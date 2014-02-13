@@ -1,0 +1,26 @@
+#
+#  AVSystem Commons Library
+#
+#  Copyright (C) 2014 AVSystem <http://www.avsystem.com/>
+#
+#  This code is free and open source software licensed under the MIT License.
+#  See the LICENSE file for details.
+#
+
+set(AVS_COMMONS_VERSION "@AVS_COMMONS_VERSION@")
+
+get_filename_component(_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
+include(${_DIR}/avs_commons-targets.cmake)
+
+get_filename_component(AVS_COMMONS_INCLUDE_DIRS "${_DIR}/../../@INCLUDE_INSTALL_DIR@" ABSOLUTE)
+
+foreach(_COMPONENT ${AVS_COMMONS_FIND_COMPONENTS})
+    if(TARGET avs_${_COMPONENT})
+        set(AVS_COMMONS_LIBRARIES ${AVS_COMMONS_LIBRARIES} avs_${_COMPONENT})
+    elseif(AVS_COMMONS_FIND_REQUIRED)
+        message(FATAL_ERROR "Component ${_COMPONENT} cannot be found")
+    endif()
+endforeach()
+
+unset(_COMPONENT)
+unset(_DIR)
