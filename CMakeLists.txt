@@ -9,7 +9,7 @@
 
 cmake_minimum_required(VERSION 2.8.1)
 project(avs_commons C)
-set(AVS_COMMONS_VERSION 1.0.0)
+set(AVS_COMMONS_VERSION SNAPSHOT)
 
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "AVSystem Commons Library")
 set(CPACK_PACKAGE_VENDOR "AVSystem")
