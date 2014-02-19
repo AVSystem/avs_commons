@@ -182,9 +182,9 @@ AVS_UNIT_CHECK_EQUAL_FUNCTION__(unsigned short, us) CHECK_EQUAL_BODY("%u")
 AVS_UNIT_CHECK_EQUAL_FUNCTION__(unsigned int, ui) CHECK_EQUAL_BODY("%u")
 AVS_UNIT_CHECK_EQUAL_FUNCTION__(unsigned long, ul) CHECK_EQUAL_BODY("%lu")
 AVS_UNIT_CHECK_EQUAL_FUNCTION__(unsigned long long, ull) CHECK_EQUAL_BODY("%llu")
-AVS_UNIT_CHECK_EQUAL_FUNCTION__(float, f) CHECK_EQUAL_BODY("%f")
-AVS_UNIT_CHECK_EQUAL_FUNCTION__(double, d) CHECK_EQUAL_BODY("%f")
-AVS_UNIT_CHECK_EQUAL_FUNCTION__(long double, ld) CHECK_EQUAL_BODY("%Lf")
+AVS_UNIT_CHECK_EQUAL_FUNCTION__(float, f) CHECK_EQUAL_BODY("%.12g")
+AVS_UNIT_CHECK_EQUAL_FUNCTION__(double, d) CHECK_EQUAL_BODY("%.12g")
+AVS_UNIT_CHECK_EQUAL_FUNCTION__(long double, ld) CHECK_EQUAL_BODY("%.12Lg")
 
 void avs_unit_assert_equal_func__(int check_result,
                                   const char *actual_str,
