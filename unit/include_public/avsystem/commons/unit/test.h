@@ -77,9 +77,14 @@ void avs_unit_assert_true__(int result,
                        int line);
 void avs_unit_assert_false__(int result, const char *file, int line);
 
+typedef struct {
+    char actual_str[64];
+    char expected_str[64];
+} avs_unit_check_equal_function_strings_t;
+
 #define AVS_UNIT_CHECK_EQUAL_FUNCTION__(type, name_suffix)                     \
 int avs_unit_check_equal_##name_suffix##__(type actual, type expected,         \
-                                           char *actual_str, char *expected_str)
+        avs_unit_check_equal_function_strings_t *strings)
 
 AVS_UNIT_CHECK_EQUAL_FUNCTION__(char, c);
 AVS_UNIT_CHECK_EQUAL_FUNCTION__(short, s);
@@ -107,33 +112,33 @@ void avs_unit_assert_not_equal_func__(int check_result,
                                       const char *file,
                                       int line);
 
-#define AVS_UNIT_CHECK_EQUAL__(actual, expected, actual_str, expected_str)\
+#define AVS_UNIT_CHECK_EQUAL__(actual, expected, strings)\
 __builtin_choose_expr(__builtin_types_compatible_p(__typeof__(actual), char),\
-    avs_unit_check_equal_c__((char) (actual), (char) (expected), actual_str, expected_str),\
+    avs_unit_check_equal_c__((char) (actual), (char) (expected), (strings)),\
 __builtin_choose_expr(__builtin_types_compatible_p(__typeof__(actual), short),\
-    avs_unit_check_equal_s__((short) (actual), (short) (expected), actual_str, expected_str),\
+    avs_unit_check_equal_s__((short) (actual), (short) (expected), (strings)),\
 __builtin_choose_expr(__builtin_types_compatible_p(__typeof__(actual), int),\
-    avs_unit_check_equal_i__((int) (actual), (int) (expected), actual_str, expected_str),\
+    avs_unit_check_equal_i__((int) (actual), (int) (expected), (strings)),\
 __builtin_choose_expr(__builtin_types_compatible_p(__typeof__(actual), long),\
-    avs_unit_check_equal_l__((long) (actual), (long) (expected), actual_str, expected_str),\
+    avs_unit_check_equal_l__((long) (actual), (long) (expected), (strings)),\
 __builtin_choose_expr(__builtin_types_compatible_p(__typeof__(actual), long long),\
-    avs_unit_check_equal_ll__((long long) (actual), (long long) (expected), actual_str, expected_str),\
+    avs_unit_check_equal_ll__((long long) (actual), (long long) (expected), (strings)),\
 __builtin_choose_expr(__builtin_types_compatible_p(__typeof__(actual), unsigned char),\
-    avs_unit_check_equal_uc__((unsigned char) (actual), (unsigned char) (expected), actual_str, expected_str),\
+    avs_unit_check_equal_uc__((unsigned char) (actual), (unsigned char) (expected), (strings)),\
 __builtin_choose_expr(__builtin_types_compatible_p(__typeof__(actual), unsigned short),\
-    avs_unit_check_equal_us__((unsigned short) (actual), (unsigned short) (expected), actual_str, expected_str),\
+    avs_unit_check_equal_us__((unsigned short) (actual), (unsigned short) (expected), (strings)),\
 __builtin_choose_expr(__builtin_types_compatible_p(__typeof__(actual), unsigned int),\
-    avs_unit_check_equal_ui__((unsigned int) (actual), (unsigned int) (expected), actual_str, expected_str),\
+    avs_unit_check_equal_ui__((unsigned int) (actual), (unsigned int) (expected), (strings)),\
 __builtin_choose_expr(__builtin_types_compatible_p(__typeof__(actual), unsigned long),\
-    avs_unit_check_equal_ul__((unsigned long) (actual), (unsigned long) (expected), actual_str, expected_str),\
+    avs_unit_check_equal_ul__((unsigned long) (actual), (unsigned long) (expected), (strings)),\
 __builtin_choose_expr(__builtin_types_compatible_p(__typeof__(actual), unsigned long long),\
-    avs_unit_check_equal_ull__((unsigned long long) (actual), (unsigned long long) (expected), actual_str, expected_str),\
+    avs_unit_check_equal_ull__((unsigned long long) (actual), (unsigned long long) (expected), (strings)),\
 __builtin_choose_expr(__builtin_types_compatible_p(__typeof__(actual), float),\
-    avs_unit_check_equal_f__((float) (actual), (float) (expected), actual_str, expected_str),\
+    avs_unit_check_equal_f__((float) (actual), (float) (expected), (strings)),\
 __builtin_choose_expr(__builtin_types_compatible_p(__typeof__(actual), double),\
-    avs_unit_check_equal_d__((double) (actual), (double) (expected), actual_str, expected_str),\
+    avs_unit_check_equal_d__((double) (actual), (double) (expected), (strings)),\
 __builtin_choose_expr(__builtin_types_compatible_p(__typeof__(actual), long double),\
-    avs_unit_check_equal_ld__((long double) (actual), (long double) (expected), actual_str, expected_str), abort()\
+    avs_unit_check_equal_ld__((long double) (actual), (long double) (expected), (strings)), abort()\
 )))))))))))))
 
 void avs_unit_assert_equal_string__(const char *actual,
@@ -294,11 +299,10 @@ static void _avs_unit_test_##suite##_##name(void)
  */
 #define AVS_UNIT_ASSERT_EQUAL(actual, expected) \
 do { \
-    char actual_str[64]; \
-    char expected_str[64]; \
+    avs_unit_check_equal_function_strings_t strings; \
     avs_unit_assert_equal_func__( \
-            AVS_UNIT_CHECK_EQUAL__(actual, expected, actual_str, expected_str),\
-            actual_str, expected_str, __FILE__, __LINE__); \
+            AVS_UNIT_CHECK_EQUAL__(actual, expected, &strings), \
+            strings.actual_str, strings.expected_str, __FILE__, __LINE__); \
 } while(0)
 
 /**
@@ -316,12 +320,10 @@ do { \
  */
 #define AVS_UNIT_ASSERT_NOT_EQUAL(actual, not_expected) \
 do { \
-    char actual_str[64]; \
-    char not_expected_str[64]; \
+    avs_unit_check_equal_function_strings_t strings; \
     avs_unit_assert_not_equal_func__( \
-            AVS_UNIT_CHECK_EQUAL__(actual, not_expected, \
-                                   actual_str, not_expected_str), \
-            actual_str, not_expected_str, __FILE__, __LINE__); \
+            AVS_UNIT_CHECK_EQUAL__(actual, not_expected, &strings), \
+            strings.actual_str, strings.expected_str, __FILE__, __LINE__); \
 } while(0)
 
 /**

@@ -7,6 +7,8 @@
  * See the LICENSE file for details.
  */
 
+#define _GNU_SOURCE
+
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
@@ -163,8 +165,10 @@ void avs_unit_assert_false__(int result,
 
 #define CHECK_EQUAL_BODY(format)                                               \
 {                                                                              \
-    sprintf(actual_str, format, actual);                                       \
-    sprintf(expected_str, format, expected);                                   \
+    snprintf(strings->actual_str, sizeof(strings->actual_str),                 \
+             format, actual);                                                  \
+    snprintf(strings->expected_str, sizeof(strings->expected_str),             \
+             format, expected);                                                \
     return (actual == expected);                                               \
 }
 
@@ -273,10 +277,10 @@ static const char *string_status(int result) {
     static char buffer[32];
     if (result) {
         /* FAIL */
-        sprintf(buffer, "\033[0;31mFAIL\033[0m");
+        snprintf(buffer, sizeof(buffer), "\033[0;31mFAIL\033[0m");
     } else {
         /* SUCCESS */
-        sprintf(buffer, "\033[0;32mOK\033[0m");
+        snprintf(buffer, sizeof(buffer), "\033[0;32mOK\033[0m");
     }
     return buffer;
 }
