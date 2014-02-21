@@ -7,7 +7,9 @@
  * See the LICENSE file for details.
  */
 
+#ifndef _GNU_SOURCE
 #define _GNU_SOURCE
+#endif
 
 #include <stdio.h>
 #include <stdarg.h>
@@ -295,8 +297,8 @@ static void test_printf(message_level_t level, const char *format, ...) {
 }
 
 static void parse_command_line_args(int argc, char* argv[],
-                                    const char **out_selected_suite,
-                                    const char **out_selected_test) {
+                                    const char * volatile *out_selected_suite,
+                                    const char * volatile *out_selected_test) {
     while (1) {
         static const struct option long_options[] = {
             { "verbose", no_argument, 0, 'v' },
@@ -329,11 +331,11 @@ static void parse_command_line_args(int argc, char* argv[],
 }
 
 int main(int argc, char *argv[]) {
-    const char *selected_suite = NULL;
-    const char *selected_test = NULL;
-    avs_unit_init_function_t *current_init = NULL;
-    avs_unit_test_suite_t *current_suite = NULL;
-    int tests_result = 0;
+    const char * volatile selected_suite = NULL;
+    const char * volatile selected_test = NULL;
+    avs_unit_init_function_t * volatile current_init = NULL;
+    avs_unit_test_suite_t * volatile current_suite = NULL;
+    volatile int tests_result = 0;
 
     parse_command_line_args(argc, argv, &selected_suite, &selected_test);
 
@@ -342,9 +344,9 @@ int main(int argc, char *argv[]) {
     }
 
     AVS_LIST_FOREACH(current_suite, test_suites) {
-        avs_unit_test_t *current_test = NULL;
-        size_t tests_passed = 0;
-        size_t tests_count;
+        avs_unit_test_t * volatile current_test = NULL;
+        volatile size_t tests_passed = 0;
+        volatile size_t tests_count;
 
         if (selected_suite && strcmp(selected_suite, current_suite->name)) {
             continue;
