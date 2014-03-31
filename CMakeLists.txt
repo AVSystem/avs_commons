@@ -95,9 +95,41 @@ if(DOXYGEN_FOUND)
                       COMMAND ${DOXYGEN_EXECUTABLE} ${CMAKE_BINARY_DIR}/doc/Doxyfile)
 endif()
 
-add_subdirectory(unit)
-add_subdirectory(buffer)
-add_subdirectory(list)
+option(WITH_AVS_UNIT "AVSystem unit test library" ON)
+if(WITH_AVS_UNIT)
+    macro(add_avs_test NAME)
+        add_executable(${NAME}_test EXCLUDE_FROM_ALL ${ARGN})
+        target_link_libraries(${NAME}_test avs_unit)
+        set_property(TARGET ${NAME}_test APPEND PROPERTY COMPILE_DEFINITIONS AVS_UNIT_TESTING)
+        set_property(TARGET ${NAME}_test APPEND PROPERTY COMPILE_FLAGS "-Wno-clobbered -Wno-overlength-strings -Wno-c++-compat -Wno-sign-conversion")
+
+        if(VALGRIND)
+            set(VALGRIND_LOG ${VALGRIND} --log-file=VALGRIND.${NAME}.log)
+        else()
+            set(VALGRIND_LOG)
+        endif()
+
+        add_test(${NAME}_test ${VALGRIND_LOG} ${CMAKE_CURRENT_BINARY_DIR}/${NAME}_test)
+
+        add_custom_target(${NAME}_check COMMAND ${CMAKE_CTEST_COMMAND} -V DEPENDS ${NAME}_test)
+        add_dependencies(check ${NAME}_check)
+    endmacro()
+
+    add_subdirectory(unit)
+else()
+    macro(add_avs_test NAME)
+    endmacro()
+endif()
+
+option(WITH_AVS_BUFFER "AVSystem buffer implementation" ON)
+if(WITH_AVS_BUFFER)
+    add_subdirectory(buffer)
+endif()
+
+option(WITH_AVS_LIST "AVSystem generic linked list implementation" ON)
+if(WITH_AVS_LIST)
+    add_subdirectory(list)
+endif()
 
 install(EXPORT avs_commons-targets
         DESTINATION ${LIB_INSTALL_DIR}/avs_commons)
