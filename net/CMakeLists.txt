@@ -9,13 +9,16 @@
 
 set(SOURCES
     src/api.c
+    src/net.c)
+
+set(PRIVATE_HEADERS
     src/net.h
     src/v_table.h)
 
 set(PUBLIC_HEADERS
     include_public/avsystem/commons/net.h)
 
-set(ALL_SOURCES ${SOURCES} ${PUBLIC_HEADERS})
+set(ALL_SOURCES ${SOURCES} ${PRIVATE_HEADERS} ${PUBLIC_HEADERS})
 
 include_directories(include_public)
 

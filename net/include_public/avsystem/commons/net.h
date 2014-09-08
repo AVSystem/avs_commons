@@ -62,13 +62,13 @@ typedef enum {
  * Available SSL versions that can be used by SSL sockets.
  */
 typedef enum {
-    AVS_SSL_VERSION_DEFAULT = 0,
-    AVS_SSL_VERSION_SSLv2_OR_3,
-    AVS_SSL_VERSION_SSLv2,
-    AVS_SSL_VERSION_SSLv3,
-    AVS_SSL_VERSION_TLSv1,
-    AVS_SSL_VERSION_TLSv1_1,
-    AVS_SSL_VERSION_TLSv1_2 = AVS_SSL_VERSION_DEFAULT
+    AVS_NET_SSL_VERSION_DEFAULT = 0,
+    AVS_NET_SSL_VERSION_SSLv2_OR_3,
+    AVS_NET_SSL_VERSION_SSLv2,
+    AVS_NET_SSL_VERSION_SSLv3,
+    AVS_NET_SSL_VERSION_TLSv1,
+    AVS_NET_SSL_VERSION_TLSv1_1,
+    AVS_NET_SSL_VERSION_TLSv1_2 = AVS_NET_SSL_VERSION_DEFAULT
 } avs_net_ssl_version_t;
 
 typedef struct {
@@ -100,9 +100,9 @@ typedef union {
 } avs_net_socket_opt_value_t;
 
 typedef enum {
-    AVS_TCP_SOCKET,
-    AVS_UDP_SOCKET,
-    AVS_SSL_SOCKET
+    AVS_NET_TCP_SOCKET,
+    AVS_NET_UDP_SOCKET,
+    AVS_NET_SSL_SOCKET
 } avs_net_socket_type_t;
 
 int avs_net_socket_debug(int value);
