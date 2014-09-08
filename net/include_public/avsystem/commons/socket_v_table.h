@@ -7,8 +7,8 @@
  * See the LICENSE file for details.
  */
 
-#ifndef V_TABLE_H
-#define V_TABLE_H
+#ifndef SOCKET_V_TABLE_H
+#define SOCKET_V_TABLE_H
 
 #include <avsystem/commons/net.h>
 
@@ -94,4 +94,4 @@ typedef struct {
     avs_net_socket_set_opt_t set_opt;
 } avs_net_socket_v_table_t;
 
-#endif /* V_TABLE_H */
+#endif /* SOCKET_V_TABLE_H */

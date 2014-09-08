@@ -12,7 +12,7 @@
 
 #include <stdint.h>
 
-#include "v_table.h"
+#include <avsystem/commons/socket_v_table.h>
 
 #ifdef HAVE_VISIBILITY
 #pragma GCC visibility push(hidden)
