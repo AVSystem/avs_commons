@@ -12,11 +12,11 @@ set(SOURCES
     src/net.c)
 
 set(PRIVATE_HEADERS
-    src/net.h
-    src/v_table.h)
+    src/net.h)
 
 set(PUBLIC_HEADERS
-    include_public/avsystem/commons/net.h)
+    include_public/avsystem/commons/net.h
+    include_public/avsystem/commons/socket_v_table.h)
 
 set(ALL_SOURCES ${SOURCES} ${PRIVATE_HEADERS} ${PUBLIC_HEADERS})
 

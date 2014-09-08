@@ -13,9 +13,9 @@
 #include <string.h>
 
 #include <avsystem/commons/net.h>
+#include <avsystem/commons/socket_v_table.h>
 
 #include "net.h"
-#include "v_table.h"
 
 #ifdef HAVE_VISIBILITY
 #pragma GCC visibility push(hidden)
