@@ -168,12 +168,12 @@ typedef int (*socket_constructor_t)(avs_net_abstract_socket_t **socket,
 static socket_constructor_t
 get_constructor_for_socket_type(avs_net_socket_type_t type) {
     switch (type) {
-    case AVS_TCP_SOCKET:
+    case AVS_NET_TCP_SOCKET:
         return _avs_net_create_tcp_socket;
-    case AVS_UDP_SOCKET:
+    case AVS_NET_UDP_SOCKET:
         return _avs_net_create_udp_socket;
 #ifdef WITH_SSL
-    case AVS_SSL_SOCKET:
+    case AVS_NET_SSL_SOCKET:
         return _avs_net_create_ssl_socket;
 #endif
     default:

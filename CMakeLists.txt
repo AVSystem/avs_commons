@@ -61,6 +61,11 @@ try_compile(HAVE_VISIBILITY ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp ${CMAKE_BINA
 include(CheckIncludeFiles)
 check_include_files("net/if.h" AVS_HAS_NET_IF_H)
 
+include(CheckFunctionExists)
+check_function_exists(poll HAVE_POLL)
+
+option(WITH_LWIP "Use lwIP library for networking" OFF)
+
 option(WITH_SOCKET_LOG "Enable socket communication logging" OFF)
 
 configure_file("config/config.h.in" "config/config.h")
