@@ -8,7 +8,9 @@
 #
 
 set(SOURCES
-    src/socket.c)
+    src/api.c
+    src/net.h
+    src/v_table.h)
 
 set(PUBLIC_HEADERS
     include_public/avsystem/commons/net.h)

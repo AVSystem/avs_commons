@@ -54,10 +54,17 @@ if(CMAKE_C_COMPILE_OPTIONS_PIC)
     endif()
 endif()
 
+# -fvisibility, #pragma GCC visibility
+file(WRITE ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp/visibility.c "#pragma GCC visibility push(default)\nint f();\n#pragma GCC visibility push(hidden)\nint f() { return 0; }\n#pragma GCC visibility pop\nint main() { return f(); }\n\n")
+try_compile(HAVE_VISIBILITY ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp/visibility.c COMPILE_DEFINITIONS -Wall -Wextra -Werror -fvisibility=default)
+
 include(CheckIncludeFiles)
 check_include_files("net/if.h" AVS_HAS_NET_IF_H)
+
+configure_file("config/config.h.in" "config/config.h")
 configure_file("include_public/avsystem/commons/defs.h.in" "include_public/avsystem/commons/defs.h")
 
+include_directories(config)
 include_directories(include_public)
 
 find_program(VALGRIND_EXECUTABLE valgrind)
