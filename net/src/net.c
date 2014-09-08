@@ -39,6 +39,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
+#include <ifaddrs.h>
 
 #include "net.h"
 
@@ -237,28 +238,6 @@ static struct addrinfo *get_addrinfo_net(int socket_type,
             return preferred;
         }
         return info;
-    }
-}
-
-static int interface_name_net(avs_net_abstract_socket_t *socket_,
-                              avs_net_socket_interface_name_t *if_name) {
-    avs_net_socket_t *socket = (avs_net_socket_t *) socket_;
-    if (socket->configuration.interface_name[0]) {
-        memcpy(*if_name,
-               socket->configuration.interface_name,
-               sizeof (*if_name));
-        return 0;
-    } else {
-#warning "TODO"
-        if (avs_net_interface_name_for_socket((avs_net_abstract_socket_t *) socket,
-                                              if_name)) {
-            return -1;
-        } else {
-            memcpy((void *) socket->configuration.interface_name,
-                   *if_name,
-                   sizeof (*if_name));
-            return 0;
-        }
     }
 }
 
@@ -909,4 +888,45 @@ static int set_opt_net(avs_net_abstract_socket_t *net_socket_,
         return -1;
     }
     return 0;
+}
+
+static int interface_name_net(avs_net_abstract_socket_t *socket_,
+                              avs_net_socket_interface_name_t *if_name) {
+    avs_net_socket_t *socket = (avs_net_socket_t *) socket_;
+    if (socket->configuration.interface_name[0]) {
+        memcpy(*if_name,
+               socket->configuration.interface_name,
+               sizeof (*if_name));
+        return 0;
+    } else {
+        int retval = -1;
+        char local_addr[NET_MAX_HOSTNAME_SIZE];
+        struct sockaddr_storage addr;
+        socklen_t addrlen = sizeof(addr);
+        struct ifaddrs *ifaddrs = NULL;
+        struct ifaddrs *ifaddr = NULL;
+        if (getsockname(socket->socket, (struct sockaddr *) &addr, &addrlen)
+                || get_string_ip((struct sockaddr *) &addr,
+                                 local_addr, sizeof(local_addr))) {
+            goto interface_name_end;
+        }
+        for (ifaddr = ifaddrs; ifaddr; ifaddr = ifaddr->ifa_next) {
+            if (ifaddr->ifa_addr) {
+                if (get_string_ip(ifaddr->ifa_addr,
+                                  *if_name, sizeof(*if_name))) {
+                    continue;
+                }
+
+                if (strcmp(*if_name, local_addr) == 0) {
+                    retval = 0;
+                    goto interface_name_end;
+                }
+            }
+        }
+    interface_name_end:
+        if (ifaddrs) {
+            freeifaddrs(ifaddrs);
+        }
+        return retval;
+    }
 }

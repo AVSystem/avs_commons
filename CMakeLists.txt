@@ -62,14 +62,12 @@ include(CheckIncludeFiles)
 check_include_files("net/if.h" AVS_HAS_NET_IF_H)
 
 include(CheckFunctionExists)
+check_function_exists(getnameinfo HAVE_GETNAMEINFO)
 check_function_exists(poll HAVE_POLL)
 
 option(WITH_LWIP "Use lwIP library for networking" OFF)
 
 option(WITH_SOCKET_LOG "Enable socket communication logging" OFF)
-
-configure_file("config/config.h.in" "config/config.h")
-configure_file("include_public/avsystem/commons/defs.h.in" "include_public/avsystem/commons/defs.h")
 
 include_directories(config)
 include_directories(include_public)
@@ -153,6 +151,9 @@ option(WITH_AVS_NET "AVSystem network communication abstraction layer" ON)
 if(WITH_AVS_NET)
     add_subdirectory(net)
 endif()
+
+configure_file("config/config.h.in" "config/config.h")
+configure_file("include_public/avsystem/commons/defs.h.in" "include_public/avsystem/commons/defs.h")
 
 install(EXPORT avs_commons-targets
         DESTINATION ${LIB_INSTALL_DIR}/avs_commons)
