@@ -1,3 +1,5 @@
+#define WITH_SOCKET_LOG
+
 #ifndef AVS_UNIT_TESTING
 #define HAVE_VISIBILITY
 #endif

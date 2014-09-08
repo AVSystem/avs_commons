@@ -61,6 +61,8 @@ try_compile(HAVE_VISIBILITY ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp ${CMAKE_BINA
 include(CheckIncludeFiles)
 check_include_files("net/if.h" AVS_HAS_NET_IF_H)
 
+option(WITH_SOCKET_LOG "Enable socket communication logging" OFF)
+
 configure_file("config/config.h.in" "config/config.h")
 configure_file("include_public/avsystem/commons/defs.h.in" "include_public/avsystem/commons/defs.h")
 

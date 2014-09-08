@@ -1,3 +1,5 @@
+#cmakedefine WITH_SOCKET_LOG
+
 #ifndef AVS_UNIT_TESTING
 #cmakedefine HAVE_VISIBILITY
 #endif
