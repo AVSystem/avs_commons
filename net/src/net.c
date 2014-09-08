@@ -58,6 +58,12 @@
 #define NET_CONNECT_TIMEOUT      1000 * 10
 #define NET_ACCEPT_TIMEOUT       1000 * 5
 
+#ifdef HAVE_INET_NTOP
+#define _avs_inet_ntop inet_ntop
+#else
+const char *_avs_inet_ntop(int af, const void *src, char *dst, socklen_t size);
+#endif
+
 static int connect_net(avs_net_abstract_socket_t *net_socket,
                        const char* host,
                        const char *port);
@@ -559,8 +565,7 @@ static int host_port_to_string(const struct sockaddr *sa, socklen_t salen,
     } else {
         return -1;
     }
-#warning "FIXME"
-    return (!inet_ntop(sa->sa_family, addr_ptr, host, hostlen)
+    return (!_avs_inet_ntop(sa->sa_family, addr_ptr, host, hostlen)
             || (retval = snprintf(serv, servlen, "%" PRIu16, *port_ptr)) < 0
             || (size_t) retval >= servlen) ? -1 : 0;
 #endif
@@ -789,8 +794,7 @@ static int get_string_ip(const struct sockaddr *addr,
     if (buffer_size < addrlen) {
         return -1;
     } else {
-#warning "FIXME"
-        return inet_ntop(addr->sa_family, addr_data, buffer, addrlen)
+        return _avs_inet_ntop(addr->sa_family, addr_data, buffer, addrlen)
                 == NULL ? -1 : 0;
     }
 }
