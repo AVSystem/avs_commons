@@ -54,6 +54,10 @@ if(CMAKE_C_COMPILE_OPTIONS_PIC)
     endif()
 endif()
 
+include(CheckIncludeFiles)
+check_include_files("net/if.h" AVS_HAS_NET_IF_H)
+configure_file("include_public/avsystem/commons/defs.h.in" "include_public/avsystem/commons/defs.h")
+
 include_directories(include_public)
 
 find_program(VALGRIND_EXECUTABLE valgrind)
@@ -129,6 +133,11 @@ endif()
 option(WITH_AVS_LIST "AVSystem generic linked list implementation" ON)
 if(WITH_AVS_LIST)
     add_subdirectory(list)
+endif()
+
+option(WITH_AVS_NET "AVSystem network communication abstraction layer" ON)
+if(WITH_AVS_NET)
+    add_subdirectory(net)
 endif()
 
 install(EXPORT avs_commons-targets

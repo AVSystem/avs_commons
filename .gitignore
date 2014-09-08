@@ -21,6 +21,7 @@ compile_commands.json
 install_manifest.txt
 _CPack_Packages/
 Testing/
+/include_public/avsystem/commons/defs.h
 
 # documentation
 /doc/*
