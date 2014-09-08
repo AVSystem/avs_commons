@@ -105,6 +105,8 @@ typedef enum {
     AVS_SSL_SOCKET
 } avs_net_socket_type_t;
 
+int avs_net_socket_debug(int value);
+
 int avs_net_socket_create(avs_net_abstract_socket_t **socket,
                           avs_net_socket_type_t sock_type,
                           const void *configuration);
@@ -160,11 +162,6 @@ int avs_net_socket_get_opt(avs_net_abstract_socket_t *socket,
 int avs_net_socket_set_opt(avs_net_abstract_socket_t *socket,
                            avs_net_socket_opt_key_t option_key,
                            avs_net_socket_opt_value_t option_value);
-
-int avs_net_interface_rx_bytes(avs_net_socket_interface_name_t if_name,
-                               uint64_t *bytes);
-int avs_net_interface_tx_bytes(avs_net_socket_interface_name_t if_name,
-                               uint64_t *bytes);
 
 /**
  * Returns a pointer to bare system socket (e.g. to invoke <c>select</c> or
