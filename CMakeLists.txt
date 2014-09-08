@@ -63,6 +63,7 @@ check_include_files("net/if.h" AVS_HAS_NET_IF_H)
 
 include(CheckFunctionExists)
 check_function_exists(getnameinfo HAVE_GETNAMEINFO)
+check_function_exists(inet_ntop HAVE_INET_NTOP)
 check_function_exists(poll HAVE_POLL)
 
 option(WITH_LWIP "Use lwIP library for networking" OFF)

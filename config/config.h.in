@@ -1,5 +1,7 @@
 #cmakedefine HAVE_GETNAMEINFO
 
+#cmakedefine HAVE_INET_NTOP
+
 #cmakedefine HAVE_POLL
 
 #cmakedefine WITH_LWIP

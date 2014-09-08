@@ -11,6 +11,10 @@ set(SOURCES
     src/api.c
     src/net.c)
 
+if(NOT HAVE_INET_NTOP)
+    set(SOURCES ${SOURCES} src/inet_ntop.c)
+endif()
+
 set(PRIVATE_HEADERS
     src/net.h)
 
