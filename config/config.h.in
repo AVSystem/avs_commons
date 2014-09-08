@@ -4,6 +4,8 @@
 
 #cmakedefine HAVE_POLL
 
+#cmakedefine HAVE_RAND_R
+
 #cmakedefine WITH_LWIP
 
 #cmakedefine WITH_SOCKET_LOG

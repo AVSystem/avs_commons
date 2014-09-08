@@ -64,6 +64,13 @@
 const char *_avs_inet_ntop(int af, const void *src, char *dst, socklen_t size);
 #endif
 
+#ifdef HAVE_RAND_R
+#define _avs_rand_r rand_r
+#else
+#warning "rand_r not available, please provide int _avs_rand_r(unsigned int *)"
+int _avs_rand_r(unsigned int *seedp);
+#endif
+
 static int connect_net(avs_net_abstract_socket_t *net_socket,
                        const char* host,
                        const char *port);
@@ -197,8 +204,7 @@ static void randomize_addrinfo_list(struct addrinfo **list_ptr,
     randomize_addrinfo_list(&part1, random_seed);
     randomize_addrinfo_list(&part2, random_seed);
     while (part1 && part2) {
-#warning "FIXME"
-        if (rand_r(random_seed) % 2) {
+        if (_avs_rand_r(random_seed) % 2) {
             *list_end_ptr = part1;
             part1 = part1->ai_next;
         } else {
