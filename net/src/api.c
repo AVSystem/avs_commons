@@ -9,6 +9,9 @@
 
 #include <config.h>
 
+#include <stdio.h>
+#include <string.h>
+
 #include <avsystem/commons/net.h>
 
 #include "net.h"
@@ -115,7 +118,7 @@ int avs_net_socket_cleanup(avs_net_abstract_socket_t **socket) {
     }
 }
 
-const void *avs_net_get_system_socket(avs_net_abstract_socket_t *socket) {
+const void *avs_net_socket_get_system(avs_net_abstract_socket_t *socket) {
     const void *out = NULL;
     if (socket->operations->get_system_socket(socket, &out) < 0) {
         return NULL;
@@ -392,37 +395,40 @@ static int interface_name_debug(avs_net_abstract_socket_t *debug_socket,
 }
 
 static int remote_host_debug(avs_net_abstract_socket_t *debug_socket,
-                             char (*hostname)[AVS_TUNABLE_URL_HOSTNAME_SIZE]) {
+                             char *out_buffer, size_t out_buffer_size) {
     int result = avs_net_socket_get_remote_host(
-            ((avs_net_socket_debug_t *) debug_socket)->socket, hostname);
+            ((avs_net_socket_debug_t *) debug_socket)->socket,
+            out_buffer, out_buffer_size);
     if (result) {
         fprintf(communication_log, "cannot get remote host\n");
     } else {
-        fprintf(communication_log, "remote host: %s\n", *hostname);
+        fprintf(communication_log, "remote host: %s\n", out_buffer);
     }
     return result;
 }
 
 static int remote_port_debug(avs_net_abstract_socket_t *debug_socket,
-                           char (*port)[AVS_URL_PORT_SIZE]) {
+                             char *out_buffer, size_t out_buffer_size) {
     int result = avs_net_socket_get_remote_port(
-            ((avs_net_socket_debug_t *) debug_socket)->socket, port);
+            ((avs_net_socket_debug_t *) debug_socket)->socket,
+            out_buffer, out_buffer_size);
     if (result) {
         fprintf(communication_log, "cannot get remote port\n");
     } else {
-        fprintf(communication_log, "remote port: %s\n", *port);
+        fprintf(communication_log, "remote port: %s\n", out_buffer);
     }
     return result;
 }
 
 static int local_port_debug(avs_net_abstract_socket_t *debug_socket,
-                            char (*port)[AVS_URL_PORT_SIZE]) {
+                            char *out_buffer, size_t out_buffer_size) {
     int result = avs_net_socket_get_local_port(
-            ((avs_net_socket_debug_t *) debug_socket)->socket, port);
+            ((avs_net_socket_debug_t *) debug_socket)->socket,
+            out_buffer, out_buffer_size);
     if (result) {
         fprintf(communication_log, "cannot get local port\n");
     } else {
-        fprintf(communication_log, "local port: %s\n", *port);
+        fprintf(communication_log, "local port: %s\n", out_buffer);
     }
     return result;
 }
@@ -458,14 +464,14 @@ static int set_opt_debug(avs_net_abstract_socket_t *debug_socket,
 
 static int system_socket_debug(avs_net_abstract_socket_t *debug_socket,
                                const void **out) {
-    *out = avs_net_get_system_socket(
+    *out = avs_net_socket_get_system(
             ((avs_net_socket_debug_t *) debug_socket)->socket);
     return *out ? 0 : -1;
 }
 
 static int cleanup_debug(avs_net_abstract_socket_t **debug_socket) {
     avs_net_socket_cleanup(&(*((avs_net_socket_debug_t **) debug_socket))->socket);
-    avs_net_free(*debug_socket);
+    free(*debug_socket);
     *debug_socket = NULL;
     return 0;
 }
@@ -496,7 +502,7 @@ static int create_socket_debug(avs_net_abstract_socket_t **debug_socket,
     avs_net_socket_cleanup(debug_socket);
 
     *debug_socket =
-            (avs_net_abstract_socket_t *) avs_net_malloc(sizeof(avs_net_socket_debug_t));
+            (avs_net_abstract_socket_t *) malloc(sizeof(avs_net_socket_debug_t));
     if (*debug_socket) {
         avs_net_socket_debug_t new_socket = { &debug_vtable, NULL };
         new_socket.socket = backend_socket;
