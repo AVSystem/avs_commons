@@ -17,8 +17,8 @@
 #   include "lwip/netdb.h"
 #   include "lwip/socket.h"
 #else
-#   ifndef _POSIX_SOURCE
-#   define _POSIX_SOURCE
+#   ifndef _POSIX_C_SOURCE
+#   define _POSIX_C_SOURCE 200112L
 #   endif
 #   include <fcntl.h>
 #   include <netdb.h>
@@ -35,6 +35,8 @@
 
 #include <assert.h>
 #include <errno.h>
+#include <inttypes.h>
+#include <stdio.h>
 #include <string.h>
 #include <time.h>
 
@@ -44,17 +46,99 @@
 #pragma GCC visibility push(hidden)
 #endif
 
+#ifndef INET_ADDRSTRLEN
+#define INET_ADDRSTRLEN 16
+#endif
+
+#define NET_MAX_HOSTNAME_SIZE    64
+#define NET_PORT_SIZE            6
+
+#define NET_SEND_TIMEOUT         1000 * 30 /* 30 sec timeout */
 #define NET_CONNECT_TIMEOUT      1000 * 10
+#define NET_ACCEPT_TIMEOUT       1000 * 5
 
-int _avs_net_create_tcp_socket(avs_net_abstract_socket_t **socket,
-                               const void *socket_configuration) {
+static int connect_net(avs_net_abstract_socket_t *net_socket,
+                       const char* host,
+                       const char *port);
+static int send_net(avs_net_abstract_socket_t *net_socket,
+                    const void* buffer,
+                    size_t buffer_length);
+static int send_to_net(avs_net_abstract_socket_t *socket,
+                       size_t *out,
+                       const void *buffer,
+                       size_t buffer_length,
+                       const char *host,
+                       const char *port);
+static int receive_net(avs_net_abstract_socket_t *net_socket_,
+                       size_t *out,
+                       void *buffer,
+                       size_t buffer_length);
+static int receive_from_net(avs_net_abstract_socket_t *net_socket,
+                            size_t *out,
+                            void *message_buffer, size_t buffer_size,
+                            char *host, size_t host_size,
+                            char *port, size_t port_size);
+static int bind_net(avs_net_abstract_socket_t *net_socket,
+                    const char *localaddr,
+                    const char *port);
+static int accept_net(avs_net_abstract_socket_t *server_net_socket,
+                      avs_net_abstract_socket_t *new_net_socket);
+static int close_net(avs_net_abstract_socket_t *net_socket);
+static int shutdown_net(avs_net_abstract_socket_t* net_socket);
+static int cleanup_net(avs_net_abstract_socket_t **net_socket);
+static int system_socket_net(avs_net_abstract_socket_t *net_socket,
+                             const void **out);
+static int interface_name_net(avs_net_abstract_socket_t *socket,
+                              avs_net_socket_interface_name_t *if_name);
+static int remote_host_net(avs_net_abstract_socket_t *socket,
+                           char *out_buffer, size_t out_buffer_size);
+static int remote_port_net(avs_net_abstract_socket_t *socket,
+                           char *out_buffer, size_t out_buffer_size);
+static int local_port_net(avs_net_abstract_socket_t *socket,
+                           char *out_buffer, size_t out_buffer_size);
+static int get_opt_net(avs_net_abstract_socket_t *net_socket,
+                       avs_net_socket_opt_key_t option_key,
+                       avs_net_socket_opt_value_t *out_option_value);
+static int set_opt_net(avs_net_abstract_socket_t *net_socket,
+                       avs_net_socket_opt_key_t option_key,
+                       avs_net_socket_opt_value_t option_value);
+
+static int unimplemented() {
     return -1;
 }
 
-int _avs_net_create_udp_socket(avs_net_abstract_socket_t **socket,
-                               const void *socket_configuration) {
-    return -1;
-}
+static const avs_net_socket_v_table_t net_vtable = {
+    connect_net,
+    (avs_net_socket_decorate_t) unimplemented,
+    send_net,
+    send_to_net,
+    receive_net,
+    receive_from_net,
+    bind_net,
+    accept_net,
+    close_net,
+    shutdown_net,
+    cleanup_net,
+    system_socket_net,
+    interface_name_net,
+    remote_host_net,
+    remote_port_net,
+    local_port_net,
+    get_opt_net,
+    set_opt_net
+};
+
+typedef struct {
+    const avs_net_socket_v_table_t * const operations;
+    int                                    socket;
+    int                                    type;
+    avs_net_socket_state_t                 state;
+    char                                   host[NET_MAX_HOSTNAME_SIZE];
+    char                                   port[NET_PORT_SIZE];
+    avs_net_socket_configuration_t         configuration;
+
+    int recv_timeout;
+} avs_net_socket_t;
 
 static struct addrinfo *detach_preferred(struct addrinfo **list_ptr,
                                          const void *preferred_addr,
@@ -156,6 +240,115 @@ static struct addrinfo *get_addrinfo_net(int socket_type,
     }
 }
 
+static int interface_name_net(avs_net_abstract_socket_t *socket_,
+                              avs_net_socket_interface_name_t *if_name) {
+    avs_net_socket_t *socket = (avs_net_socket_t *) socket_;
+    if (socket->configuration.interface_name[0]) {
+        memcpy(*if_name,
+               socket->configuration.interface_name,
+               sizeof (*if_name));
+        return 0;
+    } else {
+#warning "TODO"
+        if (avs_net_interface_name_for_socket((avs_net_abstract_socket_t *) socket,
+                                              if_name)) {
+            return -1;
+        } else {
+            memcpy((void *) socket->configuration.interface_name,
+                   *if_name,
+                   sizeof (*if_name));
+            return 0;
+        }
+    }
+}
+
+static int remote_host_net(avs_net_abstract_socket_t *socket_,
+                           char *out_buffer, size_t out_buffer_size) {
+    avs_net_socket_t *socket = (avs_net_socket_t *) socket_;
+    int retval;
+    if (socket->socket < 0) {
+        return -1;
+    }
+    retval = snprintf(out_buffer, out_buffer_size, "%s", socket->host);
+    return (retval < 0 || (size_t) retval >= out_buffer_size) ? -1 : 0;
+}
+
+static int remote_port_net(avs_net_abstract_socket_t *socket_,
+                           char *out_buffer, size_t out_buffer_size) {
+    avs_net_socket_t *socket = (avs_net_socket_t *) socket_;
+    int retval;
+    if (socket->socket < 0) {
+        return -1;
+    }
+    retval = snprintf(out_buffer, out_buffer_size, "%s", socket->port);
+    return (retval < 0 || (size_t) retval >= out_buffer_size) ? -1 : 0;
+}
+
+static int system_socket_net(avs_net_abstract_socket_t *net_socket,
+                             const void **out) {
+    *out = &((const avs_net_socket_t *) net_socket)->socket;
+    return *out ? 0 : -1;
+}
+
+static int close_net(avs_net_abstract_socket_t *net_socket_) {
+    avs_net_socket_t *net_socket = (avs_net_socket_t *) net_socket_;
+    if (net_socket->socket >= 0) {
+        close(net_socket->socket);
+        net_socket->socket = -1;
+        net_socket->state = AVS_NET_SOCKET_STATE_CLOSED;
+    }
+    return 0;
+}
+
+static int cleanup_net(avs_net_abstract_socket_t **net_socket) {
+    close_net(*net_socket);
+    free(*net_socket);
+    *net_socket = NULL;
+    return 0;
+}
+
+static int shutdown_net(avs_net_abstract_socket_t *net_socket_) {
+    avs_net_socket_t *net_socket = (avs_net_socket_t *) net_socket_;
+    int retval = shutdown(net_socket->socket, SHUT_RDWR);
+    net_socket->state = AVS_NET_SOCKET_STATE_SHUTDOWN;
+    return retval;
+}
+
+static int configure_socket(avs_net_socket_t *net_socket) {
+    if (net_socket->configuration.interface_name[0]) {
+        if (setsockopt(net_socket->socket,
+                       SOL_SOCKET,
+                       SO_BINDTODEVICE,
+                       net_socket->configuration.interface_name,
+                       (socklen_t)
+                       strlen(net_socket->configuration.interface_name))) {
+            return -1;
+        }
+    }
+    if (net_socket->configuration.priority) {
+        /* SO_PRIORITY accepts int as argument */
+        int priority = net_socket->configuration.priority;
+        socklen_t length = sizeof(priority);
+        if (setsockopt(net_socket->socket,
+                       SOL_SOCKET, SO_PRIORITY, &priority, length)) {
+            return -1;
+        }
+    }
+    if (net_socket->configuration.dscp) {
+        uint8_t tos;
+        socklen_t length = sizeof(tos);
+        if (getsockopt(net_socket->socket, IPPROTO_IP, IP_TOS, &tos, &length)) {
+            return -1;
+        }
+        tos &= 0x03; /* clear first 6 bits */
+        tos |= (uint8_t) (net_socket->configuration.dscp << 2);
+        if (setsockopt(net_socket->socket, IPPROTO_IP, IP_TOS, &tos, length)) {
+            return -1;
+        }
+    }
+    return 0;
+}
+
 static short wait_until_ready(int sockfd, int timeout, char in, char out) {
 #ifdef HAVE_POLL
     struct pollfd p;
@@ -220,6 +413,368 @@ static int connect_with_timeout(int sockfd,
     return 0;
 }
 
+static int is_stream(avs_net_socket_t *net_socket) {
+    return (net_socket->type == SOCK_STREAM
+            || net_socket->type == SOCK_SEQPACKET);
+}
+
+static int connect_net(avs_net_abstract_socket_t *net_socket_,
+                       const char *host,
+                       const char *port) {
+    avs_net_socket_t *net_socket = (avs_net_socket_t *) net_socket_;
+    struct addrinfo *info = NULL, *address = NULL;
+
+    if (net_socket->socket >= 0) {
+        return -1;
+    }
+
+    strncpy(net_socket->host, host, sizeof(net_socket->host) - 1);
+    net_socket->host[sizeof(net_socket->host) - 1] = '\0';
+    strncpy(net_socket->port, port, sizeof(net_socket->port) - 1);
+    net_socket->port[sizeof(net_socket->port) - 1] = '\0';
+
+    info = get_addrinfo_net(net_socket->type,
+                            net_socket->host, net_socket->port, AF_UNSPEC, 0,
+                            net_socket->configuration.preferred_endpoint);
+    for (address = info; address != NULL; address = address->ai_next) {
+        if ((net_socket->socket = socket(address->ai_family,
+                                         address->ai_socktype,
+                                         address->ai_protocol)) < 0) {
+            continue;
+        }
+        if (configure_socket(net_socket)) {
+            close(net_socket->socket);
+            continue;
+        }
+        if (connect_with_timeout(net_socket->socket,
+                                 address->ai_addr,
+                                 address->ai_addrlen) < 0
+                || (is_stream(net_socket)
+                && send_net(net_socket_, NULL, 0) < 0)) {
+            close(net_socket->socket);
+            continue;
+        } else {
+            /* SUCCESS */
+            net_socket->state = AVS_NET_SOCKET_STATE_CONSUMING;
+            /* store address affinity */
+            if (net_socket->configuration.preferred_endpoint) {
+                if (address->ai_addrlen > UINT8_MAX) {
+                    net_socket->configuration.preferred_endpoint->size = 0;
+                } else {
+                    net_socket->configuration.preferred_endpoint->size
+                            = (uint8_t) address->ai_addrlen;
+                    memcpy(net_socket->configuration.preferred_endpoint->data,
+                           address->ai_addr, address->ai_addrlen);
+                }
+            }
+            freeaddrinfo(info);
+            return 0;
+        }
+    }
+    freeaddrinfo(info);
+    return -1;
+}
+
+static int send_net(avs_net_abstract_socket_t *net_socket_,
+                    const void *buffer,
+                    size_t buffer_length) {
+    avs_net_socket_t *net_socket = (avs_net_socket_t *) net_socket_;
+    size_t bytes_sent = 0;
+
+    /* send at least one datagram, even if zero-length - hence do..while */
+    do {
+        ssize_t result;
+        if (!wait_until_ready(net_socket->socket, NET_SEND_TIMEOUT, 0, 1)) {
+            return -1;
+        }
+        result = send(net_socket->socket, ((const char *) buffer) + bytes_sent,
+                      buffer_length - bytes_sent, MSG_NOSIGNAL);
+        if (result < 0) {
+            return -1;
+        } else if (buffer_length != 0 && result == 0) {
+            break;
+        } else {
+            bytes_sent += (size_t) result;
+        }
+        /* call send() multiple times only if the socket is stream-oriented */
+    } while (is_stream(net_socket) && bytes_sent < buffer_length);
+
+    if (bytes_sent < buffer_length) {
+        return -1;
+    } else {
+        /* SUCCESS */
+        return 0;
+    }
+}
+
+static int send_to_net(avs_net_abstract_socket_t *net_socket_,
+                       size_t *out,
+                       const void *buffer,
+                       size_t buffer_length,
+                       const char *host,
+                       const char *port) {
+    avs_net_socket_t *net_socket = (avs_net_socket_t *) net_socket_;
+    struct addrinfo *info = get_addrinfo_net(net_socket->type,
+                                             host, port, AF_UNSPEC, 0, NULL);
+    ssize_t result;
+
+    if (!info) {
+        return -1;
+    }
+
+    result = sendto(net_socket->socket, buffer, buffer_length,
+                    0, info->ai_addr, info->ai_addrlen);
+    freeaddrinfo(info);
+    if (result < 0) {
+        *out = 0;
+        return (int) result;
+    } else {
+        *out = (size_t) result;
+        return 0;
+    }
+}
+
+static int receive_net(avs_net_abstract_socket_t *net_socket_,
+                       size_t *out,
+                       void *buffer,
+                       size_t buffer_length) {
+    avs_net_socket_t *net_socket = (avs_net_socket_t *) net_socket_;
+    if (!wait_until_ready(net_socket->socket, net_socket->recv_timeout, 1, 0)) {
+        *out = 0;
+        return -1;
+    } else {
+        ssize_t recv_out = recv(net_socket->socket, buffer, buffer_length,
+                                MSG_NOSIGNAL);
+        if (recv_out < 0) {
+            *out = 0;
+            return (int) recv_out;
+        } else {
+            *out = (size_t) recv_out;
+            return 0;
+        }
+    }
+}
+
+static int host_port_to_string(const struct sockaddr *sa, socklen_t salen,
+                               char *host, socklen_t hostlen,
+                               char *serv, socklen_t servlen) {
+#ifdef HAVE_GETNAMEINFO
+    return getnameinfo(sa, salen, host, hostlen, serv, servlen,
+                       NI_NUMERICHOST | NI_NUMERICSERV);
+#else
+    const void *addr_ptr = NULL;
+    const uint16_t *port_ptr = NULL;
+    int retval;
+    if (sa->sa_family == AF_INET) {
+        if (salen < sizeof(struct sockaddr_in)) {
+            return -1;
+        }
+        addr_ptr = &((const struct sockaddr_in *) sa)->sin_addr;
+        port_ptr = &((const struct sockaddr_in *) sa)->sin_port;
+    } else if (sa->sa_family == AF_INET6) {
+        if (salen < sizeof(struct sockaddr_in6)) {
+            return -1;
+        }
+        addr_ptr = &((const struct sockaddr_in6 *) sa)->sin6_addr;
+        port_ptr = &((const struct sockaddr_in6 *) sa)->sin6_port;
+    } else {
+        return -1;
+    }
+#warning "FIXME"
+    return (!inet_ntop(sa->sa_family, addr_ptr, host, hostlen)
+            || (retval = snprintf(serv, servlen, "%" PRIu16, *port_ptr)) < 0
+            || (size_t) retval >= servlen) ? -1 : 0;
+#endif
+}
+
+static int receive_from_net(avs_net_abstract_socket_t *net_socket_,
+                            size_t *out,
+                            void *message_buffer, size_t buffer_size,
+                            char *host, size_t host_size,
+                            char *port, size_t port_size) {
+    avs_net_socket_t *net_socket = (avs_net_socket_t *) net_socket_;
+    struct sockaddr_storage sender_addr;
+    socklen_t addrlen = sizeof (sender_addr);
+
+    if (host) {
+        host[0] = '\0';
+    }
+    if (port) {
+        port[0] = '\0';
+    }
+
+    if (!wait_until_ready(net_socket->socket,
+                          AVS_NET_SOCKET_DEFAULT_RECV_TIMEOUT, 1, 0)) {
+        *out = 0;
+        return -1;
+    } else {
+        ssize_t result = recvfrom(net_socket->socket,
+                                  message_buffer, buffer_size, 0,
+                                  (struct sockaddr *) &sender_addr, &addrlen);
+        if (result < 0) {
+            *out = 0;
+            return -1;
+        } else {
+            *out = (size_t) result;
+            if (result > 0 && (host || port)) {
+                return host_port_to_string((struct sockaddr *) &sender_addr,
+                                           addrlen, host, (socklen_t) host_size,
+                                           port, (socklen_t) port_size);
+            }
+            return 0;
+        }
+    }
+}
+
+static int bind_net(avs_net_abstract_socket_t *net_socket_,
+                    const char *localaddr,
+                    const char *port) {
+    avs_net_socket_t *net_socket = (avs_net_socket_t *) net_socket_;
+    struct addrinfo *info = NULL;
+    int val = 1;
+
+    if (net_socket->socket >= 0) {
+        return -1;
+    }
+
+    info = get_addrinfo_net(net_socket->type, localaddr, port,
+                            AF_INET6, AI_ADDRCONFIG | AI_PASSIVE, NULL);
+    if (!info) {
+        info = get_addrinfo_net(net_socket->type, localaddr, port,
+                                AF_INET, AI_ADDRCONFIG | AI_PASSIVE, NULL);
+    }
+    if (!info) {
+        return -1;
+    }
+
+    if ((net_socket->socket = socket(info->ai_family,
+                                     info->ai_socktype,
+                                     info->ai_protocol)) < 0) {
+        freeaddrinfo(info);
+        return -1;
+    }
+    if (is_stream(net_socket)
+            && setsockopt(net_socket->socket,
+                          SOL_SOCKET, SO_REUSEADDR, &val, sizeof (val))) {
+        freeaddrinfo(info);
+        close_net(net_socket_);
+        return -1;
+    }
+    if (bind(net_socket->socket, info->ai_addr, info->ai_addrlen) < 0) {
+        freeaddrinfo(info);
+        close_net(net_socket_);
+        return -2;
+    }
+    if (is_stream(net_socket) && listen(net_socket->socket, 1) < 0) {
+        freeaddrinfo(info);
+        close_net(net_socket_);
+        return -3;
+    }
+    freeaddrinfo(info);
+    net_socket->state = AVS_NET_SOCKET_STATE_LISTENING;
+    return 0;
+}
+
+static int accept_net(avs_net_abstract_socket_t *server_net_socket_,
+                      avs_net_abstract_socket_t *new_net_socket_) {
+    avs_net_socket_t *server_net_socket =
+            (avs_net_socket_t *) server_net_socket_;
+    avs_net_socket_t *new_net_socket =
+            (avs_net_socket_t *) new_net_socket_;
+
+    if (new_net_socket->socket >= 0) {
+        return -1;
+    }
+
+    if (wait_until_ready(server_net_socket->socket,
+                         NET_ACCEPT_TIMEOUT, 1, 0)) {
+        struct sockaddr_storage remote_address;
+        socklen_t remote_address_length = sizeof(remote_address);
+
+        new_net_socket->socket = accept(server_net_socket->socket,
+                                        (struct sockaddr *) &remote_address,
+                                        &remote_address_length);
+        if (new_net_socket->socket >= 0) {
+            if (host_port_to_string((struct sockaddr *) &remote_address,
+                                    remote_address_length, new_net_socket->host,
+                                    sizeof(new_net_socket->host),
+                                    new_net_socket->port,
+                                    sizeof(new_net_socket->port)) < 0) {
+                close_net(new_net_socket_);
+                return -1;
+            }
+            new_net_socket->state = AVS_NET_SOCKET_STATE_SERVING;
+            return 0;
+        }
+    }
+    return -1;
+}
+
+static int check_configuration(const avs_net_socket_configuration_t *configuration) {
+    if (strlen(configuration->interface_name) >= IF_NAMESIZE) {
+        return -1;
+
+    }
+    if (configuration->dscp >= 64) {
+        return -1;
+    }
+    if (configuration->priority > 7) {
+        return -1;
+    }
+    return 0;
+}
+
+static void
+store_configuration(avs_net_socket_t *socket,
+                    const avs_net_socket_configuration_t *configuration) {
+    memcpy(&socket->configuration, configuration, sizeof(*configuration));
+}
+
+static int create_net_socket(avs_net_abstract_socket_t **socket,
+                             int socket_type,
+                             const void *socket_configuration) {
+    static const avs_net_socket_t new_socket
+            = { &net_vtable, -1, 0, AVS_NET_SOCKET_STATE_CLOSED, "", "",
+                { 0, 0, "", NULL }, AVS_NET_SOCKET_DEFAULT_RECV_TIMEOUT };
+    avs_net_socket_t *net_socket = NULL;
+
+    net_socket = (avs_net_socket_t *) malloc(sizeof (avs_net_socket_t));
+    if (net_socket) {
+        const avs_net_socket_configuration_t *configuration =
+                (const avs_net_socket_configuration_t *) socket_configuration;
+
+        VALGRIND_HG_DISABLE_CHECKING(&net_socket->socket,
+                                     sizeof(net_socket->socket));
+
+        memcpy(net_socket, &new_socket, sizeof (new_socket));
+        net_socket->type = socket_type;
+        *socket = (avs_net_abstract_socket_t *) net_socket;
+
+        if (configuration) {
+            if (check_configuration(configuration)) {
+                free(*socket);
+                *socket = NULL;
+                return -1;
+            } else {
+                store_configuration((avs_net_socket_t*) *socket, configuration);
+            }
+        }
+        return 0;
+    } else {
+        return -1;
+    }
+}
+
+int _avs_net_create_tcp_socket(avs_net_abstract_socket_t **socket,
+                               const void *socket_configuration) {
+    return create_net_socket(socket, SOCK_STREAM, socket_configuration);
+}
+
+int _avs_net_create_udp_socket(avs_net_abstract_socket_t **socket,
+                               const void *socket_configuration) {
+    return create_net_socket(socket, SOCK_DGRAM, socket_configuration);
+}
+
 static int get_af(avs_net_af_t addr_family) {
     switch (addr_family) {
     case AVS_NET_AF_INET4:
@@ -261,6 +816,28 @@ static int get_string_ip(const struct sockaddr *addr,
     }
 }
 
+static int get_string_port(const struct sockaddr *addr,
+                           char *buffer, size_t buffer_size) {
+    in_port_t port;
+    int retval;
+
+    switch(addr->sa_family) {
+        case AF_INET:
+            port = ((const struct sockaddr_in *)addr)->sin_port;
+            break;
+
+        case AF_INET6:
+            port = ((const struct sockaddr_in6 *)addr)->sin6_port;
+            break;
+
+        default:
+            return -1;
+    }
+
+    retval = snprintf(buffer, buffer_size, "%u", ntohs(port));
+    return (retval < 0 || (size_t) retval >= buffer_size) ? -1 : 0;
+}
+
 int avs_net_local_address_for_target_host(const char *target_host,
                                           avs_net_af_t addr_family,
                                           char *address_buffer,
@@ -294,4 +871,42 @@ int avs_net_local_address_for_target_host(const char *target_host,
 
     freeaddrinfo(info);
     return result;
+}
+
+static int local_port_net(avs_net_abstract_socket_t *socket,
+                          char *out_buffer, size_t out_buffer_size) {
+    const avs_net_socket_t *net_socket = (const avs_net_socket_t *) socket;
+    struct sockaddr_storage addr;
+    socklen_t addrlen = sizeof (addr);
+
+    if (!getsockname(net_socket->socket, (struct sockaddr *) &addr, &addrlen)) {
+        return get_string_port((struct sockaddr *)&addr,
+                               out_buffer, out_buffer_size);
+    } else {
+        return -1;
+    }
+}
+
+static int get_opt_net(avs_net_abstract_socket_t *net_socket_,
+                       avs_net_socket_opt_key_t option_key,
+                       avs_net_socket_opt_value_t *out_option_value) {
+    avs_net_socket_t *net_socket = (avs_net_socket_t *) net_socket_;
+    if (option_key == AVS_NET_SOCKET_OPT_STATE) {
+        out_option_value->state = net_socket->state;
+    } else {
+        return -1;
+    }
+    return 0;
+}
+
+static int set_opt_net(avs_net_abstract_socket_t *net_socket_,
+                       avs_net_socket_opt_key_t option_key,
+                       avs_net_socket_opt_value_t option_value) {
+    avs_net_socket_t *net_socket = (avs_net_socket_t *) net_socket_;
+    if (option_key == AVS_NET_SOCKET_OPT_RECV_TIMEOUT) {
+        net_socket->recv_timeout = option_value.recv_timeout;
+    } else {
+        return -1;
+    }
+    return 0;
 }
