@@ -9,6 +9,8 @@
 
 set(AVS_COMMONS_VERSION "@AVS_COMMONS_VERSION@")
 
+@LIBRARY_FIND_ROUTINES@
+
 get_filename_component(_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
 include(${_DIR}/avs_commons-targets.cmake)
 

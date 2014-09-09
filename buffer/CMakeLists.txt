@@ -19,10 +19,7 @@ include_directories(include_public)
 
 add_library(avs_buffer STATIC ${ALL_SOURCES})
 
-install(TARGETS avs_buffer
-        COMPONENT buffer
-        EXPORT avs_commons-targets
-        DESTINATION ${LIB_INSTALL_DIR})
+avs_install_export(avs_buffer buffer)
 install(DIRECTORY include_public/
         COMPONENT buffer
         DESTINATION ${INCLUDE_INSTALL_DIR}
