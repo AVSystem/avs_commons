@@ -7,10 +7,16 @@
  * See the LICENSE file for details.
  */
 
+#include <config.h>
+
 #include <stdlib.h>
 #include <string.h>
 
 #include <avsystem/commons/buffer.h>
+
+#ifdef HAVE_VISIBILITY
+#pragma GCC visibility push(hidden)
+#endif
 
 struct avs_buffer_struct {
     size_t capacity;

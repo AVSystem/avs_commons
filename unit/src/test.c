@@ -11,6 +11,8 @@
 #define _GNU_SOURCE
 #endif
 
+#include <config.h>
+
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
@@ -21,6 +23,10 @@
 #include <avsystem/commons/list.h>
 #include <avsystem/commons/unit/mock_helpers.h>
 #include <avsystem/commons/unit/test.h>
+
+#ifdef HAVE_VISIBILITY
+#pragma GCC visibility push(hidden)
+#endif
 
 typedef struct avs_unit_test_struct {
     const char *name;

@@ -7,7 +7,13 @@
  * See the LICENSE file for details.
  */
 
+#include <config.h>
+
 #include <avsystem/commons/list.h>
+
+#ifdef HAVE_VISIBILITY
+#pragma GCC visibility push(hidden)
+#endif
 
 void *avs_list_nth__(void *list, size_t n) {
     void *element = NULL;

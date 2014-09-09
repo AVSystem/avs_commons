@@ -7,9 +7,15 @@
  * See the LICENSE file for details.
  */
 
+#include <config.h>
+
 #include <avsystem/commons/list.h>
 
 #include <avsystem/commons/unit/mock_helpers.h>
+
+#ifdef HAVE_VISIBILITY
+#pragma GCC visibility push(hidden)
+#endif
 
 typedef struct {
     avs_unit_mock_func_ptr *mock_ptr;

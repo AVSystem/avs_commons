@@ -31,10 +31,7 @@ include_directories(${INCLUDE_DIRS})
 add_library(avs_unit STATIC ${SOURCES} ${PUBLIC_HEADERS})
 target_link_libraries(avs_unit avs_list)
 
-install(TARGETS avs_unit
-        COMPONENT unit
-        EXPORT avs_commons-targets
-        DESTINATION ${LIB_INSTALL_DIR})
+avs_install_export(avs_unit unit)
 install(DIRECTORY include_public/
         COMPONENT unit
         DESTINATION ${INCLUDE_INSTALL_DIR}

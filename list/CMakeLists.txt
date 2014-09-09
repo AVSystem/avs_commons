@@ -19,10 +19,7 @@ include_directories(include_public)
 
 add_library(avs_list STATIC ${ALL_SOURCES})
 
-install(TARGETS avs_list
-        COMPONENT list
-        EXPORT avs_commons-targets
-        DESTINATION ${LIB_INSTALL_DIR})
+avs_install_export(avs_list list)
 install(DIRECTORY include_public/
         COMPONENT list
         DESTINATION ${INCLUDE_INSTALL_DIR}
