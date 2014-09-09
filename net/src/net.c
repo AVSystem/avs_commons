@@ -948,7 +948,7 @@ static int find_interface(const struct sockaddr *addr,
     }
     for (ifaddr = ifaddrs; ifaddr; ifaddr = ifaddr->ifa_next) {
         if (ifaddr->ifa_addr) {
-            TRY_ADDRESS(ifaddr->ifa_addr);
+            TRY_ADDRESS(ifaddr->ifa_addr, ifaddr->ifa_name);
         }
     }
 interface_name_end:
