@@ -897,6 +897,35 @@ static int set_opt_net(avs_net_abstract_socket_t *net_socket_,
     return 0;
 }
 
+static int ifaddr_ip_equal(const struct sockaddr *left,
+                           const struct sockaddr *right) {
+    size_t offset;
+    size_t length;
+    int family_diff = left->sa_family - right->sa_family;
+
+    if (family_diff) {
+        return family_diff;
+    }
+
+    switch(left->sa_family) {
+        case AF_INET:
+            offset = offsetof(struct sockaddr_in, sin_addr);
+            length = 4;
+            break;
+
+        case AF_INET6:
+            offset = offsetof(struct sockaddr_in6, sin6_addr);
+            length = 16;
+            break;
+
+        default:
+            return -1;
+    }
+
+    return memcmp(((const char *) left) + offset,
+                  ((const char *) right) + offset, length);
+}
+
 static int interface_name_net(avs_net_abstract_socket_t *socket_,
                               avs_net_socket_interface_name_t *if_name) {
     avs_net_socket_t *socket = (avs_net_socket_t *) socket_;
@@ -907,25 +936,23 @@ static int interface_name_net(avs_net_abstract_socket_t *socket_,
         return 0;
     } else {
         int retval = -1;
-        char local_addr[NET_MAX_HOSTNAME_SIZE];
         struct sockaddr_storage addr;
         socklen_t addrlen = sizeof(addr);
         struct ifaddrs *ifaddrs = NULL;
         struct ifaddrs *ifaddr = NULL;
         if (getsockname(socket->socket, (struct sockaddr *) &addr, &addrlen)
-                || get_string_ip((struct sockaddr *) &addr,
-                                 local_addr, sizeof(local_addr))) {
+                || getifaddrs(&ifaddrs)) {
             goto interface_name_end;
         }
         for (ifaddr = ifaddrs; ifaddr; ifaddr = ifaddr->ifa_next) {
             if (ifaddr->ifa_addr) {
-                if (get_string_ip(ifaddr->ifa_addr,
-                                  *if_name, sizeof(*if_name))) {
-                    continue;
-                }
-
-                if (strcmp(*if_name, local_addr) == 0) {
-                    retval = 0;
+                if (ifaddr_ip_equal((const struct sockaddr *) &addr,
+                                    ifaddr->ifa_addr) == 0) {
+                    retval = snprintf(*if_name, sizeof(*if_name), "%s",
+                                      ifaddr->ifa_name);
+                    if (retval > 0) {
+                        retval = (retval >= sizeof(*if_name)) ? -1 : 0;
+                    }
                     goto interface_name_end;
                 }
             }
