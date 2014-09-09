@@ -55,6 +55,7 @@
 #define NET_SEND_TIMEOUT         1000 * 30 /* 30 sec timeout */
 #define NET_CONNECT_TIMEOUT      1000 * 10
 #define NET_ACCEPT_TIMEOUT       1000 * 5
+#define NET_LISTEN_BACKLOG       1024
 
 #ifdef HAVE_INET_NTOP
 #define _avs_inet_ntop inet_ntop
@@ -614,53 +615,82 @@ static int receive_from_net(avs_net_abstract_socket_t *net_socket_,
     }
 }
 
+static int create_listening_socket(avs_net_socket_t *net_socket,
+                                   const struct sockaddr *addr,
+                                   socklen_t addrlen) {
+    int retval = -1;
+    int val = 1;
+    if ((net_socket->socket = socket(addr->sa_family, net_socket->type, 0))
+            < 0) {
+        goto create_listening_socket_error;
+    }
+    if (is_stream(net_socket)
+            && setsockopt(net_socket->socket,
+                          SOL_SOCKET, SO_REUSEADDR, &val, sizeof (val))) {
+        goto create_listening_socket_error;
+    }
+    if (bind(net_socket->socket, addr, addrlen) < 0) {
+        retval = -2;
+        goto create_listening_socket_error;
+    }
+    if (is_stream(net_socket)
+            && listen(net_socket->socket, NET_LISTEN_BACKLOG) < 0) {
+        retval = -3;
+        goto create_listening_socket_error;
+    }
+    return 0;
+create_listening_socket_error:
+    close_net((avs_net_abstract_socket_t *) net_socket);
+    return retval;
+}
+
+static int try_bind(avs_net_socket_t *net_socket, int family,
+                    const char *localaddr, const char *port) {
+    struct addrinfo *info = NULL;
+    struct sockaddr_storage addr_storage;
+    const struct sockaddr *addr = NULL;
+    socklen_t addrlen;
+    int retval = -1;
+    if (localaddr && port) {
+        info = get_addrinfo_net(net_socket->type, localaddr, port,
+                                family, AI_ADDRCONFIG | AI_PASSIVE, NULL);
+        if (info) {
+            addr = info->ai_addr;
+            addrlen = info->ai_addrlen;
+        }
+    } else {
+        memset(&addr_storage, 0, sizeof(addr_storage));
+        addr_storage.ss_family = (sa_family_t) family;
+        addr = (const struct sockaddr *) &addr_storage;
+        addrlen = sizeof(addr_storage);
+    }
+    if (!addr) {
+        goto bind_net_end;
+    }
+    net_socket->state = AVS_NET_SOCKET_STATE_LISTENING;
+    retval = create_listening_socket(net_socket, addr, addrlen);
+bind_net_end:
+    if (info) {
+        freeaddrinfo(info);
+    }
+    return retval;
+}
+
 static int bind_net(avs_net_abstract_socket_t *net_socket_,
                     const char *localaddr,
                     const char *port) {
     avs_net_socket_t *net_socket = (avs_net_socket_t *) net_socket_;
-    struct addrinfo *info = NULL;
-    int val = 1;
+    int retval = -1;
 
     if (net_socket->socket >= 0) {
         return -1;
     }
 
-    info = get_addrinfo_net(net_socket->type, localaddr, port,
-                            AF_INET6, AI_ADDRCONFIG | AI_PASSIVE, NULL);
-    if (!info) {
-        info = get_addrinfo_net(net_socket->type, localaddr, port,
-                                AF_INET, AI_ADDRCONFIG | AI_PASSIVE, NULL);
+    retval = try_bind(net_socket, AF_INET6, localaddr, port);
+    if (retval) {
+        retval = try_bind(net_socket, AF_INET, localaddr, port);
     }
-    if (!info) {
-        return -1;
-    }
-
-    if ((net_socket->socket = socket(info->ai_family,
-                                     info->ai_socktype,
-                                     info->ai_protocol)) < 0) {
-        freeaddrinfo(info);
-        return -1;
-    }
-    if (is_stream(net_socket)
-            && setsockopt(net_socket->socket,
-                          SOL_SOCKET, SO_REUSEADDR, &val, sizeof (val))) {
-        freeaddrinfo(info);
-        close_net(net_socket_);
-        return -1;
-    }
-    if (bind(net_socket->socket, info->ai_addr, info->ai_addrlen) < 0) {
-        freeaddrinfo(info);
-        close_net(net_socket_);
-        return -2;
-    }
-    if (is_stream(net_socket) && listen(net_socket->socket, 1) < 0) {
-        freeaddrinfo(info);
-        close_net(net_socket_);
-        return -3;
-    }
-    freeaddrinfo(info);
-    net_socket->state = AVS_NET_SOCKET_STATE_LISTENING;
-    return 0;
+    return retval;
 }
 
 static int accept_net(avs_net_abstract_socket_t *server_net_socket_,
