@@ -107,7 +107,7 @@ static int avs_bio_write(BIO *bio, const char *data, int size) {
     }
     BIO_clear_retry_flags(bio);
     if (avs_net_socket_send(((ssl_socket_t *) bio->ptr)->tcp_socket,
-                          data, (size_t) size)) {
+                            data, (size_t) size)) {
         return -1;
     } else {
         return size;
@@ -121,7 +121,7 @@ static int avs_bio_read(BIO *bio, char *buffer, int size) {
     }
     BIO_clear_retry_flags(bio);
     if (avs_net_socket_receive(((ssl_socket_t *) bio->ptr)->tcp_socket,
-                             &read_bytes, buffer, (size_t) size)) {
+                               &read_bytes, buffer, (size_t) size)) {
         return -1;
     } else {
         return (int) read_bytes;
@@ -200,8 +200,8 @@ static int interface_name_ssl(avs_net_abstract_socket_t *ssl_socket_,
     ssl_socket_t *ssl_socket = (ssl_socket_t *) ssl_socket_;
     if (ssl_socket->tcp_socket) {
         return avs_net_socket_interface_name(
-                        (avs_net_abstract_socket_t *) ssl_socket->tcp_socket,
-                        if_name);
+                (avs_net_abstract_socket_t *) ssl_socket->tcp_socket,
+                if_name);
     } else {
         return -1;
     }
@@ -300,7 +300,7 @@ static int verify_peer_subject_cn(ssl_socket_t *ssl_socket) {
 static int ssl_handshake(ssl_socket_t *socket) {
     avs_net_socket_opt_value_t state_opt;
     if (avs_net_socket_get_opt(socket->tcp_socket,
-                             AVS_NET_SOCKET_OPT_STATE, &state_opt)) {
+                               AVS_NET_SOCKET_OPT_STATE, &state_opt)) {
         return -1;
     }
     if (state_opt.state == AVS_NET_SOCKET_STATE_CONSUMING) {

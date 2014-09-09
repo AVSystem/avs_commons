@@ -45,46 +45,46 @@ struct avs_net_abstract_socket_struct {
 };
 
 int avs_net_socket_connect(avs_net_abstract_socket_t *socket,
-                         const char *host,
-                         const char *port) {
+                           const char *host,
+                           const char *port) {
     return socket->operations->connect(socket, host, port);
 }
 
 int avs_net_socket_decorate(avs_net_abstract_socket_t *socket,
-                          avs_net_abstract_socket_t *backend_socket) {
+                            avs_net_abstract_socket_t *backend_socket) {
     return socket->operations->decorate(socket, backend_socket);
 }
 
 int avs_net_socket_send(avs_net_abstract_socket_t *socket,
-                      const void *buffer,
-                      size_t buffer_length) {
+                        const void *buffer,
+                        size_t buffer_length) {
     return socket->operations->send(socket, buffer, buffer_length);
 }
 
 int avs_net_socket_send_to(avs_net_abstract_socket_t *socket,
-                         size_t *out_bytes_sent,
-                         const void *buffer,
-                         size_t buffer_length,
-                         const char *host,
-                         const char *port) {
+                           size_t *out_bytes_sent,
+                           const void *buffer,
+                           size_t buffer_length,
+                           const char *host,
+                           const char *port) {
     return socket->operations->send_to(socket, out_bytes_sent,
                                        buffer, buffer_length, host, port);
 }
 
 int avs_net_socket_receive(avs_net_abstract_socket_t *socket,
-                         size_t *out_bytes_received,
-                         void *buffer,
-                         size_t buffer_length) {
+                           size_t *out_bytes_received,
+                           void *buffer,
+                           size_t buffer_length) {
     return socket->operations->receive(socket, out_bytes_received,
                                        buffer, buffer_length);
 }
 
 int avs_net_socket_receive_from(avs_net_abstract_socket_t *socket,
-                              size_t *out_bytes_received,
-                              void *buffer,
-                              size_t buffer_length,
-                              char *host, size_t host_size,
-                              char *port, size_t port_size) {
+                                size_t *out_bytes_received,
+                                void *buffer,
+                                size_t buffer_length,
+                                char *host, size_t host_size,
+                                char *port, size_t port_size) {
     return socket->operations->receive_from(socket, out_bytes_received,
                                             buffer, buffer_length,
                                             host, host_size,
@@ -92,13 +92,13 @@ int avs_net_socket_receive_from(avs_net_abstract_socket_t *socket,
 }
 
 int avs_net_socket_bind(avs_net_abstract_socket_t *socket,
-                      const char *address,
-                      const char *port) {
+                        const char *address,
+                        const char *port) {
     return socket->operations->bind(socket, address, port);
 }
 
 int avs_net_socket_accept(avs_net_abstract_socket_t *server_socket,
-                        avs_net_abstract_socket_t *client_socket) {
+                          avs_net_abstract_socket_t *client_socket) {
     return server_socket->operations->accept(server_socket, client_socket);
 }
 
@@ -128,7 +128,7 @@ const void *avs_net_socket_get_system(avs_net_abstract_socket_t *socket) {
 }
 
 int avs_net_socket_interface_name(avs_net_abstract_socket_t *socket,
-                                avs_net_socket_interface_name_t *if_name) {
+                                  avs_net_socket_interface_name_t *if_name) {
     return socket->operations->get_interface_name(socket, if_name);
 }
 
@@ -151,14 +151,14 @@ int avs_net_socket_get_local_port(avs_net_abstract_socket_t *socket,
 }
 
 int avs_net_socket_get_opt(avs_net_abstract_socket_t *socket,
-                         avs_net_socket_opt_key_t option_key,
-                         avs_net_socket_opt_value_t *out_option_value) {
+                           avs_net_socket_opt_key_t option_key,
+                           avs_net_socket_opt_value_t *out_option_value) {
     return socket->operations->get_opt(socket, option_key, out_option_value);
 }
 
 int avs_net_socket_set_opt(avs_net_abstract_socket_t *socket,
-                         avs_net_socket_opt_key_t option_key,
-                         avs_net_socket_opt_value_t option_value) {
+                           avs_net_socket_opt_key_t option_key,
+                           avs_net_socket_opt_value_t option_value) {
     return socket->operations->set_opt(socket, option_key, option_value);
 }
 
@@ -195,8 +195,8 @@ static int create_bare_socket(avs_net_abstract_socket_t **socket,
 }
 
 int avs_net_socket_decorate_in_place(avs_net_abstract_socket_t **socket,
-                                   avs_net_socket_type_t new_type,
-                                   const void *configuration) {
+                                     avs_net_socket_type_t new_type,
+                                     const void *configuration) {
     avs_net_abstract_socket_t *new_socket = NULL;
     if (avs_net_socket_create(&new_socket, new_type, configuration)) {
         return -1;
@@ -514,8 +514,8 @@ static int create_socket_debug(avs_net_abstract_socket_t **debug_socket,
 }
 
 int avs_net_socket_create(avs_net_abstract_socket_t **debug_socket,
-                        avs_net_socket_type_t type,
-                        const void *configuration) {
+                          avs_net_socket_type_t type,
+                          const void *configuration) {
     avs_net_abstract_socket_t *backend_socket = NULL;
     int result;
 
@@ -539,8 +539,8 @@ int avs_net_socket_create(avs_net_abstract_socket_t **debug_socket,
 #else
 
 int avs_net_socket_create(avs_net_abstract_socket_t **socket,
-                        avs_net_socket_type_t type,
-                        const void *configuration) {
+                          avs_net_socket_type_t type,
+                          const void *configuration) {
     return create_bare_socket(socket, type, configuration);
 }
 
