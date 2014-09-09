@@ -8,6 +8,12 @@
 
 #cmakedefine WITH_LWIP
 
+#cmakedefine WITH_OPENSSL
+#cmakedefine WITH_XYSSL
+#if defined(WITH_OPENSSL) || defined(WITH_XYSSL)
+#define WITH_SSL
+#endif
+
 #cmakedefine WITH_SOCKET_LOG
 
 #cmakedefine WITH_VALGRIND

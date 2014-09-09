@@ -18,10 +18,18 @@
 #pragma GCC visibility push(hidden)
 #endif
 
+#define NET_MAX_HOSTNAME_SIZE    64
+#define NET_PORT_SIZE            6
+
 int _avs_net_create_tcp_socket(avs_net_abstract_socket_t **socket,
                                const void *socket_configuration);
 int _avs_net_create_udp_socket(avs_net_abstract_socket_t **socket,
                                const void *socket_configuration);
+
+#ifdef WITH_SSL
+int _avs_net_create_ssl_socket(avs_net_abstract_socket_t **socket,
+                               const void *socket_configuration);
+#endif
 
 #ifdef HAVE_VISIBILITY
 #pragma GCC visibility pop
