@@ -51,9 +51,6 @@
 #define INET_ADDRSTRLEN 16
 #endif
 
-#define NET_MAX_HOSTNAME_SIZE    64
-#define NET_PORT_SIZE            6
-
 #define NET_SEND_TIMEOUT         1000 * 30 /* 30 sec timeout */
 #define NET_CONNECT_TIMEOUT      1000 * 10
 #define NET_ACCEPT_TIMEOUT       1000 * 5
