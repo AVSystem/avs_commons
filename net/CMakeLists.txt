@@ -28,10 +28,13 @@ include_directories(include_public)
 
 add_library(avs_net STATIC ${ALL_SOURCES})
 
-install(TARGETS avs_net
-        COMPONENT net
-        EXPORT avs_commons-targets
-        DESTINATION ${LIB_INSTALL_DIR})
+if(WITH_OPENSSL)
+    avs_emit_deps(avs_net ssl crypto)
+elseif(WITH_XYSSL)
+    avs_emit_deps(avs_net ${XYSSL_LIBRARY_NAME})
+endif()
+
+avs_install_export(avs_net net)
 install(DIRECTORY include_public/
         COMPONENT net
         DESTINATION ${INCLUDE_INSTALL_DIR}
