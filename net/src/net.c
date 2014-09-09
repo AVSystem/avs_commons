@@ -7,6 +7,9 @@
  * See the LICENSE file for details.
  */
 
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE
+#endif
 
 #include <config.h>
 
@@ -17,9 +20,6 @@
 #   include "lwip/netdb.h"
 #   include "lwip/socket.h"
 #else
-#   ifndef _POSIX_C_SOURCE
-#   define _POSIX_C_SOURCE 200112L
-#   endif
 #   include <fcntl.h>
 #   include <netdb.h>
 #   include <unistd.h>
@@ -28,6 +28,7 @@
 #   else
 #       include <sys/select.h>
 #   endif
+#   include <sys/ioctl.h>
 #   include <sys/socket.h>
 #   include <sys/types.h>
 #   include <arpa/inet.h>
@@ -926,6 +927,75 @@ static int ifaddr_ip_equal(const struct sockaddr *left,
                   ((const char *) right) + offset, length);
 }
 
+static int find_interface(const struct sockaddr *addr,
+                          avs_net_socket_interface_name_t *if_name) {
+#define TRY_ADDRESS(tried_addr, tried_name) \
+    do { \
+        if (ifaddr_ip_equal(addr, tried_addr) == 0) { \
+            retval = snprintf(*if_name, sizeof(*if_name), "%s", tried_name); \
+            if (retval > 0) { \
+                retval = ((size_t) retval >= sizeof(*if_name)) ? -1 : 0; \
+            } \
+            goto interface_name_end; \
+        } \
+    } while (0)
+#ifdef HAVE_GETIFADDRS
+    int retval = -1;
+    struct ifaddrs *ifaddrs = NULL;
+    struct ifaddrs *ifaddr = NULL;
+    if (getifaddrs(&ifaddrs)) {
+        goto interface_name_end;
+    }
+    for (ifaddr = ifaddrs; ifaddr; ifaddr = ifaddr->ifa_next) {
+        if (ifaddr->ifa_addr) {
+            TRY_ADDRESS(ifaddr->ifa_addr);
+        }
+    }
+interface_name_end:
+    if (ifaddrs) {
+        freeifaddrs(ifaddrs);
+    }
+    return retval;
+#elif defined(SIOCGIFCONF)
+#ifndef _SIZEOF_ADDR_IFREQ
+#define _SIZEOF_ADDR_IFREQ sizeof
+#endif
+    int retval = -1;
+    int null_socket;
+    struct ifconf conf;
+    size_t blen = 32 * sizeof(struct ifconf [1]);
+    struct ifreq *reqs = NULL;
+    struct ifreq *req;
+    if ((null_socket = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
+        goto interface_name_end;
+    }
+interface_name_retry:
+    reqs = (struct ifreq *) realloc(reqs, blen);
+    conf.ifc_req = reqs;
+    conf.ifc_len = (int) blen;
+    if (ioctl(null_socket, SIOCGIFCONF, &conf) < 0) {
+        goto interface_name_end;
+    }
+    if ((size_t) conf.ifc_len == blen) {
+        blen *= 2;
+        goto interface_name_retry;
+    }
+    for (req = reqs; req < reqs + blen;
+            req = (struct ifreq *)(((char *) req) + _SIZEOF_ADDR_IFREQ(*req))) {
+        TRY_ADDRESS(&req->ifr_addr, req->ifr_name);
+    }
+interface_name_end:
+    free(reqs);
+    close(null_socket);
+    return retval;
+#elif defined(WITH_LWIP)
+#error "TODO"
+#else
+    return -1;
+#endif
+#undef TRY_ADDRESS
+}
+
 static int interface_name_net(avs_net_abstract_socket_t *socket_,
                               avs_net_socket_interface_name_t *if_name) {
     avs_net_socket_t *socket = (avs_net_socket_t *) socket_;
@@ -935,32 +1005,11 @@ static int interface_name_net(avs_net_abstract_socket_t *socket_,
                sizeof (*if_name));
         return 0;
     } else {
-        int retval = -1;
         struct sockaddr_storage addr;
         socklen_t addrlen = sizeof(addr);
-        struct ifaddrs *ifaddrs = NULL;
-        struct ifaddrs *ifaddr = NULL;
-        if (getsockname(socket->socket, (struct sockaddr *) &addr, &addrlen)
-                || getifaddrs(&ifaddrs)) {
-            goto interface_name_end;
+        if (getsockname(socket->socket, (struct sockaddr *) &addr, &addrlen)) {
+            return -1;
         }
-        for (ifaddr = ifaddrs; ifaddr; ifaddr = ifaddr->ifa_next) {
-            if (ifaddr->ifa_addr) {
-                if (ifaddr_ip_equal((const struct sockaddr *) &addr,
-                                    ifaddr->ifa_addr) == 0) {
-                    retval = snprintf(*if_name, sizeof(*if_name), "%s",
-                                      ifaddr->ifa_name);
-                    if (retval > 0) {
-                        retval = (retval >= sizeof(*if_name)) ? -1 : 0;
-                    }
-                    goto interface_name_end;
-                }
-            }
-        }
-    interface_name_end:
-        if (ifaddrs) {
-            freeifaddrs(ifaddrs);
-        }
-        return retval;
+        return find_interface((const struct sockaddr *) &addr, if_name);
     }
 }

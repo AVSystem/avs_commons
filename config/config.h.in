@@ -1,3 +1,5 @@
+#cmakedefine HAVE_GETIFADDRS
+
 #cmakedefine HAVE_GETNAMEINFO
 
 #cmakedefine HAVE_INET_NTOP
