@@ -334,12 +334,9 @@ static int start_ssl(ssl_socket_t *socket) {
     }
     SSL_set_bio(socket->ssl, bio, bio);
 
-    {
-        int handshake_result = ssl_handshake(socket);
-        if (handshake_result <= 0) {
-            close_ssl((avs_net_abstract_socket_t *) socket);
-            return -1;
-        }
+    if (ssl_handshake(socket) <= 0) {
+        close_ssl((avs_net_abstract_socket_t *) socket);
+        return -1;
     }
 
     if (socket->verification && verify_peer_subject_cn(socket) != 0) {
