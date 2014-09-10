@@ -7,8 +7,8 @@
  * See the LICENSE file for details.
  */
 
-#ifndef SOCKET_V_TABLE_H
-#define SOCKET_V_TABLE_H
+#ifndef AVS_COMMONS_SOCKET_V_TABLE_H
+#define AVS_COMMONS_SOCKET_V_TABLE_H
 
 #include <avsystem/commons/net.h>
 
@@ -102,4 +102,4 @@ typedef struct {
 }
 #endif
 
-#endif /* SOCKET_V_TABLE_H */
+#endif /* AVS_COMMONS_SOCKET_V_TABLE_H */

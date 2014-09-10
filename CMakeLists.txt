@@ -275,6 +275,11 @@ if(WITH_AVS_NET)
     add_subdirectory(net)
 endif()
 
+option(WITH_AVS_STREAM "AVSystem IO stream abstraction layer" ON)
+if(WITH_AVS_STREAM)
+    add_subdirectory(stream)
+endif()
+
 configure_file("config/config.h.in" "config/config.h")
 configure_file("include_public/avsystem/commons/defs.h.in" "include_public/avsystem/commons/defs.h")
 

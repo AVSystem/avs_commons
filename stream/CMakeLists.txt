@@ -1,0 +1,37 @@
+#
+#  AVSystem Commons Library
+#
+#  Copyright (C) 2014 AVSystem <http://www.avsystem.com/>
+#
+#  This code is free and open source software licensed under the MIT License.
+#  See the LICENSE file for details.
+#
+
+set(SOURCES
+    src/stream.c)
+
+set(PUBLIC_HEADERS
+    include_public/avsystem/commons/stream.h)
+
+set(INCLUDE_DIRS include_public)
+
+if(WITH_AVS_BUFFER AND WITH_AVS_NET)
+    set(SOURCES ${SOURCES} src/netbuf.c)
+    set(PUBLIC_HEADERS ${PUBLIC_HEADERS}
+        include_public/avsystem/commons/stream/netbuf.h)
+    set(INCLUDE_DIRS ${INCLUDE_DIRS}
+        ../buffer/include_public
+        ../net/include_public)
+endif()
+
+set(ALL_SOURCES ${SOURCES} ${PUBLIC_HEADERS})
+
+include_directories(${INCLUDE_DIRS})
+
+add_library(avs_stream STATIC ${ALL_SOURCES})
+
+avs_install_export(avs_stream stream)
+install(DIRECTORY include_public/
+        COMPONENT stream
+        DESTINATION ${INCLUDE_INSTALL_DIR}
+        FILES_MATCHING REGEX "[.]h$")

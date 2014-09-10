@@ -7,8 +7,8 @@
  * See the LICENSE file for details.
  */
 
-#ifndef AVS_COMMONS_SOCKET_H
-#define AVS_COMMONS_SOCKET_H
+#ifndef AVS_COMMONS_NET_H
+#define AVS_COMMONS_NET_H
 
 #include <stdint.h>
 #include <stdlib.h>
@@ -192,4 +192,4 @@ int avs_net_local_address_for_target_host(const char *target_host,
 }
 #endif
 
-#endif /* AVS_COMMONS_SOCKET_H */
+#endif /* AVS_COMMONS_NET_H */
