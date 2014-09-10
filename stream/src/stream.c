@@ -284,11 +284,11 @@ static int getline_peeker_getch_func(void *state_, char peek) {
 }
 
 int avs_stream_peekline(avs_stream_abstract_t *stream,
-                          size_t offset,
-                          size_t *out_bytes_peeked,
-                          size_t *out_next_offset,
-                          char *buffer,
-                          size_t buffer_length) {
+                        size_t offset,
+                        size_t *out_bytes_peeked,
+                        size_t *out_next_offset,
+                        char *buffer,
+                        size_t buffer_length) {
     size_t bytes_peeked;
     getline_peeker_getch_func_state_t state;
     int retval;
@@ -301,4 +301,15 @@ int avs_stream_peekline(avs_stream_abstract_t *stream,
         *out_next_offset = state.offset;
     }
     return retval;
+}
+
+const void *avs_stream_v_table_find_extension(avs_stream_abstract_t *stream,
+                                              uint32_t id) {
+    const avs_stream_v_table_extension_t *ext;
+    for (ext = stream->vtable->extension_list; ext && ext->id; ++ext) {
+        if (ext->id == id) {
+            return ext->data;
+        }
+    }
+    return NULL;
 }

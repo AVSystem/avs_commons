@@ -18,6 +18,8 @@
 #include <avsystem/commons/stream_v_table.h>
 #include <avsystem/commons/stream/netbuf.h>
 
+#include "avsystem/commons/stream/net.h"
+
 #ifdef HAVE_VISIBILITY
 #pragma GCC visibility push(hidden)
 #endif
@@ -265,6 +267,18 @@ static int unimplemented() {
     return -1;
 }
 
+static const avs_stream_v_table_extension_net_t
+buffered_netstream_net_vtable = {
+    buffered_netstream_getsock,
+    buffered_netstream_setsock
+};
+
+static const avs_stream_v_table_extension_t
+buffered_netstream_vtable_extensions[] = {
+    { AVS_STREAM_V_TABLE_EXTENSION_NET, &buffered_netstream_net_vtable },
+    AVS_STREAM_V_TABLE_EXTENSION_NULL
+};
+
 static const avs_stream_v_table_t buffered_netstream_vtable = {
     buffered_netstream_write,
     buffered_netstream_finish_message,
@@ -273,7 +287,8 @@ static const avs_stream_v_table_t buffered_netstream_vtable = {
     (avs_stream_write_subchannel_t) unimplemented,
     buffered_netstream_reset,
     buffered_netstream_close,
-    buffered_netstream_errno
+    buffered_netstream_errno,
+    buffered_netstream_vtable_extensions
 };
 
 int avs_stream_netbuf_create(avs_stream_abstract_t **stream_,

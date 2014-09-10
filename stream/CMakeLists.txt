@@ -16,8 +16,11 @@ set(PUBLIC_HEADERS
 set(INCLUDE_DIRS include_public)
 
 if(WITH_AVS_BUFFER AND WITH_AVS_NET)
-    set(SOURCES ${SOURCES} src/netbuf.c)
+    set(SOURCES ${SOURCES}
+        src/net.c
+        src/netbuf.c)
     set(PUBLIC_HEADERS ${PUBLIC_HEADERS}
+        include_public/avsystem/commons/stream/net.h
         include_public/avsystem/commons/stream/netbuf.h)
     set(INCLUDE_DIRS ${INCLUDE_DIRS}
         ../buffer/include_public

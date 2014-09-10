@@ -10,6 +10,7 @@
 #ifndef AVS_COMMONS_STREAM_H
 #define	AVS_COMMONS_STREAM_H
 
+#include <stdarg.h>
 #include <stddef.h>
 
 #ifdef	__cplusplus
