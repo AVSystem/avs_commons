@@ -12,6 +12,10 @@
 
 #include <avsystem/commons/net.h>
 
+#ifdef	__cplusplus
+extern "C" {
+#endif
+
 typedef int (*avs_net_socket_connect_t)(avs_net_abstract_socket_t *socket,
                                         const char *host,
                                         const char *port);
@@ -93,5 +97,9 @@ typedef struct {
     avs_net_socket_get_opt_t get_opt;
     avs_net_socket_set_opt_t set_opt;
 } avs_net_socket_v_table_t;
+
+#ifdef	__cplusplus
+}
+#endif
 
 #endif /* SOCKET_V_TABLE_H */
