@@ -612,32 +612,32 @@ static int initialize_ssl_socket(ssl_socket_t *socket,
     switch (configuration->version) {
 #ifndef OPENSSL_NO_SSL2
     case AVS_NET_SSL_VERSION_SSLv2:
-        method = SSLv2_client_method();
+        method = SSLv2_method();
         break;
 #endif
 
 #ifndef OPENSSL_NO_SSL3
     case AVS_NET_SSL_VERSION_SSLv2_OR_3:
-        method = SSLv23_client_method();
+        method = SSLv23_method();
         break;
 
     case AVS_NET_SSL_VERSION_SSLv3:
-        method = SSLv3_client_method();
+        method = SSLv3_method();
         break;
 #endif
 
 #ifndef OPENSSL_NO_TLS1
     case AVS_NET_SSL_VERSION_TLSv1:
-        method = TLSv1_client_method();
+        method = TLSv1_method();
         break;
 
 #if OPENSSL_VERSION_NUMBER >= 0x10001000L /* OpenSSL >= 1.0.1 */
     case AVS_NET_SSL_VERSION_TLSv1_1:
-        method = TLSv1_1_client_method();
+        method = TLSv1_1_method();
         break;
 
     case AVS_NET_SSL_VERSION_TLSv1_2:
-        method = TLSv1_2_client_method();
+        method = TLSv1_2_method();
         break;
 #endif
 #endif /* OPENSSL_NO_TLS1 */
