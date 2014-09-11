@@ -335,12 +335,10 @@ static int start_ssl(ssl_socket_t *socket) {
     SSL_set_bio(socket->ssl, bio, bio);
 
     if (ssl_handshake(socket) <= 0) {
-        close_ssl((avs_net_abstract_socket_t *) socket);
         return -1;
     }
 
     if (socket->verification && verify_peer_subject_cn(socket) != 0) {
-        close_ssl((avs_net_abstract_socket_t *) socket);
         return -1;
     }
 
@@ -363,7 +361,7 @@ static int connect_ssl(avs_net_abstract_socket_t *socket_,
 
     result = start_ssl(socket);
     if (result) {
-        avs_net_socket_cleanup(&socket->tcp_socket);
+        close_ssl(socket_);
     }
     return result;
 }
@@ -381,6 +379,7 @@ static int decorate_ssl(avs_net_abstract_socket_t *socket_,
     result = start_ssl(socket);
     if (result) {
         socket->tcp_socket = NULL;
+        close_ssl(socket_);
     }
     return result;
 }
