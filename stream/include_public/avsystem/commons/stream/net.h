@@ -1,12 +1,14 @@
-/* 
- * File:   net.h
- * Author: kfyatek
+/*
+ * AVSystem Commons Library
  *
- * Created on 10 września 2014, 12:48
+ * Copyright (C) 2014 AVSystem <http://www.avsystem.com/>
+ *
+ * This code is free and open source software licensed under the MIT License.
+ * See the LICENSE file for details.
  */
 
-#ifndef NET_H
-#define	NET_H
+#ifndef AVS_COMMONS_STREAM_NET_H
+#define	AVS_COMMONS_STREAM_NET_H
 
 #include <stdint.h>
 
@@ -40,5 +42,5 @@ int avs_stream_net_setsock(avs_stream_abstract_t *stream,
 }
 #endif
 
-#endif	/* NET_H */
+#endif	/* AVS_COMMONS_STREAM_NET_H */
 

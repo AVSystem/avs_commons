@@ -10,8 +10,13 @@
 set(SOURCES
     src/stream.c)
 
+set(PRIVATE_HEADERS
+    src/md5_common.h)
+
 set(PUBLIC_HEADERS
-    include_public/avsystem/commons/stream.h)
+    include_public/avsystem/commons/stream.h
+    include_public/avsystem/commons/stream_v_table.h
+    include_public/avsystem/commons/stream/md5.h)
 
 set(INCLUDE_DIRS include_public)
 
@@ -27,7 +32,13 @@ if(WITH_AVS_BUFFER AND WITH_AVS_NET)
         ../net/include_public)
 endif()
 
-set(ALL_SOURCES ${SOURCES} ${PUBLIC_HEADERS})
+if(WITH_OPENSSL)
+    set(SOURCES ${SOURCES} src/openssl.c)
+elseif(WITH_XYSSL)
+    set(SOURCES ${SOURCES} src/xyssl.c)
+endif()
+
+set(ALL_SOURCES ${SOURCES} ${PRIVATE_HEADERS} ${PUBLIC_HEADERS})
 
 include_directories(${INCLUDE_DIRS})
 
