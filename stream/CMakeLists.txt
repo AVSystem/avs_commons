@@ -8,6 +8,7 @@
 #
 
 set(SOURCES
+    src/md5_common.c
     src/stream.c)
 
 set(PRIVATE_HEADERS
