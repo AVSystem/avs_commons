@@ -11,6 +11,7 @@
 #define AVS_COMMONS_DEFS_H
 
 #include <stddef.h>
+#include <stdint.h>
 
 #ifdef	__cplusplus
 extern "C" {
@@ -21,6 +22,13 @@ extern "C" {
  *
  * Global common definitions.
 */
+
+/**
+ * Internal definitions used by the library to implement the functionality.
+ */
+/**@{*/
+#define AVS_CONCAT_INTERNAL__(prefix, suffix) prefix##suffix
+/**@}*/
 
 /**
  * Returns a pointer to a structure member given by offset. Can be thought of as
@@ -34,6 +42,16 @@ extern "C" {
  */
 #define AVS_APPLY_OFFSET(type, struct_ptr, offset) \
         ((type *) (((char *) (intptr_t) (struct_ptr)) + (offset)))
+
+/**
+ * Concatenates two tokens. Can be used to do macro expansion before standard C
+ * preprocessor concatenation.
+ *
+ * @param prefix First token to concatenate.
+ *
+ * @param suffix Second token to concatenate.
+ */
+#define AVS_CONCAT(prefix, suffix) AVS_CONCAT_INTERNAL__(prefix, suffix)
 
 /**
  * C89-compliant replacement for <c>max_align_t</c>.

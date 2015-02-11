@@ -13,6 +13,8 @@
 #include <stdlib.h>
 #include <setjmp.h>
 
+#include <avsystem/commons/defs.h>
+
 #ifdef	__cplusplus
 extern "C" {
 #endif
@@ -175,13 +177,13 @@ void avs_unit_assert_not_null__(const void *pointer, const char *file,
  * @param VERBOSE_VAR Name of a verbosity level variable (of type <c>int</c>).
  */
 #define AVS_UNIT_GLOBAL_INIT(VERBOSE_VAR)                                      \
-static void _avs_unit_global_init_##__LINE__(int VERBOSE_VAR);                 \
-void _avs_unit_global_init_constructor_##__LINE__(void)                        \
+static void AVS_CONCAT(_avs_unit_global_init_, __LINE__) (int VERBOSE_VAR);    \
+void AVS_CONCAT(_avs_unit_global_init_constructor_, __LINE__) (void)           \
         __attribute__((constructor));                                          \
-void _avs_unit_global_init_constructor_##__LINE__(void) {                      \
-    avs_unit_add_global_init__(_avs_unit_global_init_##__LINE__);              \
+void AVS_CONCAT(_avs_unit_global_init_constructor_, __LINE__) (void) {         \
+    avs_unit_add_global_init__(AVS_CONCAT(_avs_unit_global_init_, __LINE__));  \
 }                                                                              \
-static void _avs_unit_global_init_##__LINE__(int VERBOSE_VAR)
+static void AVS_CONCAT(_avs_unit_global_init_, __LINE__) (int VERBOSE_VAR)
 
 /**
  * Defines a suite initialization function.
@@ -194,14 +196,17 @@ static void _avs_unit_global_init_##__LINE__(int VERBOSE_VAR)
  * @param VERBOSE_VAR Name of a verbosity level variable (of type <c>int</c>).
  */
 #define AVS_UNIT_SUITE_INIT(suite, VERBOSE_VAR)                                \
-static void _avs_unit_suite_init_##suite##_##__LINE__(int VERBOSE_VAR);        \
-void _avs_unit_suite_init_constructor_##suite##_##__LINE__(void)               \
+static void                                                                    \
+AVS_CONCAT(_avs_unit_suite_init_##suite##_, __LINE__) (int VERBOSE_VAR);       \
+void AVS_CONCAT(_avs_unit_suite_init_constructor_##suite##_, __LINE__) (void)  \
         __attribute__((constructor));                                          \
-void _avs_unit_suite_init_constructor_##suite##_##__LINE__(void) {             \
+void AVS_CONCAT(_avs_unit_suite_init_constructor_##suite##_, __LINE__) (void) {\
     avs_unit_add_suite_init__(#suite,                                          \
-                              _avs_unit_suite_init_##suite##_##__LINE__);      \
+                              AVS_CONCAT(_avs_unit_suite_init_##suite##_,      \
+                                         __LINE__);                            \
 }                                                                              \
-static void _avs_unit_suite_init_##suite##_##__LINE__(int VERBOSE_VAR)
+static void                                                                    \
+AVS_CONCAT(_avs_unit_suite_init_##suite##_, __LINE__) (int VERBOSE_VAR)
 
 /**
  * Defines a unit test case.
