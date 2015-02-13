@@ -7,6 +7,7 @@
  * See the LICENSE file for details.
  */
 
+#include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -34,7 +35,7 @@ void avs_buffer_reset(avs_buffer_t *buffer) {
 
 int avs_buffer_create(avs_buffer_t **buffer_ptr, size_t capacity) {
     *buffer_ptr = (avs_buffer_t *)
-            malloc(sizeof(avs_buffer_t) + capacity - 1);
+            malloc(offsetof(avs_buffer_t, data) + capacity);
     if (*buffer_ptr) {
         (*buffer_ptr)->capacity = capacity;
         avs_buffer_reset(*buffer_ptr);
