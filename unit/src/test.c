@@ -386,7 +386,7 @@ int main(int argc, char *argv[]) {
                     "\033[0;33m%-65s\033[0;%sm%" PRIu64 "/%" PRIu64 "\033[0m\n",
                     current_suite->name,
                     (selected_test || tests_passed == tests_count) ? "32" : "31",
-                    tests_passed, tests_count);
+                    (uint64_t) tests_passed, (uint64_t) tests_count);
         test_printf(VERBOSE, "\n");
     }
     AVS_LIST_CLEAR(&test_suites) {
