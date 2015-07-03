@@ -45,6 +45,7 @@ typedef struct {
 typedef struct {
     uint8_t                                dscp;
     uint8_t                                priority;
+    uint8_t                                transparent;
     avs_net_socket_interface_name_t        interface_name;
     avs_net_socket_raw_resolved_endpoint_t *preferred_endpoint;
 } avs_net_socket_configuration_t;

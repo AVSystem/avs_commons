@@ -304,6 +304,25 @@ static int shutdown_net(avs_net_abstract_socket_t *net_socket_) {
     return retval;
 }
 
+static sa_family_t get_socket_family(int fd) {
+    struct sockaddr_storage addr;
+    socklen_t addrlen = sizeof (addr);
+
+    if (!getsockname(fd, (struct sockaddr *) &addr, &addrlen)) {
+        return addr.ss_family;
+    } else {
+        return AF_UNSPEC;
+    }
+}
+
+#if !defined(IP_TRANSPARENT) && defined(__linux__)
+#define IP_TRANSPARENT 19
+#endif
+
+#if !defined(IPV6_TRANSPARENT) && defined(__linux__)
+#define IPV6_TRANSPARENT 75
+#endif
+
 static int configure_socket(avs_net_socket_t *net_socket) {
     if (net_socket->configuration.interface_name[0]) {
         if (setsockopt(net_socket->socket,
@@ -333,6 +352,33 @@ static int configure_socket(avs_net_socket_t *net_socket) {
         tos &= 0x03; /* clear first 6 bits */
         tos |= (uint8_t) (net_socket->configuration.dscp << 2);
         if (setsockopt(net_socket->socket, IPPROTO_IP, IP_TOS, &tos, length)) {
+            return -1;
+        }
+    }
+    if (net_socket->configuration.transparent) {
+        int value = 1;
+        switch (get_socket_family(net_socket->socket)) {
+        case AF_INET:
+#ifdef IP_TRANSPARENT
+            if (setsockopt(net_socket->socket, SOL_IP, IP_TRANSPARENT,
+                           &value, sizeof(value)))
+#endif
+            {
+                return -1;
+            }
+            break;
+
+        case AF_INET6:
+#ifdef IPV6_TRANSPARENT
+            if (setsockopt(net_socket->socket, SOL_IPV6, IPV6_TRANSPARENT,
+                           &value, sizeof(value)))
+#endif
+            {
+                return -1;
+            }
+            break;
+
+        default:
             return -1;
         }
     }
@@ -629,6 +675,9 @@ static int create_listening_socket(avs_net_socket_t *net_socket,
                           SOL_SOCKET, SO_REUSEADDR, &val, sizeof (val))) {
         goto create_listening_socket_error;
     }
+    if (configure_socket(net_socket)) {
+        goto create_listening_socket_error;
+    }
     if (bind(net_socket->socket, addr, addrlen) < 0) {
         retval = -2;
         goto create_listening_socket_error;
@@ -651,7 +700,7 @@ static int try_bind(avs_net_socket_t *net_socket, int family,
     const struct sockaddr *addr = NULL;
     socklen_t addrlen;
     int retval = -1;
-    if (localaddr && port) {
+    if (localaddr || port) {
         info = get_addrinfo_net(net_socket->type, localaddr, port,
                                 family, AI_ADDRCONFIG | AI_PASSIVE, NULL);
         if (info) {
@@ -753,7 +802,7 @@ static int create_net_socket(avs_net_abstract_socket_t **socket,
                              const void *socket_configuration) {
     static const avs_net_socket_t new_socket
             = { &net_vtable, -1, 0, AVS_NET_SOCKET_STATE_CLOSED, "", "",
-                { 0, 0, "", NULL }, AVS_NET_SOCKET_DEFAULT_RECV_TIMEOUT };
+                { 0, 0, 0, "", NULL }, AVS_NET_SOCKET_DEFAULT_RECV_TIMEOUT };
     avs_net_socket_t *net_socket = NULL;
 
     net_socket = (avs_net_socket_t *) malloc(sizeof (avs_net_socket_t));

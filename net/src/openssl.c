@@ -602,7 +602,7 @@ static int initialize_ssl_socket(ssl_socket_t *socket,
 #ifdef WITH_TRACE
                 NULL,
 #endif /* WITH_TRACE */
-                NULL, { 0, 0, "", NULL } };
+                NULL, { 0, 0, 0, "", NULL } };
 
     memcpy(socket, &new_socket, sizeof (new_socket));
 #ifdef WITH_TRACE
