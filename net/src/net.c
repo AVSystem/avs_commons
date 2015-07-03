@@ -454,6 +454,55 @@ static int is_stream(avs_net_socket_t *net_socket) {
             || net_socket->type == SOCK_SEQPACKET);
 }
 
+static void unwrap_4in6(char *host) {
+    const char *last_colon = strrchr(host, ':');
+    if (last_colon) {
+    /* this is an IPv6 address */
+        if (strchr(host, '.')) {
+            /* but actually a wrapped IPv4, retain only the v4 part */
+            memmove(host, last_colon + 1, strlen(last_colon));
+        }
+    }
+}
+
+static int host_port_to_string(const struct sockaddr *sa, socklen_t salen,
+                               char *host, socklen_t hostlen,
+                               char *serv, socklen_t servlen) {
+    int result = -1;
+#ifdef HAVE_GETNAMEINFO
+    result = getnameinfo(sa, salen, host, hostlen, serv, servlen,
+                         NI_NUMERICHOST | NI_NUMERICSERV);
+#else
+    const void *addr_ptr = NULL;
+    const uint16_t *port_ptr = NULL;
+    if (sa->sa_family == AF_INET) {
+        if (salen >= sizeof(struct sockaddr_in)) {
+            addr_ptr = &((const struct sockaddr_in *) sa)->sin_addr;
+            port_ptr = &((const struct sockaddr_in *) sa)->sin_port;
+            result = 0;
+        }
+    } else if (sa->sa_family == AF_INET6) {
+        if (salen >= sizeof(struct sockaddr_in6)) {
+            addr_ptr = &((const struct sockaddr_in6 *) sa)->sin6_addr;
+            port_ptr = &((const struct sockaddr_in6 *) sa)->sin6_port;
+            result = 0;
+        }
+    }
+    if (!result) {
+        int retval;
+        result = (!_avs_inet_ntop(sa->sa_family, addr_ptr, host, hostlen)
+                || (retval = snprintf(serv, servlen, "%" PRIu16, *port_ptr)) < 0
+                || (size_t) retval >= servlen) ? -1 : 0;
+    }
+#endif
+    if (!result) {
+        host[hostlen - 1] = '\0';
+        serv[servlen - 1] = '\0';
+        unwrap_4in6(host);
+    }
+    return result;
+}
+
 static int connect_net(avs_net_abstract_socket_t *net_socket_,
                        const char *host,
                        const char *port) {
@@ -464,13 +513,7 @@ static int connect_net(avs_net_abstract_socket_t *net_socket_,
         return -1;
     }
 
-    strncpy(net_socket->host, host, sizeof(net_socket->host) - 1);
-    net_socket->host[sizeof(net_socket->host) - 1] = '\0';
-    strncpy(net_socket->port, port, sizeof(net_socket->port) - 1);
-    net_socket->port[sizeof(net_socket->port) - 1] = '\0';
-
-    info = get_addrinfo_net(net_socket->type,
-                            net_socket->host, net_socket->port, AF_UNSPEC, 0,
+    info = get_addrinfo_net(net_socket->type, host, port, AF_UNSPEC, 0,
                             net_socket->configuration.preferred_endpoint);
     for (address = info; address != NULL; address = address->ai_next) {
         if ((net_socket->socket = socket(address->ai_family,
@@ -486,7 +529,12 @@ static int connect_net(avs_net_abstract_socket_t *net_socket_,
                                  address->ai_addr,
                                  address->ai_addrlen) < 0
                 || (is_stream(net_socket)
-                && send_net(net_socket_, NULL, 0) < 0)) {
+                && send_net(net_socket_, NULL, 0) < 0)
+                || host_port_to_string(address->ai_addr, address->ai_addrlen,
+                                       net_socket->host,
+                                       sizeof(net_socket->host),
+                                       net_socket->port,
+                                       sizeof(net_socket->port))) {
             close(net_socket->socket);
             continue;
         } else {
@@ -508,6 +556,7 @@ static int connect_net(avs_net_abstract_socket_t *net_socket_,
         }
     }
     freeaddrinfo(info);
+    net_socket->socket = -1;
     return -1;
 }
 
@@ -591,37 +640,6 @@ static int receive_net(avs_net_abstract_socket_t *net_socket_,
     }
 }
 
-static int host_port_to_string(const struct sockaddr *sa, socklen_t salen,
-                               char *host, socklen_t hostlen,
-                               char *serv, socklen_t servlen) {
-#ifdef HAVE_GETNAMEINFO
-    return getnameinfo(sa, salen, host, hostlen, serv, servlen,
-                       NI_NUMERICHOST | NI_NUMERICSERV);
-#else
-    const void *addr_ptr = NULL;
-    const uint16_t *port_ptr = NULL;
-    int retval;
-    if (sa->sa_family == AF_INET) {
-        if (salen < sizeof(struct sockaddr_in)) {
-            return -1;
-        }
-        addr_ptr = &((const struct sockaddr_in *) sa)->sin_addr;
-        port_ptr = &((const struct sockaddr_in *) sa)->sin_port;
-    } else if (sa->sa_family == AF_INET6) {
-        if (salen < sizeof(struct sockaddr_in6)) {
-            return -1;
-        }
-        addr_ptr = &((const struct sockaddr_in6 *) sa)->sin6_addr;
-        port_ptr = &((const struct sockaddr_in6 *) sa)->sin6_port;
-    } else {
-        return -1;
-    }
-    return (!_avs_inet_ntop(sa->sa_family, addr_ptr, host, hostlen)
-            || (retval = snprintf(serv, servlen, "%" PRIu16, *port_ptr)) < 0
-            || (size_t) retval >= servlen) ? -1 : 0;
-#endif
-}
-
 static int receive_from_net(avs_net_abstract_socket_t *net_socket_,
                             size_t *out,
                             void *message_buffer, size_t buffer_size,
@@ -631,12 +649,10 @@ static int receive_from_net(avs_net_abstract_socket_t *net_socket_,
     struct sockaddr_storage sender_addr;
     socklen_t addrlen = sizeof (sender_addr);
 
-    if (host) {
-        host[0] = '\0';
-    }
-    if (port) {
-        port[0] = '\0';
-    }
+    assert(host);
+    assert(port);
+    host[0] = '\0';
+    port[0] = '\0';
 
     if (!wait_until_ready(net_socket->socket,
                           AVS_NET_SOCKET_DEFAULT_RECV_TIMEOUT, 1, 0)) {
@@ -651,7 +667,7 @@ static int receive_from_net(avs_net_abstract_socket_t *net_socket_,
             return -1;
         } else {
             *out = (size_t) result;
-            if (result > 0 && (host || port)) {
+            if (result > 0) {
                 return host_port_to_string((struct sockaddr *) &sender_addr,
                                            addrlen, host, (socklen_t) host_size,
                                            port, (socklen_t) port_size);
@@ -802,7 +818,8 @@ static int create_net_socket(avs_net_abstract_socket_t **socket,
                              const void *socket_configuration) {
     static const avs_net_socket_t new_socket
             = { &net_vtable, -1, 0, AVS_NET_SOCKET_STATE_CLOSED, "", "",
-                { 0, 0, 0, "", NULL }, AVS_NET_SOCKET_DEFAULT_RECV_TIMEOUT };
+                { 0, 0, 0, "", NULL, AVS_NET_AF_UNSPEC },
+                AVS_NET_SOCKET_DEFAULT_RECV_TIMEOUT };
     avs_net_socket_t *net_socket = NULL;
 
     net_socket = (avs_net_socket_t *) malloc(sizeof (avs_net_socket_t));

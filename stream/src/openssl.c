@@ -75,11 +75,10 @@ static const avs_stream_v_table_t md5_vtable = {
 };
 
 avs_stream_abstract_t *avs_stream_md5_create(void) {
-    static const avs_stream_v_table_t * const vtable = &md5_vtable;
     openssl_md5_stream_t *retval =
             (openssl_md5_stream_t *) malloc(sizeof (openssl_md5_stream_t));
     if (retval) {
-        _avs_stream_md5_common_init(&retval->common, vtable);
+        _avs_stream_md5_common_init(&retval->common, &md5_vtable);
         MD5_Init(&retval->ctx);
     }
     return (avs_stream_abstract_t *) retval;

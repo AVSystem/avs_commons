@@ -295,18 +295,14 @@ int avs_stream_netbuf_create(avs_stream_abstract_t **stream_,
                                     avs_net_abstract_socket_t *socket,
                                     size_t in_buffer_size,
                                     size_t out_buffer_size) {
-    static const buffered_netstream_t tcp_bio_template
-            = {&buffered_netstream_vtable, NULL,
-               NULL, NULL, 0};
     buffered_netstream_t *stream = NULL;
-
-    *stream_ = NULL;
-    *stream_ = (avs_stream_abstract_t*) malloc(sizeof(buffered_netstream_t));
+    *stream_ = (avs_stream_abstract_t*) calloc(1, sizeof(buffered_netstream_t));
     if (!*stream_) {
         return -1;
     }
     stream = (buffered_netstream_t*) * stream_;
-    memcpy(stream, &tcp_bio_template, sizeof (buffered_netstream_t));
+    *(const avs_stream_v_table_t **) (intptr_t) &stream->vtable =
+            &buffered_netstream_vtable;
 
     stream->socket = socket;
     if (avs_buffer_create(&stream->in_buffer, in_buffer_size)) {

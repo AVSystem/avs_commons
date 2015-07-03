@@ -37,18 +37,26 @@ typedef struct avs_net_abstract_socket_struct avs_net_abstract_socket_t;
  */
 typedef char avs_net_socket_interface_name_t[IF_NAMESIZE];
 
+/**
+ * Function type for callbacks to be executed for additional SSL configuration.
+ *
+ * It can be used to set values such as allowed cipher suites.
+ *
+ * Note that the @ref library_ssl_context parameter is a pointer to a native
+ * SSL context object of the SSL library in use. It shall be case to
+ * <c>SSL_CTX *</c> for OpenSSL or <c>ssl_context *</c> for XySSL-derivatives.
+ *
+ * @param library_ssl_context pointer to a native SSL context object of the
+ *                            SSL library in use
+ *
+ * @return 0 on success, negative value on failure
+ */
+typedef int avs_ssl_additional_configuration_clb_t(void *library_ssl_context);
+
 typedef struct {
     uint8_t size;
     char data[AVS_NET_SOCKET_RAW_RESOLVED_ENDPOINT_MAX_SIZE];
 } avs_net_socket_raw_resolved_endpoint_t;
-
-typedef struct {
-    uint8_t                                dscp;
-    uint8_t                                priority;
-    uint8_t                                transparent;
-    avs_net_socket_interface_name_t        interface_name;
-    avs_net_socket_raw_resolved_endpoint_t *preferred_endpoint;
-} avs_net_socket_configuration_t;
 
 /**
  * Alias for address family to avoid leaking POSIX socket API.
@@ -58,6 +66,15 @@ typedef enum {
     AVS_NET_AF_INET4,
     AVS_NET_AF_INET6
 } avs_net_af_t;
+
+typedef struct {
+    uint8_t                                dscp;
+    uint8_t                                priority;
+    uint8_t                                transparent;
+    avs_net_socket_interface_name_t        interface_name;
+    avs_net_socket_raw_resolved_endpoint_t *preferred_endpoint;
+    avs_net_af_t                           address_family;
+} avs_net_socket_configuration_t;
 
 /**
  * Available SSL versions that can be used by SSL sockets.
@@ -79,6 +96,7 @@ typedef struct {
     const char *client_cert_file;
     const char *client_key_file;
     const char *client_key_password;
+    avs_ssl_additional_configuration_clb_t *additional_configuration_clb;
     avs_net_socket_configuration_t backend_configuration;
 } avs_net_ssl_configuration_t;
 

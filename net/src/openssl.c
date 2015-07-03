@@ -15,6 +15,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
 #include <openssl/ssl.h>
 #include <openssl/rand.h>
 #include <openssl/err.h>
@@ -264,16 +265,11 @@ static int system_socket_ssl(avs_net_abstract_socket_t *ssl_socket_,
     return *out ? 0 : -1;
 }
 
-static int verify_peer_subject_cn(ssl_socket_t *ssl_socket) {
-    char host[NET_MAX_HOSTNAME_SIZE];
+static int verify_peer_subject_cn(ssl_socket_t *ssl_socket,
+                                  const char *host) {
     char buffer[CERT_SUBJECT_NAME_SIZE];
     char *cn = NULL;
     X509* peer_certificate = NULL;
-
-    if (remote_host_ssl((avs_net_abstract_socket_t *) ssl_socket,
-                        host, sizeof(host))) {
-        return -1;
-    }
 
     /* check whether CN matches host portion of ACS URL */
     peer_certificate = SSL_get_peer_certificate(ssl_socket->ssl);
@@ -312,7 +308,7 @@ static int ssl_handshake(ssl_socket_t *socket) {
     return -1;
 }
 
-static int start_ssl(ssl_socket_t *socket) {
+static int start_ssl(ssl_socket_t *socket, const char *host) {
     BIO *bio = NULL;
 
     if (socket->ssl) {
@@ -338,7 +334,7 @@ static int start_ssl(ssl_socket_t *socket) {
         return -1;
     }
 
-    if (socket->verification && verify_peer_subject_cn(socket) != 0) {
+    if (socket->verification && verify_peer_subject_cn(socket, host) != 0) {
         return -1;
     }
 
@@ -359,7 +355,7 @@ static int connect_ssl(avs_net_abstract_socket_t *socket_,
         return -1;
     }
 
-    result = start_ssl(socket);
+    result = start_ssl(socket, host);
     if (result) {
         close_ssl(socket_);
     }
@@ -368,6 +364,7 @@ static int connect_ssl(avs_net_abstract_socket_t *socket_,
 
 static int decorate_ssl(avs_net_abstract_socket_t *socket_,
                         avs_net_abstract_socket_t *backend_socket) {
+    char host[NET_MAX_HOSTNAME_SIZE];
     int result;
     ssl_socket_t *socket = (ssl_socket_t *) socket_;
 
@@ -375,8 +372,12 @@ static int decorate_ssl(avs_net_abstract_socket_t *socket_,
         avs_net_socket_cleanup(&socket->tcp_socket);
     }
 
+    if (remote_host_ssl(backend_socket, host, sizeof(host))) {
+        return -1;
+    }
+
     socket->tcp_socket = backend_socket;
-    result = start_ssl(socket);
+    result = start_ssl(socket, host);
     if (result) {
         socket->tcp_socket = NULL;
         close_ssl(socket_);
@@ -477,6 +478,11 @@ static int configure_ssl(ssl_socket_t *socket,
                          socket)) {
         return -1;
     }
+
+    if (configuration->additional_configuration_clb
+            && configuration->additional_configuration_clb(socket->ctx)) {
+        return -1;
+    }
     return 0;
 }
 
@@ -529,30 +535,7 @@ static int receive_ssl(avs_net_abstract_socket_t *socket_,
         *out = 0;
         return result;
     } else {
-        if (RUNNING_ON_VALGRIND) {
-            /* This is likely the ugliest piece of code in this library.
-             *
-             * This is here because OpenSSL uses some weird overoptimizations
-             * that break documented ABIs and make Valgrind go crazy, reporting
-             * errors about uninitialized memory everywhere.
-             *
-             * This basically copies memory onto itself in a way that makes
-             * Valgrind think it has just been initialized.
-             *
-             * It itself contains a conditional jump depending on uninitialized
-             * memory, so a Valgrind-level suppression is still necessary. */
-            int i = 0;
-            for (i = 0; i < result; ++i) {
-                int j = 0;
-                volatile uint8_t tmp = 0;
-                for (j = 0; j < 8; ++j) {
-                    if (((uint8_t *) buffer)[i] & (1 << j)) {
-                        tmp |= (uint8_t) (1 << j);
-                    }
-                }
-                ((uint8_t *) buffer)[i] = tmp;
-            }
-        }
+        VALGRIND_MAKE_MEM_DEFINED_IF_ADDRESSABLE(buffer, result);
         *out = (size_t) result;
         return 0;
     }
@@ -562,11 +545,6 @@ static int cleanup_ssl(avs_net_abstract_socket_t **socket_) {
     ssl_socket_t **socket = (ssl_socket_t **) socket_;
 
     close_ssl(*socket_);
-    if ((*socket)->ssl) {
-        SSL_shutdown((*socket)->ssl);
-        SSL_free((*socket)->ssl);
-        (*socket)->ssl = NULL;
-    }
     if ((*socket)->ctx) {
         SSL_CTX_free((*socket)->ctx);
         (*socket)->ctx = NULL;
@@ -590,6 +568,9 @@ static int avs_ssl_init() {
 #endif
         OpenSSL_add_all_algorithms();
         RAND_load_file("/dev/urandom", -1);
+        /* On some OpenSSL version, RAND_load file causes hell to break loose.
+         * Get rid of any "uninitialized" memory that it created :( */
+        VALGRIND_MAKE_MEM_DEFINED_IF_ADDRESSABLE(0, sbrk(0));
     }
     return 0;
 }
@@ -597,14 +578,10 @@ static int avs_ssl_init() {
 static int initialize_ssl_socket(ssl_socket_t *socket,
                                  const avs_net_ssl_configuration_t *configuration) {
     const SSL_METHOD *method = NULL;
-    static const ssl_socket_t new_socket
-            = { &ssl_vtable, NULL, NULL, 0,
-#ifdef WITH_TRACE
-                NULL,
-#endif /* WITH_TRACE */
-                NULL, { 0, 0, 0, "", NULL } };
 
-    memcpy(socket, &new_socket, sizeof (new_socket));
+    memset(socket, 0, sizeof(*socket));
+    *(const avs_net_socket_v_table_t **) (intptr_t) &socket->operations =
+            &ssl_vtable;
 #ifdef WITH_TRACE
     socket->error_buffer = (char *) malloc(120); /* see 'man ERR_error_string' */
 #endif /* WITH_TRACE */
