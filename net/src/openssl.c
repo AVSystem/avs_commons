@@ -13,6 +13,15 @@
 
 #include <config.h>
 
+#ifdef WITH_LWIP
+#   undef LWIP_COMPAT_SOCKETS
+#   define LWIP_COMPAT_SOCKETS 1
+#   include "lwipopts.h"
+#   include "lwip/socket.h"
+#else
+#   include <sys/socket.h>
+#endif
+
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
@@ -575,7 +584,71 @@ static int avs_ssl_init() {
     return 0;
 }
 
+static const SSL_METHOD *stream_method(avs_net_ssl_version_t version) {
+    switch (version) {
+#ifndef OPENSSL_NO_SSL2
+    case AVS_NET_SSL_VERSION_SSLv2:
+        return SSLv2_method();
+#endif
+
+#ifndef OPENSSL_NO_SSL3
+    case AVS_NET_SSL_VERSION_SSLv2_OR_3:
+        return SSLv23_method();
+
+    case AVS_NET_SSL_VERSION_SSLv3:
+        return SSLv3_method();
+#endif
+
+#ifndef OPENSSL_NO_TLS1
+    case AVS_NET_SSL_VERSION_TLSv1:
+        return TLSv1_method();
+
+#if OPENSSL_VERSION_NUMBER >= 0x10001000L /* OpenSSL >= 1.0.1 */
+    case AVS_NET_SSL_VERSION_TLSv1_1:
+        return TLSv1_1_method();
+
+    case AVS_NET_SSL_VERSION_TLSv1_2:
+        return TLSv1_2_method();
+#endif
+#endif /* OPENSSL_NO_TLS1 */
+
+    default:
+        return NULL;
+    }
+}
+
+static const SSL_METHOD *dgram_method(avs_net_ssl_version_t version) {
+    switch (version) {
+#if OPENSSL_VERSION_NUMBER >= 0x10001000L /* OpenSSL >= 1.0.1 */
+    case AVS_NET_SSL_VERSION_TLSv1:
+    case AVS_NET_SSL_VERSION_TLSv1_1:
+        return DTLSv1_method();
+#endif
+
+#if OPENSSL_VERSION_NUMBER >= 0x10002000L /* OpenSSL >= 1.0.2 */
+    case AVS_NET_SSL_VERSION_TLSv1_2:
+        return DTLSv1_2_method();
+#endif
+
+    default:
+        return NULL;
+    }
+}
+
+static const SSL_METHOD *ssl_method(int socket_type,
+                                    avs_net_ssl_version_t version) {
+    switch (socket_type) {
+    case SOCK_STREAM:
+        return stream_method(version);
+    case SOCK_DGRAM:
+        return dgram_method(version);
+    default:
+        return NULL;
+    }
+}
+
 static int initialize_ssl_socket(ssl_socket_t *socket,
+                                 int socket_type,
                                  const avs_net_ssl_configuration_t *configuration) {
     const SSL_METHOD *method = NULL;
 
@@ -586,40 +659,7 @@ static int initialize_ssl_socket(ssl_socket_t *socket,
     socket->error_buffer = (char *) malloc(120); /* see 'man ERR_error_string' */
 #endif /* WITH_TRACE */
 
-    switch (configuration->version) {
-#ifndef OPENSSL_NO_SSL2
-    case AVS_NET_SSL_VERSION_SSLv2:
-        method = SSLv2_method();
-        break;
-#endif
-
-#ifndef OPENSSL_NO_SSL3
-    case AVS_NET_SSL_VERSION_SSLv2_OR_3:
-        method = SSLv23_method();
-        break;
-
-    case AVS_NET_SSL_VERSION_SSLv3:
-        method = SSLv3_method();
-        break;
-#endif
-
-#ifndef OPENSSL_NO_TLS1
-    case AVS_NET_SSL_VERSION_TLSv1:
-        method = TLSv1_method();
-        break;
-
-#if OPENSSL_VERSION_NUMBER >= 0x10001000L /* OpenSSL >= 1.0.1 */
-    case AVS_NET_SSL_VERSION_TLSv1_1:
-        method = TLSv1_1_method();
-        break;
-
-    case AVS_NET_SSL_VERSION_TLSv1_2:
-        method = TLSv1_2_method();
-        break;
-#endif
-#endif /* OPENSSL_NO_TLS1 */
-
-    default:
+    if (!(method = ssl_method(socket_type, configuration->version))) {
         return -1;
     }
 
@@ -632,15 +672,16 @@ static int initialize_ssl_socket(ssl_socket_t *socket,
     return configure_ssl(socket, configuration);
 }
 
-int _avs_net_create_ssl_socket(avs_net_abstract_socket_t **socket,
-                               const void *socket_configuration) {
+static int create_ssl_socket(avs_net_abstract_socket_t **socket,
+                             int socket_type,
+                             const void *socket_configuration) {
     if (avs_ssl_init()) {
         return -1;
     }
 
     *socket = (avs_net_abstract_socket_t *) malloc(sizeof (ssl_socket_t));
     if (*socket) {
-        if (initialize_ssl_socket((ssl_socket_t *) * socket,
+        if (initialize_ssl_socket((ssl_socket_t *) * socket, socket_type,
                                   (const avs_net_ssl_configuration_t *)
                                   socket_configuration)) {
             avs_net_socket_cleanup(socket);
@@ -651,4 +692,14 @@ int _avs_net_create_ssl_socket(avs_net_abstract_socket_t **socket,
     } else {
         return -1;
     }
+}
+
+int _avs_net_create_ssl_socket(avs_net_abstract_socket_t **socket,
+                               const void *socket_configuration) {
+    return create_ssl_socket(socket, SOCK_STREAM, socket_configuration);
+}
+
+int _avs_net_create_dtls_socket(avs_net_abstract_socket_t **socket,
+                               const void *socket_configuration) {
+    return create_ssl_socket(socket, SOCK_DGRAM, socket_configuration);
 }

@@ -121,7 +121,8 @@ typedef union {
 typedef enum {
     AVS_NET_TCP_SOCKET,
     AVS_NET_UDP_SOCKET,
-    AVS_NET_SSL_SOCKET
+    AVS_NET_SSL_SOCKET,
+    AVS_NET_DTLS_SOCKET
 } avs_net_socket_type_t;
 
 int avs_net_socket_debug(int value);
