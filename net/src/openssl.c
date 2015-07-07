@@ -47,6 +47,7 @@ typedef struct {
 #ifdef WITH_TRACE
     char *error_buffer;
 #endif
+    int64_t next_deadline_ms;
     avs_net_socket_type_t backend_type;
     avs_net_abstract_socket_t *backend_socket;
     avs_net_socket_configuration_t backend_configuration;
@@ -113,7 +114,7 @@ static const avs_net_socket_v_table_t ssl_vtable = {
 
 #ifdef BIO_TYPE_SOURCE_SINK
 static int avs_bio_write(BIO *bio, const char *data, int size) {
-    if (!data || size <= 0) {
+    if (!data || size < 0) {
         return 0;
     }
     BIO_clear_retry_flags(bio);
@@ -125,18 +126,58 @@ static int avs_bio_write(BIO *bio, const char *data, int size) {
     }
 }
 
+static int64_t current_time_ms(void) {
+    struct timespec t;
+    clock_gettime(CLOCK_REALTIME, &t);
+    return (int64_t) t.tv_sec + t.tv_nsec / 1000000;
+}
+
+static int get_socket_timeout(avs_net_abstract_socket_t *sock) {
+    avs_net_socket_opt_value_t opt_value;
+    avs_net_socket_get_opt(sock, AVS_NET_SOCKET_OPT_RECV_TIMEOUT, &opt_value);
+    return opt_value.recv_timeout;
+}
+
+static void set_socket_timeout(avs_net_abstract_socket_t *sock, int timeout) {
+    avs_net_socket_opt_value_t opt_value;
+    opt_value.recv_timeout = timeout;
+    avs_net_socket_set_opt(sock, AVS_NET_SOCKET_OPT_RECV_TIMEOUT, opt_value);
+}
+
+static int adjust_receive_timeout(ssl_socket_t *sock) {
+    int socket_timeout = get_socket_timeout(sock->backend_socket);
+    if (sock->next_deadline_ms >= 0) {
+        int64_t now_ms = current_time_ms();
+        int timeout = (int) (sock->next_deadline_ms - now_ms);
+        if (socket_timeout <= 0 || socket_timeout > timeout) {
+            set_socket_timeout(sock->backend_socket, timeout);
+        }
+    }
+    return socket_timeout;
+}
+
 static int avs_bio_read(BIO *bio, char *buffer, int size) {
+    ssl_socket_t *sock = (ssl_socket_t *) bio->ptr;
+    int prev_timeout;
     size_t read_bytes;
-    if (!buffer || size <= 0) {
+    int result;
+    if (!buffer || size < 0) {
         return 0;
     }
     BIO_clear_retry_flags(bio);
-    if (avs_net_socket_receive(((ssl_socket_t *) bio->ptr)->backend_socket,
-                               &read_bytes, buffer, (size_t) size)) {
-        return -1;
-    } else {
-        return (int) read_bytes;
+    if (sock->backend_type == AVS_NET_UDP_SOCKET) {
+        prev_timeout = adjust_receive_timeout(sock);
     }
+    if (avs_net_socket_receive(sock->backend_socket,
+                               &read_bytes, buffer, (size_t) size)) {
+        result = -1;
+    } else {
+        result = (int) read_bytes;
+    }
+    if (sock->backend_type == AVS_NET_UDP_SOCKET) {
+        set_socket_timeout(sock->backend_socket, prev_timeout);
+    }
+    return result;
 }
 
 static int avs_bio_puts(BIO *bio, const char *data) {

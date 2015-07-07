@@ -974,24 +974,29 @@ static int get_opt_net(avs_net_abstract_socket_t *net_socket_,
                        avs_net_socket_opt_key_t option_key,
                        avs_net_socket_opt_value_t *out_option_value) {
     avs_net_socket_t *net_socket = (avs_net_socket_t *) net_socket_;
-    if (option_key == AVS_NET_SOCKET_OPT_STATE) {
+    switch (option_key) {
+    case AVS_NET_SOCKET_OPT_RECV_TIMEOUT:
+        out_option_value->recv_timeout = net_socket->recv_timeout;
+        return 0;
+    case AVS_NET_SOCKET_OPT_STATE:
         out_option_value->state = net_socket->state;
-    } else {
+        return 0;
+    default:
         return -1;
     }
-    return 0;
 }
 
 static int set_opt_net(avs_net_abstract_socket_t *net_socket_,
                        avs_net_socket_opt_key_t option_key,
                        avs_net_socket_opt_value_t option_value) {
     avs_net_socket_t *net_socket = (avs_net_socket_t *) net_socket_;
-    if (option_key == AVS_NET_SOCKET_OPT_RECV_TIMEOUT) {
+    switch (option_key) {
+    case AVS_NET_SOCKET_OPT_RECV_TIMEOUT:
         net_socket->recv_timeout = option_value.recv_timeout;
-    } else {
+        return 0;
+    default:
         return -1;
     }
-    return 0;
 }
 
 static int ifaddr_ip_equal(const struct sockaddr *left,
