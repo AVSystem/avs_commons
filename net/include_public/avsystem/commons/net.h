@@ -102,7 +102,9 @@ typedef struct {
 
 typedef enum {
     AVS_NET_SOCKET_OPT_RECV_TIMEOUT,
-    AVS_NET_SOCKET_OPT_STATE
+    AVS_NET_SOCKET_OPT_STATE,
+    AVS_NET_SOCKET_OPT_ADDR_FAMILY,
+    AVS_NET_SOCKET_OPT_MTU
 } avs_net_socket_opt_key_t;
 
 typedef enum {
@@ -116,6 +118,8 @@ typedef enum {
 typedef union {
     int recv_timeout;
     avs_net_socket_state_t state;
+    avs_net_af_t addr_family;
+    int mtu;
 } avs_net_socket_opt_value_t;
 
 typedef enum {

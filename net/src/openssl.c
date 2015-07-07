@@ -191,14 +191,61 @@ static int avs_bio_gets(BIO *bio, char *buffer, int size) {
     return -1;
 }
 
-static long avs_bio_ctrl(BIO *bio, int command, long intarg, void *ptrarg) {
-    (void) bio;
-    (void) intarg;
-    (void) ptrarg;
-    if (command == BIO_CTRL_FLUSH) {
-        return 1; /* OpenSSL requirement */
+static avs_net_af_t get_socket_af(avs_net_abstract_socket_t *sock) {
+    avs_net_socket_opt_value_t opt_value;
+    if (avs_net_socket_get_opt(sock, AVS_NET_SOCKET_OPT_ADDR_FAMILY,
+                               &opt_value)) {
+        return AVS_NET_AF_UNSPEC;
+    } else {
+        return opt_value.addr_family;
     }
-    return 0;
+}
+
+static int get_socket_mtu(avs_net_abstract_socket_t *sock) {
+    avs_net_socket_opt_value_t opt_value;
+    if (avs_net_socket_get_opt(sock, AVS_NET_SOCKET_OPT_MTU, &opt_value)) {
+        return -1;
+    } else {
+        return opt_value.mtu;
+    }
+}
+
+static int get_dtls_overhead(avs_net_abstract_socket_t *sock) {
+    switch (get_socket_af(sock)) {
+    case AVS_NET_AF_INET4:
+        return 28;
+    case AVS_NET_AF_INET6:
+        return 48;
+    default:
+        return -1;
+    }
+}
+
+static int calculate_mtu_or_zero(int base, int overhead) {
+    if (base < 0 || overhead < 0) {
+        return 0;
+    } else {
+        return base - overhead;
+    }
+}
+
+static int get_dtls_mtu_or_zero(ssl_socket_t *sock) {
+    return calculate_mtu_or_zero(get_socket_mtu(sock->backend_socket),
+                                 get_dtls_overhead(sock->backend_socket));
+}
+
+static long avs_bio_ctrl(BIO *bio, int command, long intarg, void *ptrarg) {
+    ssl_socket_t *sock = (ssl_socket_t *) bio->ptr;
+    switch (command) {
+    case BIO_CTRL_FLUSH:
+        return 1;
+#if OPENSSL_VERSION_NUMBER >= 0x10001000L /* OpenSSL >= 1.0.1 */
+    case BIO_CTRL_DGRAM_QUERY_MTU:
+        return get_dtls_mtu_or_zero(sock);
+#endif
+    default:
+        return 0;
+    }
 }
 
 static int avs_bio_create(BIO *bio) {
@@ -304,8 +351,14 @@ static int get_opt_ssl(avs_net_abstract_socket_t *ssl_socket_,
                        avs_net_socket_opt_key_t option_key,
                        avs_net_socket_opt_value_t *out_option_value) {
     ssl_socket_t *ssl_socket = (ssl_socket_t *) ssl_socket_;
-    return avs_net_socket_get_opt(ssl_socket->backend_socket, option_key,
-                                out_option_value);
+    switch (option_key) {
+    case AVS_NET_SOCKET_OPT_MTU:
+        out_option_value->mtu = get_dtls_mtu_or_zero(ssl_socket);
+        return out_option_value->mtu > 0 ? 0 : -1;
+    default:
+        return avs_net_socket_get_opt(ssl_socket->backend_socket, option_key,
+                                    out_option_value);
+    }
 }
 
 static int set_opt_ssl(avs_net_abstract_socket_t *ssl_socket_,

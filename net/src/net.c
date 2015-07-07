@@ -871,6 +871,17 @@ static int get_af(avs_net_af_t addr_family) {
     }
 }
 
+static avs_net_af_t get_avs_af(int af) {
+    switch (af) {
+    case AF_INET:
+        return AVS_NET_AF_INET4;
+    case AF_INET6:
+        return AVS_NET_AF_INET6;
+    default:
+        return AVS_NET_AF_UNSPEC;
+    }
+}
+
 static int get_string_ip(const struct sockaddr *addr,
                          char *buffer, size_t buffer_size) {
     const void *addr_data;
@@ -981,6 +992,35 @@ static int get_opt_net(avs_net_abstract_socket_t *net_socket_,
     case AVS_NET_SOCKET_OPT_STATE:
         out_option_value->state = net_socket->state;
         return 0;
+    case AVS_NET_SOCKET_OPT_ADDR_FAMILY:
+        out_option_value->addr_family =
+                get_avs_af(get_socket_family(net_socket->socket));
+        return 0;
+    case AVS_NET_SOCKET_OPT_MTU:
+    {
+        int mtu, retval = -1;
+        socklen_t dummy = sizeof(mtu);
+        switch (get_socket_family(net_socket->socket)) {
+#ifdef IP_MTU
+        case AF_INET:
+            retval = getsockopt(net_socket->socket, IPPROTO_IP, IP_MTU,
+                                &mtu, &dummy);
+            break;
+#endif
+#ifdef IPV6_MTU
+        case AF_INET6:
+            retval = getsockopt(net_socket->socket, IPPROTO_IPV6, IPV6_MTU,
+                                &mtu, &dummy);
+            break;
+#endif
+        }
+        if (retval < 0 || mtu < 0) {
+            return -1;
+        } else {
+            out_option_value->mtu = mtu;
+            return 0;
+        }
+    }
     default:
         return -1;
     }
