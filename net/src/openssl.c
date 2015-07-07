@@ -202,7 +202,18 @@ static BIO *avs_bio_spawn(ssl_socket_t *socket) {
 static BIO *avs_bio_spawn(ssl_socket_t *socket) {
     const void *fd_ptr =
             avs_net_socket_get_system((avs_net_abstract_socket_t *) socket);
-    return fd_ptr ? BIO_new_socket(*(const int *) fd_ptr, 0) : NULL;
+    if (fd_ptr) {
+        int fd = *(const int *) fd_ptr;
+        if (socket->backend_type == AVS_NET_TCP_SOCKET) {
+            return BIO_new_socket(fd, 0);
+        }
+#if OPENSSL_VERSION_NUMBER >= 0x10001000L /* OpenSSL >= 1.0.1 */
+        if (socket->backend_type == AVS_NET_UDP_SOCKET) {
+            return BIO_new_dgram(fd, 0);
+        }
+#endif
+    }
+    return NULL;
 }
 #endif /* BIO_TYPE_SOURCE_SINK */
 
