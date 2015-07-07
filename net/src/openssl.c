@@ -113,6 +113,49 @@ static const avs_net_socket_v_table_t ssl_vtable = {
     set_opt_ssl
 };
 
+static avs_net_af_t get_socket_af(avs_net_abstract_socket_t *sock) {
+    avs_net_socket_opt_value_t opt_value;
+    if (avs_net_socket_get_opt(sock, AVS_NET_SOCKET_OPT_ADDR_FAMILY,
+                               &opt_value)) {
+        return AVS_NET_AF_UNSPEC;
+    } else {
+        return opt_value.addr_family;
+    }
+}
+
+static int get_socket_mtu(avs_net_abstract_socket_t *sock) {
+    avs_net_socket_opt_value_t opt_value;
+    if (avs_net_socket_get_opt(sock, AVS_NET_SOCKET_OPT_MTU, &opt_value)) {
+        return -1;
+    } else {
+        return opt_value.mtu;
+    }
+}
+
+static int get_dtls_overhead(avs_net_abstract_socket_t *sock) {
+    switch (get_socket_af(sock)) {
+    case AVS_NET_AF_INET4:
+        return 28;
+    case AVS_NET_AF_INET6:
+        return 48;
+    default:
+        return -1;
+    }
+}
+
+static int calculate_mtu_or_zero(int base, int overhead) {
+    if (base < 0 || overhead < 0) {
+        return 0;
+    } else {
+        return base - overhead;
+    }
+}
+
+static int get_dtls_mtu_or_zero(ssl_socket_t *sock) {
+    return calculate_mtu_or_zero(get_socket_mtu(sock->backend_socket),
+                                 get_dtls_overhead(sock->backend_socket));
+}
+
 #ifdef BIO_TYPE_SOURCE_SINK
 static int avs_bio_write(BIO *bio, const char *data, int size) {
     if (!data || size < 0) {
@@ -192,36 +235,6 @@ static int avs_bio_gets(BIO *bio, char *buffer, int size) {
     return -1;
 }
 
-static avs_net_af_t get_socket_af(avs_net_abstract_socket_t *sock) {
-    avs_net_socket_opt_value_t opt_value;
-    if (avs_net_socket_get_opt(sock, AVS_NET_SOCKET_OPT_ADDR_FAMILY,
-                               &opt_value)) {
-        return AVS_NET_AF_UNSPEC;
-    } else {
-        return opt_value.addr_family;
-    }
-}
-
-static int get_socket_mtu(avs_net_abstract_socket_t *sock) {
-    avs_net_socket_opt_value_t opt_value;
-    if (avs_net_socket_get_opt(sock, AVS_NET_SOCKET_OPT_MTU, &opt_value)) {
-        return -1;
-    } else {
-        return opt_value.mtu;
-    }
-}
-
-static int get_dtls_overhead(avs_net_abstract_socket_t *sock) {
-    switch (get_socket_af(sock)) {
-    case AVS_NET_AF_INET4:
-        return 28;
-    case AVS_NET_AF_INET6:
-        return 48;
-    default:
-        return -1;
-    }
-}
-
 static int get_dtls_fallback_mtu_or_zero(ssl_socket_t *sock) {
     char host[NET_MAX_HOSTNAME_SIZE];
     if (avs_net_socket_get_remote_host(sock->backend_socket,
@@ -234,19 +247,6 @@ static int get_dtls_fallback_mtu_or_zero(ssl_socket_t *sock) {
             return 548;
         }
     }
-}
-
-static int calculate_mtu_or_zero(int base, int overhead) {
-    if (base < 0 || overhead < 0) {
-        return 0;
-    } else {
-        return base - overhead;
-    }
-}
-
-static int get_dtls_mtu_or_zero(ssl_socket_t *sock) {
-    return calculate_mtu_or_zero(get_socket_mtu(sock->backend_socket),
-                                 get_dtls_overhead(sock->backend_socket));
 }
 
 static long avs_bio_ctrl(BIO *bio, int command, long intarg, void *ptrarg) {
@@ -324,7 +324,10 @@ static BIO *avs_bio_spawn(ssl_socket_t *socket) {
         }
 #if OPENSSL_VERSION_NUMBER >= 0x10001000L /* OpenSSL >= 1.0.1 */
         if (socket->backend_type == AVS_NET_UDP_SOCKET) {
-            return BIO_new_dgram(fd, 0);
+            BIO *bio = BIO_new_dgram(fd, 0);
+            BIO_ctrl(bio, BIO_CTRL_DGRAM_SET_CONNECTED, 0,
+                     socket->backend_configuration.preferred_endpoint->data);
+            return bio;
         }
 #endif
     }
@@ -596,6 +599,9 @@ static int configure_ssl(ssl_socket_t *socket,
 
     ERR_clear_error();
     SSL_CTX_set_options(socket->ctx, (long) (SSL_OP_ALL | SSL_OP_NO_SSLv2));
+    if (socket->backend_type == AVS_NET_UDP_SOCKET) {
+        SSL_CTX_set_read_ahead(socket->ctx, 1);
+    }
     SSL_CTX_set_verify(socket->ctx, SSL_VERIFY_NONE, NULL);
 #ifdef WITH_OPENSSL_CUSTOM_CIPHERS
     SSL_CTX_set_cipher_list(socket->ctx, WITH_OPENSSL_CUSTOM_CIPHERS);
