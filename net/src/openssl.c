@@ -51,6 +51,7 @@ typedef struct {
     avs_net_socket_type_t backend_type;
     avs_net_abstract_socket_t *backend_socket;
     avs_net_socket_configuration_t backend_configuration;
+    avs_net_socket_raw_resolved_endpoint_t endpoint_buffer;
 } ssl_socket_t;
 
 static int connect_ssl(avs_net_abstract_socket_t *ssl_socket,
@@ -262,6 +263,10 @@ static long avs_bio_ctrl(BIO *bio, int command, long intarg, void *ptrarg) {
                 (int64_t) ((const struct timeval *) ptrarg)->tv_sec * 1000 +
                 ((const struct timeval *) ptrarg)->tv_usec / 1000;
         return 0;
+    case BIO_CTRL_DGRAM_GET_PEER:
+        memcpy(ptrarg, sock->backend_configuration.preferred_endpoint->data,
+               sock->backend_configuration.preferred_endpoint->size);
+        return sock->backend_configuration.preferred_endpoint->size;
     case BIO_CTRL_DGRAM_GET_FALLBACK_MTU:
         return get_dtls_fallback_mtu_or_zero(sock);
 #endif
@@ -584,6 +589,10 @@ static int server_auth_enabled(const avs_net_ssl_configuration_t *configuration)
 static int configure_ssl(ssl_socket_t *socket,
                          const avs_net_ssl_configuration_t *configuration) {
     socket->backend_configuration = configuration->backend_configuration;
+    if (!socket->backend_configuration.preferred_endpoint) {
+        socket->backend_configuration.preferred_endpoint =
+                &socket->endpoint_buffer;
+    }
 
     ERR_clear_error();
     SSL_CTX_set_options(socket->ctx, (long) (SSL_OP_ALL | SSL_OP_NO_SSLv2));
