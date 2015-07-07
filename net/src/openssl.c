@@ -221,6 +221,20 @@ static int get_dtls_overhead(avs_net_abstract_socket_t *sock) {
     }
 }
 
+static int get_dtls_fallback_mtu_or_zero(ssl_socket_t *sock) {
+    char host[NET_MAX_HOSTNAME_SIZE];
+    if (avs_net_socket_get_remote_host(sock->backend_socket,
+                                       host, sizeof(host))) {
+        return 0;
+    } else {
+        if (strchr(host, ':')) { /* IPv6 */
+            return 1232;
+        } else {
+            return 548;
+        }
+    }
+}
+
 static int calculate_mtu_or_zero(int base, int overhead) {
     if (base < 0 || overhead < 0) {
         return 0;
@@ -236,12 +250,20 @@ static int get_dtls_mtu_or_zero(ssl_socket_t *sock) {
 
 static long avs_bio_ctrl(BIO *bio, int command, long intarg, void *ptrarg) {
     ssl_socket_t *sock = (ssl_socket_t *) bio->ptr;
+    (void) intarg;
     switch (command) {
     case BIO_CTRL_FLUSH:
         return 1;
 #if OPENSSL_VERSION_NUMBER >= 0x10001000L /* OpenSSL >= 1.0.1 */
     case BIO_CTRL_DGRAM_QUERY_MTU:
         return get_dtls_mtu_or_zero(sock);
+    case BIO_CTRL_DGRAM_SET_NEXT_TIMEOUT:
+        sock->next_deadline_ms =
+                (int64_t) ((const struct timeval *) ptrarg)->tv_sec * 1000 +
+                ((const struct timeval *) ptrarg)->tv_usec / 1000;
+        return 0;
+    case BIO_CTRL_DGRAM_GET_FALLBACK_MTU:
+        return get_dtls_fallback_mtu_or_zero(sock);
 #endif
     default:
         return 0;
