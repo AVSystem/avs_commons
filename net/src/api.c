@@ -175,6 +175,8 @@ get_constructor_for_socket_type(avs_net_socket_type_t type) {
 #ifdef WITH_SSL
     case AVS_NET_SSL_SOCKET:
         return _avs_net_create_ssl_socket;
+    case AVS_NET_DTLS_SOCKET:
+        return _avs_net_create_dtls_socket;
 #endif
     default:
         return NULL;

@@ -29,6 +29,8 @@ int _avs_net_create_udp_socket(avs_net_abstract_socket_t **socket,
 #ifdef WITH_SSL
 int _avs_net_create_ssl_socket(avs_net_abstract_socket_t **socket,
                                const void *socket_configuration);
+int _avs_net_create_dtls_socket(avs_net_abstract_socket_t **socket,
+                               const void *socket_configuration);
 #endif
 
 #ifdef HAVE_VISIBILITY
