@@ -23,6 +23,13 @@ extern "C" {
  * Global common definitions.
 */
 
+#cmakedefine AVS_HAS_NET_IF_H
+#ifdef AVS_HAS_NET_IF_H
+#include <net/if.h>
+#else
+#define IF_NAMESIZE 16
+#endif
+
 /**
  * Internal definitions used by the library to implement the functionality.
  */

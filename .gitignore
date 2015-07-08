@@ -1,4 +1,5 @@
 # binaries
+*.o
 *.a
 *.so
 *.so.*
@@ -21,6 +22,8 @@ compile_commands.json
 install_manifest.txt
 _CPack_Packages/
 Testing/
+/config/config.h
+/include_public/avsystem/commons/defs.h
 
 # documentation
 /doc/*

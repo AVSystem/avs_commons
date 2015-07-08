@@ -7,9 +7,13 @@
 #  See the LICENSE file for details.
 #
 
+################# DEFINITION ###################################################
+
 cmake_minimum_required(VERSION 2.8.1)
 project(avs_commons C)
 set(AVS_COMMONS_VERSION SNAPSHOT)
+
+################# DISTRIBUTION #################################################
 
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "AVSystem Commons Library")
 set(CPACK_PACKAGE_VENDOR "AVSystem")
@@ -42,6 +46,92 @@ include(CPack)
 
 add_custom_target(dist COMMAND ${CMAKE_CPACK_COMMAND} --config ${CMAKE_BINARY_DIR}/CPackSourceConfig.cmake WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
 
+################# INITIALIZATION ###############################################
+
+set(WITH_ADDITIONAL_LIBRARY_SUFFIXES "" CACHE STRING "Additional library file name suffixes")
+set(CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_FIND_LIBRARY_SUFFIXES} ${WITH_ADDITIONAL_LIBRARY_SUFFIXES})
+
+################# LIBRARIES ####################################################
+
+macro(avs_emit_deps TNAME)
+    target_link_libraries(${TNAME} ${ARGN})
+    list(APPEND AVS_TARGET_DEPS_${TNAME} ${ARGN})
+endmacro()
+
+macro(avs_temp_name fname)
+    if(${ARGC} GREATER 1) # Have to escape ARGC to correctly compare
+        set(_base ${ARGV1})
+    else(${ARGC} GREATER 1)
+        set(_base ".cmake-tmp")
+    endif(${ARGC} GREATER 1)
+    set(_counter 0)
+    while(EXISTS "${CMAKE_BINARY_DIR}/${_base}${_counter}")
+        math(EXPR _counter "${_counter} + 1")
+    endwhile(EXISTS "${CMAKE_BINARY_DIR}/${_base}${_counter}")
+    set(${fname} "${CMAKE_BINARY_DIR}/${_base}${_counter}")
+endmacro()
+
+macro(avs_find_library_inner)
+    avs_temp_name(_fname)
+    file(WRITE ${_fname} "${avs_find_library_EXPR_NOW}")
+    include(${_fname})
+    file(REMOVE ${_fname})
+    foreach(PROVIDED_LIB ${ARGN})
+        set(LIBRARY_FIND_ROUTINE_${PROVIDED_LIB} "${avs_find_library_EXPR_STORE}")
+        set(LIBRARY_FIND_ROUTINE_PROVIDES_${PROVIDED_LIB} ${ARGN})
+    endforeach()
+endmacro()
+
+macro(avs_find_library_ex EXPR_NOW EXPR_STORE)
+    set(avs_find_library_EXPR_NOW "${EXPR_NOW}")
+    set(avs_find_library_EXPR_STORE "${EXPR_STORE}")
+    avs_find_library_inner(${ARGN})
+    set(avs_find_library_EXPR_NOW)
+    set(avs_find_library_EXPR_STORE)
+endmacro()
+
+macro(avs_find_library EXPR)
+    set(avs_find_library_EXPR_NOW "${EXPR}")
+    set(avs_find_library_EXPR_STORE "${EXPR}")
+    avs_find_library_inner(${ARGN})
+    set(avs_find_library_EXPR_NOW)
+    set(avs_find_library_EXPR_STORE)
+endmacro()
+
+set(LIBRARY_FIND_ROUTINES)
+macro(avs_emit_find_dependency LIB)
+    if(NOT LIBRARY_FIND_ROUTINE_EMITTED_${LIB})
+        if(LIBRARY_FIND_ROUTINE_${LIB})
+            set(LIBRARY_FIND_ROUTINES "${LIBRARY_FIND_ROUTINES}
+
+${LIBRARY_FIND_ROUTINE_${LIB}}")
+            foreach(PROVIDED_LIB ${LIBRARY_FIND_ROUTINE_PROVIDES_${LIB}})
+                set(LIBRARY_FIND_ROUTINE_EMITTED_${PROVIDED_LIB} 1)
+            endforeach()
+        endif()
+    endif()
+endmacro()
+
+macro(avs_install_export TNAME CNAME)
+    install(TARGETS ${TNAME} COMPONENT ${CNAME} EXPORT avs_commons-targets DESTINATION ${LIB_INSTALL_DIR})
+    foreach(DEP ${avs_TARGET_DEPS_${TNAME}})
+        avs_emit_find_dependency(${DEP})
+    endforeach()
+endmacro()
+
+# OpenSSL
+avs_find_library("find_package(OpenSSL)" ssl crypto)
+
+# SSL
+option(WITH_OPENSSL "Enable OpenSSL" ON)
+
+option(WITH_XYSSL "XySSL or derivative library enable" OFF)
+set(XYSSL_LIBRARY_NAME "" CACHE STRING "XySSL or derivative library name")
+set(XYSSL_LIBRARY_LOCATION "" CACHE STRING "XySSL or derivative library location")
+set(XYSSL_LIBRARY_INCLUDES "" CACHE STRING "XySSL or derivative library headers directory")
+
+################################################################################
+
 option(WITH_EXTRA_WARNINGS "Enable extra compilation warnings" OFF)
 if(WITH_EXTRA_WARNINGS)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c89 -pedantic -Wall -Wextra -Winit-self -Wmissing-declarations -Wc++-compat -Wsign-conversion -Wconversion -Wcast-qual -Wno-variadic-macros -Wno-long-long")
@@ -54,6 +144,25 @@ if(CMAKE_C_COMPILE_OPTIONS_PIC)
     endif()
 endif()
 
+# -fvisibility, #pragma GCC visibility
+file(WRITE ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp/visibility.c "#pragma GCC visibility push(default)\nint f();\n#pragma GCC visibility push(hidden)\nint f() { return 0; }\n#pragma GCC visibility pop\nint main() { return f(); }\n\n")
+try_compile(HAVE_VISIBILITY ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp/visibility.c COMPILE_DEFINITIONS -Wall -Wextra -Werror -fvisibility=default)
+
+include(CheckIncludeFiles)
+check_include_files("net/if.h" AVS_HAS_NET_IF_H)
+
+include(CheckFunctionExists)
+check_function_exists(getifaddrs HAVE_GETIFADDRS)
+check_function_exists(getnameinfo HAVE_GETNAMEINFO)
+check_function_exists(inet_ntop HAVE_INET_NTOP)
+check_function_exists(poll HAVE_POLL)
+check_function_exists(rand_r HAVE_RAND_R)
+
+option(WITH_LWIP "Use lwIP library for networking" OFF)
+
+option(WITH_SOCKET_LOG "Enable socket communication logging" OFF)
+
+include_directories(config)
 include_directories(include_public)
 
 find_program(VALGRIND_EXECUTABLE valgrind)
@@ -131,8 +240,49 @@ if(WITH_AVS_LIST)
     add_subdirectory(list)
 endif()
 
-install(EXPORT avs_commons-targets
-        DESTINATION ${LIB_INSTALL_DIR}/avs_commons)
+option(WITH_AVS_NET "AVSystem network communication abstraction layer" ON)
+if(WITH_AVS_NET)
+    if(WITH_OPENSSL)
+        if(NOT OPENSSL_FOUND)
+            message(FATAL_ERROR "OpenSSL libraries not found")
+        endif()
+        include_directories(${OPENSSL_INCLUDE_DIRS})
+        add_library(ssl UNKNOWN IMPORTED)
+        add_library(crypto UNKNOWN IMPORTED)
+        set_property(TARGET ssl PROPERTY IMPORTED_LOCATION ${OPENSSL_SSL_LIBRARY})
+        set_property(TARGET crypto PROPERTY IMPORTED_LOCATION ${OPENSSL_CRYPTO_LIBRARY})
+
+        option(OPENSSL_CUSTOM_CIPHERS_ENABLED "Customize OpenSSL cipher suite list" ON)
+        if(OPENSSL_CUSTOM_CIPHERS_ENABLED)
+            set(WITH_OPENSSL_CUSTOM_CIPHERS "DEFAULT:!ECDSA" CACHE STRING "Customized OpenSSL cipher suite list")
+        endif()
+    elseif(WITH_XYSSL)
+        if(NOT XYSSL_LIBRARY_NAME)
+            message(FATAL_ERROR "XySSL lib name not specified")
+        endif()
+        if(NOT XYSSL_LIBRARY_LOCATION)
+            message(FATAL_ERROR "XySSL location not specified")
+        endif()
+        add_library(${XYSSL_LIBRARY_NAME} UNKNOWN IMPORTED)
+        set_property(TARGET ${XYSSL_LIBRARY_NAME} PROPERTY IMPORTED_LOCATION ${XYSSL_LIBRARY_LOCATION})
+        separate_arguments(XYSSL_LIBRARY_INCLUDES)
+        if(XYSSL_LIBRARY_INCLUDES)
+            set(DEPS_INCLUDE_DIRS ${DEPS_INCLUDE_DIRS} ${XYSSL_LIBRARY_INCLUDES})
+        endif()
+        include_directories(xyssl-compat/${XYSSL_LIBRARY_NAME})
+    endif()
+
+    add_subdirectory(net)
+endif()
+
+option(WITH_AVS_STREAM "AVSystem IO stream abstraction layer" ON)
+if(WITH_AVS_STREAM)
+    add_subdirectory(stream)
+endif()
+
+configure_file("config/config.h.in" "config/config.h")
+configure_file("include_public/avsystem/commons/defs.h.in" "include_public/avsystem/commons/defs.h")
+
 configure_file(avs_commons-config.cmake.in avs_commons-config.cmake @ONLY)
 configure_file(avs_commons-version.cmake.in avs_commons-version.cmake @ONLY)
 install(EXPORT avs_commons-targets DESTINATION ${LIB_INSTALL_DIR}/avs_commons)
