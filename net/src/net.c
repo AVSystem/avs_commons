@@ -998,7 +998,7 @@ static int get_opt_net(avs_net_abstract_socket_t *net_socket_,
         return 0;
     case AVS_NET_SOCKET_OPT_MTU:
     {
-        int mtu, retval = -1;
+        int mtu, retval;
         socklen_t dummy = sizeof(mtu);
         switch (get_socket_family(net_socket->socket)) {
 #ifdef IP_MTU
@@ -1013,6 +1013,8 @@ static int get_opt_net(avs_net_abstract_socket_t *net_socket_,
                                 &mtu, &dummy);
             break;
 #endif
+        default:
+            retval = -1;
         }
         if (retval < 0 || mtu < 0) {
             return -1;

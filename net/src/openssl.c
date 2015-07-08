@@ -242,9 +242,9 @@ static int get_dtls_fallback_mtu_or_zero(ssl_socket_t *sock) {
         return 0;
     } else {
         if (strchr(host, ':')) { /* IPv6 */
-            return 1232;
+            return 1232; /* 1280 - 48 */
         } else {
-            return 548;
+            return 548; /* 576 - 28 */
         }
     }
 }
