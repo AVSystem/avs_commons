@@ -313,3 +313,71 @@ const void *avs_stream_v_table_find_extension(avs_stream_abstract_t *stream,
     }
     return NULL;
 }
+
+static int unimplemented() {
+    return -1;
+}
+
+static int outbuf_stream_write(avs_stream_abstract_t *stream_,
+                               const void *buffer,
+                               size_t buffer_length) {
+    avs_stream_outbuf_t *stream = (avs_stream_outbuf_t *) stream_;
+    if (stream->message_finished
+            || stream->buffer_ptr + buffer_length > stream->buffer_size) {
+        return -1;
+    }
+    memcpy(stream->buffer + stream->buffer_ptr, buffer, buffer_length);
+    stream->buffer_ptr += buffer_length;
+    return 0;
+}
+
+static int outbuf_stream_finish(avs_stream_abstract_t *stream) {
+    ((avs_stream_outbuf_t *) stream)->message_finished = 1;
+    return 0;
+}
+
+static int outbuf_stream_reset(avs_stream_abstract_t *stream) {
+    ((avs_stream_outbuf_t *) stream)->message_finished = 0;
+    ((avs_stream_outbuf_t *) stream)->buffer_ptr = 0;
+    return 0;
+}
+
+static int outbuf_stream_close(avs_stream_abstract_t *stream) {
+    (void) stream;
+    return 0;
+}
+
+static const avs_stream_v_table_t outbuf_stream_vtable = {
+    outbuf_stream_write,
+    outbuf_stream_finish,
+    (avs_stream_read_t) unimplemented,
+    (avs_stream_peek_t) unimplemented,
+    (avs_stream_write_subchannel_t) unimplemented,
+    outbuf_stream_reset,
+    outbuf_stream_close,
+    (avs_stream_errno_t) unimplemented,
+    NULL
+};
+
+const avs_stream_outbuf_t AVS_STREAM_OUTBUF_STATIC_INITIALIZER
+        = {&outbuf_stream_vtable, NULL, 0, 0, 0};
+
+size_t avs_stream_outbuf_stream_ptr(avs_stream_outbuf_t *stream) {
+    return stream->buffer_ptr;
+}
+
+int avs_stream_outbuf_set_ptr(avs_stream_outbuf_t *stream, size_t buffer_ptr) {
+    if (buffer_ptr > stream->buffer_ptr) {
+        return -1;
+    }
+    stream->buffer_ptr = buffer_ptr;
+    return 0;
+}
+
+void avs_stream_outbuf_set_buffer(avs_stream_outbuf_t *stream,
+                                  char *buffer,
+                                  size_t buffer_size) {
+    stream->buffer = buffer;
+    stream->buffer_size = buffer_size;
+    stream->buffer_ptr = 0;
+}
