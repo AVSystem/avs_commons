@@ -77,15 +77,15 @@ typedef struct {
     const void * const vtable;
     char *buffer;
     size_t buffer_size;
-    size_t buffer_ptr;
+    size_t buffer_offset;
     char message_finished;
 } avs_stream_outbuf_t;
 
 extern const avs_stream_outbuf_t AVS_STREAM_OUTBUF_STATIC_INITIALIZER;
 
-size_t avs_stream_outbuf_stream_ptr(avs_stream_outbuf_t *stream);
+size_t avs_stream_outbuf_stream_offset(avs_stream_outbuf_t *stream);
 
-int avs_stream_outbuf_set_ptr(avs_stream_outbuf_t *stream, size_t buffer_ptr);
+int avs_stream_outbuf_set_offset(avs_stream_outbuf_t *stream, size_t offset);
 
 void avs_stream_outbuf_set_buffer(avs_stream_outbuf_t *stream,
                                   char *buffer,
