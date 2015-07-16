@@ -280,6 +280,11 @@ if(WITH_AVS_STREAM)
     add_subdirectory(stream)
 endif()
 
+option(WITH_AVS_LOG "AVSystem logging framework" ON)
+if(WITH_AVS_LOG)
+    add_subdirectory(log)
+endif()
+
 configure_file("config/config.h.in" "config/config.h")
 configure_file("include_public/avsystem/commons/defs.h.in" "include_public/avsystem/commons/defs.h")
 
