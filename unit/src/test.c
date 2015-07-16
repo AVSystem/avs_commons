@@ -18,6 +18,7 @@
 #include <string.h>
 #include <inttypes.h>
 #include <getopt.h>
+#include <stdbool.h>
 
 #include <avsystem/commons/defs.h>
 #include <avsystem/commons/list.h>
@@ -75,6 +76,40 @@ static void test_fail_printf(const char *file, int line, const char *fmt, ...) {
     vprintf(fmt, ap);
     printf("\033[0m");
     va_end(ap);
+}
+
+void avs_unit_abort__(const char *msg, const char *file, int line) {
+    test_fail_printf(file, line, msg);
+    abort();
+}
+
+static void test_fail_print_hex_diff(const uint8_t *actual,
+                                     const uint8_t *expected,
+                                     size_t buffer_size,
+                                     size_t diff_start_offset,
+                                     size_t diff_bytes,
+                                     size_t context_size) {
+#define MIN(a, b) ((a) < (b) ? (a) : (b))
+#define MAX(a, b) ((a) > (b) ? (a) : (b))
+
+    size_t start = (size_t)MAX((ssize_t)diff_start_offset - (ssize_t)context_size, 0);
+    size_t end = MIN(diff_start_offset + diff_bytes + context_size, buffer_size);
+
+#undef MIN
+#undef MAX
+
+    size_t i;
+    size_t marker_offset = sizeof("expected:") + 1 + (diff_start_offset - start) * (sizeof(" 00") - 1);
+
+    printf("  actual:");
+    for (i = start; i < end; ++i) {
+        printf(" \033[%dm%02x", actual[i] != expected[i], actual[i]);
+    }
+    printf("\033[0m\nexpected:");
+    for (i = start; i < end; ++i) {
+        printf(" \033[%dm%02x", actual[i] != expected[i], expected[i]);
+    }
+    printf("\033[0m\n%*s\n", (int)marker_offset, "^");
 }
 
 static avs_unit_test_suite_t *find_test_suite(const char *suite_name) {
@@ -239,6 +274,98 @@ void avs_unit_assert_equal_string__(const char *actual,
                          expected, actual);
         longjmp(_avs_unit_jmp_buf, 1);
     }
+}
+
+static size_t find_first__(bool equal,
+                           const uint8_t *a,
+                           const uint8_t *b,
+                           size_t start,
+                           size_t size) {
+    size_t at;
+    for (at = start; at < size; ++at) {
+        if ((a[at] == b[at]) == equal) {
+            return at;
+        }
+    }
+
+    return size;
+}
+
+#define find_first_equal(a, b, start, size) find_first__(true, (a), (b), (start), (size))
+#define find_first_different(a, b, start, size) find_first__(false, (a), (b), (start), (size))
+
+static void print_differences(const void *actual,
+                              const void *expected,
+                              size_t num_bytes) {
+    static const size_t CONTEXT_SIZE = 5;
+    static const size_t MAX_ERRORS = 3;
+    size_t found_errors = 0;
+    size_t at = 0;
+    const uint8_t *actual_ptr = (const uint8_t*)actual;
+    const uint8_t *expected_ptr = (const uint8_t*)expected;
+
+    for (found_errors = 0; found_errors < MAX_ERRORS; ++found_errors) {
+        size_t error_start = find_first_different(actual_ptr, expected_ptr, at, num_bytes);
+        size_t error_end;
+
+        if (error_start >= num_bytes) {
+            return;
+        }
+
+        error_end = find_first_equal(actual_ptr, expected_ptr, error_start, num_bytes);
+
+        while (error_end < num_bytes) {
+            at = find_first_different(actual_ptr, expected_ptr, error_end, num_bytes);
+            if (at - error_end <= CONTEXT_SIZE * 2) {
+                error_end = find_first_equal(actual_ptr, expected_ptr, at, num_bytes);
+            } else {
+                break;
+            }
+        }
+
+        printf("- %lu different byte(s) at offset %lu:\n", error_end - error_start, error_start);
+        test_fail_print_hex_diff(actual_ptr, expected_ptr, num_bytes,
+                                 error_start, error_end - error_start,
+                                 CONTEXT_SIZE);
+    }
+
+    printf("- (more errors skipped)\n");
+}
+
+static void compare_bytes(const void *actual,
+                          const void *expected,
+                          size_t num_bytes,
+                          bool expect_same,
+                          const char *file,
+                          int line) {
+    if (!memcmp(actual, expected, num_bytes) == expect_same) {
+        return;
+    }
+
+    test_fail_printf(file, line, "byte sequences are %sequal:\n",
+                     expect_same ? "not " : "");
+
+    if (expect_same) {
+        print_differences(actual, expected, num_bytes);
+    }
+
+    longjmp(_avs_unit_jmp_buf, 1);
+}
+
+void avs_unit_assert_bytes_equal__(const void *actual,
+                                   const void *expected,
+                                   size_t num_bytes,
+                                   const char *file,
+                                   int line) {
+    compare_bytes(actual, expected, num_bytes, true, file, line);
+}
+
+void avs_unit_assert_bytes_not_equal__(const void *actual,
+                                       const void *expected,
+                                       size_t num_bytes,
+                                       const char *file,
+                                       int line) {
+    compare_bytes(actual, expected, num_bytes, false, file, line);
 }
 
 void avs_unit_assert_not_equal_string__(const char *actual,

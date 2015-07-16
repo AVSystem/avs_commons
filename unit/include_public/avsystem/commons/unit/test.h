@@ -10,7 +10,6 @@
 #ifndef AVS_COMMONS_UNIT_TEST_H
 #define AVS_COMMONS_UNIT_TEST_H
 
-#include <stdlib.h>
 #include <setjmp.h>
 
 #include <avsystem/commons/defs.h>
@@ -79,6 +78,8 @@ void avs_unit_assert_true__(int result,
                        int line);
 void avs_unit_assert_false__(int result, const char *file, int line);
 
+void avs_unit_abort__(const char *msg, const char *file, int line);
+
 typedef struct {
     char actual_str[64];
     char expected_str[64];
@@ -114,6 +115,18 @@ void avs_unit_assert_not_equal_func__(int check_result,
                                       const char *file,
                                       int line);
 
+void avs_unit_assert_bytes_equal__(const void *actual,
+                                   const void *expected,
+                                   size_t num_bytes,
+                                   const char *file,
+                                   int line);
+
+void avs_unit_assert_bytes_not_equal__(const void *actual,
+                                       const void *expected,
+                                       size_t num_bytes,
+                                       const char *file,
+                                       int line);
+
 #define AVS_UNIT_CHECK_EQUAL__(actual, expected, strings)\
 __builtin_choose_expr(__builtin_types_compatible_p(__typeof__(actual), char),\
     avs_unit_check_equal_c__((char) (actual), (char) (expected), (strings)),\
@@ -140,8 +153,19 @@ __builtin_choose_expr(__builtin_types_compatible_p(__typeof__(actual), float),\
 __builtin_choose_expr(__builtin_types_compatible_p(__typeof__(actual), double),\
     avs_unit_check_equal_d__((double) (actual), (double) (expected), (strings)),\
 __builtin_choose_expr(__builtin_types_compatible_p(__typeof__(actual), long double),\
-    avs_unit_check_equal_ld__((long double) (actual), (long double) (expected), (strings)), abort()\
+    avs_unit_check_equal_ld__((long double) (actual), (long double) (expected), (strings)),\
+    avs_unit_abort__("AVS_UNIT_ASSERT_EQUAL called for unsupported data type\n", __FILE__, __LINE__)\
 )))))))))))))
+
+#define AVS_UNIT_ASSERT_EQUAL_BYTES__(actual, expected)\
+__builtin_choose_expr(__builtin_types_compatible_p(__typeof__(expected), const char[]),\
+        avs_unit_assert_bytes_equal__((actual), (expected), sizeof(expected) - 1, __FILE__, __LINE__),\
+        avs_unit_abort__("AVS_UNIT_ASSERT_EQUAL_BYTES called for unsupported data type\n", __FILE__, __LINE__))
+
+#define AVS_UNIT_ASSERT_NOT_EQUAL_BYTES__(actual, expected)\
+__builtin_choose_expr(__builtin_types_compatible_p(__typeof__(expected), const char[]),\
+        avs_unit_assert_bytes_not_equal__((actual), (expected), sizeof(expected) - 1, __FILE__, __LINE__),\
+        avs_unit_abort__("AVS_UNIT_ASSERT_NOT_EQUAL_BYTES called for unsupported data type\n", __FILE__, __LINE__))
 
 void avs_unit_assert_equal_string__(const char *actual,
                                     const char *expected,
@@ -356,6 +380,70 @@ do { \
  */
 #define AVS_UNIT_ASSERT_NOT_EQUAL_STRING(actual, not_expected) \
     avs_unit_assert_not_equal_string__(actual, not_expected, __FILE__, __LINE__)
+
+/**
+ * Asserts that two buffers contain same data.
+ *
+ * This macro shall be called from unit test cases defined in
+ * @ref AVS_UNIT_TEST.
+ *
+ * @param actual    The value returned from code under test.
+ *
+ * @param expected  A null-terminated string literal which contents will be
+ *                  compared to the @p actual. Its length determines number of
+ *                  bytes to compare. Note: the trailing NULL character is NOT
+ *                  considered a part of the string, i.e. only
+ *                  (sizeof(expected) - 1) bytes are compared.
+ */
+#define AVS_UNIT_ASSERT_EQUAL_BYTES(actual, expected) \
+    AVS_UNIT_ASSERT_EQUAL_BYTES__(actual, expected)
+
+/**
+ * Asserts that two buffers contain same data.
+ *
+ * This macro shall be called from unit test cases defined in
+ * @ref AVS_UNIT_TEST.
+ *
+ * @param actual    The value returned from code under test.
+ *
+ * @param expected  The expected value to compare with.
+ *
+ * @param num_bytes Number of bytes in each buffer.
+ */
+#define AVS_UNIT_ASSERT_EQUAL_BYTES_SIZED(actual, expected, num_bytes) \
+    avs_unit_assert_bytes_equal__(actual, expected, num_bytes, __FILE__, __LINE__)
+
+/**
+ * Asserts that two buffers contain different data.
+ *
+ * This macro shall be called from unit test cases defined in
+ * @ref AVS_UNIT_TEST.
+ *
+ * @param actual    The value returned from code under test.
+ *
+ * @param expected  A null-terminated string literal which contents will be
+ *                  compared to the @p actual. Its length determines number of
+ *                  bytes to compare. Note: the trailing NULL character is NOT
+ *                  considered a part of the string, i.e. only
+ *                  (sizeof(expected) - 1) bytes are compared.
+ */
+#define AVS_UNIT_ASSERT_NOT_EQUAL_BYTES(actual, expected) \
+    AVS_UNIT_ASSERT_NOT_EQUAL_BYTES__(actual, expected)
+
+/**
+ * Asserts that two buffers contain different data.
+ *
+ * This macro shall be called from unit test cases defined in
+ * @ref AVS_UNIT_TEST.
+ *
+ * @param actual    The value returned from code under test.
+ *
+ * @param expected  The expected value to compare with.
+ *
+ * @param num_bytes Number of bytes in each buffer.
+ */
+#define AVS_UNIT_ASSERT_NOT_EQUAL_BYTES_SIZED(actual, expected, num_bytes) \
+    avs_unit_assert_bytes_not_equal__(actual, expected, num_bytes, __FILE__, __LINE__)
 
 /**
  * Asserts that the specified pointer is <c>NULL</c>.
