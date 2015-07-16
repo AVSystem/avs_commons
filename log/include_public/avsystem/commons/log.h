@@ -10,10 +10,146 @@
 #ifndef AVS_COMMONS_LOG_H
 #define	AVS_COMMONS_LOG_H
 
+#include <avsystem/commons/defs.h>
+
 #ifdef	__cplusplus
 extern "C" {
 #endif
 
+/**
+ * Specifies log level used by function @ref avs_log_set_level.
+ */
+typedef enum {
+    AVS_LOG_TRACE,
+    AVS_LOG_DEBUG,
+    AVS_LOG_INFO,
+    AVS_LOG_WARNING,
+    AVS_LOG_ERROR,
+    AVS_LOG_QUIET
+} avs_log_level_t;
+
+/**
+ * User-defined handler for logging.
+ *
+ * The messages sent to the log handler are already pre-formatted using the
+ * following format:
+ *
+ * <c><i>log_level</i> [<i>module_name</i>]
+ * [<i>source_file_name</i>:<i>line_number</i>]: <i>message</i></c>
+ *
+ * @param level   Log level of the logged message.
+ *
+ * @param module  Name of the module that generated the message.
+ *
+ * @param message A pre-formatted message to log.
+ */
+typedef void avs_log_handler_t(avs_log_level_t level,
+                               const char *module,
+                               const char *message);
+
+/**
+ * Sets the handler for the library's logging system. There may be only one
+ * handler registered at a time.
+ *
+ * The default log handler prints the log message to <c>stderr</c>.
+ *
+ * For example on implementing a log handler, refer to <c>demo.c</c>, where a
+ * handler using different colors for log levels is used.
+ *
+ * @param log_handler New log handler function to use.
+ */
+void avs_log_set_handler(avs_log_handler_t *log_handler);
+
+/**
+ * @name Logging subsystem internals
+ */
+/**@{*/
+void avs_log_internal__(avs_log_level_t level,
+                        const char *module,
+                        const char *msg, ...)
+        AVS_F_PRINTF(3, 4);
+
+#define AVS_QUOTE(x) #x
+#define AVS_QUOTE_MACRO(x) AVS_QUOTE(x)
+
+#define AVS_LOG_MSG_PREFIX_IMPL__(Level, Module) \
+        #Level " [" #Module "] [" __FILE__ ":" AVS_QUOTE_MACRO(__LINE__) "]: "
+
+#define avs_log_TRACE(...) avs_log_internal__(AVS_LOG_TRACE, __VA_ARGS__)
+#define avs_log_DEBUG(...) avs_log_internal__(AVS_LOG_DEBUG, __VA_ARGS__)
+#define avs_log_INFO(...) avs_log_internal__(AVS_LOG_INFO, __VA_ARGS__)
+#define avs_log_WARNING(...) avs_log_internal__(AVS_LOG_WARNING, __VA_ARGS__)
+#define avs_log_ERROR(...) avs_log_internal__(AVS_LOG_ERROR, __VA_ARGS__)
+
+#define AVS_LOG_MSG_PREFIX__TRACE(Module)   AVS_LOG_MSG_PREFIX_IMPL__(TRACE,   Module)
+#define AVS_LOG_MSG_PREFIX__DEBUG(Module)   AVS_LOG_MSG_PREFIX_IMPL__(DEBUG,   Module)
+#define AVS_LOG_MSG_PREFIX__INFO(Module)    AVS_LOG_MSG_PREFIX_IMPL__(INFO,    Module)
+#define AVS_LOG_MSG_PREFIX__WARNING(Module) AVS_LOG_MSG_PREFIX_IMPL__(WARNING, Module)
+#define AVS_LOG_MSG_PREFIX__ERROR(Module)   AVS_LOG_MSG_PREFIX_IMPL__(ERROR,   Module)
+
+/* enable compiling-in TRACE messages */
+#ifndef AVS_LOG_WITH_TRACE
+#undef avs_log_TRACE
+#define avs_log_TRACE(...) ((void) 0)
+#endif
+
+/* disable compiling-in DEBUG messages */
+#ifdef AVS_LOG_WITHOUT_DEBUG
+#undef cwmp_log_DEBUG
+#define cwmp_log_DEBUG(...) ((void) 0)
+#endif
+
+void avs_log_set_level__(const char *module, avs_log_level_t level);
+/**@}*/
+
+/**
+ * Creates a log message and displays it on a specified error output. Message
+ * format and additional arguments are the same as for standard C library
+ * <c>printf</c>.
+ *
+ * @param Module Name of the module that generates the message, given as a raw
+ *               token.
+ *
+ * @param Level  Log level, specified as a name of @ref avs_log_level_t (other
+ *               than <c>QUIET</c>) with the leading <c>AVS_LOG_</c> omitted.
+ */
+#define avs_log(Module, Level, ...) \
+        avs_log_##Level(#Module, AVS_LOG_MSG_PREFIX__##Level (Module) __VA_ARGS__)
+
+/**
+ * Sets the logging level for a given module. Messages with lower level than the
+ * one set will not be passed to the log writer.
+ *
+ * If not set, the value set via @ref avs_log_set_default_level is used.
+ *
+ * @param Module Name of the module that generates the message, given as a raw
+ *               token.
+ *
+ * @param Level  Log level to set (see @ref avs_log_level_t for list of possible
+ *               values).
+ *
+ * <example>
+ * @code
+ * int main() {
+ *     avs_log_set_level(app, AVS_LOG_DEBUG
+ *     avs_log_set_level(libcwmp, AVS_LOG_INFO);
+ *     // ...
+ * }
+ * @endcode
+ * </example>
+ */
+#define avs_log_set_level(Module, Level) avs_log_set_level__(#Module, Level)
+
+/**
+ * Sets the logging level for a given module. Messages with lower level than the
+ * one set will not be passed to the log writer.
+ *
+ * Default log level is @ref AVS_LOG_INFO.
+ *
+ * @param Level  Log level to set (see @ref avs_log_level_t for list of possible
+ *               values).
+ */
+#define avs_log_set_default_level(Level) avs_log_set_level__(NULL, Level)
 
 #ifdef	__cplusplus
 }
