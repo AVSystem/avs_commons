@@ -203,7 +203,7 @@ void AVS_CONCAT(_avs_unit_suite_init_constructor_##suite##_, __LINE__) (void)  \
 void AVS_CONCAT(_avs_unit_suite_init_constructor_##suite##_, __LINE__) (void) {\
     avs_unit_add_suite_init__(#suite,                                          \
                               AVS_CONCAT(_avs_unit_suite_init_##suite##_,      \
-                                         __LINE__);                            \
+                                         __LINE__));                           \
 }                                                                              \
 static void                                                                    \
 AVS_CONCAT(_avs_unit_suite_init_##suite##_, __LINE__) (int VERBOSE_VAR)
