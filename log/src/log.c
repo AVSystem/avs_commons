@@ -1,3 +1,12 @@
+/*
+ * AVSystem Commons Library
+ *
+ * Copyright (C) 2015 AVSystem <http://www.avsystem.com/>
+ *
+ * This code is free and open source software licensed under the MIT License.
+ * See the LICENSE file for details.
+ */
+
 #define _BSD_SOURCE /* for vsnprintf when not C99 */
 #include <stdarg.h>
 #include <stdbool.h>

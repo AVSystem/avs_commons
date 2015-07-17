@@ -42,4 +42,6 @@ extern void *sbrk (intptr_t __delta);
 #pragma GCC visibility push(default)
 #endif
 
-#cmakedefine WITH_AVS_LOG
+#cmakedefine WITH_INTERNAL_LOGS
+
+#cmakedefine WITH_INTERNAL_TRACE

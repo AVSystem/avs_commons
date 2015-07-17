@@ -33,7 +33,7 @@ set(ALL_SOURCES ${SOURCES} ${PRIVATE_HEADERS} ${PUBLIC_HEADERS})
 include_directories(include_public)
 
 add_library(avs_net STATIC ${ALL_SOURCES})
-if(WITH_AVS_LOG)
+if(WITH_INTERNAL_LOGS)
     target_link_libraries(avs_net avs_log)
     include_directories(../log/include_public)
 endif()

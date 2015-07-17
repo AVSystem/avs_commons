@@ -27,7 +27,7 @@ install(DIRECTORY include_public/
 
 include_directories(${AVS_TEST_INCLUDE_DIRS})
 add_avs_test(avs_buffer ${ALL_SOURCES})
-if(WITH_AVS_LOG)
+if(WITH_INTERNAL_LOGS)
     target_link_libraries(avs_buffer avs_log)
     target_link_libraries(avs_buffer_test avs_log)
     include_directories(../log/include_public)
