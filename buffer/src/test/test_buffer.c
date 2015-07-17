@@ -12,6 +12,14 @@
 
 #include <avsystem/commons/unit/test.h>
 #include <avsystem/commons/buffer.h>
+#include <avsystem/commons/log.h>
+
+
+AVS_UNIT_GLOBAL_INIT(verbose) {
+    if (!verbose) {
+        avs_log_set_default_level(AVS_LOG_QUIET);
+    }
+}
 
 AVS_UNIT_TEST(byte_buffer, free) {
     avs_buffer_t *buffer;

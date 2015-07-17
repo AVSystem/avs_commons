@@ -14,6 +14,13 @@
 
 #include <avsystem/commons/socket_v_table.h>
 
+#ifdef WITH_AVS_LOG
+#include <avsystem/commons/log.h>
+#define LOG(...) avs_log(avs_net, __VA_ARGS__)
+#else
+#define LOG(...) ((void) 0)
+#endif
+
 #ifdef HAVE_VISIBILITY
 #pragma GCC visibility push(hidden)
 #endif

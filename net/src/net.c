@@ -235,6 +235,11 @@ static struct addrinfo *get_addrinfo_net(int socket_type,
     hint.ai_socktype = socket_type;
 
     if ((error = getaddrinfo(localaddr, port, &hint, &info))) {
+#ifdef HAVE_GAI_STRERROR
+        LOG(ERROR, "%s", gai_strerror(error));
+#else
+        LOG(ERROR, "getaddrinfo() error %d", error);
+#endif
         return NULL;
     } else {
         unsigned seed = (unsigned) time(NULL);
@@ -324,6 +329,10 @@ static sa_family_t get_socket_family(int fd) {
 #endif
 
 static int configure_socket(avs_net_socket_t *net_socket) {
+    LOG(TRACE, "configuration '%s' 0x%02x 0x%02x",
+        net_socket->configuration.interface_name,
+        net_socket->configuration.dscp,
+        net_socket->configuration.priority);
     if (net_socket->configuration.interface_name[0]) {
         if (setsockopt(net_socket->socket,
                        SOL_SOCKET,
@@ -331,6 +340,7 @@ static int configure_socket(avs_net_socket_t *net_socket) {
                        net_socket->configuration.interface_name,
                        (socklen_t)
                        strlen(net_socket->configuration.interface_name))) {
+            LOG(ERROR, "setsockopt error: %s", strerror(errno));
             return -1;
         }
     }
@@ -340,6 +350,7 @@ static int configure_socket(avs_net_socket_t *net_socket) {
         socklen_t length = sizeof(priority);
         if (setsockopt(net_socket->socket,
                        SOL_SOCKET, SO_PRIORITY, &priority, length)) {
+            LOG(ERROR, "setsockopt error: %s", strerror(errno));
             return -1;
         }
     }
@@ -347,11 +358,13 @@ static int configure_socket(avs_net_socket_t *net_socket) {
         uint8_t tos;
         socklen_t length = sizeof(tos);
         if (getsockopt(net_socket->socket, IPPROTO_IP, IP_TOS, &tos, &length)) {
+            LOG(ERROR, "getsockopt error: %s", strerror(errno));
             return -1;
         }
         tos &= 0x03; /* clear first 6 bits */
         tos |= (uint8_t) (net_socket->configuration.dscp << 2);
         if (setsockopt(net_socket->socket, IPPROTO_IP, IP_TOS, &tos, length)) {
+            LOG(ERROR, "setsockopt error: %s", strerror(errno));
             return -1;
         }
     }
@@ -495,7 +508,9 @@ static int host_port_to_string(const struct sockaddr *sa, socklen_t salen,
                 || (size_t) retval >= servlen) ? -1 : 0;
     }
 #endif
-    if (!result) {
+    if (result) {
+        LOG(ERROR, "Could not stringify socket address");
+    } else {
         host[hostlen - 1] = '\0';
         serv[servlen - 1] = '\0';
         unwrap_4in6(host);
@@ -510,8 +525,11 @@ static int connect_net(avs_net_abstract_socket_t *net_socket_,
     struct addrinfo *info = NULL, *address = NULL;
 
     if (net_socket->socket >= 0) {
+        LOG(ERROR, "socket is already connected or bound");
         return -1;
     }
+
+    LOG(TRACE, "connecting to [%s]:%s", host, port);
 
     info = get_addrinfo_net(net_socket->type, host, port, AF_UNSPEC, 0,
                             net_socket->configuration.preferred_endpoint);
@@ -519,12 +537,15 @@ static int connect_net(avs_net_abstract_socket_t *net_socket_,
         if ((net_socket->socket = socket(address->ai_family,
                                          address->ai_socktype,
                                          address->ai_protocol)) < 0) {
+            LOG(ERROR, "cannot create socket: %s", strerror(errno));
             continue;
         }
         if (configure_socket(net_socket)) {
+            LOG(WARNING, "socket configuration problem");
             close(net_socket->socket);
             continue;
         }
+        LOG(TRACE, "connect to [%s]:%s", host, port);
         if (connect_with_timeout(net_socket->socket,
                                  address->ai_addr,
                                  address->ai_addrlen) < 0
@@ -535,6 +556,8 @@ static int connect_net(avs_net_abstract_socket_t *net_socket_,
                                        sizeof(net_socket->host),
                                        net_socket->port,
                                        sizeof(net_socket->port))) {
+            LOG(ERROR, "cannot establish connection to [%s]:%s: %s",
+                host, port, strerror(errno));
             close(net_socket->socket);
             continue;
         } else {
@@ -557,6 +580,7 @@ static int connect_net(avs_net_abstract_socket_t *net_socket_,
     }
     freeaddrinfo(info);
     net_socket->socket = -1;
+    LOG(ERROR, "connect_net failed");
     return -1;
 }
 
@@ -570,13 +594,16 @@ static int send_net(avs_net_abstract_socket_t *net_socket_,
     do {
         ssize_t result;
         if (!wait_until_ready(net_socket->socket, NET_SEND_TIMEOUT, 0, 1)) {
+            LOG(ERROR, "timeout (send)");
             return -1;
         }
         result = send(net_socket->socket, ((const char *) buffer) + bytes_sent,
                       buffer_length - bytes_sent, MSG_NOSIGNAL);
         if (result < 0) {
+            LOG(ERROR, "%d:%s", (int) result, strerror(errno));
             return -1;
         } else if (buffer_length != 0 && result == 0) {
+            LOG(ERROR, "send returned 0");
             break;
         } else {
             bytes_sent += (size_t) result;
@@ -585,6 +612,8 @@ static int send_net(avs_net_abstract_socket_t *net_socket_,
     } while (is_stream(net_socket) && bytes_sent < buffer_length);
 
     if (bytes_sent < buffer_length) {
+        LOG(ERROR, "sending fail (%lu/%lu)",
+            (unsigned long) bytes_sent, (unsigned long) buffer_length);
         return -1;
     } else {
         /* SUCCESS */
@@ -684,22 +713,26 @@ static int create_listening_socket(avs_net_socket_t *net_socket,
     int val = 1;
     if ((net_socket->socket = socket(addr->sa_family, net_socket->type, 0))
             < 0) {
+        LOG(ERROR, "cannot create system socket: %s", strerror(errno));
         goto create_listening_socket_error;
     }
     if (is_stream(net_socket)
             && setsockopt(net_socket->socket,
                           SOL_SOCKET, SO_REUSEADDR, &val, sizeof (val))) {
+        LOG(ERROR, "can't set socket opt");
         goto create_listening_socket_error;
     }
     if (configure_socket(net_socket)) {
         goto create_listening_socket_error;
     }
     if (bind(net_socket->socket, addr, addrlen) < 0) {
+        LOG(ERROR, "bind error: %s", strerror(errno));
         retval = -2;
         goto create_listening_socket_error;
     }
     if (is_stream(net_socket)
             && listen(net_socket->socket, NET_LISTEN_BACKLOG) < 0) {
+        LOG(ERROR, "listen error: %s", strerror(errno));
         retval = -3;
         goto create_listening_socket_error;
     }
@@ -709,27 +742,58 @@ create_listening_socket_error:
     return retval;
 }
 
-static int try_bind(avs_net_socket_t *net_socket, int family,
+static int get_af(avs_net_af_t addr_family) {
+    switch (addr_family) {
+    case AVS_NET_AF_INET4:
+        return AF_INET;
+    case AVS_NET_AF_INET6:
+        return AF_INET6;
+    case AVS_NET_AF_UNSPEC:
+    default:
+        return AF_UNSPEC;
+    }
+}
+
+static const char *get_af_name(avs_net_af_t af) {
+    switch (af) {
+    case AVS_NET_AF_INET4:
+        return "AF_INET";
+    case AVS_NET_AF_INET6:
+        return "AF_INET6";
+    case AVS_NET_AF_UNSPEC:
+    default:
+        return "AF_UNSPEC";
+    }
+}
+
+static int try_bind(avs_net_socket_t *net_socket, avs_net_af_t family,
                     const char *localaddr, const char *port) {
     struct addrinfo *info = NULL;
     struct sockaddr_storage addr_storage;
     const struct sockaddr *addr = NULL;
+    int af = get_af(family);
     socklen_t addrlen;
     int retval = -1;
+    if (net_socket->configuration.address_family != AVS_NET_AF_UNSPEC
+            && net_socket->configuration.address_family != family) {
+        return -1;
+    }
     if (localaddr || port) {
         info = get_addrinfo_net(net_socket->type, localaddr, port,
-                                family, AI_ADDRCONFIG | AI_PASSIVE, NULL);
+                                af, AI_ADDRCONFIG | AI_PASSIVE, NULL);
         if (info) {
             addr = info->ai_addr;
             addrlen = info->ai_addrlen;
         }
     } else {
         memset(&addr_storage, 0, sizeof(addr_storage));
-        addr_storage.ss_family = (sa_family_t) family;
+        addr_storage.ss_family = (sa_family_t) af;
         addr = (const struct sockaddr *) &addr_storage;
         addrlen = sizeof(addr_storage);
     }
     if (!addr) {
+        LOG(WARNING, "Cannot get %s address info for %s",
+            get_af_name(family), localaddr ? localaddr : "(null)");
         goto bind_net_end;
     }
     net_socket->state = AVS_NET_SOCKET_STATE_LISTENING;
@@ -748,12 +812,13 @@ static int bind_net(avs_net_abstract_socket_t *net_socket_,
     int retval = -1;
 
     if (net_socket->socket >= 0) {
+        LOG(ERROR, "socket is already connected or bound");
         return -1;
     }
 
-    retval = try_bind(net_socket, AF_INET6, localaddr, port);
+    retval = try_bind(net_socket, AVS_NET_AF_INET6, localaddr, port);
     if (retval) {
-        retval = try_bind(net_socket, AF_INET, localaddr, port);
+        retval = try_bind(net_socket, AVS_NET_AF_INET4, localaddr, port);
     }
     return retval;
 }
@@ -766,6 +831,7 @@ static int accept_net(avs_net_abstract_socket_t *server_net_socket_,
             (avs_net_socket_t *) new_net_socket_;
 
     if (new_net_socket->socket >= 0) {
+        LOG(ERROR, "socket is already connected or bound");
         return -1;
     }
 
@@ -795,13 +861,18 @@ static int accept_net(avs_net_abstract_socket_t *server_net_socket_,
 
 static int check_configuration(const avs_net_socket_configuration_t *configuration) {
     if (strlen(configuration->interface_name) >= IF_NAMESIZE) {
+        LOG(ERROR, "interface name too long <%s>",
+            configuration->interface_name);
         return -1;
 
     }
     if (configuration->dscp >= 64) {
+        LOG(ERROR, "bad DSCP value <%x>", (unsigned) configuration->dscp);
         return -1;
     }
     if (configuration->priority > 7) {
+        LOG(ERROR, "bad priority value <%d>",
+            (unsigned) configuration->priority);
         return -1;
     }
     return 0;
@@ -811,6 +882,7 @@ static void
 store_configuration(avs_net_socket_t *socket,
                     const avs_net_socket_configuration_t *configuration) {
     memcpy(&socket->configuration, configuration, sizeof(*configuration));
+    LOG(TRACE, "stored socket configuration");
 }
 
 static int create_net_socket(avs_net_abstract_socket_t **socket,
@@ -842,6 +914,8 @@ static int create_net_socket(avs_net_abstract_socket_t **socket,
             } else {
                 store_configuration((avs_net_socket_t*) *socket, configuration);
             }
+        } else {
+            LOG(TRACE, "no additional socket configuration");
         }
         return 0;
     } else {
@@ -857,18 +931,6 @@ int _avs_net_create_tcp_socket(avs_net_abstract_socket_t **socket,
 int _avs_net_create_udp_socket(avs_net_abstract_socket_t **socket,
                                const void *socket_configuration) {
     return create_net_socket(socket, SOCK_DGRAM, socket_configuration);
-}
-
-static int get_af(avs_net_af_t addr_family) {
-    switch (addr_family) {
-    case AVS_NET_AF_INET4:
-        return AF_INET;
-    case AVS_NET_AF_INET6:
-        return AF_INET6;
-    case AVS_NET_AF_UNSPEC:
-    default:
-        return AF_UNSPEC;
-    }
 }
 
 static avs_net_af_t get_avs_af(int af) {
@@ -1024,6 +1086,7 @@ static int get_opt_net(avs_net_abstract_socket_t *net_socket_,
         }
     }
     default:
+        LOG(ERROR, "get_opt_net: unknown or unsupported option key");
         return -1;
     }
 }
@@ -1037,6 +1100,7 @@ static int set_opt_net(avs_net_abstract_socket_t *net_socket_,
         net_socket->recv_timeout = option_value.recv_timeout;
         return 0;
     default:
+        LOG(ERROR, "set_opt_net: unknown or unsupported option key");
         return -1;
     }
 }
