@@ -15,9 +15,14 @@ set(PUBLIC_HEADERS
 
 set(ALL_SOURCES ${SOURCES} ${PUBLIC_HEADERS})
 
-include_directories(include_public)
+set(INCLUDE_DIRS include_public ../list/include_public)
+make_absolute_sources(ABSOLUTE_INCLUDE_DIRS ${INCLUDE_DIRS})
+set(AVS_TEST_INCLUDE_DIRS "${ABSOLUTE_INCLUDE_DIRS}" PARENT_SCOPE)
+
+include_directories(${INCLUDE_DIRS})
 
 add_library(avs_log STATIC ${ALL_SOURCES})
+target_link_libraries(avs_log avs_list)
 
 avs_install_export(avs_log log)
 install(DIRECTORY include_public/

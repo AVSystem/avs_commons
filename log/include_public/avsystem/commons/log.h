@@ -64,9 +64,14 @@ void avs_log_set_handler(avs_log_handler_t *log_handler);
  * @name Logging subsystem internals
  */
 /**@{*/
-void avs_log_internal__(avs_log_level_t level,
-                        const char *module,
-                        const char *msg, ...)
+void avs_log_internal_v__(avs_log_level_t level,
+                          const char *module,
+                          const char *msg,
+                          va_list ap);
+
+void avs_log_internal_l__(avs_log_level_t level,
+                          const char *module,
+                          const char *msg, ...)
         AVS_F_PRINTF(3, 4);
 
 #define AVS_QUOTE(x) #x
@@ -75,11 +80,14 @@ void avs_log_internal__(avs_log_level_t level,
 #define AVS_LOG_MSG_PREFIX_IMPL__(Level, Module) \
         #Level " [" #Module "] [" __FILE__ ":" AVS_QUOTE_MACRO(__LINE__) "]: "
 
-#define avs_log_TRACE(...) avs_log_internal__(AVS_LOG_TRACE, __VA_ARGS__)
-#define avs_log_DEBUG(...) avs_log_internal__(AVS_LOG_DEBUG, __VA_ARGS__)
-#define avs_log_INFO(...) avs_log_internal__(AVS_LOG_INFO, __VA_ARGS__)
-#define avs_log_WARNING(...) avs_log_internal__(AVS_LOG_WARNING, __VA_ARGS__)
-#define avs_log_ERROR(...) avs_log_internal__(AVS_LOG_ERROR, __VA_ARGS__)
+#define AVS_LOG_IMPL__(Level, Variant, ...) \
+        avs_log_internal_##Variant##__(Level, __VA_ARGS__)
+
+#define AVS_LOG__TRACE(...) AVS_LOG_IMPL__(AVS_LOG_TRACE, __VA_ARGS__)
+#define AVS_LOG__DEBUG(...) AVS_LOG_IMPL__(AVS_LOG_DEBUG, __VA_ARGS__)
+#define AVS_LOG__INFO(...) AVS_LOG_IMPL__(AVS_LOG_INFO, __VA_ARGS__)
+#define AVS_LOG__WARNING(...) AVS_LOG_IMPL__(AVS_LOG_WARNING, __VA_ARGS__)
+#define AVS_LOG__ERROR(...) AVS_LOG_IMPL__(AVS_LOG_ERROR, __VA_ARGS__)
 
 #define AVS_LOG_MSG_PREFIX__TRACE(Module)   AVS_LOG_MSG_PREFIX_IMPL__(TRACE,   Module)
 #define AVS_LOG_MSG_PREFIX__DEBUG(Module)   AVS_LOG_MSG_PREFIX_IMPL__(DEBUG,   Module)
@@ -89,14 +97,14 @@ void avs_log_internal__(avs_log_level_t level,
 
 /* enable compiling-in TRACE messages */
 #ifndef AVS_LOG_WITH_TRACE
-#undef avs_log_TRACE
-#define avs_log_TRACE(...) ((void) 0)
+#undef AVS_LOG__TRACE
+#define AVS_LOG__TRACE(...) ((void) 0)
 #endif
 
 /* disable compiling-in DEBUG messages */
 #ifdef AVS_LOG_WITHOUT_DEBUG
-#undef cwmp_log_DEBUG
-#define cwmp_log_DEBUG(...) ((void) 0)
+#undef AVS_LOG__DEBUG
+#define AVS_LOG__DEBUG(...) ((void) 0)
 #endif
 
 void avs_log_set_level__(const char *module, avs_log_level_t level);
@@ -114,7 +122,21 @@ void avs_log_set_level__(const char *module, avs_log_level_t level);
  *               than <c>QUIET</c>) with the leading <c>AVS_LOG_</c> omitted.
  */
 #define avs_log(Module, Level, ...) \
-        avs_log_##Level(#Module, AVS_LOG_MSG_PREFIX__##Level (Module) __VA_ARGS__)
+        AVS_LOG__##Level(l, #Module, AVS_LOG_MSG_PREFIX__##Level (Module) __VA_ARGS__)
+
+/**
+ * Creates a log message and displays it on a specified error output. Message
+ * format and additional arguments are the same as for standard C library
+ * <c>vprintf</c>.
+ *
+ * @param Module Name of the module that generates the message, given as a raw
+ *               token.
+ *
+ * @param Level  Log level, specified as a name of @ref avs_log_level_t (other
+ *               than <c>QUIET</c>) with the leading <c>AVS_LOG_</c> omitted.
+ */
+#define avs_log_v(Module, Level, ...) \
+        AVS_LOG__##Level(v, #Module, AVS_LOG_MSG_PREFIX__##Level (Module) __VA_ARGS__)
 
 /**
  * Sets the logging level for a given module. Messages with lower level than the
