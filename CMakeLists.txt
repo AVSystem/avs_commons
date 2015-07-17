@@ -26,6 +26,7 @@ set(CPACK_SOURCE_IGNORE_FILES
     \\\\.so\\\\.
     /list/avs_list_test\\$
     /buffer/avs_buffer_test\\$
+    /log/avs_log_test\\$
     /nbproject
     \\\\.log\\$
     /CMakeFiles/

@@ -41,6 +41,12 @@ typedef struct {
 
 static AVS_LIST(module_level_t) MODULE_LEVELS = NULL;
 
+void avs_log_reset(void) {
+    AVS_LIST_CLEAR(&MODULE_LEVELS);
+    avs_log_set_handler(default_log_handler);
+    avs_log_set_default_level(AVS_LOG_INFO);
+}
+
 static volatile avs_log_level_t *level_for(const char *module, bool create) {
     if (module) {
         AVS_LIST(module_level_t) *entry_ptr;
@@ -96,3 +102,7 @@ void avs_log_internal_l__(avs_log_level_t level,
 void avs_log_set_level__(const char *module, avs_log_level_t level) {
     *level_for(module, true) = level;
 }
+
+#ifdef AVS_UNIT_TESTING
+#include "test/test_log.c"
+#endif

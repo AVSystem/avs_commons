@@ -29,3 +29,6 @@ install(DIRECTORY include_public/
         COMPONENT log
         DESTINATION ${INCLUDE_INSTALL_DIR}
         FILES_MATCHING REGEX "[.]h$")
+
+include_directories(${AVS_TEST_INCLUDE_DIRS})
+add_avs_test(avs_log ${ALL_SOURCES})

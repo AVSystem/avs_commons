@@ -61,6 +61,12 @@ typedef void avs_log_handler_t(avs_log_level_t level,
 void avs_log_set_handler(avs_log_handler_t *log_handler);
 
 /**
+ * Resets the logging system to default settings and frees all resources that
+ * may be used by it.
+ */
+void avs_log_reset(void);
+
+/**
  * @name Logging subsystem internals
  */
 /**@{*/
