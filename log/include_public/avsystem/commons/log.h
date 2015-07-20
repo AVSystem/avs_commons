@@ -59,6 +59,45 @@ typedef void avs_log_handler_t(avs_log_level_t level,
  * handler using different colors for log levels is used.
  *
  * @param log_handler New log handler function to use.
+ *
+ * <example>
+ * @code
+ * static int get_color_for_level(avs_log_level_t level) {
+ *     switch (level) {
+ *     case AVS_LOG_TRACE:
+ *     case AVS_LOG_DEBUG:
+ *         return 37; // white
+ *     case AVS_LOG_INFO:
+ *         return 32; // green
+ *     case AVS_LOG_WARNING:
+ *         return 33; // yellow
+ *     case AVS_LOG_ERROR:
+ *         return 31; // red
+ *     }
+ *     return 37; // white
+ * }
+ *
+ * static void demo_log_handler(avs_log_level_t level,
+ *                              const char *module,
+ *                              const char *message) {
+ *     (void) module;
+ *     char time_buf[256] = "";
+ *     time_t current_time;
+ *     struct tm current_tm;
+ *     current_time = time(NULL);
+ *     memset(&current_tm, 0, sizeof (current_tm));
+ *     localtime_r(&current_time, &current_tm);
+ *     strftime(time_buf, sizeof (time_buf), "%c", &current_tm);
+ *     fprintf(stderr, "\033[0;%dm%s %s\033[0m\n",
+ *             get_color_for_level(level), time_buf, message);
+ * }
+ *
+ * int main() {
+ *     avs_log_set_handler(demo_log_handler);
+ *     // ...
+ * }
+ * @endcode
+ * </example>
  */
 void avs_log_set_handler(avs_log_handler_t *log_handler);
 
@@ -161,7 +200,7 @@ void avs_log_set_level__(const char *module, avs_log_level_t level);
  * <example>
  * @code
  * int main() {
- *     avs_log_set_level(app, AVS_LOG_DEBUG
+ *     avs_log_set_level(app, AVS_LOG_DEBUG);
  *     avs_log_set_level(libcwmp, AVS_LOG_INFO);
  *     // ...
  * }
