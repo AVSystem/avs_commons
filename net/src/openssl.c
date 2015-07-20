@@ -121,7 +121,7 @@ static const avs_net_socket_v_table_t ssl_vtable = {
 #else /* !AVS_LOG_WITH_TRACE */
 
 #define log_openssl_error(socket) \
-    LOG(ERROR, "%s", ERR_error_string(ERR_get_error(), NULL))
+    LOG(ERROR, "OpenSSL error %lu", ERR_get_error())
 
 #endif /* AVS_LOG_WITH_TRACE */
 
