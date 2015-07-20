@@ -13,6 +13,8 @@
 #include <stdarg.h>
 #include <stddef.h>
 
+#include <avsystem/commons/defs.h>
+
 #ifdef	__cplusplus
 extern "C" {
 #endif
@@ -26,9 +28,8 @@ int avs_stream_write(avs_stream_abstract_t *stream,
 
 int avs_stream_finish_message(avs_stream_abstract_t *stream);
 
-/* The format string is not exactly printf-like, but it's mostly a subset */
 int avs_stream_write_f(avs_stream_abstract_t *stream,
-                       const char *msg, ...) /*CWMP_F_PRINTF(2, 3)*/;
+                       const char *msg, ...) AVS_F_PRINTF(2, 3);
 
 int avs_stream_write_fv(avs_stream_abstract_t *stream,
                         const char *msg,

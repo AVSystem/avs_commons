@@ -26,6 +26,9 @@
 #include <avsystem/commons/stream.h>
 #include <avsystem/commons/stream_v_table.h>
 
+#define MODULE_NAME avs_stream
+#include <x_log_config.h>
+
 #ifdef HAVE_VISIBILITY
 #pragma GCC visibility push(hidden)
 #endif
@@ -368,6 +371,7 @@ size_t avs_stream_outbuf_stream_offset(avs_stream_outbuf_t *stream) {
 
 int avs_stream_outbuf_set_offset(avs_stream_outbuf_t *stream, size_t offset) {
     if (offset > stream->buffer_offset) {
+        LOG(ERROR, "outbuf stream offset cannot be advanced");
         return -1;
     }
     stream->buffer_offset = offset;

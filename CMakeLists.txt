@@ -26,6 +26,7 @@ set(CPACK_SOURCE_IGNORE_FILES
     \\\\.so\\\\.
     /list/avs_list_test\\$
     /buffer/avs_buffer_test\\$
+    /log/avs_log_test\\$
     /nbproject
     \\\\.log\\$
     /CMakeFiles/
@@ -50,6 +51,7 @@ add_custom_target(dist COMMAND ${CMAKE_CPACK_COMMAND} --config ${CMAKE_BINARY_DI
 
 set(WITH_ADDITIONAL_LIBRARY_SUFFIXES "" CACHE STRING "Additional library file name suffixes")
 set(CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_FIND_LIBRARY_SUFFIXES} ${WITH_ADDITIONAL_LIBRARY_SUFFIXES})
+set(CMAKE_USE_RELATIVE_PATHS TRUE)
 
 ################# LIBRARIES ####################################################
 
@@ -152,6 +154,7 @@ include(CheckIncludeFiles)
 check_include_files("net/if.h" AVS_HAS_NET_IF_H)
 
 include(CheckFunctionExists)
+check_function_exists(gai_strerror HAVE_GAI_STRERROR)
 check_function_exists(getifaddrs HAVE_GETIFADDRS)
 check_function_exists(getnameinfo HAVE_GETNAMEINFO)
 check_function_exists(inet_ntop HAVE_INET_NTOP)
@@ -205,6 +208,17 @@ if(DOXYGEN_FOUND)
 endif()
 
 option(WITH_AVS_UNIT "AVSystem unit test library" ON)
+option(WITH_AVS_BUFFER "AVSystem buffer implementation" ON)
+option(WITH_AVS_LIST "AVSystem generic linked list implementation" ON)
+option(WITH_AVS_NET "AVSystem network communication abstraction layer" ON)
+option(WITH_AVS_STREAM "AVSystem IO stream abstraction layer" ON)
+option(WITH_AVS_LOG "AVSystem logging framework" ON)
+
+include(CMakeDependentOption)
+
+cmake_dependent_option(WITH_INTERNAL_LOGS "Enable logging from inside AVSystem Commons libraries" ON WITH_AVS_LOG OFF)
+cmake_dependent_option(WITH_INTERNAL_TRACE "Enable TRACE-level logs inside AVSystem Commons libraries" OFF WITH_INTERNAL_LOGS OFF)
+
 if(WITH_AVS_UNIT)
     macro(add_avs_test NAME)
         add_executable(${NAME}_test EXCLUDE_FROM_ALL ${ARGN})
@@ -230,17 +244,14 @@ else()
     endmacro()
 endif()
 
-option(WITH_AVS_BUFFER "AVSystem buffer implementation" ON)
 if(WITH_AVS_BUFFER)
     add_subdirectory(buffer)
 endif()
 
-option(WITH_AVS_LIST "AVSystem generic linked list implementation" ON)
 if(WITH_AVS_LIST)
     add_subdirectory(list)
 endif()
 
-option(WITH_AVS_NET "AVSystem network communication abstraction layer" ON)
 if(WITH_AVS_NET)
     if(WITH_OPENSSL)
         if(NOT OPENSSL_FOUND)
@@ -275,9 +286,12 @@ if(WITH_AVS_NET)
     add_subdirectory(net)
 endif()
 
-option(WITH_AVS_STREAM "AVSystem IO stream abstraction layer" ON)
 if(WITH_AVS_STREAM)
     add_subdirectory(stream)
+endif()
+
+if(WITH_AVS_LOG)
+    add_subdirectory(log)
 endif()
 
 configure_file("config/config.h.in" "config/config.h")

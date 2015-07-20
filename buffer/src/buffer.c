@@ -15,6 +15,9 @@
 
 #include <avsystem/commons/buffer.h>
 
+#define MODULE_NAME avs_buffer
+#include <x_log_config.h>
+
 #ifdef HAVE_VISIBILITY
 #pragma GCC visibility push(hidden)
 #endif
@@ -47,6 +50,7 @@ int avs_buffer_create(avs_buffer_t **buffer_ptr, size_t capacity) {
         avs_buffer_reset(*buffer_ptr);
         return 0;
     } else {
+        LOG(ERROR, "cannot allocate buffer");
         return -1;
     }
 }
@@ -84,6 +88,7 @@ char *avs_buffer_raw_insert_ptr(avs_buffer_t *buffer) {
 
 int avs_buffer_consume_bytes(avs_buffer_t *buffer, size_t bytes_count) {
     if (bytes_count > avs_buffer_data_size(buffer)) {
+        LOG(ERROR, "not enough data");
         return -1;
     }
     buffer->begin += bytes_count;
@@ -95,6 +100,7 @@ int avs_buffer_append_bytes(avs_buffer_t *buffer,
                             const void *data,
                             size_t data_length) {
     if (data_length > avs_buffer_space_left(buffer)) {
+        LOG(ERROR, "buffer too small");
         return -1;
     } else {
         if (data_length > space_left_without_moving(buffer)) {
@@ -108,6 +114,7 @@ int avs_buffer_append_bytes(avs_buffer_t *buffer,
 
 int avs_buffer_advance_ptr(avs_buffer_t *buffer, size_t n) {
     if (n > avs_buffer_space_left(buffer)) {
+        LOG(ERROR, "position out of bounds");
         return -1;
     } else {
         if (n > space_left_without_moving(buffer)) {

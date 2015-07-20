@@ -20,6 +20,9 @@
 
 #include "avsystem/commons/stream/net.h"
 
+#define MODULE_NAME avs_stream
+#include <x_log_config.h>
+
 #ifdef HAVE_VISIBILITY
 #pragma GCC visibility push(hidden)
 #endif
@@ -35,7 +38,9 @@ typedef struct buffered_netstream_struct {
 } buffered_netstream_t;
 
 static void set_errno(buffered_netstream_t *stream) {
-    if (!stream->errno_) {
+    if (stream->errno_) {
+        LOG(TRACE, "error already set");
+    } else {
         stream->errno_ = errno;
     }
 }
@@ -115,6 +120,7 @@ static int in_buffer_read_some(buffered_netstream_t *stream,
     size_t space_left = avs_buffer_space_left(in_buffer);
 
     if (!space_left) {
+        LOG(ERROR, "cannot read more data - buffer is full");
         return -1;
     }
 
@@ -213,8 +219,10 @@ static int buffered_netstream_peek(avs_stream_abstract_t *stream_,
         while (offset >= avs_buffer_data_size(stream->in_buffer)) {
             size_t bytes_read;
             if (in_buffer_read_some(stream, &bytes_read)) {
+                LOG(ERROR, "cannot peek - read error");
                 return EOF;
             } else if (bytes_read == 0) {
+                LOG(ERROR, "cannot peek - 0 bytes read");
                 return EOF;
             }
         }
@@ -222,6 +230,7 @@ static int buffered_netstream_peek(avs_stream_abstract_t *stream_,
     } else {
         errno = EINVAL;
         set_errno(stream);
+        LOG(ERROR, "cannot peek - buffer is too small");
         return EOF;
     }
 }
@@ -298,6 +307,7 @@ int avs_stream_netbuf_create(avs_stream_abstract_t **stream_,
     buffered_netstream_t *stream = NULL;
     *stream_ = (avs_stream_abstract_t*) calloc(1, sizeof(buffered_netstream_t));
     if (!*stream_) {
+        LOG(ERROR, "cannot allocate memory");
         return -1;
     }
     stream = (buffered_netstream_t*) * stream_;
@@ -306,9 +316,11 @@ int avs_stream_netbuf_create(avs_stream_abstract_t **stream_,
 
     stream->socket = socket;
     if (avs_buffer_create(&stream->in_buffer, in_buffer_size)) {
+        LOG(ERROR, "cannot create input buffer");
         goto buffered_netstream_create_error;
     }
     if (avs_buffer_create(&stream->out_buffer, out_buffer_size)) {
+        LOG(ERROR, "cannot create output buffer");
         goto buffered_netstream_create_error;
     }
     return 0;
@@ -328,6 +340,7 @@ int avs_stream_netbuf_transfer(avs_stream_abstract_t *destination_,
 
     if (source->vtable != &buffered_netstream_vtable
             || destination->vtable != &buffered_netstream_vtable) {
+        LOG(ERROR, "buffers can be transferred only between netbuf streams");
         return -1;
     }
 
@@ -335,6 +348,7 @@ int avs_stream_netbuf_transfer(avs_stream_abstract_t *destination_,
             < avs_buffer_data_size(source->out_buffer)
             || avs_buffer_space_left(destination->in_buffer)
             < avs_buffer_data_size(source->in_buffer)) {
+        LOG(ERROR, "no space left in destination buffer");
         return -1;
     }
 
@@ -355,6 +369,7 @@ int avs_stream_netbuf_transfer(avs_stream_abstract_t *destination_,
 int avs_stream_netbuf_out_buffer_left(avs_stream_abstract_t *str) {
     buffered_netstream_t *stream = (buffered_netstream_t *) str;
     if (stream->vtable != &buffered_netstream_vtable) {
+        LOG(ERROR, "not a buffered_netstream");
         return -1;
     }
     return (int) avs_buffer_space_left(stream->out_buffer);

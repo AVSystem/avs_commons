@@ -1,3 +1,5 @@
+#cmakedefine HAVE_GAI_STRERROR
+
 #cmakedefine HAVE_GETIFADDRS
 
 #cmakedefine HAVE_GETNAMEINFO
@@ -39,3 +41,7 @@ extern void *sbrk (intptr_t __delta);
 /* set default visibility for external symbols */
 #pragma GCC visibility push(default)
 #endif
+
+#cmakedefine WITH_INTERNAL_LOGS
+
+#cmakedefine WITH_INTERNAL_TRACE

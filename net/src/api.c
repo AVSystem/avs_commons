@@ -179,6 +179,7 @@ get_constructor_for_socket_type(avs_net_socket_type_t type) {
         return _avs_net_create_dtls_socket;
 #endif
     default:
+        LOG(ERROR, "unknown socket type");
         return NULL;
     }
 }
@@ -192,6 +193,7 @@ static int create_bare_socket(avs_net_abstract_socket_t **socket,
     if (constructor) {
         return constructor(socket, configuration);
     } else {
+        LOG(ERROR, "cannot create socket");
         return -1;
     }
 }

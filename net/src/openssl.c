@@ -44,7 +44,7 @@ typedef struct {
     SSL_CTX *ctx;
     SSL *ssl;
     int verification;
-#ifdef WITH_TRACE
+#ifdef AVS_LOG_WITH_TRACE
     char *error_buffer;
 #endif
     int64_t next_deadline_ms;
@@ -112,6 +112,18 @@ static const avs_net_socket_v_table_t ssl_vtable = {
     get_opt_ssl,
     set_opt_ssl
 };
+
+#ifdef AVS_LOG_WITH_TRACE
+
+#define log_openssl_error(ssl_socket) \
+    LOG(ERROR, "%s", ERR_error_string(ERR_get_error(), ssl_socket->error_buffer))
+
+#else /* !AVS_LOG_WITH_TRACE */
+
+#define log_openssl_error(socket) \
+    LOG(ERROR, "OpenSSL error %lu", ERR_get_error())
+
+#endif /* AVS_LOG_WITH_TRACE */
 
 static avs_net_af_t get_socket_af(avs_net_abstract_socket_t *sock) {
     avs_net_socket_opt_value_t opt_value;
@@ -419,6 +431,7 @@ static int verify_peer_subject_cn(ssl_socket_t *ssl_socket,
     /* check whether CN matches host portion of ACS URL */
     peer_certificate = SSL_get_peer_certificate(ssl_socket->ssl);
     if (!peer_certificate) {
+        LOG(ERROR, "Cannot load peer certificate");
         return -1;
     }
     X509_NAME_oneline(X509_get_subject_name(peer_certificate),
@@ -432,6 +445,7 @@ static int verify_peer_subject_cn(ssl_socket_t *ssl_socket,
         cn += 3;
     }
     if (cn == NULL || strcmp(cn, host)) {
+        LOG(ERROR, "Subject CN(%s) does not match ACS URL (%s)", cn, host);
         return -1;
     }
 
@@ -442,6 +456,7 @@ static int ssl_handshake(ssl_socket_t *socket) {
     avs_net_socket_opt_value_t state_opt;
     if (avs_net_socket_get_opt(socket->backend_socket,
                                AVS_NET_SOCKET_OPT_STATE, &state_opt)) {
+        LOG(ERROR, "ssl_handshake: could not get socket state");
         return -1;
     }
     if (state_opt.state == AVS_NET_SOCKET_STATE_CONSUMING) {
@@ -450,13 +465,16 @@ static int ssl_handshake(ssl_socket_t *socket) {
     if (state_opt.state == AVS_NET_SOCKET_STATE_SERVING) {
         return SSL_accept(socket->ssl);
     }
+    LOG(ERROR, "ssl_handshake: invalid socket state");
     return -1;
 }
 
 static int start_ssl(ssl_socket_t *socket, const char *host) {
     BIO *bio = NULL;
+    LOG(TRACE, "start_ssl(socket=%p)", (void *) socket);
 
     if (socket->ssl) {
+        LOG(ERROR, "SSL socket already connected");
         return -1;
     }
 
@@ -471,15 +489,23 @@ static int start_ssl(ssl_socket_t *socket, const char *host) {
 
     bio = avs_bio_spawn(socket);
     if (!bio) {
+        LOG(ERROR, "cannot create BIO object");
         return -1;
     }
     SSL_set_bio(socket->ssl, bio, bio);
 
-    if (ssl_handshake(socket) <= 0) {
-        return -1;
+    {
+        int handshake_result = ssl_handshake(socket);
+        if (handshake_result <= 0) {
+            LOG(ERROR, "SSL handshake failed.");
+            log_openssl_error(socket);
+            LOG(TRACE, "handshake_result = %d", handshake_result);
+            return -1;
+        }
     }
 
     if (socket->verification && verify_peer_subject_cn(socket, host) != 0) {
+        LOG(ERROR, "server certificate verification failure");
         return -1;
     }
 
@@ -491,12 +517,15 @@ static int connect_ssl(avs_net_abstract_socket_t *socket_,
                        const char *port) {
     int result;
     ssl_socket_t *socket = (ssl_socket_t *) socket_;
+    LOG(TRACE, "connect_ssl(socket=%p, host=%s, port=%s)",
+        (void *) socket, host, port);
 
     if (avs_net_socket_create(&socket->backend_socket, socket->backend_type,
                               &socket->backend_configuration)) {
         return -1;
     }
     if (avs_net_socket_connect(socket->backend_socket, host, port)) {
+        LOG(ERROR, "cannot establish TCP connection");
         return -1;
     }
 
@@ -512,6 +541,8 @@ static int decorate_ssl(avs_net_abstract_socket_t *socket_,
     char host[NET_MAX_HOSTNAME_SIZE];
     int result;
     ssl_socket_t *socket = (ssl_socket_t *) socket_;
+    LOG(TRACE, "decorate_ssl(socket=%p, backend_socket=%p)",
+        (void *) socket, (void *) backend_socket);
 
     if (socket->backend_socket) {
         avs_net_socket_cleanup(&socket->backend_socket);
@@ -535,6 +566,7 @@ static int load_ca_certs(const char *ca_cert_path,
                          ssl_socket_t *socket) {
 
     if (!ca_cert_path && !ca_cert_file) {
+        LOG(ERROR, "no certificate for CA provided");
         return -1;
     }
 
@@ -562,13 +594,16 @@ static int load_client_cert(const char *client_cert_file,
                             ssl_socket_t *socket) {
 
     if (!client_cert_file) {
+        LOG(TRACE, "client certificate not specified");
         return 0;
     }
     if (!client_key_file || !client_key_password) {
+        LOG(ERROR, "private key with password not specified");
         return -1;
     }
 
     if (!SSL_CTX_use_certificate_chain_file(socket->ctx, client_cert_file)) {
+        log_openssl_error(socket);
         return -1;
     }
 
@@ -579,6 +614,7 @@ static int load_client_cert(const char *client_cert_file,
     if (!SSL_CTX_use_PrivateKey_file(socket->ctx,
                                      client_key_file,
                                      SSL_FILETYPE_PEM)) {
+        log_openssl_error(socket);
         return -1;
     }
 
@@ -591,6 +627,9 @@ static int server_auth_enabled(const avs_net_ssl_configuration_t *configuration)
 
 static int configure_ssl(ssl_socket_t *socket,
                          const avs_net_ssl_configuration_t *configuration) {
+    LOG(TRACE, "configure_ssl(socket=%p, configuration=%p)",
+        (void *) socket, (const void *) configuration);
+
     socket->backend_configuration = configuration->backend_configuration;
     if (!socket->backend_configuration.preferred_endpoint) {
         socket->backend_configuration.preferred_endpoint =
@@ -608,6 +647,7 @@ static int configure_ssl(ssl_socket_t *socket,
 #endif
 
     if (!configuration) {
+        LOG(WARNING, "configuration not provided");
         return 0;
     }
 
@@ -620,19 +660,24 @@ static int configure_ssl(ssl_socket_t *socket,
         if (load_ca_certs(configuration->ca_cert_path,
                           configuration->ca_cert_file,
                           socket)) {
+            LOG(ERROR, "Error loading CA certs");
             return -1;
         }
+    } else {
+        LOG(DEBUG, "Server authentication disabled");
     }
 
     if (load_client_cert(configuration->client_cert_file,
                          configuration->client_key_file,
                          configuration->client_key_password,
                          socket)) {
+        LOG(ERROR, "Error loading client certificate");
         return -1;
     }
 
     if (configuration->additional_configuration_clb
             && configuration->additional_configuration_clb(socket->ctx)) {
+        LOG(ERROR, "Error while setting additional SSL configuration");
         return -1;
     }
     return 0;
@@ -649,6 +694,7 @@ static int shutdown_ssl(avs_net_abstract_socket_t *socket_) {
 
 static int close_ssl(avs_net_abstract_socket_t *socket_) {
     ssl_socket_t *socket = (ssl_socket_t *) socket_;
+    LOG(TRACE, "close_ssl(socket=%p)", (void *) socket);
     if (socket->ssl) {
         SSL_shutdown(socket->ssl);
         SSL_free(socket->ssl);
@@ -668,8 +714,12 @@ static int send_ssl(avs_net_abstract_socket_t *socket_,
     ssl_socket_t *socket = (ssl_socket_t *) socket_;
     int result;
 
+    LOG(TRACE, "send_ssl(socket=%p, buffer=%p, buffer_length=%lu)",
+        (void *) socket, buffer, (unsigned long) buffer_length);
+
     result = SSL_write(socket->ssl, buffer, (int) buffer_length);
     if (result < 0 || (size_t) result < buffer_length) {
+        LOG(ERROR, "write failed");
         return -1;
     }
     return 0;
@@ -681,6 +731,8 @@ static int receive_ssl(avs_net_abstract_socket_t *socket_,
                        size_t buffer_length) {
     ssl_socket_t *socket = (ssl_socket_t *) socket_;
     int result;
+    LOG(TRACE, "receive_ssl(socket=%p, buffer=%p, buffer_length=%lu)",
+        (void *) socket, buffer, (unsigned long) buffer_length);
 
     result = SSL_read(socket->ssl, buffer, (int) buffer_length);
     if (result < 0) {
@@ -695,13 +747,14 @@ static int receive_ssl(avs_net_abstract_socket_t *socket_,
 
 static int cleanup_ssl(avs_net_abstract_socket_t **socket_) {
     ssl_socket_t **socket = (ssl_socket_t **) socket_;
+    LOG(TRACE, "cleanup_ssl(*socket=%p)", (void *) *socket);
 
     close_ssl(*socket_);
     if ((*socket)->ctx) {
         SSL_CTX_free((*socket)->ctx);
         (*socket)->ctx = NULL;
     }
-#ifdef WITH_TRACE
+#ifdef AVS_LOG_WITH_TRACE
     free((*socket)->error_buffer);
 #endif
     free(*socket);
@@ -713,13 +766,16 @@ static int avs_ssl_init() {
     static volatile int initialized = 0;
     if (!initialized) {
         initialized = 1;
+        LOG(TRACE, "OpenSSL initialization");
 
         SSL_library_init();
-#ifdef WITH_TRACE
+#ifdef AVS_LOG_WITH_TRACE
         SSL_load_error_strings();
 #endif
         OpenSSL_add_all_algorithms();
-        RAND_load_file("/dev/urandom", -1);
+        if (!RAND_load_file("/dev/urandom", -1)) {
+            LOG(WARNING, "RAND_load_file error");
+        }
         /* On some OpenSSL version, RAND_load file causes hell to break loose.
          * Get rid of any "uninitialized" memory that it created :( */
         VALGRIND_MAKE_MEM_DEFINED_IF_ADDRESSABLE(0, sbrk(0));
@@ -798,18 +854,23 @@ static int initialize_ssl_socket(ssl_socket_t *socket,
     memset(socket, 0, sizeof(*socket));
     *(const avs_net_socket_v_table_t **) (intptr_t) &socket->operations =
             &ssl_vtable;
-#ifdef WITH_TRACE
+#ifdef AVS_LOG_WITH_TRACE
     socket->error_buffer = (char *) malloc(120); /* see 'man ERR_error_string' */
-#endif /* WITH_TRACE */
+    if (!socket->error_buffer) {
+        LOG(WARNING, "Cannot create buffer for OpenSSL error strings");
+    }
+#endif /* AVS_LOG_WITH_TRACE */
     socket->backend_type = backend_type;
 
     if (!(method = ssl_method(backend_type, configuration->version))) {
+        LOG(ERROR, "Unsupported SSL version");
         return -1;
     }
 
     /* older versions of OpenSSL expect non-const pointer here... */
     socket->ctx = SSL_CTX_new((SSL_METHOD *) (intptr_t) method);
     if (socket->ctx == NULL) {
+        log_openssl_error(socket);
         return -1;
     }
 
@@ -819,7 +880,10 @@ static int initialize_ssl_socket(ssl_socket_t *socket,
 static int create_ssl_socket(avs_net_abstract_socket_t **socket,
                              avs_net_socket_type_t backend_type,
                              const void *socket_configuration) {
+    LOG(TRACE, "_cwmp_create_ssl_socket(socket=%p)", (void *) socket);
+
     if (avs_ssl_init()) {
+        LOG(ERROR, "OpenSSL initialization error");
         return -1;
     }
 
@@ -828,12 +892,14 @@ static int create_ssl_socket(avs_net_abstract_socket_t **socket,
         if (initialize_ssl_socket((ssl_socket_t *) * socket, backend_type,
                                   (const avs_net_ssl_configuration_t *)
                                   socket_configuration)) {
+            LOG(ERROR, "socket initialization error");
             avs_net_socket_cleanup(socket);
             return -1;
         } else {
             return 0;
         }
     } else {
+        LOG(ERROR, "memory allocation error");
         return -1;
     }
 }
