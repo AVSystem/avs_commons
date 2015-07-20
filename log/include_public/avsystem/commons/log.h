@@ -10,6 +10,8 @@
 #ifndef AVS_COMMONS_LOG_H
 #define	AVS_COMMONS_LOG_H
 
+#include <stdarg.h>
+
 #include <avsystem/commons/defs.h>
 
 #ifdef	__cplusplus
