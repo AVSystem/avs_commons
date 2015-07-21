@@ -33,10 +33,6 @@ typedef int (*avs_stream_read_t)(avs_stream_abstract_t *stream,
 typedef int (*avs_stream_peek_t)(avs_stream_abstract_t *stream,
                                  size_t offset);
 
-typedef int (*avs_stream_write_subchannel_t)(avs_stream_abstract_t *stream,
-                                             const char *key,
-                                             const char *value);
-
 typedef int (*avs_stream_reset_t)(avs_stream_abstract_t *stream);
 
 typedef int (*avs_stream_close_t)(avs_stream_abstract_t *stream);
@@ -55,7 +51,6 @@ typedef struct {
     avs_stream_finish_message_t finish_message;
     avs_stream_read_t read;
     avs_stream_peek_t peek;
-    avs_stream_write_subchannel_t write_subchannel;
     avs_stream_reset_t reset;
     avs_stream_close_t close;
     avs_stream_errno_t get_errno;

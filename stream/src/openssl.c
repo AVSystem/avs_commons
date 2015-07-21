@@ -67,7 +67,6 @@ static const avs_stream_v_table_t md5_vtable = {
     avs_md5_finish,
     _avs_stream_md5_common_read,
     (avs_stream_peek_t) unimplemented,
-    (avs_stream_write_subchannel_t) unimplemented,
     avs_md5_reset,
     avs_md5_finish,
     (avs_stream_errno_t) unimplemented,
