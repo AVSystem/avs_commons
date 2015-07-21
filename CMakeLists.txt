@@ -158,6 +158,7 @@ check_function_exists(gai_strerror HAVE_GAI_STRERROR)
 check_function_exists(getifaddrs HAVE_GETIFADDRS)
 check_function_exists(getnameinfo HAVE_GETNAMEINFO)
 check_function_exists(inet_ntop HAVE_INET_NTOP)
+check_function_exists(inet_pton HAVE_INET_PTON)
 check_function_exists(poll HAVE_POLL)
 check_function_exists(rand_r HAVE_RAND_R)
 
