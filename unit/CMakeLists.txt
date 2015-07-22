@@ -12,7 +12,9 @@ set(SOURCES
     src/test.c)
 
 set(PUBLIC_HEADERS
+    include_public/avsystem/commons/unit/memstream.h
     include_public/avsystem/commons/unit/mock_helpers.h
+    include_public/avsystem/commons/unit/mocksock.h
     include_public/avsystem/commons/unit/test.h)
 
 macro(make_absolute_sources ABSVAR)
@@ -23,6 +25,20 @@ macro(make_absolute_sources ABSVAR)
 endmacro()
 
 set(INCLUDE_DIRS include_public ../list/include_public)
+set(DEPS_LIBRARIES avs_list)
+
+if(WITH_AVS_NET)
+    set(SOURCES ${SOURCES} src/mocksock.c)
+    set(DEPS_LIBRARIES ${DEPS_LIBRARIES} avs_net)
+    set(INCLUDE_DIRS ${INCLUDE_DIRS} ../net/include_public)
+endif()
+
+if(WITH_AVS_STREAM)
+    set(SOURCES ${SOURCES} src/memstream.c)
+    set(DEPS_LIBRARIES ${DEPS_LIBRARIES} avs_stream)
+    set(INCLUDE_DIRS ${INCLUDE_DIRS} ../stream/include_public)
+endif()
+
 make_absolute_sources(ABSOLUTE_INCLUDE_DIRS ${INCLUDE_DIRS})
 set(AVS_TEST_INCLUDE_DIRS "${ABSOLUTE_INCLUDE_DIRS}" PARENT_SCOPE)
 

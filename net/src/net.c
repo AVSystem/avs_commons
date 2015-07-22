@@ -63,6 +63,12 @@
 const char *_avs_inet_ntop(int af, const void *src, char *dst, socklen_t size);
 #endif
 
+#ifdef HAVE_INET_PTON
+#define _avs_inet_pton inet_pton
+#else
+int _avs_inet_pton(int af, const char *src, void *dst);
+#endif
+
 #ifdef HAVE_RAND_R
 #define _avs_rand_r rand_r
 #else
@@ -1218,5 +1224,26 @@ static int interface_name_net(avs_net_abstract_socket_t *socket_,
             return -1;
         }
         return find_interface((const struct sockaddr *) &addr, if_name);
+    }
+}
+
+static int validate_ip_address(avs_net_af_t family, const char *ip_address) {
+    union {
+        struct in_addr sa4;
+        struct in6_addr sa6;
+    } sa;
+    if (_avs_inet_pton(get_af(family), ip_address, &sa) < 1) {
+        return -1;
+    }
+    return 0;
+}
+
+int avs_net_validate_ip_address(avs_net_af_t family, const char *ip_address) {
+    if (family == AVS_NET_AF_INET4 || family == AVS_NET_AF_INET6) {
+        return validate_ip_address(family, ip_address);
+    } else {
+        return (validate_ip_address(AVS_NET_AF_INET4, ip_address) == 0
+                || validate_ip_address(AVS_NET_AF_INET6, ip_address) == 0)
+                ? 0 : -1;
     }
 }

@@ -15,6 +15,10 @@ if(NOT HAVE_INET_NTOP)
     set(SOURCES ${SOURCES} src/inet_ntop.c)
 endif()
 
+if(NOT HAVE_INET_PTON)
+    set(SOURCES ${SOURCES} src/inet_pton.c)
+endif()
+
 if(WITH_OPENSSL)
     set(SOURCES ${SOURCES} src/openssl.c)
 elseif(WITH_XYSSL)

@@ -272,10 +272,6 @@ static int buffered_netstream_errno(avs_stream_abstract_t *stream) {
     return ((buffered_netstream_t *) stream)->errno_;
 }
 
-static int unimplemented() {
-    return -1;
-}
-
 static const avs_stream_v_table_extension_net_t
 buffered_netstream_net_vtable = {
     buffered_netstream_getsock,
@@ -293,7 +289,6 @@ static const avs_stream_v_table_t buffered_netstream_vtable = {
     buffered_netstream_finish_message,
     buffered_netstream_read,
     buffered_netstream_peek,
-    (avs_stream_write_subchannel_t) unimplemented,
     buffered_netstream_reset,
     buffered_netstream_close,
     buffered_netstream_errno,

@@ -6,6 +6,8 @@
 
 #cmakedefine HAVE_INET_NTOP
 
+#cmakedefine HAVE_INET_PTON
+
 #cmakedefine HAVE_POLL
 
 #cmakedefine HAVE_RAND_R

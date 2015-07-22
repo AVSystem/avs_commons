@@ -64,10 +64,6 @@ int avs_stream_peekline(avs_stream_abstract_t *stream,
                         char *buffer,
                         size_t buffer_length);
 
-int avs_stream_write_subchannel(avs_stream_abstract_t *stream,
-                                const char *key,
-                                const char *value);
-
 int avs_stream_reset(avs_stream_abstract_t *stream);
 
 void avs_stream_cleanup(avs_stream_abstract_t **stream);
@@ -84,7 +80,7 @@ typedef struct {
 
 extern const avs_stream_outbuf_t AVS_STREAM_OUTBUF_STATIC_INITIALIZER;
 
-size_t avs_stream_outbuf_stream_offset(avs_stream_outbuf_t *stream);
+size_t avs_stream_outbuf_offset(avs_stream_outbuf_t *stream);
 
 int avs_stream_outbuf_set_offset(avs_stream_outbuf_t *stream, size_t offset);
 

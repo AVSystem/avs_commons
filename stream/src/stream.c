@@ -62,12 +62,6 @@ int avs_stream_peek(avs_stream_abstract_t *stream,
     return stream->vtable->peek(stream, offset);
 }
 
-int avs_stream_write_subchannel(avs_stream_abstract_t *stream,
-                                  const char *key,
-                                  const char *value) {
-    return stream->vtable->write_subchannel(stream, key, value);
-}
-
 int avs_stream_reset(avs_stream_abstract_t *stream) {
     return stream->vtable->reset(stream);
 }
@@ -355,7 +349,6 @@ static const avs_stream_v_table_t outbuf_stream_vtable = {
     outbuf_stream_finish,
     (avs_stream_read_t) unimplemented,
     (avs_stream_peek_t) unimplemented,
-    (avs_stream_write_subchannel_t) unimplemented,
     outbuf_stream_reset,
     outbuf_stream_close,
     (avs_stream_errno_t) unimplemented,
@@ -365,7 +358,7 @@ static const avs_stream_v_table_t outbuf_stream_vtable = {
 const avs_stream_outbuf_t AVS_STREAM_OUTBUF_STATIC_INITIALIZER
         = {&outbuf_stream_vtable, NULL, 0, 0, 0};
 
-size_t avs_stream_outbuf_stream_offset(avs_stream_outbuf_t *stream) {
+size_t avs_stream_outbuf_offset(avs_stream_outbuf_t *stream) {
     return stream->buffer_offset;
 }
 
