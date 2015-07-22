@@ -81,6 +81,14 @@ typedef union {
     /** @endcond */
 } avs_max_align_t;
 
+/**
+ * C89-compliant replacement for <c>static_assert</c>.
+ */
+#define AVS_STATIC_ASSERT(condition, message) \
+    struct AVS_CONCAT(static_assert_,message) { \
+        char message[(condition) ? 1 : -1]; \
+    }
+
 #ifdef	__cplusplus
 }
 #endif

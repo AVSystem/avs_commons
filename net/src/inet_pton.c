@@ -45,6 +45,8 @@
 #   include <sys/socket.h>
 #endif
 
+#include <avsystem/commons/defs.h>
+
 #define NS_INT16SZ	 2
 #define NS_INADDRSZ	 4
 #define NS_IN6ADDRSZ	16
@@ -53,6 +55,7 @@
  * WARNING: Don't even consider trying to compile this on a system where
  * sizeof(int) < 4.  sizeof(int) > 4 is fine; all the world's not a VAX.
  */
+AVS_STATIC_ASSERT(sizeof(int) >= 4, sane_sizeof_int);
 
 static int inet_pton4(const char *src, void *dst);
 static int inet_pton6(const char *src, void *dst);

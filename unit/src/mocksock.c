@@ -114,7 +114,6 @@ static int mock_send(avs_net_abstract_socket_t *socket_,
                      size_t buffer_length) {
     mocksock_t *socket = (mocksock_t *) socket_;
     AVS_UNIT_ASSERT_TRUE(socket->connected);
-    /* fwrite(buffer, 1, buffer_length, stdout); */
     while (buffer_length > 0) {
         AVS_UNIT_ASSERT_NOT_NULL(socket->expected_data);
         if (socket->expected_data->type == MOCKSOCK_DATA_TYPE_OUTPUT) {
@@ -123,10 +122,10 @@ static int mock_send(avs_net_abstract_socket_t *socket_,
             if (buffer_length < to_send) {
                 to_send = buffer_length;
             }
-            AVS_UNIT_ASSERT_SUCCESS(
-                    memcmp(socket->expected_data->args.valid.data
-                           + socket->expected_data->args.valid.ptr,
-                           buffer, to_send));
+            AVS_UNIT_ASSERT_EQUAL_BYTES_SIZED(buffer,
+                    socket->expected_data->args.valid.data
+                    + socket->expected_data->args.valid.ptr,
+                    to_send);
             socket->expected_data->args.valid.ptr += to_send;
             if (socket->expected_data->args.valid.ptr
                     == socket->expected_data->args.valid.size) {
