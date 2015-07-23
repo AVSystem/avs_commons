@@ -24,7 +24,7 @@ macro(make_absolute_sources ABSVAR)
     endforeach()
 endmacro()
 
-set(INCLUDE_DIRS include_public ../list/include_public)
+set(INCLUDE_DIRS include_public ../list/include_public ../log/include_public)
 set(DEPS_LIBRARIES avs_list)
 
 if(WITH_AVS_NET)

@@ -22,6 +22,7 @@
 
 #include <avsystem/commons/defs.h>
 #include <avsystem/commons/list.h>
+#include <avsystem/commons/log.h>
 #include <avsystem/commons/unit/mock_helpers.h>
 #include <avsystem/commons/unit/test.h>
 
@@ -463,6 +464,94 @@ static void parse_command_line_args(int argc, char* argv[],
     }
 }
 
+static int parse_log_level(const char *str,
+                           avs_log_level_t *level) {
+    if (!strcasecmp(str, "trace")) {
+        *level = AVS_LOG_TRACE;
+    } else if (!strcasecmp(str, "debug")) {
+        *level = AVS_LOG_DEBUG;
+    } else if (!strcasecmp(str, "info")) {
+        *level = AVS_LOG_INFO;
+    } else if (!strcasecmp(str, "warning")) {
+        *level = AVS_LOG_WARNING;
+    } else if (!strcasecmp(str, "error")) {
+        *level = AVS_LOG_ERROR;
+    } else if (!strcasecmp(str, "quiet")) {
+        *level = AVS_LOG_QUIET;
+    } else {
+        return -1;
+    }
+
+    return 0;
+}
+
+static int parse_log_level_definition(const char **def,
+                                      char *out_module,
+                                      size_t module_size,
+                                      char *out_level_str,
+                                      size_t level_str_size,
+                                      avs_log_level_t *out_level) {
+    const char *eq = strchr(*def, '=');
+    const char *end;
+    int result = -1;
+
+    if (!eq) {
+        *def = strchr(*def, ';');
+        if (*def) {
+            ++*def;
+        }
+        return -1;
+    }
+
+    if (!(end = strchr(eq, ';'))) {
+        end = strchr(eq, '\0');
+    }
+
+    if (eq - *def < (ssize_t)module_size
+            && end - (eq + 1) < (ssize_t)level_str_size) {
+        memcpy(out_module, *def, (size_t)(eq - *def));
+        memcpy(out_level_str, eq + 1, (size_t)(end - (eq + 1)));
+
+        if (parse_log_level(out_level_str, out_level)) {
+            test_printf(NORMAL, "invalid log level: %s for module %s\n",
+                        out_level_str, out_module);
+        } else {
+            result = 0;
+        }
+    }
+
+    if (*end) {
+        *def = end + 1;
+    } else {
+        *def = NULL;
+    }
+
+    return result;
+}
+
+static void process_env_vars(void) {
+    const char *log = getenv("AVS_LOG");
+    bool log_levels_changed = false;
+
+    while (log) {
+        char module[128] = "";
+        char level_str[16] = "";
+        avs_log_level_t level;
+
+        if (!parse_log_level_definition(&log, module, sizeof(module),
+                                        level_str, sizeof(level_str), &level)) {
+            avs_log_set_level__(module, level);
+            log_levels_changed = true;
+            test_printf(VERBOSE, "log level set to %s for module %s\n",
+                        level_str, module);
+        }
+    }
+
+    if (log_levels_changed) {
+        atexit(avs_log_reset);
+    }
+}
+
 int main(int argc, char *argv[]) {
     const char * volatile selected_suite = NULL;
     const char * volatile selected_test = NULL;
@@ -471,6 +560,7 @@ int main(int argc, char *argv[]) {
     volatile int tests_result = 0;
 
     parse_command_line_args(argc, argv, &selected_suite, &selected_test);
+    process_env_vars();
 
     AVS_LIST_FOREACH(current_init, global_init) {
         (*current_init)(verbose);

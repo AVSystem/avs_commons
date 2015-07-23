@@ -35,8 +35,8 @@ void avs_log_set_handler(avs_log_handler_t *log_handler) {
 static volatile avs_log_level_t DEFAULT_LEVEL = AVS_LOG_INFO;
 
 typedef struct {
-    const char *module;
     volatile avs_log_level_t level;
+    char module[1];
 } module_level_t;
 
 static AVS_LIST(module_level_t) MODULE_LEVELS = NULL;
@@ -60,10 +60,13 @@ static volatile avs_log_level_t *level_for(const char *module, bool create) {
         if (cmp == 0) {
             return &(*entry_ptr)->level;
         } else if (create) {
-            module_level_t *new_entry = AVS_LIST_NEW_ELEMENT(module_level_t);
+            size_t module_size = strlen(module);
+            module_level_t *new_entry = (module_level_t*)
+                    AVS_LIST_NEW_BUFFER(offsetof(module_level_t, module) + module_size + 1);
             if (new_entry) {
-                new_entry->module = module;
                 new_entry->level = DEFAULT_LEVEL;
+                memcpy(new_entry->module, module, module_size);
+                new_entry->module[module_size] = '\0';
                 AVS_LIST_INSERT(entry_ptr, new_entry);
                 return &new_entry->level;
             }
