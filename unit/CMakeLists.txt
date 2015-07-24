@@ -25,7 +25,7 @@ macro(make_absolute_sources ABSVAR)
 endmacro()
 
 set(INCLUDE_DIRS include_public ../list/include_public ../log/include_public)
-set(DEPS_LIBRARIES avs_list)
+set(DEPS_LIBRARIES avs_list avs_log)
 
 if(WITH_AVS_NET)
     set(SOURCES ${SOURCES} src/mocksock.c)
@@ -45,7 +45,7 @@ set(AVS_TEST_INCLUDE_DIRS "${ABSOLUTE_INCLUDE_DIRS}" PARENT_SCOPE)
 include_directories(${INCLUDE_DIRS})
 
 add_library(avs_unit STATIC ${SOURCES} ${PUBLIC_HEADERS})
-target_link_libraries(avs_unit avs_list)
+target_link_libraries(avs_unit ${DEPS_LIBRARIES})
 
 avs_install_export(avs_unit unit)
 install(DIRECTORY include_public/

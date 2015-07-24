@@ -16,6 +16,7 @@
 
 #include <avsystem/commons/stream_v_table.h>
 #include <avsystem/commons/unit/memstream.h>
+#include <avsystem/commons/unit/test.h>
 
 typedef struct {
     const avs_stream_v_table_t *v_table;
@@ -84,16 +85,26 @@ static int memstream_peek(avs_stream_abstract_t *_stream,
     }
 }
 
+static int memstream_close(avs_stream_abstract_t *stream) {
+    free(((memstream_t*)stream)->buffer);
+    return 0;
+}
+
+static int memstream_fail() {
+    AVS_UNIT_ASSERT_TRUE(0);
+    return 0;
+}
+
 int avs_unit_memstream_alloc(avs_stream_abstract_t** stream,
                              size_t buffer_size) {
     static const avs_stream_v_table_t V_TABLE = {
         memstream_write,
-        NULL,
+        (avs_stream_finish_message_t) memstream_fail,
         memstream_read,
         memstream_peek,
-        NULL,
-        NULL,
-        NULL,
+        (avs_stream_reset_t) memstream_fail,
+        memstream_close,
+        (avs_stream_reset_t) memstream_fail,
         NULL
     };
 
@@ -115,9 +126,4 @@ int avs_unit_memstream_alloc(avs_stream_abstract_t** stream,
 
     *stream = (avs_stream_abstract_t*)ret;
     return 0;
-}
-
-void avs_unit_memstream_free(avs_stream_abstract_t *stream) {
-    free(((memstream_t*)stream)->buffer);
-    free(stream);
 }
