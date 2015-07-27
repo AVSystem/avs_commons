@@ -548,7 +548,7 @@ static int decorate_ssl(avs_net_abstract_socket_t *socket_,
         avs_net_socket_cleanup(&socket->backend_socket);
     }
 
-    if (remote_host_ssl(backend_socket, host, sizeof(host))) {
+    if (avs_net_socket_get_remote_host(backend_socket, host, sizeof(host))) {
         return -1;
     }
 
