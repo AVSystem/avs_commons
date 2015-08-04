@@ -308,23 +308,27 @@ static void print_differences(const void *actual,
     for (found_errors = 0; found_errors < MAX_ERRORS; ++found_errors) {
         size_t error_start = find_first_different(actual_ptr, expected_ptr, at, num_bytes);
         size_t error_end;
+        size_t error_bytes = 0;
 
         if (error_start >= num_bytes) {
             return;
         }
 
         error_end = find_first_equal(actual_ptr, expected_ptr, error_start, num_bytes);
+        error_bytes = error_end - error_start;
 
         while (error_end < num_bytes) {
             at = find_first_different(actual_ptr, expected_ptr, error_end, num_bytes);
             if (at - error_end <= CONTEXT_SIZE * 2) {
                 error_end = find_first_equal(actual_ptr, expected_ptr, at, num_bytes);
+                error_bytes += error_end - at;
+                at = error_end;
             } else {
                 break;
             }
         }
 
-        printf("- %lu different byte(s) at offset %lu:\n", error_end - error_start, error_start);
+        printf("- %lu different byte(s) at offset %lu:\n", error_bytes, error_start);
         test_fail_print_hex_diff(actual_ptr, expected_ptr, num_bytes,
                                  error_start, error_end - error_start,
                                  CONTEXT_SIZE);
