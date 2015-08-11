@@ -213,7 +213,7 @@ void avs_unit_assert_false__(int result,
              format, actual);                                                  \
     snprintf(strings->expected_str, sizeof(strings->expected_str),             \
              format, expected);                                                \
-    return (actual == expected);                                               \
+    return memcmp(&actual, &expected, sizeof(actual)) == 0;                    \
 }
 
 AVS_UNIT_CHECK_EQUAL_FUNCTION__(char, c) CHECK_EQUAL_BODY("%c")
