@@ -12,6 +12,13 @@
 
 #include <setjmp.h>
 
+#if __STDC_VERSION__ >= 199901L
+#include <stdbool.h>
+#define AVS_UNIT_HAVE_BOOL__
+#elif defined(__cplusplus)
+#define AVS_UNIT_HAVE_BOOL__
+#endif
+
 #include <avsystem/commons/defs.h>
 
 #ifdef	__cplusplus
@@ -127,7 +134,17 @@ void avs_unit_assert_bytes_not_equal__(const void *actual,
                                        const char *file,
                                        int line);
 
+#ifdef AVS_UNIT_HAVE_BOOL__
+#define AVS_UNIT_CHECK_BOOL__(actual, expected, strings, inner)\
+__builtin_choose_expr(__builtin_types_compatible_p(__typeof__(actual), bool),\
+    avs_unit_check_equal_i__((int) (actual), (int) (expected), (strings)),\
+    inner)
+#else
+#define AVS_UNIT_CHECK_BOOL__(actual, expected, strings, inner) inner
+#endif
+
 #define AVS_UNIT_CHECK_EQUAL__(actual, expected, strings)\
+AVS_UNIT_CHECK_BOOL__(actual, expected, strings,\
 __builtin_choose_expr(__builtin_types_compatible_p(__typeof__(actual), char),\
     avs_unit_check_equal_c__((char) (actual), (char) (expected), (strings)),\
 __builtin_choose_expr(__builtin_types_compatible_p(__typeof__(actual), short),\
@@ -155,7 +172,7 @@ __builtin_choose_expr(__builtin_types_compatible_p(__typeof__(actual), double),\
 __builtin_choose_expr(__builtin_types_compatible_p(__typeof__(actual), long double),\
     avs_unit_check_equal_ld__((long double) (actual), (long double) (expected), (strings)),\
     avs_unit_abort__("AVS_UNIT_ASSERT_EQUAL called for unsupported data type\n", __FILE__, __LINE__)\
-)))))))))))))
+))))))))))))))
 
 #define AVS_UNIT_ASSERT_EQUAL_BYTES__(actual, expected)\
 __builtin_choose_expr(__builtin_types_compatible_p(__typeof__(expected), const char[]),\
@@ -335,6 +352,29 @@ do { \
 } while(0)
 
 /**
+ * Asserts that corresponding fields in two specified structures are equal.
+ *
+ * The same types as for @ref AVS_UNIT_ASSERT_EQUAL are supported.
+ *
+ * This macro shall be called from unit test cases defined in
+ * @ref AVS_UNIT_TEST
+ *
+ * @param actual_struct_ptr   Pointer to structure containing actual value.
+ *
+ * @param expected_struct_ptr Pointer to structure containing expected value.
+ *
+ * @param field               Name of the structure field to compare.
+ */
+#define AVS_UNIT_ASSERT_FIELD_EQUAL(actual_struct_ptr, expected_struct_ptr, field) \
+__builtin_choose_expr( \
+        __builtin_types_compatible_p(__typeof__(*(actual_struct_ptr)), \
+                                     __typeof__(*(expected_struct_ptr))), \
+        ({ AVS_UNIT_ASSERT_EQUAL((actual_struct_ptr)->field, \
+                                 (expected_struct_ptr)->field); }), \
+        avs_unit_abort__("AVS_UNIT_ASSERT_FIELD_EQUAL called for different types\n", \
+                         __FILE__, __LINE__))
+
+/**
  * Asserts that the two specified values are not equal.
  *
  * All integer and floating-point types are supported.
@@ -354,6 +394,29 @@ do { \
             AVS_UNIT_CHECK_EQUAL__(actual, not_expected, &strings), \
             strings.actual_str, strings.expected_str, __FILE__, __LINE__); \
 } while(0)
+
+/**
+ * Asserts that corresponding fields in two specified structures are not equal.
+ *
+ * The same types as for @ref AVS_UNIT_ASSERT_NOT_EQUAL are supported.
+ *
+ * This macro shall be called from unit test cases defined in
+ * @ref AVS_UNIT_TEST
+ *
+ * @param actual_struct_ptr   Pointer to structure containing actual value.
+ *
+ * @param expected_struct_ptr Pointer to structure containing expected value.
+ *
+ * @param field               Name of the structure field to compare.
+ */
+#define AVS_UNIT_ASSERT_FIELD_NOT_EQUAL(actual_struct_ptr, expected_struct_ptr, field) \
+__builtin_choose_expr( \
+        __builtin_types_compatible_p(__typeof__(*(actual_struct_ptr)), \
+                                     __typeof__(*(expected_struct_ptr))), \
+        ({ AVS_UNIT_ASSERT_NOT_EQUAL((actual_struct_ptr)->field, \
+                                     (expected_struct_ptr)->field); }), \
+        avs_unit_abort__("AVS_UNIT_ASSERT_FIELD_NOT_EQUAL called for different types\n", \
+                         __FILE__, __LINE__))
 
 /**
  * Asserts that two specified string values are equal.
