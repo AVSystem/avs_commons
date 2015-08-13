@@ -352,6 +352,27 @@ do { \
 } while(0)
 
 /**
+ * Asserts that corresponding fields in two specified structures are equal.
+ *
+ * The same types as for @ref AVS_UNIT_ASSERT_EQUAL are supported.
+ *
+ * This macro shall be called from unit test cases defined in
+ * @ref AVS_UNIT_TEST
+ *
+ * @param ActualStructPtr   Pointer to structure containing the actual value.
+ *
+ * @param ExpectedStructPtr Pointer to structure containing the expected value.
+ */
+#define AVS_UNIT_ASSERT_FIELD_EQUAL(ActualStructPtr, ExpectedStructPtr, Field) \
+__builtin_choose_expr( \
+        __builtin_types_compatible_p(__typeof__(*(ActualStructPtr)), \
+                                     __typeof__(*(ExpectedStructPtr))), \
+        ({ AVS_UNIT_ASSERT_EQUAL((ActualStructPtr)->Field, \
+                                 (ExpectedStructPtr)->Field); }), \
+        avs_unit_abort__("AVS_UNIT_ASSERT_FIELD_EQUAL called for different types\n", \
+                         __FILE__, __LINE__))
+
+/**
  * Asserts that the two specified values are not equal.
  *
  * All integer and floating-point types are supported.
@@ -371,6 +392,27 @@ do { \
             AVS_UNIT_CHECK_EQUAL__(actual, not_expected, &strings), \
             strings.actual_str, strings.expected_str, __FILE__, __LINE__); \
 } while(0)
+
+/**
+ * Asserts that corresponding fields in two specified structures are not equal.
+ *
+ * The same types as for @ref AVS_UNIT_ASSERT_NOT_EQUAL are supported.
+ *
+ * This macro shall be called from unit test cases defined in
+ * @ref AVS_UNIT_TEST
+ *
+ * @param ActualStructPtr   Pointer to structure containing the actual value.
+ *
+ * @param ExpectedStructPtr Pointer to structure containing the expected value.
+ */
+#define AVS_UNIT_ASSERT_FIELD_NOT_EQUAL(ActualStructPtr, ExpectedStructPtr, Field) \
+__builtin_choose_expr( \
+        __builtin_types_compatible_p(__typeof__(*(ActualStructPtr)), \
+                                     __typeof__(*(ExpectedStructPtr))), \
+        ({ AVS_UNIT_ASSERT_NOT_EQUAL((ActualStructPtr)->Field, \
+                                     (ExpectedStructPtr)->Field); }), \
+        avs_unit_abort__("AVS_UNIT_ASSERT_FIELD_NOT_EQUAL called for different types\n", \
+                         __FILE__, __LINE__))
 
 /**
  * Asserts that two specified string values are equal.
