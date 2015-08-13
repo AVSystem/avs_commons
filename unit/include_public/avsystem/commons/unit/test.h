@@ -362,6 +362,8 @@ do { \
  * @param ActualStructPtr   Pointer to structure containing the actual value.
  *
  * @param ExpectedStructPtr Pointer to structure containing the expected value.
+ *
+ * @param Field             Name of the structure field to compare.
  */
 #define AVS_UNIT_ASSERT_FIELD_EQUAL(ActualStructPtr, ExpectedStructPtr, Field) \
 __builtin_choose_expr( \
@@ -404,6 +406,8 @@ do { \
  * @param ActualStructPtr   Pointer to structure containing the actual value.
  *
  * @param ExpectedStructPtr Pointer to structure containing the expected value.
+ *
+ * @param Field             Name of the structure field to compare.
  */
 #define AVS_UNIT_ASSERT_FIELD_NOT_EQUAL(ActualStructPtr, ExpectedStructPtr, Field) \
 __builtin_choose_expr( \
