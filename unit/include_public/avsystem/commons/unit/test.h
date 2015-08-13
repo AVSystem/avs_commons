@@ -359,18 +359,18 @@ do { \
  * This macro shall be called from unit test cases defined in
  * @ref AVS_UNIT_TEST
  *
- * @param ActualStructPtr   Pointer to structure containing the actual value.
+ * @param actual_struct_ptr   Pointer to structure containing actual value.
  *
- * @param ExpectedStructPtr Pointer to structure containing the expected value.
+ * @param expected_struct_ptr Pointer to structure containing expected value.
  *
- * @param Field             Name of the structure field to compare.
+ * @param field               Name of the structure field to compare.
  */
-#define AVS_UNIT_ASSERT_FIELD_EQUAL(ActualStructPtr, ExpectedStructPtr, Field) \
+#define AVS_UNIT_ASSERT_FIELD_EQUAL(actual_struct_ptr, expected_struct_ptr, field) \
 __builtin_choose_expr( \
-        __builtin_types_compatible_p(__typeof__(*(ActualStructPtr)), \
-                                     __typeof__(*(ExpectedStructPtr))), \
-        ({ AVS_UNIT_ASSERT_EQUAL((ActualStructPtr)->Field, \
-                                 (ExpectedStructPtr)->Field); }), \
+        __builtin_types_compatible_p(__typeof__(*(actual_struct_ptr)), \
+                                     __typeof__(*(expected_struct_ptr))), \
+        ({ AVS_UNIT_ASSERT_EQUAL((actual_struct_ptr)->field, \
+                                 (expected_struct_ptr)->field); }), \
         avs_unit_abort__("AVS_UNIT_ASSERT_FIELD_EQUAL called for different types\n", \
                          __FILE__, __LINE__))
 
@@ -403,18 +403,18 @@ do { \
  * This macro shall be called from unit test cases defined in
  * @ref AVS_UNIT_TEST
  *
- * @param ActualStructPtr   Pointer to structure containing the actual value.
+ * @param actual_struct_ptr   Pointer to structure containing actual value.
  *
- * @param ExpectedStructPtr Pointer to structure containing the expected value.
+ * @param expected_struct_ptr Pointer to structure containing expected value.
  *
- * @param Field             Name of the structure field to compare.
+ * @param field               Name of the structure field to compare.
  */
-#define AVS_UNIT_ASSERT_FIELD_NOT_EQUAL(ActualStructPtr, ExpectedStructPtr, Field) \
+#define AVS_UNIT_ASSERT_FIELD_NOT_EQUAL(actual_struct_ptr, expected_struct_ptr, field) \
 __builtin_choose_expr( \
-        __builtin_types_compatible_p(__typeof__(*(ActualStructPtr)), \
-                                     __typeof__(*(ExpectedStructPtr))), \
-        ({ AVS_UNIT_ASSERT_NOT_EQUAL((ActualStructPtr)->Field, \
-                                     (ExpectedStructPtr)->Field); }), \
+        __builtin_types_compatible_p(__typeof__(*(actual_struct_ptr)), \
+                                     __typeof__(*(expected_struct_ptr))), \
+        ({ AVS_UNIT_ASSERT_NOT_EQUAL((actual_struct_ptr)->field, \
+                                     (expected_struct_ptr)->field); }), \
         avs_unit_abort__("AVS_UNIT_ASSERT_FIELD_NOT_EQUAL called for different types\n", \
                          __FILE__, __LINE__))
 
