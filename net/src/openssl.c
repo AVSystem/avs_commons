@@ -25,11 +25,15 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/time.h>
+#include <assert.h>
 #include <openssl/ssl.h>
 #include <openssl/rand.h>
 #include <openssl/err.h>
 #include <openssl/md5.h>
 #include <openssl/hmac.h>
+#include <openssl/rsa.h>
+#include <openssl/bn.h>
 
 #include "net.h"
 
@@ -52,6 +56,8 @@ typedef struct {
     avs_net_abstract_socket_t *backend_socket;
     avs_net_socket_configuration_t backend_configuration;
     avs_net_socket_raw_resolved_endpoint_t endpoint_buffer;
+
+    avs_net_psk_t psk;
 } ssl_socket_t;
 
 static int connect_ssl(avs_net_abstract_socket_t *ssl_socket,
@@ -482,6 +488,7 @@ static int start_ssl(ssl_socket_t *socket, const char *host) {
     if (!socket->ssl) {
         return -1;
     }
+    SSL_set_app_data(socket->ssl, socket);
 
 #ifdef SSL_MODE_AUTO_RETRY
     SSL_set_mode(socket->ssl, SSL_MODE_AUTO_RETRY);
@@ -561,22 +568,39 @@ static int decorate_ssl(avs_net_abstract_socket_t *socket_,
     return result;
 }
 
-static int load_ca_certs(const char *ca_cert_path,
+static int load_ca_certs(ssl_socket_t *socket,
+                         const char *ca_cert_path,
                          const char *ca_cert_file,
-                         ssl_socket_t *socket) {
+                         const avs_net_ssl_raw_cert_t *ca_cert) {
+    const int has_files = ca_cert_path || ca_cert_file;
+    const int has_raw_cert = ca_cert && ca_cert->cert_der;
 
-    if (!ca_cert_path && !ca_cert_file) {
+    if (!has_files && !has_raw_cert) {
         LOG(ERROR, "no certificate for CA provided");
         return -1;
     }
 
-    if (!SSL_CTX_load_verify_locations(socket->ctx,
-                                       ca_cert_file,
-                                       ca_cert_path)) {
-        return -1;
+    if (has_files) {
+        if (!SSL_CTX_load_verify_locations(socket->ctx,
+                                           ca_cert_file,
+                                           ca_cert_path)) {
+            return -1;
+        }
+        if (!SSL_CTX_set_default_verify_paths(socket->ctx)) {
+            return -1;
+        }
     }
-    if (!SSL_CTX_set_default_verify_paths(socket->ctx)) {
-        return -1;
+
+    if (has_raw_cert) {
+        const unsigned char *cert_data = (const unsigned char*)&ca_cert->cert_der;
+        X509 *cert = d2i_X509(NULL, &cert_data, (int)ca_cert->cert_size);
+        X509_STORE *store = SSL_CTX_get_cert_store(socket->ctx);
+
+        if (!cert || !store || !X509_STORE_add_cert(store, cert)) {
+            log_openssl_error(socket);
+            X509_free(cert);
+            return -1;
+        }
     }
 
     return 0;
@@ -588,27 +612,105 @@ static int password_cb(char *buf, int num, int rwflag, void *userdata) {
     return (retval < 0 || retval >= num) ? -1 : 0;
 }
 
-static int load_client_cert(const char *client_cert_file,
-                            const char *client_key_file,
-                            const char *client_key_password,
-                            ssl_socket_t *socket) {
+static const EC_POINT *get_ec_public_key(ssl_socket_t *socket) {
+    X509 *cert = NULL;
+    EVP_PKEY *evp_key = NULL;
+    EC_KEY *ec_key = NULL;
+    const EC_POINT *point = NULL;
 
-    if (!client_cert_file) {
-        LOG(TRACE, "client certificate not specified");
-        return 0;
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+    // HACK: temporary SSL context to obtain X509 cert
+    SSL *ssl = SSL_new(socket->ctx);
+    if (!ssl) {
+        return NULL;
     }
-    if (!client_key_file || !client_key_password) {
-        LOG(ERROR, "private key with password not specified");
-        return -1;
+    cert = SSL_get_certificate(ssl);
+#else
+    cert = SSL_CTX_get0_certificate(socket->ctx);
+#endif
+
+    if (!cert
+            || !(evp_key = X509_get_pubkey(cert))
+            || !(ec_key = EVP_PKEY_get1_EC_KEY(evp_key))
+            || !(point = EC_KEY_get0_public_key(ec_key))) {
+        log_openssl_error(socket);
+        point = NULL;
     }
 
-    if (!SSL_CTX_use_certificate_chain_file(socket->ctx, client_cert_file)) {
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+    SSL_free(ssl);
+#endif
+    EC_KEY_free(ec_key);
+    EVP_PKEY_free(evp_key);
+    return point;
+}
+
+static EC_KEY *ec_key_from_raw_private_key(ssl_socket_t *socket,
+                                           const avs_net_ssl_raw_key_t *key) {
+    int curve_id = OBJ_txt2nid(key->curve_name);
+    if (curve_id == NID_undef) {
+        LOG(ERROR, "unknown curve: %s", key->curve_name);
+        return NULL;
+    }
+
+    const EC_POINT *public_key = get_ec_public_key(socket);
+    if (!public_key) {
+        return NULL;
+    }
+
+    BIGNUM *private_key = NULL;
+    EC_KEY *ec_key = NULL;
+
+    if (!(private_key = BN_bin2bn((const unsigned char*)key->private_key,
+                                  (int)key->private_key_size, NULL))
+            || !(ec_key = EC_KEY_new_by_curve_name(curve_id))
+            || !EC_KEY_set_public_key(ec_key, public_key)
+            || !EC_KEY_set_private_key(ec_key, private_key)) {
+        log_openssl_error(socket);
+        BN_free(private_key);
+        EC_KEY_free(ec_key);
+        return NULL;
+    }
+
+    BN_free(private_key);
+    return ec_key;
+}
+
+static int load_client_key_from_data(ssl_socket_t *socket,
+                                     const avs_net_ssl_raw_key_t *key) {
+    EC_KEY *ec_key = ec_key_from_raw_private_key(socket, key);
+    if (!ec_key) {
+        LOG(ERROR, "could not decode EC private key");
         log_openssl_error(socket);
         return -1;
     }
 
-    SSL_CTX_set_default_passwd_cb_userdata(socket->ctx,
-                      /* const_cast */ (void *) (intptr_t) client_key_password);
+    EVP_PKEY *evp_key = EVP_PKEY_new();
+    if (!evp_key || !EVP_PKEY_assign_EC_KEY(evp_key, ec_key)) {
+        log_openssl_error(socket);
+        LOG(ERROR, "could not create EVP_PKEY");
+        EC_KEY_free(ec_key);
+        EVP_PKEY_free(evp_key);
+        return -1;
+    }
+
+    if (!SSL_CTX_use_PrivateKey(socket->ctx, evp_key)) {
+        LOG(ERROR, "could not set private key");
+        log_openssl_error(socket);
+        EVP_PKEY_free(evp_key);
+        return -1;
+    }
+
+    EVP_PKEY_free(evp_key);
+    return 0;
+}
+
+static int load_client_key_from_file(ssl_socket_t *socket,
+                                     const char *client_key_file,
+                                     const char *client_key_password) {
+    SSL_CTX_set_default_passwd_cb_userdata(
+            socket->ctx,
+            /* const_cast */ (void *) (intptr_t) client_key_password);
     SSL_CTX_set_default_passwd_cb(socket->ctx, password_cb);
 
     if (!SSL_CTX_use_PrivateKey_file(socket->ctx,
@@ -621,8 +723,158 @@ static int load_client_cert(const char *client_cert_file,
     return 0;
 }
 
-static int server_auth_enabled(const avs_net_ssl_configuration_t *configuration) {
-    return configuration->ca_cert_file || configuration->ca_cert_path;
+static int is_private_key_valid(const avs_net_private_key_t *key) {
+    assert(key);
+
+    switch (key->source) {
+    case AVS_NET_DATA_SOURCE_FILE:
+        if (!key->data.file.path || !key->data.file.password) {
+            LOG(ERROR, "private key with password not specified");
+            return 0;
+        }
+        return 1;
+    case AVS_NET_DATA_SOURCE_BUFFER:
+        if (!key->data.buffer.private_key) {
+            LOG(ERROR, "private key not specified");
+            return 0;
+        }
+        return 1;
+    }
+    assert(!"invalid enum value");
+    return 0;
+}
+
+static int load_client_private_key(ssl_socket_t *socket,
+                                   const avs_net_private_key_t *key) {
+    if (!is_private_key_valid(key)) {
+        return -1;
+    }
+
+    switch (key->source) {
+    case AVS_NET_DATA_SOURCE_FILE:
+        return load_client_key_from_file(socket, key->data.file.path,
+                                         key->data.file.password);
+    case AVS_NET_DATA_SOURCE_BUFFER:
+        return load_client_key_from_data(socket, &key->data.buffer);
+    }
+    assert(!"invalid enum value");
+    return -1;
+}
+
+static int is_client_cert_empty(const avs_net_client_cert_t *cert) {
+    switch (cert->source) {
+    case AVS_NET_DATA_SOURCE_FILE:
+        return !cert->data.file;
+    case AVS_NET_DATA_SOURCE_BUFFER:
+        return !cert->data.buffer.cert_der;
+    }
+    assert(!"invalid enum value");
+    return 1;
+}
+
+static int load_client_cert(ssl_socket_t *socket,
+                            const avs_net_client_cert_t *cert) {
+    if (is_client_cert_empty(cert)) {
+        LOG(TRACE, "client certificate not specified");
+        return 0;
+    }
+
+    int result = 0;
+    switch (cert->source) {
+    case AVS_NET_DATA_SOURCE_FILE:
+        result = SSL_CTX_use_certificate_chain_file(socket->ctx,
+                                                    cert->data.file);
+        break;
+    case AVS_NET_DATA_SOURCE_BUFFER:
+        result = SSL_CTX_use_certificate_ASN1(
+                    socket->ctx, (int)cert->data.buffer.cert_size,
+                    (const unsigned char*)cert->data.buffer.cert_der);
+        break;
+    default:
+        assert(!"invalid enum value");
+        return -1;
+    }
+
+    if (!result) {
+        log_openssl_error(socket);
+        return -1;
+    }
+    return 0;
+}
+
+static int server_auth_enabled(const avs_net_certificate_info_t *cert_info) {
+    return cert_info->ca_cert_file
+        || cert_info->ca_cert_path
+        || cert_info->ca_cert_raw.cert_der;
+}
+
+static int configure_ssl_certs(ssl_socket_t *socket,
+                               const avs_net_certificate_info_t *cert_info) {
+    LOG(TRACE, "configure_ssl_certs");
+
+    if (server_auth_enabled(cert_info)) {
+        socket->verification = 1;
+        SSL_CTX_set_verify(socket->ctx, SSL_VERIFY_PEER, NULL);
+#if defined(OPENSSL_VERSION_NUMBER) && (OPENSSL_VERSION_NUMBER < 0x00905100L)
+        SSL_CTX_set_verify_depth(socket->ctx, 1);
+#endif
+        if (load_ca_certs(socket, cert_info->ca_cert_path,
+                          cert_info->ca_cert_file,
+                          &cert_info->ca_cert_raw)) {
+            LOG(ERROR, "Error loading CA certs");
+            return -1;
+        }
+    } else {
+        LOG(DEBUG, "Server authentication disabled");
+    }
+
+    if (load_client_cert(socket, &cert_info->client_cert)) {
+        LOG(ERROR, "Error loading client certificate");
+        return -1;
+    }
+
+    if (load_client_private_key(socket, &cert_info->client_key)) {
+        LOG(ERROR, "Error loading client private key");
+        return -1;
+    }
+
+    return 0;
+}
+
+static unsigned int psk_client_cb(SSL *ssl,
+                                  const char *hint,
+                                  char *identity,
+                                  unsigned int max_identity_len,
+                                  unsigned char *psk,
+                                  unsigned int max_psk_len) {
+    ssl_socket_t *socket = (ssl_socket_t*)SSL_get_app_data(ssl);
+    if (!socket || !socket->psk.getter) {
+        return 0;
+    }
+
+    size_t result = socket->psk.getter(socket->psk.getter_data, hint,
+                                       identity, (size_t)max_identity_len,
+                                       psk, (size_t)max_psk_len);
+
+    if (result == 0) {
+        LOG(ERROR, "PSK getter returned 0");
+    }
+    return (unsigned int)result;
+}
+
+static int configure_ssl_psk(ssl_socket_t *socket,
+                             const avs_net_psk_t *psk) {
+    LOG(TRACE, "configure_ssl_psk");
+    (void)psk;
+
+    if (socket->psk.getter_data && socket->psk.free_getter_data) {
+        socket->psk.free_getter_data(socket->psk.getter_data);
+    }
+
+    memcpy(&socket->psk, psk, sizeof(*psk));
+    SSL_CTX_set_psk_client_callback(socket->ctx, psk_client_cb);
+
+    return 0;
 }
 
 static int configure_ssl(ssl_socket_t *socket,
@@ -643,7 +895,11 @@ static int configure_ssl(ssl_socket_t *socket,
     }
     SSL_CTX_set_verify(socket->ctx, SSL_VERIFY_NONE, NULL);
 #ifdef WITH_OPENSSL_CUSTOM_CIPHERS
-    SSL_CTX_set_cipher_list(socket->ctx, WITH_OPENSSL_CUSTOM_CIPHERS);
+    if (!SSL_CTX_set_cipher_list(socket->ctx, WITH_OPENSSL_CUSTOM_CIPHERS)) {
+        LOG(WARNING, "could not set cipher list to %s",
+            WITH_OPENSSL_CUSTOM_CIPHERS);
+        log_openssl_error(socket);
+    }
 #endif
 
     if (!configuration) {
@@ -651,27 +907,19 @@ static int configure_ssl(ssl_socket_t *socket,
         return 0;
     }
 
-    if (server_auth_enabled(configuration)) {
-        socket->verification = 1;
-        SSL_CTX_set_verify(socket->ctx, SSL_VERIFY_PEER, NULL);
-#if defined(OPENSSL_VERSION_NUMBER) && (OPENSSL_VERSION_NUMBER < 0x00905100L)
-        SSL_CTX_set_verify_depth(socket->ctx, 1);
-#endif
-        if (load_ca_certs(configuration->ca_cert_path,
-                          configuration->ca_cert_file,
-                          socket)) {
-            LOG(ERROR, "Error loading CA certs");
+    switch (configuration->security.mode) {
+    case AVS_NET_SECURITY_PSK:
+        if (configure_ssl_psk(socket, &configuration->security.data.psk)) {
             return -1;
         }
-    } else {
-        LOG(DEBUG, "Server authentication disabled");
-    }
-
-    if (load_client_cert(configuration->client_cert_file,
-                         configuration->client_key_file,
-                         configuration->client_key_password,
-                         socket)) {
-        LOG(ERROR, "Error loading client certificate");
+        break;
+    case AVS_NET_SECURITY_CERTIFICATE:
+        if (configure_ssl_certs(socket, &configuration->security.data.cert)) {
+            return -1;
+        }
+        break;
+    default:
+        assert(!"invalid enum value");
         return -1;
     }
 
@@ -748,6 +996,10 @@ static int receive_ssl(avs_net_abstract_socket_t *socket_,
 static int cleanup_ssl(avs_net_abstract_socket_t **socket_) {
     ssl_socket_t **socket = (ssl_socket_t **) socket_;
     LOG(TRACE, "cleanup_ssl(*socket=%p)", (void *) *socket);
+
+    if ((*socket)->psk.getter_data && (*socket)->psk.free_getter_data) {
+        (*socket)->psk.free_getter_data((*socket)->psk.getter_data);
+    }
 
     close_ssl(*socket_);
     if ((*socket)->ctx) {
@@ -874,7 +1126,13 @@ static int initialize_ssl_socket(ssl_socket_t *socket,
         return -1;
     }
 
-    return configure_ssl(socket, configuration);
+    if (configure_ssl(socket, configuration)) {
+        SSL_CTX_free(socket->ctx);
+        socket->ctx = NULL;
+        return -1;
+    }
+
+    return 0;
 }
 
 static int create_ssl_socket(avs_net_abstract_socket_t **socket,
