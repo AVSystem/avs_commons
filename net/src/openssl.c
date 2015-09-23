@@ -609,7 +609,7 @@ static int load_ca_certs(ssl_socket_t *socket,
 static int password_cb(char *buf, int num, int rwflag, void *userdata) {
     int retval = snprintf(buf, (size_t) num, "%s", (const char *) userdata);
     (void) rwflag;
-    return (retval < 0 || retval >= num) ? -1 : 0;
+    return (retval < 0 || retval >= num) ? -1 : retval;
 }
 
 static const EC_POINT *get_ec_public_key(ssl_socket_t *socket) {
@@ -877,6 +877,27 @@ static int configure_ssl_psk(ssl_socket_t *socket,
     return 0;
 }
 
+static int configure_cipher_list(ssl_socket_t *socket,
+                                 const char *cipher_list) {
+    static const char *DEFAULT_OPENSSL_CIPHER_LIST = "DEFAULT";
+
+    if (SSL_CTX_set_cipher_list(socket->ctx, cipher_list)) {
+        return 0;
+    }
+
+    LOG(WARNING, "could not set cipher list to %s, using %s",
+        cipher_list, DEFAULT_OPENSSL_CIPHER_LIST);
+    log_openssl_error(socket);
+
+    if (SSL_CTX_set_cipher_list(socket->ctx, DEFAULT_OPENSSL_CIPHER_LIST)) {
+        return 0;
+    }
+
+    LOG(ERROR, "could not set cipher list to %s", DEFAULT_OPENSSL_CIPHER_LIST);
+    log_openssl_error(socket);
+    return -1;
+}
+
 static int configure_ssl(ssl_socket_t *socket,
                          const avs_net_ssl_configuration_t *configuration) {
     LOG(TRACE, "configure_ssl(socket=%p, configuration=%p)",
@@ -894,13 +915,12 @@ static int configure_ssl(ssl_socket_t *socket,
         SSL_CTX_set_read_ahead(socket->ctx, 1);
     }
     SSL_CTX_set_verify(socket->ctx, SSL_VERIFY_NONE, NULL);
+
 #ifdef WITH_OPENSSL_CUSTOM_CIPHERS
-    if (!SSL_CTX_set_cipher_list(socket->ctx, WITH_OPENSSL_CUSTOM_CIPHERS)) {
-        LOG(WARNING, "could not set cipher list to %s",
-            WITH_OPENSSL_CUSTOM_CIPHERS);
-        log_openssl_error(socket);
+    if (configure_cipher_list(socket, WITH_OPENSSL_CUSTOM_CIPHERS)) {
+        return -1;
     }
-#endif
+#endif /* WITH_OPENSSL_CUSTOM_CIPHERS */
 
     if (!configuration) {
         LOG(WARNING, "configuration not provided");
