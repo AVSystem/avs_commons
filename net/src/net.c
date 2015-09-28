@@ -45,6 +45,7 @@
 #include <ifaddrs.h>
 #endif
 
+#include "addrinfo.h"
 #include "net.h"
 
 #ifdef HAVE_VISIBILITY

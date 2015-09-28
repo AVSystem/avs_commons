@@ -26,6 +26,7 @@ elseif(WITH_XYSSL)
 endif()
 
 set(PRIVATE_HEADERS
+    src/addrinfo.h
     src/net.h)
 
 set(PUBLIC_HEADERS
