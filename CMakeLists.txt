@@ -220,6 +220,13 @@ include(CMakeDependentOption)
 cmake_dependent_option(WITH_INTERNAL_LOGS "Enable logging from inside AVSystem Commons libraries" ON WITH_AVS_LOG OFF)
 cmake_dependent_option(WITH_INTERNAL_TRACE "Enable TRACE-level logs inside AVSystem Commons libraries" OFF WITH_INTERNAL_LOGS OFF)
 
+macro(make_absolute_sources ABSVAR)
+    set(${ABSVAR})
+    foreach(SRC ${ARGN})
+        set(${ABSVAR} ${${ABSVAR}} ${CMAKE_CURRENT_SOURCE_DIR}/${SRC})
+    endforeach()
+endmacro()
+
 if(WITH_AVS_UNIT)
     macro(add_avs_test NAME)
         add_executable(${NAME}_test EXCLUDE_FROM_ALL ${ARGN})

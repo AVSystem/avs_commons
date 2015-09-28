@@ -17,13 +17,6 @@ set(PUBLIC_HEADERS
     include_public/avsystem/commons/unit/mocksock.h
     include_public/avsystem/commons/unit/test.h)
 
-macro(make_absolute_sources ABSVAR)
-    set(${ABSVAR})
-    foreach(SRC ${ARGN})
-        set(${ABSVAR} ${${ABSVAR}} ${CMAKE_CURRENT_SOURCE_DIR}/${SRC})
-    endforeach()
-endmacro()
-
 set(INCLUDE_DIRS include_public ../list/include_public ../log/include_public)
 set(DEPS_LIBRARIES avs_list avs_log)
 
