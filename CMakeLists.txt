@@ -171,7 +171,7 @@ include_directories(include_public)
 
 find_program(VALGRIND_EXECUTABLE valgrind)
 if(VALGRIND_EXECUTABLE)
-    option(WITH_VALGRIND "Enable usage of valgrind during unit tests" ON)
+    option(WITH_VALGRIND "Enable usage of valgrind during unit tests" OFF)
 endif()
 if(WITH_VALGRIND)
     execute_process(COMMAND ${VALGRIND_EXECUTABLE} --tool=helgrind --version

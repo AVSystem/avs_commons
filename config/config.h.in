@@ -28,7 +28,7 @@
 #define WITH_OPENSSL_CUSTOM_CIPHERS "${WITH_OPENSSL_CUSTOM_CIPHERS}"
 #endif /* OPENSSL_CUSTOM_CIPHERS_ENABLED */
 
-#define WITH_VALGRIND
+#cmakedefine WITH_VALGRIND
 #ifdef WITH_VALGRIND
 #include <valgrind/valgrind.h>
 #include <valgrind/memcheck.h>
