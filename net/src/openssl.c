@@ -619,7 +619,7 @@ static const EC_POINT *get_ec_public_key(ssl_socket_t *socket) {
     const EC_POINT *point = NULL;
 
 #if OPENSSL_VERSION_NUMBER < 0x10100000L
-    // HACK: temporary SSL context to obtain X509 cert
+    /* HACK: temporary SSL context to obtain X509 cert */
     SSL *ssl = SSL_new(socket->ctx);
     if (!ssl) {
         return NULL;
@@ -647,19 +647,18 @@ static const EC_POINT *get_ec_public_key(ssl_socket_t *socket) {
 
 static EC_KEY *ec_key_from_raw_private_key(ssl_socket_t *socket,
                                            const avs_net_ssl_raw_key_t *key) {
+    const EC_POINT *public_key = NULL;
+    BIGNUM *private_key = NULL;
+    EC_KEY *ec_key = NULL;
     int curve_id = OBJ_txt2nid(key->curve_name);
     if (curve_id == NID_undef) {
         LOG(ERROR, "unknown curve: %s", key->curve_name);
         return NULL;
     }
 
-    const EC_POINT *public_key = get_ec_public_key(socket);
-    if (!public_key) {
+    if (!(public_key = get_ec_public_key(socket))) {
         return NULL;
     }
-
-    BIGNUM *private_key = NULL;
-    EC_KEY *ec_key = NULL;
 
     if (!(private_key = BN_bin2bn((const unsigned char*)key->private_key,
                                   (int)key->private_key_size, NULL))
@@ -678,15 +677,17 @@ static EC_KEY *ec_key_from_raw_private_key(ssl_socket_t *socket,
 
 static int load_client_key_from_data(ssl_socket_t *socket,
                                      const avs_net_ssl_raw_key_t *key) {
-    EC_KEY *ec_key = ec_key_from_raw_private_key(socket, key);
-    if (!ec_key) {
+    EC_KEY *ec_key = NULL;
+    EVP_PKEY *evp_key = NULL;
+
+    if (!(ec_key = ec_key_from_raw_private_key(socket, key))) {
         LOG(ERROR, "could not decode EC private key");
         log_openssl_error(socket);
         return -1;
     }
 
-    EVP_PKEY *evp_key = EVP_PKEY_new();
-    if (!evp_key || !EVP_PKEY_assign_EC_KEY(evp_key, ec_key)) {
+    if (!(evp_key = EVP_PKEY_new())
+            || !EVP_PKEY_assign_EC_KEY(evp_key, ec_key)) {
         log_openssl_error(socket);
         LOG(ERROR, "could not create EVP_PKEY");
         EC_KEY_free(ec_key);
@@ -774,12 +775,13 @@ static int is_client_cert_empty(const avs_net_client_cert_t *cert) {
 
 static int load_client_cert(ssl_socket_t *socket,
                             const avs_net_client_cert_t *cert) {
+    int result = 0;
+
     if (is_client_cert_empty(cert)) {
         LOG(TRACE, "client certificate not specified");
         return 0;
     }
 
-    int result = 0;
     switch (cert->source) {
     case AVS_NET_DATA_SOURCE_FILE:
         result = SSL_CTX_use_certificate_chain_file(socket->ctx,
@@ -863,7 +865,7 @@ static unsigned int psk_client_cb(SSL *ssl,
     memcpy(identity, socket->psk.identity, socket->psk.identity_size);
     identity[socket->psk.identity_size] = '\0';
 
-    return (unsigned int)socket->psk.psk_size;
+    return (unsigned int) socket->psk.psk_size;
 }
 
 static void free_psk(avs_net_psk_t *psk) {

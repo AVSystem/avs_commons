@@ -40,7 +40,10 @@
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
+
+#ifdef HAVE_GETIFADDRS
 #include <ifaddrs.h>
+#endif
 
 #include "net.h"
 
