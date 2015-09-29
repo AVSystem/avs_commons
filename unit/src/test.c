@@ -26,6 +26,8 @@
 #include <avsystem/commons/unit/mock_helpers.h>
 #include <avsystem/commons/unit/test.h>
 
+#include "test.h"
+
 #ifdef HAVE_VISIBILITY
 #pragma GCC visibility push(hidden)
 #endif
@@ -70,17 +72,27 @@ void avs_unit_add_global_init__(avs_unit_init_function_t init_func) {
     }
 }
 
-static void test_fail_printf(const char *file, int line, const char *fmt, ...) {
+static void test_fail_vprintf(const char *file,
+                              int line,
+                              const char *fmt,
+                              va_list list) {
+    printf("\033[1m[%s:%d] ", file, line);
+    vprintf(fmt, list);
+    printf("\033[0m");
+}
+
+void _avs_unit_test_fail_printf(const char *file,
+                                int line,
+                                const char *fmt,
+                                ...) {
     va_list ap;
     va_start(ap, fmt);
-    printf("\033[1m[%s:%d] ", file, line);
-    vprintf(fmt, ap);
-    printf("\033[0m");
+    test_fail_vprintf(file, line, fmt, ap);
     va_end(ap);
 }
 
 void avs_unit_abort__(const char *msg, const char *file, int line) {
-    test_fail_printf(file, line, msg);
+    _avs_unit_test_fail_printf(file, line, msg);
     abort();
 }
 
@@ -170,41 +182,46 @@ void avs_unit_add_test__(const char *suite_name,
     AVS_LIST_APPEND(&suite->tests, new_test);
 }
 
+void _avs_unit_assert(bool condition,
+                      const char *file,
+                      int line,
+                      const char *format,
+                      ...) {
+    if (condition) {
+        return;
+    }
+
+    va_list list;
+    va_start(list, format);
+    test_fail_vprintf(file, line, format, list);
+    va_end(list);
+
+    longjmp(_avs_unit_jmp_buf, 1);
+}
+
 /* <editor-fold defaultstate="collapsed" desc="ASSERTIONS"> */
 void avs_unit_assert_success__(int result,
                                const char *file,
                                int line) {
-    if (result != 0) {
-        test_fail_printf(file, line, "expected success\n");
-        longjmp(_avs_unit_jmp_buf, 1);
-    }
+    _avs_unit_assert(result == 0, file, line, "expected success\n");
 }
 
 void avs_unit_assert_failed__(int result,
                               const char *file,
                               int line) {
-    if (result == 0) {
-        test_fail_printf(file, line, "expected failure\n");
-        longjmp(_avs_unit_jmp_buf, 1);
-    }
+    _avs_unit_assert(result != 0, file, line, "expected failure\n");
 }
 
 void avs_unit_assert_true__(int result,
                             const char *file,
                             int line) {
-    if (result == 0) {
-        test_fail_printf(file, line, "expected true\n");
-        longjmp(_avs_unit_jmp_buf, 1);
-    }
+    _avs_unit_assert(result != 0, file, line, "expected true\n");
 }
 
 void avs_unit_assert_false__(int result,
                              const char *file,
                              int line) {
-    if (result != 0) {
-        test_fail_printf(file, line, "expected false\n");
-        longjmp(_avs_unit_jmp_buf, 1);
-    }
+    _avs_unit_assert(result == 0, file, line, "expected false\n");
 }
 
 #define CHECK_EQUAL_BODY(format)                                               \
@@ -235,12 +252,8 @@ void avs_unit_assert_equal_func__(int check_result,
                                   const char *expected_str,
                                   const char *file,
                                   int line) {
-    if (!check_result) {
-        test_fail_printf(file, line,
-                         "expected <%s> was <%s>\n",
-                         expected_str, actual_str);
-        longjmp(_avs_unit_jmp_buf, 1);
-    }
+    _avs_unit_assert(check_result, file, line, "expected <%s> was <%s>\n",
+                     expected_str, actual_str);
 }
 
 void avs_unit_assert_not_equal_func__(int check_result,
@@ -249,32 +262,18 @@ void avs_unit_assert_not_equal_func__(int check_result,
                                       const char *file,
                                       int line) {
     (void) actual_str;
-    if (check_result) {
-        test_fail_printf(file, line,
-                         "expected value other than <%s>\n",
-                         not_expected_str);
-        longjmp(_avs_unit_jmp_buf, 1);
-    }
+    _avs_unit_assert(!check_result, file, line,
+                     "expected value other than <%s>\n", not_expected_str);
 }
 
 void avs_unit_assert_equal_string__(const char *actual,
                                     const char *expected,
                                     const char *file,
                                     int line) {
-    if (!expected) {
-        test_fail_printf(file, line, "expected is NULL\n");
-        longjmp(_avs_unit_jmp_buf, 1);
-    }
-    if (!actual) {
-        test_fail_printf(file, line, "actual is NULL\n");
-        longjmp(_avs_unit_jmp_buf, 1);
-    }
-    if (strcmp(actual, expected)) {
-        test_fail_printf(file, line,
-                         "expected <%s> was <%s>\n",
-                         expected, actual);
-        longjmp(_avs_unit_jmp_buf, 1);
-    }
+    _avs_unit_assert(!!expected, file, line, "expected is NULL\n");
+    _avs_unit_assert(!!actual, file, line, "actual is NULL\n");
+    _avs_unit_assert(!strcmp(actual, expected), file, line,
+                     "expected <%s> was <%s>\n", expected, actual);
 }
 
 static size_t find_first__(bool equal,
@@ -347,8 +346,8 @@ static void compare_bytes(const void *actual,
         return;
     }
 
-    test_fail_printf(file, line, "byte sequences are %sequal:\n",
-                     expect_same ? "not " : "");
+    _avs_unit_test_fail_printf(file, line, "byte sequences are %sequal:\n",
+                               expect_same ? "not " : "");
 
     if (expect_same) {
         print_differences(actual, expected, num_bytes);
@@ -377,38 +376,22 @@ void avs_unit_assert_not_equal_string__(const char *actual,
                                         const char *not_expected,
                                         const char *file,
                                         int line) {
-    if (!not_expected) {
-        test_fail_printf(file, line, "expected is NULL\n");
-        longjmp(_avs_unit_jmp_buf, 1);
-    }
-    if (!actual) {
-        test_fail_printf(file, line, "actual is NULL\n");
-        longjmp(_avs_unit_jmp_buf, 1);
-    }
-    if (strcmp(actual, not_expected) == 0) {
-        test_fail_printf(file, line,
-                         "expected value other than <%s>\n",
-                         not_expected);
-        longjmp(_avs_unit_jmp_buf, 1);
-    }
+    _avs_unit_assert(!!not_expected, file, line, "not_expected is NULL\n");
+    _avs_unit_assert(!!actual, file, line, "actual is NULL\n");
+    _avs_unit_assert(strcmp(actual, not_expected), file, line,
+                     "expected value other than <%s>\n", not_expected);
 }
 
 void avs_unit_assert_null__(const void *pointer,
                             const char *file,
                             int line) {
-    if (pointer) {
-        test_fail_printf(file, line, "expected NULL\n");
-        longjmp(_avs_unit_jmp_buf, 1);
-    }
+    _avs_unit_assert(!pointer, file, line, "expected NULL\n");
 }
 
 void avs_unit_assert_not_null__(const void *pointer,
                                 const char *file,
                                 int line) {
-    if (!pointer) {
-        test_fail_printf(file, line, "expected not NULL\n");
-        longjmp(_avs_unit_jmp_buf, 1);
-    }
+    _avs_unit_assert(!!pointer, file, line, "expected not NULL\n");
 }
 
 /* </editor-fold> */
