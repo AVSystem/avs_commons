@@ -43,6 +43,10 @@
 
 #define CERT_SUBJECT_NAME_SIZE 257
 
+#if OPENSSL_VERSION_NUMBER >= 0x10000000L && !defined(OPENSSL_NO_PSK) /* OpenSSL >= 1.0.0 */
+#define HAVE_OPENSSL_PSK
+#endif
+
 typedef struct {
     const avs_net_socket_v_table_t * const operations;
     SSL_CTX *ctx;
@@ -57,7 +61,9 @@ typedef struct {
     avs_net_socket_configuration_t backend_configuration;
     avs_net_socket_raw_resolved_endpoint_t endpoint_buffer;
 
+#ifdef HAVE_OPENSSL_PSK
     avs_net_psk_t psk;
+#endif
 } ssl_socket_t;
 
 static int connect_ssl(avs_net_abstract_socket_t *ssl_socket,
@@ -850,6 +856,7 @@ static int configure_ssl_certs(ssl_socket_t *socket,
     return 0;
 }
 
+#ifdef HAVE_OPENSSL_PSK
 static unsigned int psk_client_cb(SSL *ssl,
                                   const char *hint,
                                   char *identity,
@@ -911,6 +918,15 @@ static int configure_ssl_psk(ssl_socket_t *socket,
 
     return 0;
 }
+#else
+static int configure_ssl_psk(ssl_socket_t *socket,
+                             const avs_net_psk_t *psk) {
+    (void) socket;
+    (void) psk;
+    LOG(ERROR, "PSK not supported in this version of OpenSSL");
+    return -1;
+}
+#endif
 
 static int configure_cipher_list(ssl_socket_t *socket,
                                  const char *cipher_list) {
@@ -1052,7 +1068,9 @@ static int cleanup_ssl(avs_net_abstract_socket_t **socket_) {
     ssl_socket_t **socket = (ssl_socket_t **) socket_;
     LOG(TRACE, "cleanup_ssl(*socket=%p)", (void *) *socket);
 
+#ifdef HAVE_OPENSSL_PSK
     free_psk(&(*socket)->psk);
+#endif
 
     close_ssl(*socket_);
     if ((*socket)->ctx) {
