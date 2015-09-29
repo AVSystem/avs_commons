@@ -122,22 +122,11 @@ typedef enum {
     AVS_NET_SECURITY_CERTIFICATE = AVS_NET_SECURITY_DEFAULT //< X509 Certificate + private key
 } avs_net_security_mode_t;
 
-/**
- * @returns number of bytes written to @p out_key on success,
- * 0 in case of error. On success @p out_identity must be NULL-terminated.
- */
-typedef size_t avs_net_psk_getter_t(void *user_data,
-                                    const char *identity_hint,
-                                    char *out_identity,
-                                    size_t identity_size,
-                                    void *out_key,
-                                    size_t key_size);
-typedef void avs_net_psk_free_data_t(void *data);
-
 typedef struct {
-    avs_net_psk_getter_t *getter; //< PSK getter handler, called whenever the library needs the key to perform SSL handshake.
-    void *getter_data; //< Custom data passed to the @p getter .
-    avs_net_psk_free_data_t *free_getter_data; //< A handler used to release @p getter_data when it is no longer needed. May be NULL if @p getter_data does not need cleanup. Will not be called on NULL @p getter_data.
+    void *psk;
+    size_t psk_size;
+    void *identity;
+    size_t identity_size;
 } avs_net_psk_t;
 
 typedef enum {

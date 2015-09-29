@@ -848,18 +848,29 @@ static unsigned int psk_client_cb(SSL *ssl,
                                   unsigned char *psk,
                                   unsigned int max_psk_len) {
     ssl_socket_t *socket = (ssl_socket_t*)SSL_get_app_data(ssl);
-    if (!socket || !socket->psk.getter) {
+
+    (void)hint;
+
+    if (!socket
+            || !socket->psk.psk
+            || max_psk_len < socket->psk.psk_size
+            || !socket->psk.identity
+            || max_identity_len < socket->psk.identity_size + 1) {
         return 0;
     }
 
-    size_t result = socket->psk.getter(socket->psk.getter_data, hint,
-                                       identity, (size_t)max_identity_len,
-                                       psk, (size_t)max_psk_len);
+    memcpy(psk, socket->psk.psk, socket->psk.psk_size);
+    memcpy(identity, socket->psk.identity, socket->psk.identity_size);
+    identity[socket->psk.identity_size] = '\0';
 
-    if (result == 0) {
-        LOG(ERROR, "PSK getter returned 0");
-    }
-    return (unsigned int)result;
+    return (unsigned int)socket->psk.psk_size;
+}
+
+static void free_psk(avs_net_psk_t *psk) {
+    free(psk->psk);
+    psk->psk = NULL;
+    free(psk->identity);
+    psk->identity = NULL;
 }
 
 static int configure_ssl_psk(ssl_socket_t *socket,
@@ -867,11 +878,26 @@ static int configure_ssl_psk(ssl_socket_t *socket,
     LOG(TRACE, "configure_ssl_psk");
     (void)psk;
 
-    if (socket->psk.getter_data && socket->psk.free_getter_data) {
-        socket->psk.free_getter_data(socket->psk.getter_data);
+    free_psk(&socket->psk);
+
+    socket->psk.psk_size = psk->psk_size;
+    socket->psk.psk = (char*)malloc(psk->psk_size);
+    if (!socket->psk.psk) {
+        LOG(ERROR, "out of memory");
+        return -1;
     }
 
-    memcpy(&socket->psk, psk, sizeof(*psk));
+    socket->psk.identity_size = psk->identity_size;
+    socket->psk.identity = (char*)malloc(psk->identity_size);
+    if (!socket->psk.identity) {
+        LOG(ERROR, "out of memory");
+        free_psk(&socket->psk);
+        return -1;
+    }
+
+    memcpy(socket->psk.psk, psk->psk, psk->psk_size);
+    memcpy(socket->psk.identity, psk->identity, psk->identity_size);
+
     SSL_CTX_set_psk_client_callback(socket->ctx, psk_client_cb);
 
     return 0;
@@ -1017,9 +1043,7 @@ static int cleanup_ssl(avs_net_abstract_socket_t **socket_) {
     ssl_socket_t **socket = (ssl_socket_t **) socket_;
     LOG(TRACE, "cleanup_ssl(*socket=%p)", (void *) *socket);
 
-    if ((*socket)->psk.getter_data && (*socket)->psk.free_getter_data) {
-        (*socket)->psk.free_getter_data((*socket)->psk.getter_data);
-    }
+    free_psk(&(*socket)->psk);
 
     close_ssl(*socket_);
     if ((*socket)->ctx) {
