@@ -774,7 +774,8 @@ static int is_client_cert_empty(const avs_net_client_cert_t *cert) {
 }
 
 static int load_client_cert(ssl_socket_t *socket,
-                            const avs_net_client_cert_t *cert) {
+                            const avs_net_client_cert_t *cert,
+                            const avs_net_private_key_t *key) {
     int result = 0;
 
     if (is_client_cert_empty(cert)) {
@@ -801,6 +802,12 @@ static int load_client_cert(ssl_socket_t *socket,
         log_openssl_error(socket);
         return -1;
     }
+
+    if (load_client_private_key(socket, key)) {
+        LOG(ERROR, "Error loading client private key");
+        return -1;
+    }
+
     return 0;
 }
 
@@ -830,13 +837,9 @@ static int configure_ssl_certs(ssl_socket_t *socket,
         LOG(DEBUG, "Server authentication disabled");
     }
 
-    if (load_client_cert(socket, &cert_info->client_cert)) {
+    if (load_client_cert(socket,
+                         &cert_info->client_cert, &cert_info->client_key)) {
         LOG(ERROR, "Error loading client certificate");
-        return -1;
-    }
-
-    if (load_client_private_key(socket, &cert_info->client_key)) {
-        LOG(ERROR, "Error loading client private key");
         return -1;
     }
 
