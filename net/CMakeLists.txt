@@ -50,6 +50,7 @@ elseif(WITH_XYSSL)
 endif()
 
 avs_install_export(avs_net net)
+avs_propagate_exports()
 install(DIRECTORY include_public/
         COMPONENT net
         DESTINATION ${INCLUDE_INSTALL_DIR}

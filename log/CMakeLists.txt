@@ -25,6 +25,7 @@ add_library(avs_log STATIC ${ALL_SOURCES})
 target_link_libraries(avs_log avs_list)
 
 avs_install_export(avs_log log)
+avs_propagate_exports()
 install(DIRECTORY include_public/
         COMPONENT log
         DESTINATION ${INCLUDE_INSTALL_DIR}

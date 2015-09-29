@@ -50,6 +50,7 @@ if(WITH_INTERNAL_LOGS)
 endif()
 
 avs_install_export(avs_stream stream)
+avs_propagate_exports()
 install(DIRECTORY include_public/
         COMPONENT stream
         DESTINATION ${INCLUDE_INSTALL_DIR}
