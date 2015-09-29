@@ -220,7 +220,7 @@ static int adjust_receive_timeout(ssl_socket_t *sock) {
 
 static int avs_bio_read(BIO *bio, char *buffer, int size) {
     ssl_socket_t *sock = (ssl_socket_t *) bio->ptr;
-    int prev_timeout;
+    int prev_timeout = -1;
     size_t read_bytes;
     int result;
     if (!buffer || size < 0) {
@@ -253,6 +253,7 @@ static int avs_bio_gets(BIO *bio, char *buffer, int size) {
     return -1;
 }
 
+#if OPENSSL_VERSION_NUMBER >= 0x10001000L /* OpenSSL >= 1.0.1 */
 static int get_dtls_fallback_mtu_or_zero(ssl_socket_t *sock) {
     char host[NET_MAX_HOSTNAME_SIZE];
     if (avs_net_socket_get_remote_host(sock->backend_socket,
@@ -266,10 +267,13 @@ static int get_dtls_fallback_mtu_or_zero(ssl_socket_t *sock) {
         }
     }
 }
+#endif
 
 static long avs_bio_ctrl(BIO *bio, int command, long intarg, void *ptrarg) {
     ssl_socket_t *sock = (ssl_socket_t *) bio->ptr;
+    (void) sock;
     (void) intarg;
+    (void) ptrarg;
     switch (command) {
     case BIO_CTRL_FLUSH:
         return 1;
