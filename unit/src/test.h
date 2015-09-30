@@ -6,7 +6,7 @@ void _avs_unit_test_fail_printf(const char *file,
                                 const char *format,
                                 ...);
 
-void _avs_unit_assert(bool condition,
+void _avs_unit_assert(int condition,
                       const char *file,
                       int line,
                       const char *format,

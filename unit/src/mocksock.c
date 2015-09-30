@@ -116,13 +116,13 @@ typedef struct {
     } args;
 } mocksock_expected_data_t;
 
-static bool data_has_size(const mocksock_expected_data_t *data) {
+static int data_has_size(const mocksock_expected_data_t *data) {
     switch (data->type) {
     case MOCKSOCK_DATA_TYPE_INPUT:
     case MOCKSOCK_DATA_TYPE_OUTPUT:
-        return true;
+        return 1;
     default:
-        return false;
+        return 0;
     }
 }
 
@@ -152,7 +152,7 @@ typedef struct {
 static void assert_command_expected(const mocksock_expected_command_t *expected,
                                     mocksock_expected_command_type_t actual) {
     if (!expected) {
-        _avs_unit_assert(false, __FILE__, __LINE__,
+        _avs_unit_assert(0, __FILE__, __LINE__,
                          "unexpected call: %s\n", cmd_type_to_string(actual));
     } else {
         _avs_unit_assert(expected->command == actual, __FILE__, __LINE__,
@@ -504,10 +504,10 @@ void avs_unit_mocksock_assert_io_clean__(avs_net_abstract_socket_t *socket_,
     mocksock_t *socket = (mocksock_t *) socket_;
 
     if (socket->expected_data) {
+        AVS_LIST(mocksock_expected_data_t) expected;
         _avs_unit_test_fail_printf(file, line,
                                    "expected more I/O operations:\n");
 
-        AVS_LIST(mocksock_expected_data_t) expected;
         AVS_LIST_FOREACH(expected, socket->expected_data) {
             if (data_has_size(expected)) {
                 _avs_unit_test_fail_printf(file, line,
@@ -524,7 +524,7 @@ void avs_unit_mocksock_assert_io_clean__(avs_net_abstract_socket_t *socket_,
             }
         }
 
-        _avs_unit_assert(false, file, line, "\n");
+        _avs_unit_assert(0, file, line, "\n");
     }
 }
 
@@ -636,9 +636,9 @@ void avs_unit_mocksock_assert_expects_met__(avs_net_abstract_socket_t *socket_,
     mocksock_t *socket = (mocksock_t *) socket_;
 
     if (socket->expected_commands) {
+        AVS_LIST(mocksock_expected_command_t) expected;
         _avs_unit_test_fail_printf(file, line, "expects not met\n");
 
-        AVS_LIST(mocksock_expected_command_t) expected;
         AVS_LIST_FOREACH(expected, socket->expected_commands) {
             _avs_unit_test_fail_printf(file, line, "- %s from %s:%d\n",
                                        cmd_to_string(expected),
@@ -646,7 +646,7 @@ void avs_unit_mocksock_assert_expects_met__(avs_net_abstract_socket_t *socket_,
                                        expected->source_line);
         }
 
-        _avs_unit_assert(false, file, line, "\n");
+        _avs_unit_assert(0, file, line, "\n");
     }
 }
 
