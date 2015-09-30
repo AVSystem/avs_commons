@@ -102,27 +102,41 @@ endmacro()
 
 set(LIBRARY_FIND_ROUTINES)
 macro(avs_emit_find_dependency LIB)
-    if(NOT LIBRARY_FIND_ROUTINE_EMITTED_${LIB})
+    list(FIND LIBRARY_FIND_ROUTINE_EMITTED_LIBS "${LIB}" EMITTED_LIB_INDEX)
+    if(EMITTED_LIB_INDEX LESS 0)
         if(LIBRARY_FIND_ROUTINE_${LIB})
             set(LIBRARY_FIND_ROUTINES "${LIBRARY_FIND_ROUTINES}
 
 ${LIBRARY_FIND_ROUTINE_${LIB}}")
-            foreach(PROVIDED_LIB ${LIBRARY_FIND_ROUTINE_PROVIDES_${LIB}})
-                set(LIBRARY_FIND_ROUTINE_EMITTED_${PROVIDED_LIB} 1)
-            endforeach()
+            list(APPEND LIBRARY_FIND_ROUTINE_EMITTED_LIBS
+                 ${LIBRARY_FIND_ROUTINE_PROVIDES_${LIB}})
         endif()
     endif()
 endmacro()
 
 macro(avs_install_export TNAME CNAME)
     install(TARGETS ${TNAME} COMPONENT ${CNAME} EXPORT avs_commons-targets DESTINATION ${LIB_INSTALL_DIR})
-    foreach(DEP ${avs_TARGET_DEPS_${TNAME}})
+    foreach(DEP ${AVS_TARGET_DEPS_${TNAME}})
         avs_emit_find_dependency(${DEP})
     endforeach()
 endmacro()
 
+macro(avs_propagate_exports)
+    set(LIBRARY_FIND_ROUTINES "${LIBRARY_FIND_ROUTINES}" PARENT_SCOPE)
+    set(LIBRARY_FIND_ROUTINE_EMITTED_LIBS "${LIBRARY_FIND_ROUTINE_EMITTED_LIBS}" PARENT_SCOPE)
+endmacro()
+
 # OpenSSL
-avs_find_library("find_package(OpenSSL)" ssl crypto)
+avs_find_library("
+    find_package(OpenSSL)
+    if(OPENSSL_FOUND)
+        include_directories(\\\${OPENSSL_INCLUDE_DIRS})
+        add_library(ssl UNKNOWN IMPORTED)
+        add_library(crypto UNKNOWN IMPORTED)
+        set_property(TARGET ssl PROPERTY IMPORTED_LOCATION \\\${OPENSSL_SSL_LIBRARY})
+        set_property(TARGET crypto PROPERTY IMPORTED_LOCATION \\\${OPENSSL_CRYPTO_LIBRARY})
+    endif()
+" ssl crypto)
 
 # SSL
 option(WITH_OPENSSL "Enable OpenSSL" ON)
@@ -265,11 +279,6 @@ if(WITH_AVS_NET)
         if(NOT OPENSSL_FOUND)
             message(FATAL_ERROR "OpenSSL libraries not found")
         endif()
-        include_directories(${OPENSSL_INCLUDE_DIRS})
-        add_library(ssl UNKNOWN IMPORTED)
-        add_library(crypto UNKNOWN IMPORTED)
-        set_property(TARGET ssl PROPERTY IMPORTED_LOCATION ${OPENSSL_SSL_LIBRARY})
-        set_property(TARGET crypto PROPERTY IMPORTED_LOCATION ${OPENSSL_CRYPTO_LIBRARY})
 
         option(OPENSSL_CUSTOM_CIPHERS_ENABLED "Customize OpenSSL cipher suite list" ON)
         if(OPENSSL_CUSTOM_CIPHERS_ENABLED)

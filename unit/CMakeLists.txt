@@ -41,6 +41,7 @@ add_library(avs_unit STATIC ${SOURCES} ${PUBLIC_HEADERS})
 target_link_libraries(avs_unit ${DEPS_LIBRARIES})
 
 avs_install_export(avs_unit unit)
+avs_propagate_exports()
 install(DIRECTORY include_public/
         COMPONENT unit
         DESTINATION ${INCLUDE_INSTALL_DIR}

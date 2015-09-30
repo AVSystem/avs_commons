@@ -26,6 +26,7 @@ elseif(WITH_XYSSL)
 endif()
 
 set(PRIVATE_HEADERS
+    src/addrinfo.h
     src/net.h)
 
 set(PUBLIC_HEADERS
@@ -49,6 +50,7 @@ elseif(WITH_XYSSL)
 endif()
 
 avs_install_export(avs_net net)
+avs_propagate_exports()
 install(DIRECTORY include_public/
         COMPONENT net
         DESTINATION ${INCLUDE_INSTALL_DIR}

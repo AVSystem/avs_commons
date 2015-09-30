@@ -95,31 +95,31 @@ typedef enum {
  */
 typedef enum {
     AVS_NET_KEY_TYPE_DEFAULT = 0,
-    AVS_NET_KEY_TYPE_EC = AVS_NET_KEY_TYPE_DEFAULT //< ECC (Elliptic Curve Cryptography) key
+    AVS_NET_KEY_TYPE_EC = AVS_NET_KEY_TYPE_DEFAULT /**< ECC (Elliptic Curve Cryptography) key */
 } avs_net_key_type_t;
 
 /**
  * Raw private key data.
  */
 typedef struct {
-    avs_net_key_type_t type; //< Type of the key stored in @p private_key buffer.
-    const char *curve_name; //< elliptic curve name for EC keys
-    const void *private_key; //< A buffer containing private key data.
-    size_t private_key_size; //< Length (in bytes) of the @p private_key .
+    avs_net_key_type_t type; /**< Type of the key stored in @p private_key buffer. */
+    const char *curve_name; /**< elliptic curve name for EC keys */
+    const void *private_key; /**< A buffer containing private key data. */
+    size_t private_key_size; /**< Length (in bytes) of the @p private_key . */
 } avs_net_ssl_raw_key_t;
 
 /**
  * X509 certificate data in DER format.
  */
 typedef struct {
-    const void *cert_der; //< DER-encoded X509 certificate.
-    size_t cert_size; //< Length (in bytes) of the @p cert_der .
+    const void *cert_der; /**< DER-encoded X509 certificate. */
+    size_t cert_size; /**< Length (in bytes) of the @p cert_der . */
 } avs_net_ssl_raw_cert_t;
 
 typedef enum {
     AVS_NET_SECURITY_DEFAULT = 0,
-    AVS_NET_SECURITY_PSK, //< Pre-Shared Key
-    AVS_NET_SECURITY_CERTIFICATE = AVS_NET_SECURITY_DEFAULT //< X509 Certificate + private key
+    AVS_NET_SECURITY_PSK, /**< Pre-Shared Key */
+    AVS_NET_SECURITY_CERTIFICATE = AVS_NET_SECURITY_DEFAULT /**< X509 Certificate + private key */
 } avs_net_security_mode_t;
 
 typedef struct {
@@ -142,73 +142,27 @@ typedef struct {
     } data;
 } avs_net_client_cert_t;
 
-static inline avs_net_client_cert_t
-avs_net_client_cert_from_file(const char *file) {
-    return (avs_net_client_cert_t) {
-        .source = AVS_NET_DATA_SOURCE_FILE,
-        .data = {
-            .file = file
-        }
-    };
-}
-
-static inline avs_net_client_cert_t
-avs_net_client_cert_from_memory(const void *cert_der,
-                                size_t cert_size) {
-    return (avs_net_client_cert_t) {
-        .source = AVS_NET_DATA_SOURCE_BUFFER,
-        .data = {
-            .buffer = {
-                .cert_der = cert_der,
-                .cert_size = cert_size
-            }
-        }
-    };
-}
+avs_net_client_cert_t avs_net_client_cert_from_file(const char *file);
+avs_net_client_cert_t avs_net_client_cert_from_memory(const void *cert_der,
+                                                      size_t cert_size);
 
 typedef struct {
     avs_net_data_source_t source;
     union {
         struct {
-            const char *path; //< private key file path
-            const char *password; //< NULL-terminated password for the private key file
+            const char *path; /**< private key file path */
+            const char *password; /**< NULL-terminated password for the private key file */
         } file;
         avs_net_ssl_raw_key_t buffer;
     } data;
 } avs_net_private_key_t;
 
-static inline avs_net_private_key_t
-avs_net_private_key_from_file(const char *path,
-                              const char *password) {
-    return (avs_net_private_key_t) {
-        .source = AVS_NET_DATA_SOURCE_FILE,
-        .data = {
-            .file = {
-                .path = path,
-                .password = password
-            }
-        }
-    };
-}
-
-static inline avs_net_private_key_t
-avs_net_private_key_from_memory(avs_net_key_type_t type,
-                                const char *curve_name,
-                                const void *private_key,
-                                size_t private_key_size) {
-    return (avs_net_private_key_t) {
-        .source = AVS_NET_DATA_SOURCE_BUFFER,
-        .data = {
-            .buffer = {
-                .type = type,
-                .curve_name = curve_name,
-                .private_key = private_key,
-                .private_key_size = private_key_size
-            }
-        }
-    };
-}
-
+avs_net_private_key_t avs_net_private_key_from_file(const char *path,
+                                                    const char *password);
+avs_net_private_key_t avs_net_private_key_from_memory(avs_net_key_type_t type,
+                                                      const char *curve_name,
+                                                      const void *private_key,
+                                                      size_t private_key_size);
 /**
  * Certificate and key information may be read from files or passed as raw data.
  *
@@ -234,21 +188,9 @@ typedef struct {
     } data;
 } avs_net_security_info_t;
 
-static inline avs_net_security_info_t
-avs_net_security_info_from_psk(avs_net_psk_t psk) {
-    return (avs_net_security_info_t) {
-        .mode = AVS_NET_SECURITY_PSK,
-        .data.psk = psk
-    };
-}
-
-static inline avs_net_security_info_t
-avs_net_security_info_from_certificates(avs_net_certificate_info_t info) {
-    return (avs_net_security_info_t) {
-        .mode = AVS_NET_SECURITY_CERTIFICATE,
-        .data.cert = info
-    };
-}
+avs_net_security_info_t avs_net_security_info_from_psk(avs_net_psk_t psk);
+avs_net_security_info_t
+avs_net_security_info_from_certificates(avs_net_certificate_info_t info);
 
 typedef struct {
     avs_net_ssl_version_t version;

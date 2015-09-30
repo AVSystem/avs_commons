@@ -21,6 +21,65 @@
 #pragma GCC visibility push(hidden)
 #endif
 
+avs_net_client_cert_t avs_net_client_cert_from_file(const char *file) {
+    avs_net_client_cert_t result;
+    memset(&result, 0, sizeof(result));
+    result.source = AVS_NET_DATA_SOURCE_FILE;
+    result.data.file = file;
+    return result;
+}
+
+avs_net_client_cert_t avs_net_client_cert_from_memory(const void *cert_der,
+                                                      size_t cert_size) {
+    avs_net_client_cert_t result;
+    memset(&result, 0, sizeof(result));
+    result.source = AVS_NET_DATA_SOURCE_BUFFER;
+    result.data.buffer.cert_der = cert_der;
+    result.data.buffer.cert_size = cert_size;
+    return result;
+}
+
+avs_net_private_key_t avs_net_private_key_from_file(const char *path,
+                                                    const char *password) {
+    avs_net_private_key_t result;
+    memset(&result, 0, sizeof(result));
+    result.source = AVS_NET_DATA_SOURCE_FILE;
+    result.data.file.path = path;
+    result.data.file.password = password;
+    return result;
+}
+
+avs_net_private_key_t avs_net_private_key_from_memory(avs_net_key_type_t type,
+                                                      const char *curve_name,
+                                                      const void *private_key,
+                                                      size_t private_key_size) {
+    avs_net_private_key_t result;
+    memset(&result, 0, sizeof(result));
+    result.source = AVS_NET_DATA_SOURCE_BUFFER;
+    result.data.buffer.type = type;
+    result.data.buffer.curve_name = curve_name;
+    result.data.buffer.private_key = private_key;
+    result.data.buffer.private_key_size = private_key_size;
+    return result;
+}
+
+avs_net_security_info_t avs_net_security_info_from_psk(avs_net_psk_t psk) {
+    avs_net_security_info_t result;
+    memset(&result, 0, sizeof(result));
+    result.mode = AVS_NET_SECURITY_PSK;
+    result.data.psk = psk;
+    return result;
+}
+
+avs_net_security_info_t
+avs_net_security_info_from_certificates(avs_net_certificate_info_t info) {
+    avs_net_security_info_t result;
+    memset(&result, 0, sizeof(result));
+    result.mode = AVS_NET_SECURITY_CERTIFICATE;
+    result.data.cert = info;
+    return result;
+}
+
 #ifdef WITH_SOCKET_LOG
 static int _avs_net_socket_debug = 0;
 

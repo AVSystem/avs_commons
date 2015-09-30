@@ -40,8 +40,12 @@
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
-#include <ifaddrs.h>
 
+#ifdef HAVE_GETIFADDRS
+#include <ifaddrs.h>
+#endif
+
+#include "addrinfo.h"
 #include "net.h"
 
 #ifdef HAVE_VISIBILITY
@@ -75,6 +79,13 @@ int _avs_inet_pton(int af, const char *src, void *dst);
 #warning "rand_r not available, please provide int _avs_rand_r(unsigned int *)"
 int _avs_rand_r(unsigned int *seedp);
 #endif
+
+typedef union {
+    struct sockaddr         addr;
+    struct sockaddr_in      addr_in;
+    struct sockaddr_in6     addr_in6;
+    struct sockaddr_storage addr_storage;
+} sockaddr_union_t;
 
 static int connect_net(avs_net_abstract_socket_t *net_socket,
                        const char* host,
@@ -316,11 +327,11 @@ static int shutdown_net(avs_net_abstract_socket_t *net_socket_) {
 }
 
 static sa_family_t get_socket_family(int fd) {
-    struct sockaddr_storage addr;
-    socklen_t addrlen = sizeof (addr);
+    sockaddr_union_t addr;
+    socklen_t addrlen = sizeof(addr);
 
-    if (!getsockname(fd, (struct sockaddr *) &addr, &addrlen)) {
-        return addr.ss_family;
+    if (!getsockname(fd, &addr.addr, &addrlen)) {
+        return addr.addr.sa_family;
     } else {
         return AF_UNSPEC;
     }
@@ -681,8 +692,8 @@ static int receive_from_net(avs_net_abstract_socket_t *net_socket_,
                             char *host, size_t host_size,
                             char *port, size_t port_size) {
     avs_net_socket_t *net_socket = (avs_net_socket_t *) net_socket_;
-    struct sockaddr_storage sender_addr;
-    socklen_t addrlen = sizeof (sender_addr);
+    sockaddr_union_t sender_addr;
+    socklen_t addrlen = sizeof(sender_addr);
 
     assert(host);
     assert(port);
@@ -696,15 +707,15 @@ static int receive_from_net(avs_net_abstract_socket_t *net_socket_,
     } else {
         ssize_t result = recvfrom(net_socket->socket,
                                   message_buffer, buffer_size, 0,
-                                  (struct sockaddr *) &sender_addr, &addrlen);
+                                  &sender_addr.addr, &addrlen);
         if (result < 0) {
             *out = 0;
             return -1;
         } else {
             *out = (size_t) result;
             if (result > 0) {
-                return host_port_to_string((struct sockaddr *) &sender_addr,
-                                           addrlen, host, (socklen_t) host_size,
+                return host_port_to_string(&sender_addr.addr, addrlen,
+                                           host, (socklen_t) host_size,
                                            port, (socklen_t) port_size);
             }
             return 0;
@@ -775,7 +786,7 @@ static const char *get_af_name(avs_net_af_t af) {
 static int try_bind(avs_net_socket_t *net_socket, avs_net_af_t family,
                     const char *localaddr, const char *port) {
     struct addrinfo *info = NULL;
-    struct sockaddr_storage addr_storage;
+    sockaddr_union_t addr_storage;
     const struct sockaddr *addr = NULL;
     int af = get_af(family);
     socklen_t addrlen;
@@ -793,8 +804,8 @@ static int try_bind(avs_net_socket_t *net_socket, avs_net_af_t family,
         }
     } else {
         memset(&addr_storage, 0, sizeof(addr_storage));
-        addr_storage.ss_family = (sa_family_t) af;
-        addr = (const struct sockaddr *) &addr_storage;
+        addr_storage.addr.sa_family = (sa_family_t) af;
+        addr = &addr_storage.addr;
         addrlen = sizeof(addr_storage);
     }
     if (!addr) {
@@ -843,14 +854,14 @@ static int accept_net(avs_net_abstract_socket_t *server_net_socket_,
 
     if (wait_until_ready(server_net_socket->socket,
                          NET_ACCEPT_TIMEOUT, 1, 0)) {
-        struct sockaddr_storage remote_address;
+        sockaddr_union_t remote_address;
         socklen_t remote_address_length = sizeof(remote_address);
 
         new_net_socket->socket = accept(server_net_socket->socket,
-                                        (struct sockaddr *) &remote_address,
+                                        &remote_address.addr,
                                         &remote_address_length);
         if (new_net_socket->socket >= 0) {
-            if (host_port_to_string((struct sockaddr *) &remote_address,
+            if (host_port_to_string(&remote_address.addr,
                                     remote_address_length, new_net_socket->host,
                                     sizeof(new_net_socket->host),
                                     new_net_socket->port,
@@ -950,19 +961,19 @@ static avs_net_af_t get_avs_af(int af) {
     }
 }
 
-static int get_string_ip(const struct sockaddr *addr,
+static int get_string_ip(const sockaddr_union_t *addr,
                          char *buffer, size_t buffer_size) {
     const void *addr_data;
     socklen_t addrlen;
 
-    switch(addr->sa_family) {
+    switch(addr->addr.sa_family) {
         case AF_INET:
-            addr_data = &((const struct sockaddr_in *)addr)->sin_addr;
+            addr_data = &addr->addr_in.sin_addr;
             addrlen = INET_ADDRSTRLEN;
             break;
 
         case AF_INET6:
-            addr_data = &((const struct sockaddr_in6 *)addr)->sin6_addr;
+            addr_data = &addr->addr_in6.sin6_addr;
             addrlen = INET6_ADDRSTRLEN;
             break;
 
@@ -970,26 +981,26 @@ static int get_string_ip(const struct sockaddr *addr,
             return -1;
     }
 
-    if (buffer_size < addrlen) {
+    if (buffer_size < (size_t) addrlen) {
         return -1;
     } else {
-        return _avs_inet_ntop(addr->sa_family, addr_data, buffer, addrlen)
+        return _avs_inet_ntop(addr->addr.sa_family, addr_data, buffer, addrlen)
                 == NULL ? -1 : 0;
     }
 }
 
-static int get_string_port(const struct sockaddr *addr,
+static int get_string_port(const sockaddr_union_t *addr,
                            char *buffer, size_t buffer_size) {
-    in_port_t port;
+    uint16_t port;
     int retval;
 
-    switch(addr->sa_family) {
+    switch(addr->addr.sa_family) {
         case AF_INET:
-            port = ((const struct sockaddr_in *)addr)->sin_port;
+            port = addr->addr_in.sin_port;
             break;
 
         case AF_INET6:
-            port = ((const struct sockaddr_in6 *)addr)->sin6_port;
+            port = addr->addr_in6.sin6_port;
             break;
 
         default:
@@ -1020,12 +1031,11 @@ int avs_net_local_address_for_target_host(const char *target_host,
         if (test_socket >= 0
                 && !connect_with_timeout(test_socket, address->ai_addr,
                                          address->ai_addrlen)) {
-            struct sockaddr_storage addr;
+            sockaddr_union_t addr;
             socklen_t addrlen = sizeof(addr);
 
-            if (!getsockname(test_socket, (struct sockaddr *)&addr, &addrlen)) {
-                result = get_string_ip((struct sockaddr *)&addr,
-                                       address_buffer, buffer_size);
+            if (!getsockname(test_socket, &addr.addr, &addrlen)) {
+                result = get_string_ip(&addr, address_buffer, buffer_size);
             }
         }
         close(test_socket);
@@ -1038,12 +1048,11 @@ int avs_net_local_address_for_target_host(const char *target_host,
 static int local_port_net(avs_net_abstract_socket_t *socket,
                           char *out_buffer, size_t out_buffer_size) {
     const avs_net_socket_t *net_socket = (const avs_net_socket_t *) socket;
-    struct sockaddr_storage addr;
-    socklen_t addrlen = sizeof (addr);
+    sockaddr_union_t addr;
+    socklen_t addrlen = sizeof(addr);
 
-    if (!getsockname(net_socket->socket, (struct sockaddr *) &addr, &addrlen)) {
-        return get_string_port((struct sockaddr *)&addr,
-                               out_buffer, out_buffer_size);
+    if (!getsockname(net_socket->socket, &addr.addr, &addrlen)) {
+        return get_string_port(&addr, out_buffer, out_buffer_size);
     } else {
         return -1;
     }
@@ -1218,12 +1227,12 @@ static int interface_name_net(avs_net_abstract_socket_t *socket_,
                sizeof (*if_name));
         return 0;
     } else {
-        struct sockaddr_storage addr;
+        sockaddr_union_t addr;
         socklen_t addrlen = sizeof(addr);
-        if (getsockname(socket->socket, (struct sockaddr *) &addr, &addrlen)) {
+        if (getsockname(socket->socket, &addr.addr, &addrlen)) {
             return -1;
         }
-        return find_interface((const struct sockaddr *) &addr, if_name);
+        return find_interface(&addr.addr, if_name);
     }
 }
 

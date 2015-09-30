@@ -43,6 +43,10 @@
 
 #define CERT_SUBJECT_NAME_SIZE 257
 
+#if OPENSSL_VERSION_NUMBER >= 0x10000000L && !defined(OPENSSL_NO_PSK) /* OpenSSL >= 1.0.0 */
+#define HAVE_OPENSSL_PSK
+#endif
+
 typedef struct {
     const avs_net_socket_v_table_t * const operations;
     SSL_CTX *ctx;
@@ -57,7 +61,9 @@ typedef struct {
     avs_net_socket_configuration_t backend_configuration;
     avs_net_socket_raw_resolved_endpoint_t endpoint_buffer;
 
+#ifdef HAVE_OPENSSL_PSK
     avs_net_psk_t psk;
+#endif
 } ssl_socket_t;
 
 static int connect_ssl(avs_net_abstract_socket_t *ssl_socket,
@@ -220,7 +226,7 @@ static int adjust_receive_timeout(ssl_socket_t *sock) {
 
 static int avs_bio_read(BIO *bio, char *buffer, int size) {
     ssl_socket_t *sock = (ssl_socket_t *) bio->ptr;
-    int prev_timeout;
+    int prev_timeout = -1;
     size_t read_bytes;
     int result;
     if (!buffer || size < 0) {
@@ -253,6 +259,7 @@ static int avs_bio_gets(BIO *bio, char *buffer, int size) {
     return -1;
 }
 
+#if OPENSSL_VERSION_NUMBER >= 0x10001000L /* OpenSSL >= 1.0.1 */
 static int get_dtls_fallback_mtu_or_zero(ssl_socket_t *sock) {
     char host[NET_MAX_HOSTNAME_SIZE];
     if (avs_net_socket_get_remote_host(sock->backend_socket,
@@ -266,10 +273,13 @@ static int get_dtls_fallback_mtu_or_zero(ssl_socket_t *sock) {
         }
     }
 }
+#endif
 
 static long avs_bio_ctrl(BIO *bio, int command, long intarg, void *ptrarg) {
     ssl_socket_t *sock = (ssl_socket_t *) bio->ptr;
+    (void) sock;
     (void) intarg;
+    (void) ptrarg;
     switch (command) {
     case BIO_CTRL_FLUSH:
         return 1;
@@ -619,7 +629,7 @@ static const EC_POINT *get_ec_public_key(ssl_socket_t *socket) {
     const EC_POINT *point = NULL;
 
 #if OPENSSL_VERSION_NUMBER < 0x10100000L
-    // HACK: temporary SSL context to obtain X509 cert
+    /* HACK: temporary SSL context to obtain X509 cert */
     SSL *ssl = SSL_new(socket->ctx);
     if (!ssl) {
         return NULL;
@@ -647,19 +657,18 @@ static const EC_POINT *get_ec_public_key(ssl_socket_t *socket) {
 
 static EC_KEY *ec_key_from_raw_private_key(ssl_socket_t *socket,
                                            const avs_net_ssl_raw_key_t *key) {
+    const EC_POINT *public_key = NULL;
+    BIGNUM *private_key = NULL;
+    EC_KEY *ec_key = NULL;
     int curve_id = OBJ_txt2nid(key->curve_name);
     if (curve_id == NID_undef) {
         LOG(ERROR, "unknown curve: %s", key->curve_name);
         return NULL;
     }
 
-    const EC_POINT *public_key = get_ec_public_key(socket);
-    if (!public_key) {
+    if (!(public_key = get_ec_public_key(socket))) {
         return NULL;
     }
-
-    BIGNUM *private_key = NULL;
-    EC_KEY *ec_key = NULL;
 
     if (!(private_key = BN_bin2bn((const unsigned char*)key->private_key,
                                   (int)key->private_key_size, NULL))
@@ -678,15 +687,17 @@ static EC_KEY *ec_key_from_raw_private_key(ssl_socket_t *socket,
 
 static int load_client_key_from_data(ssl_socket_t *socket,
                                      const avs_net_ssl_raw_key_t *key) {
-    EC_KEY *ec_key = ec_key_from_raw_private_key(socket, key);
-    if (!ec_key) {
+    EC_KEY *ec_key = NULL;
+    EVP_PKEY *evp_key = NULL;
+
+    if (!(ec_key = ec_key_from_raw_private_key(socket, key))) {
         LOG(ERROR, "could not decode EC private key");
         log_openssl_error(socket);
         return -1;
     }
 
-    EVP_PKEY *evp_key = EVP_PKEY_new();
-    if (!evp_key || !EVP_PKEY_assign_EC_KEY(evp_key, ec_key)) {
+    if (!(evp_key = EVP_PKEY_new())
+            || !EVP_PKEY_assign_EC_KEY(evp_key, ec_key)) {
         log_openssl_error(socket);
         LOG(ERROR, "could not create EVP_PKEY");
         EC_KEY_free(ec_key);
@@ -773,13 +784,15 @@ static int is_client_cert_empty(const avs_net_client_cert_t *cert) {
 }
 
 static int load_client_cert(ssl_socket_t *socket,
-                            const avs_net_client_cert_t *cert) {
+                            const avs_net_client_cert_t *cert,
+                            const avs_net_private_key_t *key) {
+    int result = 0;
+
     if (is_client_cert_empty(cert)) {
         LOG(TRACE, "client certificate not specified");
         return 0;
     }
 
-    int result = 0;
     switch (cert->source) {
     case AVS_NET_DATA_SOURCE_FILE:
         result = SSL_CTX_use_certificate_chain_file(socket->ctx,
@@ -799,6 +812,12 @@ static int load_client_cert(ssl_socket_t *socket,
         log_openssl_error(socket);
         return -1;
     }
+
+    if (load_client_private_key(socket, key)) {
+        LOG(ERROR, "Error loading client private key");
+        return -1;
+    }
+
     return 0;
 }
 
@@ -828,19 +847,16 @@ static int configure_ssl_certs(ssl_socket_t *socket,
         LOG(DEBUG, "Server authentication disabled");
     }
 
-    if (load_client_cert(socket, &cert_info->client_cert)) {
+    if (load_client_cert(socket,
+                         &cert_info->client_cert, &cert_info->client_key)) {
         LOG(ERROR, "Error loading client certificate");
-        return -1;
-    }
-
-    if (load_client_private_key(socket, &cert_info->client_key)) {
-        LOG(ERROR, "Error loading client private key");
         return -1;
     }
 
     return 0;
 }
 
+#ifdef HAVE_OPENSSL_PSK
 static unsigned int psk_client_cb(SSL *ssl,
                                   const char *hint,
                                   char *identity,
@@ -863,7 +879,7 @@ static unsigned int psk_client_cb(SSL *ssl,
     memcpy(identity, socket->psk.identity, socket->psk.identity_size);
     identity[socket->psk.identity_size] = '\0';
 
-    return (unsigned int)socket->psk.psk_size;
+    return (unsigned int) socket->psk.psk_size;
 }
 
 static void free_psk(avs_net_psk_t *psk) {
@@ -902,6 +918,15 @@ static int configure_ssl_psk(ssl_socket_t *socket,
 
     return 0;
 }
+#else
+static int configure_ssl_psk(ssl_socket_t *socket,
+                             const avs_net_psk_t *psk) {
+    (void) socket;
+    (void) psk;
+    LOG(ERROR, "PSK not supported in this version of OpenSSL");
+    return -1;
+}
+#endif
 
 static int configure_cipher_list(ssl_socket_t *socket,
                                  const char *cipher_list) {
@@ -1043,7 +1068,9 @@ static int cleanup_ssl(avs_net_abstract_socket_t **socket_) {
     ssl_socket_t **socket = (ssl_socket_t **) socket_;
     LOG(TRACE, "cleanup_ssl(*socket=%p)", (void *) *socket);
 
+#ifdef HAVE_OPENSSL_PSK
     free_psk(&(*socket)->psk);
+#endif
 
     close_ssl(*socket_);
     if ((*socket)->ctx) {
