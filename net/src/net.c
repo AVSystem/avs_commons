@@ -981,7 +981,7 @@ static int get_string_ip(const sockaddr_union_t *addr,
             return -1;
     }
 
-    if (buffer_size < addrlen) {
+    if (buffer_size < (size_t) addrlen) {
         return -1;
     } else {
         return _avs_inet_ntop(addr->addr.sa_family, addr_data, buffer, addrlen)
@@ -991,7 +991,7 @@ static int get_string_ip(const sockaddr_union_t *addr,
 
 static int get_string_port(const sockaddr_union_t *addr,
                            char *buffer, size_t buffer_size) {
-    in_port_t port;
+    uint16_t port;
     int retval;
 
     switch(addr->addr.sa_family) {
