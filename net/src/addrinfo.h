@@ -21,8 +21,10 @@
 
 #ifdef __UCLIBC__
 #define __UCLIBC_PREREQ(maj, min, patch) \
-    ((__UCLIBC_MAJOR__ << 16) + (__UCLIBC_MINOR__ << 8) + __UCLIBC_SUBLEVEL__ \
-    >= ((maj) << 16) + ((min) << 8) + (patch))
+    (__UCLIBC_MAJOR__ > (maj) || \
+     (__UCLIBC_MAJOR__ == (maj) && \
+      (__UCLIBC_MINOR > (min) || \
+       (__UCLIBC_MINOR__ == (min) && __UCLIBC_SUBLEVEL__ >= (patch)))))
 
 #if !__UCLIBC_PREREQ(0,9,30)
 /* These guys are available since uClibc 0.9.30 */
