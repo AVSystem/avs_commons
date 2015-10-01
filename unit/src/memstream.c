@@ -105,7 +105,7 @@ int avs_unit_memstream_alloc(avs_stream_abstract_t** stream,
         (avs_stream_reset_t) memstream_fail,
         memstream_close,
         (avs_stream_reset_t) memstream_fail,
-        NULL
+        AVS_STREAM_V_TABLE_NO_EXTENSIONS
     };
 
     memstream_t *ret = (memstream_t*) calloc(1, sizeof(memstream_t));

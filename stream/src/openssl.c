@@ -70,7 +70,7 @@ static const avs_stream_v_table_t md5_vtable = {
     avs_md5_reset,
     avs_md5_finish,
     (avs_stream_errno_t) unimplemented,
-    NULL
+    AVS_STREAM_V_TABLE_NO_EXTENSIONS
 };
 
 avs_stream_abstract_t *avs_stream_md5_create(void) {

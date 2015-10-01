@@ -44,6 +44,7 @@ typedef struct {
     const void *data;
 } avs_stream_v_table_extension_t;
 
+#define AVS_STREAM_V_TABLE_NO_EXTENSIONS NULL
 #define AVS_STREAM_V_TABLE_EXTENSION_NULL { 0, NULL }
 
 typedef struct {

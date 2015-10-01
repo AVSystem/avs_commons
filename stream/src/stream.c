@@ -352,7 +352,7 @@ static const avs_stream_v_table_t outbuf_stream_vtable = {
     outbuf_stream_reset,
     outbuf_stream_close,
     (avs_stream_errno_t) unimplemented,
-    NULL
+    AVS_STREAM_V_TABLE_NO_EXTENSIONS
 };
 
 const avs_stream_outbuf_t AVS_STREAM_OUTBUF_STATIC_INITIALIZER
