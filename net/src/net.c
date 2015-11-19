@@ -237,17 +237,41 @@ static void randomize_addrinfo_list(struct addrinfo **list_ptr,
     }
 }
 
+static int get_af(avs_net_af_t addr_family) {
+    switch (addr_family) {
+    case AVS_NET_AF_INET4:
+        return AF_INET;
+    case AVS_NET_AF_INET6:
+        return AF_INET6;
+    case AVS_NET_AF_UNSPEC:
+    default:
+        return AF_UNSPEC;
+    }
+}
+
+static const char *get_af_name(avs_net_af_t af) {
+    switch (af) {
+    case AVS_NET_AF_INET4:
+        return "AF_INET";
+    case AVS_NET_AF_INET6:
+        return "AF_INET6";
+    case AVS_NET_AF_UNSPEC:
+    default:
+        return "AF_UNSPEC";
+    }
+}
+
 static struct addrinfo *get_addrinfo_net(int socket_type,
                                          const char *localaddr,
                                          const char *port,
-                                         int addr_family,
+                                         avs_net_af_t addr_family,
                                          int flags,
                                          const avs_net_socket_raw_resolved_endpoint_t *preferred_endpoint) {
     int error;
     struct addrinfo hint, *info = NULL;
 
     memset((void *) &hint, 0, sizeof (hint));
-    hint.ai_family = addr_family;
+    hint.ai_family = get_af(addr_family);
     hint.ai_flags = AI_NUMERICSERV | flags;
     hint.ai_socktype = socket_type;
 
@@ -548,7 +572,8 @@ static int connect_net(avs_net_abstract_socket_t *net_socket_,
 
     LOG(TRACE, "connecting to [%s]:%s", host, port);
 
-    info = get_addrinfo_net(net_socket->type, host, port, AF_UNSPEC, 0,
+    info = get_addrinfo_net(net_socket->type, host, port,
+                            net_socket->configuration.address_family, 0,
                             net_socket->configuration.preferred_endpoint);
     for (address = info; address != NULL; address = address->ai_next) {
         if ((net_socket->socket = socket(address->ai_family,
@@ -645,8 +670,9 @@ static int send_to_net(avs_net_abstract_socket_t *net_socket_,
                        const char *host,
                        const char *port) {
     avs_net_socket_t *net_socket = (avs_net_socket_t *) net_socket_;
-    struct addrinfo *info = get_addrinfo_net(net_socket->type,
-                                             host, port, AF_UNSPEC, 0, NULL);
+    struct addrinfo *info =
+            get_addrinfo_net(net_socket->type, host, port,
+                             net_socket->configuration.address_family, 0, NULL);
     ssize_t result;
 
     if (!info) {
@@ -759,36 +785,11 @@ create_listening_socket_error:
     return retval;
 }
 
-static int get_af(avs_net_af_t addr_family) {
-    switch (addr_family) {
-    case AVS_NET_AF_INET4:
-        return AF_INET;
-    case AVS_NET_AF_INET6:
-        return AF_INET6;
-    case AVS_NET_AF_UNSPEC:
-    default:
-        return AF_UNSPEC;
-    }
-}
-
-static const char *get_af_name(avs_net_af_t af) {
-    switch (af) {
-    case AVS_NET_AF_INET4:
-        return "AF_INET";
-    case AVS_NET_AF_INET6:
-        return "AF_INET6";
-    case AVS_NET_AF_UNSPEC:
-    default:
-        return "AF_UNSPEC";
-    }
-}
-
 static int try_bind(avs_net_socket_t *net_socket, avs_net_af_t family,
                     const char *localaddr, const char *port) {
     struct addrinfo *info = NULL;
     sockaddr_union_t addr_storage;
     const struct sockaddr *addr = NULL;
-    int af = get_af(family);
     socklen_t addrlen;
     int retval = -1;
     if (net_socket->configuration.address_family != AVS_NET_AF_UNSPEC
@@ -797,14 +798,14 @@ static int try_bind(avs_net_socket_t *net_socket, avs_net_af_t family,
     }
     if (localaddr || port) {
         info = get_addrinfo_net(net_socket->type, localaddr, port,
-                                af, AI_ADDRCONFIG | AI_PASSIVE, NULL);
+                                family, AI_ADDRCONFIG | AI_PASSIVE, NULL);
         if (info) {
             addr = info->ai_addr;
             addrlen = info->ai_addrlen;
         }
     } else {
         memset(&addr_storage, 0, sizeof(addr_storage));
-        addr_storage.addr.sa_family = (sa_family_t) af;
+        addr_storage.addr.sa_family = (sa_family_t) get_af(family);
         addr = &addr_storage.addr;
         addrlen = sizeof(addr_storage);
     }
@@ -1020,7 +1021,7 @@ int avs_net_local_address_for_target_host(const char *target_host,
     int result = -1;
 
     info = get_addrinfo_net(SOCK_DGRAM, target_host, DUMMY_PORT,
-                            get_af(addr_family), 0, NULL);
+                            addr_family, 0, NULL);
     for (address = info;
             result != 0 && address != NULL;
             address = address->ai_next) {
