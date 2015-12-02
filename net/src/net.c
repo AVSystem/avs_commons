@@ -298,6 +298,12 @@ static struct addrinfo *get_addrinfo_net(int socket_type,
     }
 }
 
+static void free_addrinfo_net(struct addrinfo *value) {
+    if (value) {
+        freeaddrinfo(value);
+    }
+}
+
 static int remote_host_net(avs_net_abstract_socket_t *socket_,
                            char *out_buffer, size_t out_buffer_size) {
     avs_net_socket_t *socket = (avs_net_socket_t *) socket_;
@@ -616,11 +622,11 @@ static int connect_net(avs_net_abstract_socket_t *net_socket_,
                            address->ai_addr, address->ai_addrlen);
                 }
             }
-            freeaddrinfo(info);
+            free_addrinfo_net(info);
             return 0;
         }
     }
-    freeaddrinfo(info);
+    free_addrinfo_net(info);
     net_socket->socket = -1;
     LOG(ERROR, "connect_net failed");
     return -1;
@@ -681,7 +687,7 @@ static int send_to_net(avs_net_abstract_socket_t *net_socket_,
 
     result = sendto(net_socket->socket, buffer, buffer_length,
                     0, info->ai_addr, info->ai_addrlen);
-    freeaddrinfo(info);
+    free_addrinfo_net(info);
     if (result < 0) {
         *out = 0;
         return (int) result;
@@ -818,7 +824,7 @@ static int try_bind(avs_net_socket_t *net_socket, avs_net_af_t family,
     retval = create_listening_socket(net_socket, addr, addrlen);
 bind_net_end:
     if (info) {
-        freeaddrinfo(info);
+        free_addrinfo_net(info);
     }
     return retval;
 }
@@ -1042,7 +1048,7 @@ int avs_net_local_address_for_target_host(const char *target_host,
         close(test_socket);
     }
 
-    freeaddrinfo(info);
+    free_addrinfo_net(info);
     return result;
 }
 
