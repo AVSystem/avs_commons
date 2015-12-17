@@ -1113,10 +1113,10 @@ static const SSL_METHOD *stream_method(avs_net_ssl_version_t version) {
         return SSLv2_method();
 #endif
 
-#ifndef OPENSSL_NO_SSL3
     case AVS_NET_SSL_VERSION_SSLv2_OR_3:
         return SSLv23_method();
 
+#ifndef OPENSSL_NO_SSL3
     case AVS_NET_SSL_VERSION_SSLv3:
         return SSLv3_method();
 #endif
