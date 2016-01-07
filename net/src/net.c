@@ -445,16 +445,19 @@ static int configure_socket(avs_net_socket_t *net_socket) {
     return 0;
 }
 
-static short wait_until_ready(int sockfd, int timeout, char in, char out) {
+static short wait_until_ready(int sockfd, int timeout,
+                              char in, char out, char err) {
 #ifdef HAVE_POLL
     struct pollfd p;
     short events = (short) ((in ? POLLIN : 0) | (out ? POLLOUT : 0));
     p.fd = sockfd;
     p.events = events;
     p.revents = 0;
-    if (poll(&p, 1, timeout) != 1
-            || (p.revents & (POLLHUP | POLLERR))) {
+    if (poll(&p, 1, timeout) != 1) {
         return 0;
+    }
+    if (err) {
+        events = (short) (events | POLLHUP | POLLERR);
     }
     return p.revents & events;
 #else
@@ -474,22 +477,24 @@ static short wait_until_ready(int sockfd, int timeout, char in, char out) {
         FD_SET(sockfd, &outfds);
     }
     FD_SET(sockfd, &errfds);
-    if (select(sockfd + 1, &infds, &outfds, &errfds, &timeval_timeout) <= 0
-            || FD_ISSET(sockfd, &errfds)) {
+    if (select(sockfd + 1, &infds, &outfds, &errfds, &timeval_timeout) <= 0) {
         return 0;
     }
-    return (in && FD_ISSET(sockfd, &infds)) || (out && FD_ISSET(sockfd, &outfds));
+    return (err && FD_ISSET(sockfd, &errfds))
+            || (in && FD_ISSET(sockfd, &infds))
+            || (out && FD_ISSET(sockfd, &outfds));
 #endif
 }
 
 static int connect_with_timeout(int sockfd,
                                 struct sockaddr *ai_addr,
-                                socklen_t ai_addrlen) {
+                                socklen_t ai_addrlen,
+                                char is_stream) {
     if (fcntl(sockfd, F_SETFL, O_NONBLOCK) == -1) {
         return -1;
     }
     connect(sockfd, ai_addr, ai_addrlen);
-    if (!wait_until_ready(sockfd, NET_CONNECT_TIMEOUT, 1, 1)) {
+    if (!wait_until_ready(sockfd, NET_CONNECT_TIMEOUT, 1, 1, is_stream)) {
         errno = ETIMEDOUT;
         return -1;
     } else {
@@ -509,7 +514,7 @@ static int connect_with_timeout(int sockfd,
     return 0;
 }
 
-static int is_stream(avs_net_socket_t *net_socket) {
+static char is_stream(avs_net_socket_t *net_socket) {
     return (net_socket->type == SOCK_STREAM
             || net_socket->type == SOCK_SEQPACKET);
 }
@@ -594,11 +599,12 @@ static int connect_net(avs_net_abstract_socket_t *net_socket_,
             continue;
         }
         LOG(TRACE, "connect to [%s]:%s", host, port);
+        char socket_is_stream = is_stream(net_socket);
         if (connect_with_timeout(net_socket->socket,
                                  address->ai_addr,
-                                 address->ai_addrlen) < 0
-                || (is_stream(net_socket)
-                && send_net(net_socket_, NULL, 0) < 0)
+                                 address->ai_addrlen,
+                                 socket_is_stream) < 0
+                || (socket_is_stream && send_net(net_socket_, NULL, 0) < 0)
                 || host_port_to_string(address->ai_addr, address->ai_addrlen,
                                        net_socket->host,
                                        sizeof(net_socket->host),
@@ -641,7 +647,7 @@ static int send_net(avs_net_abstract_socket_t *net_socket_,
     /* send at least one datagram, even if zero-length - hence do..while */
     do {
         ssize_t result;
-        if (!wait_until_ready(net_socket->socket, NET_SEND_TIMEOUT, 0, 1)) {
+        if (!wait_until_ready(net_socket->socket, NET_SEND_TIMEOUT, 0, 1, 1)) {
             LOG(ERROR, "timeout (send)");
             return -1;
         }
@@ -702,7 +708,8 @@ static int receive_net(avs_net_abstract_socket_t *net_socket_,
                        void *buffer,
                        size_t buffer_length) {
     avs_net_socket_t *net_socket = (avs_net_socket_t *) net_socket_;
-    if (!wait_until_ready(net_socket->socket, net_socket->recv_timeout, 1, 0)) {
+    if (!wait_until_ready(net_socket->socket, net_socket->recv_timeout,
+                          1, 0, 1)) {
         *out = 0;
         return -1;
     } else {
@@ -733,7 +740,7 @@ static int receive_from_net(avs_net_abstract_socket_t *net_socket_,
     port[0] = '\0';
 
     if (!wait_until_ready(net_socket->socket,
-                          AVS_NET_SOCKET_DEFAULT_RECV_TIMEOUT, 1, 0)) {
+                          AVS_NET_SOCKET_DEFAULT_RECV_TIMEOUT, 1, 0, 1)) {
         *out = 0;
         return -1;
     } else {
@@ -860,7 +867,7 @@ static int accept_net(avs_net_abstract_socket_t *server_net_socket_,
     }
 
     if (wait_until_ready(server_net_socket->socket,
-                         NET_ACCEPT_TIMEOUT, 1, 0)) {
+                         NET_ACCEPT_TIMEOUT, 1, 0, 1)) {
         sockaddr_union_t remote_address;
         socklen_t remote_address_length = sizeof(remote_address);
 
@@ -1037,7 +1044,7 @@ int avs_net_local_address_for_target_host(const char *target_host,
 
         if (test_socket >= 0
                 && !connect_with_timeout(test_socket, address->ai_addr,
-                                         address->ai_addrlen)) {
+                                         address->ai_addrlen, 0)) {
             sockaddr_union_t addr;
             socklen_t addrlen = sizeof(addr);
 
