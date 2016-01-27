@@ -1,10 +1,10 @@
 /*
- * Copyright (C) 2006-2014 AVSystem <avsystem@avsystem.com>
- * All Rights Reserved
- * Unauthorized copying and modifications of this file are strictly PROHIBITED
+ * AVSystem Commons Library
  *
- * libCWMP ##version##
- * Client library for CPE WAN Management Protocol (TR-069)
+ * Copyright (C) 2014-2016 AVSystem <http://www.avsystem.com/>
+ *
+ * This code is free and open source software licensed under the MIT License.
+ * See the LICENSE file for details.
  */
 
 #include "config.h"
