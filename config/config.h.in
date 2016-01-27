@@ -15,8 +15,8 @@
 #cmakedefine WITH_LWIP
 
 #cmakedefine WITH_OPENSSL
-#cmakedefine WITH_XYSSL
-#if defined(WITH_OPENSSL) || defined(WITH_XYSSL)
+#cmakedefine WITH_MBEDTLS
+#if defined(WITH_OPENSSL) || defined(WITH_MBEDTLS)
 #define WITH_SSL
 #endif
 
