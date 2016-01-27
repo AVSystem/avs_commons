@@ -10,12 +10,16 @@
 #include <config.h>
 
 #include <assert.h>
+#include <inttypes.h>
 #include <string.h>
 
 #if !defined(__STDC_VERSION__) || (__STDC_VERSION__ < 199901L)
 #define inline
 #endif
 
+#include <mbedtls/ctr_drbg.h>
+#include <mbedtls/entropy.h>
+#include <mbedtls/net.h>
 #include <mbedtls/ssl.h>
 
 #include "net.h"
@@ -26,12 +30,16 @@
 
 typedef struct {
     const avs_net_socket_v_table_t * const operations;
-    /*mbedtls_ssl_context context;*/
+    mbedtls_ssl_context context;
+    mbedtls_ssl_config config;
     mbedtls_x509_crt *ca_cert;
     mbedtls_x509_crt *client_cert;
     mbedtls_pk_context *pk_key;
-    /*havege_state havege;*/
+    mbedtls_entropy_context entropy;
+    mbedtls_ctr_drbg_context rng;
     avs_net_abstract_socket_t *tcp_socket;
+    avs_net_ssl_version_t version;
+    avs_ssl_additional_configuration_clb_t *additional_configuration_clb;
     avs_net_socket_configuration_t backend_configuration;
 } ssl_socket_t;
 
@@ -93,6 +101,39 @@ static const avs_net_socket_v_table_t ssl_vtable = {
     get_opt_ssl,
     set_opt_ssl
 };
+
+static int avs_bio_recv(void *ctx, unsigned char *buf, size_t len,
+                        uint32_t timeout_ms) {
+    ssl_socket_t *socket = (ssl_socket_t *) ctx;
+    avs_net_socket_opt_value_t orig_timeout;
+    avs_net_socket_opt_value_t new_timeout;
+    size_t read_bytes;
+    int result;
+    avs_net_socket_get_opt(socket->tcp_socket,
+                           AVS_NET_SOCKET_OPT_RECV_TIMEOUT, &orig_timeout);
+    new_timeout = orig_timeout;
+    if (timeout_ms) {
+        new_timeout.recv_timeout = (int) timeout_ms;
+    }
+    avs_net_socket_set_opt(socket->tcp_socket, AVS_NET_SOCKET_OPT_RECV_TIMEOUT,
+                           new_timeout);
+    if (avs_net_socket_receive(socket->tcp_socket, &read_bytes, buf, len)) {
+        result = MBEDTLS_ERR_NET_RECV_FAILED;
+    } else {
+        result = (int) read_bytes;
+    }
+    avs_net_socket_set_opt(socket->tcp_socket, AVS_NET_SOCKET_OPT_RECV_TIMEOUT,
+                           orig_timeout);
+    return result;
+}
+
+static int avs_bio_send(void *ctx, const unsigned char *buf, size_t len) {
+    if (avs_net_socket_send(((ssl_socket_t *) ctx)->tcp_socket, buf, len)) {
+        return MBEDTLS_ERR_NET_SEND_FAILED;
+    } else {
+        return (int) len;
+    }
+}
 
 static int interface_name_ssl(avs_net_abstract_socket_t *ssl_socket_,
                               avs_net_socket_interface_name_t *if_name) {
@@ -161,6 +202,170 @@ static int system_socket_ssl(avs_net_abstract_socket_t *socket_,
         *out = NULL;
     }
     return *out ? 0 : -1;
+}
+
+static int set_min_ssl_version(mbedtls_ssl_config *config,
+                               avs_net_ssl_version_t version) {
+    switch (version) {
+    case AVS_NET_SSL_VERSION_SSLv2_OR_3:
+    case AVS_NET_SSL_VERSION_SSLv3:
+        mbedtls_ssl_conf_min_version(config,
+                                     MBEDTLS_SSL_MAJOR_VERSION_3,
+                                     MBEDTLS_SSL_MINOR_VERSION_0);
+        return 0;
+    case AVS_NET_SSL_VERSION_TLSv1:
+        mbedtls_ssl_conf_min_version(config,
+                                     MBEDTLS_SSL_MAJOR_VERSION_3,
+                                     MBEDTLS_SSL_MINOR_VERSION_1);
+        return 0;
+    case AVS_NET_SSL_VERSION_TLSv1_1:
+        mbedtls_ssl_conf_min_version(config,
+                                     MBEDTLS_SSL_MAJOR_VERSION_3,
+                                     MBEDTLS_SSL_MINOR_VERSION_2);
+        return 0;
+    case AVS_NET_SSL_VERSION_TLSv1_2:
+        mbedtls_ssl_conf_min_version(config,
+                                     MBEDTLS_SSL_MAJOR_VERSION_3,
+                                     MBEDTLS_SSL_MINOR_VERSION_3);
+        return 0;
+    default:
+        LOG(ERROR, "Unsupported SSL version");
+        return -1;
+    }
+}
+
+static uint8_t is_verification_enabled(ssl_socket_t *socket) {
+    return socket->ca_cert != NULL;
+}
+
+static int initialize_ssl_config(ssl_socket_t *socket) {
+    avs_net_socket_opt_value_t state_opt;
+    int endpoint;
+    if (avs_net_socket_get_opt(socket->tcp_socket,
+                               AVS_NET_SOCKET_OPT_STATE, &state_opt)) {
+        LOG(ERROR, "initialize_ssl_config: could not get socket state");
+        return -1;
+    }
+    if (state_opt.state == AVS_NET_SOCKET_STATE_CONSUMING) {
+        endpoint = MBEDTLS_SSL_IS_CLIENT;
+    } else if (state_opt.state == AVS_NET_SOCKET_STATE_SERVING) {
+        endpoint = MBEDTLS_SSL_IS_SERVER;
+    } else {
+        LOG(ERROR, "initialize_ssl_config: invalid socket state");
+        return -1;
+    }
+
+    mbedtls_ssl_config_init(&socket->config);
+    if (mbedtls_ssl_config_defaults(&socket->config, endpoint,
+                                    MBEDTLS_SSL_TRANSPORT_STREAM,
+                                    MBEDTLS_SSL_PRESET_DEFAULT)) {
+        LOG(ERROR, "mbedtls_ssl_config_defaults() failed");
+        return -1;
+    }
+
+    if (set_min_ssl_version(&socket->config, socket->version)) {
+        LOG(ERROR, "Could not set max SSL version");
+        return -1;
+    }
+
+    mbedtls_ssl_conf_rng(&socket->config,
+                         mbedtls_ctr_drbg_random, &socket->rng);
+
+    if (socket->ca_cert) {
+        mbedtls_ssl_conf_authmode(&socket->config, MBEDTLS_SSL_VERIFY_REQUIRED);
+        mbedtls_ssl_conf_ca_chain(&socket->config, socket->ca_cert, NULL);
+    } else {
+        mbedtls_ssl_conf_authmode(&socket->config, MBEDTLS_SSL_VERIFY_NONE);
+    }
+
+    if (socket->client_cert && socket->pk_key) {
+        mbedtls_ssl_conf_own_cert(&socket->config,
+                                  socket->client_cert, socket->pk_key);
+    }
+
+    if (socket->additional_configuration_clb
+            && socket->additional_configuration_clb(&socket->config)) {
+        LOG(ERROR, "Error while setting additional SSL configuration");
+        return -1;
+    }
+
+    return 0;
+}
+
+static int start_ssl(ssl_socket_t *socket, const char *host) {
+    int result;
+    mbedtls_entropy_init(&socket->entropy);
+
+    mbedtls_ctr_drbg_init(&socket->rng);
+    if ((result = mbedtls_ctr_drbg_seed(&socket->rng, mbedtls_entropy_func,
+                                        &socket->entropy, NULL, 0))) {
+        LOG(ERROR, "mbedtls_ctr_drbg_seed() failed: %d", result);
+        return -1;
+    }
+
+    if (initialize_ssl_config(socket)) {
+        LOG(ERROR, "could not initialize ssl context");
+        return -1;
+    }
+
+    mbedtls_ssl_init(&socket->context);
+    mbedtls_ssl_set_bio(&socket->context, socket,
+                        avs_bio_send, NULL, avs_bio_recv);
+    if ((result = mbedtls_ssl_setup(&socket->context, &socket->config))) {
+        LOG(ERROR, "mbedtls_ssl_setup() failed: %d", result);
+        return -1;
+    }
+
+    if ((result = mbedtls_ssl_set_hostname(&socket->context, host))) {
+        LOG(ERROR, "mbedtls_ssl_set_hostname() failed: %d", result);
+    }
+
+    for (;;) {
+        int result = mbedtls_ssl_handshake(&socket->context);
+        if (result == 0) {
+            LOG(TRACE, "handshake success");
+            break;
+        } else if (result != MBEDTLS_ERR_SSL_WANT_READ
+                && result != MBEDTLS_ERR_SSL_WANT_WRITE) {
+            LOG(ERROR, "handshake failed: %d", result);
+            break;
+        }
+    }
+
+    if (is_verification_enabled(socket)) {
+        uint32_t verify_result =
+                mbedtls_ssl_get_verify_result(&socket->context);
+        if (verify_result) {
+            LOG(ERROR, "server certificate verification failure: %" PRIu32,
+                verify_result);
+            result = -1;
+        }
+    }
+    return result ? -1 : 0;
+}
+
+static int connect_ssl(avs_net_abstract_socket_t *socket_,
+                       const char *host,
+                       const char *port) {
+    int result;
+    ssl_socket_t *socket = (ssl_socket_t *) socket_;
+    LOG(TRACE, "connect_ssl(socket=%p, host=%s, port=%s)",
+        (void *) socket, host, port);
+
+    if (avs_net_socket_create(&socket->tcp_socket, AVS_NET_TCP_SOCKET,
+                              &socket->backend_configuration)) {
+        return -1;
+    }
+    if (avs_net_socket_connect(socket->tcp_socket, host, port)) {
+        LOG(ERROR, "cannot establish TCP connection");
+        return -1;
+    }
+
+    result = start_ssl(socket, host);
+    if (result) {
+        avs_net_socket_cleanup(&socket->tcp_socket);
+    }
+    return result;
 }
 
 #define CREATE_OR_FAIL(type, ptr) \
@@ -348,9 +553,10 @@ static int configure_ssl(ssl_socket_t *socket,
         return 0;
     }
 
+    socket->version = configuration->version;
+    socket->additional_configuration_clb =
+            configuration->additional_configuration_clb;
     socket->backend_configuration = configuration->backend_configuration;
-
-#warning "TODO: set_max_ssl_version(&socket->context, configuration->version)"
 
     switch (configuration->security.mode) {
     case AVS_NET_SECURITY_PSK:
@@ -367,12 +573,6 @@ static int configure_ssl(ssl_socket_t *socket,
         return -1;
     }
 
-#warning "FIXME"
-    /*if (configuration->additional_configuration_clb
-            && configuration->additional_configuration_clb(&socket->context)) {
-        LOG(ERROR, "Error while setting additional SSL configuration");
-        return -1;
-    }*/
     return 0;
 }
 
