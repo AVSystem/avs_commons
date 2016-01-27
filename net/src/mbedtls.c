@@ -421,6 +421,68 @@ static int shutdown_ssl(avs_net_abstract_socket_t *socket_) {
     }
 }
 
+static int send_ssl(avs_net_abstract_socket_t *socket,
+                    const void *buffer,
+                    size_t buffer_length) {
+    size_t bytes_sent = 0;
+    int result;
+    LOG(TRACE, "send_ssl(socket=%p, buffer=%p, buffer_length=%lu)",
+        (void *) socket, buffer, (unsigned long) buffer_length);
+
+    while (bytes_sent < buffer_length) {
+        result = mbedtls_ssl_write(
+                &((ssl_socket_t *) socket)->context,
+                ((const unsigned char *) buffer) + bytes_sent,
+                (size_t) (buffer_length - bytes_sent));
+        if (result <= 0) {
+            if (result == MBEDTLS_ERR_SSL_WANT_READ
+                    || result == MBEDTLS_ERR_SSL_WANT_WRITE) {
+                continue;
+            } else {
+                LOG(DEBUG, "ssl_write result %d", result);
+                break;
+            }
+        } else {
+            bytes_sent += (size_t) result;
+        }
+    }
+    if (bytes_sent < buffer_length) {
+        LOG(ERROR, "send failed (%lu/%lu): %d",
+            bytes_sent, buffer_length, result);
+        return -1;
+    }
+    return 0;
+}
+
+static int receive_ssl(avs_net_abstract_socket_t *socket,
+                       size_t *out,
+                       void *buffer,
+                       size_t buffer_length) {
+    int result = -1;
+
+    LOG(TRACE, "receive_ssl(socket=%p, buffer=%p, buffer_length=%lu)",
+        (void *) socket, buffer, (unsigned long) buffer_length);
+
+    while ((result = mbedtls_ssl_read(&((ssl_socket_t *) socket)->context,
+                                      (unsigned char *) buffer,
+                                      buffer_length)) < 0) {
+        if (result != MBEDTLS_ERR_SSL_WANT_READ
+                && result != MBEDTLS_ERR_SSL_WANT_WRITE) {
+            break;
+        }
+    }
+    if (result < 0) {
+        *out = 0;
+        if (result != MBEDTLS_ERR_SSL_PEER_CLOSE_NOTIFY) {
+            LOG(ERROR, "receive failed: %d", result);
+            return -1;
+        }
+    } else {
+        *out = (size_t) result;
+    }
+    return 0;
+}
+
 static int cleanup_ssl(avs_net_abstract_socket_t **socket_) {
     ssl_socket_t **socket = (ssl_socket_t **) socket_;
     LOG(TRACE, "cleanup_ssl(*socket=%p)", (void *) *socket);
