@@ -94,6 +94,75 @@ static const avs_net_socket_v_table_t ssl_vtable = {
     set_opt_ssl
 };
 
+static int interface_name_ssl(avs_net_abstract_socket_t *ssl_socket_,
+                              avs_net_socket_interface_name_t *if_name) {
+    ssl_socket_t *ssl_socket = (ssl_socket_t *) ssl_socket_;
+    if (ssl_socket->tcp_socket) {
+        return avs_net_socket_interface_name(
+                        (avs_net_abstract_socket_t *) ssl_socket->tcp_socket,
+                        if_name);
+    } else {
+        return -1;
+    }
+}
+
+static int remote_host_ssl(avs_net_abstract_socket_t *socket_,
+                           char *out_buffer, size_t out_buffer_size) {
+    ssl_socket_t *socket = (ssl_socket_t *) socket_;
+    if (!socket->tcp_socket) {
+        return -1;
+    }
+    return avs_net_socket_get_remote_host(socket->tcp_socket,
+                                          out_buffer, out_buffer_size);
+}
+
+static int remote_port_ssl(avs_net_abstract_socket_t *socket_,
+                           char *out_buffer, size_t out_buffer_size) {
+    ssl_socket_t *socket = (ssl_socket_t *) socket_;
+    if (!socket->tcp_socket) {
+        return -1;
+    }
+    return avs_net_socket_get_remote_port(socket->tcp_socket,
+                                          out_buffer, out_buffer_size);
+}
+
+static int local_port_ssl(avs_net_abstract_socket_t *socket_,
+                          char *out_buffer, size_t out_buffer_size) {
+    ssl_socket_t *socket = (ssl_socket_t *) socket_;
+    if (!socket->tcp_socket) {
+        return -1;
+    }
+    return avs_net_socket_get_local_port(socket->tcp_socket,
+                                         out_buffer, out_buffer_size);
+}
+
+static int get_opt_ssl(avs_net_abstract_socket_t *ssl_socket_,
+                       avs_net_socket_opt_key_t option_key,
+                       avs_net_socket_opt_value_t *out_option_value) {
+    ssl_socket_t *ssl_socket = (ssl_socket_t *) ssl_socket_;
+    return avs_net_socket_get_opt(ssl_socket->tcp_socket, option_key,
+                                  out_option_value);
+}
+
+static int set_opt_ssl(avs_net_abstract_socket_t *ssl_socket_,
+                       avs_net_socket_opt_key_t option_key,
+                       avs_net_socket_opt_value_t option_value) {
+    ssl_socket_t *ssl_socket = (ssl_socket_t *) ssl_socket_;
+    return avs_net_socket_set_opt(ssl_socket->tcp_socket, option_key,
+                                  option_value);
+}
+
+static int system_socket_ssl(avs_net_abstract_socket_t *socket_,
+                             const void **out) {
+    ssl_socket_t *socket = (ssl_socket_t *) socket_;
+    if (socket->tcp_socket) {
+        *out = avs_net_socket_get_system(socket->tcp_socket);
+    } else {
+        *out = NULL;
+    }
+    return *out ? 0 : -1;
+}
+
 #define CREATE_OR_FAIL(type, ptr) \
 do {\
     free(*ptr);\
