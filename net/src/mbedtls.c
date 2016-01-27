@@ -363,9 +363,85 @@ static int connect_ssl(avs_net_abstract_socket_t *socket_,
 
     result = start_ssl(socket, host);
     if (result) {
-        avs_net_socket_cleanup(&socket->tcp_socket);
+        close_ssl(socket_);
     }
     return result;
+}
+
+static int decorate_ssl(avs_net_abstract_socket_t *socket_,
+                        avs_net_abstract_socket_t *backend_socket) {
+    char host[NET_MAX_HOSTNAME_SIZE];
+    int result;
+    ssl_socket_t *socket = (ssl_socket_t *) socket_;
+    LOG(TRACE, "decorate_ssl(socket=%p, backend_socket=%p)",
+        (void *) socket, (void *) backend_socket);
+
+    if (socket->tcp_socket) {
+        avs_net_socket_cleanup(&socket->tcp_socket);
+    }
+
+    if (avs_net_socket_get_remote_host(backend_socket, host, sizeof(host))) {
+        return -1;
+    }
+
+    socket->tcp_socket = backend_socket;
+    result = start_ssl(socket, host);
+    if (result) {
+        socket->tcp_socket = NULL;
+        close_ssl(socket_);
+    }
+    return result;
+}
+
+static int close_ssl(avs_net_abstract_socket_t *socket_) {
+    ssl_socket_t *socket = (ssl_socket_t *) socket_;
+    LOG(TRACE, "close_ssl(socket=%p)", (void *) socket);
+    if (socket->tcp_socket) {
+        avs_net_socket_close(socket->tcp_socket);
+        avs_net_socket_cleanup(&socket->tcp_socket);
+    }
+    mbedtls_ssl_free(&socket->context);
+    memset(&socket->context, 0, sizeof(socket->context));
+    mbedtls_ssl_config_free(&socket->config);
+    memset(&socket->config, 0, sizeof(socket->config));
+    mbedtls_ctr_drbg_free(&socket->rng);
+    memset(&socket->rng, 0, sizeof(socket->rng));
+    mbedtls_entropy_free(&socket->entropy);
+    memset(&socket->entropy, 0, sizeof(socket->entropy));
+    return 0;
+}
+
+static int shutdown_ssl(avs_net_abstract_socket_t *socket_) {
+    ssl_socket_t *socket = (ssl_socket_t *) socket_;
+    LOG(TRACE, "shutdown_ssl(socket=%p)", (void *) socket);
+    if (socket->tcp_socket) {
+        return avs_net_socket_shutdown(socket->tcp_socket);
+    } else {
+        return 0;
+    }
+}
+
+static int cleanup_ssl(avs_net_abstract_socket_t **socket_) {
+    ssl_socket_t **socket = (ssl_socket_t **) socket_;
+    LOG(TRACE, "cleanup_ssl(*socket=%p)", (void *) *socket);
+
+    close_ssl(*socket_);
+
+    if ((*socket)->ca_cert) {
+        mbedtls_x509_crt_free((*socket)->ca_cert);
+        free((*socket)->ca_cert);
+    }
+    if ((*socket)->client_cert) {
+        mbedtls_x509_crt_free((*socket)->client_cert);
+        free((*socket)->client_cert);
+    }
+    if ((*socket)->pk_key) {
+        mbedtls_pk_free((*socket)->pk_key);
+        free((*socket)->pk_key);
+    }
+    free(*socket);
+    *socket = NULL;
+    return 0;
 }
 
 #define CREATE_OR_FAIL(type, ptr) \
@@ -608,4 +684,8 @@ int _avs_net_create_ssl_socket(avs_net_abstract_socket_t **socket,
 
 int _avs_net_create_dtls_socket(avs_net_abstract_socket_t **socket,
                                 const void *socket_configuration) {
+#warning "TODO"
+    (void) socket;
+    (void) socket_configuration;
+    return -1;
 }
