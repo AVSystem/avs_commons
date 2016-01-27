@@ -40,5 +40,5 @@ int _avs_net_create_dtls_socket(avs_net_abstract_socket_t **socket,
 #pragma GCC visibility pop
 #endif
 
-#endif /* LIBCWMP_INCLUDE_COMPAT_NET_H */
+#endif /* NET_H */
 

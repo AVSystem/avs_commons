@@ -1209,7 +1209,7 @@ static int initialize_ssl_socket(ssl_socket_t *socket,
 static int create_ssl_socket(avs_net_abstract_socket_t **socket,
                              avs_net_socket_type_t backend_type,
                              const void *socket_configuration) {
-    LOG(TRACE, "_cwmp_create_ssl_socket(socket=%p)", (void *) socket);
+    LOG(TRACE, "create_ssl_socket(socket=%p)", (void *) socket);
 
     if (avs_ssl_init()) {
         LOG(ERROR, "OpenSSL initialization error");
