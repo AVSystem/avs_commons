@@ -30,12 +30,20 @@
 #endif
 
 typedef struct {
-    const avs_net_socket_v_table_t * const operations;
-    mbedtls_ssl_context context;
-    mbedtls_ssl_config config;
     mbedtls_x509_crt *ca_cert;
     mbedtls_x509_crt *client_cert;
     mbedtls_pk_context *pk_key;
+} ssl_socket_certs_t;
+
+typedef struct {
+    const avs_net_socket_v_table_t * const operations;
+    mbedtls_ssl_context context;
+    mbedtls_ssl_config config;
+    avs_net_security_mode_t security_mode;
+    union {
+        ssl_socket_certs_t cert;
+        avs_net_psk_t psk;
+    } security;
     mbedtls_entropy_context entropy;
     mbedtls_ctr_drbg_context rng;
     mbedtls_timing_delay_context timer;
@@ -236,7 +244,28 @@ static int set_min_ssl_version(mbedtls_ssl_config *config,
 }
 
 static uint8_t is_verification_enabled(ssl_socket_t *socket) {
-    return socket->ca_cert != NULL;
+    return socket->security_mode == AVS_NET_SECURITY_CERTIFICATE
+            && socket->security.cert.ca_cert != NULL;
+}
+
+static void initialize_cert_security(ssl_socket_t *socket) {
+    if (socket->security.cert.ca_cert) {
+        mbedtls_ssl_conf_authmode(&socket->config, MBEDTLS_SSL_VERIFY_REQUIRED);
+        mbedtls_ssl_conf_ca_chain(&socket->config,
+                                  socket->security.cert.ca_cert, NULL);
+    } else {
+        mbedtls_ssl_conf_authmode(&socket->config, MBEDTLS_SSL_VERIFY_NONE);
+    }
+
+    if (socket->security.cert.client_cert && socket->security.cert.pk_key) {
+        mbedtls_ssl_conf_own_cert(&socket->config,
+                                  socket->security.cert.client_cert,
+                                  socket->security.cert.pk_key);
+    }
+}
+
+static void initialize_psk_security(ssl_socket_t *socket) {
+    /* mbedtls_ssl_conf_psk(&socket->config */
 }
 
 static int transport_for_socket_type(avs_net_socket_type_t backend_type) {
@@ -287,16 +316,16 @@ static int initialize_ssl_config(ssl_socket_t *socket) {
     mbedtls_ssl_conf_rng(&socket->config,
                          mbedtls_ctr_drbg_random, &socket->rng);
 
-    if (socket->ca_cert) {
-        mbedtls_ssl_conf_authmode(&socket->config, MBEDTLS_SSL_VERIFY_REQUIRED);
-        mbedtls_ssl_conf_ca_chain(&socket->config, socket->ca_cert, NULL);
-    } else {
-        mbedtls_ssl_conf_authmode(&socket->config, MBEDTLS_SSL_VERIFY_NONE);
-    }
-
-    if (socket->client_cert && socket->pk_key) {
-        mbedtls_ssl_conf_own_cert(&socket->config,
-                                  socket->client_cert, socket->pk_key);
+    switch (socket->security_mode) {
+    case AVS_NET_SECURITY_PSK:
+        initialize_psk_security(socket);
+        break;
+    case AVS_NET_SECURITY_CERTIFICATE:
+        initialize_cert_security(socket);
+        break;
+    default:
+        assert(!"invalid enum value");
+        return -1;
     }
 
     if (socket->additional_configuration_clb
@@ -502,23 +531,33 @@ static int receive_ssl(avs_net_abstract_socket_t *socket,
     return 0;
 }
 
+static void cleanup_security_cert(ssl_socket_certs_t *certs) {
+    if (certs->ca_cert) {
+        mbedtls_x509_crt_free(certs->ca_cert);
+        free(certs->ca_cert);
+    }
+    if (certs->client_cert) {
+        mbedtls_x509_crt_free(certs->client_cert);
+        free(certs->client_cert);
+    }
+    if (certs->pk_key) {
+        mbedtls_pk_free(certs->pk_key);
+        free(certs->pk_key);
+    }
+}
+
 static int cleanup_ssl(avs_net_abstract_socket_t **socket_) {
     ssl_socket_t **socket = (ssl_socket_t **) socket_;
     LOG(TRACE, "cleanup_ssl(*socket=%p)", (void *) *socket);
 
     close_ssl(*socket_);
 
-    if ((*socket)->ca_cert) {
-        mbedtls_x509_crt_free((*socket)->ca_cert);
-        free((*socket)->ca_cert);
-    }
-    if ((*socket)->client_cert) {
-        mbedtls_x509_crt_free((*socket)->client_cert);
-        free((*socket)->client_cert);
-    }
-    if ((*socket)->pk_key) {
-        mbedtls_pk_free((*socket)->pk_key);
-        free((*socket)->pk_key);
+    switch ((*socket)->security_mode) {
+    case AVS_NET_SECURITY_PSK:
+#warning "TODO"
+    case AVS_NET_SECURITY_CERTIFICATE:
+        cleanup_security_cert(&(*socket)->security.cert);
+        break;
     }
     free(*socket);
     *socket = NULL;
@@ -595,24 +634,24 @@ static int is_private_key_valid(const avs_net_private_key_t *key) {
     return 0;
 }
 
-static int load_client_key_from_data(ssl_socket_t *socket,
+static int load_client_key_from_data(ssl_socket_certs_t *certs,
                                      const avs_net_ssl_raw_key_t *key) {
     mbedtls_ecp_keypair *private_ec, *cert_ec;
 
-    if (!socket->client_cert
-            || mbedtls_pk_get_type(&socket->client_cert->pk)
+    if (!certs->client_cert
+            || mbedtls_pk_get_type(&certs->client_cert->pk)
                     != MBEDTLS_PK_ECKEY) {
         LOG(ERROR, "invalid client certificate");
         return -1;
     }
-    cert_ec = mbedtls_pk_ec(socket->client_cert->pk);
+    cert_ec = mbedtls_pk_ec(certs->client_cert->pk);
 
-    if (mbedtls_pk_setup(socket->pk_key,
+    if (mbedtls_pk_setup(certs->pk_key,
                          mbedtls_pk_info_from_type(MBEDTLS_PK_ECKEY))) {
         LOG(ERROR, "could not create pk_key");
         return -1;
     }
-    private_ec = mbedtls_pk_ec(*socket->pk_key);
+    private_ec = mbedtls_pk_ec(*certs->pk_key);
 
     if (mbedtls_ecp_group_load(&private_ec->grp,
                                mbedtls_ecp_curve_info_from_name(
@@ -629,21 +668,21 @@ static int load_client_key_from_data(ssl_socket_t *socket,
     return 0;
 }
 
-static int load_client_private_key(ssl_socket_t *socket,
+static int load_client_private_key(ssl_socket_certs_t *certs,
                                    const avs_net_private_key_t *key) {
     if (!is_private_key_valid(key)) {
         return -1;
     }
 
-    CREATE_OR_FAIL(mbedtls_pk_context, &socket->pk_key);
-    mbedtls_pk_init(socket->pk_key);
+    CREATE_OR_FAIL(mbedtls_pk_context, &certs->pk_key);
+    mbedtls_pk_init(certs->pk_key);
 
     switch (key->source) {
     case AVS_NET_DATA_SOURCE_FILE:
-        return mbedtls_pk_parse_keyfile(socket->pk_key, key->data.file.path,
+        return mbedtls_pk_parse_keyfile(certs->pk_key, key->data.file.path,
                                         key->data.file.password);
     case AVS_NET_DATA_SOURCE_BUFFER:
-        return load_client_key_from_data(socket, &key->data.buffer);
+        return load_client_key_from_data(certs, &key->data.buffer);
     default:
         assert(!"invalid enum value");
         return -1;
@@ -661,7 +700,7 @@ static int is_client_cert_empty(const avs_net_client_cert_t *cert) {
     return 1;
 }
 
-static int load_client_cert(ssl_socket_t *socket,
+static int load_client_cert(ssl_socket_certs_t *certs,
                             const avs_net_client_cert_t *cert,
                             const avs_net_private_key_t *key) {
     int failed;
@@ -671,12 +710,12 @@ static int load_client_cert(ssl_socket_t *socket,
         return 0;
     }
 
-    CREATE_OR_FAIL(mbedtls_x509_crt, &socket->client_cert);
-    mbedtls_x509_crt_init(socket->client_cert);
+    CREATE_OR_FAIL(mbedtls_x509_crt, &certs->client_cert);
+    mbedtls_x509_crt_init(certs->client_cert);
 
     switch (cert->source) {
     case AVS_NET_DATA_SOURCE_FILE:
-        failed = mbedtls_x509_crt_parse_file(socket->client_cert,
+        failed = mbedtls_x509_crt_parse_file(certs->client_cert,
                                              cert->data.file);
         if (failed) {
             LOG(WARNING, "failed to parse %d certs in file <%s>",
@@ -685,7 +724,7 @@ static int load_client_cert(ssl_socket_t *socket,
         break;
     case AVS_NET_DATA_SOURCE_BUFFER:
         failed = mbedtls_x509_crt_parse_der(
-                socket->client_cert,
+                certs->client_cert,
                 (const unsigned char *) cert->data.buffer.cert_der,
                 cert->data.buffer.cert_size);
         if (failed) {
@@ -696,7 +735,7 @@ static int load_client_cert(ssl_socket_t *socket,
         return -1;
     }
 
-    if (load_client_private_key(socket, key)) {
+    if (load_client_private_key(certs, key)) {
         LOG(ERROR, "Error loading client private key");
         return -1;
     }
@@ -710,12 +749,12 @@ static int server_auth_enabled(const avs_net_certificate_info_t *cert_info) {
         || cert_info->ca_cert_raw.cert_der;
 }
 
-static int configure_ssl_certs(ssl_socket_t *socket,
+static int configure_ssl_certs(ssl_socket_certs_t *certs,
                                const avs_net_certificate_info_t *cert_info) {
     LOG(TRACE, "configure_ssl_certs");
 
     if (server_auth_enabled(cert_info)) {
-        if (load_ca_certs(&socket->ca_cert,
+        if (load_ca_certs(&certs->ca_cert,
                           cert_info->ca_cert_path,
                           cert_info->ca_cert_file,
                           &cert_info->ca_cert_raw)) {
@@ -726,7 +765,7 @@ static int configure_ssl_certs(ssl_socket_t *socket,
         LOG(DEBUG, "Server authentication disabled");
     }
 
-    if (load_client_cert(socket,
+    if (load_client_cert(certs,
                          &cert_info->client_cert,
                          &cert_info->client_key)) {
         LOG(ERROR, "error loading client certificate");
@@ -734,6 +773,11 @@ static int configure_ssl_certs(ssl_socket_t *socket,
     }
 
     return 0;
+}
+
+static int configure_ssl_psk(ssl_socket_t *socket,
+                             const avs_net_psk_t *psk) {
+    LOG(TRACE, "configure_ssl_psk");
 }
 
 static int initialize_ssl_socket(ssl_socket_t *socket,
@@ -759,11 +803,12 @@ static int initialize_ssl_socket(ssl_socket_t *socket,
 
     switch (configuration->security.mode) {
     case AVS_NET_SECURITY_PSK:
-#warning "TODO"
-        assert(!"PSK not supported for now");
-        return -1;
+        if (configure_ssl_psk(socket, &configuration->security.data.psk)) {
+            return -1;
+        }
     case AVS_NET_SECURITY_CERTIFICATE:
-        if (configure_ssl_certs(socket, &configuration->security.data.cert)) {
+        if (configure_ssl_certs(&socket->security.cert,
+                                &configuration->security.data.cert)) {
             return -1;
         }
         break;

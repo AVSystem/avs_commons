@@ -892,7 +892,6 @@ static void free_psk(avs_net_psk_t *psk) {
 static int configure_ssl_psk(ssl_socket_t *socket,
                              const avs_net_psk_t *psk) {
     LOG(TRACE, "configure_ssl_psk");
-    (void)psk;
 
     free_psk(&socket->psk);
 
