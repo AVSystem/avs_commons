@@ -265,7 +265,13 @@ static void initialize_cert_security(ssl_socket_t *socket) {
 }
 
 static void initialize_psk_security(ssl_socket_t *socket) {
-    /* mbedtls_ssl_conf_psk(&socket->config */
+    /* mbedtls_ssl_conf_psk() makes copies of the buffers */
+    /* We set the values directly instead, to avoid that. */
+    socket->config.psk = (unsigned char *) socket->security.psk.psk;
+    socket->config.psk_len = socket->security.psk.psk_size;
+    socket->config.psk_identity =
+            (unsigned char *) socket->security.psk.identity;
+    socket->config.psk_identity_len = socket->security.psk.identity_size;
 }
 
 static int transport_for_socket_type(avs_net_socket_type_t backend_type) {
@@ -450,10 +456,18 @@ static int close_ssl(avs_net_abstract_socket_t *socket_) {
     }
     mbedtls_ssl_free(&socket->context);
     memset(&socket->context, 0, sizeof(socket->context));
+
+    /* Detach the uncopied PSK values */
+    socket->config.psk = NULL;
+    socket->config.psk_len = 0;
+    socket->config.psk_identity = NULL;
+    socket->config.psk_identity_len = 0;
     mbedtls_ssl_config_free(&socket->config);
     memset(&socket->config, 0, sizeof(socket->config));
+
     mbedtls_ctr_drbg_free(&socket->rng);
     memset(&socket->rng, 0, sizeof(socket->rng));
+
     mbedtls_entropy_free(&socket->entropy);
     memset(&socket->entropy, 0, sizeof(socket->entropy));
     return 0;
@@ -546,6 +560,13 @@ static void cleanup_security_cert(ssl_socket_certs_t *certs) {
     }
 }
 
+static void cleanup_security_psk(avs_net_psk_t *psk) {
+    free(psk->psk);
+    psk->psk = NULL;
+    free(psk->identity);
+    psk->identity = NULL;
+}
+
 static int cleanup_ssl(avs_net_abstract_socket_t **socket_) {
     ssl_socket_t **socket = (ssl_socket_t **) socket_;
     LOG(TRACE, "cleanup_ssl(*socket=%p)", (void *) *socket);
@@ -554,7 +575,8 @@ static int cleanup_ssl(avs_net_abstract_socket_t **socket_) {
 
     switch ((*socket)->security_mode) {
     case AVS_NET_SECURITY_PSK:
-#warning "TODO"
+        cleanup_security_psk(&(*socket)->security.psk);
+        break;
     case AVS_NET_SECURITY_CERTIFICATE:
         cleanup_security_cert(&(*socket)->security.cert);
         break;
@@ -778,6 +800,28 @@ static int configure_ssl_certs(ssl_socket_certs_t *certs,
 static int configure_ssl_psk(ssl_socket_t *socket,
                              const avs_net_psk_t *psk) {
     LOG(TRACE, "configure_ssl_psk");
+
+    cleanup_security_psk(&socket->security.psk);
+
+    socket->security.psk.psk_size = psk->psk_size;
+    socket->security.psk.psk = (char *) malloc(psk->psk_size);
+    if (!socket->security.psk.psk) {
+        LOG(ERROR, "out of memory");
+        return -1;
+    }
+
+    socket->security.psk.identity_size = psk->identity_size;
+    socket->security.psk.identity = (char *) malloc(psk->identity_size);
+    if (!socket->security.psk.identity) {
+        LOG(ERROR, "out of memory");
+        cleanup_security_psk(&socket->security.psk);
+        return -1;
+    }
+
+    memcpy(socket->security.psk.psk, psk->psk, psk->psk_size);
+    memcpy(socket->security.psk.identity, psk->identity, psk->identity_size);
+
+    return 0;
 }
 
 static int initialize_ssl_socket(ssl_socket_t *socket,
@@ -806,6 +850,7 @@ static int initialize_ssl_socket(ssl_socket_t *socket,
         if (configure_ssl_psk(socket, &configuration->security.data.psk)) {
             return -1;
         }
+        break;
     case AVS_NET_SECURITY_CERTIFICATE:
         if (configure_ssl_certs(&socket->security.cert,
                                 &configuration->security.data.cert)) {
