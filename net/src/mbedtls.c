@@ -190,6 +190,9 @@ static int get_opt_ssl(avs_net_abstract_socket_t *ssl_socket_,
                        avs_net_socket_opt_key_t option_key,
                        avs_net_socket_opt_value_t *out_option_value) {
     ssl_socket_t *ssl_socket = (ssl_socket_t *) ssl_socket_;
+    if (!ssl_socket->backend_socket) {
+        return -1;
+    }
     return avs_net_socket_get_opt(ssl_socket->backend_socket, option_key,
                                   out_option_value);
 }
@@ -198,6 +201,9 @@ static int set_opt_ssl(avs_net_abstract_socket_t *ssl_socket_,
                        avs_net_socket_opt_key_t option_key,
                        avs_net_socket_opt_value_t option_value) {
     ssl_socket_t *ssl_socket = (ssl_socket_t *) ssl_socket_;
+    if (!ssl_socket->backend_socket) {
+        return -1;
+    }
     return avs_net_socket_set_opt(ssl_socket->backend_socket, option_key,
                                   option_value);
 }
@@ -315,7 +321,7 @@ static int initialize_ssl_config(ssl_socket_t *socket) {
     }
 
     if (set_min_ssl_version(&socket->config, socket->version)) {
-        LOG(ERROR, "Could not set max SSL version");
+        LOG(ERROR, "Could not set minimum SSL version");
         return -1;
     }
 
@@ -517,7 +523,7 @@ static int send_ssl(avs_net_abstract_socket_t *socket,
 }
 
 static int receive_ssl(avs_net_abstract_socket_t *socket,
-                       size_t *out,
+                       size_t *out_bytes_received,
                        void *buffer,
                        size_t buffer_length) {
     int result = -1;
@@ -534,13 +540,13 @@ static int receive_ssl(avs_net_abstract_socket_t *socket,
         }
     }
     if (result < 0) {
-        *out = 0;
+        *out_bytes_received = 0;
         if (result != MBEDTLS_ERR_SSL_PEER_CLOSE_NOTIFY) {
             LOG(ERROR, "receive failed: %d", result);
             return -1;
         }
     } else {
-        *out = (size_t) result;
+        *out_bytes_received = (size_t) result;
     }
     return 0;
 }
@@ -659,6 +665,7 @@ static int is_private_key_valid(const avs_net_private_key_t *key) {
 static int load_client_key_from_data(ssl_socket_certs_t *certs,
                                      const avs_net_ssl_raw_key_t *key) {
     mbedtls_ecp_keypair *private_ec, *cert_ec;
+    const mbedtls_ecp_curve_info *curve_info;
 
     if (!certs->client_cert
             || mbedtls_pk_get_type(&certs->client_cert->pk)
@@ -675,9 +682,8 @@ static int load_client_key_from_data(ssl_socket_certs_t *certs,
     }
     private_ec = mbedtls_pk_ec(*certs->pk_key);
 
-    if (mbedtls_ecp_group_load(&private_ec->grp,
-                               mbedtls_ecp_curve_info_from_name(
-                                       key->curve_name)->grp_id)
+    if (!(curve_info = mbedtls_ecp_curve_info_from_name(key->curve_name))
+            || mbedtls_ecp_group_load(&private_ec->grp, curve_info->grp_id)
             || mbedtls_mpi_read_binary(&private_ec->d,
                                        (const unsigned char *) key->private_key,
                                        key->private_key_size)
@@ -752,6 +758,7 @@ static int load_client_cert(ssl_socket_certs_t *certs,
         if (failed) {
             LOG(WARNING, "failed to parse DER certificate: %d", failed);
         }
+        break;
     default:
         assert(!"invalid enum value");
         return -1;
