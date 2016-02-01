@@ -36,13 +36,18 @@ typedef struct {
 } ssl_socket_certs_t;
 
 typedef struct {
+    avs_net_psk_t value;
+    int *ciphersuites;
+} ssl_socket_psk_t;
+
+typedef struct {
     const avs_net_socket_v_table_t * const operations;
     mbedtls_ssl_context context;
     mbedtls_ssl_config config;
     avs_net_security_mode_t security_mode;
     union {
         ssl_socket_certs_t cert;
-        avs_net_psk_t psk;
+        ssl_socket_psk_t psk;
     } security;
     mbedtls_entropy_context entropy;
     mbedtls_ctr_drbg_context rng;
@@ -270,21 +275,65 @@ static void initialize_cert_security(ssl_socket_t *socket) {
     }
 }
 
-static void initialize_psk_security(ssl_socket_t *socket) {
-    static const int PSK_CIPHERSUITES[] = {
-        MBEDTLS_TLS_PSK_WITH_AES_128_CCM_8,
-        0
-    };
+typedef void foreach_psk_ciphersuite_cb_t(int suite, void *arg);
+
+static void foreach_psk_ciphersuite(const int *suites,
+                                    foreach_psk_ciphersuite_cb_t callback,
+                                    void *arg) {
+    for (; suites && *suites; ++suites) {
+        const mbedtls_ssl_ciphersuite_t *info =
+                mbedtls_ssl_ciphersuite_from_id(*suites);
+        if (mbedtls_ssl_ciphersuite_uses_psk(info)) {
+            callback(*suites, arg);
+        }
+    }
+}
+
+static void enumerate_psk_ciphersuites(int suite, void *count) {
+    (void) suite;
+    ++*((size_t *) count);
+}
+
+static void fill_psk_ciphersuites(int suite, void *out_it) {
+    *(*(int **) out_it)++ = suite;
+}
+
+static int *init_psk_ciphersuites(const mbedtls_ssl_config *config) {
+    size_t ciphersuite_count = 0;
+    const int *all_suites;
+    int *psk_suites;
+    int *psk_suite_it;
+
+    all_suites = config->ciphersuite_list[0];
+    foreach_psk_ciphersuite(all_suites, enumerate_psk_ciphersuites,
+                            &ciphersuite_count);
+    if (!(psk_suites = (int *) calloc(ciphersuite_count + 1, sizeof(int)))) {
+        LOG(ERROR, "out of memory");
+        return NULL;
+    }
+    psk_suite_it = psk_suites;
+    foreach_psk_ciphersuite(all_suites, fill_psk_ciphersuites, &psk_suite_it);
+
+    return psk_suites;
+}
+
+static int initialize_psk_security(ssl_socket_t *socket) {
+    if (!(socket->security.psk.ciphersuites =
+            init_psk_ciphersuites(&socket->config))) {
+        return -1;
+    }
 
     /* mbedtls_ssl_conf_psk() makes copies of the buffers */
     /* We set the values directly instead, to avoid that. */
-    socket->config.psk = (unsigned char *) socket->security.psk.psk;
-    socket->config.psk_len = socket->security.psk.psk_size;
+    socket->config.psk = (unsigned char *) socket->security.psk.value.psk;
+    socket->config.psk_len = socket->security.psk.value.psk_size;
     socket->config.psk_identity =
-            (unsigned char *) socket->security.psk.identity;
-    socket->config.psk_identity_len = socket->security.psk.identity_size;
+            (unsigned char *) socket->security.psk.value.identity;
+    socket->config.psk_identity_len = socket->security.psk.value.identity_size;
 
-    mbedtls_ssl_conf_ciphersuites(&socket->config, PSK_CIPHERSUITES);
+    mbedtls_ssl_conf_ciphersuites(&socket->config,
+                                  socket->security.psk.ciphersuites);
+    return 0;
 }
 
 static int transport_for_socket_type(avs_net_socket_type_t backend_type) {
@@ -337,7 +386,9 @@ static int initialize_ssl_config(ssl_socket_t *socket) {
 
     switch (socket->security_mode) {
     case AVS_NET_SECURITY_PSK:
-        initialize_psk_security(socket);
+        if (initialize_psk_security(socket)) {
+            return -1;
+        }
         break;
     case AVS_NET_SECURITY_CERTIFICATE:
         initialize_cert_security(socket);
@@ -573,11 +624,13 @@ static void cleanup_security_cert(ssl_socket_certs_t *certs) {
     }
 }
 
-static void cleanup_security_psk(avs_net_psk_t *psk) {
-    free(psk->psk);
-    psk->psk = NULL;
-    free(psk->identity);
-    psk->identity = NULL;
+static void cleanup_security_psk(ssl_socket_psk_t *psk) {
+    free(psk->ciphersuites);
+    psk->ciphersuites = NULL;
+    free(psk->value.psk);
+    psk->value.psk = NULL;
+    free(psk->value.identity);
+    psk->value.identity = NULL;
 }
 
 static int cleanup_ssl(avs_net_abstract_socket_t **socket_) {
@@ -817,23 +870,24 @@ static int configure_ssl_psk(ssl_socket_t *socket,
 
     cleanup_security_psk(&socket->security.psk);
 
-    socket->security.psk.psk_size = psk->psk_size;
-    socket->security.psk.psk = (char *) malloc(psk->psk_size);
-    if (!socket->security.psk.psk) {
+    socket->security.psk.value.psk_size = psk->psk_size;
+    socket->security.psk.value.psk = (char *) malloc(psk->psk_size);
+    if (!socket->security.psk.value.psk) {
         LOG(ERROR, "out of memory");
         return -1;
     }
 
-    socket->security.psk.identity_size = psk->identity_size;
-    socket->security.psk.identity = (char *) malloc(psk->identity_size);
-    if (!socket->security.psk.identity) {
+    socket->security.psk.value.identity_size = psk->identity_size;
+    socket->security.psk.value.identity = (char *) malloc(psk->identity_size);
+    if (!socket->security.psk.value.identity) {
         LOG(ERROR, "out of memory");
         cleanup_security_psk(&socket->security.psk);
         return -1;
     }
 
-    memcpy(socket->security.psk.psk, psk->psk, psk->psk_size);
-    memcpy(socket->security.psk.identity, psk->identity, psk->identity_size);
+    memcpy(socket->security.psk.value.psk, psk->psk, psk->psk_size);
+    memcpy(socket->security.psk.value.identity, psk->identity,
+           psk->identity_size);
 
     return 0;
 }
