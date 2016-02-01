@@ -271,6 +271,11 @@ static void initialize_cert_security(ssl_socket_t *socket) {
 }
 
 static void initialize_psk_security(ssl_socket_t *socket) {
+    static const int PSK_CIPHERSUITES[] = {
+        MBEDTLS_TLS_PSK_WITH_AES_128_CCM_8,
+        0
+    };
+
     /* mbedtls_ssl_conf_psk() makes copies of the buffers */
     /* We set the values directly instead, to avoid that. */
     socket->config.psk = (unsigned char *) socket->security.psk.psk;
@@ -278,6 +283,8 @@ static void initialize_psk_security(ssl_socket_t *socket) {
     socket->config.psk_identity =
             (unsigned char *) socket->security.psk.identity;
     socket->config.psk_identity_len = socket->security.psk.identity_size;
+
+    mbedtls_ssl_conf_ciphersuites(&socket->config, PSK_CIPHERSUITES);
 }
 
 static int transport_for_socket_type(avs_net_socket_type_t backend_type) {
@@ -852,6 +859,7 @@ static int initialize_ssl_socket(ssl_socket_t *socket,
             configuration->additional_configuration_clb;
     socket->backend_configuration = configuration->backend_configuration;
 
+    socket->security_mode = configuration->security.mode;
     switch (configuration->security.mode) {
     case AVS_NET_SECURITY_PSK:
         if (configure_ssl_psk(socket, &configuration->security.data.psk)) {
