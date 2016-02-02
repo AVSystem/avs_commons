@@ -17,6 +17,7 @@
 
 #include <config.h>
 
+#include <assert.h>
 #include <errno.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -385,14 +386,15 @@ static int inbuf_stream_read(avs_stream_abstract_t *stream_,
                              void *buffer,
                              size_t buffer_length) {
     avs_stream_inbuf_t *stream = (avs_stream_inbuf_t *) stream_;
+    size_t bytes_left, bytes_read;
     if (!buffer) {
         return -1;
     }
 
     assert(stream->buffer_offset <= stream->buffer_size);
 
-    size_t bytes_left = stream->buffer_size - stream->buffer_offset;
-    size_t bytes_read = bytes_left < buffer_length ? bytes_left : buffer_length;
+    bytes_left = stream->buffer_size - stream->buffer_offset;
+    bytes_read = bytes_left < buffer_length ? bytes_left : buffer_length;
     memcpy(buffer, (const char *) stream->buffer + stream->buffer_offset,
            bytes_read);
     stream->buffer_offset += bytes_read;
