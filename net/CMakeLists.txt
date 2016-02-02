@@ -21,8 +21,8 @@ endif()
 
 if(WITH_OPENSSL)
     set(SOURCES ${SOURCES} src/openssl.c)
-elseif(WITH_XYSSL)
-    set(SOURCES ${SOURCES} src/xyssl.c)
+elseif(WITH_MBEDTLS)
+    set(SOURCES ${SOURCES} src/mbedtls.c)
 endif()
 
 set(PRIVATE_HEADERS
@@ -45,8 +45,8 @@ endif()
 
 if(WITH_OPENSSL)
     avs_emit_deps(avs_net ssl crypto)
-elseif(WITH_XYSSL)
-    avs_emit_deps(avs_net ${XYSSL_LIBRARY_NAME})
+elseif(WITH_MBEDTLS)
+    avs_emit_deps(avs_net ${MBEDTLS_LIBRARIES})
 endif()
 
 avs_install_export(avs_net net)

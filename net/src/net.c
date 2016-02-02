@@ -587,6 +587,7 @@ static int connect_net(avs_net_abstract_socket_t *net_socket_,
                             net_socket->configuration.address_family, 0,
                             net_socket->configuration.preferred_endpoint);
     for (address = info; address != NULL; address = address->ai_next) {
+        char socket_is_stream;
         if ((net_socket->socket = socket(address->ai_family,
                                          address->ai_socktype,
                                          address->ai_protocol)) < 0) {
@@ -599,7 +600,7 @@ static int connect_net(avs_net_abstract_socket_t *net_socket_,
             continue;
         }
         LOG(TRACE, "connect to [%s]:%s", host, port);
-        char socket_is_stream = is_stream(net_socket);
+        socket_is_stream = is_stream(net_socket);
         if (connect_with_timeout(net_socket->socket,
                                  address->ai_addr,
                                  address->ai_addrlen,
