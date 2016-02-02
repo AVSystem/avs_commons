@@ -1,7 +1,7 @@
 /*
  * AVSystem Commons Library
  *
- * Copyright (C) 2014 AVSystem <http://www.avsystem.com/>
+ * Copyright (C) 2016 AVSystem <http://www.avsystem.com/>
  *
  * This code is free and open source software licensed under the MIT License.
  * See the LICENSE file for details.
@@ -38,8 +38,8 @@ struct avs_stream_abstract_struct {
 };
 
 int avs_stream_write(avs_stream_abstract_t *stream,
-                       const void *buffer,
-                       size_t buffer_length) {
+                     const void *buffer,
+                     size_t buffer_length) {
     return stream->vtable->write(stream, buffer, buffer_length);
 }
 
@@ -48,17 +48,17 @@ int avs_stream_finish_message(avs_stream_abstract_t *stream) {
 }
 
 int avs_stream_read(avs_stream_abstract_t *stream,
-                      size_t *out_bytes_read,
-                      char *out_message_finished,
-                      void *buffer,
-                      size_t buffer_length) {
+                    size_t *out_bytes_read,
+                    char *out_message_finished,
+                    void *buffer,
+                    size_t buffer_length) {
     return stream->vtable->read(stream, out_bytes_read,
                                 out_message_finished,
                                 buffer, buffer_length);
 }
 
 int avs_stream_peek(avs_stream_abstract_t *stream,
-                      size_t offset) {
+                    size_t offset) {
     return stream->vtable->peek(stream, offset);
 }
 
@@ -144,8 +144,8 @@ int avs_stream_write_fv(avs_stream_abstract_t *stream,
 }
 
 int avs_stream_read_reliably(avs_stream_abstract_t *stream,
-                               void *buffer,
-                               size_t buffer_length) {
+                             void *buffer,
+                             size_t buffer_length) {
     size_t bytes_read = 0;
     char message_finished = 0;
     while (bytes_read < buffer_length && !message_finished) {
@@ -249,10 +249,10 @@ static int getline_reader_getch_func(void *state_, char peek) {
  *   }
  */
 int avs_stream_getline(avs_stream_abstract_t *stream,
-                         size_t *out_bytes_read,
-                         char *out_message_finished,
-                         char *buffer,
-                         size_t buffer_length) {
+                       size_t *out_bytes_read,
+                       char *out_message_finished,
+                       char *buffer,
+                       size_t buffer_length) {
     size_t bytes_read;
     char message_finished;
     getline_reader_getch_func_state_t state;
@@ -378,3 +378,64 @@ void avs_stream_outbuf_set_buffer(avs_stream_outbuf_t *stream,
     stream->buffer_size = buffer_size;
     stream->buffer_offset = 0;
 }
+
+static int inbuf_stream_read(avs_stream_abstract_t *stream_,
+                             size_t *out_bytes_read,
+                             char *out_message_finished,
+                             void *buffer,
+                             size_t buffer_length) {
+    avs_stream_inbuf_t *stream = (avs_stream_inbuf_t *) stream_;
+    if (!buffer) {
+        return -1;
+    }
+
+    assert(stream->buffer_offset <= stream->buffer_size);
+
+    size_t bytes_left = stream->buffer_size - stream->buffer_offset;
+    size_t bytes_read = bytes_left < buffer_length ? bytes_left : buffer_length;
+    memcpy(buffer, (const char *) stream->buffer + stream->buffer_offset,
+           bytes_read);
+    stream->buffer_offset += bytes_read;
+
+    *out_message_finished = stream->buffer_offset >= stream->buffer_size;
+    *out_bytes_read = bytes_read;
+    return 0;
+}
+
+static int inbuf_stream_peek(avs_stream_abstract_t *stream_,
+                             size_t offset) {
+    avs_stream_inbuf_t *stream = (avs_stream_inbuf_t *) stream_;
+
+    if (stream->buffer_offset + offset >= stream->buffer_size) {
+        return EOF;
+    }
+    return (unsigned char) stream->buffer[stream->buffer_offset + offset];
+}
+
+static int inbuf_stream_close(avs_stream_abstract_t *stream_) {
+    (void) stream_;
+    return 0;
+}
+
+static const avs_stream_v_table_t inbuf_stream_vtable = {
+    (avs_stream_write_t) unimplemented,
+    (avs_stream_finish_message_t) unimplemented,
+    inbuf_stream_read,
+    inbuf_stream_peek,
+    (avs_stream_reset_t) unimplemented,
+    inbuf_stream_close,
+    (avs_stream_errno_t) unimplemented,
+    AVS_STREAM_V_TABLE_NO_EXTENSIONS
+};
+
+const avs_stream_inbuf_t AVS_STREAM_INBUF_STATIC_INITIALIZER
+        = {&inbuf_stream_vtable, NULL, 0, 0};
+
+void avs_stream_inbuf_set_buffer(avs_stream_inbuf_t *stream,
+                                 const char *buffer,
+                                 size_t buffer_size) {
+    stream->buffer = buffer;
+    stream->buffer_size = buffer_size;
+    stream->buffer_offset = 0;
+}
+
