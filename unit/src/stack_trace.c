@@ -1,9 +1,9 @@
+#include <config.h>
+
 #define _POSIX_C_SOURCE 200809L
 #include "stack_trace.h"
 
-/*
- */
-#ifndef __GNUC__
+#ifndef WITH_AVS_STACK_TRACE
 
 void _avs_unit_stack_trace_init(int argc, char **argv) {
     (void)argc;
@@ -14,7 +14,7 @@ void _avs_unit_stack_trace_print(FILE *file) {
     fprintf(file, "(stack trace not available)\n");
 }
 
-#else /* __GNUC__ */
+#else /* WITH_AVS_STACK_TRACE */
 
 #include <execinfo.h>
 
@@ -413,4 +413,4 @@ void _avs_unit_stack_trace_print(FILE *file) {
     stack_trace_release(&trace);
 }
 
-#endif /* __GNUC__ */
+#endif /* WITH_AVS_STACK_TRACE */

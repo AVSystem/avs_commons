@@ -12,6 +12,14 @@
 
 #cmakedefine HAVE_RAND_R
 
+#cmakedefine HAVE_BACKTRACE
+
+#cmakedefine HAVE_BACKTRACE_SYMBOLS
+
+#if defined(HAVE_BACKTRACE) && defined(HAVE_BACKTRACE_SYMBOLS)
+#define WITH_AVS_STACK_TRACE
+#endif
+
 #cmakedefine WITH_LWIP
 
 #cmakedefine WITH_OPENSSL
