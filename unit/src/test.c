@@ -549,6 +549,7 @@ int main(int argc, char *argv[]) {
     avs_unit_test_suite_t * volatile current_suite = NULL;
     volatile int tests_result = 0;
 
+    _avs_unit_stack_trace_init(argc, argv);
     parse_command_line_args(argc, argv, &selected_suite, &selected_test);
     process_env_vars();
 

@@ -5,6 +5,11 @@
  */
 #ifndef __GNUC__
 
+void _avs_unit_stack_trace_init(int argc, char **argv) {
+    (void)argc;
+    (void)argv;
+}
+
 void _avs_unit_stack_trace_print(FILE *file) {
     fprintf(file, "(stack trace not available)\n");
 }
@@ -28,6 +33,8 @@ void _avs_unit_stack_trace_print(FILE *file) {
 #include <string.h>
 #include <assert.h>
 
+#include "test.h"
+
 #define MAX_TRACE_LEVELS 256
 #define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
 
@@ -41,25 +48,7 @@ typedef struct stack_trace {
     stack_frame_t *frames[1]; /* FAM */
 } stack_trace_t;
 
-static char *get_program_invocation_name() {
-    static char program_invocation_name[256];
-    FILE *f = NULL;
-
-    if (program_invocation_name[0]) {
-        return program_invocation_name;
-    }
-
-    f = fopen("/proc/self/cmdline", "r");
-    if (!f) {
-        return NULL;
-    }
-
-    fread(program_invocation_name, 1, sizeof(program_invocation_name) - 1, f);
-    fclose(f);
-
-    return program_invocation_name;
-}
-
+static char *const *_saved_argv;
 static int addr2line_pid = -1;
 static FILE* addr2line_read;
 static FILE* addr2line_write;
@@ -102,17 +91,19 @@ static void cleanup_addr2line(void) {
     }
 }
 
-static void start_addr2line(void) {
+static void start_addr2line(int argc, char **argv) {
     char addr2line_cmd[] = "/usr/bin/addr2line";
     char addr2line_arg[] = "-Capfe";
-    char* argv[4];
+    char* addr2line_argv[4];
 
-    argv[0] = addr2line_cmd;
-    argv[1] = addr2line_arg;
-    argv[2] = get_program_invocation_name();
-    argv[3] = NULL;
+    (void)argc;
 
-    execv(argv[0], argv);
+    addr2line_argv[0] = addr2line_cmd;
+    addr2line_argv[1] = addr2line_arg;
+    addr2line_argv[2] = argv[0];
+    addr2line_argv[3] = NULL;
+
+    execv(addr2line_argv[0], addr2line_argv);
     perror("execv() failed");
     fprintf(stderr, "Could not start %s, stacktrace symbols will not be"
             " resolved\n", addr2line_cmd);
@@ -196,14 +187,14 @@ static void close_pipe(int pipe[2]) {
     }
 }
 
-static void init_addr2line() __attribute__((constructor));
-static void init_addr2line()
-{
+void _avs_unit_stack_trace_init(int argc, char **argv) {
     const int READ = 0;
     const int WRITE = 1;
 
     int addr_pipe[2] = { -1, -1 };
     int line_pipe[2] = { -1, -1 };
+
+    _saved_argv = argv;
 
     if (pipe(addr_pipe) != 0
             || pipe(line_pipe) != 0) {
@@ -222,7 +213,7 @@ static void init_addr2line()
         close(addr_pipe[WRITE]);
         close(line_pipe[READ]);
 
-        start_addr2line();
+        start_addr2line(argc, argv);
         break;
     default:
         close(addr_pipe[READ]);
@@ -280,7 +271,7 @@ static char *addr2line(void* addr) {
 
 static int is_own_symbol(const char *symbol) {
     const char* sym = symbol;
-    const char *prog = get_program_invocation_name();
+    const char *prog = _saved_argv[0];
 
     if (!prog) {
         return 0;
