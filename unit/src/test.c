@@ -27,6 +27,7 @@
 #include <avsystem/commons/unit/test.h>
 
 #include "test.h"
+#include "stack_trace.h"
 
 #ifdef HAVE_VISIBILITY
 #pragma GCC visibility push(hidden)
@@ -195,6 +196,8 @@ void _avs_unit_assert(int condition,
     va_start(list, format);
     test_fail_vprintf(file, line, format, list);
     va_end(list);
+
+    _avs_unit_stack_trace_print(stdout);
 
     longjmp(_avs_unit_jmp_buf, 1);
 }
