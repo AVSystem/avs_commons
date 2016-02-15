@@ -270,22 +270,16 @@ static char *addr2line(void* addr) {
 
 
 static int is_own_symbol(const char *symbol) {
-    const char* sym = symbol;
     const char *prog = _saved_argv[0];
+    size_t prog_len;
 
     if (!prog) {
         return 0;
     }
 
-    while (*prog) {
-        if (!*sym || *prog != *sym) {
-            return 0;
-        }
-        ++sym;
-        ++prog;
-    }
-
-    return *sym == '(';
+    prog_len = strlen(prog);
+    return (strncmp(symbol, prog, prog_len) == 0
+            && symbol[prog_len] == '(');
 }
 
 static stack_frame_t *frame_from_symbol(void *address,
