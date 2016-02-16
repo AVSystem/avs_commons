@@ -193,6 +193,8 @@ check_function_exists(inet_ntop HAVE_INET_NTOP)
 check_function_exists(inet_pton HAVE_INET_PTON)
 check_function_exists(poll HAVE_POLL)
 check_function_exists(rand_r HAVE_RAND_R)
+check_function_exists(backtrace HAVE_BACKTRACE)
+check_function_exists(backtrace_symbols HAVE_BACKTRACE_SYMBOLS)
 
 option(WITH_LWIP "Use lwIP library for networking" OFF)
 

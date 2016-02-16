@@ -9,7 +9,8 @@
 
 set(SOURCES
     src/mock.c
-    src/test.c)
+    src/test.c
+    src/stack_trace.c)
 
 set(PUBLIC_HEADERS
     include_public/avsystem/commons/unit/memstream.h
