@@ -72,13 +72,17 @@ static void cleanup_addr2line(void) {
 
     if (addr2line_pid >= 0) {
         int status = 0;
-        struct timespec wait_time = { 0, 100 * 1000 }; /* 100ms */
+        struct timespec wait_time = { 0, 100 * 1000 * 1000 }; /* 100ms */
 
         while (wait_time.tv_sec > 0 || wait_time.tv_nsec > 0) {
-            struct timespec time_remaining;
+            struct timespec time_remaining = { 0, 0 };
 
-            nanosleep(&wait_time, &time_remaining);
-            wait_time = time_remaining;
+            if (nanosleep(&wait_time, &time_remaining)) {
+                wait_time = time_remaining;
+            } else {
+                wait_time.tv_sec = 0;
+                wait_time.tv_nsec = 0;
+            }
 
             if (waitpid(addr2line_pid, &status, WNOHANG) != 0) {
                 addr2line_pid = -1;
