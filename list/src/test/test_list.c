@@ -14,10 +14,15 @@
 
 AVS_UNIT_TEST(list, one_element) {
     size_t count = 0;
+    size_t i = 0;
     int *list = NULL;
     int *element = NULL;
-    AVS_LIST_INSERT_NEW(int, &list);
+    AVS_UNIT_ASSERT_TRUE(AVS_LIST_INSERT_NEW(int, &list) == list);
     *list = 514;
+    for (i = 0; i < 10; ++ i) {
+        /* inserting NULL shall have no effect */
+        AVS_UNIT_ASSERT_NULL(AVS_LIST_INSERT(&list, NULL));
+    }
     AVS_LIST_FOREACH(element, list) {
         AVS_UNIT_ASSERT_EQUAL(*element, 514);
         ++count;
@@ -31,9 +36,7 @@ AVS_UNIT_TEST(list, middle_delete) {
     int *list = NULL;
     int *element = NULL;
     for (i = 0; i < 10; ++i) {
-        element = AVS_LIST_NEW_ELEMENT(int);
-        *element = (int) (i + 1);
-        AVS_LIST_APPEND(&list, element);
+        *AVS_LIST_APPEND_NEW(int, &list) = (int) (i + 1);
     }
     i = 0;
     AVS_LIST_FOREACH(element, list) {

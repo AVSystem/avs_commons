@@ -314,6 +314,16 @@ size_t avs_list_size__(const void *list);
 void avs_list_sort__(void **list_ptr,
                       avs_list_comparator_func_t comparator,
                       size_t element_size);
+int avs_list_is_cyclic__(const void *list);
+void *avs_list_assert_acyclic__(void *list);
+
+#ifdef NDEBUG
+#define AVS_LIST_ASSERT_ACYCLIC__(list) (list)
+#else
+#define AVS_LIST_ASSERT_ACYCLIC__(list) \
+((AVS_LIST_TYPEOF__(*(list)) *) \
+        avs_list_assert_acyclic__((void *) (intptr_t) (list)))
+#endif
 /**@}*/
 
 /**
@@ -463,6 +473,11 @@ void avs_list_sort__(void **list_ptr,
 /**
  * Inserts an element or a list into the list.
  *
+ * Note that if <c>NDEBUG</c> is not defined at the point of including this
+ * header file, this macro will contain an assertion that checks if the
+ * resulting list is acyclic, which runs in O(n) time complexity. Otherwise
+ * it runs in O(1).
+ *
  * @param destination_element_ptr Pointer to a variable holding a pointer to the
  *                                element (which may be null) before which to
  *                                insert the new element. The variable value
@@ -477,20 +492,24 @@ void avs_list_sort__(void **list_ptr,
  *
  * @return The inserted element, i.e. <c>new_element</c>.
  */
-#warning "TODO: Add acyclic assertion"
 #define AVS_LIST_INSERT(destination_element_ptr, new_element) \
-(((void) sizeof(*(destination_element_ptr) = (new_element))), \
- ((AVS_LIST_TYPEOF__(*(new_element)) *) \
-  avs_list_insert__((void **) \
-                    (AVS_LIST_TYPEOF__(**(destination_element_ptr)) **) \
-                            (destination_element_ptr), \
-                    (void *) (new_element))))
+((((void) sizeof(*(destination_element_ptr) = (new_element))), \
+        ((AVS_LIST_TYPEOF__(*(new_element)) *) \
+        AVS_LIST_ASSERT_ACYCLIC__(avs_list_insert__( \
+                (void **) (AVS_LIST_TYPEOF__(**(destination_element_ptr)) **) \
+                (destination_element_ptr), \
+                (void *) (new_element))))))
 
 /**
  * Allocates a new element and inserts it into the list.
  *
  * It is semantically equivalent to
  * <c>AVS_LIST_INSERT(destination_element_ptr, AVS_LIST_NEW_ELEMENT(type))</c>.
+ *
+ * Note that if <c>NDEBUG</c> is not defined at the point of including this
+ * header file, this macro will contain an assertion that checks if the
+ * resulting list is acyclic, which runs in O(n) time complexity. Otherwise
+ * it runs in O(1).
  *
  * @param type                    Type of user data to allocate.
  *
@@ -514,9 +533,8 @@ AVS_LIST_INSERT(destination_element_ptr, AVS_LIST_NEW_ELEMENT(type))
  *                    is already a list), they will be preserved, actually
  *                    concatenating two lists.
  */
-#warning "TODO: Add acyclic assertion"
 #define AVS_LIST_APPEND(list_ptr, new_element) \
-(*AVS_LIST_APPEND_PTR(list_ptr) = new_element)
+AVS_LIST_ASSERT_ACYCLIC__(*AVS_LIST_APPEND_PTR(list_ptr) = new_element)
 
 /**
  * Allocates a new element and appends at the end of a list.
@@ -649,15 +667,17 @@ for ((element_ptr) = (list_ptr), (helper_element) = *(element_ptr); \
 for (; *(first_element_ptr); AVS_LIST_DELETE(first_element_ptr))
 
 /**
- * @def AVS_LIST_SIZE(list)
- *
  * Returns the number of elements on the list.
+ *
+ * Note that if <c>NDEBUG</c> is not defined at the point of including this
+ * header file, this macro will contain an assertion that checks if the list is
+ * acyclic before calculating the size.
  *
  * @param list Pointer to the first element of a list.
  *
  * @return Number of elements on the list.
  */
-#define AVS_LIST_SIZE avs_list_size__
+#define AVS_LIST_SIZE(list) avs_list_size__(AVS_LIST_ASSERT_ACYCLIC__(list))
 
 /**
  * Sorts the list elements, ascending by the ordering enforced by the specified
@@ -674,6 +694,17 @@ for (; *(first_element_ptr); AVS_LIST_DELETE(first_element_ptr))
 #define AVS_LIST_SORT(list_ptr, comparator) \
 avs_list_sort__((void **)(intptr_t)(list_ptr), (comparator), \
                 sizeof(**(list_ptr)))
+
+/**
+ * @def AVS_LIST_IS_CYCLIC(list)
+ *
+ * Checks whether the list contains cycles.
+ *
+ * @param list Pointer to the first element of a list.
+ *
+ * @return 1 if the list contains cycles, 0 otherwise.
+ */
+#define AVS_LIST_IS_CYCLIC avs_list_is_cyclic__
 
 #ifdef	__cplusplus
 }

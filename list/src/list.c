@@ -7,8 +7,16 @@
  * See the LICENSE file for details.
  */
 
+#ifdef NDEBUG
+#undef NDEBUG /* we want to call assert() in avs_list_assert_acyclic__() */
+#endif
+
 #include <config.h>
 
+#include <assert.h>
+
+/* but we don't want avs_list_assert_acyclic__ called from our own internals */
+#define NDEBUG
 #include <avsystem/commons/list.h>
 
 #ifdef HAVE_VISIBILITY
@@ -139,6 +147,25 @@ void avs_list_sort__(void **list_ptr,
     } else {
         *list_end_ptr = part2;
     }
+}
+
+int avs_list_is_cyclic__(const void *list) {
+    const void *slow = list;
+    const void *fast1 = list;
+    const void *fast2 = list;
+    while (slow
+            && (fast1 = AVS_LIST_NEXT(fast2))
+            && (fast2 = AVS_LIST_NEXT(fast1))) {
+        if (fast1 == slow || fast2 == slow) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+void *avs_list_assert_acyclic__(void *list) {
+    assert(!avs_list_is_cyclic__(list));
+    return list;
 }
 
 #ifdef AVS_UNIT_TESTING
