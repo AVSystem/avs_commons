@@ -307,6 +307,8 @@ void **avs_list_find_by_value_ptr__(void **list_ptr,
                                     avs_list_comparator_func_t comparator,
                                     size_t value_size);
 void *avs_list_tail__(void *list);
+void **avs_list_append_ptr__(void **list_ptr);
+void *avs_list_insert__(void **insert_ptr, void *list_to_insert);
 void *avs_list_detach__(void **to_detach_ptr);
 size_t avs_list_size__(const void *list);
 void avs_list_sort__(void **list_ptr,
@@ -417,6 +419,22 @@ void avs_list_sort__(void **list_ptr,
 ((AVS_LIST_TYPEOF__(*(list)) *) avs_list_tail__((void *) (intptr_t) (list)))
 
 /**
+ * Returns the next element pointer of last element in a list.
+ *
+ * For non-empty lists, it is semantically equivalent to
+ * <c>&AVS_LIST_NEXT(AVS_LIST_TAIL(*list_ptr))</c>.
+ *
+ * @param list_ptr Pointer to a list variable.
+ *
+ * @return Pointer to a variable, writing to which will append an element to the
+ *         end of the list. Note that the returned value, when dereferenced,
+ *         will always yield <c>NULL</c>.
+ */
+#define AVS_LIST_APPEND_PTR(list_ptr) \
+((AVS_LIST_TYPEOF__(*(list_ptr)) *) \
+        avs_list_append_ptr__((void **) (intptr_t) (list_ptr)))
+
+/**
  * Allocates a new list element with an arbitrary size.
  *
  * Invokes @ref AVS_LIST_CONFIG_ALLOC with the desired size increased by the
@@ -443,29 +461,30 @@ void avs_list_sort__(void **list_ptr,
 ((type *) AVS_LIST_NEW_BUFFER(sizeof(type)))
 
 /**
- * Inserts an element into the list.
+ * Inserts an element or a list into the list.
  *
  * @param destination_element_ptr Pointer to a variable holding a pointer to the
  *                                element (which may be null) before which to
  *                                insert the new element. The variable value
  *                                will be updated with the newly added element.
  *
- * @param new_element             The element to insert. Note that its current
- *                                next pointer value will be discarded, and as
- *                                such, should be <c>NULL</c>.
+ * @param new_element             The element to insert. If it has subsequent
+ *                                elements (i.e. is already a list), they will
+ *                                be preserved, and the part of the list
+ *                                previously held at destination_element_ptr
+ *                                will be appended after element at
+ *                                <c>new_element</c>.
+ *
+ * @return The inserted element, i.e. <c>new_element</c>.
  */
+#warning "TODO: Add acyclic assertion"
 #define AVS_LIST_INSERT(destination_element_ptr, new_element) \
-do { \
-    AVS_LIST_TYPEOF__(**(destination_element_ptr)) \
-            **avs_list_insert_dest_ptr__ = \
-            (AVS_LIST_TYPEOF__(**(destination_element_ptr)) **) \
-            (destination_element_ptr); \
-    AVS_LIST_TYPEOF__(*(new_element)) *avs_list_insert_new_element__ = \
-            (new_element); \
-    AVS_LIST_NEXT(avs_list_insert_new_element__) = \
-            *avs_list_insert_dest_ptr__; \
-    *avs_list_insert_dest_ptr__ = avs_list_insert_new_element__; \
-} while (0)
+(((void) sizeof(*(destination_element_ptr) = (new_element))), \
+ ((AVS_LIST_TYPEOF__(*(new_element)) *) \
+  avs_list_insert__((void **) \
+                    (AVS_LIST_TYPEOF__(**(destination_element_ptr)) **) \
+                            (destination_element_ptr), \
+                    (void *) (new_element))))
 
 /**
  * Allocates a new element and inserts it into the list.
@@ -473,25 +492,18 @@ do { \
  * It is semantically equivalent to
  * <c>AVS_LIST_INSERT(destination_element_ptr, AVS_LIST_NEW_ELEMENT(type))</c>.
  *
- * @warning Note that this macro gives no immediate feedback about whether the
- *          memory allocation succeeded. It is thus adviced not to use it in any
- *          code in which memory allocations fails are anticipated.
- *
  * @param type                    Type of user data to allocate.
  *
  * @param destination_element_ptr Pointer to a variable holding a pointer to the
  *                                element (which may be null) before which to
  *                                insert the new element. The variable value
  *                                will be updated with the newly added element.
+ *
+ * @return Pointer to the created and inserted element, or <c>NULL</c> in case
+ *         of error.
  */
 #define AVS_LIST_INSERT_NEW(type, destination_element_ptr) \
-do { \
-    type *avs_list_insert_new_value__ = AVS_LIST_NEW_ELEMENT(type); \
-    if (avs_list_insert_new_value__) { \
-        AVS_LIST_INSERT(destination_element_ptr, \
-                        avs_list_insert_new_value__); \
-    } \
-} while (0)
+AVS_LIST_INSERT(destination_element_ptr, AVS_LIST_NEW_ELEMENT(type))
 
 /**
  * Appends an element or a list at the end of a list.
@@ -502,13 +514,25 @@ do { \
  *                    is already a list), they will be preserved, actually
  *                    concatenating two lists.
  */
+#warning "TODO: Add acyclic assertion"
 #define AVS_LIST_APPEND(list_ptr, new_element) \
-do { \
-    AVS_LIST_TYPEOF__(**(list_ptr)) **avs_list_insert_ptr__; \
-    AVS_LIST_FOREACH_PTR(avs_list_insert_ptr__, \
-                         (AVS_LIST_TYPEOF__(**(list_ptr)) **) list_ptr); \
-    *avs_list_insert_ptr__ = new_element; \
-} while (0)
+(*AVS_LIST_APPEND_PTR(list_ptr) = new_element)
+
+/**
+ * Allocates a new element and appends at the end of a list.
+ *
+ * It is semantically equivalent to
+ * <c>AVS_LIST_APPEND(list_ptr, AVS_LIST_NEW_ELEMENT(type))</c>.
+ *
+ * @param type     Type of user data to allocate.
+ *
+ * @param list_ptr Pointer to a list variable.
+ *
+ * @return Pointer to the created and inserted element, or <c>NULL</c> in case
+ *         of error.
+ */
+#define AVS_LIST_APPEND_NEW(type, list_ptr) \
+AVS_LIST_APPEND(list_ptr, AVS_LIST_NEW_ELEMENT(type))
 
 /**
  * Detaches an element from a list.

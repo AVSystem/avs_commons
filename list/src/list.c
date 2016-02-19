@@ -68,6 +68,22 @@ void *avs_list_tail__(void *list) {
     return element;
 }
 
+void **avs_list_append_ptr__(void **list_ptr) {
+    AVS_LIST_ITERATE_PTR(list_ptr);
+    return list_ptr;
+}
+
+void *avs_list_insert__(void **insert_ptr, void *list_to_insert) {
+    if (list_to_insert) {
+        void *next = *insert_ptr;
+        *insert_ptr = list_to_insert;
+        if (next) {
+            *AVS_LIST_APPEND_PTR(&list_to_insert) = next;
+        }
+    }
+    return list_to_insert;
+}
+
 void *avs_list_detach__(void **to_detach_ptr) {
     void *retval = *to_detach_ptr;
     *to_detach_ptr = AVS_LIST_NEXT(*(to_detach_ptr));
