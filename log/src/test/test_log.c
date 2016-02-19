@@ -148,3 +148,44 @@ AVS_UNIT_TEST(log, module_levels) {
     ASSERT_LOG_CLEAN;
     reset_everything();
 }
+
+static int fail(void) {
+    AVS_UNIT_ASSERT_TRUE(0);
+    return -1;
+}
+
+static int success(void) {
+    return 42;
+}
+
+AVS_UNIT_TEST(log, lazy_log) {
+    avs_log_set_level(debugged_module, AVS_LOG_DEBUG);
+    avs_log_set_level(stable_module, AVS_LOG_ERROR);
+
+    ASSERT_LOG(debugged_module, DEBUG, "DEBUG [debugged_module] [src/test/test_log.c:166]: Testing DEBUG 42");
+    avs_log(debugged_module, LAZY_DEBUG, "Testing DEBUG %d", success());
+    ASSERT_LOG(debugged_module, INFO, "INFO [debugged_module] [src/test/test_log.c:168]: Testing INFO 42");
+    avs_log(debugged_module, LAZY_INFO, "Testing INFO %d", success());
+    ASSERT_LOG(debugged_module, WARNING, "WARNING [debugged_module] [src/test/test_log.c:170]: Testing WARNING 42");
+    avs_log(debugged_module, LAZY_WARNING, "Testing WARNING %d", success());
+    ASSERT_LOG(debugged_module, ERROR, "ERROR [debugged_module] [src/test/test_log.c:172]: Testing ERROR 42");
+    avs_log(debugged_module, LAZY_ERROR, "Testing ERROR %d", success());
+
+    avs_log(stable_module, LAZY_DEBUG, "Testing DEBUG %d", fail());
+    avs_log(stable_module, LAZY_INFO, "Testing INFO %d", fail());
+    avs_log(stable_module, LAZY_WARNING, "Testing WARNING %d", fail());
+    ASSERT_LOG(stable_module, ERROR, "ERROR [stable_module] [src/test/test_log.c:178]: Testing ERROR 42");
+    avs_log(stable_module, LAZY_ERROR, "Testing ERROR %d", success());
+
+    /* default level is INFO */
+    avs_log(other_module, LAZY_DEBUG, "Testing DEBUG %d", fail());
+    ASSERT_LOG(other_module, INFO, "INFO [other_module] [src/test/test_log.c:183]: Testing INFO 42");
+    avs_log(other_module, LAZY_INFO, "Testing INFO %d", success());
+    ASSERT_LOG(other_module, WARNING, "WARNING [other_module] [src/test/test_log.c:185]: Testing WARNING 42");
+    avs_log(other_module, LAZY_WARNING, "Testing WARNING %d", success());
+    ASSERT_LOG(other_module, ERROR, "ERROR [other_module] [src/test/test_log.c:187]: Testing ERROR 42");
+    avs_log(other_module, LAZY_ERROR, "Testing ERROR %d", success());
+
+    ASSERT_LOG_CLEAN;
+    reset_everything();
+}
