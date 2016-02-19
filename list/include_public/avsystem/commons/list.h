@@ -90,6 +90,14 @@ extern "C" {
 #endif
 
 /**
+ * Structure definition for padding helper macro.
+ */
+struct avs_list_space_for_next_helper_struct__ {
+    void *next;
+    avs_max_align_t value;
+};
+
+/**
  * Padding helper macro.
  *
  * The in-memory representation format of the list is as follows:
@@ -111,20 +119,11 @@ extern "C" {
  * on an address complying to strictest alignment requirements suitable for any
  * data type on the target architecture.
  *
- * The concept for calculating this size is based on the structure:
- *
- * <code>
- * struct {
- *     void *next;
- *     avs_max_align_t value;
- * };
- * </code>
+ * The concept for calculating this size is based on the
+ * @ref avs_list_space_for_next_helper_struct__ structure.
  */
 #define AVS_LIST_SPACE_FOR_NEXT__ \
-offsetof(struct { \
-    void *next; \
-    avs_max_align_t value; \
-}, value)
+offsetof(struct avs_list_space_for_next_helper_struct__, value)
 
 /**
  * List type for a given element type.
