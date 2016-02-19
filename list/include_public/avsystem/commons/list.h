@@ -324,7 +324,7 @@ void avs_list_sort__(void **list_ptr,
  * @return Pointer to the desired element, or <c>NULL</c> if not found.
  */
 #define AVS_LIST_NTH(list, n) \
-((AVS_LIST_TYPEOF__(*(list)) *) avs_list_nth__((list), (n)))
+((AVS_LIST_TYPEOF__(*(list)) *) avs_list_nth__((void *) (intptr_t) (list), (n)))
 
 /**
  * Returns a pointer to a variable holding the <i>n</i>-th element in a list.
@@ -338,7 +338,7 @@ void avs_list_sort__(void **list_ptr,
  */
 #define AVS_LIST_NTH_PTR(list_ptr, n) \
 ((AVS_LIST_TYPEOF__(*(list_ptr)) *) \
-        avs_list_nth_ptr__((void **) (list_ptr), (n)))
+        avs_list_nth_ptr__((void **) (intptr_t) (list_ptr), (n)))
 
 /**
  * Looks for a given element in the list and returns a pointer to the variable
@@ -414,7 +414,7 @@ void avs_list_sort__(void **list_ptr,
  *         empty.
  */
 #define AVS_LIST_TAIL(list) \
-((AVS_LIST_TYPEOF__(*(list)) *) avs_list_tail__((list)))
+((AVS_LIST_TYPEOF__(*(list)) *) avs_list_tail__((void *) (intptr_t) (list)))
 
 /**
  * Allocates a new list element with an arbitrary size.
