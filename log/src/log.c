@@ -9,7 +9,6 @@
 
 #define _BSD_SOURCE /* for vsnprintf when not C99 */
 #include <stdarg.h>
-#include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -47,7 +46,7 @@ void avs_log_reset(void) {
     avs_log_set_default_level(AVS_LOG_INFO);
 }
 
-static volatile avs_log_level_t *level_for(const char *module, bool create) {
+static volatile avs_log_level_t *level_for(const char *module, int create) {
     if (module) {
         AVS_LIST(module_level_t) *entry_ptr;
         int cmp = 1;
@@ -75,35 +74,51 @@ static volatile avs_log_level_t *level_for(const char *module, bool create) {
     return &DEFAULT_LEVEL;
 }
 
-static bool should_log(avs_log_level_t level, const char *module) {
-    return level >= *level_for(module, false);
+int avs_log_should_log__(avs_log_level_t level, const char *module) {
+    return level >= AVS_LOG_QUIET || level >= *level_for(module, 0);
+}
+
+void avs_log_internal_forced_v__(avs_log_level_t level,
+                                 const char *module,
+                                 const char *msg,
+                                 va_list ap) {
+    char log_buf[MAX_LOG_LINE_LENGTH];
+    vsnprintf(log_buf, sizeof(log_buf) - 1, msg, ap);
+    log_buf[sizeof(log_buf) - 1] = '\0';
+    HANDLER(level, module, log_buf);
 }
 
 void avs_log_internal_v__(avs_log_level_t level,
                           const char *module,
                           const char *msg,
                           va_list ap) {
-    if (should_log(level, module)) {
-        char log_buf[MAX_LOG_LINE_LENGTH];
-        vsnprintf(log_buf, sizeof(log_buf) - 1, msg, ap);
-        log_buf[sizeof(log_buf) - 1] = '\0';
-        HANDLER(level, module, log_buf);
+    if (avs_log_should_log__(level, module)) {
+        avs_log_internal_forced_v__(level, module, msg, ap);
     }
+}
+
+void avs_log_internal_forced_l__(avs_log_level_t level,
+                                 const char *module,
+                                 const char *msg, ...) {
+    va_list ap;
+    va_start(ap, msg);
+    avs_log_internal_forced_v__(level, module, msg, ap);
+    va_end(ap);
 }
 
 void avs_log_internal_l__(avs_log_level_t level,
                           const char *module,
                           const char *msg, ...) {
-    if (should_log(level, module)) {
+    if (avs_log_should_log__(level, module)) {
         va_list ap;
         va_start(ap, msg);
-        avs_log_internal_v__(level, module, msg, ap);
+        avs_log_internal_forced_v__(level, module, msg, ap);
         va_end(ap);
     }
 }
 
 void avs_log_set_level__(const char *module, avs_log_level_t level) {
-    *level_for(module, true) = level;
+    *level_for(module, 1) = level;
 }
 
 #ifdef AVS_UNIT_TESTING
