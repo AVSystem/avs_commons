@@ -533,7 +533,9 @@ AVS_LIST_INSERT(destination_element_ptr, AVS_LIST_NEW_ELEMENT(type))
  *                    concatenating two lists.
  */
 #define AVS_LIST_APPEND(list_ptr, new_element) \
-AVS_LIST_ASSERT_ACYCLIC__(*AVS_LIST_APPEND_PTR(list_ptr) = new_element)
+AVS_LIST_ASSERT_ACYCLIC__( \
+        (*(AVS_LIST_TYPEOF__(**(list_ptr)) **) AVS_LIST_APPEND_PTR(list_ptr) = \
+                (new_element)))
 
 /**
  * Allocates a new element and appends at the end of a list.
