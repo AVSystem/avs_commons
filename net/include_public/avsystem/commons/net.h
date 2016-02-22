@@ -285,6 +285,7 @@ int avs_net_socket_get_opt(avs_net_abstract_socket_t *socket,
 int avs_net_socket_set_opt(avs_net_abstract_socket_t *socket,
                            avs_net_socket_opt_key_t option_key,
                            avs_net_socket_opt_value_t option_value);
+int avs_net_socket_errno(avs_net_abstract_socket_t *socket);
 
 /**
  * Returns a pointer to bare system socket (e.g. to invoke <c>select</c> or

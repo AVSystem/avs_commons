@@ -90,6 +90,7 @@ static int get_opt_ssl(avs_net_abstract_socket_t *ssl_socket_,
 static int set_opt_ssl(avs_net_abstract_socket_t *net_socket,
                        avs_net_socket_opt_key_t option_key,
                        avs_net_socket_opt_value_t option_value);
+static int errno_ssl(avs_net_abstract_socket_t *net_socket);
 
 static int unimplemented() {
     return -1;
@@ -113,7 +114,8 @@ static const avs_net_socket_v_table_t ssl_vtable = {
     remote_port_ssl,
     local_port_ssl,
     get_opt_ssl,
-    set_opt_ssl
+    set_opt_ssl,
+    errno_ssl
 };
 
 static int avs_bio_recv(void *ctx, unsigned char *buf, size_t len,

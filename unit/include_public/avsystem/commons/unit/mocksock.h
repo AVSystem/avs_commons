@@ -135,6 +135,12 @@ void avs_unit_mocksock_expect_set_opt__(avs_net_abstract_socket_t *socket,
 #define avs_unit_mocksock_expect_set_opt(Socket, Key) \
     avs_unit_mocksock_expect_set_opt__((Socket), (Key), __FILE__, __LINE__)
 
+void avs_unit_mocksock_expect_errno__(avs_net_abstract_socket_t *socket,
+                                      int to_return,
+                                      const char *file, int line);
+#define avs_unit_mocksock_expect_errno(Socket, ToReturn) \
+    avs_unit_mocksock_expect_errno__((Socket), (ToReturn), __FILE__, __LINE__)
+
 void avs_unit_mocksock_assert_expects_met__(avs_net_abstract_socket_t *socket,
                                             const char *file,
                                             int line);

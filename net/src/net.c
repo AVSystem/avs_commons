@@ -132,6 +132,7 @@ static int get_opt_net(avs_net_abstract_socket_t *net_socket,
 static int set_opt_net(avs_net_abstract_socket_t *net_socket,
                        avs_net_socket_opt_key_t option_key,
                        avs_net_socket_opt_value_t option_value);
+static int errno_net(avs_net_abstract_socket_t *net_socket);
 
 static int unimplemented() {
     return -1;
@@ -155,7 +156,8 @@ static const avs_net_socket_v_table_t net_vtable = {
     remote_port_net,
     local_port_net,
     get_opt_net,
-    set_opt_net
+    set_opt_net,
+    errno_net
 };
 
 typedef struct {
