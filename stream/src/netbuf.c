@@ -38,44 +38,26 @@ typedef struct buffered_netstream_struct {
 } buffered_netstream_t;
 
 #define WRAP_ERRNO(Stream, Retval, ...) do { \
-    Retval = 0; \
-    errno = 0; \
     Retval = (__VA_ARGS__); \
     if (Retval) { \
         if ((Stream)->errno_) { \
             LOG(TRACE, "error already set"); \
         } else { \
-            (Stream)->errno_ = errno; \
+            (Stream)->errno_ = avs_net_socket_errno((Stream)->socket); \
         } \
     } \
 } while (0)
 
-static int out_buffer_flush_impl(buffered_netstream_t *stream) {
-    int result = avs_net_socket_send(stream->socket,
+static int out_buffer_flush(buffered_netstream_t *stream) {
+    int result;
+    WRAP_ERRNO(stream, result,
+               avs_net_socket_send(stream->socket,
                                    avs_buffer_data(stream->out_buffer),
-                                   avs_buffer_data_size(stream->out_buffer));
+                                   avs_buffer_data_size(stream->out_buffer)));
     if (!result) {
         avs_buffer_reset(stream->out_buffer);
     }
     return result;
-}
-
-static int out_buffer_flush(buffered_netstream_t *stream) {
-    int result;
-    WRAP_ERRNO(stream, result, out_buffer_flush_impl(stream));
-    return result;
-}
-
-static int buffered_netstream_write_impl(buffered_netstream_t *stream,
-                                         const void *data,
-                                         size_t data_length) {
-    if (data_length >= avs_buffer_space_left(stream->out_buffer)) {
-        return (out_buffer_flush(stream)
-                || avs_net_socket_send(stream->socket, data, data_length))
-                ? -1 : 0;
-    } else {
-        return avs_buffer_append_bytes(stream->out_buffer, data, data_length);
-    }
 }
 
 static int buffered_netstream_write(avs_stream_abstract_t *stream_,
@@ -83,9 +65,15 @@ static int buffered_netstream_write(avs_stream_abstract_t *stream_,
                                     size_t data_length) {
     buffered_netstream_t *stream = (buffered_netstream_t *) stream_;
     int result;
-    WRAP_ERRNO(stream, result,
-               buffered_netstream_write_impl(stream, data, data_length));
-    return result;
+    if (data_length < avs_buffer_space_left(stream->out_buffer)) {
+        return avs_buffer_append_bytes(stream->out_buffer, data, data_length);
+    } else if ((result = out_buffer_flush(stream))) {
+        return result;
+    } else {
+        WRAP_ERRNO(stream, result,
+                   avs_net_socket_send(stream->socket, data, data_length));
+        return result;
+    }
 }
 
 static int buffered_netstream_finish_message(avs_stream_abstract_t *stream) {
@@ -110,34 +98,22 @@ static int return_data_from_buffer(avs_buffer_t *in_buffer,
     return 0;
 }
 
-static int read_data_to_user_buffer_impl(buffered_netstream_t *stream,
-                                         size_t *out_bytes_read,
-                                         char *out_message_finished,
-                                         void *buffer,
-                                         size_t buffer_length) {
-    int result = avs_net_socket_receive(stream->socket,
-                                      out_bytes_read,
-                                      buffer,
-                                      buffer_length);
-    *out_message_finished = (result || *out_bytes_read == 0);
-    return result;
-}
-
 static int read_data_to_user_buffer(buffered_netstream_t *stream,
                                     size_t *out_bytes_read,
                                     char *out_message_finished,
                                     void *buffer,
                                     size_t buffer_length) {
     int result;
-    WRAP_ERRNO(stream, result,
-               read_data_to_user_buffer_impl(stream, out_bytes_read,
-                                             out_message_finished,
-                                             buffer, buffer_length));
+    WRAP_ERRNO(stream, result, avs_net_socket_receive(stream->socket,
+                                                      out_bytes_read,
+                                                      buffer,
+                                                      buffer_length));
+    *out_message_finished = (result || *out_bytes_read == 0);
     return result;
 }
 
-static int in_buffer_read_some_impl(buffered_netstream_t *stream,
-                                    size_t *out_bytes_read) {
+static int in_buffer_read_some(buffered_netstream_t *stream,
+                               size_t *out_bytes_read) {
     int result;
     avs_buffer_t *in_buffer = stream->in_buffer;
     size_t space_left = avs_buffer_space_left(in_buffer);
@@ -147,22 +123,15 @@ static int in_buffer_read_some_impl(buffered_netstream_t *stream,
         return -1;
     }
 
-    result = avs_net_socket_receive(stream->socket,
-                                  out_bytes_read,
-                                  avs_buffer_raw_insert_ptr(in_buffer),
-                                  space_left);
+    WRAP_ERRNO(stream, result,
+               avs_net_socket_receive(stream->socket,
+                                      out_bytes_read,
+                                      avs_buffer_raw_insert_ptr(in_buffer),
+                                      space_left));
 
     if (!result) {
         avs_buffer_advance_ptr(in_buffer, *out_bytes_read);
     }
-    return result;
-}
-
-static int in_buffer_read_some(buffered_netstream_t *stream,
-                               size_t *out_bytes_read) {
-    int result;
-    WRAP_ERRNO(stream, result,
-               in_buffer_read_some_impl(stream, out_bytes_read));
     return result;
 }
 
@@ -240,12 +209,6 @@ static int buffered_netstream_read(avs_stream_abstract_t *stream_,
     }
 }
 
-static int cannot_peek(void) {
-    errno = EINVAL;
-    LOG(ERROR, "cannot peek - buffer is too small");
-    return EOF;
-}
-
 static int buffered_netstream_peek(avs_stream_abstract_t *stream_,
                                    size_t offset) {
     buffered_netstream_t *stream = (buffered_netstream_t *) stream_;
@@ -263,9 +226,13 @@ static int buffered_netstream_peek(avs_stream_abstract_t *stream_,
         }
         return (unsigned char)avs_buffer_data(stream->in_buffer)[offset];
     } else {
-        int result;
-        WRAP_ERRNO(stream, result, cannot_peek());
-        return result;
+        LOG(ERROR, "cannot peek - buffer is too small");
+        if (stream->errno_) {
+            LOG(TRACE, "error already set");
+        } else {
+            stream->errno_ = EINVAL;
+        }
+        return EOF;
     }
 }
 

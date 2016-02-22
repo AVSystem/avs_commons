@@ -170,6 +170,7 @@ typedef struct {
     avs_net_socket_configuration_t         configuration;
 
     int recv_timeout;
+    int error_code;
 } avs_net_socket_t;
 
 static struct addrinfo *detach_preferred(struct addrinfo **list_ptr,
@@ -308,6 +309,7 @@ static void free_addrinfo_net(struct addrinfo *value) {
 
 static int remote_host_net(avs_net_abstract_socket_t *socket_,
                            char *out_buffer, size_t out_buffer_size) {
+#warning "TODO: ERRNO"
     avs_net_socket_t *socket = (avs_net_socket_t *) socket_;
     int retval;
     if (socket->socket < 0) {
@@ -319,6 +321,7 @@ static int remote_host_net(avs_net_abstract_socket_t *socket_,
 
 static int remote_port_net(avs_net_abstract_socket_t *socket_,
                            char *out_buffer, size_t out_buffer_size) {
+#warning "TODO: ERRNO"
     avs_net_socket_t *socket = (avs_net_socket_t *) socket_;
     int retval;
     if (socket->socket < 0) {
@@ -330,11 +333,13 @@ static int remote_port_net(avs_net_abstract_socket_t *socket_,
 
 static int system_socket_net(avs_net_abstract_socket_t *net_socket,
                              const void **out) {
+#warning "TODO: ERRNO"
     *out = &((const avs_net_socket_t *) net_socket)->socket;
     return *out ? 0 : -1;
 }
 
 static int close_net(avs_net_abstract_socket_t *net_socket_) {
+#warning "TODO: ERRNO"
     avs_net_socket_t *net_socket = (avs_net_socket_t *) net_socket_;
     if (net_socket->socket >= 0) {
         close(net_socket->socket);
@@ -345,6 +350,7 @@ static int close_net(avs_net_abstract_socket_t *net_socket_) {
 }
 
 static int cleanup_net(avs_net_abstract_socket_t **net_socket) {
+#warning "TODO: ERRNO"
     close_net(*net_socket);
     free(*net_socket);
     *net_socket = NULL;
@@ -352,6 +358,7 @@ static int cleanup_net(avs_net_abstract_socket_t **net_socket) {
 }
 
 static int shutdown_net(avs_net_abstract_socket_t *net_socket_) {
+#warning "TODO: ERRNO"
     avs_net_socket_t *net_socket = (avs_net_socket_t *) net_socket_;
     int retval = shutdown(net_socket->socket, SHUT_RDWR);
     net_socket->state = AVS_NET_SOCKET_STATE_SHUTDOWN;
@@ -575,6 +582,7 @@ static int host_port_to_string(const struct sockaddr *sa, socklen_t salen,
 static int connect_net(avs_net_abstract_socket_t *net_socket_,
                        const char *host,
                        const char *port) {
+#warning "TODO: ERRNO"
     avs_net_socket_t *net_socket = (avs_net_socket_t *) net_socket_;
     struct addrinfo *info = NULL, *address = NULL;
 
@@ -644,6 +652,7 @@ static int connect_net(avs_net_abstract_socket_t *net_socket_,
 static int send_net(avs_net_abstract_socket_t *net_socket_,
                     const void *buffer,
                     size_t buffer_length) {
+#warning "TODO: ERRNO"
     avs_net_socket_t *net_socket = (avs_net_socket_t *) net_socket_;
     size_t bytes_sent = 0;
 
@@ -684,6 +693,7 @@ static int send_to_net(avs_net_abstract_socket_t *net_socket_,
                        size_t buffer_length,
                        const char *host,
                        const char *port) {
+#warning "TODO: ERRNO"
     avs_net_socket_t *net_socket = (avs_net_socket_t *) net_socket_;
     struct addrinfo *info =
             get_addrinfo_net(net_socket->type, host, port,
@@ -710,6 +720,7 @@ static int receive_net(avs_net_abstract_socket_t *net_socket_,
                        size_t *out,
                        void *buffer,
                        size_t buffer_length) {
+#warning "TODO: ERRNO"
     avs_net_socket_t *net_socket = (avs_net_socket_t *) net_socket_;
     if (!wait_until_ready(net_socket->socket, net_socket->recv_timeout,
                           1, 0, 1)) {
@@ -733,6 +744,7 @@ static int receive_from_net(avs_net_abstract_socket_t *net_socket_,
                             void *message_buffer, size_t buffer_size,
                             char *host, size_t host_size,
                             char *port, size_t port_size) {
+#warning "TODO: ERRNO"
     avs_net_socket_t *net_socket = (avs_net_socket_t *) net_socket_;
     sockaddr_union_t sender_addr;
     socklen_t addrlen = sizeof(sender_addr);
@@ -842,6 +854,7 @@ bind_net_end:
 static int bind_net(avs_net_abstract_socket_t *net_socket_,
                     const char *localaddr,
                     const char *port) {
+#warning "TODO: ERRNO"
     avs_net_socket_t *net_socket = (avs_net_socket_t *) net_socket_;
     int retval = -1;
 
@@ -859,6 +872,7 @@ static int bind_net(avs_net_abstract_socket_t *net_socket_,
 
 static int accept_net(avs_net_abstract_socket_t *server_net_socket_,
                       avs_net_abstract_socket_t *new_net_socket_) {
+#warning "TODO: ERRNO"
     avs_net_socket_t *server_net_socket =
             (avs_net_socket_t *) server_net_socket_;
     avs_net_socket_t *new_net_socket =
@@ -1064,6 +1078,7 @@ int avs_net_local_address_for_target_host(const char *target_host,
 
 static int local_port_net(avs_net_abstract_socket_t *socket,
                           char *out_buffer, size_t out_buffer_size) {
+#warning "TODO: ERRNO"
     const avs_net_socket_t *net_socket = (const avs_net_socket_t *) socket;
     sockaddr_union_t addr;
     socklen_t addrlen = sizeof(addr);
@@ -1078,6 +1093,7 @@ static int local_port_net(avs_net_abstract_socket_t *socket,
 static int get_opt_net(avs_net_abstract_socket_t *net_socket_,
                        avs_net_socket_opt_key_t option_key,
                        avs_net_socket_opt_value_t *out_option_value) {
+#warning "TODO: ERRNO"
     avs_net_socket_t *net_socket = (avs_net_socket_t *) net_socket_;
     switch (option_key) {
     case AVS_NET_SOCKET_OPT_RECV_TIMEOUT:
@@ -1126,6 +1142,7 @@ static int get_opt_net(avs_net_abstract_socket_t *net_socket_,
 static int set_opt_net(avs_net_abstract_socket_t *net_socket_,
                        avs_net_socket_opt_key_t option_key,
                        avs_net_socket_opt_value_t option_value) {
+#warning "TODO: ERRNO"
     avs_net_socket_t *net_socket = (avs_net_socket_t *) net_socket_;
     switch (option_key) {
     case AVS_NET_SOCKET_OPT_RECV_TIMEOUT:
@@ -1135,6 +1152,10 @@ static int set_opt_net(avs_net_abstract_socket_t *net_socket_,
         LOG(ERROR, "set_opt_net: unknown or unsupported option key");
         return -1;
     }
+}
+
+static int errno_net(avs_net_abstract_socket_t *net_socket) {
+    return ((avs_net_socket_t *) net_socket)->error_code;
 }
 
 static int ifaddr_ip_equal(const struct sockaddr *left,
@@ -1237,6 +1258,7 @@ interface_name_end:
 
 static int interface_name_net(avs_net_abstract_socket_t *socket_,
                               avs_net_socket_interface_name_t *if_name) {
+#warning "TODO: ERRNO"
     avs_net_socket_t *socket = (avs_net_socket_t *) socket_;
     if (socket->configuration.interface_name[0]) {
         memcpy(*if_name,
