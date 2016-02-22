@@ -178,13 +178,13 @@ AVS_UNIT_TEST(log, lazy_log) {
     avs_log(stable_module, LAZY_ERROR, "Testing ERROR %d", success());
 
     /* default level is INFO */
-    avs_log(other_module, LAZY_DEBUG, "Testing DEBUG %d", fail());
+    avs_log_lazy(other_module, DEBUG, "Testing DEBUG %d", fail());
     ASSERT_LOG(other_module, INFO, "INFO [other_module] [src/test/test_log.c:183]: Testing INFO 42");
-    avs_log(other_module, LAZY_INFO, "Testing INFO %d", success());
+    avs_log_lazy(other_module, INFO, "Testing INFO %d", success());
     ASSERT_LOG(other_module, WARNING, "WARNING [other_module] [src/test/test_log.c:185]: Testing WARNING 42");
-    avs_log(other_module, LAZY_WARNING, "Testing WARNING %d", success());
+    avs_log_lazy(other_module, WARNING, "Testing WARNING %d", success());
     ASSERT_LOG(other_module, ERROR, "ERROR [other_module] [src/test/test_log.c:187]: Testing ERROR 42");
-    avs_log(other_module, LAZY_ERROR, "Testing ERROR %d", success());
+    avs_log_lazy(other_module, ERROR, "Testing ERROR %d", success());
 
     ASSERT_LOG_CLEAN;
     reset_everything();

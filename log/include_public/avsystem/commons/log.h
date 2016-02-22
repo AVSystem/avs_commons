@@ -224,6 +224,40 @@ void avs_log_set_level__(const char *module, avs_log_level_t level);
         AVS_LOG__##Level(v, #Module, AVS_LOG_MSG_PREFIX__##Level (Module) __VA_ARGS__)
 
 /**
+ * If the current log level is high enough, creates a log message and displays
+ * it on a specified error output. Message format and additional arguments are
+ * the same as for standard C library <c>printf</c>.
+ *
+ * This is alternate syntax for specifying one of <c>LAZY_*</c> pseudo-levels
+ * to @ref avs_log.
+ *
+ * @param Module Name of the module that generates the message, given as a raw
+ *               token.
+ *
+ * @param Level  Log level, specified as a name of @ref avs_log_level_t (other
+ *               than <c>QUIET</c>) with the leading <c>AVS_LOG_</c> omitted.
+ */
+#define avs_log_lazy(Module, Level, ...) \
+        avs_log(Module, LAZY_##Level, __VA_ARGS__)
+
+/**
+ * If the current log level is high enough, creates a log message and displays
+ * it on a specified error output. Message format and additional arguments are
+ * the same as for standard C library <c>vprintf</c>.
+ *
+ * This is alternate syntax for specifying one of <c>LAZY_*</c> pseudo-levels
+ * to @ref avs_log_v.
+ *
+ * @param Module Name of the module that generates the message, given as a raw
+ *               token.
+ *
+ * @param Level  Log level, specified as a name of @ref avs_log_level_t (other
+ *               than <c>QUIET</c>) with the leading <c>AVS_LOG_</c> omitted.
+ */
+#define avs_log_lazy_v(Module, Level, ...) \
+        avs_log_v(Module, LAZY_##Level, __VA_ARGS__)
+
+/**
  * Sets the logging level for a given module. Messages with lower level than the
  * one set will not be passed to the log writer.
  *
