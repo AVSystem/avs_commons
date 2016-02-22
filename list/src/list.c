@@ -159,6 +159,7 @@ int avs_list_is_cyclic__(const void *list) {
         if (fast1 == slow || fast2 == slow) {
             return 1;
         }
+        slow = AVS_LIST_NEXT(slow);
     }
     return 0;
 }

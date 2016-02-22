@@ -482,14 +482,21 @@ void *avs_list_assert_acyclic__(void *list);
  *                                insert the new element. The variable value
  *                                will be updated with the newly added element.
  *
- * @param new_element             The element to insert. If it has subsequent
- *                                elements (i.e. is already a list), they will
- *                                be preserved, and the part of the list
- *                                previously held at destination_element_ptr
- *                                will be appended after element at
- *                                <c>new_element</c>.
+ * @param new_element             The element to insert.
+ * 
+ *                                If it has subsequent elements (i.e. is already
+ *                                a list), they will be preserved, and the part
+ *                                of the list previously held at
+ *                                <c>destination_element_ptr</c> will be
+ *                                appended after element at <c>new_element</c>.
  *
- * @return The inserted element, i.e. <c>new_element</c>.
+ *                                Note that <c>NULL</c> is a valid list
+ *                                containing zero elements, so passing
+ *                                <c>NULL</c> as <c>new_elements</c> is
+ *                                essentially a no-op.
+ *
+ * @return The inserted element, i.e. <c>new_element</c>. If <c>new_element</c>
+ *         is <c>NULL</c>, the return value will also be <c>NULL</c>.
  */
 #define AVS_LIST_INSERT(destination_element_ptr, new_element) \
 ((((void) sizeof(*(destination_element_ptr) = (new_element))), \
