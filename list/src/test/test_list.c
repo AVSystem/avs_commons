@@ -163,3 +163,27 @@ AVS_UNIT_TEST(list, sort) {
         }
     }
 }
+
+AVS_UNIT_TEST(list, is_cyclic) {
+    AVS_LIST(int) list = NULL;
+    size_t i;
+    AVS_UNIT_ASSERT_FALSE(AVS_LIST_IS_CYCLIC(list));
+    *AVS_LIST_APPEND_NEW(int, &list) = 1;
+    AVS_UNIT_ASSERT_FALSE(AVS_LIST_IS_CYCLIC(list));
+    *AVS_LIST_APPEND_NEW(int, &list) = 2;
+    AVS_UNIT_ASSERT_FALSE(AVS_LIST_IS_CYCLIC(list));
+    *AVS_LIST_APPEND_NEW(int, &list) = 3;
+    AVS_UNIT_ASSERT_FALSE(AVS_LIST_IS_CYCLIC(list));
+
+    for (i = 4; i < 10; ++i) {
+        AVS_LIST(int) *ptr;
+        *AVS_LIST_APPEND_NEW(int, &list) = i;
+        ptr = AVS_LIST_APPEND_PTR(&list);
+        /* (i-3) elements in loop */
+        *ptr = AVS_LIST_NTH(list, 3);
+        AVS_UNIT_ASSERT_TRUE(AVS_LIST_IS_CYCLIC(list));
+        *ptr = NULL;
+    }
+
+    AVS_LIST_CLEAR(&list);
+}
