@@ -90,6 +90,14 @@ extern "C" {
 #endif
 
 /**
+ * Structure definition for padding helper macro.
+ */
+struct avs_list_space_for_next_helper_struct__ {
+    void *next;
+    avs_max_align_t value;
+};
+
+/**
  * Padding helper macro.
  *
  * The in-memory representation format of the list is as follows:
@@ -111,20 +119,11 @@ extern "C" {
  * on an address complying to strictest alignment requirements suitable for any
  * data type on the target architecture.
  *
- * The concept for calculating this size is based on the structure:
- *
- * <code>
- * struct {
- *     void *next;
- *     avs_max_align_t value;
- * };
- * </code>
+ * The concept for calculating this size is based on the
+ * @ref avs_list_space_for_next_helper_struct__ structure.
  */
 #define AVS_LIST_SPACE_FOR_NEXT__ \
-offsetof(struct { \
-    void *next; \
-    avs_max_align_t value; \
-}, value)
+offsetof(struct avs_list_space_for_next_helper_struct__, value)
 
 /**
  * List type for a given element type.
@@ -307,11 +306,23 @@ void **avs_list_find_by_value_ptr__(void **list_ptr,
                                     avs_list_comparator_func_t comparator,
                                     size_t value_size);
 void *avs_list_tail__(void *list);
+void **avs_list_append_ptr__(void **list_ptr);
+void *avs_list_insert__(void **insert_ptr, void *list_to_insert);
 void *avs_list_detach__(void **to_detach_ptr);
 size_t avs_list_size__(const void *list);
 void avs_list_sort__(void **list_ptr,
                       avs_list_comparator_func_t comparator,
                       size_t element_size);
+int avs_list_is_cyclic__(const void *list);
+void *avs_list_assert_acyclic__(void *list);
+
+#ifdef NDEBUG
+#define AVS_LIST_ASSERT_ACYCLIC__(list) (list)
+#else
+#define AVS_LIST_ASSERT_ACYCLIC__(list) \
+((AVS_LIST_TYPEOF__(*(list)) *) \
+        avs_list_assert_acyclic__((void *) (intptr_t) (list)))
+#endif
 /**@}*/
 
 /**
@@ -324,7 +335,7 @@ void avs_list_sort__(void **list_ptr,
  * @return Pointer to the desired element, or <c>NULL</c> if not found.
  */
 #define AVS_LIST_NTH(list, n) \
-((AVS_LIST_TYPEOF__(*(list)) *) avs_list_nth__((list), (n)))
+((AVS_LIST_TYPEOF__(*(list)) *) avs_list_nth__((void *) (intptr_t) (list), (n)))
 
 /**
  * Returns a pointer to a variable holding the <i>n</i>-th element in a list.
@@ -338,7 +349,7 @@ void avs_list_sort__(void **list_ptr,
  */
 #define AVS_LIST_NTH_PTR(list_ptr, n) \
 ((AVS_LIST_TYPEOF__(*(list_ptr)) *) \
-        avs_list_nth_ptr__((void **) (list_ptr), (n)))
+        avs_list_nth_ptr__((void **) (intptr_t) (list_ptr), (n)))
 
 /**
  * Looks for a given element in the list and returns a pointer to the variable
@@ -414,7 +425,23 @@ void avs_list_sort__(void **list_ptr,
  *         empty.
  */
 #define AVS_LIST_TAIL(list) \
-((AVS_LIST_TYPEOF__(*(list)) *) avs_list_tail__((list)))
+((AVS_LIST_TYPEOF__(*(list)) *) avs_list_tail__((void *) (intptr_t) (list)))
+
+/**
+ * Returns the next element pointer of last element in a list.
+ *
+ * For non-empty lists, it is semantically equivalent to
+ * <c>&AVS_LIST_NEXT(AVS_LIST_TAIL(*list_ptr))</c>.
+ *
+ * @param list_ptr Pointer to a list variable.
+ *
+ * @return Pointer to a variable, writing to which will append an element to the
+ *         end of the list. Note that the returned value, when dereferenced,
+ *         will always yield <c>NULL</c>.
+ */
+#define AVS_LIST_APPEND_PTR(list_ptr) \
+((AVS_LIST_TYPEOF__(*(list_ptr)) *) \
+        avs_list_append_ptr__((void **) (intptr_t) (list_ptr)))
 
 /**
  * Allocates a new list element with an arbitrary size.
@@ -443,29 +470,41 @@ void avs_list_sort__(void **list_ptr,
 ((type *) AVS_LIST_NEW_BUFFER(sizeof(type)))
 
 /**
- * Inserts an element into the list.
+ * Inserts an element or a list into the list.
+ *
+ * Note that if <c>NDEBUG</c> is not defined at the point of including this
+ * header file, this macro will contain an assertion that checks if the
+ * resulting list is acyclic, which runs in O(n) time complexity. Otherwise
+ * it runs in O(1).
  *
  * @param destination_element_ptr Pointer to a variable holding a pointer to the
  *                                element (which may be null) before which to
  *                                insert the new element. The variable value
  *                                will be updated with the newly added element.
  *
- * @param new_element             The element to insert. Note that its current
- *                                next pointer value will be discarded, and as
- *                                such, should be <c>NULL</c>.
+ * @param new_element             The element to insert.
+ * 
+ *                                If it has subsequent elements (i.e. is already
+ *                                a list), they will be preserved, and the part
+ *                                of the list previously held at
+ *                                <c>destination_element_ptr</c> will be
+ *                                appended after element at <c>new_element</c>.
+ *
+ *                                Note that <c>NULL</c> is a valid list
+ *                                containing zero elements, so passing
+ *                                <c>NULL</c> as <c>new_elements</c> is
+ *                                essentially a no-op.
+ *
+ * @return The inserted element, i.e. <c>new_element</c>. If <c>new_element</c>
+ *         is <c>NULL</c>, the return value will also be <c>NULL</c>.
  */
 #define AVS_LIST_INSERT(destination_element_ptr, new_element) \
-do { \
-    AVS_LIST_TYPEOF__(**(destination_element_ptr)) \
-            **avs_list_insert_dest_ptr__ = \
-            (AVS_LIST_TYPEOF__(**(destination_element_ptr)) **) \
-            (destination_element_ptr); \
-    AVS_LIST_TYPEOF__(*(new_element)) *avs_list_insert_new_element__ = \
-            (new_element); \
-    AVS_LIST_NEXT(avs_list_insert_new_element__) = \
-            *avs_list_insert_dest_ptr__; \
-    *avs_list_insert_dest_ptr__ = avs_list_insert_new_element__; \
-} while (0)
+((((void) sizeof(*(destination_element_ptr) = (new_element))), \
+        ((AVS_LIST_TYPEOF__(*(new_element)) *) \
+        AVS_LIST_ASSERT_ACYCLIC__(avs_list_insert__( \
+                (void **) (AVS_LIST_TYPEOF__(**(destination_element_ptr)) **) \
+                (destination_element_ptr), \
+                (void *) (new_element))))))
 
 /**
  * Allocates a new element and inserts it into the list.
@@ -473,9 +512,10 @@ do { \
  * It is semantically equivalent to
  * <c>AVS_LIST_INSERT(destination_element_ptr, AVS_LIST_NEW_ELEMENT(type))</c>.
  *
- * @warning Note that this macro gives no immediate feedback about whether the
- *          memory allocation succeeded. It is thus adviced not to use it in any
- *          code in which memory allocations fails are anticipated.
+ * Note that if <c>NDEBUG</c> is not defined at the point of including this
+ * header file, this macro will contain an assertion that checks if the
+ * resulting list is acyclic, which runs in O(n) time complexity. Otherwise
+ * it runs in O(1).
  *
  * @param type                    Type of user data to allocate.
  *
@@ -483,15 +523,12 @@ do { \
  *                                element (which may be null) before which to
  *                                insert the new element. The variable value
  *                                will be updated with the newly added element.
+ *
+ * @return Pointer to the created and inserted element, or <c>NULL</c> in case
+ *         of error.
  */
 #define AVS_LIST_INSERT_NEW(type, destination_element_ptr) \
-do { \
-    type *avs_list_insert_new_value__ = AVS_LIST_NEW_ELEMENT(type); \
-    if (avs_list_insert_new_value__) { \
-        AVS_LIST_INSERT(destination_element_ptr, \
-                        avs_list_insert_new_value__); \
-    } \
-} while (0)
+AVS_LIST_INSERT(destination_element_ptr, AVS_LIST_NEW_ELEMENT(type))
 
 /**
  * Appends an element or a list at the end of a list.
@@ -503,12 +540,25 @@ do { \
  *                    concatenating two lists.
  */
 #define AVS_LIST_APPEND(list_ptr, new_element) \
-do { \
-    AVS_LIST_TYPEOF__(**(list_ptr)) **avs_list_insert_ptr__; \
-    AVS_LIST_FOREACH_PTR(avs_list_insert_ptr__, \
-                         (AVS_LIST_TYPEOF__(**(list_ptr)) **) list_ptr); \
-    *avs_list_insert_ptr__ = new_element; \
-} while (0)
+AVS_LIST_ASSERT_ACYCLIC__( \
+        (*(AVS_LIST_TYPEOF__(**(list_ptr)) **) AVS_LIST_APPEND_PTR(list_ptr) = \
+                (new_element)))
+
+/**
+ * Allocates a new element and appends at the end of a list.
+ *
+ * It is semantically equivalent to
+ * <c>AVS_LIST_APPEND(list_ptr, AVS_LIST_NEW_ELEMENT(type))</c>.
+ *
+ * @param type     Type of user data to allocate.
+ *
+ * @param list_ptr Pointer to a list variable.
+ *
+ * @return Pointer to the created and inserted element, or <c>NULL</c> in case
+ *         of error.
+ */
+#define AVS_LIST_APPEND_NEW(type, list_ptr) \
+AVS_LIST_APPEND(list_ptr, AVS_LIST_NEW_ELEMENT(type))
 
 /**
  * Detaches an element from a list.
@@ -625,15 +675,17 @@ for ((element_ptr) = (list_ptr), (helper_element) = *(element_ptr); \
 for (; *(first_element_ptr); AVS_LIST_DELETE(first_element_ptr))
 
 /**
- * @def AVS_LIST_SIZE(list)
- *
  * Returns the number of elements on the list.
+ *
+ * Note that if <c>NDEBUG</c> is not defined at the point of including this
+ * header file, this macro will contain an assertion that checks if the list is
+ * acyclic before calculating the size.
  *
  * @param list Pointer to the first element of a list.
  *
  * @return Number of elements on the list.
  */
-#define AVS_LIST_SIZE avs_list_size__
+#define AVS_LIST_SIZE(list) avs_list_size__(AVS_LIST_ASSERT_ACYCLIC__(list))
 
 /**
  * Sorts the list elements, ascending by the ordering enforced by the specified
@@ -650,6 +702,17 @@ for (; *(first_element_ptr); AVS_LIST_DELETE(first_element_ptr))
 #define AVS_LIST_SORT(list_ptr, comparator) \
 avs_list_sort__((void **)(intptr_t)(list_ptr), (comparator), \
                 sizeof(**(list_ptr)))
+
+/**
+ * @def AVS_LIST_IS_CYCLIC(list)
+ *
+ * Checks whether the list contains cycles.
+ *
+ * @param list Pointer to the first element of a list.
+ *
+ * @return 1 if the list contains cycles, 0 otherwise.
+ */
+#define AVS_LIST_IS_CYCLIC avs_list_is_cyclic__
 
 #ifdef	__cplusplus
 }

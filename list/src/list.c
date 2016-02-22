@@ -7,8 +7,16 @@
  * See the LICENSE file for details.
  */
 
+#ifdef NDEBUG
+#undef NDEBUG /* we want to call assert() in avs_list_assert_acyclic__() */
+#endif
+
 #include <config.h>
 
+#include <assert.h>
+
+/* but we don't want avs_list_assert_acyclic__ called from our own internals */
+#define NDEBUG
 #include <avsystem/commons/list.h>
 
 #ifdef HAVE_VISIBILITY
@@ -68,6 +76,22 @@ void *avs_list_tail__(void *list) {
     return element;
 }
 
+void **avs_list_append_ptr__(void **list_ptr) {
+    AVS_LIST_ITERATE_PTR(list_ptr);
+    return list_ptr;
+}
+
+void *avs_list_insert__(void **insert_ptr, void *list_to_insert) {
+    if (list_to_insert) {
+        void *next = *insert_ptr;
+        *insert_ptr = list_to_insert;
+        if (next) {
+            *AVS_LIST_APPEND_PTR(&list_to_insert) = next;
+        }
+    }
+    return list_to_insert;
+}
+
 void *avs_list_detach__(void **to_detach_ptr) {
     void *retval = *to_detach_ptr;
     *to_detach_ptr = AVS_LIST_NEXT(*(to_detach_ptr));
@@ -123,6 +147,26 @@ void avs_list_sort__(void **list_ptr,
     } else {
         *list_end_ptr = part2;
     }
+}
+
+int avs_list_is_cyclic__(const void *list) {
+    const void *slow = list;
+    const void *fast1 = list;
+    const void *fast2 = list;
+    while (slow
+            && (fast1 = AVS_LIST_NEXT(fast2))
+            && (fast2 = AVS_LIST_NEXT(fast1))) {
+        if (fast1 == slow || fast2 == slow) {
+            return 1;
+        }
+        slow = AVS_LIST_NEXT(slow);
+    }
+    return 0;
+}
+
+void *avs_list_assert_acyclic__(void *list) {
+    assert(!avs_list_is_cyclic__(list));
+    return list;
 }
 
 #ifdef AVS_UNIT_TESTING
