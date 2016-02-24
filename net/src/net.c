@@ -169,7 +169,7 @@ typedef struct {
     char                                   port[NET_PORT_SIZE];
     avs_net_socket_configuration_t         configuration;
 
-    int recv_timeout;
+    avs_net_timeout_t recv_timeout;
     int error_code;
 } avs_net_socket_t;
 
@@ -487,7 +487,7 @@ static int configure_socket(avs_net_socket_t *net_socket) {
     return 0;
 }
 
-static short wait_until_ready(int sockfd, int timeout,
+static short wait_until_ready(int sockfd, avs_net_timeout_t timeout,
                               char in, char out, char err) {
 #ifdef HAVE_POLL
     struct pollfd p;
@@ -519,7 +519,8 @@ static short wait_until_ready(int sockfd, int timeout,
         FD_SET(sockfd, &outfds);
     }
     FD_SET(sockfd, &errfds);
-    if (select(sockfd + 1, &infds, &outfds, &errfds, &timeval_timeout) <= 0) {
+    if (select(sockfd + 1, &infds, &outfds, &errfds,
+               timeout >= 0 ? &timeval_timeout : NULL) <= 0) {
         return 0;
     }
     return (err && FD_ISSET(sockfd, &errfds))

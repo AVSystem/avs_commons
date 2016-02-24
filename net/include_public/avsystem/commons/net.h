@@ -10,6 +10,7 @@
 #ifndef AVS_COMMONS_NET_H
 #define AVS_COMMONS_NET_H
 
+#include <limits.h>
 #include <stdint.h>
 #include <stdlib.h>
 
@@ -214,8 +215,14 @@ typedef enum {
     AVS_NET_SOCKET_STATE_CONSUMING
 } avs_net_socket_state_t;
 
+#if INT_MAX >= INT_LEAST32_MAX
+typedef int avs_net_timeout_t;
+#else
+typedef int_least32_t avs_net_timeout_t;
+#endif
+
 typedef union {
-    int recv_timeout;
+    avs_net_timeout_t recv_timeout;
     avs_net_socket_state_t state;
     avs_net_af_t addr_family;
     int mtu;

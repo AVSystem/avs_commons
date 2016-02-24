@@ -203,23 +203,25 @@ static int64_t current_time_ms(void) {
     return (int64_t) t.tv_sec + t.tv_nsec / 1000000;
 }
 
-static int get_socket_timeout(avs_net_abstract_socket_t *sock) {
+static avs_net_timeout_t get_socket_timeout(avs_net_abstract_socket_t *sock) {
     avs_net_socket_opt_value_t opt_value;
     avs_net_socket_get_opt(sock, AVS_NET_SOCKET_OPT_RECV_TIMEOUT, &opt_value);
     return opt_value.recv_timeout;
 }
 
-static void set_socket_timeout(avs_net_abstract_socket_t *sock, int timeout) {
+static void set_socket_timeout(avs_net_abstract_socket_t *sock,
+                               avs_net_timeout_t timeout) {
     avs_net_socket_opt_value_t opt_value;
     opt_value.recv_timeout = timeout;
     avs_net_socket_set_opt(sock, AVS_NET_SOCKET_OPT_RECV_TIMEOUT, opt_value);
 }
 
-static int adjust_receive_timeout(ssl_socket_t *sock) {
-    int socket_timeout = get_socket_timeout(sock->backend_socket);
+static avs_net_timeout_t adjust_receive_timeout(ssl_socket_t *sock) {
+    avs_net_timeout_t socket_timeout = get_socket_timeout(sock->backend_socket);
     if (sock->next_deadline_ms >= 0) {
         int64_t now_ms = current_time_ms();
-        int timeout = (int) (sock->next_deadline_ms - now_ms);
+        avs_net_timeout_t timeout =
+                (avs_net_timeout_t) (sock->next_deadline_ms - now_ms);
         if (socket_timeout <= 0 || socket_timeout > timeout) {
             set_socket_timeout(sock->backend_socket, timeout);
         }
@@ -229,7 +231,7 @@ static int adjust_receive_timeout(ssl_socket_t *sock) {
 
 static int avs_bio_read(BIO *bio, char *buffer, int size) {
     ssl_socket_t *sock = (ssl_socket_t *) bio->ptr;
-    int prev_timeout = -1;
+    avs_net_timeout_t prev_timeout = -1;
     size_t read_bytes;
     int result;
     if (!buffer || size < 0) {

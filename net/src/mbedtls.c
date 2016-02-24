@@ -131,7 +131,7 @@ static int avs_bio_recv(void *ctx, unsigned char *buf, size_t len,
                            AVS_NET_SOCKET_OPT_RECV_TIMEOUT, &orig_timeout);
     new_timeout = orig_timeout;
     if (timeout_ms) {
-        new_timeout.recv_timeout = (int) timeout_ms;
+        new_timeout.recv_timeout = (avs_net_timeout_t) timeout_ms;
     }
     avs_net_socket_set_opt(socket->backend_socket,
                            AVS_NET_SOCKET_OPT_RECV_TIMEOUT, new_timeout);

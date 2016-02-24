@@ -372,7 +372,7 @@ int avs_stream_netbuf_out_buffer_left(avs_stream_abstract_t *str) {
 }
 
 void avs_stream_netbuf_set_recv_timeout(avs_stream_abstract_t *str,
-                                               int timeout_ms) {
+                                        avs_net_timeout_t timeout_ms) {
     buffered_netstream_t *stream = (buffered_netstream_t *) str;
     avs_net_socket_opt_value_t timeout_opt;
 

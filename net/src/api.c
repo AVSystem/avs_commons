@@ -9,8 +9,10 @@
 
 #include <config.h>
 
+#include <stdint.h>
 #include <stdio.h>
 #include <string.h>
+#include <inttypes.h>
 
 #include <avsystem/commons/net.h>
 #include <avsystem/commons/socket_v_table.h>
@@ -509,7 +511,7 @@ static int get_opt_debug(avs_net_abstract_socket_t *debug_socket,
     if (result) {
         fprintf(communication_log, "cannot get opt %d\n", option_key);
     } else {
-        fprintf(communication_log, "get opt: %d, value: %d\n",
+        fprintf(communication_log, "get opt: %d, value: %" PRIdLEAST32 "\n",
                 option_key, out_option_value->recv_timeout);
     }
     return result;
