@@ -10,6 +10,7 @@
 #ifndef AVS_COMMONS_NET_H
 #define AVS_COMMONS_NET_H
 
+#include <limits.h>
 #include <stdint.h>
 #include <stdlib.h>
 
@@ -214,8 +215,16 @@ typedef enum {
     AVS_NET_SOCKET_STATE_CONSUMING
 } avs_net_socket_state_t;
 
+#if INT_MAX >= INT_LEAST32_MAX
+typedef int avs_net_timeout_t;
+#define AVS_FORMAT_NET_TIMEOUT(Type, Letter) #Letter
+#else
+typedef int_least32_t avs_net_timeout_t;
+#define AVS_FORMAT_NET_TIMEOUT(Type, Letter) Type##Letter##LEAST32
+#endif
+
 typedef union {
-    int recv_timeout;
+    avs_net_timeout_t recv_timeout;
     avs_net_socket_state_t state;
     avs_net_af_t addr_family;
     int mtu;
@@ -285,6 +294,7 @@ int avs_net_socket_get_opt(avs_net_abstract_socket_t *socket,
 int avs_net_socket_set_opt(avs_net_abstract_socket_t *socket,
                            avs_net_socket_opt_key_t option_key,
                            avs_net_socket_opt_value_t option_value);
+int avs_net_socket_errno(avs_net_abstract_socket_t *socket);
 
 /**
  * Returns a pointer to bare system socket (e.g. to invoke <c>select</c> or

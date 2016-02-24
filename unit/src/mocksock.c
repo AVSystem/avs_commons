@@ -47,7 +47,8 @@ typedef enum {
     MOCKSOCK_COMMAND_REMOTE_PORT,
     MOCKSOCK_COMMAND_MID_CLOSE,
     MOCKSOCK_COMMAND_GET_OPT,
-    MOCKSOCK_COMMAND_SET_OPT
+    MOCKSOCK_COMMAND_SET_OPT,
+    MOCKSOCK_COMMAND_ERRNO
 } mocksock_expected_command_type_t;
 
 typedef struct mocksock_expected_command_struct {
@@ -86,6 +87,8 @@ static const char *cmd_type_to_string(mocksock_expected_command_type_t type) {
         return "get_opt";
     case MOCKSOCK_COMMAND_SET_OPT:
         return "set_opt";
+    case MOCKSOCK_COMMAND_ERRNO:
+        return "errno";
     }
 
     return "<invalid>";
@@ -396,6 +399,15 @@ static int mock_set_opt(avs_net_abstract_socket_t *socket_,
     return retval;
 }
 
+static int mock_errno(avs_net_abstract_socket_t *socket_) {
+    int retval = 0;
+    mocksock_t *socket = (mocksock_t *) socket_;
+    assert_command_expected(socket->expected_commands, MOCKSOCK_COMMAND_ERRNO);
+    retval = socket->expected_commands->retval;
+    AVS_LIST_DELETE(&socket->expected_commands);
+    return retval;
+}
+
 static int unimplemented() {
     return -1;
 }
@@ -418,7 +430,8 @@ static const avs_net_socket_v_table_t mock_vtable = {
     mock_remote_port,
     (avs_net_socket_get_local_port_t) unimplemented,
     mock_get_opt,
-    mock_set_opt
+    mock_set_opt,
+    mock_errno
 };
 
 void avs_unit_mocksock_create__(avs_net_abstract_socket_t **socket_,
@@ -620,6 +633,15 @@ void avs_unit_mocksock_expect_set_opt__(avs_net_abstract_socket_t *socket,
                                                                 file, line);
     command->command = MOCKSOCK_COMMAND_SET_OPT;
     command->data.set_opt.key = key;
+}
+
+void avs_unit_mocksock_expect_errno__(avs_net_abstract_socket_t *socket,
+                                      int to_return,
+                                      const char *file, int line) {
+    mocksock_expected_command_t *command = new_expected_command(socket,
+                                                                file, line);
+    command->command = MOCKSOCK_COMMAND_ERRNO;
+    command->retval = to_return;
 }
 
 void avs_unit_mocksock_fail_command__(avs_net_abstract_socket_t *socket,

@@ -77,6 +77,8 @@ typedef int (*avs_net_socket_set_opt_t)(avs_net_abstract_socket_t *socket,
                                         avs_net_socket_opt_key_t option_key,
                                         avs_net_socket_opt_value_t option_value);
 
+typedef int (*avs_net_socket_errno_t)(avs_net_abstract_socket_t *socket);
+
 typedef struct {
     avs_net_socket_connect_t connect;
     avs_net_socket_decorate_t decorate;
@@ -96,6 +98,7 @@ typedef struct {
     avs_net_socket_get_local_port_t get_local_port;
     avs_net_socket_get_opt_t get_opt;
     avs_net_socket_set_opt_t set_opt;
+    avs_net_socket_errno_t get_errno;
 } avs_net_socket_v_table_t;
 
 #ifdef	__cplusplus

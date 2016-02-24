@@ -23,7 +23,6 @@ void _avs_unit_stack_trace_print(FILE *file) {
 #include <signal.h>
 #include <unistd.h>
 #include <time.h>
-#include <time.h>
 
 #include <stddef.h>
 #include <stdlib.h>

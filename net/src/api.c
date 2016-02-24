@@ -9,8 +9,10 @@
 
 #include <config.h>
 
+#include <stdint.h>
 #include <stdio.h>
 #include <string.h>
+#include <inttypes.h>
 
 #include <avsystem/commons/net.h>
 #include <avsystem/commons/socket_v_table.h>
@@ -219,6 +221,10 @@ int avs_net_socket_set_opt(avs_net_abstract_socket_t *socket,
                            avs_net_socket_opt_key_t option_key,
                            avs_net_socket_opt_value_t option_value) {
     return socket->operations->set_opt(socket, option_key, option_value);
+}
+
+int avs_net_socket_errno(avs_net_abstract_socket_t *socket) {
+    return socket->operations->get_errno(socket);
 }
 
 typedef int (*socket_constructor_t)(avs_net_abstract_socket_t **socket,
@@ -505,7 +511,8 @@ static int get_opt_debug(avs_net_abstract_socket_t *debug_socket,
     if (result) {
         fprintf(communication_log, "cannot get opt %d\n", option_key);
     } else {
-        fprintf(communication_log, "get opt: %d, value: %d\n",
+        fprintf(communication_log, "get opt: %d, value: "
+                                   "%" AVS_FORMAT_NET_TIMEOUT(PRI, d) "\n",
                 option_key, out_option_value->recv_timeout);
     }
     return result;
@@ -530,6 +537,11 @@ static int system_socket_debug(avs_net_abstract_socket_t *debug_socket,
     *out = avs_net_socket_get_system(
             ((avs_net_socket_debug_t *) debug_socket)->socket);
     return *out ? 0 : -1;
+}
+
+static int errno_debug(avs_net_abstract_socket_t *debug_socket) {
+    return avs_net_socket_errno(
+            ((avs_net_socket_debug_t *) debug_socket)->socket);
 }
 
 static int cleanup_debug(avs_net_abstract_socket_t **debug_socket) {
@@ -557,7 +569,8 @@ static const avs_net_socket_v_table_t debug_vtable = {
     remote_port_debug,
     local_port_debug,
     get_opt_debug,
-    set_opt_debug
+    set_opt_debug,
+    errno_debug
 };
 
 static int create_socket_debug(avs_net_abstract_socket_t **debug_socket,
