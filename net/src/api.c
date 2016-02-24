@@ -511,7 +511,8 @@ static int get_opt_debug(avs_net_abstract_socket_t *debug_socket,
     if (result) {
         fprintf(communication_log, "cannot get opt %d\n", option_key);
     } else {
-        fprintf(communication_log, "get opt: %d, value: %" PRIdLEAST32 "\n",
+        fprintf(communication_log, "get opt: %d, value: "
+                                   "%" AVS_FORMAT_NET_TIMEOUT(PRI, d) "\n",
                 option_key, out_option_value->recv_timeout);
     }
     return result;

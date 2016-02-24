@@ -217,8 +217,10 @@ typedef enum {
 
 #if INT_MAX >= INT_LEAST32_MAX
 typedef int avs_net_timeout_t;
+#define AVS_FORMAT_NET_TIMEOUT(Type, Letter) #Letter
 #else
 typedef int_least32_t avs_net_timeout_t;
+#define AVS_FORMAT_NET_TIMEOUT(Type, Letter) Type##Letter##LEAST32
 #endif
 
 typedef union {
