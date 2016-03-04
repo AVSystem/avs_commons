@@ -66,7 +66,7 @@ offsetof(struct { \
 
 #define RB_TREE_NEW_ELEMENT(type) ((type*)rb_create_node(sizeof(type)))
 
-#define RB_TREE_DELETE(tree, elem) (RB_DEALLOC(RB_NODE(rb_detach((tree), (elem)))))
+#define RB_TREE_DELETE(elem) rb_delete(elem)
 
 #define RB_INSERT(tree, ptr) rb_insert((tree), (ptr), sizeof(*(ptr)))
 
@@ -448,15 +448,162 @@ void *rb_prev(void *elem) {
     return parent;
 }
 
+static void swap(void **a,
+                 void **b) {
+    assert(a);
+    assert(b);
+
+    void *tmp = *a;
+    *a = *b;
+    *b = tmp;
+}
+
+static void swap_nodes(struct rb_tree *tree,
+                       void *a,
+                       void *b) {
+    if (a == b) {
+        return;
+    }
+
+    swap(rb_own_parent_ptr(tree, a), rb_own_parent_ptr(tree, b));
+    swap(RB_PARENT_PTR(a), RB_PARENT_PTR(b));
+
+    swap(RB_LEFT_PTR(a), RB_LEFT_PTR(b));
+    if (RB_LEFT(a)) {
+        RB_PARENT(RB_LEFT(a)) = a;
+    }
+
+    swap(RB_RIGHT_PTR(a), RB_RIGHT_PTR(b));
+    if (RB_RIGHT(a)) {
+        RB_PARENT(RB_RIGHT(a)) = a;
+    }
+}
+
 void rb_detach_fix(struct rb_tree *tree,
                    void *elem) {
+    assert(elem);
+    assert(rb_node_color(elem) == BLACK);
+
+    // case 1
+    void *parent = RB_PARENT(elem);
+    if (!parent) {
+        return;
+    }
+
+    // case 2
+    void *sibling = rb_sibling(elem);
+    if (rb_node_color(sibling) == RED) {
+        RB_NODE(parent)->color = RED;
+        RB_NODE(sibling)->color = BLACK;
+
+        if (elem == RB_LEFT(parent)) {
+            rb_rotate_left(tree, parent);
+        } else {
+            rb_rotate_right(tree, parent);
+        }
+    }
+
+    // case 3
+    parent = RB_PARENT(elem);
+    sibling = rb_sibling(elem);
+    if (rb_node_color(parent) == BLACK
+            && rb_node_color(sibling) == BLACK
+            && rb_node_color(RB_LEFT(sibling)) == BLACK
+            && rb_node_color(RB_RIGHT(sibling)) == BLACK) {
+        RB_NODE(sibling)->color = RED;
+        return rb_detach_fix(tree, parent);
+    }
+
+    // case 4
+    if (rb_node_color(parent) == RED
+            && rb_node_color(sibling) == BLACK
+            && rb_node_color(RB_LEFT(sibling)) == BLACK
+            && rb_node_color(RB_RIGHT(sibling)) == BLACK) {
+        RB_NODE(sibling)->color = RED;
+        RB_NODE(parent)->color = BLACK;
+        return;
+    }
+
+    // case 5
+    assert(rb_node_color(sibling) == BLACK);
+    if (elem == RB_LEFT(parent)
+            && rb_node_color(RB_RIGHT(sibling)) == BLACK) {
+        assert(rb_node_color(RB_LEFT(sibling)) == RED);
+
+        RB_NODE(sibling)->color = RED;
+        RB_NODE(RB_LEFT(sibling))->color = BLACK;
+        rb_rotate_right(tree, sibling);
+    } else if (elem == RB_RIGHT(parent)
+               && rb_node_color(RB_LEFT(sibling)) == BLACK) {
+        assert(rb_node_color(RB_RIGHT(sibling)) == RED);
+
+        RB_NODE(sibling)->color = RED;
+        RB_NODE(RB_RIGHT(sibling))->color = BLACK;
+        rb_rotate_left(tree, sibling);
+    }
+
+    // case 6
+    parent = RB_PARENT(elem);
+    sibling = rb_sibling(elem);
+
+    RB_NODE(sibling)->color = rb_node_color(parent);
+    RB_NODE(parent)->color = BLACK;
+
+    if (elem == RB_LEFT(parent)) {
+        RB_NODE(RB_RIGHT(sibling))->color = BLACK;
+        rb_rotate_left(tree, parent);
+    } else {
+        RB_NODE(RB_LEFT(sibling))->color = BLACK;
+        rb_rotate_right(tree, parent);
+    }
 }
 
 void *rb_detach(struct rb_tree *tree,
                 void *elem) {
+    assert(tree);
     assert(elem);
 
-#warning TODO
+    void *left = RB_LEFT(elem);
+    void *right = RB_RIGHT(elem);
 
+    if (left && right) {
+        void *replacement = rb_next(elem);
+        swap_nodes(tree, elem, replacement);
+        return rb_detach(tree, elem);
+    }
+
+    void *child = left ? left : right;
+    void *parent = RB_PARENT(elem);
+
+    if (child) {
+        assert(RB_PARENT(child) == elem);
+        RB_PARENT(child) = parent;
+    }
+
+    *rb_own_parent_ptr(tree, elem) = child;
+
+    if (rb_node_color(elem) == RED
+            || rb_node_color(child) == RED) {
+        if (child) {
+            // if elem is red, child is already black
+            // if child is red, we need to repaint it
+            RB_NODE(child)->color = BLACK;
+        }
+
+        return elem;
+    }
+
+    // both node and child are black
+    if (child) {
+        rb_detach_fix(tree, child);
+    }
     return elem;
+}
+
+void rb_delete(void *elem) {
+    struct rb_node *node = RB_NODE(elem);
+    assert(!node->parent);
+    assert(!node->left);
+    assert(!node->right);
+    RB_DEALLOC(node);
 }

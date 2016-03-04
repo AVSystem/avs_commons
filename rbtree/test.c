@@ -47,13 +47,6 @@ static void dump_tree(struct rb_tree *tree) {
     dump_tree_recursive(tree->root, sizeof(int), print_int, 0);
 }
 
-static void validate_tree(struct rb_tree *tree) {
-    assert(rb_node_color(tree->root) == BLACK);
-
-    void *node = tree->root;
-#warning TODO
-}
-
 static void assert_rb_properties_hold_recursive(void *node,
                                                 size_t *out_black_height) {
     *out_black_height = 1;
@@ -89,7 +82,9 @@ static void assert_rb_properties_hold_recursive(void *node,
 
 static void assert_rb_properties_hold(struct rb_tree *tree) {
     AVS_UNIT_ASSERT_EQUAL(BLACK, rb_node_color(tree->root));
-    AVS_UNIT_ASSERT_NULL(RB_PARENT(tree->root));
+    if (tree->root) {
+        AVS_UNIT_ASSERT_NULL(RB_PARENT(tree->root));
+    }
 
     size_t black_height = 0;
     assert_rb_properties_hold_recursive(tree->root, &black_height);
@@ -146,7 +141,7 @@ AVS_UNIT_TEST(rbtree, create_element) {
 
     assert_node_equal(elem, 0, RED, NULL, NULL, NULL);
 
-    RB_TREE_DELETE(NULL, elem);
+    RB_TREE_DELETE(elem);
 }
 
 AVS_UNIT_TEST(rbtree, rotate_left) {
@@ -395,5 +390,26 @@ AVS_UNIT_TEST(rbtree, traverse_backward) {
 
     AVS_UNIT_ASSERT_NULL(node);
 
+    rb_release(&tree);
+}
+
+AVS_UNIT_TEST(rbtree, detach_root) {
+    struct rb_tree *tree = make_tree(1, 0);
+    //   1B
+    //  *  *
+
+    int *one = (int*)tree->root;
+    assert_node_equal(one, 1, BLACK, NULL, NULL, NULL);
+    assert_rb_properties_hold(tree);
+
+    one = rb_detach(tree, one);
+    // should be:
+    //   *
+
+    assert_node_equal(one, 1, BLACK, NULL, NULL, NULL);
+    AVS_UNIT_ASSERT_NULL(tree->root);
+    assert_rb_properties_hold(tree);
+
+    RB_TREE_DELETE(one);
     rb_release(&tree);
 }
