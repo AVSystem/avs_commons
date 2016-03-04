@@ -71,6 +71,7 @@ offsetof(struct { \
 #define RB_INSERT(tree, ptr) rb_insert((tree), (ptr), sizeof(*(ptr)))
 
 #define RB_NEXT(elem) ((TYPEOF(elem))rb_next(elem))
+#define RB_PREV(elem) ((TYPEOF(elem))rb_prev(elem))
 
 #define RB_FIRST(root) ((TYPEOF(root))rb_min(root))
 #define RB_LAST(root) ((TYPEOF(root))rb_max(root))
@@ -424,6 +425,22 @@ void *rb_next(void *elem) {
     void *parent = RB_PARENT(elem);
     void *curr = elem;
     while (parent && RB_RIGHT(parent) == curr) {
+        curr = parent;
+        parent = RB_PARENT(parent);
+    }
+
+    return parent;
+}
+
+void *rb_prev(void *elem) {
+    void *left = RB_LEFT(elem);
+    if (left) {
+        return rb_max(left);
+    }
+
+    void *parent = RB_PARENT(elem);
+    void *curr = elem;
+    while (parent && RB_LEFT(parent) == curr) {
         curr = parent;
         parent = RB_PARENT(parent);
     }

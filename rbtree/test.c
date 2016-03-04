@@ -341,7 +341,7 @@ AVS_UNIT_TEST(rbtree, insert_case4_5) {
     rb_release(&tree);
 }
 
-AVS_UNIT_TEST(rbtree, traverse_forward) {
+static struct rb_tree *make_full_3level_tree(void) {
     struct rb_tree *tree = make_tree(4, 2, 6, 1, 3, 5, 7, 0);
     //            4B
     //      2B          6B
@@ -367,10 +367,30 @@ AVS_UNIT_TEST(rbtree, traverse_forward) {
 
     assert_rb_properties_hold(tree);
 
-    int *node = RB_FIRST(four);
+    return tree;
+}
+
+AVS_UNIT_TEST(rbtree, traverse_forward) {
+    struct rb_tree *tree = make_full_3level_tree();
+
+    int *node = RB_FIRST((int*)tree->root);
     for (int i = 1; i <= 7; ++i) {
         AVS_UNIT_ASSERT_EQUAL(i, *node);
-        node = rb_next(node);
+        node = RB_NEXT(node);
+    }
+
+    AVS_UNIT_ASSERT_NULL(node);
+
+    rb_release(&tree);
+}
+
+AVS_UNIT_TEST(rbtree, traverse_backward) {
+    struct rb_tree *tree = make_full_3level_tree();
+
+    int *node = RB_LAST((int*)tree->root);
+    for (int i = 7; i >= 1; --i) {
+        AVS_UNIT_ASSERT_EQUAL(i, *node);
+        node = RB_PREV(node);
     }
 
     AVS_UNIT_ASSERT_NULL(node);
