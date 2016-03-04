@@ -146,7 +146,7 @@ AVS_UNIT_TEST(rbtree, create_element) {
 
     assert_node_equal(elem, 0, RED, NULL, NULL, NULL);
 
-    RB_TREE_DELETE(elem);
+    RB_TREE_DELETE(NULL, elem);
 }
 
 AVS_UNIT_TEST(rbtree, rotate_left) {
@@ -182,6 +182,8 @@ AVS_UNIT_TEST(rbtree, rotate_left) {
     assert_node_equal(seven, 7, RED,   five,   NULL,  NULL);
     assert_node_equal(two,   2, BLACK, three,  NULL,  NULL);
     assert_node_equal(four,  4, RED,   three,  NULL,  NULL);
+
+    rb_release(&tree);
 }
 
 AVS_UNIT_TEST(rbtree, rotate_right) {
@@ -217,6 +219,8 @@ AVS_UNIT_TEST(rbtree, rotate_right) {
     assert_node_equal(five,  5, BLACK, three,  four, seven);
     assert_node_equal(seven, 7, BLACK, five,   NULL,  NULL);
     assert_node_equal(four,  4, RED,   five,   NULL,  NULL);
+
+    rb_release(&tree);
 }
 
 AVS_UNIT_TEST(rbtree, insert_case1_first) {
@@ -231,6 +235,8 @@ AVS_UNIT_TEST(rbtree, insert_case1_first) {
     assert_node_equal(elem, 0, BLACK, NULL, NULL, NULL);
 
     assert_rb_properties_hold(tree);
+
+    rb_release(&tree);
 }
 
 AVS_UNIT_TEST(rbtree, insert_case2) {
@@ -258,6 +264,8 @@ AVS_UNIT_TEST(rbtree, insert_case2) {
     AVS_UNIT_ASSERT_EQUAL(RED, RB_NODE(elem)->color);
 
     assert_rb_properties_hold(tree);
+
+    rb_release(&tree);
 }
 
 AVS_UNIT_TEST(rbtree, insert_case3) {
@@ -288,6 +296,8 @@ AVS_UNIT_TEST(rbtree, insert_case3) {
     assert_node_equal(seven, 7, BLACK, five, NULL, NULL);
 
     assert_rb_properties_hold(tree);
+
+    rb_release(&tree);
 }
 
 AVS_UNIT_TEST(rbtree, insert_case4_5) {
@@ -327,4 +337,43 @@ AVS_UNIT_TEST(rbtree, insert_case4_5) {
     assert_node_equal(four,  4, RED,   three, NULL,  NULL);
 
     assert_rb_properties_hold(tree);
+
+    rb_release(&tree);
+}
+
+AVS_UNIT_TEST(rbtree, traverse_forward) {
+    struct rb_tree *tree = make_tree(4, 2, 6, 1, 3, 5, 7, 0);
+    //            4B
+    //      2B          6B
+    //   1R    3R    5R    7R
+    //  *  *  *  *  *  *  *  *
+
+    int *four = (int*)tree->root;
+    int *two = RB_LEFT(four);
+    int *one = RB_LEFT(two);
+    int *three = RB_RIGHT(two);
+    int *six = RB_RIGHT(four);
+    int *five = RB_LEFT(six);
+    int *seven = RB_RIGHT(six);
+
+    AVS_UNIT_ASSERT_TRUE(four == tree->root);
+    assert_node_equal(four,  4, BLACK, NULL, two,  six);
+    assert_node_equal(two,   2, BLACK, four, one,  three);
+    assert_node_equal(one,   1, RED,   two,  NULL, NULL);
+    assert_node_equal(three, 3, RED,   two,  NULL, NULL);
+    assert_node_equal(six,   6, BLACK, four, five, seven);
+    assert_node_equal(five,  5, RED,   six,  NULL, NULL);
+    assert_node_equal(seven, 7, RED,   six,  NULL, NULL);
+
+    assert_rb_properties_hold(tree);
+
+    int *node = RB_FIRST(four);
+    for (int i = 1; i <= 7; ++i) {
+        AVS_UNIT_ASSERT_EQUAL(i, *node);
+        node = rb_next(node);
+    }
+
+    AVS_UNIT_ASSERT_NULL(node);
+
+    rb_release(&tree);
 }

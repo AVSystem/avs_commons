@@ -66,9 +66,14 @@ offsetof(struct { \
 
 #define RB_TREE_NEW_ELEMENT(type) ((type*)rb_create_node(sizeof(type)))
 
-#define RB_TREE_DELETE(elem) (RB_DEALLOC(RB_NODE(rb_detach(elem))))
+#define RB_TREE_DELETE(tree, elem) (RB_DEALLOC(RB_NODE(rb_detach((tree), (elem)))))
 
 #define RB_INSERT(tree, ptr) rb_insert((tree), (ptr), sizeof(*(ptr)))
+
+#define RB_NEXT(elem) ((TYPEOF(elem))rb_next(elem))
+
+#define RB_FIRST(root) ((TYPEOF(root))rb_min(root))
+#define RB_LAST(root) ((TYPEOF(root))rb_max(root))
 
 #ifdef RB_USE_MAGIC
 # define RB_NODE_VALID(node) (!node || RB_NODE(node)->magic == RB_MAGIC)
@@ -83,6 +88,26 @@ struct rb_tree *rb_create(rb_cmp *cmp) {
         tree->root = NULL;
     }
     return tree;
+}
+
+static void rb_release_subtree(void *root) {
+    if (!root) {
+        return;
+    }
+
+    rb_release_subtree(RB_LEFT(root));
+    rb_release_subtree(RB_RIGHT(root));
+    RB_DEALLOC(RB_NODE(root));
+}
+
+void rb_release(struct rb_tree **tree) {
+    if (!tree || !*tree) {
+        return;
+    }
+
+    rb_release_subtree((*tree)->root);
+    RB_DEALLOC(*tree);
+    *tree = NULL;
 }
 
 static void *rb_create_node(size_t elem_size) {
@@ -261,8 +286,8 @@ static void rb_rotate_right(struct rb_tree *tree,
     }
 }
 
-static void rb_fix(struct rb_tree *tree,
-                   void *elem) {
+static void rb_insert_fix(struct rb_tree *tree,
+                          void *elem) {
     // case 1
     if (elem == tree->root) {
         RB_NODE(elem)->color = BLACK;
@@ -285,7 +310,7 @@ static void rb_fix(struct rb_tree *tree,
         RB_NODE(parent)->color = BLACK;
         RB_NODE(uncle)->color = BLACK;
         RB_NODE(grandparent)->color = RED;
-        return rb_fix(tree, grandparent);
+        return rb_insert_fix(tree, grandparent);
     }
 
     // case 4
@@ -358,11 +383,60 @@ int rb_insert(struct rb_tree *tree,
         RB_PARENT(elem) = parent;
     }
 
-    rb_fix(tree, elem);
+    rb_insert_fix(tree, elem);
     return 0;
 }
 
-void *rb_detach(void *elem) {
+void *rb_min(void *root) {
+    assert(root);
+
+    void *min = root;
+    void *left = root;
+
+    do {
+        min = left;
+        left = RB_LEFT(min);
+    } while (left);
+
+    return min;
+}
+
+void *rb_max(void *root) {
+    assert(root);
+
+    void *max = root;
+    void *right = root;
+
+    do {
+        max = right;
+        right = RB_RIGHT(max);
+    } while (right);
+
+    return max;
+}
+
+void *rb_next(void *elem) {
+    void *right = RB_RIGHT(elem);
+    if (right) {
+        return rb_min(right);
+    }
+
+    void *parent = RB_PARENT(elem);
+    void *curr = elem;
+    while (parent && RB_RIGHT(parent) == curr) {
+        curr = parent;
+        parent = RB_PARENT(parent);
+    }
+
+    return parent;
+}
+
+void rb_detach_fix(struct rb_tree *tree,
+                   void *elem) {
+}
+
+void *rb_detach(struct rb_tree *tree,
+                void *elem) {
     assert(elem);
 
 #warning TODO
