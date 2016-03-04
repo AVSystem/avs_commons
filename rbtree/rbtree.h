@@ -581,6 +581,9 @@ void *rb_detach(struct rb_tree *tree,
     }
 
     *rb_own_parent_ptr(tree, elem) = child;
+    RB_PARENT(elem) = NULL;
+    RB_LEFT(elem) = NULL;
+    RB_RIGHT(elem) = NULL;
 
     if (rb_node_color(elem) == RED
             || rb_node_color(child) == RED) {

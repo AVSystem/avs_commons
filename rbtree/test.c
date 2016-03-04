@@ -413,3 +413,28 @@ AVS_UNIT_TEST(rbtree, detach_root) {
     RB_TREE_DELETE(one);
     rb_release(&tree);
 }
+
+AVS_UNIT_TEST(rbtree, detach_single_root_child) {
+    struct rb_tree *tree = make_tree(1, 2, 0);
+    //  1B
+    // *  2R
+
+    assert_rb_properties_hold(tree);
+
+    int *one = (int*)tree->root;
+    int *two = RB_RIGHT(one);
+
+    two = rb_detach(tree, two);
+    // should be:
+    //  1B
+    // *  *
+
+    assert_node_equal(one, 1, BLACK, NULL, NULL, NULL);
+    AVS_UNIT_ASSERT_TRUE(one == tree->root);
+    assert_rb_properties_hold(tree);
+
+    assert_node_equal(two, 2, RED, NULL, NULL, NULL);
+
+    RB_TREE_DELETE(two);
+    rb_release(&tree);
+}
