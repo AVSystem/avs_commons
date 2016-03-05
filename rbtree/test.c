@@ -539,12 +539,10 @@ AVS_UNIT_TEST(rbtree, fuzz1) {
 
 AVS_UNIT_TEST(rbtree, fuzz2) {
     struct rb_tree *tree = make_tree(2, 5, 3, 1, 0);
-    dump_tree(tree);
     assert_rb_properties_hold(tree);
 
     const int three = 3;
     RB_TREE_DELETE(rb_detach(tree, RB_FIND(tree, three)));
-    dump_tree(tree);
     assert_rb_properties_hold(tree);
 
     rb_release(&tree);

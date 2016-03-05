@@ -617,11 +617,7 @@ void *rb_detach(struct rb_tree *tree,
 
     if (left && right) {
         void *replacement = rb_next(elem);
-        printf("before swap\n");
-        dump_tree(tree);
         swap_nodes(tree, elem, replacement);
-        printf("after swap\n");
-        dump_tree(tree);
         return rb_detach(tree, elem);
     }
 
@@ -650,12 +646,8 @@ void *rb_detach(struct rb_tree *tree,
         return elem;
     }
 
-    printf("before fix\n");
-    dump_tree(tree);
     // both node and child are black
     rb_detach_fix(tree, child, parent);
-    printf("after fix\n");
-    dump_tree(tree);
 
     assert(rb_node_color(tree->root) == BLACK);
     return elem;
