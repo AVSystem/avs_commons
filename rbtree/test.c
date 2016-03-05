@@ -144,6 +144,65 @@ AVS_UNIT_TEST(rbtree, create_element) {
     RB_TREE_DELETE(elem);
 }
 
+AVS_UNIT_TEST(rbtree, swap_nodes_unrelated) {
+    struct rb_tree *tree = make_tree(
+                      8,
+              4,             12,
+          2,      6,     10,     14,
+        1,  3,  5,  7,  9, 11, 13, 15, 0);
+
+    int *_1 = RB_FIND(tree, (int){1});
+    int *_2 = RB_FIND(tree, (int){2});
+    int *_3 = RB_FIND(tree, (int){3});
+    int *_4 = RB_FIND(tree, (int){4});
+
+    int *_8 = RB_FIND(tree, (int){8});
+    int *_12 = RB_FIND(tree, (int){12});
+    int *_10 = RB_FIND(tree, (int){10});
+    int *_14 = RB_FIND(tree, (int){14});
+
+    int *a = _2;
+    int *b = _12;
+
+    assert_node_equal(a, 2,  BLACK, _4, _1,  _3);
+    assert_node_equal(b, 12, RED,   _8, _10, _14);
+
+    swap_nodes(tree, a, b);
+
+    assert_node_equal(a, 2,  BLACK, _8, _10, _14);
+    assert_node_equal(b, 12, RED,   _4, _1,  _3);
+
+    rb_release(&tree);
+}
+
+AVS_UNIT_TEST(rbtree, swap_nodes_parent_child) {
+    struct rb_tree *tree = make_tree(
+                      8,
+              4,             12,
+          2,      6,     10,     14,
+        1,  3,  5,  7,  9, 11, 13, 15, 0);
+
+    int *_1 = RB_FIND(tree, (int){1});
+    int *_2 = RB_FIND(tree, (int){2});
+    int *_3 = RB_FIND(tree, (int){3});
+    int *_4 = RB_FIND(tree, (int){4});
+    int *_6 = RB_FIND(tree, (int){6});
+    int *_8 = RB_FIND(tree, (int){8});
+
+    int *a = _2;
+    int *b = _4;
+
+    assert_node_equal(a, 2, BLACK, _4, _1, _3);
+    assert_node_equal(b, 4, RED,   _8, _2, _6);
+
+    swap_nodes(tree, a, b);
+
+    assert_node_equal(a, 2, BLACK, _8, _4, _6);
+    assert_node_equal(b, 4, RED,   _2, _1, _3);
+
+    rb_release(&tree);
+}
+
 AVS_UNIT_TEST(rbtree, rotate_left) {
     struct rb_tree *tree = make_tree(3, 2, 5, 7, 4, 0);
     //          3B
@@ -402,7 +461,7 @@ AVS_UNIT_TEST(rbtree, detach_root) {
     assert_node_equal(one, 1, BLACK, NULL, NULL, NULL);
     assert_rb_properties_hold(tree);
 
-    one = rb_detach(tree, one);
+    AVS_UNIT_ASSERT_TRUE(one == rb_detach(tree, one));
     // should be:
     //   *
 
@@ -424,7 +483,7 @@ AVS_UNIT_TEST(rbtree, detach_single_root_child) {
     int *one = (int*)tree->root;
     int *two = RB_RIGHT(one);
 
-    two = rb_detach(tree, two);
+    AVS_UNIT_ASSERT_TRUE(two == rb_detach(tree, two));
     // should be:
     //  1B
     // *  *
@@ -436,5 +495,16 @@ AVS_UNIT_TEST(rbtree, detach_single_root_child) {
     assert_node_equal(two, 2, RED, NULL, NULL, NULL);
 
     RB_TREE_DELETE(two);
+    rb_release(&tree);
+}
+
+AVS_UNIT_TEST(rbtree, fuzz1) {
+    struct rb_tree *tree = make_tree(3, 1, 2, 0);
+    assert_rb_properties_hold(tree);
+    const int two = 2;
+    dump_tree(tree);
+    RB_TREE_DELETE(rb_detach(tree, RB_FIND(tree, two)));
+    dump_tree(tree);
+    assert_rb_properties_hold(tree);
     rb_release(&tree);
 }

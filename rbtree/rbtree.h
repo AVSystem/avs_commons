@@ -64,11 +64,15 @@ offsetof(struct { \
 
 #define RB_PARENT(elem) (*RB_PARENT_PTR(elem))
 
+#define RB_SIZE(tree) rb_size(tree)
+
 #define RB_TREE_NEW_ELEMENT(type) ((type*)rb_create_node(sizeof(type)))
 
 #define RB_TREE_DELETE(elem) rb_delete(elem)
 
 #define RB_INSERT(tree, ptr) rb_insert((tree), (ptr), sizeof(*(ptr)))
+
+#define RB_FIND(tree, val) ((TYPEOF(val)*)rb_find(tree, &val, sizeof(val)))
 
 #define RB_NEXT(elem) ((TYPEOF(elem))rb_next(elem))
 #define RB_PREV(elem) ((TYPEOF(elem))rb_prev(elem))
@@ -109,6 +113,18 @@ void rb_release(struct rb_tree **tree) {
     rb_release_subtree((*tree)->root);
     RB_DEALLOC(*tree);
     *tree = NULL;
+}
+
+static size_t rb_subtree_size(void *root) {
+    if (!root) {
+        return 0;
+    }
+
+    return 1 + rb_subtree_size(RB_LEFT(root)) + rb_subtree_size(RB_RIGHT(root));
+}
+
+size_t rb_size(struct rb_tree *tree) {
+    return rb_subtree_size(tree->root);
 }
 
 static void *rb_create_node(size_t elem_size) {
@@ -156,11 +172,10 @@ void *rb_find_parent(struct rb_tree *tree,
 }
 
 void **rb_find_ptr(struct rb_tree *tree,
-                   void *elem,
+                   const void *elem,
                    size_t elem_size) {
     assert(tree);
     assert(elem);
-    assert(RB_NODE_VALID(elem));
 
     void **curr = &tree->root;
 
@@ -178,6 +193,13 @@ void **rb_find_ptr(struct rb_tree *tree,
     }
 
     return curr;
+}
+
+void *rb_find(struct rb_tree *tree,
+              const void *val,
+              size_t val_size) {
+    void **elem_ptr = rb_find_ptr(tree, val, val_size);
+    return elem_ptr ? *elem_ptr : NULL;
 }
 
 static void *rb_sibling(void *elem) {
@@ -458,6 +480,9 @@ static void swap(void **a,
     *b = tmp;
 }
 
+/**
+ * Swaps parent/left/right pointers. Retains value and color.
+ */
 static void swap_nodes(struct rb_tree *tree,
                        void *a,
                        void *b) {
@@ -465,7 +490,20 @@ static void swap_nodes(struct rb_tree *tree,
         return;
     }
 
-    swap(rb_own_parent_ptr(tree, a), rb_own_parent_ptr(tree, b));
+    void **a_parent_ptr = rb_own_parent_ptr(tree, a);
+    void **b_parent_ptr = rb_own_parent_ptr(tree, b);
+
+    // simply swapping pointers in case where one node is a parent of
+    // another would set parent pointer of the former parent to itself
+    if (RB_PARENT(a) == b) {
+        *rb_own_parent_ptr(tree, a) = b;
+        RB_PARENT(a) = a;
+    } else if (RB_PARENT(b) == a) {
+        *rb_own_parent_ptr(tree, b) = a;
+        RB_PARENT(b) = b;
+    }
+
+    swap(a_parent_ptr, b_parent_ptr);
     swap(RB_PARENT_PTR(a), RB_PARENT_PTR(b));
 
     swap(RB_LEFT_PTR(a), RB_LEFT_PTR(b));
@@ -560,6 +598,10 @@ void rb_detach_fix(struct rb_tree *tree,
 
 void *rb_detach(struct rb_tree *tree,
                 void *elem) {
+    if (!elem) {
+        return NULL;
+    }
+
     assert(tree);
     assert(elem);
 
@@ -604,6 +646,10 @@ void *rb_detach(struct rb_tree *tree,
 }
 
 void rb_delete(void *elem) {
+    if (!elem) {
+        return;
+    }
+
     struct rb_node *node = RB_NODE(elem);
     assert(!node->parent);
     assert(!node->left);
