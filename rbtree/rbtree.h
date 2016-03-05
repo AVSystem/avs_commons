@@ -202,11 +202,10 @@ void *rb_find(struct rb_tree *tree,
     return elem_ptr ? *elem_ptr : NULL;
 }
 
-static void *rb_sibling(void *elem) {
-    assert(elem);
-    assert(RB_NODE_VALID(elem));
+static void *rb_sibling(void *elem,
+                        void *parent) {
+    assert(!elem || RB_NODE_VALID(elem));
 
-    void *parent = RB_PARENT(elem);
     assert(parent);
     assert(RB_NODE_VALID(parent));
 
@@ -231,7 +230,7 @@ static void *rb_uncle(void *elem) {
     assert(parent);
     assert(RB_NODE_VALID(parent));
 
-    return rb_sibling(parent);
+    return rb_sibling(parent, RB_PARENT(parent));
 }
 
 static enum rb_color rb_node_color(void *elem) {
@@ -326,8 +325,8 @@ static void rb_insert_fix(struct rb_tree *tree,
     }
 
     // case 3
-    void *uncle = rb_sibling(parent);
     void *grandparent = RB_PARENT(parent);
+    void *uncle = rb_sibling(parent, grandparent);
 
     if (rb_node_color(uncle) == RED) {
         RB_NODE(parent)->color = BLACK;
@@ -529,18 +528,17 @@ static void swap_nodes(struct rb_tree *tree,
 }
 
 void rb_detach_fix(struct rb_tree *tree,
-                   void *elem) {
-    assert(elem);
+                   void *elem,
+                   void *parent) {
     assert(rb_node_color(elem) == BLACK);
 
     // case 1
-    void *parent = RB_PARENT(elem);
     if (!parent) {
         return;
     }
 
     // case 2
-    void *sibling = rb_sibling(elem);
+    void *sibling = rb_sibling(elem, parent);
     if (rb_node_color(sibling) == RED) {
         RB_NODE(parent)->color = RED;
         RB_NODE(sibling)->color = BLACK;
@@ -553,14 +551,13 @@ void rb_detach_fix(struct rb_tree *tree,
     }
 
     // case 3
-    parent = RB_PARENT(elem);
-    sibling = rb_sibling(elem);
+    sibling = rb_sibling(elem, parent);
     if (rb_node_color(parent) == BLACK
             && rb_node_color(sibling) == BLACK
             && rb_node_color(RB_LEFT(sibling)) == BLACK
             && rb_node_color(RB_RIGHT(sibling)) == BLACK) {
         RB_NODE(sibling)->color = RED;
-        return rb_detach_fix(tree, parent);
+        return rb_detach_fix(tree, parent, RB_PARENT(parent));
     }
 
     // case 4
@@ -592,8 +589,7 @@ void rb_detach_fix(struct rb_tree *tree,
     }
 
     // case 6
-    parent = RB_PARENT(elem);
-    sibling = rb_sibling(elem);
+    sibling = rb_sibling(elem, parent);
 
     RB_NODE(sibling)->color = rb_node_color(parent);
     RB_NODE(parent)->color = BLACK;
@@ -621,7 +617,11 @@ void *rb_detach(struct rb_tree *tree,
 
     if (left && right) {
         void *replacement = rb_next(elem);
+        printf("before swap\n");
+        dump_tree(tree);
         swap_nodes(tree, elem, replacement);
+        printf("after swap\n");
+        dump_tree(tree);
         return rb_detach(tree, elem);
     }
 
@@ -650,10 +650,12 @@ void *rb_detach(struct rb_tree *tree,
         return elem;
     }
 
+    printf("before fix\n");
+    dump_tree(tree);
     // both node and child are black
-    if (child) {
-        rb_detach_fix(tree, child);
-    }
+    rb_detach_fix(tree, child, parent);
+    printf("after fix\n");
+    dump_tree(tree);
 
     assert(rb_node_color(tree->root) == BLACK);
     return elem;
