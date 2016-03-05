@@ -481,11 +481,14 @@ static void swap(void **a,
 }
 
 /**
- * Swaps parent/left/right pointers. Retains value and color.
+ * Swaps parent/left/right pointers and color. Retains value.
  */
 static void swap_nodes(struct rb_tree *tree,
                        void *a,
                        void *b) {
+    assert(a);
+    assert(b);
+
     if (a == b) {
         return;
     }
@@ -519,6 +522,10 @@ static void swap_nodes(struct rb_tree *tree,
     if (RB_RIGHT(b)) {
         RB_PARENT(RB_RIGHT(b)) = b;
     }
+
+    enum rb_color col = rb_node_color(a);
+    RB_NODE(a)->color = rb_node_color(b);
+    RB_NODE(b)->color = col;
 }
 
 void rb_detach_fix(struct rb_tree *tree,
@@ -631,6 +638,7 @@ void *rb_detach(struct rb_tree *tree,
     RB_LEFT(elem) = NULL;
     RB_RIGHT(elem) = NULL;
 
+    assert(rb_node_color(elem) == BLACK || rb_node_color(child) == BLACK);
     if (rb_node_color(elem) == RED
             || rb_node_color(child) == RED) {
         if (child) {
@@ -646,6 +654,8 @@ void *rb_detach(struct rb_tree *tree,
     if (child) {
         rb_detach_fix(tree, child);
     }
+
+    assert(rb_node_color(tree->root) == BLACK);
     return elem;
 }
 

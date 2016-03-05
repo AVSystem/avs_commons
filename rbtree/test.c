@@ -169,8 +169,8 @@ AVS_UNIT_TEST(rbtree, swap_nodes_unrelated) {
 
     swap_nodes(tree, a, b);
 
-    assert_node_equal(a, 2,  BLACK, _8, _10, _14);
-    assert_node_equal(b, 12, RED,   _4, _1,  _3);
+    assert_node_equal(a, 2,  RED,   _8, _10, _14);
+    assert_node_equal(b, 12, BLACK, _4, _1,  _3);
 
     rb_release(&tree);
 }
@@ -197,8 +197,8 @@ AVS_UNIT_TEST(rbtree, swap_nodes_parent_child) {
 
     swap_nodes(tree, a, b);
 
-    assert_node_equal(a, 2, BLACK, _8, _4, _6);
-    assert_node_equal(b, 4, RED,   _2, _1, _3);
+    assert_node_equal(a, 2, RED,   _8, _4, _6);
+    assert_node_equal(b, 4, BLACK, _2, _1, _3);
 
     rb_release(&tree);
 }
