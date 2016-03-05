@@ -496,10 +496,8 @@ static void swap_nodes(struct rb_tree *tree,
     // simply swapping pointers in case where one node is a parent of
     // another would set parent pointer of the former parent to itself
     if (RB_PARENT(a) == b) {
-        *rb_own_parent_ptr(tree, a) = b;
         RB_PARENT(a) = a;
     } else if (RB_PARENT(b) == a) {
-        *rb_own_parent_ptr(tree, b) = a;
         RB_PARENT(b) = b;
     }
 
@@ -510,10 +508,16 @@ static void swap_nodes(struct rb_tree *tree,
     if (RB_LEFT(a)) {
         RB_PARENT(RB_LEFT(a)) = a;
     }
+    if (RB_LEFT(b)) {
+        RB_PARENT(RB_LEFT(b)) = b;
+    }
 
     swap(RB_RIGHT_PTR(a), RB_RIGHT_PTR(b));
     if (RB_RIGHT(a)) {
         RB_PARENT(RB_RIGHT(a)) = a;
+    }
+    if (RB_RIGHT(b)) {
+        RB_PARENT(RB_RIGHT(b)) = b;
     }
 }
 

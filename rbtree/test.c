@@ -203,6 +203,34 @@ AVS_UNIT_TEST(rbtree, swap_nodes_parent_child) {
     rb_release(&tree);
 }
 
+AVS_UNIT_TEST(rbtree, swap_nodes_parent_child_under_root) {
+    struct rb_tree *tree = make_tree(
+                  4,
+              2,      6,
+            1,  3,  5,  7, 0);
+
+    int *_1 = RB_FIND(tree, (int){1});
+    int *_2 = RB_FIND(tree, (int){2});
+    int *_3 = RB_FIND(tree, (int){3});
+    int *_4 = RB_FIND(tree, (int){4});
+    int *_6 = RB_FIND(tree, (int){6});
+
+    int *a = _2;
+    int *b = _4;
+
+    AVS_UNIT_ASSERT_TRUE(_4 == tree->root);
+    assert_node_equal(a, 2, BLACK, _4,   _1, _3);
+    assert_node_equal(b, 4, BLACK, NULL, _2, _6);
+
+    swap_nodes(tree, a, b);
+
+    AVS_UNIT_ASSERT_TRUE(_2 == tree->root);
+    assert_node_equal(a, 2, BLACK, NULL, _4, _6);
+    assert_node_equal(b, 4, BLACK, _2,   _1, _3);
+
+    rb_release(&tree);
+}
+
 AVS_UNIT_TEST(rbtree, rotate_left) {
     struct rb_tree *tree = make_tree(3, 2, 5, 7, 4, 0);
     //          3B
