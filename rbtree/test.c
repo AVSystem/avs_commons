@@ -1,5 +1,3 @@
-#include "rbtree.c"
-
 #include <stdio.h>
 #include <string.h>
 #include <stdarg.h>
@@ -7,6 +5,10 @@
 #include <avsystem/commons/log.h>
 #include <avsystem/commons/unit/test.h>
 
+#include <avsystem/commons/rbtree.h>
+#include "rbtree.h"
+
+#if 0
 static void log_node(void *node) {
     struct rb_node *n = _AVS_RB_NODE(node);
     avs_log(rb, ERROR, "%p: %s, parent %p, left %p, right %p",
@@ -46,6 +48,7 @@ static void print_int(void *value,
 static void dump_tree(struct rb_tree *tree) {
     dump_tree_recursive(tree->root, sizeof(int), print_int, 0);
 }
+#endif
 
 static void assert_rb_properties_hold_recursive(void *node,
                                                 size_t *out_black_height) {
@@ -72,9 +75,9 @@ static void assert_rb_properties_hold_recursive(void *node,
     AVS_UNIT_ASSERT_EQUAL(left_black_height, right_black_height);
     *out_black_height = left_black_height;
 
-    if (rb_node_color(node) == RED) {
-        AVS_UNIT_ASSERT_EQUAL(BLACK, rb_node_color(left));
-        AVS_UNIT_ASSERT_EQUAL(BLACK, rb_node_color(right));
+    if (_avs_rb_node_color(node) == RED) {
+        AVS_UNIT_ASSERT_EQUAL(BLACK, _avs_rb_node_color(left));
+        AVS_UNIT_ASSERT_EQUAL(BLACK, _avs_rb_node_color(right));
     } else {
         ++*out_black_height;
     }
@@ -83,7 +86,7 @@ static void assert_rb_properties_hold_recursive(void *node,
 static void assert_rb_properties_hold(AVS_RB_TREE(int) tree_) {
     struct rb_tree *tree = _AVS_RB_TREE(tree_);
 
-    AVS_UNIT_ASSERT_EQUAL(BLACK, rb_node_color(tree->root));
+    AVS_UNIT_ASSERT_EQUAL(BLACK, _avs_rb_node_color(tree->root));
     if (tree->root) {
         AVS_UNIT_ASSERT_NULL(_AVS_RB_PARENT(tree->root));
     }
@@ -170,7 +173,7 @@ AVS_UNIT_TEST(rbtree, swap_nodes_unrelated) {
     assert_node_equal(a, 2,  BLACK, _4, _1,  _3);
     assert_node_equal(b, 12, RED,   _8, _10, _14);
 
-    swap_nodes(_AVS_RB_TREE(tree), a, b);
+    _avs_rb_swap_nodes(_AVS_RB_TREE(tree), a, b);
 
     assert_node_equal(a, 2,  RED,   _8, _10, _14);
     assert_node_equal(b, 12, BLACK, _4, _1,  _3);
@@ -198,7 +201,7 @@ AVS_UNIT_TEST(rbtree, swap_nodes_parent_child) {
     assert_node_equal(a, 2, BLACK, _4, _1, _3);
     assert_node_equal(b, 4, RED,   _8, _2, _6);
 
-    swap_nodes(_AVS_RB_TREE(tree), a, b);
+    _avs_rb_swap_nodes(_AVS_RB_TREE(tree), a, b);
 
     assert_node_equal(a, 2, RED,   _8, _4, _6);
     assert_node_equal(b, 4, BLACK, _2, _1, _3);
@@ -225,7 +228,7 @@ AVS_UNIT_TEST(rbtree, swap_nodes_parent_child_under_root) {
     assert_node_equal(a, 2, BLACK, _4,   _1, _3);
     assert_node_equal(b, 4, BLACK, NULL, _2, _6);
 
-    swap_nodes(_AVS_RB_TREE(tree), a, b);
+    _avs_rb_swap_nodes(_AVS_RB_TREE(tree), a, b);
 
     AVS_UNIT_ASSERT_TRUE(_2 == _AVS_RB_TREE(tree)->root);
     assert_node_equal(a, 2, BLACK, NULL, _4, _6);
@@ -253,7 +256,7 @@ AVS_UNIT_TEST(rbtree, rotate_left) {
     assert_node_equal(_4, 4, RED,   _5,   NULL, NULL);
     assert_node_equal(_7, 7, RED,   _5,   NULL, NULL);
 
-    rb_rotate_left(_AVS_RB_TREE(tree), _3);
+    _avs_rb_rotate_left(_AVS_RB_TREE(tree), _3);
 
     // should be:
     //          5B
@@ -290,7 +293,7 @@ AVS_UNIT_TEST(rbtree, rotate_right) {
     assert_node_equal(_2, 2, RED,   _3,   NULL, NULL);
     assert_node_equal(_4, 4, RED,   _3,   NULL, NULL);
 
-    rb_rotate_right(_AVS_RB_TREE(tree), _5);
+    _avs_rb_rotate_right(_AVS_RB_TREE(tree), _5);
 
     // should be:
     //          3B
