@@ -20,9 +20,10 @@
 #include <assert.h>
 #include <errno.h>
 #include <stdarg.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include <limits.h>
 
 #include <avsystem/commons/stream.h>
 #include <avsystem/commons/stream_v_table.h>
@@ -304,6 +305,9 @@ int avs_stream_peekline(avs_stream_abstract_t *stream,
 const void *avs_stream_v_table_find_extension(avs_stream_abstract_t *stream,
                                               uint32_t id) {
     const avs_stream_v_table_extension_t *ext;
+    if (!stream) {
+        return NULL;
+    }
     for (ext = stream->vtable->extension_list; ext && ext->id; ++ext) {
         if (ext->id == id) {
             return ext->data;
@@ -440,4 +444,3 @@ void avs_stream_inbuf_set_buffer(avs_stream_inbuf_t *stream,
     stream->buffer_size = buffer_size;
     stream->buffer_offset = 0;
 }
-

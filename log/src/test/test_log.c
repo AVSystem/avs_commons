@@ -58,11 +58,11 @@ AVS_UNIT_GLOBAL_INIT(verbose) {
 
 AVS_UNIT_TEST(log, initial) {
     /* plain */
-    ASSERT_LOG(test, INFO, "INFO [test] [src/test/test_log.c:62]: Hello, world!");
+    ASSERT_LOG(test, INFO, "INFO [test] [" __FILE__ ":62]: Hello, world!");
     avs_log(test, INFO, "Hello, world!");
 
     /* formatted */
-    ASSERT_LOG(test, ERROR, "ERROR [test] [src/test/test_log.c:66]: Hello, world!");
+    ASSERT_LOG(test, ERROR, "ERROR [test] [" __FILE__ ":66]: Hello, world!");
     avs_log(test, ERROR, "%s, %s!", "Hello", "world");
 
     avs_log(test, DEBUG, "Not printed");
@@ -74,37 +74,37 @@ AVS_UNIT_TEST(log, initial) {
 AVS_UNIT_TEST(log, default_level) {
     /* not testing TRACE as it may not be compiled in */
     avs_log_set_default_level(AVS_LOG_DEBUG);
-    ASSERT_LOG(test, DEBUG, "DEBUG [test] [src/test/test_log.c:78]: Testing DEBUG");
+    ASSERT_LOG(test, DEBUG, "DEBUG [test] [" __FILE__ ":78]: Testing DEBUG");
     avs_log(test, DEBUG, "Testing DEBUG");
-    ASSERT_LOG(test, INFO, "INFO [test] [src/test/test_log.c:80]: Testing INFO");
+    ASSERT_LOG(test, INFO, "INFO [test] [" __FILE__ ":80]: Testing INFO");
     avs_log(test, INFO, "Testing INFO");
-    ASSERT_LOG(test, WARNING, "WARNING [test] [src/test/test_log.c:82]: Testing WARNING");
+    ASSERT_LOG(test, WARNING, "WARNING [test] [" __FILE__ ":82]: Testing WARNING");
     avs_log(test, WARNING, "Testing WARNING");
-    ASSERT_LOG(test, ERROR, "ERROR [test] [src/test/test_log.c:84]: Testing ERROR");
+    ASSERT_LOG(test, ERROR, "ERROR [test] [" __FILE__ ":84]: Testing ERROR");
     avs_log(test, ERROR, "Testing ERROR");
 
     avs_log_set_default_level(AVS_LOG_INFO);
     avs_log(test, DEBUG, "Testing DEBUG");
-    ASSERT_LOG(test, INFO, "INFO [test] [src/test/test_log.c:89]: Testing INFO");
+    ASSERT_LOG(test, INFO, "INFO [test] [" __FILE__ ":89]: Testing INFO");
     avs_log(test, INFO, "Testing INFO");
-    ASSERT_LOG(test, WARNING, "WARNING [test] [src/test/test_log.c:91]: Testing WARNING");
+    ASSERT_LOG(test, WARNING, "WARNING [test] [" __FILE__ ":91]: Testing WARNING");
     avs_log(test, WARNING, "Testing WARNING");
-    ASSERT_LOG(test, ERROR, "ERROR [test] [src/test/test_log.c:93]: Testing ERROR");
+    ASSERT_LOG(test, ERROR, "ERROR [test] [" __FILE__ ":93]: Testing ERROR");
     avs_log(test, ERROR, "Testing ERROR");
 
     avs_log_set_default_level(AVS_LOG_WARNING);
     avs_log(test, DEBUG, "Testing DEBUG");
     avs_log(test, INFO, "Testing INFO");
-    ASSERT_LOG(test, WARNING, "WARNING [test] [src/test/test_log.c:99]: Testing WARNING");
+    ASSERT_LOG(test, WARNING, "WARNING [test] [" __FILE__ ":99]: Testing WARNING");
     avs_log(test, WARNING, "Testing WARNING");
-    ASSERT_LOG(test, ERROR, "ERROR [test] [src/test/test_log.c:101]: Testing ERROR");
+    ASSERT_LOG(test, ERROR, "ERROR [test] [" __FILE__ ":101]: Testing ERROR");
     avs_log(test, ERROR, "Testing ERROR");
 
     avs_log_set_default_level(AVS_LOG_ERROR);
     avs_log(test, DEBUG, "Testing DEBUG");
     avs_log(test, INFO, "Testing INFO");
     avs_log(test, WARNING, "Testing WARNING");
-    ASSERT_LOG(test, ERROR, "ERROR [test] [src/test/test_log.c:108]: Testing ERROR");
+    ASSERT_LOG(test, ERROR, "ERROR [test] [" __FILE__ ":108]: Testing ERROR");
     avs_log(test, ERROR, "Testing ERROR");
 
     avs_log_set_default_level(AVS_LOG_QUIET);
@@ -121,28 +121,28 @@ AVS_UNIT_TEST(log, module_levels) {
     avs_log_set_level(debugged_module, AVS_LOG_DEBUG);
     avs_log_set_level(stable_module, AVS_LOG_ERROR);
 
-    ASSERT_LOG(debugged_module, DEBUG, "DEBUG [debugged_module] [src/test/test_log.c:125]: Testing DEBUG");
+    ASSERT_LOG(debugged_module, DEBUG, "DEBUG [debugged_module] [" __FILE__ ":125]: Testing DEBUG");
     avs_log(debugged_module, DEBUG, "Testing DEBUG");
-    ASSERT_LOG(debugged_module, INFO, "INFO [debugged_module] [src/test/test_log.c:127]: Testing INFO");
+    ASSERT_LOG(debugged_module, INFO, "INFO [debugged_module] [" __FILE__ ":127]: Testing INFO");
     avs_log(debugged_module, INFO, "Testing INFO");
-    ASSERT_LOG(debugged_module, WARNING, "WARNING [debugged_module] [src/test/test_log.c:129]: Testing WARNING");
+    ASSERT_LOG(debugged_module, WARNING, "WARNING [debugged_module] [" __FILE__ ":129]: Testing WARNING");
     avs_log(debugged_module, WARNING, "Testing WARNING");
-    ASSERT_LOG(debugged_module, ERROR, "ERROR [debugged_module] [src/test/test_log.c:131]: Testing ERROR");
+    ASSERT_LOG(debugged_module, ERROR, "ERROR [debugged_module] [" __FILE__ ":131]: Testing ERROR");
     avs_log(debugged_module, ERROR, "Testing ERROR");
 
     avs_log(stable_module, DEBUG, "Testing DEBUG");
     avs_log(stable_module, INFO, "Testing INFO");
     avs_log(stable_module, WARNING, "Testing WARNING");
-    ASSERT_LOG(stable_module, ERROR, "ERROR [stable_module] [src/test/test_log.c:137]: Testing ERROR");
+    ASSERT_LOG(stable_module, ERROR, "ERROR [stable_module] [" __FILE__ ":137]: Testing ERROR");
     avs_log(stable_module, ERROR, "Testing ERROR");
 
     /* default level is INFO */
     avs_log(other_module, DEBUG, "Testing DEBUG");
-    ASSERT_LOG(other_module, INFO, "INFO [other_module] [src/test/test_log.c:142]: Testing INFO");
+    ASSERT_LOG(other_module, INFO, "INFO [other_module] [" __FILE__ ":142]: Testing INFO");
     avs_log(other_module, INFO, "Testing INFO");
-    ASSERT_LOG(other_module, WARNING, "WARNING [other_module] [src/test/test_log.c:144]: Testing WARNING");
+    ASSERT_LOG(other_module, WARNING, "WARNING [other_module] [" __FILE__ ":144]: Testing WARNING");
     avs_log(other_module, WARNING, "Testing WARNING");
-    ASSERT_LOG(other_module, ERROR, "ERROR [other_module] [src/test/test_log.c:146]: Testing ERROR");
+    ASSERT_LOG(other_module, ERROR, "ERROR [other_module] [" __FILE__ ":146]: Testing ERROR");
     avs_log(other_module, ERROR, "Testing ERROR");
 
     ASSERT_LOG_CLEAN;
@@ -162,28 +162,28 @@ AVS_UNIT_TEST(log, lazy_log) {
     avs_log_set_level(debugged_module, AVS_LOG_DEBUG);
     avs_log_set_level(stable_module, AVS_LOG_ERROR);
 
-    ASSERT_LOG(debugged_module, DEBUG, "DEBUG [debugged_module] [src/test/test_log.c:166]: Testing DEBUG 42");
+    ASSERT_LOG(debugged_module, DEBUG, "DEBUG [debugged_module] [" __FILE__ ":166]: Testing DEBUG 42");
     avs_log(debugged_module, LAZY_DEBUG, "Testing DEBUG %d", success());
-    ASSERT_LOG(debugged_module, INFO, "INFO [debugged_module] [src/test/test_log.c:168]: Testing INFO 42");
+    ASSERT_LOG(debugged_module, INFO, "INFO [debugged_module] [" __FILE__ ":168]: Testing INFO 42");
     avs_log(debugged_module, LAZY_INFO, "Testing INFO %d", success());
-    ASSERT_LOG(debugged_module, WARNING, "WARNING [debugged_module] [src/test/test_log.c:170]: Testing WARNING 42");
+    ASSERT_LOG(debugged_module, WARNING, "WARNING [debugged_module] [" __FILE__ ":170]: Testing WARNING 42");
     avs_log(debugged_module, LAZY_WARNING, "Testing WARNING %d", success());
-    ASSERT_LOG(debugged_module, ERROR, "ERROR [debugged_module] [src/test/test_log.c:172]: Testing ERROR 42");
+    ASSERT_LOG(debugged_module, ERROR, "ERROR [debugged_module] [" __FILE__ ":172]: Testing ERROR 42");
     avs_log(debugged_module, LAZY_ERROR, "Testing ERROR %d", success());
 
     avs_log(stable_module, LAZY_DEBUG, "Testing DEBUG %d", fail());
     avs_log(stable_module, LAZY_INFO, "Testing INFO %d", fail());
     avs_log(stable_module, LAZY_WARNING, "Testing WARNING %d", fail());
-    ASSERT_LOG(stable_module, ERROR, "ERROR [stable_module] [src/test/test_log.c:178]: Testing ERROR 42");
+    ASSERT_LOG(stable_module, ERROR, "ERROR [stable_module] [" __FILE__ ":178]: Testing ERROR 42");
     avs_log(stable_module, LAZY_ERROR, "Testing ERROR %d", success());
 
     /* default level is INFO */
     avs_log_lazy(other_module, DEBUG, "Testing DEBUG %d", fail());
-    ASSERT_LOG(other_module, INFO, "INFO [other_module] [src/test/test_log.c:183]: Testing INFO 42");
+    ASSERT_LOG(other_module, INFO, "INFO [other_module] [" __FILE__ ":183]: Testing INFO 42");
     avs_log_lazy(other_module, INFO, "Testing INFO %d", success());
-    ASSERT_LOG(other_module, WARNING, "WARNING [other_module] [src/test/test_log.c:185]: Testing WARNING 42");
+    ASSERT_LOG(other_module, WARNING, "WARNING [other_module] [" __FILE__ ":185]: Testing WARNING 42");
     avs_log_lazy(other_module, WARNING, "Testing WARNING %d", success());
-    ASSERT_LOG(other_module, ERROR, "ERROR [other_module] [src/test/test_log.c:187]: Testing ERROR 42");
+    ASSERT_LOG(other_module, ERROR, "ERROR [other_module] [" __FILE__ ":187]: Testing ERROR 42");
     avs_log_lazy(other_module, ERROR, "Testing ERROR %d", success());
 
     ASSERT_LOG_CLEAN;

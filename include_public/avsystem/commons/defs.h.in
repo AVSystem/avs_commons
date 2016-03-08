@@ -1,7 +1,7 @@
 /*
  * AVSystem Commons Library
  *
- * Copyright (C) 2014 AVSystem <http://www.avsystem.com/>
+ * Copyright (C) 2016 AVSystem <http://www.avsystem.com/>
  *
  * This code is free and open source software licensed under the MIT License.
  * See the LICENSE file for details.
@@ -88,6 +88,8 @@ typedef union {
     struct AVS_CONCAT(static_assert_,message) { \
         char message[(condition) ? 1 : -1]; \
     }
+
+typedef long avs_off_t;
 
 #ifdef	__cplusplus
 }
