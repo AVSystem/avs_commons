@@ -297,9 +297,9 @@ static const avs_stream_v_table_t buffered_netstream_vtable = {
 };
 
 int avs_stream_netbuf_create(avs_stream_abstract_t **stream_,
-                                    avs_net_abstract_socket_t *socket,
-                                    size_t in_buffer_size,
-                                    size_t out_buffer_size) {
+                             avs_net_abstract_socket_t *socket,
+                             size_t in_buffer_size,
+                             size_t out_buffer_size) {
     buffered_netstream_t *stream = NULL;
     *stream_ = (avs_stream_abstract_t*) calloc(1, sizeof(buffered_netstream_t));
     if (!*stream_) {
@@ -330,7 +330,7 @@ buffered_netstream_create_error:
 }
 
 int avs_stream_netbuf_transfer(avs_stream_abstract_t *destination_,
-                                      avs_stream_abstract_t *source_) {
+                               avs_stream_abstract_t *source_) {
     buffered_netstream_t *destination = (buffered_netstream_t *) destination_;
     buffered_netstream_t *source = (buffered_netstream_t *) source_;
 

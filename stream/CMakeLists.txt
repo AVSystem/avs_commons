@@ -1,7 +1,7 @@
 #
 #  AVSystem Commons Library
 #
-#  Copyright (C) 2014 AVSystem <http://www.avsystem.com/>
+#  Copyright (C) 2016 AVSystem <http://www.avsystem.com/>
 #
 #  This code is free and open source software licensed under the MIT License.
 #  See the LICENSE file for details.
@@ -9,13 +9,15 @@
 
 set(SOURCES
     src/md5_common.c
-    src/stream.c)
+    src/stream.c
+    src/stream_file.c)
 
 set(PRIVATE_HEADERS
     src/md5_common.h)
 
 set(PUBLIC_HEADERS
     include_public/avsystem/commons/stream.h
+    include_public/avsystem/commons/stream/stream_file.h
     include_public/avsystem/commons/stream_v_table.h
     include_public/avsystem/commons/stream/md5.h)
 
@@ -44,10 +46,15 @@ endif()
 set(ALL_SOURCES ${SOURCES} ${PRIVATE_HEADERS} ${PUBLIC_HEADERS})
 
 include_directories(${INCLUDE_DIRS})
+include_directories(${AVS_TEST_INCLUDE_DIRS})
+add_avs_test(avs_stream ${ALL_SOURCES})
 
 add_library(avs_stream STATIC ${ALL_SOURCES})
 if(WITH_INTERNAL_LOGS)
     target_link_libraries(avs_stream avs_log)
+    if(WITH_AVS_UNIT)
+        target_link_libraries(avs_stream_test avs_log)
+    endif()
     include_directories(../log/include_public)
 endif()
 if(WITH_AVS_BUFFER AND WITH_AVS_NET)
