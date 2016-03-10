@@ -56,7 +56,7 @@ void _avs_rb_free_node(void **node) {
 }
 
 static void rb_release_subtree(void **root) {
-    if (!root) {
+    if (!root || !*root) {
         return;
     }
 
