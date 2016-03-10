@@ -75,14 +75,17 @@ struct rb_tree {
 # define _AVS_RB_NODE_VALID(node) (!(node) || _AVS_RB_NODE(node)->rb_magic == RB_MAGIC)
 # define _AVS_RB_TREE_VALID(tree) (!(tree) || (tree)->rb_magic == RB_MAGIC)
 
-# define _AVS_RB_NODE_SET_TREE_MAGIC(elem, magic) \
+# define _AVS_RB_NODE_SET_TREE_MAGIC(node, magic) \
     (_AVS_RB_NODE(node)->tree_magic = (magic))
 # define _AVS_RB_NODE_TREE_MAGIC(node) (_AVS_RB_NODE(node)->tree_magic)
 # define _AVS_RB_TREE_MAGIC(tree) (_AVS_RB_TREE(tree)->tree_magic)
 #else
 # define _AVS_RB_NODE_VALID(node) 1
 # define _AVS_RB_TREE_VALID(tree) 1
-# define _AVS_RB_NODE_SET_TREE_MAGIC(elem, magic) (void)0;
+
+# define _AVS_RB_NODE_SET_TREE_MAGIC(node, magic) (void)0
+# define _AVS_RB_NODE_TREE_MAGIC(node) 0
+# define _AVS_RB_TREE_MAGIC(tree) 0
 #endif
 
 enum rb_color _avs_rb_node_color(void *elem);

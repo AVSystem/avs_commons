@@ -342,6 +342,7 @@ int _avs_rb_tree_attach(AVS_RB_TREE(void) tree_,
 
     assert(tree_);
     assert(elem);
+    assert(rb_is_node_detached(elem));
 
     parent = rb_find_parent(tree, elem, elem_size, &dst);
     assert(dst);
@@ -595,6 +596,7 @@ void *_avs_rb_tree_detach(void **tree_,
 
     assert(tree_);
     assert(elem);
+    assert(_AVS_RB_NODE_TREE_MAGIC(elem) == _AVS_RB_TREE_MAGIC(tree));
 
     left = _AVS_RB_LEFT(elem);
     right = _AVS_RB_RIGHT(elem);
