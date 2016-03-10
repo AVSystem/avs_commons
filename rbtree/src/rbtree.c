@@ -11,26 +11,31 @@ enum rb_color _avs_rb_node_color(void *elem) {
     }
 }
 
+#ifdef _AVS_RB_USE_MAGIC
+static void rb_tree_init_magic(struct rb_tree *tree) {
+    static uint32_t tree_magic_gen = 0;
+
+    memcpy((void*)(intptr_t)&tree->rb_magic, &_AVS_RB_MAGIC,
+           sizeof(tree->rb_magic));
+    tree_magic_gen++;
+    memcpy((void*)(intptr_t)&tree->tree_magic, &tree_magic_gen,
+           sizeof(tree->tree_magic));
+}
+#else
+#define rb_tree_init_magic(tree) (void)0
+#endif
+
 void **_avs_rb_tree_create(avs_rb_cmp_t *cmp) {
     struct rb_tree *tree = (struct rb_tree*)_AVS_RB_ALLOC(sizeof(struct rb_tree));
     if (!tree) {
         return NULL;
     }
 
-#ifdef _AVS_RB_USE_MAGIC
-    memcpy((void*)(intptr_t)&tree->rb_magic, &_AVS_RB_MAGIC,
-           sizeof(tree->rb_magic));
-
-    static uint32_t tree_magic_gen = 0;
-    tree_magic_gen++;
-    memcpy((void*)(intptr_t)&tree->tree_magic, &tree_magic_gen,
-           sizeof(tree->tree_magic));
-#endif /* _AVS_RB_USE_MAGIC */
-
+    rb_tree_init_magic(tree);
     tree->cmp = cmp;
     tree->root = NULL;
 
-    assert(_AVS_RB_TREE_VALID(tree));
+    assert(_AVS_RB_TREE_VALID(&tree->root));
     return &tree->root;
 }
 
@@ -62,6 +67,10 @@ static void rb_release_subtree(void **root) {
 
     rb_release_subtree(_AVS_RB_LEFT_PTR(*root));
     rb_release_subtree(_AVS_RB_RIGHT_PTR(*root));
+
+    _AVS_RB_PARENT(*root) = NULL;
+    _AVS_RB_NODE_SET_TREE_MAGIC(*root, 0);
+
     _avs_rb_free_node(root);
 }
 
@@ -73,7 +82,7 @@ void _avs_rb_tree_release(void ***tree_) {
     }
 
     tree = _AVS_RB_TREE(*tree_);
-    assert(_AVS_RB_TREE_VALID(tree));
+    assert(_AVS_RB_TREE_VALID(*tree_));
 
     rb_release_subtree(&tree->root);
     _AVS_RB_DEALLOC(tree);
@@ -93,17 +102,21 @@ size_t _avs_rb_tree_size(AVS_RB_TREE(void) tree) {
     return rb_subtree_size(_AVS_RB_TREE(tree)->root);
 }
 
+#ifdef _AVS_RB_USE_MAGIC
+static void rb_node_init_magic(struct rb_node *node) {
+    memcpy((void*)(intptr_t)&node->rb_magic, &_AVS_RB_MAGIC,
+           sizeof(node->rb_magic));
+    node->tree_magic = 0;
+}
+#else
+#define rb_node_init_magic(_) (void)0
+#endif
+
 AVS_RB_NODE(void) _avs_rb_alloc_node(size_t elem_size) {
     struct rb_node *node =
             (struct rb_node*)_AVS_RB_ALLOC(_AVS_NODE_SPACE__ + elem_size);
-
-#ifdef RB_USE_MAGIC
-    memcpy((void*)(intptr_t)&node->rb_magic, &_AVS_RB_MAGIC,
-           sizeof(node->magic));
-    node->tree_magic = 0;
-#endif /* RB_USE_MAGIC */
-
     void *elem = (char*)node + _AVS_NODE_SPACE__;
+    rb_node_init_magic(node);
 
     assert(_AVS_RB_NODE_VALID(elem));
     return elem;
@@ -596,7 +609,8 @@ void *_avs_rb_tree_detach(void **tree_,
 
     assert(tree_);
     assert(elem);
-    assert(_AVS_RB_NODE_TREE_MAGIC(elem) == _AVS_RB_TREE_MAGIC(tree));
+    assert(_AVS_RB_NODE_TREE_MAGIC(elem) == _AVS_RB_TREE_MAGIC(tree)
+           && "node not attached to given tree");
 
     left = _AVS_RB_LEFT(elem);
     right = _AVS_RB_RIGHT(elem);

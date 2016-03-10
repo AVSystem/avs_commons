@@ -18,8 +18,8 @@ enum rb_color {
 
 struct rb_node {
 #ifdef _AVS_RB_USE_MAGIC
-    const uint32_t rb_magic; // always set to _AVS_RB_MAGIC
-    uint32_t tree_magic; // marks the tree a node is attached to
+    const uint32_t rb_magic; /* always set to _AVS_RB_MAGIC */
+    uint32_t tree_magic; /* marks the tree a node is attached to, 0 if detached */
 #endif
 
     enum rb_color color;
@@ -29,9 +29,9 @@ struct rb_node {
 };
 
 struct rb_tree {
-#ifdef RB_USE_MAGIC
-    const uint32_t rb_magic; // always set to _AVS_RB_MAGIC
-    uint32_t tree_magic; // marks the tree a node is attached to
+#ifdef _AVS_RB_USE_MAGIC
+    const uint32_t rb_magic; /* always set to _AVS_RB_MAGIC */
+    uint32_t tree_magic; /* marks the tree a node is attached to */
 #endif
 
     avs_rb_cmp_t *cmp;
@@ -72,8 +72,10 @@ struct rb_tree {
 #define _AVS_RB_PARENT(elem) (*_AVS_RB_PARENT_PTR(elem))
 
 #ifdef _AVS_RB_USE_MAGIC
-# define _AVS_RB_NODE_VALID(node) (!(node) || _AVS_RB_NODE(node)->rb_magic == RB_MAGIC)
-# define _AVS_RB_TREE_VALID(tree) (!(tree) || (tree)->rb_magic == RB_MAGIC)
+# define _AVS_RB_NODE_VALID(node) \
+    (!(node) || _AVS_RB_NODE(node)->rb_magic == _AVS_RB_MAGIC)
+# define _AVS_RB_TREE_VALID(tree) \
+    (!(tree) || _AVS_RB_TREE(tree)->rb_magic == _AVS_RB_MAGIC)
 
 # define _AVS_RB_NODE_SET_TREE_MAGIC(node, magic) \
     (_AVS_RB_NODE(node)->tree_magic = (magic))
