@@ -26,5 +26,6 @@ install(DIRECTORY include_public/
         DESTINATION ${INCLUDE_INSTALL_DIR}
         FILES_MATCHING REGEX "[.]h$")
 
-include_directories(${AVS_TEST_INCLUDE_DIRS})
+include_directories(${AVS_TEST_INCLUDE_DIRS}
+                    "../unit/include_public")
 add_avs_test(avs_rbtree ${ALL_SOURCES})
