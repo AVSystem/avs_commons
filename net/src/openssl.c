@@ -8,7 +8,7 @@
  */
 
 #ifndef _POSIX_C_SOURCE
-#define _POSIX_C_SOURCE 200112L
+#define _POSIX_C_SOURCE 200112L /* for snprintf() on C89 and clock_gettime() */
 #endif
 
 #include <config.h>

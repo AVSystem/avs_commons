@@ -1,6 +1,19 @@
+/*
+ * AVSystem Commons Library
+ *
+ * Copyright (C) 2014 AVSystem <http://www.avsystem.com/>
+ *
+ * This code is free and open source software licensed under the MIT License.
+ * See the LICENSE file for details.
+ */
+
+#ifndef _POSIX_C_SOURCE
+#define _POSIX_C_SOURCE 200809L /* a lot of things (nanosleep, strdup, ...) */
+/* avs_unit is currently GNU-specific anyway */
+#endif
+
 #include <config.h>
 
-#define _POSIX_C_SOURCE 200809L
 #include "stack_trace.h"
 
 #ifndef WITH_AVS_STACK_TRACE

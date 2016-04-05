@@ -7,14 +7,6 @@
  * See the LICENSE file for details.
  */
 
-#ifndef _POSIX_C_SOURCE
-#define _POSIX_C_SOURCE 200112L
-#endif
-
-#ifdef __STRICT_ANSI__
-#undef __STRICT_ANSI__
-#endif
-
 #ifdef AVS_UNIT_TESTING
 #define _BSD_SOURCE /* for mkstemp */
 #endif

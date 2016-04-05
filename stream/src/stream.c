@@ -7,12 +7,8 @@
  * See the LICENSE file for details.
  */
 
-#ifndef _POSIX_C_SOURCE
-#define _POSIX_C_SOURCE 200112L
-#endif
-
 #ifdef __STRICT_ANSI__
-#undef __STRICT_ANSI__
+#undef __STRICT_ANSI__ /* for va_copy() */
 #endif
 
 #include <config.h>

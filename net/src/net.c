@@ -8,7 +8,7 @@
  */
 
 #ifndef _GNU_SOURCE
-#define _GNU_SOURCE
+#define _GNU_SOURCE /* for rand_r(), addrinfo and many others */
 #endif
 
 #include <config.h>

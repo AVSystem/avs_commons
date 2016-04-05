@@ -177,7 +177,7 @@ AVS_UNIT_TEST(list, is_cyclic) {
 
     for (i = 4; i < 10; ++i) {
         AVS_LIST(int) *ptr;
-        *AVS_LIST_APPEND_NEW(int, &list) = i;
+        *AVS_LIST_APPEND_NEW(int, &list) = (int) i;
         ptr = AVS_LIST_APPEND_PTR(&list);
         /* (i-3) elements in loop */
         *ptr = AVS_LIST_NTH(list, 3);
