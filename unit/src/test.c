@@ -331,7 +331,8 @@ static void print_differences(const void *actual,
             }
         }
 
-        printf("- %lu different byte(s) at offset %lu:\n", error_bytes, error_start);
+        printf("- %lu different byte(s) at offset %lu:\n",
+               (unsigned long) error_bytes, (unsigned long) error_start);
         test_fail_print_hex_diff(actual_ptr, expected_ptr, num_bytes,
                                  error_start, error_end - error_start,
                                  CONTEXT_SIZE);
