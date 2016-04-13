@@ -200,8 +200,10 @@ option(WITH_LWIP "Use lwIP library for networking" OFF)
 
 option(WITH_SOCKET_LOG "Enable socket communication logging" OFF)
 
-include_directories(config)
-include_directories(include_public)
+include_directories("${CMAKE_SOURCE_DIR}/config")
+include_directories("${CMAKE_BINARY_DIR}/config")
+include_directories("${CMAKE_SOURCE_DIR}/include_public")
+include_directories("${CMAKE_BINARY_DIR}/include_public")
 
 find_program(VALGRIND_EXECUTABLE valgrind)
 if(VALGRIND_EXECUTABLE)
@@ -335,6 +337,9 @@ install(FILES
         ${CMAKE_BINARY_DIR}/avs_commons-config.cmake
         ${CMAKE_BINARY_DIR}/avs_commons-version.cmake
         DESTINATION ${LIB_INSTALL_DIR}/avs_commons)
-install(DIRECTORY include_public/
+install(DIRECTORY "${CMAKE_SOURCE_DIR}/include_public/"
+        DESTINATION ${INCLUDE_INSTALL_DIR}
+        FILES_MATCHING REGEX "[.]h$")
+install(DIRECTORY "${CMAKE_BINARY_DIR}/include_public/"
         DESTINATION ${INCLUDE_INSTALL_DIR}
         FILES_MATCHING REGEX "[.]h$")
