@@ -10,7 +10,8 @@
 set(SOURCES
     src/md5_common.c
     src/stream.c
-    src/stream_file.c)
+    src/stream_file.c
+    src/stream_membuf.c)
 
 set(PRIVATE_HEADERS
     src/md5_common.h)
@@ -18,6 +19,7 @@ set(PRIVATE_HEADERS
 set(PUBLIC_HEADERS
     include_public/avsystem/commons/stream.h
     include_public/avsystem/commons/stream/stream_file.h
+    include_public/avsystem/commons/stream/stream_membuf.h
     include_public/avsystem/commons/stream_v_table.h
     include_public/avsystem/commons/stream/md5.h)
 
