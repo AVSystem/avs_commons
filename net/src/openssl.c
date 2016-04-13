@@ -684,6 +684,7 @@ static int password_cb(char *buf, int num, int rwflag, void *userdata) {
     return (retval < 0 || retval >= num) ? -1 : retval;
 }
 
+#ifndef OPENSSL_NO_EC
 static const EC_POINT *get_ec_public_key(ssl_socket_t *socket) {
     X509 *cert = NULL;
     EVP_PKEY *evp_key = NULL;
@@ -777,6 +778,9 @@ static int load_client_key_from_data(ssl_socket_t *socket,
     EVP_PKEY_free(evp_key);
     return 0;
 }
+#else
+#define load_client_key_from_data(...) ((int) -1)
+#endif
 
 static int load_client_key_from_file(ssl_socket_t *socket,
                                      const char *client_key_file,
