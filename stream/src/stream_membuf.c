@@ -128,7 +128,7 @@ static int stream_membuf_fit(avs_stream_abstract_t *stream_) {
     size_t max_index = stream->index_write;
     if (stream->buffer_size > max_index) {
         void *new_buffer = realloc(stream->buffer, max_index);
-        if (new_buffer) {
+        if (new_buffer || max_index == 0) {
             stream->buffer = (char *) new_buffer;
             stream->buffer_size = max_index;
         }
