@@ -147,6 +147,11 @@ void avs_unit_mocksock_assert_expects_met__(avs_net_abstract_socket_t *socket,
 #define avs_unit_mocksock_assert_expects_met(Socket) \
     avs_unit_mocksock_assert_expects_met__((Socket), __FILE__, __LINE__);
 
+
+void avs_unit_mocksock_enable_recv_timeout_getsetopt(
+        avs_net_abstract_socket_t *socket_,
+        int default_timeout_ms);
+
 #ifdef  __cplusplus
 }
 #endif
