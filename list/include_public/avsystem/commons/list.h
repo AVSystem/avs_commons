@@ -66,7 +66,7 @@
 #endif
 
 #if !defined(AVS_LIST_CONFIG_TYPEOF) && !defined(AVS_LIST_CONFIG_NO_TYPEOF) \
-        && __GNUC__
+        && !defined(__cplusplus) && __GNUC__
 /**
  * Alias to the <c>typeof</c> keyword, if available.
  *
@@ -83,6 +83,24 @@
  * using <c>typeof</c> even on GNU compilers (e.g. for testing).
  */
 #define AVS_LIST_CONFIG_TYPEOF __typeof__
+#endif
+
+/**
+ * @def AVS_LIST_TYPEOF_PTR__(symbol)
+ *
+ * This macro is used to avoid having to specify list type where possible.
+ * It uses <c>typeof</c> if possible. Otherwise, it just produces casts to
+ * <c>void *</c>, which is unsafe, but permitted by the C standard
+ * (will produce warnings, though).
+ */
+#ifdef AVS_LIST_CONFIG_TYPEOF
+#define AVS_LIST_TYPEOF_PTR__(symbol) AVS_LIST_CONFIG_TYPEOF(*(symbol)) *
+#elif defined(__cplusplus) && \
+        (__cplusplus >= 201103L || defined(__GXX_EXPERIMENTAL_CXX0X__))
+#include <type_traits>
+#define AVS_LIST_TYPEOF_PTR__(symbol) std::decay<decltype((symbol))>::type
+#else
+#define AVS_LIST_TYPEOF_PTR__(symbol) void *
 #endif
 
 #ifdef	__cplusplus
@@ -138,20 +156,6 @@ offsetof(struct avs_list_space_for_next_helper_struct__, value)
 #define AVS_LIST(element_type) element_type*
 
 /**
- * @def AVS_LIST_TYPEOF__(symbol)
- *
- * This macro is used to avoid having to specify list type where possible.
- * It uses <c>typeof</c> if possible. Otherwise, it just produces casts to
- * <c>void *</c>, which is unsafe, but permitted by the C standard
- * (will produce warnings, though).
- */
-#ifdef AVS_LIST_CONFIG_TYPEOF
-#define AVS_LIST_TYPEOF__(symbol) AVS_LIST_CONFIG_TYPEOF(symbol)
-#else
-#define AVS_LIST_TYPEOF__(symbol) void
-#endif
-
-/**
  * Returns a pointer to the next element.
  *
  * The entity returned is syntactically an lvalue.
@@ -161,7 +165,7 @@ offsetof(struct avs_list_space_for_next_helper_struct__, value)
  * @return Pointer to the next list element.
  */
 #define AVS_LIST_NEXT(element) \
-(*AVS_APPLY_OFFSET(AVS_LIST_TYPEOF__(*(element)) *, element, \
+(*AVS_APPLY_OFFSET(AVS_LIST_TYPEOF_PTR__(element), element, \
         -AVS_LIST_SPACE_FOR_NEXT__))
 
 /**
@@ -177,7 +181,7 @@ offsetof(struct avs_list_space_for_next_helper_struct__, value)
  *         next element.
  */
 #define AVS_LIST_NEXT_PTR(element_ptr) \
-((AVS_LIST_TYPEOF__(*(element_ptr)) *) &AVS_LIST_NEXT(*(element_ptr)))
+((AVS_LIST_TYPEOF_PTR__(element_ptr)) &AVS_LIST_NEXT(*(element_ptr)))
 
 /**
  * A shorthand notation for a for-each loop.
@@ -320,7 +324,7 @@ void *avs_list_assert_acyclic__(void *list);
 #define AVS_LIST_ASSERT_ACYCLIC__(list) (list)
 #else
 #define AVS_LIST_ASSERT_ACYCLIC__(list) \
-((AVS_LIST_TYPEOF__(*(list)) *) \
+((AVS_LIST_TYPEOF_PTR__(list)) \
         avs_list_assert_acyclic__((void *) (intptr_t) (list)))
 #endif
 /**@}*/
@@ -335,7 +339,7 @@ void *avs_list_assert_acyclic__(void *list);
  * @return Pointer to the desired element, or <c>NULL</c> if not found.
  */
 #define AVS_LIST_NTH(list, n) \
-((AVS_LIST_TYPEOF__(*(list)) *) avs_list_nth__((void *) (intptr_t) (list), (n)))
+((AVS_LIST_TYPEOF_PTR__(list)) avs_list_nth__((void *) (intptr_t) (list), (n)))
 
 /**
  * Returns a pointer to a variable holding the <i>n</i>-th element in a list.
@@ -348,7 +352,7 @@ void *avs_list_assert_acyclic__(void *list);
  *         <c>NULL</c> if not found.
  */
 #define AVS_LIST_NTH_PTR(list_ptr, n) \
-((AVS_LIST_TYPEOF__(*(list_ptr)) *) \
+((AVS_LIST_TYPEOF_PTR__(list_ptr)) \
         avs_list_nth_ptr__((void **) (intptr_t) (list_ptr), (n)))
 
 /**
@@ -377,7 +381,7 @@ void *avs_list_assert_acyclic__(void *list);
  *         <c>NULL</c> if not found.
  */
 #define AVS_LIST_FIND_PTR(list_ptr, element) \
-((AVS_LIST_TYPEOF__(*(list_ptr)) *)(intptr_t) \
+((AVS_LIST_TYPEOF_PTR__(list_ptr))(intptr_t) \
         avs_list_find_ptr__((void **)(intptr_t)(list_ptr), \
                             (char *)(intptr_t)(element)))
 
@@ -410,7 +414,7 @@ void *avs_list_assert_acyclic__(void *list);
  *         found, or <c>NULL</c> if not found.
  */
 #define AVS_LIST_FIND_BY_VALUE_PTR(list_ptr, value_ptr, comparator) \
-((AVS_LIST_TYPEOF__(*(list_ptr)) *) \
+((AVS_LIST_TYPEOF_PTR__(list_ptr)) \
         avs_list_find_by_value_ptr__((void **)(intptr_t)(list_ptr),\
                                      (void *)(intptr_t)(value_ptr),\
                                      (comparator),\
@@ -425,7 +429,7 @@ void *avs_list_assert_acyclic__(void *list);
  *         empty.
  */
 #define AVS_LIST_TAIL(list) \
-((AVS_LIST_TYPEOF__(*(list)) *) avs_list_tail__((void *) (intptr_t) (list)))
+((AVS_LIST_TYPEOF_PTR__(list)) avs_list_tail__((void *) (intptr_t) (list)))
 
 /**
  * Returns the next element pointer of last element in a list.
@@ -440,7 +444,7 @@ void *avs_list_assert_acyclic__(void *list);
  *         will always yield <c>NULL</c>.
  */
 #define AVS_LIST_APPEND_PTR(list_ptr) \
-((AVS_LIST_TYPEOF__(*(list_ptr)) *) \
+((AVS_LIST_TYPEOF_PTR__(list_ptr)) \
         avs_list_append_ptr__((void **) (intptr_t) (list_ptr)))
 
 /**
@@ -483,7 +487,7 @@ void *avs_list_assert_acyclic__(void *list);
  *                                will be updated with the newly added element.
  *
  * @param new_element             The element to insert.
- * 
+ *
  *                                If it has subsequent elements (i.e. is already
  *                                a list), they will be preserved, and the part
  *                                of the list previously held at
@@ -500,11 +504,11 @@ void *avs_list_assert_acyclic__(void *list);
  */
 #define AVS_LIST_INSERT(destination_element_ptr, new_element) \
 ((((void) sizeof(*(destination_element_ptr) = (new_element))), \
-        ((AVS_LIST_TYPEOF__(*(new_element)) *) \
+        ((AVS_LIST_TYPEOF_PTR__(new_element)) \
         AVS_LIST_ASSERT_ACYCLIC__(avs_list_insert__( \
-                (void **) (AVS_LIST_TYPEOF__(**(destination_element_ptr)) **) \
+                (void **) (AVS_LIST_TYPEOF_PTR__(*(destination_element_ptr)) *)\
                 (destination_element_ptr), \
-                (void *) (new_element))))))
+                (void *) (intptr_t) (new_element))))))
 
 /**
  * Allocates a new element and inserts it into the list.
@@ -541,8 +545,8 @@ AVS_LIST_INSERT(destination_element_ptr, AVS_LIST_NEW_ELEMENT(type))
  */
 #define AVS_LIST_APPEND(list_ptr, new_element) \
 AVS_LIST_ASSERT_ACYCLIC__( \
-        (*(AVS_LIST_TYPEOF__(**(list_ptr)) **) AVS_LIST_APPEND_PTR(list_ptr) = \
-                (new_element)))
+        (*(AVS_LIST_TYPEOF_PTR__(*(list_ptr)) *) \
+                AVS_LIST_APPEND_PTR(list_ptr) = (new_element)))
 
 /**
  * Allocates a new element and appends at the end of a list.
@@ -572,7 +576,7 @@ AVS_LIST_APPEND(list_ptr, AVS_LIST_NEW_ELEMENT(type))
  */
 /* additional casts through char * work around aliasing rules */
 #define AVS_LIST_DETACH(element_to_detach_ptr) \
-((AVS_LIST_TYPEOF__(**(element_to_detach_ptr)) *) (char *) \
+((AVS_LIST_TYPEOF_PTR__(*(element_to_detach_ptr))) (char *) \
         avs_list_detach__((void **) (char *) (element_to_detach_ptr)))
 
 /**
@@ -582,7 +586,8 @@ AVS_LIST_APPEND(list_ptr, AVS_LIST_NEW_ELEMENT(type))
  *                              pointer to the element to destroy.
  */
 #define AVS_LIST_DELETE(element_to_delete_ptr) \
-AVS_LIST_CONFIG_FREE(((char *) (AVS_LIST_DETACH(element_to_delete_ptr))) \
+AVS_LIST_CONFIG_FREE( \
+        ((char *) (intptr_t) (AVS_LIST_DETACH(element_to_delete_ptr))) \
         - AVS_LIST_SPACE_FOR_NEXT__)
 
 /**
