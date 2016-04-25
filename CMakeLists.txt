@@ -247,6 +247,7 @@ endif()
 option(WITH_AVS_UNIT "AVSystem unit test library" ON)
 option(WITH_AVS_BUFFER "AVSystem buffer implementation" ON)
 option(WITH_AVS_LIST "AVSystem generic linked list implementation" ON)
+option(WITH_AVS_VECTOR "AVSystem generic vector implementation" ON)
 option(WITH_AVS_NET "AVSystem network communication abstraction layer" ON)
 option(WITH_AVS_STREAM "AVSystem IO stream abstraction layer" ON)
 option(WITH_AVS_LOG "AVSystem logging framework" ON)
@@ -294,6 +295,10 @@ endif()
 
 if(WITH_AVS_LIST)
     add_subdirectory(list)
+endif()
+
+if(WITH_AVS_VECTOR)
+    add_subdirectory(vector)
 endif()
 
 if(WITH_AVS_NET)

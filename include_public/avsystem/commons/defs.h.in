@@ -95,6 +95,44 @@ typedef long avs_off_t;
 }
 #endif
 
+#if !defined(AVS_CONFIG_TYPEOF) && !defined(AVS_CONFIG_NO_TYPEOF) \
+        && !defined(__cplusplus) && __GNUC__
+/**
+ * Alias to the <c>typeof</c> keyword, if available.
+ *
+ * It will be automatically defined as <c>__typeof__(symbol)</c> if compiling on
+ * a GNU compiler or compatible.
+ *
+ * <c>typeof</c> is not necessary for the library to function, but it increases
+ * type safety and in some cases allows for cleaner code.
+ *
+ * It can be defined prior to including <c>defs.h</c> to use the <c>typeof</c>
+ * keyword available in the target compiler.
+ *
+ * Alternatively, <c>AVS_CONFIG_NO_TYPEOF</c> can be defined to suppress using
+ * <c>typeof</c> even on GNU compilers (e.g. for testing).
+ */
+#define AVS_CONFIG_TYPEOF __typeof__
+#endif
+
+/**
+ * @def AVS_TYPEOF_PTR(symbol)
+ *
+ * This macro is used to avoid having to specify pointer type where possible.
+ * It uses <c>typeof</c> if possible. Otherwise, it just produces casts to
+ * <c>void *</c>, which is unsafe, but permitted by the C standard
+ * (usage might produce warnings, though).
+ */
+#ifdef AVS_CONFIG_TYPEOF
+#define AVS_TYPEOF_PTR(symbol) AVS_CONFIG_TYPEOF(*(symbol)) *
+#elif defined(__cplusplus) && \
+        (__cplusplus >= 201103L || defined(__GXX_EXPERIMENTAL_CXX0X__))
+#include <type_traits>
+#define AVS_TYPEOF_PTR(symbol) std::decay<decltype((symbol))>::type
+#else
+#define AVS_TYPEOF_PTR(symbol) void *
+#endif
+
 #if (__GNUC__ >= 4)
 #define AVS_F_SENTINEL __attribute__((sentinel(0)))
 #endif
