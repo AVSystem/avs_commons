@@ -150,6 +150,9 @@ typedef struct {
     AVS_LIST(mocksock_expected_command_t) expected_commands;
     AVS_LIST(mocksock_expected_data_t) expected_data;
     size_t last_data_read;
+
+    bool recv_timeout_enabled;
+    int recv_timeout_ms;
 } mocksock_t;
 
 static void assert_command_expected(const mocksock_expected_command_t *expected,
@@ -370,6 +373,12 @@ static int mock_get_opt(avs_net_abstract_socket_t *socket_,
     int retval = 0;
     mocksock_t *socket = (mocksock_t *) socket_;
 
+    if (socket->recv_timeout_enabled
+            && option_key == AVS_NET_SOCKET_OPT_RECV_TIMEOUT) {
+        out_option_value->recv_timeout = socket->recv_timeout_ms;
+        return 0;
+    }
+
     assert_command_expected(socket->expected_commands,
             MOCKSOCK_COMMAND_GET_OPT);
 
@@ -387,6 +396,12 @@ static int mock_set_opt(avs_net_abstract_socket_t *socket_,
                         avs_net_socket_opt_value_t option_value) {
     int retval = 0;
     mocksock_t *socket = (mocksock_t *) socket_;
+
+    if (socket->recv_timeout_enabled
+            && option_key == AVS_NET_SOCKET_OPT_RECV_TIMEOUT) {
+        socket->recv_timeout_ms = option_value.recv_timeout;
+        return 0;
+    }
 
     assert_command_expected(socket->expected_commands,
             MOCKSOCK_COMMAND_SET_OPT);
@@ -672,5 +687,12 @@ void avs_unit_mocksock_assert_expects_met__(avs_net_abstract_socket_t *socket_,
     }
 }
 
+/* -------------------------------------------------------------------------- */
 
-
+void avs_unit_mocksock_enable_recv_timeout_getsetopt(
+        avs_net_abstract_socket_t *socket_,
+        int default_timeout_ms) {
+    mocksock_t *socket = (mocksock_t *) socket_;
+    socket->recv_timeout_enabled = true;
+    socket->recv_timeout_ms = default_timeout_ms;
+}
