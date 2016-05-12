@@ -151,7 +151,7 @@ typedef struct {
     AVS_LIST(mocksock_expected_data_t) expected_data;
     size_t last_data_read;
 
-    bool recv_timeout_enabled;
+    char recv_timeout_enabled;
     int recv_timeout_ms;
 } mocksock_t;
 
@@ -693,6 +693,6 @@ void avs_unit_mocksock_enable_recv_timeout_getsetopt(
         avs_net_abstract_socket_t *socket_,
         int default_timeout_ms) {
     mocksock_t *socket = (mocksock_t *) socket_;
-    socket->recv_timeout_enabled = true;
+    socket->recv_timeout_enabled = 1;
     socket->recv_timeout_ms = default_timeout_ms;
 }

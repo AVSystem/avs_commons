@@ -106,11 +106,11 @@ AVS_UNIT_TEST(avs_vector, capacity_and_size) {
 
 AVS_UNIT_TEST(avs_vector, remove) {
     AVS_VECTOR(int) v = AVS_VECTOR_NEW(int);
-    int i;
+    int i, *elem;
     for (i = 0; i < 5; ++i) {
         AVS_VECTOR_PUSH(&v, &i);
     }
-    int *elem = AVS_VECTOR_REMOVE_AT(&v, 3);
+    elem = AVS_VECTOR_REMOVE_AT(&v, 3);
     AVS_UNIT_ASSERT_EQUAL(*elem, 3);
     AVS_UNIT_ASSERT_EQUAL(AVS_VECTOR_SIZE(v), 4);
     AVS_UNIT_ASSERT_EQUAL((*v)[0], 0);

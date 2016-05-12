@@ -214,7 +214,7 @@ static int ensure_capacity(avs_vector_desc_t *desc, size_t num_elements) {
     if (new_capacity != (size_t) new_capacity) {
         return -1;
     }
-    new_data = realloc(desc->data, new_capacity);
+    new_data = realloc(desc->data, (size_t) new_capacity);
     if (!new_data) {
         return -1;
     }
