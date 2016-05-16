@@ -693,8 +693,9 @@ avs_list_sort__((void **)(intptr_t)(list_ptr), (comparator), \
  * @return pointer to the cloned list, NULL in case of an error.
  */
 #define AVS_LIST_SIMPLE_CLONE(list) \
-(AVS_LIST(AVS_TYPEOF_PTR(list))) \
-    avs_list_simple_clone__(AVS_LIST_ASSERT_ACYCLIC__(list), sizeof(*(list)))
+((AVS_TYPEOF_PTR(list)) \
+        avs_list_simple_clone__(AVS_LIST_ASSERT_ACYCLIC__(list), \
+                                sizeof(*(list))))
 
 #ifdef	__cplusplus
 }
