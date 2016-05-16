@@ -475,10 +475,15 @@ static int host_port_to_string(const struct sockaddr *sa, socklen_t salen,
         }
     }
     if (!result) {
-        int retval;
-        result = (!_avs_inet_ntop(sa->sa_family, addr_ptr, host, hostlen)
-                || (retval = snprintf(serv, servlen, "%" PRIu16, *port_ptr)) < 0
-                || (size_t) retval >= servlen) ? -1 : 0;
+        int retval = 0;
+        if (host) {
+            result = (!_avs_inet_ntop(sa->sa_family, addr_ptr, host, hostlen)
+                    ? -1 : 0);
+        }
+        if (!result && port) {
+            result = ((retval = snprintf(serv, servlen, "%" PRIu16, *port_ptr)) < 0
+                    || (size_t) retval >= servlen) ? -1 : 0;
+        }
     }
 #endif
     if (result) {
@@ -487,9 +492,13 @@ static int host_port_to_string(const struct sockaddr *sa, socklen_t salen,
             errno = ENOSPC;
         }
     } else {
-        host[hostlen - 1] = '\0';
-        serv[servlen - 1] = '\0';
-        unwrap_4in6(host);
+        if (host) {
+            host[hostlen - 1] = '\0';
+            unwrap_4in6(host);
+        }
+        if (serv) {
+            serv[servlen - 1] = '\0';
+        }
         errno = 0;
     }
     return result;
@@ -551,12 +560,10 @@ static int connect_net(avs_net_abstract_socket_t *net_socket_,
             if (connect_with_timeout(net_socket->socket, &address,
                                      socket_is_stream) < 0
                     || (socket_is_stream && send_net(net_socket_, NULL, 0) < 0)
-                    || host_port_to_string((const struct sockaddr *)
-                                                   &address.data, address.size,
-                                           net_socket->host,
-                                           sizeof(net_socket->host),
-                                           net_socket->port,
-                                           sizeof(net_socket->port))) {
+                    || avs_net_resolved_endpoint_get_host_port(
+                            &address,
+                            net_socket->host, sizeof(net_socket->host),
+                            net_socket->port, sizeof(net_socket->port))) {
                 net_socket->error_code = errno;
                 LOG(ERROR, "cannot establish connection to [%s]:%s: %s",
                     host, port, strerror(errno));
@@ -1273,4 +1280,14 @@ int avs_net_validate_ip_address(avs_net_af_t family, const char *ip_address) {
                 || validate_ip_address(AVS_NET_AF_INET6, ip_address) == 0)
                 ? 0 : -1;
     }
+}
+
+int avs_net_resolved_endpoint_get_host_port(
+        const avs_net_socket_raw_resolved_endpoint_t *endp,
+        char *host, size_t hostlen,
+        char *serv, size_t servlen) {
+    return host_port_to_string((const struct sockaddr *) &endp->data,
+                               endp->size,
+                               host, (socklen_t) hostlen,
+                               serv, (socklen_t) servlen);
 }
