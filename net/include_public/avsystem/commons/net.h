@@ -31,7 +31,7 @@ typedef struct {
         avs_max_align_t align;
         char buf[AVS_NET_SOCKET_RAW_RESOLVED_ENDPOINT_MAX_SIZE];
     } data;
-} avs_net_socket_raw_resolved_endpoint_t;
+} avs_net_resolved_endpoint_t;
 
 typedef enum {
     AVS_NET_TCP_SOCKET,
@@ -69,15 +69,15 @@ int avs_net_addrinfo_ctx_resolve(
         const char *host,
         const char *port,
         int passive,
-        const avs_net_socket_raw_resolved_endpoint_t *preferred_endpoint);
+        const avs_net_resolved_endpoint_t *preferred_endpoint);
 
 int avs_net_addrinfo_ctx_get_next(avs_net_addrinfo_ctx_t *ctx,
-                                  avs_net_socket_raw_resolved_endpoint_t *out);
+                                  avs_net_resolved_endpoint_t *out);
 
 void avs_net_addrinfo_ctx_rewind(avs_net_addrinfo_ctx_t *ctx);
 
 int avs_net_resolved_endpoint_get_host_port(
-        const avs_net_socket_raw_resolved_endpoint_t *endp,
+        const avs_net_resolved_endpoint_t *endp,
         char *host, size_t hostlen,
         char *serv, size_t servlen);
 
@@ -111,12 +111,12 @@ typedef char avs_net_socket_interface_name_t[IF_NAMESIZE];
 typedef int avs_ssl_additional_configuration_clb_t(void *library_ssl_context);
 
 typedef struct {
-    uint8_t                                dscp;
-    uint8_t                                priority;
-    uint8_t                                transparent;
-    avs_net_socket_interface_name_t        interface_name;
-    avs_net_socket_raw_resolved_endpoint_t *preferred_endpoint;
-    avs_net_af_t                           address_family;
+    uint8_t                         dscp;
+    uint8_t                         priority;
+    uint8_t                         transparent;
+    avs_net_socket_interface_name_t interface_name;
+    avs_net_resolved_endpoint_t    *preferred_endpoint;
+    avs_net_af_t                    address_family;
 } avs_net_socket_configuration_t;
 
 /**

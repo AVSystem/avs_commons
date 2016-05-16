@@ -60,7 +60,7 @@ typedef struct {
     avs_net_socket_type_t backend_type;
     avs_net_abstract_socket_t *backend_socket;
     avs_net_socket_configuration_t backend_configuration;
-    avs_net_socket_raw_resolved_endpoint_t endpoint_buffer;
+    avs_net_resolved_endpoint_t endpoint_buffer;
 
 #ifdef HAVE_OPENSSL_PSK
     avs_net_psk_t psk;

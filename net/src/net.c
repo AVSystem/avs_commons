@@ -412,10 +412,9 @@ static short wait_until_ready(int sockfd, avs_net_timeout_t timeout,
 #endif
 }
 
-static int connect_with_timeout(
-        int sockfd,
-        const avs_net_socket_raw_resolved_endpoint_t *endpoint,
-        char is_stream) {
+static int connect_with_timeout(int sockfd,
+                                const avs_net_resolved_endpoint_t *endpoint,
+                                char is_stream) {
     if (fcntl(sockfd, F_SETFL, O_NONBLOCK) == -1) {
         return -1;
     }
@@ -517,6 +516,11 @@ int _avs_net_get_socket_type(avs_net_socket_type_t socket_type) {
     }
 }
 
+static int
+resolved_endpoint_family(const avs_net_resolved_endpoint_t *address) {
+    return (int) ((const struct sockaddr *) address->data.buf)->sa_family;
+}
+
 static int connect_net(avs_net_abstract_socket_t *net_socket_,
                        const char *host,
                        const char *port) {
@@ -541,11 +545,11 @@ static int connect_net(avs_net_abstract_socket_t *net_socket_,
             net_socket->configuration.preferred_endpoint);
     if (!result) {
         char socket_is_stream = (net_socket->type == AVS_NET_TCP_SOCKET);
-        avs_net_socket_raw_resolved_endpoint_t address;
+        avs_net_resolved_endpoint_t address;
         while (!(result = avs_net_addrinfo_ctx_get_next(&info_ctx,
                                                         &address))) {
             if ((net_socket->socket = socket(
-                    _avs_net_get_af(net_socket->configuration.address_family),
+                    resolved_endpoint_family(&address),
                     _avs_net_get_socket_type(net_socket->type), 0)) < 0) {
                 net_socket->error_code = errno;
                 LOG(ERROR, "cannot create socket: %s", strerror(errno));
@@ -639,7 +643,7 @@ static int send_to_net(avs_net_abstract_socket_t *net_socket_,
                        const char *port) {
     avs_net_socket_t *net_socket = (avs_net_socket_t *) net_socket_;
     avs_net_addrinfo_ctx_t info_ctx;
-    avs_net_socket_raw_resolved_endpoint_t address;
+    avs_net_resolved_endpoint_t address;
     ssize_t result;
 
     _avs_net_addrinfo_ctx_init(&info_ctx);
@@ -743,8 +747,9 @@ static int create_listening_socket(avs_net_socket_t *net_socket,
     int retval = -1;
     int val = 1;
     errno = 0;
-    if ((net_socket->socket = socket(addr->sa_family, net_socket->type, 0))
-            < 0) {
+    if ((net_socket->socket = socket(addr->sa_family,
+                                     _avs_net_get_socket_type(net_socket->type),
+                                     0)) < 0) {
         net_socket->error_code = errno;
         LOG(ERROR, "cannot create system socket: %s", strerror(errno));
         goto create_listening_socket_error;
@@ -782,7 +787,7 @@ create_listening_socket_error:
 static int try_bind(avs_net_socket_t *net_socket, avs_net_af_t family,
                     const char *localaddr, const char *port) {
     avs_net_addrinfo_ctx_t info_ctx;
-    avs_net_socket_raw_resolved_endpoint_t address;
+    avs_net_resolved_endpoint_t address;
     int retval = -1;
     if (net_socket->configuration.address_family != AVS_NET_AF_UNSPEC
             && net_socket->configuration.address_family != family) {
@@ -1025,9 +1030,9 @@ int avs_net_local_address_for_target_host(const char *target_host,
                                           addr_family, target_host, DUMMY_PORT,
                                           0, NULL);
     if (!result) {
-        avs_net_socket_raw_resolved_endpoint_t address;
+        avs_net_resolved_endpoint_t address;
         while (!(result = avs_net_addrinfo_ctx_get_next(&info_ctx, &address))) {
-            int test_socket = socket(_avs_net_get_af(addr_family),
+            int test_socket = socket(resolved_endpoint_family(&address),
                                      SOCK_DGRAM, 0);
 
             if (test_socket >= 0
@@ -1283,7 +1288,7 @@ int avs_net_validate_ip_address(avs_net_af_t family, const char *ip_address) {
 }
 
 int avs_net_resolved_endpoint_get_host_port(
-        const avs_net_socket_raw_resolved_endpoint_t *endp,
+        const avs_net_resolved_endpoint_t *endp,
         char *host, size_t hostlen,
         char *serv, size_t servlen) {
     return host_port_to_string((const struct sockaddr *) &endp->data,

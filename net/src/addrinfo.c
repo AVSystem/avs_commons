@@ -174,7 +174,7 @@ int avs_net_addrinfo_ctx_resolve(
         const char *host,
         const char *port,
         int passive,
-        const avs_net_socket_raw_resolved_endpoint_t *preferred_endpoint) {
+        const avs_net_resolved_endpoint_t *preferred_endpoint) {
     int error;
     struct addrinfo hint;
 
@@ -218,7 +218,7 @@ int avs_net_addrinfo_ctx_resolve(
 }
 
 int avs_net_addrinfo_ctx_get_next(avs_net_addrinfo_ctx_t *ctx,
-                                  avs_net_socket_raw_resolved_endpoint_t *out) {
+                                  avs_net_resolved_endpoint_t *out) {
     if (!ctx->to_send) {
         return AVS_NET_ADDRINFO_CTX_END;
     }
