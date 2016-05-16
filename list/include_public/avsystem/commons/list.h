@@ -281,6 +281,7 @@ void avs_list_sort__(void **list_ptr,
                       size_t element_size);
 int avs_list_is_cyclic__(const void *list);
 void *avs_list_assert_acyclic__(void *list);
+void *avs_list_simple_clone__(void *list, size_t elem_size);
 
 #ifdef NDEBUG
 #define AVS_LIST_ASSERT_ACYCLIC__(list) (list)
@@ -680,6 +681,20 @@ avs_list_sort__((void **)(intptr_t)(list_ptr), (comparator), \
  * @return 1 if the list contains cycles, 0 otherwise.
  */
 #define AVS_LIST_IS_CYCLIC avs_list_is_cyclic__
+
+/**
+ * Clones the list by copying every element naively.
+ *
+ * WARNING: This function WILL NOT WORK as expected on lists that contain
+ * variable length data. It is safe to use only if list constists fixed-size
+ * datatypes. Data type of the list argument (@p list) must reflect the actual
+ * type of the data held in that list.
+ *
+ * @return pointer to the cloned list, NULL in case of an error.
+ */
+#define AVS_LIST_SIMPLE_CLONE(list) \
+(AVS_LIST(AVS_TYPEOF_PTR(list))) \
+    avs_list_simple_clone__(AVS_LIST_ASSERT_ACYCLIC__(list), sizeof(*(list)))
 
 #ifdef	__cplusplus
 }

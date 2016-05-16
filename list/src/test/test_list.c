@@ -187,3 +187,21 @@ AVS_UNIT_TEST(list, is_cyclic) {
 
     AVS_LIST_CLEAR(&list);
 }
+
+AVS_UNIT_TEST(list, simple_clone) {
+    AVS_LIST(int) list = NULL;
+    AVS_LIST(int) cloned = NULL;
+    AVS_LIST(int) it = NULL;
+    size_t i;
+    for (i = 0; i < 10; ++i) {
+        *AVS_LIST_APPEND_NEW(int, &list) = i;
+    }
+    cloned = AVS_LIST_SIMPLE_CLONE(list);
+    it = cloned;
+    for (i = 0; i < 10; ++i) {
+        AVS_UNIT_ASSERT_EQUAL(*it, i);
+        it = AVS_LIST_NEXT(it);
+    }
+    AVS_LIST_CLEAR(&list);
+    AVS_LIST_CLEAR(&cloned);
+}

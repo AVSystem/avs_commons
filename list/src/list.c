@@ -14,6 +14,7 @@
 #include <config.h>
 
 #include <assert.h>
+#include <string.h>
 
 /* but we don't want avs_list_assert_acyclic__ called from our own internals */
 #define NDEBUG
@@ -167,6 +168,24 @@ int avs_list_is_cyclic__(const void *list) {
 void *avs_list_assert_acyclic__(void *list) {
     assert(!avs_list_is_cyclic__(list));
     return list;
+}
+
+void *avs_list_simple_clone__(void *list, size_t elem_size) {
+    AVS_LIST(void) retval = NULL;
+    AVS_LIST(void) *last = &retval;
+    AVS_LIST(void) it;
+
+    AVS_LIST_FOREACH(it, list) {
+        void *new_elem = AVS_LIST_NEW_BUFFER(elem_size);
+        if (new_elem && AVS_LIST_INSERT(last, new_elem)) {
+            memcpy(new_elem, it, elem_size);
+            last = AVS_LIST_NEXT_PTR(last);
+        } else {
+            AVS_LIST_CLEAR(&retval);
+            return NULL;
+        }
+    }
+    return retval;
 }
 
 #ifdef AVS_UNIT_TESTING
