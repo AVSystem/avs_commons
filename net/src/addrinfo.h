@@ -10,36 +10,16 @@
 #ifndef AVS_COMMONS_ADDRINFO_H
 #define AVS_COMMONS_ADDRINFO_H
 
-#ifdef __GLIBC__
-#if !__GLIBC_PREREQ(2,4)
-/* This guy is available since glibc 2.3.4 */
-#ifndef AI_NUMERICSERV
-#define AI_NUMERICSERV 0
-#endif
-#endif
-#endif /* __GLIBC__ */
+#include <avsystem/commons/net.h>
 
-#ifdef __UCLIBC__
-#define __UCLIBC_PREREQ(maj, min, patch) \
-    (__UCLIBC_MAJOR__ > (maj) || \
-     (__UCLIBC_MAJOR__ == (maj) && \
-      (__UCLIBC_MINOR > (min) || \
-       (__UCLIBC_MINOR__ == (min) && __UCLIBC_SUBLEVEL__ >= (patch)))))
+struct avs_net_addrinfo_ctx_struct {
+    struct addrinfo *results;
+    struct addrinfo *to_send;
+};
 
-#if !__UCLIBC_PREREQ(0,9,30)
-/* These guys are available since uClibc 0.9.30 */
-#ifdef AI_NUMERICSERV
-#undef AI_NUMERICSERV
-#endif /* AI_NUMERICSERV */
-#define AI_NUMERICSERV 0
+void _avs_net_addrinfo_ctx_init(avs_net_addrinfo_ctx_t *ctx);
 
-#ifdef AI_ADDRCONFIG
-#undef AI_ADDRCONFIG
-#endif /* AI_ADDRCONFIG */
-#define AI_ADDRCONFIG 0
-#endif
-
-#endif /* __UCLIBC__ */
+void _avs_net_addrinfo_ctx_cleanup(avs_net_addrinfo_ctx_t *ctx);
 
 #endif /* AVS_COMMONS_ADDRINFO_H */
 

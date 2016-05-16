@@ -297,7 +297,7 @@ static long avs_bio_ctrl(BIO *bio, int command, long intarg, void *ptrarg) {
                 ((const struct timeval *) ptrarg)->tv_usec / 1000;
         return 0;
     case BIO_CTRL_DGRAM_GET_PEER:
-        memcpy(ptrarg, sock->backend_configuration.preferred_endpoint->data,
+        memcpy(ptrarg, sock->backend_configuration.preferred_endpoint->data.buf,
                sock->backend_configuration.preferred_endpoint->size);
         return sock->backend_configuration.preferred_endpoint->size;
     case BIO_CTRL_DGRAM_GET_FALLBACK_MTU:

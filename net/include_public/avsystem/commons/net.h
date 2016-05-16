@@ -25,6 +25,57 @@ extern "C" {
 
 #define AVS_NET_SOCKET_DEFAULT_RECV_TIMEOUT (30 * 1000) /* 30 sec timeout */
 
+typedef struct {
+    uint8_t size;
+    union {
+        avs_max_align_t align;
+        char buf[AVS_NET_SOCKET_RAW_RESOLVED_ENDPOINT_MAX_SIZE];
+    } data;
+} avs_net_socket_raw_resolved_endpoint_t;
+
+typedef enum {
+    AVS_NET_TCP_SOCKET,
+    AVS_NET_UDP_SOCKET,
+    AVS_NET_SSL_SOCKET,
+    AVS_NET_DTLS_SOCKET
+} avs_net_socket_type_t;
+
+/**
+ * Alias for address family to avoid leaking POSIX socket API.
+ */
+typedef enum {
+    AVS_NET_AF_UNSPEC,
+    AVS_NET_AF_INET4,
+    AVS_NET_AF_INET6
+} avs_net_af_t;
+
+struct avs_net_addrinfo_ctx_struct;
+
+/**
+ * Type for address resolution abstraction context.
+ */
+typedef struct avs_net_addrinfo_ctx_struct avs_net_addrinfo_ctx_t;
+
+#define AVS_NET_ADDRINFO_CTX_END 1
+
+int avs_net_addrinfo_ctx_create(avs_net_addrinfo_ctx_t **ctx);
+
+void avs_net_addrinfo_ctx_delete(avs_net_addrinfo_ctx_t **ctx);
+
+int avs_net_addrinfo_ctx_resolve(
+        avs_net_addrinfo_ctx_t *ctx,
+        avs_net_socket_type_t socket_type,
+        avs_net_af_t family,
+        const char *host,
+        const char *port,
+        int passive,
+        const avs_net_socket_raw_resolved_endpoint_t *preferred_endpoint);
+
+int avs_net_addrinfo_ctx_get_next(avs_net_addrinfo_ctx_t *ctx,
+                                  avs_net_socket_raw_resolved_endpoint_t *out);
+
+void avs_net_addrinfo_ctx_rewind(avs_net_addrinfo_ctx_t *ctx);
+
 struct avs_net_abstract_socket_struct;
 
 /**
@@ -53,20 +104,6 @@ typedef char avs_net_socket_interface_name_t[IF_NAMESIZE];
  * @return 0 on success, negative value on failure
  */
 typedef int avs_ssl_additional_configuration_clb_t(void *library_ssl_context);
-
-typedef struct {
-    uint8_t size;
-    char data[AVS_NET_SOCKET_RAW_RESOLVED_ENDPOINT_MAX_SIZE];
-} avs_net_socket_raw_resolved_endpoint_t;
-
-/**
- * Alias for address family to avoid leaking POSIX socket API.
- */
-typedef enum {
-    AVS_NET_AF_UNSPEC,
-    AVS_NET_AF_INET4,
-    AVS_NET_AF_INET6
-} avs_net_af_t;
 
 typedef struct {
     uint8_t                                dscp;
@@ -230,13 +267,6 @@ typedef union {
     int mtu;
 } avs_net_socket_opt_value_t;
 
-typedef enum {
-    AVS_NET_TCP_SOCKET,
-    AVS_NET_UDP_SOCKET,
-    AVS_NET_SSL_SOCKET,
-    AVS_NET_DTLS_SOCKET
-} avs_net_socket_type_t;
-
 int avs_net_socket_debug(int value);
 
 int avs_net_socket_create(avs_net_abstract_socket_t **socket,
@@ -317,9 +347,9 @@ int avs_net_socket_get_interface(avs_net_abstract_socket_t *socket,
                                  avs_net_socket_interface_name_t *if_name);
 
 int avs_net_local_address_for_target_host(const char *target_host,
-                                            avs_net_af_t addr_family,
-                                            char *address_buffer,
-                                            size_t buffer_size);
+                                          avs_net_af_t addr_family,
+                                          char *address_buffer,
+                                          size_t buffer_size);
 
 int avs_net_validate_ip_address(avs_net_af_t family, const char *ip_address);
 

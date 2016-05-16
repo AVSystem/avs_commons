@@ -194,7 +194,7 @@ AVS_UNIT_TEST(list, simple_clone) {
     AVS_LIST(int) it = NULL;
     int i;
     for (i = 0; i < 10; ++i) {
-        *AVS_LIST_APPEND_NEW(int, &list) = i;
+        *AVS_LIST_APPEND_NEW(int, &list) = (int) i;
     }
     cloned = AVS_LIST_SIMPLE_CLONE(list);
     it = cloned;
