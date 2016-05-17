@@ -478,7 +478,7 @@ static int host_port_to_string(const struct sockaddr *sa, socklen_t salen,
             result = (!_avs_inet_ntop(sa->sa_family, addr_ptr, host, hostlen)
                     ? -1 : 0);
         }
-        if (!result && port) {
+        if (!result && serv) {
             result = ((retval = snprintf(serv, servlen, "%" PRIu16, *port_ptr)) < 0
                     || (size_t) retval >= servlen) ? -1 : 0;
         }
@@ -520,6 +520,44 @@ resolved_endpoint_family(const avs_net_resolved_endpoint_t *address) {
     return (int) ((const struct sockaddr *) address->data.buf)->sa_family;
 }
 
+static int try_connect(avs_net_socket_t *net_socket,
+                       const avs_net_resolved_endpoint_t *address) {
+    char socket_is_stream = (net_socket->type == AVS_NET_TCP_SOCKET);
+    if ((net_socket->socket = socket(
+            resolved_endpoint_family(address),
+            _avs_net_get_socket_type(net_socket->type), 0)) < 0) {
+        net_socket->error_code = errno;
+        LOG(ERROR, "cannot create socket: %s", strerror(errno));
+        return -1;
+    }
+    if (configure_socket(net_socket)) {
+        LOG(WARNING, "socket configuration problem");
+        close(net_socket->socket);
+        return -1;
+    }
+    if (connect_with_timeout(net_socket->socket, address, socket_is_stream) < 0
+            || (socket_is_stream
+                    && send_net((avs_net_abstract_socket_t *) net_socket,
+                                NULL, 0) < 0)
+            || avs_net_resolved_endpoint_get_host_port(
+                    address,
+                    net_socket->host, sizeof(net_socket->host),
+                    net_socket->port, sizeof(net_socket->port))) {
+        net_socket->error_code = errno;
+        close(net_socket->socket);
+        return -1;
+    } else {
+        /* SUCCESS */
+        net_socket->state = AVS_NET_SOCKET_STATE_CONSUMING;
+        /* store address affinity */
+        if (net_socket->configuration.preferred_endpoint) {
+            *net_socket->configuration.preferred_endpoint = *address;
+        }
+        net_socket->error_code = 0;
+        return 0;
+    }
+}
+
 static int connect_net(avs_net_abstract_socket_t *net_socket_,
                        const char *host,
                        const char *port) {
@@ -540,50 +578,18 @@ static int connect_net(avs_net_abstract_socket_t *net_socket_,
     if ((info = avs_net_addrinfo_resolve(
             net_socket->type, net_socket->configuration.address_family,
             host, port, net_socket->configuration.preferred_endpoint))) {
-        char socket_is_stream = (net_socket->type == AVS_NET_TCP_SOCKET);
         avs_net_resolved_endpoint_t address;
         while (!(result = avs_net_addrinfo_next(info, &address))) {
-            if ((net_socket->socket = socket(
-                    resolved_endpoint_family(&address),
-                    _avs_net_get_socket_type(net_socket->type), 0)) < 0) {
-                net_socket->error_code = errno;
-                LOG(ERROR, "cannot create socket: %s", strerror(errno));
-                continue;
-            }
-            if (configure_socket(net_socket)) {
-                LOG(WARNING, "socket configuration problem");
-                close(net_socket->socket);
-                continue;
-            }
-            LOG(TRACE, "connect to [%s]:%s", host, port);
-            if (connect_with_timeout(net_socket->socket, &address,
-                                     socket_is_stream) < 0
-                    || (socket_is_stream && send_net(net_socket_, NULL, 0) < 0)
-                    || avs_net_resolved_endpoint_get_host_port(
-                            &address,
-                            net_socket->host, sizeof(net_socket->host),
-                            net_socket->port, sizeof(net_socket->port))) {
-                net_socket->error_code = errno;
-                LOG(ERROR, "cannot establish connection to [%s]:%s: %s",
-                    host, port, strerror(errno));
-                close(net_socket->socket);
-                continue;
-            } else {
-                /* SUCCESS */
-                net_socket->state = AVS_NET_SOCKET_STATE_CONSUMING;
-                /* store address affinity */
-                if (net_socket->configuration.preferred_endpoint) {
-                    *net_socket->configuration.preferred_endpoint = address;
-                }
+            if (!try_connect(net_socket, &address)) {
                 avs_net_addrinfo_delete(&info);
-                net_socket->error_code = 0;
                 return 0;
             }
         }
     }
     avs_net_addrinfo_delete(&info);
     net_socket->socket = -1;
-    LOG(ERROR, "connect_net failed");
+    LOG(ERROR, "cannot establish connection to [%s]:%s: %s",
+        host, port, strerror(net_socket->error_code));
     return result < 0 ? result : -1;
 }
 
