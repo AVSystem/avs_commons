@@ -239,3 +239,21 @@ int avs_net_addrinfo_next(avs_net_addrinfo_t *ctx,
 void avs_net_addrinfo_rewind(avs_net_addrinfo_t *ctx) {
     ctx->to_send = ctx->results;
 }
+
+int avs_net_resolve_host_simple(avs_net_socket_type_t socket_type,
+                                avs_net_af_t family,
+                                const char *host,
+                                char *resolved_buf, size_t resolved_buf_size) {
+    int result = -1;
+    avs_net_resolved_endpoint_t address;
+    avs_net_addrinfo_t *info =
+            avs_net_addrinfo_resolve(socket_type, family,
+                                     host, AVS_NET_RESOLVE_DUMMY_PORT, NULL);
+    if (info) {
+        (void) ((result = avs_net_addrinfo_next(info, &address))
+                || (result = avs_net_resolved_endpoint_get_host(
+                        &address, resolved_buf, resolved_buf_size)));
+    }
+    avs_net_addrinfo_delete(&info);
+    return result;
+}

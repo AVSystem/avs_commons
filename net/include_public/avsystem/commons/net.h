@@ -80,6 +80,11 @@ int avs_net_resolved_endpoint_get_host_port(
 int avs_net_resolved_endpoint_get_host(const avs_net_resolved_endpoint_t *endp,
                                        char *host, size_t hostlen);
 
+int avs_net_resolve_host_simple(avs_net_socket_type_t socket_type,
+                                avs_net_af_t family,
+                                const char *host,
+                                char *resolved_buf, size_t resolved_buf_size);
+
 struct avs_net_abstract_socket_struct;
 
 /**

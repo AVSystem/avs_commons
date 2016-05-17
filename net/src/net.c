@@ -1010,11 +1010,11 @@ int avs_net_local_address_for_target_host(const char *target_host,
                                           avs_net_af_t addr_family,
                                           char *address_buffer,
                                           size_t buffer_size) {
-    static const char *DUMMY_PORT = "1337";
     int result = -1;
     avs_net_addrinfo_t *info =
             avs_net_addrinfo_resolve(AVS_NET_UDP_SOCKET, addr_family,
-                                     target_host, DUMMY_PORT, NULL);
+                                     target_host, AVS_NET_RESOLVE_DUMMY_PORT,
+                                     NULL);
     if (info) {
         avs_net_resolved_endpoint_t address;
         while (!(result = avs_net_addrinfo_next(info, &address))) {

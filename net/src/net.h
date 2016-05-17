@@ -24,6 +24,8 @@
 #define NET_MAX_HOSTNAME_SIZE    64
 #define NET_PORT_SIZE            6
 
+#define AVS_NET_RESOLVE_DUMMY_PORT "1337"
+
 avs_net_addrinfo_t *_avs_net_addrinfo_resolve_passive(
         avs_net_socket_type_t socket_type,
         avs_net_af_t family,
