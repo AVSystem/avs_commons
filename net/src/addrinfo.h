@@ -14,7 +14,7 @@
 
 struct avs_net_addrinfo_ctx_struct {
     struct addrinfo *results;
-    struct addrinfo *to_send;
+    const struct addrinfo *to_send;
 };
 
 void _avs_net_addrinfo_ctx_init(avs_net_addrinfo_ctx_t *ctx);

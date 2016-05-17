@@ -143,9 +143,16 @@ void _avs_net_addrinfo_ctx_init(avs_net_addrinfo_ctx_t *ctx) {
     memset(ctx, 0, sizeof(*ctx));
 }
 
-void _avs_net_addrinfo_ctx_cleanup(avs_net_addrinfo_ctx_t *ctx) {
-    if (ctx && ctx->results) {
+static void ctx_reset(avs_net_addrinfo_ctx_t *ctx) {
+    if (ctx->results) {
         freeaddrinfo(ctx->results);
+    }
+    ctx->to_send = NULL;
+}
+
+void _avs_net_addrinfo_ctx_cleanup(avs_net_addrinfo_ctx_t *ctx) {
+    if (ctx) {
+        ctx_reset(ctx);
     }
 }
 
@@ -186,11 +193,7 @@ int avs_net_addrinfo_ctx_resolve(
     }
     hint.ai_socktype = _avs_net_get_socket_type(socket_type);
 
-    if (ctx->results) {
-        freeaddrinfo(ctx->results);
-        ctx->results = NULL;
-    }
-    ctx->to_send = NULL;
+    ctx_reset(ctx);
 
     if ((error = getaddrinfo(host, port, &hint, &ctx->results))) {
 #ifdef HAVE_GAI_STRERROR
