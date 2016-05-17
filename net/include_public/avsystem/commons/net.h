@@ -58,6 +58,35 @@ typedef struct avs_net_addrinfo_struct avs_net_addrinfo_t;
 
 #define AVS_NET_ADDRINFO_END 1
 
+/**
+ * Resolves a text-represented host and port address to its binary
+ * representation, possibly executing a DNS query as necessary.
+ *
+ * If there are multiple addresses that correspond to the specified names, they
+ * are returned in randomized order.
+ *
+ * @param socket_type        Type of the socket for which the resolving is
+ *                           performed. Valid values are
+ *                           <c>AVS_NET_TCP_SOCKET</c> and
+ *                           <c>AVS_NET_UDP_SOCKET</c>.
+ *
+ * @param family             Family of the address to resolve.
+ *                           <c>AVS_NET_AF_UNSPEC</c> means that an address of
+ *                           any supported type may be returned.
+ *
+ * @param host               Host name.
+ *
+ * @param port               Port number represented as a string.
+ *
+ * @param preferred_endpoint Preferred resolved address. If it is found among
+ *                           the resolved addresses, it is returned on the first
+ *                           position.
+ *
+ * @return A new instance of @ref avs_net_addrinfo_t that may be queried using
+ *         @ref avs_net_addrinfo_next and has to be freed using
+ *         @ref avs_net_addrinfo_delete. If an error occured, <c>NULL</c> is
+ *         returned.
+ */
 avs_net_addrinfo_t *avs_net_addrinfo_resolve(
         avs_net_socket_type_t socket_type,
         avs_net_af_t family,
@@ -65,21 +94,114 @@ avs_net_addrinfo_t *avs_net_addrinfo_resolve(
         const char *port,
         const avs_net_resolved_endpoint_t *preferred_endpoint);
 
+/**
+ * Frees an object allocated by @ref avs_net_addrinfo_resolve.
+ *
+ * @param ctx Pointer to a variable holding an instance of
+ *            @ref avs_net_addrinfo_t. It will be freed and zeroed.
+ */
 void avs_net_addrinfo_delete(avs_net_addrinfo_t **ctx);
 
+/**
+ * Returns a binary representation of the address previously queried for
+ * resolution using @ref avs_net_addrinfo_resolve.
+ *
+ * Calling this function more than once will return subsequent alternative
+ * addresses, if any.
+ *
+ * @param ctx A context object returned from @ref avs_net_addrinfo_resolve.
+ * @param out Pointer to variable in which to store the result.
+ *
+ * @return @li 0 for success
+ *         @li negative value in case of error
+ *         @li <c>AVS_NET_ADDRINFO_END</c> if there are no more addresses to
+ *             return
+ */
 int avs_net_addrinfo_next(avs_net_addrinfo_t *ctx,
                           avs_net_resolved_endpoint_t *out);
 
+/**
+ * "Rewinds" a list of resolved addresses, so that a following call to
+ * @ref avs_net_addrinfo_next will return the same value as the first call for
+ * given context.
+ *
+ * @param ctx A context object returned from @ref avs_net_addrinfo_resolve.
+ */
 void avs_net_addrinfo_rewind(avs_net_addrinfo_t *ctx);
 
+/**
+ * Translates a binary representation of a socket address to textual
+ * representation.
+ *
+ * @param endp    The socket address to convert.
+ *
+ * @param host    Buffer in which to store the textual representation of the
+ *                numerical host address.
+ *
+ * @param hostlen Size in bytes of the buffer pointed to by <c>host</c>.
+ *
+ * @param serv    Buffer in which to store the textual representation of the
+ *                port number.
+ *
+ * @param servlen Size in bytes of the buffer pointed to by <c>serv</c>.
+ *
+ * Either <c>host</c> or <c>serv</c> arguments may be <c>NULL</c> in which case
+ * only the non-<c>NULL</c> argument is filled in.
+ *
+ * @return 0 for success, or a negative value in case of error.
+ */
 int avs_net_resolved_endpoint_get_host_port(
         const avs_net_resolved_endpoint_t *endp,
         char *host, size_t hostlen,
         char *serv, size_t servlen);
 
+/**
+ * Equivalent to @ref avs_net_resolved_endpoint_get_host_port with the
+ * <c>serv</c> argument set to <c>NULL</c>.
+ *
+ * @param endp    The socket address to convert.
+ *
+ * @param host    Buffer in which to store the textual representation of the
+ *                numerical host address.
+ *
+ * @param hostlen Size in bytes of the buffer pointed to by <c>host</c>.
+ *
+ * @return 0 for success, or a negative value in case of error.
+ */
 int avs_net_resolved_endpoint_get_host(const avs_net_resolved_endpoint_t *endp,
                                        char *host, size_t hostlen);
 
+/**
+ * A convenience function that handles the most common use case of host address
+ * resolution. It resolves a host name (possibly by doing a DNS query in the
+ * common case of it being a symbolic name) and returns a string representation
+ * of one of its numerical addresses. If multiple addresses are available, one
+ * of them is chosen at random.
+ *
+ * This call is essentially equivalent to calling @ref avs_net_addrinfo_resolve
+ * (with a dummy port number), getting the first result (if available) using
+ * @ref avs_net_addrinfo_next and stringifying it using
+ * @ref avs_net_resolved_endpoint_get_host.
+ *
+ * @param socket_type       Type of the socket for which the resolving is
+ *                          performed. Valid values are
+ *                          <c>AVS_NET_TCP_SOCKET</c> and
+ *                          <c>AVS_NET_UDP_SOCKET</c>.
+ *
+ * @param family            Family of the address to resolve.
+ *                          <c>AVS_NET_AF_UNSPEC</c> means that an address of
+ *                          any supported type may be returned.
+ *
+ * @param host              Host name to resolve.
+ *
+ * @param resolved_buf      Buffer in which to store the textual representation
+ *                          of the numerical host address.
+ *
+ * @param resolved_buf_size Size in bytes of the buffer pointed to by
+ *                          <c>resolved_buf</c>.
+ *
+ * @ref 0 for success, or a non-zero value in case of error.
+ */
 int avs_net_resolve_host_simple(avs_net_socket_type_t socket_type,
                                 avs_net_af_t family,
                                 const char *host,
@@ -278,6 +400,25 @@ typedef union {
 
 int avs_net_socket_debug(int value);
 
+/**
+ * Creates a new socket of a specified type.
+ *
+ * @param socket        A variable to hold the newly created socket in. If it
+ *                      already is initialized to any socket, the existing
+ *                      socket will be destroyed and freed. This also means that
+ *                      at first use, the variable <strong>MUST</strong> be
+ *                      initialized to <c>NULL</c>.
+ *
+ * @param sock_type     Type of the socket to create.
+ *
+ * @param configuration Pointer to additional configuration for the socket to
+ *                      create. The type of configuration data is dependent on
+ *                      the type of the socket:
+ *                      @ref avs_net_socket_configuration_t for a TCP or UDP
+ *                      socket (in which case it may also be <c>NULL</c> for
+ *                      defaults) or @ref avs_net_ssl_configuration_t for an SSL
+ *                      or DTLS socket.
+ */
 int avs_net_socket_create(avs_net_abstract_socket_t **socket,
                           avs_net_socket_type_t sock_type,
                           const void *configuration);
