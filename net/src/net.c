@@ -45,7 +45,6 @@
 #include <ifaddrs.h>
 #endif
 
-#include "addrinfo.h"
 #include "net.h"
 
 #ifdef HAVE_VISIBILITY
@@ -525,7 +524,7 @@ static int connect_net(avs_net_abstract_socket_t *net_socket_,
                        const char *host,
                        const char *port) {
     avs_net_socket_t *net_socket = (avs_net_socket_t *) net_socket_;
-    avs_net_addrinfo_ctx_t info_ctx;
+    avs_net_addrinfo_t *info = NULL;
     int result = 0;
 
     if (net_socket->socket >= 0) {
@@ -538,16 +537,12 @@ static int connect_net(avs_net_abstract_socket_t *net_socket_,
 
     errno = 0;
     net_socket->error_code = EPROTO;
-    _avs_net_addrinfo_ctx_init(&info_ctx);
-    result = avs_net_addrinfo_ctx_resolve(
-            &info_ctx, net_socket->type,
-            net_socket->configuration.address_family, host, port, 0,
-            net_socket->configuration.preferred_endpoint);
-    if (!result) {
+    if ((info = avs_net_addrinfo_resolve(
+            net_socket->type, net_socket->configuration.address_family,
+            host, port, net_socket->configuration.preferred_endpoint))) {
         char socket_is_stream = (net_socket->type == AVS_NET_TCP_SOCKET);
         avs_net_resolved_endpoint_t address;
-        while (!(result = avs_net_addrinfo_ctx_get_next(&info_ctx,
-                                                        &address))) {
+        while (!(result = avs_net_addrinfo_next(info, &address))) {
             if ((net_socket->socket = socket(
                     resolved_endpoint_family(&address),
                     _avs_net_get_socket_type(net_socket->type), 0)) < 0) {
@@ -580,13 +575,13 @@ static int connect_net(avs_net_abstract_socket_t *net_socket_,
                 if (net_socket->configuration.preferred_endpoint) {
                     *net_socket->configuration.preferred_endpoint = address;
                 }
-                _avs_net_addrinfo_ctx_cleanup(&info_ctx);
+                avs_net_addrinfo_delete(&info);
                 net_socket->error_code = 0;
                 return 0;
             }
         }
     }
-    _avs_net_addrinfo_ctx_cleanup(&info_ctx);
+    avs_net_addrinfo_delete(&info);
     net_socket->socket = -1;
     LOG(ERROR, "connect_net failed");
     return result < 0 ? result : -1;
@@ -642,17 +637,14 @@ static int send_to_net(avs_net_abstract_socket_t *net_socket_,
                        const char *host,
                        const char *port) {
     avs_net_socket_t *net_socket = (avs_net_socket_t *) net_socket_;
-    avs_net_addrinfo_ctx_t info_ctx;
+    avs_net_addrinfo_t *info = NULL;
     avs_net_resolved_endpoint_t address;
-    ssize_t result;
+    ssize_t result = -1;
 
-    _avs_net_addrinfo_ctx_init(&info_ctx);
-    if ((result = (ssize_t) avs_net_addrinfo_ctx_resolve(
-                    &info_ctx, net_socket->type,
-                    net_socket->configuration.address_family, host, port, 0,
-                    NULL))
-            || (result = (ssize_t) avs_net_addrinfo_ctx_get_next(&info_ctx,
-                                                                 &address))) {
+    if (!(info = avs_net_addrinfo_resolve(
+                    net_socket->type, net_socket->configuration.address_family,
+                    host, port, NULL))
+            || (result = (ssize_t) avs_net_addrinfo_next(info, &address))) {
         net_socket->error_code = EPROTO;
     } else {
         errno = 0;
@@ -661,7 +653,7 @@ static int send_to_net(avs_net_abstract_socket_t *net_socket_,
         net_socket->error_code = errno;
     }
 
-    _avs_net_addrinfo_ctx_cleanup(&info_ctx);
+    avs_net_addrinfo_delete(&info);
     if (result < 0) {
         *out = 0;
         return (int) result;
@@ -786,7 +778,7 @@ create_listening_socket_error:
 
 static int try_bind(avs_net_socket_t *net_socket, avs_net_af_t family,
                     const char *localaddr, const char *port) {
-    avs_net_addrinfo_ctx_t info_ctx;
+    avs_net_addrinfo_t *info = NULL;
     avs_net_resolved_endpoint_t address;
     int retval = -1;
     if (net_socket->configuration.address_family != AVS_NET_AF_UNSPEC
@@ -794,13 +786,10 @@ static int try_bind(avs_net_socket_t *net_socket, avs_net_af_t family,
         net_socket->error_code = EINVAL;
         return -1;
     }
-    _avs_net_addrinfo_ctx_init(&info_ctx);
     if (localaddr || port) {
-        if ((retval = avs_net_addrinfo_ctx_resolve(&info_ctx, net_socket->type,
-                                                   family, localaddr, port, 1,
-                                                   NULL))
-                || (retval = avs_net_addrinfo_ctx_get_next(&info_ctx,
-                                                           &address))) {
+        if (!(info = _avs_net_addrinfo_resolve_passive(net_socket->type, family,
+                                                       localaddr, port, NULL))
+                || (retval = avs_net_addrinfo_next(info, &address))) {
             LOG(WARNING, "Cannot get %s address info for %s",
                 get_af_name(family), localaddr ? localaddr : "(null)");
             net_socket->error_code = EINVAL;
@@ -817,7 +806,7 @@ static int try_bind(avs_net_socket_t *net_socket, avs_net_af_t family,
                                      (const struct sockaddr *) &address.data,
                                      address.size);
 bind_net_end:
-    _avs_net_addrinfo_ctx_cleanup(&info_ctx);
+    avs_net_addrinfo_delete(&info);
     return retval;
 }
 
@@ -1022,16 +1011,13 @@ int avs_net_local_address_for_target_host(const char *target_host,
                                           char *address_buffer,
                                           size_t buffer_size) {
     static const char *DUMMY_PORT = "1337";
-    avs_net_addrinfo_ctx_t info_ctx;
     int result = -1;
-
-    _avs_net_addrinfo_ctx_init(&info_ctx);
-    result = avs_net_addrinfo_ctx_resolve(&info_ctx, AVS_NET_UDP_SOCKET,
-                                          addr_family, target_host, DUMMY_PORT,
-                                          0, NULL);
-    if (!result) {
+    avs_net_addrinfo_t *info =
+            avs_net_addrinfo_resolve(AVS_NET_UDP_SOCKET, addr_family,
+                                     target_host, DUMMY_PORT, NULL);
+    if (info) {
         avs_net_resolved_endpoint_t address;
-        while (!(result = avs_net_addrinfo_ctx_get_next(&info_ctx, &address))) {
+        while (!(result = avs_net_addrinfo_next(info, &address))) {
             int test_socket = socket(resolved_endpoint_family(&address),
                                      SOCK_DGRAM, 0);
 
@@ -1046,12 +1032,12 @@ int avs_net_local_address_for_target_host(const char *target_host,
             }
             close(test_socket);
             if (!result) {
-                _avs_net_addrinfo_ctx_cleanup(&info_ctx);
+                avs_net_addrinfo_delete(&info);
                 return 0;
             }
         }
     }
-    _avs_net_addrinfo_ctx_cleanup(&info_ctx);
+    avs_net_addrinfo_delete(&info);
     return result < 0 ? result : -1;;
 }
 
@@ -1295,4 +1281,10 @@ int avs_net_resolved_endpoint_get_host_port(
                                endp->size,
                                host, (socklen_t) hostlen,
                                serv, (socklen_t) servlen);
+}
+
+int avs_net_resolved_endpoint_get_host(const avs_net_resolved_endpoint_t *endp,
+                                       char *host, size_t hostlen) {
+    return avs_net_resolved_endpoint_get_host_port(endp,
+                                                   host, hostlen, NULL, 0);
 }

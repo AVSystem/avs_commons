@@ -49,37 +49,36 @@ typedef enum {
     AVS_NET_AF_INET6
 } avs_net_af_t;
 
-struct avs_net_addrinfo_ctx_struct;
+struct avs_net_addrinfo_struct;
 
 /**
  * Type for address resolution abstraction context.
  */
-typedef struct avs_net_addrinfo_ctx_struct avs_net_addrinfo_ctx_t;
+typedef struct avs_net_addrinfo_struct avs_net_addrinfo_t;
 
-#define AVS_NET_ADDRINFO_CTX_END 1
+#define AVS_NET_ADDRINFO_END 1
 
-int avs_net_addrinfo_ctx_create(avs_net_addrinfo_ctx_t **ctx);
-
-void avs_net_addrinfo_ctx_delete(avs_net_addrinfo_ctx_t **ctx);
-
-int avs_net_addrinfo_ctx_resolve(
-        avs_net_addrinfo_ctx_t *ctx,
+avs_net_addrinfo_t *avs_net_addrinfo_resolve(
         avs_net_socket_type_t socket_type,
         avs_net_af_t family,
         const char *host,
         const char *port,
-        int passive,
         const avs_net_resolved_endpoint_t *preferred_endpoint);
 
-int avs_net_addrinfo_ctx_get_next(avs_net_addrinfo_ctx_t *ctx,
-                                  avs_net_resolved_endpoint_t *out);
+void avs_net_addrinfo_delete(avs_net_addrinfo_t **ctx);
 
-void avs_net_addrinfo_ctx_rewind(avs_net_addrinfo_ctx_t *ctx);
+int avs_net_addrinfo_next(avs_net_addrinfo_t *ctx,
+                          avs_net_resolved_endpoint_t *out);
+
+void avs_net_addrinfo_rewind(avs_net_addrinfo_t *ctx);
 
 int avs_net_resolved_endpoint_get_host_port(
         const avs_net_resolved_endpoint_t *endp,
         char *host, size_t hostlen,
         char *serv, size_t servlen);
+
+int avs_net_resolved_endpoint_get_host(const avs_net_resolved_endpoint_t *endp,
+                                       char *host, size_t hostlen);
 
 struct avs_net_abstract_socket_struct;
 

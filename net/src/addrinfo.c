@@ -32,7 +32,6 @@
 #include <avsystem/commons/net.h>
 
 #include "net.h"
-#include "addrinfo.h"
 
 #ifdef __GLIBC__
 #if !__GLIBC_PREREQ(2,4)
@@ -71,6 +70,11 @@
 #warning "rand_r not available, please provide int _avs_rand_r(unsigned int *)"
 int _avs_rand_r(unsigned int *seedp);
 #endif
+
+struct avs_net_addrinfo_struct {
+    struct addrinfo *results;
+    const struct addrinfo *to_send;
+};
 
 static struct addrinfo *detach_preferred(struct addrinfo **list_ptr,
                                          const void *preferred_addr,
@@ -139,49 +143,24 @@ static void randomize_addrinfo_list(struct addrinfo **list_ptr,
     }
 }
 
-void _avs_net_addrinfo_ctx_init(avs_net_addrinfo_ctx_t *ctx) {
-    memset(ctx, 0, sizeof(*ctx));
-}
-
-static void ctx_reset(avs_net_addrinfo_ctx_t *ctx) {
-    if (ctx->results) {
-        freeaddrinfo(ctx->results);
-    }
-    ctx->to_send = NULL;
-}
-
-void _avs_net_addrinfo_ctx_cleanup(avs_net_addrinfo_ctx_t *ctx) {
-    if (ctx) {
-        ctx_reset(ctx);
-    }
-}
-
-int avs_net_addrinfo_ctx_create(avs_net_addrinfo_ctx_t **ctx) {
-    avs_net_addrinfo_ctx_delete(ctx);
-    *ctx = (avs_net_addrinfo_ctx_t *) malloc(sizeof(avs_net_addrinfo_ctx_t));
-    if (!*ctx) {
-        return -1;
-    }
-    _avs_net_addrinfo_ctx_init(*ctx);
-    return 0;
-}
-
-void avs_net_addrinfo_ctx_delete(avs_net_addrinfo_ctx_t **ctx) {
+void avs_net_addrinfo_delete(avs_net_addrinfo_t **ctx) {
     if (*ctx) {
-        _avs_net_addrinfo_ctx_cleanup(*ctx);
+        if ((*ctx)->results) {
+            freeaddrinfo((*ctx)->results);
+        }
         free(*ctx);
         *ctx = NULL;
     }
 }
 
-int avs_net_addrinfo_ctx_resolve(
-        avs_net_addrinfo_ctx_t *ctx,
+static avs_net_addrinfo_t *ctx_resolve(
         avs_net_socket_type_t socket_type,
         avs_net_af_t family,
         const char *host,
         const char *port,
         int passive,
         const avs_net_resolved_endpoint_t *preferred_endpoint) {
+    avs_net_addrinfo_t *ctx = NULL;
     int error;
     struct addrinfo hint;
 
@@ -193,7 +172,10 @@ int avs_net_addrinfo_ctx_resolve(
     }
     hint.ai_socktype = _avs_net_get_socket_type(socket_type);
 
-    ctx_reset(ctx);
+    ctx = (avs_net_addrinfo_t *) calloc(1, sizeof(avs_net_addrinfo_t));
+    if (!ctx) {
+        return NULL;
+    }
 
     if ((error = getaddrinfo(host, port, &hint, &ctx->results))) {
 #ifdef HAVE_GAI_STRERROR
@@ -201,7 +183,8 @@ int avs_net_addrinfo_ctx_resolve(
 #else
         LOG(ERROR, "getaddrinfo() error %d", error);
 #endif
-        return error;
+        avs_net_addrinfo_delete(&ctx);
+        return NULL;
     } else {
         unsigned seed = (unsigned) time(NULL);
         struct addrinfo *preferred = NULL;
@@ -216,14 +199,32 @@ int avs_net_addrinfo_ctx_resolve(
             ctx->results = preferred;
         }
         ctx->to_send = ctx->results;
-        return 0;
+        return ctx;
     }
 }
 
-int avs_net_addrinfo_ctx_get_next(avs_net_addrinfo_ctx_t *ctx,
+avs_net_addrinfo_t *avs_net_addrinfo_resolve(
+        avs_net_socket_type_t socket_type,
+        avs_net_af_t family,
+        const char *host,
+        const char *port,
+        const avs_net_resolved_endpoint_t *preferred_endpoint) {
+    return ctx_resolve(socket_type, family, host, port, 0, preferred_endpoint);
+}
+
+avs_net_addrinfo_t *_avs_net_addrinfo_resolve_passive(
+        avs_net_socket_type_t socket_type,
+        avs_net_af_t family,
+        const char *host,
+        const char *port,
+        const avs_net_resolved_endpoint_t *preferred_endpoint) {
+    return ctx_resolve(socket_type, family, host, port, 1, preferred_endpoint);
+}
+
+int avs_net_addrinfo_next(avs_net_addrinfo_t *ctx,
                                   avs_net_resolved_endpoint_t *out) {
     if (!ctx->to_send) {
-        return AVS_NET_ADDRINFO_CTX_END;
+        return AVS_NET_ADDRINFO_END;
     }
     if (ctx->to_send->ai_addrlen > sizeof(out->data)) {
         return -1;
@@ -235,6 +236,6 @@ int avs_net_addrinfo_ctx_get_next(avs_net_addrinfo_ctx_t *ctx,
     return 0;
 }
 
-void avs_net_addrinfo_ctx_rewind(avs_net_addrinfo_ctx_t *ctx) {
+void avs_net_addrinfo_rewind(avs_net_addrinfo_t *ctx) {
     ctx->to_send = ctx->results;
 }
