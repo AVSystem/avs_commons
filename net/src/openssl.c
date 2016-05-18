@@ -60,7 +60,7 @@ typedef struct {
     avs_net_socket_type_t backend_type;
     avs_net_abstract_socket_t *backend_socket;
     avs_net_socket_configuration_t backend_configuration;
-    avs_net_socket_raw_resolved_endpoint_t endpoint_buffer;
+    avs_net_resolved_endpoint_t endpoint_buffer;
 
 #ifdef HAVE_OPENSSL_PSK
     avs_net_psk_t psk;
@@ -297,7 +297,7 @@ static long avs_bio_ctrl(BIO *bio, int command, long intarg, void *ptrarg) {
                 ((const struct timeval *) ptrarg)->tv_usec / 1000;
         return 0;
     case BIO_CTRL_DGRAM_GET_PEER:
-        memcpy(ptrarg, sock->backend_configuration.preferred_endpoint->data,
+        memcpy(ptrarg, sock->backend_configuration.preferred_endpoint->data.buf,
                sock->backend_configuration.preferred_endpoint->size);
         return sock->backend_configuration.preferred_endpoint->size;
     case BIO_CTRL_DGRAM_GET_FALLBACK_MTU:
@@ -1274,6 +1274,11 @@ static int create_ssl_socket(avs_net_abstract_socket_t **socket,
                              avs_net_socket_type_t backend_type,
                              const void *socket_configuration) {
     LOG(TRACE, "create_ssl_socket(socket=%p)", (void *) socket);
+
+    if (!socket_configuration) {
+        LOG(ERROR, "SSL configuration not specified");
+        return -1;
+    }
 
     if (avs_ssl_init()) {
         LOG(ERROR, "OpenSSL initialization error");

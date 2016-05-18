@@ -24,6 +24,15 @@
 #define NET_MAX_HOSTNAME_SIZE    64
 #define NET_PORT_SIZE            6
 
+#define AVS_NET_RESOLVE_DUMMY_PORT "1337"
+
+avs_net_addrinfo_t *_avs_net_addrinfo_resolve_passive(
+        avs_net_socket_type_t socket_type,
+        avs_net_af_t family,
+        const char *host,
+        const char *port,
+        const avs_net_resolved_endpoint_t *preferred_endpoint);
+
 int _avs_net_create_tcp_socket(avs_net_abstract_socket_t **socket,
                                const void *socket_configuration);
 int _avs_net_create_udp_socket(avs_net_abstract_socket_t **socket,
@@ -35,6 +44,10 @@ int _avs_net_create_ssl_socket(avs_net_abstract_socket_t **socket,
 int _avs_net_create_dtls_socket(avs_net_abstract_socket_t **socket,
                                const void *socket_configuration);
 #endif
+
+int _avs_net_get_af(avs_net_af_t addr_family);
+
+int _avs_net_get_socket_type(avs_net_socket_type_t socket_type);
 
 #ifdef HAVE_VISIBILITY
 #pragma GCC visibility pop

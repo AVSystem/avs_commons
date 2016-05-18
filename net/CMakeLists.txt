@@ -8,6 +8,7 @@
 #
 
 set(SOURCES
+    src/addrinfo.c
     src/api.c
     src/net.c)
 
@@ -26,7 +27,6 @@ elseif(WITH_MBEDTLS)
 endif()
 
 set(PRIVATE_HEADERS
-    src/addrinfo.h
     src/net.h)
 
 set(PUBLIC_HEADERS
