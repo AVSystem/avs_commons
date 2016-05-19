@@ -162,7 +162,7 @@ typedef struct {
     avs_net_socket_configuration_t         configuration;
 
     avs_net_timeout_t recv_timeout;
-    int error_code;
+    volatile int error_code;
 } avs_net_socket_t;
 
 int _avs_net_get_af(avs_net_af_t addr_family) {
@@ -924,6 +924,8 @@ static int create_net_socket(avs_net_abstract_socket_t **socket,
 
     VALGRIND_HG_DISABLE_CHECKING(&net_socket->socket,
                                  sizeof(net_socket->socket));
+    VALGRIND_HG_DISABLE_CHECKING(&net_socket->error_code,
+                                 sizeof(net_socket->error_code));
 
     *socket = (avs_net_abstract_socket_t *) net_socket;
 
