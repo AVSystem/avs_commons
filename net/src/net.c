@@ -532,8 +532,7 @@ static int try_connect(avs_net_socket_t *net_socket,
     }
     if (configure_socket(net_socket)) {
         LOG(WARNING, "socket configuration problem");
-        close(net_socket->socket);
-        return -1;
+        goto try_connect_err;
     }
     if (connect_with_timeout(net_socket->socket, address, socket_is_stream) < 0
             || (socket_is_stream
@@ -544,8 +543,7 @@ static int try_connect(avs_net_socket_t *net_socket,
                     net_socket->host, sizeof(net_socket->host),
                     net_socket->port, sizeof(net_socket->port))) {
         net_socket->error_code = errno;
-        close(net_socket->socket);
-        return -1;
+        goto try_connect_err;
     } else {
         /* SUCCESS */
         net_socket->state = AVS_NET_SOCKET_STATE_CONSUMING;
@@ -556,6 +554,10 @@ static int try_connect(avs_net_socket_t *net_socket,
         net_socket->error_code = 0;
         return 0;
     }
+try_connect_err:
+    close(net_socket->socket);
+    net_socket->socket = -1;
+    return -1;
 }
 
 static int connect_net(avs_net_abstract_socket_t *net_socket_,
@@ -587,7 +589,6 @@ static int connect_net(avs_net_abstract_socket_t *net_socket_,
         }
     }
     avs_net_addrinfo_delete(&info);
-    net_socket->socket = -1;
     LOG(ERROR, "cannot establish connection to [%s]:%s: %s",
         host, port, strerror(net_socket->error_code));
     return result < 0 ? result : -1;
@@ -910,12 +911,11 @@ static int create_net_socket(avs_net_abstract_socket_t **socket,
     const avs_net_socket_configuration_t *configuration =
             (const avs_net_socket_configuration_t *) socket_configuration;
     avs_net_socket_t *net_socket =
-            (avs_net_socket_t *) malloc(sizeof (avs_net_socket_t));
+            (avs_net_socket_t *) calloc(1, sizeof (avs_net_socket_t));
     if (!net_socket) {
         return -1;
     }
 
-    memset(net_socket, 0, sizeof(*net_socket));
     memcpy((void *) (intptr_t) &net_socket->operations,
            &VTABLE_PTR, sizeof(VTABLE_PTR));
     net_socket->socket = -1;
@@ -1019,34 +1019,34 @@ int avs_net_local_address_for_target_host(const char *target_host,
                                           char *address_buffer,
                                           size_t buffer_size) {
     int result = -1;
+    avs_net_resolved_endpoint_t address;
     avs_net_addrinfo_t *info =
             avs_net_addrinfo_resolve(AVS_NET_UDP_SOCKET, addr_family,
                                      target_host, AVS_NET_RESOLVE_DUMMY_PORT,
                                      NULL);
-    if (info) {
-        avs_net_resolved_endpoint_t address;
-        while (!(result = avs_net_addrinfo_next(info, &address))) {
-            int test_socket = socket(resolved_endpoint_family(&address),
-                                     SOCK_DGRAM, 0);
+    if (!info) {
+        return -1;
+    }
+    while (!(result = avs_net_addrinfo_next(info, &address))) {
+        int test_socket = socket(resolved_endpoint_family(&address),
+                                 SOCK_DGRAM, 0);
 
-            if (test_socket >= 0
-                    && !connect_with_timeout(test_socket, &address, 0)) {
-                sockaddr_union_t addr;
-                socklen_t addrlen = sizeof(addr);
+        if (test_socket >= 0
+                && !connect_with_timeout(test_socket, &address, 0)) {
+            sockaddr_union_t addr;
+            socklen_t addrlen = sizeof(addr);
 
-                if (!getsockname(test_socket, &addr.addr, &addrlen)) {
-                    result = get_string_ip(&addr, address_buffer, buffer_size);
-                }
+            if (!getsockname(test_socket, &addr.addr, &addrlen)) {
+                result = get_string_ip(&addr, address_buffer, buffer_size);
             }
-            close(test_socket);
-            if (!result) {
-                avs_net_addrinfo_delete(&info);
-                return 0;
-            }
+        }
+        close(test_socket);
+        if (!result) {
+            break;
         }
     }
     avs_net_addrinfo_delete(&info);
-    return result < 0 ? result : -1;;
+    return result <= 0 ? result : -1;;
 }
 
 static int local_port_net(avs_net_abstract_socket_t *socket,
