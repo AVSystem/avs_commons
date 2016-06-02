@@ -520,20 +520,9 @@ resolved_endpoint_family(const avs_net_resolved_endpoint_t *address) {
     return (int) ((const struct sockaddr *) address->data.buf)->sa_family;
 }
 
-static int try_connect(avs_net_socket_t *net_socket,
-                       const avs_net_resolved_endpoint_t *address) {
+static int try_connect_open_socket(avs_net_socket_t *net_socket,
+                                   const avs_net_resolved_endpoint_t *address) {
     char socket_is_stream = (net_socket->type == AVS_NET_TCP_SOCKET);
-    if ((net_socket->socket = socket(
-            resolved_endpoint_family(address),
-            _avs_net_get_socket_type(net_socket->type), 0)) < 0) {
-        net_socket->error_code = errno;
-        LOG(ERROR, "cannot create socket: %s", strerror(errno));
-        return -1;
-    }
-    if (configure_socket(net_socket)) {
-        LOG(WARNING, "socket configuration problem");
-        goto try_connect_err;
-    }
     if (connect_with_timeout(net_socket->socket, address, socket_is_stream) < 0
             || (socket_is_stream
                     && send_net((avs_net_abstract_socket_t *) net_socket,
@@ -543,7 +532,7 @@ static int try_connect(avs_net_socket_t *net_socket,
                     net_socket->host, sizeof(net_socket->host),
                     net_socket->port, sizeof(net_socket->port))) {
         net_socket->error_code = errno;
-        goto try_connect_err;
+        return -1;
     } else {
         /* SUCCESS */
         net_socket->state = AVS_NET_SOCKET_STATE_CONSUMING;
@@ -554,10 +543,32 @@ static int try_connect(avs_net_socket_t *net_socket,
         net_socket->error_code = 0;
         return 0;
     }
-try_connect_err:
-    close(net_socket->socket);
-    net_socket->socket = -1;
-    return -1;
+}
+
+static int try_connect(avs_net_socket_t *net_socket,
+                       const avs_net_resolved_endpoint_t *address) {
+    char socket_was_already_open = (net_socket->socket >= 0);
+    int retval = 0;
+    if (!socket_was_already_open) {
+        if ((net_socket->socket = socket(
+                resolved_endpoint_family(address),
+                _avs_net_get_socket_type(net_socket->type), 0)) < 0) {
+            net_socket->error_code = errno;
+            LOG(ERROR, "cannot create socket: %s", strerror(errno));
+            retval = -1;
+        } else if (configure_socket(net_socket)) {
+            LOG(WARNING, "socket configuration problem");
+            retval = -1;
+        }
+    }
+    if (!retval) {
+        retval = try_connect_open_socket(net_socket, address);
+    }
+    if (retval && !socket_was_already_open && net_socket->socket >= 0) {
+        close(net_socket->socket);
+        net_socket->socket = -1;
+    }
+    return retval;
 }
 
 static int connect_net(avs_net_abstract_socket_t *net_socket_,
@@ -567,7 +578,9 @@ static int connect_net(avs_net_abstract_socket_t *net_socket_,
     avs_net_addrinfo_t *info = NULL;
     int result = 0;
 
-    if (net_socket->socket >= 0) {
+    if (net_socket->socket >= 0
+            && (net_socket->type != AVS_NET_UDP_SOCKET
+                    || net_socket->state != AVS_NET_SOCKET_STATE_LISTENING)) {
         LOG(ERROR, "socket is already connected or bound");
         net_socket->error_code = EISCONN;
         return -1;
@@ -753,9 +766,8 @@ static int create_listening_socket(avs_net_socket_t *net_socket,
         LOG(ERROR, "cannot create system socket: %s", strerror(errno));
         goto create_listening_socket_error;
     }
-    if (net_socket->type == AVS_NET_TCP_SOCKET
-            && setsockopt(net_socket->socket,
-                          SOL_SOCKET, SO_REUSEADDR, &val, sizeof (val))) {
+    if (setsockopt(net_socket->socket,
+                   SOL_SOCKET, SO_REUSEADDR, &val, sizeof (val))) {
         net_socket->error_code = errno;
         LOG(ERROR, "can't set socket opt");
         goto create_listening_socket_error;
