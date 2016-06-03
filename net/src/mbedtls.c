@@ -73,6 +73,9 @@ static int receive_ssl(avs_net_abstract_socket_t *ssl_socket,
                        size_t *out,
                        void *buffer,
                        size_t buffer_length);
+static int bind_ssl(avs_net_abstract_socket_t *socket,
+                    const char *localaddr,
+                    const char *port);
 static int shutdown_ssl(avs_net_abstract_socket_t *socket);
 static int close_ssl(avs_net_abstract_socket_t *ssl_socket);
 static int cleanup_ssl(avs_net_abstract_socket_t **ssl_socket);
@@ -105,7 +108,7 @@ static const avs_net_socket_v_table_t ssl_vtable = {
     (avs_net_socket_send_to_t) unimplemented,
     receive_ssl,
     (avs_net_socket_receive_from_t) unimplemented,
-    (avs_net_socket_bind_t) unimplemented,
+    bind_ssl,
     (avs_net_socket_accept_t) unimplemented,
     close_ssl,
     shutdown_ssl,
@@ -528,6 +531,21 @@ static int start_ssl(ssl_socket_t *socket, const char *host) {
     }
 }
 
+static int is_ssl_started(ssl_socket_t *socket) {
+    return socket->context.conf != NULL;
+}
+
+static int ensure_have_backend_socket(ssl_socket_t *socket) {
+    if (!socket->backend_socket
+            && avs_net_socket_create(&socket->backend_socket,
+                                     socket->backend_type,
+                                     &socket->backend_configuration)) {
+        socket->error_code = EBADF;
+        return -1;
+    }
+    return 0;
+}
+
 static int connect_ssl(avs_net_abstract_socket_t *socket_,
                        const char *host,
                        const char *port) {
@@ -536,8 +554,12 @@ static int connect_ssl(avs_net_abstract_socket_t *socket_,
     LOG(TRACE, "connect_ssl(socket=%p, host=%s, port=%s)",
         (void *) socket, host, port);
 
-    if (avs_net_socket_create(&socket->backend_socket, socket->backend_type,
-                              &socket->backend_configuration)) {
+    if (is_ssl_started(socket)) {
+        LOG(ERROR, "SSL socket already connected");
+        socket->error_code = EISCONN;
+        return -1;
+    }
+    if (ensure_have_backend_socket(socket)) {
         socket->error_code = EBADF;
         return -1;
     }
@@ -562,6 +584,11 @@ static int decorate_ssl(avs_net_abstract_socket_t *socket_,
     LOG(TRACE, "decorate_ssl(socket=%p, backend_socket=%p)",
         (void *) socket, (void *) backend_socket);
 
+    if (is_ssl_started(socket)) {
+        LOG(ERROR, "SSL socket already connected");
+        socket->error_code = EISCONN;
+        return -1;
+    }
     if (socket->backend_socket) {
         avs_net_socket_cleanup(&socket->backend_socket);
     }
@@ -580,6 +607,19 @@ static int decorate_ssl(avs_net_abstract_socket_t *socket_,
         close_ssl_raw(socket);
     }
     return result;
+}
+
+static int bind_ssl(avs_net_abstract_socket_t *socket_,
+                    const char *localaddr,
+                    const char *port) {
+    ssl_socket_t *socket = (ssl_socket_t *) socket_;
+    int retval;
+    if (ensure_have_backend_socket(socket)) {
+        return -1;
+    }
+    WRAP_ERRNO(socket, retval, avs_net_socket_bind(socket->backend_socket,
+                                                   localaddr, port));
+    return retval;
 }
 
 static int shutdown_ssl(avs_net_abstract_socket_t *socket_) {
