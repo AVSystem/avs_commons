@@ -29,7 +29,6 @@
 
 #include "config.h"
 
-#include <errno.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
@@ -37,10 +36,12 @@
 #ifdef WITH_LWIP
 #   undef LWIP_COMPAT_SOCKETS
 #   define LWIP_COMPAT_SOCKETS 1
+#   define NO_IPV6
 #   include "lwipopts.h"
 #   include "lwip/sockets.h"
 #   include "lwip/netdb.h"
 #else
+#   include <errno.h>
 #   include <sys/types.h>
 #   include <sys/socket.h>
 #endif
@@ -58,7 +59,9 @@
 AVS_STATIC_ASSERT(sizeof(int) >= 4, sane_sizeof_int);
 
 static int inet_pton4(const char *src, void *dst);
+#ifndef NO_IPV6
 static int inet_pton6(const char *src, void *dst);
+#endif // NO_IPV6
 
 int _avs_inet_pton(int af, const char *src, void *dst);
 
@@ -77,8 +80,10 @@ int _avs_inet_pton(int af, const char *src, void *dst) {
     switch (af) {
     case AF_INET:
         return (inet_pton4(src, dst));
+#ifndef NO_IPV6
     case AF_INET6:
         return (inet_pton6(src, dst));
+#endif // NO_IPV6
     default:
         errno = EAFNOSUPPORT;
         return (-1);
@@ -132,6 +137,7 @@ static int inet_pton4(const char *src, void *dst) {
     return (1);
 }
 
+#ifndef NO_IPV6
 /* int
  * inet_pton6(src, dst)
  *	convert presentation level address to network order binary form.
@@ -225,3 +231,4 @@ static int inet_pton6(const char *src, void *dst) {
     memcpy(dst, tmp, NS_IN6ADDRSZ);
     return (1);
 }
+#endif // NO_IPV6
