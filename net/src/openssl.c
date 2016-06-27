@@ -17,7 +17,7 @@
 #   undef LWIP_COMPAT_SOCKETS
 #   define LWIP_COMPAT_SOCKETS 1
 #   include "lwipopts.h"
-#   include "lwip/socket.h"
+#   include "lwip/sockets.h"
 #else
 #   include <sys/socket.h>
 #endif
