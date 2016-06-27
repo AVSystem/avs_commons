@@ -1272,7 +1272,8 @@ interface_name_end:
     close(null_socket);
     return retval;
 #elif defined(WITH_LWIP)
-#error "TODO"
+#warning "TODO"
+    return -1;
 #else
     return -1;
 #endif
