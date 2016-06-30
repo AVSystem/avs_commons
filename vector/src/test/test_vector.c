@@ -18,7 +18,7 @@ typedef struct {
 } sample_nonpod_t;
 
 static void make_sample_nonpod(size_t data_size, sample_nonpod_t *out) {
-    out->data = malloc(data_size);
+    AVS_UNIT_ASSERT_NOT_NULL((out->data = malloc(data_size)));
 }
 
 AVS_UNIT_TEST(avs_vector, example_usage_nonpod) {
@@ -27,6 +27,7 @@ AVS_UNIT_TEST(avs_vector, example_usage_nonpod) {
     sample_nonpod_t *elemptr;
     int i;
 
+    AVS_UNIT_ASSERT_NOT_NULL(u);
     for (i = 0; i < 4; i++) {
         make_sample_nonpod((i + 1) * 256, &elem);
         AVS_VECTOR_PUSH(&u, &elem);
@@ -52,6 +53,7 @@ AVS_UNIT_TEST(avs_vector, example_usage_pod) {
     int i;
     int sum = 0;
 
+    AVS_UNIT_ASSERT_NOT_NULL(v);
     for (i = 0; i < 129; i++) {
         AVS_VECTOR_PUSH(&v, &i);
     }
@@ -77,6 +79,7 @@ AVS_UNIT_TEST(avs_vector, initialization_and_clearance) {
     AVS_VECTOR(int) v = AVS_VECTOR_NEW(int);
     int x = 1;
     int *p;
+    AVS_UNIT_ASSERT_NOT_NULL(v);
     AVS_VECTOR_PUSH(&v, &x);
     AVS_UNIT_ASSERT_EQUAL(AVS_VECTOR_SIZE(v), 1);
     AVS_UNIT_ASSERT_EQUAL(AVS_VECTOR_CAPACITY(v), 1);
@@ -84,6 +87,7 @@ AVS_UNIT_TEST(avs_vector, initialization_and_clearance) {
     AVS_UNIT_ASSERT_NULL(v);
 
     v = AVS_VECTOR_NEW(int);
+    AVS_UNIT_ASSERT_NOT_NULL(v);
     AVS_VECTOR_PUSH(&v, &x);
     AVS_VECTOR_CLEAR(&v, p);
     AVS_UNIT_ASSERT_NOT_NULL(v);
@@ -95,6 +99,7 @@ AVS_UNIT_TEST(avs_vector, capacity_and_size) {
     AVS_VECTOR(int) v = AVS_VECTOR_NEW(int);
     int x = 1;
     int *y;
+    AVS_UNIT_ASSERT_NOT_NULL(v);
     AVS_UNIT_ASSERT_EQUAL(AVS_VECTOR_SIZE(v), 0);
     AVS_UNIT_ASSERT_EQUAL(AVS_VECTOR_CAPACITY(v), 0);
     AVS_VECTOR_PUSH(&v, &x);
@@ -107,6 +112,7 @@ AVS_UNIT_TEST(avs_vector, capacity_and_size) {
 AVS_UNIT_TEST(avs_vector, remove) {
     AVS_VECTOR(int) v = AVS_VECTOR_NEW(int);
     int i, *elem;
+    AVS_UNIT_ASSERT_NOT_NULL(v);
     for (i = 0; i < 5; ++i) {
         AVS_VECTOR_PUSH(&v, &i);
     }
@@ -153,6 +159,7 @@ static int increasing(const void *a, const void *b) {
 AVS_UNIT_TEST(avs_vector, sort) {
     AVS_VECTOR(int) u = AVS_VECTOR_NEW(int);
     int i;
+    AVS_UNIT_ASSERT_NOT_NULL(u);
     for (i = 0; i < 64; i++) {
         AVS_VECTOR_PUSH(&u, &i);
     }
@@ -177,6 +184,7 @@ AVS_UNIT_TEST(avs_vector, sort) {
 AVS_UNIT_TEST(avs_vector, reverse) {
     AVS_VECTOR(int) u = AVS_VECTOR_NEW(int);
     int i;
+    AVS_UNIT_ASSERT_NOT_NULL(u);
     for (i = 0; i < 10; ++i) {
         AVS_VECTOR_PUSH(&u, &i);
     }
@@ -190,6 +198,7 @@ AVS_UNIT_TEST(avs_vector, reverse) {
 AVS_UNIT_TEST(avs_vector, reverse_range) {
     AVS_VECTOR(int) u = AVS_VECTOR_NEW(int);
     int i;
+    AVS_UNIT_ASSERT_NOT_NULL(u);
     for (i = 0; i < 10; ++i) {
         AVS_VECTOR_PUSH(&u, &i);
     }
@@ -206,6 +215,7 @@ AVS_UNIT_TEST(avs_vector, reverse_range) {
     AVS_VECTOR_DELETE(&u);
 
     u = AVS_VECTOR_NEW(int);
+    AVS_UNIT_ASSERT_NOT_NULL(u);
     for (i = 0; i < 10; ++i) {
         AVS_VECTOR_PUSH(&u, &i);
     }
@@ -224,7 +234,7 @@ AVS_UNIT_TEST(avs_vector, push_is_idempotent) {
     int i;
     int *elem = &data[0];
     for (i = 0; i < 10; ++i) {
-        vecs[i] = AVS_VECTOR_NEW(int);
+        AVS_UNIT_ASSERT_NOT_NULL((vecs[i] = AVS_VECTOR_NEW(int)));
     }
     v = &vecs[0];
     for (i = 0; i < 10; ++i) {

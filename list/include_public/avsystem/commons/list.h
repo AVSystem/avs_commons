@@ -420,6 +420,7 @@ void *avs_list_simple_clone__(void *list, size_t elem_size);
  *
  * @return Newly allocated list element, as <c>void *</c>.
  */
+#warning "FIXME"
 #define AVS_LIST_NEW_BUFFER(size) \
 ((void *) (((char *) AVS_LIST_CONFIG_ALLOC(AVS_LIST_SPACE_FOR_NEXT__ + (size)))\
         + AVS_LIST_SPACE_FOR_NEXT__))
