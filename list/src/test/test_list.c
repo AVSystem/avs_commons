@@ -7,10 +7,18 @@
  * See the LICENSE file for details.
  */
 
-#include <avsystem/commons/list.h>
-#include <avsystem/commons/unit/test.h>
+#include <config.h>
 
+#include <stdlib.h>
 #include <string.h>
+
+#include <avsystem/commons/unit/test.h>
+#include <avsystem/commons/unit/mock_helpers.h>
+
+AVS_UNIT_MOCK_CREATE(calloc)
+#define calloc(...) AVS_UNIT_MOCK_WRAPPER(calloc)(__VA_ARGS__)
+
+#include <avsystem/commons/list.h>
 
 AVS_UNIT_TEST(list, one_element) {
     size_t count = 0;
@@ -29,6 +37,26 @@ AVS_UNIT_TEST(list, one_element) {
     }
     AVS_UNIT_ASSERT_EQUAL(count, 1);
     AVS_LIST_CLEAR(&list);
+}
+
+static void *failing_calloc(size_t nmemb, size_t size) {
+    AVS_UNIT_ASSERT_EQUAL(nmemb, 1);
+    AVS_UNIT_ASSERT_TRUE(size >= AVS_LIST_SPACE_FOR_NEXT__);
+    return NULL;
+}
+
+AVS_UNIT_TEST(list, failing_alloc) {
+    AVS_LIST(int) test_list = NULL;
+
+    AVS_UNIT_MOCK(calloc) = failing_calloc;
+
+    AVS_UNIT_ASSERT_NULL(AVS_LIST_NEW_BUFFER(42));
+    AVS_UNIT_ASSERT_NULL(AVS_LIST_NEW_ELEMENT(int));
+
+    AVS_UNIT_ASSERT_NULL(AVS_LIST_INSERT_NEW(int, &test_list));
+    AVS_UNIT_ASSERT_NULL(test_list);
+    AVS_UNIT_ASSERT_NULL(AVS_LIST_APPEND_NEW(int, &test_list));
+    AVS_UNIT_ASSERT_NULL(test_list);
 }
 
 AVS_UNIT_TEST(list, middle_delete) {

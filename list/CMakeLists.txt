@@ -27,4 +27,4 @@ install(DIRECTORY include_public/
         FILES_MATCHING REGEX "[.]h$")
 
 include_directories(${AVS_TEST_INCLUDE_DIRS})
-add_avs_test(avs_list ${ALL_SOURCES})
+add_avs_test(avs_list ${ALL_SOURCES} src/test/test_list.c)

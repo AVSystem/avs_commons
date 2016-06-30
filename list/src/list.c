@@ -24,6 +24,14 @@
 #pragma GCC visibility push(hidden)
 #endif
 
+void *avs_list_adjust_allocated_ptr__(void *allocated) {
+    if (allocated) {
+        return (char *) allocated + AVS_LIST_SPACE_FOR_NEXT__;
+    } else {
+        return NULL;
+    }
+}
+
 void *avs_list_nth__(void *list, size_t n) {
     void *element = NULL;
     AVS_LIST_FOREACH(element, list) {
@@ -187,7 +195,3 @@ void *avs_list_simple_clone__(void *list, size_t elem_size) {
     }
     return retval;
 }
-
-#ifdef AVS_UNIT_TESTING
-#include "test/test_list.c"
-#endif
