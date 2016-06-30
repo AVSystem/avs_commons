@@ -39,7 +39,6 @@ static char rcsid[] = "$Id: inet_ntop.c,v 8.5 1996/05/22 04:56:30 vixie Exp $";
 #ifdef WITH_LWIP
 #   undef LWIP_COMPAT_SOCKETS
 #   define LWIP_COMPAT_SOCKETS 1
-#   define NO_IPV6
 #   include "lwipopts.h"
 #   include "lwip/arch.h"
 #   include "lwip/sockets.h"
@@ -60,14 +59,14 @@ typedef unsigned char  u_char;
 
 #endif
 
-#ifndef NO_IPV6
+#ifdef WITH_IPV6
 #define	IN6ADDRSZ	16
 #define	INT16SZ		 2
 
 #ifndef	AF_INET6
 #define	AF_INET6	AF_MAX+1	/* just to let this compile */
 #endif
-#endif // NO_IPV6
+#endif // WITH_IPV6
 
 #ifdef HAVE_VISIBILITY
 #pragma GCC visibility push(hidden)
@@ -79,10 +78,12 @@ typedef unsigned char  u_char;
  */
 
 const char *_avs_inet_ntop(int af, const void *src, char *dst, size_t size);
+#ifdef WITH_IPV4
 static const char *inet_ntop4(const u_char *src, char *dst, size_t size);
-#ifndef NO_IPV6
+#endif // WITH_IPV4
+#ifdef WITH_IPV6
 static const char *inet_ntop6(const u_char *src, char *dst, size_t size);
-#endif // NO_IPV6
+#endif // WITH_IPV6
 
 /* char *
  * inet_ntop(af, src, dst, size)
@@ -94,12 +95,14 @@ static const char *inet_ntop6(const u_char *src, char *dst, size_t size);
  */
 const char *_avs_inet_ntop(int af, const void *src, char *dst, size_t size) {
 	switch (af) {
+#ifdef WITH_IPV4
 	case AF_INET:
 		return (inet_ntop4((const u_char *) src, dst, size));
-#ifndef NO_IPV6
+#endif // WITH_IPV4
+#ifdef WITH_IPV6
 	case AF_INET6:
 		return (inet_ntop6((const u_char *) src, dst, size));
-#endif // NO_IPV6
+#endif // WITH_IPV6
 	default:
 		errno = EAFNOSUPPORT;
 		return (NULL);
@@ -107,6 +110,7 @@ const char *_avs_inet_ntop(int af, const void *src, char *dst, size_t size) {
 	/* NOTREACHED */
 }
 
+#ifdef WITH_IPV4
 /* const char *
  * inet_ntop4(src, dst, size)
  *	format an IPv4 address, more or less like inet_ntoa()
@@ -132,8 +136,9 @@ inet_ntop4(const u_char *src, char *dst, size_t size)
 	strcpy(dst, tmp);
 	return (dst);
 }
+#endif // WITH_IPV4
 
-#ifndef NO_IPV6
+#ifdef WITH_IPV6
 /* const char *
  * inet_ntop6(src, dst, size)
  *	convert IPv6 binary address into presentation (printable) format
@@ -225,4 +230,4 @@ inet_ntop6(const u_char *src, char *dst, size_t size)
 	strcpy(dst, tmp);
 	return (dst);
 }
-#endif // NO_IPV6
+#endif // WITH_IPV6
