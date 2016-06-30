@@ -184,7 +184,7 @@ void avs_log_internal_l__(avs_log_level_t level,
 #define AVS_LOG__DEBUG(...) ((void) 0)
 #endif
 
-void avs_log_set_level__(const char *module, avs_log_level_t level);
+int avs_log_set_level__(const char *module, avs_log_level_t level);
 /**@}*/
 
 /**
@@ -269,6 +269,8 @@ void avs_log_set_level__(const char *module, avs_log_level_t level);
  * @param Level  Log level to set (see @ref avs_log_level_t for list of possible
  *               values).
  *
+ * @return 0 on success, negative value in case of an error (i.e. out of memory)
+ *
  * <example>
  * @code
  * int main() {
@@ -290,7 +292,8 @@ void avs_log_set_level__(const char *module, avs_log_level_t level);
  * @param Level  Log level to set (see @ref avs_log_level_t for list of possible
  *               values).
  */
-#define avs_log_set_default_level(Level) avs_log_set_level__(NULL, Level)
+#define avs_log_set_default_level(Level) \
+        ((void) avs_log_set_level__(NULL, Level))
 
 #ifdef	__cplusplus
 }

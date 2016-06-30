@@ -62,13 +62,14 @@ static volatile avs_log_level_t *level_for(const char *module, int create) {
             size_t module_size = strlen(module);
             module_level_t *new_entry = (module_level_t*)
                     AVS_LIST_NEW_BUFFER(offsetof(module_level_t, module) + module_size + 1);
-            if (new_entry) {
-                new_entry->level = DEFAULT_LEVEL;
-                memcpy(new_entry->module, module, module_size);
-                new_entry->module[module_size] = '\0';
-                AVS_LIST_INSERT(entry_ptr, new_entry);
-                return &new_entry->level;
+            if (!new_entry) {
+                return NULL;
             }
+            new_entry->level = DEFAULT_LEVEL;
+            memcpy(new_entry->module, module, module_size);
+            new_entry->module[module_size] = '\0';
+            AVS_LIST_INSERT(entry_ptr, new_entry);
+            return &new_entry->level;
         }
     }
     return &DEFAULT_LEVEL;
@@ -117,8 +118,19 @@ void avs_log_internal_l__(avs_log_level_t level,
     }
 }
 
-void avs_log_set_level__(const char *module, avs_log_level_t level) {
-    *level_for(module, 1) = level;
+int avs_log_set_level__(const char *module, avs_log_level_t level) {
+    volatile avs_log_level_t *level_ptr = level_for(module, 1);
+    if (!level_ptr) {
+        if (AVS_LOG_ERROR >= DEFAULT_LEVEL) {
+            avs_log_internal_forced_l__(
+                    AVS_LOG_ERROR, "avs_log",
+                    AVS_LOG_MSG_PREFIX_IMPL__(ERROR, avs_log)
+                    "could not allocate level entry for module: %s", module);
+        }
+        return -1;
+    }
+    *level_ptr = level;
+    return 0;
 }
 
 #ifdef AVS_UNIT_TESTING

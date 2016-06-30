@@ -77,6 +77,7 @@ AVS_UNIT_TEST(list, deletable_foreach) {
     int **element_ptr = NULL, *helper = NULL;
     for (i = 0; i < 10; ++i) {
         int *element = AVS_LIST_NEW_ELEMENT(int);
+        AVS_UNIT_ASSERT_NOT_NULL(element);
         *element = (int) (i + 1);
         AVS_LIST_APPEND(&list, element);
     }
@@ -96,6 +97,7 @@ AVS_UNIT_TEST(list, find) {
     AVS_LIST(int) list = NULL;
     for (i = 0; i < 10; ++i) {
         int *element = AVS_LIST_NEW_ELEMENT(int);
+        AVS_UNIT_ASSERT_NOT_NULL(element);
         *element = (int) (i + 1);
         AVS_LIST_APPEND(&list, element);
     }
@@ -129,7 +131,7 @@ AVS_UNIT_TEST(list, sort) {
     size_t i;
 
     for (i = 0; i < 10; ++i) {
-        element = AVS_LIST_NEW_ELEMENT(int);
+        AVS_UNIT_ASSERT_NOT_NULL((element = AVS_LIST_NEW_ELEMENT(int)));
         switch (i) {
         case 0: *element = 1; break;
         case 1: *element = 51; break;
@@ -196,7 +198,7 @@ AVS_UNIT_TEST(list, simple_clone) {
     for (i = 0; i < 10; ++i) {
         *AVS_LIST_APPEND_NEW(int, &list) = (int) i;
     }
-    cloned = AVS_LIST_SIMPLE_CLONE(list);
+    AVS_UNIT_ASSERT_NOT_NULL((cloned = AVS_LIST_SIMPLE_CLONE(list)));
     it = cloned;
     for (i = 0; i < 10; ++i) {
         AVS_UNIT_ASSERT_EQUAL(*it, i);
