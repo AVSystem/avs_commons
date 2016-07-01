@@ -18,7 +18,7 @@
 #   define LWIP_COMPAT_SOCKETS 1
 #   include "lwipopts.h"
 #   include "lwip/netdb.h"
-#   include "lwip/socket.h"
+#   include "lwip/sockets.h"
 #else
 #   include <netdb.h>
 #   include <sys/socket.h>

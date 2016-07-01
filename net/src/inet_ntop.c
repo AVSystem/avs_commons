@@ -59,12 +59,14 @@ typedef unsigned char  u_char;
 
 #endif
 
-#define	IN6ADDRSZ	16
-#define	INT16SZ		 2
+#ifdef WITH_IPV6
+#   define IN6ADDRSZ 16
+#   define INT16SZ 2
 
-#ifndef	AF_INET6
-#define	AF_INET6	AF_MAX+1	/* just to let this compile */
-#endif
+#   ifndef AF_INET6
+#       define AF_INET6 (AF_MAX+1) /* just to let this compile */
+#   endif
+#endif // WITH_IPV6
 
 #ifdef HAVE_VISIBILITY
 #pragma GCC visibility push(hidden)
@@ -77,7 +79,9 @@ typedef unsigned char  u_char;
 
 const char *_avs_inet_ntop(int af, const void *src, char *dst, size_t size);
 static const char *inet_ntop4(const u_char *src, char *dst, size_t size);
+#ifdef WITH_IPV6
 static const char *inet_ntop6(const u_char *src, char *dst, size_t size);
+#endif // WITH_IPV6
 
 /* char *
  * inet_ntop(af, src, dst, size)
@@ -89,10 +93,14 @@ static const char *inet_ntop6(const u_char *src, char *dst, size_t size);
  */
 const char *_avs_inet_ntop(int af, const void *src, char *dst, size_t size) {
 	switch (af) {
+#ifdef WITH_IPV4
 	case AF_INET:
 		return (inet_ntop4((const u_char *) src, dst, size));
+#endif // WITH_IPV4
+#ifdef WITH_IPV6
 	case AF_INET6:
 		return (inet_ntop6((const u_char *) src, dst, size));
+#endif // WITH_IPV6
 	default:
 		errno = EAFNOSUPPORT;
 		return (NULL);
@@ -126,6 +134,7 @@ inet_ntop4(const u_char *src, char *dst, size_t size)
 	return (dst);
 }
 
+#ifdef WITH_IPV6
 /* const char *
  * inet_ntop6(src, dst, size)
  *	convert IPv6 binary address into presentation (printable) format
@@ -217,3 +226,4 @@ inet_ntop6(const u_char *src, char *dst, size_t size)
 	strcpy(dst, tmp);
 	return (dst);
 }
+#endif // WITH_IPV6

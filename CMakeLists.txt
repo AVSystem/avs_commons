@@ -198,6 +198,9 @@ check_function_exists(backtrace_symbols HAVE_BACKTRACE_SYMBOLS)
 
 option(WITH_LWIP "Use lwIP library for networking" OFF)
 
+option(WITH_IPV4 "Enable IPv4 support" ON)
+option(WITH_IPV6 "Enable IPv6 support" ON)
+
 option(WITH_SOCKET_LOG "Enable socket communication logging" OFF)
 
 include_directories("${CMAKE_SOURCE_DIR}/config")

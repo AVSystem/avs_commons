@@ -22,6 +22,25 @@
 
 #cmakedefine WITH_LWIP
 
+#cmakedefine WITH_IPV4
+#cmakedefine WITH_IPV6
+
+#if !defined(WITH_IPV4) && !defined(WITH_IPV6)
+#error "At least one IP protocol version must be enabled"
+#endif
+
+#ifdef WITH_IPV4
+# define IPV4_AVAILABLE 1
+#else
+# define IPV4_AVAILABLE 0
+#endif
+
+#ifdef WITH_IPV6
+# define IPV6_AVAILABLE 1
+#else
+# define IPV6_AVAILABLE 0
+#endif
+
 #cmakedefine WITH_OPENSSL
 #cmakedefine WITH_MBEDTLS
 #if defined(WITH_OPENSSL) || defined(WITH_MBEDTLS)
