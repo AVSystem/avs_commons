@@ -60,12 +60,12 @@ typedef unsigned char  u_char;
 #endif
 
 #ifdef WITH_IPV6
-#define	IN6ADDRSZ	16
-#define	INT16SZ		 2
+#   define IN6ADDRSZ 16
+#   define INT16SZ 2
 
-#ifndef	AF_INET6
-#define	AF_INET6	AF_MAX+1	/* just to let this compile */
-#endif
+#   ifndef AF_INET6
+#       define AF_INET6 (AF_MAX+1) /* just to let this compile */
+#   endif
 #endif // WITH_IPV6
 
 #ifdef HAVE_VISIBILITY

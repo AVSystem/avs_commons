@@ -483,7 +483,7 @@ static int host_port_to_string(const struct sockaddr *sa, socklen_t salen,
     const uint16_t *port_ptr = NULL;
 
 # ifdef WITH_IPV4
-    if (IPV4_AVAILABLE && (sa->sa_family == AF_INET)) {
+    if (sa->sa_family == AF_INET) {
         if (salen >= sizeof(struct sockaddr_in)) {
             addr_ptr = &((const struct sockaddr_in *) sa)->sin_addr;
             port_ptr = &((const struct sockaddr_in *) sa)->sin_port;
