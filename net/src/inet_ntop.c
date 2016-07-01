@@ -78,9 +78,7 @@ typedef unsigned char  u_char;
  */
 
 const char *_avs_inet_ntop(int af, const void *src, char *dst, size_t size);
-#ifdef WITH_IPV4
 static const char *inet_ntop4(const u_char *src, char *dst, size_t size);
-#endif // WITH_IPV4
 #ifdef WITH_IPV6
 static const char *inet_ntop6(const u_char *src, char *dst, size_t size);
 #endif // WITH_IPV6
@@ -110,7 +108,6 @@ const char *_avs_inet_ntop(int af, const void *src, char *dst, size_t size) {
 	/* NOTREACHED */
 }
 
-#ifdef WITH_IPV4
 /* const char *
  * inet_ntop4(src, dst, size)
  *	format an IPv4 address, more or less like inet_ntoa()
@@ -136,7 +133,6 @@ inet_ntop4(const u_char *src, char *dst, size_t size)
 	strcpy(dst, tmp);
 	return (dst);
 }
-#endif // WITH_IPV4
 
 #ifdef WITH_IPV6
 /* const char *

@@ -57,9 +57,7 @@
  */
 AVS_STATIC_ASSERT(sizeof(int) >= 4, sane_sizeof_int);
 
-#ifdef WITH_IPV4
 static int inet_pton4(const char *src, void *dst);
-#endif // WITH_IPV4
 
 #ifdef WITH_IPV6
 static int inet_pton6(const char *src, void *dst);
@@ -97,7 +95,6 @@ int _avs_inet_pton(int af, const char *src, void *dst) {
     /* NOTREACHED */
 }
 
-#ifdef WITH_IPV4
 /* int
  * inet_pton4(src, dst)
  *	like inet_aton() but without all the hexadecimal and shorthand.
@@ -143,7 +140,6 @@ static int inet_pton4(const char *src, void *dst) {
     memcpy(dst, tmp, NS_INADDRSZ);
     return (1);
 }
-#endif // WITH_IPV4
 
 #ifdef WITH_IPV6
 /* int
