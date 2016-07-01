@@ -1356,8 +1356,8 @@ int avs_net_validate_ip_address(avs_net_af_t family, const char *ip_address) {
         return ((IPV4_AVAILABLE
                     && (validate_ip_address(AVS_NET_AF_INET4, ip_address) == 0))
                 || (IPV6_AVAILABLE
-                    && (validate_ip_address(AVS_NET_AF_INET6, ip_address) == 0))
-                ) ? 0 : -1;
+                    && (validate_ip_address(AVS_NET_AF_INET6, ip_address) == 0)))
+               ? 0 : -1;
     }
 }
 
