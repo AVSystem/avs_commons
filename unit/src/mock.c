@@ -9,6 +9,8 @@
 
 #include <config.h>
 
+#include <stdio.h>
+
 #include <avsystem/commons/list.h>
 
 #include <avsystem/commons/unit/mock_helpers.h>
@@ -26,6 +28,10 @@ static AVS_LIST(avs_unit_mock_t) ALL_MOCKS;
 
 void avs_unit_mock_add__(avs_unit_mock_func_ptr *new_mock_ptr) {
     avs_unit_mock_t *new_mock = AVS_LIST_NEW_ELEMENT(avs_unit_mock_t);
+    if (!new_mock) {
+        fprintf(stderr, "cannot add new mock function entry\n");
+        exit(EXIT_FAILURE);
+    }
     new_mock->mock_ptr = new_mock_ptr;
     AVS_LIST_INSERT(&ALL_MOCKS, new_mock);
 }

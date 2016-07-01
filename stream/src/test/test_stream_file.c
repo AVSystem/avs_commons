@@ -60,6 +60,7 @@ AVS_UNIT_TEST(stream_file, write_and_read) {
 
     avs_stream_abstract_t *stream;
 
+    AVS_UNIT_ASSERT_NOT_NULL(buf);
     AVS_UNIT_ASSERT_SUCCESS(make_temporary(filename));
     AVS_UNIT_ASSERT_NOT_NULL((stream = avs_stream_file_create(filename, AVS_STREAM_FILE_WRITE | AVS_STREAM_FILE_READ)));
 

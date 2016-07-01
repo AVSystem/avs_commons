@@ -264,6 +264,7 @@ typedef int (*avs_list_comparator_func_t)(const void *a,
  * functions directly.
  */
 /**@{*/
+void *avs_list_adjust_allocated_ptr__(void *allocated);
 void *avs_list_nth__(void *list, size_t n);
 void **avs_list_nth_ptr__(void **list_ptr, size_t n);
 void **avs_list_find_ptr__(void **list_ptr, void *element);
@@ -421,8 +422,8 @@ void *avs_list_simple_clone__(void *list, size_t elem_size);
  * @return Newly allocated list element, as <c>void *</c>.
  */
 #define AVS_LIST_NEW_BUFFER(size) \
-((void *) (((char *) AVS_LIST_CONFIG_ALLOC(AVS_LIST_SPACE_FOR_NEXT__ + (size)))\
-        + AVS_LIST_SPACE_FOR_NEXT__))
+(avs_list_adjust_allocated_ptr__( \
+        AVS_LIST_CONFIG_ALLOC(AVS_LIST_SPACE_FOR_NEXT__ + (size))))
 
 /**
  * Allocates a new list element of a given type.

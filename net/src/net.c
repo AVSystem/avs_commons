@@ -1225,7 +1225,11 @@ interface_name_end:
         goto interface_name_end;
     }
 interface_name_retry:
-    reqs = (struct ifreq *) realloc(reqs, blen);
+    if (!(req = (struct ifreq *) realloc(reqs, blen))) {
+        goto interface_name_end;
+    } else {
+        reqs = req;
+    }
     conf.ifc_req = reqs;
     conf.ifc_len = (int) blen;
     if (ioctl(null_socket, SIOCGIFCONF, &conf) < 0) {
