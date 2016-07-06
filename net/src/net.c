@@ -14,26 +14,7 @@
 #include <config.h>
 
 #ifdef WITH_LWIP
-#   undef LWIP_COMPAT_SOCKETS
-#   define LWIP_COMPAT_SOCKETS 1
-#   include "lwipopts.h"
-#   include "lwip/netdb.h"
-#   include "lwip/sockets.h"
-
-/* Following values are not defined in LwIP 1.4.1 */
-/* Hopefully high enum values will not collide with any existing ones */
-#   ifndef SO_BINDTODEVICE
-#       define SO_BINDTODEVICE 0xFFFF
-#   endif
-#   ifndef SO_PRIORITY
-#       define SO_PRIORITY     0xFFFE
-#   endif
-
-/* This one is a bit-flag, so it needs to be set to 0 */
-#   ifndef MSG_NOSIGNAL
-#       define MSG_NOSIGNAL 0
-#   endif
-
+#   include "lwip_compat.h"
 #else /* WITH_LWIP */
 #   include <fcntl.h>
 #   include <netdb.h>

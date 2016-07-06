@@ -14,23 +14,7 @@
 #include <config.h>
 
 #ifdef WITH_LWIP
-#   undef LWIP_COMPAT_SOCKETS
-#   define LWIP_COMPAT_SOCKETS 1
-#   include "lwipopts.h"
-#   include "lwip/netdb.h"
-#   include "lwip/sockets.h"
-
-/* These flags are not defined in LwIP 1.4.1 */
-#   ifndef AI_NUMERICSERV
-#       define AI_NUMERICSERV 0
-#   endif
-#   ifndef AI_ADDRCONFIG
-#       define AI_ADDRCONFIG 0
-#   endif
-#   ifndef AI_PASSIVE
-#       define AI_PASSIVE 0
-#   endif
-
+#   include "lwip_compat.h"
 #else /* WITH_LWIP */
 #   include <netdb.h>
 #   include <sys/socket.h>
