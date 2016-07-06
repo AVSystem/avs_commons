@@ -19,7 +19,19 @@
 #   include "lwipopts.h"
 #   include "lwip/netdb.h"
 #   include "lwip/sockets.h"
-#else
+
+/* These flags are not defined in LwIP 1.4.1 */
+#   ifndef AI_NUMERICSERV
+#       define AI_NUMERICSERV 0
+#   endif
+#   ifndef AI_ADDRCONFIG
+#       define AI_ADDRCONFIG 0
+#   endif
+#   ifndef AI_PASSIVE
+#       define AI_PASSIVE 0
+#   endif
+
+#else /* WITH_LWIP */
 #   include <netdb.h>
 #   include <sys/socket.h>
 #   include <sys/types.h>
