@@ -502,7 +502,7 @@ static int start_ssl(ssl_socket_t *socket, const char *host) {
     }
 
     for (;;) {
-        int result = mbedtls_ssl_handshake(&socket->context);
+        result = mbedtls_ssl_handshake(&socket->context);
         if (result == 0) {
             LOG(TRACE, "handshake success");
             break;
