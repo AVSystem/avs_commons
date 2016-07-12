@@ -27,7 +27,8 @@ elseif(WITH_MBEDTLS)
 endif()
 
 set(PRIVATE_HEADERS
-    src/net.h)
+    src/net.h
+    src/lwip_compat.h)
 
 set(PUBLIC_HEADERS
     include_public/avsystem/commons/net.h
