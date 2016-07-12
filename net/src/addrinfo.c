@@ -14,12 +14,8 @@
 #include <config.h>
 
 #ifdef WITH_LWIP
-#   undef LWIP_COMPAT_SOCKETS
-#   define LWIP_COMPAT_SOCKETS 1
-#   include "lwipopts.h"
-#   include "lwip/netdb.h"
-#   include "lwip/sockets.h"
-#else
+#   include "lwip_compat.h"
+#else /* WITH_LWIP */
 #   include <netdb.h>
 #   include <sys/socket.h>
 #   include <sys/types.h>

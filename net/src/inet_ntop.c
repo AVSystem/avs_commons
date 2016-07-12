@@ -37,12 +37,7 @@ static char rcsid[] = "$Id: inet_ntop.c,v 8.5 1996/05/22 04:56:30 vixie Exp $";
 #include <string.h>
 
 #ifdef WITH_LWIP
-#   undef LWIP_COMPAT_SOCKETS
-#   define LWIP_COMPAT_SOCKETS 1
-#   include "lwipopts.h"
-#   include "lwip/arch.h"
-#   include "lwip/sockets.h"
-#   include "lwip/netdb.h"
+#   include "lwip_compat.h"
 #else
 #   include <errno.h>
 #   include <sys/types.h>
