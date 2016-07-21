@@ -200,7 +200,7 @@ static int avs_bio_write(BIO *bio, const char *data, int size) {
 static int64_t current_time_ms(void) {
     struct timespec t;
     clock_gettime(CLOCK_REALTIME, &t);
-    return (int64_t) t.tv_sec + t.tv_nsec / 1000000;
+    return (int64_t) t.tv_sec * 1000 + t.tv_nsec / 1000000;
 }
 
 static avs_net_timeout_t get_socket_timeout(avs_net_abstract_socket_t *sock) {
