@@ -1135,6 +1135,7 @@ static int receive_ssl(avs_net_abstract_socket_t *socket_,
 
     errno = 0;
     result = SSL_read(socket->ssl, buffer, (int) buffer_length);
+    VALGRIND_MAKE_MEM_DEFINED_IF_ADDRESSABLE(&result, sizeof(result));
     if (result < 0) {
         (void) ((socket->error_code =
                         avs_net_socket_errno(socket->backend_socket))
