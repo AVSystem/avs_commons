@@ -422,11 +422,24 @@ static void test_printf(message_level_t level, const char *format, ...) {
     }
 }
 
-static void parse_command_line_args(int argc, char* argv[],
-                                    const char * volatile *out_selected_suite,
-                                    const char * volatile *out_selected_test) {
+static void list_tests_for_suite(avs_unit_test_suite_t *suite) {
+    avs_unit_test_t *current_test;
+
+    test_printf(NORMAL, "%s (%u tests)\n",
+                suite->name, (unsigned)AVS_LIST_SIZE(suite->tests));
+
+    AVS_LIST_FOREACH(current_test, suite->tests) {
+        test_printf(NORMAL, "  - %s\n", current_test->name);
+    }
+}
+
+static int parse_command_line_args(int argc, char* argv[],
+                                   const char * volatile *out_selected_suite,
+                                   const char * volatile *out_selected_test) {
     while (1) {
         static const struct option long_options[] = {
+            { "help",    no_argument, 0, 'h' },
+            { "list",    optional_argument, 0, 'l' },
             { "verbose", no_argument, 0, 'v' },
             { 0, 0, 0, 0 }
         };
@@ -434,11 +447,78 @@ static void parse_command_line_args(int argc, char* argv[],
         int option_index = 0;
         int c;
 
-        c = getopt_long(argc, argv, "v", long_options, &option_index);
+        c = getopt_long(argc, argv, "hl::v", long_options, &option_index);
         if (c == -1)
             break;
 
         switch (c) {
+        case 'h':
+            test_printf(NORMAL,
+                        "NAME\n"
+                        "    %s - execute compiled-in test cases\n"
+                        "\n"
+                        "SYNOPSIS\n"
+                        "    %s [OPTION]... [TEST_SUITE_NAME] "
+                        "[TEST_CASE_NAME]\n"
+                        "\n"
+                        "OPTIONS\n"
+                        "    -h, --help - display this message and exit.\n"
+                        "    -l, --list [TEST_SUITE_NAME] - list all available "
+                        "test cases and exit. If TEST_SUITE_NAME is specified, "
+                        "list only test cases that belong to given test "
+                        "suite.\n"
+                        "    -v, --verbose - display result of each individual "
+                        "test case instead of a summary per test suite.\n"
+                        "\n"
+                        "ENVIRONMENT VARIABLES\n"
+                        "    AVS_LOG - a list of semicolon-separated log level "
+                        "definitions to be set before starting the test. Each "
+                        "definition has the form of 'module_name=level'. The "
+                        "module name can be omitted to set the default log "
+                        "level (i.e. '=level'). The default log level for all "
+                        "modules is 'quiet' (no logs).\n"
+                        "        Available log levels:\n"
+                        "            trace debug info warning "
+                        "quiet\n"
+                        "        Examples:\n"
+                        "            AVS_LOG='=trace'              # set "
+                        "default log level to 'trace'\n"
+                        "            AVS_LOG='foo=debug;bar=error' # set log "
+                        "levels for modules 'foo' and 'bar'\n"
+                        "\n"
+                        "EXAMPLES\n"
+                        "    %s            # run all tests\n"
+                        "    %s -l         # list all tests, do not run any\n"
+                        "    %s -l suite   # list all tests from suite "
+                        "'suite', do not run any\n"
+                        "    %s suite      # run all tests from suite 'suite'\n"
+                        "    %s suite case # run only test 'case' from suite "
+                        "'suite'\n",
+                        argv[0], argv[0], argv[0], argv[0], argv[0], argv[0],
+                        argv[0]);
+            return -1;
+        case 'l': {
+            avs_unit_test_suite_t *suite;
+            /* getopt does not regognize optional arguments in the form of
+             * "-l foo"; check for such possibility */
+            const char *arg = optarg ? optarg
+                                     : (argv[optind] && argv[optind][0] != '-'
+                                             ? argv[optind] : NULL);
+            if (arg) {
+                suite = find_test_suite(arg);
+                if (suite) {
+                    list_tests_for_suite(suite);
+                } else {
+                    test_printf(NORMAL, "test suite '%s' does not exist\n",
+                                arg);
+                }
+            } else {
+                AVS_LIST_FOREACH(suite, test_suites) {
+                    list_tests_for_suite(suite);
+                }
+            }
+            return -1;
+        }
         case 'v':
             verbose += 1;
             break;
@@ -454,6 +534,8 @@ static void parse_command_line_args(int argc, char* argv[],
             *out_selected_test = argv[optind];
         }
     }
+
+    return 0;
 }
 
 static int parse_log_level(const char *str,
@@ -532,10 +614,16 @@ static void process_env_vars(void) {
 
         if (!parse_log_level_definition(&log, module, sizeof(module),
                                         level_str, sizeof(level_str), &level)) {
-            avs_log_set_level__(module, level);
-            log_levels_changed = true;
-            test_printf(VERBOSE, "log level set to %s for module %s\n",
-                        level_str, module);
+            if (!module[0]) {
+                avs_log_set_default_level(level);
+                log_levels_changed = true;
+                test_printf(VERBOSE, "default log level set to %s\n", level_str);
+            } else {
+                avs_log_set_level__(module, level);
+                log_levels_changed = true;
+                test_printf(VERBOSE, "log level set to %s for module %s\n",
+                            level_str, module);
+            }
         }
     }
 
@@ -551,8 +639,12 @@ int main(int argc, char *argv[]) {
     avs_unit_test_suite_t * volatile current_suite = NULL;
     volatile int tests_result = 0;
 
+    avs_log_set_default_level(AVS_LOG_QUIET);
+
     _avs_unit_stack_trace_init(argc, argv);
-    parse_command_line_args(argc, argv, &selected_suite, &selected_test);
+    if (parse_command_line_args(argc, argv, &selected_suite, &selected_test)) {
+        return 0;
+    }
     process_env_vars();
 
     AVS_LIST_FOREACH(current_init, global_init) {
