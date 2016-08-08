@@ -455,10 +455,10 @@ static int parse_command_line_args(int argc, char* argv[],
         case 'h':
             test_printf(NORMAL,
                         "NAME\n"
-                        "    %s - execute compiled-in test cases\n"
+                        "    %1$s - execute compiled-in test cases\n"
                         "\n"
                         "SYNOPSIS\n"
-                        "    %s [OPTION]... [TEST_SUITE_NAME] "
+                        "    %1$s [OPTION]... [TEST_SUITE_NAME] "
                         "[TEST_CASE_NAME]\n"
                         "\n"
                         "OPTIONS\n"
@@ -469,7 +469,9 @@ static int parse_command_line_args(int argc, char* argv[],
                         "suite.\n"
                         "    -v, --verbose - display result of each individual "
                         "test case instead of a summary per test suite.\n"
-                        "\n"
+                        "\n",
+                        argv[0]);
+            test_printf(NORMAL,
                         "ENVIRONMENT VARIABLES\n"
                         "    AVS_LOG - a list of semicolon-separated log level "
                         "definitions to be set before starting the test. Each "
@@ -479,7 +481,8 @@ static int parse_command_line_args(int argc, char* argv[],
                         "modules is 'quiet' (no logs).\n"
                         "        Available log levels:\n"
                         "            trace debug info warning "
-                        "quiet\n"
+                        "quiet\n");
+            test_printf(NORMAL,
                         "        Examples:\n"
                         "            AVS_LOG='=trace'              # set "
                         "default log level to 'trace'\n"
@@ -487,19 +490,18 @@ static int parse_command_line_args(int argc, char* argv[],
                         "levels for modules 'foo' and 'bar'\n"
                         "\n"
                         "EXAMPLES\n"
-                        "    %s            # run all tests\n"
-                        "    %s -l         # list all tests, do not run any\n"
-                        "    %s -l suite   # list all tests from suite "
+                        "    %1$s            # run all tests\n"
+                        "    %1$s -l         # list all tests, do not run any\n"
+                        "    %1$s -l suite   # list all tests from suite "
                         "'suite', do not run any\n"
-                        "    %s suite      # run all tests from suite 'suite'\n"
-                        "    %s suite case # run only test 'case' from suite "
+                        "    %1$s suite      # run all tests from suite 'suite'\n"
+                        "    %1$s suite case # run only test 'case' from suite "
                         "'suite'\n",
-                        argv[0], argv[0], argv[0], argv[0], argv[0], argv[0],
                         argv[0]);
             return -1;
         case 'l': {
             avs_unit_test_suite_t *suite;
-            /* getopt does not regognize optional arguments in the form of
+            /* getopt does not recognize optional arguments in the form of
              * "-l foo"; check for such possibility */
             const char *arg = optarg ? optarg
                                      : (argv[optind] && argv[optind][0] != '-'
