@@ -64,7 +64,8 @@ AVS_UNIT_TEST(list, middle_delete) {
     int *list = NULL;
     int *element = NULL;
     for (i = 0; i < 10; ++i) {
-        *AVS_LIST_APPEND_NEW(int, &list) = (int) (i + 1);
+        element = AVS_LIST_APPEND_NEW(int, &list);
+        *element = (int) (i + 1);
     }
     i = 0;
     AVS_LIST_FOREACH(element, list) {
@@ -195,19 +196,24 @@ AVS_UNIT_TEST(list, sort) {
 }
 
 AVS_UNIT_TEST(list, is_cyclic) {
+    int *elem = NULL;
     AVS_LIST(int) list = NULL;
     size_t i;
     AVS_UNIT_ASSERT_FALSE(AVS_LIST_IS_CYCLIC(list));
-    *AVS_LIST_APPEND_NEW(int, &list) = 1;
+    elem = AVS_LIST_APPEND_NEW(int, &list);
+    *elem = 1;
     AVS_UNIT_ASSERT_FALSE(AVS_LIST_IS_CYCLIC(list));
-    *AVS_LIST_APPEND_NEW(int, &list) = 2;
+    elem = AVS_LIST_APPEND_NEW(int, &list);
+    *elem = 2;
     AVS_UNIT_ASSERT_FALSE(AVS_LIST_IS_CYCLIC(list));
-    *AVS_LIST_APPEND_NEW(int, &list) = 3;
+    elem = AVS_LIST_APPEND_NEW(int, &list);
+    *elem = 3;
     AVS_UNIT_ASSERT_FALSE(AVS_LIST_IS_CYCLIC(list));
 
     for (i = 4; i < 10; ++i) {
         AVS_LIST(int) *ptr;
-        *AVS_LIST_APPEND_NEW(int, &list) = (int) i;
+        elem = AVS_LIST_APPEND_NEW(int, &list);
+        *elem = (int) i;
         ptr = AVS_LIST_APPEND_PTR(&list);
         /* (i-3) elements in loop */
         *ptr = AVS_LIST_NTH(list, 3);
@@ -219,12 +225,14 @@ AVS_UNIT_TEST(list, is_cyclic) {
 }
 
 AVS_UNIT_TEST(list, simple_clone) {
+    int *elem = NULL;
     AVS_LIST(int) list = NULL;
     AVS_LIST(int) cloned = NULL;
     AVS_LIST(int) it = NULL;
     int i;
     for (i = 0; i < 10; ++i) {
-        *AVS_LIST_APPEND_NEW(int, &list) = (int) i;
+        elem = AVS_LIST_APPEND_NEW(int, &list);
+        *elem = (int) i;
     }
     AVS_UNIT_ASSERT_NOT_NULL((cloned = AVS_LIST_SIMPLE_CLONE(list)));
     it = cloned;
