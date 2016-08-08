@@ -143,7 +143,7 @@ offsetof(struct avs_list_space_for_next_helper_struct__, value)
  *         next element.
  */
 #define AVS_LIST_NEXT_PTR(element_ptr) \
-((AVS_TYPEOF_PTR(element_ptr)) &AVS_LIST_NEXT(*(element_ptr)))
+((AVS_TYPEOF_PTR(*(element_ptr)) *) &AVS_LIST_NEXT(*(element_ptr)))
 
 /**
  * A shorthand notation for a for-each loop.
@@ -408,7 +408,7 @@ void *avs_list_simple_clone__(void *list, size_t elem_size);
  *         will always yield <c>NULL</c>.
  */
 #define AVS_LIST_APPEND_PTR(list_ptr) \
-((AVS_TYPEOF_PTR(list_ptr)) \
+((AVS_TYPEOF_PTR(*(list_ptr)) *) \
         avs_list_append_ptr__((void **) (intptr_t) (list_ptr)))
 
 /**
