@@ -641,8 +641,6 @@ int main(int argc, char *argv[]) {
     avs_unit_test_suite_t * volatile current_suite = NULL;
     volatile int tests_result = 0;
 
-    avs_log_set_default_level(AVS_LOG_QUIET);
-
     _avs_unit_stack_trace_init(argc, argv);
     if (parse_command_line_args(argc, argv, &selected_suite, &selected_test)) {
         return 0;
