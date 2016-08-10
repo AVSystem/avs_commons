@@ -946,6 +946,13 @@ static int configure_ssl_certs(ssl_socket_certs_t *certs,
                                const avs_net_certificate_info_t *cert_info) {
     LOG(TRACE, "configure_ssl_certs");
 
+    if (cert_info->ca_cert_raw.cert_der
+            && cert_info->ca_cert_raw.cert_size == 0) {
+        LOG(ERROR, "invalid certificate info: non-NULL raw certificate of size "
+            "0 given");
+        return -1;
+    }
+
     if (server_auth_enabled(cert_info)) {
         if (load_ca_certs(&certs->ca_cert,
                           cert_info->ca_cert_path,
