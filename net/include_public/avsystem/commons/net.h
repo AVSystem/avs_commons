@@ -336,6 +336,7 @@ avs_net_private_key_t avs_net_private_key_from_memory(avs_net_key_type_t type,
  * Certificate and key information may be read from files or passed as raw data.
  *
  * Setting both filename and data pointer for client_key/client_cert is invalid.
+ * When the ca_cert_raw.cert_der is not NULL, its size must not be zero.
  *
  * ca_cert_raw may be used with ca_cert_file/ca_cert_path to add an extra CA
  * certificate to the certificate store,
