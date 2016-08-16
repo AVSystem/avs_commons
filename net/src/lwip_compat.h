@@ -32,4 +32,4 @@
 #   define MSG_NOSIGNAL 0
 #endif
 
-#endif // AVS_COMMONS_NET_LWIP_COMPAT_H
+#endif /* AVS_COMMONS_NET_LWIP_COMPAT_H */
