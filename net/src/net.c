@@ -543,7 +543,8 @@ int _avs_net_get_socket_type(avs_net_socket_type_t socket_type) {
 
 static int
 resolved_endpoint_family(const avs_net_resolved_endpoint_t *address) {
-    return (int) ((const struct sockaddr *) address->data.buf)->sa_family;
+    const char *buf = address->data.buf;
+    return (int) ((const struct sockaddr *) buf)->sa_family;
 }
 
 static int try_connect_open_socket(avs_net_socket_t *net_socket,
