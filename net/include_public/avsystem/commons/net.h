@@ -373,7 +373,8 @@ typedef enum {
     AVS_NET_SOCKET_OPT_RECV_TIMEOUT,
     AVS_NET_SOCKET_OPT_STATE,
     AVS_NET_SOCKET_OPT_ADDR_FAMILY,
-    AVS_NET_SOCKET_OPT_MTU
+    AVS_NET_SOCKET_OPT_MTU,
+    AVS_NET_SOCKET_OPT_INNER_MTU
 } avs_net_socket_opt_key_t;
 
 typedef enum {
