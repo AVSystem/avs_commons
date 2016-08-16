@@ -140,47 +140,14 @@ static const avs_net_socket_v_table_t ssl_vtable = {
 
 #endif /* AVS_LOG_WITH_TRACE */
 
-static avs_net_af_t get_socket_af(avs_net_abstract_socket_t *sock) {
+static int get_socket_inner_mtu_or_zero(avs_net_abstract_socket_t *sock) {
     avs_net_socket_opt_value_t opt_value;
-    if (avs_net_socket_get_opt(sock, AVS_NET_SOCKET_OPT_ADDR_FAMILY,
+    if (avs_net_socket_get_opt(sock, AVS_NET_SOCKET_OPT_INNER_MTU,
                                &opt_value)) {
-        return AVS_NET_AF_UNSPEC;
-    } else {
-        return opt_value.addr_family;
-    }
-}
-
-static int get_socket_mtu(avs_net_abstract_socket_t *sock) {
-    avs_net_socket_opt_value_t opt_value;
-    if (avs_net_socket_get_opt(sock, AVS_NET_SOCKET_OPT_MTU, &opt_value)) {
-        return -1;
+        return 0;
     } else {
         return opt_value.mtu;
     }
-}
-
-static int get_dtls_overhead(avs_net_abstract_socket_t *sock) {
-    switch (get_socket_af(sock)) {
-    case AVS_NET_AF_INET4:
-        return 28;
-    case AVS_NET_AF_INET6:
-        return 48;
-    default:
-        return -1;
-    }
-}
-
-static int calculate_mtu_or_zero(int base, int overhead) {
-    if (base < 0 || overhead < 0) {
-        return 0;
-    } else {
-        return base - overhead;
-    }
-}
-
-static int get_dtls_mtu_or_zero(ssl_socket_t *sock) {
-    return calculate_mtu_or_zero(get_socket_mtu(sock->backend_socket),
-                                 get_dtls_overhead(sock->backend_socket));
 }
 
 #ifdef BIO_TYPE_SOURCE_SINK
@@ -290,7 +257,7 @@ static long avs_bio_ctrl(BIO *bio, int command, long intarg, void *ptrarg) {
         return 1;
 #if OPENSSL_VERSION_NUMBER >= 0x10001000L /* OpenSSL >= 1.0.1 */
     case BIO_CTRL_DGRAM_QUERY_MTU:
-        return get_dtls_mtu_or_zero(sock);
+        return get_socket_inner_mtu_or_zero(sock->backend_socket);
     case BIO_CTRL_DGRAM_SET_NEXT_TIMEOUT:
         sock->next_deadline_ms =
                 (int64_t) ((const struct timeval *) ptrarg)->tv_sec * 1000 +
@@ -429,10 +396,23 @@ static int get_opt_ssl(avs_net_abstract_socket_t *ssl_socket_,
     int retval;
     ssl_socket->error_code = 0;
     switch (option_key) {
-    case AVS_NET_SOCKET_OPT_MTU:
-        out_option_value->mtu = get_dtls_mtu_or_zero(ssl_socket);
-        retval = (out_option_value->mtu > 0 ? 0 : -1);
-        break;
+    case AVS_NET_SOCKET_OPT_INNER_MTU:
+    {
+        /*
+         * DTLS datagram header is 13 bytes long.
+         *
+         * This might not be an entirely accurate measurement, as some ciphers
+         * add additional overhead/padding/etc., but there seems to be no way of
+         * querying the actual value using OpenSSL APIs.
+         */
+        int mtu = get_socket_inner_mtu_or_zero(ssl_socket->backend_socket) - 13;
+        if (mtu > 0) {
+            out_option_value->mtu = mtu;
+            return 0;
+        } else {
+            return -1;
+        }
+    }
     default:
         retval = avs_net_socket_get_opt(ssl_socket->backend_socket, option_key,
                                         out_option_value);
