@@ -1124,6 +1124,59 @@ static int local_port_net(avs_net_abstract_socket_t *socket,
     }
 }
 
+static int get_mtu(avs_net_socket_t *net_socket, int *out_mtu) {
+    int mtu, retval;
+    socklen_t dummy = sizeof(mtu);
+    switch (get_socket_family(net_socket->socket)) {
+#if defined(WITH_IPV4) && defined(IP_MTU)
+    case AF_INET:
+        errno = 0;
+        retval = getsockopt(net_socket->socket, IPPROTO_IP, IP_MTU,
+                            &mtu, &dummy);
+        net_socket->error_code = errno;
+        break;
+#endif /* defined(WITH_IPV4) && defined(IP_MTU) */
+
+#if defined(WITH_IPV6) && defined(IPV6_MTU)
+    case AF_INET6:
+        errno = 0;
+        retval = getsockopt(net_socket->socket, IPPROTO_IPV6, IPV6_MTU,
+                            &mtu, &dummy);
+        net_socket->error_code = errno;
+        break;
+#endif /* defined(WITH_IPV6) && defined(IPV6_MTU) */
+
+    default:
+        net_socket->error_code = EINVAL;
+        retval = -1;
+    }
+    if (retval < 0 || mtu < 0) {
+        return -1;
+    } else {
+        *out_mtu = mtu;
+        return 0;
+    }
+}
+
+static int get_udp_overhead(avs_net_socket_t *net_socket) {
+    net_socket->error_code = 0;
+    switch (get_socket_family(net_socket->socket)) {
+#ifdef WITH_IPV4
+    case AF_INET:
+        return 28; /* 20 for IP, 8 for UDP */
+#endif /* WITH_IPV4 */
+
+#ifdef WITH_IPV6
+    case AF_INET6:
+        return 48; /* 40 for IPv6, 8 for UDP */
+#endif /* WITH_IPV6 */
+
+    default:
+        net_socket->error_code = EINVAL;
+        return -1;
+    }
+}
+
 static int get_opt_net(avs_net_abstract_socket_t *net_socket_,
                        avs_net_socket_opt_key_t option_key,
                        avs_net_socket_opt_value_t *out_option_value) {
@@ -1141,38 +1194,22 @@ static int get_opt_net(avs_net_abstract_socket_t *net_socket_,
                 get_avs_af(get_socket_family(net_socket->socket));
         return 0;
     case AVS_NET_SOCKET_OPT_MTU:
+        return get_mtu(net_socket, &out_option_value->mtu);
+    case AVS_NET_SOCKET_OPT_INNER_MTU:
     {
-        int mtu, retval;
-        socklen_t dummy = sizeof(mtu);
-        switch (get_socket_family(net_socket->socket)) {
-#if defined(WITH_IPV4) && defined(IP_MTU)
-        case AF_INET:
-            errno = 0;
-            retval = getsockopt(net_socket->socket, IPPROTO_IP, IP_MTU,
-                                &mtu, &dummy);
-            net_socket->error_code = errno;
-            break;
-#endif /* defined(WITH_IPV4) && defined(IP_MTU) */
-
-#if defined(WITH_IPV6) && defined(IPV6_MTU)
-        case AF_INET6:
-            errno = 0;
-            retval = getsockopt(net_socket->socket, IPPROTO_IPV6, IPV6_MTU,
-                                &mtu, &dummy);
-            net_socket->error_code = errno;
-            break;
-#endif /* defined(WITH_IPV6) && defined(IPV6_MTU) */
-
-        default:
-            net_socket->error_code = EINVAL;
-            retval = -1;
+        int mtu, udp_overhead, retval;
+        if ((retval = get_mtu(net_socket, &mtu))) {
+            return retval;
         }
-        if (retval < 0 || mtu < 0) {
-            return -1;
-        } else {
-            out_option_value->mtu = mtu;
-            return 0;
+        if ((udp_overhead = get_udp_overhead(net_socket)) < 0) {
+            return udp_overhead;
         }
+        mtu -= udp_overhead;
+        if (mtu < 0) {
+            mtu = 0;
+        }
+        out_option_value->mtu = mtu;
+        return 0;
     }
     default:
         LOG(ERROR, "get_opt_net: unknown or unsupported option key");
