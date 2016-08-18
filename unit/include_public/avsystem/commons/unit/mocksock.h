@@ -152,6 +152,10 @@ void avs_unit_mocksock_enable_recv_timeout_getsetopt(
         avs_net_abstract_socket_t *socket_,
         int default_timeout_ms);
 
+void avs_unit_mocksock_enable_inner_mtu_getopt(
+        avs_net_abstract_socket_t *socket_,
+        int inner_mtu);
+
 #ifdef  __cplusplus
 }
 #endif
