@@ -1158,17 +1158,19 @@ static int get_mtu(avs_net_socket_t *net_socket, int *out_mtu) {
     }
 }
 
-static int get_udp_overhead(avs_net_socket_t *net_socket) {
+static int get_udp_overhead(avs_net_socket_t *net_socket, int *out) {
     net_socket->error_code = 0;
     switch (get_socket_family(net_socket->socket)) {
 #ifdef WITH_IPV4
     case AF_INET:
-        return 28; /* 20 for IP, 8 for UDP */
+        *out = 28; /* 20 for IP + 8 for UDP */
+        return 0;
 #endif /* WITH_IPV4 */
 
 #ifdef WITH_IPV6
     case AF_INET6:
-        return 48; /* 40 for IPv6, 8 for UDP */
+        *out = 48; /* 40 for IPv6 + 8 for UDP */
+        return 0;
 #endif /* WITH_IPV6 */
 
     default:
@@ -1198,11 +1200,9 @@ static int get_opt_net(avs_net_abstract_socket_t *net_socket_,
     case AVS_NET_SOCKET_OPT_INNER_MTU:
     {
         int mtu, udp_overhead, retval;
-        if ((retval = get_mtu(net_socket, &mtu))) {
+        if ((retval = get_mtu(net_socket, &mtu))
+                || (retval = get_udp_overhead(net_socket, &udp_overhead))) {
             return retval;
-        }
-        if ((udp_overhead = get_udp_overhead(net_socket)) < 0) {
-            return udp_overhead;
         }
         mtu -= udp_overhead;
         if (mtu < 0) {
