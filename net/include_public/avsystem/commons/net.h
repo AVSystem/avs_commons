@@ -394,12 +394,10 @@ typedef enum {
      */
     AVS_NET_SOCKET_OPT_MTU,
     /**
-     * Used the get the maximum size of application-layer data that can be
-     * transmitted in a single packet by the socket, i.e. the maximum size of
-     * a buffer that can be passed to @ref avs_net_socket_send or
-     * @ref avs_net_socket_send_to and transmitted as a single packet. The value
-     * is passed as bytes in the <c>mtu</c> field of the
-     * @ref avs_net_socket_opt_value_t union.
+     * Used the get the maximum size of a buffer that can be passed to
+     * @ref avs_net_socket_send or @ref avs_net_socket_send_to and transmitted
+     * as a single packet. The value is passed as bytes in the <c>mtu</c> field
+     * of the @ref avs_net_socket_opt_value_t union.
      */
     AVS_NET_SOCKET_OPT_INNER_MTU
 } avs_net_socket_opt_key_t;
