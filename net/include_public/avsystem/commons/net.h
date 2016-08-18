@@ -370,10 +370,37 @@ typedef struct {
 } avs_net_ssl_configuration_t;
 
 typedef enum {
+    /**
+     * Used to set or get receive timeout of the socket. The value is passed in
+     * the <c>recv_timeout</c> field of the @ref avs_net_socket_opt_value_t
+     * union.
+     */
     AVS_NET_SOCKET_OPT_RECV_TIMEOUT,
+    /**
+     * Used to get the current state of the socket. The value is passed in the
+     * <c>state</c> field of the @ref avs_net_socket_opt_value_t union.
+     */
     AVS_NET_SOCKET_OPT_STATE,
+    /**
+     * Used to get the family of the communication addresses used by the socket.
+     * The value is passed in the <c>addr_family</c> field of the
+     * @ref avs_net_socket_opt_value_t union.
+     */
     AVS_NET_SOCKET_OPT_ADDR_FAMILY,
+    /**
+     * Used to get the maximum size of a network-layer packet that can be
+     * transmitted by the socket. The value is passed as bytes in the <c>mtu</c>
+     * field of the @ref avs_net_socket_opt_value_t union.
+     */
     AVS_NET_SOCKET_OPT_MTU,
+    /**
+     * Used the get the maximum size of application-layer data that can be
+     * transmitted in a single packet by the socket, i.e. the maximum size of
+     * a buffer that can be passed to @ref avs_net_socket_send or
+     * @ref avs_net_socket_send_to and transmitted as a single packet. The value
+     * is passed as bytes in the <c>mtu</c> field of the
+     * @ref avs_net_socket_opt_value_t union.
+     */
     AVS_NET_SOCKET_OPT_INNER_MTU
 } avs_net_socket_opt_key_t;
 

@@ -150,6 +150,49 @@ static int get_socket_inner_mtu_or_zero(avs_net_abstract_socket_t *sock) {
     }
 }
 
+static int get_explicit_iv_length(EVP_CIPHER_CTX *cipher_ctx) {
+    /* adapted from do_dtls1_write() in OpenSSL */
+    int mode = EVP_CIPHER_CTX_mode(cipher_ctx);
+    if (mode == EVP_CIPH_CBC_MODE) {
+        int eivlen = EVP_CIPHER_CTX_iv_length(cipher_ctx);
+        if (eivlen > 1) {
+            return eivlen;
+        }
+    } else if (mode == EVP_CIPH_GCM_MODE) {
+        return EVP_GCM_TLS_EXPLICIT_IV_LEN;
+    }
+    return 0;
+}
+
+static int get_dtls_overhead(ssl_socket_t *socket) {
+    int result = DTLS1_RT_HEADER_LENGTH;
+    if (socket && socket->ssl) {
+        /* querying OpenSSL internals, but there seem to be no other way */
+        EVP_CIPHER_CTX *cipher_ctx = socket->ssl->enc_write_ctx;
+        EVP_MD_CTX *md_ctx = socket->ssl->write_hash;
+        /* actual logic is inspired by GnuTLS' record_overhead() */
+        if (cipher_ctx) {
+            int block_size = EVP_CIPHER_CTX_block_size(cipher_ctx);
+            if (block_size < 0) {
+                return -1;
+            }
+            if (!(EVP_CIPHER_CTX_flags(cipher_ctx) & EVP_CIPH_NO_PADDING)) {
+                result += block_size;
+            }
+            result += get_explicit_iv_length(cipher_ctx);
+        }
+        /* adapted from mac_size calculation in dtls1_do_write() in OpenSSL */
+        if (md_ctx && !(cipher_ctx
+                    && EVP_CIPHER_CTX_mode(cipher_ctx) == EVP_CIPH_GCM_MODE)) {
+            result += EVP_MD_CTX_size(md_ctx);
+        }
+        if (SSL_get_current_compression(socket->ssl) != NULL) {
+            result += SSL3_RT_MAX_COMPRESSED_OVERHEAD;
+        }
+    }
+    return result;
+}
+
 #ifdef BIO_TYPE_SOURCE_SINK
 static int avs_bio_write(BIO *bio, const char *data, int size) {
     if (!data || size < 0) {
@@ -231,7 +274,6 @@ static int avs_bio_gets(BIO *bio, char *buffer, int size) {
     return -1;
 }
 
-#if OPENSSL_VERSION_NUMBER >= 0x10001000L /* OpenSSL >= 1.0.1 */
 static int get_dtls_fallback_mtu_or_zero(ssl_socket_t *sock) {
     char host[NET_MAX_HOSTNAME_SIZE];
     if (avs_net_socket_get_remote_host(sock->backend_socket,
@@ -245,7 +287,6 @@ static int get_dtls_fallback_mtu_or_zero(ssl_socket_t *sock) {
         }
     }
 }
-#endif
 
 static long avs_bio_ctrl(BIO *bio, int command, long intarg, void *ptrarg) {
     ssl_socket_t *sock = (ssl_socket_t *) bio->ptr;
@@ -398,20 +439,22 @@ static int get_opt_ssl(avs_net_abstract_socket_t *ssl_socket_,
     switch (option_key) {
     case AVS_NET_SOCKET_OPT_INNER_MTU:
     {
-        /*
-         * DTLS datagram header is 13 bytes long.
-         *
-         * This might not be an entirely accurate measurement, as some ciphers
-         * add additional overhead/padding/etc., but there seems to be no way of
-         * querying the actual value using OpenSSL APIs.
-         */
-        int mtu = get_socket_inner_mtu_or_zero(ssl_socket->backend_socket) - 13;
+        int mtu = get_socket_inner_mtu_or_zero(ssl_socket->backend_socket);
+        if (mtu <= 0) {
+            mtu = get_dtls_fallback_mtu_or_zero(ssl_socket);
+        }
         if (mtu > 0) {
-            out_option_value->mtu = mtu;
-            return 0;
-        } else {
+            int overhead = get_dtls_overhead(ssl_socket);
+            if (overhead < 0) {
+                return -1;
+            }
+            mtu -= overhead;
+        }
+        if (mtu < 0) {
             return -1;
         }
+        out_option_value->mtu = mtu;
+        return 0;
     }
     default:
         retval = avs_net_socket_get_opt(ssl_socket->backend_socket, option_key,
