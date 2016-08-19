@@ -1158,6 +1158,14 @@ static int get_mtu(avs_net_socket_t *net_socket, int *out_mtu) {
     }
 }
 
+static int get_fallback_inner_mtu(avs_net_socket_t *socket) {
+    if (strchr(socket->host, ':')) { /* IPv6 */
+        return 1232; /* 1280 - 48 */
+    } else { /* probably IPv4 */
+        return 548; /* 576 - 28 */
+    }
+}
+
 static int get_udp_overhead(avs_net_socket_t *net_socket, int *out) {
     net_socket->error_code = 0;
     switch (get_socket_family(net_socket->socket)) {
@@ -1199,16 +1207,21 @@ static int get_opt_net(avs_net_abstract_socket_t *net_socket_,
         return get_mtu(net_socket, &out_option_value->mtu);
     case AVS_NET_SOCKET_OPT_INNER_MTU:
     {
-        int mtu, udp_overhead, retval;
-        if ((retval = get_mtu(net_socket, &mtu))
-                || (retval = get_udp_overhead(net_socket, &udp_overhead))) {
-            return retval;
+        int mtu;
+        if (!get_mtu(net_socket, &mtu)) {
+            int retval, udp_overhead;
+            if ((retval = get_udp_overhead(net_socket, &udp_overhead))) {
+                return retval;
+            }
+            mtu -= udp_overhead;
+            if (mtu < 0) {
+                mtu = 0;
+            }
+            out_option_value->mtu = mtu;
+        } else {
+            net_socket->error_code = 0;
+            mtu = get_fallback_inner_mtu(net_socket);
         }
-        mtu -= udp_overhead;
-        if (mtu < 0) {
-            mtu = 0;
-        }
-        out_option_value->mtu = mtu;
         return 0;
     }
     default:

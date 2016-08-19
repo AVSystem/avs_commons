@@ -210,30 +210,6 @@ static int local_port_ssl(avs_net_abstract_socket_t *socket_,
     return retval;
 }
 
-static int get_socket_inner_mtu_or_zero(avs_net_abstract_socket_t *sock) {
-    avs_net_socket_opt_value_t opt_value;
-    if (avs_net_socket_get_opt(sock, AVS_NET_SOCKET_OPT_INNER_MTU,
-                               &opt_value)) {
-        return 0;
-    } else {
-        return opt_value.mtu;
-    }
-}
-
-static int get_dtls_fallback_mtu_or_zero(ssl_socket_t *sock) {
-    char host[NET_MAX_HOSTNAME_SIZE];
-    if (avs_net_socket_get_remote_host(sock->backend_socket,
-                                       host, sizeof(host))) {
-        return 0;
-    } else {
-        if (strchr(host, ':')) { /* IPv6 */
-            return 1232; /* 1280 - 48 */
-        } else {
-            return 548; /* 576 - 28 */
-        }
-    }
-}
-
 static unsigned get_dtls_overhead(ssl_socket_t *socket) {
     unsigned result = 13; /* base DTLS header size */
     const mbedtls_ssl_ciphersuite_t *ciphersuite =
@@ -266,30 +242,17 @@ static int get_opt_ssl(avs_net_abstract_socket_t *ssl_socket_,
                        avs_net_socket_opt_value_t *out_option_value) {
     ssl_socket_t *ssl_socket = (ssl_socket_t *) ssl_socket_;
     int retval;
-    ssl_socket->error_code = 0;
-    switch (option_key) {
-    case AVS_NET_SOCKET_OPT_INNER_MTU:
-    {
-        int mtu = get_socket_inner_mtu_or_zero(ssl_socket->backend_socket);
-        if (mtu <= 0) {
-            mtu = get_dtls_fallback_mtu_or_zero(ssl_socket);
+    WRAP_ERRNO(ssl_socket, retval,
+               avs_net_socket_get_opt(ssl_socket->backend_socket, option_key,
+                                      out_option_value));
+    if (!retval && option_key == AVS_NET_SOCKET_OPT_INNER_MTU) {
+        unsigned overhead = get_dtls_overhead(ssl_socket);
+        if (out_option_value->mtu > 0
+                && overhead < (unsigned) out_option_value->mtu) {
+            out_option_value->mtu -= (int) overhead;
+        } else {
+            out_option_value->mtu = 0;
         }
-        if (mtu > 0) {
-            mtu -= (int) get_dtls_overhead(ssl_socket);
-        }
-        if (mtu < 0) {
-            return -1;
-        }
-        out_option_value->mtu = mtu;
-        return 0;
-    }
-    default:
-        retval = avs_net_socket_get_opt(ssl_socket->backend_socket, option_key,
-                                        out_option_value);
-    }
-    if (retval && !(ssl_socket->error_code =
-                avs_net_socket_errno(ssl_socket->backend_socket))) {
-        ssl_socket->error_code = EPROTO;
     }
     return retval;
 }
