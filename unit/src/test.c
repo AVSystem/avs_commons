@@ -540,6 +540,7 @@ static int parse_command_line_args(int argc, char* argv[],
     return 0;
 }
 
+#ifdef WITH_AVS_LOG
 static int parse_log_level(const char *str,
                            avs_log_level_t *level) {
     if (!strcasecmp(str, "trace")) {
@@ -633,6 +634,9 @@ static void process_env_vars(void) {
         atexit(avs_log_reset);
     }
 }
+#else /* WITH_AVS_LOG */
+static void process_env_vars(void) {}
+#endif /* WITH_AVS_LOG */
 
 int main(int argc, char *argv[]) {
     const char * volatile selected_suite = NULL;
