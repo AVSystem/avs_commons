@@ -47,6 +47,7 @@
 #define WITH_SSL
 #endif
 
+#cmakedefine WITH_AVS_LOG
 #cmakedefine WITH_SOCKET_LOG
 
 #cmakedefine OPENSSL_CUSTOM_CIPHERS_ENABLED
