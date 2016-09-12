@@ -162,11 +162,19 @@ static int get_explicit_iv_length(EVP_CIPHER_CTX *cipher_ctx) {
     } else if (mode == EVP_CIPH_GCM_MODE) {
         return EVP_GCM_TLS_EXPLICIT_IV_LEN;
     }
+#ifdef EVP_CCM_TLS_EXPLICIT_IV_LEN
+    else if (mode == EVP_CIPH_CCM_MODE) {
+        return EVP_CCM_TLS_EXPLICIT_IV_LEN;
+    }
+#endif
     return 0;
 }
 
-static int get_dtls_overhead(ssl_socket_t *socket) {
-    int result = DTLS1_RT_HEADER_LENGTH;
+static int get_dtls_overhead(ssl_socket_t *socket,
+                             int *out_header,
+                             int *out_padding_size) {
+    *out_header = DTLS1_RT_HEADER_LENGTH;
+    *out_padding_size = 0;
     if (socket && socket->ssl) {
         /* querying OpenSSL internals, but there seem to be no other way */
         EVP_CIPHER_CTX *cipher_ctx = socket->ssl->enc_write_ctx;
@@ -178,26 +186,30 @@ static int get_dtls_overhead(ssl_socket_t *socket) {
                 return -1;
             }
             if (!(EVP_CIPHER_CTX_flags(cipher_ctx) & EVP_CIPH_NO_PADDING)) {
-                result += block_size;
+                *out_padding_size = block_size;
             }
-            result += get_explicit_iv_length(cipher_ctx);
+            *out_header += get_explicit_iv_length(cipher_ctx);
         }
         /* adapted from mac_size calculation in dtls1_do_write() in OpenSSL */
         if (md_ctx && !(cipher_ctx
                     && EVP_CIPHER_CTX_mode(cipher_ctx) == EVP_CIPH_GCM_MODE)) {
-            result += EVP_MD_CTX_size(md_ctx);
+            *out_header += EVP_MD_CTX_size(md_ctx);
         }
         if (SSL_get_current_compression(socket->ssl) != NULL) {
-            result += SSL3_RT_MAX_COMPRESSED_OVERHEAD;
+            *out_header += SSL3_RT_MAX_COMPRESSED_OVERHEAD;
         }
     }
-    return result;
+    return 0;
 }
 #else
-static int get_dtls_overhead(ssl_socket_t *socket) {
+static int get_dtls_overhead(ssl_socket_t *socket,
+                             int *out_header,
+                             int *out_padding_size) {
     /* OpenSSL 1.1 hides its internals, but also does not allow to query the
      * currently used ciphers in any other way, so we're screwed :( */
     (void) socket;
+    (void) out_header;
+    (void) out_padding_size;
     return -1;
 }
 #endif
@@ -488,11 +500,18 @@ static int get_opt_ssl(avs_net_abstract_socket_t *ssl_socket_,
             mtu = get_dtls_fallback_mtu_or_zero(ssl_socket);
         }
         if (mtu > 0) {
-            int overhead = get_dtls_overhead(ssl_socket);
-            if (overhead < 0) {
+            int header, padding;
+            if (get_dtls_overhead(ssl_socket, &header, &padding)) {
                 return -1;
             }
-            mtu -= overhead;
+            mtu -= header;
+            if (padding > 0) {
+                /* SSL padding is always present - when data is an exact
+                 * multiply of block size, a full block of padding is added;
+                 * the maximum user data we can pass is thus the maximum number
+                 * of full blocks minus one byte */
+                mtu = (mtu / padding) * padding - 1;
+            }
         }
         if (mtu < 0) {
             return -1;
