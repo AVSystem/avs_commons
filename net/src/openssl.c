@@ -150,6 +150,7 @@ static int get_socket_inner_mtu_or_zero(avs_net_abstract_socket_t *sock) {
     }
 }
 
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
 static int get_explicit_iv_length(EVP_CIPHER_CTX *cipher_ctx) {
     /* adapted from do_dtls1_write() in OpenSSL */
     int mode = EVP_CIPHER_CTX_mode(cipher_ctx);
@@ -192,15 +193,31 @@ static int get_dtls_overhead(ssl_socket_t *socket) {
     }
     return result;
 }
+#else
+static int get_dtls_overhead(ssl_socket_t *socket) {
+    /* OpenSSL 1.1 hides its internals, but also does not allow to query the
+     * currently used ciphers in any other way, so we're screwed :( */
+    (void) socket;
+    return -1;
+}
+#endif
 
 #ifdef BIO_TYPE_SOURCE_SINK
+
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+#define BIO_set_init(bio, value) ((bio)->init = (value))
+#define BIO_get_data(bio) ((bio)->ptr)
+#define BIO_set_data(bio, data) ((bio)->ptr = (data))
+#endif
+
 static int avs_bio_write(BIO *bio, const char *data, int size) {
     if (!data || size < 0) {
         return 0;
     }
     BIO_clear_retry_flags(bio);
-    if (avs_net_socket_send(((ssl_socket_t *) bio->ptr)->backend_socket,
-                            data, (size_t) size)) {
+    if (avs_net_socket_send(
+            ((ssl_socket_t *) BIO_get_data(bio))->backend_socket,
+            data, (size_t) size)) {
         return -1;
     } else {
         return size;
@@ -240,7 +257,7 @@ static avs_net_timeout_t adjust_receive_timeout(ssl_socket_t *sock) {
 }
 
 static int avs_bio_read(BIO *bio, char *buffer, int size) {
-    ssl_socket_t *sock = (ssl_socket_t *) bio->ptr;
+    ssl_socket_t *sock = (ssl_socket_t *) BIO_get_data(bio);
     avs_net_timeout_t prev_timeout = -1;
     size_t read_bytes;
     int result;
@@ -289,7 +306,7 @@ static int get_dtls_fallback_mtu_or_zero(ssl_socket_t *sock) {
 }
 
 static long avs_bio_ctrl(BIO *bio, int command, long intarg, void *ptrarg) {
-    ssl_socket_t *sock = (ssl_socket_t *) bio->ptr;
+    ssl_socket_t *sock = (ssl_socket_t *) BIO_get_data(bio);
     (void) sock;
     (void) intarg;
     (void) ptrarg;
@@ -317,10 +334,9 @@ static long avs_bio_ctrl(BIO *bio, int command, long intarg, void *ptrarg) {
 }
 
 static int avs_bio_create(BIO *bio) {
-    bio->init = 1;
-    bio->num = 0;
-    bio->ptr = NULL;
-    bio->flags = 0;
+    BIO_set_init(bio, 1);
+    BIO_set_data(bio, NULL);
+    BIO_set_flags(bio, 0);
     return 1;
 }
 
@@ -328,29 +344,57 @@ static int avs_bio_destroy(BIO *bio) {
     if (!bio) {
         return 0;
     }
-    bio->ptr = NULL; /* will be cleaned up elsewhere */
-    bio->init = 0;
-    bio->flags = 0;
+    BIO_set_data(bio, NULL); /* will be cleaned up elsewhere */
+    BIO_set_init(bio, 0);
+    BIO_set_flags(bio, 0);
     return 1;
 }
 
-static BIO_METHOD AVS_BIO = {
-    (100 | BIO_TYPE_SOURCE_SINK),
-    "avs_net",
-    avs_bio_write,
-    avs_bio_read,
-    avs_bio_puts,
-    avs_bio_gets,
-    avs_bio_ctrl,
-    avs_bio_create,
-    avs_bio_destroy,
-    NULL
-};
+static BIO_METHOD *AVS_BIO = NULL;
+
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+static int avs_bio_init(void) {
+    static BIO_METHOD AVS_BIO_IMPL = {
+        (100 | BIO_TYPE_SOURCE_SINK),
+        "avs_net",
+        avs_bio_write,
+        avs_bio_read,
+        avs_bio_puts,
+        avs_bio_gets,
+        avs_bio_ctrl,
+        avs_bio_create,
+        avs_bio_destroy,
+        NULL
+    };
+    AVS_BIO = &AVS_BIO_IMPL;
+    return 0;
+}
+#else
+static int avs_bio_init(void) {
+    assert(!AVS_BIO);
+    /* BIO_meth_set_* return 1 on success */
+    if (!((AVS_BIO = BIO_meth_new(100 | BIO_TYPE_SOURCE_SINK, "avs_net"))
+            && BIO_meth_set_write(AVS_BIO, avs_bio_write)
+            && BIO_meth_set_read(AVS_BIO, avs_bio_read)
+            && BIO_meth_set_puts(AVS_BIO, avs_bio_puts)
+            && BIO_meth_set_gets(AVS_BIO, avs_bio_gets)
+            && BIO_meth_set_ctrl(AVS_BIO, avs_bio_ctrl)
+            && BIO_meth_set_create(AVS_BIO, avs_bio_create)
+            && BIO_meth_set_destroy(AVS_BIO, avs_bio_destroy))) {
+        if (AVS_BIO) {
+            BIO_meth_free(AVS_BIO);
+            AVS_BIO = NULL;
+        }
+        return -1;
+    }
+    return 0;
+}
+#endif
 
 static BIO *avs_bio_spawn(ssl_socket_t *socket) {
-    BIO *bio = BIO_new(&AVS_BIO);
+    BIO *bio = BIO_new(AVS_BIO);
     if (bio) {
-        bio->ptr = socket;
+        BIO_set_data(bio, socket);
     }
     return bio;
 }
@@ -1209,7 +1253,7 @@ static int cleanup_ssl(avs_net_abstract_socket_t **socket_) {
 static int avs_ssl_init() {
     static volatile int initialized = 0;
     if (!initialized) {
-        initialized = 1;
+        int result = 0;
         LOG(TRACE, "OpenSSL initialization");
 
         SSL_library_init();
@@ -1219,17 +1263,23 @@ static int avs_ssl_init() {
         OpenSSL_add_all_algorithms();
         if (!RAND_load_file("/dev/urandom", -1)) {
             LOG(WARNING, "RAND_load_file error");
+            result = -1;
         }
         /* On some OpenSSL version, RAND_load file causes hell to break loose.
          * Get rid of any "uninitialized" memory that it created :( */
         VALGRIND_MAKE_MEM_DEFINED_IF_ADDRESSABLE(0, sbrk(0));
+        if (avs_bio_init()) {
+            LOG(WARNING, "avs_bio_init error");
+            result = -1;
+        }
+        initialized = (result ? result : 1);
     }
-    return 0;
+    return initialized < 0 ? initialized : 0;
 }
 
 static const SSL_METHOD *stream_method(avs_net_ssl_version_t version) {
     switch (version) {
-#ifndef OPENSSL_NO_SSL2
+#if OPENSSL_VERSION_NUMBER < 0x10100000L && !defined(OPENSSL_NO_SSL2)
     case AVS_NET_SSL_VERSION_SSLv2:
         return SSLv2_method();
 #endif
