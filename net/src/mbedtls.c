@@ -210,11 +210,14 @@ static int local_port_ssl(avs_net_abstract_socket_t *socket_,
     return retval;
 }
 
-static unsigned get_dtls_overhead(ssl_socket_t *socket) {
-    unsigned result = 13; /* base DTLS header size */
+static void get_dtls_overhead(ssl_socket_t *socket,
+                              unsigned *out_header,
+                              unsigned *out_padding_size) {
     const mbedtls_ssl_ciphersuite_t *ciphersuite =
             mbedtls_ssl_ciphersuite_from_string(
                     mbedtls_ssl_get_ciphersuite(&socket->context));
+    *out_header = 13; /* base DTLS header size */
+    *out_padding_size = 0;
     if (ciphersuite) {
         const mbedtls_cipher_info_t *cipher =
                 mbedtls_cipher_info_from_type(ciphersuite->cipher);
@@ -222,19 +225,18 @@ static unsigned get_dtls_overhead(ssl_socket_t *socket) {
                 mbedtls_md_info_from_type(ciphersuite->mac);
         if (cipher) {
             if (cipher->mode == MBEDTLS_MODE_CBC) {
-                result += cipher->block_size; /* padding */
-                result += cipher->iv_size; /* explicit IV */
+                *out_padding_size = cipher->block_size; /* padding */
+                *out_header += cipher->iv_size; /* explicit IV */
             } else if (cipher->mode == MBEDTLS_MODE_GCM) {
-                result += 8; /* explicit IV length for GCM */
+                *out_header += 8; /* explicit IV length for GCM */
             }
         }
         if (mac && !(cipher && cipher->mode == MBEDTLS_MODE_GCM)) {
-            result += mbedtls_md_get_size(mac);
+            *out_header += mbedtls_md_get_size(mac);
         }
     }
     /* ignoring the compression for now */
     /* mbed TLS does not declare any overhead constants */
-    return result;
 }
 
 static int get_opt_ssl(avs_net_abstract_socket_t *ssl_socket_,
@@ -246,11 +248,22 @@ static int get_opt_ssl(avs_net_abstract_socket_t *ssl_socket_,
                avs_net_socket_get_opt(ssl_socket->backend_socket, option_key,
                                       out_option_value));
     if (!retval && option_key == AVS_NET_SOCKET_OPT_INNER_MTU) {
-        unsigned overhead = get_dtls_overhead(ssl_socket);
+        unsigned header, padding;
+        get_dtls_overhead(ssl_socket, &header, &padding);
         if (out_option_value->mtu > 0
-                && overhead < (unsigned) out_option_value->mtu) {
-            out_option_value->mtu -= (int) overhead;
-        } else {
+                && header < (unsigned) out_option_value->mtu) {
+            out_option_value->mtu -= (int) header;
+            if (padding > 0) {
+                /* SSL padding is always present - when data is an exact
+                 * multiply of block size, a full block of padding is added;
+                 * the maximum user data we can pass is thus the maximum number
+                 * of full blocks minus one byte */
+                out_option_value->mtu =
+                        (int) (((unsigned) out_option_value->mtu
+                                        / padding) * padding - 1);
+            }
+        }
+        if (out_option_value->mtu < 0) {
             out_option_value->mtu = 0;
         }
     }
