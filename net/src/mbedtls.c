@@ -250,6 +250,7 @@ static int get_opt_ssl(avs_net_abstract_socket_t *ssl_socket_,
                avs_net_socket_get_opt(ssl_socket->backend_socket, option_key,
                                       out_option_value));
     if (!retval && option_key == AVS_NET_SOCKET_OPT_INNER_MTU) {
+        /* for non-datagram sockets, the above get_opt call have failed */
         unsigned header, padding;
         get_dtls_overhead(ssl_socket, &header, &padding);
         if (out_option_value->mtu > 0

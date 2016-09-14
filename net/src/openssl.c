@@ -499,6 +499,7 @@ static int get_opt_ssl(avs_net_abstract_socket_t *ssl_socket_,
     switch (option_key) {
     case AVS_NET_SOCKET_OPT_INNER_MTU:
     {
+        /* getting inner MTU will fail for non-datagram sockets */
         int mtu = get_socket_inner_mtu_or_zero(ssl_socket->backend_socket);
         if (mtu > 0) {
             int header, padding;
