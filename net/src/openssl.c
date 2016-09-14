@@ -159,9 +159,12 @@ static int get_explicit_iv_length(EVP_CIPHER_CTX *cipher_ctx) {
         if (eivlen > 1) {
             return eivlen;
         }
-    } else if (mode == EVP_CIPH_GCM_MODE) {
+    }
+#ifdef EVP_GCM_TLS_EXPLICIT_IV_LEN
+    else if (mode == EVP_CIPH_GCM_MODE) {
         return EVP_GCM_TLS_EXPLICIT_IV_LEN;
     }
+#endif
 #ifdef EVP_CCM_TLS_EXPLICIT_IV_LEN
     else if (mode == EVP_CIPH_CCM_MODE) {
         return EVP_CCM_TLS_EXPLICIT_IV_LEN;
@@ -169,6 +172,11 @@ static int get_explicit_iv_length(EVP_CIPHER_CTX *cipher_ctx) {
 #endif
     return 0;
 }
+
+#ifndef SSL3_RT_MAX_COMPRESSED_OVERHEAD
+/* this is the value in OpenSSL 1.x */
+#define SSL3_RT_MAX_COMPRESSED_OVERHEAD 1024
+#endif
 
 static int get_dtls_overhead(ssl_socket_t *socket,
                              int *out_header,
@@ -191,10 +199,12 @@ static int get_dtls_overhead(ssl_socket_t *socket,
             *out_header += get_explicit_iv_length(cipher_ctx);
         }
         /* adapted from mac_size calculation in dtls1_do_write() in OpenSSL */
+#ifdef EVP_CIPH_GCM_MODE
         if (md_ctx && !(cipher_ctx
                     && EVP_CIPHER_CTX_mode(cipher_ctx) == EVP_CIPH_GCM_MODE)) {
             *out_header += EVP_MD_CTX_size(md_ctx);
         }
+#endif
         if (SSL_get_current_compression(socket->ssl) != NULL) {
             *out_header += SSL3_RT_MAX_COMPRESSED_OVERHEAD;
         }
