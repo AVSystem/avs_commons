@@ -227,11 +227,13 @@ static void get_dtls_overhead(ssl_socket_t *socket,
             if (cipher->mode == MBEDTLS_MODE_CBC) {
                 *out_padding_size = cipher->block_size; /* padding */
                 *out_header += cipher->iv_size; /* explicit IV */
-            } else if (cipher->mode == MBEDTLS_MODE_GCM) {
-                *out_header += 8; /* explicit IV length for GCM */
+            } else if (cipher->mode == MBEDTLS_MODE_GCM
+                    || cipher->mode == MBEDTLS_MODE_CCM) {
+                *out_header += 8; /* explicit IV length for GCM and CCM */
             }
         }
-        if (mac && !(cipher && cipher->mode == MBEDTLS_MODE_GCM)) {
+        if (mac && !(cipher && (cipher->mode == MBEDTLS_MODE_GCM
+                                        || cipher->mode == MBEDTLS_MODE_CCM))) {
             *out_header += mbedtls_md_get_size(mac);
         }
     }
