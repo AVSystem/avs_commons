@@ -153,6 +153,9 @@ typedef struct {
 
     char recv_timeout_enabled;
     int recv_timeout_ms;
+
+    char inner_mtu_enabled;
+    int inner_mtu;
 } mocksock_t;
 
 static void assert_command_expected(const mocksock_expected_command_t *expected,
@@ -376,6 +379,12 @@ static int mock_get_opt(avs_net_abstract_socket_t *socket_,
     if (socket->recv_timeout_enabled
             && option_key == AVS_NET_SOCKET_OPT_RECV_TIMEOUT) {
         out_option_value->recv_timeout = socket->recv_timeout_ms;
+        return 0;
+    }
+
+    if (socket->inner_mtu_enabled
+            && option_key == AVS_NET_SOCKET_OPT_INNER_MTU) {
+        out_option_value->mtu = socket->inner_mtu;
         return 0;
     }
 
@@ -695,4 +704,12 @@ void avs_unit_mocksock_enable_recv_timeout_getsetopt(
     mocksock_t *socket = (mocksock_t *) socket_;
     socket->recv_timeout_enabled = 1;
     socket->recv_timeout_ms = default_timeout_ms;
+}
+
+void avs_unit_mocksock_enable_inner_mtu_getopt(
+        avs_net_abstract_socket_t *socket_,
+        int inner_mtu) {
+    mocksock_t *socket = (mocksock_t *) socket_;
+    socket->inner_mtu_enabled = 1;
+    socket->inner_mtu = inner_mtu;
 }

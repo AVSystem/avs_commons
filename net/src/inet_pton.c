@@ -57,7 +57,7 @@ static int inet_pton4(const char *src, void *dst);
 
 #ifdef WITH_IPV6
 static int inet_pton6(const char *src, void *dst);
-#endif // WITH_IPV6
+#endif /* WITH_IPV6 */
 
 int _avs_inet_pton(int af, const char *src, void *dst);
 
@@ -77,12 +77,12 @@ int _avs_inet_pton(int af, const char *src, void *dst) {
 #ifdef WITH_IPV4
     case AF_INET:
         return (inet_pton4(src, dst));
-#endif // WITH_IPV4
+#endif /* WITH_IPV4 */
 
 #ifdef WITH_IPV6
     case AF_INET6:
         return (inet_pton6(src, dst));
-#endif // WITH_IPV6
+#endif /* WITH_IPV6 */
 
     default:
         errno = EAFNOSUPPORT;
@@ -231,4 +231,4 @@ static int inet_pton6(const char *src, void *dst) {
     memcpy(dst, tmp, NS_IN6ADDRSZ);
     return (1);
 }
-#endif // WITH_IPV6
+#endif /* WITH_IPV6 */

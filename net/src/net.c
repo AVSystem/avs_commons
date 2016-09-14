@@ -74,11 +74,11 @@ typedef union {
 
 #ifdef WITH_IPV4
     struct sockaddr_in      addr_in;
-#endif // WITH_IPV4
+#endif /* WITH_IPV4 */
 
 #ifdef WITH_IPV6
     struct sockaddr_in6     addr_in6;
-#endif // WITH_IPV6
+#endif /* WITH_IPV6 */
 } sockaddr_union_t;
 
 static int connect_net(avs_net_abstract_socket_t *net_socket,
@@ -172,12 +172,12 @@ int _avs_net_get_af(avs_net_af_t addr_family) {
 #ifdef WITH_IPV4
     case AVS_NET_AF_INET4:
         return AF_INET;
-#endif // WITH_IPV4
+#endif /* WITH_IPV4 */
 
 #ifdef WITH_IPV6
     case AVS_NET_AF_INET6:
         return AF_INET6;
-#endif // WITH_IPV6
+#endif /* WITH_IPV6 */
 
     case AVS_NET_AF_UNSPEC:
     default:
@@ -190,12 +190,12 @@ static const char *get_af_name(avs_net_af_t af) {
 #ifdef WITH_IPV4
     case AVS_NET_AF_INET4:
         return "AF_INET";
-#endif // WITH_IPV4
+#endif /* WITH_IPV4 */
 
 #ifdef WITH_IPV6
     case AVS_NET_AF_INET6:
         return "AF_INET6";
-#endif // WITH_IPV6
+#endif /* WITH_IPV6 */
 
     case AVS_NET_AF_UNSPEC:
     default:
@@ -363,7 +363,7 @@ static int configure_socket(avs_net_socket_t *net_socket) {
                 return -1;
             }
             break;
-#endif // WITH_IPV4
+#endif /* WITH_IPV4 */
 
 #ifdef WITH_IPV6
         case AF_INET6:
@@ -376,7 +376,7 @@ static int configure_socket(avs_net_socket_t *net_socket) {
                 return -1;
             }
             break;
-#endif // WITH_IPV6
+#endif /* WITH_IPV6 */
 
         default:
             net_socket->error_code = EINVAL;
@@ -474,7 +474,7 @@ static int host_port_to_string(const struct sockaddr *sa, socklen_t salen,
 #ifdef HAVE_GETNAMEINFO
     result = getnameinfo(sa, salen, host, hostlen, serv, servlen,
                          NI_NUMERICHOST | NI_NUMERICSERV);
-#else // HAVE_GETNAMEINFO
+#else /* HAVE_GETNAMEINFO */
     const void *addr_ptr = NULL;
     const uint16_t *port_ptr = NULL;
 
@@ -486,7 +486,7 @@ static int host_port_to_string(const struct sockaddr *sa, socklen_t salen,
             result = 0;
         }
     }
-# endif // WITH_IPV4
+# endif /* WITH_IPV4 */
 
 # ifdef WITH_IPV6
     if (sa->sa_family == AF_INET6) {
@@ -496,7 +496,7 @@ static int host_port_to_string(const struct sockaddr *sa, socklen_t salen,
             result = 0;
         }
     }
-# endif // WITH_IPV6
+# endif /* WITH_IPV6 */
 
     if (!result) {
         int retval = 0;
@@ -509,7 +509,7 @@ static int host_port_to_string(const struct sockaddr *sa, socklen_t salen,
                     || (size_t) retval >= servlen) ? -1 : 0;
         }
     }
-#endif // HAVE_GETNAMEINFO
+#endif /* HAVE_GETNAMEINFO */
     if (result) {
         LOG(ERROR, "Could not stringify socket address");
         if (!errno) {
@@ -543,7 +543,8 @@ int _avs_net_get_socket_type(avs_net_socket_type_t socket_type) {
 
 static int
 resolved_endpoint_family(const avs_net_resolved_endpoint_t *address) {
-    return (int) ((const struct sockaddr *) address->data.buf)->sa_family;
+    const char *buf = address->data.buf;
+    return (int) ((const struct sockaddr *) buf)->sa_family;
 }
 
 static int try_connect_open_socket(avs_net_socket_t *net_socket,
@@ -869,11 +870,11 @@ static int bind_net(avs_net_abstract_socket_t *net_socket_,
 #ifdef WITH_IPV6
     retval = try_bind(net_socket, AVS_NET_AF_INET6, localaddr, port);
     if (retval)
-#endif // WITH_IPV6
+#endif /* WITH_IPV6 */
     {
 #ifdef WITH_IPV4
         retval = try_bind(net_socket, AVS_NET_AF_INET4, localaddr, port);
-#endif // WITH_IPV4
+#endif /* WITH_IPV4 */
     }
     return retval;
 }
@@ -1001,12 +1002,12 @@ static avs_net_af_t get_avs_af(int af) {
 #ifdef WITH_IPV4
     case AF_INET:
         return AVS_NET_AF_INET4;
-#endif // WITH_IPV4
+#endif /* WITH_IPV4 */
 
 #ifdef WITH_IPV6
     case AF_INET6:
         return AVS_NET_AF_INET6;
-#endif // WITH_IPV6
+#endif /* WITH_IPV6 */
 
     default:
         return AVS_NET_AF_UNSPEC;
@@ -1024,14 +1025,14 @@ static int get_string_ip(const sockaddr_union_t *addr,
             addr_data = &addr->addr_in.sin_addr;
             addrlen = INET_ADDRSTRLEN;
             break;
-#endif // WITH_IPV4
+#endif /* WITH_IPV4 */
 
 #ifdef WITH_IPV6
         case AF_INET6:
             addr_data = &addr->addr_in6.sin6_addr;
             addrlen = INET6_ADDRSTRLEN;
             break;
-#endif // WITH_IPV6
+#endif /* WITH_IPV6 */
 
         default:
             return -1;
@@ -1055,13 +1056,13 @@ static int get_string_port(const sockaddr_union_t *addr,
         case AF_INET:
             port = addr->addr_in.sin_port;
             break;
-#endif // WITH_IPV4
+#endif /* WITH_IPV4 */
 
 #ifdef WITH_IPV6
         case AF_INET6:
             port = addr->addr_in6.sin6_port;
             break;
-#endif // WITH_IPV6
+#endif /* WITH_IPV6 */
 
         default:
             return -1;
@@ -1123,6 +1124,61 @@ static int local_port_net(avs_net_abstract_socket_t *socket,
     }
 }
 
+static int get_mtu(avs_net_socket_t *net_socket, int *out_mtu) {
+    int mtu, retval;
+    socklen_t dummy = sizeof(mtu);
+    switch (get_socket_family(net_socket->socket)) {
+#if defined(WITH_IPV4) && defined(IP_MTU)
+    case AF_INET:
+        errno = 0;
+        retval = getsockopt(net_socket->socket, IPPROTO_IP, IP_MTU,
+                            &mtu, &dummy);
+        net_socket->error_code = errno;
+        break;
+#endif /* defined(WITH_IPV4) && defined(IP_MTU) */
+
+#if defined(WITH_IPV6) && defined(IPV6_MTU)
+    case AF_INET6:
+        errno = 0;
+        retval = getsockopt(net_socket->socket, IPPROTO_IPV6, IPV6_MTU,
+                            &mtu, &dummy);
+        net_socket->error_code = errno;
+        break;
+#endif /* defined(WITH_IPV6) && defined(IPV6_MTU) */
+
+    default:
+        net_socket->error_code = EINVAL;
+        retval = -1;
+    }
+    if (retval < 0 || mtu < 0) {
+        return -1;
+    } else {
+        *out_mtu = mtu;
+        return 0;
+    }
+}
+
+static int get_udp_overhead(avs_net_socket_t *net_socket, int *out) {
+    net_socket->error_code = 0;
+    switch (get_socket_family(net_socket->socket)) {
+#ifdef WITH_IPV4
+    case AF_INET:
+        *out = 28; /* 20 for IP + 8 for UDP */
+        return 0;
+#endif /* WITH_IPV4 */
+
+#ifdef WITH_IPV6
+    case AF_INET6:
+        *out = 48; /* 40 for IPv6 + 8 for UDP */
+        return 0;
+#endif /* WITH_IPV6 */
+
+    default:
+        net_socket->error_code = EINVAL;
+        return -1;
+    }
+}
+
 static int get_opt_net(avs_net_abstract_socket_t *net_socket_,
                        avs_net_socket_opt_key_t option_key,
                        avs_net_socket_opt_value_t *out_option_value) {
@@ -1140,38 +1196,20 @@ static int get_opt_net(avs_net_abstract_socket_t *net_socket_,
                 get_avs_af(get_socket_family(net_socket->socket));
         return 0;
     case AVS_NET_SOCKET_OPT_MTU:
+        return get_mtu(net_socket, &out_option_value->mtu);
+    case AVS_NET_SOCKET_OPT_INNER_MTU:
     {
-        int mtu, retval;
-        socklen_t dummy = sizeof(mtu);
-        switch (get_socket_family(net_socket->socket)) {
-#if defined(WITH_IPV4) && defined(IP_MTU)
-        case AF_INET:
-            errno = 0;
-            retval = getsockopt(net_socket->socket, IPPROTO_IP, IP_MTU,
-                                &mtu, &dummy);
-            net_socket->error_code = errno;
-            break;
-#endif // defined(WITH_IPV4) && defined(IP_MTU)
-
-#if defined(WITH_IPV6) && defined(IPV6_MTU)
-        case AF_INET6:
-            errno = 0;
-            retval = getsockopt(net_socket->socket, IPPROTO_IPV6, IPV6_MTU,
-                                &mtu, &dummy);
-            net_socket->error_code = errno;
-            break;
-#endif // defined(WITH_IPV6) && defined(IPV6_MTU)
-
-        default:
-            net_socket->error_code = EINVAL;
-            retval = -1;
+        int mtu, udp_overhead, retval;
+        if ((retval = get_mtu(net_socket, &mtu))
+                || (retval = get_udp_overhead(net_socket, &udp_overhead))) {
+            return retval;
         }
-        if (retval < 0 || mtu < 0) {
-            return -1;
-        } else {
-            out_option_value->mtu = mtu;
-            return 0;
+        mtu -= udp_overhead;
+        if (mtu < 0) {
+            mtu = 0;
         }
+        out_option_value->mtu = mtu;
+        return 0;
     }
     default:
         LOG(ERROR, "get_opt_net: unknown or unsupported option key");
@@ -1216,14 +1254,14 @@ static int ifaddr_ip_equal(const struct sockaddr *left,
             offset = offsetof(struct sockaddr_in, sin_addr);
             length = 4;
             break;
-#endif // WITH_IPV4
+#endif /* WITH_IPV4 */
 
 #ifdef WITH_IPV6
         case AF_INET6:
             offset = offsetof(struct sockaddr_in6, sin6_addr);
             length = 16;
             break;
-#endif // WITH_IPV6
+#endif /* WITH_IPV6 */
 
         default:
             return -1;
@@ -1332,11 +1370,11 @@ static int validate_ip_address(avs_net_af_t family, const char *ip_address) {
     union {
 #ifdef WITH_IPV4
         struct in_addr sa4;
-#endif // WITH_IPV4
+#endif /* WITH_IPV4 */
 
 #ifdef WITH_IPV6
         struct in6_addr sa6;
-#endif // WITH_IPV6
+#endif /* WITH_IPV6 */
     } sa;
     if (_avs_inet_pton(_avs_net_get_af(family), ip_address, &sa) < 1) {
         return -1;

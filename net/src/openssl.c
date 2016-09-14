@@ -140,57 +140,115 @@ static const avs_net_socket_v_table_t ssl_vtable = {
 
 #endif /* AVS_LOG_WITH_TRACE */
 
-static avs_net_af_t get_socket_af(avs_net_abstract_socket_t *sock) {
+static int get_socket_inner_mtu_or_zero(avs_net_abstract_socket_t *sock) {
     avs_net_socket_opt_value_t opt_value;
-    if (avs_net_socket_get_opt(sock, AVS_NET_SOCKET_OPT_ADDR_FAMILY,
+    if (avs_net_socket_get_opt(sock, AVS_NET_SOCKET_OPT_INNER_MTU,
                                &opt_value)) {
-        return AVS_NET_AF_UNSPEC;
-    } else {
-        return opt_value.addr_family;
-    }
-}
-
-static int get_socket_mtu(avs_net_abstract_socket_t *sock) {
-    avs_net_socket_opt_value_t opt_value;
-    if (avs_net_socket_get_opt(sock, AVS_NET_SOCKET_OPT_MTU, &opt_value)) {
-        return -1;
+        return 0;
     } else {
         return opt_value.mtu;
     }
 }
 
-static int get_dtls_overhead(avs_net_abstract_socket_t *sock) {
-    switch (get_socket_af(sock)) {
-    case AVS_NET_AF_INET4:
-        return 28;
-    case AVS_NET_AF_INET6:
-        return 48;
-    default:
-        return -1;
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+
+/* values from OpenSSL 1.x */
+#ifndef EVP_GCM_TLS_EXPLICIT_IV_LEN
+#define EVP_GCM_TLS_EXPLICIT_IV_LEN 8
+#endif
+#ifndef EVP_CCM_TLS_EXPLICIT_IV_LEN
+#define EVP_CCM_TLS_EXPLICIT_IV_LEN 8
+#endif
+#ifndef SSL3_RT_MAX_COMPRESSED_OVERHEAD
+#define SSL3_RT_MAX_COMPRESSED_OVERHEAD 1024
+#endif
+
+static int get_explicit_iv_length(EVP_CIPHER_CTX *cipher_ctx) {
+    /* adapted from do_dtls1_write() in OpenSSL */
+    int mode = EVP_CIPHER_CTX_mode(cipher_ctx);
+    if (mode == EVP_CIPH_CBC_MODE) {
+        int eivlen = EVP_CIPHER_CTX_iv_length(cipher_ctx);
+        if (eivlen > 1) {
+            return eivlen;
+        }
     }
+#ifdef EVP_CIPH_GCM_MODE
+    else if (mode == EVP_CIPH_GCM_MODE) {
+        return EVP_GCM_TLS_EXPLICIT_IV_LEN;
+    }
+#endif
+#ifdef EVP_CIPH_CCM_MODE
+    else if (mode == EVP_CIPH_CCM_MODE) {
+        return EVP_CCM_TLS_EXPLICIT_IV_LEN;
+    }
+#endif
+    return 0;
 }
 
-static int calculate_mtu_or_zero(int base, int overhead) {
-    if (base < 0 || overhead < 0) {
-        return 0;
-    } else {
-        return base - overhead;
+static int get_dtls_overhead(ssl_socket_t *socket,
+                             int *out_header,
+                             int *out_padding_size) {
+    *out_header = DTLS1_RT_HEADER_LENGTH;
+    *out_padding_size = 0;
+    if (socket && socket->ssl) {
+        /* querying OpenSSL internals, but there seem to be no other way */
+        EVP_CIPHER_CTX *cipher_ctx = socket->ssl->enc_write_ctx;
+        EVP_MD_CTX *md_ctx = socket->ssl->write_hash;
+        /* actual logic is inspired by GnuTLS' record_overhead() */
+        if (cipher_ctx) {
+            int block_size = EVP_CIPHER_CTX_block_size(cipher_ctx);
+            if (block_size < 0) {
+                return -1;
+            }
+            if (!(EVP_CIPHER_CTX_flags(cipher_ctx) & EVP_CIPH_NO_PADDING)) {
+                *out_padding_size = block_size;
+            }
+            *out_header += get_explicit_iv_length(cipher_ctx);
+        }
+        /* adapted from mac_size calculation in dtls1_do_write() in OpenSSL */
+#ifdef EVP_CIPH_FLAG_AEAD_CIPHER
+        if (md_ctx
+                && !(cipher_ctx
+                        && (EVP_CIPHER_CTX_flags(cipher_ctx)
+                                & EVP_CIPH_FLAG_AEAD_CIPHER))) {
+            *out_header += EVP_MD_CTX_size(md_ctx);
+        }
+#endif
+        if (SSL_get_current_compression(socket->ssl) != NULL) {
+            *out_header += SSL3_RT_MAX_COMPRESSED_OVERHEAD;
+        }
     }
+    return 0;
 }
-
-static int get_dtls_mtu_or_zero(ssl_socket_t *sock) {
-    return calculate_mtu_or_zero(get_socket_mtu(sock->backend_socket),
-                                 get_dtls_overhead(sock->backend_socket));
+#else
+static int get_dtls_overhead(ssl_socket_t *socket,
+                             int *out_header,
+                             int *out_padding_size) {
+    /* OpenSSL 1.1 hides its internals, but also does not allow to query the
+     * currently used ciphers in any other way, so we're screwed :( */
+    (void) socket;
+    (void) out_header;
+    (void) out_padding_size;
+    return -1;
 }
+#endif
 
 #ifdef BIO_TYPE_SOURCE_SINK
+
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+#define BIO_set_init(bio, value) ((bio)->init = (value))
+#define BIO_get_data(bio) ((bio)->ptr)
+#define BIO_set_data(bio, data) ((bio)->ptr = (data))
+#endif
+
 static int avs_bio_write(BIO *bio, const char *data, int size) {
     if (!data || size < 0) {
         return 0;
     }
     BIO_clear_retry_flags(bio);
-    if (avs_net_socket_send(((ssl_socket_t *) bio->ptr)->backend_socket,
-                            data, (size_t) size)) {
+    if (avs_net_socket_send(
+            ((ssl_socket_t *) BIO_get_data(bio))->backend_socket,
+            data, (size_t) size)) {
         return -1;
     } else {
         return size;
@@ -230,7 +288,7 @@ static avs_net_timeout_t adjust_receive_timeout(ssl_socket_t *sock) {
 }
 
 static int avs_bio_read(BIO *bio, char *buffer, int size) {
-    ssl_socket_t *sock = (ssl_socket_t *) bio->ptr;
+    ssl_socket_t *sock = (ssl_socket_t *) BIO_get_data(bio);
     avs_net_timeout_t prev_timeout = -1;
     size_t read_bytes;
     int result;
@@ -264,7 +322,6 @@ static int avs_bio_gets(BIO *bio, char *buffer, int size) {
     return -1;
 }
 
-#if OPENSSL_VERSION_NUMBER >= 0x10001000L /* OpenSSL >= 1.0.1 */
 static int get_dtls_fallback_mtu_or_zero(ssl_socket_t *sock) {
     char host[NET_MAX_HOSTNAME_SIZE];
     if (avs_net_socket_get_remote_host(sock->backend_socket,
@@ -278,10 +335,9 @@ static int get_dtls_fallback_mtu_or_zero(ssl_socket_t *sock) {
         }
     }
 }
-#endif
 
 static long avs_bio_ctrl(BIO *bio, int command, long intarg, void *ptrarg) {
-    ssl_socket_t *sock = (ssl_socket_t *) bio->ptr;
+    ssl_socket_t *sock = (ssl_socket_t *) BIO_get_data(bio);
     (void) sock;
     (void) intarg;
     (void) ptrarg;
@@ -290,7 +346,7 @@ static long avs_bio_ctrl(BIO *bio, int command, long intarg, void *ptrarg) {
         return 1;
 #if OPENSSL_VERSION_NUMBER >= 0x10001000L /* OpenSSL >= 1.0.1 */
     case BIO_CTRL_DGRAM_QUERY_MTU:
-        return get_dtls_mtu_or_zero(sock);
+        return get_socket_inner_mtu_or_zero(sock->backend_socket);
     case BIO_CTRL_DGRAM_SET_NEXT_TIMEOUT:
         sock->next_deadline_ms =
                 (int64_t) ((const struct timeval *) ptrarg)->tv_sec * 1000 +
@@ -309,10 +365,9 @@ static long avs_bio_ctrl(BIO *bio, int command, long intarg, void *ptrarg) {
 }
 
 static int avs_bio_create(BIO *bio) {
-    bio->init = 1;
-    bio->num = 0;
-    bio->ptr = NULL;
-    bio->flags = 0;
+    BIO_set_init(bio, 1);
+    BIO_set_data(bio, NULL);
+    BIO_set_flags(bio, 0);
     return 1;
 }
 
@@ -320,29 +375,57 @@ static int avs_bio_destroy(BIO *bio) {
     if (!bio) {
         return 0;
     }
-    bio->ptr = NULL; /* will be cleaned up elsewhere */
-    bio->init = 0;
-    bio->flags = 0;
+    BIO_set_data(bio, NULL); /* will be cleaned up elsewhere */
+    BIO_set_init(bio, 0);
+    BIO_set_flags(bio, 0);
     return 1;
 }
 
-static BIO_METHOD AVS_BIO = {
-    (100 | BIO_TYPE_SOURCE_SINK),
-    "avs_net",
-    avs_bio_write,
-    avs_bio_read,
-    avs_bio_puts,
-    avs_bio_gets,
-    avs_bio_ctrl,
-    avs_bio_create,
-    avs_bio_destroy,
-    NULL
-};
+static BIO_METHOD *AVS_BIO = NULL;
+
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+static int avs_bio_init(void) {
+    static BIO_METHOD AVS_BIO_IMPL = {
+        (100 | BIO_TYPE_SOURCE_SINK),
+        "avs_net",
+        avs_bio_write,
+        avs_bio_read,
+        avs_bio_puts,
+        avs_bio_gets,
+        avs_bio_ctrl,
+        avs_bio_create,
+        avs_bio_destroy,
+        NULL
+    };
+    AVS_BIO = &AVS_BIO_IMPL;
+    return 0;
+}
+#else
+static int avs_bio_init(void) {
+    assert(!AVS_BIO);
+    /* BIO_meth_set_* return 1 on success */
+    if (!((AVS_BIO = BIO_meth_new(100 | BIO_TYPE_SOURCE_SINK, "avs_net"))
+            && BIO_meth_set_write(AVS_BIO, avs_bio_write)
+            && BIO_meth_set_read(AVS_BIO, avs_bio_read)
+            && BIO_meth_set_puts(AVS_BIO, avs_bio_puts)
+            && BIO_meth_set_gets(AVS_BIO, avs_bio_gets)
+            && BIO_meth_set_ctrl(AVS_BIO, avs_bio_ctrl)
+            && BIO_meth_set_create(AVS_BIO, avs_bio_create)
+            && BIO_meth_set_destroy(AVS_BIO, avs_bio_destroy))) {
+        if (AVS_BIO) {
+            BIO_meth_free(AVS_BIO);
+            AVS_BIO = NULL;
+        }
+        return -1;
+    }
+    return 0;
+}
+#endif
 
 static BIO *avs_bio_spawn(ssl_socket_t *socket) {
-    BIO *bio = BIO_new(&AVS_BIO);
+    BIO *bio = BIO_new(AVS_BIO);
     if (bio) {
-        bio->ptr = socket;
+        BIO_set_data(bio, socket);
     }
     return bio;
 }
@@ -429,10 +512,32 @@ static int get_opt_ssl(avs_net_abstract_socket_t *ssl_socket_,
     int retval;
     ssl_socket->error_code = 0;
     switch (option_key) {
-    case AVS_NET_SOCKET_OPT_MTU:
-        out_option_value->mtu = get_dtls_mtu_or_zero(ssl_socket);
-        retval = (out_option_value->mtu > 0 ? 0 : -1);
-        break;
+    case AVS_NET_SOCKET_OPT_INNER_MTU:
+    {
+        int mtu = get_socket_inner_mtu_or_zero(ssl_socket->backend_socket);
+        if (mtu <= 0) {
+            mtu = get_dtls_fallback_mtu_or_zero(ssl_socket);
+        }
+        if (mtu > 0) {
+            int header, padding;
+            if (get_dtls_overhead(ssl_socket, &header, &padding)) {
+                return -1;
+            }
+            mtu -= header;
+            if (padding > 0) {
+                /* SSL padding is always present - when data is an exact
+                 * multiply of block size, a full block of padding is added;
+                 * the maximum user data we can pass is thus the maximum number
+                 * of full blocks minus one byte */
+                mtu = (mtu / padding) * padding - 1;
+            }
+        }
+        if (mtu < 0) {
+            return -1;
+        }
+        out_option_value->mtu = mtu;
+        return 0;
+    }
     default:
         retval = avs_net_socket_get_opt(ssl_socket->backend_socket, option_key,
                                         out_option_value);
@@ -1186,7 +1291,7 @@ static int cleanup_ssl(avs_net_abstract_socket_t **socket_) {
 static int avs_ssl_init() {
     static volatile int initialized = 0;
     if (!initialized) {
-        initialized = 1;
+        int result = 0;
         LOG(TRACE, "OpenSSL initialization");
 
         SSL_library_init();
@@ -1196,17 +1301,23 @@ static int avs_ssl_init() {
         OpenSSL_add_all_algorithms();
         if (!RAND_load_file("/dev/urandom", -1)) {
             LOG(WARNING, "RAND_load_file error");
+            result = -1;
         }
         /* On some OpenSSL version, RAND_load file causes hell to break loose.
          * Get rid of any "uninitialized" memory that it created :( */
         VALGRIND_MAKE_MEM_DEFINED_IF_ADDRESSABLE(0, sbrk(0));
+        if (avs_bio_init()) {
+            LOG(WARNING, "avs_bio_init error");
+            result = -1;
+        }
+        initialized = (result ? result : 1);
     }
-    return 0;
+    return initialized < 0 ? initialized : 0;
 }
 
 static const SSL_METHOD *stream_method(avs_net_ssl_version_t version) {
     switch (version) {
-#ifndef OPENSSL_NO_SSL2
+#if OPENSSL_VERSION_NUMBER < 0x10100000L && !defined(OPENSSL_NO_SSL2)
     case AVS_NET_SSL_VERSION_SSLv2:
         return SSLv2_method();
 #endif
