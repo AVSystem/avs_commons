@@ -322,20 +322,6 @@ static int avs_bio_gets(BIO *bio, char *buffer, int size) {
     return -1;
 }
 
-static int get_dtls_fallback_mtu_or_zero(ssl_socket_t *sock) {
-    char host[NET_MAX_HOSTNAME_SIZE];
-    if (avs_net_socket_get_remote_host(sock->backend_socket,
-                                       host, sizeof(host))) {
-        return 0;
-    } else {
-        if (strchr(host, ':')) { /* IPv6 */
-            return 1232; /* 1280 - 48 */
-        } else {
-            return 548; /* 576 - 28 */
-        }
-    }
-}
-
 static long avs_bio_ctrl(BIO *bio, int command, long intarg, void *ptrarg) {
     ssl_socket_t *sock = (ssl_socket_t *) BIO_get_data(bio);
     (void) sock;
@@ -346,6 +332,7 @@ static long avs_bio_ctrl(BIO *bio, int command, long intarg, void *ptrarg) {
         return 1;
 #if OPENSSL_VERSION_NUMBER >= 0x10001000L /* OpenSSL >= 1.0.1 */
     case BIO_CTRL_DGRAM_QUERY_MTU:
+    case BIO_CTRL_DGRAM_GET_FALLBACK_MTU:
         return get_socket_inner_mtu_or_zero(sock->backend_socket);
     case BIO_CTRL_DGRAM_SET_NEXT_TIMEOUT:
         sock->next_deadline_ms =
@@ -356,8 +343,6 @@ static long avs_bio_ctrl(BIO *bio, int command, long intarg, void *ptrarg) {
         memcpy(ptrarg, sock->backend_configuration.preferred_endpoint->data.buf,
                sock->backend_configuration.preferred_endpoint->size);
         return sock->backend_configuration.preferred_endpoint->size;
-    case BIO_CTRL_DGRAM_GET_FALLBACK_MTU:
-        return get_dtls_fallback_mtu_or_zero(sock);
 #endif
     default:
         return 0;
@@ -514,10 +499,8 @@ static int get_opt_ssl(avs_net_abstract_socket_t *ssl_socket_,
     switch (option_key) {
     case AVS_NET_SOCKET_OPT_INNER_MTU:
     {
+        /* getting inner MTU will fail for non-datagram sockets */
         int mtu = get_socket_inner_mtu_or_zero(ssl_socket->backend_socket);
-        if (mtu <= 0) {
-            mtu = get_dtls_fallback_mtu_or_zero(ssl_socket);
-        }
         if (mtu > 0) {
             int header, padding;
             if (get_dtls_overhead(ssl_socket, &header, &padding)) {

@@ -1158,6 +1158,14 @@ static int get_mtu(avs_net_socket_t *net_socket, int *out_mtu) {
     }
 }
 
+static int get_fallback_inner_mtu(avs_net_socket_t *socket) {
+    if (strchr(socket->host, ':')) { /* IPv6 */
+        return 1232; /* 1280 - 48 */
+    } else { /* probably IPv4 */
+        return 548; /* 576 - 28 */
+    }
+}
+
 static int get_udp_overhead(avs_net_socket_t *net_socket, int *out) {
     net_socket->error_code = 0;
     switch (get_socket_family(net_socket->socket)) {
@@ -1179,6 +1187,28 @@ static int get_udp_overhead(avs_net_socket_t *net_socket, int *out) {
     }
 }
 
+static int get_inner_mtu(avs_net_socket_t *net_socket, int *out_mtu) {
+    if (net_socket->type != AVS_NET_UDP_SOCKET) {
+        LOG(ERROR,
+            "get_opt_net: inner MTU calculation unimplemented for TCP");
+        return -1;
+    }
+    if (!get_mtu(net_socket, out_mtu)) {
+        int retval, udp_overhead;
+        if ((retval = get_udp_overhead(net_socket, &udp_overhead))) {
+            return retval;
+        }
+        *out_mtu -= udp_overhead;
+        if (*out_mtu < 0) {
+            *out_mtu = 0;
+        }
+    } else {
+        net_socket->error_code = 0;
+        *out_mtu = get_fallback_inner_mtu(net_socket);
+    }
+    return 0;
+}
+
 static int get_opt_net(avs_net_abstract_socket_t *net_socket_,
                        avs_net_socket_opt_key_t option_key,
                        avs_net_socket_opt_value_t *out_option_value) {
@@ -1198,19 +1228,7 @@ static int get_opt_net(avs_net_abstract_socket_t *net_socket_,
     case AVS_NET_SOCKET_OPT_MTU:
         return get_mtu(net_socket, &out_option_value->mtu);
     case AVS_NET_SOCKET_OPT_INNER_MTU:
-    {
-        int mtu, udp_overhead, retval;
-        if ((retval = get_mtu(net_socket, &mtu))
-                || (retval = get_udp_overhead(net_socket, &udp_overhead))) {
-            return retval;
-        }
-        mtu -= udp_overhead;
-        if (mtu < 0) {
-            mtu = 0;
-        }
-        out_option_value->mtu = mtu;
-        return 0;
-    }
+        return get_inner_mtu(net_socket, &out_option_value->mtu);
     default:
         LOG(ERROR, "get_opt_net: unknown or unsupported option key");
         net_socket->error_code = EINVAL;
