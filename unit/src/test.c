@@ -98,6 +98,15 @@ void avs_unit_abort__(const char *msg, const char *file, int line) {
     abort();
 }
 
+static void print_char(uint8_t value,
+                       bool bold) {
+    if (getenv("AVS_UNIT_UNESCAPE_PRINTABLE") && isgraph((char)value)) {
+        printf(" \033[%dm%c ", bold, value);
+    } else {
+        printf(" \033[%dm%02x", bold, value);
+    }
+}
+
 static void test_fail_print_hex_diff(const uint8_t *actual,
                                      const uint8_t *expected,
                                      size_t buffer_size,
@@ -118,11 +127,11 @@ static void test_fail_print_hex_diff(const uint8_t *actual,
 
     printf("  actual:");
     for (i = start; i < end; ++i) {
-        printf(" \033[%dm%02x", actual[i] != expected[i], actual[i]);
+        print_char(actual[i], actual[i] != expected[i]);
     }
     printf("\033[0m\nexpected:");
     for (i = start; i < end; ++i) {
-        printf(" \033[%dm%02x", actual[i] != expected[i], expected[i]);
+        print_char(expected[i], actual[i] != expected[i]);
     }
     printf("\033[0m\n%*s\n", (int)marker_offset, "^");
 }
@@ -489,6 +498,11 @@ static int parse_command_line_args(int argc, char* argv[],
                         "            AVS_LOG='foo=debug;bar=error' # set log "
                         "levels for modules 'foo' and 'bar'\n"
                         "\n"
+                        "    AVS_UNIT_UNESCAPE_PRINTABLE - if set, printable "
+                        "characters compared using ASSERT_EQUAL_BYTES are "
+                        "displayed in unescaped form.\n"
+                        "\n");
+            test_printf(NORMAL,
                         "EXAMPLES\n"
                         "    %1$s            # run all tests\n"
                         "    %1$s -l         # list all tests, do not run any\n"
