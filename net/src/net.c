@@ -722,15 +722,27 @@ static int receive_net(avs_net_abstract_socket_t *net_socket_,
         return -1;
     } else {
         ssize_t recv_out;
+        struct iovec iov;
+        struct msghdr msg;
+        memset(&iov, 0, sizeof(iov));
+        memset(&msg, 0, sizeof(msg));
+        iov.iov_base = buffer;
+        iov.iov_len = buffer_length;
+        msg.msg_iov = &iov;
+        msg.msg_iovlen = 1;
         errno = 0;
-        recv_out = recv(net_socket->socket, buffer, buffer_length,
-                        MSG_NOSIGNAL);
+        recv_out = recvmsg(net_socket->socket, &msg, 0);
         net_socket->error_code = errno;
         if (recv_out < 0) {
             *out = 0;
             return (int) recv_out;
         } else {
             *out = (size_t) recv_out;
+            if (msg.msg_flags & MSG_TRUNC) {
+                /* message too long to fit in the buffer */
+                net_socket->error_code = EMSGSIZE;
+                return -1;
+            }
             return 0;
         }
     }
