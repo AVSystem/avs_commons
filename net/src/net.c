@@ -710,6 +710,15 @@ static int send_to_net(avs_net_abstract_socket_t *net_socket_,
     }
 }
 
+static int handle_truncation(avs_net_socket_t *socket, struct msghdr *msg) {
+    if (msg->msg_flags & MSG_TRUNC) {
+        /* message too long to fit in the buffer */
+        socket->error_code = EMSGSIZE;
+        return -1;
+    }
+    return 0;
+}
+
 static int receive_net(avs_net_abstract_socket_t *net_socket_,
                        size_t *out,
                        void *buffer,
@@ -722,16 +731,23 @@ static int receive_net(avs_net_abstract_socket_t *net_socket_,
         return -1;
     } else {
         ssize_t recv_out;
+        struct iovec iov;
+        struct msghdr msg;
+        memset(&iov, 0, sizeof(iov));
+        memset(&msg, 0, sizeof(msg));
+        iov.iov_base = buffer;
+        iov.iov_len = buffer_length;
+        msg.msg_iov = &iov;
+        msg.msg_iovlen = 1;
         errno = 0;
-        recv_out = recv(net_socket->socket, buffer, buffer_length,
-                        MSG_NOSIGNAL);
+        recv_out = recvmsg(net_socket->socket, &msg, 0);
         net_socket->error_code = errno;
         if (recv_out < 0) {
             *out = 0;
             return (int) recv_out;
         } else {
             *out = (size_t) recv_out;
-            return 0;
+            return handle_truncation(net_socket, &msg);
         }
     }
 }
@@ -757,9 +773,18 @@ static int receive_from_net(avs_net_abstract_socket_t *net_socket_,
         return -1;
     } else {
         ssize_t result;
+        struct iovec iov;
+        struct msghdr msg;
+        memset(&iov, 0, sizeof(iov));
+        memset(&msg, 0, sizeof(msg));
+        iov.iov_base = message_buffer;
+        iov.iov_len = buffer_size;
+        msg.msg_iov = &iov;
+        msg.msg_iovlen = 1;
+        msg.msg_name = &sender_addr.addr;
+        msg.msg_namelen = addrlen;
         errno = 0;
-        result = recvfrom(net_socket->socket, message_buffer, buffer_size, 0,
-                          &sender_addr.addr, &addrlen);
+        result = recvmsg(net_socket->socket, &msg, 0);
         net_socket->error_code = errno;
         if (result < 0) {
             *out = 0;
@@ -775,7 +800,7 @@ static int receive_from_net(avs_net_abstract_socket_t *net_socket_,
                 net_socket->error_code = errno;
                 return retval;
             }
-            return 0;
+            return handle_truncation(net_socket, &msg);
         }
     }
 }
