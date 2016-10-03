@@ -239,6 +239,10 @@ typedef int avs_ssl_additional_configuration_clb_t(void *library_ssl_context);
 typedef struct {
     uint8_t                         dscp;
     uint8_t                         priority;
+    /**
+     * This flag is used to set SO_REUSEADDR on the underlying system socket.
+     */
+    uint8_t                         reuse_addr;
     uint8_t                         transparent;
     avs_net_socket_interface_name_t interface_name;
     avs_net_resolved_endpoint_t    *preferred_endpoint;
@@ -399,14 +403,7 @@ typedef enum {
      * as a single packet. The value is passed as bytes in the <c>mtu</c> field
      * of the @ref avs_net_socket_opt_value_t union.
      */
-    AVS_NET_SOCKET_OPT_INNER_MTU,
-    /**
-     * Sets SO_REUSEADDR flag (0 for disabled, 1 for enabled) to the underlying
-     * system socket. This might cause different behavior depending on the
-     * operating system being run. The value is passed as integer in the
-     * <c>reuse_addr</c> field of the @ref avs_net_socket_opt_value_t union.
-     */
-    AVS_NET_SOCKET_OPT_REUSE_ADDR
+    AVS_NET_SOCKET_OPT_INNER_MTU
 } avs_net_socket_opt_key_t;
 
 typedef enum {
@@ -430,7 +427,6 @@ typedef union {
     avs_net_socket_state_t state;
     avs_net_af_t addr_family;
     int mtu;
-    int reuse_addr;
 } avs_net_socket_opt_value_t;
 
 int avs_net_socket_debug(int value);
