@@ -162,7 +162,6 @@ typedef struct {
     char                                   host[NET_MAX_HOSTNAME_SIZE];
     char                                   port[NET_PORT_SIZE];
     avs_net_socket_configuration_t         configuration;
-    int                                    reuse_addr;
 
     avs_net_timeout_t recv_timeout;
     volatile int error_code;
