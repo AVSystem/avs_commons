@@ -162,6 +162,7 @@ typedef struct {
     char                                   host[NET_MAX_HOSTNAME_SIZE];
     char                                   port[NET_PORT_SIZE];
     avs_net_socket_configuration_t         configuration;
+    int                                    reuse_addr;
 
     avs_net_timeout_t recv_timeout;
     volatile int error_code;
@@ -809,7 +810,7 @@ static int create_listening_socket(avs_net_socket_t *net_socket,
                                    const struct sockaddr *addr,
                                    socklen_t addrlen) {
     int retval = -1;
-    int val = 1;
+    int reuse_addr = net_socket->reuse_addr;
     errno = 0;
     if ((net_socket->socket = socket(addr->sa_family,
                                      _avs_net_get_socket_type(net_socket->type),
@@ -818,8 +819,8 @@ static int create_listening_socket(avs_net_socket_t *net_socket,
         LOG(ERROR, "cannot create system socket: %s", strerror(errno));
         goto create_listening_socket_error;
     }
-    if (setsockopt(net_socket->socket,
-                   SOL_SOCKET, SO_REUSEADDR, &val, sizeof (val))) {
+    if (setsockopt(net_socket->socket, SOL_SOCKET, SO_REUSEADDR, &reuse_addr,
+                   sizeof(reuse_addr))) {
         net_socket->error_code = errno;
         LOG(ERROR, "can't set socket opt");
         goto create_listening_socket_error;
@@ -1254,6 +1255,9 @@ static int get_opt_net(avs_net_abstract_socket_t *net_socket_,
         return get_mtu(net_socket, &out_option_value->mtu);
     case AVS_NET_SOCKET_OPT_INNER_MTU:
         return get_inner_mtu(net_socket, &out_option_value->mtu);
+    case AVS_NET_SOCKET_OPT_REUSE_ADDR:
+        out_option_value->reuse_addr = net_socket->reuse_addr;
+        return 0;
     default:
         LOG(ERROR, "get_opt_net: unknown or unsupported option key");
         net_socket->error_code = EINVAL;
@@ -1265,10 +1269,18 @@ static int set_opt_net(avs_net_abstract_socket_t *net_socket_,
                        avs_net_socket_opt_key_t option_key,
                        avs_net_socket_opt_value_t option_value) {
     avs_net_socket_t *net_socket = (avs_net_socket_t *) net_socket_;
+    net_socket->error_code = 0;
     switch (option_key) {
+    case AVS_NET_SOCKET_OPT_REUSE_ADDR:
+        if (option_value.reuse_addr != 0 && option_value.reuse_addr != 1) {
+            LOG(ERROR, "set_opt_net: invalid reuse_addr value");
+            net_socket->reuse_addr = EINVAL;
+            return -1;
+        }
+        net_socket->reuse_addr = option_value.reuse_addr;
+        return 0;
     case AVS_NET_SOCKET_OPT_RECV_TIMEOUT:
         net_socket->recv_timeout = option_value.recv_timeout;
-        net_socket->error_code = 0;
         return 0;
     default:
         LOG(ERROR, "set_opt_net: unknown or unsupported option key");
