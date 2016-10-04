@@ -809,7 +809,11 @@ static int create_listening_socket(avs_net_socket_t *net_socket,
                                    const struct sockaddr *addr,
                                    socklen_t addrlen) {
     int retval = -1;
-    int val = 1;
+    int reuse_addr = net_socket->configuration.reuse_addr;
+    if (reuse_addr != 0 && reuse_addr != 1) {
+        errno = EINVAL;
+        return -1;
+    }
     errno = 0;
     if ((net_socket->socket = socket(addr->sa_family,
                                      _avs_net_get_socket_type(net_socket->type),
@@ -818,8 +822,8 @@ static int create_listening_socket(avs_net_socket_t *net_socket,
         LOG(ERROR, "cannot create system socket: %s", strerror(errno));
         goto create_listening_socket_error;
     }
-    if (setsockopt(net_socket->socket,
-                   SOL_SOCKET, SO_REUSEADDR, &val, sizeof (val))) {
+    if (setsockopt(net_socket->socket, SOL_SOCKET, SO_REUSEADDR, &reuse_addr,
+                   sizeof(reuse_addr))) {
         net_socket->error_code = errno;
         LOG(ERROR, "can't set socket opt");
         goto create_listening_socket_error;

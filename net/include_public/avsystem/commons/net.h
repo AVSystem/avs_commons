@@ -239,6 +239,10 @@ typedef int avs_ssl_additional_configuration_clb_t(void *library_ssl_context);
 typedef struct {
     uint8_t                         dscp;
     uint8_t                         priority;
+    /**
+     * This flag is used to set SO_REUSEADDR on the underlying system socket.
+     */
+    uint8_t                         reuse_addr;
     uint8_t                         transparent;
     avs_net_socket_interface_name_t interface_name;
     avs_net_resolved_endpoint_t    *preferred_endpoint;
