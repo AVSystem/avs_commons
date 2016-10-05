@@ -20,6 +20,7 @@
 #include <inttypes.h>
 #include <getopt.h>
 #include <stdbool.h>
+#include <ctype.h>
 
 #include <avsystem/commons/defs.h>
 #include <avsystem/commons/list.h>
