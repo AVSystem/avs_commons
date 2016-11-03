@@ -25,10 +25,14 @@ AVS_STATIC_ASSERT(sizeof(base64_chars) == 65, /* 64 chars + NULL terminator */
 
 static int check_base64_out_buffer_size(size_t buffer_size,
                                         size_t data_length) {
-    size_t needed_size = (data_length / 3) * 4;
-    needed_size += (data_length % 3) ? 4 : 0;
+    return buffer_size >= avs_base64_encoded_size(data_length) ? 0 : -1;
+}
+
+size_t avs_base64_encoded_size(size_t input_length) {
+    size_t needed_size = (input_length / 3) * 4;
+    needed_size += (input_length % 3) ? 4 : 0;
     needed_size += 1; /* NULL terminator */
-    return buffer_size >= needed_size ? 0 : -1;
+    return needed_size;
 }
 
 int avs_base64_encode(const uint8_t *input,

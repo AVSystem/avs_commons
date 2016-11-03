@@ -24,9 +24,19 @@
  */
 
 /**
+ * Returns amount of bytes required to store input encoded in base64.
+ *
+ * @param input_length Length of input in bytes.
+ *
+ * @returns length of base64 encoded input of length @p input_length.
+ */
+size_t avs_base64_encoded_size(size_t input_length);
+
+/**
  * Encodes specified input into base64.
  *
- * Note: this function fails if @p out_length is too small to encode @p input .
+ * Note: this function fails if @p out_length is too small to encode @p input,
+ * to predict buffer requirements use @ref avs_base64_encoded_size .
  *
  * @param input         Input to encode.
  * @param input_length  Length of the input.
@@ -43,6 +53,9 @@ int avs_base64_encode(const uint8_t *input,
 
 /**
  * Decodes specified input from base64.
+ *
+ * Note: it ignores whitespaces (see @ref isspace for details) and '=' if they
+ * are in the middle of the input.
  *
  * @param input     Null terminated input to decode.
  * @param out       Pointer to user-allocated array where decoded data will be
