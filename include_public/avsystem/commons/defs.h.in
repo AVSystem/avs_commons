@@ -124,7 +124,7 @@ typedef long avs_off_t;
  * (usage might produce warnings, though).
  */
 #ifdef AVS_CONFIG_TYPEOF
-#define AVS_TYPEOF_PTR(symbol) AVS_CONFIG_TYPEOF(*(symbol)) *
+#define AVS_TYPEOF_PTR(symbol) AVS_CONFIG_TYPEOF(symbol)
 #elif defined(__cplusplus) && \
         (__cplusplus >= 201103L || defined(__GXX_EXPERIMENTAL_CXX0X__))
 #include <type_traits>
