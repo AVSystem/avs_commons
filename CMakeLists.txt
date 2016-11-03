@@ -247,6 +247,7 @@ if(DOXYGEN_FOUND)
                       COMMAND ${DOXYGEN_EXECUTABLE} ${CMAKE_BINARY_DIR}/doc/Doxyfile)
 endif()
 
+option(WITH_AVS_ALGORITHM "AVSystem algorithm utilities library" ON)
 option(WITH_AVS_UNIT "AVSystem unit test library" ON)
 option(WITH_AVS_BUFFER "AVSystem buffer implementation" ON)
 option(WITH_AVS_LIST "AVSystem generic linked list implementation" ON)
@@ -290,6 +291,10 @@ if(WITH_AVS_UNIT)
 else()
     macro(add_avs_test NAME)
     endmacro()
+endif()
+
+if(WITH_AVS_ALGORITHM)
+    add_subdirectory(algorithm)
 endif()
 
 if(WITH_AVS_BUFFER)
