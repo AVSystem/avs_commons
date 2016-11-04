@@ -52,18 +52,18 @@ size_t avs_base64_estimate_decoded_size(size_t input_length);
  * Note: this function fails if @p out_length is too small to encode @p input,
  * to predict buffer requirements use @ref avs_base64_encoded_size .
  *
- * @param input         Input to encode.
- * @param input_length  Length of the input.
  * @param out           Pointer to user-allocated array where encoded data will
  *                      be written.
  * @param out_length    Length of user-allocated array.
+ * @param input         Input to encode.
+ * @param input_length  Length of the input.
  *
  * @returns 0 on success, negative value in case of error.
  */
-int avs_base64_encode(const uint8_t *input,
-                      size_t input_length,
-                      char *out,
-                      size_t out_length);
+int avs_base64_encode(char *out,
+                      size_t out_length,
+                      const uint8_t *input,
+                      size_t input_length);
 
 /**
  * Decodes specified input from base64.
@@ -73,14 +73,14 @@ int avs_base64_encode(const uint8_t *input,
  * @p out_length is too small to hold decoded input. To predict buffer
  * requirements use @ref avs_base64_estimate_decoded_size .
  *
- * @param input     Null terminated input to decode.
- * @param out       Pointer to user-allocated array where decoded data will be
- *                  stored.
- * @param size      Length of user-allocated array.
+ * @param input         Null terminated input to decode.
+ * @param out           Pointer to user-allocated array where decoded data will be
+ *                      stored.
+ * @param out_length    Length of user-allocated array.
  *
  * @returns length of decoded data in bytes, negative value in case of error.
  */
-ssize_t avs_base64_decode(const char *input, uint8_t *out, size_t out_length);
+ssize_t avs_base64_decode(uint8_t *out, size_t out_length, const char *input);
 
 #endif /* AVS_COMMONS_ALGORITHM_BASE64_H */
 

@@ -39,10 +39,10 @@ size_t avs_base64_estimate_decoded_size(size_t input_length) {
     return 3 * (input_length / 4);
 }
 
-int avs_base64_encode(const uint8_t *input,
-                      size_t input_length,
-                      char *out,
-                      size_t out_length) {
+int avs_base64_encode(char *out,
+                      size_t out_length,
+                      const uint8_t *input,
+                      size_t input_length) {
     char *const out_begin = (char *) out;
     uint8_t num;
     size_t i;
@@ -92,7 +92,7 @@ static const uint8_t base64_chars_reversed[128] = {
    41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 64, 64, 64, 64, 64
 };
 
-ssize_t avs_base64_decode(const char *b64_data, uint8_t *out, size_t out_size) {
+ssize_t avs_base64_decode(uint8_t *out, size_t out_size, const char *b64_data) {
     uint32_t accumulator = 0;
     uint8_t bits = 0;
     const char *current = b64_data;
