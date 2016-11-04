@@ -97,4 +97,8 @@ AVS_UNIT_TEST(base64, encoded_and_decoded_size) {
         /* avs_base64_estimate_decoded_size should be an upper bound */
         AVS_UNIT_ASSERT_TRUE(avs_base64_estimate_decoded_size(length + 1) >= i);
     }
+    AVS_UNIT_ASSERT_EQUAL(avs_base64_estimate_decoded_size(0), 0);
+    for (i = 1; i < 4; ++i) {
+        AVS_UNIT_ASSERT_EQUAL(avs_base64_estimate_decoded_size(i), 3);
+    }
 }
