@@ -8,6 +8,7 @@
 /log/avs_log_test
 /stream/avs_stream_test
 /vector/avs_vector_test
+/algorithm/avs_algorithm_test
 
 # NetBeans Project
 nbproject
