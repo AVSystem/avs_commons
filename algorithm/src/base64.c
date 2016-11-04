@@ -35,6 +35,10 @@ size_t avs_base64_encoded_size(size_t input_length) {
     return needed_size;
 }
 
+size_t avs_base64_estimate_decoded_size(size_t input_length) {
+    return 3 * (input_length / 4);
+}
+
 int avs_base64_encode(const uint8_t *input,
                       size_t input_length,
                       char *out,

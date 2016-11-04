@@ -73,3 +73,21 @@ AVS_UNIT_TEST(base64, decode_fail) {
             (int) avs_base64_decode("AA==", (uint8_t *) result, 1));
     AVS_UNIT_ASSERT_FAILED((int) avs_base64_decode(",", (uint8_t *) result, 5));
 }
+
+AVS_UNIT_TEST(base64, encoded_and_decoded_size) {
+    char result[1024];
+    uint8_t bytes[256];
+    size_t i;
+    size_t length;
+    for (i = 0; i < sizeof(bytes); ++i) {
+        bytes[i] = rand() % 255;
+    }
+    for (i = 0; i < sizeof(bytes); ++i) {
+        AVS_UNIT_ASSERT_SUCCESS(avs_base64_encode(bytes, i, result, sizeof(result)));
+        length = strlen(result);
+        AVS_UNIT_ASSERT_EQUAL(length + 1, avs_base64_encoded_size(i));
+        /* avs_base64_estimate_decoded_size should be an upper bound */
+        AVS_UNIT_ASSERT_TRUE(avs_base64_estimate_decoded_size(length + 1) >= i);
+    }
+
+}
