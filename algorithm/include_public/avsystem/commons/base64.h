@@ -66,12 +66,36 @@ int avs_base64_encode(char *out,
                       size_t input_length);
 
 /**
- * Decodes specified input from base64.
+ * Decodes specified base64 input.
  *
- * Note: it ignores whitespaces (see @ref isspace for details) and '=' if they
- * are in the middle of the input. Also note that this function fails if
- * @p out_length is too small to hold decoded input. To predict buffer
- * requirements use @ref avs_base64_estimate_decoded_size .
+ * Note:
+ * 1. It does not accept inputs with whitespace characters of any kind.
+ * 2. It does not accept inputs with with superflous padding characters.
+ * 3. It does not accept inputs that are not padded properly.
+ * 4. As a consequence it does not accepts inputs whose length is not a multiple
+ *    of four.
+ *
+ * Moreover, this function fails if @p out_length is too small. To predict
+ * buffer requirements use @ref avs_base64_estimate_decoded_size (which, for
+ * inputs accepted by this function will return the exact amount of bytes
+ * needed).
+ *
+ * @param out           Pointer to user-allocated array where decoded data
+ *                      will be stored.
+ * @param out_length    Length of user-allocated array.
+ * @param input         Null terminated input to decode.
+ *
+ * @returns length of decoded data in bytes, negative value in case of error.
+ */
+ssize_t
+avs_base64_decode_strict(uint8_t *out, size_t out_length, const char *input);
+
+/**
+ * Does the same as @ref avs_base64_decode_strict except that it ignores
+ * superflous whitespaces and padding characters.
+ *
+ * Note that this function fails if @p out_length is too small. To predict
+ * buffer requirements use @ref avs_base64_estimate_decoded_size .
  *
  * @param out           Pointer to user-allocated array where decoded data will be
  *                      stored.
@@ -82,23 +106,4 @@ int avs_base64_encode(char *out,
  */
 ssize_t avs_base64_decode(uint8_t *out, size_t out_length, const char *input);
 
-/**
- * Same as @ref avs_base64_decode except that:
- * 1. It does not accept inputs with whitespace characters of any kind.
- * 2. It does not accept inputs with with superflous padding characters.
- * 3. It does not accept inputs that are not padded well.
- * 4. As a consequence it does not accepts inputs whose length is not a multiple
- *    of four.
- *
- * @param out           Pointer to user-allocated array where decoded data will be
- *                      stored.
- * @param out_length    Length of user-allocated array.
- * @param input         Null terminated input to decode.
- *
- * @returns length of decoded data in bytes, negative value in case of error.
- */
-ssize_t
-avs_base64_decode_strict(uint8_t *out, size_t out_length, const char *input);
-
 #endif /* AVS_COMMONS_ALGORITHM_BASE64_H */
-
