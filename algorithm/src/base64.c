@@ -9,6 +9,7 @@
 #include <config.h>
 
 #include <ctype.h>
+#include <string.h>
 
 #include <avsystem/commons/base64.h>
 
@@ -121,6 +122,26 @@ ssize_t avs_base64_decode(uint8_t *out, size_t out_size, const char *b64_data) {
     }
 
     return out_length;
+}
+
+ssize_t avs_base64_decode_strict(uint8_t *out,
+                                 size_t out_length,
+                                 const char *b64_data) {
+    const size_t length = strlen(b64_data);
+    const char *curr = b64_data;
+    const char *last = curr + length;
+    const char *prev1 = last - 1 >= b64_data ? last - 1 : b64_data;
+    const char *prev2 = last - 2 >= b64_data ? last - 2 : b64_data;
+    if (length % 4 != 0) {
+        return -1;
+    }
+    while (*curr++) {
+        if (isspace(*curr)
+                || (curr != prev1 && curr != prev2 && *curr == '=')) {
+            return -1;
+        }
+    }
+    return avs_base64_decode(out, out_length, b64_data);
 }
 
 #ifdef AVS_UNIT_TESTING

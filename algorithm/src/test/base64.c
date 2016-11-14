@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <limits.h>
 
 #include <avsystem/commons/unit/test.h>
 
@@ -65,21 +66,60 @@ AVS_UNIT_TEST(base64, decode) {
             avs_base64_decode((uint8_t *) result, sizeof(result), "YWEA"), 3);
     AVS_UNIT_ASSERT_EQUAL_STRING(result, "aa");
 
+    AVS_UNIT_ASSERT_EQUAL(
+            avs_base64_decode((uint8_t *) result, sizeof(result), ""), 0);
+
+    AVS_UNIT_ASSERT_FAILED((int) avs_base64_decode((uint8_t *) result,
+                                                   sizeof(result), "\x01"));
+
+    /* avs_base64_decode is not strict */
     AVS_UNIT_ASSERT_EQUAL(avs_base64_decode((uint8_t *) result, sizeof(result),
                                             "Y== ==\n\n\t\vWEA"),
                           3);
     AVS_UNIT_ASSERT_EQUAL_STRING(result, "aa");
 
     AVS_UNIT_ASSERT_EQUAL(
-            avs_base64_decode( (uint8_t *) result, sizeof(result),""), 0);
+            avs_base64_decode((uint8_t *) result, sizeof(result), "YQA"), 2);
+    AVS_UNIT_ASSERT_EQUAL_STRING(result, "a");
+
+    AVS_UNIT_ASSERT_EQUAL(
+            avs_base64_decode((uint8_t *) result, sizeof(result), "YQA=="), 2);
+    AVS_UNIT_ASSERT_EQUAL_STRING(result, "a");
 }
 
 AVS_UNIT_TEST(base64, decode_fail) {
     char result[5];
-
+    char buf[5] = "AX==";
+    char ch;
     AVS_UNIT_ASSERT_FAILED(
             (int) avs_base64_decode((uint8_t *) result, 1, "AA=="));
     AVS_UNIT_ASSERT_FAILED((int) avs_base64_decode((uint8_t *) result, 5, ","));
+
+    for (ch = 1; ch < CHAR_MAX; ++ch) {
+        buf[1] = ch;
+        if (!isspace(ch) && ch != '=') {
+            AVS_UNIT_ASSERT_FAILED(
+                    (int) avs_base64_decode((uint8_t *) result, 5, buf));
+        }
+        AVS_UNIT_ASSERT_FAILED(
+                (int) avs_base64_decode_strict((uint8_t *) result, 5, buf));
+    }
+}
+
+AVS_UNIT_TEST(base64, decode_strict) {
+    char result[5];
+    AVS_UNIT_ASSERT_FAILED((int) avs_base64_decode_strict(
+            (uint8_t *) result, sizeof(result), "Y== ==\n\n\t\vWEA"));
+    AVS_UNIT_ASSERT_FAILED((int) avs_base64_decode_strict(
+            (uint8_t *) result, sizeof(result), "YQA"));
+    AVS_UNIT_ASSERT_FAILED((int) avs_base64_decode_strict(
+            (uint8_t *) result, sizeof(result), "YQA=="));
+    AVS_UNIT_ASSERT_FAILED((int) avs_base64_decode_strict(
+            (uint8_t *) result, sizeof(result), "=="));
+    AVS_UNIT_ASSERT_FAILED((int) avs_base64_decode_strict(
+            (uint8_t *) result, sizeof(result), "="));
+    AVS_UNIT_ASSERT_EQUAL(
+            avs_base64_decode((uint8_t *) result, sizeof(result), ""), 0);
 }
 
 AVS_UNIT_TEST(base64, encoded_and_decoded_size) {

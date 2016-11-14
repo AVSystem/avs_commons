@@ -73,14 +73,32 @@ int avs_base64_encode(char *out,
  * @p out_length is too small to hold decoded input. To predict buffer
  * requirements use @ref avs_base64_estimate_decoded_size .
  *
- * @param input         Null terminated input to decode.
  * @param out           Pointer to user-allocated array where decoded data will be
  *                      stored.
  * @param out_length    Length of user-allocated array.
+ * @param input         Null terminated input to decode.
  *
  * @returns length of decoded data in bytes, negative value in case of error.
  */
 ssize_t avs_base64_decode(uint8_t *out, size_t out_length, const char *input);
+
+/**
+ * Same as @ref avs_base64_decode except that:
+ * 1. It does not accept inputs with whitespace characters of any kind.
+ * 2. It does not accept inputs with with superflous padding characters.
+ * 3. It does not accept inputs that are not padded well.
+ * 4. As a consequence it does not accepts inputs whose length is not a multiple
+ *    of four.
+ *
+ * @param out           Pointer to user-allocated array where decoded data will be
+ *                      stored.
+ * @param out_length    Length of user-allocated array.
+ * @param input         Null terminated input to decode.
+ *
+ * @returns length of decoded data in bytes, negative value in case of error.
+ */
+ssize_t
+avs_base64_decode_strict(uint8_t *out, size_t out_length, const char *input);
 
 #endif /* AVS_COMMONS_ALGORITHM_BASE64_H */
 
