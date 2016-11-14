@@ -54,7 +54,18 @@ AVS_UNIT_TEST(base64, encode) {
 
 AVS_UNIT_TEST(base64, decode) {
     char result[5];
-
+    char buf[5] = "AX==";
+    const char *ch;
+    for (ch = base64_chars; *ch; ++ch) {
+        buf[1] = *ch;
+        if (*ch != 'A') {
+            AVS_UNIT_ASSERT_EQUAL(
+                    (int) avs_base64_decode((uint8_t *) result, 5, buf), 1);
+            AVS_UNIT_ASSERT_EQUAL(
+                    (int) avs_base64_decode_strict((uint8_t *) result, 5, buf),
+                    1);
+        }
+    }
     /* terminating NULL byte is Base64 encoded */
     AVS_UNIT_ASSERT_EQUAL(
             avs_base64_decode((uint8_t *) result, sizeof(result), "AA=="), 1);
@@ -68,6 +79,9 @@ AVS_UNIT_TEST(base64, decode) {
 
     AVS_UNIT_ASSERT_EQUAL(
             avs_base64_decode((uint8_t *) result, sizeof(result), ""), 0);
+
+    AVS_UNIT_ASSERT_EQUAL(
+            avs_base64_decode((uint8_t *) result, sizeof(result), "A+=="), 1);
 
     AVS_UNIT_ASSERT_FAILED((int) avs_base64_decode((uint8_t *) result,
                                                    sizeof(result), "\x01"));
@@ -97,12 +111,14 @@ AVS_UNIT_TEST(base64, decode_fail) {
 
     for (ch = 1; ch < CHAR_MAX; ++ch) {
         buf[1] = ch;
-        if (!isspace(ch) && ch != '=') {
+        if (!strchr(base64_chars, ch) && !isspace(ch) && ch != '=') {
             AVS_UNIT_ASSERT_FAILED(
                     (int) avs_base64_decode((uint8_t *) result, 5, buf));
         }
-        AVS_UNIT_ASSERT_FAILED(
-                (int) avs_base64_decode_strict((uint8_t *) result, 5, buf));
+        if (!strchr(base64_chars, ch)) {
+            AVS_UNIT_ASSERT_FAILED(
+                    (int) avs_base64_decode_strict((uint8_t *) result, 5, buf));
+        }
     }
 }
 

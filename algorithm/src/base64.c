@@ -8,6 +8,7 @@
  */
 #include <config.h>
 
+#include <assert.h>
 #include <ctype.h>
 #include <string.h>
 
@@ -93,7 +94,26 @@ static const uint8_t base64_chars_reversed[128] = {
    41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 64, 64, 64, 64, 64
 };
 
-ssize_t avs_base64_decode(uint8_t *out, size_t out_size, const char *b64_data) {
+typedef int base64_validator_t(const char *current, void *args);
+
+static int base64_decode_validator(const char *current, void *args) {
+    int index = (uint8_t) *current;
+    (void) args;
+    if (isspace(index) || index == '=') {
+        return 0;
+    }
+    if (((size_t) index >= sizeof(base64_chars_reversed))
+            || (base64_chars_reversed[index] > 63)) {
+        return -1;
+    }
+    return 0;
+}
+
+static ssize_t base64_decode_impl(uint8_t *out,
+                                  size_t out_size,
+                                  const char *b64_data,
+                                  base64_validator_t *validator,
+                                  void *validator_args) {
     uint32_t accumulator = 0;
     uint8_t bits = 0;
     const char *current = b64_data;
@@ -105,12 +125,11 @@ ssize_t avs_base64_decode(uint8_t *out, size_t out_size, const char *b64_data) {
         if ((size_t)out_length >= out_size) {
             return -1;
         }
+        if (validator(current - 1, validator_args)) {
+            return -1;
+        }
         if (isspace(idx) || idx == '=') {
             continue;
-        }
-        if (((size_t)idx >= sizeof(base64_chars_reversed))
-                || (base64_chars_reversed[idx] > 63)) {
-            return -1;
         }
         accumulator <<= 6;
         bits = (uint8_t) (bits + 6);
@@ -124,24 +143,70 @@ ssize_t avs_base64_decode(uint8_t *out, size_t out_size, const char *b64_data) {
     return out_length;
 }
 
-ssize_t avs_base64_decode_strict(uint8_t *out,
-                                 size_t out_length,
-                                 const char *b64_data) {
-    const size_t length = strlen(b64_data);
-    const char *curr = b64_data;
-    const char *last = curr + length;
-    const char *prev1 = last - 1 >= b64_data ? last - 1 : b64_data;
-    const char *prev2 = last - 2 >= b64_data ? last - 2 : b64_data;
-    if (length % 4 != 0) {
+ssize_t avs_base64_decode(uint8_t *out, size_t out_size, const char *b64_data) {
+    return base64_decode_impl(out, out_size, b64_data, base64_decode_validator,
+                              NULL);
+}
+
+typedef struct {
+    const char *pad1;
+    const char *pad2;
+    const char *last;
+} base64_strict_validator_ctx_t;
+
+static int base64_decode_strict_validator(const char *current, void *args) {
+    base64_strict_validator_ctx_t *ctx = (base64_strict_validator_ctx_t *) args;
+    ctx->last = current;
+    if (base64_decode_validator(current, NULL) || isspace(*current)) {
         return -1;
     }
-    while (*curr++) {
-        if (isspace(*curr)
-                || (curr != prev1 && curr != prev2 && *curr == '=')) {
+    if (*current == '=') {
+        if (!ctx->pad1) {
+            ctx->pad1 = current;
+        } else if (!ctx->pad2) {
+            ctx->pad2 = current;
+        } else {
+            /* too much pading */
             return -1;
         }
     }
-    return avs_base64_decode(out, out_length, b64_data);
+    return 0;
+}
+
+ssize_t avs_base64_decode_strict(uint8_t *out,
+                                 size_t out_size,
+                                 const char *b64_data) {
+    base64_strict_validator_ctx_t ctx;
+    const char *prev1;
+    const char *prev2;
+    ssize_t retval;
+    ctx.pad1 = NULL;
+    ctx.pad2 = NULL;
+    ctx.last = NULL;
+    retval = base64_decode_impl(out, out_size, b64_data,
+                                base64_decode_strict_validator, &ctx);
+    if (retval >= 0) {
+        assert(*ctx.last != '\0');
+        /* Point at NULL terminator. */
+        ++ctx.last;
+
+        assert(*ctx.last == '\0');
+        assert(ctx.last > b64_data);
+        if ((ctx.last - b64_data) % 4 != 0) {
+            return -1;
+        }
+
+        /* Either padding is at the end or there is none. */
+        prev1 = ctx.last - 1 >= b64_data ? ctx.last - 1 : b64_data;
+        prev2 = ctx.last - 2 >= b64_data ? ctx.last - 2 : b64_data;
+        if (*prev2 == '=' && prev2 != ctx.pad1) {
+            return -1;
+        }
+        if (*prev1 == '=' && prev1 != ctx.pad2) {
+            return -1;
+        }
+    }
+    return retval;
 }
 
 #ifdef AVS_UNIT_TESTING
