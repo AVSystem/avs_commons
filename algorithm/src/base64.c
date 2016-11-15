@@ -166,7 +166,7 @@ static int base64_decode_strict_validator(const char *current, void *args) {
         } else if (!ctx->pad2) {
             ctx->pad2 = current;
         } else {
-            /* too much pading */
+            /* too much padding */
             return -1;
         }
     }
