@@ -182,7 +182,10 @@ ssize_t avs_base64_decode_strict(uint8_t *out,
     ssize_t retval;
     ctx.pad1 = NULL;
     ctx.pad2 = NULL;
-    ctx.last = NULL;
+    ctx.last = b64_data;
+    if (*b64_data == '\0') {
+        return 0;
+    }
     retval = base64_decode_impl(out, out_size, b64_data,
                                 base64_decode_strict_validator, &ctx);
     if (retval >= 0) {

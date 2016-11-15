@@ -58,13 +58,10 @@ AVS_UNIT_TEST(base64, decode) {
     const char *ch;
     for (ch = base64_chars; *ch; ++ch) {
         buf[1] = *ch;
-        if (*ch != 'A') {
-            AVS_UNIT_ASSERT_EQUAL(
-                    (int) avs_base64_decode((uint8_t *) result, 5, buf), 1);
-            AVS_UNIT_ASSERT_EQUAL(
-                    (int) avs_base64_decode_strict((uint8_t *) result, 5, buf),
-                    1);
-        }
+        AVS_UNIT_ASSERT_EQUAL(
+                (int) avs_base64_decode((uint8_t *) result, 5, buf), 1);
+        AVS_UNIT_ASSERT_EQUAL(
+                (int) avs_base64_decode_strict((uint8_t *) result, 5, buf), 1);
     }
     /* terminating NULL byte is Base64 encoded */
     AVS_UNIT_ASSERT_EQUAL(
@@ -125,8 +122,9 @@ AVS_UNIT_TEST(base64, decode_fail) {
 AVS_UNIT_TEST(base64, decode_strict) {
     char result[16];
     /* no data - no problem */
-    AVS_UNIT_ASSERT_EQUAL(
-            avs_base64_decode((uint8_t *) result, sizeof(result), ""), 0);
+    AVS_UNIT_ASSERT_EQUAL(avs_base64_decode_strict((uint8_t *) result,
+                                                   sizeof(result), ""),
+                          0);
 
     /* not a multiple of 4 */
     AVS_UNIT_ASSERT_FAILED((int) avs_base64_decode_strict(
