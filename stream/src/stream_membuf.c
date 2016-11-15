@@ -84,7 +84,9 @@ static int stream_membuf_read(avs_stream_abstract_t *stream_,
         return -1;
     }
     *out_bytes_read = bytes_read;
-    *out_message_finished = (bytes_read == bytes_left);
+    if (out_message_finished) {
+        *out_message_finished = (bytes_read == bytes_left);
+    }
     memcpy(buffer, stream->buffer + stream->index_read, bytes_read);
     stream->index_read += bytes_read;
     return 0;
