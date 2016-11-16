@@ -149,8 +149,7 @@ ssize_t avs_base64_decode(uint8_t *out, size_t out_size, const char *b64_data) {
 }
 
 typedef struct {
-    const char *pad1;
-    const char *pad2;
+    size_t padding;
     const char *last;
 } base64_strict_validator_ctx_t;
 
@@ -161,14 +160,12 @@ static int base64_decode_strict_validator(const char *current, void *args) {
         return -1;
     }
     if (*current == '=') {
-        if (!ctx->pad1) {
-            ctx->pad1 = current;
-        } else if (!ctx->pad2) {
-            ctx->pad2 = current;
-        } else {
-            /* too much padding */
+        if (++ctx->padding > 2) {
             return -1;
         }
+    } else if (ctx->padding) {
+        /* padding in the middle of input */
+        return -1;
     }
     return 0;
 }
@@ -177,11 +174,8 @@ ssize_t avs_base64_decode_strict(uint8_t *out,
                                  size_t out_size,
                                  const char *b64_data) {
     base64_strict_validator_ctx_t ctx;
-    const char *prev1;
-    const char *prev2;
     ssize_t retval;
-    ctx.pad1 = NULL;
-    ctx.pad2 = NULL;
+    ctx.padding = 0;
     ctx.last = b64_data;
     if (*b64_data == '\0') {
         return 0;
@@ -196,16 +190,6 @@ ssize_t avs_base64_decode_strict(uint8_t *out,
         assert(*ctx.last == '\0');
         assert(ctx.last > b64_data);
         if ((ctx.last - b64_data) % 4 != 0) {
-            return -1;
-        }
-
-        /* Either padding is at the end or there is none. */
-        prev1 = ctx.last - 1 >= b64_data ? ctx.last - 1 : b64_data;
-        prev2 = ctx.last - 2 >= b64_data ? ctx.last - 2 : b64_data;
-        if (*prev2 == '=' && prev2 != ctx.pad1) {
-            return -1;
-        }
-        if (*prev1 == '=' && prev1 != ctx.pad2) {
             return -1;
         }
     }
