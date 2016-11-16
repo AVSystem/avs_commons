@@ -205,7 +205,7 @@ ssize_t avs_base64_decode_strict(uint8_t *out,
         if (*prev2 == '=' && prev2 != ctx.pad1) {
             return -1;
         }
-        if (*prev1 == '=' && prev1 != ctx.pad2) {
+        if (*prev1 == '=' && prev1 != (ctx.pad2 ? ctx.pad2 : ctx.pad1)) {
             return -1;
         }
     }

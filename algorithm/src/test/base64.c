@@ -179,6 +179,11 @@ AVS_UNIT_TEST(base64, decode_strict) {
             (uint8_t *) result, sizeof(result), "Zm9v=="));
     AVS_UNIT_ASSERT_FAILED((int) avs_base64_decode_strict(
             (uint8_t *) result, sizeof(result), "Zm9v="));
+
+    /* valid, with single padding byte */
+    AVS_UNIT_ASSERT_EQUAL(avs_base64_decode_strict((uint8_t *) result,
+                                                   sizeof(result), "YQA="),
+                          2);
 }
 
 AVS_UNIT_TEST(base64, encoded_and_decoded_size) {
