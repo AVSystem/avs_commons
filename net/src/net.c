@@ -1320,10 +1320,11 @@ static int ifaddr_ip_equal(const struct sockaddr *left,
 
 static int find_interface(const struct sockaddr *addr,
                           avs_net_socket_interface_name_t *if_name) {
-#define TRY_ADDRESS(tried_addr, tried_name) \
+#define TRY_ADDRESS(TriedAddr, TriedName) \
     do { \
-        if (ifaddr_ip_equal(addr, tried_addr) == 0) { \
-            retval = snprintf(*if_name, sizeof(*if_name), "%s", tried_name); \
+        if ((TriedAddr) && (TriedName) \
+                && ifaddr_ip_equal(addr, (TriedAddr)) == 0) { \
+            retval = snprintf(*if_name, sizeof(*if_name), "%s", (TriedName)); \
             if (retval > 0) { \
                 retval = ((size_t) retval >= sizeof(*if_name)) ? -1 : 0; \
             } \
@@ -1338,9 +1339,7 @@ static int find_interface(const struct sockaddr *addr,
         goto interface_name_end;
     }
     for (ifaddr = ifaddrs; ifaddr; ifaddr = ifaddr->ifa_next) {
-        if (ifaddr->ifa_addr) {
-            TRY_ADDRESS(ifaddr->ifa_addr, ifaddr->ifa_name);
-        }
+        TRY_ADDRESS(ifaddr->ifa_addr, ifaddr->ifa_name);
     }
 interface_name_end:
     if (ifaddrs) {
