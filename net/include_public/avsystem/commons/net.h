@@ -524,9 +524,6 @@ int avs_net_socket_errno(avs_net_abstract_socket_t *socket);
  */
 const void *avs_net_socket_get_system(avs_net_abstract_socket_t *socket);
 
-int avs_net_socket_get_interface(avs_net_abstract_socket_t *socket,
-                                 avs_net_socket_interface_name_t *if_name);
-
 int avs_net_local_address_for_target_host(const char *target_host,
                                           avs_net_af_t addr_family,
                                           char *address_buffer,
