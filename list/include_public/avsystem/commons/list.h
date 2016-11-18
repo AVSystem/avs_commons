@@ -542,7 +542,7 @@ AVS_LIST_APPEND(list_ptr, AVS_LIST_NEW_ELEMENT(type))
 /* additional casts through char * work around aliasing rules */
 #define AVS_LIST_DETACH(element_to_detach_ptr) \
 ((AVS_TYPEOF_PTR(*(element_to_detach_ptr))) (char *) \
-        avs_list_detach__((void **) (intptr_t) (element_to_detach_ptr)))
+        avs_list_detach__((void **) (intptr_t) (char *)(element_to_detach_ptr)))
 
 /**
  * Deallocates memory claimed by a list element, detaching it beforehand.
