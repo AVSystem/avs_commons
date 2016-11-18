@@ -105,10 +105,9 @@ static int stream_file_read(avs_stream_abstract_t *stream_,
     if (ferror(file->fp)) {
         file->error_code = EIO;
         return -1;
-    } else if (feof(file->fp)) {
-        *out_message_finished = 1;
-    } else {
-        *out_message_finished = 0;
+    }
+    if (out_message_finished) {
+        *out_message_finished = !!feof(file->fp);
     }
     file->error_code = 0;
     return 0;
