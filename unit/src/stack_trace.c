@@ -412,7 +412,7 @@ void _avs_unit_stack_trace_print(FILE *file) {
 
     fprintf(file, "--- STACK TRACE ---\n");
     for (i = 0; i < trace->num_frames; ++i) {
-        if (trace->frames[i]->symbol_name) {
+        if (trace->frames[i]->symbol_name[0]) {
             fprintf(file, "%s\n", trace->frames[i]->symbol_name);
         } else {
             fprintf(file, "%p (no symbol name)\n", trace->frames[i]->address);

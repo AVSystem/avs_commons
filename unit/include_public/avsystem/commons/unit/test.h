@@ -175,12 +175,14 @@ __builtin_choose_expr(__builtin_types_compatible_p(__typeof__(actual), long doub
 ))))))))))))))
 
 #define AVS_UNIT_ASSERT_EQUAL_BYTES__(actual, expected)\
-__builtin_choose_expr(__builtin_types_compatible_p(__typeof__(expected), const char[]),\
+__builtin_choose_expr(__builtin_types_compatible_p(__typeof__(expected), const char[])\
+                        || __builtin_types_compatible_p(__typeof__(expected), char[]),\
         avs_unit_assert_bytes_equal__((actual), (expected), sizeof(expected) - 1, __FILE__, __LINE__),\
         avs_unit_abort__("AVS_UNIT_ASSERT_EQUAL_BYTES called for unsupported data type\n", __FILE__, __LINE__))
 
 #define AVS_UNIT_ASSERT_NOT_EQUAL_BYTES__(actual, expected)\
-__builtin_choose_expr(__builtin_types_compatible_p(__typeof__(expected), const char[]),\
+__builtin_choose_expr(__builtin_types_compatible_p(__typeof__(expected), const char[])\
+                        || __builtin_types_compatible_p(__typeof__(expected), char[]),\
         avs_unit_assert_bytes_not_equal__((actual), (expected), sizeof(expected) - 1, __FILE__, __LINE__),\
         avs_unit_abort__("AVS_UNIT_ASSERT_NOT_EQUAL_BYTES called for unsupported data type\n", __FILE__, __LINE__))
 
