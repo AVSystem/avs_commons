@@ -918,7 +918,7 @@ static int is_private_key_valid(const avs_net_private_key_t *key) {
         }
         return 1;
     }
-    assert(!"invalid enum value");
+    assert(0 && "invalid enum value");
     return 0;
 }
 
@@ -935,7 +935,7 @@ static int load_client_private_key(ssl_socket_t *socket,
     case AVS_NET_DATA_SOURCE_BUFFER:
         return load_client_key_from_data(socket, &key->data.buffer);
     }
-    assert(!"invalid enum value");
+    assert(0 && "invalid enum value");
     return -1;
 }
 
@@ -946,7 +946,7 @@ static int is_client_cert_empty(const avs_net_client_cert_t *cert) {
     case AVS_NET_DATA_SOURCE_BUFFER:
         return !cert->data.buffer.cert_der;
     }
-    assert(!"invalid enum value");
+    assert(0 && "invalid enum value");
     return 1;
 }
 
@@ -971,7 +971,7 @@ static int load_client_cert(ssl_socket_t *socket,
                     (const unsigned char*)cert->data.buffer.cert_der);
         break;
     default:
-        assert(!"invalid enum value");
+        assert(0 && "invalid enum value");
         return -1;
     }
 
@@ -1163,7 +1163,7 @@ static int configure_ssl(ssl_socket_t *socket,
         }
         break;
     default:
-        assert(!"invalid enum value");
+        assert(0 && "invalid enum value");
         return -1;
     }
 
