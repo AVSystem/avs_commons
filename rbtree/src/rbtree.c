@@ -25,7 +25,7 @@ static void rb_tree_init_magic(struct rb_tree *tree) {
 #define rb_tree_init_magic(tree) (void)0
 #endif
 
-void **_avs_rb_tree_new(avs_rb_cmp_t *cmp) {
+void **_avs_rb_tree_new(avs_rbtree_node_comparator_t *cmp) {
     struct rb_tree *tree = (struct rb_tree*)_AVS_RB_ALLOC(sizeof(struct rb_tree));
     if (!tree) {
         return NULL;
@@ -51,7 +51,7 @@ static int rb_is_node_detached(AVS_RB_NODE(void) elem) {
 #endif
 
 void _avs_rb_free_node(void **node,
-                       avs_rb_node_deleter_t *deleter) {
+                       avs_rbtree_element_deleter_t *deleter) {
     if (node && *node) {
         assert(_AVS_RB_NODE_VALID(*node));
         assert(rb_is_node_detached(*node));
@@ -66,7 +66,7 @@ void _avs_rb_free_node(void **node,
 }
 
 static void rb_delete_subtree(void **root,
-                              avs_rb_node_deleter_t *deleter) {
+                              avs_rbtree_element_deleter_t *deleter) {
     if (!root || !*root) {
         return;
     }
@@ -81,7 +81,7 @@ static void rb_delete_subtree(void **root,
 }
 
 void _avs_rb_tree_delete(void ***tree_,
-                         avs_rb_node_deleter_t *deleter) {
+                         avs_rbtree_element_deleter_t *deleter) {
     struct rb_tree *tree;
 
     if (!tree_ || !*tree_) {
