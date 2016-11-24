@@ -31,7 +31,8 @@ struct rb_node {
 struct rb_tree {
 #ifdef _AVS_RB_USE_MAGIC
     const uint32_t rb_magic; /* always set to _AVS_RB_MAGIC */
-    uint32_t tree_magic; /* marks the tree a node is attached to */
+    uint32_t tree_magic; /* uniquely identifies a tree; used to check whether
+                            a node is attached to this tree */
 #endif
 
     avs_rbtree_element_comparator_t *cmp;
