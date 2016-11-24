@@ -69,9 +69,9 @@ typedef void avs_rb_node_deleter_t(void *elem);
 /**
  * @param tree RB-tree object to operate on.
  *
- * @returns Total number of elements in the tree.
+ * @returns Total number of elements stored in the tree.
  */
-#define AVS_RB_TREE_SIZE(tree) _avs_rb_tree_size((void**)tree)
+#define AVS_RBTREE_SIZE(tree) _avs_rb_tree_size((void**)tree)
 
 /**
  * Creates an arbitrarily-sized, detached RB-tree element.

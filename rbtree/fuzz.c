@@ -68,11 +68,11 @@ int main(void) {
                     int *elem = AVS_RB_NEW_ELEMENT(int);
                     *elem = val;
 
-                    size_t prev_size = AVS_RB_TREE_SIZE(tree);
+                    size_t prev_size = AVS_RBTREE_SIZE(tree);
                     if (AVS_RB_TREE_INSERT(tree, elem)) {
-                        assert(prev_size == AVS_RB_TREE_SIZE(tree));
+                        assert(prev_size == AVS_RBTREE_SIZE(tree));
                     } else {
-                        assert(prev_size + 1 == AVS_RB_TREE_SIZE(tree));
+                        assert(prev_size + 1 == AVS_RBTREE_SIZE(tree));
                     }
                     assert(AVS_RB_TREE_FIND(tree, &val));
                     assert_rb_properties_hold(tree);
@@ -80,7 +80,7 @@ int main(void) {
                 break;
             case 1:
                 {
-                    size_t expected_size = AVS_RB_TREE_SIZE(tree);
+                    size_t expected_size = AVS_RBTREE_SIZE(tree);
                     if (AVS_RB_TREE_FIND(tree, &val)) {
                         --expected_size;
                     }
@@ -90,7 +90,7 @@ int main(void) {
                     AVS_RB_DELETE_ELEMENT(elem);
 
                     assert(!AVS_RB_TREE_FIND(tree, &val));
-                    assert(expected_size == AVS_RB_TREE_SIZE(tree));
+                    assert(expected_size == AVS_RBTREE_SIZE(tree));
                     assert_rb_properties_hold(tree);
                 }
                 break;
