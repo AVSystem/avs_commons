@@ -150,29 +150,47 @@ typedef void avs_rbtree_element_deleter_t(void *elem);
      ((AVS_TYPEOF_PTR(val_ptr)) \
       _avs_rbtree_find((const AVS_RBTREE(void))tree, val_ptr)))
 
-/** Returns @p elem successor or NULL if there is none. */
+/**
+ * Returns @p elem successor in order defined by
+ * @ref avs_rbtree_element_comparator_t of an RB-tree object @p elem is
+ * attached to.
+ *
+ * Returns NULL if there is no successor or the node is detached.
+ */
 #define AVS_RBTREE_NEXT(elem) ((AVS_TYPEOF_PTR(elem))_avs_rb_next(elem))
 
-/** Returns @p elem predecessor or NULL if there is none. */
+/**
+ * Returns @p elem predecessor in order defined by
+ * @ref avs_rbtree_element_comparator_t of an RB-tree object @p elem is
+ * attached to.
+ *
+ * Returns NULL if there is no predecessor or the node is detached.
+ */
 #define AVS_RBTREE_PREV(elem) ((AVS_TYPEOF_PTR(elem))_avs_rb_prev(elem))
 
-/** Returns the first element in @p tree. */
+/**
+ * Returns the first element in @p tree (in order defined by
+ * @ref avs_rbtree_element_comparator_t of @p tree).
+ */
 #define AVS_RBTREE_FIRST(tree) \
     ((AVS_TYPEOF_PTR(*tree))_avs_rbtree_first((AVS_RBTREE(void))tree))
 
-/** Returns the last element in @p tree. */
+/**
+ * Returns the last element in @p tree (in order defined by
+ * @ref avs_rbtree_element_comparator_t of @p tree).
+ */
 #define AVS_RBTREE_LAST(tree) \
     ((AVS_TYPEOF_PTR(*tree))_avs_rbtree_last((AVS_RBTREE(void))tree))
 
 /** Convenience macro for forward iteration on elements of @p tree. */
-#define AVS_RB_FOREACH(it, tree) \
-    for (it = AVS_RB_FIRST((AVS_TYPEOF_PTR(it))(tree)->root); \
+#define AVS_RBTREE_FOREACH(it, tree) \
+    for (it = AVS_RB_FIRST(tree); \
             it; \
             it = AVS_RB_NEXT(it))
 
 /** Convenience macro for backward iteration on elements of @p tree. */
-#define AVS_RB_FOREACH_REVERSE(it, tree) \
-    for (it = AVS_RB_LAST((AVS_TYPEOF_PTR(it))(tree)->root); \
+#define AVS_RBTREE_FOREACH_REVERSE(it, tree) \
+    for (it = AVS_RB_LAST(tree); \
             it; \
             it = AVS_RB_PREV(it))
 
