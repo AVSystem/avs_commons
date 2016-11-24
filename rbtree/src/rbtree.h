@@ -34,7 +34,7 @@ struct rb_tree {
     uint32_t tree_magic; /* marks the tree a node is attached to */
 #endif
 
-    avs_rbtree_node_comparator_t *cmp;
+    avs_rbtree_element_comparator_t *cmp;
     void *root;
 };
 

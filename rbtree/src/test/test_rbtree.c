@@ -63,7 +63,7 @@ static void assert_rb_properties_hold_recursive(void *node,
     }
 }
 
-static void assert_rb_properties_hold(AVS_RB_TREE(int) tree_) {
+static void assert_rb_properties_hold(AVS_RBTREE(int) tree_) {
     struct rb_tree *tree = _AVS_RB_TREE(tree_);
     size_t black_height = 0;
 
@@ -76,8 +76,8 @@ static void assert_rb_properties_hold(AVS_RB_TREE(int) tree_) {
 }
 
 /* terminated with 0 */
-static AVS_RB_TREE(int) make_tree(int first, ...) {
-    AVS_RB_TREE(int) tree = AVS_RBTREE_NEW(int, int_comparator);
+static AVS_RBTREE(int) make_tree(int first, ...) {
+    AVS_RBTREE(int) tree = AVS_RBTREE_NEW(int, int_comparator);
     va_list list;
     int value = first;
 
@@ -85,11 +85,11 @@ static AVS_RB_TREE(int) make_tree(int first, ...) {
     va_start(list, first);
 
     while (value != 0) {
-        AVS_RB_NODE(int) elem = AVS_RB_NEW_ELEMENT(int);
+        AVS_RBTREE_NODE(int) elem = AVS_RBTREE_NEW_ELEMENT(int);
         AVS_UNIT_ASSERT_NOT_NULL(elem);
 
         *elem = value;
-        AVS_UNIT_ASSERT_SUCCESS(AVS_RB_TREE_INSERT(tree, elem));
+        AVS_UNIT_ASSERT_SUCCESS(AVS_RBTREE_INSERT(tree, elem));
 
         value = va_arg(list, int);
     }
@@ -115,7 +115,7 @@ static void assert_node_equal(int *node,
 }
 
 AVS_UNIT_TEST(rbtree, create) {
-    AVS_RB_TREE(int) tree = AVS_RBTREE_NEW(int, int_comparator);
+    AVS_RBTREE(int) tree = AVS_RBTREE_NEW(int, int_comparator);
 
     struct rb_tree *tree_struct = _AVS_RB_TREE(tree);
     AVS_UNIT_ASSERT_TRUE(tree_struct->cmp == int_comparator);
@@ -123,29 +123,29 @@ AVS_UNIT_TEST(rbtree, create) {
 }
 
 AVS_UNIT_TEST(rbtree, create_element) {
-    AVS_RB_NODE(int) elem = AVS_RB_NEW_ELEMENT(int);
+    AVS_RBTREE_NODE(int) elem = AVS_RBTREE_NEW_ELEMENT(int);
 
     assert_node_equal(elem, 0, RED, NULL, NULL, NULL);
 
-    AVS_RB_DELETE_ELEMENT(&elem);
+    AVS_RBTREE_DELETE_ELEMENT(&elem);
 }
 
 AVS_UNIT_TEST(rbtree, swap_nodes_unrelated) {
-    AVS_RB_TREE(int) tree = make_tree(
+    AVS_RBTREE(int) tree = make_tree(
                       8,
               4,             12,
           2,      6,     10,     14,
         1,  3,  5,  7,  9, 11, 13, 15, 0);
 
-    int *_1 = AVS_RB_TREE_FIND(tree, &CONST_1);
-    int *_2 = AVS_RB_TREE_FIND(tree, &CONST_2);
-    int *_3 = AVS_RB_TREE_FIND(tree, &CONST_3);
-    int *_4 = AVS_RB_TREE_FIND(tree, &CONST_4);
+    int *_1 = AVS_RBTREE_FIND(tree, &CONST_1);
+    int *_2 = AVS_RBTREE_FIND(tree, &CONST_2);
+    int *_3 = AVS_RBTREE_FIND(tree, &CONST_3);
+    int *_4 = AVS_RBTREE_FIND(tree, &CONST_4);
 
-    int *_8 =  AVS_RB_TREE_FIND(tree, &CONST_8);
-    int *_12 = AVS_RB_TREE_FIND(tree, &CONST_12);
-    int *_10 = AVS_RB_TREE_FIND(tree, &CONST_10);
-    int *_14 = AVS_RB_TREE_FIND(tree, &CONST_14);
+    int *_8 =  AVS_RBTREE_FIND(tree, &CONST_8);
+    int *_12 = AVS_RBTREE_FIND(tree, &CONST_12);
+    int *_10 = AVS_RBTREE_FIND(tree, &CONST_10);
+    int *_14 = AVS_RBTREE_FIND(tree, &CONST_14);
 
     int *a = _2;
     int *b = _12;
@@ -162,18 +162,18 @@ AVS_UNIT_TEST(rbtree, swap_nodes_unrelated) {
 }
 
 AVS_UNIT_TEST(rbtree, swap_nodes_parent_child) {
-    AVS_RB_TREE(int) tree = make_tree(
+    AVS_RBTREE(int) tree = make_tree(
                       8,
               4,             12,
           2,      6,     10,     14,
         1,  3,  5,  7,  9, 11, 13, 15, 0);
 
-    int *_1 = AVS_RB_TREE_FIND(tree, &CONST_1);
-    int *_2 = AVS_RB_TREE_FIND(tree, &CONST_2);
-    int *_3 = AVS_RB_TREE_FIND(tree, &CONST_3);
-    int *_4 = AVS_RB_TREE_FIND(tree, &CONST_4);
-    int *_6 = AVS_RB_TREE_FIND(tree, &CONST_6);
-    int *_8 = AVS_RB_TREE_FIND(tree, &CONST_8);
+    int *_1 = AVS_RBTREE_FIND(tree, &CONST_1);
+    int *_2 = AVS_RBTREE_FIND(tree, &CONST_2);
+    int *_3 = AVS_RBTREE_FIND(tree, &CONST_3);
+    int *_4 = AVS_RBTREE_FIND(tree, &CONST_4);
+    int *_6 = AVS_RBTREE_FIND(tree, &CONST_6);
+    int *_8 = AVS_RBTREE_FIND(tree, &CONST_8);
 
     int *a = _2;
     int *b = _4;
@@ -190,16 +190,16 @@ AVS_UNIT_TEST(rbtree, swap_nodes_parent_child) {
 }
 
 AVS_UNIT_TEST(rbtree, swap_nodes_parent_child_under_root) {
-    AVS_RB_TREE(int) tree = make_tree(
+    AVS_RBTREE(int) tree = make_tree(
                   4,
               2,      6,
             1,  3,  5,  7, 0);
 
-    int *_1 = AVS_RB_TREE_FIND(tree, &CONST_1);
-    int *_2 = AVS_RB_TREE_FIND(tree, &CONST_2);
-    int *_3 = AVS_RB_TREE_FIND(tree, &CONST_3);
-    int *_4 = AVS_RB_TREE_FIND(tree, &CONST_4);
-    int *_6 = AVS_RB_TREE_FIND(tree, &CONST_6);
+    int *_1 = AVS_RBTREE_FIND(tree, &CONST_1);
+    int *_2 = AVS_RBTREE_FIND(tree, &CONST_2);
+    int *_3 = AVS_RBTREE_FIND(tree, &CONST_3);
+    int *_4 = AVS_RBTREE_FIND(tree, &CONST_4);
+    int *_6 = AVS_RBTREE_FIND(tree, &CONST_6);
 
     int *a = _2;
     int *b = _4;
@@ -218,18 +218,18 @@ AVS_UNIT_TEST(rbtree, swap_nodes_parent_child_under_root) {
 }
 
 AVS_UNIT_TEST(rbtree, rotate_left) {
-    AVS_RB_TREE(int) tree = make_tree(3, 2, 5, 7, 4, 0);
+    AVS_RBTREE(int) tree = make_tree(3, 2, 5, 7, 4, 0);
     /*          3B
      *     2B         5B
      *    *  *     4R    7R
      *            *  *  *  *
      */
 
-    int *_3 = AVS_RB_TREE_FIND(tree, &CONST_3);
-    int *_2 = AVS_RB_TREE_FIND(tree, &CONST_2);
-    int *_5 = AVS_RB_TREE_FIND(tree, &CONST_5);
-    int *_4 = AVS_RB_TREE_FIND(tree, &CONST_4);
-    int *_7 = AVS_RB_TREE_FIND(tree, &CONST_7);
+    int *_3 = AVS_RBTREE_FIND(tree, &CONST_3);
+    int *_2 = AVS_RBTREE_FIND(tree, &CONST_2);
+    int *_5 = AVS_RBTREE_FIND(tree, &CONST_5);
+    int *_4 = AVS_RBTREE_FIND(tree, &CONST_4);
+    int *_7 = AVS_RBTREE_FIND(tree, &CONST_7);
 
     assert_node_equal(_3, 3, BLACK, NULL, _2,   _5);
     assert_node_equal(_2, 2, BLACK, _3,   NULL, NULL);
@@ -257,18 +257,18 @@ AVS_UNIT_TEST(rbtree, rotate_left) {
 }
 
 AVS_UNIT_TEST(rbtree, rotate_right) {
-    AVS_RB_TREE(int) tree = make_tree(5, 3, 7, 2, 4, 0);
+    AVS_RBTREE(int) tree = make_tree(5, 3, 7, 2, 4, 0);
     /*           5B
      *      3B        7B
      *   2R    4R   *    *
      *  *  *  *  *
      */
 
-    int *_5 = AVS_RB_TREE_FIND(tree, &CONST_5);
-    int *_3 = AVS_RB_TREE_FIND(tree, &CONST_3);
-    int *_7 = AVS_RB_TREE_FIND(tree, &CONST_7);
-    int *_2 = AVS_RB_TREE_FIND(tree, &CONST_2);
-    int *_4 = AVS_RB_TREE_FIND(tree, &CONST_4);
+    int *_5 = AVS_RBTREE_FIND(tree, &CONST_5);
+    int *_3 = AVS_RBTREE_FIND(tree, &CONST_3);
+    int *_7 = AVS_RBTREE_FIND(tree, &CONST_7);
+    int *_2 = AVS_RBTREE_FIND(tree, &CONST_2);
+    int *_4 = AVS_RBTREE_FIND(tree, &CONST_4);
 
     assert_node_equal(_5, 5, BLACK, NULL, _3,   _7);
     assert_node_equal(_3, 3, BLACK, _5,   _2,   _4);
@@ -297,9 +297,9 @@ AVS_UNIT_TEST(rbtree, rotate_right) {
 
 AVS_UNIT_TEST(rbtree, insert_case1_first) {
     int **tree = AVS_RBTREE_NEW(int, int_comparator);
-    int *elem = AVS_RB_NEW_ELEMENT(int);
+    int *elem = AVS_RBTREE_NEW_ELEMENT(int);
 
-    AVS_UNIT_ASSERT_SUCCESS(AVS_RB_TREE_INSERT(tree, elem));
+    AVS_UNIT_ASSERT_SUCCESS(AVS_RBTREE_INSERT(tree, elem));
 
     AVS_UNIT_ASSERT_TRUE(_AVS_RB_TREE(tree)->cmp == int_comparator);
     AVS_UNIT_ASSERT_TRUE(_AVS_RB_TREE(tree)->root == elem);
@@ -312,16 +312,16 @@ AVS_UNIT_TEST(rbtree, insert_case1_first) {
 }
 
 AVS_UNIT_TEST(rbtree, insert_case2) {
-    AVS_RB_TREE(int) tree = make_tree(2, 0);
+    AVS_RBTREE(int) tree = make_tree(2, 0);
     /*     2
      *   *   *
      */
 
     void *root = NULL;
 
-    int *elem = AVS_RB_NEW_ELEMENT(int);
+    int *elem = AVS_RBTREE_NEW_ELEMENT(int);
     *elem = 1;
-    AVS_UNIT_ASSERT_SUCCESS(AVS_RB_TREE_INSERT(tree, elem));
+    AVS_UNIT_ASSERT_SUCCESS(AVS_RBTREE_INSERT(tree, elem));
 
     /* should be:
      *      2
@@ -346,19 +346,19 @@ AVS_UNIT_TEST(rbtree, insert_case2) {
 }
 
 AVS_UNIT_TEST(rbtree, insert_case3) {
-    AVS_RB_TREE(int) tree = make_tree(5, 2, 7, 0);
+    AVS_RBTREE(int) tree = make_tree(5, 2, 7, 0);
     /*     5
      *  2     7
      * * *   * *
      */
 
-    int *_5 = AVS_RB_TREE_FIND(tree, &CONST_5);
-    int *_2 = AVS_RB_TREE_FIND(tree, &CONST_2);
-    int *_7 = AVS_RB_TREE_FIND(tree, &CONST_7);
+    int *_5 = AVS_RBTREE_FIND(tree, &CONST_5);
+    int *_2 = AVS_RBTREE_FIND(tree, &CONST_2);
+    int *_7 = AVS_RBTREE_FIND(tree, &CONST_7);
 
-    int *_1 = AVS_RB_NEW_ELEMENT(int);
+    int *_1 = AVS_RBTREE_NEW_ELEMENT(int);
     *_1 = 1;
-    AVS_UNIT_ASSERT_SUCCESS(AVS_RB_TREE_INSERT(tree, _1));
+    AVS_UNIT_ASSERT_SUCCESS(AVS_RBTREE_INSERT(tree, _1));
 
     /* should be:
      *            5
@@ -380,17 +380,17 @@ AVS_UNIT_TEST(rbtree, insert_case3) {
 }
 
 AVS_UNIT_TEST(rbtree, insert_case4_5) {
-    AVS_RB_TREE(int) tree = make_tree(5, 4, 7, 2, 0);
+    AVS_RBTREE(int) tree = make_tree(5, 4, 7, 2, 0);
     /*            5B
      *       4B        7B
      *    2R    *    *    *
      *   *  *
      */
 
-    int *_5 = AVS_RB_TREE_FIND(tree, &CONST_5);
-    int *_4 = AVS_RB_TREE_FIND(tree, &CONST_4);
-    int *_7 = AVS_RB_TREE_FIND(tree, &CONST_7);
-    int *_2 = AVS_RB_TREE_FIND(tree, &CONST_2);
+    int *_5 = AVS_RBTREE_FIND(tree, &CONST_5);
+    int *_4 = AVS_RBTREE_FIND(tree, &CONST_4);
+    int *_7 = AVS_RBTREE_FIND(tree, &CONST_7);
+    int *_2 = AVS_RBTREE_FIND(tree, &CONST_2);
     int *_3 = NULL;
 
     AVS_UNIT_ASSERT_TRUE(_5 == _AVS_RB_TREE(tree)->root);
@@ -400,9 +400,9 @@ AVS_UNIT_TEST(rbtree, insert_case4_5) {
     assert_node_equal(_7, 7, BLACK, _5,   NULL, NULL);
     assert_node_equal(_2, 2, RED,   _4,   NULL, NULL);
 
-    _3 = AVS_RB_NEW_ELEMENT(int);
+    _3 = AVS_RBTREE_NEW_ELEMENT(int);
     *_3 = 3;
-    AVS_UNIT_ASSERT_SUCCESS(AVS_RB_TREE_INSERT(tree, _3));
+    AVS_UNIT_ASSERT_SUCCESS(AVS_RBTREE_INSERT(tree, _3));
 
     /* should be:
      *             5B
@@ -423,19 +423,19 @@ AVS_UNIT_TEST(rbtree, insert_case4_5) {
     AVS_RBTREE_DELETE(&tree, NULL);
 }
 
-static AVS_RB_TREE(int) make_full_3level_tree(void) {
-    AVS_RB_TREE(int) tree = make_tree(
+static AVS_RBTREE(int) make_full_3level_tree(void) {
+    AVS_RBTREE(int) tree = make_tree(
                 4,
             2,      6,
           1,  3,  5,  7, 0);
 
-    int *_4 = AVS_RB_TREE_FIND(tree, &CONST_4);
-    int *_2 = AVS_RB_TREE_FIND(tree, &CONST_2);
-    int *_1 = AVS_RB_TREE_FIND(tree, &CONST_1);
-    int *_3 = AVS_RB_TREE_FIND(tree, &CONST_3);
-    int *_6 = AVS_RB_TREE_FIND(tree, &CONST_6);
-    int *_5 = AVS_RB_TREE_FIND(tree, &CONST_5);
-    int *_7 = AVS_RB_TREE_FIND(tree, &CONST_7);
+    int *_4 = AVS_RBTREE_FIND(tree, &CONST_4);
+    int *_2 = AVS_RBTREE_FIND(tree, &CONST_2);
+    int *_1 = AVS_RBTREE_FIND(tree, &CONST_1);
+    int *_3 = AVS_RBTREE_FIND(tree, &CONST_3);
+    int *_6 = AVS_RBTREE_FIND(tree, &CONST_6);
+    int *_5 = AVS_RBTREE_FIND(tree, &CONST_5);
+    int *_7 = AVS_RBTREE_FIND(tree, &CONST_7);
 
     AVS_UNIT_ASSERT_TRUE(_4 == _AVS_RB_TREE(tree)->root);
     assert_node_equal(_4, 4, BLACK, NULL, _2,  _6);
@@ -452,13 +452,13 @@ static AVS_RB_TREE(int) make_full_3level_tree(void) {
 }
 
 AVS_UNIT_TEST(rbtree, traverse_forward) {
-    AVS_RB_TREE(int) tree = make_full_3level_tree();
+    AVS_RBTREE(int) tree = make_full_3level_tree();
 
-    int *node = AVS_RB_TREE_FIRST(tree);
+    int *node = AVS_RBTREE_FIRST(tree);
     int i;
     for (i = 1; i <= 7; ++i) {
         AVS_UNIT_ASSERT_EQUAL(i, *node);
-        node = AVS_RB_NEXT(node);
+        node = AVS_RBTREE_NEXT(node);
     }
 
     AVS_UNIT_ASSERT_NULL(node);
@@ -467,13 +467,13 @@ AVS_UNIT_TEST(rbtree, traverse_forward) {
 }
 
 AVS_UNIT_TEST(rbtree, traverse_backward) {
-    AVS_RB_TREE(int) tree = make_full_3level_tree();
+    AVS_RBTREE(int) tree = make_full_3level_tree();
 
-    int *node = AVS_RB_TREE_LAST(tree);
+    int *node = AVS_RBTREE_LAST(tree);
     int i;
     for (i = 7; i >= 1; --i) {
         AVS_UNIT_ASSERT_EQUAL(i, *node);
-        node = AVS_RB_PREV(node);
+        node = AVS_RBTREE_PREV(node);
     }
 
     AVS_UNIT_ASSERT_NULL(node);
@@ -482,16 +482,16 @@ AVS_UNIT_TEST(rbtree, traverse_backward) {
 }
 
 AVS_UNIT_TEST(rbtree, detach_root) {
-    AVS_RB_TREE(int) tree = make_tree(1, 0);
+    AVS_RBTREE(int) tree = make_tree(1, 0);
     /*   1B
      *  *  *
      */
 
-    int *_1 = AVS_RB_TREE_FIND(tree, &CONST_1);
+    int *_1 = AVS_RBTREE_FIND(tree, &CONST_1);
     assert_node_equal(_1, 1, BLACK, NULL, NULL, NULL);
     assert_rb_properties_hold(tree);
 
-    AVS_UNIT_ASSERT_TRUE(_1 == AVS_RB_TREE_DETACH(tree, _1));
+    AVS_UNIT_ASSERT_TRUE(_1 == AVS_RBTREE_DETACH(tree, _1));
     /* should be:
      *   *
      */
@@ -500,12 +500,12 @@ AVS_UNIT_TEST(rbtree, detach_root) {
     AVS_UNIT_ASSERT_NULL(_AVS_RB_TREE(tree)->root);
     assert_rb_properties_hold(tree);
 
-    AVS_RB_DELETE_ELEMENT(&_1);
+    AVS_RBTREE_DELETE_ELEMENT(&_1);
     AVS_RBTREE_DELETE(&tree, NULL);
 }
 
 AVS_UNIT_TEST(rbtree, detach_single_root_child) {
-    AVS_RB_TREE(int) tree = make_tree(1, 2, 0);
+    AVS_RBTREE(int) tree = make_tree(1, 2, 0);
     /*    1B
      *   *  2R
      */
@@ -515,13 +515,13 @@ AVS_UNIT_TEST(rbtree, detach_single_root_child) {
 
     assert_rb_properties_hold(tree);
 
-    _1 = AVS_RB_TREE_FIND(tree, &CONST_1);
-    _2 = AVS_RB_TREE_FIND(tree, &CONST_2);
+    _1 = AVS_RBTREE_FIND(tree, &CONST_1);
+    _2 = AVS_RBTREE_FIND(tree, &CONST_2);
 
     assert_node_equal(_1, 1, BLACK, NULL, NULL, _2);
     assert_node_equal(_2, 2, RED,   _1,   NULL, NULL);
 
-    AVS_UNIT_ASSERT_TRUE(_2 == AVS_RB_TREE_DETACH(tree, _2));
+    AVS_UNIT_ASSERT_TRUE(_2 == AVS_RBTREE_DETACH(tree, _2));
     /* should be:
      *    1B
      *   *  *
@@ -533,19 +533,19 @@ AVS_UNIT_TEST(rbtree, detach_single_root_child) {
 
     assert_node_equal(_2, 2, RED, NULL, NULL, NULL);
 
-    AVS_RB_DELETE_ELEMENT(&_2);
+    AVS_RBTREE_DELETE_ELEMENT(&_2);
     AVS_RBTREE_DELETE(&tree, NULL);
 }
 
 AVS_UNIT_TEST(rbtree, fuzz1) {
-    AVS_RB_TREE(int) tree = make_tree(3, 1, 2, 0);
+    AVS_RBTREE(int) tree = make_tree(3, 1, 2, 0);
     int *_2 = NULL;
 
     assert_rb_properties_hold(tree);
 
-    _2 = AVS_RB_TREE_FIND(tree, &CONST_2);
-    AVS_UNIT_ASSERT_TRUE(_2 == AVS_RB_TREE_DETACH(tree, _2));
-    AVS_RB_DELETE_ELEMENT(&_2);
+    _2 = AVS_RBTREE_FIND(tree, &CONST_2);
+    AVS_UNIT_ASSERT_TRUE(_2 == AVS_RBTREE_DETACH(tree, _2));
+    AVS_RBTREE_DELETE_ELEMENT(&_2);
 
     assert_rb_properties_hold(tree);
 
@@ -553,14 +553,14 @@ AVS_UNIT_TEST(rbtree, fuzz1) {
 }
 
 AVS_UNIT_TEST(rbtree, fuzz2) {
-    AVS_RB_TREE(int) tree = make_tree(2, 5, 3, 1, 0);
+    AVS_RBTREE(int) tree = make_tree(2, 5, 3, 1, 0);
     int *_3 = NULL;
 
     assert_rb_properties_hold(tree);
 
-    _3 = AVS_RB_TREE_FIND(tree, &CONST_3);
-    AVS_UNIT_ASSERT_TRUE(_3 == AVS_RB_TREE_DETACH(tree, _3));
-    AVS_RB_DELETE_ELEMENT(&_3);
+    _3 = AVS_RBTREE_FIND(tree, &CONST_3);
+    AVS_UNIT_ASSERT_TRUE(_3 == AVS_RBTREE_DETACH(tree, _3));
+    AVS_RBTREE_DELETE_ELEMENT(&_3);
 
     assert_rb_properties_hold(tree);
 

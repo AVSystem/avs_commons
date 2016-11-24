@@ -25,7 +25,7 @@ static void rb_tree_init_magic(struct rb_tree *tree) {
 #define rb_tree_init_magic(tree) (void)0
 #endif
 
-void **_avs_rb_tree_new(avs_rbtree_node_comparator_t *cmp) {
+void **_avs_rbtree_new(avs_rbtree_element_comparator_t *cmp) {
     struct rb_tree *tree = (struct rb_tree*)_AVS_RB_ALLOC(sizeof(struct rb_tree));
     if (!tree) {
         return NULL;
@@ -40,7 +40,7 @@ void **_avs_rb_tree_new(avs_rbtree_node_comparator_t *cmp) {
 }
 
 #if _DEBUG
-static int rb_is_node_detached(AVS_RB_NODE(void) elem) {
+static int rb_is_node_detached(AVS_RBTREE_NODE(void) elem) {
     return _AVS_RB_PARENT(elem) == NULL
         && _AVS_RB_LEFT(elem) == NULL
         && _AVS_RB_RIGHT(elem) == NULL
@@ -80,8 +80,8 @@ static void rb_delete_subtree(void **root,
     _avs_rb_free_node(root, deleter);
 }
 
-void _avs_rb_tree_delete(void ***tree_,
-                         avs_rbtree_element_deleter_t *deleter) {
+void _avs_rbtree_delete(void ***tree_,
+                        avs_rbtree_element_deleter_t *deleter) {
     struct rb_tree *tree;
 
     if (!tree_ || !*tree_) {
@@ -105,7 +105,7 @@ static size_t rb_subtree_size(void *root) {
             + rb_subtree_size(_AVS_RB_RIGHT(root)));
 }
 
-size_t _avs_rb_tree_size(const AVS_RB_TREE(void) tree) {
+size_t _avs_rbtree_size(const AVS_RBTREE(void) tree) {
     return rb_subtree_size(_AVS_RB_TREE(tree)->root);
 }
 
@@ -119,7 +119,7 @@ static void rb_node_init_magic(struct rb_node *node) {
 #define rb_node_init_magic(_) (void)0
 #endif
 
-AVS_RB_NODE(void) _avs_rb_alloc_node(size_t elem_size) {
+AVS_RBTREE_NODE(void) _avs_rb_alloc_node(size_t elem_size) {
     struct rb_node *node =
             (struct rb_node*)_AVS_RB_ALLOC(_AVS_NODE_SPACE__ + elem_size);
     void *elem = (char*)node + _AVS_NODE_SPACE__;
@@ -190,8 +190,8 @@ static void **rb_find_ptr(struct rb_tree *tree,
     return curr;
 }
 
-void *_avs_rb_tree_find(void **tree,
-                        const void *val) {
+void *_avs_rbtree_find(void **tree,
+                       const void *val) {
     void **elem_ptr = NULL;
 
     assert(_AVS_RB_TREE_VALID(tree));
@@ -350,8 +350,8 @@ static void rb_insert_fix(struct rb_tree *tree,
     }
 }
 
-int _avs_rb_tree_attach(AVS_RB_TREE(void) tree_,
-                        AVS_RB_NODE(void) elem) {
+int _avs_rbtree_attach(AVS_RBTREE(void) tree_,
+                       AVS_RBTREE_NODE(void) elem) {
     struct rb_tree *tree = _AVS_RB_TREE(tree_);
     void **dst = NULL;
     void *parent = NULL;
@@ -376,7 +376,7 @@ int _avs_rb_tree_attach(AVS_RB_TREE(void) tree_,
     return 0;
 }
 
-static AVS_RB_NODE(void) rb_min(void *root) {
+static AVS_RBTREE_NODE(void) rb_min(void *root) {
     void *min = root;
     void *left = root;
 
@@ -390,11 +390,11 @@ static AVS_RB_NODE(void) rb_min(void *root) {
     return min;
 }
 
-AVS_RB_NODE(void) _avs_rb_tree_first(AVS_RB_TREE(void) tree) {
+AVS_RBTREE_NODE(void) _avs_rbtree_first(AVS_RBTREE(void) tree) {
     return rb_min(_AVS_RB_TREE(tree)->root);
 }
 
-static AVS_RB_NODE(void) rb_max(AVS_RB_NODE(void) root) {
+static AVS_RBTREE_NODE(void) rb_max(AVS_RBTREE_NODE(void) root) {
     void *max = root;
     void *right = root;
 
@@ -408,11 +408,11 @@ static AVS_RB_NODE(void) rb_max(AVS_RB_NODE(void) root) {
     return max;
 }
 
-AVS_RB_NODE(void) _avs_rb_tree_last(AVS_RB_TREE(void) tree) {
+AVS_RBTREE_NODE(void) _avs_rbtree_last(AVS_RBTREE(void) tree) {
     return rb_max(_AVS_RB_TREE(tree)->root);
 }
 
-AVS_RB_NODE(void) _avs_rb_next(AVS_RB_NODE(void) elem) {
+AVS_RBTREE_NODE(void) _avs_rb_next(AVS_RBTREE_NODE(void) elem) {
     void *right = _AVS_RB_RIGHT(elem);
     void *parent = NULL;
     void *curr = NULL;
@@ -598,8 +598,8 @@ static void rb_detach_fix(struct rb_tree *tree,
     }
 }
 
-void *_avs_rb_tree_detach(void **tree_,
-                          void *elem) {
+void *_avs_rbtree_detach(void **tree_,
+                         void *elem) {
     struct rb_tree *tree = _AVS_RB_TREE(tree_);
     void *left = NULL;
     void *right = NULL;
@@ -621,7 +621,7 @@ void *_avs_rb_tree_detach(void **tree_,
     if (left && right) {
         void *replacement = _avs_rb_next(elem);
         _avs_rb_swap_nodes(tree, elem, replacement);
-        return _avs_rb_tree_detach(tree_, elem);
+        return _avs_rbtree_detach(tree_, elem);
     }
 
     child = left ? left : right;

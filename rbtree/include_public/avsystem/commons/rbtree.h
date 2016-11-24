@@ -91,7 +91,8 @@ typedef void avs_rbtree_element_deleter_t(void *elem);
  * @returns Pointer to created element cast to @p type * on success,
  *          NULL in case of error.
  */
-#define AVS_RB_NEW_ELEMENT(type) ((type*)AVS_RB_NEW_BUFFER(sizeof(type)))
+#define AVS_RBTREE_NEW_ELEMENT(type) \
+    ((type*)AVS_RBTREE_NEW_BUFFER(sizeof(type)))
 
 /**
  * Frees memory associated with given detached RB-tree element.
@@ -101,7 +102,7 @@ typedef void avs_rbtree_element_deleter_t(void *elem);
  *
  * @param elem Pointer to element to free. *elem is set to NULL after cleanup.
  */
-#define AVS_RB_DELETE_ELEMENT(elem) _avs_rb_free_node((void**)elem, NULL)
+#define AVS_RBTREE_DELETE_ELEMENT(elem) _avs_rb_free_node((void**)elem, NULL)
 
 /**
  * Inserts an detached @p elem into given @p tree.
@@ -149,10 +150,10 @@ typedef void avs_rbtree_element_deleter_t(void *elem);
       _avs_rbtree_find((void**)tree, val_ptr)))
 
 /** Returns @p elem successor or NULL if there is none. */
-#define AVS_RB_NEXT(elem) ((AVS_TYPEOF_PTR(elem))_avs_rb_next(elem))
+#define AVS_RBTREE_NEXT(elem) ((AVS_TYPEOF_PTR(elem))_avs_rb_next(elem))
 
 /** Returns @p elem predecessor or NULL if there is none. */
-#define AVS_RB_PREV(elem) ((AVS_TYPEOF_PTR(elem))_avs_rb_prev(elem))
+#define AVS_RBTREE_PREV(elem) ((AVS_TYPEOF_PTR(elem))_avs_rb_prev(elem))
 
 /** Returns the first element in @p tree. */
 #define AVS_RBTREE_FIRST(tree) \
