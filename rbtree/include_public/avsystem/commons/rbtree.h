@@ -38,7 +38,7 @@ typedef int avs_rb_cmp_t(const void *a,
  * Create an RB-tree with elements of given @p type. @p cmp function is used
  * to compare its elements.
  *
- * @param type Type of elements in the tree.
+ * @param type Type of elements stored in the tree nodes.
  * @param cmp  A function that compares two elements. See @ref avs_rb_cmp_t .
  *
  * @returns Created RB-tree object on success, NULL in case of error.
