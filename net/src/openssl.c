@@ -1300,13 +1300,17 @@ static int avs_ssl_init() {
 
 static const SSL_METHOD *stream_method(avs_net_ssl_version_t version) {
     switch (version) {
+    case AVS_NET_SSL_VERSION_DEFAULT:
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L /* OpenSSL >= 1.1.0 */
+        return TLS_method();
+#endif
+    case AVS_NET_SSL_VERSION_SSLv2_OR_3:
+        return SSLv23_method();
+
 #if OPENSSL_VERSION_NUMBER < 0x10100000L && !defined(OPENSSL_NO_SSL2)
     case AVS_NET_SSL_VERSION_SSLv2:
         return SSLv2_method();
 #endif
-
-    case AVS_NET_SSL_VERSION_SSLv2_OR_3:
-        return SSLv23_method();
 
 #ifndef OPENSSL_NO_SSL3
     case AVS_NET_SSL_VERSION_SSLv3:
@@ -1333,15 +1337,18 @@ static const SSL_METHOD *stream_method(avs_net_ssl_version_t version) {
 
 static const SSL_METHOD *dgram_method(avs_net_ssl_version_t version) {
     switch (version) {
+    case AVS_NET_SSL_VERSION_DEFAULT:
+#if OPENSSL_VERSION_NUMBER >= 0x10002000L /* OpenSSL >= 1.0.2 */
+        return DTLS_method();
+        
+    case AVS_NET_SSL_VERSION_TLSv1_2:
+        return DTLSv1_2_method();
+#endif
+
 #if OPENSSL_VERSION_NUMBER >= 0x10001000L /* OpenSSL >= 1.0.1 */
     case AVS_NET_SSL_VERSION_TLSv1:
     case AVS_NET_SSL_VERSION_TLSv1_1:
         return DTLSv1_method();
-#endif
-
-#if OPENSSL_VERSION_NUMBER >= 0x10002000L /* OpenSSL >= 1.0.2 */
-    case AVS_NET_SSL_VERSION_TLSv1_2:
-        return DTLSv1_2_method();
 #endif
 
     default:
