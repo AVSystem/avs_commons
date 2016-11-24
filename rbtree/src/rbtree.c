@@ -60,13 +60,13 @@ void _avs_rb_free_node(void **node) {
     }
 }
 
-static void rb_release_subtree(void **root) {
+static void rb_delete_subtree(void **root) {
     if (!root || !*root) {
         return;
     }
 
-    rb_release_subtree(_AVS_RB_LEFT_PTR(*root));
-    rb_release_subtree(_AVS_RB_RIGHT_PTR(*root));
+    rb_delete_subtree(_AVS_RB_LEFT_PTR(*root));
+    rb_delete_subtree(_AVS_RB_RIGHT_PTR(*root));
 
     _AVS_RB_PARENT(*root) = NULL;
     _AVS_RB_NODE_SET_TREE_MAGIC(*root, 0);
@@ -74,7 +74,7 @@ static void rb_release_subtree(void **root) {
     _avs_rb_free_node(root);
 }
 
-void _avs_rb_tree_release(void ***tree_) {
+void _avs_rb_tree_delete(void ***tree_) {
     struct rb_tree *tree;
 
     if (!tree_ || !*tree_) {
@@ -84,7 +84,7 @@ void _avs_rb_tree_release(void ***tree_) {
     tree = _AVS_RB_TREE(*tree_);
     assert(_AVS_RB_TREE_VALID(*tree_));
 
-    rb_release_subtree(&tree->root);
+    rb_delete_subtree(&tree->root);
     _AVS_RB_DEALLOC(tree);
     *tree_ = NULL;
 }

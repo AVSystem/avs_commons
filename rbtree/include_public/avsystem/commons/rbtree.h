@@ -51,7 +51,7 @@ typedef int avs_rb_cmp_t(const void *a,
  * @param tree_ptr Pointer to the RB-tree object to destroy. *tree_ptr is set to
  *                 NULL after the cleanup is done.
  */
-#define AVS_RB_TREE_RELEASE(tree_ptr) _avs_rb_tree_release((void***)(tree_ptr))
+#define AVS_RBTREE_DELETE(tree_ptr) _avs_rb_tree_delete((void***)(tree_ptr))
 
 /**
  * @param tree RB-tree object to operate on.
@@ -163,7 +163,7 @@ typedef int avs_rb_cmp_t(const void *a,
 
 /* Internal functions. Use macros defined above instead. */
 AVS_RB_TREE(void) _avs_rb_tree_new(avs_rb_cmp_t *cmp);
-void _avs_rb_tree_release(AVS_RB_TREE(void) *tree);
+void _avs_rb_tree_delete(AVS_RB_TREE(void) *tree);
 
 size_t _avs_rb_tree_size(AVS_RB_TREE(void) tree);
 AVS_RB_NODE(void) _avs_rb_tree_find(AVS_RB_TREE(void) tree,
