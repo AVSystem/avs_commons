@@ -31,8 +31,6 @@ typedef int avs_rb_cmp_t(const void *a,
 /** RB element type alias. */
 #define AVS_RB_NODE(type) type*
 
-#define _AVS_TYPEOF __typeof__
-
 #define _AVS_RB_TYPECHECK(tree_type, elem_type) \
     ((void)(**(tree_type) < *(elem_type)))
 
@@ -134,32 +132,32 @@ typedef int avs_rb_cmp_t(const void *a,
  */
 #define AVS_RB_TREE_FIND(tree, val_ptr) \
     (_AVS_RB_TYPECHECK(tree, val_ptr), \
-     ((_AVS_TYPEOF(val_ptr)) \
+     ((AVS_TYPEOF_PTR(val_ptr)) \
       _avs_rb_tree_find((void**)tree, val_ptr)))
 
 /** Returns @p elem successor or NULL if there is none. */
-#define AVS_RB_NEXT(elem) ((_AVS_TYPEOF(elem))_avs_rb_next(elem))
+#define AVS_RB_NEXT(elem) ((AVS_TYPEOF_PTR(elem))_avs_rb_next(elem))
 
 /** Returns @p elem predecessor or NULL if there is none. */
-#define AVS_RB_PREV(elem) ((_AVS_TYPEOF(elem))_avs_rb_prev(elem))
+#define AVS_RB_PREV(elem) ((AVS_TYPEOF_PTR(elem))_avs_rb_prev(elem))
 
 /** Returns the first element in @p tree. */
 #define AVS_RB_TREE_FIRST(tree) \
-    ((_AVS_TYPEOF(*tree))_avs_rb_tree_first((AVS_RB_TREE(void))tree))
+    ((AVS_TYPEOF_PTR(*tree))_avs_rb_tree_first((AVS_RB_TREE(void))tree))
 
 /** Returns the last element in @p tree. */
 #define AVS_RB_TREE_LAST(tree) \
-    ((_AVS_TYPEOF(*tree))_avs_rb_tree_last((AVS_RB_TREE(void))tree))
+    ((AVS_TYPEOF_PTR(*tree))_avs_rb_tree_last((AVS_RB_TREE(void))tree))
 
 /** Convenience macro for forward iteration on elements of @p tree. */
 #define AVS_RB_FOREACH(it, tree) \
-    for (it = AVS_RB_FIRST((_AVS_TYPEOF(it))(tree)->root); \
+    for (it = AVS_RB_FIRST((AVS_TYPEOF_PTR(it))(tree)->root); \
             it; \
             it = AVS_RB_NEXT(it))
 
 /** Convenience macro for backward iteration on elements of @p tree. */
 #define AVS_RB_FOREACH_REVERSE(it, tree) \
-    for (it = AVS_RB_LAST((_AVS_TYPEOF(it))(tree)->root); \
+    for (it = AVS_RB_LAST((AVS_TYPEOF_PTR(it))(tree)->root); \
             it; \
             it = AVS_RB_PREV(it))
 

@@ -57,17 +57,17 @@ struct rb_tree {
 #define _AVS_RB_DEALLOC(ptr) free(ptr)
 
 #define _AVS_RB_LEFT_PTR(elem) \
-    ((_AVS_TYPEOF(elem)*)&(_AVS_RB_NODE(elem)->left))
+    ((AVS_TYPEOF_PTR(elem)*)&(_AVS_RB_NODE(elem)->left))
 
 #define _AVS_RB_LEFT(elem) (*_AVS_RB_LEFT_PTR(elem))
 
 #define _AVS_RB_RIGHT_PTR(elem) \
-    ((_AVS_TYPEOF(elem)*)&(_AVS_RB_NODE(elem)->right))
+    ((AVS_TYPEOF_PTR(elem)*)&(_AVS_RB_NODE(elem)->right))
 
 #define _AVS_RB_RIGHT(elem) (*_AVS_RB_RIGHT_PTR(elem))
 
 #define _AVS_RB_PARENT_PTR(elem) \
-    ((_AVS_TYPEOF(elem)*)&(_AVS_RB_NODE(elem)->parent))
+    ((AVS_TYPEOF_PTR(elem)*)&(_AVS_RB_NODE(elem)->parent))
 
 #define _AVS_RB_PARENT(elem) (*_AVS_RB_PARENT_PTR(elem))
 
