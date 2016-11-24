@@ -39,7 +39,7 @@ void **_avs_rbtree_new(avs_rbtree_element_comparator_t *cmp) {
     return &tree->root;
 }
 
-#if _DEBUG
+#ifndef NDEBUG
 static int rb_is_node_detached(AVS_RBTREE_NODE(void) elem) {
     return _AVS_RB_PARENT(elem) == NULL
         && _AVS_RB_LEFT(elem) == NULL

@@ -6,10 +6,10 @@
 
 #include <avsystem/commons/rbtree.h>
 
-#if _DEBUG
+#ifndef NDEBUG
 #define _AVS_RB_USE_MAGIC
 static const uint32_t _AVS_RB_MAGIC = 0x00031337;
-#endif /* _DEBUG */
+#endif /* NDEBUG */
 
 enum rb_color {
     RED,
