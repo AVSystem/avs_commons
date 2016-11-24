@@ -105,7 +105,7 @@ static size_t rb_subtree_size(void *root) {
             + rb_subtree_size(_AVS_RB_RIGHT(root)));
 }
 
-size_t _avs_rb_tree_size(AVS_RB_TREE(void) tree) {
+size_t _avs_rb_tree_size(const AVS_RB_TREE(void) tree) {
     return rb_subtree_size(_AVS_RB_TREE(tree)->root);
 }
 

@@ -71,7 +71,7 @@ typedef void avs_rb_node_deleter_t(void *elem);
  *
  * @returns Total number of elements stored in the tree.
  */
-#define AVS_RBTREE_SIZE(tree) _avs_rb_tree_size((void**)tree)
+#define AVS_RBTREE_SIZE(tree) _avs_rb_tree_size((const void**)tree)
 
 /**
  * Creates an arbitrarily-sized, detached RB-tree element.
@@ -179,7 +179,7 @@ AVS_RB_TREE(void) _avs_rb_tree_new(avs_rb_cmp_t *cmp);
 void _avs_rb_tree_delete(AVS_RB_TREE(void) *tree,
                          avs_rb_node_deleter_t *deleter);
 
-size_t _avs_rb_tree_size(AVS_RB_TREE(void) tree);
+size_t _avs_rb_tree_size(const AVS_RB_TREE(void) tree);
 AVS_RB_NODE(void) _avs_rb_tree_find(AVS_RB_TREE(void) tree,
                                     const void *value);
 int _avs_rb_tree_attach(AVS_RB_TREE(void) tree,
