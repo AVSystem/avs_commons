@@ -8,22 +8,23 @@
 #include <avsystem/commons/defs.h>
 
 /**
- * Tree element comparator.
+ * RB-tree element comparator.
  *
- * @param a    First element.
+ * @param a    First element. Note that the comparator must be aware of actual
+ *             type of compared elements.
  * @param b    Second element.
- * @param size Element size. Note: the value passed here is the sizeof() of
- *             an actual element type. If tree nodes contain FAMs, their size
- *             is not included.
  *
  * @returns The comparator should return:
  * - a negative value if @p a < @p b,
  * - 0 if @p a == @p b,
  * - a positive value if @p a > @p b.
+ *
+ * NOTE: the comparator MUST establish a total ordering of RB-tree elements.
+ * If it does not fullfill this requirement, the behavior of operations on the
+ * tree is undefined.
  */
 typedef int avs_rb_cmp_t(const void *a,
-                         const void *b,
-                         size_t size);
+                         const void *b);
 
 /** RB tree type alias.  */
 #define AVS_RB_TREE(type) type**
@@ -105,7 +106,7 @@ typedef int avs_rb_cmp_t(const void *a,
  */
 #define AVS_RB_TREE_INSERT(tree, elem) \
     (_AVS_RB_TYPECHECK(tree, elem), \
-     _avs_rb_tree_attach((void**)(tree), (elem), sizeof(*(elem))))
+     _avs_rb_tree_attach((void**)(tree), (elem)))
 
 /**
  * Detaches given @p elem from @p tree. Does not free @p elem.
@@ -134,7 +135,7 @@ typedef int avs_rb_cmp_t(const void *a,
 #define AVS_RB_TREE_FIND(tree, val_ptr) \
     (_AVS_RB_TYPECHECK(tree, val_ptr), \
      ((_AVS_TYPEOF(val_ptr)) \
-      _avs_rb_tree_find((void**)tree, val_ptr, sizeof(*val_ptr))))
+      _avs_rb_tree_find((void**)tree, val_ptr)))
 
 /** Returns @p elem successor or NULL if there is none. */
 #define AVS_RB_NEXT(elem) ((_AVS_TYPEOF(elem))_avs_rb_next(elem))
@@ -168,11 +169,9 @@ void _avs_rb_tree_release(AVS_RB_TREE(void) *tree);
 
 size_t _avs_rb_tree_size(AVS_RB_TREE(void) tree);
 AVS_RB_NODE(void) _avs_rb_tree_find(AVS_RB_TREE(void) tree,
-                                    const void *value,
-                                    size_t value_size);
+                                    const void *value);
 int _avs_rb_tree_attach(AVS_RB_TREE(void) tree,
-                        AVS_RB_NODE(void) node,
-                        size_t node_size);
+                        AVS_RB_NODE(void) node);
 AVS_RB_NODE(void) _avs_rb_tree_detach(AVS_RB_TREE(void) tree,
                                       AVS_RB_NODE(void) node);
 

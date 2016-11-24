@@ -20,6 +20,11 @@ static int CONST_12 = 12;
 
 static int CONST_14 = 14;
 
+static int int_comparator(const void *a,
+                          const void *b) {
+    return *(const int*)a - *(const int*)b;
+}
+
 static void assert_rb_properties_hold_recursive(void *node,
                                                 size_t *out_black_height) {
     void *left = NULL;
@@ -72,7 +77,7 @@ static void assert_rb_properties_hold(AVS_RB_TREE(int) tree_) {
 
 /* terminated with 0 */
 static AVS_RB_TREE(int) make_tree(int first, ...) {
-    AVS_RB_TREE(int) tree = AVS_RB_TREE_CREATE(int, memcmp);
+    AVS_RB_TREE(int) tree = AVS_RB_TREE_CREATE(int, int_comparator);
     va_list list;
     int value = first;
 
@@ -110,10 +115,10 @@ static void assert_node_equal(int *node,
 }
 
 AVS_UNIT_TEST(rbtree, create) {
-    AVS_RB_TREE(int) tree = AVS_RB_TREE_CREATE(int, memcmp);
+    AVS_RB_TREE(int) tree = AVS_RB_TREE_CREATE(int, int_comparator);
 
     struct rb_tree *tree_struct = _AVS_RB_TREE(tree);
-    AVS_UNIT_ASSERT_TRUE(tree_struct->cmp == memcmp);
+    AVS_UNIT_ASSERT_TRUE(tree_struct->cmp == int_comparator);
     AVS_UNIT_ASSERT_NULL(tree_struct->root);
 }
 
@@ -291,12 +296,12 @@ AVS_UNIT_TEST(rbtree, rotate_right) {
 }
 
 AVS_UNIT_TEST(rbtree, insert_case1_first) {
-    int **tree = AVS_RB_TREE_CREATE(int, memcmp);
+    int **tree = AVS_RB_TREE_CREATE(int, int_comparator);
     int *elem = AVS_RB_NEW_ELEMENT(int);
 
     AVS_UNIT_ASSERT_SUCCESS(AVS_RB_TREE_INSERT(tree, elem));
 
-    AVS_UNIT_ASSERT_TRUE(_AVS_RB_TREE(tree)->cmp == memcmp);
+    AVS_UNIT_ASSERT_TRUE(_AVS_RB_TREE(tree)->cmp == int_comparator);
     AVS_UNIT_ASSERT_TRUE(_AVS_RB_TREE(tree)->root == elem);
 
     assert_node_equal(elem, 0, BLACK, NULL, NULL, NULL);

@@ -48,8 +48,13 @@ static void assert_rb_properties_hold(AVS_RB_TREE(int) tree_) {
     assert_rb_properties_hold_recursive(tree->root, &black_height);
 }
 
+static int int_comparator(const void *a,
+                          const void *b) {
+    return *(const int*)a - *(const int*)b;
+}
+
 int main(void) {
-    AVS_RB_TREE(int) tree = AVS_RB_TREE_CREATE(int, memcmp);
+    AVS_RB_TREE(int) tree = AVS_RB_TREE_CREATE(int, int_comparator);
 
     while (!feof(stdin)) {
         char op;

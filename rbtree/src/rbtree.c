@@ -124,7 +124,6 @@ AVS_RB_NODE(void) _avs_rb_alloc_node(size_t elem_size) {
 
 static void *rb_find_parent(struct rb_tree *tree,
                             void *elem,
-                            size_t elem_size,
                             void ***out_ptr) {
     void *parent = NULL;
     void **curr = NULL;
@@ -140,7 +139,7 @@ static void *rb_find_parent(struct rb_tree *tree,
 
         assert(_AVS_RB_NODE_VALID(*curr));
 
-        cmp = tree->cmp(elem, *curr, elem_size);
+        cmp = tree->cmp(elem, *curr);
         if (cmp == 0) {
             break;
         }
@@ -158,8 +157,7 @@ static void *rb_find_parent(struct rb_tree *tree,
 }
 
 static void **rb_find_ptr(struct rb_tree *tree,
-                          const void *elem,
-                          size_t elem_size) {
+                          const void *elem) {
     void **curr = NULL;
 
     assert(tree);
@@ -172,7 +170,7 @@ static void **rb_find_ptr(struct rb_tree *tree,
 
         assert(_AVS_RB_NODE_VALID(*curr));
 
-        cmp = tree->cmp(elem, *curr, elem_size);
+        cmp = tree->cmp(elem, *curr);
         if (cmp < 0) {
             curr = _AVS_RB_LEFT_PTR(*curr);
         } else if (cmp > 0) {
@@ -186,13 +184,12 @@ static void **rb_find_ptr(struct rb_tree *tree,
 }
 
 void *_avs_rb_tree_find(void **tree,
-                        const void *val,
-                        size_t val_size) {
+                        const void *val) {
     void **elem_ptr = NULL;
 
     assert(_AVS_RB_TREE_VALID(tree));
 
-    elem_ptr = rb_find_ptr(_AVS_RB_TREE(tree), val, val_size);
+    elem_ptr = rb_find_ptr(_AVS_RB_TREE(tree), val);
     return elem_ptr ? *elem_ptr : NULL;
 }
 
@@ -347,8 +344,7 @@ static void rb_insert_fix(struct rb_tree *tree,
 }
 
 int _avs_rb_tree_attach(AVS_RB_TREE(void) tree_,
-                        AVS_RB_NODE(void) elem,
-                        size_t elem_size) {
+                        AVS_RB_NODE(void) elem) {
     struct rb_tree *tree = _AVS_RB_TREE(tree_);
     void **dst = NULL;
     void *parent = NULL;
@@ -357,7 +353,7 @@ int _avs_rb_tree_attach(AVS_RB_TREE(void) tree_,
     assert(elem);
     assert(rb_is_node_detached(elem));
 
-    parent = rb_find_parent(tree, elem, elem_size, &dst);
+    parent = rb_find_parent(tree, elem, &dst);
     assert(dst);
 
     if (*dst) {
