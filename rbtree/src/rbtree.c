@@ -242,6 +242,17 @@ static void **rb_own_parent_ptr(struct rb_tree *tree,
     }
 }
 
+/**
+ *        (A)               (root)
+ *        / \                / \
+ *       /   \              /   \
+ *     (B) (root)   -->   (A)   (D)
+ *          / \           / \
+ *         /   \         /   \
+ *       (C)   (D)     (B)   (C)
+ *
+ * (C) 2016 Mateusz Krawiec
+ */
 void _avs_rb_rotate_left(struct rb_tree *tree,
                          void *root) {
     void *parent = _AVS_RB_PARENT(root);
@@ -268,6 +279,17 @@ void _avs_rb_rotate_left(struct rb_tree *tree,
     }
 }
 
+/**
+ *        (A)               (root)
+ *        / \                / \
+ *       /   \              /   \
+ *    (root) (B)   -->    (C)   (A)
+ *     / \                      / \
+ *    /   \                    /   \
+ *  (C)   (D)                (D)   (B)
+ *
+ * (C) 2016 Mateusz Krawiec
+ */
 void _avs_rb_rotate_right(struct rb_tree *tree,
                           void *root) {
     void *parent = _AVS_RB_PARENT(root);
