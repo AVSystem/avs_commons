@@ -141,7 +141,29 @@ static int get_socket_inner_mtu_or_zero(avs_net_abstract_socket_t *sock) {
     }
 }
 
-#if OPENSSL_VERSION_NUMBER < 0x10100000L
+#if OPENSSL_VERSION_NUMBER < 0x10100000L /* OpenSSL < 1.1.0 */
+static const EVP_CIPHER *get_evp_cipher(SSL *ssl) {
+    EVP_CIPHER_CTX *ctx = ssl->enc_write_ctx;
+    return ctx ? ctx->cipher : NULL;
+}
+
+static const EVP_MD *get_evp_md(SSL *ssl) {
+    EVP_MD_CTX *ctx = ssl->write_hash;
+    return ctx ? ctx->digest : NULL;
+}
+#else /* OpenSSL >= 1.1.0 */
+static const EVP_CIPHER *get_evp_cipher(SSL *ssl) {
+    const SSL_CIPHER *ssl_cipher = SSL_get_current_cipher(ssl);
+    return ssl_cipher
+            ? EVP_get_cipherbynid(SSL_CIPHER_get_cipher_nid(ssl_cipher)) : NULL;
+}
+
+static const EVP_MD *get_evp_md(SSL *ssl) {
+    const SSL_CIPHER *ssl_cipher = SSL_get_current_cipher(ssl);
+    return ssl_cipher
+            ? EVP_get_digestbynid(SSL_CIPHER_get_digest_nid(ssl_cipher)) : NULL;
+}
+#endif
 
 /* values from OpenSSL 1.x */
 #ifndef EVP_GCM_TLS_EXPLICIT_IV_LEN
@@ -154,11 +176,11 @@ static int get_socket_inner_mtu_or_zero(avs_net_abstract_socket_t *sock) {
 #define SSL3_RT_MAX_COMPRESSED_OVERHEAD 1024
 #endif
 
-static int get_explicit_iv_length(EVP_CIPHER_CTX *cipher_ctx) {
+static int get_explicit_iv_length(const EVP_CIPHER *cipher) {
     /* adapted from do_dtls1_write() in OpenSSL */
-    int mode = EVP_CIPHER_CTX_mode(cipher_ctx);
+    int mode = EVP_CIPHER_mode(cipher);
     if (mode == EVP_CIPH_CBC_MODE) {
-        int eivlen = EVP_CIPHER_CTX_iv_length(cipher_ctx);
+        int eivlen = EVP_CIPHER_iv_length(cipher);
         if (eivlen > 1) {
             return eivlen;
         }
@@ -179,50 +201,38 @@ static int get_explicit_iv_length(EVP_CIPHER_CTX *cipher_ctx) {
 static int get_dtls_overhead(ssl_socket_t *socket,
                              int *out_header,
                              int *out_padding_size) {
+    const EVP_CIPHER *cipher;
+    const EVP_MD *md;
     *out_header = DTLS1_RT_HEADER_LENGTH;
     *out_padding_size = 0;
-    if (socket && socket->ssl) {
-        /* querying OpenSSL internals, but there seem to be no other way */
-        EVP_CIPHER_CTX *cipher_ctx = socket->ssl->enc_write_ctx;
-        EVP_MD_CTX *md_ctx = socket->ssl->write_hash;
-        /* actual logic is inspired by GnuTLS' record_overhead() */
-        if (cipher_ctx) {
-            int block_size = EVP_CIPHER_CTX_block_size(cipher_ctx);
-            if (block_size < 0) {
-                return -1;
-            }
-            if (!(EVP_CIPHER_CTX_flags(cipher_ctx) & EVP_CIPH_NO_PADDING)) {
-                *out_padding_size = block_size;
-            }
-            *out_header += get_explicit_iv_length(cipher_ctx);
+    if (!socket || !socket->ssl) {
+        return 0;
+    }
+    /* actual logic is inspired by GnuTLS' record_overhead() */
+    if ((cipher = get_evp_cipher(socket->ssl))) {
+        int block_size = EVP_CIPHER_block_size(cipher);
+        if (block_size < 0) {
+            return -1;
         }
-        /* adapted from mac_size calculation in dtls1_do_write() in OpenSSL */
+        if (!(EVP_CIPHER_flags(cipher) & EVP_CIPH_NO_PADDING)) {
+            *out_padding_size = block_size;
+        }
+        *out_header += get_explicit_iv_length(cipher);
+    }
 #ifdef EVP_CIPH_FLAG_AEAD_CIPHER
-        if (md_ctx
-                && !(cipher_ctx
-                        && (EVP_CIPHER_CTX_flags(cipher_ctx)
-                                & EVP_CIPH_FLAG_AEAD_CIPHER))) {
-            *out_header += EVP_MD_CTX_size(md_ctx);
-        }
+    /* adapted from mac_size calculation in dtls1_do_write() in OpenSSL */
+    if ((md = get_evp_md(socket->ssl))
+            && !(cipher
+                    && (EVP_CIPHER_flags(cipher)
+                            & EVP_CIPH_FLAG_AEAD_CIPHER))) {
+        *out_header += EVP_MD_size(md);
+    }
 #endif
-        if (SSL_get_current_compression(socket->ssl) != NULL) {
-            *out_header += SSL3_RT_MAX_COMPRESSED_OVERHEAD;
-        }
+    if (SSL_get_current_compression(socket->ssl) != NULL) {
+        *out_header += SSL3_RT_MAX_COMPRESSED_OVERHEAD;
     }
     return 0;
 }
-#else
-static int get_dtls_overhead(ssl_socket_t *socket,
-                             int *out_header,
-                             int *out_padding_size) {
-    /* OpenSSL 1.1 hides its internals, but also does not allow to query the
-     * currently used ciphers in any other way, so we're screwed :( */
-    (void) socket;
-    (void) out_header;
-    (void) out_padding_size;
-    return -1;
-}
-#endif
 
 #ifdef BIO_TYPE_SOURCE_SINK
 
