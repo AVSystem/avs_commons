@@ -48,11 +48,8 @@ struct rb_tree {
 #define _AVS_RB_NODE(elem) \
     ((struct rb_node*)((char*)(elem) - _AVS_NODE_SPACE__))
 
-#define container_of(ptr, type, member) \
-    ((type*)((char*)(ptr) - offsetof(type, member)))
-
 #define _AVS_RB_TREE(ptr) \
-    container_of((ptr), struct rb_tree, root)
+    AVS_CONTAINER_OF((ptr), struct rb_tree, root)
 
 #define _AVS_RB_ALLOC(size) calloc(1, size)
 #define _AVS_RB_DEALLOC(ptr) free(ptr)
