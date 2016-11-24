@@ -25,7 +25,7 @@ static void rb_tree_init_magic(struct rb_tree *tree) {
 #define rb_tree_init_magic(tree) (void)0
 #endif
 
-void **_avs_rb_tree_create(avs_rb_cmp_t *cmp) {
+void **_avs_rb_tree_new(avs_rb_cmp_t *cmp) {
     struct rb_tree *tree = (struct rb_tree*)_AVS_RB_ALLOC(sizeof(struct rb_tree));
     if (!tree) {
         return NULL;

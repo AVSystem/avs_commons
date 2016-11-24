@@ -54,7 +54,7 @@ static int int_comparator(const void *a,
 }
 
 int main(void) {
-    AVS_RB_TREE(int) tree = AVS_RB_TREE_CREATE(int, int_comparator);
+    AVS_RB_TREE(int) tree = AVS_RBTREE_NEW(int, int_comparator);
 
     while (!feof(stdin)) {
         char op;

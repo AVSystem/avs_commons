@@ -77,7 +77,7 @@ static void assert_rb_properties_hold(AVS_RB_TREE(int) tree_) {
 
 /* terminated with 0 */
 static AVS_RB_TREE(int) make_tree(int first, ...) {
-    AVS_RB_TREE(int) tree = AVS_RB_TREE_CREATE(int, int_comparator);
+    AVS_RB_TREE(int) tree = AVS_RBTREE_NEW(int, int_comparator);
     va_list list;
     int value = first;
 
@@ -115,7 +115,7 @@ static void assert_node_equal(int *node,
 }
 
 AVS_UNIT_TEST(rbtree, create) {
-    AVS_RB_TREE(int) tree = AVS_RB_TREE_CREATE(int, int_comparator);
+    AVS_RB_TREE(int) tree = AVS_RBTREE_NEW(int, int_comparator);
 
     struct rb_tree *tree_struct = _AVS_RB_TREE(tree);
     AVS_UNIT_ASSERT_TRUE(tree_struct->cmp == int_comparator);
@@ -296,7 +296,7 @@ AVS_UNIT_TEST(rbtree, rotate_right) {
 }
 
 AVS_UNIT_TEST(rbtree, insert_case1_first) {
-    int **tree = AVS_RB_TREE_CREATE(int, int_comparator);
+    int **tree = AVS_RBTREE_NEW(int, int_comparator);
     int *elem = AVS_RB_NEW_ELEMENT(int);
 
     AVS_UNIT_ASSERT_SUCCESS(AVS_RB_TREE_INSERT(tree, elem));

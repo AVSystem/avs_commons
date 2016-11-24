@@ -43,7 +43,7 @@ typedef int avs_rb_cmp_t(const void *a,
  *
  * @returns Created RB-tree object on success, NULL in case of error.
  */
-#define AVS_RB_TREE_CREATE(type, cmp) ((AVS_RB_TREE(type))_avs_rb_tree_create(cmp))
+#define AVS_RBTREE_NEW(type, cmp) ((AVS_RB_TREE(type))_avs_rb_tree_new(cmp))
 
 /**
  * Releases given RB-tree and all its nodes.
@@ -162,7 +162,7 @@ typedef int avs_rb_cmp_t(const void *a,
             it = AVS_RB_PREV(it))
 
 /* Internal functions. Use macros defined above instead. */
-AVS_RB_TREE(void) _avs_rb_tree_create(avs_rb_cmp_t *cmp);
+AVS_RB_TREE(void) _avs_rb_tree_new(avs_rb_cmp_t *cmp);
 void _avs_rb_tree_release(AVS_RB_TREE(void) *tree);
 
 size_t _avs_rb_tree_size(AVS_RB_TREE(void) tree);
