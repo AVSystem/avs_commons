@@ -50,9 +50,6 @@ typedef struct {
     SSL *ssl;
     int verification;
     int error_code;
-#ifdef AVS_LOG_WITH_TRACE
-    char *error_buffer;
-#endif
     int64_t next_deadline_ms;
     avs_net_socket_type_t backend_type;
     avs_net_abstract_socket_t *backend_socket;
@@ -128,17 +125,11 @@ static const avs_net_socket_v_table_t ssl_vtable = {
     errno_ssl
 };
 
-#ifdef AVS_LOG_WITH_TRACE
-
-#define log_openssl_error(ssl_socket) \
-    LOG(ERROR, "%s", ERR_error_string(ERR_get_error(), ssl_socket->error_buffer))
-
-#else /* !AVS_LOG_WITH_TRACE */
-
-#define log_openssl_error(socket) \
-    LOG(ERROR, "OpenSSL error %lu", ERR_get_error())
-
-#endif /* AVS_LOG_WITH_TRACE */
+#define log_openssl_error() \
+    do { \
+        char _error_buffer[256]; /* see 'man ERR_error_string' */ \
+        LOG(ERROR, "%s", ERR_error_string(ERR_get_error(), _error_buffer)); \
+    } while (0)
 
 static int get_socket_inner_mtu_or_zero(avs_net_abstract_socket_t *sock) {
     avs_net_socket_opt_value_t opt_value;
@@ -651,7 +642,7 @@ static int start_ssl(ssl_socket_t *socket, const char *host) {
         int handshake_result = ssl_handshake(socket);
         if (handshake_result <= 0) {
             LOG(ERROR, "SSL handshake failed.");
-            log_openssl_error(socket);
+            log_openssl_error();
             LOG(TRACE, "handshake_result = %d", handshake_result);
             socket->error_code = EPROTO;
             return -1;
@@ -770,7 +761,7 @@ static int load_ca_certs(ssl_socket_t *socket,
         X509_STORE *store = SSL_CTX_get_cert_store(socket->ctx);
 
         if (!cert || !store || !X509_STORE_add_cert(store, cert)) {
-            log_openssl_error(socket);
+            log_openssl_error();
             X509_free(cert);
             return -1;
         }
@@ -807,7 +798,7 @@ static const EC_POINT *get_ec_public_key(ssl_socket_t *socket) {
             || !(evp_key = X509_get_pubkey(cert))
             || !(ec_key = EVP_PKEY_get1_EC_KEY(evp_key))
             || !(point = EC_KEY_get0_public_key(ec_key))) {
-        log_openssl_error(socket);
+        log_openssl_error();
         point = NULL;
     }
 
@@ -839,7 +830,7 @@ static EC_KEY *ec_key_from_raw_private_key(ssl_socket_t *socket,
             || !(ec_key = EC_KEY_new_by_curve_name(curve_id))
             || !EC_KEY_set_public_key(ec_key, public_key)
             || !EC_KEY_set_private_key(ec_key, private_key)) {
-        log_openssl_error(socket);
+        log_openssl_error();
         BN_free(private_key);
         EC_KEY_free(ec_key);
         return NULL;
@@ -856,13 +847,13 @@ static int load_client_key_from_data(ssl_socket_t *socket,
 
     if (!(ec_key = ec_key_from_raw_private_key(socket, key))) {
         LOG(ERROR, "could not decode EC private key");
-        log_openssl_error(socket);
+        log_openssl_error();
         return -1;
     }
 
     if (!(evp_key = EVP_PKEY_new())
             || !EVP_PKEY_assign_EC_KEY(evp_key, ec_key)) {
-        log_openssl_error(socket);
+        log_openssl_error();
         LOG(ERROR, "could not create EVP_PKEY");
         EC_KEY_free(ec_key);
         EVP_PKEY_free(evp_key);
@@ -871,7 +862,7 @@ static int load_client_key_from_data(ssl_socket_t *socket,
 
     if (!SSL_CTX_use_PrivateKey(socket->ctx, evp_key)) {
         LOG(ERROR, "could not set private key");
-        log_openssl_error(socket);
+        log_openssl_error();
         EVP_PKEY_free(evp_key);
         return -1;
     }
@@ -894,7 +885,7 @@ static int load_client_key_from_file(ssl_socket_t *socket,
     if (!SSL_CTX_use_PrivateKey_file(socket->ctx,
                                      client_key_file,
                                      SSL_FILETYPE_PEM)) {
-        log_openssl_error(socket);
+        log_openssl_error();
         return -1;
     }
 
@@ -976,7 +967,7 @@ static int load_client_cert(ssl_socket_t *socket,
     }
 
     if (!result) {
-        log_openssl_error(socket);
+        log_openssl_error();
         return -1;
     }
 
@@ -1111,14 +1102,14 @@ static int configure_cipher_list(ssl_socket_t *socket,
 
     LOG(WARNING, "could not set cipher list to %s, using %s",
         cipher_list, DEFAULT_OPENSSL_CIPHER_LIST);
-    log_openssl_error(socket);
+    log_openssl_error();
 
     if (SSL_CTX_set_cipher_list(socket->ctx, DEFAULT_OPENSSL_CIPHER_LIST)) {
         return 0;
     }
 
     LOG(ERROR, "could not set cipher list to %s", DEFAULT_OPENSSL_CIPHER_LIST);
-    log_openssl_error(socket);
+    log_openssl_error();
     return -1;
 }
 
@@ -1263,9 +1254,6 @@ static int cleanup_ssl(avs_net_abstract_socket_t **socket_) {
         SSL_CTX_free((*socket)->ctx);
         (*socket)->ctx = NULL;
     }
-#ifdef AVS_LOG_WITH_TRACE
-    free((*socket)->error_buffer);
-#endif
     free(*socket);
     *socket = NULL;
     return 0;
@@ -1298,16 +1286,14 @@ static int avs_ssl_init() {
     return initialized < 0 ? initialized : 0;
 }
 
+#if OPENSSL_VERSION_NUMBER < 0x10100000L /* OpenSSL < 1.1.0 */
 static const SSL_METHOD *stream_method(avs_net_ssl_version_t version) {
     switch (version) {
     case AVS_NET_SSL_VERSION_DEFAULT:
-#if OPENSSL_VERSION_NUMBER >= 0x10100000L /* OpenSSL >= 1.1.0 */
-        return TLS_method();
-#endif
     case AVS_NET_SSL_VERSION_SSLv2_OR_3:
         return SSLv23_method();
 
-#if OPENSSL_VERSION_NUMBER < 0x10100000L && !defined(OPENSSL_NO_SSL2)
+#ifndef OPENSSL_NO_SSL2
     case AVS_NET_SSL_VERSION_SSLv2:
         return SSLv2_method();
 #endif
@@ -1356,43 +1342,108 @@ static const SSL_METHOD *dgram_method(avs_net_ssl_version_t version) {
     }
 }
 
-static const SSL_METHOD *ssl_method(avs_net_socket_type_t backend_type,
-                                    avs_net_ssl_version_t version) {
+static SSL_CTX *make_ssl_context(avs_net_socket_type_t backend_type,
+                                 avs_net_ssl_version_t version) {
+    const SSL_METHOD *method = NULL;
+    SSL_CTX *ctx = NULL;
     switch (backend_type) {
     case AVS_NET_TCP_SOCKET:
-        return stream_method(version);
+        method = stream_method(version);
+        break;
     case AVS_NET_UDP_SOCKET:
-        return dgram_method(version);
-    default:
+        method = dgram_method(version);
+        break;
+    default:;
+    }
+    if (!method) {
+        LOG(ERROR, "Unsupported SSL version");
         return NULL;
     }
+    /* older versions of OpenSSL expect non-const pointer here... */
+    if (!(ctx = SSL_CTX_new((SSL_METHOD *) (intptr_t) method))) {
+        log_openssl_error();
+    }
+    return ctx;
 }
+#else /* OpenSSL >= 1.1.0 */
+static int stream_proto_version(avs_net_ssl_version_t version) {
+    switch (version) {
+    case AVS_NET_SSL_VERSION_DEFAULT:
+        return 0;
+    case AVS_NET_SSL_VERSION_SSLv3:
+        return SSL3_VERSION;
+    case AVS_NET_SSL_VERSION_TLSv1:
+        return TLS1_VERSION;
+    case AVS_NET_SSL_VERSION_TLSv1_1:
+        return TLS1_1_VERSION;
+    case AVS_NET_SSL_VERSION_TLSv1_2:
+        return TLS1_2_VERSION;
+    default:
+        return -1;
+    }
+}
+
+static int dgram_proto_version(avs_net_ssl_version_t version) {
+    switch (version) {
+    case AVS_NET_SSL_VERSION_DEFAULT:
+        return 0;
+    case AVS_NET_SSL_VERSION_TLSv1:
+    case AVS_NET_SSL_VERSION_TLSv1_1:
+        return DTLS1_VERSION;
+    case AVS_NET_SSL_VERSION_TLSv1_2:
+        return DTLS1_2_VERSION;
+    default:
+        return -1;
+    }
+}
+
+static SSL_CTX *make_ssl_context(avs_net_socket_type_t backend_type,
+                                 avs_net_ssl_version_t version) {
+    const SSL_METHOD *method = NULL;
+    int ossl_proto_version = 0;
+    SSL_CTX *ctx = NULL;
+    switch (backend_type) {
+    case AVS_NET_TCP_SOCKET:
+        method = TLS_method();
+        ossl_proto_version = stream_proto_version(version);
+        break;
+    case AVS_NET_UDP_SOCKET:
+        method = DTLS_method();
+        ossl_proto_version = dgram_proto_version(version);
+        break;
+    default:;
+    }
+    if (ossl_proto_version < 0) {
+        LOG(ERROR, "Unsupported SSL version");
+        return NULL;
+    }
+    if (!method) {
+        LOG(ERROR, "Could not get OpenSSL method handle");
+        return NULL;
+    }
+    if (!(ctx = SSL_CTX_new(method))) {
+        log_openssl_error();
+        return NULL;
+    }
+    if (ossl_proto_version
+            && SSL_CTX_set_min_proto_version(ctx, ossl_proto_version)) {
+        log_openssl_error();
+        return NULL;
+    }
+    return ctx;
+}
+#endif
 
 static int initialize_ssl_socket(ssl_socket_t *socket,
                                  avs_net_socket_type_t backend_type,
                                  const avs_net_ssl_configuration_t *configuration) {
-    const SSL_METHOD *method = NULL;
-
     memset(socket, 0, sizeof(*socket));
     *(const avs_net_socket_v_table_t **) (intptr_t) &socket->operations =
             &ssl_vtable;
-#ifdef AVS_LOG_WITH_TRACE
-    socket->error_buffer = (char *) malloc(120); /* see 'man ERR_error_string' */
-    if (!socket->error_buffer) {
-        LOG(WARNING, "Cannot create buffer for OpenSSL error strings");
-    }
-#endif /* AVS_LOG_WITH_TRACE */
     socket->backend_type = backend_type;
 
-    if (!(method = ssl_method(backend_type, configuration->version))) {
-        LOG(ERROR, "Unsupported SSL version");
-        return -1;
-    }
-
-    /* older versions of OpenSSL expect non-const pointer here... */
-    socket->ctx = SSL_CTX_new((SSL_METHOD *) (intptr_t) method);
-    if (socket->ctx == NULL) {
-        log_openssl_error(socket);
+    if (!(socket->ctx = make_ssl_context(backend_type,
+                                         configuration->version))) {
         return -1;
     }
 
