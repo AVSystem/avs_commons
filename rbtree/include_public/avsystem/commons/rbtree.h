@@ -26,7 +26,7 @@
 typedef int avs_rb_cmp_t(const void *a,
                          const void *b);
 
-/** RB tree type alias.  */
+/** RB-tree type alias.  */
 #define AVS_RB_TREE(type) type**
 /** RB element type alias. */
 #define AVS_RB_NODE(type) type*
@@ -35,33 +35,33 @@ typedef int avs_rb_cmp_t(const void *a,
     ((void)(**(tree_type) < *(elem_type)))
 
 /**
- * Create an RB tree with elements of given @p type. @p cmp function is used
+ * Create an RB-tree with elements of given @p type. @p cmp function is used
  * to compare its elements.
  *
  * @param type Type of elements in the tree.
  * @param cmp  A function that compares two elements. See @ref avs_rb_cmp_t .
  *
- * @returns Created RB tree object on success, NULL in case of error.
+ * @returns Created RB-tree object on success, NULL in case of error.
  */
 #define AVS_RB_TREE_CREATE(type, cmp) ((AVS_RB_TREE(type))_avs_rb_tree_create(cmp))
 
 /**
- * Releases given RB tree and all its nodes.
+ * Releases given RB-tree and all its nodes.
  *
- * @param tree_ptr Pointer to the RB tree object to destroy. *tree_ptr is set to
+ * @param tree_ptr Pointer to the RB-tree object to destroy. *tree_ptr is set to
  *                 NULL after the cleanup is done.
  */
 #define AVS_RB_TREE_RELEASE(tree_ptr) _avs_rb_tree_release((void***)(tree_ptr))
 
 /**
- * @param tree RB tree object to operate on.
+ * @param tree RB-tree object to operate on.
  *
  * @returns Total number of elements in the tree.
  */
 #define AVS_RB_TREE_SIZE(tree) _avs_rb_tree_size((void**)tree)
 
 /**
- * Creates an arbitrarily-sized, detached RB tree element.
+ * Creates an arbitrarily-sized, detached RB-tree element.
  *
  * @param size Number of bytes to allocate for the element content.
  *
@@ -70,7 +70,7 @@ typedef int avs_rb_cmp_t(const void *a,
 #define AVS_RB_NEW_BUFFER(size) _avs_rb_alloc_node(size)
 
 /**
- * Creates a detached RB tree element large enough to hold a value of
+ * Creates a detached RB-tree element large enough to hold a value of
  * given @p type.
  *
  * @param type Desired element type.
@@ -81,7 +81,7 @@ typedef int avs_rb_cmp_t(const void *a,
 #define AVS_RB_NEW_ELEMENT(type) ((type*)AVS_RB_NEW_BUFFER(sizeof(type)))
 
 /**
- * Frees memory associated with given detached RB tree element.
+ * Frees memory associated with given detached RB-tree element.
  *
  * NOTE: when passed @p elem is attached to some tree, the behavior
  * is undefined.
