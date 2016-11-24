@@ -100,6 +100,6 @@ int main(void) {
         }
     }
 
-    AVS_RBTREE_DELETE(&tree);
+    AVS_RBTREE_DELETE(&tree, NULL);
     return 0;
 }

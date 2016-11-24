@@ -50,31 +50,38 @@ static int rb_is_node_detached(AVS_RB_NODE(void) elem) {
 # define rb_is_node_detached(_) 1
 #endif
 
-void _avs_rb_free_node(void **node) {
+void _avs_rb_free_node(void **node,
+                       avs_rb_node_deleter_t *deleter) {
     if (node && *node) {
         assert(_AVS_RB_NODE_VALID(*node));
         assert(rb_is_node_detached(*node));
+
+        if (deleter) {
+            deleter(*node);
+        }
 
         _AVS_RB_DEALLOC(_AVS_RB_NODE(*node));
         *node = NULL;
     }
 }
 
-static void rb_delete_subtree(void **root) {
+static void rb_delete_subtree(void **root,
+                              avs_rb_node_deleter_t *deleter) {
     if (!root || !*root) {
         return;
     }
 
-    rb_delete_subtree(_AVS_RB_LEFT_PTR(*root));
-    rb_delete_subtree(_AVS_RB_RIGHT_PTR(*root));
+    rb_delete_subtree(_AVS_RB_LEFT_PTR(*root), deleter);
+    rb_delete_subtree(_AVS_RB_RIGHT_PTR(*root), deleter);
 
     _AVS_RB_PARENT(*root) = NULL;
     _AVS_RB_NODE_SET_TREE_MAGIC(*root, 0);
 
-    _avs_rb_free_node(root);
+    _avs_rb_free_node(root, deleter);
 }
 
-void _avs_rb_tree_delete(void ***tree_) {
+void _avs_rb_tree_delete(void ***tree_,
+                         avs_rb_node_deleter_t *deleter) {
     struct rb_tree *tree;
 
     if (!tree_ || !*tree_) {
@@ -84,7 +91,7 @@ void _avs_rb_tree_delete(void ***tree_) {
     tree = _AVS_RB_TREE(*tree_);
     assert(_AVS_RB_TREE_VALID(*tree_));
 
-    rb_delete_subtree(&tree->root);
+    rb_delete_subtree(&tree->root, deleter);
     _AVS_RB_DEALLOC(tree);
     *tree_ = NULL;
 }

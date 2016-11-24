@@ -26,6 +26,16 @@
 typedef int avs_rb_cmp_t(const void *a,
                          const void *b);
 
+/**
+ * RB-tree element deleter. May be passed to @ref AVS_RBTREE_DELETE to perform
+ * additional cleanup for each deleted element.
+ *
+ * NOTE: the deleter MUST NOT call <c>free()</c> on the @p elem itself.
+ *
+ * @param elem Element to perform cleanup on.
+ */
+typedef void avs_rb_node_deleter_t(void *elem);
+
 /** RB-tree type alias.  */
 #define AVS_RB_TREE(type) type**
 /** RB element type alias. */
@@ -50,8 +60,11 @@ typedef int avs_rb_cmp_t(const void *a,
  *
  * @param tree_ptr Pointer to the RB-tree object to destroy. *tree_ptr is set to
  *                 NULL after the cleanup is done.
+ * @param deleter  Cleanup callback, called before deleting each tree element.
+ *                 May be NULL if no additional cleanup is required.
  */
-#define AVS_RBTREE_DELETE(tree_ptr) _avs_rb_tree_delete((void***)(tree_ptr))
+#define AVS_RBTREE_DELETE(tree_ptr, deleter) \
+    _avs_rb_tree_delete((void***)(tree_ptr), (deleter))
 
 /**
  * @param tree RB-tree object to operate on.
@@ -88,10 +101,10 @@ typedef int avs_rb_cmp_t(const void *a,
  *
  * @param elem Pointer to element to free. *elem is set to NULL after cleanup.
  */
-#define AVS_RB_DELETE_ELEMENT(elem) _avs_rb_free_node((void**)elem)
+#define AVS_RB_DELETE_ELEMENT(elem) _avs_rb_free_node((void**)elem, NULL)
 
 /**
- * Inserts an detached @p elem into given @p tree. 
+ * Inserts an detached @p elem into given @p tree.
  *
  * NOTE: when passed @p elem is attached to some tree, the behavior
  * is undefined.
@@ -163,7 +176,8 @@ typedef int avs_rb_cmp_t(const void *a,
 
 /* Internal functions. Use macros defined above instead. */
 AVS_RB_TREE(void) _avs_rb_tree_new(avs_rb_cmp_t *cmp);
-void _avs_rb_tree_delete(AVS_RB_TREE(void) *tree);
+void _avs_rb_tree_delete(AVS_RB_TREE(void) *tree,
+                         avs_rb_node_deleter_t *deleter);
 
 size_t _avs_rb_tree_size(AVS_RB_TREE(void) tree);
 AVS_RB_NODE(void) _avs_rb_tree_find(AVS_RB_TREE(void) tree,
@@ -177,7 +191,8 @@ AVS_RB_NODE(void) _avs_rb_tree_first(AVS_RB_TREE(void) tree);
 AVS_RB_NODE(void) _avs_rb_tree_last(AVS_RB_TREE(void) tree);
 
 AVS_RB_NODE(void) _avs_rb_alloc_node(size_t elem_size);
-void _avs_rb_free_node(AVS_RB_NODE(void) *node);
+void _avs_rb_free_node(AVS_RB_NODE(void) *node,
+                       avs_rb_node_deleter_t *deleter);
 
 AVS_RB_NODE(void) _avs_rb_next(AVS_RB_NODE(void) elem);
 AVS_RB_NODE(void) _avs_rb_prev(AVS_RB_NODE(void) elem);

@@ -158,7 +158,7 @@ AVS_UNIT_TEST(rbtree, swap_nodes_unrelated) {
     assert_node_equal(a, 2,  RED,   _8, _10, _14);
     assert_node_equal(b, 12, BLACK, _4, _1,  _3);
 
-    AVS_RBTREE_DELETE(&tree);
+    AVS_RBTREE_DELETE(&tree, NULL);
 }
 
 AVS_UNIT_TEST(rbtree, swap_nodes_parent_child) {
@@ -186,7 +186,7 @@ AVS_UNIT_TEST(rbtree, swap_nodes_parent_child) {
     assert_node_equal(a, 2, RED,   _8, _4, _6);
     assert_node_equal(b, 4, BLACK, _2, _1, _3);
 
-    AVS_RBTREE_DELETE(&tree);
+    AVS_RBTREE_DELETE(&tree, NULL);
 }
 
 AVS_UNIT_TEST(rbtree, swap_nodes_parent_child_under_root) {
@@ -214,7 +214,7 @@ AVS_UNIT_TEST(rbtree, swap_nodes_parent_child_under_root) {
     assert_node_equal(a, 2, BLACK, NULL, _4, _6);
     assert_node_equal(b, 4, BLACK, _2,   _1, _3);
 
-    AVS_RBTREE_DELETE(&tree);
+    AVS_RBTREE_DELETE(&tree, NULL);
 }
 
 AVS_UNIT_TEST(rbtree, rotate_left) {
@@ -253,7 +253,7 @@ AVS_UNIT_TEST(rbtree, rotate_left) {
     assert_node_equal(_2, 2, BLACK, _3,   NULL, NULL);
     assert_node_equal(_4, 4, RED,   _3,   NULL, NULL);
 
-    AVS_RBTREE_DELETE(&tree);
+    AVS_RBTREE_DELETE(&tree, NULL);
 }
 
 AVS_UNIT_TEST(rbtree, rotate_right) {
@@ -292,7 +292,7 @@ AVS_UNIT_TEST(rbtree, rotate_right) {
     assert_node_equal(_7, 7, BLACK, _5,   NULL, NULL);
     assert_node_equal(_4, 4, RED,   _5,   NULL, NULL);
 
-    AVS_RBTREE_DELETE(&tree);
+    AVS_RBTREE_DELETE(&tree, NULL);
 }
 
 AVS_UNIT_TEST(rbtree, insert_case1_first) {
@@ -308,7 +308,7 @@ AVS_UNIT_TEST(rbtree, insert_case1_first) {
 
     assert_rb_properties_hold(tree);
 
-    AVS_RBTREE_DELETE(&tree);
+    AVS_RBTREE_DELETE(&tree, NULL);
 }
 
 AVS_UNIT_TEST(rbtree, insert_case2) {
@@ -342,7 +342,7 @@ AVS_UNIT_TEST(rbtree, insert_case2) {
 
     assert_rb_properties_hold(tree);
 
-    AVS_RBTREE_DELETE(&tree);
+    AVS_RBTREE_DELETE(&tree, NULL);
 }
 
 AVS_UNIT_TEST(rbtree, insert_case3) {
@@ -376,7 +376,7 @@ AVS_UNIT_TEST(rbtree, insert_case3) {
 
     assert_rb_properties_hold(tree);
 
-    AVS_RBTREE_DELETE(&tree);
+    AVS_RBTREE_DELETE(&tree, NULL);
 }
 
 AVS_UNIT_TEST(rbtree, insert_case4_5) {
@@ -420,7 +420,7 @@ AVS_UNIT_TEST(rbtree, insert_case4_5) {
 
     assert_rb_properties_hold(tree);
 
-    AVS_RBTREE_DELETE(&tree);
+    AVS_RBTREE_DELETE(&tree, NULL);
 }
 
 static AVS_RB_TREE(int) make_full_3level_tree(void) {
@@ -463,7 +463,7 @@ AVS_UNIT_TEST(rbtree, traverse_forward) {
 
     AVS_UNIT_ASSERT_NULL(node);
 
-    AVS_RBTREE_DELETE(&tree);
+    AVS_RBTREE_DELETE(&tree, NULL);
 }
 
 AVS_UNIT_TEST(rbtree, traverse_backward) {
@@ -478,7 +478,7 @@ AVS_UNIT_TEST(rbtree, traverse_backward) {
 
     AVS_UNIT_ASSERT_NULL(node);
 
-    AVS_RBTREE_DELETE(&tree);
+    AVS_RBTREE_DELETE(&tree, NULL);
 }
 
 AVS_UNIT_TEST(rbtree, detach_root) {
@@ -501,7 +501,7 @@ AVS_UNIT_TEST(rbtree, detach_root) {
     assert_rb_properties_hold(tree);
 
     AVS_RB_DELETE_ELEMENT(&_1);
-    AVS_RBTREE_DELETE(&tree);
+    AVS_RBTREE_DELETE(&tree, NULL);
 }
 
 AVS_UNIT_TEST(rbtree, detach_single_root_child) {
@@ -534,7 +534,7 @@ AVS_UNIT_TEST(rbtree, detach_single_root_child) {
     assert_node_equal(_2, 2, RED, NULL, NULL, NULL);
 
     AVS_RB_DELETE_ELEMENT(&_2);
-    AVS_RBTREE_DELETE(&tree);
+    AVS_RBTREE_DELETE(&tree, NULL);
 }
 
 AVS_UNIT_TEST(rbtree, fuzz1) {
@@ -549,7 +549,7 @@ AVS_UNIT_TEST(rbtree, fuzz1) {
 
     assert_rb_properties_hold(tree);
 
-    AVS_RBTREE_DELETE(&tree);
+    AVS_RBTREE_DELETE(&tree, NULL);
 }
 
 AVS_UNIT_TEST(rbtree, fuzz2) {
@@ -564,6 +564,6 @@ AVS_UNIT_TEST(rbtree, fuzz2) {
 
     assert_rb_properties_hold(tree);
 
-    AVS_RBTREE_DELETE(&tree);
+    AVS_RBTREE_DELETE(&tree, NULL);
 }
 
