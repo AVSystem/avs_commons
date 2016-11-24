@@ -190,7 +190,7 @@ static void **rb_find_ptr(struct rb_tree *tree,
     return curr;
 }
 
-void *_avs_rbtree_find(void **tree,
+void *_avs_rbtree_find(const void **tree,
                        const void *val) {
     void **elem_ptr = NULL;
 
