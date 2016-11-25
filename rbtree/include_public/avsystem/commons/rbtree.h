@@ -19,9 +19,14 @@
  * - 0 if @p a == @p b,
  * - a positive value if @p a > @p b.
  *
- * NOTE: the comparator MUST establish a total ordering of RB-tree elements.
- * If it does not fullfill this requirement, the behavior of operations on the
- * tree is undefined.
+ * WARNING: The comparator MUST establish a total ordering of RB-tree elements.
+ * Moreover, element components used to establish an ordering MUST be immutable
+ * for the whole lifetime of an RB-tree, otherwise the behavior of operations on
+ * the tree is undefined.
+ *
+ * NOTE: Since a comparator may use only a fragment of the RB-tree element, it
+ * is possible to implement a map (dictionary) by storing a { key; value }
+ * struct in each tree element and comparing them by key.
  */
 typedef int avs_rbtree_element_comparator_t(const void *a,
                                             const void *b);
