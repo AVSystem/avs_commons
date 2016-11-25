@@ -184,8 +184,8 @@ typedef void avs_rbtree_element_deleter_t(void *elem);
  */
 #define AVS_RBTREE_DETACH_DELETE(tree, elem, deleter) \
     do { \
-        AVS_RBTREE_NODE(void) node = (AVS_RBTREE_NODE(void))(elem); \
-        _avs_rb_node_free(AVS_RBTREE_DETACH((tree), &node), (deleter)); \
+        AVS_RBTREE_NODE(void) node = AVS_RBTREE_DETACH((tree), (elem)); \
+        _avs_rb_node_free(&node, (deleter)); \
     } while (0)
 
 /**
