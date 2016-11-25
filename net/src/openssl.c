@@ -19,11 +19,12 @@
 #   include <sys/socket.h>
 #endif
 
+#include <assert.h>
+#include <errno.h>
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
 #include <sys/time.h>
-#include <assert.h>
 #include <openssl/ssl.h>
 #include <openssl/rand.h>
 #include <openssl/err.h>
@@ -40,11 +41,37 @@
 
 #define CERT_SUBJECT_NAME_SIZE 257
 
+#ifdef OPENSSL_VERSION_NUMBER
 #define MAKE_OPENSSL_VER(Major, Minor, Fix) \
         (((Major) << 28) | ((Minor) << 20) | ((Fix) << 12))
 
-#if OPENSSL_VERSION_NUMBER >= MAKE_OPENSSL_VER(1,0,0) && !defined(OPENSSL_NO_PSK)
+#define OPENSSL_VERSION_NUMBER_GE(Major, Minor, Fix) \
+        (OPENSSL_VERSION_NUMBER >= MAKE_OPENSSL_VER(Major, Minor, Fix))
+#else
+#define OPENSSL_VERSION_NUMBER_GE(Major, Minor, Fix) 0
+#endif
+
+#define OPENSSL_VERSION_NUMBER_LT(Major, Minor, Fix) \
+        (!OPENSSL_VERSION_NUMBER_GE(Major, Minor, Fix))
+
+#if OPENSSL_VERSION_NUMBER_GE(0,9,7) && !defined(OPENSSL_NO_EC)
+#define HAVE_EC
+#endif
+
+#if OPENSSL_VERSION_NUMBER_GE(1,0,0) && !defined(OPENSSL_NO_PSK)
 #define HAVE_OPENSSL_PSK
+#endif
+
+#if OPENSSL_VERSION_NUMBER_GE(1,0,1)
+#define HAVE_DTLS
+#endif
+
+#ifndef HEADER_SSL_H
+/*
+ * Try to support some OpenSSL-like compatibility layers, which tend to not have
+ * everything implemented.
+ */
+#define FAKE_OPENSSL
 #endif
 
 typedef struct {
@@ -144,7 +171,8 @@ static int get_socket_inner_mtu_or_zero(avs_net_abstract_socket_t *sock) {
     }
 }
 
-#if OPENSSL_VERSION_NUMBER < MAKE_OPENSSL_VER(1,1,0)
+#ifdef HAVE_DTLS
+#if OPENSSL_VERSION_NUMBER_LT(1,1,0)
 static const EVP_CIPHER *get_evp_cipher(SSL *ssl) {
     EVP_CIPHER_CTX *ctx = ssl->enc_write_ctx;
     return ctx ? ctx->cipher : NULL;
@@ -241,10 +269,13 @@ static int get_dtls_overhead(ssl_socket_t *socket,
     }
     return 0;
 }
+#else /* HAVE_DTLS */
+#define get_dtls_overhead(Socket, OutHeader, OutPaddingSize) (-1)
+#endif /* HAVE_DTLS */
 
 #ifdef BIO_TYPE_SOURCE_SINK
 
-#if OPENSSL_VERSION_NUMBER < MAKE_OPENSSL_VER(1,1,0)
+#if OPENSSL_VERSION_NUMBER_LT(1,1,0)
 #define BIO_set_init(bio, value) ((bio)->init = (value))
 #define BIO_get_data(bio) ((bio)->ptr)
 #define BIO_set_data(bio, data) ((bio)->ptr = (data))
@@ -339,7 +370,7 @@ static long avs_bio_ctrl(BIO *bio, int command, long intarg, void *ptrarg) {
     switch (command) {
     case BIO_CTRL_FLUSH:
         return 1;
-#if OPENSSL_VERSION_NUMBER >= MAKE_OPENSSL_VER(1,0,1)
+#ifdef HAVE_DTLS
     case BIO_CTRL_DGRAM_QUERY_MTU:
     case BIO_CTRL_DGRAM_GET_FALLBACK_MTU:
         return get_socket_inner_mtu_or_zero(sock->backend_socket);
@@ -377,7 +408,7 @@ static int avs_bio_destroy(BIO *bio) {
 
 static BIO_METHOD *AVS_BIO = NULL;
 
-#if OPENSSL_VERSION_NUMBER < MAKE_OPENSSL_VER(1,1,0)
+#if OPENSSL_VERSION_NUMBER_LT(1,1,0)
 static int avs_bio_init(void) {
     static BIO_METHOD AVS_BIO_IMPL = {
         (100 | BIO_TYPE_SOURCE_SINK),
@@ -424,6 +455,8 @@ static BIO *avs_bio_spawn(ssl_socket_t *socket) {
     return bio;
 }
 #else /* BIO_TYPE_SOURCE_SINK */
+#define avs_bio_init() 0
+
 static BIO *avs_bio_spawn(ssl_socket_t *socket) {
     const void *fd_ptr =
             avs_net_socket_get_system((avs_net_abstract_socket_t *) socket);
@@ -432,7 +465,7 @@ static BIO *avs_bio_spawn(ssl_socket_t *socket) {
         if (socket->backend_type == AVS_NET_TCP_SOCKET) {
             return BIO_new_socket(fd, 0);
         }
-#if OPENSSL_VERSION_NUMBER >= MAKE_OPENSSL_VER(1,0,1)
+#ifdef HAVE_DTLS
         if (socket->backend_type == AVS_NET_UDP_SOCKET) {
             BIO *bio = BIO_new_dgram(fd, 0);
             BIO_ctrl(bio, BIO_CTRL_DGRAM_SET_CONNECTED, 0,
@@ -627,11 +660,29 @@ static int ssl_handshake(ssl_socket_t *socket) {
         return SSL_connect(socket->ssl);
     }
     if (state_opt.state == AVS_NET_SOCKET_STATE_SERVING) {
+#ifndef FAKE_OPENSSL
         return SSL_accept(socket->ssl);
+#else
+        LOG(ERROR, "Server mode not supported for this library version");
+        return -1;
+#endif
     }
     LOG(ERROR, "ssl_handshake: invalid socket state");
     return -1;
 }
+
+#if !defined(HAVE_OPENSSL_PSK) && !defined(SSL_set_app_data)
+/*
+ * SSL_set_app_data is not available in some versions, but also not used
+ * anywhere if PSK is not used.
+ */
+#define SSL_set_app_data(S, Arg) ((void) 0)
+/*
+ * To be extra safe, make attempt to use SSL_get_app_data() deliberately
+ * a compilation error in such case.
+ */
+#define SSL_get_app_data @@@@@
+#endif
 
 static int start_ssl(ssl_socket_t *socket, const char *host) {
     BIO *bio = NULL;
@@ -774,6 +825,10 @@ static int load_ca_certs(ssl_socket_t *socket,
     }
 
     if (has_raw_cert) {
+#ifdef FAKE_OPENSSL
+        LOG(ERROR, "Raw EC certificates not supported for this library version");
+        return -1;
+#else
         const unsigned char *cert_data = (const unsigned char*)&ca_cert->cert_der;
         X509 *cert = d2i_X509(NULL, &cert_data, (int)ca_cert->cert_size);
         X509_STORE *store = SSL_CTX_get_cert_store(socket->ctx);
@@ -783,6 +838,7 @@ static int load_ca_certs(ssl_socket_t *socket,
             X509_free(cert);
             return -1;
         }
+#endif
     }
 
     return 0;
@@ -794,14 +850,14 @@ static int password_cb(char *buf, int num, int rwflag, void *userdata) {
     return (retval < 0 || retval >= num) ? -1 : retval;
 }
 
-#ifndef OPENSSL_NO_EC
+#ifdef HAVE_EC
 static const EC_POINT *get_ec_public_key(ssl_socket_t *socket) {
     X509 *cert = NULL;
     EVP_PKEY *evp_key = NULL;
     EC_KEY *ec_key = NULL;
     const EC_POINT *point = NULL;
 
-#if OPENSSL_VERSION_NUMBER < MAKE_OPENSSL_VER(1,1,0)
+#if OPENSSL_VERSION_NUMBER_LT(1,1,0)
     /* HACK: temporary SSL context to obtain X509 cert */
     SSL *ssl = SSL_new(socket->ctx);
     if (!ssl) {
@@ -820,7 +876,7 @@ static const EC_POINT *get_ec_public_key(ssl_socket_t *socket) {
         point = NULL;
     }
 
-#if OPENSSL_VERSION_NUMBER < MAKE_OPENSSL_VER(1,1,0)
+#if OPENSSL_VERSION_NUMBER_LT(1,1,0)
     SSL_free(ssl);
 #endif
     EC_KEY_free(ec_key);
@@ -975,9 +1031,15 @@ static int load_client_cert(ssl_socket_t *socket,
                                                     cert->data.file);
         break;
     case AVS_NET_DATA_SOURCE_BUFFER:
+#ifdef FAKE_OPENSSL
+        LOG(ERROR, "Loading certificates from memory not supported for this "
+                   "library version");
+        result = -1;
+#else
         result = SSL_CTX_use_certificate_ASN1(
                     socket->ctx, (int)cert->data.buffer.cert_size,
                     (const unsigned char*)cert->data.buffer.cert_der);
+#endif
         break;
     default:
         assert(0 && "invalid enum value");
@@ -1017,7 +1079,7 @@ static int configure_ssl_certs(ssl_socket_t *socket,
     if (server_auth_enabled(cert_info)) {
         socket->verification = 1;
         SSL_CTX_set_verify(socket->ctx, SSL_VERIFY_PEER, NULL);
-#if OPENSSL_VERSION_NUMBER < MAKE_OPENSSL_VER(0,9,5)
+#if !defined(FAKE_OPENSSL) && OPENSSL_VERSION_NUMBER_LT(0,9,5)
         SSL_CTX_set_verify_depth(socket->ctx, 1);
 #endif
         if (load_ca_certs(socket, cert_info->ca_cert_path,
@@ -1144,9 +1206,6 @@ static int configure_ssl(ssl_socket_t *socket,
 
     ERR_clear_error();
     SSL_CTX_set_options(socket->ctx, (long) (SSL_OP_ALL | SSL_OP_NO_SSLv2));
-    if (socket->backend_type == AVS_NET_UDP_SOCKET) {
-        SSL_CTX_set_read_ahead(socket->ctx, 1);
-    }
     SSL_CTX_set_verify(socket->ctx, SSL_VERIFY_NONE, NULL);
 
 #ifdef WITH_OPENSSL_CUSTOM_CIPHERS
@@ -1304,33 +1363,40 @@ static int avs_ssl_init() {
     return initialized < 0 ? initialized : 0;
 }
 
-#if OPENSSL_VERSION_NUMBER < MAKE_OPENSSL_VER(1,1,0)
+#ifndef FAKE_OPENSSL
+#define OPENSSL_METHOD(Proto) Proto##_method
+#else
+/* Allow the compatibility layer libraries to work at least for client mode */
+#define OPENSSL_METHOD(Proto) Proto##_client_method
+#endif
+
+#if OPENSSL_VERSION_NUMBER_LT(1,1,0)
 static const SSL_METHOD *stream_method(avs_net_ssl_version_t version) {
     switch (version) {
     case AVS_NET_SSL_VERSION_DEFAULT:
     case AVS_NET_SSL_VERSION_SSLv2_OR_3:
-        return SSLv23_method();
+        return OPENSSL_METHOD(SSLv23)();
 
 #ifndef OPENSSL_NO_SSL2
     case AVS_NET_SSL_VERSION_SSLv2:
-        return SSLv2_method();
+        return OPENSSL_METHOD(SSLv2)();
 #endif
 
 #ifndef OPENSSL_NO_SSL3
     case AVS_NET_SSL_VERSION_SSLv3:
-        return SSLv3_method();
+        return OPENSSL_METHOD(SSLv3)();
 #endif
 
 #ifndef OPENSSL_NO_TLS1
     case AVS_NET_SSL_VERSION_TLSv1:
-        return TLSv1_method();
+        return OPENSSL_METHOD(TLSv1)();
 
-#if OPENSSL_VERSION_NUMBER >= MAKE_OPENSSL_VER(1,0,1)
+#if OPENSSL_VERSION_NUMBER_GE(1,0,1)
     case AVS_NET_SSL_VERSION_TLSv1_1:
-        return TLSv1_1_method();
+        return OPENSSL_METHOD(TLSv1_1)();
 
     case AVS_NET_SSL_VERSION_TLSv1_2:
-        return TLSv1_2_method();
+        return OPENSSL_METHOD(TLSv1_2)();
 #endif
 #endif /* OPENSSL_NO_TLS1 */
 
@@ -1342,17 +1408,17 @@ static const SSL_METHOD *stream_method(avs_net_ssl_version_t version) {
 static const SSL_METHOD *dgram_method(avs_net_ssl_version_t version) {
     switch (version) {
     case AVS_NET_SSL_VERSION_DEFAULT:
-#if OPENSSL_VERSION_NUMBER >= MAKE_OPENSSL_VER(1,0,2)
-        return DTLS_method();
+#if OPENSSL_VERSION_NUMBER_GE(1,0,2)
+        return OPENSSL_METHOD(DTLS)();
 
     case AVS_NET_SSL_VERSION_TLSv1_2:
-        return DTLSv1_2_method();
+        return OPENSSL_METHOD(DTLSv1_2)();
 #endif
 
-#if OPENSSL_VERSION_NUMBER >= MAKE_OPENSSL_VER(1,0,1)
+#if OPENSSL_VERSION_NUMBER_GE(1,0,1)
     case AVS_NET_SSL_VERSION_TLSv1:
     case AVS_NET_SSL_VERSION_TLSv1_1:
-        return DTLSv1_method();
+        return OPENSSL_METHOD(DTLSv1)();
 #endif
 
     default:
@@ -1422,11 +1488,11 @@ static SSL_CTX *make_ssl_context(avs_net_socket_type_t backend_type,
     SSL_CTX *ctx = NULL;
     switch (backend_type) {
     case AVS_NET_TCP_SOCKET:
-        method = TLS_method();
+        method = OPENSSL_METHOD(TLS)();
         ossl_proto_version = stream_proto_version(version);
         break;
     case AVS_NET_UDP_SOCKET:
-        method = DTLS_method();
+        method = OPENSSL_METHOD(DTLS)();
         ossl_proto_version = dgram_proto_version(version);
         break;
     default:;
