@@ -236,15 +236,15 @@ typedef void avs_rbtree_element_deleter_t(void *elem);
 
 /** Convenience macro for forward iteration on elements of @p tree. */
 #define AVS_RBTREE_FOREACH(it, tree) \
-    for (it = AVS_RB_FIRST(tree); \
+    for (it = AVS_RBTREE_FIRST(tree); \
             it; \
-            it = AVS_RB_NEXT(it))
+            it = AVS_RBTREE_NEXT(it))
 
 /** Convenience macro for backward iteration on elements of @p tree. */
 #define AVS_RBTREE_FOREACH_REVERSE(it, tree) \
-    for (it = AVS_RB_LAST(tree); \
+    for (it = AVS_RBTREE_LAST(tree); \
             it; \
-            it = AVS_RB_PREV(it))
+            it = AVS_RBTREE_PREV(it))
 
 /* Internal functions. Use macros defined above instead. */
 AVS_RBTREE(void) _avs_rbtree_new(avs_rbtree_element_comparator_t *cmp);

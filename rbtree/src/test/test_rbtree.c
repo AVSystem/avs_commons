@@ -484,6 +484,36 @@ AVS_UNIT_TEST(rbtree, traverse_backward) {
     AVS_RBTREE_DELETE(&tree, NULL);
 }
 
+AVS_UNIT_TEST(rbtree, foreach) {
+    AVS_RBTREE(int) tree = make_full_3level_tree();
+
+    int *node;
+    int i = 1;
+    AVS_RBTREE_FOREACH(node, tree) {
+        AVS_UNIT_ASSERT_EQUAL(i++, *node);
+    }
+
+    AVS_UNIT_ASSERT_NULL(node);
+    AVS_UNIT_ASSERT_EQUAL(8, i);
+
+    AVS_RBTREE_DELETE(&tree, NULL);
+}
+
+AVS_UNIT_TEST(rbtree, foreach_reverse) {
+    AVS_RBTREE(int) tree = make_full_3level_tree();
+
+    int *node;
+    int i = 7;
+    AVS_RBTREE_FOREACH_REVERSE(node, tree) {
+        AVS_UNIT_ASSERT_EQUAL(i--, *node);
+    }
+
+    AVS_UNIT_ASSERT_NULL(node);
+    AVS_UNIT_ASSERT_EQUAL(0, i);
+
+    AVS_RBTREE_DELETE(&tree, NULL);
+}
+
 AVS_UNIT_TEST(rbtree, detach_root) {
     AVS_RBTREE(int) tree = make_tree(1, 0);
     /*   1B
