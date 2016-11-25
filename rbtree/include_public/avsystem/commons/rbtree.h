@@ -133,10 +133,11 @@ typedef void avs_rbtree_element_deleter_t(void *elem);
  * NOTE: when passed @p elem is attached to some tree, the behavior
  * is undefined.
  *
- * @param elem Pointer to element to free. *elem is set to NULL after cleanup.
+ * @param elem_ptr Double pointer to element to free. *elem is set to NULL after
+ *                 cleanup.
  */
 #define AVS_RBTREE_DELETE_ELEMENT(elem) \
-    _avs_rb_free_node((AVS_RBTREE(void))elem, NULL)
+    _avs_rb_free_node((AVS_RBTREE_NODE(void)*)elem, NULL)
 
 /**
  * Inserts a detached @p elem into given @p tree.

@@ -90,7 +90,7 @@ int main(void) {
 
                     int *elem = AVS_RBTREE_FIND(tree, &val);
                     assert(elem == AVS_RBTREE_DETACH(tree, elem));
-                    AVS_RBTREE_DELETE_ELEMENT(elem);
+                    AVS_RBTREE_DELETE_ELEMENT(&elem);
 
                     assert(!AVS_RBTREE_FIND(tree, &val));
                     assert(expected_size == AVS_RBTREE_SIZE(tree));

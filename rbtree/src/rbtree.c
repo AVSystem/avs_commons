@@ -44,7 +44,7 @@ static int rb_is_node_detached(AVS_RBTREE_NODE(void) elem) {
     return _AVS_RB_PARENT(elem) == NULL
         && _AVS_RB_LEFT(elem) == NULL
         && _AVS_RB_RIGHT(elem) == NULL
-        && _AVS_RB_TREE_MAGIC(elem) == 0;
+        && _AVS_RB_NODE_TREE_MAGIC(elem) == 0;
 }
 #else
 # define rb_is_node_detached(_) 1
@@ -396,7 +396,7 @@ int _avs_rbtree_attach(AVS_RBTREE(void) tree_,
     }
 
     rb_insert_fix(tree, elem);
-    _AVS_RB_NODE_SET_TREE_MAGIC(elem, _AVS_RB_TREE_MAGIC(tree));
+    _AVS_RB_NODE_SET_TREE_MAGIC(elem, _AVS_RB_TREE_MAGIC(tree_));
     return 0;
 }
 
@@ -636,7 +636,7 @@ void *_avs_rbtree_detach(void **tree_,
 
     assert(tree_);
     assert(elem);
-    assert(_AVS_RB_NODE_TREE_MAGIC(elem) == _AVS_RB_TREE_MAGIC(tree)
+    assert(_AVS_RB_NODE_TREE_MAGIC(elem) == _AVS_RB_TREE_MAGIC(tree_)
            && "node not attached to given tree");
 
     left = _AVS_RB_LEFT(elem);
@@ -660,6 +660,7 @@ void *_avs_rbtree_detach(void **tree_,
     _AVS_RB_PARENT(elem) = NULL;
     _AVS_RB_LEFT(elem) = NULL;
     _AVS_RB_RIGHT(elem) = NULL;
+    _AVS_RB_NODE_SET_TREE_MAGIC(elem, 0);
 
     assert(_avs_rb_node_color(elem) == BLACK || _avs_rb_node_color(child) == BLACK);
     if (_avs_rb_node_color(elem) == RED
@@ -675,7 +676,6 @@ void *_avs_rbtree_detach(void **tree_,
 
     /* both node and child are black */
     rb_detach_fix(tree, child, parent);
-    _AVS_RB_NODE_SET_TREE_MAGIC(elem, 0);
 
     assert(_avs_rb_node_color(tree->root) == BLACK);
     return elem;
