@@ -91,6 +91,19 @@ typedef void avs_rbtree_element_deleter_t(void *elem);
  * // member array
  * @endcode
  *
+ * NOTE: the in-memory representation of a node is as follows:
+ * <pre>
+ *                                     element pointers point here
+ *                                     |
+ *                                     v
+ * +========+========+========+========+======================================+
+ * |  color | parent |  left  |  right | element value                        |
+ * +========+========+========+========+======================================+
+ *  { sizeof(int) + 3 * sizeof(void)  } { -------- arbitrary size ---------- }
+ *  {           (+ padding)           }
+ *
+ * </pre>
+ *
  * @param size Number of bytes to allocate for the element content.
  *
  * @returns Pointer to created element on success, NULL in case of error.
