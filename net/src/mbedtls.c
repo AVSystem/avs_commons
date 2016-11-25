@@ -331,6 +331,7 @@ static int close_ssl(avs_net_abstract_socket_t *socket_) {
 static int set_min_ssl_version(mbedtls_ssl_config *config,
                                avs_net_ssl_version_t version) {
     switch (version) {
+    case AVS_NET_SSL_VERSION_DEFAULT:
     case AVS_NET_SSL_VERSION_SSLv2_OR_3:
     case AVS_NET_SSL_VERSION_SSLv3:
         mbedtls_ssl_conf_min_version(config,
