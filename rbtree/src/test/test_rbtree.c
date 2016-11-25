@@ -20,9 +20,12 @@ static int CONST_12 = 12;
 
 static int CONST_14 = 14;
 
-static int int_comparator(const void *a,
-                          const void *b) {
-    return *(const int*)a - *(const int*)b;
+static int int_comparator(const void *a_,
+                          const void *b_) {
+    int a = *(const int*)a_;
+    int b = *(const int*)b_;
+    return a < b ? -1
+                 : (a == b ? 0 : 1);
 }
 
 static void assert_rb_properties_hold_recursive(void *node,

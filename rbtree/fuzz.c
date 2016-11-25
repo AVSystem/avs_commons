@@ -48,9 +48,12 @@ static void assert_rb_properties_hold(AVS_RBTREE(int) tree_) {
     assert_rb_properties_hold_recursive(tree->root, &black_height);
 }
 
-static int int_comparator(const void *a,
-                          const void *b) {
-    return *(const int*)a - *(const int*)b;
+static int int_comparator(const void *a_,
+                          const void *b_) {
+    int a = *(const int*)a_;
+    int b = *(const int*)b_;
+    return a < b ? -1
+                 : (a == b ? 0 : 1);
 }
 
 int main(void) {
