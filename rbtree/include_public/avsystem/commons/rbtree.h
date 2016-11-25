@@ -14,7 +14,7 @@
  *             type of compared elements.
  * @param b    Second element.
  *
- * @returns The comparator should return:
+ * @returns:
  * - a negative value if @p a < @p b,
  * - 0 if @p a == @p b,
  * - a positive value if @p a > @p b.
@@ -32,7 +32,7 @@ typedef int avs_rbtree_element_comparator_t(const void *a,
  *
  * NOTE: the deleter MUST NOT call <c>free()</c> on the @p elem itself.
  *
- * @param elem Element to perform cleanup on.
+ * @param elem Pointer to the element to perform cleanup on.
  */
 typedef void avs_rbtree_element_deleter_t(void *elem);
 
@@ -48,7 +48,7 @@ typedef void avs_rbtree_element_deleter_t(void *elem);
  * Create an RB-tree with elements of given @p type.
  *
  * @param type Type of elements stored in the tree nodes.
- * @param cmp  A function that compares two elements.
+ * @param cmp  Pointer to a function that compares two elements.
  *             See @ref avs_rbtree_element_comparator_t .
  *
  * @returns Created RB-tree object on success, NULL in case of error.
@@ -75,6 +75,21 @@ typedef void avs_rbtree_element_deleter_t(void *elem);
 
 /**
  * Creates an arbitrarily-sized, detached RB-tree element.
+ *
+ * Example:
+ * @code
+ * struct string {
+ *     size_t size;
+ *     char c_str[]; // C99 flexible array member
+ * };
+ *
+ * const size_t STRING_CAPACITY = 64;
+ *
+ * AVS_RBTREE_NODE(struct string) node = (AVS_RBTREE_NODE(struct string))
+ *     AVS_RBTREE_NEW_BUFFER(sizeof(struct string) + STRING_CAPACITY);
+ * // allocated string is able to hold STRING_CAPACITY characters in its c_str
+ * // member array
+ * @endcode
  *
  * @param size Number of bytes to allocate for the element content.
  *
