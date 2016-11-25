@@ -570,6 +570,29 @@ AVS_UNIT_TEST(rbtree, detach_single_root_child) {
     AVS_RBTREE_DELETE(&tree, NULL);
 }
 
+AVS_UNIT_TEST(rbtree, detach_delete) {
+    AVS_RBTREE(int) tree = make_tree(1, 2, 0);
+    /*    1B
+     *   *  2R
+     */
+
+    int *_1 = NULL;
+    int *_2 = NULL;
+
+    _1 = AVS_RBTREE_FIND(tree, &CONST_1);
+    _2 = AVS_RBTREE_FIND(tree, &CONST_2);
+
+    AVS_RBTREE_DETACH_DELETE(tree, &_1, NULL);
+    AVS_UNIT_ASSERT_TRUE(_2 == _AVS_RB_TREE(tree)->root);
+    AVS_UNIT_ASSERT_EQUAL(1, AVS_RBTREE_SIZE(tree));
+
+    AVS_RBTREE_DETACH_DELETE(tree, &_2, NULL);
+    AVS_UNIT_ASSERT_TRUE(NULL == _AVS_RB_TREE(tree)->root);
+    AVS_UNIT_ASSERT_EQUAL(0, AVS_RBTREE_SIZE(tree));
+
+    AVS_RBTREE_DELETE(&tree, NULL);
+}
+
 AVS_UNIT_TEST(rbtree, fuzz1) {
     AVS_RBTREE(int) tree = make_tree(3, 1, 2, 0);
     int *_2 = NULL;

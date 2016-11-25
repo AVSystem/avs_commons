@@ -177,15 +177,17 @@ typedef void avs_rbtree_element_deleter_t(void *elem);
  * NOTE: when passed @p elem is not attached to @p tree, the behavior
  * is undefined.
  *
- * @param tree    Tree to remove element from.
- * @param elem    Element to remove.
- * @param deleter Pointer to a cleanup function to call before releasing
- *                @p elem. May be NULL if no extra cleanup is necessary.
+ * @param tree     Tree to remove element from.
+ * @param elem_ptr Pointer to the element to remove. On success, *elem_ptr
+ *                 will be set to NULL.
+ * @param deleter  Pointer to a cleanup function to call before releasing
+ *                 @p elem. May be NULL if no extra cleanup is necessary.
  */
-#define AVS_RBTREE_DETACH_DELETE(tree, elem, deleter) \
+#define AVS_RBTREE_DETACH_DELETE(tree, elem_ptr, deleter) \
     do { \
-        AVS_RBTREE_NODE(void) node = AVS_RBTREE_DETACH((tree), (elem)); \
-        _avs_rb_node_free(&node, (deleter)); \
+        AVS_RBTREE_NODE(void) found = AVS_RBTREE_DETACH((tree), *(elem_ptr)); \
+        assert(found && "node not found in the tree"); \
+        _avs_rb_node_free((AVS_RBTREE_NODE(void)*)(elem_ptr), (deleter)); \
     } while (0)
 
 /**
