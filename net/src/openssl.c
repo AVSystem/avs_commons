@@ -40,7 +40,10 @@
 
 #define CERT_SUBJECT_NAME_SIZE 257
 
-#if OPENSSL_VERSION_NUMBER >= 0x10000000L && !defined(OPENSSL_NO_PSK) /* OpenSSL >= 1.0.0 */
+#define MAKE_OPENSSL_VER(Major, Minor, Fix) \
+        (((Major) << 28) | ((Minor) << 20) | ((Fix) << 12))
+
+#if OPENSSL_VERSION_NUMBER >= MAKE_OPENSSL_VER(1,0,0) && !defined(OPENSSL_NO_PSK)
 #define HAVE_OPENSSL_PSK
 #endif
 
@@ -127,8 +130,8 @@ static const avs_net_socket_v_table_t ssl_vtable = {
 
 #define log_openssl_error() \
     do { \
-        char _error_buffer[256]; /* see 'man ERR_error_string' */ \
-        LOG(ERROR, "%s", ERR_error_string(ERR_get_error(), _error_buffer)); \
+        char error_buffer[256]; /* see 'man ERR_error_string' */ \
+        LOG(ERROR, "%s", ERR_error_string(ERR_get_error(), error_buffer)); \
     } while (0)
 
 static int get_socket_inner_mtu_or_zero(avs_net_abstract_socket_t *sock) {
@@ -141,7 +144,7 @@ static int get_socket_inner_mtu_or_zero(avs_net_abstract_socket_t *sock) {
     }
 }
 
-#if OPENSSL_VERSION_NUMBER < 0x10100000L /* OpenSSL < 1.1.0 */
+#if OPENSSL_VERSION_NUMBER < MAKE_OPENSSL_VER(1,1,0)
 static const EVP_CIPHER *get_evp_cipher(SSL *ssl) {
     EVP_CIPHER_CTX *ctx = ssl->enc_write_ctx;
     return ctx ? ctx->cipher : NULL;
@@ -198,6 +201,16 @@ static int get_explicit_iv_length(const EVP_CIPHER *cipher) {
     return 0;
 }
 
+static int cipher_is_aead(const EVP_CIPHER *cipher) {
+#ifdef EVP_CIPH_FLAG_AEAD_CIPHER
+    if (cipher) {
+        return !!(EVP_CIPHER_flags(cipher) & EVP_CIPH_FLAG_AEAD_CIPHER);
+    }
+#endif
+    (void) cipher;
+    return 0;
+}
+
 static int get_dtls_overhead(ssl_socket_t *socket,
                              int *out_header,
                              int *out_padding_size) {
@@ -219,15 +232,10 @@ static int get_dtls_overhead(ssl_socket_t *socket,
         }
         *out_header += get_explicit_iv_length(cipher);
     }
-#ifdef EVP_CIPH_FLAG_AEAD_CIPHER
     /* adapted from mac_size calculation in dtls1_do_write() in OpenSSL */
-    if ((md = get_evp_md(socket->ssl))
-            && !(cipher
-                    && (EVP_CIPHER_flags(cipher)
-                            & EVP_CIPH_FLAG_AEAD_CIPHER))) {
+    if (!cipher_is_aead(cipher) && (md = get_evp_md(socket->ssl))) {
         *out_header += EVP_MD_size(md);
     }
-#endif
     if (SSL_get_current_compression(socket->ssl) != NULL) {
         *out_header += SSL3_RT_MAX_COMPRESSED_OVERHEAD;
     }
@@ -236,7 +244,7 @@ static int get_dtls_overhead(ssl_socket_t *socket,
 
 #ifdef BIO_TYPE_SOURCE_SINK
 
-#if OPENSSL_VERSION_NUMBER < 0x10100000L
+#if OPENSSL_VERSION_NUMBER < MAKE_OPENSSL_VER(1,1,0)
 #define BIO_set_init(bio, value) ((bio)->init = (value))
 #define BIO_get_data(bio) ((bio)->ptr)
 #define BIO_set_data(bio, data) ((bio)->ptr = (data))
@@ -331,7 +339,7 @@ static long avs_bio_ctrl(BIO *bio, int command, long intarg, void *ptrarg) {
     switch (command) {
     case BIO_CTRL_FLUSH:
         return 1;
-#if OPENSSL_VERSION_NUMBER >= 0x10001000L /* OpenSSL >= 1.0.1 */
+#if OPENSSL_VERSION_NUMBER >= MAKE_OPENSSL_VER(1,0,1)
     case BIO_CTRL_DGRAM_QUERY_MTU:
     case BIO_CTRL_DGRAM_GET_FALLBACK_MTU:
         return get_socket_inner_mtu_or_zero(sock->backend_socket);
@@ -369,7 +377,7 @@ static int avs_bio_destroy(BIO *bio) {
 
 static BIO_METHOD *AVS_BIO = NULL;
 
-#if OPENSSL_VERSION_NUMBER < 0x10100000L
+#if OPENSSL_VERSION_NUMBER < MAKE_OPENSSL_VER(1,1,0)
 static int avs_bio_init(void) {
     static BIO_METHOD AVS_BIO_IMPL = {
         (100 | BIO_TYPE_SOURCE_SINK),
@@ -424,7 +432,7 @@ static BIO *avs_bio_spawn(ssl_socket_t *socket) {
         if (socket->backend_type == AVS_NET_TCP_SOCKET) {
             return BIO_new_socket(fd, 0);
         }
-#if OPENSSL_VERSION_NUMBER >= 0x10001000L /* OpenSSL >= 1.0.1 */
+#if OPENSSL_VERSION_NUMBER >= MAKE_OPENSSL_VER(1,0,1)
         if (socket->backend_type == AVS_NET_UDP_SOCKET) {
             BIO *bio = BIO_new_dgram(fd, 0);
             BIO_ctrl(bio, BIO_CTRL_DGRAM_SET_CONNECTED, 0,
@@ -793,7 +801,7 @@ static const EC_POINT *get_ec_public_key(ssl_socket_t *socket) {
     EC_KEY *ec_key = NULL;
     const EC_POINT *point = NULL;
 
-#if OPENSSL_VERSION_NUMBER < 0x10100000L
+#if OPENSSL_VERSION_NUMBER < MAKE_OPENSSL_VER(1,1,0)
     /* HACK: temporary SSL context to obtain X509 cert */
     SSL *ssl = SSL_new(socket->ctx);
     if (!ssl) {
@@ -812,7 +820,7 @@ static const EC_POINT *get_ec_public_key(ssl_socket_t *socket) {
         point = NULL;
     }
 
-#if OPENSSL_VERSION_NUMBER < 0x10100000L
+#if OPENSSL_VERSION_NUMBER < MAKE_OPENSSL_VER(1,1,0)
     SSL_free(ssl);
 #endif
     EC_KEY_free(ec_key);
@@ -1009,7 +1017,7 @@ static int configure_ssl_certs(ssl_socket_t *socket,
     if (server_auth_enabled(cert_info)) {
         socket->verification = 1;
         SSL_CTX_set_verify(socket->ctx, SSL_VERIFY_PEER, NULL);
-#if defined(OPENSSL_VERSION_NUMBER) && (OPENSSL_VERSION_NUMBER < 0x00905100L)
+#if OPENSSL_VERSION_NUMBER < MAKE_OPENSSL_VER(0,9,5)
         SSL_CTX_set_verify_depth(socket->ctx, 1);
 #endif
         if (load_ca_certs(socket, cert_info->ca_cert_path,
@@ -1296,7 +1304,7 @@ static int avs_ssl_init() {
     return initialized < 0 ? initialized : 0;
 }
 
-#if OPENSSL_VERSION_NUMBER < 0x10100000L /* OpenSSL < 1.1.0 */
+#if OPENSSL_VERSION_NUMBER < MAKE_OPENSSL_VER(1,1,0)
 static const SSL_METHOD *stream_method(avs_net_ssl_version_t version) {
     switch (version) {
     case AVS_NET_SSL_VERSION_DEFAULT:
@@ -1317,7 +1325,7 @@ static const SSL_METHOD *stream_method(avs_net_ssl_version_t version) {
     case AVS_NET_SSL_VERSION_TLSv1:
         return TLSv1_method();
 
-#if OPENSSL_VERSION_NUMBER >= 0x10001000L /* OpenSSL >= 1.0.1 */
+#if OPENSSL_VERSION_NUMBER >= MAKE_OPENSSL_VER(1,0,1)
     case AVS_NET_SSL_VERSION_TLSv1_1:
         return TLSv1_1_method();
 
@@ -1334,14 +1342,14 @@ static const SSL_METHOD *stream_method(avs_net_ssl_version_t version) {
 static const SSL_METHOD *dgram_method(avs_net_ssl_version_t version) {
     switch (version) {
     case AVS_NET_SSL_VERSION_DEFAULT:
-#if OPENSSL_VERSION_NUMBER >= 0x10002000L /* OpenSSL >= 1.0.2 */
+#if OPENSSL_VERSION_NUMBER >= MAKE_OPENSSL_VER(1,0,2)
         return DTLS_method();
-        
+
     case AVS_NET_SSL_VERSION_TLSv1_2:
         return DTLSv1_2_method();
 #endif
 
-#if OPENSSL_VERSION_NUMBER >= 0x10001000L /* OpenSSL >= 1.0.1 */
+#if OPENSSL_VERSION_NUMBER >= MAKE_OPENSSL_VER(1,0,1)
     case AVS_NET_SSL_VERSION_TLSv1:
     case AVS_NET_SSL_VERSION_TLSv1_1:
         return DTLSv1_method();
