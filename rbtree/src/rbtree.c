@@ -50,7 +50,7 @@ static int rb_is_node_detached(AVS_RBTREE_NODE(void) elem) {
 # define rb_is_node_detached(_) 1
 #endif
 
-void _avs_rb_free_node(void **node,
+void _avs_rb_node_free(void **node,
                        avs_rbtree_element_deleter_t *deleter) {
     if (node && *node) {
         assert(_AVS_RB_NODE_VALID(*node));
@@ -77,7 +77,7 @@ static void rb_delete_subtree(void **root,
     _AVS_RB_PARENT(*root) = NULL;
     _AVS_RB_NODE_SET_TREE_MAGIC(*root, 0);
 
-    _avs_rb_free_node(root, deleter);
+    _avs_rb_node_free(root, deleter);
 }
 
 void _avs_rbtree_delete(void ***tree_,
@@ -119,7 +119,7 @@ static void rb_node_init_magic(struct rb_node *node) {
 #define rb_node_init_magic(_) (void)0
 #endif
 
-AVS_RBTREE_NODE(void) _avs_rb_alloc_node(size_t elem_size) {
+AVS_RBTREE_NODE(void) _avs_rb_node_alloc(size_t elem_size) {
     struct rb_node *node =
             (struct rb_node*)_AVS_RB_ALLOC(_AVS_NODE_SPACE__ + elem_size);
     void *elem = (char*)node + _AVS_NODE_SPACE__;

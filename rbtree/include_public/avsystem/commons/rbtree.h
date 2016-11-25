@@ -113,7 +113,7 @@ typedef void avs_rbtree_element_deleter_t(void *elem);
  *
  * @returns Pointer to created element on success, NULL in case of error.
  */
-#define AVS_RBTREE_NEW_BUFFER(size) _avs_rb_alloc_node(size)
+#define AVS_RBTREE_NEW_BUFFER(size) _avs_rb_node_alloc(size)
 
 /**
  * Creates a detached RB-tree element large enough to hold a value of
@@ -137,7 +137,7 @@ typedef void avs_rbtree_element_deleter_t(void *elem);
  *                 cleanup.
  */
 #define AVS_RBTREE_DELETE_ELEMENT(elem) \
-    _avs_rb_free_node((AVS_RBTREE_NODE(void)*)elem, NULL)
+    _avs_rb_node_free((AVS_RBTREE_NODE(void)*)elem, NULL)
 
 /**
  * Inserts a detached @p elem into given @p tree.
@@ -185,7 +185,7 @@ typedef void avs_rbtree_element_deleter_t(void *elem);
 #define AVS_RBTREE_DETACH_DELETE(tree, elem, deleter) \
     do { \
         AVS_RBTREE_NODE(void) node = (AVS_RBTREE_NODE(void))(elem); \
-        _avs_rb_free_node(AVS_RBTREE_DETACH((tree), &node), (deleter)); \
+        _avs_rb_node_free(AVS_RBTREE_DETACH((tree), &node), (deleter)); \
     } while (0)
 
 /**
@@ -262,8 +262,8 @@ AVS_RBTREE_NODE(void) _avs_rbtree_detach(AVS_RBTREE(void) tree,
 AVS_RBTREE_NODE(void) _avs_rbtree_first(AVS_RBTREE(void) tree);
 AVS_RBTREE_NODE(void) _avs_rbtree_last(AVS_RBTREE(void) tree);
 
-AVS_RBTREE_NODE(void) _avs_rb_alloc_node(size_t elem_size);
-void _avs_rb_free_node(AVS_RBTREE_NODE(void) *node,
+AVS_RBTREE_NODE(void) _avs_rb_node_alloc(size_t elem_size);
+void _avs_rb_node_free(AVS_RBTREE_NODE(void) *node,
                        avs_rbtree_element_deleter_t *deleter);
 
 AVS_RBTREE_NODE(void) _avs_rb_next(AVS_RBTREE_NODE(void) elem);
