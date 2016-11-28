@@ -40,7 +40,7 @@ void **_avs_rbtree_new(avs_rbtree_element_comparator_t *cmp) {
 }
 
 #ifndef NDEBUG
-static int rb_is_node_detached(AVS_RBTREE_NODE(void) elem) {
+static int rb_is_node_detached(AVS_RBTREE_ELEM(void) elem) {
     return _AVS_RB_PARENT(elem) == NULL
         && _AVS_RB_LEFT(elem) == NULL
         && _AVS_RB_RIGHT(elem) == NULL
@@ -119,7 +119,7 @@ static void rb_node_init_magic(struct rb_node *node) {
 #define rb_node_init_magic(_) (void)0
 #endif
 
-AVS_RBTREE_NODE(void) _avs_rb_node_alloc(size_t elem_size) {
+AVS_RBTREE_ELEM(void) _avs_rb_node_alloc(size_t elem_size) {
     struct rb_node *node =
             (struct rb_node*)_AVS_RB_ALLOC(_AVS_NODE_SPACE__ + elem_size);
     void *elem = (char*)node + _AVS_NODE_SPACE__;
@@ -374,8 +374,8 @@ static void rb_insert_fix(struct rb_tree *tree,
     }
 }
 
-AVS_RBTREE_NODE(void) _avs_rbtree_attach(AVS_RBTREE(void) tree_,
-                                         AVS_RBTREE_NODE(void) elem) {
+AVS_RBTREE_ELEM(void) _avs_rbtree_attach(AVS_RBTREE(void) tree_,
+                                         AVS_RBTREE_ELEM(void) elem) {
     struct rb_tree *tree = _AVS_RB_TREE(tree_);
     void **dst = NULL;
     void *parent = NULL;
@@ -400,7 +400,7 @@ AVS_RBTREE_NODE(void) _avs_rbtree_attach(AVS_RBTREE(void) tree_,
     return elem;
 }
 
-static AVS_RBTREE_NODE(void) rb_min(void *root) {
+static AVS_RBTREE_ELEM(void) rb_min(void *root) {
     void *min = root;
     void *left = root;
 
@@ -414,11 +414,11 @@ static AVS_RBTREE_NODE(void) rb_min(void *root) {
     return min;
 }
 
-AVS_RBTREE_NODE(void) _avs_rbtree_first(AVS_RBTREE(void) tree) {
+AVS_RBTREE_ELEM(void) _avs_rbtree_first(AVS_RBTREE(void) tree) {
     return rb_min(_AVS_RB_TREE(tree)->root);
 }
 
-static AVS_RBTREE_NODE(void) rb_max(AVS_RBTREE_NODE(void) root) {
+static AVS_RBTREE_ELEM(void) rb_max(AVS_RBTREE_ELEM(void) root) {
     void *max = root;
     void *right = root;
 
@@ -432,11 +432,11 @@ static AVS_RBTREE_NODE(void) rb_max(AVS_RBTREE_NODE(void) root) {
     return max;
 }
 
-AVS_RBTREE_NODE(void) _avs_rbtree_last(AVS_RBTREE(void) tree) {
+AVS_RBTREE_ELEM(void) _avs_rbtree_last(AVS_RBTREE(void) tree) {
     return rb_max(_AVS_RB_TREE(tree)->root);
 }
 
-AVS_RBTREE_NODE(void) _avs_rb_next(AVS_RBTREE_NODE(void) elem) {
+AVS_RBTREE_ELEM(void) _avs_rb_next(AVS_RBTREE_ELEM(void) elem) {
     void *right = _AVS_RB_RIGHT(elem);
     void *parent = NULL;
     void *curr = NULL;
