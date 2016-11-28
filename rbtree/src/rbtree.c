@@ -374,8 +374,8 @@ static void rb_insert_fix(struct rb_tree *tree,
     }
 }
 
-int _avs_rbtree_attach(AVS_RBTREE(void) tree_,
-                       AVS_RBTREE_NODE(void) elem) {
+AVS_RBTREE_NODE(void) _avs_rbtree_attach(AVS_RBTREE(void) tree_,
+                                         AVS_RBTREE_NODE(void) elem) {
     struct rb_tree *tree = _AVS_RB_TREE(tree_);
     void **dst = NULL;
     void *parent = NULL;
@@ -389,7 +389,7 @@ int _avs_rbtree_attach(AVS_RBTREE(void) tree_,
 
     if (*dst) {
         /* already present */
-        return -1;
+        return *dst;
     } else {
         *dst = elem;
         _AVS_RB_PARENT(elem) = parent;
@@ -397,7 +397,7 @@ int _avs_rbtree_attach(AVS_RBTREE(void) tree_,
 
     rb_insert_fix(tree, elem);
     _AVS_RB_NODE_SET_TREE_MAGIC(elem, _AVS_RB_TREE_MAGIC(tree_));
-    return 0;
+    return elem;
 }
 
 static AVS_RBTREE_NODE(void) rb_min(void *root) {

@@ -140,7 +140,9 @@ typedef void avs_rbtree_element_deleter_t(void *elem);
     _avs_rb_node_free((AVS_RBTREE_NODE(void)*)elem, NULL)
 
 /**
- * Inserts a detached @p elem into given @p tree.
+ * Inserts a detached @p elem into given @p tree, if an element
+ * equivalent to @p elem (wrt. @ref avs_rbtree_element_comparator_t
+ * of @p tree) does not yet exist in the tree.
  *
  * NOTE: when passed @p elem is attached to some tree, the behavior
  * is undefined.
@@ -148,12 +150,13 @@ typedef void avs_rbtree_element_deleter_t(void *elem);
  * @param tree Tree to insert element into.
  * @param elem Element to insert.
  *
- * @returns 0 on success, a nonzero value if the element is already present in
- * the tree.
+ * @returns:
+ * - @p elem on success,
+ * - a pointer to the equivalent element if one already existed in the tree.
  */
 #define AVS_RBTREE_INSERT(tree, elem) \
     (_AVS_RB_TYPECHECK(tree, elem), \
-     _avs_rbtree_attach((AVS_RBTREE(void))(tree), (elem)))
+     (AVS_TYPEOF_PTR(elem))_avs_rbtree_attach((AVS_RBTREE(void))(tree), (elem)))
 
 /**
  * Detaches given @p elem from @p tree. Does not free @p elem.
@@ -256,8 +259,8 @@ void _avs_rbtree_delete(AVS_RBTREE(void) *tree,
 size_t _avs_rbtree_size(const AVS_RBTREE(void) tree);
 AVS_RBTREE_NODE(void) _avs_rbtree_find(const AVS_RBTREE(void) tree,
                                        const void *value);
-int _avs_rbtree_attach(AVS_RBTREE(void) tree,
-                       AVS_RBTREE_NODE(void) node);
+AVS_RBTREE_NODE(void) _avs_rbtree_attach(AVS_RBTREE(void) tree,
+                                         AVS_RBTREE_NODE(void) node);
 AVS_RBTREE_NODE(void) _avs_rbtree_detach(AVS_RBTREE(void) tree,
                                          AVS_RBTREE_NODE(void) node);
 

@@ -72,8 +72,9 @@ int main(void) {
                     *elem = val;
 
                     size_t prev_size = AVS_RBTREE_SIZE(tree);
-                    if (AVS_RBTREE_INSERT(tree, elem)) {
+                    if (AVS_RBTREE_INSERT(tree, elem) != elem) {
                         assert(prev_size == AVS_RBTREE_SIZE(tree));
+                        AVS_RBTREE_DELETE_ELEMENT(elem);
                     } else {
                         assert(prev_size + 1 == AVS_RBTREE_SIZE(tree));
                     }

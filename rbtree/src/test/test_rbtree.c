@@ -92,7 +92,7 @@ static AVS_RBTREE(int) make_tree(int first, ...) {
         AVS_UNIT_ASSERT_NOT_NULL(elem);
 
         *elem = value;
-        AVS_UNIT_ASSERT_SUCCESS(AVS_RBTREE_INSERT(tree, elem));
+        AVS_UNIT_ASSERT_TRUE(elem == AVS_RBTREE_INSERT(tree, elem));
 
         value = va_arg(list, int);
     }
@@ -302,7 +302,7 @@ AVS_UNIT_TEST(rbtree, insert_case1_first) {
     int **tree = AVS_RBTREE_NEW(int, int_comparator);
     int *elem = AVS_RBTREE_NEW_ELEMENT(int);
 
-    AVS_UNIT_ASSERT_SUCCESS(AVS_RBTREE_INSERT(tree, elem));
+    AVS_UNIT_ASSERT_TRUE(elem == AVS_RBTREE_INSERT(tree, elem));
 
     AVS_UNIT_ASSERT_TRUE(_AVS_RB_TREE(tree)->cmp == int_comparator);
     AVS_UNIT_ASSERT_TRUE(_AVS_RB_TREE(tree)->root == elem);
@@ -324,7 +324,7 @@ AVS_UNIT_TEST(rbtree, insert_case2) {
 
     int *elem = AVS_RBTREE_NEW_ELEMENT(int);
     *elem = 1;
-    AVS_UNIT_ASSERT_SUCCESS(AVS_RBTREE_INSERT(tree, elem));
+    AVS_UNIT_ASSERT_TRUE(elem == AVS_RBTREE_INSERT(tree, elem));
 
     /* should be:
      *      2
@@ -361,7 +361,7 @@ AVS_UNIT_TEST(rbtree, insert_case3) {
 
     int *_1 = AVS_RBTREE_NEW_ELEMENT(int);
     *_1 = 1;
-    AVS_UNIT_ASSERT_SUCCESS(AVS_RBTREE_INSERT(tree, _1));
+    AVS_UNIT_ASSERT_TRUE(_1 == AVS_RBTREE_INSERT(tree, _1));
 
     /* should be:
      *            5
@@ -405,7 +405,7 @@ AVS_UNIT_TEST(rbtree, insert_case4_5) {
 
     _3 = AVS_RBTREE_NEW_ELEMENT(int);
     *_3 = 3;
-    AVS_UNIT_ASSERT_SUCCESS(AVS_RBTREE_INSERT(tree, _3));
+    AVS_UNIT_ASSERT_TRUE(_3 == AVS_RBTREE_INSERT(tree, _3));
 
     /* should be:
      *             5B
@@ -425,6 +425,27 @@ AVS_UNIT_TEST(rbtree, insert_case4_5) {
 
     AVS_RBTREE_DELETE(&tree, NULL);
 }
+
+AVS_UNIT_TEST(rbtree, insert_existing) {
+    int **tree = AVS_RBTREE_NEW(int, int_comparator);
+    int *elem = AVS_RBTREE_NEW_ELEMENT(int);
+    int *elem2 = AVS_RBTREE_NEW_ELEMENT(int);
+
+    AVS_UNIT_ASSERT_TRUE(elem == AVS_RBTREE_INSERT(tree, elem));
+    /* attempt to insert an equivalent element should return the previous one */
+    AVS_UNIT_ASSERT_TRUE(elem == AVS_RBTREE_INSERT(tree, elem2));
+
+    AVS_UNIT_ASSERT_TRUE(_AVS_RB_TREE(tree)->cmp == int_comparator);
+    AVS_UNIT_ASSERT_TRUE(_AVS_RB_TREE(tree)->root == elem);
+
+    assert_node_equal(elem, 0, BLACK, NULL, NULL, NULL);
+
+    assert_rb_properties_hold(tree);
+
+    AVS_RBTREE_DELETE_ELEMENT(&elem2);
+    AVS_RBTREE_DELETE(&tree, NULL);
+}
+
 
 static AVS_RBTREE(int) make_full_3level_tree(void) {
     AVS_RBTREE(int) tree = make_tree(
