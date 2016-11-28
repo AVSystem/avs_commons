@@ -153,7 +153,7 @@ typedef void avs_rbtree_element_deleter_t(void *elem);
  *          NULL in case of error.
  */
 #define AVS_RBTREE_ELEM_NEW(type) \
-    ((type*)AVS_RBTREE_ELEM_NEW_BUFFER(sizeof(type)))
+    ((AVS_RBTREE_ELEM(type))AVS_RBTREE_ELEM_NEW_BUFFER(sizeof(type)))
 
 /**
  * Frees memory associated with given detached RB-tree element.
