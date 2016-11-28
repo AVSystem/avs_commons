@@ -633,6 +633,23 @@ AVS_UNIT_TEST(rbtree, detach_single_root_child) {
     AVS_RBTREE_DELETE(&tree);
 }
 
+AVS_UNIT_TEST(rbtree, delete_destructor) {
+    AVS_RBTREE(int) tree = make_tree(1, 0);
+    /*    1B
+     *   *  *
+     */
+
+    int *_1 = AVS_RBTREE_FIND(tree, &CONST_1);
+    AVS_RBTREE_DELETE_ELEM(tree, &_1) {
+        AVS_UNIT_ASSERT_EQUAL(1, *_1);
+    }
+
+    AVS_UNIT_ASSERT_NULL(_1);
+    AVS_UNIT_ASSERT_NULL(*tree);
+
+    AVS_RBTREE_DELETE(&tree);
+}
+
 AVS_UNIT_TEST(rbtree, delete_attached) {
     AVS_RBTREE(int) tree = make_tree(1, 2, 0);
     /*    1B
@@ -645,11 +662,11 @@ AVS_UNIT_TEST(rbtree, delete_attached) {
     _1 = AVS_RBTREE_FIND(tree, &CONST_1);
     _2 = AVS_RBTREE_FIND(tree, &CONST_2);
 
-    AVS_RBTREE_DELETE_ELEM(tree, &_1, NULL);
+    AVS_RBTREE_DELETE_ELEM(tree, &_1);
     AVS_UNIT_ASSERT_TRUE(_2 == _AVS_RB_TREE(tree)->root);
     AVS_UNIT_ASSERT_EQUAL(1, AVS_RBTREE_SIZE(tree));
 
-    AVS_RBTREE_DELETE_ELEM(tree, &_2, NULL);
+    AVS_RBTREE_DELETE_ELEM(tree, &_2);
     AVS_UNIT_ASSERT_TRUE(NULL == _AVS_RB_TREE(tree)->root);
     AVS_UNIT_ASSERT_EQUAL(0, AVS_RBTREE_SIZE(tree));
 
@@ -663,7 +680,7 @@ AVS_UNIT_TEST(rbtree, fuzz1) {
     assert_rb_properties_hold(tree);
 
     _2 = AVS_RBTREE_FIND(tree, &CONST_2);
-    AVS_RBTREE_DELETE_ELEM(tree, &_2, NULL);
+    AVS_RBTREE_DELETE_ELEM(tree, &_2);
 
     assert_rb_properties_hold(tree);
 
@@ -677,7 +694,7 @@ AVS_UNIT_TEST(rbtree, fuzz2) {
     assert_rb_properties_hold(tree);
 
     _3 = AVS_RBTREE_FIND(tree, &CONST_3);
-    AVS_RBTREE_DELETE_ELEM(tree, &_3, NULL);
+    AVS_RBTREE_DELETE_ELEM(tree, &_3);
 
     assert_rb_properties_hold(tree);
 

@@ -36,15 +36,9 @@ void **avs_rbtree_new__(avs_rbtree_element_comparator_t *cmp) {
     return &tree->root;
 }
 
-void avs_rbtree_elem_delete__(void **node,
-                              avs_rbtree_element_deleter_t *deleter) {
+void avs_rbtree_elem_delete__(void **node) {
     if (node && *node) {
         assert(rb_is_node_detached(*node));
-
-        if (deleter) {
-            deleter(*node);
-        }
-
         _AVS_RB_DEALLOC(_AVS_RB_NODE(*node));
         *node = NULL;
     }
@@ -662,7 +656,7 @@ AVS_RBTREE_ELEM(void) avs_rbtree_cleanup_next_ptr__(AVS_RBTREE(void) tree) {
     assert(_AVS_RB_LEFT(*tree) == NULL);
     assert(_AVS_RB_RIGHT(*tree) == NULL);
 
-    avs_rbtree_elem_delete__(curr_ptr, NULL);
+    avs_rbtree_elem_delete__(curr_ptr);
 
     return *tree = next;
 }

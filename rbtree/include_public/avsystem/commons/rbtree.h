@@ -161,11 +161,27 @@ typedef void avs_rbtree_element_deleter_t(void *elem);
  * NOTE: when passed @p elem is attached to some tree, the behavior
  * is undefined.
  *
+ * @code
+ * // no extra cleanup required:
+ * AVS_RBTREE_ELEM(int) elem = AVS_RBTREE_ELEM_NEW(int);
+ * AVS_RBTREE_ELEM_DELETE_DETACHED(&elem);
+ *
+ * // with extra cleanup per element:
+ * AVS_RBTREE(char *) elem = // create and initialize
+ * AVS_RBTREE_ELEM_DELETE_DETACHED(&elem) {
+ *     free(*elem);
+ * }
+ * @endcode
+ *
  * @param elem_ptr Pointer to element to free. *elem is set to NULL after
  *                 cleanup.
  */
-#define AVS_RBTREE_ELEM_DELETE_DETACHED(elem) \
-    avs_rbtree_elem_delete__((AVS_RBTREE_ELEM(void)*)elem, NULL)
+#define AVS_RBTREE_ELEM_DELETE_DETACHED(elem_ptr) \
+    for (; \
+            *(elem_ptr) \
+                && (avs_rbtree_elem_delete__( \
+                        (AVS_RBTREE_ELEM(void)*)(elem_ptr)), 0); \
+            *(elem_ptr) = NULL)
 
 /**
  * Inserts a detached @p elem into given @p tree, if an element
@@ -205,19 +221,34 @@ typedef void avs_rbtree_element_deleter_t(void *elem);
  * Deletes a @p elem attached to @p tree by detaching it from @p tree.
  *
  * NOTE: when passed @p elem is not attached to @p tree, the behavior
- * is undefined.
+ * is undefined. In such case, use @ref AVS_RBTREE_ELEM_DELETE_DETACHED.
+ *
+ * Example usage:
+ *
+ * @code
+ * // no extra cleanup required:
+ * AVS_RBTREE(int) ints = ...;
+ * AVS_RBTREE_ELEM(int) elem = // get elem from ints tree
+ * AVS_RBTREE_DELETE_ELEM(ints, &elem);
+ *
+ * // with extra cleanup per element:
+ * AVS_RBTREE(char *) strings = ...;
+ * AVS_RBTREE_ELEM(char *) elem = // get elem from strings tree
+ * AVS_RBTREE_DELETE_ELEM(strings, &elem) {
+ *     free(*elem);
+ * }
+ * @endcode
  *
  * @param tree     Tree to remove element from.
  * @param elem_ptr Pointer to the element to remove. On success, *elem_ptr
  *                 will be set to NULL.
  */
-#define AVS_RBTREE_DELETE_ELEM(tree, elem_ptr, deleter) \
-    do { \
-        AVS_RBTREE_ELEM(void) found = AVS_RBTREE_DETACH((tree), *(elem_ptr)); \
-        assert(found && "node not found in the tree"); \
-        avs_rbtree_elem_delete__((AVS_RBTREE_ELEM(void)*)(elem_ptr), \
-                                 (deleter)); \
-    } while (0)
+#define AVS_RBTREE_DELETE_ELEM(tree, elem_ptr) \
+    for (AVS_RBTREE_DETACH((tree), *(elem_ptr)); \
+            *(elem_ptr) \
+                && (avs_rbtree_elem_delete__( \
+                        (AVS_RBTREE_ELEM(void)*)(elem_ptr)), 0); \
+            *(elem_ptr) = NULL)
 
 /**
  * Finds an element with value given by @p val_ptr in @p tree.
@@ -296,8 +327,7 @@ AVS_RBTREE_ELEM(void) avs_rbtree_first__(AVS_RBTREE(void) tree);
 AVS_RBTREE_ELEM(void) avs_rbtree_last__(AVS_RBTREE(void) tree);
 
 AVS_RBTREE_ELEM(void) avs_rbtree_elem_new_buffer__(size_t elem_size);
-void avs_rbtree_elem_delete__(AVS_RBTREE_ELEM(void) *node,
-                              avs_rbtree_element_deleter_t *deleter);
+void avs_rbtree_elem_delete__(AVS_RBTREE_ELEM(void) *node);
 
 AVS_RBTREE_ELEM(void) avs_rbtree_elem_next__(AVS_RBTREE_ELEM(void) elem);
 AVS_RBTREE_ELEM(void) avs_rbtree_elem_prev__(AVS_RBTREE_ELEM(void) elem);
