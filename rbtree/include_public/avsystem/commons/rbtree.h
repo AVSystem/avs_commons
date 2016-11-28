@@ -47,7 +47,7 @@ typedef void avs_rbtree_element_deleter_t(void *elem);
 #define AVS_RBTREE_ELEM(type) type*
 
 #define _AVS_RB_TYPECHECK(tree_type, elem_type) \
-    ((void)(**(tree_type) < *(elem_type)))
+    ((void)(sizeof(**(tree_type) < *(elem_type))))
 
 /**
  * Create an RB-tree with elements of given @p type.
@@ -244,7 +244,8 @@ typedef void avs_rbtree_element_deleter_t(void *elem);
  *                 will be set to NULL.
  */
 #define AVS_RBTREE_DELETE_ELEM(tree, elem_ptr) \
-    for (AVS_RBTREE_DETACH((tree), *(elem_ptr)); \
+    for (_AVS_RB_TYPECHECK(tree, *(elem_ptr)), \
+                AVS_RBTREE_DETACH((tree), *(elem_ptr)); \
             *(elem_ptr) \
                 && (avs_rbtree_elem_delete__( \
                         (AVS_RBTREE_ELEM(void)*)(elem_ptr)), 0); \
@@ -301,15 +302,17 @@ typedef void avs_rbtree_element_deleter_t(void *elem);
 
 /** Convenience macro for forward iteration on elements of @p tree. */
 #define AVS_RBTREE_FOREACH(it, tree) \
-    for (it = AVS_RBTREE_FIRST(tree); \
-            it; \
-            it = AVS_RBTREE_ELEM_NEXT(it))
+    for (_AVS_RB_TYPECHECK((tree), (it)), \
+            (it) = AVS_RBTREE_FIRST(tree); \
+            (it); \
+            (it) = AVS_RBTREE_ELEM_NEXT(it))
 
 /** Convenience macro for backward iteration on elements of @p tree. */
 #define AVS_RBTREE_FOREACH_REVERSE(it, tree) \
-    for (it = AVS_RBTREE_LAST(tree); \
-            it; \
-            it = AVS_RBTREE_ELEM_PREV(it))
+    for (_AVS_RB_TYPECHECK((tree), (it)), \
+            (it) = AVS_RBTREE_LAST(tree); \
+            (it); \
+            (it) = AVS_RBTREE_ELEM_PREV(it))
 
 /* Internal functions. Use macros defined above instead. */
 AVS_RBTREE(void) avs_rbtree_new__(avs_rbtree_element_comparator_t *cmp);
