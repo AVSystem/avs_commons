@@ -63,13 +63,41 @@ typedef void avs_rbtree_element_deleter_t(void *elem);
 /**
  * Releases given RB-tree and all its nodes.
  *
+ * Example usage:
+ *
+ * @code
+ * // simple destruction - no extra operations required for elements
+ * AVS_RBTREE(int) ints = ...;
+ * AVS_RBTREE_DELETE(&ints);
+ *
+ * // destruction with extra operation before releasing each element:
+ * AVS_RBTREE(char *) strings = ...;
+ * AVS_RBTREE_DELETE(&strings) {
+ *     free(**strings);
+ * }
+ * @endcode
+ *
+ * WARNING: during cleanup the tree is NOT in an consistent state. Attempting
+ * any kind of tree operations while AVS_RBTREE_DELETE on that tree is in
+ * progress invokes undefined behavior.
+ *
+ * WARNING: <c>break;</c> from the AVS_RBTREE_DELETE loop leaves the tree in an
+ * invalid state. One can resume cleanup using AVS_RBTREE_DELETE again, but any
+ * other operations cause undefined behavior. In case of AVS_RBTREE_DELETE
+ * resumption, iteration starts from the element which previously triggered
+ * the <c>break;</c>.
+ *
  * @param tree_ptr Pointer to the RB-tree object to destroy. *tree_ptr is set to
- *                 NULL after the cleanup is done.
- * @param deleter  Cleanup callback, called before deleting each tree element.
- *                 May be NULL if no additional cleanup is required.
+ *                 NULL after the cleanup is done. The next element to be
+ *                 released can be accessed using <c>**tree</c>.
  */
-#define AVS_RBTREE_DELETE(tree_ptr, deleter) \
-    avs_rbtree_delete__((AVS_RBTREE(void)*)(tree_ptr), (deleter))
+#define AVS_RBTREE_DELETE(tree_ptr) \
+    for (**(tree_ptr) = (AVS_TYPEOF_PTR(**(tree_ptr))) \
+            avs_rbtree_first__((AVS_RBTREE(void))*(tree_ptr)); \
+         **(tree_ptr) \
+            || (avs_rbtree_delete__((AVS_RBTREE(void)*)(tree_ptr)), 0); \
+         **(tree_ptr) = (AVS_TYPEOF_PTR(**(tree_ptr))) \
+            avs_rbtree_cleanup_next_ptr__((AVS_RBTREE(void))*(tree_ptr)))
 
 /**
  * @param tree RB-tree object to operate on.
@@ -174,8 +202,7 @@ typedef void avs_rbtree_element_deleter_t(void *elem);
      avs_rbtree_detach__((AVS_RBTREE(void))(tree), (elem)))
 
 /**
- * Deletes a @p elem attached to @p tree by detaching it from @p tree,
- * performing cleanup using @p deleter and releasing allocated memory.
+ * Deletes a @p elem attached to @p tree by detaching it from @p tree.
  *
  * NOTE: when passed @p elem is not attached to @p tree, the behavior
  * is undefined.
@@ -183,8 +210,6 @@ typedef void avs_rbtree_element_deleter_t(void *elem);
  * @param tree     Tree to remove element from.
  * @param elem_ptr Pointer to the element to remove. On success, *elem_ptr
  *                 will be set to NULL.
- * @param deleter  Pointer to a cleanup function to call before releasing
- *                 @p elem. May be NULL if no extra cleanup is necessary.
  */
 #define AVS_RBTREE_DELETE_ELEM(tree, elem_ptr, deleter) \
     do { \
@@ -257,8 +282,7 @@ typedef void avs_rbtree_element_deleter_t(void *elem);
 
 /* Internal functions. Use macros defined above instead. */
 AVS_RBTREE(void) avs_rbtree_new__(avs_rbtree_element_comparator_t *cmp);
-void avs_rbtree_delete__(AVS_RBTREE(void) *tree,
-                        avs_rbtree_element_deleter_t *deleter);
+void avs_rbtree_delete__(AVS_RBTREE(void) *tree);
 
 size_t avs_rbtree_size__(const AVS_RBTREE(void) tree);
 AVS_RBTREE_ELEM(void) avs_rbtree_find__(const AVS_RBTREE(void) tree,
@@ -277,5 +301,7 @@ void avs_rbtree_elem_delete__(AVS_RBTREE_ELEM(void) *node,
 
 AVS_RBTREE_ELEM(void) avs_rbtree_elem_next__(AVS_RBTREE_ELEM(void) elem);
 AVS_RBTREE_ELEM(void) avs_rbtree_elem_prev__(AVS_RBTREE_ELEM(void) elem);
+
+AVS_RBTREE_ELEM(void) avs_rbtree_cleanup_next_ptr__(AVS_RBTREE(void) tree);
 
 #endif /* AVS_COMMONS_RBTREE_INCLUDE_PUBLIC_COMMONS_RBTREE_H */

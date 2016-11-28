@@ -45,31 +45,15 @@ void avs_rbtree_elem_delete__(void **node,
     }
 }
 
-static void rb_delete_subtree(void **root,
-                              avs_rbtree_element_deleter_t *deleter) {
-    if (!root || !*root) {
-        return;
-    }
-
-    rb_delete_subtree(_AVS_RB_LEFT_PTR(*root), deleter);
-    rb_delete_subtree(_AVS_RB_RIGHT_PTR(*root), deleter);
-
-    _AVS_RB_PARENT(*root) = NULL;
-
-    avs_rbtree_elem_delete__(root, deleter);
-}
-
-void avs_rbtree_delete__(void ***tree_,
-                         avs_rbtree_element_deleter_t *deleter) {
+void avs_rbtree_delete__(void ***tree_) {
     struct rb_tree *tree;
 
     if (!tree_ || !*tree_) {
         return;
     }
 
+    assert(!**tree_); /* should only be called on empty trees */
     tree = _AVS_RB_TREE(*tree_);
-
-    rb_delete_subtree(&tree->root, deleter);
     _AVS_RB_DEALLOC(tree);
     *tree_ = NULL;
 }
@@ -96,7 +80,7 @@ AVS_RBTREE_ELEM(void) avs_rbtree_elem_new_buffer__(size_t elem_size) {
 
     node->color = RED;
 
-    return (char*)node + _AVS_NODE_SPACE__;;
+    return (char*)node + _AVS_NODE_SPACE__;
 }
 
 static void *rb_find_parent(struct rb_tree *tree,
@@ -357,7 +341,9 @@ static AVS_RBTREE_ELEM(void) rb_min(void *root) {
     void *min = root;
     void *left = root;
 
-    assert(root);
+    if (!root) {
+        return NULL;
+    }
 
     do {
         min = left;
@@ -629,6 +615,36 @@ void *avs_rbtree_detach__(void **tree_,
 
     assert(_avs_rb_node_color(tree->root) == BLACK);
     return elem;
+}
+
+static AVS_RBTREE_ELEM(void) rb_cleanup_next(AVS_RBTREE_ELEM(void) curr) {
+    void *parent = _AVS_RB_PARENT(curr);
+    if (!parent) {
+        return NULL;
+    }
+
+    if (_AVS_RB_RIGHT(parent) && _AVS_RB_RIGHT(parent) != curr) {
+        return rb_min(_AVS_RB_RIGHT(parent));
+    }
+
+    return parent;
+}
+
+AVS_RBTREE_ELEM(void) avs_rbtree_cleanup_next_ptr__(AVS_RBTREE(void) tree) {
+    AVS_RBTREE_ELEM(void) next;
+    AVS_RBTREE_ELEM(void) *curr_ptr;
+
+    next = rb_cleanup_next(*tree);
+    curr_ptr = rb_own_parent_ptr(_AVS_RB_TREE(tree), *tree);
+
+    _AVS_RB_PARENT(*tree) = NULL;
+    /* at this point, child nodes should be cleaned up */
+    assert(_AVS_RB_LEFT(*tree) == NULL);
+    assert(_AVS_RB_RIGHT(*tree) == NULL);
+
+    avs_rbtree_elem_delete__(curr_ptr, NULL);
+
+    return *tree = next;
 }
 
 #ifdef AVS_UNIT_TESTING

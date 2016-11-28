@@ -11,12 +11,10 @@ class PrintAvsRbtreeBase(gdb.Command):
         self.output_format = '%%s 0x%%0%dx = %%s' % (self.intptr_type.sizeof * 2,)
 
         # TODO
-        self.rb_magic_offset = -48
-        self.tree_magic_offset = -44
-        self.color_offset = -40
-        self.parent_offset = -32
-        self.left_offset = -24
-        self.right_offset = -16
+        self.color_offset = -32
+        self.parent_offset = -24
+        self.left_offset = -16
+        self.right_offset = -8
 
     def _print_tree(self, ptr, path='', depth=0, visited_addrs=set()):
         left_ptr_value = ptr.cast(self.intptr_type) + self.left_offset
