@@ -11,27 +11,12 @@ enum rb_color _avs_rb_node_color(void *elem) {
     }
 }
 
-#ifdef _AVS_RB_USE_MAGIC
-static void rb_tree_init_magic(struct rb_tree *tree) {
-    static uint32_t tree_magic_gen = 0;
-
-    memcpy((void*)(intptr_t)&tree->rb_magic, &_AVS_RB_MAGIC,
-           sizeof(tree->rb_magic));
-    tree_magic_gen++;
-    memcpy((void*)(intptr_t)&tree->tree_magic, &tree_magic_gen,
-           sizeof(tree->tree_magic));
-}
-#else
-#define rb_tree_init_magic(tree) (void)0
-#endif
-
 void **avs_rbtree_new__(avs_rbtree_element_comparator_t *cmp) {
     struct rb_tree *tree = (struct rb_tree*)_AVS_RB_ALLOC(sizeof(struct rb_tree));
     if (!tree) {
         return NULL;
     }
 
-    rb_tree_init_magic(tree);
     tree->cmp = cmp;
     tree->root = NULL;
 
@@ -43,8 +28,7 @@ void **avs_rbtree_new__(avs_rbtree_element_comparator_t *cmp) {
 static int rb_is_node_detached(AVS_RBTREE_ELEM(void) elem) {
     return _AVS_RB_PARENT(elem) == NULL
         && _AVS_RB_LEFT(elem) == NULL
-        && _AVS_RB_RIGHT(elem) == NULL
-        && _AVS_RB_NODE_TREE_MAGIC(elem) == 0;
+        && _AVS_RB_RIGHT(elem) == NULL;
 }
 #else
 # define rb_is_node_detached(_) 1
@@ -75,7 +59,6 @@ static void rb_delete_subtree(void **root,
     rb_delete_subtree(_AVS_RB_RIGHT_PTR(*root), deleter);
 
     _AVS_RB_PARENT(*root) = NULL;
-    _AVS_RB_NODE_SET_TREE_MAGIC(*root, 0);
 
     avs_rbtree_elem_delete__(root, deleter);
 }
@@ -109,21 +92,10 @@ size_t avs_rbtree_size__(const AVS_RBTREE(void) tree) {
     return rb_subtree_size(_AVS_RB_TREE(tree)->root);
 }
 
-#ifdef _AVS_RB_USE_MAGIC
-static void rb_node_init_magic(struct rb_node *node) {
-    memcpy((void*)(intptr_t)&node->rb_magic, &_AVS_RB_MAGIC,
-           sizeof(node->rb_magic));
-    node->tree_magic = 0;
-}
-#else
-#define rb_node_init_magic(_) (void)0
-#endif
-
 AVS_RBTREE_ELEM(void) avs_rbtree_elem_new_buffer__(size_t elem_size) {
     struct rb_node *node =
             (struct rb_node*)_AVS_RB_ALLOC(_AVS_NODE_SPACE__ + elem_size);
     void *elem = (char*)node + _AVS_NODE_SPACE__;
-    rb_node_init_magic(node);
 
     assert(_AVS_RB_NODE_VALID(elem));
     return elem;
@@ -396,7 +368,6 @@ AVS_RBTREE_ELEM(void) avs_rbtree_attach__(AVS_RBTREE(void) tree_,
     }
 
     rb_insert_fix(tree, elem);
-    _AVS_RB_NODE_SET_TREE_MAGIC(elem, _AVS_RB_TREE_MAGIC(tree_));
     return elem;
 }
 
@@ -636,8 +607,6 @@ void *avs_rbtree_detach__(void **tree_,
 
     assert(tree_);
     assert(elem);
-    assert(_AVS_RB_NODE_TREE_MAGIC(elem) == _AVS_RB_TREE_MAGIC(tree_)
-           && "node not attached to given tree");
 
     left = _AVS_RB_LEFT(elem);
     right = _AVS_RB_RIGHT(elem);
@@ -660,7 +629,6 @@ void *avs_rbtree_detach__(void **tree_,
     _AVS_RB_PARENT(elem) = NULL;
     _AVS_RB_LEFT(elem) = NULL;
     _AVS_RB_RIGHT(elem) = NULL;
-    _AVS_RB_NODE_SET_TREE_MAGIC(elem, 0);
 
     assert(_avs_rb_node_color(elem) == BLACK || _avs_rb_node_color(child) == BLACK);
     if (_avs_rb_node_color(elem) == RED

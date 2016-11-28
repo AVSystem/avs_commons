@@ -6,22 +6,12 @@
 
 #include <avsystem/commons/rbtree.h>
 
-#ifndef NDEBUG
-#define _AVS_RB_USE_MAGIC
-static const uint32_t _AVS_RB_MAGIC = 0x00031337;
-#endif /* NDEBUG */
-
 enum rb_color {
-    RED,
-    BLACK
+    RED = 0x50DE,
+    BLACK = 0x50DF
 };
 
 struct rb_node {
-#ifdef _AVS_RB_USE_MAGIC
-    const uint32_t rb_magic; /* always set to _AVS_RB_MAGIC */
-    uint32_t tree_magic; /* marks the tree a node is attached to, 0 if detached */
-#endif
-
     enum rb_color color;
     void *parent;
     void *left;
@@ -29,12 +19,6 @@ struct rb_node {
 };
 
 struct rb_tree {
-#ifdef _AVS_RB_USE_MAGIC
-    const uint32_t rb_magic; /* always set to _AVS_RB_MAGIC */
-    uint32_t tree_magic; /* uniquely identifies a tree; used to check whether
-                            a node is attached to this tree */
-#endif
-
     avs_rbtree_element_comparator_t *cmp;
     void *root;
 };
@@ -68,25 +52,6 @@ struct rb_tree {
     ((AVS_TYPEOF_PTR(elem)*)&(_AVS_RB_NODE(elem)->parent))
 
 #define _AVS_RB_PARENT(elem) (*_AVS_RB_PARENT_PTR(elem))
-
-#ifdef _AVS_RB_USE_MAGIC
-# define _AVS_RB_NODE_VALID(node) \
-    (!(node) || _AVS_RB_NODE(node)->rb_magic == _AVS_RB_MAGIC)
-# define _AVS_RB_TREE_VALID(tree) \
-    (!(tree) || _AVS_RB_TREE(tree)->rb_magic == _AVS_RB_MAGIC)
-
-# define _AVS_RB_NODE_SET_TREE_MAGIC(node, magic) \
-    (_AVS_RB_NODE(node)->tree_magic = (magic))
-# define _AVS_RB_NODE_TREE_MAGIC(node) (_AVS_RB_NODE(node)->tree_magic)
-# define _AVS_RB_TREE_MAGIC(tree) (_AVS_RB_TREE(tree)->tree_magic)
-#else
-# define _AVS_RB_NODE_VALID(node) 1
-# define _AVS_RB_TREE_VALID(tree) 1
-
-# define _AVS_RB_NODE_SET_TREE_MAGIC(node, magic) (void)0
-# define _AVS_RB_NODE_TREE_MAGIC(node) 0
-# define _AVS_RB_TREE_MAGIC(tree) 0
-#endif
 
 enum rb_color _avs_rb_node_color(void *elem);
 
