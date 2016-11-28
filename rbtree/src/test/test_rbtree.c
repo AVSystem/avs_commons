@@ -683,4 +683,3 @@ AVS_UNIT_TEST(rbtree, fuzz2) {
 
     AVS_RBTREE_DELETE(&tree);
 }
-
