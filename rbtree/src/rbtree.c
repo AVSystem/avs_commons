@@ -2,8 +2,8 @@
 #include "rbtree.h"
 
 #ifndef NDEBUG
-static int rb_is_cleanup_in_progress(AVS_RBTREE(void) tree) {
-    return *tree && (_AVS_RB_PARENT(*tree) != NULL);
+static int rb_is_cleanup_in_progress(AVS_RBTREE_CONST(void) tree) {
+    return *tree && (_AVS_RB_PARENT_CONST(*tree) != NULL);
 }
 
 static int rb_is_node_detached(AVS_RBTREE_ELEM(void) elem) {
@@ -15,6 +15,10 @@ static int rb_is_node_detached(AVS_RBTREE_ELEM(void) elem) {
 # define rb_is_cleanup_in_progress(_) 0
 # define rb_is_node_detached(_) 1
 #endif
+
+static AVS_RBTREE_CONST(void) rb_tree_const(AVS_RBTREE(void) tree) {
+    return (AVS_RBTREE_CONST(void))(intptr_t)tree;
+}
 
 enum rb_color _avs_rb_node_color(void *elem) {
     if (!elem) {
@@ -57,20 +61,20 @@ void avs_rbtree_delete__(void ***tree_) {
     *tree_ = NULL;
 }
 
-static size_t rb_subtree_size(void *root) {
+static size_t rb_subtree_size(const void *root) {
     if (!root) {
         return 0;
     }
 
-    return (1 + rb_subtree_size(_AVS_RB_LEFT(root))
-            + rb_subtree_size(_AVS_RB_RIGHT(root)));
+    return (1 + rb_subtree_size(_AVS_RB_LEFT_CONST(root))
+            + rb_subtree_size(_AVS_RB_RIGHT_CONST(root)));
 }
 
-size_t avs_rbtree_size__(const AVS_RBTREE(void) tree) {
-    assert(!rb_is_cleanup_in_progress((AVS_RBTREE(void))(intptr_t)tree)
+size_t avs_rbtree_size__(AVS_RBTREE_CONST(void) tree) {
+    assert(!rb_is_cleanup_in_progress(tree)
            && "avs_rbtree_size__ called while tree deletion in progress");
 
-    return rb_subtree_size(_AVS_RB_TREE(tree)->root);
+    return rb_subtree_size(_AVS_RB_TREE_CONST(tree)->root);
 }
 
 AVS_RBTREE_ELEM(void) avs_rbtree_elem_new_buffer__(size_t elem_size) {
@@ -141,14 +145,14 @@ static void **rb_find_ptr(struct rb_tree *tree,
     return curr;
 }
 
-void *avs_rbtree_find__(const void **tree,
+void *avs_rbtree_find__(AVS_RBTREE_CONST(void) tree,
                         const void *val) {
     void **elem_ptr;
 
-    assert(!rb_is_cleanup_in_progress((AVS_RBTREE(void))(intptr_t)tree)
+    assert(!rb_is_cleanup_in_progress(tree)
            && "avs_rbtree_find__ called while tree deletion in progress");
 
-    elem_ptr = rb_find_ptr(_AVS_RB_TREE(tree), val);
+    elem_ptr = rb_find_ptr(_AVS_RB_TREE((AVS_RBTREE(void))(intptr_t)tree), val);
     return elem_ptr ? *elem_ptr : NULL;
 }
 
@@ -325,7 +329,7 @@ AVS_RBTREE_ELEM(void) avs_rbtree_attach__(AVS_RBTREE(void) tree_,
     void **dst = NULL;
     void *parent = NULL;
 
-    assert(!rb_is_cleanup_in_progress(tree_)
+    assert(!rb_is_cleanup_in_progress(rb_tree_const(tree_))
            && "avs_rbtree_attach__ called while tree deletion in progress");
     assert(tree_);
     assert(elem);
@@ -382,7 +386,7 @@ static AVS_RBTREE_ELEM(void) rb_max(AVS_RBTREE_ELEM(void) root) {
 }
 
 AVS_RBTREE_ELEM(void) avs_rbtree_last__(AVS_RBTREE(void) tree) {
-    assert(!rb_is_cleanup_in_progress(tree)
+    assert(!rb_is_cleanup_in_progress(rb_tree_const(tree))
            && "avs_rbtree_last__ called while tree deletion in progress");
     return rb_max(_AVS_RB_TREE(tree)->root);
 }
@@ -585,7 +589,7 @@ void *avs_rbtree_detach__(void **tree_,
         return NULL;
     }
 
-    assert(!rb_is_cleanup_in_progress(tree_)
+    assert(!rb_is_cleanup_in_progress(rb_tree_const(tree_))
            && "avs_rbtree_detach__ called while tree deletion in progress");
     assert(tree_);
     assert(elem);

@@ -37,6 +37,8 @@ typedef int avs_rbtree_element_comparator_t(const void *a,
 
 /** RB-tree type alias.  */
 #define AVS_RBTREE(type) type**
+/** Constant RB-tree type alias.  */
+#define AVS_RBTREE_CONST(type) const type *const *
 /** RB element type alias. */
 #define AVS_RBTREE_ELEM(type) type*
 
@@ -104,7 +106,7 @@ typedef int avs_rbtree_element_comparator_t(const void *a,
  *
  * @returns Total number of elements stored in the tree.
  */
-#define AVS_RBTREE_SIZE(tree) avs_rbtree_size__((const AVS_RBTREE(void))tree)
+#define AVS_RBTREE_SIZE(tree) avs_rbtree_size__((AVS_RBTREE_CONST(void))tree)
 
 /**
  * Creates an arbitrarily-sized, detached RB-tree element.
@@ -278,7 +280,7 @@ typedef int avs_rbtree_element_comparator_t(const void *a,
 #define AVS_RBTREE_FIND(tree, val_ptr) \
     (_AVS_RB_TYPECHECK(tree, val_ptr), \
      ((AVS_TYPEOF_PTR(val_ptr)) \
-      avs_rbtree_find__((const AVS_RBTREE(void))tree, val_ptr)))
+      avs_rbtree_find__((AVS_RBTREE_CONST(void))tree, val_ptr)))
 
 /**
  * Complexity: O(log n).
@@ -340,8 +342,8 @@ typedef int avs_rbtree_element_comparator_t(const void *a,
 AVS_RBTREE(void) avs_rbtree_new__(avs_rbtree_element_comparator_t *cmp);
 void avs_rbtree_delete__(AVS_RBTREE(void) *tree);
 
-size_t avs_rbtree_size__(const AVS_RBTREE(void) tree);
-AVS_RBTREE_ELEM(void) avs_rbtree_find__(const AVS_RBTREE(void) tree,
+size_t avs_rbtree_size__(AVS_RBTREE_CONST(void) tree);
+AVS_RBTREE_ELEM(void) avs_rbtree_find__(AVS_RBTREE_CONST(void) tree,
                                         const void *value);
 AVS_RBTREE_ELEM(void) avs_rbtree_attach__(AVS_RBTREE(void) tree,
                                           AVS_RBTREE_ELEM(void) node);

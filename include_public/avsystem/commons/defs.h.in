@@ -150,5 +150,8 @@ typedef long avs_off_t;
 #define AVS_CONTAINER_OF(ptr, type, member) \
     ((type*)((char*)(ptr) - offsetof(type, member)))
 
+#define AVS_CONTAINER_OF_CONST(ptr, type, member) \
+    ((type*)((const char*)(ptr) - offsetof(type, member)))
+
 #endif	/* AVS_COMMONS_DEFS_H */
 
