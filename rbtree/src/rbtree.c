@@ -631,7 +631,24 @@ void *avs_rbtree_detach__(void **tree_,
     return elem;
 }
 
-static AVS_RBTREE_ELEM(void) rb_cleanup_next(AVS_RBTREE_ELEM(void) curr) {
+static AVS_RBTREE_ELEM(void) rb_postorder_first(AVS_RBTREE_ELEM(void) root) {
+    if (_AVS_RB_LEFT(root)) {
+        return rb_postorder_first(_AVS_RB_LEFT(root));
+    } else if (_AVS_RB_RIGHT(root)) {
+        return rb_postorder_first(_AVS_RB_RIGHT(root));
+    } else {
+        return root;
+    }
+}
+
+AVS_RBTREE_ELEM(void) avs_rbtree_cleanup_first__(AVS_RBTREE(void) tree) {
+    if (!*tree) {
+        return NULL;
+    }
+    return rb_postorder_first(*tree);
+}
+
+static AVS_RBTREE_ELEM(void) rb_postorder_next(AVS_RBTREE_ELEM(void) curr) {
     void *parent = _AVS_RB_PARENT(curr);
     if (!parent) {
         return NULL;
@@ -644,11 +661,11 @@ static AVS_RBTREE_ELEM(void) rb_cleanup_next(AVS_RBTREE_ELEM(void) curr) {
     return parent;
 }
 
-AVS_RBTREE_ELEM(void) avs_rbtree_cleanup_next_ptr__(AVS_RBTREE(void) tree) {
+AVS_RBTREE_ELEM(void) avs_rbtree_cleanup_next__(AVS_RBTREE(void) tree) {
     AVS_RBTREE_ELEM(void) next;
     AVS_RBTREE_ELEM(void) *curr_ptr;
 
-    next = rb_cleanup_next(*tree);
+    next = rb_postorder_next(*tree);
     curr_ptr = rb_own_parent_ptr(_AVS_RB_TREE(tree), *tree);
 
     _AVS_RB_PARENT(*tree) = NULL;
