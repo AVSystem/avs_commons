@@ -42,8 +42,8 @@ typedef int avs_rbtree_element_comparator_t(const void *a,
 /** RB element type alias. */
 #define AVS_RBTREE_ELEM(type) type*
 
-#define _AVS_RB_TYPECHECK(tree_type, elem_type) \
-    ((void)(sizeof(**(tree_type) < *(elem_type))))
+#define _AVS_RB_TYPECHECK(first_ptr_type, second_ptr_type) \
+    ((void)(sizeof((first_ptr_type) < (second_ptr_type))))
 
 /**
  * Create an RB-tree with elements of given @p type.
@@ -106,7 +106,7 @@ typedef int avs_rbtree_element_comparator_t(const void *a,
  *
  * @returns Total number of elements stored in the tree.
  */
-#define AVS_RBTREE_SIZE(tree) avs_rbtree_size__((AVS_RBTREE_CONST(void))tree)
+#define AVS_RBTREE_SIZE(tree) avs_rbtree_size__((AVS_RBTREE_CONST(void))(tree))
 
 /**
  * Creates an arbitrarily-sized, detached RB-tree element.
@@ -193,7 +193,7 @@ typedef int avs_rbtree_element_comparator_t(const void *a,
  * - a pointer to the equivalent element if one already existed in the tree.
  */
 #define AVS_RBTREE_INSERT(tree, elem) \
-    (_AVS_RB_TYPECHECK(tree, elem), \
+    (_AVS_RB_TYPECHECK(*(tree), (elem)), \
      (AVS_TYPEOF_PTR(elem))avs_rbtree_attach__((AVS_RBTREE(void))(tree), (elem)))
 
 /**
@@ -210,7 +210,7 @@ typedef int avs_rbtree_element_comparator_t(const void *a,
  * @returns Detached @p elem.
  */
 #define AVS_RBTREE_DETACH(tree, elem) \
-    (_AVS_RB_TYPECHECK(tree, elem), \
+    (_AVS_RB_TYPECHECK(*(tree), (elem)), \
      avs_rbtree_detach__((AVS_RBTREE(void))(tree), (elem)))
 
 /**
@@ -228,7 +228,7 @@ typedef int avs_rbtree_element_comparator_t(const void *a,
  *                 will be set to NULL.
  */
 #define AVS_RBTREE_DELETE_ELEM(tree, elem_ptr) \
-    (_AVS_RB_TYPECHECK((tree), (elem_ptr)), \
+    (_AVS_RB_TYPECHECK(*(tree), *(elem_ptr)), \
      AVS_RBTREE_DETACH((tree), *(elem_ptr)), \
      avs_rbtree_elem_delete__((AVS_RBTREE_ELEM(void)*)(elem_ptr)))
 
@@ -245,9 +245,9 @@ typedef int avs_rbtree_element_comparator_t(const void *a,
  *          not contain such element.
  */
 #define AVS_RBTREE_FIND(tree, val_ptr) \
-    (_AVS_RB_TYPECHECK(tree, val_ptr), \
+    (_AVS_RB_TYPECHECK(*(tree), (val_ptr)), \
      ((AVS_TYPEOF_PTR(val_ptr)) \
-      avs_rbtree_find__((AVS_RBTREE_CONST(void))tree, val_ptr)))
+      avs_rbtree_find__((AVS_RBTREE_CONST(void))(tree), (val_ptr))))
 
 /**
  * Complexity: O(log n).
@@ -280,7 +280,7 @@ typedef int avs_rbtree_element_comparator_t(const void *a,
  *          @ref avs_rbtree_element_comparator_t of @p tree).
  */
 #define AVS_RBTREE_FIRST(tree) \
-    ((AVS_TYPEOF_PTR(*tree))avs_rbtree_first__((AVS_RBTREE(void))tree))
+    ((AVS_TYPEOF_PTR(*tree))avs_rbtree_first__((AVS_RBTREE(void))(tree)))
 
 /**
  * Complexity: O(log n).
@@ -289,18 +289,18 @@ typedef int avs_rbtree_element_comparator_t(const void *a,
  *          @ref avs_rbtree_element_comparator_t of @p tree).
  */
 #define AVS_RBTREE_LAST(tree) \
-    ((AVS_TYPEOF_PTR(*tree))avs_rbtree_last__((AVS_RBTREE(void))tree))
+    ((AVS_TYPEOF_PTR(*tree))avs_rbtree_last__((AVS_RBTREE(void))(tree)))
 
 /** Convenience macro for forward iteration on elements of @p tree. */
 #define AVS_RBTREE_FOREACH(it, tree) \
-    for (_AVS_RB_TYPECHECK((tree), (it)), \
+    for (_AVS_RB_TYPECHECK(*(tree), (it)), \
             (it) = AVS_RBTREE_FIRST(tree); \
             (it); \
             (it) = AVS_RBTREE_ELEM_NEXT(it))
 
 /** Convenience macro for backward iteration on elements of @p tree. */
 #define AVS_RBTREE_FOREACH_REVERSE(it, tree) \
-    for (_AVS_RB_TYPECHECK((tree), (it)), \
+    for (_AVS_RB_TYPECHECK(*(tree), (it)), \
             (it) = AVS_RBTREE_LAST(tree); \
             (it); \
             (it) = AVS_RBTREE_ELEM_PREV(it))
