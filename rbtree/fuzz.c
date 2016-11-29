@@ -74,7 +74,7 @@ int main(void) {
                     size_t prev_size = AVS_RBTREE_SIZE(tree);
                     if (AVS_RBTREE_INSERT(tree, elem) != elem) {
                         assert(prev_size == AVS_RBTREE_SIZE(tree));
-                        AVS_RBTREE_ELEM_DELETE_DETACHED(elem);
+                        AVS_RBTREE_ELEM_DELETE_DETACHED(&elem);
                     } else {
                         assert(prev_size + 1 == AVS_RBTREE_SIZE(tree));
                     }
@@ -90,7 +90,7 @@ int main(void) {
                     }
 
                     int *elem = AVS_RBTREE_FIND(tree, &val);
-                    AVS_RBTREE_DELETE_ELEM(tree, elem);
+                    AVS_RBTREE_DELETE_ELEM(tree, &elem);
 
                     assert(!AVS_RBTREE_FIND(tree, &val));
                     assert(expected_size == AVS_RBTREE_SIZE(tree));
