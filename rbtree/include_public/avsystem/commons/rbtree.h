@@ -46,6 +46,8 @@ typedef int avs_rbtree_element_comparator_t(const void *a,
 /**
  * Create an RB-tree with elements of given @p type.
  *
+ * Complexity: O(1).
+ *
  * @param type Type of elements stored in the tree nodes.
  * @param cmp  Pointer to a function that compares two elements.
  *             See @ref avs_rbtree_element_comparator_t .
@@ -56,6 +58,8 @@ typedef int avs_rbtree_element_comparator_t(const void *a,
 
 /**
  * Releases given RB-tree and all its nodes.
+ *
+ * Complexity: O(n).
  *
  * Example usage:
  *
@@ -94,6 +98,8 @@ typedef int avs_rbtree_element_comparator_t(const void *a,
             avs_rbtree_cleanup_next__((AVS_RBTREE(void))*(tree_ptr)))
 
 /**
+ * Complexity: O(n).
+ *
  * @param tree RB-tree object to operate on.
  *
  * @returns Total number of elements stored in the tree.
@@ -102,6 +108,8 @@ typedef int avs_rbtree_element_comparator_t(const void *a,
 
 /**
  * Creates an arbitrarily-sized, detached RB-tree element.
+ *
+ * Complexity: O(1).
  *
  * Example:
  * @code
@@ -141,6 +149,8 @@ typedef int avs_rbtree_element_comparator_t(const void *a,
  * Creates a detached RB-tree element large enough to hold a value of
  * given @p type.
  *
+ * Complexity: O(1).
+ *
  * @param type Desired element type.
  *
  * @returns Pointer to created element cast to @p type * on success,
@@ -154,6 +164,8 @@ typedef int avs_rbtree_element_comparator_t(const void *a,
  *
  * NOTE: when passed @p elem is attached to some tree, the behavior
  * is undefined.
+ *
+ * Complexity: O(1).
  *
  * @code
  * // no extra cleanup required:
@@ -185,6 +197,8 @@ typedef int avs_rbtree_element_comparator_t(const void *a,
  * NOTE: when passed @p elem is attached to some tree, the behavior
  * is undefined.
  *
+ * Complexity: O(log n).
+ *
  * @param tree Tree to insert element into.
  * @param elem Element to insert.
  *
@@ -202,6 +216,8 @@ typedef int avs_rbtree_element_comparator_t(const void *a,
  * NOTE: when passed @p elem is not attached to @p tree, the behavior
  * is undefined.
  *
+ * Complexity: O(log n).
+ *
  * @param tree Tree to remove element from.
  * @param elem Element to remove.
  *
@@ -216,6 +232,8 @@ typedef int avs_rbtree_element_comparator_t(const void *a,
  *
  * NOTE: when passed @p elem is not attached to @p tree, the behavior
  * is undefined. In such case, use @ref AVS_RBTREE_ELEM_DELETE_DETACHED.
+ *
+ * Complexity: O(log n).
  *
  * Example usage:
  *
@@ -248,6 +266,8 @@ typedef int avs_rbtree_element_comparator_t(const void *a,
 /**
  * Finds an element with value given by @p val_ptr in @p tree.
  *
+ * Complexity: O(log n).
+ *
  * @param tree    Tree to search in.
  * @param val_ptr Pointer to a node value to search for.
  *                NOTE: this does not need to be an AVS_RBTREE_ELEM object.
@@ -261,6 +281,8 @@ typedef int avs_rbtree_element_comparator_t(const void *a,
       avs_rbtree_find__((const AVS_RBTREE(void))tree, val_ptr)))
 
 /**
+ * Complexity: O(log n).
+ *
  * @returns:
  * - @p elem successor in order defined by
  *   @ref avs_rbtree_element_comparator_t of an RB-tree object @p elem is
@@ -271,6 +293,8 @@ typedef int avs_rbtree_element_comparator_t(const void *a,
     ((AVS_TYPEOF_PTR(elem))avs_rbtree_elem_next__(elem))
 
 /**
+ * Complexity: O(log n).
+ *
  * @returns:
  * - @p elem predecessor in order defined by
  *   @ref avs_rbtree_element_comparator_t of an RB-tree object @p elem is
@@ -281,6 +305,8 @@ typedef int avs_rbtree_element_comparator_t(const void *a,
     ((AVS_TYPEOF_PTR(elem))avs_rbtree_elem_prev__(elem))
 
 /**
+ * Complexity: O(log n).
+ *
  * @returns the first element in @p tree (in order defined by
  *          @ref avs_rbtree_element_comparator_t of @p tree).
  */
@@ -288,6 +314,8 @@ typedef int avs_rbtree_element_comparator_t(const void *a,
     ((AVS_TYPEOF_PTR(*tree))avs_rbtree_first__((AVS_RBTREE(void))tree))
 
 /**
+ * Complexity: O(log n).
+ *
  * @returns the last element in @p tree (in order defined by
  *          @ref avs_rbtree_element_comparator_t of @p tree).
  */
