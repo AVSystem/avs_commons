@@ -655,7 +655,7 @@ static AVS_RBTREE_ELEM(void) rb_postorder_next(AVS_RBTREE_ELEM(void) curr) {
     }
 
     if (_AVS_RB_RIGHT(parent) && _AVS_RB_RIGHT(parent) != curr) {
-        return rb_min(_AVS_RB_RIGHT(parent));
+        return rb_postorder_first(_AVS_RB_RIGHT(parent));
     }
 
     return parent;
