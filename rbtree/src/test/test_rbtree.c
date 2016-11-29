@@ -665,23 +665,6 @@ AVS_UNIT_TEST(rbtree, detach_single_root_child) {
     AVS_RBTREE_DELETE(&tree);
 }
 
-AVS_UNIT_TEST(rbtree, delete_destructor) {
-    AVS_RBTREE(int) tree = make_tree(1, 0);
-    /*    1B
-     *   *  *
-     */
-
-    int *_1 = AVS_RBTREE_FIND(tree, &CONST_1);
-    AVS_RBTREE_DELETE_ELEM(tree, &_1) {
-        AVS_UNIT_ASSERT_EQUAL(1, *_1);
-    }
-
-    AVS_UNIT_ASSERT_NULL(_1);
-    AVS_UNIT_ASSERT_NULL(*tree);
-
-    AVS_RBTREE_DELETE(&tree);
-}
-
 AVS_UNIT_TEST(rbtree, delete_attached) {
     AVS_RBTREE(int) tree = make_tree(1, 2, 0);
     /*    1B

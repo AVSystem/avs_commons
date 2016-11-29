@@ -223,31 +223,14 @@ typedef int avs_rbtree_element_comparator_t(const void *a,
  *
  * Example usage:
  *
- * @code
- * // no extra cleanup required:
- * AVS_RBTREE(int) ints = ...;
- * AVS_RBTREE_ELEM(int) elem = // get elem from ints tree
- * AVS_RBTREE_DELETE_ELEM(ints, &elem);
- *
- * // with extra cleanup per element:
- * AVS_RBTREE(char *) strings = ...;
- * AVS_RBTREE_ELEM(char *) elem = // get elem from strings tree
- * AVS_RBTREE_DELETE_ELEM(strings, &elem) {
- *     free(*elem);
- * }
- * @endcode
- *
  * @param tree     Tree to remove element from.
  * @param elem_ptr Pointer to the element to remove. On success, *elem_ptr
  *                 will be set to NULL.
  */
 #define AVS_RBTREE_DELETE_ELEM(tree, elem_ptr) \
-    for (_AVS_RB_TYPECHECK(tree, *(elem_ptr)), \
-                AVS_RBTREE_DETACH((tree), *(elem_ptr)); \
-            *(elem_ptr) \
-                && (avs_rbtree_elem_delete__( \
-                        (AVS_RBTREE_ELEM(void)*)(elem_ptr)), 0); \
-            *(elem_ptr) = NULL)
+    (_AVS_RB_TYPECHECK((tree), (elem_ptr)), \
+     AVS_RBTREE_DETACH((tree), *(elem_ptr)), \
+     avs_rbtree_elem_delete__((AVS_RBTREE_ELEM(void)*)(elem_ptr)))
 
 /**
  * Finds an element with value given by @p val_ptr in @p tree.
