@@ -169,27 +169,11 @@ typedef int avs_rbtree_element_comparator_t(const void *a,
  *
  * Complexity: O(1).
  *
- * @code
- * // no extra cleanup required:
- * AVS_RBTREE_ELEM(int) elem = AVS_RBTREE_ELEM_NEW(int);
- * AVS_RBTREE_ELEM_DELETE_DETACHED(&elem);
- *
- * // with extra cleanup per element:
- * AVS_RBTREE(char *) elem = // create and initialize
- * AVS_RBTREE_ELEM_DELETE_DETACHED(&elem) {
- *     free(*elem);
- * }
- * @endcode
- *
  * @param elem_ptr Pointer to element to free. *elem is set to NULL after
  *                 cleanup.
  */
 #define AVS_RBTREE_ELEM_DELETE_DETACHED(elem_ptr) \
-    for (; \
-            *(elem_ptr) \
-                && (avs_rbtree_elem_delete__( \
-                        (AVS_RBTREE_ELEM(void)*)(elem_ptr)), 0); \
-            *(elem_ptr) = NULL)
+    avs_rbtree_elem_delete__((AVS_RBTREE_ELEM(void)*)(elem_ptr))
 
 /**
  * Inserts a detached @p elem into given @p tree, if an element
