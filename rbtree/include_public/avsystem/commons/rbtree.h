@@ -7,6 +7,10 @@
 
 #include <avsystem/commons/defs.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * RB-tree element comparator.
  *
@@ -337,5 +341,9 @@ AVS_RBTREE_ELEM(void) avs_rbtree_elem_prev__(AVS_RBTREE_ELEM(void) elem);
 
 AVS_RBTREE_ELEM(void) avs_rbtree_cleanup_first__(AVS_RBTREE(void) tree);
 AVS_RBTREE_ELEM(void) avs_rbtree_cleanup_next__(AVS_RBTREE(void) tree);
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif
 
 #endif /* AVS_COMMONS_RBTREE_INCLUDE_PUBLIC_COMMONS_RBTREE_H */
