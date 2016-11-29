@@ -35,16 +35,6 @@ extern "C" {
 typedef int avs_rbtree_element_comparator_t(const void *a,
                                             const void *b);
 
-/**
- * RB-tree element deleter. May be passed to @ref AVS_RBTREE_DELETE to perform
- * additional cleanup for each deleted element.
- *
- * NOTE: the deleter MUST NOT call <c>free()</c> on the @p elem itself.
- *
- * @param elem Pointer to the element to perform cleanup on.
- */
-typedef void avs_rbtree_element_deleter_t(void *elem);
-
 /** RB-tree type alias.  */
 #define AVS_RBTREE(type) type**
 /** RB element type alias. */
