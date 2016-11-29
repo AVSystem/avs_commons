@@ -187,6 +187,25 @@ AVS_UNIT_TEST(rbtree, delete_postorder_first_different_from_min) {
     AVS_RBTREE_DELETE(&tree);
 }
 
+AVS_UNIT_TEST(rbtree, delete_1234) {
+    AVS_RBTREE(int) tree = AVS_RBTREE_NEW(int, int_comparator);
+
+    AVS_RBTREE_ELEM(int) _1 = AVS_RBTREE_ELEM_NEW(int);
+    AVS_RBTREE_ELEM(int) _2 = AVS_RBTREE_ELEM_NEW(int);
+    AVS_RBTREE_ELEM(int) _3 = AVS_RBTREE_ELEM_NEW(int);
+    AVS_RBTREE_ELEM(int) _4 = AVS_RBTREE_ELEM_NEW(int);
+    *_1 = 1;
+    *_2 = 2;
+    *_3 = 3;
+    *_4 = 4;
+    AVS_RBTREE_INSERT(tree, _1);
+    AVS_RBTREE_INSERT(tree, _2);
+    AVS_RBTREE_INSERT(tree, _3);
+    AVS_RBTREE_INSERT(tree, _4);
+
+    AVS_RBTREE_DELETE(&tree);
+}
+
 AVS_UNIT_TEST(rbtree, swap_nodes_unrelated) {
     AVS_RBTREE(int) tree = make_tree(
                       8,
