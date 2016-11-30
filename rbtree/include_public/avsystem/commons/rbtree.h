@@ -299,7 +299,8 @@ typedef int avs_rbtree_element_comparator_t(const void *a,
  * - c - complexity of tree element comparator.
  *
  * @returns the first element in @p tree (in order defined by
- *          @ref avs_rbtree_element_comparator_t of @p tree).
+ *          @ref avs_rbtree_element_comparator_t of @p tree) or NULL if the
+ *          @p tree is empty.
  */
 #define AVS_RBTREE_FIRST(tree) \
     ((AVS_TYPEOF_PTR(*tree))avs_rbtree_first__((AVS_RBTREE(void))(tree)))
@@ -310,7 +311,8 @@ typedef int avs_rbtree_element_comparator_t(const void *a,
  * - c - complexity of tree element comparator.
  *
  * @returns the last element in @p tree (in order defined by
- *          @ref avs_rbtree_element_comparator_t of @p tree).
+ *          @ref avs_rbtree_element_comparator_t of @p tree) or NULL if the
+ *          tree is empty.
  */
 #define AVS_RBTREE_LAST(tree) \
     ((AVS_TYPEOF_PTR(*tree))avs_rbtree_last__((AVS_RBTREE(void))(tree)))
