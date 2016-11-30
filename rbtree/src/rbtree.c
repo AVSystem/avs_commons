@@ -637,20 +637,21 @@ void *avs_rbtree_detach__(void **tree_,
     return elem;
 }
 
-static AVS_RBTREE_ELEM(void) rb_postorder_first(AVS_RBTREE_ELEM(void) root) {
-    if (_AVS_RB_LEFT(root)) {
-        return rb_postorder_first(_AVS_RB_LEFT(root));
-    } else if (_AVS_RB_RIGHT(root)) {
-        return rb_postorder_first(_AVS_RB_RIGHT(root));
-    } else {
-        return root;
+static AVS_RBTREE_ELEM(void) rb_postorder_first(AVS_RBTREE_ELEM(void) node) {
+    while (node) {
+        if (_AVS_RB_LEFT(node)) {
+            node = _AVS_RB_LEFT(node);
+        } else if (_AVS_RB_RIGHT(node)) {
+            node = _AVS_RB_RIGHT(node);
+        } else {
+            return node;
+        }
     }
+
+    return NULL;
 }
 
 AVS_RBTREE_ELEM(void) avs_rbtree_cleanup_first__(AVS_RBTREE(void) tree) {
-    if (!*tree) {
-        return NULL;
-    }
     return rb_postorder_first(*tree);
 }
 
