@@ -49,7 +49,7 @@ typedef int avs_rbtree_element_comparator_t(const void *a,
  * Create an RB-tree with elements of given @p type.
  *
  * Complexity: O(m), where:
- * - m - malloc() complexity.
+ * - m - calloc() complexity.
  *
  * @param type Type of elements stored in the tree nodes.
  * @param cmp  Pointer to a function that compares two elements.
@@ -116,7 +116,7 @@ typedef int avs_rbtree_element_comparator_t(const void *a,
  * Creates an arbitrarily-sized, detached RB-tree element.
  *
  * Complexity: O(m), where:
- * - m - malloc() complexity.
+ * - m - calloc() complexity.
  *
  * Example:
  * @code
@@ -157,7 +157,7 @@ typedef int avs_rbtree_element_comparator_t(const void *a,
  * given @p type.
  *
  * Complexity: O(m), where:
- * - m - malloc() complexity.
+ * - m - calloc() complexity.
  *
  * @param type Desired element type.
  *
