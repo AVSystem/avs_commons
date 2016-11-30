@@ -62,9 +62,9 @@ typedef int avs_rbtree_element_comparator_t(const void *a,
 /**
  * Releases given RB-tree and all its nodes.
  *
- * Complexity: O(n * c), where:
+ * Complexity: O(n * f), where:
  * - n - number of nodes in @p tree_ptr,
- * - c - complexity of tree element comparator.
+ * - f - free() complexity.
  *
  * Example usage:
  *
