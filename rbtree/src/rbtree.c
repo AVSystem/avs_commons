@@ -375,7 +375,9 @@ static AVS_RBTREE_ELEM(void) rb_max(AVS_RBTREE_ELEM(void) root) {
     void *max = root;
     void *right = root;
 
-    assert(root);
+    if (!root) {
+        return NULL;
+    }
 
     do {
         max = right;
