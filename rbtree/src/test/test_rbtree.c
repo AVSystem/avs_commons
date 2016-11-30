@@ -549,6 +549,18 @@ static AVS_RBTREE(int) make_full_3level_tree(void) {
     return tree;
 }
 
+AVS_UNIT_TEST(rbtree, first_on_empty_tree) {
+    AVS_RBTREE(int) tree = AVS_RBTREE_NEW(int, int_comparator);
+    AVS_UNIT_ASSERT_NULL(AVS_RBTREE_FIRST(tree));
+    AVS_RBTREE_DELETE(&tree);
+}
+
+AVS_UNIT_TEST(rbtree, last_on_empty_tree) {
+    AVS_RBTREE(int) tree = AVS_RBTREE_NEW(int, int_comparator);
+    AVS_UNIT_ASSERT_NULL(AVS_RBTREE_LAST(tree));
+    AVS_RBTREE_DELETE(&tree);
+}
+
 AVS_UNIT_TEST(rbtree, traverse_forward) {
     AVS_RBTREE(int) tree = make_full_3level_tree();
 
