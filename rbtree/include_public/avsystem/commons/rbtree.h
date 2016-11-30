@@ -190,7 +190,7 @@ typedef int avs_rbtree_element_comparator_t(const void *a,
  * NOTE: when passed @p elem is attached to some tree, the behavior
  * is undefined.
  *
- * Complexity: O(log n * c), where:
+ * Complexity: O((log n) * c), where:
  * - n - number of nodes in @p tree,
  * - c - complexity of tree element comparator.
  *
@@ -211,7 +211,7 @@ typedef int avs_rbtree_element_comparator_t(const void *a,
  * NOTE: when passed @p elem is not attached to @p tree, the behavior
  * is undefined.
  *
- * Complexity: O(log n * c), where:
+ * Complexity: O((log n) * c), where:
  * - n - number of nodes in @p tree,
  * - c - complexity of tree element comparator.
  *
@@ -230,7 +230,7 @@ typedef int avs_rbtree_element_comparator_t(const void *a,
  * NOTE: when passed @p elem is not attached to @p tree, the behavior
  * is undefined. In such case, use @ref AVS_RBTREE_ELEM_DELETE_DETACHED.
  *
- * Complexity: O(log n * c + f).
+ * Complexity: O((log n) * c + f).
  * - n - number of nodes in @p tree,
  * - c - complexity of tree element comparator,
  * - f - free() complexity.
@@ -251,7 +251,7 @@ typedef int avs_rbtree_element_comparator_t(const void *a,
 /**
  * Finds an element with value given by @p val_ptr in @p tree.
  *
- * Complexity: O(log n * c), where:
+ * Complexity: O((log n) * c), where:
  * - n - number of nodes in @p tree,
  * - c - complexity of tree element comparator.
  *
@@ -268,7 +268,7 @@ typedef int avs_rbtree_element_comparator_t(const void *a,
       avs_rbtree_find__((AVS_RBTREE_CONST(void))(tree), (val_ptr))))
 
 /**
- * Complexity: O(log n * c), where:
+ * Complexity: O((log n) * c), where:
  * - n - number of nodes in @p tree,
  * - c - complexity of tree element comparator.
  *
@@ -282,7 +282,7 @@ typedef int avs_rbtree_element_comparator_t(const void *a,
     ((AVS_TYPEOF_PTR(elem))avs_rbtree_elem_next__(elem))
 
 /**
- * Complexity: O(log n * c), where:
+ * Complexity: O((log n) * c), where:
  * - n - number of nodes in @p tree,
  * - c - complexity of tree element comparator.
  *
@@ -296,7 +296,7 @@ typedef int avs_rbtree_element_comparator_t(const void *a,
     ((AVS_TYPEOF_PTR(elem))avs_rbtree_elem_prev__(elem))
 
 /**
- * Complexity: O(log n * c), where:
+ * Complexity: O((log n) * c), where:
  * - n - number of nodes in @p tree,
  * - c - complexity of tree element comparator.
  *
@@ -308,7 +308,7 @@ typedef int avs_rbtree_element_comparator_t(const void *a,
     ((AVS_TYPEOF_PTR(*tree))avs_rbtree_first__((AVS_RBTREE(void))(tree)))
 
 /**
- * Complexity: O(log n * c), where:
+ * Complexity: O((log n) * c), where:
  * - n - number of nodes in @p tree,
  * - c - complexity of tree element comparator.
  *
