@@ -229,7 +229,7 @@ AVS_UNIT_TEST(rbtree, swap_nodes_unrelated) {
     assert_node_equal(a, 2,  BLACK, _4, _1,  _3);
     assert_node_equal(b, 12, RED,   _8, _10, _14);
 
-    _avs_rb_swap_nodes(_AVS_RB_TREE(tree), a, b);
+    rb_swap_nodes(_AVS_RB_TREE(tree), a, b);
 
     assert_node_equal(a, 2,  RED,   _8, _10, _14);
     assert_node_equal(b, 12, BLACK, _4, _1,  _3);
@@ -257,7 +257,7 @@ AVS_UNIT_TEST(rbtree, swap_nodes_parent_child) {
     assert_node_equal(a, 2, BLACK, _4, _1, _3);
     assert_node_equal(b, 4, RED,   _8, _2, _6);
 
-    _avs_rb_swap_nodes(_AVS_RB_TREE(tree), a, b);
+    rb_swap_nodes(_AVS_RB_TREE(tree), a, b);
 
     assert_node_equal(a, 2, RED,   _8, _4, _6);
     assert_node_equal(b, 4, BLACK, _2, _1, _3);
@@ -284,7 +284,7 @@ AVS_UNIT_TEST(rbtree, swap_nodes_parent_child_under_root) {
     assert_node_equal(a, 2, BLACK, _4,   _1, _3);
     assert_node_equal(b, 4, BLACK, NULL, _2, _6);
 
-    _avs_rb_swap_nodes(_AVS_RB_TREE(tree), a, b);
+    rb_swap_nodes(_AVS_RB_TREE(tree), a, b);
 
     AVS_UNIT_ASSERT_TRUE(_2 == _AVS_RB_TREE(tree)->root);
     assert_node_equal(a, 2, BLACK, NULL, _4, _6);
@@ -313,7 +313,7 @@ AVS_UNIT_TEST(rbtree, rotate_left) {
     assert_node_equal(_4, 4, RED,   _5,   NULL, NULL);
     assert_node_equal(_7, 7, RED,   _5,   NULL, NULL);
 
-    _avs_rb_rotate_left(_AVS_RB_TREE(tree), _3);
+    rb_rotate_left(_AVS_RB_TREE(tree), _3);
 
     /* should be:
      *            5B
@@ -352,7 +352,7 @@ AVS_UNIT_TEST(rbtree, rotate_right) {
     assert_node_equal(_2, 2, RED,   _3,   NULL, NULL);
     assert_node_equal(_4, 4, RED,   _3,   NULL, NULL);
 
-    _avs_rb_rotate_right(_AVS_RB_TREE(tree), _5);
+    rb_rotate_right(_AVS_RB_TREE(tree), _5);
 
     /* should be:
      *          3B

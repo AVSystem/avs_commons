@@ -68,14 +68,4 @@ struct rb_tree {
 
 enum rb_color _avs_rb_node_color(void *elem);
 
-void _avs_rb_swap_nodes(struct rb_tree *tree,
-                        void *a,
-                        void *b);
-
-void _avs_rb_rotate_left(struct rb_tree *tree,
-                         void *root);
-
-void _avs_rb_rotate_right(struct rb_tree *tree,
-                          void *root);
-
 #endif /* AVS_COMMONS_RBTREE_RBTREE_H */

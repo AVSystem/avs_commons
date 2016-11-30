@@ -205,8 +205,8 @@ static void **rb_own_parent_ptr(struct rb_tree *tree,
  *          /     \           /    \
  *  (grandchild)  (B)       (A)  (grandchild)
  */
-void _avs_rb_rotate_left(struct rb_tree *tree,
-                         void *root) {
+static void rb_rotate_left(struct rb_tree *tree,
+                           void *root) {
     void *parent = _AVS_RB_PARENT(root);
     void **own_parent_ptr = rb_own_parent_ptr(tree, root);
     void *pivot = NULL;
@@ -242,8 +242,8 @@ void _avs_rb_rotate_left(struct rb_tree *tree,
  *    /     \                          /    \
  *  (B)  (grandchild)         (grandchild)  (A)
  */
-void _avs_rb_rotate_right(struct rb_tree *tree,
-                          void *root) {
+static void rb_rotate_right(struct rb_tree *tree,
+                            void *root) {
     void *parent = _AVS_RB_PARENT(root);
     void **own_parent_ptr = rb_own_parent_ptr(tree, root);
     void *pivot = NULL;
@@ -302,11 +302,11 @@ static void rb_insert_fix(struct rb_tree *tree,
     /* case 4 */
     if (elem == _AVS_RB_RIGHT(parent)
             && parent == _AVS_RB_LEFT(grandparent)) {
-        _avs_rb_rotate_left(tree, parent);
+        rb_rotate_left(tree, parent);
         elem = _AVS_RB_LEFT(elem);
     } else if (elem == _AVS_RB_LEFT(parent)
                    && parent == _AVS_RB_RIGHT(grandparent)) {
-        _avs_rb_rotate_right(tree, parent);
+        rb_rotate_right(tree, parent);
         elem = _AVS_RB_RIGHT(elem);
     }
 
@@ -317,9 +317,9 @@ static void rb_insert_fix(struct rb_tree *tree,
     _AVS_RB_NODE(parent)->color = BLACK;
     _AVS_RB_NODE(grandparent)->color = RED;
     if (elem == _AVS_RB_LEFT(parent)) {
-        _avs_rb_rotate_right(tree, grandparent);
+        rb_rotate_right(tree, grandparent);
     } else {
-        _avs_rb_rotate_left(tree, grandparent);
+        rb_rotate_left(tree, grandparent);
     }
 }
 
@@ -446,9 +446,9 @@ static void swap(void **a,
 /**
  * Swaps parent/left/right pointers and color. Retains value.
  */
-void _avs_rb_swap_nodes(struct rb_tree *tree,
-                        void *a,
-                        void *b) {
+static void rb_swap_nodes(struct rb_tree *tree,
+                         void *a,
+                         void *b) {
     void **a_parent_ptr = NULL;
     void **b_parent_ptr = NULL;
     enum rb_color col;
@@ -518,9 +518,9 @@ static void rb_detach_fix(struct rb_tree *tree,
         _AVS_RB_NODE(sibling)->color = BLACK;
 
         if (elem == _AVS_RB_LEFT(parent)) {
-            _avs_rb_rotate_left(tree, parent);
+            rb_rotate_left(tree, parent);
         } else {
-            _avs_rb_rotate_right(tree, parent);
+            rb_rotate_right(tree, parent);
         }
     }
 
@@ -554,14 +554,14 @@ static void rb_detach_fix(struct rb_tree *tree,
 
         _AVS_RB_NODE(sibling)->color = RED;
         _AVS_RB_NODE(_AVS_RB_LEFT(sibling))->color = BLACK;
-        _avs_rb_rotate_right(tree, sibling);
+        rb_rotate_right(tree, sibling);
     } else if (elem == _AVS_RB_RIGHT(parent)
                && _avs_rb_node_color(_AVS_RB_LEFT(sibling)) == BLACK) {
         assert(_avs_rb_node_color(_AVS_RB_RIGHT(sibling)) == RED);
 
         _AVS_RB_NODE(sibling)->color = RED;
         _AVS_RB_NODE(_AVS_RB_RIGHT(sibling))->color = BLACK;
-        _avs_rb_rotate_left(tree, sibling);
+        rb_rotate_left(tree, sibling);
     }
 
     /* case 6 */
@@ -572,10 +572,10 @@ static void rb_detach_fix(struct rb_tree *tree,
 
     if (elem == _AVS_RB_LEFT(parent)) {
         _AVS_RB_NODE(_AVS_RB_RIGHT(sibling))->color = BLACK;
-        _avs_rb_rotate_left(tree, parent);
+        rb_rotate_left(tree, parent);
     } else {
         _AVS_RB_NODE(_AVS_RB_LEFT(sibling))->color = BLACK;
-        _avs_rb_rotate_right(tree, parent);
+        rb_rotate_right(tree, parent);
     }
 }
 
@@ -601,7 +601,7 @@ void *avs_rbtree_detach__(void **tree_,
 
     if (left && right) {
         void *replacement = avs_rbtree_elem_next__(elem);
-        _avs_rb_swap_nodes(tree, elem, replacement);
+        rb_swap_nodes(tree, elem, replacement);
         return avs_rbtree_detach__(tree_, elem);
     }
 
