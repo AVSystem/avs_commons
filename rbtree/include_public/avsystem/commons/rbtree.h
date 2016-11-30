@@ -280,7 +280,7 @@ typedef int avs_rbtree_element_comparator_t(const void *a,
     ((AVS_TYPEOF_PTR(elem))avs_rbtree_elem_next__(elem))
 
 /**
- * Complexity: O(log n), where:
+ * Complexity: O(log n * c), where:
  * - n - number of nodes in @p tree,
  * - c - complexity of tree element comparator.
  *
