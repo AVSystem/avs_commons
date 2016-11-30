@@ -242,9 +242,11 @@ typedef int avs_rbtree_element_comparator_t(const void *a,
  *                 will be set to NULL.
  */
 #define AVS_RBTREE_DELETE_ELEM(tree, elem_ptr) \
-    (_AVS_RB_TYPECHECK(*(tree), *(elem_ptr)), \
-     AVS_RBTREE_DETACH((tree), *(elem_ptr)), \
-     avs_rbtree_elem_delete__((AVS_RBTREE_ELEM(void)*)(elem_ptr)))
+    do { \
+        AVS_TYPEOF_PTR(elem_ptr) ptr__ = (elem_ptr); \
+        AVS_RBTREE_DETACH((tree), *ptr__); \
+        avs_rbtree_elem_delete__((AVS_RBTREE_ELEM(void)*)ptr__); \
+    } while (0)
 
 /**
  * Finds an element with value given by @p val_ptr in @p tree.
