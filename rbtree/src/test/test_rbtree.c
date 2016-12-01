@@ -104,6 +104,16 @@ static AVS_RBTREE(int) make_tree(int first, ...) {
     return tree;
 }
 
+static const char *get_color_name(enum rb_color color) {
+    switch (color) {
+    case DETACHED: return "DETACHED";
+    case BLACK: return "BLACK";
+    case RED: return "RED";
+    }
+
+    return "(invalid color)";
+}
+
 static void assert_node_equal(int *node,
                               int value,
                               enum rb_color color,
@@ -111,7 +121,8 @@ static void assert_node_equal(int *node,
                               int *left,
                               int *right) {
     AVS_UNIT_ASSERT_EQUAL(value, *node);
-    AVS_UNIT_ASSERT_EQUAL(color, _AVS_RB_NODE(node)->color);
+    AVS_UNIT_ASSERT_EQUAL_STRING(get_color_name(color),
+                                 get_color_name(_AVS_RB_NODE(node)->color));
     AVS_UNIT_ASSERT_TRUE(parent == _AVS_RB_PARENT(node));
     AVS_UNIT_ASSERT_TRUE(left == _AVS_RB_LEFT(node));
     AVS_UNIT_ASSERT_TRUE(right == _AVS_RB_RIGHT(node));
@@ -130,7 +141,7 @@ AVS_UNIT_TEST(rbtree, create) {
 AVS_UNIT_TEST(rbtree, create_element) {
     AVS_RBTREE_ELEM(int) elem = AVS_RBTREE_ELEM_NEW(int);
 
-    assert_node_equal(elem, 0, RED, NULL, NULL, NULL);
+    assert_node_equal(elem, 0, DETACHED, NULL, NULL, NULL);
 
     AVS_RBTREE_ELEM_DELETE_DETACHED(&elem);
 }
@@ -636,7 +647,7 @@ AVS_UNIT_TEST(rbtree, detach_root) {
      *   *
      */
 
-    assert_node_equal(_1, 1, BLACK, NULL, NULL, NULL);
+    assert_node_equal(_1, 1, DETACHED, NULL, NULL, NULL);
     AVS_UNIT_ASSERT_NULL(_AVS_RB_TREE(tree)->root);
     assert_rb_properties_hold(tree);
 
@@ -671,7 +682,7 @@ AVS_UNIT_TEST(rbtree, detach_single_root_child) {
     AVS_UNIT_ASSERT_TRUE(_1 == _AVS_RB_TREE(tree)->root);
     assert_rb_properties_hold(tree);
 
-    assert_node_equal(_2, 2, RED, NULL, NULL, NULL);
+    assert_node_equal(_2, 2, DETACHED, NULL, NULL, NULL);
 
     AVS_RBTREE_ELEM_DELETE_DETACHED(&_2);
     AVS_RBTREE_DELETE(&tree);
