@@ -506,12 +506,15 @@ static void rb_detach_fix(struct rb_tree *tree,
         } else {
             rb_rotate_right(tree, parent);
         }
+
+        sibling = rb_sibling(elem, parent);
     }
 
+    assert(sibling);
+    assert(_avs_rb_node_color(sibling) == BLACK);
+
     /* case 3 */
-    sibling = rb_sibling(elem, parent);
     if (_avs_rb_node_color(parent) == BLACK
-            && _avs_rb_node_color(sibling) == BLACK
             && _avs_rb_node_color(_AVS_RB_LEFT(sibling)) == BLACK
             && _avs_rb_node_color(_AVS_RB_RIGHT(sibling)) == BLACK) {
         _AVS_RB_NODE(sibling)->color = RED;
@@ -521,7 +524,6 @@ static void rb_detach_fix(struct rb_tree *tree,
 
     /* case 4 */
     if (_avs_rb_node_color(parent) == RED
-            && _avs_rb_node_color(sibling) == BLACK
             && _avs_rb_node_color(_AVS_RB_LEFT(sibling)) == BLACK
             && _avs_rb_node_color(_AVS_RB_RIGHT(sibling)) == BLACK) {
         _AVS_RB_NODE(sibling)->color = RED;
@@ -530,8 +532,6 @@ static void rb_detach_fix(struct rb_tree *tree,
     }
 
     /* case 5 */
-    assert(sibling);
-    assert(_avs_rb_node_color(sibling) == BLACK);
     if (elem == _AVS_RB_LEFT(parent)
             && _avs_rb_node_color(_AVS_RB_RIGHT(sibling)) == BLACK) {
         assert(_avs_rb_node_color(_AVS_RB_LEFT(sibling)) == RED);
