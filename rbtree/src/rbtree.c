@@ -265,6 +265,7 @@ static void rb_insert_fix(struct rb_tree *tree,
 
     /* case 2 */
     parent = _AVS_RB_PARENT(elem);
+    assert(parent);
     if (_avs_rb_node_color(parent) == BLACK) {
         return;
     }
@@ -294,7 +295,7 @@ static void rb_insert_fix(struct rb_tree *tree,
 
     /* case 5 */
     parent = _AVS_RB_PARENT(elem);
-    grandparent = _AVS_RB_PARENT(parent);
+    assert(grandparent == _AVS_RB_PARENT(parent));
 
     _AVS_RB_NODE(parent)->color = BLACK;
     _AVS_RB_NODE(grandparent)->color = RED;
