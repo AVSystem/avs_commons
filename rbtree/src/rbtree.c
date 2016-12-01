@@ -12,17 +12,13 @@ static int rb_is_node_detached(AVS_RBTREE_ELEM(void) elem) {
         && _AVS_RB_LEFT(elem) == NULL
         && _AVS_RB_RIGHT(elem) == NULL;
 }
-#else
-# define rb_is_cleanup_in_progress(_) 0
-
-static int rb_is_node_detached(AVS_RBTREE_ELEM(void) elem) {
-    return _AVS_RB_NODE(elem)->color == DETACHED;
-}
-#endif
 
 static AVS_RBTREE_CONST(void) rb_tree_const(AVS_RBTREE(void) tree) {
     return (AVS_RBTREE_CONST(void))(intptr_t)tree;
 }
+#else
+# define rb_is_cleanup_in_progress(_) 0
+#endif
 
 enum rb_color _avs_rb_node_color(AVS_RBTREE_ELEM(void) elem) {
     if (!elem) {
