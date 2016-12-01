@@ -7,6 +7,7 @@
 #include <avsystem/commons/rbtree.h>
 
 enum rb_color {
+    DETACHED = 0x50DD,
     RED = 0x50DE,
     BLACK = 0x50DF
 };

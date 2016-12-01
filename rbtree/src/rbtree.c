@@ -7,13 +7,17 @@ static int rb_is_cleanup_in_progress(AVS_RBTREE_CONST(void) tree) {
 }
 
 static int rb_is_node_detached(AVS_RBTREE_ELEM(void) elem) {
-    return _AVS_RB_PARENT(elem) == NULL
+    return _AVS_RB_NODE(elem)->color == DETACHED
+        && _AVS_RB_PARENT(elem) == NULL
         && _AVS_RB_LEFT(elem) == NULL
         && _AVS_RB_RIGHT(elem) == NULL;
 }
 #else
 # define rb_is_cleanup_in_progress(_) 0
-# define rb_is_node_detached(_) 1
+
+static int rb_is_node_detached(AVS_RBTREE_ELEM(void) elem) {
+    return _AVS_RB_NODE(elem)->color == DETACHED;
+}
 #endif
 
 static AVS_RBTREE_CONST(void) rb_tree_const(AVS_RBTREE(void) tree) {
@@ -24,6 +28,10 @@ enum rb_color _avs_rb_node_color(void *elem) {
     if (!elem) {
         return BLACK;
     } else {
+        /* checking the color of a detached node is pointless, so
+         * this function should never be called on one */
+        assert(_AVS_RB_NODE(elem)->color == RED
+                || _AVS_RB_NODE(elem)->color == BLACK);
         return _AVS_RB_NODE(elem)->color;
     }
 }
@@ -84,7 +92,7 @@ AVS_RBTREE_ELEM(void) avs_rbtree_elem_new_buffer__(size_t elem_size) {
         return NULL;
     }
 
-    node->color = RED;
+    node->color = DETACHED;
 
     return (char*)node + _AVS_NODE_SPACE__;
 }
@@ -591,6 +599,8 @@ void *avs_rbtree_detach__(void **tree_,
         return NULL;
     }
 
+    assert(!rb_is_node_detached(elem)
+           && "cannot detach an node that's already detached");
     assert(!rb_is_cleanup_in_progress(rb_tree_const(tree_))
            && "avs_rbtree_detach__ called while tree deletion in progress");
     assert(tree_);
@@ -618,7 +628,8 @@ void *avs_rbtree_detach__(void **tree_,
     _AVS_RB_LEFT(elem) = NULL;
     _AVS_RB_RIGHT(elem) = NULL;
 
-    assert(_avs_rb_node_color(elem) == BLACK || _avs_rb_node_color(child) == BLACK);
+    assert(_avs_rb_node_color(elem) == BLACK
+            || _avs_rb_node_color(child) == BLACK);
     if (_avs_rb_node_color(elem) == RED
             || _avs_rb_node_color(child) == RED) {
         if (child) {
@@ -627,12 +638,14 @@ void *avs_rbtree_detach__(void **tree_,
             _AVS_RB_NODE(child)->color = BLACK;
         }
 
+        _AVS_RB_NODE(elem)->color = DETACHED;
         return elem;
     }
 
     /* both node and child are black */
     rb_detach_fix(tree, child, parent);
 
+    _AVS_RB_NODE(elem)->color = DETACHED;
     assert(_avs_rb_node_color(tree->root) == BLACK);
     return elem;
 }
@@ -675,6 +688,7 @@ AVS_RBTREE_ELEM(void) avs_rbtree_cleanup_next__(AVS_RBTREE(void) tree) {
     next = rb_postorder_next(*tree);
     curr_ptr = rb_own_parent_ptr(_AVS_RB_TREE(tree), *tree);
 
+    _AVS_RB_NODE(*tree)->color = DETACHED;
     _AVS_RB_PARENT(*tree) = NULL;
     /* at this point, child nodes should be cleaned up */
     assert(_AVS_RB_LEFT(*tree) == NULL);
