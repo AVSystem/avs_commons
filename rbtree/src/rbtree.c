@@ -588,7 +588,10 @@ AVS_RBTREE_ELEM(void) avs_rbtree_detach__(AVS_RBTREE(void) tree_,
     if (left && right) {
         AVS_RBTREE_ELEM(void) replacement = avs_rbtree_elem_next__(elem);
         rb_swap_nodes(tree, elem, replacement);
-        return avs_rbtree_detach__(tree_, elem);
+
+        assert(!_AVS_RB_LEFT(elem));
+        left = NULL;
+        right = _AVS_RB_RIGHT(elem);
     }
 
     child = left ? left : right;
