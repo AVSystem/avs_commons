@@ -97,59 +97,32 @@ AVS_RBTREE_ELEM(void) avs_rbtree_elem_new_buffer__(size_t elem_size) {
     return (char*)node + _AVS_NODE_SPACE__;
 }
 
-static void *rb_find_parent(struct rb_tree *tree,
-                            void *elem,
-                            void ***out_ptr) {
+static void **rb_find_ptr(struct rb_tree *tree,
+                          const void *val,
+                          void **out_parent_of_found) {
     void *parent = NULL;
     void **curr = NULL;
 
     assert(tree);
-    assert(elem);
+    assert(val);
 
     curr = &tree->root;
 
     while (*curr) {
-        int cmp;
+        int cmp = tree->cmp(val, *curr);
 
-        cmp = tree->cmp(elem, *curr);
         if (cmp == 0) {
             break;
-        }
-
-        parent = *curr;
-        if (cmp < 0) {
-            curr = _AVS_RB_LEFT_PTR(*curr);
         } else {
-            curr = _AVS_RB_RIGHT_PTR(*curr);
+            parent = *curr;
+            curr = (cmp < 0) ? _AVS_RB_LEFT_PTR(*curr)
+                             : _AVS_RB_RIGHT_PTR(*curr);
         }
     }
 
-    *out_ptr = curr;
-    return parent;
-}
-
-static void **rb_find_ptr(struct rb_tree *tree,
-                          const void *elem) {
-    void **curr = NULL;
-
-    assert(tree);
-    assert(elem);
-
-    curr = &tree->root;
-
-    while (*curr) {
-        int cmp;
-
-        cmp = tree->cmp(elem, *curr);
-        if (cmp < 0) {
-            curr = _AVS_RB_LEFT_PTR(*curr);
-        } else if (cmp > 0) {
-            curr = _AVS_RB_RIGHT_PTR(*curr);
-        } else {
-            return curr;
-        }
+    if (out_parent_of_found) {
+        *out_parent_of_found = parent;
     }
-
     return curr;
 }
 
@@ -160,7 +133,8 @@ void *avs_rbtree_find__(AVS_RBTREE_CONST(void) tree,
     assert(!rb_is_cleanup_in_progress(tree)
            && "avs_rbtree_find__ called while tree deletion in progress");
 
-    elem_ptr = rb_find_ptr(_AVS_RB_TREE((AVS_RBTREE(void))(intptr_t)tree), val);
+    elem_ptr = rb_find_ptr(_AVS_RB_TREE((AVS_RBTREE(void))(intptr_t)tree),
+                           val, NULL);
     return elem_ptr ? *elem_ptr : NULL;
 }
 
@@ -343,7 +317,7 @@ AVS_RBTREE_ELEM(void) avs_rbtree_attach__(AVS_RBTREE(void) tree_,
     assert(elem);
     assert(rb_is_node_detached(elem));
 
-    parent = rb_find_parent(tree, elem, &dst);
+    dst = rb_find_ptr(tree, elem, &parent);
     assert(dst);
 
     if (*dst) {
