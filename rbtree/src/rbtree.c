@@ -24,7 +24,7 @@ static AVS_RBTREE_CONST(void) rb_tree_const(AVS_RBTREE(void) tree) {
     return (AVS_RBTREE_CONST(void))(intptr_t)tree;
 }
 
-enum rb_color _avs_rb_node_color(void *elem) {
+enum rb_color _avs_rb_node_color(AVS_RBTREE_ELEM(void) elem) {
     if (!elem) {
         return BLACK;
     } else {
@@ -36,7 +36,7 @@ enum rb_color _avs_rb_node_color(void *elem) {
     }
 }
 
-void **avs_rbtree_new__(avs_rbtree_element_comparator_t *cmp) {
+AVS_RBTREE(void) avs_rbtree_new__(avs_rbtree_element_comparator_t *cmp) {
     struct rb_tree *tree = (struct rb_tree*)_AVS_RB_ALLOC(sizeof(struct rb_tree));
     if (!tree) {
         return NULL;
@@ -56,20 +56,20 @@ void avs_rbtree_elem_delete__(AVS_RBTREE_ELEM(void) *node_ptr) {
     }
 }
 
-void avs_rbtree_delete__(void ***tree_) {
+void avs_rbtree_delete__(AVS_RBTREE(void) *tree_ptr) {
     struct rb_tree *tree;
 
-    if (!tree_ || !*tree_) {
+    if (!tree_ptr || !*tree_ptr) {
         return;
     }
 
-    assert(!**tree_); /* should only be called on empty trees */
-    tree = _AVS_RB_TREE(*tree_);
+    assert(!**tree_ptr); /* should only be called on empty trees */
+    tree = _AVS_RB_TREE(*tree_ptr);
     _AVS_RB_DEALLOC(tree);
-    *tree_ = NULL;
+    *tree_ptr = NULL;
 }
 
-static size_t rb_subtree_size(const void *root) {
+static size_t rb_subtree_size(const AVS_RBTREE_ELEM(void) root) {
     if (!root) {
         return 0;
     }
@@ -97,11 +97,12 @@ AVS_RBTREE_ELEM(void) avs_rbtree_elem_new_buffer__(size_t elem_size) {
     return (char*)node + _AVS_NODE_SPACE__;
 }
 
-static void **rb_find_ptr(struct rb_tree *tree,
-                          const void *val,
-                          void **out_parent_of_found) {
-    void *parent = NULL;
-    void **curr = NULL;
+static AVS_RBTREE_ELEM(void) *
+rb_find_ptr(struct rb_tree *tree,
+            const void *val,
+            AVS_RBTREE_ELEM(void) *out_parent_of_found) {
+    AVS_RBTREE_ELEM(void) parent = NULL;
+    AVS_RBTREE_ELEM(void) *curr = NULL;
 
     assert(tree);
     assert(val);
@@ -126,9 +127,9 @@ static void **rb_find_ptr(struct rb_tree *tree,
     return curr;
 }
 
-void *avs_rbtree_find__(AVS_RBTREE_CONST(void) tree,
-                        const void *val) {
-    void **elem_ptr;
+AVS_RBTREE_ELEM(void) avs_rbtree_find__(AVS_RBTREE_CONST(void) tree,
+                                        const void *val) {
+    AVS_RBTREE_ELEM(void) *elem_ptr;
 
     assert(!rb_is_cleanup_in_progress(tree)
            && "avs_rbtree_find__ called while tree deletion in progress");
@@ -138,10 +139,10 @@ void *avs_rbtree_find__(AVS_RBTREE_CONST(void) tree,
     return elem_ptr ? *elem_ptr : NULL;
 }
 
-static void *rb_sibling(void *elem,
-                        void *parent) {
-    void *p_left = NULL;
-    void *p_right = NULL;
+static AVS_RBTREE_ELEM(void) rb_sibling(AVS_RBTREE_ELEM(void) elem,
+                                        AVS_RBTREE_ELEM(void) parent) {
+    AVS_RBTREE_ELEM(void) p_left = NULL;
+    AVS_RBTREE_ELEM(void) p_right = NULL;
 
     assert(parent);
 
@@ -160,9 +161,9 @@ static void *rb_sibling(void *elem,
  * Returns a reference to parent's pointer to @p node.
  * If @p node is the root, returns a root reference from the @p tree.
  */
-static void **rb_own_parent_ptr(struct rb_tree *tree,
-                                void *node) {
-    void *parent = _AVS_RB_PARENT(node);
+static AVS_RBTREE_ELEM(void) *rb_own_parent_ptr(struct rb_tree *tree,
+                                                AVS_RBTREE_ELEM(void) node) {
+    AVS_RBTREE_ELEM(void) parent = _AVS_RB_PARENT(node);
     if (!parent) {
         return &tree->root;
     }
@@ -188,11 +189,11 @@ static void **rb_own_parent_ptr(struct rb_tree *tree,
  *  (grandchild)  (B)       (A)  (grandchild)
  */
 static void rb_rotate_left(struct rb_tree *tree,
-                           void *root) {
-    void *parent = _AVS_RB_PARENT(root);
-    void **own_parent_ptr = rb_own_parent_ptr(tree, root);
-    void *pivot = NULL;
-    void *grandchild = NULL;
+                           AVS_RBTREE_ELEM(void) root) {
+    AVS_RBTREE_ELEM(void) parent = _AVS_RB_PARENT(root);
+    AVS_RBTREE_ELEM(void) *own_parent_ptr = rb_own_parent_ptr(tree, root);
+    AVS_RBTREE_ELEM(void) pivot = NULL;
+    AVS_RBTREE_ELEM(void) grandchild = NULL;
 
     assert(own_parent_ptr);
 
@@ -225,11 +226,11 @@ static void rb_rotate_left(struct rb_tree *tree,
  *  (B)  (grandchild)         (grandchild)  (A)
  */
 static void rb_rotate_right(struct rb_tree *tree,
-                            void *root) {
-    void *parent = _AVS_RB_PARENT(root);
-    void **own_parent_ptr = rb_own_parent_ptr(tree, root);
-    void *pivot = NULL;
-    void *grandchild = NULL;
+                            AVS_RBTREE_ELEM(void) root) {
+    AVS_RBTREE_ELEM(void) parent = _AVS_RB_PARENT(root);
+    AVS_RBTREE_ELEM(void) *own_parent_ptr = rb_own_parent_ptr(tree, root);
+    AVS_RBTREE_ELEM(void) pivot = NULL;
+    AVS_RBTREE_ELEM(void) grandchild = NULL;
 
     assert(own_parent_ptr);
 
@@ -250,10 +251,10 @@ static void rb_rotate_right(struct rb_tree *tree,
 }
 
 static void rb_insert_fix(struct rb_tree *tree,
-                          void *elem) {
-    void *parent = NULL;
-    void *grandparent = NULL;
-    void *uncle = NULL;
+                          AVS_RBTREE_ELEM(void) elem) {
+    AVS_RBTREE_ELEM(void) parent = NULL;
+    AVS_RBTREE_ELEM(void) grandparent = NULL;
+    AVS_RBTREE_ELEM(void) uncle = NULL;
 
     /* case 1 */
     if (elem == tree->root) {
@@ -309,8 +310,8 @@ static void rb_insert_fix(struct rb_tree *tree,
 AVS_RBTREE_ELEM(void) avs_rbtree_attach__(AVS_RBTREE(void) tree_,
                                           AVS_RBTREE_ELEM(void) elem) {
     struct rb_tree *tree = _AVS_RB_TREE(tree_);
-    void **dst = NULL;
-    void *parent = NULL;
+    AVS_RBTREE_ELEM(void) *dst = NULL;
+    AVS_RBTREE_ELEM(void) parent = NULL;
 
     assert(!rb_is_cleanup_in_progress(rb_tree_const(tree_))
            && "avs_rbtree_attach__ called while tree deletion in progress");
@@ -333,9 +334,9 @@ AVS_RBTREE_ELEM(void) avs_rbtree_attach__(AVS_RBTREE(void) tree_,
     return elem;
 }
 
-static AVS_RBTREE_ELEM(void) rb_min(void *root) {
-    void *min = root;
-    void *left = root;
+static AVS_RBTREE_ELEM(void) rb_min(AVS_RBTREE_ELEM(void) root) {
+    AVS_RBTREE_ELEM(void) min = root;
+    AVS_RBTREE_ELEM(void) left = root;
 
     if (!root) {
         return NULL;
@@ -355,8 +356,8 @@ AVS_RBTREE_ELEM(void) avs_rbtree_first__(AVS_RBTREE(void) tree) {
 }
 
 static AVS_RBTREE_ELEM(void) rb_max(AVS_RBTREE_ELEM(void) root) {
-    void *max = root;
-    void *right = root;
+    AVS_RBTREE_ELEM(void) max = root;
+    AVS_RBTREE_ELEM(void) right = root;
 
     if (!root) {
         return NULL;
@@ -377,9 +378,9 @@ AVS_RBTREE_ELEM(void) avs_rbtree_last__(AVS_RBTREE(void) tree) {
 }
 
 AVS_RBTREE_ELEM(void) avs_rbtree_elem_next__(AVS_RBTREE_ELEM(void) elem) {
-    void *right = _AVS_RB_RIGHT(elem);
-    void *parent = NULL;
-    void *curr = NULL;
+    AVS_RBTREE_ELEM(void) right = _AVS_RB_RIGHT(elem);
+    AVS_RBTREE_ELEM(void) parent = NULL;
+    AVS_RBTREE_ELEM(void) curr = NULL;
 
     if (right) {
         return rb_min(right);
@@ -395,10 +396,10 @@ AVS_RBTREE_ELEM(void) avs_rbtree_elem_next__(AVS_RBTREE_ELEM(void) elem) {
     return parent;
 }
 
-void *avs_rbtree_elem_prev__(void *elem) {
-    void *left = _AVS_RB_LEFT(elem);
-    void *parent = NULL;
-    void *curr = NULL;
+AVS_RBTREE_ELEM(void) avs_rbtree_elem_prev__(AVS_RBTREE_ELEM(void) elem) {
+    AVS_RBTREE_ELEM(void) left = _AVS_RB_LEFT(elem);
+    AVS_RBTREE_ELEM(void) parent = NULL;
+    AVS_RBTREE_ELEM(void) curr = NULL;
 
     if (left) {
         return rb_max(left);
@@ -430,10 +431,10 @@ static void swap(void **a,
  * Swaps parent/left/right pointers and color. Retains value.
  */
 static void rb_swap_nodes(struct rb_tree *tree,
-                         void *a,
-                         void *b) {
-    void **a_parent_ptr = NULL;
-    void **b_parent_ptr = NULL;
+                          AVS_RBTREE_ELEM(void) a,
+                          AVS_RBTREE_ELEM(void) b) {
+    AVS_RBTREE_ELEM(void) *a_parent_ptr = NULL;
+    AVS_RBTREE_ELEM(void) *b_parent_ptr = NULL;
     enum rb_color col;
 
     assert(a);
@@ -459,21 +460,21 @@ static void rb_swap_nodes(struct rb_tree *tree,
 
     swap(_AVS_RB_LEFT_PTR(a), _AVS_RB_LEFT_PTR(b));
     if (_AVS_RB_LEFT(a)) {
-        void *left = _AVS_RB_LEFT(a);
+        AVS_RBTREE_ELEM(void) left = _AVS_RB_LEFT(a);
         _AVS_RB_PARENT(left) = a;
     }
     if (_AVS_RB_LEFT(b)) {
-        void *left = _AVS_RB_LEFT(b);
+        AVS_RBTREE_ELEM(void) left = _AVS_RB_LEFT(b);
         _AVS_RB_PARENT(left) = b;
     }
 
     swap(_AVS_RB_RIGHT_PTR(a), _AVS_RB_RIGHT_PTR(b));
     if (_AVS_RB_RIGHT(a)) {
-        void *right = _AVS_RB_RIGHT(a);
+        AVS_RBTREE_ELEM(void) right = _AVS_RB_RIGHT(a);
         _AVS_RB_PARENT(right) = a;
     }
     if (_AVS_RB_RIGHT(b)) {
-        void *right = _AVS_RB_RIGHT(b);
+        AVS_RBTREE_ELEM(void) right = _AVS_RB_RIGHT(b);
         _AVS_RB_PARENT(right) = b;
     }
 
@@ -483,9 +484,9 @@ static void rb_swap_nodes(struct rb_tree *tree,
 }
 
 static void rb_detach_fix(struct rb_tree *tree,
-                          void *elem,
-                          void *parent) {
-    void *sibling = NULL;
+                          AVS_RBTREE_ELEM(void) elem,
+                          AVS_RBTREE_ELEM(void) parent) {
+    AVS_RBTREE_ELEM(void) sibling = NULL;
 
     assert(_avs_rb_node_color(elem) == BLACK);
 
@@ -562,13 +563,13 @@ static void rb_detach_fix(struct rb_tree *tree,
     }
 }
 
-void *avs_rbtree_detach__(void **tree_,
-                          void *elem) {
+AVS_RBTREE_ELEM(void) avs_rbtree_detach__(AVS_RBTREE(void) tree_,
+                                          AVS_RBTREE_ELEM(void) elem) {
     struct rb_tree *tree = _AVS_RB_TREE(tree_);
-    void *left = NULL;
-    void *right = NULL;
-    void *child = NULL;
-    void *parent = NULL;
+    AVS_RBTREE_ELEM(void) left = NULL;
+    AVS_RBTREE_ELEM(void) right = NULL;
+    AVS_RBTREE_ELEM(void) child = NULL;
+    AVS_RBTREE_ELEM(void) parent = NULL;
 
     if (!elem) {
         return NULL;
@@ -585,7 +586,7 @@ void *avs_rbtree_detach__(void **tree_,
     right = _AVS_RB_RIGHT(elem);
 
     if (left && right) {
-        void *replacement = avs_rbtree_elem_next__(elem);
+        AVS_RBTREE_ELEM(void) replacement = avs_rbtree_elem_next__(elem);
         rb_swap_nodes(tree, elem, replacement);
         return avs_rbtree_detach__(tree_, elem);
     }
@@ -644,7 +645,7 @@ AVS_RBTREE_ELEM(void) avs_rbtree_cleanup_first__(AVS_RBTREE(void) tree) {
 }
 
 static AVS_RBTREE_ELEM(void) rb_postorder_next(AVS_RBTREE_ELEM(void) curr) {
-    void *parent = _AVS_RB_PARENT(curr);
+    AVS_RBTREE_ELEM(void) parent = _AVS_RB_PARENT(curr);
     if (!parent) {
         return NULL;
     }
