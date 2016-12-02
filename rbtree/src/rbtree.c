@@ -566,6 +566,7 @@ AVS_RBTREE_ELEM(void) avs_rbtree_detach__(AVS_RBTREE(void) tree_,
     AVS_RBTREE_ELEM(void) right = NULL;
     AVS_RBTREE_ELEM(void) child = NULL;
     AVS_RBTREE_ELEM(void) parent = NULL;
+    enum rb_color elem_color;
 
     if (!elem) {
         return NULL;
@@ -599,13 +600,15 @@ AVS_RBTREE_ELEM(void) avs_rbtree_detach__(AVS_RBTREE(void) tree_,
     }
 
     *rb_own_parent_ptr(tree, elem) = child;
+    elem_color = _avs_rb_node_color(elem);
+    _AVS_RB_NODE(elem)->color = DETACHED;
     _AVS_RB_PARENT(elem) = NULL;
     _AVS_RB_LEFT(elem) = NULL;
     _AVS_RB_RIGHT(elem) = NULL;
 
-    assert(_avs_rb_node_color(elem) == BLACK
+    assert(elem_color == BLACK
             || _avs_rb_node_color(child) == BLACK);
-    if (_avs_rb_node_color(elem) == RED
+    if (elem_color == RED
             || _avs_rb_node_color(child) == RED) {
         if (child) {
             /* if elem is red, child is already black
@@ -613,14 +616,12 @@ AVS_RBTREE_ELEM(void) avs_rbtree_detach__(AVS_RBTREE(void) tree_,
             _AVS_RB_NODE(child)->color = BLACK;
         }
 
-        _AVS_RB_NODE(elem)->color = DETACHED;
         return elem;
     }
 
     /* both node and child are black */
     rb_detach_fix(tree, child, parent);
 
-    _AVS_RB_NODE(elem)->color = DETACHED;
     assert(_avs_rb_node_color(tree->root) == BLACK);
     return elem;
 }
