@@ -255,6 +255,7 @@ option(WITH_AVS_VECTOR "AVSystem generic vector implementation" ON)
 option(WITH_AVS_NET "AVSystem network communication abstraction layer" ON)
 option(WITH_AVS_STREAM "AVSystem IO stream abstraction layer" ON)
 option(WITH_AVS_LOG "AVSystem logging framework" ON)
+option(WITH_AVS_RBTREE "AVSystem generic red-black tree implementation" ON)
 
 include(CMakeDependentOption)
 
@@ -338,6 +339,10 @@ endif()
 
 if(WITH_AVS_LOG)
     add_subdirectory(log)
+endif()
+
+if (WITH_AVS_RBTREE)
+    add_subdirectory(rbtree)
 endif()
 
 configure_file("config/config.h.in" "config/config.h")
