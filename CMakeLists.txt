@@ -289,6 +289,7 @@ if(WITH_AVS_UNIT)
     endmacro()
 
     add_subdirectory(unit)
+    add_subdirectory(tests)
 else()
     macro(add_avs_test NAME)
     endmacro()
