@@ -209,6 +209,30 @@ AVS_UNIT_TEST(rbtree, delete_1234) {
     AVS_RBTREE_DELETE(&tree);
 }
 
+AVS_UNIT_TEST(rbtree, simple_clone) {
+    AVS_RBTREE(int) tree = make_tree(
+                      8,
+              4,             12,
+          2,      6,     10,     14,
+        1,  3,  5,  7,  9, 11, 13, 15, 0);
+
+    AVS_RBTREE(int) clone = AVS_RBTREE_SIMPLE_CLONE(tree);
+    AVS_UNIT_ASSERT_NOT_NULL(clone);
+    assert_rb_properties_hold(clone);
+
+    AVS_RBTREE_ELEM(int) it1 = AVS_RBTREE_FIRST(tree);
+    AVS_RBTREE_ELEM(int) it2 = AVS_RBTREE_FIRST(clone);
+    while (it1 && it2) {
+        AVS_UNIT_ASSERT_TRUE(it1 != it2);
+        AVS_UNIT_ASSERT_TRUE(*it1 == *it2);
+        it1 = AVS_RBTREE_ELEM_NEXT(it1);
+        it2 = AVS_RBTREE_ELEM_NEXT(it2);
+    }
+
+    AVS_RBTREE_DELETE(&tree);
+    AVS_RBTREE_DELETE(&clone);
+}
+
 AVS_UNIT_TEST(rbtree, lower_bound) {
     AVS_RBTREE(int) tree = make_tree(
                        80,
