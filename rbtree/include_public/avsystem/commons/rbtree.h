@@ -107,7 +107,9 @@ typedef int avs_rbtree_element_comparator_t(const void *a,
 /**
  * Clones the tree by copying every element naively.
  *
- * Complexity:
+ * Complexity: O(n * m), where:
+ * - n - number of nodes in @p tree,
+ * - m - calloc() complexity.
  *
  * WARNING: This function WILL NOT WORK as expected on trees that contain
  * variable length data. It is safe to use only if tree constists fixed-size
