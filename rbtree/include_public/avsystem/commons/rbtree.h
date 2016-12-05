@@ -249,6 +249,46 @@ typedef int avs_rbtree_element_comparator_t(const void *a,
     } while (0)
 
 /**
+ * Finds the first element in @p tree that has a value greater or equal to
+ * @p val_ptr in @p tree.
+ *
+ * Complexity: O((log n) * c), where:
+ * - n - number of nodes in @p tree,
+ * - c - complexity of tree element comparator.
+ *
+ * @param tree    Tree to search in.
+ * @param val_ptr Pointer to a node value to search for.
+ *                NOTE: this does not need to be an AVS_RBTREE_ELEM object.
+ *
+ * @returns Attached element pointer on success, NULL if @p tree is empty, or
+ *          all elements present in it are strictly less than @p val_ptr.
+ */
+#define AVS_RBTREE_LOWER_BOUND(tree, val_ptr) \
+    (_AVS_RB_TYPECHECK(*(tree), (val_ptr)), \
+     ((AVS_TYPEOF_PTR(val_ptr)) \
+      avs_rbtree_lower_bound__((AVS_RBTREE_CONST(void))(tree), (val_ptr))))
+
+/**
+ * Finds the first element in @p tree that has a value strictly greater than
+ * @p val_ptr in @p tree.
+ *
+ * Complexity: O((log n) * c), where:
+ * - n - number of nodes in @p tree,
+ * - c - complexity of tree element comparator.
+ *
+ * @param tree    Tree to search in.
+ * @param val_ptr Pointer to a node value to search for.
+ *                NOTE: this does not need to be an AVS_RBTREE_ELEM object.
+ *
+ * @returns Attached element pointer on success, NULL if @pr tree is empty, or
+ *          all elements present in it are less or equal to @p val_ptr.
+ */
+#define AVS_RBTREE_UPPER_BOUND(tree, val_ptr) \
+    (_AVS_RB_TYPECHECK(*(tree), (val_ptr)), \
+     ((AVS_TYPEOF_PTR(val_ptr)) \
+      avs_rbtree_upper_bound__((AVS_RBTREE_CONST(void))(tree), (val_ptr))))
+
+/**
  * Finds an element with value given by @p val_ptr in @p tree.
  *
  * Complexity: O((log n) * c), where:
@@ -338,6 +378,10 @@ AVS_RBTREE(void) avs_rbtree_new__(avs_rbtree_element_comparator_t *cmp);
 void avs_rbtree_delete__(AVS_RBTREE(void) *tree);
 
 size_t avs_rbtree_size__(AVS_RBTREE_CONST(void) tree);
+AVS_RBTREE_ELEM(void) avs_rbtree_lower_bound__(AVS_RBTREE_CONST(void) tree,
+                                               const void *value);
+AVS_RBTREE_ELEM(void) avs_rbtree_upper_bound__(AVS_RBTREE_CONST(void) tree,
+                                               const void *value);
 AVS_RBTREE_ELEM(void) avs_rbtree_find__(AVS_RBTREE_CONST(void) tree,
                                         const void *value);
 AVS_RBTREE_ELEM(void) avs_rbtree_attach__(AVS_RBTREE(void) tree,

@@ -123,6 +123,56 @@ rb_find_ptr(struct rb_tree *tree,
     return curr;
 }
 
+AVS_RBTREE_ELEM(void) avs_rbtree_lower_bound__(AVS_RBTREE_CONST(void) tree,
+                                               const void *value) {
+    AVS_RBTREE_ELEM(void) curr;
+    AVS_RBTREE_ELEM(void) result;
+
+    assert(!rb_is_cleanup_in_progress(tree)
+           && "avs_rbtree_lower_bound__ called while tree deletion in progress");
+
+    assert(tree);
+    assert(value);
+
+    curr = *(AVS_RBTREE(void)) (intptr_t) tree;
+    result = NULL;
+
+    while (curr) {
+        if (_AVS_RB_TREE_CONST(tree)->cmp(value, curr) <= 0) {
+            result = curr;
+            curr = _AVS_RB_LEFT(curr);
+        } else {
+            curr = _AVS_RB_RIGHT(curr);
+        }
+    }
+    return result;
+}
+
+AVS_RBTREE_ELEM(void) avs_rbtree_upper_bound__(AVS_RBTREE_CONST(void) tree,
+                                               const void *value) {
+    AVS_RBTREE_ELEM(void) curr;
+    AVS_RBTREE_ELEM(void) result;
+
+    assert(!rb_is_cleanup_in_progress(tree)
+           && "avs_rbtree_upper_bound__ called while tree deletion in progress");
+
+    assert(tree);
+    assert(value);
+
+    curr = *(AVS_RBTREE(void)) (intptr_t) tree;
+    result = NULL;
+
+    while (curr) {
+        if (_AVS_RB_TREE_CONST(tree)->cmp(value, curr) < 0) {
+            result = curr;
+            curr = _AVS_RB_LEFT(curr);
+        } else {
+            curr = _AVS_RB_RIGHT(curr);
+        }
+    }
+    return result;
+}
+
 AVS_RBTREE_ELEM(void) avs_rbtree_find__(AVS_RBTREE_CONST(void) tree,
                                         const void *val) {
     AVS_RBTREE_ELEM(void) *elem_ptr;
