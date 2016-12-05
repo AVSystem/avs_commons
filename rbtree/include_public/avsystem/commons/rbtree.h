@@ -260,7 +260,8 @@ typedef int avs_rbtree_element_comparator_t(const void *a,
  * @param val_ptr Pointer to a node value to search for.
  *                NOTE: this does not need to be an AVS_RBTREE_ELEM object.
  *
- * @returns Attached element pointer on success, NULL if the @p tree is empty.
+ * @returns Attached element pointer on success, NULL if @p tree is empty, or
+ *          all elements present in it are strictly less than @p val_ptr.
  */
 #define AVS_RBTREE_LOWER_BOUND(tree, val_ptr) \
     (_AVS_RB_TYPECHECK(*(tree), (val_ptr)), \
@@ -279,7 +280,8 @@ typedef int avs_rbtree_element_comparator_t(const void *a,
  * @param val_ptr Pointer to a node value to search for.
  *                NOTE: this does not need to be an AVS_RBTREE_ELEM object.
  *
- * @returns Attached element pointer on success, NULL if the @p tree is empty.
+ * @returns Attached element pointer on success, NULL if @pr tree is empty, or
+ *          all elements present in it are less or equal to @p val_ptr.
  */
 #define AVS_RBTREE_UPPER_BOUND(tree, val_ptr) \
     (_AVS_RB_TYPECHECK(*(tree), (val_ptr)), \
