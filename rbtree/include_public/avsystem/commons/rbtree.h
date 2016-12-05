@@ -95,12 +95,14 @@ typedef int avs_rbtree_element_comparator_t(const void *a,
  *                 released can be accessed using <c>**tree</c>.
  */
 #define AVS_RBTREE_DELETE(tree_ptr) \
-    for (**(tree_ptr) = (AVS_TYPEOF_PTR(**(tree_ptr))) \
-            avs_rbtree_cleanup_first__((AVS_RBTREE(void))*(tree_ptr)); \
-         **(tree_ptr) \
-            || (avs_rbtree_delete__((AVS_RBTREE(void)*)(tree_ptr)), 0); \
-         **(tree_ptr) = (AVS_TYPEOF_PTR(**(tree_ptr))) \
-            avs_rbtree_cleanup_next__((AVS_RBTREE(void))*(tree_ptr)))
+    if (!*(tree_ptr)); \
+    else \
+        for (**(tree_ptr) = (AVS_TYPEOF_PTR(**(tree_ptr))) \
+                avs_rbtree_cleanup_first__((AVS_RBTREE(void))*(tree_ptr)); \
+             **(tree_ptr) \
+                || (avs_rbtree_delete__((AVS_RBTREE(void)*)(tree_ptr)), 0); \
+             **(tree_ptr) = (AVS_TYPEOF_PTR(**(tree_ptr))) \
+                avs_rbtree_cleanup_next__((AVS_RBTREE(void))*(tree_ptr)))
 
 /**
  * Complexity: O(n), where:
