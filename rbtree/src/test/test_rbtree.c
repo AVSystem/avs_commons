@@ -150,6 +150,11 @@ AVS_UNIT_TEST(rbtree, delete) {
     }
 }
 
+AVS_UNIT_TEST(rbtree, delete_null) {
+    AVS_RBTREE(int) tree = NULL;
+    AVS_RBTREE_DELETE(&tree);
+}
+
 AVS_UNIT_TEST(rbtree, delete_break_resume) {
     AVS_RBTREE(int) tree = make_tree(
                       8,
@@ -757,6 +762,11 @@ AVS_UNIT_TEST(rbtree, detach_single_root_child) {
 
     AVS_RBTREE_ELEM_DELETE_DETACHED(&_2);
     AVS_RBTREE_DELETE(&tree);
+}
+
+AVS_UNIT_TEST(rbtree, delete_detached_null) {
+    AVS_RBTREE_ELEM(int) elem = NULL;
+    AVS_RBTREE_ELEM_DELETE_DETACHED(&elem);
 }
 
 AVS_UNIT_TEST(rbtree, delete_attached) {
