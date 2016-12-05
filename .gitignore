@@ -8,6 +8,7 @@
 /log/avs_log_test
 /rbtree/avs_rbtree_test
 /stream/avs_stream_test
+/tests/avs_memory_test
 /vector/avs_vector_test
 /algorithm/avs_algorithm_test
 
