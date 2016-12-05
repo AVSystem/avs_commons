@@ -65,12 +65,11 @@ void avs_rbtree_delete__(AVS_RBTREE(void) *tree_ptr) {
     *tree_ptr = NULL;
 }
 
-static void rb_subtree_delete(AVS_RBTREE_ELEM(void) *elem_ptr) {
-    if (*elem_ptr) {
-        rb_subtree_delete(_AVS_RB_LEFT_PTR(*elem_ptr));
-        rb_subtree_delete(_AVS_RB_RIGHT_PTR(*elem_ptr));
-        _AVS_RB_DEALLOC(_AVS_RB_NODE(*elem_ptr));
-        *elem_ptr = NULL;
+static void rb_subtree_delete(AVS_RBTREE_ELEM(void) elem) {
+    if (elem) {
+        rb_subtree_delete(_AVS_RB_LEFT_PTR(elem));
+        rb_subtree_delete(_AVS_RB_RIGHT_PTR(elem));
+        _AVS_RB_DEALLOC(_AVS_RB_NODE(elem));
     }
 }
 
@@ -85,18 +84,21 @@ static AVS_RBTREE_ELEM(void) rb_subtree_clone(AVS_RBTREE_ELEM(void) node,
     AVS_RBTREE_ELEM(void) right = _AVS_RB_RIGHT(node);
 
     AVS_RBTREE_ELEM(void) clone = AVS_RBTREE_ELEM_NEW_BUFFER(elem_size);
-    if (clone) {
-        if ((left && !(_AVS_RB_LEFT(clone) =
-                        rb_subtree_clone(left, clone, elem_size)))
-                || (right && !(_AVS_RB_RIGHT(clone) =
-                        rb_subtree_clone(right, clone, elem_size)))) {
-            rb_subtree_delete(&clone);
-        } else {
-            _AVS_RB_NODE(clone)->color = _AVS_RB_NODE(node)->color;
-            _AVS_RB_PARENT(clone) = new_parent;
-            memcpy(clone, node, elem_size);
-        }
+    if (!clone) {
+        return NULL;
     }
+
+    if ((left && !(_AVS_RB_LEFT(clone) =
+                    rb_subtree_clone(left, clone, elem_size)))
+            || (right && !(_AVS_RB_RIGHT(clone) =
+                    rb_subtree_clone(right, clone, elem_size)))) {
+        rb_subtree_delete(clone);
+        return NULL;
+    }
+
+    _AVS_RB_NODE(clone)->color = _AVS_RB_NODE(node)->color;
+    _AVS_RB_PARENT(clone) = new_parent;
+    memcpy(clone, node, elem_size);
     return clone;
 }
 
@@ -104,10 +106,12 @@ AVS_RBTREE(void) avs_rbtree_simple_clone__(AVS_RBTREE_CONST(void) tree,
                                            size_t elem_size) {
     assert(tree);
     AVS_RBTREE(void) result = avs_rbtree_new__(_AVS_RB_TREE_CONST(tree)->cmp);
-    if (!result || (*tree && !(*result = rb_subtree_clone(
-                                       (AVS_RBTREE_ELEM(void)) (intptr_t) *tree,
-                                                          NULL, elem_size)))) {
-        avs_rbtree_delete__(&result);
+    if (result && *tree) {
+        *result = rb_subtree_clone((AVS_RBTREE_ELEM(void)) (intptr_t) *tree,
+                                   NULL, elem_size);
+        if (!*result) {
+            avs_rbtree_delete__(&result);
+        }
     }
     return result;
 }
