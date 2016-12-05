@@ -69,9 +69,8 @@ static void rb_subtree_delete(AVS_RBTREE_ELEM(void) *elem_ptr) {
     if (*elem_ptr) {
         rb_subtree_delete(_AVS_RB_LEFT_PTR(*elem_ptr));
         rb_subtree_delete(_AVS_RB_RIGHT_PTR(*elem_ptr));
-        _AVS_RB_NODE(*elem_ptr)->color = DETACHED;
-        _AVS_RB_PARENT(*elem_ptr) = NULL;
-        AVS_RBTREE_ELEM_DELETE_DETACHED(elem_ptr);
+        _AVS_RB_DEALLOC(_AVS_RB_NODE(*elem_ptr));
+        *elem_ptr = NULL;
     }
 }
 
@@ -108,7 +107,7 @@ AVS_RBTREE(void) avs_rbtree_simple_clone__(AVS_RBTREE_CONST(void) tree,
     if (!result || (*tree && !(*result = rb_subtree_clone(
                                        (AVS_RBTREE_ELEM(void)) (intptr_t) *tree,
                                                           NULL, elem_size)))) {
-        AVS_RBTREE_DELETE(&result);
+        avs_rbtree_delete__(&result);
     }
     return result;
 }
