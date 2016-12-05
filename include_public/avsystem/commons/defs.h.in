@@ -35,6 +35,9 @@ extern "C" {
  */
 /**@{*/
 #define AVS_CONCAT_INTERNAL__(prefix, suffix) prefix##suffix
+
+#define AVS_ALIGN_POINTER_INTERNAL__(type, ptr, alignment) \
+    (type)((uintptr_t)(ptr) + (alignment) - (uintptr_t)(ptr) % (alignment))
 /**@}*/
 
 /**
@@ -80,6 +83,41 @@ typedef union {
     intmax_t i;
     /** @endcond */
 } avs_max_align_t;
+
+/**
+ * Returns @p type alignment requirements.
+ */
+#if __STDC_VERSION__ >= 201112L /* C11 */
+#define AVS_ALIGNOF(type) _Alignof(type)
+#else
+#define AVS_ALIGNOF(type) offsetof(struct { char pad; type value; }, value)
+#endif
+
+/**
+ * Allocates stack storage that is aligned as @p align_as type.
+ */
+#if __STDC_VERSION__ >= 201112L /* C11 */
+#define AVS_ALIGNED_VLA(type, name, size, align_as) \
+    _Alignas(align_as) type name[size]
+#elif defined(__GNUC__) || defined(__clang__) /* GCC or clang */
+#define AVS_ALIGNED_VLA(type, name, size, align_as) \
+    type name[size] __attribute__((aligned (AVS_ALIGNOF(align_as))))
+#else /* C99 standard fallback (might waste few bytes) */
+#define AVS_ALIGNED_VLA(type, name, size, align_as)                           \
+    uint8_t AVS_CONCAT(                                                       \
+            name##__vla_,                                                     \
+            __LINE__)[sizeof(type[size]) + (AVS_ALIGNOF(align_as) - 1)];      \
+    type *const name =                                                        \
+            (AVS_ALIGN_POINTER_INTERNAL__(type *,                             \
+                                          AVS_CONCAT(name##__vla_, __LINE__), \
+                                          AVS_ALIGNOF(align_as)))
+#endif
+
+/**
+ * Allocates stack buffer properly aligned to store arbitrary data type.
+ */
+#define AVS_ALIGNED_STACK_BUF(name, size) \
+    AVS_ALIGNED_VLA(uint8_t, name, size, avs_max_align_t)
 
 /**
  * C89-compliant replacement for <c>static_assert</c>.
