@@ -6,6 +6,7 @@
 /list/avs_list_test
 /buffer/avs_buffer_test
 /log/avs_log_test
+/rbtree/avs_rbtree_test
 /stream/avs_stream_test
 /vector/avs_vector_test
 /algorithm/avs_algorithm_test
