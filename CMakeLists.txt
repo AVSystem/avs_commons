@@ -168,7 +168,7 @@ endif()
 
 option(WITH_EXTRA_WARNINGS "Enable extra compilation warnings" OFF)
 if(WITH_EXTRA_WARNINGS)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c89 -pedantic -Wall -Wextra -Winit-self -Wmissing-declarations -Wc++-compat -Wsign-conversion -Wconversion -Wcast-qual -Wno-variadic-macros -Wno-long-long")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c99 -pedantic -Wall -Wextra -Winit-self -Wmissing-declarations -Wc++-compat -Wsign-conversion -Wconversion -Wcast-qual -Wno-variadic-macros -Wno-long-long")
 endif()
 
 if(CMAKE_C_COMPILE_OPTIONS_PIC)
