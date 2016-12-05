@@ -105,6 +105,27 @@ typedef int avs_rbtree_element_comparator_t(const void *a,
                 avs_rbtree_cleanup_next__((AVS_RBTREE(void))*(tree_ptr)))
 
 /**
+ * Clones the tree by copying every element naively.
+ *
+ * Complexity: O(n * m), where:
+ * - n - number of nodes in @p tree,
+ * - m - calloc() complexity.
+ *
+ * WARNING: This function WILL NOT WORK as expected on trees that contain
+ * variable length data. It is safe to use only if tree constists fixed-size
+ * datatypes. Data type of the tree argument (@p tree) must reflect the actual
+ * type of the data held in tree elements.
+ *
+ * @param tree RB-tree object to clone.
+ *
+ * @returns Cloned RB-tree object on success, NULL in case of error.
+ */
+#define AVS_RBTREE_SIMPLE_CLONE(tree) \
+    ((AVS_TYPEOF_PTR(*(tree)) *) \
+        avs_rbtree_simple_clone__((AVS_RBTREE_CONST(void)) (tree), \
+                                  sizeof(**(tree))))
+
+/**
  * Complexity: O(n), where:
  * - n - number of nodes in @p tree.
  *
@@ -378,6 +399,8 @@ typedef int avs_rbtree_element_comparator_t(const void *a,
 /* Internal functions. Use macros defined above instead. */
 AVS_RBTREE(void) avs_rbtree_new__(avs_rbtree_element_comparator_t *cmp);
 void avs_rbtree_delete__(AVS_RBTREE(void) *tree);
+AVS_RBTREE(void) avs_rbtree_simple_clone__(AVS_RBTREE_CONST(void) tree,
+                                           size_t elem_size);
 
 size_t avs_rbtree_size__(AVS_RBTREE_CONST(void) tree);
 AVS_RBTREE_ELEM(void) avs_rbtree_lower_bound__(AVS_RBTREE_CONST(void) tree,
