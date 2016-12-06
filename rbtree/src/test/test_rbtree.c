@@ -133,6 +133,31 @@ AVS_UNIT_TEST(rbtree, create_element) {
     AVS_RBTREE_ELEM_DELETE_DETACHED(&elem);
 }
 
+AVS_UNIT_TEST(rbtree, clear) {
+    AVS_RBTREE(int) tree = make_tree(
+                      8,
+              4,             12,
+          2,      6,     10,     14,
+        1,  3,  5,  7,  9, 11, 13, 15, 0);
+
+    int expected_cleanup_order[] = {
+        1, 3, 2, 5, 7, 6, 4, 9, 11, 10, 13, 15, 14, 12, 8
+    };
+
+    size_t i = 0;
+    AVS_RBTREE_CLEAR(tree) {
+        AVS_UNIT_ASSERT_EQUAL(**tree, expected_cleanup_order[i++]);
+    }
+    AVS_UNIT_ASSERT_NOT_NULL(tree);
+    AVS_UNIT_ASSERT_EQUAL(AVS_RBTREE_SIZE(tree), 0);
+
+    AVS_RBTREE_ELEM(int) new_elem = AVS_RBTREE_ELEM_NEW(int);
+    *new_elem = 42;
+    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_INSERT(tree, new_elem) == new_elem);
+
+    AVS_RBTREE_DELETE(&tree);
+}
+
 AVS_UNIT_TEST(rbtree, delete) {
     AVS_RBTREE(int) tree = make_tree(
                       8,

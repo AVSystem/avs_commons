@@ -60,6 +60,47 @@ typedef int avs_rbtree_element_comparator_t(const void *a,
 #define AVS_RBTREE_NEW(type, cmp) ((AVS_RBTREE(type))avs_rbtree_new__(cmp))
 
 /**
+ * Releases all nodes in RB-tree, making it empty.
+ *
+ * Complexity: O(n * f), where:
+ * - n - number of nodes in @p tree,
+ * - f - free() complexity.
+ *
+ * Example usage:
+ *
+ * @code
+ * // simple cleanup - no extra operations required for elements
+ * AVS_RBTREE(int) ints = ...;
+ * AVS_RBTREE_CLEAR(ints);
+ *
+ * // cleanup with extra operation before releasing each element:
+ * AVS_RBTREE(char *) strings = ...;
+ * AVS_RBTREE_CLEAR(strings) {
+ *     free(**strings);
+ * }
+ * @endcode
+ *
+ * WARNING: during cleanup the tree is NOT in an consistent state. Attempting
+ * any kind of tree operations while AVS_RBTREE_CLEAR or AVS_RBTREE_DELETE on
+ * that tree is in progress invokes undefined behavior.
+ *
+ * WARNING: <c>break;</c> from the AVS_RBTREE_CLEAR loop leaves the tree in an
+ * invalid state. One can resume cleanup using AVS_RBTREE_CLEAR or
+ * AVS_RBTREE_DELETE again, but any other operations cause undefined behavior.
+ * In case of resumption, iteration starts from the element which previously
+ * triggered the <c>break;</c>.
+ *
+ * @param tree RB-tree object to make empty. The next element to be released can
+ *             be accessed using <c>*tree</c>.
+ */
+#define AVS_RBTREE_CLEAR(tree) \
+    for (*(tree) = (AVS_TYPEOF_PTR(*(tree))) \
+            avs_rbtree_cleanup_first__((AVS_RBTREE(void))(tree)); \
+         *(tree); \
+         *(tree) = (AVS_TYPEOF_PTR(*(tree))) \
+            avs_rbtree_cleanup_next__((AVS_RBTREE(void))(tree)))
+
+/**
  * Releases given RB-tree and all its nodes.
  *
  * Complexity: O(n * f), where:
@@ -81,14 +122,14 @@ typedef int avs_rbtree_element_comparator_t(const void *a,
  * @endcode
  *
  * WARNING: during cleanup the tree is NOT in an consistent state. Attempting
- * any kind of tree operations while AVS_RBTREE_DELETE on that tree is in
- * progress invokes undefined behavior.
+ * any kind of tree operations while AVS_RBTREE_CLEAR or AVS_RBTREE_DELETE on
+ * that tree is in progress invokes undefined behavior.
  *
  * WARNING: <c>break;</c> from the AVS_RBTREE_DELETE loop leaves the tree in an
- * invalid state. One can resume cleanup using AVS_RBTREE_DELETE again, but any
- * other operations cause undefined behavior. In case of AVS_RBTREE_DELETE
- * resumption, iteration starts from the element which previously triggered
- * the <c>break;</c>.
+ * invalid state. One can resume cleanup using AVS_RBTREE_CLEAR or
+ * AVS_RBTREE_DELETE again, but any other operations cause undefined behavior.
+ * In case of resumption, iteration starts from the element which previously
+ * triggered the <c>break;</c>.
  *
  * @param tree_ptr Pointer to the RB-tree object to destroy. *tree_ptr is set to
  *                 NULL after the cleanup is done. The next element to be
