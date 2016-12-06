@@ -742,6 +742,36 @@ AVS_UNIT_TEST(rbtree, foreach) {
     AVS_RBTREE_DELETE(&tree);
 }
 
+AVS_UNIT_TEST(rbtree, deletable_foreach) {
+    AVS_RBTREE(int) tree = make_full_3level_tree();
+
+    AVS_UNIT_ASSERT_EQUAL(AVS_RBTREE_SIZE(tree), 7);
+
+    AVS_RBTREE_ELEM(int) node;
+    AVS_RBTREE_ELEM(int) helper;
+    int i = 1;
+    AVS_RBTREE_DELETABLE_FOREACH(node, helper, tree) {
+        AVS_UNIT_ASSERT_EQUAL(i++, *node);
+        if (*node % 3 == 0) {
+            AVS_RBTREE_DELETE_ELEM(tree, &node);
+        }
+    }
+
+    AVS_UNIT_ASSERT_NULL(node);
+    AVS_UNIT_ASSERT_NULL(helper);
+    AVS_UNIT_ASSERT_EQUAL(8, i);
+
+    AVS_UNIT_ASSERT_EQUAL(AVS_RBTREE_SIZE(tree), 5);
+
+    static const int EXPECTED[] = { 1, 2, 4, 5, 7 };
+    i = 0;
+    AVS_RBTREE_FOREACH(node, tree) {
+        AVS_UNIT_ASSERT_EQUAL(EXPECTED[i++], *node);
+    }
+
+    AVS_RBTREE_DELETE(&tree);
+}
+
 AVS_UNIT_TEST(rbtree, foreach_reverse) {
     AVS_RBTREE(int) tree = make_full_3level_tree();
 
@@ -753,6 +783,58 @@ AVS_UNIT_TEST(rbtree, foreach_reverse) {
 
     AVS_UNIT_ASSERT_NULL(node);
     AVS_UNIT_ASSERT_EQUAL(0, i);
+
+    AVS_RBTREE_DELETE(&tree);
+}
+
+AVS_UNIT_TEST(rbtree, deletable_foreach_reverse) {
+    AVS_RBTREE(int) tree = make_full_3level_tree();
+
+    AVS_UNIT_ASSERT_EQUAL(AVS_RBTREE_SIZE(tree), 7);
+
+    AVS_RBTREE_ELEM(int) node;
+    AVS_RBTREE_ELEM(int) helper;
+    int i = 7;
+    AVS_RBTREE_DELETABLE_FOREACH_REVERSE(node, helper, tree) {
+        AVS_UNIT_ASSERT_EQUAL(i--, *node);
+        if ((*node & 3) == 3) {
+            AVS_RBTREE_DELETE_ELEM(tree, &node);
+        }
+    }
+
+    AVS_UNIT_ASSERT_NULL(node);
+    AVS_UNIT_ASSERT_NULL(helper);
+    AVS_UNIT_ASSERT_EQUAL(0, i);
+
+    AVS_UNIT_ASSERT_EQUAL(AVS_RBTREE_SIZE(tree), 5);
+
+    static const int EXPECTED[] = { 1, 2, 4, 5, 6 };
+    i = 0;
+    AVS_RBTREE_FOREACH(node, tree) {
+        AVS_UNIT_ASSERT_EQUAL(EXPECTED[i++], *node);
+    }
+
+    AVS_RBTREE_DELETE(&tree);
+}
+
+AVS_UNIT_TEST(rbtree, foreach_empty) {
+    AVS_RBTREE(int) tree = AVS_RBTREE_NEW(int, int_comparator);
+
+    AVS_RBTREE_ELEM(int) node;
+    AVS_RBTREE_FOREACH(node, tree) {
+        AVS_UNIT_ASSERT_TRUE(0);
+    }
+    AVS_RBTREE_FOREACH_REVERSE(node, tree) {
+        AVS_UNIT_ASSERT_TRUE(0);
+    }
+
+    AVS_RBTREE_ELEM(int) helper;
+    AVS_RBTREE_DELETABLE_FOREACH(node, helper, tree) {
+        AVS_UNIT_ASSERT_TRUE(0);
+    }
+    AVS_RBTREE_DELETABLE_FOREACH_REVERSE(node, helper, tree) {
+        AVS_UNIT_ASSERT_TRUE(0);
+    }
 
     AVS_RBTREE_DELETE(&tree);
 }
