@@ -38,10 +38,16 @@ struct avs_stream_abstract_struct {
 int avs_stream_write(avs_stream_abstract_t *stream,
                      const void *buffer,
                      size_t buffer_length) {
+    if (!stream->vtable->write) {
+        return -1;
+    }
     return stream->vtable->write(stream, buffer, buffer_length);
 }
 
 int avs_stream_finish_message(avs_stream_abstract_t *stream) {
+    if (!stream->vtable->finish_message) {
+        return -1;
+    }
     return stream->vtable->finish_message(stream);
 }
 
@@ -50,6 +56,9 @@ int avs_stream_read(avs_stream_abstract_t *stream,
                     char *out_message_finished,
                     void *buffer,
                     size_t buffer_length) {
+    if (!stream->vtable->read) {
+        return -1;
+    }
     return stream->vtable->read(stream, out_bytes_read,
                                 out_message_finished,
                                 buffer, buffer_length);
@@ -57,10 +66,16 @@ int avs_stream_read(avs_stream_abstract_t *stream,
 
 int avs_stream_peek(avs_stream_abstract_t *stream,
                     size_t offset) {
+    if (!stream->vtable->peek) {
+        return -1;
+    }
     return stream->vtable->peek(stream, offset);
 }
 
 int avs_stream_reset(avs_stream_abstract_t *stream) {
+    if (!stream->vtable->reset) {
+        return -1;
+    }
     return stream->vtable->reset(stream);
 }
 
@@ -73,12 +88,12 @@ void avs_stream_cleanup(avs_stream_abstract_t **stream) {
 }
 
 int avs_stream_errno(avs_stream_abstract_t *stream) {
+    if (!stream->vtable->get_errno) {
+        return -1;
+    }
     return stream->vtable->get_errno(stream);
 }
 
-/**
- * Sends well formatted message (printf like)
- */
 int avs_stream_write_f(avs_stream_abstract_t *stream, const char* msg, ...) {
     int result = 0;
     va_list args;
@@ -312,10 +327,6 @@ const void *avs_stream_v_table_find_extension(avs_stream_abstract_t *stream,
     return NULL;
 }
 
-static int unimplemented() {
-    return -1;
-}
-
 static int outbuf_stream_write(avs_stream_abstract_t *stream_,
                                const void *buffer,
                                size_t buffer_length) {
@@ -346,14 +357,11 @@ static int outbuf_stream_close(avs_stream_abstract_t *stream) {
 }
 
 static const avs_stream_v_table_t outbuf_stream_vtable = {
-    outbuf_stream_write,
-    outbuf_stream_finish,
-    (avs_stream_read_t) unimplemented,
-    (avs_stream_peek_t) unimplemented,
-    outbuf_stream_reset,
-    outbuf_stream_close,
-    (avs_stream_errno_t) unimplemented,
-    AVS_STREAM_V_TABLE_NO_EXTENSIONS
+    .close = outbuf_stream_close,
+    .reset = outbuf_stream_reset,
+    .write = outbuf_stream_write,
+    .finish_message = outbuf_stream_finish,
+    .extension_list = AVS_STREAM_V_TABLE_NO_EXTENSIONS
 };
 
 const avs_stream_outbuf_t AVS_STREAM_OUTBUF_STATIC_INITIALIZER
@@ -420,14 +428,10 @@ static int inbuf_stream_close(avs_stream_abstract_t *stream_) {
 }
 
 static const avs_stream_v_table_t inbuf_stream_vtable = {
-    (avs_stream_write_t) unimplemented,
-    (avs_stream_finish_message_t) unimplemented,
-    inbuf_stream_read,
-    inbuf_stream_peek,
-    (avs_stream_reset_t) unimplemented,
-    inbuf_stream_close,
-    (avs_stream_errno_t) unimplemented,
-    AVS_STREAM_V_TABLE_NO_EXTENSIONS
+    .close = inbuf_stream_close,
+    .peek = inbuf_stream_peek,
+    .read = inbuf_stream_read,
+    .extension_list = AVS_STREAM_V_TABLE_NO_EXTENSIONS
 };
 
 const avs_stream_inbuf_t AVS_STREAM_INBUF_STATIC_INITIALIZER
