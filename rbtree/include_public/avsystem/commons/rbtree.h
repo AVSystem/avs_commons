@@ -307,9 +307,12 @@ typedef int avs_rbtree_element_comparator_t(const void *a,
  */
 #define AVS_RBTREE_DELETE_ELEM(tree, elem_ptr) \
     do { \
-        AVS_TYPEOF_PTR(elem_ptr) ptr__ = (elem_ptr); \
-        AVS_RBTREE_DETACH((tree), *ptr__); \
-        avs_rbtree_elem_delete__((AVS_RBTREE_ELEM(void)*)ptr__); \
+        _AVS_RB_TYPECHECK(*(tree), *(elem_ptr)); \
+        AVS_TYPEOF_PTR(*(elem_ptr)) *ptr__ = \
+                (AVS_TYPEOF_PTR(*(elem_ptr)) *) (elem_ptr); \
+        avs_rbtree_detach__((AVS_RBTREE(void)) (tree), \
+                            (AVS_RBTREE_ELEM(void)) *ptr__); \
+        avs_rbtree_elem_delete__((AVS_RBTREE_ELEM(void) *) ptr__); \
     } while (0)
 
 /**

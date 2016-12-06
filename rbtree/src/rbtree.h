@@ -62,7 +62,7 @@ struct rb_tree {
 #define _AVS_RB_PARENT_PTR(elem) \
     ((AVS_TYPEOF_PTR(elem)*)&(_AVS_RB_NODE(elem)->parent))
 #define _AVS_RB_PARENT_PTR_CONST(elem) \
-    ((AVS_TYPEOF_PTR(elem)*)&(_AVS_RB_NODE_CONST(elem)->parent))
+    ((AVS_TYPEOF_PTR(elem) const*)&(_AVS_RB_NODE_CONST(elem)->parent))
 
 #define _AVS_RB_PARENT(elem) (*_AVS_RB_PARENT_PTR(elem))
 #define _AVS_RB_PARENT_CONST(elem) (*_AVS_RB_PARENT_PTR_CONST(elem))
