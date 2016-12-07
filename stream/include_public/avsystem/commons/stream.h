@@ -114,9 +114,10 @@ int avs_stream_write_fv(avs_stream_abstract_t *stream,
  * has been read entirely. @p out_message_finished set to 1 however does not
  * imply that no more messages are or will be available.
  *
- * For example, let's consider a HTTP stream. Logical message could be a request
- * or response, and indeed, reading one request / response does not necessarily
- * mean that all requests / responses were read.
+ * For example, let's consider an HTTP client implemented as a stream. Logical
+ * message could correspond with an HTTP response entity. After reading it
+ * entirely, it may be possible to issue another request via the same stream and
+ * read response to it afterwards.
  *
  * Another example, illustrating a slightly different interpretation of the
  * message finished semantics may be a file stream. It would make sense then
@@ -129,7 +130,8 @@ int avs_stream_write_fv(avs_stream_abstract_t *stream,
  * error immediately.
  *
  * Also note that even if the final outcome of the read operation is an error,
- * it is still allowed for the implementation to write some data to the @p buffer .
+ * it is still allowed for the implementation to write some data to the @p
+ * buffer .
  *
  * @param stream                Stream to operate on.
  * @param out_bytes_read        Pointer to a variable where amount of read bytes
@@ -153,9 +155,9 @@ int avs_stream_read(avs_stream_abstract_t *stream,
  * Attempts to read EXACTLY @p buffer_length bytes from the underlying stream
  * by calling @ref avs_stream_read (possibly multiple times).
  *
- * If the amount of data available in the stream is too small (i.e. less than @p
- * buffer_length) then an error is returned (even though some chunk of the data
- * might have been read into the @p buffer).
+ * If it is not possible to read exactly @p buffer_length bytes an error must be
+ * returned (even though some chunk of the data might have been read into the @p
+ * buffer).
  *
  * @param stream        Stream to operate on.
  * @param buffer        Pointer to a memory block where read bytes shall be
@@ -179,7 +181,11 @@ int avs_stream_read_reliably(avs_stream_abstract_t *stream,
 int avs_stream_ignore_to_end(avs_stream_abstract_t *stream);
 
 /**
- * Peeks a single byte at specified offset (from the current stream position).
+ * Peeks a single byte at specified offset (from the current stream position),
+ * without consuming it.
+ *
+ * Note: streams might not implement this functionality or they may set
+ * arbitrary limit on the maximum supported @p offset value.
  *
  * @param stream    Stream to operate on.
  * @param offset    Offset from the current stream position.
@@ -190,28 +196,39 @@ int avs_stream_peek(avs_stream_abstract_t *stream, size_t offset);
 
 /**
  * Reads a single byte from the stream. Semantics of "message finished" is the
- * same as for @ref avs_stream_read .
+ * same as for @ref avs_stream_read (as it calls @ref avs_stream_read
+ * underneath).
  *
- * @param stream            Stream to operate on.
- * @param message_finished  As in @ref avs_stream_read .
+ * @param stream                Stream to operate on.
+ * @param out_message_finished  Pointer to a variable where information about
+ *                              message state will be stored (0 if not finished,
+ *                              1 otherwise), or NULL.
+ *
  * @returns 0 on success, EOF if the message is finished, negative value
  * (different than EOF) on error.
  */
-int avs_stream_getch(avs_stream_abstract_t *stream, char *message_finished);
+int avs_stream_getch(avs_stream_abstract_t *stream, char *out_message_finished);
 
 /**
- * Helper function that reads a line (delimited with '\n') from the stream by
- * calling @ref avs_stream_v_table_t#read (possibly multiple times) on the
- * underlying stream implementation.
+ * Helper function that reads a line (delimited with '\n', '\r\n' or '\0') from
+ * the stream by calling @ref avs_stream_v_table_t#read (possibly multiple
+ * times) on the underlying stream implementation.
  *
  * Note: unless an error during reading occured @p buffer will always be
  * NULL terminated.
  *
+ * Note: the line terminator (one of '\n', '\r\n', '\0') is never written into
+ * the @p buffer.
+ *
  * @param stream                Stream to operate on.
- * @param out_bytes_read        As in @ref avs_stream_read .
- * @param out_message_finished  As in @ref avs_stream_read .
- * @param buffer                As in @ref avs_stream_read .
- * @param buffer_length         As in @ref avs_stream_read .
+ * @param out_bytes_read        Pointer to a variable where amount of read bytes
+ *                              will be written, or NULL.
+ * @param out_message_finished  Pointer to a variable where information about
+ *                              message state will be stored (0 if not finished,
+ *                              1 otherwise), or NULL.
+ * @param buffer                Pointer to a memory block where read line will
+ *                              be written.
+ * @param buffer_length         Available buffer storage.
  *
  * @returns 0 on success, negative value on error, positive value if the line
  * did not fit entirely into the @p buffer .
@@ -226,14 +243,23 @@ int avs_stream_getline(avs_stream_abstract_t *stream,
  * Similar to @ref avs_stream_getline except that it does not consume stream
  * data.
  *
+ * Note: this operation will be unavailable if @ref avs_stream_v_table_t#peek
+ * method is not implemented. Also note that this function shares limitations
+ * of @ref avs_stream_peek as it uses it internally.
+ *
  * @param stream            Stream to operate on.
  * @param offset            Offset from the current stream position where line
  *                          peeking shall be started.
- * @param out_bytes_peeked  Amount of bytes written into the buffer.
- * @param out_next_offset   Offset where peeking stopped.
+ * @param out_bytes_peeked  Pointer to a variable where amount of bytes written
+ *                          into the buffer shall be stored, or NULL.
+ * @param out_next_offset   Pointer to a variable where offset where peeking
+ *                          stopped (which is an @p offset + amount of bytes
+ *                          written into the @p buffer + length of line
+ *                          terminators if any) shall be stored, or NULL.
  * @param buffer            Pointer to the memory block where data will be
  *                          stored.
  * @param buffer_length     Length of the buffer.
+ *
  * @returns 0 on success, negative value on error, positive value if the line
  * did not fit entirely into the @p buffer.
  */
