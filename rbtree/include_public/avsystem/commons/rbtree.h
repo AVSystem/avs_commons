@@ -307,9 +307,12 @@ typedef int avs_rbtree_element_comparator_t(const void *a,
  */
 #define AVS_RBTREE_DELETE_ELEM(tree, elem_ptr) \
     do { \
-        AVS_TYPEOF_PTR(elem_ptr) ptr__ = (elem_ptr); \
-        AVS_RBTREE_DETACH((tree), *ptr__); \
-        avs_rbtree_elem_delete__((AVS_RBTREE_ELEM(void)*)ptr__); \
+        _AVS_RB_TYPECHECK(*(tree), *(elem_ptr)); \
+        AVS_TYPEOF_PTR(*(elem_ptr)) *ptr__ = \
+                (AVS_TYPEOF_PTR(*(elem_ptr)) *) (elem_ptr); \
+        avs_rbtree_detach__((AVS_RBTREE(void)) (tree), \
+                            (AVS_RBTREE_ELEM(void)) *ptr__); \
+        avs_rbtree_elem_delete__((AVS_RBTREE_ELEM(void) *) ptr__); \
     } while (0)
 
 /**
@@ -430,12 +433,44 @@ typedef int avs_rbtree_element_comparator_t(const void *a,
             (it); \
             (it) = AVS_RBTREE_ELEM_NEXT(it))
 
+/**
+ * Convenience macro for forward iteration on elements of @p tree, also allowing
+ * for element deletion.
+ *
+ * @p helper needs to be an AVS_RBTREE_ELEM variable - it will be used
+ * internally.
+ */
+#define AVS_RBTREE_DELETABLE_FOREACH(it, helper, tree) \
+    for (_AVS_RB_TYPECHECK(*(tree), (it)), \
+            _AVS_RB_TYPECHECK((it), (helper)), \
+            (it) = AVS_RBTREE_FIRST(tree), \
+            (helper) = (it) ? AVS_RBTREE_ELEM_NEXT(it) : (it); \
+            (it); \
+            (it) = (helper), \
+            (helper) = (helper) ? AVS_RBTREE_ELEM_NEXT(helper) : (helper))
+
 /** Convenience macro for backward iteration on elements of @p tree. */
 #define AVS_RBTREE_FOREACH_REVERSE(it, tree) \
     for (_AVS_RB_TYPECHECK(*(tree), (it)), \
             (it) = AVS_RBTREE_LAST(tree); \
             (it); \
             (it) = AVS_RBTREE_ELEM_PREV(it))
+
+/**
+ * Convenience macro for backward iteration on elements of @p tree, also
+ * allowing for element deletion.
+ *
+ * @p helper needs to be an AVS_RBTREE_ELEM variable - it will be used
+ * internally.
+ */
+#define AVS_RBTREE_DELETABLE_FOREACH_REVERSE(it, helper, tree) \
+    for (_AVS_RB_TYPECHECK(*(tree), (it)), \
+            _AVS_RB_TYPECHECK((it), (helper)), \
+            (it) = AVS_RBTREE_LAST(tree), \
+            (helper) = (it) ? AVS_RBTREE_ELEM_PREV(it) : (it); \
+            (it); \
+            (it) = (helper), \
+            (helper) = (helper) ? AVS_RBTREE_ELEM_PREV(helper) : (helper))
 
 /* Internal functions. Use macros defined above instead. */
 AVS_RBTREE(void) avs_rbtree_new__(avs_rbtree_element_comparator_t *cmp);
