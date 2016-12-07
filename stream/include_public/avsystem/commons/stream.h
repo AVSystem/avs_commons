@@ -49,7 +49,8 @@ typedef struct avs_stream_abstract_struct avs_stream_abstract_t;
 
 /**
  * Writes data to the stream by calling @ref avs_stream_vtable_t#write method
- * on the underlying stream.
+ * on the underlying stream. Implementation MUST fail if less than
+ * @p buffer_length bytes were written.
  *
  * @param stream        Stream to write data to.
  * @param buffer        Data to write, MUST NOT be NULL.
@@ -270,41 +271,8 @@ void avs_stream_cleanup(avs_stream_abstract_t **stream);
  */
 int avs_stream_errno(avs_stream_abstract_t *stream);
 
-
-#warning "TODO: this isn't an ideal place to put it"
-typedef struct {
-    const void *const vtable;
-    char *buffer;
-    size_t buffer_size;
-    size_t buffer_offset;
-    char message_finished;
-} avs_stream_outbuf_t;
-
-typedef struct {
-    const void *const vtable;
-    const char *buffer;
-    size_t buffer_size;
-    size_t buffer_offset;
-} avs_stream_inbuf_t;
-
-extern const avs_stream_outbuf_t AVS_STREAM_OUTBUF_STATIC_INITIALIZER;
-extern const avs_stream_inbuf_t AVS_STREAM_INBUF_STATIC_INITIALIZER;
-
-size_t avs_stream_outbuf_offset(avs_stream_outbuf_t *stream);
-
-int avs_stream_outbuf_set_offset(avs_stream_outbuf_t *stream, size_t offset);
-
-void avs_stream_outbuf_set_buffer(avs_stream_outbuf_t *stream,
-                                  char *buffer,
-                                  size_t buffer_size);
-
-void avs_stream_inbuf_set_buffer(avs_stream_inbuf_t *stream,
-                                 const char *buffer,
-                                 size_t buffer_size);
-
 #ifdef	__cplusplus
 }
 #endif
 
 #endif	/* STREAM_H */
-
