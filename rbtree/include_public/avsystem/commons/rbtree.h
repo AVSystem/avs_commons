@@ -167,8 +167,7 @@ typedef int avs_rbtree_element_comparator_t(const void *a,
                                   sizeof(**(tree))))
 
 /**
- * Complexity: O(n), where:
- * - n - number of nodes in @p tree.
+ * Complexity: O(1).
  *
  * @param tree RB-tree object to operate on.
  *
