@@ -50,7 +50,7 @@ typedef struct avs_stream_abstract_struct avs_stream_abstract_t;
 /**
  * Writes data to the stream by calling @ref avs_stream_vtable_t#write method
  * on the underlying stream. Implementation MUST fail if less than
- * @p buffer_length bytes were written.
+ * @p buffer_length bytes were successfully written.
  *
  * @param stream        Stream to write data to.
  * @param buffer        Data to write, MUST NOT be NULL.
