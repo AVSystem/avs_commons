@@ -124,14 +124,11 @@ int avs_stream_write_fv(avs_stream_abstract_t *stream,
  * to set @p out_message_finished to 1 if the entire file has been read and 0
  * otherwise.
  *
- * WARNING: it is NOT allowed for the implementation to read 0 bytes from the
- * underlying stream and at the same time set @p out_message_finished to 0 .
- * Instead, the implementation should block (waiting for the data) or return an
- * error immediately.
+ * Note: this function will never read 0 bytes and set @p out_message_finished to
+ * 0 at the same time.
  *
- * Also note that even if the final outcome of the read operation is an error,
- * it is still allowed for the implementation to write some data to the @p
- * buffer .
+ * Note: even if the final outcome of the read operation is an error, it is still
+ * possible that some data was written into the @p buffer.
  *
  * @param stream                Stream to operate on.
  * @param out_bytes_read        Pointer to a variable where amount of read bytes
@@ -155,7 +152,7 @@ int avs_stream_read(avs_stream_abstract_t *stream,
  * Attempts to read EXACTLY @p buffer_length bytes from the underlying stream
  * by calling @ref avs_stream_read (possibly multiple times).
  *
- * If it is not possible to read exactly @p buffer_length bytes an error must be
+ * If it is not possible to read exactly @p buffer_length bytes an error is
  * returned (even though some chunk of the data might have been read into the @p
  * buffer).
  *
@@ -293,7 +290,7 @@ void avs_stream_cleanup(avs_stream_abstract_t **stream);
  * avs_stream_v_table#get_errno .
  *
  * @param stream    Stream to operate on.
- * @returns last error code or 0 if no error occured.
+ * @returns last error code or 0 if no error occurred.
  */
 int avs_stream_errno(avs_stream_abstract_t *stream);
 
