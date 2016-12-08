@@ -20,6 +20,7 @@ struct rb_node {
 };
 
 struct rb_tree {
+    size_t size;
     avs_rbtree_element_comparator_t *cmp;
     void *root;
 };

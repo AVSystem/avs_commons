@@ -16,8 +16,16 @@ static int rb_is_node_detached(AVS_RBTREE_ELEM(void) elem) {
 static AVS_RBTREE_CONST(void) rb_tree_const(AVS_RBTREE(void) tree) {
     return (AVS_RBTREE_CONST(void))(intptr_t)tree;
 }
+
+static int rb_is_node_owner(AVS_RBTREE(void) tree, AVS_RBTREE_ELEM(void) elem) {
+    while (elem && elem != _AVS_RB_TREE(tree)->root) {
+        elem = _AVS_RB_PARENT(elem);
+    }
+    return elem == _AVS_RB_TREE(tree)->root;
+}
 #else
 # define rb_is_cleanup_in_progress(_) 0
+# define rb_is_node_owner(...) 1
 #endif
 
 enum rb_color _avs_rb_node_color(AVS_RBTREE_ELEM(void) elem) {
@@ -111,25 +119,17 @@ AVS_RBTREE(void) avs_rbtree_simple_clone__(AVS_RBTREE_CONST(void) tree,
                                    NULL, elem_size);
         if (!*result) {
             avs_rbtree_delete__(&result);
+        } else {
+            _AVS_RB_TREE(result)->size = AVS_RBTREE_SIZE(tree);
         }
     }
     return result;
 }
 
-static size_t rb_subtree_size(const AVS_RBTREE_ELEM(void) root) {
-    if (!root) {
-        return 0;
-    }
-
-    return (1 + rb_subtree_size(_AVS_RB_LEFT_CONST(root))
-            + rb_subtree_size(_AVS_RB_RIGHT_CONST(root)));
-}
-
 size_t avs_rbtree_size__(AVS_RBTREE_CONST(void) tree) {
     assert(!rb_is_cleanup_in_progress(tree)
            && "avs_rbtree_size__ called while tree deletion in progress");
-
-    return rb_subtree_size(_AVS_RB_TREE_CONST(tree)->root);
+    return _AVS_RB_TREE_CONST(tree)->size;
 }
 
 AVS_RBTREE_ELEM(void) avs_rbtree_elem_new_buffer__(size_t elem_size) {
@@ -322,8 +322,7 @@ static void rb_rotate_left(struct rb_tree *tree,
  *    /     \                          /    \
  *  (B)  (grandchild)         (grandchild)  (A)
  */
-static void rb_rotate_right(struct rb_tree *tree,
-                            AVS_RBTREE_ELEM(void) root) {
+static void rb_rotate_right(struct rb_tree *tree, AVS_RBTREE_ELEM(void) root) {
     AVS_RBTREE_ELEM(void) parent = _AVS_RB_PARENT(root);
     AVS_RBTREE_ELEM(void) *own_parent_ptr = rb_own_parent_ptr(tree, root);
     AVS_RBTREE_ELEM(void) pivot = NULL;
@@ -425,6 +424,7 @@ AVS_RBTREE_ELEM(void) avs_rbtree_attach__(AVS_RBTREE(void) tree_,
     } else {
         *dst = elem;
         _AVS_RB_PARENT(elem) = parent;
+        ++tree->size;
     }
 
     rb_insert_fix(tree, elem);
@@ -679,6 +679,8 @@ AVS_RBTREE_ELEM(void) avs_rbtree_detach__(AVS_RBTREE(void) tree_,
            && "avs_rbtree_detach__ called while tree deletion in progress");
     assert(tree_);
     assert(elem);
+    assert(rb_is_node_owner(tree_, elem)
+           && "cannot detach node not owned by the tree");
 
     left = _AVS_RB_LEFT(elem);
     right = _AVS_RB_RIGHT(elem);
@@ -706,6 +708,8 @@ AVS_RBTREE_ELEM(void) avs_rbtree_detach__(AVS_RBTREE(void) tree_,
     _AVS_RB_PARENT(elem) = NULL;
     _AVS_RB_LEFT(elem) = NULL;
     _AVS_RB_RIGHT(elem) = NULL;
+    assert(tree->size > 0u);
+    --tree->size;
 
     assert(elem_color == BLACK
             || _avs_rb_node_color(child) == BLACK);
@@ -767,6 +771,8 @@ AVS_RBTREE_ELEM(void) avs_rbtree_cleanup_next__(AVS_RBTREE(void) tree) {
 
     _AVS_RB_NODE(*tree)->color = DETACHED;
     _AVS_RB_PARENT(*tree) = NULL;
+    assert(AVS_RBTREE_SIZE(tree) > 0u);
+    --_AVS_RB_TREE(tree)->size;
     /* at this point, child nodes should be cleaned up */
     assert(_AVS_RB_LEFT(*tree) == NULL);
     assert(_AVS_RB_RIGHT(*tree) == NULL);
