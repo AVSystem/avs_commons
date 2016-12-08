@@ -15,8 +15,9 @@ static int int_comparator(const void *a_,
                  : (a == b ? 0 : 1);
 }
 
-static size_t assert_rb_properties_hold_recursive(void *node,
-                                                  size_t *out_black_height) {
+static void assert_rb_properties_hold_recursive(void *node,
+                                                size_t *out_black_height,
+                                                size_t *out_size) {
     void *left = NULL;
     void *right = NULL;
     size_t left_black_height = 0;
@@ -26,7 +27,8 @@ static size_t assert_rb_properties_hold_recursive(void *node,
 
     *out_black_height = 1;
     if (!node) {
-        return 0;
+        *out_size = 0;
+        return;
     }
 
     left = _AVS_RB_LEFT(node);
@@ -35,15 +37,15 @@ static size_t assert_rb_properties_hold_recursive(void *node,
     left_black_height = 0;
     if (left) {
         AVS_UNIT_ASSERT_TRUE(node == _AVS_RB_PARENT(left));
-        left_size =
-                assert_rb_properties_hold_recursive(left, &left_black_height);
+        assert_rb_properties_hold_recursive(left, &left_black_height,
+                                            &left_size);
     }
 
     right_black_height = 0;
     if (right) {
         AVS_UNIT_ASSERT_TRUE(node == _AVS_RB_PARENT(right));
-        right_size = assert_rb_properties_hold_recursive(right,
-                                                         &right_black_height);
+        assert_rb_properties_hold_recursive(right, &right_black_height,
+                                            &right_size);
     }
 
     AVS_UNIT_ASSERT_EQUAL(left_black_height, right_black_height);
@@ -55,7 +57,7 @@ static size_t assert_rb_properties_hold_recursive(void *node,
     } else {
         ++*out_black_height;
     }
-    return 1 + left_size + right_size;
+    *out_size = 1 + left_size + right_size;
 }
 
 static void assert_rb_properties_hold(AVS_RBTREE(int) tree_) {
@@ -67,8 +69,8 @@ static void assert_rb_properties_hold(AVS_RBTREE(int) tree_) {
         AVS_UNIT_ASSERT_NULL(_AVS_RB_PARENT(tree->root));
     }
 
-    size_t size =
-            assert_rb_properties_hold_recursive(tree->root, &black_height);
+    size_t size;
+    assert_rb_properties_hold_recursive(tree->root, &black_height, &size);
     AVS_UNIT_ASSERT_EQUAL(tree->size, size);
 }
 
