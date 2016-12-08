@@ -16,8 +16,16 @@ static int rb_is_node_detached(AVS_RBTREE_ELEM(void) elem) {
 static AVS_RBTREE_CONST(void) rb_tree_const(AVS_RBTREE(void) tree) {
     return (AVS_RBTREE_CONST(void))(intptr_t)tree;
 }
+
+static int rb_is_node_owner(AVS_RBTREE(void) tree, AVS_RBTREE_ELEM(void) elem) {
+    while (elem && elem != _AVS_RB_TREE(tree)->root) {
+        elem = _AVS_RB_PARENT(elem);
+    }
+    return elem == _AVS_RB_TREE(tree)->root;
+}
 #else
 # define rb_is_cleanup_in_progress(_) 0
+# define rb_is_node_owner(...) 1
 #endif
 
 enum rb_color _avs_rb_node_color(AVS_RBTREE_ELEM(void) elem) {
@@ -314,8 +322,7 @@ static void rb_rotate_left(struct rb_tree *tree,
  *    /     \                          /    \
  *  (B)  (grandchild)         (grandchild)  (A)
  */
-static void rb_rotate_right(struct rb_tree *tree,
-                            AVS_RBTREE_ELEM(void) root) {
+static void rb_rotate_right(struct rb_tree *tree, AVS_RBTREE_ELEM(void) root) {
     AVS_RBTREE_ELEM(void) parent = _AVS_RB_PARENT(root);
     AVS_RBTREE_ELEM(void) *own_parent_ptr = rb_own_parent_ptr(tree, root);
     AVS_RBTREE_ELEM(void) pivot = NULL;
@@ -672,6 +679,8 @@ AVS_RBTREE_ELEM(void) avs_rbtree_detach__(AVS_RBTREE(void) tree_,
            && "avs_rbtree_detach__ called while tree deletion in progress");
     assert(tree_);
     assert(elem);
+    assert(rb_is_node_owner(tree_, elem)
+           && "cannot detach node not owned by the tree");
 
     left = _AVS_RB_LEFT(elem);
     right = _AVS_RB_RIGHT(elem);
