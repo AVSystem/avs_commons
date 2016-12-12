@@ -8,7 +8,7 @@
  */
 
 #ifndef AVS_COMMONS_STREAM_STREAM_INBUF_H
-#define	AVS_COMMONS_STREAM_STREAM_INBUF_H
+#define AVS_COMMONS_STREAM_STREAM_INBUF_H
 
 #include <stdarg.h>
 #include <stddef.h>
