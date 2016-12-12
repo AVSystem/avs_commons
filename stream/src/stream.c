@@ -38,10 +38,16 @@ struct avs_stream_abstract_struct {
 int avs_stream_write(avs_stream_abstract_t *stream,
                      const void *buffer,
                      size_t buffer_length) {
+    if (!stream->vtable->write) {
+        return -1;
+    }
     return stream->vtable->write(stream, buffer, buffer_length);
 }
 
 int avs_stream_finish_message(avs_stream_abstract_t *stream) {
+    if (!stream->vtable->finish_message) {
+        return -1;
+    }
     return stream->vtable->finish_message(stream);
 }
 
@@ -50,6 +56,9 @@ int avs_stream_read(avs_stream_abstract_t *stream,
                     char *out_message_finished,
                     void *buffer,
                     size_t buffer_length) {
+    if (!stream->vtable->read) {
+        return -1;
+    }
     return stream->vtable->read(stream, out_bytes_read,
                                 out_message_finished,
                                 buffer, buffer_length);
@@ -57,10 +66,16 @@ int avs_stream_read(avs_stream_abstract_t *stream,
 
 int avs_stream_peek(avs_stream_abstract_t *stream,
                     size_t offset) {
+    if (!stream->vtable->peek) {
+        return -1;
+    }
     return stream->vtable->peek(stream, offset);
 }
 
 int avs_stream_reset(avs_stream_abstract_t *stream) {
+    if (!stream->vtable->reset) {
+        return -1;
+    }
     return stream->vtable->reset(stream);
 }
 
@@ -73,12 +88,12 @@ void avs_stream_cleanup(avs_stream_abstract_t **stream) {
 }
 
 int avs_stream_errno(avs_stream_abstract_t *stream) {
+    if (!stream->vtable->get_errno) {
+        return -1;
+    }
     return stream->vtable->get_errno(stream);
 }
 
-/**
- * Sends well formatted message (printf like)
- */
 int avs_stream_write_f(avs_stream_abstract_t *stream, const char* msg, ...) {
     int result = 0;
     va_list args;
@@ -310,133 +325,4 @@ const void *avs_stream_v_table_find_extension(avs_stream_abstract_t *stream,
         }
     }
     return NULL;
-}
-
-static int unimplemented() {
-    return -1;
-}
-
-static int outbuf_stream_write(avs_stream_abstract_t *stream_,
-                               const void *buffer,
-                               size_t buffer_length) {
-    avs_stream_outbuf_t *stream = (avs_stream_outbuf_t *) stream_;
-    if (stream->message_finished
-            || stream->buffer_offset + buffer_length > stream->buffer_size) {
-        return -1;
-    }
-    memcpy(stream->buffer + stream->buffer_offset, buffer, buffer_length);
-    stream->buffer_offset += buffer_length;
-    return 0;
-}
-
-static int outbuf_stream_finish(avs_stream_abstract_t *stream) {
-    ((avs_stream_outbuf_t *) stream)->message_finished = 1;
-    return 0;
-}
-
-static int outbuf_stream_reset(avs_stream_abstract_t *stream) {
-    ((avs_stream_outbuf_t *) stream)->message_finished = 0;
-    ((avs_stream_outbuf_t *) stream)->buffer_offset = 0;
-    return 0;
-}
-
-static int outbuf_stream_close(avs_stream_abstract_t *stream) {
-    (void) stream;
-    return 0;
-}
-
-static const avs_stream_v_table_t outbuf_stream_vtable = {
-    outbuf_stream_write,
-    outbuf_stream_finish,
-    (avs_stream_read_t) unimplemented,
-    (avs_stream_peek_t) unimplemented,
-    outbuf_stream_reset,
-    outbuf_stream_close,
-    (avs_stream_errno_t) unimplemented,
-    AVS_STREAM_V_TABLE_NO_EXTENSIONS
-};
-
-const avs_stream_outbuf_t AVS_STREAM_OUTBUF_STATIC_INITIALIZER
-        = {&outbuf_stream_vtable, NULL, 0, 0, 0};
-
-size_t avs_stream_outbuf_offset(avs_stream_outbuf_t *stream) {
-    return stream->buffer_offset;
-}
-
-int avs_stream_outbuf_set_offset(avs_stream_outbuf_t *stream, size_t offset) {
-    if (offset > stream->buffer_offset) {
-        LOG(ERROR, "outbuf stream offset cannot be advanced");
-        return -1;
-    }
-    stream->buffer_offset = offset;
-    return 0;
-}
-
-void avs_stream_outbuf_set_buffer(avs_stream_outbuf_t *stream,
-                                  char *buffer,
-                                  size_t buffer_size) {
-    stream->buffer = buffer;
-    stream->buffer_size = buffer_size;
-    stream->buffer_offset = 0;
-}
-
-static int inbuf_stream_read(avs_stream_abstract_t *stream_,
-                             size_t *out_bytes_read,
-                             char *out_message_finished,
-                             void *buffer,
-                             size_t buffer_length) {
-    avs_stream_inbuf_t *stream = (avs_stream_inbuf_t *) stream_;
-    size_t bytes_left, bytes_read;
-    if (!buffer) {
-        return -1;
-    }
-
-    assert(stream->buffer_offset <= stream->buffer_size);
-
-    bytes_left = stream->buffer_size - stream->buffer_offset;
-    bytes_read = bytes_left < buffer_length ? bytes_left : buffer_length;
-    memcpy(buffer, (const char *) stream->buffer + stream->buffer_offset,
-           bytes_read);
-    stream->buffer_offset += bytes_read;
-
-    *out_message_finished = stream->buffer_offset >= stream->buffer_size;
-    *out_bytes_read = bytes_read;
-    return 0;
-}
-
-static int inbuf_stream_peek(avs_stream_abstract_t *stream_,
-                             size_t offset) {
-    avs_stream_inbuf_t *stream = (avs_stream_inbuf_t *) stream_;
-
-    if (stream->buffer_offset + offset >= stream->buffer_size) {
-        return EOF;
-    }
-    return (unsigned char) stream->buffer[stream->buffer_offset + offset];
-}
-
-static int inbuf_stream_close(avs_stream_abstract_t *stream_) {
-    (void) stream_;
-    return 0;
-}
-
-static const avs_stream_v_table_t inbuf_stream_vtable = {
-    (avs_stream_write_t) unimplemented,
-    (avs_stream_finish_message_t) unimplemented,
-    inbuf_stream_read,
-    inbuf_stream_peek,
-    (avs_stream_reset_t) unimplemented,
-    inbuf_stream_close,
-    (avs_stream_errno_t) unimplemented,
-    AVS_STREAM_V_TABLE_NO_EXTENSIONS
-};
-
-const avs_stream_inbuf_t AVS_STREAM_INBUF_STATIC_INITIALIZER
-        = {&inbuf_stream_vtable, NULL, 0, 0};
-
-void avs_stream_inbuf_set_buffer(avs_stream_inbuf_t *stream,
-                                 const char *buffer,
-                                 size_t buffer_size) {
-    stream->buffer = buffer;
-    stream->buffer_size = buffer_size;
-    stream->buffer_offset = 0;
 }
