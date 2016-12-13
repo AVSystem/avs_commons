@@ -1510,7 +1510,7 @@ static SSL_CTX *make_ssl_context(avs_net_socket_type_t backend_type,
         return NULL;
     }
     if (ossl_proto_version
-            && SSL_CTX_set_min_proto_version(ctx, ossl_proto_version)) {
+            && !SSL_CTX_set_min_proto_version(ctx, ossl_proto_version)) {
         log_openssl_error();
         return NULL;
     }
