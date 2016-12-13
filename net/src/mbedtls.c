@@ -819,49 +819,71 @@ do { \
     } \
 } while (0)
 
-static int load_ca_certs(mbedtls_x509_crt **out,
-                         const char *ca_cert_path,
-                         const char *ca_cert_file,
-                         const avs_net_ssl_raw_cert_t *ca_cert) {
-    const int has_raw_cert = ca_cert && ca_cert->cert_der;
-
-    if (!ca_cert_path && !ca_cert_file && !has_raw_cert) {
-        LOG(ERROR, "no certificate for CA provided");
+static int load_ca_certs_from_files(mbedtls_x509_crt **out,
+                                    const char *ca_cert_path,
+                                    const char *ca_cert_file) {
+    if (!ca_cert_path && !ca_cert_file) {
+        LOG(ERROR, "CA cert path and CA cert file not provided");
         return -1;
     }
-
     CREATE_OR_FAIL(mbedtls_x509_crt, out);
     mbedtls_x509_crt_init(*out);
+    int result;
 
-    if (ca_cert_path) {
-        int failed = mbedtls_x509_crt_parse_path(*out, ca_cert_path);
-        if (failed) {
-            LOG(WARNING,
-                "failed to parse %d certs in path <%s>", failed, ca_cert_path);
-        }
+    if (ca_cert_path
+           && (result = mbedtls_x509_crt_parse_path(*out, ca_cert_path))) {
+        LOG(ERROR, "failed to parse %d certs in path <%s>", result,
+            ca_cert_path);
+        return result;
     }
-    if (ca_cert_file) {
-        int failed = mbedtls_x509_crt_parse_file(*out, ca_cert_file);
-        if (failed) {
-            LOG(WARNING,
-                "failed to parse %d certs in file <%s>", failed, ca_cert_file);
-        }
-    }
-    if (has_raw_cert) {
-        int failed = mbedtls_x509_crt_parse_der(
-                *out,
-                (const unsigned char *) ca_cert->cert_der, ca_cert->cert_size);
-        if (failed) {
-            LOG(WARNING, "failed to parse DER certificate: %d", failed);
-        }
+    if (ca_cert_file
+           && (result = mbedtls_x509_crt_parse_file(*out, ca_cert_file))) {
+        LOG(ERROR, "failed to parse %d certs in file <%s>", result,
+            ca_cert_file);
+        return result;
     }
     return 0;
+}
+
+static int load_ca_certs_from_memory(mbedtls_x509_crt **out,
+                                     const avs_net_ssl_raw_cert_t *ca_cert) {
+    if (!ca_cert || !ca_cert->cert_der || !ca_cert->cert_size) {
+        LOG(ERROR, "invalid raw CA certificate provided");
+        return -1;
+    }
+    if (ca_cert->cert_der && ca_cert->cert_size == 0) {
+        LOG(ERROR, "invalid certificate info: non-NULL raw certificate of size "
+                   "0 given");
+        return -1;
+    }
+    CREATE_OR_FAIL(mbedtls_x509_crt, out);
+    mbedtls_x509_crt_init(*out);
+    int result = mbedtls_x509_crt_parse_der(
+            *out, (const unsigned char *) ca_cert->cert_der,
+            ca_cert->cert_size);
+    if (result) {
+        LOG(ERROR, "failed to parse DER certificate: %d", result);
+    }
+    return result;
+}
+
+static int load_ca_certs_from_pkcs12_file(mbedtls_x509_crt **out,
+                                          const char *file,
+                                          const char *password) {
+    (void) out;
+    (void) file;
+    (void) password;
+    LOG(ERROR, "pkcs12 is not supported");
+    return -1;
 }
 
 static int is_private_key_valid(const avs_net_private_key_t *key) {
     assert(key);
 
     switch (key->source) {
+    case AVS_NET_DATA_SOURCE_PKCS12_FILE:
+        LOG(ERROR, "pkcs12 is not supported");
+        return 0;
     case AVS_NET_DATA_SOURCE_FILE:
         if (!key->data.file.path || !key->data.file.password) {
             LOG(ERROR, "private key with password not specified");
@@ -923,6 +945,9 @@ static int load_client_private_key(ssl_socket_certs_t *certs,
     mbedtls_pk_init(certs->pk_key);
 
     switch (key->source) {
+    case AVS_NET_DATA_SOURCE_PKCS12_FILE:
+        LOG(ERROR, "pkcs12 is not supported");
+        return -1;
     case AVS_NET_DATA_SOURCE_FILE:
         return mbedtls_pk_parse_keyfile(certs->pk_key, key->data.file.path,
                                         key->data.file.password);
@@ -936,8 +961,11 @@ static int load_client_private_key(ssl_socket_certs_t *certs,
 
 static int is_client_cert_empty(const avs_net_client_cert_t *cert) {
     switch (cert->source) {
+    case AVS_NET_DATA_SOURCE_PKCS12_FILE:
+        LOG(ERROR, "pkcs12 is not supported");
+        return 1;
     case AVS_NET_DATA_SOURCE_FILE:
-        return !cert->data.file;
+        return !cert->data.file.path;
     case AVS_NET_DATA_SOURCE_BUFFER:
         return !cert->data.buffer.cert_der;
     }
@@ -948,7 +976,7 @@ static int is_client_cert_empty(const avs_net_client_cert_t *cert) {
 static int load_client_cert(ssl_socket_certs_t *certs,
                             const avs_net_client_cert_t *cert,
                             const avs_net_private_key_t *key) {
-    int failed;
+    int failed = 0;
 
     if (is_client_cert_empty(cert)) {
         LOG(TRACE, "client certificate not specified");
@@ -959,12 +987,16 @@ static int load_client_cert(ssl_socket_certs_t *certs,
     mbedtls_x509_crt_init(certs->client_cert);
 
     switch (cert->source) {
+    case AVS_NET_DATA_SOURCE_PKCS12_FILE:
+        failed = -1;
+        LOG(ERROR, "pkcs12 is not supported");
+        break;
     case AVS_NET_DATA_SOURCE_FILE:
         failed = mbedtls_x509_crt_parse_file(certs->client_cert,
-                                             cert->data.file);
+                                             cert->data.file.path);
         if (failed) {
             LOG(WARNING, "failed to parse %d certs in file <%s>",
-                failed, cert->data.file);
+                failed, cert->data.file.path);
         }
         break;
     case AVS_NET_DATA_SOURCE_BUFFER:
@@ -981,6 +1013,10 @@ static int load_client_cert(ssl_socket_certs_t *certs,
         return -1;
     }
 
+    if (failed) {
+        return failed;
+    }
+
     if (load_client_private_key(certs, key)) {
         LOG(ERROR, "Error loading client private key");
         return -1;
@@ -990,28 +1026,36 @@ static int load_client_cert(ssl_socket_certs_t *certs,
 }
 
 static int server_auth_enabled(const avs_net_certificate_info_t *cert_info) {
-    return cert_info->ca_cert_file
-        || cert_info->ca_cert_path
-        || cert_info->ca_cert_raw.cert_der;
+    return cert_info->ca_enabled;
 }
 
 static int configure_ssl_certs(ssl_socket_certs_t *certs,
                                const avs_net_certificate_info_t *cert_info) {
     LOG(TRACE, "configure_ssl_certs");
 
-    if (cert_info->ca_cert_raw.cert_der
-            && cert_info->ca_cert_raw.cert_size == 0) {
-        LOG(ERROR, "invalid certificate info: non-NULL raw certificate of size "
-            "0 given");
-        return -1;
-    }
-
     if (server_auth_enabled(cert_info)) {
-        if (load_ca_certs(&certs->ca_cert,
-                          cert_info->ca_cert_path,
-                          cert_info->ca_cert_file,
-                          &cert_info->ca_cert_raw)) {
-            LOG(ERROR, "error loading CA certs");
+        switch (cert_info->ca.source) {
+        case AVS_NET_DATA_SOURCE_PKCS12_FILE:
+            if (load_ca_certs_from_pkcs12_file(
+                        &certs->ca_cert, cert_info->ca.data.pkcs12.path,
+                        cert_info->ca.data.pkcs12.password)) {
+                return -1;
+            }
+            break;
+        case AVS_NET_DATA_SOURCE_FILE:
+            if (load_ca_certs_from_files(&certs->ca_cert,
+                                         cert_info->ca.data.paths.cert_path,
+                                         cert_info->ca.data.paths.cert_file)) {
+                return -1;
+            }
+            break;
+        case AVS_NET_DATA_SOURCE_BUFFER:
+            if (load_ca_certs_from_memory(&certs->ca_cert,
+                                          &cert_info->ca.data.raw)) {
+                return -1;
+            }
+        default:
+            LOG(ERROR, "Unsupported CA source");
             return -1;
         }
     } else {
