@@ -131,7 +131,7 @@ typedef struct avs_vector_desc_struct avs_vector_desc_t;
  * Time complexity: O(1)
  */
 #define AVS_VECTOR_AT(vec, index) \
-    (AVS_TYPEOF_PTR(*(vec))) avs_vector_at__((void **) (vec), (index))
+    ((AVS_TYPEOF_PTR(*(vec))) avs_vector_at__((void **) (vec), (index)))
 
 /**
  * Retrieves pointer to the first element in the vector, or NULL if the vector
@@ -156,7 +156,7 @@ typedef struct avs_vector_desc_struct avs_vector_desc_t;
  * Time complexity: O(1)
  */
 #define AVS_VECTOR_BACK(vec) \
-    (AVS_TYPEOF_PTR(*(vec))) avs_vector_back__((void **) (vec))
+    ((AVS_TYPEOF_PTR(*(vec))) avs_vector_back__((void **) (vec)))
 
 /**
  * Moves element from position @p index at the end of the vector and decreases
@@ -241,7 +241,7 @@ typedef struct avs_vector_desc_struct avs_vector_desc_t;
  * @return 0 on success, negative value otherwise
  */
 #define AVS_VECTOR_RESERVE(vecptr, num_elements) \
-    avs_vector_reserve__((vecptr), (num_elements))
+    avs_vector_reserve__((void ***) (vecptr), (num_elements))
 
 /**
  * Swaps elements at positions @p i and @p j.
