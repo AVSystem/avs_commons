@@ -32,6 +32,7 @@
 #include <openssl/hmac.h>
 #include <openssl/rsa.h>
 #include <openssl/bn.h>
+#include <openssl/pkcs12.h>
 
 #include "net.h"
 
@@ -801,47 +802,144 @@ static int decorate_ssl(avs_net_abstract_socket_t *socket_,
     return result;
 }
 
-static int load_ca_certs(ssl_socket_t *socket,
-                         const char *ca_cert_path,
-                         const char *ca_cert_file,
-                         const avs_net_ssl_raw_cert_t *ca_cert) {
-    const int has_files = ca_cert_path || ca_cert_file;
-    const int has_raw_cert = ca_cert && ca_cert->cert_der;
+typedef struct {
+    /* private key */
+    EVP_PKEY *pkey;
+    /* certificate */
+    X509 *cert;
+    /* additional CA-certificates */
+    STACK_OF(X509) *ca;
+} pkcs12_unpacked_t;
 
-    if (!has_files && !has_raw_cert) {
-        LOG(ERROR, "no certificate for CA provided");
+static void pkcs12_unpacked_delete(pkcs12_unpacked_t **pkcs12) {
+    if (!*pkcs12) {
+        return;
+    }
+    if ((*pkcs12)->ca) {
+        sk_X509_pop_free((*pkcs12)->ca, X509_free);
+    }
+    if ((*pkcs12)->cert) {
+        X509_free((*pkcs12)->cert);
+    }
+    if ((*pkcs12)->pkey) {
+        EVP_PKEY_free((*pkcs12)->pkey);
+    }
+    free(*pkcs12);
+    *pkcs12 = NULL;
+}
+
+static pkcs12_unpacked_t *
+pkcs12_unpacked_new_from_file(const char *pkcs12_file,
+                              const char *pkcs12_password) {
+    pkcs12_unpacked_t *result = NULL;
+    FILE *fp = fopen(pkcs12_file, "rb");
+    if (!fp) {
+        LOG(ERROR, "cannot open %s for parsing", pkcs12_file);
+        return NULL;
+    }
+
+    PKCS12 *ctx = d2i_PKCS12_fp(fp, NULL);
+    if (!ctx) {
+        goto cleanup;
+    }
+
+    result = (pkcs12_unpacked_t *) calloc(1, sizeof(pkcs12_unpacked_t));
+    if (!result) {
+        goto cleanup;
+    }
+
+    if (!PKCS12_parse(ctx, pkcs12_password, &result->pkey, &result->cert,
+                      &result->ca)) {
+        log_openssl_error();
+        pkcs12_unpacked_delete(&result);
+        goto cleanup;
+    }
+
+cleanup:
+    if (fp) {
+        fclose(fp);
+    }
+    if (ctx) {
+        PKCS12_free(ctx);
+    }
+    return result;
+}
+
+static int load_ca_certs_from_files(ssl_socket_t *socket,
+                                    const char *ca_cert_path,
+                                    const char *ca_cert_file) {
+    if (!ca_cert_path && !ca_cert_file) {
+        LOG(ERROR, "CA cert path and CA cert file not provided");
+        return -1;
+    }
+    if (!SSL_CTX_load_verify_locations(socket->ctx, ca_cert_file,
+                                       ca_cert_path)) {
+        log_openssl_error();
+        return -1;
+    }
+    if (!SSL_CTX_set_default_verify_paths(socket->ctx)) {
+        log_openssl_error();
+        return -1;
+    }
+    return 0;
+}
+
+static int load_ca_certs_from_memory(ssl_socket_t *socket,
+                                     const avs_net_ssl_raw_cert_t *ca_cert) {
+    if (!ca_cert || !ca_cert->cert_der || !ca_cert->cert_size) {
+        LOG(ERROR, "invalid raw CA certificate provided");
+        return -1;
+    }
+    if (ca_cert->cert_der && ca_cert->cert_size == 0) {
+        LOG(ERROR, "invalid certificate info: non-NULL raw certificate of size "
+                   "0 given");
         return -1;
     }
 
-    if (has_files) {
-        if (!SSL_CTX_load_verify_locations(socket->ctx,
-                                           ca_cert_file,
-                                           ca_cert_path)) {
-            return -1;
-        }
-        if (!SSL_CTX_set_default_verify_paths(socket->ctx)) {
-            return -1;
-        }
-    }
-
-    if (has_raw_cert) {
 #ifdef FAKE_OPENSSL
-        LOG(ERROR, "Raw EC certificates not supported for this library version");
-        return -1;
+    LOG(ERROR, "Raw EC certificates not supported for this library version");
+    return -1;
 #else
-        const unsigned char *cert_data = (const unsigned char*)&ca_cert->cert_der;
-        X509 *cert = d2i_X509(NULL, &cert_data, (int)ca_cert->cert_size);
-        X509_STORE *store = SSL_CTX_get_cert_store(socket->ctx);
+    const unsigned char *cert_data = (const unsigned char *) &ca_cert->cert_der;
+    X509 *cert = d2i_X509(NULL, &cert_data, (int) ca_cert->cert_size);
+    X509_STORE *store = SSL_CTX_get_cert_store(socket->ctx);
 
-        if (!cert || !store || !X509_STORE_add_cert(store, cert)) {
-            log_openssl_error();
-            X509_free(cert);
-            return -1;
-        }
-#endif
+    if (!cert || !store || !X509_STORE_add_cert(store, cert)) {
+        log_openssl_error();
+        X509_free(cert);
+        return -1;
     }
+#endif
 
     return 0;
+}
+
+static int load_ca_certs_from_pkcs12_file(ssl_socket_t *socket,
+                                          const char *file,
+                                          const char *password) {
+    if (!file || !password) {
+        LOG(ERROR, "invalid file / password provided");
+        return -1;
+    }
+    pkcs12_unpacked_t *pkcs12 =
+            pkcs12_unpacked_new_from_file(password, password);
+    int retval = 0;
+    if (!pkcs12) {
+        retval = -1;
+    }
+    if (!retval && pkcs12->ca) {
+        X509_STORE *store = SSL_CTX_get_cert_store(socket->ctx);
+        for (int i = 0; i < sk_X509_num(pkcs12->ca); ++i) {
+            if (!X509_STORE_add_cert(store, sk_X509_value(pkcs12->ca, i))) {
+                log_openssl_error();
+                retval = -1;
+                break;
+            }
+        }
+    }
+    pkcs12_unpacked_delete(&pkcs12);
+
+    return retval;
 }
 
 static int password_cb(char *buf, int num, int rwflag, void *userdata) {
@@ -966,6 +1064,22 @@ static int load_client_key_from_file(ssl_socket_t *socket,
     return 0;
 }
 
+static int load_client_key_from_pkcs12_file(ssl_socket_t *socket,
+                                            const char *client_key_file,
+                                            const char *client_key_password) {
+    pkcs12_unpacked_t *pkcs12 =
+            pkcs12_unpacked_new_from_file(client_key_file, client_key_password);
+    int retval = 0;
+    if (!pkcs12 || !pkcs12->pkey
+            || !SSL_CTX_use_PrivateKey(socket->ctx, pkcs12->pkey)) {
+        log_openssl_error();
+        retval = -1;
+    }
+    pkcs12_unpacked_delete(&pkcs12);
+
+    return retval;
+}
+
 static int is_private_key_valid(const avs_net_private_key_t *key) {
     assert(key);
 
@@ -973,6 +1087,12 @@ static int is_private_key_valid(const avs_net_private_key_t *key) {
     case AVS_NET_DATA_SOURCE_FILE:
         if (!key->data.file.path || !key->data.file.password) {
             LOG(ERROR, "private key with password not specified");
+            return 0;
+        }
+        return 1;
+    case AVS_NET_DATA_SOURCE_PKCS12_FILE:
+        if (!key->data.pkcs12.path || !key->data.pkcs12.password) {
+            LOG(ERROR, "pkcs12 file with password not specified");
             return 0;
         }
         return 1;
@@ -997,6 +1117,9 @@ static int load_client_private_key(ssl_socket_t *socket,
     case AVS_NET_DATA_SOURCE_FILE:
         return load_client_key_from_file(socket, key->data.file.path,
                                          key->data.file.password);
+    case AVS_NET_DATA_SOURCE_PKCS12_FILE:
+        return load_client_key_from_pkcs12_file(socket, key->data.pkcs12.path,
+                                                key->data.pkcs12.password);
     case AVS_NET_DATA_SOURCE_BUFFER:
         return load_client_key_from_data(socket, &key->data.buffer);
     }
@@ -1007,12 +1130,29 @@ static int load_client_private_key(ssl_socket_t *socket,
 static int is_client_cert_empty(const avs_net_client_cert_t *cert) {
     switch (cert->source) {
     case AVS_NET_DATA_SOURCE_FILE:
-        return !cert->data.file;
+        return !cert->data.file.path;
+    case AVS_NET_DATA_SOURCE_PKCS12_FILE:
+        return !cert->data.pkcs12.path || !cert->data.pkcs12.password;
     case AVS_NET_DATA_SOURCE_BUFFER:
         return !cert->data.buffer.cert_der;
     }
     assert(0 && "invalid enum value");
     return 1;
+}
+
+static int load_client_cert_from_pkcs12_file(ssl_socket_t *socket,
+                                             const char *client_cert_file,
+                                             const char *client_cert_password) {
+    pkcs12_unpacked_t *pkcs12 =
+            pkcs12_unpacked_new_from_file(client_cert_file, client_cert_password);
+    int retval = 0;
+    if (!pkcs12 || !pkcs12->cert
+            || !SSL_CTX_use_certificate(socket->ctx, pkcs12->cert)) {
+        retval = -1;
+    }
+    pkcs12_unpacked_delete(&pkcs12);
+
+    return retval;
 }
 
 static int load_client_cert(ssl_socket_t *socket,
@@ -1028,7 +1168,11 @@ static int load_client_cert(ssl_socket_t *socket,
     switch (cert->source) {
     case AVS_NET_DATA_SOURCE_FILE:
         result = SSL_CTX_use_certificate_chain_file(socket->ctx,
-                                                    cert->data.file);
+                                                    cert->data.file.path);
+        break;
+    case AVS_NET_DATA_SOURCE_PKCS12_FILE:
+        result = load_client_cert_from_pkcs12_file(
+                socket, cert->data.pkcs12.path, cert->data.pkcs12.password);
         break;
     case AVS_NET_DATA_SOURCE_BUFFER:
 #ifdef FAKE_OPENSSL
@@ -1060,21 +1204,13 @@ static int load_client_cert(ssl_socket_t *socket,
 }
 
 static int server_auth_enabled(const avs_net_certificate_info_t *cert_info) {
-    return cert_info->ca_cert_file
-        || cert_info->ca_cert_path
-        || cert_info->ca_cert_raw.cert_der;
+    return cert_info->ca_enabled;
 }
 
 static int configure_ssl_certs(ssl_socket_t *socket,
                                const avs_net_certificate_info_t *cert_info) {
     LOG(TRACE, "configure_ssl_certs");
 
-    if (cert_info->ca_cert_raw.cert_der
-            && cert_info->ca_cert_raw.cert_size == 0) {
-        LOG(ERROR, "invalid certificate info: non-NULL raw certificate of size "
-            "0 given");
-        return -1;
-    }
 
     if (server_auth_enabled(cert_info)) {
         socket->verification = 1;
@@ -1082,10 +1218,31 @@ static int configure_ssl_certs(ssl_socket_t *socket,
 #if !defined(FAKE_OPENSSL) && OPENSSL_VERSION_NUMBER_LT(0,9,5)
         SSL_CTX_set_verify_depth(socket->ctx, 1);
 #endif
-        if (load_ca_certs(socket, cert_info->ca_cert_path,
-                          cert_info->ca_cert_file,
-                          &cert_info->ca_cert_raw)) {
-            LOG(ERROR, "Error loading CA certs");
+        switch (cert_info->ca.source) {
+        case AVS_NET_DATA_SOURCE_FILE:
+            if (load_ca_certs_from_files(socket,
+                                         cert_info->ca.data.paths.cert_path,
+                                         cert_info->ca.data.paths.cert_file)) {
+                LOG(ERROR, "Error loading CA certs from paths");
+                return -1;
+            }
+            break;
+        case AVS_NET_DATA_SOURCE_PKCS12_FILE:
+            if (load_ca_certs_from_pkcs12_file(
+                        socket, cert_info->ca.data.pkcs12.path,
+                        cert_info->ca.data.pkcs12.password)) {
+                LOG(ERROR, "Error loading CA certs from PKCS12 archive");
+                return -1;
+            }
+            break;
+        case AVS_NET_DATA_SOURCE_BUFFER:
+            if (load_ca_certs_from_memory(socket, &cert_info->ca.data.raw)) {
+                LOG(ERROR, "Error loading CA certs from memory buffer");
+                return -1;
+            }
+            break;
+        default:
+            LOG(ERROR, "Unsupported CA source");
             return -1;
         }
     } else {

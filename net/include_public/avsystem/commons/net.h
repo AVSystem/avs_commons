@@ -302,33 +302,45 @@ typedef struct {
     size_t identity_size;
 } avs_net_psk_t;
 
+typedef struct {
+    /** Path to the file */
+    const char *path;
+    /** NULL-terminated password protecting contents of the file */
+    const char *password;
+} avs_net_file_t;
+
 typedef enum {
     AVS_NET_DATA_SOURCE_FILE,
+    AVS_NET_DATA_SOURCE_PKCS12_FILE,
     AVS_NET_DATA_SOURCE_BUFFER
 } avs_net_data_source_t;
 
 typedef struct {
     avs_net_data_source_t source;
     union {
-        const char *file;
+        avs_net_file_t file;
+        avs_net_file_t pkcs12;
         avs_net_ssl_raw_cert_t buffer;
     } data;
 } avs_net_client_cert_t;
 
+avs_net_client_cert_t
+avs_net_client_cert_from_pkcs12_file(const char *file, const char *password);
 avs_net_client_cert_t avs_net_client_cert_from_file(const char *file);
-avs_net_client_cert_t avs_net_client_cert_from_memory(const void *cert_der,
+avs_net_client_cert_t avs_net_client_cert_from_memory(const void *der_cert,
                                                       size_t cert_size);
 
 typedef struct {
     avs_net_data_source_t source;
     union {
-        struct {
-            const char *path; /**< private key file path */
-            const char *password; /**< NULL-terminated password for the private key file */
-        } file;
+        avs_net_file_t file;
+        avs_net_file_t pkcs12;
         avs_net_ssl_raw_key_t buffer;
     } data;
 } avs_net_private_key_t;
+
+avs_net_private_key_t
+avs_net_private_key_from_pkcs12_file(const char *path, const char *password);
 
 avs_net_private_key_t avs_net_private_key_from_file(const char *path,
                                                     const char *password);
@@ -336,19 +348,48 @@ avs_net_private_key_t avs_net_private_key_from_memory(avs_net_key_type_t type,
                                                       const char *curve_name,
                                                       const void *private_key,
                                                       size_t private_key_size);
+
+typedef struct {
+    avs_net_data_source_t source;
+    union {
+        avs_net_file_t file;
+        avs_net_file_t pkcs12;
+        avs_net_ssl_raw_cert_t raw;
+        struct {
+            const char *cert_file;
+            const char *cert_path;
+        } paths;
+    } data;
+} avs_net_ca_chain_t;
+
+avs_net_ca_chain_t avs_net_ca_chain_from_memory(const void *cert_der,
+                                                size_t size);
+
+avs_net_ca_chain_t
+avs_net_ca_chain_from_paths(const char *trusted_ca_cert_file,
+                            const char *trusted_ca_cert_path);
+
+avs_net_ca_chain_t avs_net_ca_chain_from_pkcs12(const char *file,
+                                                const char *password);
+
 /**
  * Certificate and key information may be read from files or passed as raw data.
  *
- * Setting both filename and data pointer for client_key/client_cert is invalid.
- * When the ca_cert_raw.cert_der is not NULL, its size must not be zero.
+ * User should initialize:
+ *  - @ref avs_net_certificate_info_t#client_cert,
+ *  - @ref avs_net_certificate_info_t#client_key,
+ *  - @ref avs_net_certificate_info_t#ca
+ * via helper functions:
+ *  - @ref avs_net_client_cert_from_*
+ *  - @ref avs_net_client_key_from_*
+ *  - @ref avs_net_ca_chain_from_*
  *
- * ca_cert_raw may be used with ca_cert_file/ca_cert_path to add an extra CA
- * certificate to the certificate store,
+ * Moreover, to enable CA chain validation one MUST set @ref
+ * avs_net_certificate_info_t#ca_enabled to a nonzero value.
  */
 typedef struct {
-    const char *ca_cert_file;
-    const char *ca_cert_path;
-    avs_net_ssl_raw_cert_t ca_cert_raw;
+    char ca_enabled;
+    avs_net_ca_chain_t ca;
 
     avs_net_client_cert_t client_cert;
     avs_net_private_key_t client_key;
