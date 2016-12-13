@@ -884,7 +884,7 @@ static int is_private_key_valid(const avs_net_private_key_t *key) {
     case AVS_NET_DATA_SOURCE_PKCS12_FILE:
         LOG(ERROR, "pkcs12 is not supported");
         return 0;
-    case AVS_NET_DATA_SOURCE_FILE:
+    case AVS_NET_DATA_SOURCE_TEXT_FILE:
         if (!key->data.file.path || !key->data.file.password) {
             LOG(ERROR, "private key with password not specified");
             return 0;
@@ -948,7 +948,7 @@ static int load_client_private_key(ssl_socket_certs_t *certs,
     case AVS_NET_DATA_SOURCE_PKCS12_FILE:
         LOG(ERROR, "pkcs12 is not supported");
         return -1;
-    case AVS_NET_DATA_SOURCE_FILE:
+    case AVS_NET_DATA_SOURCE_TEXT_FILE:
         return mbedtls_pk_parse_keyfile(certs->pk_key, key->data.file.path,
                                         key->data.file.password);
     case AVS_NET_DATA_SOURCE_BUFFER:
@@ -964,7 +964,7 @@ static int is_client_cert_empty(const avs_net_client_cert_t *cert) {
     case AVS_NET_DATA_SOURCE_PKCS12_FILE:
         LOG(ERROR, "pkcs12 is not supported");
         return 1;
-    case AVS_NET_DATA_SOURCE_FILE:
+    case AVS_NET_DATA_SOURCE_TEXT_FILE:
         return !cert->data.file.path;
     case AVS_NET_DATA_SOURCE_BUFFER:
         return !cert->data.buffer.cert_der;
@@ -991,7 +991,7 @@ static int load_client_cert(ssl_socket_certs_t *certs,
         failed = -1;
         LOG(ERROR, "pkcs12 is not supported");
         break;
-    case AVS_NET_DATA_SOURCE_FILE:
+    case AVS_NET_DATA_SOURCE_TEXT_FILE:
         failed = mbedtls_x509_crt_parse_file(certs->client_cert,
                                              cert->data.file.path);
         if (failed) {
@@ -1042,7 +1042,7 @@ static int configure_ssl_certs(ssl_socket_certs_t *certs,
                 return -1;
             }
             break;
-        case AVS_NET_DATA_SOURCE_FILE:
+        case AVS_NET_DATA_SOURCE_TEXT_FILE:
             if (load_ca_certs_from_files(&certs->ca_cert,
                                          cert_info->ca.data.paths.cert_path,
                                          cert_info->ca.data.paths.cert_file)) {

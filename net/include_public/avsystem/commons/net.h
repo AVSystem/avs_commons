@@ -310,7 +310,7 @@ typedef struct {
 } avs_net_file_t;
 
 typedef enum {
-    AVS_NET_DATA_SOURCE_FILE,
+    AVS_NET_DATA_SOURCE_TEXT_FILE,
     AVS_NET_DATA_SOURCE_PKCS12_FILE,
     AVS_NET_DATA_SOURCE_BUFFER
 } avs_net_data_source_t;
