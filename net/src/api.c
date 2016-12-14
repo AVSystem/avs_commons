@@ -36,7 +36,7 @@ avs_net_client_cert_t avs_net_client_cert_from_pkcs12_file(const char *file,
 avs_net_client_cert_t avs_net_client_cert_from_file(const char *file) {
     avs_net_client_cert_t result;
     memset(&result, 0, sizeof(result));
-    result.source = AVS_NET_DATA_SOURCE_TEXT_FILE;
+    result.source = AVS_NET_DATA_SOURCE_FILE;
     result.data.file.path = file;
     result.data.file.password = "";
     return result;
@@ -66,7 +66,7 @@ avs_net_private_key_t avs_net_private_key_from_file(const char *path,
                                                     const char *password) {
     avs_net_private_key_t result;
     memset(&result, 0, sizeof(result));
-    result.source = AVS_NET_DATA_SOURCE_TEXT_FILE;
+    result.source = AVS_NET_DATA_SOURCE_FILE;
     result.data.file.path = path;
     result.data.file.password = password;
     return result;
@@ -101,7 +101,7 @@ avs_net_ca_chain_from_paths(const char *trusted_ca_cert_file,
                             const char *trusted_ca_cert_path) {
     avs_net_ca_chain_t result;
     memset(&result, 0, sizeof(result));
-    result.source = AVS_NET_DATA_SOURCE_TEXT_FILE;
+    result.source = AVS_NET_DATA_SOURCE_FILE;
     result.data.paths.cert_file = trusted_ca_cert_file;
     result.data.paths.cert_path = trusted_ca_cert_path;
     return result;
