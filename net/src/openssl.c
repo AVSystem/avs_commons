@@ -904,7 +904,7 @@ static int load_ca_certs_from_memory(ssl_socket_t *socket,
     LOG(ERROR, "Raw EC certificates not supported for this library version");
     return -1;
 #else
-    const unsigned char *cert_data = (const unsigned char *) &ca_cert->cert_der;
+    const unsigned char *cert_data = (const unsigned char *) ca_cert->cert_der;
     X509 *cert = d2i_X509(NULL, &cert_data, (int) ca_cert->cert_size);
     X509_STORE *store = SSL_CTX_get_cert_store(socket->ctx);
 
