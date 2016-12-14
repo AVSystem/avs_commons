@@ -11,6 +11,7 @@
 #define AVS_COMMONS_NET_H
 
 #include <limits.h>
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
 
@@ -390,10 +391,10 @@ avs_net_trusted_cert_source_from_memory(const void *der, size_t size);
  *  - @ref avs_net_trusted_cert_source_from_*
  *
  * Moreover, to enable CA chain validation one MUST set @ref
- * avs_net_certificate_info_t#server_cert_validation to a nonzero value.
+ * avs_net_certificate_info_t#server_cert_validation to true.
  */
 typedef struct {
-    char server_cert_validation;
+    bool server_cert_validation;
     avs_net_trusted_cert_source_t trusted_certs;
 
     avs_net_client_cert_t client_cert;
