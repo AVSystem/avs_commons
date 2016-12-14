@@ -1179,8 +1179,8 @@ static int load_client_cert_from_file(ssl_socket_t *socket,
                                       const avs_net_client_cert_t *cert) {
     switch (cert->format) {
     case AVS_NET_DATA_SOURCE_FORMAT_PEM:
-        return SSL_CTX_use_certificate_chain_file(socket->ctx,
-                                                  cert->data.file.path);
+        return -(SSL_CTX_use_certificate_chain_file(socket->ctx,
+                                                  cert->data.file.path) != 1);
     case AVS_NET_DATA_SOURCE_FORMAT_PKCS12:
         return load_client_cert_from_pkcs12_file(socket, cert->data.file.path,
                                                  cert->data.file.password);
@@ -1214,9 +1214,12 @@ static int load_client_cert(ssl_socket_t *socket,
             LOG(ERROR, "unsupported client cert format");
             result = -1;
         } else {
-            result = SSL_CTX_use_certificate_ASN1(
-                    socket->ctx, (int) cert->data.buffer.cert_size,
-                    (const unsigned char *) cert->data.buffer.cert_der);
+            if (SSL_CTX_use_certificate_ASN1(
+                        socket->ctx, (int) cert->data.buffer.cert_size,
+                        (const unsigned char *) cert->data.buffer.cert_der)
+                   != 1) {
+                result = -1;
+            }
         }
 #endif
         break;
@@ -1225,7 +1228,7 @@ static int load_client_cert(ssl_socket_t *socket,
         return -1;
     }
 
-    if (!result) {
+    if (result) {
         log_openssl_error();
         return -1;
     }
