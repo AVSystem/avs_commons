@@ -303,7 +303,6 @@ typedef struct {
 } avs_net_psk_t;
 
 typedef enum {
-    AVS_NET_DATA_SOURCE_FORMAT_AUTO,
     AVS_NET_DATA_SOURCE_FORMAT_DER,
     AVS_NET_DATA_SOURCE_FORMAT_PEM,
     AVS_NET_DATA_SOURCE_FORMAT_PKCS12
