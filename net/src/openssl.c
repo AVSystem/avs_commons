@@ -1046,7 +1046,7 @@ static int load_client_key_from_data(ssl_socket_t *socket,
         return -1;
     }
 
-    if (!SSL_CTX_use_PrivateKey(socket->ctx, evp_key)) {
+    if (SSL_CTX_use_PrivateKey(socket->ctx, evp_key) != 1) {
         LOG(ERROR, "could not set private key");
         log_openssl_error();
         EVP_PKEY_free(evp_key);
@@ -1068,9 +1068,9 @@ static int load_client_key_from_pem_file(ssl_socket_t *socket,
             /* const_cast */ (void *) (intptr_t) client_key_password);
     SSL_CTX_set_default_passwd_cb(socket->ctx, password_cb);
 
-    if (!SSL_CTX_use_PrivateKey_file(socket->ctx,
-                                     client_key_file,
-                                     SSL_FILETYPE_PEM)) {
+    if (SSL_CTX_use_PrivateKey_file(socket->ctx, client_key_file,
+                                    SSL_FILETYPE_PEM)
+            != 1) {
         log_openssl_error();
         return -1;
     }
@@ -1085,7 +1085,7 @@ static int load_client_key_from_pkcs12_file(ssl_socket_t *socket,
             pkcs12_unpacked_new_from_file(client_key_file, client_key_password);
     int retval = 0;
     if (!pkcs12 || !pkcs12->private_key
-            || !SSL_CTX_use_PrivateKey(socket->ctx, pkcs12->private_key)) {
+        || (SSL_CTX_use_PrivateKey(socket->ctx, pkcs12->private_key) != 1)) {
         log_openssl_error();
         retval = -1;
     }
@@ -1169,7 +1169,7 @@ static int load_client_cert_from_pkcs12_file(ssl_socket_t *socket,
             pkcs12_unpacked_new_from_file(client_cert_file, client_cert_password);
     int retval = 0;
     if (!pkcs12 || !pkcs12->client_cert
-            || !SSL_CTX_use_certificate(socket->ctx, pkcs12->client_cert)) {
+        || (SSL_CTX_use_certificate(socket->ctx, pkcs12->client_cert) != 1)) {
         retval = -1;
     }
     pkcs12_unpacked_delete(&pkcs12);
