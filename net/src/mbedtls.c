@@ -819,11 +819,18 @@ do { \
     } \
 } while (0)
 
-static int load_ca_certs_from_files(mbedtls_x509_crt **out,
-                                    const char *ca_cert_path,
-                                    const char *ca_cert_file) {
+static int
+load_ca_certs_from_paths(mbedtls_x509_crt **out,
+                         const avs_net_certificate_info_t *cert_info) {
+    const char *ca_cert_path = cert_info->trusted_certs.data.paths.cert_path;
+    const char *ca_cert_file = cert_info->trusted_certs.data.paths.cert_file;
     if (!ca_cert_path && !ca_cert_file) {
         LOG(ERROR, "CA cert path and CA cert file not provided");
+        return -1;
+    }
+    if (cert_info->trusted_certs.format != AVS_NET_DATA_SOURCE_FORMAT_DER
+        && cert_info->trusted_certs.format != AVS_NET_DATA_SOURCE_FORMAT_PEM) {
+        LOG(ERROR, "unsupported CA certs format");
         return -1;
     }
     CREATE_OR_FAIL(mbedtls_x509_crt, out);
@@ -846,7 +853,8 @@ static int load_ca_certs_from_files(mbedtls_x509_crt **out,
 }
 
 static int load_ca_certs_from_memory(mbedtls_x509_crt **out,
-                                     const avs_net_ssl_raw_cert_t *ca_cert) {
+                                     const avs_net_trusted_cert_source_t *cert_info) {
+    const avs_net_ssl_raw_cert_t *ca_cert = &cert_info->data.raw;
     if (!ca_cert || !ca_cert->cert_der || !ca_cert->cert_size) {
         LOG(ERROR, "invalid raw CA certificate provided");
         return -1;
@@ -854,6 +862,10 @@ static int load_ca_certs_from_memory(mbedtls_x509_crt **out,
     if (ca_cert->cert_der && ca_cert->cert_size == 0) {
         LOG(ERROR, "invalid certificate info: non-NULL raw certificate of size "
                    "0 given");
+        return -1;
+    }
+    if (cert_info->format != AVS_NET_DATA_SOURCE_FORMAT_DER) {
+        LOG(ERROR, "invalid CA certs format");
         return -1;
     }
     CREATE_OR_FAIL(mbedtls_x509_crt, out);
@@ -867,23 +879,10 @@ static int load_ca_certs_from_memory(mbedtls_x509_crt **out,
     return result;
 }
 
-static int load_ca_certs_from_pkcs12_file(mbedtls_x509_crt **out,
-                                          const char *file,
-                                          const char *password) {
-    (void) out;
-    (void) file;
-    (void) password;
-    LOG(ERROR, "pkcs12 is not supported");
-    return -1;
-}
-
 static int is_private_key_valid(const avs_net_private_key_t *key) {
     assert(key);
 
     switch (key->source) {
-    case AVS_NET_DATA_SOURCE_PKCS12_FILE:
-        LOG(ERROR, "pkcs12 is not supported");
-        return 0;
     case AVS_NET_DATA_SOURCE_FILE:
         if (!key->data.file.path || !key->data.file.password) {
             LOG(ERROR, "private key with password not specified");
@@ -896,9 +895,10 @@ static int is_private_key_valid(const avs_net_private_key_t *key) {
             return 0;
         }
         return 1;
+    default:
+        assert(!"invalid enum value");
+        return 0;
     }
-    assert(!"invalid enum value");
-    return 0;
 }
 
 static int load_client_key_from_data(ssl_socket_certs_t *certs,
@@ -935,6 +935,19 @@ static int load_client_key_from_data(ssl_socket_certs_t *certs,
     return 0;
 }
 
+static int load_client_key_from_file(ssl_socket_certs_t *certs,
+                                     const avs_net_private_key_t *key) {
+    switch (key->format) {
+    case AVS_NET_DATA_SOURCE_FORMAT_PEM:
+    case AVS_NET_DATA_SOURCE_FORMAT_DER:
+        return mbedtls_pk_parse_keyfile(certs->pk_key, key->data.file.path,
+                                        key->data.file.password);
+    default:
+        LOG(ERROR, "unsupported client key file format");
+        return -1;
+    }
+}
+
 static int load_client_private_key(ssl_socket_certs_t *certs,
                                    const avs_net_private_key_t *key) {
     if (!is_private_key_valid(key)) {
@@ -945,12 +958,8 @@ static int load_client_private_key(ssl_socket_certs_t *certs,
     mbedtls_pk_init(certs->pk_key);
 
     switch (key->source) {
-    case AVS_NET_DATA_SOURCE_PKCS12_FILE:
-        LOG(ERROR, "pkcs12 is not supported");
-        return -1;
     case AVS_NET_DATA_SOURCE_FILE:
-        return mbedtls_pk_parse_keyfile(certs->pk_key, key->data.file.path,
-                                        key->data.file.password);
+        return load_client_key_from_file(certs, key);
     case AVS_NET_DATA_SOURCE_BUFFER:
         return load_client_key_from_data(certs, &key->data.buffer);
     default:
@@ -961,16 +970,40 @@ static int load_client_private_key(ssl_socket_certs_t *certs,
 
 static int is_client_cert_empty(const avs_net_client_cert_t *cert) {
     switch (cert->source) {
-    case AVS_NET_DATA_SOURCE_PKCS12_FILE:
-        LOG(ERROR, "pkcs12 is not supported");
-        return 1;
     case AVS_NET_DATA_SOURCE_FILE:
         return !cert->data.file.path;
     case AVS_NET_DATA_SOURCE_BUFFER:
         return !cert->data.buffer.cert_der;
+    default:
+        assert(!"invalid enum value");
+        return 1;
     }
-    assert(!"invalid enum value");
-    return 1;
+}
+
+static int load_client_cert_from_file(ssl_socket_certs_t *certs,
+                                      const avs_net_client_cert_t *cert) {
+    switch (cert->format) {
+    case AVS_NET_DATA_SOURCE_FORMAT_PEM:
+    case AVS_NET_DATA_SOURCE_FORMAT_DER:
+        return mbedtls_x509_crt_parse_file(certs->client_cert, cert->data.file.path);
+    default:
+        LOG(ERROR, "unsupported client cert file format");
+        return -1;
+    }
+}
+
+static int load_client_cert_from_data(ssl_socket_certs_t *certs,
+        const avs_net_client_cert_t *cert) {
+    switch (cert->format) {
+    case AVS_NET_DATA_SOURCE_FORMAT_DER:
+        return mbedtls_x509_crt_parse_der(
+                certs->client_cert,
+                (const unsigned char *) cert->data.buffer.cert_der,
+                cert->data.buffer.cert_size);
+    default:
+        LOG(ERROR, "unsupported client cert data format");
+        return -1;
+    }
 }
 
 static int load_client_cert(ssl_socket_certs_t *certs,
@@ -987,23 +1020,15 @@ static int load_client_cert(ssl_socket_certs_t *certs,
     mbedtls_x509_crt_init(certs->client_cert);
 
     switch (cert->source) {
-    case AVS_NET_DATA_SOURCE_PKCS12_FILE:
-        failed = -1;
-        LOG(ERROR, "pkcs12 is not supported");
-        break;
     case AVS_NET_DATA_SOURCE_FILE:
-        failed = mbedtls_x509_crt_parse_file(certs->client_cert,
-                                             cert->data.file.path);
+        failed = load_client_cert_from_file(certs, cert);
         if (failed) {
             LOG(WARNING, "failed to parse %d certs in file <%s>",
                 failed, cert->data.file.path);
         }
         break;
     case AVS_NET_DATA_SOURCE_BUFFER:
-        failed = mbedtls_x509_crt_parse_der(
-                certs->client_cert,
-                (const unsigned char *) cert->data.buffer.cert_der,
-                cert->data.buffer.cert_size);
+        failed = load_client_cert_from_data(certs, cert);
         if (failed) {
             LOG(WARNING, "failed to parse DER certificate: %d", failed);
         }
@@ -1025,33 +1050,20 @@ static int load_client_cert(ssl_socket_certs_t *certs,
     return 0;
 }
 
-static int server_auth_enabled(const avs_net_certificate_info_t *cert_info) {
-    return cert_info->ca_enabled;
-}
-
 static int configure_ssl_certs(ssl_socket_certs_t *certs,
                                const avs_net_certificate_info_t *cert_info) {
     LOG(TRACE, "configure_ssl_certs");
 
-    if (server_auth_enabled(cert_info)) {
-        switch (cert_info->ca.source) {
-        case AVS_NET_DATA_SOURCE_PKCS12_FILE:
-            if (load_ca_certs_from_pkcs12_file(
-                        &certs->ca_cert, cert_info->ca.data.pkcs12.path,
-                        cert_info->ca.data.pkcs12.password)) {
-                return -1;
-            }
-            break;
-        case AVS_NET_DATA_SOURCE_FILE:
-            if (load_ca_certs_from_files(&certs->ca_cert,
-                                         cert_info->ca.data.paths.cert_path,
-                                         cert_info->ca.data.paths.cert_file)) {
+    if (cert_info->server_cert_validation) {
+        switch (cert_info->trusted_certs.source) {
+        case AVS_NET_DATA_SOURCE_PATHS:
+            if (load_ca_certs_from_paths(&certs->ca_cert, cert_info)) {
                 return -1;
             }
             break;
         case AVS_NET_DATA_SOURCE_BUFFER:
             if (load_ca_certs_from_memory(&certs->ca_cert,
-                                          &cert_info->ca.data.raw)) {
+                                          &cert_info->trusted_certs)) {
                 return -1;
             }
         default:
