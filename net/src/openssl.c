@@ -883,12 +883,12 @@ static int load_ca_certs_from_paths(ssl_socket_t *socket,
 
 static int load_ca_certs_from_memory(ssl_socket_t *socket,
                                      const avs_net_trusted_cert_source_t *certs) {
-    if (certs->format != AVS_NET_DATA_FORMAT_DER) {
+    if (certs->impl.format != AVS_NET_DATA_FORMAT_DER) {
         LOG(ERROR, "unsupported CA certs format");
         return -1;
     }
 
-    const avs_net_ssl_raw_cert_t *ca_cert = &certs->data.raw;
+    const avs_net_ssl_raw_cert_t *ca_cert = &certs->impl.data.raw_cert;
 
     if (!ca_cert || !ca_cert->cert_der || !ca_cert->cert_size) {
         LOG(ERROR, "invalid raw CA certificate provided");
@@ -948,12 +948,12 @@ static int load_ca_certs_from_pkcs12_file(ssl_socket_t *socket,
 
 static int load_ca_certs_from_file(ssl_socket_t *socket,
                                    const avs_net_trusted_cert_source_t *certs) {
-    if (certs->format != AVS_NET_DATA_FORMAT_PKCS12) {
+    if (certs->impl.format != AVS_NET_DATA_FORMAT_PKCS12) {
         LOG(ERROR, "unsupported CA certs format");
         return -1;
     }
-    return load_ca_certs_from_pkcs12_file(socket, certs->data.file.path,
-                                          certs->data.file.password);
+    return load_ca_certs_from_pkcs12_file(socket, certs->impl.data.file.path,
+                                          certs->impl.data.file.password);
 }
 
 static int password_cb(char *buf, int num, int rwflag, void *userdata) {
@@ -1096,13 +1096,15 @@ static int load_client_key_from_pkcs12_file(ssl_socket_t *socket,
 
 static int load_client_key_from_file(ssl_socket_t *socket,
                                      const avs_net_private_key_t *pkey) {
-    switch (pkey->format) {
+    switch (pkey->impl.format) {
     case AVS_NET_DATA_FORMAT_PEM:
-        return load_client_key_from_pem_file(socket, pkey->data.file.path,
-                                             pkey->data.file.password);
+        return load_client_key_from_pem_file(socket,
+                                             pkey->impl.data.file.path,
+                                             pkey->impl.data.file.password);
     case AVS_NET_DATA_FORMAT_PKCS12:
-        return load_client_key_from_pkcs12_file(socket, pkey->data.file.path,
-                                                pkey->data.file.password);
+        return load_client_key_from_pkcs12_file(socket,
+                                                pkey->impl.data.file.path,
+                                                pkey->impl.data.file.password);
     default:
         LOG(ERROR, "unsupported client key file format");
         return -1;
@@ -1112,15 +1114,15 @@ static int load_client_key_from_file(ssl_socket_t *socket,
 static int is_private_key_valid(const avs_net_private_key_t *key) {
     assert(key);
 
-    switch (key->source) {
+    switch (key->impl.source) {
     case AVS_NET_DATA_SOURCE_FILE:
-        if (!key->data.file.path || !key->data.file.password) {
+        if (!key->impl.data.file.path || !key->impl.data.file.password) {
             LOG(ERROR, "private key with password not specified");
             return 0;
         }
         return 1;
     case AVS_NET_DATA_SOURCE_BUFFER:
-        if (!key->data.buffer.private_key) {
+        if (!key->impl.data.raw_key.private_key) {
             LOG(ERROR, "private key not specified");
             return 0;
         }
@@ -1137,11 +1139,11 @@ static int load_client_private_key(ssl_socket_t *socket,
         return -1;
     }
 
-    switch (key->source) {
+    switch (key->impl.source) {
     case AVS_NET_DATA_SOURCE_FILE:
         return load_client_key_from_file(socket, key);
     case AVS_NET_DATA_SOURCE_BUFFER:
-        return load_client_key_from_data(socket, &key->data.buffer);
+        return load_client_key_from_data(socket, &key->impl.data.raw_key);
     default:
         assert(0 && "invalid enum value");
         return -1;
@@ -1149,11 +1151,11 @@ static int load_client_private_key(ssl_socket_t *socket,
 }
 
 static int is_client_cert_empty(const avs_net_client_cert_t *cert) {
-    switch (cert->source) {
+    switch (cert->impl.source) {
     case AVS_NET_DATA_SOURCE_FILE:
-        return !cert->data.file.path;
+        return !cert->impl.data.file.path;
     case AVS_NET_DATA_SOURCE_BUFFER:
-        return !cert->data.buffer.cert_der;
+        return !cert->impl.data.raw_cert.cert_der;
     default:
         assert(0 && "invalid enum value");
         return 1;
@@ -1177,13 +1179,15 @@ static int load_client_cert_from_pkcs12_file(ssl_socket_t *socket,
 
 static int load_client_cert_from_file(ssl_socket_t *socket,
                                       const avs_net_client_cert_t *cert) {
-    switch (cert->format) {
+    switch (cert->impl.format) {
     case AVS_NET_DATA_FORMAT_PEM:
         return -(SSL_CTX_use_certificate_chain_file(socket->ctx,
-                                                  cert->data.file.path) != 1);
+                                                    cert->impl.data.file.path)
+                 != 1);
     case AVS_NET_DATA_FORMAT_PKCS12:
-        return load_client_cert_from_pkcs12_file(socket, cert->data.file.path,
-                                                 cert->data.file.password);
+        return load_client_cert_from_pkcs12_file(socket,
+                                                 cert->impl.data.file.path,
+                                                 cert->impl.data.file.password);
     default:
         LOG(ERROR, "unsupported client cert format");
     }
@@ -1193,14 +1197,14 @@ static int load_client_cert_from_file(ssl_socket_t *socket,
 static int load_client_cert(ssl_socket_t *socket,
                             const avs_net_client_cert_t *cert,
                             const avs_net_private_key_t *key) {
-    int result = 0;
+    int result = -1;
 
     if (is_client_cert_empty(cert)) {
         LOG(TRACE, "client certificate not specified");
         return 0;
     }
 
-    switch (cert->source) {
+    switch (cert->impl.source) {
     case AVS_NET_DATA_SOURCE_FILE:
         result = load_client_cert_from_file(socket, cert);
         break;
@@ -1208,33 +1212,36 @@ static int load_client_cert(ssl_socket_t *socket,
 #ifdef FAKE_OPENSSL
         LOG(ERROR, "Loading certificates from memory not supported for this "
                    "library version");
-        result = -1;
+        goto error;
 #else
-        if (cert->format != AVS_NET_DATA_FORMAT_DER) {
+        if (cert->impl.format != AVS_NET_DATA_FORMAT_DER) {
             LOG(ERROR, "unsupported client cert format");
-            result = -1;
-        } else {
-            if (SSL_CTX_use_certificate_ASN1(
-                        socket->ctx, (int) cert->data.buffer.cert_size,
-                        (const unsigned char *) cert->data.buffer.cert_der)
-                   != 1) {
-                result = -1;
-            }
+            goto error;
+        }
+
+        const int size = (int) cert->impl.data.raw_cert.cert_size;
+        const unsigned char *der =
+                (const unsigned char *) cert->impl.data.raw_cert.cert_der;
+        if (SSL_CTX_use_certificate_ASN1(socket->ctx, size, der) != 1) {
+            goto error;
         }
 #endif
         break;
     default:
         assert(0 && "invalid enum value");
-        return -1;
+        goto error;
     }
 
-    if (result) {
-        log_openssl_error();
-        return -1;
-    }
 
     if (load_client_private_key(socket, key)) {
         LOG(ERROR, "Error loading client private key");
+        goto error;
+    }
+
+    return 0;
+error:
+    if (result) {
+        log_openssl_error();
         return -1;
     }
 
@@ -1252,11 +1259,12 @@ static int configure_ssl_certs(ssl_socket_t *socket,
 #if !defined(FAKE_OPENSSL) && OPENSSL_VERSION_NUMBER_LT(0,9,5)
         SSL_CTX_set_verify_depth(socket->ctx, 1);
 #endif
-        switch (cert_info->trusted_certs.source) {
+        switch (cert_info->trusted_certs.impl.source) {
         case AVS_NET_DATA_SOURCE_PATHS:
             if (load_ca_certs_from_paths(
-                        socket, cert_info->trusted_certs.data.paths.cert_file,
-                        cert_info->trusted_certs.data.paths.cert_path)) {
+                        socket,
+                        cert_info->trusted_certs.impl.data.paths.cert_file,
+                        cert_info->trusted_certs.impl.data.paths.cert_path)) {
                 LOG(ERROR, "Error loading CA certs from paths");
                 return -1;
             }

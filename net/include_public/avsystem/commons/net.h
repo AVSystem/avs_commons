@@ -323,11 +323,20 @@ typedef struct {
 
 typedef struct {
     avs_net_data_source_t source;
-    avs_net_data_format_t format;
     union {
         avs_net_file_t file;
-        avs_net_ssl_raw_cert_t buffer;
+        avs_net_ssl_raw_cert_t raw_cert;
+        avs_net_ssl_raw_key_t raw_key;
+        struct {
+            const char *cert_file;
+            const char *cert_path;
+        } paths;
     } data;
+    avs_net_data_format_t format;
+} avs_net_security_info_union_t;
+
+typedef struct {
+    avs_net_security_info_union_t impl;
 } avs_net_client_cert_t;
 
 avs_net_client_cert_t
@@ -339,12 +348,7 @@ avs_net_client_cert_t avs_net_client_cert_from_memory(const void *der_cert,
                                                       size_t cert_size);
 
 typedef struct {
-    avs_net_data_source_t source;
-    avs_net_data_format_t format;
-    union {
-        avs_net_file_t file;
-        avs_net_ssl_raw_key_t buffer;
-    } data;
+    avs_net_security_info_union_t impl;
 } avs_net_private_key_t;
 
 avs_net_private_key_t
@@ -358,16 +362,7 @@ avs_net_private_key_t avs_net_private_key_from_memory(avs_net_key_type_t type,
                                                       size_t private_key_size);
 
 typedef struct {
-    avs_net_data_source_t source;
-    avs_net_data_format_t format;
-    union {
-        avs_net_file_t file;
-        avs_net_ssl_raw_cert_t raw;
-        struct {
-            const char *cert_file;
-            const char *cert_path;
-        } paths;
-    } data;
+    avs_net_security_info_union_t impl;
 } avs_net_trusted_cert_source_t;
 
 avs_net_trusted_cert_source_t
