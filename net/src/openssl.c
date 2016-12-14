@@ -883,7 +883,7 @@ static int load_ca_certs_from_paths(ssl_socket_t *socket,
 
 static int load_ca_certs_from_memory(ssl_socket_t *socket,
                                      const avs_net_trusted_cert_source_t *certs) {
-    if (certs->format != AVS_NET_DATA_SOURCE_FORMAT_DER) {
+    if (certs->format != AVS_NET_DATA_FORMAT_DER) {
         LOG(ERROR, "unsupported CA certs format");
         return -1;
     }
@@ -948,7 +948,7 @@ static int load_ca_certs_from_pkcs12_file(ssl_socket_t *socket,
 
 static int load_ca_certs_from_file(ssl_socket_t *socket,
                                    const avs_net_trusted_cert_source_t *certs) {
-    if (certs->format != AVS_NET_DATA_SOURCE_FORMAT_PKCS12) {
+    if (certs->format != AVS_NET_DATA_FORMAT_PKCS12) {
         LOG(ERROR, "unsupported CA certs format");
         return -1;
     }
@@ -1097,10 +1097,10 @@ static int load_client_key_from_pkcs12_file(ssl_socket_t *socket,
 static int load_client_key_from_file(ssl_socket_t *socket,
                                      const avs_net_private_key_t *pkey) {
     switch (pkey->format) {
-    case AVS_NET_DATA_SOURCE_FORMAT_PEM:
+    case AVS_NET_DATA_FORMAT_PEM:
         return load_client_key_from_pem_file(socket, pkey->data.file.path,
                                              pkey->data.file.password);
-    case AVS_NET_DATA_SOURCE_FORMAT_PKCS12:
+    case AVS_NET_DATA_FORMAT_PKCS12:
         return load_client_key_from_pkcs12_file(socket, pkey->data.file.path,
                                                 pkey->data.file.password);
     default:
@@ -1178,10 +1178,10 @@ static int load_client_cert_from_pkcs12_file(ssl_socket_t *socket,
 static int load_client_cert_from_file(ssl_socket_t *socket,
                                       const avs_net_client_cert_t *cert) {
     switch (cert->format) {
-    case AVS_NET_DATA_SOURCE_FORMAT_PEM:
+    case AVS_NET_DATA_FORMAT_PEM:
         return -(SSL_CTX_use_certificate_chain_file(socket->ctx,
                                                   cert->data.file.path) != 1);
-    case AVS_NET_DATA_SOURCE_FORMAT_PKCS12:
+    case AVS_NET_DATA_FORMAT_PKCS12:
         return load_client_cert_from_pkcs12_file(socket, cert->data.file.path,
                                                  cert->data.file.password);
     default:
@@ -1210,7 +1210,7 @@ static int load_client_cert(ssl_socket_t *socket,
                    "library version");
         result = -1;
 #else
-        if (cert->format != AVS_NET_DATA_SOURCE_FORMAT_DER) {
+        if (cert->format != AVS_NET_DATA_FORMAT_DER) {
             LOG(ERROR, "unsupported client cert format");
             result = -1;
         } else {

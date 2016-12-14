@@ -26,7 +26,7 @@
 avs_net_client_cert_t
 avs_net_client_cert_from_file(const char *file,
                               const char *password,
-                              avs_net_data_source_format_t format) {
+                              avs_net_data_format_t format) {
     avs_net_client_cert_t result;
     memset(&result, 0, sizeof(result));
     result.source = AVS_NET_DATA_SOURCE_FILE;
@@ -41,7 +41,7 @@ avs_net_client_cert_t avs_net_client_cert_from_memory(const void *cert_der,
     avs_net_client_cert_t result;
     memset(&result, 0, sizeof(result));
     result.source = AVS_NET_DATA_SOURCE_BUFFER;
-    result.format = AVS_NET_DATA_SOURCE_FORMAT_DER;
+    result.format = AVS_NET_DATA_FORMAT_DER;
     result.data.buffer.cert_der = cert_der;
     result.data.buffer.cert_size = cert_size;
     return result;
@@ -50,7 +50,7 @@ avs_net_client_cert_t avs_net_client_cert_from_memory(const void *cert_der,
 avs_net_private_key_t
 avs_net_private_key_from_file(const char *path,
                               const char *password,
-                              avs_net_data_source_format_t format) {
+                              avs_net_data_format_t format) {
     avs_net_private_key_t result;
     memset(&result, 0, sizeof(result));
     result.source = AVS_NET_DATA_SOURCE_FILE;
@@ -79,7 +79,7 @@ avs_net_trusted_cert_source_from_memory(const void *cert_der, size_t size) {
     avs_net_trusted_cert_source_t result;
     memset(&result, 0, sizeof(result));
     result.source = AVS_NET_DATA_SOURCE_BUFFER;
-    result.format = AVS_NET_DATA_SOURCE_FORMAT_DER;
+    result.format = AVS_NET_DATA_FORMAT_DER;
     result.data.raw.cert_der = cert_der;
     result.data.raw.cert_size = size;
     return result;
@@ -91,7 +91,7 @@ avs_net_trusted_cert_source_from_paths(const char *trusted_ca_cert_file,
     avs_net_trusted_cert_source_t result;
     memset(&result, 0, sizeof(result));
     result.source = AVS_NET_DATA_SOURCE_PATHS;
-    result.format = AVS_NET_DATA_SOURCE_FORMAT_PEM;
+    result.format = AVS_NET_DATA_FORMAT_PEM;
     result.data.paths.cert_file = trusted_ca_cert_file;
     result.data.paths.cert_path = trusted_ca_cert_path;
     return result;
@@ -100,7 +100,7 @@ avs_net_trusted_cert_source_from_paths(const char *trusted_ca_cert_file,
 avs_net_trusted_cert_source_t
 avs_net_trusted_cert_source_from_file(const char *file,
                                       const char *password,
-                                      avs_net_data_source_format_t format) {
+                                      avs_net_data_format_t format) {
     avs_net_trusted_cert_source_t result;
     memset(&result, 0, sizeof(result));
     result.source = AVS_NET_DATA_SOURCE_FILE;

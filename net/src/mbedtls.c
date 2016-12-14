@@ -828,8 +828,8 @@ load_ca_certs_from_paths(mbedtls_x509_crt **out,
         LOG(ERROR, "CA cert path and CA cert file not provided");
         return -1;
     }
-    if (cert_info->trusted_certs.format != AVS_NET_DATA_SOURCE_FORMAT_DER
-        && cert_info->trusted_certs.format != AVS_NET_DATA_SOURCE_FORMAT_PEM) {
+    if (cert_info->trusted_certs.format != AVS_NET_DATA_FORMAT_DER
+        && cert_info->trusted_certs.format != AVS_NET_DATA_FORMAT_PEM) {
         LOG(ERROR, "unsupported CA certs format");
         return -1;
     }
@@ -864,7 +864,7 @@ static int load_ca_certs_from_memory(mbedtls_x509_crt **out,
                    "0 given");
         return -1;
     }
-    if (cert_info->format != AVS_NET_DATA_SOURCE_FORMAT_DER) {
+    if (cert_info->format != AVS_NET_DATA_FORMAT_DER) {
         LOG(ERROR, "invalid CA certs format");
         return -1;
     }
@@ -938,8 +938,8 @@ static int load_client_key_from_data(ssl_socket_certs_t *certs,
 static int load_client_key_from_file(ssl_socket_certs_t *certs,
                                      const avs_net_private_key_t *key) {
     switch (key->format) {
-    case AVS_NET_DATA_SOURCE_FORMAT_PEM:
-    case AVS_NET_DATA_SOURCE_FORMAT_DER:
+    case AVS_NET_DATA_FORMAT_PEM:
+    case AVS_NET_DATA_FORMAT_DER:
         return mbedtls_pk_parse_keyfile(certs->pk_key, key->data.file.path,
                                         key->data.file.password);
     default:
@@ -983,8 +983,8 @@ static int is_client_cert_empty(const avs_net_client_cert_t *cert) {
 static int load_client_cert_from_file(ssl_socket_certs_t *certs,
                                       const avs_net_client_cert_t *cert) {
     switch (cert->format) {
-    case AVS_NET_DATA_SOURCE_FORMAT_PEM:
-    case AVS_NET_DATA_SOURCE_FORMAT_DER:
+    case AVS_NET_DATA_FORMAT_PEM:
+    case AVS_NET_DATA_FORMAT_DER:
         return mbedtls_x509_crt_parse_file(certs->client_cert, cert->data.file.path);
     default:
         LOG(ERROR, "unsupported client cert file format");
@@ -995,7 +995,7 @@ static int load_client_cert_from_file(ssl_socket_certs_t *certs,
 static int load_client_cert_from_data(ssl_socket_certs_t *certs,
         const avs_net_client_cert_t *cert) {
     switch (cert->format) {
-    case AVS_NET_DATA_SOURCE_FORMAT_DER:
+    case AVS_NET_DATA_FORMAT_DER:
         return mbedtls_x509_crt_parse_der(
                 certs->client_cert,
                 (const unsigned char *) cert->data.buffer.cert_der,
