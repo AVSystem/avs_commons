@@ -302,6 +302,19 @@ typedef struct {
     size_t identity_size;
 } avs_net_psk_t;
 
+typedef enum {
+    AVS_NET_DATA_SOURCE_FORMAT_AUTO,
+    AVS_NET_DATA_SOURCE_FORMAT_DER,
+    AVS_NET_DATA_SOURCE_FORMAT_PEM,
+    AVS_NET_DATA_SOURCE_FORMAT_PKCS12
+} avs_net_data_source_format_t;
+
+typedef enum {
+    AVS_NET_DATA_SOURCE_FILE,
+    AVS_NET_DATA_SOURCE_PATHS,
+    AVS_NET_DATA_SOURCE_BUFFER
+} avs_net_data_source_t;
+
 typedef struct {
     /** Path to the file */
     const char *path;
@@ -309,41 +322,37 @@ typedef struct {
     const char *password;
 } avs_net_file_t;
 
-typedef enum {
-    AVS_NET_DATA_SOURCE_FILE,
-    AVS_NET_DATA_SOURCE_PKCS12_FILE,
-    AVS_NET_DATA_SOURCE_BUFFER
-} avs_net_data_source_t;
-
 typedef struct {
     avs_net_data_source_t source;
+    avs_net_data_source_format_t format;
     union {
         avs_net_file_t file;
-        avs_net_file_t pkcs12;
         avs_net_ssl_raw_cert_t buffer;
     } data;
 } avs_net_client_cert_t;
 
 avs_net_client_cert_t
-avs_net_client_cert_from_pkcs12_file(const char *file, const char *password);
-avs_net_client_cert_t avs_net_client_cert_from_file(const char *file);
+avs_net_client_cert_from_file(const char *file,
+                              const char *password,
+                              avs_net_data_source_format_t format);
+
 avs_net_client_cert_t avs_net_client_cert_from_memory(const void *der_cert,
                                                       size_t cert_size);
 
 typedef struct {
     avs_net_data_source_t source;
+    avs_net_data_source_format_t format;
     union {
         avs_net_file_t file;
-        avs_net_file_t pkcs12;
         avs_net_ssl_raw_key_t buffer;
     } data;
 } avs_net_private_key_t;
 
 avs_net_private_key_t
-avs_net_private_key_from_pkcs12_file(const char *path, const char *password);
+avs_net_private_key_from_file(const char *path,
+                              const char *password,
+                              avs_net_data_source_format_t format);
 
-avs_net_private_key_t avs_net_private_key_from_file(const char *path,
-                                                    const char *password);
 avs_net_private_key_t avs_net_private_key_from_memory(avs_net_key_type_t type,
                                                       const char *curve_name,
                                                       const void *private_key,
@@ -351,26 +360,28 @@ avs_net_private_key_t avs_net_private_key_from_memory(avs_net_key_type_t type,
 
 typedef struct {
     avs_net_data_source_t source;
+    avs_net_data_source_format_t format;
     union {
         avs_net_file_t file;
-        avs_net_file_t pkcs12;
         avs_net_ssl_raw_cert_t raw;
         struct {
             const char *cert_file;
             const char *cert_path;
         } paths;
     } data;
-} avs_net_ca_chain_t;
+} avs_net_trusted_cert_source_t;
 
-avs_net_ca_chain_t avs_net_ca_chain_from_memory(const void *cert_der,
-                                                size_t size);
+avs_net_trusted_cert_source_t
+avs_net_trusted_cert_source_from_paths(const char *cert_file,
+                                       const char *cert_path);
 
-avs_net_ca_chain_t
-avs_net_ca_chain_from_paths(const char *trusted_ca_cert_file,
-                            const char *trusted_ca_cert_path);
+avs_net_trusted_cert_source_t
+avs_net_trusted_cert_source_from_file(const char *file,
+                                      const char *password,
+                                      avs_net_data_source_format_t format);
 
-avs_net_ca_chain_t avs_net_ca_chain_from_pkcs12(const char *file,
-                                                const char *password);
+avs_net_trusted_cert_source_t
+avs_net_trusted_cert_source_from_memory(const void *der, size_t size);
 
 /**
  * Certificate and key information may be read from files or passed as raw data.
@@ -388,8 +399,8 @@ avs_net_ca_chain_t avs_net_ca_chain_from_pkcs12(const char *file,
  * avs_net_certificate_info_t#ca_enabled to a nonzero value.
  */
 typedef struct {
-    char ca_enabled;
-    avs_net_ca_chain_t ca;
+    char server_cert_validation;
+    avs_net_trusted_cert_source_t trusted_certs;
 
     avs_net_client_cert_t client_cert;
     avs_net_private_key_t client_key;
