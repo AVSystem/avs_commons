@@ -959,18 +959,18 @@ static int load_ca_certs_from_memory(ssl_socket_t *socket,
     const avs_net_ssl_raw_cert_t *ca_cert = &certs->impl.data.raw_cert;
 
     if (!ca_cert || !ca_cert->cert_der || !ca_cert->cert_size) {
-        LOG(ERROR, "invalid raw CA certificate provided");
+        LOG(ERROR, "invalid der CA certificate provided");
         return -1;
     }
     if (ca_cert->cert_der && ca_cert->cert_size == 0) {
-        LOG(ERROR, "invalid certificate info: non-NULL raw certificate of size "
+        LOG(ERROR, "invalid certificate info: non-NULL der certificate of size "
                    "0 given");
         return -1;
     }
 
 #ifdef FAKE_OPENSSL
     (void) socket;
-    LOG(ERROR, "Raw EC certificates not supported for this library version");
+    LOG(ERROR, "der EC certificates not supported for this library version");
     return -1;
 #else
     const unsigned char *cert_data = (const unsigned char *) ca_cert->cert_der;
