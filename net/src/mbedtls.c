@@ -854,13 +854,13 @@ load_ca_certs_from_paths(mbedtls_x509_crt **out,
 
 static int load_ca_certs_from_memory(mbedtls_x509_crt **out,
                                      const avs_net_trusted_cert_source_t *cert_info) {
-    const avs_net_ssl_raw_cert_t *ca_cert = &cert_info->impl.data.raw_cert;
-    if (!ca_cert || !ca_cert->cert_der || !ca_cert->cert_size) {
-        LOG(ERROR, "invalid raw CA certificate provided");
+    const avs_net_ssl_der_cert_t *ca_cert = &cert_info->impl.data.der_cert;
+    if (!ca_cert || !ca_cert->data || !ca_cert->size) {
+        LOG(ERROR, "invalid DER CA certificate provided");
         return -1;
     }
-    if (ca_cert->cert_der && ca_cert->cert_size == 0) {
-        LOG(ERROR, "invalid certificate info: non-NULL raw certificate of size "
+    if (ca_cert->data && ca_cert->size == 0) {
+        LOG(ERROR, "invalid certificate info: non-NULL DER certificate of size "
                    "0 given");
         return -1;
     }
@@ -871,8 +871,7 @@ static int load_ca_certs_from_memory(mbedtls_x509_crt **out,
     CREATE_OR_FAIL(mbedtls_x509_crt, out);
     mbedtls_x509_crt_init(*out);
     int result = mbedtls_x509_crt_parse_der(
-            *out, (const unsigned char *) ca_cert->cert_der,
-            ca_cert->cert_size);
+            *out, (const unsigned char *) ca_cert->data, ca_cert->size);
     if (result) {
         LOG(ERROR, "failed to parse DER certificate: %d", result);
     }
@@ -973,7 +972,7 @@ static int is_client_cert_empty(const avs_net_client_cert_t *cert) {
     case AVS_NET_DATA_SOURCE_FILE:
         return !cert->impl.data.file.path;
     case AVS_NET_DATA_SOURCE_BUFFER:
-        return !cert->impl.data.raw_cert.cert_der;
+        return !cert->impl.data.der_cert.data;
     default:
         assert(!"invalid enum value");
         return 1;
@@ -999,8 +998,8 @@ static int load_client_cert_from_data(ssl_socket_certs_t *certs,
     case AVS_NET_DATA_FORMAT_DER:
         return mbedtls_x509_crt_parse_der(
                 certs->client_cert,
-                (const unsigned char *) cert->impl.data.raw_cert.cert_der,
-                cert->impl.data.raw_cert.cert_size);
+                (const unsigned char *) cert->impl.data.der_cert.data,
+                cert->impl.data.der_cert.size);
     default:
         LOG(ERROR, "unsupported client cert data format");
         return -1;

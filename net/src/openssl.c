@@ -956,25 +956,25 @@ static int load_ca_certs_from_memory(ssl_socket_t *socket,
         return -1;
     }
 
-    const avs_net_ssl_raw_cert_t *ca_cert = &certs->impl.data.raw_cert;
+    const avs_net_ssl_der_cert_t *ca_cert = &certs->impl.data.der_cert;
 
-    if (!ca_cert || !ca_cert->cert_der || !ca_cert->cert_size) {
-        LOG(ERROR, "invalid der CA certificate provided");
+    if (!ca_cert || !ca_cert->data || !ca_cert->size) {
+        LOG(ERROR, "invalid DER CA certificate provided");
         return -1;
     }
-    if (ca_cert->cert_der && ca_cert->cert_size == 0) {
-        LOG(ERROR, "invalid certificate info: non-NULL der certificate of size "
+    if (ca_cert->data && ca_cert->size == 0) {
+        LOG(ERROR, "invalid certificate info: non-NULL DER certificate of size "
                    "0 given");
         return -1;
     }
 
 #ifdef FAKE_OPENSSL
     (void) socket;
-    LOG(ERROR, "der EC certificates not supported for this library version");
+    LOG(ERROR, "DER EC certificates not supported for this library version");
     return -1;
 #else
-    const unsigned char *cert_data = (const unsigned char *) ca_cert->cert_der;
-    X509 *cert = d2i_X509(NULL, &cert_data, (int) ca_cert->cert_size);
+    const unsigned char *cert_data = (const unsigned char *) ca_cert->data;
+    X509 *cert = d2i_X509(NULL, &cert_data, (int) ca_cert->size);
     X509_STORE *store = SSL_CTX_get_cert_store(socket->ctx);
 
     if (!cert || !store || !X509_STORE_add_cert(store, cert)) {
@@ -1180,7 +1180,7 @@ static int is_client_cert_empty(const avs_net_client_cert_t *cert) {
     case AVS_NET_DATA_SOURCE_FILE:
         return !cert->impl.data.file.path;
     case AVS_NET_DATA_SOURCE_BUFFER:
-        return !cert->impl.data.raw_cert.cert_der;
+        return !cert->impl.data.der_cert.data;
     default:
         assert(0 && "invalid enum value");
         return 1;
@@ -1229,9 +1229,9 @@ static int load_client_cert(ssl_socket_t *socket,
             goto error;
         }
 
-        const int size = (int) cert->impl.data.raw_cert.cert_size;
+        const int size = (int) cert->impl.data.der_cert.size;
         const unsigned char *der =
-                (const unsigned char *) cert->impl.data.raw_cert.cert_der;
+                (const unsigned char *) cert->impl.data.der_cert.data;
         if (SSL_CTX_use_certificate_ASN1(socket->ctx, size, der) != 1) {
             goto error;
         }

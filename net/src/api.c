@@ -42,8 +42,8 @@ avs_net_client_cert_t avs_net_client_cert_from_memory(const void *cert_der,
     memset(&result, 0, sizeof(result));
     result.impl.source = AVS_NET_DATA_SOURCE_BUFFER;
     result.impl.format = AVS_NET_DATA_FORMAT_DER;
-    result.impl.data.raw_cert.cert_der = cert_der;
-    result.impl.data.raw_cert.cert_size = cert_size;
+    result.impl.data.der_cert.data = cert_der;
+    result.impl.data.der_cert.size = cert_size;
     return result;
 }
 
@@ -80,8 +80,8 @@ avs_net_trusted_cert_source_from_memory(const void *cert_der, size_t size) {
     memset(&result, 0, sizeof(result));
     result.impl.source = AVS_NET_DATA_SOURCE_BUFFER;
     result.impl.format = AVS_NET_DATA_FORMAT_DER;
-    result.impl.data.raw_cert.cert_der = cert_der;
-    result.impl.data.raw_cert.cert_size = size;
+    result.impl.data.der_cert.data = cert_der;
+    result.impl.data.der_cert.size = size;
     return result;
 }
 

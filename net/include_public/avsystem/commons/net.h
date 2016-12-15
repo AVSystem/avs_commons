@@ -286,9 +286,11 @@ typedef struct {
  * X509 certificate data in DER format.
  */
 typedef struct {
-    const void *cert_der; /**< DER-encoded X509 certificate. */
-    size_t cert_size; /**< Length (in bytes) of the @p cert_der . */
-} avs_net_ssl_raw_cert_t;
+    /** Pointer to the DER-encoded X509 certificate contents. */
+    const void *data;
+    /** Length (in bytes) of the certificate. */
+    size_t size;
+} avs_net_ssl_der_cert_t;
 
 typedef enum {
     AVS_NET_SECURITY_DEFAULT = 0,
@@ -326,7 +328,7 @@ typedef struct {
     avs_net_data_source_t source;
     union {
         avs_net_file_t file;
-        avs_net_ssl_raw_cert_t raw_cert;
+        avs_net_ssl_der_cert_t der_cert;
         avs_net_ssl_raw_key_t raw_key;
         struct {
             const char *cert_file;
