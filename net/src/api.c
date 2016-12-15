@@ -86,8 +86,8 @@ avs_net_trusted_cert_source_from_memory(const void *cert_der, size_t size) {
 }
 
 avs_net_trusted_cert_source_t
-avs_net_trusted_cert_source_from_paths(const char *trusted_ca_cert_file,
-                                       const char *trusted_ca_cert_path) {
+avs_net_trusted_cert_source_from_paths(const char *trusted_ca_cert_path,
+                                       const char *trusted_ca_cert_file) {
     avs_net_trusted_cert_source_t result;
     memset(&result, 0, sizeof(result));
     result.impl.source = AVS_NET_DATA_SOURCE_PATHS;

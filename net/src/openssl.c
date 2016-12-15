@@ -931,8 +931,9 @@ static int load_client_cert_from_pkcs12_file(ssl_socket_t *socket,
 #endif
 
 static int load_ca_certs_from_paths(ssl_socket_t *socket,
-                                    const char *ca_cert_path,
-                                    const char *ca_cert_file) {
+                                    const avs_net_certificate_info_t *cert_info) {
+    const char *ca_cert_path = cert_info->trusted_certs.impl.data.paths.cert_path;
+    const char *ca_cert_file = cert_info->trusted_certs.impl.data.paths.cert_file;
     if (!ca_cert_path && !ca_cert_file) {
         LOG(ERROR, "CA cert path and CA cert file not provided");
         return -1;
@@ -1271,10 +1272,7 @@ static int configure_ssl_certs(ssl_socket_t *socket,
 #endif
         switch (cert_info->trusted_certs.impl.source) {
         case AVS_NET_DATA_SOURCE_PATHS:
-            if (load_ca_certs_from_paths(
-                        socket,
-                        cert_info->trusted_certs.impl.data.paths.cert_file,
-                        cert_info->trusted_certs.impl.data.paths.cert_path)) {
+            if (load_ca_certs_from_paths(socket, cert_info)) {
                 LOG(ERROR, "Error loading CA certs from paths");
                 return -1;
             }
