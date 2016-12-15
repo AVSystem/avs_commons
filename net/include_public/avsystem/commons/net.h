@@ -369,8 +369,8 @@ typedef struct {
 } avs_net_trusted_cert_source_t;
 
 avs_net_trusted_cert_source_t
-avs_net_trusted_cert_source_from_paths(const char *cert_file,
-                                       const char *cert_path);
+avs_net_trusted_cert_source_from_paths(const char *cert_path,
+                                       const char *cert_file);
 
 avs_net_trusted_cert_source_t
 avs_net_trusted_cert_source_from_file(const char *file,
