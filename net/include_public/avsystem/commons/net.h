@@ -368,7 +368,7 @@ avs_net_private_key_t avs_net_private_key_from_ec(const char *curve_name,
                                                   const void *private_key,
                                                   size_t private_key_size);
 
-avs_net_private_key_t avs_net_private_key_from_pkcs12(const char *data,
+avs_net_private_key_t avs_net_private_key_from_pkcs12(const void *data,
                                                       size_t size,
                                                       const char *password);
 
