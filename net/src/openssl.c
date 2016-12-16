@@ -1306,7 +1306,7 @@ static int load_client_cert_from_der(ssl_socket_t *socket,
 }
 
 static int load_client_cert_from_memory(ssl_socket_t *socket,
-        const avs_net_client_cert_t *cert) {
+                                        const avs_net_client_cert_t *cert) {
     switch (cert->impl.format) {
     case AVS_NET_DATA_FORMAT_DER:
         return load_client_cert_from_der(socket, cert->impl.data.cert.data,
