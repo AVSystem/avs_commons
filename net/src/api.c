@@ -36,14 +36,27 @@ avs_net_client_cert_from_file(const char *file,
     return result;
 }
 
-avs_net_client_cert_t avs_net_client_cert_from_memory(const void *cert_der,
-                                                      size_t cert_size) {
+avs_net_client_cert_t avs_net_client_cert_from_der(const void *data,
+                                                   size_t data_size) {
     avs_net_client_cert_t result;
     memset(&result, 0, sizeof(result));
     result.impl.source = AVS_NET_DATA_SOURCE_BUFFER;
     result.impl.format = AVS_NET_DATA_FORMAT_DER;
-    result.impl.data.der_cert.data = cert_der;
-    result.impl.data.der_cert.size = cert_size;
+    result.impl.data.cert.data = data;
+    result.impl.data.cert.size = data_size;
+    return result;
+}
+
+avs_net_client_cert_t avs_net_client_cert_from_pkcs12(const void *data,
+                                                      size_t data_size,
+                                                      const char *password) {
+    avs_net_client_cert_t result;
+    memset(&result, 0, sizeof(result));
+    result.impl.source = AVS_NET_DATA_SOURCE_BUFFER;
+    result.impl.format = AVS_NET_DATA_FORMAT_PKCS12;
+    result.impl.data.cert.data = data;
+    result.impl.data.cert.size = data_size;
+    result.impl.data.cert.password = password;
     return result;
 }
 
@@ -60,28 +73,54 @@ avs_net_private_key_from_file(const char *path,
     return result;
 }
 
-avs_net_private_key_t avs_net_private_key_from_memory(avs_net_key_type_t type,
-                                                      const char *curve_name,
-                                                      const void *private_key,
-                                                      size_t private_key_size) {
+avs_net_private_key_t avs_net_private_key_from_ec(const char *curve_name,
+                                                  const void *private_key,
+                                                  size_t private_key_size) {
     avs_net_private_key_t result;
     memset(&result, 0, sizeof(result));
     result.impl.source = AVS_NET_DATA_SOURCE_BUFFER;
-    result.impl.data.raw_key.type = type;
-    result.impl.data.raw_key.curve_name = curve_name;
-    result.impl.data.raw_key.private_key = private_key;
-    result.impl.data.raw_key.private_key_size = private_key_size;
+    result.impl.format = AVS_NET_DATA_FORMAT_RAW;
+    result.impl.data.ec.curve_name = curve_name;
+    result.impl.data.ec.private_key = private_key;
+    result.impl.data.ec.private_key_size = private_key_size;
+    return result;
+}
+
+avs_net_private_key_t avs_net_private_key_from_pkcs12(const char *data,
+                                                      size_t size,
+                                                      const char *password) {
+    avs_net_private_key_t result;
+    memset(&result, 0, sizeof(result));
+    result.impl.source = AVS_NET_DATA_SOURCE_BUFFER;
+    result.impl.format = AVS_NET_DATA_FORMAT_PKCS12;
+    result.impl.data.pkcs12.data = data;
+    result.impl.data.pkcs12.size = size;
+    result.impl.data.pkcs12.password = password;
     return result;
 }
 
 avs_net_trusted_cert_source_t
-avs_net_trusted_cert_source_from_memory(const void *cert_der, size_t size) {
+avs_net_trusted_cert_source_from_der(const void *cert_der, size_t size) {
     avs_net_trusted_cert_source_t result;
     memset(&result, 0, sizeof(result));
     result.impl.source = AVS_NET_DATA_SOURCE_BUFFER;
     result.impl.format = AVS_NET_DATA_FORMAT_DER;
-    result.impl.data.der_cert.data = cert_der;
-    result.impl.data.der_cert.size = size;
+    result.impl.data.cert.data = cert_der;
+    result.impl.data.cert.size = size;
+    return result;
+}
+
+avs_net_trusted_cert_source_t
+avs_net_trusted_cert_source_from_pkcs12(const void *data,
+                                        size_t size,
+                                        const char *password) {
+    avs_net_trusted_cert_source_t result;
+    memset(&result, 0, sizeof(result));
+    result.impl.source = AVS_NET_DATA_SOURCE_BUFFER;
+    result.impl.format = AVS_NET_DATA_FORMAT_PKCS12;
+    result.impl.data.cert.data = data;
+    result.impl.data.cert.size = size;
+    result.impl.data.cert.password = password;
     return result;
 }
 

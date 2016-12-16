@@ -1,7 +1,7 @@
 /*
  * AVSystem Commons Library
  *
- * Copyright (C) 2014 AVSystem <http://www.avsystem.com/>
+ * Copyright (C) 2016 AVSystem <http://www.avsystem.com/>
  *
  * This code is free and open source software licensed under the MIT License.
  * See the LICENSE file for details.
@@ -827,16 +827,12 @@ static void pkcs12_unpacked_delete(pkcs12_unpacked_t **pkcs12) {
 }
 
 static pkcs12_unpacked_t *
-pkcs12_unpacked_new_from_file(const char *pkcs12_file,
-                              const char *pkcs12_password) {
+pkcs12_unpacked_new(const void *data,
+                    size_t size,
+                    const char *password) {
+    long length = (long) (unsigned) size;
+    PKCS12 *ctx = d2i_PKCS12(NULL, (const unsigned char **) &data, length);
     pkcs12_unpacked_t *result = NULL;
-    FILE *fp = fopen(pkcs12_file, "rb");
-    if (!fp) {
-        LOG(ERROR, "cannot open %s for parsing", pkcs12_file);
-        return NULL;
-    }
-
-    PKCS12 *ctx = d2i_PKCS12_fp(fp, NULL);
     if (!ctx) {
         goto cleanup;
     }
@@ -846,7 +842,7 @@ pkcs12_unpacked_new_from_file(const char *pkcs12_file,
         goto cleanup;
     }
 
-    if (!PKCS12_parse(ctx, pkcs12_password, &result->private_key, &result->client_cert,
+    if (!PKCS12_parse(ctx, password, &result->private_key, &result->client_cert,
                       &result->additional_ca_certs)) {
         log_openssl_error();
         pkcs12_unpacked_delete(&result);
@@ -854,13 +850,61 @@ pkcs12_unpacked_new_from_file(const char *pkcs12_file,
     }
 
 cleanup:
-    if (fp) {
-        fclose(fp);
-    }
     if (ctx) {
         PKCS12_free(ctx);
     }
     return result;
+}
+
+static pkcs12_unpacked_t *
+pkcs12_unpacked_new_from_file(const char *pkcs12_file,
+                              const char *pkcs12_password) {
+    pkcs12_unpacked_t *result = NULL;
+    void *pkcs12_data = NULL;
+    FILE *f = fopen(pkcs12_file, "rb");
+    if (!f) {
+        LOG(ERROR, "cannot open %s for parsing", pkcs12_file);
+        return NULL;
+    }
+
+    if (fseek(f, 0L, SEEK_END)) {
+        goto cleanup;
+    }
+    size_t length = (size_t) ftell(f);
+    if (fseek(f, 0L, SEEK_SET)) {
+        goto cleanup;
+    }
+
+    if (!(pkcs12_data = malloc(length))
+            || fread(pkcs12_data, 1, length, f) != length) {
+        goto cleanup;
+    }
+    result = pkcs12_unpacked_new(pkcs12_data, length, pkcs12_password);
+
+cleanup:
+    if (f) {
+        fclose(f);
+    }
+    free(pkcs12_data);
+    return result;
+}
+
+static int load_ca_certs_from_pkcs12_unpacked(ssl_socket_t *socket,
+                                              pkcs12_unpacked_t *pkcs12) {
+    if (!pkcs12) {
+        return -1;
+    }
+    if (pkcs12->additional_ca_certs) {
+        X509_STORE *store = SSL_CTX_get_cert_store(socket->ctx);
+        for (int i = 0; i < sk_X509_num(pkcs12->additional_ca_certs); ++i) {
+            if (!X509_STORE_add_cert(
+                        store, sk_X509_value(pkcs12->additional_ca_certs, i))) {
+                log_openssl_error();
+                return -1;
+            }
+        }
+    }
+    return 0;
 }
 
 static int load_ca_certs_from_pkcs12_file(ssl_socket_t *socket,
@@ -872,22 +916,38 @@ static int load_ca_certs_from_pkcs12_file(ssl_socket_t *socket,
     }
     pkcs12_unpacked_t *pkcs12 =
             pkcs12_unpacked_new_from_file(file, password);
-    if (!pkcs12) {
+    int retval = load_ca_certs_from_pkcs12_unpacked(socket, pkcs12);
+    pkcs12_unpacked_delete(&pkcs12);
+    return retval;
+}
+
+static int load_ca_certs_from_pkcs12(ssl_socket_t *socket,
+                                     const void *data,
+                                     size_t size,
+                                     const char *password) {
+    pkcs12_unpacked_t *pkcs12 = pkcs12_unpacked_new(data, size, password);
+    int retval = load_ca_certs_from_pkcs12_unpacked(socket, pkcs12);
+    pkcs12_unpacked_delete(&pkcs12);
+    return retval;
+}
+
+static int load_client_key_from_pkcs12_unpacked(ssl_socket_t *socket,
+                                                pkcs12_unpacked_t *pkcs12) {
+    if (!pkcs12 || !pkcs12->private_key
+        || (SSL_CTX_use_PrivateKey(socket->ctx, pkcs12->private_key) != 1)) {
+        log_openssl_error();
         return -1;
     }
-    int retval = 0;
-    if (pkcs12->additional_ca_certs) {
-        X509_STORE *store = SSL_CTX_get_cert_store(socket->ctx);
-        for (int i = 0; i < sk_X509_num(pkcs12->additional_ca_certs); ++i) {
-            if (!X509_STORE_add_cert(store, sk_X509_value(pkcs12->additional_ca_certs, i))) {
-                log_openssl_error();
-                retval = -1;
-                break;
-            }
-        }
-    }
-    pkcs12_unpacked_delete(&pkcs12);
+    return 0;
+}
 
+static int load_client_key_from_pkcs12(ssl_socket_t *socket,
+                                       const void *data,
+                                       size_t size,
+                                       const char *password) {
+    pkcs12_unpacked_t *pkcs12 = pkcs12_unpacked_new(data, size, password);
+    int retval = load_client_key_from_pkcs12_unpacked(socket, pkcs12);
+    pkcs12_unpacked_delete(&pkcs12);
     return retval;
 }
 
@@ -896,14 +956,27 @@ static int load_client_key_from_pkcs12_file(ssl_socket_t *socket,
                                             const char *client_key_password) {
     pkcs12_unpacked_t *pkcs12 =
             pkcs12_unpacked_new_from_file(client_key_file, client_key_password);
-    int retval = 0;
-    if (!pkcs12 || !pkcs12->private_key
-        || (SSL_CTX_use_PrivateKey(socket->ctx, pkcs12->private_key) != 1)) {
-        log_openssl_error();
-        retval = -1;
-    }
+    int retval = load_client_key_from_pkcs12_unpacked(socket, pkcs12);
     pkcs12_unpacked_delete(&pkcs12);
+    return retval;
+}
 
+static int load_client_cert_from_pkcs12_unpacked(ssl_socket_t *socket,
+                                                 pkcs12_unpacked_t *pkcs12) {
+    if (!pkcs12 || !pkcs12->client_cert
+        || (SSL_CTX_use_certificate(socket->ctx, pkcs12->client_cert) != 1)) {
+        return -1;
+    }
+    return 0;
+}
+
+static int load_client_cert_from_pkcs12(ssl_socket_t *socket,
+                                        const void *data,
+                                        size_t size,
+                                        const char *password) {
+    pkcs12_unpacked_t *pkcs12 = pkcs12_unpacked_new(data, size, password);
+    int retval = load_client_cert_from_pkcs12_unpacked(socket, pkcs12);
+    pkcs12_unpacked_delete(&pkcs12);
     return retval;
 }
 
@@ -912,13 +985,8 @@ static int load_client_cert_from_pkcs12_file(ssl_socket_t *socket,
                                              const char *client_cert_password) {
     pkcs12_unpacked_t *pkcs12 =
             pkcs12_unpacked_new_from_file(client_cert_file, client_cert_password);
-    int retval = 0;
-    if (!pkcs12 || !pkcs12->client_cert
-        || (SSL_CTX_use_certificate(socket->ctx, pkcs12->client_cert) != 1)) {
-        retval = -1;
-    }
+    int retval = load_client_cert_from_pkcs12_unpacked(socket, pkcs12);
     pkcs12_unpacked_delete(&pkcs12);
-
     return retval;
 }
 #else // FAKE_OPENSSL
@@ -949,32 +1017,20 @@ static int load_ca_certs_from_paths(ssl_socket_t *socket,
     return 0;
 }
 
-static int load_ca_certs_from_memory(ssl_socket_t *socket,
-                                     const avs_net_trusted_cert_source_t *certs) {
-    if (certs->impl.format != AVS_NET_DATA_FORMAT_DER) {
-        LOG(ERROR, "unsupported CA certs format");
-        return -1;
-    }
-
-    const avs_net_ssl_der_cert_t *ca_cert = &certs->impl.data.der_cert;
-
-    if (!ca_cert || !ca_cert->data || !ca_cert->size) {
+static int load_ca_certs_from_der(ssl_socket_t *socket,
+                                  const void *data,
+                                  size_t size) {
+    if (!data || !size) {
         LOG(ERROR, "invalid DER CA certificate provided");
         return -1;
     }
-    if (ca_cert->data && ca_cert->size == 0) {
-        LOG(ERROR, "invalid certificate info: non-NULL DER certificate of size "
-                   "0 given");
-        return -1;
-    }
-
 #ifdef FAKE_OPENSSL
     (void) socket;
     LOG(ERROR, "DER EC certificates not supported for this library version");
     return -1;
 #else
-    const unsigned char *cert_data = (const unsigned char *) ca_cert->data;
-    X509 *cert = d2i_X509(NULL, &cert_data, (int) ca_cert->size);
+    const unsigned char *cert_data = (const unsigned char *) data;
+    X509 *cert = d2i_X509(NULL, &cert_data, (int) size);
     X509_STORE *store = SSL_CTX_get_cert_store(socket->ctx);
 
     if (!cert || !store || !X509_STORE_add_cert(store, cert)) {
@@ -983,7 +1039,23 @@ static int load_ca_certs_from_memory(ssl_socket_t *socket,
         return -1;
     }
 #endif
+    return 0;
+}
 
+static int load_ca_certs_from_memory(ssl_socket_t *socket,
+                                     const avs_net_trusted_cert_source_t *certs) {
+    switch (certs->impl.format) {
+    case AVS_NET_DATA_FORMAT_DER:
+        return load_ca_certs_from_der(socket, certs->impl.data.cert.data,
+                                      certs->impl.data.cert.size);
+    case AVS_NET_DATA_FORMAT_PKCS12:
+        return load_ca_certs_from_pkcs12(socket, certs->impl.data.cert.data,
+                                         certs->impl.data.cert.size,
+                                         certs->impl.data.cert.password);
+    default:
+        LOG(ERROR, "unsupported CA certs format");
+        return -1;
+    }
     return 0;
 }
 
@@ -995,12 +1067,6 @@ static int load_ca_certs_from_file(ssl_socket_t *socket,
     }
     return load_ca_certs_from_pkcs12_file(socket, certs->impl.data.file.path,
                                           certs->impl.data.file.password);
-}
-
-static int password_cb(char *buf, int num, int rwflag, void *userdata) {
-    int retval = snprintf(buf, (size_t) num, "%s", (const char *) userdata);
-    (void) rwflag;
-    return (retval < 0 || retval >= num) ? -1 : retval;
 }
 
 #ifdef HAVE_EC
@@ -1038,7 +1104,7 @@ static const EC_POINT *get_ec_public_key(ssl_socket_t *socket) {
 }
 
 static EC_KEY *ec_key_from_raw_private_key(ssl_socket_t *socket,
-                                           const avs_net_ssl_raw_key_t *key) {
+                                           const avs_net_ssl_raw_ec_t *key) {
     const EC_POINT *public_key = NULL;
     BIGNUM *private_key = NULL;
     EC_KEY *ec_key = NULL;
@@ -1067,8 +1133,8 @@ static EC_KEY *ec_key_from_raw_private_key(ssl_socket_t *socket,
     return ec_key;
 }
 
-static int load_client_key_from_data(ssl_socket_t *socket,
-                                     const avs_net_ssl_raw_key_t *key) {
+static int load_client_key_from_ec(ssl_socket_t *socket,
+                                   const avs_net_ssl_raw_ec_t *key) {
     EC_KEY *ec_key = NULL;
     EVP_PKEY *evp_key = NULL;
 
@@ -1097,9 +1163,30 @@ static int load_client_key_from_data(ssl_socket_t *socket,
     EVP_PKEY_free(evp_key);
     return 0;
 }
+
+static int load_client_key_from_data(ssl_socket_t *socket,
+                                     const avs_net_private_key_t *key) {
+    switch (key->impl.format) {
+    case AVS_NET_DATA_FORMAT_RAW:
+        return load_client_key_from_ec(socket, &key->impl.data.ec);
+    case AVS_NET_DATA_FORMAT_PKCS12:
+        return load_client_key_from_pkcs12(socket, key->impl.data.pkcs12.data,
+                                           key->impl.data.pkcs12.size,
+                                           key->impl.data.pkcs12.password);
+    default:
+        LOG(ERROR, "unsupported in memory private key format");
+        return -1;
+    }
+}
 #else
 #define load_client_key_from_data(...) ((int) -1)
 #endif
+
+static int password_cb(char *buf, int num, int rwflag, void *userdata) {
+    int retval = snprintf(buf, (size_t) num, "%s", (const char *) userdata);
+    (void) rwflag;
+    return (retval < 0 || retval >= num) ? -1 : retval;
+}
 
 static int load_client_key_from_pem_file(ssl_socket_t *socket,
                                          const char *client_key_file,
@@ -1136,6 +1223,17 @@ static int load_client_key_from_file(ssl_socket_t *socket,
     }
 }
 
+static int is_memory_private_key_valid(const avs_net_private_key_t *key) {
+    switch (key->impl.format) {
+    case AVS_NET_DATA_FORMAT_RAW:
+        return !key->impl.data.ec.private_key;
+    case AVS_NET_DATA_FORMAT_PKCS12:
+        return !key->impl.data.pkcs12.data || !key->impl.data.pkcs12.size;
+    default:
+        return -1;
+    }
+}
+
 static int is_private_key_valid(const avs_net_private_key_t *key) {
     assert(key);
 
@@ -1147,8 +1245,8 @@ static int is_private_key_valid(const avs_net_private_key_t *key) {
         }
         return 1;
     case AVS_NET_DATA_SOURCE_BUFFER:
-        if (!key->impl.data.raw_key.private_key) {
-            LOG(ERROR, "private key not specified");
+        if (is_memory_private_key_valid(key)) {
+            LOG(ERROR, "in memory private key not valid");
             return 0;
         }
         return 1;
@@ -1168,7 +1266,7 @@ static int load_client_private_key(ssl_socket_t *socket,
     case AVS_NET_DATA_SOURCE_FILE:
         return load_client_key_from_file(socket, key);
     case AVS_NET_DATA_SOURCE_BUFFER:
-        return load_client_key_from_data(socket, &key->impl.data.raw_key);
+        return load_client_key_from_data(socket, key);
     default:
         assert(0 && "invalid enum value");
         return -1;
@@ -1180,7 +1278,7 @@ static int is_client_cert_empty(const avs_net_client_cert_t *cert) {
     case AVS_NET_DATA_SOURCE_FILE:
         return !cert->impl.data.file.path;
     case AVS_NET_DATA_SOURCE_BUFFER:
-        return !cert->impl.data.der_cert.data;
+        return !cert->impl.data.cert.data;
     default:
         assert(0 && "invalid enum value");
         return 1;
@@ -1204,6 +1302,42 @@ static int load_client_cert_from_file(ssl_socket_t *socket,
     return -1;
 }
 
+static int load_client_cert_from_der(ssl_socket_t *socket,
+                                     const void *data,
+                                     size_t size) {
+    if (!data || !size) {
+        LOG(ERROR, "invalid client DER certificate provided");
+        return -1;
+    }
+#ifdef FAKE_OPENSSL
+    LOG(ERROR, "Loading certificates from memory not supported for this "
+               "library version");
+    return -1;
+#else
+    const unsigned char *der = (const unsigned char *) data;
+    if (SSL_CTX_use_certificate_ASN1(socket->ctx, (int) size, der) != 1) {
+        return -1;
+    }
+#endif
+    return 0;
+}
+
+static int load_client_cert_from_memory(ssl_socket_t *socket,
+        const avs_net_client_cert_t *cert) {
+    switch (cert->impl.format) {
+    case AVS_NET_DATA_FORMAT_DER:
+        return load_client_cert_from_der(socket, cert->impl.data.cert.data,
+                                         cert->impl.data.cert.size);
+    case AVS_NET_DATA_FORMAT_PKCS12:
+        return load_client_cert_from_pkcs12(socket, cert->impl.data.pkcs12.data,
+                                            cert->impl.data.pkcs12.size,
+                                            cert->impl.data.pkcs12.password);
+    default:
+        LOG(ERROR, "unsupported in memory client certificate format");
+        return -1;
+    }
+}
+
 static int load_client_cert(ssl_socket_t *socket,
                             const avs_net_client_cert_t *cert,
                             const avs_net_private_key_t *key) {
@@ -1219,29 +1353,12 @@ static int load_client_cert(ssl_socket_t *socket,
         result = load_client_cert_from_file(socket, cert);
         break;
     case AVS_NET_DATA_SOURCE_BUFFER:
-#ifdef FAKE_OPENSSL
-        LOG(ERROR, "Loading certificates from memory not supported for this "
-                   "library version");
-        goto error;
-#else
-        if (cert->impl.format != AVS_NET_DATA_FORMAT_DER) {
-            LOG(ERROR, "unsupported client cert format");
-            goto error;
-        }
-
-        const int size = (int) cert->impl.data.der_cert.size;
-        const unsigned char *der =
-                (const unsigned char *) cert->impl.data.der_cert.data;
-        if (SSL_CTX_use_certificate_ASN1(socket->ctx, size, der) != 1) {
-            goto error;
-        }
-#endif
+        result = load_client_cert_from_memory(socket, cert);
         break;
     default:
         assert(0 && "invalid enum value");
         goto error;
     }
-
 
     if (load_client_private_key(socket, key)) {
         LOG(ERROR, "Error loading client private key");
