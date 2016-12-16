@@ -1183,7 +1183,7 @@ static int load_client_key_from_ec(ssl_socket_t *socket,
 static int load_client_key_from_data(ssl_socket_t *socket,
                                      const avs_net_private_key_t *key) {
     switch (key->impl.format) {
-    case AVS_NET_DATA_FORMAT_RAW:
+    case AVS_NET_DATA_FORMAT_EC:
         return load_client_key_from_ec(socket, &key->impl.data.ec);
     case AVS_NET_DATA_FORMAT_PKCS12:
         return load_client_key_from_pkcs12(socket, key->impl.data.pkcs12.data,

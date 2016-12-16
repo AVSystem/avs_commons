@@ -36,8 +36,8 @@ avs_net_client_cert_from_file(const char *file,
     return result;
 }
 
-avs_net_client_cert_t avs_net_client_cert_from_der(const void *data,
-                                                   size_t data_size) {
+avs_net_client_cert_t avs_net_client_cert_from_x509(const void *data,
+                                                    size_t data_size) {
     avs_net_client_cert_t result;
     memset(&result, 0, sizeof(result));
     result.impl.source = AVS_NET_DATA_SOURCE_BUFFER;
@@ -79,7 +79,7 @@ avs_net_private_key_t avs_net_private_key_from_ec(const char *curve_name,
     avs_net_private_key_t result;
     memset(&result, 0, sizeof(result));
     result.impl.source = AVS_NET_DATA_SOURCE_BUFFER;
-    result.impl.format = AVS_NET_DATA_FORMAT_RAW;
+    result.impl.format = AVS_NET_DATA_FORMAT_EC;
     result.impl.data.ec.curve_name = curve_name;
     result.impl.data.ec.private_key = private_key;
     result.impl.data.ec.private_key_size = private_key_size;
@@ -100,7 +100,7 @@ avs_net_private_key_t avs_net_private_key_from_pkcs12(const void *data,
 }
 
 avs_net_trusted_cert_source_t
-avs_net_trusted_cert_source_from_der(const void *cert_der, size_t size) {
+avs_net_trusted_cert_source_from_x509(const void *cert_der, size_t size) {
     avs_net_trusted_cert_source_t result;
     memset(&result, 0, sizeof(result));
     result.impl.source = AVS_NET_DATA_SOURCE_BUFFER;

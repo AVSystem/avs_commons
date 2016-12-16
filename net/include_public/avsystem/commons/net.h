@@ -304,7 +304,7 @@ typedef struct {
 } avs_net_psk_t;
 
 typedef enum {
-    AVS_NET_DATA_FORMAT_RAW,
+    AVS_NET_DATA_FORMAT_EC,
     AVS_NET_DATA_FORMAT_DER,
     AVS_NET_DATA_FORMAT_PEM,
     AVS_NET_DATA_FORMAT_PKCS12
@@ -347,8 +347,8 @@ avs_net_client_cert_from_file(const char *file,
                               const char *password,
                               avs_net_data_format_t format);
 
-avs_net_client_cert_t avs_net_client_cert_from_der(const void *data,
-                                                   size_t data_size);
+avs_net_client_cert_t avs_net_client_cert_from_x509(const void *data,
+                                                    size_t data_size);
 
 avs_net_client_cert_t
 avs_net_client_cert_from_pkcs12(const void *data,
@@ -386,7 +386,7 @@ avs_net_trusted_cert_source_from_file(const char *file,
                                       avs_net_data_format_t format);
 
 avs_net_trusted_cert_source_t
-avs_net_trusted_cert_source_from_der(const void *der, size_t data_size);
+avs_net_trusted_cert_source_from_x509(const void *der, size_t data_size);
 
 avs_net_trusted_cert_source_t
 avs_net_trusted_cert_source_from_pkcs12(const void *data,

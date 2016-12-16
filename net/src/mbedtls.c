@@ -918,7 +918,7 @@ static int load_client_key_from_ec(ssl_socket_certs_t *certs,
 static int load_client_key_from_data(ssl_socket_certs_t *certs,
                                      const avs_net_private_key_t *key) {
     switch (key->impl.format) {
-    case AVS_NET_DATA_FORMAT_RAW:
+    case AVS_NET_DATA_FORMAT_EC:
         return load_client_key_from_ec(certs, &key->impl.data.ec);
     default:
         LOG(ERROR, "unsupported in memory private key format");
