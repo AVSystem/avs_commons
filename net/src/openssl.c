@@ -830,6 +830,14 @@ static pkcs12_unpacked_t *
 pkcs12_unpacked_new(const void *data,
                     size_t size,
                     const char *password) {
+    if (!data) {
+        LOG(ERROR, "cannot parse NULL pkcs12 data");
+        return NULL;
+    }
+    if (!size) {
+        LOG(ERROR, "cannot parse 0 sized pkcs12 data");
+        return NULL;
+    }
     long length = (long) (unsigned) size;
     PKCS12 *ctx = d2i_PKCS12(NULL, (const unsigned char **) &data, length);
     pkcs12_unpacked_t *result = NULL;
@@ -1135,6 +1143,14 @@ static EC_KEY *ec_key_from_raw_private_key(ssl_socket_t *socket,
 
 static int load_client_key_from_ec(ssl_socket_t *socket,
                                    const avs_net_ssl_raw_ec_t *key) {
+    if (!key->private_key || !key->private_key_size) {
+        LOG(ERROR, "EC private key not provided");
+        return -1;
+    }
+    if (!key->curve_name) {
+        LOG(ERROR, "EC curve name not provided");
+        return -1;
+    }
     EC_KEY *ec_key = NULL;
     EVP_PKEY *evp_key = NULL;
 
@@ -1191,6 +1207,10 @@ static int password_cb(char *buf, int num, int rwflag, void *userdata) {
 static int load_client_key_from_pem_file(ssl_socket_t *socket,
                                          const char *client_key_file,
                                          const char *client_key_password) {
+    if (!client_key_file || !client_key_password) {
+        LOG(ERROR, "private key with password not specified");
+        return -1;
+    }
     SSL_CTX_set_default_passwd_cb_userdata(
             socket->ctx,
             /* const_cast */ (void *) (intptr_t) client_key_password);
@@ -1223,45 +1243,8 @@ static int load_client_key_from_file(ssl_socket_t *socket,
     }
 }
 
-static int is_memory_private_key_valid(const avs_net_private_key_t *key) {
-    switch (key->impl.format) {
-    case AVS_NET_DATA_FORMAT_RAW:
-        return !key->impl.data.ec.private_key;
-    case AVS_NET_DATA_FORMAT_PKCS12:
-        return !key->impl.data.pkcs12.data || !key->impl.data.pkcs12.size;
-    default:
-        return -1;
-    }
-}
-
-static int is_private_key_valid(const avs_net_private_key_t *key) {
-    assert(key);
-
-    switch (key->impl.source) {
-    case AVS_NET_DATA_SOURCE_FILE:
-        if (!key->impl.data.file.path || !key->impl.data.file.password) {
-            LOG(ERROR, "private key with password not specified");
-            return 0;
-        }
-        return 1;
-    case AVS_NET_DATA_SOURCE_BUFFER:
-        if (is_memory_private_key_valid(key)) {
-            LOG(ERROR, "in memory private key not valid");
-            return 0;
-        }
-        return 1;
-    default:
-        assert(0 && "invalid enum value");
-        return 0;
-    }
-}
-
 static int load_client_private_key(ssl_socket_t *socket,
                                    const avs_net_private_key_t *key) {
-    if (!is_private_key_valid(key)) {
-        return -1;
-    }
-
     switch (key->impl.source) {
     case AVS_NET_DATA_SOURCE_FILE:
         return load_client_key_from_file(socket, key);
