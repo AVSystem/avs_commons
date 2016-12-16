@@ -273,24 +273,22 @@ typedef enum {
 } avs_net_key_type_t;
 
 /**
- * Raw private key data.
+ * Raw EC private key data.
  */
 typedef struct {
-    avs_net_key_type_t type; /**< Type of the key stored in @p private_key buffer. */
     const char *curve_name; /**< elliptic curve name for EC keys */
     const void *private_key; /**< A buffer containing private key data. */
     size_t private_key_size; /**< Length (in bytes) of the @p private_key . */
-} avs_net_ssl_raw_key_t;
+} avs_net_ssl_raw_ec_t;
 
 /**
- * X509 certificate data in DER format.
+ * Internal structure used to store password protected data.
  */
 typedef struct {
-    /** Pointer to the DER-encoded X509 certificate contents. */
     const void *data;
-    /** Length (in bytes) of the certificate. */
     size_t size;
-} avs_net_ssl_der_cert_t;
+    const char *password;
+} avs_net_ssl_raw_data_t;
 
 typedef enum {
     AVS_NET_SECURITY_DEFAULT = 0,
@@ -306,6 +304,7 @@ typedef struct {
 } avs_net_psk_t;
 
 typedef enum {
+    AVS_NET_DATA_FORMAT_EC,
     AVS_NET_DATA_FORMAT_DER,
     AVS_NET_DATA_FORMAT_PEM,
     AVS_NET_DATA_FORMAT_PKCS12
@@ -328,8 +327,9 @@ typedef struct {
     avs_net_data_source_t source;
     union {
         avs_net_file_t file;
-        avs_net_ssl_der_cert_t der_cert;
-        avs_net_ssl_raw_key_t raw_key;
+        avs_net_ssl_raw_ec_t ec;
+        avs_net_ssl_raw_data_t cert;
+        avs_net_ssl_raw_data_t pkcs12;
         struct {
             const char *cert_file;
             const char *cert_path;
@@ -347,8 +347,13 @@ avs_net_client_cert_from_file(const char *file,
                               const char *password,
                               avs_net_data_format_t format);
 
-avs_net_client_cert_t avs_net_client_cert_from_memory(const void *der_cert,
-                                                      size_t cert_size);
+avs_net_client_cert_t avs_net_client_cert_from_x509(const void *data,
+                                                    size_t data_size);
+
+avs_net_client_cert_t
+avs_net_client_cert_from_pkcs12(const void *data,
+                                size_t data_size,
+                                const char *password);
 
 typedef struct {
     avs_net_security_info_union_t impl;
@@ -359,10 +364,13 @@ avs_net_private_key_from_file(const char *path,
                               const char *password,
                               avs_net_data_format_t format);
 
-avs_net_private_key_t avs_net_private_key_from_memory(avs_net_key_type_t type,
-                                                      const char *curve_name,
-                                                      const void *private_key,
-                                                      size_t private_key_size);
+avs_net_private_key_t avs_net_private_key_from_ec(const char *curve_name,
+                                                  const void *private_key,
+                                                  size_t private_key_size);
+
+avs_net_private_key_t avs_net_private_key_from_pkcs12(const void *data,
+                                                      size_t size,
+                                                      const char *password);
 
 typedef struct {
     avs_net_security_info_union_t impl;
@@ -378,7 +386,12 @@ avs_net_trusted_cert_source_from_file(const char *file,
                                       avs_net_data_format_t format);
 
 avs_net_trusted_cert_source_t
-avs_net_trusted_cert_source_from_memory(const void *der, size_t size);
+avs_net_trusted_cert_source_from_x509(const void *der, size_t data_size);
+
+avs_net_trusted_cert_source_t
+avs_net_trusted_cert_source_from_pkcs12(const void *data,
+                                        size_t data_size,
+                                        const char *password);
 
 /**
  * Certificate and key information may be read from files or passed as raw data.
