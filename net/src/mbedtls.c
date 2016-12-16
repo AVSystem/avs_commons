@@ -928,8 +928,8 @@ static int load_client_key_from_data(ssl_socket_certs_t *certs,
 
 static int load_client_key_from_file(ssl_socket_certs_t *certs,
                                      const avs_net_private_key_t *key) {
-    if (!key->impl.data.file.path || !key->impl.data.file.password) {
-        LOG(ERROR, "private key with password not specified");
+    if (!key->impl.data.file.path) {
+        LOG(ERROR, "private key not specified");
         return -1;
     }
 

@@ -918,8 +918,8 @@ static int load_ca_certs_from_pkcs12_unpacked(ssl_socket_t *socket,
 static int load_ca_certs_from_pkcs12_file(ssl_socket_t *socket,
                                           const char *file,
                                           const char *password) {
-    if (!file || !password) {
-        LOG(ERROR, "invalid file / password provided");
+    if (!file) {
+        LOG(ERROR, "invalid file provided");
         return -1;
     }
     pkcs12_unpacked_t *pkcs12 =
@@ -1025,16 +1025,15 @@ static int load_ca_certs_from_paths(ssl_socket_t *socket,
     return 0;
 }
 
-static int load_ca_certs_from_der(ssl_socket_t *socket,
-                                  const void *data,
-                                  size_t size) {
+static int
+load_ca_certs_from_x509(ssl_socket_t *socket, const void *data, size_t size) {
     if (!data || !size) {
         LOG(ERROR, "invalid DER CA certificate provided");
         return -1;
     }
 #ifdef FAKE_OPENSSL
     (void) socket;
-    LOG(ERROR, "DER EC certificates not supported for this library version");
+    LOG(ERROR, "DER certificates not supported for this library version");
     return -1;
 #else
     const unsigned char *cert_data = (const unsigned char *) data;
@@ -1054,8 +1053,8 @@ static int load_ca_certs_from_memory(ssl_socket_t *socket,
                                      const avs_net_trusted_cert_source_t *certs) {
     switch (certs->impl.format) {
     case AVS_NET_DATA_FORMAT_DER:
-        return load_ca_certs_from_der(socket, certs->impl.data.cert.data,
-                                      certs->impl.data.cert.size);
+        return load_ca_certs_from_x509(socket, certs->impl.data.cert.data,
+                                       certs->impl.data.cert.size);
     case AVS_NET_DATA_FORMAT_PKCS12:
         return load_ca_certs_from_pkcs12(socket, certs->impl.data.cert.data,
                                          certs->impl.data.cert.size,
@@ -1207,8 +1206,8 @@ static int password_cb(char *buf, int num, int rwflag, void *userdata) {
 static int load_client_key_from_pem_file(ssl_socket_t *socket,
                                          const char *client_key_file,
                                          const char *client_key_password) {
-    if (!client_key_file || !client_key_password) {
-        LOG(ERROR, "private key with password not specified");
+    if (!client_key_file) {
+        LOG(ERROR, "private key not specified");
         return -1;
     }
     SSL_CTX_set_default_passwd_cb_userdata(
