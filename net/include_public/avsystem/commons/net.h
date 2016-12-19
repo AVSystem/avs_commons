@@ -307,6 +307,7 @@ typedef enum {
     AVS_NET_DATA_FORMAT_EC,
     AVS_NET_DATA_FORMAT_DER,
     AVS_NET_DATA_FORMAT_PEM,
+    AVS_NET_DATA_FORMAT_PKCS8,
     AVS_NET_DATA_FORMAT_PKCS12
 } avs_net_data_format_t;
 
@@ -329,6 +330,7 @@ typedef struct {
         avs_net_file_t file;
         avs_net_ssl_raw_ec_t ec;
         avs_net_ssl_raw_data_t cert;
+        avs_net_ssl_raw_data_t pkcs8;
         avs_net_ssl_raw_data_t pkcs12;
         struct {
             const char *cert_file;
@@ -367,6 +369,10 @@ avs_net_private_key_from_file(const char *path,
 avs_net_private_key_t avs_net_private_key_from_ec(const char *curve_name,
                                                   const void *private_key,
                                                   size_t private_key_size);
+
+avs_net_private_key_t avs_net_private_key_from_pkcs8(const void *data,
+                                                     size_t size,
+                                                     const char *password);
 
 avs_net_private_key_t avs_net_private_key_from_pkcs12(const void *data,
                                                       size_t size,

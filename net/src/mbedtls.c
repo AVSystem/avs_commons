@@ -915,11 +915,25 @@ static int load_client_key_from_ec(ssl_socket_certs_t *certs,
     return 0;
 }
 
+static int load_client_key_from_pkcs8(ssl_socket_certs_t *certs,
+                                      const void *data,
+                                      size_t size,
+                                      const char *password) {
+    size_t password_len = password ? strlen(password) : 0;
+    return mbedtls_pk_parse_key(certs->pk_key,
+                                (const unsigned char *) data, size,
+                                (const unsigned char *) password, password_len);
+}
+
 static int load_client_key_from_data(ssl_socket_certs_t *certs,
                                      const avs_net_private_key_t *key) {
     switch (key->impl.format) {
     case AVS_NET_DATA_FORMAT_EC:
         return load_client_key_from_ec(certs, &key->impl.data.ec);
+    case AVS_NET_DATA_FORMAT_PKCS8:
+        return load_client_key_from_pkcs8(certs, key->impl.data.pkcs8.data,
+                                          key->impl.data.pkcs8.size,
+                                          key->impl.data.pkcs8.password);
     default:
         LOG(ERROR, "unsupported in memory private key format");
         return -1;

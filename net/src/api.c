@@ -86,6 +86,19 @@ avs_net_private_key_t avs_net_private_key_from_ec(const char *curve_name,
     return result;
 }
 
+avs_net_private_key_t avs_net_private_key_from_pkcs8(const void *data,
+                                                     size_t size,
+                                                     const char *password) {
+    avs_net_private_key_t result;
+    memset(&result, 0, sizeof(result));
+    result.impl.source = AVS_NET_DATA_SOURCE_BUFFER;
+    result.impl.format = AVS_NET_DATA_FORMAT_PKCS8;
+    result.impl.data.pkcs8.data = data;
+    result.impl.data.pkcs8.size = size;
+    result.impl.data.pkcs8.password = password;
+    return result;
+}
+
 avs_net_private_key_t avs_net_private_key_from_pkcs12(const void *data,
                                                       size_t size,
                                                       const char *password) {

@@ -802,6 +802,16 @@ static int decorate_ssl(avs_net_abstract_socket_t *socket_,
     return result;
 }
 
+static int password_cb(char *buf, int num, int rwflag, void *userdata) {
+    if (!userdata) {
+        buf[0] = '\0';
+        return 0;
+    }
+    int retval = snprintf(buf, (size_t) num, "%s", (const char *) userdata);
+    (void) rwflag;
+    return (retval < 0 || retval >= num) ? -1 : retval;
+}
+
 typedef struct {
     EVP_PKEY *private_key;
     X509 *client_cert;
@@ -937,6 +947,28 @@ static int load_ca_certs_from_pkcs12(ssl_socket_t *socket,
     int retval = load_ca_certs_from_pkcs12_unpacked(socket, pkcs12);
     pkcs12_unpacked_delete(&pkcs12);
     return retval;
+}
+
+static int load_client_key_from_pkcs8(ssl_socket_t *socket,
+                                      const void *data,
+                                      size_t size,
+                                      const char *password) {
+    SSL_CTX_set_default_passwd_cb_userdata(
+            socket->ctx,
+            /* const_cast */ (void *) (intptr_t) password);
+    SSL_CTX_set_default_passwd_cb(socket->ctx, password_cb);
+
+    /**
+     * We support EC keys only at the moment, as OpenSSL does not seem to have
+     * a method for auto-detection of key type.
+     */
+    if (SSL_CTX_use_PrivateKey_ASN1(EVP_PKEY_EC, socket->ctx,
+                                    (const unsigned char *) data, (long) size)
+            != 1) {
+        log_openssl_error();
+        return -1;
+    }
+    return 0;
 }
 
 static int load_client_key_from_pkcs12_unpacked(ssl_socket_t *socket,
@@ -1185,6 +1217,10 @@ static int load_client_key_from_data(ssl_socket_t *socket,
     switch (key->impl.format) {
     case AVS_NET_DATA_FORMAT_EC:
         return load_client_key_from_ec(socket, &key->impl.data.ec);
+    case AVS_NET_DATA_FORMAT_PKCS8:
+        return load_client_key_from_pkcs8(socket, key->impl.data.pkcs8.data,
+                                          key->impl.data.pkcs8.size,
+                                          key->impl.data.pkcs8.password);
     case AVS_NET_DATA_FORMAT_PKCS12:
         return load_client_key_from_pkcs12(socket, key->impl.data.pkcs12.data,
                                            key->impl.data.pkcs12.size,
@@ -1198,15 +1234,10 @@ static int load_client_key_from_data(ssl_socket_t *socket,
 #define load_client_key_from_data(...) ((int) -1)
 #endif
 
-static int password_cb(char *buf, int num, int rwflag, void *userdata) {
-    int retval = snprintf(buf, (size_t) num, "%s", (const char *) userdata);
-    (void) rwflag;
-    return (retval < 0 || retval >= num) ? -1 : retval;
-}
-
-static int load_client_key_from_pem_file(ssl_socket_t *socket,
-                                         const char *client_key_file,
-                                         const char *client_key_password) {
+static int load_client_key_from_typed_file(ssl_socket_t *socket,
+                                           const char *client_key_file,
+                                           const char *client_key_password,
+                                           int type) {
     if (!client_key_file) {
         LOG(ERROR, "private key not specified");
         return -1;
@@ -1216,9 +1247,7 @@ static int load_client_key_from_pem_file(ssl_socket_t *socket,
             /* const_cast */ (void *) (intptr_t) client_key_password);
     SSL_CTX_set_default_passwd_cb(socket->ctx, password_cb);
 
-    if (SSL_CTX_use_PrivateKey_file(socket->ctx, client_key_file,
-                                    SSL_FILETYPE_PEM)
-            != 1) {
+    if (SSL_CTX_use_PrivateKey_file(socket->ctx, client_key_file, type) != 1) {
         log_openssl_error();
         return -1;
     }
@@ -1230,9 +1259,15 @@ static int load_client_key_from_file(ssl_socket_t *socket,
                                      const avs_net_private_key_t *pkey) {
     switch (pkey->impl.format) {
     case AVS_NET_DATA_FORMAT_PEM:
-        return load_client_key_from_pem_file(socket,
-                                             pkey->impl.data.file.path,
-                                             pkey->impl.data.file.password);
+        return load_client_key_from_typed_file(socket,
+                                               pkey->impl.data.file.path,
+                                               pkey->impl.data.file.password,
+                                               SSL_FILETYPE_PEM);
+    case AVS_NET_DATA_FORMAT_DER:
+        return load_client_key_from_typed_file(socket,
+                                               pkey->impl.data.file.path,
+                                               pkey->impl.data.file.password,
+                                               SSL_FILETYPE_ASN1);
     case AVS_NET_DATA_FORMAT_PKCS12:
         return load_client_key_from_pkcs12_file(socket,
                                                 pkey->impl.data.file.path,
