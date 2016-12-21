@@ -1003,11 +1003,26 @@ static int load_client_key_from_pkcs12_file(ssl_socket_t *socket,
 
 static int load_client_cert_from_pkcs12_unpacked(ssl_socket_t *socket,
                                                  pkcs12_unpacked_t *pkcs12) {
-    if (!pkcs12 || !pkcs12->client_cert
-        || (SSL_CTX_use_certificate(socket->ctx, pkcs12->client_cert) != 1)) {
+    if (!pkcs12) {
         return -1;
     }
-    return 0;
+    /**
+     * There are two cases here apparently:
+     * 1. There was some private key and a certificate associated with it, in
+     *    which case we are interested in pkcs12->client_cert.
+     *
+     * 2. There were no private keys, therefore every certificate is considered
+     *    "additional", and lands at pkcs12->additional_ca_certs stack.
+     */
+    X509 *cert = NULL;
+    if (pkcs12->private_key && pkcs12->client_cert) {
+        cert = pkcs12->client_cert;
+    } else if (!pkcs12->private_key && pkcs12->additional_ca_certs) {
+        cert = sk_X509_value(pkcs12->additional_ca_certs, 0);
+    } else {
+        return -1;
+    }
+    return -(SSL_CTX_use_certificate(socket->ctx, cert) != 1);
 }
 
 static int load_client_cert_from_pkcs12(ssl_socket_t *socket,
