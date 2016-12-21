@@ -1393,6 +1393,10 @@ static int load_client_cert(ssl_socket_t *socket,
         goto error;
     }
 
+    if (result) {
+        goto error;
+    }
+
     if (load_client_private_key(socket, key)) {
         LOG(ERROR, "Error loading client private key");
         goto error;
