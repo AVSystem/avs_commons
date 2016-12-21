@@ -1022,7 +1022,7 @@ static int load_client_cert_from_pkcs12_unpacked(ssl_socket_t *socket,
     } else {
         return -1;
     }
-    return -(SSL_CTX_use_certificate(socket->ctx, cert) != 1);
+    return SSL_CTX_use_certificate(socket->ctx, cert) == 1 ? 0 : -1;
 }
 
 static int load_client_cert_from_pkcs12(ssl_socket_t *socket,
@@ -1322,9 +1322,12 @@ static int load_client_cert_from_file(ssl_socket_t *socket,
                                       const avs_net_client_cert_t *cert) {
     switch (cert->impl.format) {
     case AVS_NET_DATA_FORMAT_PEM:
-        return -(SSL_CTX_use_certificate_chain_file(socket->ctx,
-                                                    cert->impl.data.file.path)
-                 != 1);
+        if (SSL_CTX_use_certificate_chain_file(socket->ctx,
+                                               cert->impl.data.file.path)
+                == 1) {
+            return 0;
+        }
+        return -1;
     case AVS_NET_DATA_FORMAT_PKCS12:
         return load_client_cert_from_pkcs12_file(socket,
                                                  cert->impl.data.file.path,
