@@ -202,7 +202,8 @@ static int getline_helper(getline_getch_func_t getch_func,
                           size_t buffer_length) {
     char line_finished = 0;
     *out_bytes_read = 0;
-    while (*out_bytes_read < buffer_length) {
+    assert(buffer_length > 0);
+    while (*out_bytes_read < buffer_length - 1) {
         int tmp_char = getch_func(getch_func_state, 0);
         if (tmp_char < 0) {
             return tmp_char;
@@ -276,7 +277,7 @@ int avs_stream_getline(avs_stream_abstract_t *stream,
     *state.out_message_finished = 0;
     return getline_helper(getline_reader_getch_func, &state,
                           out_bytes_read ? out_bytes_read : &bytes_read, buffer,
-                          buffer_length - 1);
+                          buffer_length);
 }
 
 typedef struct {
@@ -310,7 +311,7 @@ int avs_stream_peekline(avs_stream_abstract_t *stream,
     int retval =
             getline_helper(getline_peeker_getch_func, &state,
                            out_bytes_peeked ? out_bytes_peeked : &bytes_peeked,
-                           buffer, buffer_length - 1);
+                           buffer, buffer_length);
     if (out_next_offset) {
         *out_next_offset = state.offset;
     }
