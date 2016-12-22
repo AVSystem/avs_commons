@@ -202,7 +202,8 @@ static int getline_helper(getline_getch_func_t getch_func,
                           size_t buffer_length) {
     char line_finished = 0;
     *out_bytes_read = 0;
-    while (*out_bytes_read < buffer_length) {
+    assert(buffer_length > 0);
+    while (*out_bytes_read < buffer_length - 1) {
         int tmp_char = getch_func(getch_func_state, 0);
         if (tmp_char < 0) {
             return tmp_char;
@@ -217,9 +218,7 @@ static int getline_helper(getline_getch_func_t getch_func,
             buffer[(*out_bytes_read)++] = (char) (unsigned char) tmp_char;
         }
     }
-    if (*out_bytes_read < buffer_length) {
-        buffer[*out_bytes_read] = '\0';
-    }
+    buffer[*out_bytes_read] = '\0';
     return line_finished ? 0 : 1;
 }
 
@@ -266,6 +265,9 @@ int avs_stream_getline(avs_stream_abstract_t *stream,
                        char *out_message_finished,
                        char *buffer,
                        size_t buffer_length) {
+    if (buffer_length == 0 || !buffer) {
+        return -1;
+    }
     size_t bytes_read;
     char message_finished;
     getline_reader_getch_func_state_t state;
@@ -274,8 +276,8 @@ int avs_stream_getline(avs_stream_abstract_t *stream,
             out_message_finished ? out_message_finished : &message_finished;
     *state.out_message_finished = 0;
     return getline_helper(getline_reader_getch_func, &state,
-                          out_bytes_read ? out_bytes_read : &bytes_read,
-                          buffer, buffer_length);
+                          out_bytes_read ? out_bytes_read : &bytes_read, buffer,
+                          buffer_length);
 }
 
 typedef struct {
@@ -299,14 +301,17 @@ int avs_stream_peekline(avs_stream_abstract_t *stream,
                         size_t *out_next_offset,
                         char *buffer,
                         size_t buffer_length) {
+    if (buffer_length == 0 || !buffer) {
+        return -1;
+    }
     size_t bytes_peeked;
     getline_peeker_getch_func_state_t state;
-    int retval;
     state.stream = stream;
     state.offset = offset;
-    retval = getline_helper(getline_peeker_getch_func, &state,
-                            out_bytes_peeked ? out_bytes_peeked : &bytes_peeked,
-                            buffer, buffer_length);
+    int retval =
+            getline_helper(getline_peeker_getch_func, &state,
+                           out_bytes_peeked ? out_bytes_peeked : &bytes_peeked,
+                           buffer, buffer_length);
     if (out_next_offset) {
         *out_next_offset = state.offset;
     }

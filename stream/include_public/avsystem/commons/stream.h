@@ -219,13 +219,16 @@ int avs_stream_getch(avs_stream_abstract_t *stream, char *out_message_finished);
  *
  * @param stream                Stream to operate on.
  * @param out_bytes_read        Pointer to a variable where amount of read bytes
- *                              will be written, or NULL.
+ *                              will be written (excluding final NULL-terminator
+ *                              added internally), or NULL.
  * @param out_message_finished  Pointer to a variable where information about
  *                              message state will be stored (0 if not finished,
  *                              1 otherwise), or NULL.
  * @param buffer                Pointer to a memory block where read line will
- *                              be written.
- * @param buffer_length         Available buffer storage.
+ *                              be written. Must not be NULL.
+ * @param buffer_length         Number of bytes that can be stored in the buffer
+ *                              (including storage for the NULL-terminator),
+ *                              must NOT be 0.
  *
  * @returns 0 on success, negative value on error, positive value if the line
  * did not fit entirely into the @p buffer .
@@ -248,14 +251,17 @@ int avs_stream_getline(avs_stream_abstract_t *stream,
  * @param offset            Offset from the current stream position where line
  *                          peeking shall be started.
  * @param out_bytes_peeked  Pointer to a variable where amount of bytes written
- *                          into the buffer shall be stored, or NULL.
+ *                          into the buffer shall be stored (excluding final
+ *                          NULL-terminator, added internally), or NULL.
  * @param out_next_offset   Pointer to a variable where offset where peeking
  *                          stopped (which is an @p offset + amount of bytes
  *                          written into the @p buffer + length of line
  *                          terminators if any) shall be stored, or NULL.
  * @param buffer            Pointer to the memory block where data will be
- *                          stored.
- * @param buffer_length     Length of the buffer.
+ *                          stored. Must NOT be NULL.
+ * @param buffer_length     Number of bytes that can be stored in the buffer
+ *                          (including storage for the NULL-terminator), MUST
+ *                          not be 0.
  *
  * @returns 0 on success, negative value on error, positive value if the line
  * did not fit entirely into the @p buffer.
