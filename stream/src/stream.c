@@ -274,10 +274,9 @@ int avs_stream_getline(avs_stream_abstract_t *stream,
     state.out_message_finished =
             out_message_finished ? out_message_finished : &message_finished;
     *state.out_message_finished = 0;
-    int retval = getline_helper(getline_reader_getch_func, &state,
-                                out_bytes_read ? out_bytes_read : &bytes_read,
-                                buffer, buffer_length - 1);
-    return retval;
+    return getline_helper(getline_reader_getch_func, &state,
+                          out_bytes_read ? out_bytes_read : &bytes_read, buffer,
+                          buffer_length - 1);
 }
 
 typedef struct {
