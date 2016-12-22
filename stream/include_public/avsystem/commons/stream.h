@@ -207,15 +207,15 @@ int avs_stream_peek(avs_stream_abstract_t *stream, size_t offset);
 int avs_stream_getch(avs_stream_abstract_t *stream, char *out_message_finished);
 
 /**
- * Helper function that reads a line (delimited with '\n', '\r\n' or '\0') from
- * the stream by calling @ref avs_stream_v_table_t#read (possibly multiple
- * times) on the underlying stream implementation.
+ * Helper function that reads a line (terminated with '\n' or '\r\n') from the
+ * stream by calling @ref avs_stream_v_table_t#read (possibly multiple times) on
+ * the underlying stream implementation.
  *
  * Note: unless an error during reading occured @p buffer will always be
  * NULL terminated.
  *
- * Note: the line terminator (one of '\n', '\r\n', '\0') is never written into
- * the @p buffer.
+ * Note: the line terminator ('\n' or '\r\n') is never written into the
+ * @p buffer.
  *
  * @param stream                Stream to operate on.
  * @param out_bytes_read        Pointer to a variable where amount of read bytes
@@ -230,8 +230,11 @@ int avs_stream_getch(avs_stream_abstract_t *stream, char *out_message_finished);
  *                              (including storage for the NULL-terminator),
  *                              must NOT be 0.
  *
- * @returns 0 on success, negative value on error, positive value if the line
- * did not fit entirely into the @p buffer .
+ * @returns
+ * - 0 on success
+ * - negative value on error (including when the line was not properly
+ *   terminated)
+ * - positive value if the line did not fit entirely into the @p buffer
  */
 int avs_stream_getline(avs_stream_abstract_t *stream,
                        size_t *out_bytes_read,
@@ -263,8 +266,11 @@ int avs_stream_getline(avs_stream_abstract_t *stream,
  *                          (including storage for the NULL-terminator), MUST
  *                          not be 0.
  *
- * @returns 0 on success, negative value on error, positive value if the line
- * did not fit entirely into the @p buffer.
+ * @returns
+ * - 0 on success
+ * - negative value on error (including when the line was not properly
+ *   terminated)
+ * - positive value if the line did not fit entirely into the @p buffer
  */
 int avs_stream_peekline(avs_stream_abstract_t *stream,
                         size_t offset,

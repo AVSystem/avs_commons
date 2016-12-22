@@ -84,7 +84,51 @@ AVS_UNIT_TEST(stream_membuf, fit) {
     avs_stream_cleanup(&stream);
 }
 
-AVS_UNIT_TEST(stream, stream_getline_and_peekline) {
+AVS_UNIT_TEST(stream_getline, simple) {
+    avs_stream_abstract_t *stream = avs_stream_membuf_create();
+    AVS_UNIT_ASSERT_SUCCESS(avs_stream_write_f(stream, "HTTP/1.1 302 Found\r\n"));
+    AVS_UNIT_ASSERT_SUCCESS(avs_stream_write_f(stream, "Cache-Control: private\r\n"));
+    AVS_UNIT_ASSERT_SUCCESS(avs_stream_write_f(stream, "Content-Type: text/html; charset=UTF-8\r\n"));
+    AVS_UNIT_ASSERT_SUCCESS(avs_stream_write_f(stream, "Location: http://www.google.pl/?gfe_rd=cr&ei=sQlcWMSSJMSv8weajb2wAg\r\n"));
+    AVS_UNIT_ASSERT_SUCCESS(avs_stream_write_f(stream, "Content-Length: 79\r\n"));
+    AVS_UNIT_ASSERT_SUCCESS(avs_stream_write_f(stream, "Date: Thu, 22 Dec 2016 17:13:21 GMT\r\n"));
+    AVS_UNIT_ASSERT_SUCCESS(avs_stream_write_f(stream, "\r\n"));
+    AVS_UNIT_ASSERT_SUCCESS(avs_stream_write_f(stream, "<HTML><HEAD><meta http-equiv=\"content-type\" content=\"text/html;charset=utf-8\">\n"));
+    AVS_UNIT_ASSERT_SUCCESS(avs_stream_write_f(stream, "</HEAD><BODY></BODY></HTML>"));
+
+    char buf[80];
+    char message_finished = 0;
+    AVS_UNIT_ASSERT_SUCCESS(avs_stream_getline(stream, NULL, &message_finished, buf, sizeof(buf)));
+    AVS_UNIT_ASSERT_EQUAL_STRING(buf, "HTTP/1.1 302 Found");
+    AVS_UNIT_ASSERT_FALSE(message_finished);
+    AVS_UNIT_ASSERT_SUCCESS(avs_stream_getline(stream, NULL, &message_finished, buf, sizeof(buf)));
+    AVS_UNIT_ASSERT_EQUAL_STRING(buf, "Cache-Control: private");
+    AVS_UNIT_ASSERT_FALSE(message_finished);
+    AVS_UNIT_ASSERT_SUCCESS(avs_stream_getline(stream, NULL, &message_finished, buf, sizeof(buf)));
+    AVS_UNIT_ASSERT_EQUAL_STRING(buf, "Content-Type: text/html; charset=UTF-8");
+    AVS_UNIT_ASSERT_FALSE(message_finished);
+    AVS_UNIT_ASSERT_SUCCESS(avs_stream_getline(stream, NULL, &message_finished, buf, sizeof(buf)));
+    AVS_UNIT_ASSERT_EQUAL_STRING(buf, "Location: http://www.google.pl/?gfe_rd=cr&ei=sQlcWMSSJMSv8weajb2wAg");
+    AVS_UNIT_ASSERT_FALSE(message_finished);
+    AVS_UNIT_ASSERT_SUCCESS(avs_stream_getline(stream, NULL, &message_finished, buf, sizeof(buf)));
+    AVS_UNIT_ASSERT_EQUAL_STRING(buf, "Content-Length: 79");
+    AVS_UNIT_ASSERT_FALSE(message_finished);
+    AVS_UNIT_ASSERT_SUCCESS(avs_stream_getline(stream, NULL, &message_finished, buf, sizeof(buf)));
+    AVS_UNIT_ASSERT_EQUAL_STRING(buf, "Date: Thu, 22 Dec 2016 17:13:21 GMT");
+    AVS_UNIT_ASSERT_FALSE(message_finished);
+    AVS_UNIT_ASSERT_SUCCESS(avs_stream_getline(stream, NULL, &message_finished, buf, sizeof(buf)));
+    AVS_UNIT_ASSERT_EQUAL_STRING(buf, "");
+    AVS_UNIT_ASSERT_FALSE(message_finished);
+    AVS_UNIT_ASSERT_SUCCESS(avs_stream_getline(stream, NULL, &message_finished, buf, sizeof(buf)));
+    AVS_UNIT_ASSERT_EQUAL_STRING(buf, "<HTML><HEAD><meta http-equiv=\"content-type\" content=\"text/html;charset=utf-8\">");
+    AVS_UNIT_ASSERT_FALSE(message_finished);
+    AVS_UNIT_ASSERT_EQUAL(avs_stream_getline(stream, NULL, &message_finished, buf, sizeof(buf)), -1);
+    AVS_UNIT_ASSERT_EQUAL_STRING(buf, "</HEAD><BODY></BODY></HTML>");
+    AVS_UNIT_ASSERT_TRUE(message_finished);
+    avs_stream_cleanup(&stream);
+}
+
+AVS_UNIT_TEST(stream_getline, errors) {
     avs_stream_abstract_t *stream = avs_stream_membuf_create();
     static const char *str = "very stream";
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_write(stream, str, strlen(str)+1));
@@ -114,4 +158,33 @@ AVS_UNIT_TEST(stream, stream_getline_and_peekline) {
     AVS_UNIT_ASSERT_EQUAL(bytes_read, 0);
     AVS_UNIT_ASSERT_EQUAL(buf[0], '\0');
     AVS_UNIT_ASSERT_EQUAL(msg_finished, 0);
+    avs_stream_cleanup(&stream);
+}
+
+AVS_UNIT_TEST(stream_getline, exact) {
+    avs_stream_abstract_t *stream = avs_stream_membuf_create();
+    static const char *STREAM_DATA_LF = "1234567\n";
+    AVS_UNIT_ASSERT_SUCCESS(avs_stream_write(stream, STREAM_DATA_LF,
+                                             strlen(STREAM_DATA_LF)));
+
+    char buf[strlen(STREAM_DATA_LF)];
+    size_t bytes_read;
+    char msg_finished;
+
+    AVS_UNIT_ASSERT_SUCCESS(avs_stream_getline(stream, &bytes_read,
+                                               &msg_finished,
+                                               buf, sizeof(buf)));
+    AVS_UNIT_ASSERT_EQUAL(bytes_read, 7);
+    AVS_UNIT_ASSERT_TRUE(msg_finished);
+
+    static const char *STREAM_DATA_CR_LF = "1234567\r\n";
+    avs_stream_reset(stream);
+    AVS_UNIT_ASSERT_SUCCESS(avs_stream_write(stream, STREAM_DATA_CR_LF,
+                                             strlen(STREAM_DATA_CR_LF)));
+    AVS_UNIT_ASSERT_SUCCESS(avs_stream_getline(stream, &bytes_read,
+                                               &msg_finished,
+                                               buf, sizeof(buf)));
+    AVS_UNIT_ASSERT_EQUAL(bytes_read, 7);
+    AVS_UNIT_ASSERT_TRUE(msg_finished);
+    avs_stream_cleanup(&stream);
 }
