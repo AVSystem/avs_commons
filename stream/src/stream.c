@@ -217,6 +217,7 @@ static int getline_helper(getline_getch_func_t getch_func,
             buffer[(*out_bytes_read)++] = (char) (unsigned char) tmp_char;
         }
     }
+    buffer[*out_bytes_read] = '\0';
     return line_finished ? 0 : 1;
 }
 
@@ -274,14 +275,8 @@ int avs_stream_getline(avs_stream_abstract_t *stream,
             out_message_finished ? out_message_finished : &message_finished;
     *state.out_message_finished = 0;
     int retval = getline_helper(getline_reader_getch_func, &state,
-                                &bytes_read,
+                                out_bytes_read ? out_bytes_read : &bytes_read,
                                 buffer, buffer_length - 1);
-    if (retval >= 0) {
-        if (out_bytes_read) {
-            *out_bytes_read = bytes_read;
-        }
-        buffer[bytes_read] = '\0';
-    }
     return retval;
 }
 
@@ -313,16 +308,12 @@ int avs_stream_peekline(avs_stream_abstract_t *stream,
     getline_peeker_getch_func_state_t state;
     state.stream = stream;
     state.offset = offset;
-    int retval = getline_helper(getline_peeker_getch_func, &state,
-                                &bytes_peeked, buffer, buffer_length - 1);
+    int retval =
+            getline_helper(getline_peeker_getch_func, &state,
+                           out_bytes_peeked ? out_bytes_peeked : &bytes_peeked,
+                           buffer, buffer_length - 1);
     if (out_next_offset) {
         *out_next_offset = state.offset;
-    }
-    if (retval >= 0) {
-        if (out_bytes_peeked) {
-            *out_bytes_peeked = bytes_peeked;
-        }
-        buffer[bytes_peeked] = '\0';
     }
     return retval;
 }
