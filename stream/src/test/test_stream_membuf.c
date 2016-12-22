@@ -84,3 +84,34 @@ AVS_UNIT_TEST(stream_membuf, fit) {
     avs_stream_cleanup(&stream);
 }
 
+AVS_UNIT_TEST(stream, stream_getline_and_peekline) {
+    avs_stream_abstract_t *stream = avs_stream_membuf_create();
+    static const char *str = "very stream";
+    AVS_UNIT_ASSERT_SUCCESS(avs_stream_write(stream, str, strlen(str)+1));
+
+    char buf[32];
+    size_t bytes_read;
+    size_t next_offset;
+    char msg_finished;
+
+    buf[0] = -1;
+    AVS_UNIT_ASSERT_FAILED(avs_stream_peekline(stream, 0, NULL, NULL, buf, 0));
+    AVS_UNIT_ASSERT_FAILED(avs_stream_peekline(stream, 0, NULL, NULL, NULL, 0));
+    AVS_UNIT_ASSERT_EQUAL(buf[0], -1);
+    AVS_UNIT_ASSERT_EQUAL(1, avs_stream_peekline(stream, 0, &bytes_read,
+                                                 &next_offset, buf, 1));
+    AVS_UNIT_ASSERT_EQUAL(bytes_read, 0);
+    AVS_UNIT_ASSERT_EQUAL(next_offset, 0);
+    AVS_UNIT_ASSERT_EQUAL(buf[0], '\0');
+
+    buf[0] = -1;
+    AVS_UNIT_ASSERT_FAILED(avs_stream_getline(stream, NULL, NULL, buf, 0));
+    AVS_UNIT_ASSERT_FAILED(avs_stream_getline(stream, NULL, NULL, NULL, 500));
+
+    AVS_UNIT_ASSERT_EQUAL(buf[0], -1);
+    AVS_UNIT_ASSERT_EQUAL(1, avs_stream_getline(stream, &bytes_read,
+                                                &msg_finished, buf, 1));
+    AVS_UNIT_ASSERT_EQUAL(bytes_read, 0);
+    AVS_UNIT_ASSERT_EQUAL(buf[0], '\0');
+    AVS_UNIT_ASSERT_EQUAL(msg_finished, 0);
+}
