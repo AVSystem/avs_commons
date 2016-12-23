@@ -209,7 +209,8 @@ int avs_stream_getch(avs_stream_abstract_t *stream, char *out_message_finished);
 /**
  * Helper function that reads a line (terminated with '\n' or '\r\n') from the
  * stream by calling @ref avs_stream_v_table_t#read (possibly multiple times) on
- * the underlying stream implementation.
+ * the underlying stream implementation. @ref avs_stream_v_table_t#peek may also
+ * be called with offset 0 or 1.
  *
  * Note: unless an error during reading occured @p buffer will always be
  * NULL terminated.

@@ -194,7 +194,6 @@ int avs_stream_getch(avs_stream_abstract_t *stream, char *message_finished) {
     return buf;
 }
 
-struct getline_getch_provider_struct;
 typedef struct getline_getch_provider_struct {
     int (*read)(struct getline_getch_provider_struct *self);
     int (*peek)(struct getline_getch_provider_struct *self, size_t offset);
@@ -206,19 +205,20 @@ static bool line_finished(getline_getch_provider_t *getch_provider,
         return true;
     }
     int next_char = getch_provider->peek(getch_provider, 0);
-    if (next_char == '\n') {
-        next_char = getch_provider->read(getch_provider);
-        assert(next_char == '\n');
-        return true;
+    return (next_char == '\n'
+            || (next_char == '\r'
+                    && getch_provider->peek(getch_provider, 1) == '\n'));
+}
+
+static void consume_line_terminator(getline_getch_provider_t *getch_provider,
+                                    int last_consumed_char) {
+    if (last_consumed_char != '\n') {
+        last_consumed_char = getch_provider->read(getch_provider);
+        if (last_consumed_char == '\r') {
+            last_consumed_char = getch_provider->read(getch_provider);
+        }
     }
-    if (next_char == '\r' && getch_provider->peek(getch_provider, 1) == '\n') {
-        next_char = getch_provider->read(getch_provider);
-        assert(next_char == '\r');
-        next_char = getch_provider->read(getch_provider);
-        assert(next_char == '\n');
-        return true;
-    }
-    return false;
+    assert(last_consumed_char == '\n');
 }
 
 static int getline_helper(getline_getch_provider_t *getch_provider,
@@ -231,14 +231,10 @@ static int getline_helper(getline_getch_provider_t *getch_provider,
     int result = 0;
     while (*out_bytes_read < buffer_length - 1) {
         tmp_char = getch_provider->read(getch_provider);
-        if (tmp_char < 0) {
-            result = tmp_char;
+        if (tmp_char <= 0) {
+            result = -1;
             break;
         } else if (tmp_char == '\n') {
-            break;
-        } else if (tmp_char == '\0') {
-            tmp_char = EOF;
-            result = -1;
             break;
         } else if (tmp_char != '\r'
                 || getch_provider->peek(getch_provider, 0) != '\n') {
@@ -247,7 +243,11 @@ static int getline_helper(getline_getch_provider_t *getch_provider,
         }
     }
     if (!result) {
-        result = line_finished(getch_provider, tmp_char) ? 0 : 1;
+        if (line_finished(getch_provider, tmp_char)) {
+            consume_line_terminator(getch_provider, tmp_char);
+        } else {
+            result = 1;
+        }
     }
     buffer[*out_bytes_read] = '\0';
     return result;

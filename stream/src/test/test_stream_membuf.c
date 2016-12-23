@@ -96,7 +96,7 @@ AVS_UNIT_TEST(stream_getline, simple) {
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_write_f(stream, "<HTML><HEAD><meta http-equiv=\"content-type\" content=\"text/html;charset=utf-8\">\n"));
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_write_f(stream, "</HEAD><BODY></BODY></HTML>"));
 
-    char buf[80];
+    char buf[64];
     char message_finished = 0;
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_getline(stream, NULL, &message_finished, buf, sizeof(buf)));
     AVS_UNIT_ASSERT_EQUAL_STRING(buf, "HTTP/1.1 302 Found");
@@ -107,8 +107,11 @@ AVS_UNIT_TEST(stream_getline, simple) {
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_getline(stream, NULL, &message_finished, buf, sizeof(buf)));
     AVS_UNIT_ASSERT_EQUAL_STRING(buf, "Content-Type: text/html; charset=UTF-8");
     AVS_UNIT_ASSERT_FALSE(message_finished);
+    AVS_UNIT_ASSERT_EQUAL(avs_stream_getline(stream, NULL, &message_finished, buf, sizeof(buf)), 1);
+    AVS_UNIT_ASSERT_EQUAL_STRING(buf, "Location: http://www.google.pl/?gfe_rd=cr&ei=sQlcWMSSJMSv8weajb");
+    AVS_UNIT_ASSERT_FALSE(message_finished);
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_getline(stream, NULL, &message_finished, buf, sizeof(buf)));
-    AVS_UNIT_ASSERT_EQUAL_STRING(buf, "Location: http://www.google.pl/?gfe_rd=cr&ei=sQlcWMSSJMSv8weajb2wAg");
+    AVS_UNIT_ASSERT_EQUAL_STRING(buf, "2wAg");
     AVS_UNIT_ASSERT_FALSE(message_finished);
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_getline(stream, NULL, &message_finished, buf, sizeof(buf)));
     AVS_UNIT_ASSERT_EQUAL_STRING(buf, "Content-Length: 79");
@@ -119,8 +122,11 @@ AVS_UNIT_TEST(stream_getline, simple) {
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_getline(stream, NULL, &message_finished, buf, sizeof(buf)));
     AVS_UNIT_ASSERT_EQUAL_STRING(buf, "");
     AVS_UNIT_ASSERT_FALSE(message_finished);
+    AVS_UNIT_ASSERT_EQUAL(avs_stream_getline(stream, NULL, &message_finished, buf, sizeof(buf)), 1);
+    AVS_UNIT_ASSERT_EQUAL_STRING(buf, "<HTML><HEAD><meta http-equiv=\"content-type\" content=\"text/html;");
+    AVS_UNIT_ASSERT_FALSE(message_finished);
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_getline(stream, NULL, &message_finished, buf, sizeof(buf)));
-    AVS_UNIT_ASSERT_EQUAL_STRING(buf, "<HTML><HEAD><meta http-equiv=\"content-type\" content=\"text/html;charset=utf-8\">");
+    AVS_UNIT_ASSERT_EQUAL_STRING(buf, "charset=utf-8\">");
     AVS_UNIT_ASSERT_FALSE(message_finished);
     AVS_UNIT_ASSERT_EQUAL(avs_stream_getline(stream, NULL, &message_finished, buf, sizeof(buf)), -1);
     AVS_UNIT_ASSERT_EQUAL_STRING(buf, "</HEAD><BODY></BODY></HTML>");
@@ -178,13 +184,41 @@ AVS_UNIT_TEST(stream_getline, exact) {
     AVS_UNIT_ASSERT_TRUE(msg_finished);
 
     static const char *STREAM_DATA_CR_LF = "1234567\r\n";
-    avs_stream_reset(stream);
+    AVS_UNIT_ASSERT_SUCCESS(avs_stream_reset(stream));
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_write(stream, STREAM_DATA_CR_LF,
                                              strlen(STREAM_DATA_CR_LF)));
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_getline(stream, &bytes_read,
                                                &msg_finished,
                                                buf, sizeof(buf)));
     AVS_UNIT_ASSERT_EQUAL(bytes_read, 7);
+    AVS_UNIT_ASSERT_TRUE(msg_finished);
+    avs_stream_cleanup(&stream);
+}
+
+AVS_UNIT_TEST(stream_getline, inline_cr) {
+    avs_stream_abstract_t *stream = avs_stream_membuf_create();
+    static const char INLINE_CR[] = "fooba\rbaz\r\n";
+    int last_result = 1;
+    char msg_finished = 0;
+    for (size_t i = 2; i <= sizeof(INLINE_CR) - 2; ++i) {
+        AVS_UNIT_ASSERT_EQUAL(last_result, 1);
+        AVS_UNIT_ASSERT_FALSE(msg_finished);
+        AVS_UNIT_ASSERT_SUCCESS(avs_stream_reset(stream));
+        AVS_UNIT_ASSERT_SUCCESS(avs_stream_write(stream, INLINE_CR,
+                                                 strlen(INLINE_CR)));
+
+        char expected[i];
+        memcpy(expected, INLINE_CR, i - 1);
+        expected[i - 1] = '\0';
+
+        char buf[i];
+        size_t bytes_read;
+        last_result = avs_stream_getline(stream, &bytes_read, &msg_finished,
+                                         buf, sizeof(buf));
+        AVS_UNIT_ASSERT_EQUAL_STRING(buf, expected);
+        AVS_UNIT_ASSERT_EQUAL(bytes_read, i - 1);
+    }
+    AVS_UNIT_ASSERT_EQUAL(last_result, 0);
     AVS_UNIT_ASSERT_TRUE(msg_finished);
     avs_stream_cleanup(&stream);
 }
