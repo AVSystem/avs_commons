@@ -266,7 +266,7 @@ typedef int avs_rbtree_element_comparator_t(const void *a,
  */
 #define AVS_RBTREE_INSERT(tree, elem) \
     (_AVS_RB_TYPECHECK(*(tree), (elem)), \
-     (AVS_TYPEOF_PTR(elem))avs_rbtree_attach__((AVS_RBTREE(void))(tree), (elem)))
+     (AVS_TYPEOF_PTR(*(tree)))avs_rbtree_attach__((AVS_RBTREE(void))(tree), (elem)))
 
 /**
  * Detaches given @p elem from @p tree. Does not free @p elem.
@@ -331,7 +331,7 @@ typedef int avs_rbtree_element_comparator_t(const void *a,
  */
 #define AVS_RBTREE_LOWER_BOUND(tree, val_ptr) \
     (_AVS_RB_TYPECHECK(*(tree), (val_ptr)), \
-     ((AVS_TYPEOF_PTR(val_ptr)) \
+     ((AVS_TYPEOF_PTR(*(tree))) \
       avs_rbtree_lower_bound__((AVS_RBTREE_CONST(void))(tree), (val_ptr))))
 
 /**
@@ -351,7 +351,7 @@ typedef int avs_rbtree_element_comparator_t(const void *a,
  */
 #define AVS_RBTREE_UPPER_BOUND(tree, val_ptr) \
     (_AVS_RB_TYPECHECK(*(tree), (val_ptr)), \
-     ((AVS_TYPEOF_PTR(val_ptr)) \
+     ((AVS_TYPEOF_PTR(*(tree))) \
       avs_rbtree_upper_bound__((AVS_RBTREE_CONST(void))(tree), (val_ptr))))
 
 /**
@@ -370,7 +370,7 @@ typedef int avs_rbtree_element_comparator_t(const void *a,
  */
 #define AVS_RBTREE_FIND(tree, val_ptr) \
     (_AVS_RB_TYPECHECK(*(tree), (val_ptr)), \
-     ((AVS_TYPEOF_PTR(val_ptr)) \
+     ((AVS_TYPEOF_PTR(*(tree))) \
       avs_rbtree_find__((AVS_RBTREE_CONST(void))(tree), (val_ptr))))
 
 /**
