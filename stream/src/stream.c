@@ -194,34 +194,33 @@ int avs_stream_getch(avs_stream_abstract_t *stream, char *message_finished) {
     return buf;
 }
 
-typedef struct getline_getch_provider_struct {
-    int (*read)(struct getline_getch_provider_struct *self);
-    int (*peek)(struct getline_getch_provider_struct *self, size_t offset);
-} getline_getch_provider_t;
+typedef struct getline_provider_struct {
+    int (*getch)(struct getline_provider_struct *self);
+    int (*peek)(struct getline_provider_struct *self, size_t offset);
+} getline_provider_t;
 
-static bool line_finished(getline_getch_provider_t *getch_provider,
+static bool line_finished(getline_provider_t *provider,
                           int last_read_char) {
     if (last_read_char == '\n') {
         return true;
     }
-    int next_char = getch_provider->peek(getch_provider, 0);
+    int next_char = provider->peek(provider, 0);
     return (next_char == '\n'
-            || (next_char == '\r'
-                    && getch_provider->peek(getch_provider, 1) == '\n'));
+            || (next_char == '\r' && provider->peek(provider, 1) == '\n'));
 }
 
-static void consume_line_terminator(getline_getch_provider_t *getch_provider,
+static void consume_line_terminator(getline_provider_t *provider,
                                     int last_consumed_char) {
     if (last_consumed_char != '\n') {
-        last_consumed_char = getch_provider->read(getch_provider);
+        last_consumed_char = provider->getch(provider);
         if (last_consumed_char == '\r') {
-            last_consumed_char = getch_provider->read(getch_provider);
+            last_consumed_char = provider->getch(provider);
         }
     }
     assert(last_consumed_char == '\n');
 }
 
-static int getline_helper(getline_getch_provider_t *getch_provider,
+static int getline_helper(getline_provider_t *provider,
                           size_t *out_bytes_read,
                           char *buffer,
                           size_t buffer_length) {
@@ -230,21 +229,20 @@ static int getline_helper(getline_getch_provider_t *getch_provider,
     int tmp_char = EOF;
     int result = 0;
     while (*out_bytes_read < buffer_length - 1) {
-        tmp_char = getch_provider->read(getch_provider);
+        tmp_char = provider->getch(provider);
         if (tmp_char <= 0) {
             result = -1;
             break;
         } else if (tmp_char == '\n') {
             break;
-        } else if (tmp_char != '\r'
-                || getch_provider->peek(getch_provider, 0) != '\n') {
+        } else if (tmp_char != '\r' || provider->peek(provider, 0) != '\n') {
             /* ignore '\r's that are before '\n's */
             buffer[(*out_bytes_read)++] = (char) (unsigned char) tmp_char;
         }
     }
     if (!result) {
-        if (line_finished(getch_provider, tmp_char)) {
-            consume_line_terminator(getch_provider, tmp_char);
+        if (line_finished(provider, tmp_char)) {
+            consume_line_terminator(provider, tmp_char);
         } else {
             result = 1;
         }
@@ -254,24 +252,24 @@ static int getline_helper(getline_getch_provider_t *getch_provider,
 }
 
 typedef struct {
-    getline_getch_provider_t vtable;
+    getline_provider_t vtable;
     avs_stream_abstract_t *stream;
     char *out_message_finished;
-} getline_reader_getch_provider_t;
+} getline_reader_provider_t;
 
-static int getline_reader_read_func(getline_getch_provider_t *self_) {
-    getline_reader_getch_provider_t *self =
-            AVS_CONTAINER_OF(self_, getline_reader_getch_provider_t, vtable);
+static int getline_reader_getch_func(getline_provider_t *self_) {
+    getline_reader_provider_t *self =
+            AVS_CONTAINER_OF(self_, getline_reader_provider_t, vtable);
     if (*self->out_message_finished) {
         return EOF;
     }
     return avs_stream_getch(self->stream, self->out_message_finished);
 }
 
-static int getline_reader_peek_func(getline_getch_provider_t *self_,
+static int getline_reader_peek_func(getline_provider_t *self_,
                                     size_t offset) {
-    getline_reader_getch_provider_t *self =
-            AVS_CONTAINER_OF(self_, getline_reader_getch_provider_t, vtable);
+    getline_reader_provider_t *self =
+            AVS_CONTAINER_OF(self_, getline_reader_provider_t, vtable);
     if (*self->out_message_finished) {
         return EOF;
     }
@@ -288,9 +286,9 @@ int avs_stream_getline(avs_stream_abstract_t *stream,
     }
     size_t bytes_read;
     char message_finished;
-    getline_reader_getch_provider_t provider = {
+    getline_reader_provider_t provider = {
         .vtable = {
-            .read = getline_reader_read_func,
+            .getch = getline_reader_getch_func,
             .peek = getline_reader_peek_func
         },
         .stream = stream,
@@ -304,14 +302,14 @@ int avs_stream_getline(avs_stream_abstract_t *stream,
 }
 
 typedef struct {
-    getline_getch_provider_t vtable;
+    getline_provider_t vtable;
     avs_stream_abstract_t *stream;
     size_t offset;
-} getline_peeker_getch_provider_t;
+} getline_peeker_provider_t;
 
-static int getline_peeker_read_func(getline_getch_provider_t *self_) {
-    getline_peeker_getch_provider_t *self =
-            AVS_CONTAINER_OF(self_, getline_peeker_getch_provider_t, vtable);
+static int getline_peeker_getch_func(getline_provider_t *self_) {
+    getline_peeker_provider_t *self =
+            AVS_CONTAINER_OF(self_, getline_peeker_provider_t, vtable);
     int retval = avs_stream_peek(self->stream, self->offset);
     if (retval >= 0) {
         ++self->offset;
@@ -319,10 +317,10 @@ static int getline_peeker_read_func(getline_getch_provider_t *self_) {
     return retval;
 }
 
-static int getline_peeker_peek_func(getline_getch_provider_t *self_,
+static int getline_peeker_peek_func(getline_provider_t *self_,
                                     size_t offset) {
-    getline_peeker_getch_provider_t *self =
-            AVS_CONTAINER_OF(self_, getline_peeker_getch_provider_t, vtable);
+    getline_peeker_provider_t *self =
+            AVS_CONTAINER_OF(self_, getline_peeker_provider_t, vtable);
     return avs_stream_peek(self->stream, self->offset + offset);
 }
 
@@ -336,9 +334,9 @@ int avs_stream_peekline(avs_stream_abstract_t *stream,
         return -1;
     }
     size_t bytes_peeked;
-    getline_peeker_getch_provider_t provider = {
+    getline_peeker_provider_t provider = {
         .vtable = {
-            .read = getline_peeker_read_func,
+            .getch = getline_peeker_getch_func,
             .peek = getline_peeker_peek_func
         },
         .stream = stream,

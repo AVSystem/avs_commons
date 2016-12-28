@@ -181,6 +181,7 @@ AVS_UNIT_TEST(stream_getline, exact) {
                                                &msg_finished,
                                                buf, sizeof(buf)));
     AVS_UNIT_ASSERT_EQUAL(bytes_read, 7);
+    AVS_UNIT_ASSERT_EQUAL_STRING(buf, "1234567");
     AVS_UNIT_ASSERT_TRUE(msg_finished);
 
     static const char *STREAM_DATA_CR_LF = "1234567\r\n";
@@ -191,6 +192,7 @@ AVS_UNIT_TEST(stream_getline, exact) {
                                                &msg_finished,
                                                buf, sizeof(buf)));
     AVS_UNIT_ASSERT_EQUAL(bytes_read, 7);
+    AVS_UNIT_ASSERT_EQUAL_STRING(buf, "1234567");
     AVS_UNIT_ASSERT_TRUE(msg_finished);
     avs_stream_cleanup(&stream);
 }

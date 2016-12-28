@@ -212,8 +212,7 @@ int avs_stream_getch(avs_stream_abstract_t *stream, char *out_message_finished);
  * the underlying stream implementation. @ref avs_stream_v_table_t#peek may also
  * be called with offset 0 or 1.
  *
- * Note: unless an error during reading occured @p buffer will always be
- * NULL terminated.
+ * Note: @p buffer will always be NULL-terminated, even in case of error.
  *
  * Note: the line terminator ('\n' or '\r\n') is never written into the
  * @p buffer.
@@ -236,6 +235,18 @@ int avs_stream_getch(avs_stream_abstract_t *stream, char *out_message_finished);
  * - negative value on error (including when the line was not properly
  *   terminated)
  * - positive value if the line did not fit entirely into the @p buffer
+ *
+ * Even in case of error, @p out_bytes_read and @p out_message_finished will
+ * always be appropriately updated. @p out_bytes_read first bytes of @p buffer
+ * will be filled with any data read before the error, and the null byte will
+ * always be written after those (or at the beginning).
+ *
+ * In case of a negative return value, @ref avs_stream_errno can be used to
+ * check for detailed error case encountered. While the exact semantics of
+ * @ref avs_stream_errno vary between different streams - if this function
+ * returns a negative value, while @p out_message_finished is set to true and
+ * @ref avs_stream_errno returns 0, it is most likely caused by lack of line
+ * terminator characters at the end of stream.
  */
 int avs_stream_getline(avs_stream_abstract_t *stream,
                        size_t *out_bytes_read,
