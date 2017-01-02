@@ -79,41 +79,90 @@ int avs_log_should_log__(avs_log_level_t level, const char *module) {
     return level >= AVS_LOG_QUIET || level >= *level_for(module, 0);
 }
 
+static const char *level_as_string(avs_log_level_t level) {
+    switch (level) {
+    case AVS_LOG_TRACE:
+        return "TRACE";
+    case AVS_LOG_DEBUG:
+        return "DEBUG";
+    case AVS_LOG_INFO:
+        return "INFO";
+    case AVS_LOG_WARNING:
+        return "WARNING";
+    case AVS_LOG_ERROR:
+        return "ERROR";
+    default:
+        return "WTF";
+    }
+}
+
 void avs_log_internal_forced_v__(avs_log_level_t level,
                                  const char *module,
+                                 const char *file,
+                                 unsigned line,
                                  const char *msg,
                                  va_list ap) {
     char log_buf[MAX_LOG_LINE_LENGTH];
-    vsnprintf(log_buf, sizeof(log_buf) - 1, msg, ap);
-    log_buf[sizeof(log_buf) - 1] = '\0';
+    char *log_buf_ptr = log_buf;
+    size_t log_buf_left = sizeof(log_buf) - 1;
+    int pfresult = snprintf(log_buf_ptr, log_buf_left, "%s [%s] [%s:%u]: ",
+                            level_as_string(level), module, file, line);
+    if (pfresult < 0) {
+        // it's hard to imagine why snprintf() above might fail,
+        // but well, let's be compliant and check it
+        return;
+    }
+    if ((size_t) pfresult > log_buf_left) {
+        pfresult = (int) log_buf_left;
+    }
+    log_buf_ptr += pfresult;
+    log_buf_left -= (size_t) pfresult;
+    if (log_buf_left) {
+        pfresult = vsnprintf(log_buf_ptr, log_buf_left, msg, ap);
+        if (pfresult < 0) {
+            // erroneous user-provided format string?
+            return;
+        }
+        if ((size_t) pfresult > log_buf_left) {
+            pfresult = (int) log_buf_left;
+        }
+        log_buf_ptr += pfresult;
+    }
+    *log_buf_ptr = '\0';
     HANDLER(level, module, log_buf);
 }
 
 void avs_log_internal_v__(avs_log_level_t level,
                           const char *module,
+                          const char *file,
+                          unsigned line,
                           const char *msg,
                           va_list ap) {
     if (avs_log_should_log__(level, module)) {
-        avs_log_internal_forced_v__(level, module, msg, ap);
+        avs_log_internal_forced_v__(level, module, file, line, msg, ap);
     }
 }
 
 void avs_log_internal_forced_l__(avs_log_level_t level,
                                  const char *module,
+                                 const char *file,
+                                 unsigned line,
                                  const char *msg, ...) {
     va_list ap;
     va_start(ap, msg);
-    avs_log_internal_forced_v__(level, module, msg, ap);
+    avs_log_internal_forced_v__(level, module, file, line, msg, ap);
     va_end(ap);
 }
 
 void avs_log_internal_l__(avs_log_level_t level,
                           const char *module,
+                          const char *file,
+                          unsigned line,
                           const char *msg, ...) {
     if (avs_log_should_log__(level, module)) {
         va_list ap;
         va_start(ap, msg);
-        avs_log_internal_forced_v__(level, module, msg, ap);
+        avs_log_internal_forced_v__(level, module, file, line, msg, ap);
         va_end(ap);
     }
 }
@@ -123,8 +172,7 @@ int avs_log_set_level__(const char *module, avs_log_level_t level) {
     if (!level_ptr) {
         if (AVS_LOG_ERROR >= DEFAULT_LEVEL) {
             avs_log_internal_forced_l__(
-                    AVS_LOG_ERROR, "avs_log",
-                    AVS_LOG_MSG_PREFIX_IMPL__(ERROR, avs_log)
+                    AVS_LOG_ERROR, "avs_log", __FILE__, __LINE__,
                     "could not allocate level entry for module: %s", module);
         }
         return -1;
