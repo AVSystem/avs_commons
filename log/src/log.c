@@ -107,7 +107,9 @@ void avs_log_internal_forced_v__(avs_log_level_t level,
     size_t log_buf_left = sizeof(log_buf) - 1;
     int pfresult = snprintf(log_buf_ptr, log_buf_left, "%s [%s] [%s:%u]: ",
                             level_as_string(level), module, file, line);
-    if (pfresult < 0) { // wat
+    if (pfresult < 0) {
+        // it's hard to imagine why snprintf() above might fail,
+        // but well, let's be compliant and check it
         return;
     }
     if ((size_t) pfresult > log_buf_left) {
@@ -117,14 +119,14 @@ void avs_log_internal_forced_v__(avs_log_level_t level,
     log_buf_left -= (size_t) pfresult;
     if (log_buf_left) {
         pfresult = vsnprintf(log_buf_ptr, log_buf_left, msg, ap);
-        if (pfresult < 0) { // wat
+        if (pfresult < 0) {
+            // erroneous user-provided format string?
             return;
         }
         if ((size_t) pfresult > log_buf_left) {
             pfresult = (int) log_buf_left;
         }
         log_buf_ptr += pfresult;
-        log_buf_left -= (size_t) pfresult;
     }
     *log_buf_ptr = '\0';
     HANDLER(level, module, log_buf);
