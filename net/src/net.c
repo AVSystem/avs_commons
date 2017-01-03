@@ -710,14 +710,80 @@ static int send_to_net(avs_net_abstract_socket_t *net_socket_,
     }
 }
 
-static int handle_truncation(avs_net_socket_t *socket, struct msghdr *msg) {
-    if (msg->msg_flags & MSG_TRUNC) {
-        /* message too long to fit in the buffer */
-        socket->error_code = EMSGSIZE;
-        return -1;
+#ifdef WITH_LWIP
+
+/* (2017-01-03) LwIP does not implement recvmsg call, try to simulate it using
+ * plain recv(), with a little hack to try to detect truncated packets. */
+static ssize_t recvfrom_impl(int sockfd,
+                             void *buffer,
+                             size_t buffer_length,
+                             struct sockaddr *src_addr,
+                             socklen_t *addrlen) {
+    ssize_t recv_out;
+
+    errno = 0;
+    recv_out = recvfrom(sockfd, buffer, buffer_length, MSG_NOSIGNAL,
+                        src_addr, addrlen);
+
+    if (recv_out > 0 && (size_t)recv_out == buffer_length) {
+        /* Buffer entirely filled - data possibly truncated. This will
+         * incorrectly reject packets that have exactly buffer_length
+         * bytes, but we have no means of distinguishing the edge case
+         * without recvmsg. */
+        errno = EMSGSIZE;
     }
-    return 0;
+
+    return recv_out;
 }
+
+static ssize_t recv_impl(int sockfd,
+                         void *buffer,
+                         size_t buffer_length) {
+    return recvfrom_impl(sockfd, buffer, buffer_length, NULL, NULL);
+}
+
+#else /* WITH_LWIP */
+
+static ssize_t recvfrom_impl(int sockfd,
+                             void *buffer,
+                             size_t buffer_length,
+                             struct sockaddr *src_addr,
+                             socklen_t *addrlen) {
+    ssize_t recv_out;
+    struct iovec iov;
+    struct msghdr msg;
+
+    memset(&iov, 0, sizeof(iov));
+    iov.iov_base = buffer;
+    iov.iov_len = buffer_length;
+
+    memset(&msg, 0, sizeof(msg));
+    msg.msg_iov = &iov;
+    msg.msg_iovlen = 1;
+    msg.msg_name = src_addr;
+    msg.msg_namelen = addrlen ? *addrlen : 0;
+
+    errno = 0;
+    recv_out = recvmsg(sockfd, &msg, 0);
+
+    if (msg.msg_flags & MSG_TRUNC) {
+        /* message too long to fit in the buffer */
+        errno = EMSGSIZE;
+    }
+
+    if (addrlen) {
+        *addrlen = msg.msg_namelen;
+    }
+    return recv_out;
+}
+
+static ssize_t recv_impl(int sockfd,
+                         void *buffer,
+                         size_t buffer_length) {
+    return recvfrom_impl(sockfd, buffer, buffer_length, NULL, NULL);
+}
+
+#endif /* WITH_LWIP */
 
 static int receive_net(avs_net_abstract_socket_t *net_socket_,
                        size_t *out,
@@ -730,24 +796,14 @@ static int receive_net(avs_net_abstract_socket_t *net_socket_,
         *out = 0;
         return -1;
     } else {
-        ssize_t recv_out;
-        struct iovec iov;
-        struct msghdr msg;
-        memset(&iov, 0, sizeof(iov));
-        memset(&msg, 0, sizeof(msg));
-        iov.iov_base = buffer;
-        iov.iov_len = buffer_length;
-        msg.msg_iov = &iov;
-        msg.msg_iovlen = 1;
-        errno = 0;
-        recv_out = recvmsg(net_socket->socket, &msg, 0);
+        ssize_t recv_out = recv_impl(net_socket->socket, buffer, buffer_length);
         net_socket->error_code = errno;
         if (recv_out < 0) {
             *out = 0;
             return (int) recv_out;
         } else {
             *out = (size_t) recv_out;
-            return handle_truncation(net_socket, &msg);
+            return errno ? -1 : 0;
         }
     }
 }
@@ -772,35 +828,25 @@ static int receive_from_net(avs_net_abstract_socket_t *net_socket_,
         *out = 0;
         return -1;
     } else {
-        ssize_t result;
-        struct iovec iov;
-        struct msghdr msg;
-        memset(&iov, 0, sizeof(iov));
-        memset(&msg, 0, sizeof(msg));
-        iov.iov_base = message_buffer;
-        iov.iov_len = buffer_size;
-        msg.msg_iov = &iov;
-        msg.msg_iovlen = 1;
-        msg.msg_name = &sender_addr.addr;
-        msg.msg_namelen = addrlen;
-        errno = 0;
-        result = recvmsg(net_socket->socket, &msg, 0);
+        ssize_t recv_result = recvfrom_impl(net_socket->socket,
+                                            message_buffer, buffer_size,
+                                            &sender_addr.addr, &addrlen);
         net_socket->error_code = errno;
-        if (result < 0) {
+        if (recv_result < 0) {
             *out = 0;
             return -1;
         } else {
-            *out = (size_t) result;
-            if (result > 0) {
-                int retval;
-                errno = 0;
-                retval = host_port_to_string(&sender_addr.addr, addrlen,
+            int retval = errno ? -1 : 0;
+            int sub_retval;
+
+            errno = 0;
+            sub_retval = host_port_to_string(&sender_addr.addr, addrlen,
                                              host, (socklen_t) host_size,
                                              port, (socklen_t) port_size);
-                net_socket->error_code = errno;
-                return retval;
-            }
-            return handle_truncation(net_socket, &msg);
+            net_socket->error_code = errno;
+
+            *out = (size_t) recv_result;
+            return retval ? retval : sub_retval;
         }
     }
 }
