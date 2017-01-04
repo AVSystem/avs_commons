@@ -765,6 +765,8 @@ static ssize_t recvfrom_impl(avs_net_socket_t *net_socket,
     if (msg.msg_flags & MSG_TRUNC) {
         /* message too long to fit in the buffer */
         errno = EMSGSIZE;
+        recv_out = ((size_t)recv_out <= buffer_length) ? recv_out
+                                                       : (ssize_t)buffer_length;
     }
 
     if (addrlen) {
