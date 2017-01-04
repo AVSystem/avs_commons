@@ -542,10 +542,63 @@ int avs_net_socket_send_to(avs_net_abstract_socket_t *socket,
                            size_t buffer_length,
                            const char *host,
                            const char *port);
+/**
+ * @param      socket             Socket object to read data from.
+ * @param[out] out_bytes_received Number of bytes successfully read into
+ *                                @p buffer after a call to this function.
+ * @param      buffer             Buffer to write read bytes to.
+ * @param      buffer_length      Number of bytes available in @p buffer .
+ *
+ * @returns 0 on success, a negative value in case of error. If an error
+ *          occurred, socket errno is set to indicate a specific error case.
+ *          See @ref avs_net_socket_errno .
+ *
+ * For UDP datagrams whose length exceeds @p buffer_length :
+ * - @p buffer is filled with @p buffer_length initial bytes of data,
+ * - @p buffer_length is returned via @p out_bytes_received ,
+ * - the function returns a negative value,
+ * - @p socket errno is set to EMSGSIZE. See @ref avs_net_socket_errno .
+ * That means, one can still access the truncated message if required. Note
+ * that the actual length of received datagram is lost.
+ *
+ * WARNING: When LwIP is used as a UDP/IP stack, this function MAY report the
+ * UDP datagram as truncated if it is exactly @p buffer_length bytes long.
+ */
 int avs_net_socket_receive(avs_net_abstract_socket_t *socket,
                            size_t *out_bytes_received,
                            void *buffer,
                            size_t buffer_length);
+
+/**
+ * @param      socket             Socket object to read data from.
+ * @param[out] out_bytes_received Number of bytes successfully read into
+ *                                @p buffer after a call to this function.
+ * @param      buffer             Buffer to write read bytes to.
+ * @param      buffer_length      Number of bytes available in @p buffer .
+ * @param[out] host               Buffer to store sender hostname. If possible,
+ *                                @p host is set to sender domain name,
+ *                                otherwise it is the sender IP address
+ *                                converted to a string.
+ * @param      host_size          Number of bytes available in @p host .
+ * @param[out] port               Buffer to store the port a message was sent
+ *                                from, converted to a string.
+ * @param      port_size          Number of bytes available in @p port .
+ *
+ * @returns 0 on success, a negative value in case of error. If an error
+ *          occurred, socket errno is set to indicate a specific error case.
+ *          See @ref avs_net_socket_errno .
+ *
+ * For UDP datagrams whose length exceeds @p buffer_length :
+ * - @p buffer is filled with @p buffer_length initial bytes of data,
+ * - @p buffer_length is returned via @p out_bytes_received ,
+ * - the function returns a negative value,
+ * - @p socket errno is set to EMSGSIZE. See @ref avs_net_socket_errno .
+ * That means, one can still access the truncated message if required. Note
+ * that the actual length of received datagram is lost.
+ *
+ * WARNING: When LwIP is used as a UDP/IP stack, this function MAY report the
+ * UDP datagram as truncated if it is exactly @p buffer_length bytes long.
+ */
 int avs_net_socket_receive_from(avs_net_abstract_socket_t *socket,
                                 size_t *out_bytes_received,
                                 void *buffer,
