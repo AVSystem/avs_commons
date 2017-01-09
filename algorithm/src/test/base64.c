@@ -192,7 +192,7 @@ AVS_UNIT_TEST(base64, encoded_and_decoded_size) {
     size_t i;
     size_t length;
     for (i = 0; i < sizeof(bytes); ++i) {
-        bytes[i] = (uint8_t) rand() % 255;
+        bytes[i] = (uint8_t) (rand() % 256);
     }
     for (i = 0; i < sizeof(bytes); ++i) {
         AVS_UNIT_ASSERT_SUCCESS(avs_base64_encode(result, sizeof(result), bytes, i));
