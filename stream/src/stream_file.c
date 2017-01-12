@@ -8,7 +8,7 @@
  */
 
 #ifdef AVS_UNIT_TESTING
-#define _BSD_SOURCE /* for mkstemp */
+#define _XOPEN_SOURCE 500 /* for mkstemp */
 #endif
 
 #include <config.h>

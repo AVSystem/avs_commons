@@ -7,7 +7,6 @@
  * See the LICENSE file for details.
  */
 
-#define _BSD_SOURCE /* for vsnprintf when not C99 */
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
