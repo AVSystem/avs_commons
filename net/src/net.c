@@ -81,6 +81,21 @@ typedef union {
 #endif /* WITH_IPV6 */
 } sockaddr_union_t;
 
+typedef struct {
+    char padding[offsetof(avs_net_resolved_endpoint_t, data)];
+    struct sockaddr addr;
+} sockaddr_endpoint_t;
+
+AVS_STATIC_ASSERT(
+        offsetof(sockaddr_endpoint_t, addr)
+                == offsetof(avs_net_resolved_endpoint_t, data),
+        sockaddr_endpoint_offset);
+
+typedef union {
+    avs_net_resolved_endpoint_t api_ep;
+    sockaddr_endpoint_t sockaddr_ep;
+} sockaddr_endpoint_union_t;
+
 static int connect_net(avs_net_abstract_socket_t *net_socket,
                        const char* host,
                        const char *port);
@@ -430,12 +445,12 @@ static short wait_until_ready(int sockfd, avs_net_timeout_t timeout,
 }
 
 static int connect_with_timeout(int sockfd,
-                                const avs_net_resolved_endpoint_t *endpoint,
+                                const sockaddr_endpoint_union_t *endpoint,
                                 char is_stream) {
     if (fcntl(sockfd, F_SETFL, O_NONBLOCK) == -1) {
         return -1;
     }
-    connect(sockfd, (const struct sockaddr *) &endpoint->data, endpoint->size);
+    connect(sockfd, &endpoint->sockaddr_ep.addr, endpoint->api_ep.size);
     if (!wait_until_ready(sockfd, NET_CONNECT_TIMEOUT, 1, 1, is_stream)) {
         errno = ETIMEDOUT;
         return -1;
@@ -541,21 +556,15 @@ int _avs_net_get_socket_type(avs_net_socket_type_t socket_type) {
     }
 }
 
-static int
-resolved_endpoint_family(const avs_net_resolved_endpoint_t *address) {
-    const char *buf = address->data.buf;
-    return (int) ((const struct sockaddr *) buf)->sa_family;
-}
-
 static int try_connect_open_socket(avs_net_socket_t *net_socket,
-                                   const avs_net_resolved_endpoint_t *address) {
+                                   const sockaddr_endpoint_union_t *address) {
     char socket_is_stream = (net_socket->type == AVS_NET_TCP_SOCKET);
     if (connect_with_timeout(net_socket->socket, address, socket_is_stream) < 0
             || (socket_is_stream
                     && send_net((avs_net_abstract_socket_t *) net_socket,
                                 NULL, 0) < 0)
             || avs_net_resolved_endpoint_get_host_port(
-                    address,
+                    &address->api_ep,
                     net_socket->host, sizeof(net_socket->host),
                     net_socket->port, sizeof(net_socket->port))) {
         net_socket->error_code = errno;
@@ -565,7 +574,7 @@ static int try_connect_open_socket(avs_net_socket_t *net_socket,
         net_socket->state = AVS_NET_SOCKET_STATE_CONSUMING;
         /* store address affinity */
         if (net_socket->configuration.preferred_endpoint) {
-            *net_socket->configuration.preferred_endpoint = *address;
+            *net_socket->configuration.preferred_endpoint = address->api_ep;
         }
         net_socket->error_code = 0;
         return 0;
@@ -573,12 +582,12 @@ static int try_connect_open_socket(avs_net_socket_t *net_socket,
 }
 
 static int try_connect(avs_net_socket_t *net_socket,
-                       const avs_net_resolved_endpoint_t *address) {
+                       const sockaddr_endpoint_union_t *address) {
     char socket_was_already_open = (net_socket->socket >= 0);
     int retval = 0;
     if (!socket_was_already_open) {
         if ((net_socket->socket = socket(
-                resolved_endpoint_family(address),
+                address->sockaddr_ep.addr.sa_family,
                 _avs_net_get_socket_type(net_socket->type), 0)) < 0) {
             net_socket->error_code = errno;
             LOG(ERROR, "cannot create socket: %s", strerror(errno));
@@ -620,8 +629,8 @@ static int connect_net(avs_net_abstract_socket_t *net_socket_,
     if ((info = avs_net_addrinfo_resolve(
             net_socket->type, net_socket->configuration.address_family,
             host, port, net_socket->configuration.preferred_endpoint))) {
-        avs_net_resolved_endpoint_t address;
-        while (!(result = avs_net_addrinfo_next(info, &address))) {
+        sockaddr_endpoint_union_t address;
+        while (!(result = avs_net_addrinfo_next(info, &address.api_ep))) {
             if (!try_connect(net_socket, &address)) {
                 avs_net_addrinfo_delete(&info);
                 return 0;
@@ -685,18 +694,19 @@ static int send_to_net(avs_net_abstract_socket_t *net_socket_,
                        const char *port) {
     avs_net_socket_t *net_socket = (avs_net_socket_t *) net_socket_;
     avs_net_addrinfo_t *info = NULL;
-    avs_net_resolved_endpoint_t address;
+    sockaddr_endpoint_union_t address;
     ssize_t result = -1;
 
     if (!(info = avs_net_addrinfo_resolve(
                     net_socket->type, net_socket->configuration.address_family,
                     host, port, NULL))
-            || (result = (ssize_t) avs_net_addrinfo_next(info, &address))) {
+            || (result = (ssize_t) avs_net_addrinfo_next(info,
+                                                         &address.api_ep))) {
         net_socket->error_code = EPROTO;
     } else {
         errno = 0;
         result = sendto(net_socket->socket, buffer, buffer_length, 0,
-                        (const struct sockaddr *) &address.data, address.size);
+                        &address.sockaddr_ep.addr, address.api_ep.size);
         net_socket->error_code = errno;
     }
 
@@ -895,7 +905,7 @@ create_listening_socket_error:
 static int try_bind(avs_net_socket_t *net_socket, avs_net_af_t family,
                     const char *localaddr, const char *port) {
     avs_net_addrinfo_t *info = NULL;
-    avs_net_resolved_endpoint_t address;
+    sockaddr_endpoint_union_t address;
     int retval = -1;
     if (net_socket->configuration.address_family != AVS_NET_AF_UNSPEC
             && net_socket->configuration.address_family != family) {
@@ -905,7 +915,7 @@ static int try_bind(avs_net_socket_t *net_socket, avs_net_af_t family,
     if (localaddr || port) {
         if (!(info = _avs_net_addrinfo_resolve_passive(net_socket->type, family,
                                                        localaddr, port, NULL))
-                || (retval = avs_net_addrinfo_next(info, &address))) {
+                || (retval = avs_net_addrinfo_next(info, &address.api_ep))) {
             LOG(WARNING, "Cannot get %s address info for %s",
                 get_af_name(family), localaddr ? localaddr : "(null)");
             net_socket->error_code = EINVAL;
@@ -913,14 +923,13 @@ static int try_bind(avs_net_socket_t *net_socket, avs_net_af_t family,
         }
     } else {
         memset(&address, 0, sizeof(address));
-        address.size = sizeof(address.data);
-        ((struct sockaddr *) &address.data)->sa_family =
+        address.api_ep.size = sizeof(address.api_ep.data);
+        address.sockaddr_ep.addr.sa_family =
                 (sa_family_t) _avs_net_get_af(family);
     }
     net_socket->state = AVS_NET_SOCKET_STATE_LISTENING;
-    retval = create_listening_socket(net_socket,
-                                     (const struct sockaddr *) &address.data,
-                                     address.size);
+    retval = create_listening_socket(net_socket, &address.sockaddr_ep.addr,
+                                     address.api_ep.size);
 bind_net_end:
     avs_net_addrinfo_delete(&info);
     return retval;
@@ -1147,7 +1156,7 @@ int avs_net_local_address_for_target_host(const char *target_host,
                                           char *address_buffer,
                                           size_t buffer_size) {
     int result = -1;
-    avs_net_resolved_endpoint_t address;
+    sockaddr_endpoint_union_t address;
     avs_net_addrinfo_t *info =
             avs_net_addrinfo_resolve(AVS_NET_UDP_SOCKET, addr_family,
                                      target_host, AVS_NET_RESOLVE_DUMMY_PORT,
@@ -1155,9 +1164,9 @@ int avs_net_local_address_for_target_host(const char *target_host,
     if (!info) {
         return -1;
     }
-    while (!(result = avs_net_addrinfo_next(info, &address))) {
-        int test_socket = socket(resolved_endpoint_family(&address),
-                                 SOCK_DGRAM, 0);
+    while (!(result = avs_net_addrinfo_next(info, &address.api_ep))) {
+        int test_socket = socket(address.sockaddr_ep.addr.sa_family, SOCK_DGRAM,
+                                 0);
 
         if (test_socket >= 0
                 && !connect_with_timeout(test_socket, &address, 0)) {
