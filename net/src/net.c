@@ -81,16 +81,48 @@ typedef union {
 #endif /* WITH_IPV6 */
 } sockaddr_union_t;
 
+/**
+ * We don't want to use types such as <c>struct sockaddr</c> in public API types
+ * such as @ref avs_net_resolved_endpoint_t, because we don't want to expose
+ * POSIX-specific types in completely portable API.
+ *
+ * But we need to access it as such, while at the same time, accessing it
+ * through casts violates strict-aliasing rules, which is technically UB and may
+ * cause some weird and hard-to-debug errors on some platforms/compilers.
+ *
+ * So we are declaring this type, to be layout-compatible with
+ * @ref avs_net_resolved_endpoint_t, but allow us to access
+ * <c>struct sockaddr</c> without explicit casts.
+ */
 typedef struct {
-    char padding[offsetof(avs_net_resolved_endpoint_t, data)];
+    union {
+        uint8_t size;
+        char padding[offsetof(avs_net_resolved_endpoint_t, data)];
+    } header;
     struct sockaddr addr;
 } sockaddr_endpoint_t;
 
-AVS_STATIC_ASSERT(
-        offsetof(sockaddr_endpoint_t, addr)
-                == offsetof(avs_net_resolved_endpoint_t, data),
-        sockaddr_endpoint_offset);
+/**
+ * Here are static assertions that ensure that @ref sockaddr_endpoint_t is
+ * indeed layout-compatible with @ref avs_net_resolved_endpoint_t.
+ */
+AVS_STATIC_ASSERT(offsetof(sockaddr_endpoint_t, header)
+                          == offsetof(avs_net_resolved_endpoint_t, size),
+                  sockaddr_endpoint_size_offset);
+AVS_STATIC_ASSERT(sizeof(((sockaddr_endpoint_t) { 
+                              .header = { .size = 0 } }).header.size)
+                          == sizeof(((avs_net_resolved_endpoint_t) {
+                                         .size = 0 }).size),
+                  sockaddr_endpoint_size_size);
+AVS_STATIC_ASSERT(offsetof(sockaddr_endpoint_t, addr)
+                          == offsetof(avs_net_resolved_endpoint_t, data),
+                  sockaddr_endpoint_offset);
 
+/**
+ * And here is the union that allows us to mix Commons' APIs that use
+ * @ref avs_net_resolved_endpoint_t and POSIX APIs that use
+ * <c>struct sockaddr</c>.
+ */
 typedef union {
     avs_net_resolved_endpoint_t api_ep;
     sockaddr_endpoint_t sockaddr_ep;
@@ -450,7 +482,8 @@ static int connect_with_timeout(int sockfd,
     if (fcntl(sockfd, F_SETFL, O_NONBLOCK) == -1) {
         return -1;
     }
-    connect(sockfd, &endpoint->sockaddr_ep.addr, endpoint->api_ep.size);
+    connect(sockfd, &endpoint->sockaddr_ep.addr,
+            endpoint->sockaddr_ep.header.size);
     if (!wait_until_ready(sockfd, NET_CONNECT_TIMEOUT, 1, 1, is_stream)) {
         errno = ETIMEDOUT;
         return -1;
@@ -706,7 +739,8 @@ static int send_to_net(avs_net_abstract_socket_t *net_socket_,
     } else {
         errno = 0;
         result = sendto(net_socket->socket, buffer, buffer_length, 0,
-                        &address.sockaddr_ep.addr, address.api_ep.size);
+                        &address.sockaddr_ep.addr,
+                        address.sockaddr_ep.header.size);
         net_socket->error_code = errno;
     }
 
@@ -923,13 +957,13 @@ static int try_bind(avs_net_socket_t *net_socket, avs_net_af_t family,
         }
     } else {
         memset(&address, 0, sizeof(address));
-        address.api_ep.size = sizeof(address.api_ep.data);
+        address.sockaddr_ep.header.size = sizeof(address.api_ep.data);
         address.sockaddr_ep.addr.sa_family =
                 (sa_family_t) _avs_net_get_af(family);
     }
     net_socket->state = AVS_NET_SOCKET_STATE_LISTENING;
     retval = create_listening_socket(net_socket, &address.sockaddr_ep.addr,
-                                     address.api_ep.size);
+                                     address.sockaddr_ep.header.size);
 bind_net_end:
     avs_net_addrinfo_delete(&info);
     return retval;
