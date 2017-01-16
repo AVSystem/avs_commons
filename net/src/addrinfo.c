@@ -218,7 +218,7 @@ avs_net_addrinfo_t *_avs_net_addrinfo_resolve_passive(
 }
 
 int avs_net_addrinfo_next(avs_net_addrinfo_t *ctx,
-                                  avs_net_resolved_endpoint_t *out) {
+                          avs_net_resolved_endpoint_t *out) {
     if (!ctx->to_send) {
         return AVS_NET_ADDRINFO_END;
     }
