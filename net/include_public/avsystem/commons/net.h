@@ -237,17 +237,95 @@ typedef char avs_net_socket_interface_name_t[IF_NAMESIZE];
  */
 typedef int avs_ssl_additional_configuration_clb_t(void *library_ssl_context);
 
+/**
+ * Structure that contains additional configuration options for creating TCP and
+ * UDP network sockets.
+ *
+ * A structure initialized with all zeroes (e.g. using <c>memset()</c>) is
+ * a valid, default configuration - it is used when <c>NULL</c> is passed to
+ * @ref avs_net_socket_create, and may also be used as a starting point for
+ * customizations.
+ */
 typedef struct {
-    uint8_t                         dscp;
-    uint8_t                         priority;
     /**
-     * This flag is used to set SO_REUSEADDR on the underlying system socket.
+     * Specifies the Differentiated Services Code Point to send in the IP
+     * packets when communicating on the created socket. Valid values are in the
+     * range 0-64.
+     *
+     * It is configured using the <c>IP_TOS</c> option on the underlying system
+     * socket - not done if left at the default value of 0.
      */
-    uint8_t                         reuse_addr;
-    uint8_t                         transparent;
+    uint8_t dscp;
+
+    /**
+     * Specifies the priority of packets sent when communicating on the created
+     * socket. Valid values are in the range 0-7.
+     *
+     * It is configured using the <c>SO_PRIORITY</c> option on the underlying
+     * system socket - not done if left at the default value of 0. It may or may
+     * not affect the IP TOS field, depending on the system.
+     *
+     * Also please note that e.g. on Linux, setting priority to 7 requires root
+     * privileges (specifically, the <c>CAP_NET_ADMIN</c> capability).
+     */
+    uint8_t priority;
+
+    /**
+     * Used to set <c>SO_REUSEADDR<c> on the underlying system socket. This is
+     * a boolean flag that needs to be set to either 0 or 1, left as
+     * <c>uint8_t</c> instead of <c>bool</c> for compatibility reasons.
+     */
+    uint8_t reuse_addr;
+
+    /**
+     * Used to set <c>IP_TRANSPARENT</c> or <c>IPV6_TRANSPARENT</c> on the
+     * underlying system socket. This is a boolean flag that needs to be set to
+     * either 0 or 1, left as <c>uint8_t</c> instead of <c>bool</c> for
+     * compatibility reasons.
+     *
+     * Please note that e.g. on Linux, creating transparent sockets requires
+     * root privileges (specifically, either the <c>CAP_NET_ADMIN</c> or the
+     * <c>CAP_NET_RAW</c> capability).
+     */
+    uint8_t transparent;
+
+    /**
+     * Configures the interface to which the created socket shall be bound. It
+     * can be left as an empty string to use the standard, default routing.
+     *
+     * It sets the <c>SO_BINDTODEVICE</c> option on the system socket
+     * internally. Please note that e.g. on Linux, using it requires root
+     * privileges (specifically, the <c>CAP_NET_RAW</c> capability). Also, some
+     * Linux-based systems enable the <c>rp_filter</c> feature in kernel, which
+     * may prevent this setting from working correctly. See
+     * http://stackoverflow.com/a/24019586/403742 for details.
+     */
     avs_net_socket_interface_name_t interface_name;
-    avs_net_resolved_endpoint_t    *preferred_endpoint;
-    avs_net_af_t                    address_family;
+
+    /**
+     * Specifies the memory location used for "preferred endpoint" storage.
+     *
+     * If set to non-NULL:
+     * - When connecting to a host specified using a domain name, then if one of
+     *   the endpoint addresses returned by DNS resolution is exactly the
+     *   address stored at <c>preferred_endpoint</c>, it will be tried first.
+     * - After successfully connecting to a host, its resolved endpoint address
+     *   will be stored at <c>preferred_endpoint</c>.
+     *
+     * This behaviour allows to implement affinity to a specific host when
+     * communicating with an address served by multiple physical hosts.
+     */
+    avs_net_resolved_endpoint_t *preferred_endpoint;
+
+    /**
+     * Sets the IP protocol version used for communication. Note that setting it
+     * explicitly to <c>AVS_NET_AF_INET4</c> or <c>AVS_NET_AF_INET6</c> will
+     * result in limiting the socket to support only addresses of that specific
+     * family, while using <c>AVS_NET_UNSPEC</c> may, at the underlying system
+     * level, result in creating an IPv6 socket connected or bound to a mapped
+     * IPv4 address.
+     */
+    avs_net_af_t address_family;
 } avs_net_socket_configuration_t;
 
 /**
