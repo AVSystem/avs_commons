@@ -68,10 +68,16 @@
 int _avs_rand_r(unsigned int *seedp);
 #endif
 
+#if defined(WITH_IPV4) && defined(WITH_IPV6)
+#define WITH_AVS_V4MAPPED
+#endif
+
 struct avs_net_addrinfo_struct {
     struct addrinfo *results;
     const struct addrinfo *to_send;
+#ifdef WITH_AVS_V4MAPPED
     bool v4mapped;
+#endif
 };
 
 static struct addrinfo *detach_preferred(struct addrinfo **list_ptr,
@@ -173,11 +179,13 @@ avs_net_addrinfo_t *avs_net_addrinfo_resolve_ex(
         hint.ai_flags |= AI_PASSIVE;
     }
 
+#ifdef WITH_AVS_V4MAPPED
     if (family == AVS_NET_AF_INET6
             && (flags & AVS_NET_ADDRINFO_RESOLVE_F_V4MAPPED)) {
         ctx->v4mapped = true;
         hint.ai_family = AF_UNSPEC;
     }
+#endif
     hint.ai_socktype = _avs_net_get_socket_type(socket_type);
 
     int error = getaddrinfo(host, port, &hint, &ctx->results);
@@ -217,6 +225,7 @@ avs_net_addrinfo_t *avs_net_addrinfo_resolve(
                                        preferred_endpoint);
 }
 
+#ifdef WITH_AVS_V4MAPPED
 static int create_v4mapped(struct sockaddr_in6 *out,
                            const struct addrinfo *in) {
     struct sockaddr_in v4_address;
@@ -233,6 +242,7 @@ static int create_v4mapped(struct sockaddr_in6 *out,
     memcpy(&out->sin6_addr.s6_addr[12], &v4_address.sin_addr, 4);
     return 0;
 }
+#endif // WITH_AVS_V4MAPPED
 
 static int return_resolved_endpoint(avs_net_resolved_endpoint_t *out,
                                     void *addr,
@@ -251,12 +261,15 @@ int avs_net_addrinfo_next(avs_net_addrinfo_t *ctx,
         return AVS_NET_ADDRINFO_END;
     }
     int result;
+#ifdef WITH_AVS_V4MAPPED
     if (ctx->v4mapped && ctx->to_send->ai_family == AF_INET) {
         struct sockaddr_in6 v6_address;
         (void) ((result = create_v4mapped(&v6_address, ctx->to_send))
                 || (result = return_resolved_endpoint(
                         out, &v6_address, (socklen_t) sizeof(v6_address))));
-    } else {
+    } else
+#endif
+    {
         result = return_resolved_endpoint(out, ctx->to_send->ai_addr,
                                           ctx->to_send->ai_addrlen);
     }
