@@ -1,7 +1,7 @@
 #
 #  AVSystem Commons Library
 #
-#  Copyright (C) 2016 AVSystem <http://www.avsystem.com/>
+#  Copyright (C) 2017 AVSystem <http://www.avsystem.com/>
 #
 #  This code is free and open source software licensed under the MIT License.
 #  See the LICENSE file for details.
@@ -27,7 +27,10 @@ set(PUBLIC_HEADERS
     include_public/avsystem/commons/stream_v_table.h
     include_public/avsystem/commons/stream/md5.h)
 
-set(INCLUDE_DIRS include_public)
+set(avs_stream_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/include_public"
+    CACHE INTERNAL "" FORCE)
+
+set(INCLUDE_DIRS "${avs_stream_INCLUDE_DIRS}")
 
 if(WITH_AVS_BUFFER AND WITH_AVS_NET)
     set(SOURCES ${SOURCES}

@@ -1,7 +1,7 @@
 #
 #  AVSystem Commons Library
 #
-#  Copyright (C) 2014 AVSystem <http://www.avsystem.com/>
+#  Copyright (C) 2017 AVSystem <http://www.avsystem.com/>
 #
 #  This code is free and open source software licensed under the MIT License.
 #  See the LICENSE file for details.
@@ -15,7 +15,10 @@ set(PUBLIC_HEADERS
 
 set(ALL_SOURCES ${SOURCES} ${PUBLIC_HEADERS})
 
-include_directories(include_public)
+set(avs_rbtree_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/include_public"
+    CACHE INTERNAL "" FORCE)
+
+include_directories(${avs_rbtree_INCLUDE_DIRS})
 
 add_library(avs_rbtree STATIC ${ALL_SOURCES})
 

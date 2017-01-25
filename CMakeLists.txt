@@ -1,7 +1,7 @@
 #
 #  AVSystem Commons Library
 #
-#  Copyright (C) 2014 AVSystem <http://www.avsystem.com/>
+#  Copyright (C) 2017 AVSystem <http://www.avsystem.com/>
 #
 #  This code is free and open source software licensed under the MIT License.
 #  See the LICENSE file for details.
@@ -203,10 +203,15 @@ option(WITH_IPV6 "Enable IPv6 support" ON)
 
 option(WITH_SOCKET_LOG "Enable socket communication logging" OFF)
 
-include_directories("${CMAKE_SOURCE_DIR}/config")
-include_directories("${CMAKE_BINARY_DIR}/config")
-include_directories("${CMAKE_SOURCE_DIR}/include_public")
-include_directories("${CMAKE_BINARY_DIR}/include_public")
+# Export general avs_commons include directories.
+set(avs_commons_INCLUDE_DIRS
+    "${CMAKE_CURRENT_SOURCE_DIR}/config"
+    "${CMAKE_CURRENT_BINARY_DIR}/config"
+    "${CMAKE_CURRENT_SOURCE_DIR}/include_public"
+    "${CMAKE_CURRENT_BINARY_DIR}/include_public"
+    CACHE INTERNAL "" FORCE)
+
+include_directories(${avs_commons_INCLUDE_DIRS})
 
 find_program(VALGRIND_EXECUTABLE valgrind)
 if(VALGRIND_EXECUTABLE)
@@ -228,7 +233,7 @@ if(WITH_VALGRIND)
 endif()
 
 enable_testing()
-add_custom_target(check)
+add_custom_target(avs_commons_check)
 
 if(NOT LIB_INSTALL_DIR)
     set(LIB_INSTALL_DIR lib)
@@ -269,6 +274,16 @@ macro(make_absolute_sources ABSVAR)
     endforeach()
 endmacro()
 
+macro(add_module_with_include_dirs MODULE_NAME)
+    add_subdirectory(${MODULE_NAME})
+    # Append submodule include directories to the general avs_commons
+    # include dirs.
+    set(avs_commons_INCLUDE_DIRS
+        "${avs_commons_INCLUDE_DIRS}"
+        "${avs_${MODULE_NAME}_INCLUDE_DIRS}"
+        CACHE INTERNAL "" FORCE)
+endmacro()
+
 if(WITH_AVS_UNIT)
     macro(add_avs_test NAME)
         add_executable(${NAME}_test EXCLUDE_FROM_ALL ${ARGN})
@@ -285,10 +300,10 @@ if(WITH_AVS_UNIT)
         add_test(${NAME}_test ${VALGRIND_LOG} ${CMAKE_CURRENT_BINARY_DIR}/${NAME}_test)
 
         add_custom_target(${NAME}_check COMMAND ${CMAKE_CTEST_COMMAND} -V DEPENDS ${NAME}_test)
-        add_dependencies(check ${NAME}_check)
+        add_dependencies(avs_commons_check ${NAME}_check)
     endmacro()
 
-    add_subdirectory(unit)
+    add_module_with_include_dirs(unit)
     add_subdirectory(tests)
 else()
     macro(add_avs_test NAME)
@@ -296,19 +311,19 @@ else()
 endif()
 
 if(WITH_AVS_ALGORITHM)
-    add_subdirectory(algorithm)
+    add_module_with_include_dirs(algorithm)
 endif()
 
 if(WITH_AVS_BUFFER)
-    add_subdirectory(buffer)
+    add_module_with_include_dirs(buffer)
 endif()
 
 if(WITH_AVS_LIST)
-    add_subdirectory(list)
+    add_module_with_include_dirs(list)
 endif()
 
 if(WITH_AVS_VECTOR)
-    add_subdirectory(vector)
+    add_module_with_include_dirs(vector)
 endif()
 
 if(WITH_AVS_NET)
@@ -331,34 +346,35 @@ if(WITH_AVS_NET)
         endif()
     endif()
 
-    add_subdirectory(net)
+    add_module_with_include_dirs(net)
 endif()
 
 if(WITH_AVS_STREAM)
-    add_subdirectory(stream)
+    add_module_with_include_dirs(stream)
 endif()
 
 if(WITH_AVS_LOG)
-    add_subdirectory(log)
+    add_module_with_include_dirs(log)
 endif()
 
 if (WITH_AVS_RBTREE)
-    add_subdirectory(rbtree)
+    add_module_with_include_dirs(rbtree)
 endif()
 
 configure_file("config/config.h.in" "config/config.h")
-configure_file("include_public/avsystem/commons/defs.h.in" "include_public/avsystem/commons/defs.h")
+configure_file("include_public/avsystem/commons/defs.h.in"
+               "include_public/avsystem/commons/defs.h")
 
 configure_file(avs_commons-config.cmake.in avs_commons-config.cmake @ONLY)
 configure_file(avs_commons-version.cmake.in avs_commons-version.cmake @ONLY)
 install(EXPORT avs_commons-targets DESTINATION ${LIB_INSTALL_DIR}/avs_commons)
 install(FILES
-        ${CMAKE_BINARY_DIR}/avs_commons-config.cmake
-        ${CMAKE_BINARY_DIR}/avs_commons-version.cmake
+        ${CMAKE_CURRENT_BINARY_DIR}/avs_commons-config.cmake
+        ${CMAKE_CURRENT_BINARY_DIR}/avs_commons-version.cmake
         DESTINATION ${LIB_INSTALL_DIR}/avs_commons)
-install(DIRECTORY "${CMAKE_SOURCE_DIR}/include_public/"
+install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/include_public/"
         DESTINATION ${INCLUDE_INSTALL_DIR}
         FILES_MATCHING REGEX "[.]h$")
-install(DIRECTORY "${CMAKE_BINARY_DIR}/include_public/"
+install(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/include_public/"
         DESTINATION ${INCLUDE_INSTALL_DIR}
         FILES_MATCHING REGEX "[.]h$")
