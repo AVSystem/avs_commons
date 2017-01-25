@@ -72,11 +72,12 @@ typedef struct avs_net_addrinfo_struct avs_net_addrinfo_t;
 
 /**
  * When this bit is set in the <c>flags</c> parameter to
- * @ref avs_net_addrinfo_resolve_ex and an IPv6 address is requested,
- * IPv4-mapped IPv6 addresses will also be returned if available.
+ * @ref avs_net_addrinfo_resolve_ex and <c>family</c> is set to
+ * <c>AVS_NET_AF_INET6</c>, IPv4 addresses will be resolved as well, and
+ * converted to IPv4-mapped IPv6 addresses in output.
  *
- * This is equivalent to <c>AI_V4MAPPED | AI_ALL</c> flags to
- * <c>getaddrinfo()</c>.
+ * This is roughly equivalent to <c>AI_V4MAPPED | AI_ALL</c> flags to
+ * <c>getaddrinfo()</c>, but implemented independently of them.
  */
 #define AVS_NET_ADDRINFO_RESOLVE_F_V4MAPPED (1 << 1)
 
