@@ -589,6 +589,23 @@ int _avs_net_get_socket_type(avs_net_socket_type_t socket_type) {
     }
 }
 
+static avs_net_af_t get_avs_af(int af) {
+    switch (af) {
+#ifdef WITH_IPV4
+    case AF_INET:
+        return AVS_NET_AF_INET4;
+#endif /* WITH_IPV4 */
+
+#ifdef WITH_IPV6
+    case AF_INET6:
+        return AVS_NET_AF_INET6;
+#endif /* WITH_IPV6 */
+
+    default:
+        return AVS_NET_AF_UNSPEC;
+    }
+}
+
 static int try_connect_open_socket(avs_net_socket_t *net_socket,
                                    const sockaddr_endpoint_union_t *address) {
     char socket_is_stream = (net_socket->type == AVS_NET_TCP_SOCKET);
@@ -646,22 +663,37 @@ static int connect_net(avs_net_abstract_socket_t *net_socket_,
     avs_net_socket_t *net_socket = (avs_net_socket_t *) net_socket_;
     avs_net_addrinfo_t *info = NULL;
     int result = 0;
+    avs_net_af_t family = net_socket->configuration.address_family;
+    int resolve_flags = 0;
 
-    if (net_socket->socket >= 0
-            && (net_socket->type != AVS_NET_UDP_SOCKET
-                    || net_socket->state != AVS_NET_SOCKET_STATE_LISTENING)) {
-        LOG(ERROR, "socket is already connected or bound");
-        net_socket->error_code = EISCONN;
-        return -1;
+    if (net_socket->socket >= 0) {
+        if (net_socket->type != AVS_NET_UDP_SOCKET
+                || net_socket->state != AVS_NET_SOCKET_STATE_LISTENING) {
+            LOG(ERROR, "socket is already connected or bound");
+            net_socket->error_code = EISCONN;
+            return -1;
+        }
+
+        avs_net_af_t socket_family =
+                get_avs_af(get_socket_family(net_socket->socket));
+        if (family == AVS_NET_AF_UNSPEC) {
+            if (socket_family == AVS_NET_AF_INET6) {
+                resolve_flags |= AVS_NET_ADDRINFO_RESOLVE_F_V4MAPPED;
+            }
+            family = socket_family;
+        } else {
+            assert(socket_family == AVS_NET_AF_UNSPEC
+                    || socket_family == family);
+        }
     }
 
     LOG(TRACE, "connecting to [%s]:%s", host, port);
 
     errno = 0;
     net_socket->error_code = EPROTO;
-    if ((info = avs_net_addrinfo_resolve(
-            net_socket->type, net_socket->configuration.address_family,
-            host, port, net_socket->configuration.preferred_endpoint))) {
+    if ((info = avs_net_addrinfo_resolve_ex(
+            net_socket->type, family, host, port, resolve_flags,
+            net_socket->configuration.preferred_endpoint))) {
         sockaddr_endpoint_union_t address;
         while (!(result = avs_net_addrinfo_next(info, &address.api_ep))) {
             if (!try_connect(net_socket, &address)) {
@@ -1109,23 +1141,6 @@ int _avs_net_create_tcp_socket(avs_net_abstract_socket_t **socket,
 int _avs_net_create_udp_socket(avs_net_abstract_socket_t **socket,
                                const void *socket_configuration) {
     return create_net_socket(socket, AVS_NET_UDP_SOCKET, socket_configuration);
-}
-
-static avs_net_af_t get_avs_af(int af) {
-    switch (af) {
-#ifdef WITH_IPV4
-    case AF_INET:
-        return AVS_NET_AF_INET4;
-#endif /* WITH_IPV4 */
-
-#ifdef WITH_IPV6
-    case AF_INET6:
-        return AVS_NET_AF_INET6;
-#endif /* WITH_IPV6 */
-
-    default:
-        return AVS_NET_AF_UNSPEC;
-    }
 }
 
 static int get_string_ip(const sockaddr_union_t *addr,
