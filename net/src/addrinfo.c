@@ -149,12 +149,12 @@ void avs_net_addrinfo_delete(avs_net_addrinfo_t **ctx) {
     }
 }
 
-static avs_net_addrinfo_t *ctx_resolve(
+avs_net_addrinfo_t *avs_net_addrinfo_resolve_ex(
         avs_net_socket_type_t socket_type,
         avs_net_af_t family,
         const char *host,
         const char *port,
-        int passive,
+        int flags,
         const avs_net_resolved_endpoint_t *preferred_endpoint) {
     avs_net_addrinfo_t *ctx = NULL;
     int error;
@@ -163,8 +163,11 @@ static avs_net_addrinfo_t *ctx_resolve(
     memset((void *) &hint, 0, sizeof (hint));
     hint.ai_family = _avs_net_get_af(family);
     hint.ai_flags = AI_NUMERICSERV | AI_ADDRCONFIG;
-    if (passive) {
+    if (flags & AVS_NET_ADDRINFO_RESOLVE_F_PASSIVE) {
         hint.ai_flags |= AI_PASSIVE;
+    }
+    if (flags & AVS_NET_ADDRINFO_RESOLVE_F_V4MAPPED) {
+        hint.ai_flags |= AI_V4MAPPED | AI_ALL;
     }
     hint.ai_socktype = _avs_net_get_socket_type(socket_type);
 
@@ -205,16 +208,8 @@ avs_net_addrinfo_t *avs_net_addrinfo_resolve(
         const char *host,
         const char *port,
         const avs_net_resolved_endpoint_t *preferred_endpoint) {
-    return ctx_resolve(socket_type, family, host, port, 0, preferred_endpoint);
-}
-
-avs_net_addrinfo_t *_avs_net_addrinfo_resolve_passive(
-        avs_net_socket_type_t socket_type,
-        avs_net_af_t family,
-        const char *host,
-        const char *port,
-        const avs_net_resolved_endpoint_t *preferred_endpoint) {
-    return ctx_resolve(socket_type, family, host, port, 1, preferred_endpoint);
+    return avs_net_addrinfo_resolve_ex(socket_type, family, host, port, 0,
+                                       preferred_endpoint);
 }
 
 int avs_net_addrinfo_next(avs_net_addrinfo_t *ctx,

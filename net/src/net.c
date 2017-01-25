@@ -947,8 +947,9 @@ static int try_bind(avs_net_socket_t *net_socket, avs_net_af_t family,
         return -1;
     }
     if (localaddr || port) {
-        if (!(info = _avs_net_addrinfo_resolve_passive(net_socket->type, family,
-                                                       localaddr, port, NULL))
+        if (!(info = avs_net_addrinfo_resolve_ex(
+                        net_socket->type, family, localaddr, port,
+                        AVS_NET_ADDRINFO_RESOLVE_F_PASSIVE, NULL))
                 || (retval = avs_net_addrinfo_next(info, &address.api_ep))) {
             LOG(WARNING, "Cannot get %s address info for %s",
                 get_af_name(family), localaddr ? localaddr : "(null)");
