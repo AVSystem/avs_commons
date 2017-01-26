@@ -255,7 +255,8 @@ if(DOXYGEN_FOUND)
     add_custom_target(avs_commons_doc
                       COMMAND ${DOXYGEN_EXECUTABLE} ${CMAKE_BINARY_DIR}/doc/Doxyfile)
 
-    if(NOT ${CMAKE_PROJECT_NAME} STREQUAL ${PROJECT_NAME})
+    if(${CMAKE_PROJECT_NAME} STREQUAL ${PROJECT_NAME})
+        add_custom_target(doc)
         add_dependencies(doc avs_commons_doc)
     endif()
 endif()
