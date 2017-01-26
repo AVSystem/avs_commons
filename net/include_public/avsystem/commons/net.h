@@ -60,21 +60,20 @@ typedef struct avs_net_addrinfo_struct avs_net_addrinfo_t;
 #define AVS_NET_ADDRINFO_END 1
 
 /**
- * When this bit is set in the <c>flags</c> parameter to
- * @ref avs_net_addrinfo_resolve_ex, a DNS query is not performed. Binary
- * endpoint will only be available for successful retrieval if the <c>host</c>
- * passed is a valid, unambiguous textual representation of an already resolved
- * IP address.
+ * When calling @ref avs_net_addrinfo_resolve_ex with this bit set in the
+ * <c>flags</c> parameter, a DNS query is not performed. Binary endpoint will
+ * only be available for successful retrieval if the <c>host</c> passed is a
+ * valid, unambiguous textual representation of an already resolved IP address.
  *
  * This is equivalent to <c>AI_PASSIVE</c> flag to <c>getaddrinfo()</c>.
  */
 #define AVS_NET_ADDRINFO_RESOLVE_F_PASSIVE  (1 << 0)
 
 /**
- * When this bit is set in the <c>flags</c> parameter to
- * @ref avs_net_addrinfo_resolve_ex and <c>family</c> is set to
- * <c>AVS_NET_AF_INET6</c>, IPv4 addresses will be resolved as well, and
- * converted to IPv4-mapped IPv6 addresses in output.
+ * When calling @ref avs_net_addrinfo_resolve_ex with this bit set in the
+ * <c>flags</c> parameter and with <c>family</c> set to <c>AVS_NET_AF_INET6</c>,
+ * IPv4 addresses will be resolved as well, and converted to IPv4-mapped IPv6
+ * addresses in output.
  *
  * This is roughly equivalent to <c>AI_V4MAPPED | AI_ALL</c> flags to
  * <c>getaddrinfo()</c>, but implemented independently of them.
