@@ -1,7 +1,7 @@
 #
 #  AVSystem Commons Library
 #
-#  Copyright (C) 2015 AVSystem <http://www.avsystem.com/>
+#  Copyright (C) 2017 AVSystem <http://www.avsystem.com/>
 #
 #  This code is free and open source software licensed under the MIT License.
 #  See the LICENSE file for details.
@@ -20,6 +20,8 @@ make_absolute_sources(ABSOLUTE_INCLUDE_DIRS ${INCLUDE_DIRS})
 set(AVS_TEST_INCLUDE_DIRS "${ABSOLUTE_INCLUDE_DIRS}" PARENT_SCOPE)
 
 include_directories(${INCLUDE_DIRS})
+
+set(avs_log_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/include_public" PARENT_SCOPE)
 
 add_library(avs_log STATIC ${ALL_SOURCES})
 target_link_libraries(avs_log avs_list)
