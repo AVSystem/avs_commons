@@ -232,7 +232,12 @@ if(WITH_VALGRIND)
 endif()
 
 enable_testing()
+
 add_custom_target(avs_commons_check)
+if(${CMAKE_PROJECT_NAME} STREQUAL ${PROJECT_NAME})
+    add_custom_target(check)
+    add_dependencies(check avs_commons_check)
+endif()
 
 if(NOT LIB_INSTALL_DIR)
     set(LIB_INSTALL_DIR lib)
@@ -362,7 +367,9 @@ if (WITH_AVS_RBTREE)
 endif()
 
 # Export general avs_commons includes as well as module level includes.
-set(avs_commons_INCLUDE_DIRS ${INCLUDE_DIRS} ${MODULE_INCLUDE_DIRS} PARENT_SCOPE)
+if(NOT ${CMAKE_PROJECT_NAME} STREQUAL ${PROJECT_NAME})
+    set(avs_commons_INCLUDE_DIRS ${INCLUDE_DIRS} ${MODULE_INCLUDE_DIRS} PARENT_SCOPE)
+endif()
 
 configure_file("config/config.h.in" "config/config.h")
 configure_file("include_public/avsystem/commons/defs.h.in"
