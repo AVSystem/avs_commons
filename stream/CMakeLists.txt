@@ -27,10 +27,9 @@ set(PUBLIC_HEADERS
     include_public/avsystem/commons/stream_v_table.h
     include_public/avsystem/commons/stream/md5.h)
 
-set(avs_stream_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/include_public"
-    CACHE INTERNAL "" FORCE)
+set(INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/include_public")
 
-set(INCLUDE_DIRS "${avs_stream_INCLUDE_DIRS}")
+set(avs_stream_INCLUDE_DIRS ${INCLUDE_DIRS} PARENT_SCOPE)
 
 if(WITH_AVS_BUFFER AND WITH_AVS_NET)
     set(SOURCES ${SOURCES}

@@ -21,10 +21,7 @@ set(AVS_TEST_INCLUDE_DIRS "${ABSOLUTE_INCLUDE_DIRS}" PARENT_SCOPE)
 
 include_directories(${INCLUDE_DIRS})
 
-set(avs_log_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/include_public"
-    CACHE INTERNAL "" FORCE)
-
-include_directories(${avs_log_INCLUDE_DIRS})
+set(avs_log_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/include_public" PARENT_SCOPE)
 
 add_library(avs_log STATIC ${ALL_SOURCES})
 target_link_libraries(avs_log avs_list)

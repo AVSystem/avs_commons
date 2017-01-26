@@ -42,8 +42,7 @@ set(AVS_TEST_INCLUDE_DIRS "${ABSOLUTE_INCLUDE_DIRS}" PARENT_SCOPE)
 
 include_directories(${INCLUDE_DIRS})
 
-set(avs_unit_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/include_public"
-    CACHE INTERNAL "" FORCE)
+set(avs_unit_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/include_public" PARENT_SCOPE)
 
 add_library(avs_unit STATIC ${SOURCES} ${PUBLIC_HEADERS})
 target_link_libraries(avs_unit ${DEPS_LIBRARIES})

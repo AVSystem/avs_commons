@@ -36,10 +36,11 @@ set(PUBLIC_HEADERS
 
 set(ALL_SOURCES ${SOURCES} ${PRIVATE_HEADERS} ${PUBLIC_HEADERS})
 
-set(avs_net_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/include_public"
-    CACHE INTERNAL "" FORCE)
+set(INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/include_public")
 
-include_directories(${avs_net_INCLUDE_DIRS})
+set(avs_net_INCLUDE_DIRS ${INCLUDE_DIRS} PARENT_SCOPE)
+
+include_directories(${INCLUDE_DIRS})
 
 add_library(avs_net STATIC ${ALL_SOURCES})
 if(WITH_INTERNAL_LOGS)

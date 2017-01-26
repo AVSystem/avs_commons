@@ -203,15 +203,14 @@ option(WITH_IPV6 "Enable IPv6 support" ON)
 
 option(WITH_SOCKET_LOG "Enable socket communication logging" OFF)
 
-# Export general avs_commons include directories.
-set(avs_commons_INCLUDE_DIRS
+set(INCLUDE_DIRS
     "${CMAKE_CURRENT_SOURCE_DIR}/config"
     "${CMAKE_CURRENT_BINARY_DIR}/config"
     "${CMAKE_CURRENT_SOURCE_DIR}/include_public"
-    "${CMAKE_CURRENT_BINARY_DIR}/include_public"
-    CACHE INTERNAL "" FORCE)
+    "${CMAKE_CURRENT_BINARY_DIR}/include_public")
 
-include_directories(${avs_commons_INCLUDE_DIRS})
+include_directories(${INCLUDE_DIRS})
+
 
 find_program(VALGRIND_EXECUTABLE valgrind)
 if(VALGRIND_EXECUTABLE)
@@ -274,14 +273,15 @@ macro(make_absolute_sources ABSVAR)
     endforeach()
 endmacro()
 
-macro(add_module_with_include_dirs MODULE_NAME)
+set(MODULE_INCLUDE_DIRS)
+
+macro(add_module_with_include_dirs MODULE_NAME MODULE_INCLUDE_DIRS_VAR)
     add_subdirectory(${MODULE_NAME})
-    # Append submodule include directories to the general avs_commons
-    # include dirs.
-    set(avs_commons_INCLUDE_DIRS
-        "${avs_commons_INCLUDE_DIRS}"
-        "${avs_${MODULE_NAME}_INCLUDE_DIRS}"
-        CACHE INTERNAL "" FORCE)
+    include_directories(${avs_${MODULE_NAME}_INCLUDE_DIRS})
+    # Append module includes to a specified variable name (i.e. MODULE_INCLUDE_DIRS_VAR).
+    set(${MODULE_INCLUDE_DIRS_VAR}
+        "${${MODULE_INCLUDE_DIRS_VAR}}"
+        "${avs_${MODULE_NAME}_INCLUDE_DIRS}")
 endmacro()
 
 if(WITH_AVS_UNIT)
@@ -303,7 +303,7 @@ if(WITH_AVS_UNIT)
         add_dependencies(avs_commons_check ${NAME}_check)
     endmacro()
 
-    add_module_with_include_dirs(unit)
+    add_module_with_include_dirs(unit MODULE_INCLUDE_DIRS)
     add_subdirectory(tests)
 else()
     macro(add_avs_test NAME)
@@ -311,19 +311,19 @@ else()
 endif()
 
 if(WITH_AVS_ALGORITHM)
-    add_module_with_include_dirs(algorithm)
+    add_module_with_include_dirs(algorithm MODULE_INCLUDE_DIRS)
 endif()
 
 if(WITH_AVS_BUFFER)
-    add_module_with_include_dirs(buffer)
+    add_module_with_include_dirs(buffer MODULE_INCLUDE_DIRS)
 endif()
 
 if(WITH_AVS_LIST)
-    add_module_with_include_dirs(list)
+    add_module_with_include_dirs(list MODULE_INCLUDE_DIRS)
 endif()
 
 if(WITH_AVS_VECTOR)
-    add_module_with_include_dirs(vector)
+    add_module_with_include_dirs(vector MODULE_INCLUDE_DIRS)
 endif()
 
 if(WITH_AVS_NET)
@@ -346,20 +346,23 @@ if(WITH_AVS_NET)
         endif()
     endif()
 
-    add_module_with_include_dirs(net)
+    add_module_with_include_dirs(net MODULE_INCLUDE_DIRS)
 endif()
 
 if(WITH_AVS_STREAM)
-    add_module_with_include_dirs(stream)
+    add_module_with_include_dirs(stream MODULE_INCLUDE_DIRS)
 endif()
 
 if(WITH_AVS_LOG)
-    add_module_with_include_dirs(log)
+    add_module_with_include_dirs(log MODULE_INCLUDE_DIRS)
 endif()
 
 if (WITH_AVS_RBTREE)
-    add_module_with_include_dirs(rbtree)
+    add_module_with_include_dirs(rbtree MODULE_INCLUDE_DIRS)
 endif()
+
+# Export general avs_commons includes as well as module level includes.
+set(avs_commons_INCLUDE_DIRS ${INCLUDE_DIRS} ${MODULE_INCLUDE_DIRS} PARENT_SCOPE)
 
 configure_file("config/config.h.in" "config/config.h")
 configure_file("include_public/avsystem/commons/defs.h.in"
