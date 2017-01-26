@@ -252,19 +252,23 @@ find_package(Doxygen)
 
 if(DOXYGEN_FOUND)
     configure_file(doc/Doxyfile.in doc/Doxyfile @ONLY)
-    add_custom_target(doc
+    add_custom_target(avs_commons_doc
                       COMMAND ${DOXYGEN_EXECUTABLE} ${CMAKE_BINARY_DIR}/doc/Doxyfile)
+
+    if(NOT ${CMAKE_PROJECT_NAME} STREQUAL ${PROJECT_NAME})
+        add_dependencies(doc avs_commons_doc)
+    endif()
 endif()
 
-option(WITH_AVS_ALGORITHM "AVSystem algorithm utilities library" ON)
-option(WITH_AVS_UNIT "AVSystem unit test library" ON)
-option(WITH_AVS_BUFFER "AVSystem buffer implementation" ON)
-option(WITH_AVS_LIST "AVSystem generic linked list implementation" ON)
-option(WITH_AVS_VECTOR "AVSystem generic vector implementation" ON)
-option(WITH_AVS_NET "AVSystem network communication abstraction layer" ON)
-option(WITH_AVS_STREAM "AVSystem IO stream abstraction layer" ON)
-option(WITH_AVS_LOG "AVSystem logging framework" ON)
-option(WITH_AVS_RBTREE "AVSystem generic red-black tree implementation" ON)
+option(WITH_AVS_ALGORITHM "AVSystem algorithm utilities library" OFF)
+option(WITH_AVS_UNIT "AVSystem unit test library" OFF)
+option(WITH_AVS_BUFFER "AVSystem buffer implementation" OFF)
+option(WITH_AVS_LIST "AVSystem generic linked list implementation" OFF)
+option(WITH_AVS_VECTOR "AVSystem generic vector implementation" OFF)
+option(WITH_AVS_NET "AVSystem network communication abstraction layer" OFF)
+option(WITH_AVS_STREAM "AVSystem IO stream abstraction layer" OFF)
+option(WITH_AVS_LOG "AVSystem logging framework" OFF)
+option(WITH_AVS_RBTREE "AVSystem generic red-black tree implementation" OFF)
 
 include(CMakeDependentOption)
 
