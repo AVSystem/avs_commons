@@ -60,6 +60,30 @@ typedef struct avs_net_addrinfo_struct avs_net_addrinfo_t;
 #define AVS_NET_ADDRINFO_END 1
 
 /**
+ * When calling @ref avs_net_addrinfo_resolve_ex with this bit set in the
+ * <c>flags</c> parameter, a DNS query is not performed. Binary endpoint will
+ * only be available for successful retrieval if the <c>host</c> passed is a
+ * valid, unambiguous textual representation of an already resolved IP address.
+ *
+ * This is equivalent to <c>AI_PASSIVE</c> flag to <c>getaddrinfo()</c>.
+ */
+#define AVS_NET_ADDRINFO_RESOLVE_F_PASSIVE  (1 << 0)
+
+/**
+ * When calling @ref avs_net_addrinfo_resolve_ex with this bit set in the
+ * <c>flags</c> parameter and with <c>family</c> set to <c>AVS_NET_AF_INET6</c>,
+ * IPv4 addresses will be resolved as well, and converted to IPv4-mapped IPv6
+ * addresses in output.
+ *
+ * This is roughly equivalent to <c>AI_V4MAPPED | AI_ALL</c> flags to
+ * <c>getaddrinfo()</c>, but implemented independently of them.
+ *
+ * This flag is meaningful only if the plaform supports both IPv4 and IPv6.
+ * Otherwise it is ignored.
+ */
+#define AVS_NET_ADDRINFO_RESOLVE_F_V4MAPPED (1 << 1)
+
+/**
  * Resolves a text-represented host and port address to its binary
  * representation, possibly executing a DNS query as necessary.
  *
@@ -79,6 +103,10 @@ typedef struct avs_net_addrinfo_struct avs_net_addrinfo_t;
  *
  * @param port               Port number represented as a string.
  *
+ * @param flags              Either 0 or a bit mask of one or more
+ *                           <c>AVS_NET_ADDRINFO_RESOLVE_F_*</c> constants.
+ *                           Please see their documentation for details.
+ *
  * @param preferred_endpoint Preferred resolved address. If it is found among
  *                           the resolved addresses, it is returned on the first
  *                           position.
@@ -88,6 +116,17 @@ typedef struct avs_net_addrinfo_struct avs_net_addrinfo_t;
  *         @ref avs_net_addrinfo_delete. If an error occured, <c>NULL</c> is
  *         returned.
  */
+avs_net_addrinfo_t *avs_net_addrinfo_resolve_ex(
+        avs_net_socket_type_t socket_type,
+        avs_net_af_t family,
+        const char *host,
+        const char *port,
+        int flags,
+        const avs_net_resolved_endpoint_t *preferred_endpoint);
+
+/**
+ * Equivalent to @ref avs_net_addrinfo_resolve_ex with <c>flags</c> set to 0.
+ */
 avs_net_addrinfo_t *avs_net_addrinfo_resolve(
         avs_net_socket_type_t socket_type,
         avs_net_af_t family,
@@ -96,7 +135,8 @@ avs_net_addrinfo_t *avs_net_addrinfo_resolve(
         const avs_net_resolved_endpoint_t *preferred_endpoint);
 
 /**
- * Frees an object allocated by @ref avs_net_addrinfo_resolve.
+ * Frees an object allocated by @ref avs_net_addrinfo_resolve or
+ * @ref avs_net_addrinfo_resolve_ex.
  *
  * @param ctx Pointer to a variable holding an instance of
  *            @ref avs_net_addrinfo_t. It will be freed and zeroed.
@@ -105,12 +145,14 @@ void avs_net_addrinfo_delete(avs_net_addrinfo_t **ctx);
 
 /**
  * Returns a binary representation of the address previously queried for
- * resolution using @ref avs_net_addrinfo_resolve.
+ * resolution using @ref avs_net_addrinfo_resolve or
+ * @ref avs_net_addrinfo_resolve_ex.
  *
  * Calling this function more than once will return subsequent alternative
  * addresses, if any.
  *
- * @param ctx A context object returned from @ref avs_net_addrinfo_resolve.
+ * @param ctx A context object returned from @ref avs_net_addrinfo_resolve or
+ *            @ref avs_net_addrinfo_resolve_ex.
  * @param out Pointer to variable in which to store the result.
  *
  * @return @li 0 for success
@@ -126,7 +168,8 @@ int avs_net_addrinfo_next(avs_net_addrinfo_t *ctx,
  * @ref avs_net_addrinfo_next will return the same value as the first call for
  * given context.
  *
- * @param ctx A context object returned from @ref avs_net_addrinfo_resolve.
+ * @param ctx A context object returned from @ref avs_net_addrinfo_resolve or
+ *            @ref avs_net_addrinfo_resolve_ex.
  */
 void avs_net_addrinfo_rewind(avs_net_addrinfo_t *ctx);
 
