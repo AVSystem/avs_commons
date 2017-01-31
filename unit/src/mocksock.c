@@ -111,6 +111,8 @@ typedef struct {
     int source_line;
     union {
         struct {
+            const char *remote_host;
+            const char *remote_port;
             const char *data;
             size_t ptr;
             size_t size;
@@ -193,11 +195,15 @@ static int mock_connect(avs_net_abstract_socket_t *socket_,
     return retval;
 }
 
-static int mock_send(avs_net_abstract_socket_t *socket_,
-                     const void *buffer,
-                     size_t buffer_length) {
+static int mock_send_to(avs_net_abstract_socket_t *socket_,
+                        size_t *out_bytes_sent,
+                        const void *buffer,
+                        size_t buffer_length,
+                        const char *host,
+                        const char *port) {
     mocksock_t *socket = (mocksock_t *) socket_;
     AVS_UNIT_ASSERT_TRUE(socket->connected);
+    *out_bytes_sent = 0;
     while (buffer_length > 0) {
         AVS_UNIT_ASSERT_NOT_NULL(socket->expected_data);
         if (socket->expected_data->type == MOCKSOCK_DATA_TYPE_OUTPUT) {
@@ -210,6 +216,10 @@ static int mock_send(avs_net_abstract_socket_t *socket_,
                                               socket->expected_data->args.valid.data
                                               + socket->expected_data->args.valid.ptr,
                                               to_send);
+            AVS_UNIT_ASSERT_EQUAL_STRING(
+                    host, socket->expected_data->args.valid.remote_host);
+            AVS_UNIT_ASSERT_EQUAL_STRING(
+                    port, socket->expected_data->args.valid.remote_port);
             socket->expected_data->args.valid.ptr += to_send;
             if (socket->expected_data->args.valid.ptr
                     == socket->expected_data->args.valid.size) {
@@ -217,6 +227,7 @@ static int mock_send(avs_net_abstract_socket_t *socket_,
             }
             buffer_length -= to_send;
             buffer = ((const char *) buffer) + to_send;
+            *out_bytes_sent += to_send;
         } else if (socket->expected_data->type
                    == MOCKSOCK_DATA_TYPE_OUTPUT_FAIL) {
             int retval = socket->expected_data->args.retval;
@@ -227,10 +238,30 @@ static int mock_send(avs_net_abstract_socket_t *socket_,
     return 0;
 }
 
-static int mock_receive(avs_net_abstract_socket_t *socket_,
-                        size_t *out,
-                        void *buffer,
-                        size_t buffer_length) {
+static int mock_send(avs_net_abstract_socket_t *socket,
+                     const void *buffer,
+                     size_t buffer_length) {
+    size_t tmp_bytes_sent;
+    return mock_send_to(socket, &tmp_bytes_sent, buffer, buffer_length,
+                        NULL, NULL);
+}
+
+static void fill_remote_addr(char *out, size_t size, const char *in) {
+    if (out) {
+        AVS_UNIT_ASSERT_NOT_NULL(in);
+        AVS_UNIT_ASSERT_TRUE(strlen(in) < size);
+        strcpy(out, in);
+    } else {
+        AVS_UNIT_ASSERT_NULL(in);
+    }
+}
+
+static int mock_receive_from(avs_net_abstract_socket_t *socket_,
+                             size_t *out,
+                             void *buffer,
+                             size_t buffer_length,
+                             char *host, size_t host_size,
+                             char *port, size_t port_size) {
     mocksock_t *socket = (mocksock_t *) socket_;
     AVS_UNIT_ASSERT_TRUE(socket->connected);
     *out = 0;
@@ -246,6 +277,10 @@ static int mock_receive(avs_net_abstract_socket_t *socket_,
         memcpy(buffer, socket->expected_data->args.valid.data
                + socket->expected_data->args.valid.ptr, *out);
         socket->expected_data->args.valid.ptr += *out;
+        fill_remote_addr(host, host_size,
+                         socket->expected_data->args.valid.remote_host);
+        fill_remote_addr(port, port_size,
+                         socket->expected_data->args.valid.remote_port);
         if (socket->expected_data->args.valid.ptr
                 == socket->expected_data->args.valid.size) {
             socket->last_data_read = socket->expected_data->args.valid.ptr;
@@ -258,6 +293,14 @@ static int mock_receive(avs_net_abstract_socket_t *socket_,
         return retval;
     }
     return 0;
+}
+
+static int mock_receive(avs_net_abstract_socket_t *socket,
+                        size_t *out,
+                        void *buffer,
+                        size_t buffer_length) {
+    return mock_receive_from(socket, out, buffer, buffer_length,
+                             NULL, 0, NULL, 0);
 }
 
 static int mock_bind(avs_net_abstract_socket_t *socket_,
@@ -440,9 +483,9 @@ static const avs_net_socket_v_table_t mock_vtable = {
     mock_connect,
     (avs_net_socket_decorate_t) unimplemented,
     mock_send,
-    (avs_net_socket_send_to_t) unimplemented,
+    mock_send_to,
     mock_receive,
-    (avs_net_socket_receive_from_t) unimplemented,
+    mock_receive_from,
     mock_bind,
     mock_accept,
     mock_close,
@@ -481,17 +524,30 @@ static mocksock_expected_data_t *new_expected_data(mocksock_t *socket,
     return new_data;
 }
 
-void avs_unit_mocksock_input__(avs_net_abstract_socket_t *socket_,
+void avs_unit_mocksock_input_from__(avs_net_abstract_socket_t *socket_,
+                                    const char *data,
+                                    size_t length,
+                                    const char *host,
+                                    const char *port,
+                                    const char *file,
+                                    int line) {
+    mocksock_t *socket = (mocksock_t *) socket_;
+    mocksock_expected_data_t *new_data = new_expected_data(socket, file, line);
+    new_data->type = MOCKSOCK_DATA_TYPE_INPUT;
+    new_data->args.valid.remote_host = host;
+    new_data->args.valid.remote_port = port;
+    new_data->args.valid.data = data;
+    new_data->args.valid.ptr = 0;
+    new_data->args.valid.size = length;
+}
+
+void avs_unit_mocksock_input__(avs_net_abstract_socket_t *socket,
                                const char *data,
                                size_t length,
                                const char *file,
                                int line) {
-    mocksock_t *socket = (mocksock_t *) socket_;
-    mocksock_expected_data_t *new_data = new_expected_data(socket, file, line);
-    new_data->type = MOCKSOCK_DATA_TYPE_INPUT;
-    new_data->args.valid.data = data;
-    new_data->args.valid.ptr = 0;
-    new_data->args.valid.size = length;
+    avs_unit_mocksock_input_from__(socket, data, length, NULL, NULL,
+                                   file, line);
 }
 
 void avs_unit_mocksock_input_fail__(avs_net_abstract_socket_t *socket_,
@@ -514,15 +570,25 @@ size_t avs_unit_mocksock_data_read(avs_net_abstract_socket_t *socket_) {
     }
 }
 
-void avs_unit_mocksock_expect_output__(avs_net_abstract_socket_t *socket_,
-                                       const char *expect, size_t length,
-                                       const char *file, int line) {
+void avs_unit_mocksock_expect_output_to__(avs_net_abstract_socket_t *socket_,
+                                          const char *expect, size_t length,
+                                          const char *host, const char *port,
+                                          const char *file, int line) {
     mocksock_t *socket = (mocksock_t *) socket_;
     mocksock_expected_data_t *new_data = new_expected_data(socket, file, line);
     new_data->type = MOCKSOCK_DATA_TYPE_OUTPUT;
+    new_data->args.valid.remote_host = host;
+    new_data->args.valid.remote_port = port;
     new_data->args.valid.data = expect;
     new_data->args.valid.ptr = 0;
     new_data->args.valid.size = length;
+}
+
+void avs_unit_mocksock_expect_output__(avs_net_abstract_socket_t *socket,
+                                       const char *expect, size_t length,
+                                       const char *file, int line) {
+    avs_unit_mocksock_expect_output_to__(socket, expect, length, NULL, NULL,
+                                         file, line);
 }
 
 void avs_unit_mocksock_output_fail__(avs_net_abstract_socket_t *socket_,
