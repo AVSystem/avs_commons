@@ -901,8 +901,8 @@ static int receive_from_net(avs_net_abstract_socket_t *net_socket_,
     host[0] = '\0';
     port[0] = '\0';
 
-    if (!wait_until_ready(net_socket->socket,
-                          AVS_NET_SOCKET_DEFAULT_RECV_TIMEOUT, 1, 0, 1)) {
+    if (!wait_until_ready(net_socket->socket, net_socket->recv_timeout,
+                          1, 0, 1)) {
         net_socket->error_code = ETIMEDOUT;
         *out = 0;
         return -1;
