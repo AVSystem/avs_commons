@@ -313,7 +313,7 @@ if(WITH_AVS_UNIT)
             set(VALGRIND_LOG)
         endif()
 
-        add_test(${NAME}_test ${VALGRIND_LOG} ${CMAKE_CURRENT_BINARY_DIR}/${NAME}_test)
+        add_test(NAME ${NAME}_test COMMAND ${VALGRIND_LOG} $<TARGET_FILE:${NAME}_test>)
 
         add_custom_target(${NAME}_check COMMAND ${CMAKE_CTEST_COMMAND} -V DEPENDS ${NAME}_test)
         add_dependencies(avs_commons_check ${NAME}_check)
