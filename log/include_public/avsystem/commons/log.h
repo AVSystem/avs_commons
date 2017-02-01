@@ -194,7 +194,7 @@ int avs_log_set_level__(const char *module, avs_log_level_t level);
  *               currently set for the specified module.
  */
 #define avs_log(Module, Level, ...) \
-        AVS_LOG__##Level(l, #Module, __VA_ARGS__)
+        AVS_LOG__##Level(l, AVS_QUOTE_MACRO(Module), __VA_ARGS__)
 
 /**
  * Creates a log message and displays it on a specified error output. Message
@@ -212,7 +212,7 @@ int avs_log_set_level__(const char *module, avs_log_level_t level);
  *               currently set for the specified module.
  */
 #define avs_log_v(Module, Level, ...) \
-        AVS_LOG__##Level(v, #Module, __VA_ARGS__)
+        AVS_LOG__##Level(v, AVS_QUOTE_MACRO(Module), __VA_ARGS__)
 
 /**
  * If the current log level is high enough, creates a log message and displays
@@ -272,7 +272,8 @@ int avs_log_set_level__(const char *module, avs_log_level_t level);
  * @endcode
  * </example>
  */
-#define avs_log_set_level(Module, Level) avs_log_set_level__(#Module, Level)
+#define avs_log_set_level(Module, Level) \
+        avs_log_set_level__(AVS_QUOTE_MACRO(Module), Level)
 
 /**
  * Sets the logging level for a given module. Messages with lower level than the

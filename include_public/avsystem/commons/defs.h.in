@@ -64,6 +64,20 @@ extern "C" {
 #define AVS_CONCAT(prefix, suffix) AVS_CONCAT_INTERNAL__(prefix, suffix)
 
 /**
+ * Stringifies a token.
+ *
+ * @param Value Token to stringify.
+ */
+#define AVS_QUOTE(Value) #Value
+
+/**
+ * Stringifies a token with performing additional macro expansion step.
+ *
+ * @param Value Token to stringify.
+ */
+#define AVS_QUOTE_MACRO(Value) AVS_QUOTE(Value)
+
+/**
  * C89-compliant replacement for <c>max_align_t</c>.
  *
  * <c>max_align_t</c> is a type defined in C11 and C++11 standards, that has
@@ -192,4 +206,3 @@ typedef long avs_off_t;
     ((type*)((const char*)(ptr) - offsetof(type, member)))
 
 #endif	/* AVS_COMMONS_DEFS_H */
-
