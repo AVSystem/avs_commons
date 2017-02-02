@@ -284,9 +284,11 @@ void avs_unit_assert_equal_string__(const char *actual,
                                     const char *expected,
                                     const char *file,
                                     int line) {
-    if (actual != NULL && expected != NULL) {
-        _avs_unit_assert(!!expected, file, line, "expected is NULL\n");
-        _avs_unit_assert(!!actual, file, line, "actual is NULL\n");
+    if (actual != NULL || expected != NULL) {
+        _avs_unit_assert(!!expected, file, line,
+                         "expected NULL was <%s>\n", actual);
+        _avs_unit_assert(!!actual, file, line,
+                         "expected <%s> was NULL\n", expected);
         _avs_unit_assert(!strcmp(actual, expected), file, line,
                          "expected <%s> was <%s>\n", expected, actual);
     }
@@ -393,7 +395,7 @@ void avs_unit_assert_not_equal_string__(const char *actual,
                                         const char *not_expected,
                                         const char *file,
                                         int line) {
-    _avs_unit_assert(!(!not_expected && !actual), file, line,
+    _avs_unit_assert(not_expected || actual, file, line,
                      "not_expected and actual are both NULL\n");
     if (not_expected && actual) {
         _avs_unit_assert(strcmp(actual, not_expected), file, line,

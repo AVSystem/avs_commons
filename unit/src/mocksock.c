@@ -260,8 +260,8 @@ static int mock_receive_from(avs_net_abstract_socket_t *socket_,
                              size_t *out,
                              void *buffer,
                              size_t buffer_length,
-                             char *host, size_t host_size,
-                             char *port, size_t port_size) {
+                             char *out_host, size_t out_host_size,
+                             char *out_port, size_t out_port_size) {
     mocksock_t *socket = (mocksock_t *) socket_;
     AVS_UNIT_ASSERT_TRUE(socket->connected);
     *out = 0;
@@ -277,9 +277,9 @@ static int mock_receive_from(avs_net_abstract_socket_t *socket_,
         memcpy(buffer, socket->expected_data->args.valid.data
                + socket->expected_data->args.valid.ptr, *out);
         socket->expected_data->args.valid.ptr += *out;
-        fill_remote_addr(host, host_size,
+        fill_remote_addr(out_host, out_host_size,
                          socket->expected_data->args.valid.remote_host);
-        fill_remote_addr(port, port_size,
+        fill_remote_addr(out_port, out_port_size,
                          socket->expected_data->args.valid.remote_port);
         if (socket->expected_data->args.valid.ptr
                 == socket->expected_data->args.valid.size) {
