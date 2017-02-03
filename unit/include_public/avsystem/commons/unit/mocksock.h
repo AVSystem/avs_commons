@@ -32,6 +32,17 @@ void avs_unit_mocksock_input__(avs_net_abstract_socket_t *socket,
 #define avs_unit_mocksock_input(Socket, Data, Length) \
     avs_unit_mocksock_input__((Socket), (Data), (Length), __FILE__, __LINE__)
 
+void avs_unit_mocksock_input_from__(avs_net_abstract_socket_t *socket_,
+                                    const char *data,
+                                    size_t length,
+                                    const char *host,
+                                    const char *port,
+                                    const char *file,
+                                    int line);
+#define avs_unit_mocksock_input_from(Socket, Data, Length, Host, Port) \
+    avs_unit_mocksock_input_from__((Socket), (Data), (Length), (Host), (Port), \
+                                   __FILE__, __LINE__)
+
 void avs_unit_mocksock_input_fail__(avs_net_abstract_socket_t *socket_,
                                     int retval,
                                     const char *file,
@@ -60,6 +71,14 @@ void avs_unit_mocksock_expect_output__(avs_net_abstract_socket_t *socket,
 #define avs_unit_mocksock_expect_output(Socket, Expect, Length) \
     avs_unit_mocksock_expect_output__((Socket), (Expect), (Length), \
                                       __FILE__, __LINE__)
+
+void avs_unit_mocksock_expect_output_to__(avs_net_abstract_socket_t *socket_,
+                                          const char *expect, size_t length,
+                                          const char *host, const char *port,
+                                          const char *file, int line);
+#define avs_unit_mocksock_expect_output_to(Socket, Expect, Length, Host, Port) \
+    avs_unit_mocksock_expect_output_to__((Socket), (Expect), (Length), \
+                                         (Host), (Port), __FILE__, __LINE__)
 
 void avs_unit_mocksock_assert_io_clean__(avs_net_abstract_socket_t *socket,
                                          const char *file,
