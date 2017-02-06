@@ -204,12 +204,12 @@ option(WITH_IPV6 "Enable IPv6 support" ON)
 option(WITH_SOCKET_LOG "Enable socket communication logging" OFF)
 
 set(INCLUDE_DIRS
-    "${CMAKE_CURRENT_SOURCE_DIR}/config"
-    "${CMAKE_CURRENT_BINARY_DIR}/config"
     "${CMAKE_CURRENT_SOURCE_DIR}/include_public"
     "${CMAKE_CURRENT_BINARY_DIR}/include_public")
 
-include_directories(${INCLUDE_DIRS})
+include_directories("${CMAKE_CURRENT_SOURCE_DIR}/config"
+                    "${CMAKE_CURRENT_BINARY_DIR}/config"
+                    ${INCLUDE_DIRS})
 
 
 find_program(VALGRIND_EXECUTABLE valgrind)
