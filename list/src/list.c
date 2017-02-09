@@ -211,34 +211,26 @@ static int is_list_sorted(void *list,
     return 1;
 }
 
-static void assert_list_sorted(void *list,
-                               avs_list_comparator_func_t comparator,
-                               size_t element_size) {
-    assert(is_list_sorted(list, comparator, element_size));
+void **avs_list_assert_sorted_ptr__(void **listptr,
+                                    avs_list_comparator_func_t comparator,
+                                    size_t element_size) {
+    assert(is_list_sorted(*listptr, comparator, element_size));
+    return listptr;
 }
 
-void **avs_list_merge__(void **target_ptr,
-                        void **source_ptr,
-                        avs_list_comparator_func_t comparator,
-                        size_t element_size) {
-    assert_list_sorted(*target_ptr, comparator, element_size);
-    assert_list_sorted(*source_ptr, comparator, element_size);
-
-    void **retval = target_ptr;
-    while (*source_ptr) {
-        while (*target_ptr
-                    && comparator(*target_ptr, *source_ptr, element_size) < 0) {
-            target_ptr = AVS_LIST_NEXT_PTR(target_ptr);
+void avs_list_merge__(void **target,
+                      void **source,
+                      avs_list_comparator_func_t comparator,
+                      size_t element_size) {
+    while (*source) {
+        while (*target && comparator(*target, *source, element_size) < 0) {
+            target = AVS_LIST_NEXT_PTR(target);
         }
-
-        if (!*target_ptr
-                    || comparator(*target_ptr, *source_ptr, element_size) > 0) {
-            AVS_LIST_INSERT(target_ptr, AVS_LIST_DETACH(source_ptr));
-            target_ptr = AVS_LIST_NEXT_PTR(target_ptr);
+        if (!*target || comparator(*target, *source, element_size) > 0) {
+            AVS_LIST_INSERT(target, AVS_LIST_DETACH(source));
         } else {
-            assert(comparator(*target_ptr, *source_ptr, element_size) == 0);
-            source_ptr = AVS_LIST_NEXT_PTR(source_ptr);
+            AVS_LIST_INSERT(target, AVS_LIST_DETACH(source));
         }
+        target = AVS_LIST_NEXT_PTR(target);
     }
-    return retval;
 }

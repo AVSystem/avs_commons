@@ -282,17 +282,28 @@ void avs_list_sort__(void **list_ptr,
                       size_t element_size);
 int avs_list_is_cyclic__(const void *list);
 void *avs_list_assert_acyclic__(void *list);
+void **avs_list_assert_sorted_ptr__(void **list,
+                                    avs_list_comparator_func_t comparator,
+                                    size_t element_size);
+
 void *avs_list_simple_clone__(void *list, size_t elem_size);
-void **avs_list_merge__(void **target_ptr,
-                        void **source_ptr,
-                        avs_list_comparator_func_t comparator,
-                        size_t element_size);
+void avs_list_merge__(void **target_ptr,
+                      void **source_ptr,
+                      avs_list_comparator_func_t comparator,
+                      size_t element_size);
 #ifdef NDEBUG
 #define AVS_LIST_ASSERT_ACYCLIC__(list) (list)
+#define AVS_LIST_ASSERT_SORTED__(list, comparator, element_size) (list)
+#define AVS_LIST_ASSERT_SORTED_PTR__(list_ptr, comparator) (list_ptr)
 #else
 #define AVS_LIST_ASSERT_ACYCLIC__(list) \
 ((AVS_TYPEOF_PTR(list)) \
         avs_list_assert_acyclic__((void *) (intptr_t) (list)))
+
+#define AVS_LIST_ASSERT_SORTED_PTR__(list_ptr, comparator)         \
+    (avs_list_assert_sorted_ptr__((void **) (intptr_t) list_ptr,   \
+                                  comparator, sizeof(**list_ptr)), \
+     list_ptr)
 #endif
 /**@}*/
 
@@ -704,11 +715,7 @@ avs_list_sort__((void **)(intptr_t)(list_ptr), (comparator), \
 
 /**
  * Merges two sorted lists @p target_ptr and @p source_ptr, writing the results
- * into @p target_ptr list.
- *
- * NOTE: Every element of @p source_ptr list that equal to some element of
- * @p target_ptr will be ignored. Therefore @p source_ptr list may require
- * additional cleanup after merging.
+ * into @p target_ptr list, and leaving @p source_ptr list empty in the end.
  *
  * WARNING: If at least one of the lists is not sorted (according to the
  * ordering established by @ref comparator) then the behavior is undefined.
@@ -718,13 +725,12 @@ avs_list_sort__((void **)(intptr_t)(list_ptr), (comparator), \
  * @param comparator    Comparator function of type
  *                      @ref avs_list_comparator_func_t. <c>sizeof(**target_ptr)</c>
  *                      will be used as the <c>element_size</c> argument.
- *
- * @returns pointer to the target list.
  */
-#define AVS_LIST_MERGE(target_ptr, source_ptr, comparator) \
-(AVS_TYPEOF_PTR(target_ptr)) avs_list_merge__((void **)(intptr_t)(target_ptr), \
-                                              (void **)(intptr_t)(source_ptr), \
-                                              (comparator), sizeof(**(target_ptr)));
+#define AVS_LIST_MERGE(target_ptr, source_ptr, comparator)                             \
+    avs_list_merge__(                                                                  \
+            (void **) (intptr_t) AVS_LIST_ASSERT_SORTED_PTR__(target_ptr, comparator), \
+            (void **) (intptr_t) AVS_LIST_ASSERT_SORTED_PTR__(source_ptr, comparator), \
+            (comparator), sizeof(**(target_ptr)));
 
 #ifdef	__cplusplus
 }
