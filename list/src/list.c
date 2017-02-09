@@ -196,10 +196,34 @@ void *avs_list_simple_clone__(void *list, size_t elem_size) {
     return retval;
 }
 
+static int is_list_sorted(void *list,
+                          avs_list_comparator_func_t comparator,
+                          size_t element_size) {
+    AVS_LIST(void) curr = list;
+    AVS_LIST(void) next = list ? AVS_LIST_NEXT(list) : NULL;
+    while (curr && next) {
+        if (comparator(curr, next, element_size) > 0) {
+            return 0;
+        }
+        curr = next;
+        next = AVS_LIST_NEXT(next);
+    }
+    return 1;
+}
+
+static void assert_list_sorted(void *list,
+                               avs_list_comparator_func_t comparator,
+                               size_t element_size) {
+    assert(is_list_sorted(list, comparator, element_size));
+}
+
 void **avs_list_merge__(void **target_ptr,
                         void **source_ptr,
                         avs_list_comparator_func_t comparator,
                         size_t element_size) {
+    assert_list_sorted(*target_ptr, comparator, element_size);
+    assert_list_sorted(*source_ptr, comparator, element_size);
+
     void **retval = target_ptr;
     while (*source_ptr) {
         while (*target_ptr
