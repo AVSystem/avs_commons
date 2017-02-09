@@ -195,3 +195,26 @@ void *avs_list_simple_clone__(void *list, size_t elem_size) {
     }
     return retval;
 }
+
+void **avs_list_merge__(void **target_ptr,
+                        void **source_ptr,
+                        avs_list_comparator_func_t comparator,
+                        size_t element_size) {
+    void **retval = target_ptr;
+    while (*source_ptr) {
+        while (*target_ptr
+                    && comparator(*target_ptr, *source_ptr, element_size) < 0) {
+            target_ptr = AVS_LIST_NEXT_PTR(target_ptr);
+        }
+
+        if (!*target_ptr
+                    || comparator(*target_ptr, *source_ptr, element_size) > 0) {
+            AVS_LIST_INSERT(target_ptr, AVS_LIST_DETACH(source_ptr));
+            target_ptr = AVS_LIST_NEXT_PTR(target_ptr);
+        } else {
+            assert(comparator(*target_ptr, *source_ptr, element_size) == 0);
+            source_ptr = AVS_LIST_NEXT_PTR(source_ptr);
+        }
+    }
+    return retval;
+}

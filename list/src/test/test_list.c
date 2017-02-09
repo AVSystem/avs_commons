@@ -243,3 +243,53 @@ AVS_UNIT_TEST(list, simple_clone) {
     AVS_LIST_CLEAR(&list);
     AVS_LIST_CLEAR(&cloned);
 }
+
+AVS_UNIT_TEST(list, merge) {
+   AVS_LIST(int) first = NULL;
+   AVS_LIST(int) second = NULL;
+
+   *AVS_LIST_APPEND(&first, AVS_LIST_NEW_ELEMENT(int)) = 1;
+   *AVS_LIST_APPEND(&first, AVS_LIST_NEW_ELEMENT(int)) = 3;
+   *AVS_LIST_APPEND(&first, AVS_LIST_NEW_ELEMENT(int)) = 4;
+   *AVS_LIST_APPEND(&first, AVS_LIST_NEW_ELEMENT(int)) = 5;
+
+   *AVS_LIST_APPEND(&second, AVS_LIST_NEW_ELEMENT(int)) = 0;
+   *AVS_LIST_APPEND(&second, AVS_LIST_NEW_ELEMENT(int)) = 2;
+   *AVS_LIST_APPEND(&second, AVS_LIST_NEW_ELEMENT(int)) = 3;
+   *AVS_LIST_APPEND(&second, AVS_LIST_NEW_ELEMENT(int)) = 4;
+   *AVS_LIST_APPEND(&second, AVS_LIST_NEW_ELEMENT(int)) = 6;
+
+   AVS_LIST(int) *target = AVS_LIST_MERGE(&first, &second, int_comparator);
+   AVS_LIST(int) it;
+   int i = 0;
+   AVS_LIST_FOREACH(it, *target) {
+       AVS_UNIT_ASSERT_EQUAL(*it, i);
+       ++i;
+   }
+   AVS_UNIT_ASSERT_EQUAL(AVS_LIST_SIZE(second), 2);
+   AVS_LIST_CLEAR(&second);
+   AVS_LIST_CLEAR(&first);
+}
+
+AVS_UNIT_TEST(list, merge_empty_lists) {
+    AVS_LIST(int) first = NULL;
+    AVS_LIST(int) second = NULL;
+    AVS_LIST_MERGE(&first, &second, int_comparator);
+    AVS_UNIT_ASSERT_EQUAL(AVS_LIST_SIZE(first), 0);
+}
+
+AVS_UNIT_TEST(list, merge_when_one_list_is_empty) {
+    AVS_LIST(int) first = NULL;
+    AVS_LIST(int) second = NULL;
+
+    *AVS_LIST_APPEND(&first, AVS_LIST_NEW_ELEMENT(int)) = 1;
+    AVS_LIST_MERGE(&first, &second, int_comparator);
+    AVS_UNIT_ASSERT_EQUAL(AVS_LIST_SIZE(first), 1);
+
+    AVS_LIST_MERGE(&second, &first, int_comparator);
+    AVS_UNIT_ASSERT_EQUAL(AVS_LIST_SIZE(first), 0);
+    AVS_UNIT_ASSERT_EQUAL(AVS_LIST_SIZE(second), 1);
+
+    AVS_LIST_CLEAR(&first);
+    AVS_LIST_CLEAR(&second);
+}
