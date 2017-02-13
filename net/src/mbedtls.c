@@ -1073,6 +1073,7 @@ static int configure_ssl_certs(ssl_socket_certs_t *certs,
                                           &cert_info->trusted_certs)) {
                 return -1;
             }
+            break;
         default:
             LOG(ERROR, "Unsupported CA source");
             return -1;
