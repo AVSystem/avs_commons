@@ -132,30 +132,16 @@ void avs_list_sort__(void **list_ptr,
                      size_t element_size) {
     AVS_LIST(void) part1 = NULL;
     AVS_LIST(void) part2 = NULL;
-    AVS_LIST(void) *list_end_ptr = NULL;
     if (!list_ptr || !*list_ptr || !AVS_LIST_NEXT(*list_ptr)) {
         /* zero or one element */
         return;
     }
     part1 = *list_ptr;
     half_list(part1, &part2);
-    *list_ptr = NULL;
-    list_end_ptr = list_ptr;
     avs_list_sort__(&part1, comparator, element_size);
     avs_list_sort__(&part2, comparator, element_size);
-    while (part1 && part2) {
-        if (comparator(part1, part2, element_size) <= 0) {
-            AVS_LIST_INSERT(list_end_ptr, AVS_LIST_DETACH(&part1));
-        } else {
-            AVS_LIST_INSERT(list_end_ptr, AVS_LIST_DETACH(&part2));
-        }
-        list_end_ptr = AVS_LIST_NEXT_PTR(list_end_ptr);
-    }
-    if (part1) {
-        *list_end_ptr = part1;
-    } else {
-        *list_end_ptr = part2;
-    }
+    avs_list_merge__(&part1, &part2, comparator, element_size);
+    *list_ptr = part1;
 }
 
 int avs_list_is_cyclic__(const void *list) {
@@ -194,4 +180,39 @@ void *avs_list_simple_clone__(void *list, size_t elem_size) {
         }
     }
     return retval;
+}
+
+static int is_list_sorted(void *list,
+                          avs_list_comparator_func_t comparator,
+                          size_t element_size) {
+    AVS_LIST(void) curr = list;
+    AVS_LIST(void) next = list ? AVS_LIST_NEXT(list) : NULL;
+    while (curr && next) {
+        if (comparator(curr, next, element_size) > 0) {
+            return 0;
+        }
+        curr = next;
+        next = AVS_LIST_NEXT(next);
+    }
+    return 1;
+}
+
+void **avs_list_assert_sorted_ptr__(void **listptr,
+                                    avs_list_comparator_func_t comparator,
+                                    size_t element_size) {
+    assert(is_list_sorted(*listptr, comparator, element_size));
+    return listptr;
+}
+
+void avs_list_merge__(void **target,
+                      void **source,
+                      avs_list_comparator_func_t comparator,
+                      size_t element_size) {
+    while (*source) {
+        while (*target && comparator(*target, *source, element_size) < 0) {
+            target = AVS_LIST_NEXT_PTR(target);
+        }
+        AVS_LIST_INSERT(target, AVS_LIST_DETACH(source));
+        target = AVS_LIST_NEXT_PTR(target);
+    }
 }
