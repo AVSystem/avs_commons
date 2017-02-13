@@ -195,6 +195,11 @@ AVS_UNIT_TEST(list, sort) {
     }
 }
 
+AVS_UNIT_TEST(list, sort_empty) {
+    AVS_LIST(int) empty_list = NULL;
+    AVS_LIST_SORT(&empty_list, int_comparator);
+}
+
 AVS_UNIT_TEST(list, is_cyclic) {
     int *elem = NULL;
     AVS_LIST(int) list = NULL;

@@ -132,30 +132,16 @@ void avs_list_sort__(void **list_ptr,
                      size_t element_size) {
     AVS_LIST(void) part1 = NULL;
     AVS_LIST(void) part2 = NULL;
-    AVS_LIST(void) *list_end_ptr = NULL;
     if (!list_ptr || !*list_ptr || !AVS_LIST_NEXT(*list_ptr)) {
         /* zero or one element */
         return;
     }
     part1 = *list_ptr;
     half_list(part1, &part2);
-    *list_ptr = NULL;
-    list_end_ptr = list_ptr;
     avs_list_sort__(&part1, comparator, element_size);
     avs_list_sort__(&part2, comparator, element_size);
-    while (part1 && part2) {
-        if (comparator(part1, part2, element_size) <= 0) {
-            AVS_LIST_INSERT(list_end_ptr, AVS_LIST_DETACH(&part1));
-        } else {
-            AVS_LIST_INSERT(list_end_ptr, AVS_LIST_DETACH(&part2));
-        }
-        list_end_ptr = AVS_LIST_NEXT_PTR(list_end_ptr);
-    }
-    if (part1) {
-        *list_end_ptr = part1;
-    } else {
-        *list_end_ptr = part2;
-    }
+    avs_list_merge__(&part1, &part2, comparator, element_size);
+    *list_ptr = part1;
 }
 
 int avs_list_is_cyclic__(const void *list) {
@@ -226,11 +212,7 @@ void avs_list_merge__(void **target,
         while (*target && comparator(*target, *source, element_size) < 0) {
             target = AVS_LIST_NEXT_PTR(target);
         }
-        if (!*target || comparator(*target, *source, element_size) > 0) {
-            AVS_LIST_INSERT(target, AVS_LIST_DETACH(source));
-        } else {
-            AVS_LIST_INSERT(target, AVS_LIST_DETACH(source));
-        }
+        AVS_LIST_INSERT(target, AVS_LIST_DETACH(source));
         target = AVS_LIST_NEXT_PTR(target);
     }
 }

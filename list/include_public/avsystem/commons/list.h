@@ -293,7 +293,6 @@ void avs_list_merge__(void **target_ptr,
                       size_t element_size);
 #ifdef NDEBUG
 #define AVS_LIST_ASSERT_ACYCLIC__(list) (list)
-#define AVS_LIST_ASSERT_SORTED__(list, comparator, element_size) (list)
 #define AVS_LIST_ASSERT_SORTED_PTR__(list_ptr, comparator) (list_ptr)
 #else
 #define AVS_LIST_ASSERT_ACYCLIC__(list) \
