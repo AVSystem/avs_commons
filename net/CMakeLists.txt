@@ -51,7 +51,7 @@ endif()
 if(WITH_OPENSSL)
     avs_emit_deps(avs_net ssl crypto)
 elseif(WITH_MBEDTLS)
-    avs_emit_deps(avs_net ${MBEDTLS_LIBRARIES})
+    avs_emit_deps(avs_net ${MBEDTLS_TARGETS})
 endif()
 
 avs_install_export(avs_net net)
