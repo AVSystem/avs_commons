@@ -9,11 +9,11 @@
 #
 # This module defines the following :prop_tgt:`IMPORTED` targets:
 #
-# ``mbed::tls``
+# ``mbedtls``
 #   The mbedTLS ``mbedtls`` library, if found.
-# ``mbed::crypto``
+# ``mbedcrypto``
 #   The mbedtls ``crypto`` library, if found.
-# ``mbed::x509``
+# ``mbedx509``
 #   The mbedtls ``x509`` library, if found.
 #
 # Result Variables
@@ -117,24 +117,24 @@ find_package_handle_standard_args(mbedTLS
                                   VERSION_VAR MBEDTLS_VERSION)
 
 
-if(NOT TARGET mbed::tls)
-    add_library(mbed::tls UNKNOWN IMPORTED)
-    set_target_properties(mbed::tls PROPERTIES
+if(NOT TARGET mbedtls)
+    add_library(mbedtls UNKNOWN IMPORTED)
+    set_target_properties(mbedtls PROPERTIES
                           INTERFACE_INCLUDE_DIRECTORIES "${MBEDTLS_INCLUDE_DIR}"
                           IMPORTED_LINK_INFERFACE_LANGUAGES "C"
                           IMPORTED_LOCATION "${MBEDTLS_LIBRARY}")
 endif()
 
-if(NOT TARGET mbed::crypto)
-    add_library(mbed::crypto UNKNOWN IMPORTED)
-    set_target_properties(mbed::crypto PROPERTIES
+if(NOT TARGET mbedcrypto)
+    add_library(mbedcrypto UNKNOWN IMPORTED)
+    set_target_properties(mbedcrypto PROPERTIES
                           IMPORTED_LINK_INFERFACE_LANGUAGES "C"
                           IMPORTED_LOCATION "${MBEDTLS_CRYPTO_LIBRARY}")
 endif()
 
-if(NOT TARGET mbed::x509)
-    add_library(mbed::x509 UNKNOWN IMPORTED)
-    set_target_properties(mbed::x509 PROPERTIES
+if(NOT TARGET mbedx509)
+    add_library(mbedx509 UNKNOWN IMPORTED)
+    set_target_properties(mbedx509 PROPERTIES
                           IMPORTED_LINK_INFERFACE_LANGUAGES "C"
                           IMPORTED_LOCATION "${MBEDTLS_X509_LIBRARY}")
 endif()

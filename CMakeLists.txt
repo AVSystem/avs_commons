@@ -75,17 +75,12 @@ macro(avs_temp_name fname)
     set(${fname} "${CMAKE_BINARY_DIR}/${_base}${_counter}")
 endmacro()
 
-macro(escape_identifier VAR_NAME)
-    string(REGEX REPLACE "[^A-Za-z0-9_]" "__" "${VAR_NAME}" "${${VAR_NAME}}")
-endmacro()
-
 macro(avs_find_library_inner)
     avs_temp_name(_fname)
     file(WRITE ${_fname} "${avs_find_library_EXPR_NOW}")
     include(${_fname})
     file(REMOVE ${_fname})
     foreach(PROVIDED_LIB ${ARGN})
-        escape_identifier(PROVIDED_LIB)
         set(LIBRARY_FIND_ROUTINE_${PROVIDED_LIB} "${avs_find_library_EXPR_STORE}")
         set(LIBRARY_FIND_ROUTINE_PROVIDES_${PROVIDED_LIB} ${ARGN})
     endforeach()
@@ -123,9 +118,7 @@ endmacro()
 
 macro(avs_install_export TNAME CNAME)
     install(TARGETS ${TNAME} COMPONENT ${CNAME} EXPORT avs_commons-targets DESTINATION ${LIB_INSTALL_DIR})
-    escape_identifier(TNAME)
     foreach(DEP ${AVS_TARGET_DEPS_${TNAME}})
-        escape_identifier(DEP)
         avs_emit_find_dependency(${DEP})
     endforeach()
 endmacro()
@@ -148,7 +141,7 @@ avs_find_library("
 " ssl crypto)
 
 # mbed TLS
-set(MBEDTLS_TARGETS mbed::tls mbed::crypto mbed::x509)
+set(MBEDTLS_TARGETS mbedtls mbedcrypto mbedx509)
 avs_find_library("
     set(CMAKE_MODULE_PATH \\\${CMAKE_MODULE_PATH} \"\\\${CMAKE_CURRENT_LIST_DIR}/cmake\")
     set(MBEDTLS_ROOT_DIR \"${MBEDTLS_ROOT_DIR}\")
