@@ -53,6 +53,8 @@ set(WITH_ADDITIONAL_LIBRARY_SUFFIXES "" CACHE STRING "Additional library file na
 set(CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_FIND_LIBRARY_SUFFIXES} ${WITH_ADDITIONAL_LIBRARY_SUFFIXES})
 set(CMAKE_USE_RELATIVE_PATHS TRUE)
 
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+
 ################# LIBRARIES ####################################################
 
 macro(avs_emit_deps TNAME)
@@ -139,21 +141,13 @@ avs_find_library("
 " ssl crypto)
 
 # mbed TLS
-set(MBEDTLS_LIBRARIES mbedtls mbedcrypto mbedx509)
+set(MBEDTLS_TARGETS mbedtls mbedcrypto mbedx509)
 avs_find_library("
-    find_library(MBEDTLS_LIB_MBEDTLS NAMES mbedtls)
-    find_library(MBEDTLS_LIB_MBEDCRYPTO NAMES mbedcrypto)
-    find_library(MBEDTLS_LIB_MBEDX509 NAMES mbedx509)
-    if(MBEDTLS_LIB_MBEDTLS AND MBEDTLS_LIB_MBEDCRYPTO AND MBEDTLS_LIB_MBEDX509)
-        set(MBEDTLS_FOUND TRUE)
-        add_library(mbedtls UNKNOWN IMPORTED)
-        set_property(TARGET mbedtls PROPERTY IMPORTED_LOCATION \\\${MBEDTLS_LIB_MBEDTLS})
-        add_library(mbedcrypto UNKNOWN IMPORTED)
-        set_property(TARGET mbedcrypto PROPERTY IMPORTED_LOCATION \\\${MBEDTLS_LIB_MBEDCRYPTO})
-        add_library(mbedx509 UNKNOWN IMPORTED)
-        set_property(TARGET mbedx509 PROPERTY IMPORTED_LOCATION \\\${MBEDTLS_LIB_MBEDX509})
-    endif()
-" ${MBEDTLS_LIBRARIES})
+    set(CMAKE_MODULE_PATH \\\${CMAKE_MODULE_PATH} \"\\\${CMAKE_CURRENT_LIST_DIR}/cmake\")
+    set(MBEDTLS_ROOT_DIR \"${MBEDTLS_ROOT_DIR}\")
+    set(MBEDTLS_USE_STATIC_LIBS ${MBEDTLS_USE_STATIC_LIBS})
+    find_package(MbedTLS)
+" ${MBEDTLS_TARGETS})
 set(MBEDTLS_INCLUDE_DIRS "" CACHE PATH "mbed TLS include directory")
 
 # SSL
@@ -393,6 +387,9 @@ install(FILES
         ${CMAKE_CURRENT_BINARY_DIR}/avs_commons-config.cmake
         ${CMAKE_CURRENT_BINARY_DIR}/avs_commons-version.cmake
         DESTINATION ${LIB_INSTALL_DIR}/avs_commons)
+install(FILES
+        ${CMAKE_CURRENT_SOURCE_DIR}/cmake/FindMbedTLS.cmake
+        DESTINATION ${LIB_INSTALL_DIR}/avs_commons/cmake)
 install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/include_public/"
         DESTINATION ${INCLUDE_INSTALL_DIR}
         FILES_MATCHING REGEX "[.]h$")
