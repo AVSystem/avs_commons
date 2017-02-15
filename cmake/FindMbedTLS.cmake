@@ -111,9 +111,6 @@ find_package_handle_standard_args(mbedTLS
                                       MBEDTLS_X509_LIBRARY
                                       MBEDTLS_LIBRARIES
                                       MBEDTLS_VERSION
-                                      MBEDTLS_VERSION_MAJOR
-                                      MBEDTLS_VERSION_MINOR
-                                      MBEDTLS_VERSION_PATCH
                                   VERSION_VAR MBEDTLS_VERSION)
 
 
