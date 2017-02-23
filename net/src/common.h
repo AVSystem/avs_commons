@@ -122,4 +122,18 @@ static int set_opt_ssl(avs_net_abstract_socket_t *ssl_socket_,
     return retval;
 }
 
+static int system_socket_ssl(avs_net_abstract_socket_t *socket_,
+                             const void **out) {
+    ssl_socket_t *socket = (ssl_socket_t *) socket_;
+    if (socket->backend_socket) {
+        *out = avs_net_socket_get_system(socket->backend_socket);
+        socket->error_code = avs_net_socket_errno(socket->backend_socket);
+    } else {
+        *out = NULL;
+        socket->error_code = EBADF;
+    }
+    return *out ? 0 : -1;
+}
+
+
 #endif /* NET_COMMON_H */

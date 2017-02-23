@@ -592,20 +592,6 @@ static int get_opt_ssl(avs_net_abstract_socket_t *ssl_socket_,
     return retval;
 }
 
-static int system_socket_ssl(avs_net_abstract_socket_t *ssl_socket_,
-                             const void **out) {
-    ssl_socket_t *ssl_socket = (ssl_socket_t *) ssl_socket_;
-    if (ssl_socket->backend_socket) {
-        *out = avs_net_socket_get_system(ssl_socket->backend_socket);
-        ssl_socket->error_code =
-                avs_net_socket_errno(ssl_socket->backend_socket);
-    } else {
-        *out = NULL;
-        ssl_socket->error_code = EBADF;
-    }
-    return *out ? 0 : -1;
-}
-
 static void close_ssl_raw(ssl_socket_t *socket) {
     if (socket->ssl) {
         SSL_shutdown(socket->ssl);
