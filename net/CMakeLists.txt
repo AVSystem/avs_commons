@@ -24,6 +24,8 @@ if(WITH_OPENSSL)
     set(SOURCES ${SOURCES} src/openssl.c)
 elseif(WITH_MBEDTLS)
     set(SOURCES ${SOURCES} src/mbedtls.c)
+elseif(WITH_TINYDTLS)
+    set(SOURCES ${SOURCES} src/tinydtls.c)
 endif()
 
 set(PRIVATE_HEADERS
@@ -53,6 +55,8 @@ if(WITH_OPENSSL)
     avs_emit_deps(avs_net ssl crypto)
 elseif(WITH_MBEDTLS)
     avs_emit_deps(avs_net ${MBEDTLS_TARGETS})
+elseif(WITH_TINYDTLS)
+    avs_emit_deps(avs_net tinydtls)
 endif()
 
 avs_install_export(avs_net net)
