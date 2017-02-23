@@ -41,6 +41,7 @@
 #include <ifaddrs.h>
 #endif
 
+#include "compat.h"
 #include "net.h"
 
 #ifdef HAVE_VISIBILITY
@@ -109,7 +110,7 @@ typedef struct {
 AVS_STATIC_ASSERT(offsetof(sockaddr_endpoint_t, header)
                           == offsetof(avs_net_resolved_endpoint_t, size),
                   sockaddr_endpoint_size_offset);
-AVS_STATIC_ASSERT(sizeof(((sockaddr_endpoint_t) { 
+AVS_STATIC_ASSERT(sizeof(((sockaddr_endpoint_t) {
                               .header = { .size = 0 } }).header.size)
                           == sizeof(((avs_net_resolved_endpoint_t) {
                                          .size = 0 }).size),
