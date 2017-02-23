@@ -124,16 +124,6 @@ static const avs_net_socket_v_table_t ssl_vtable = {
         LOG(ERROR, "%s", ERR_error_string(ERR_get_error(), error_buffer)); \
     } while (0)
 
-static int get_socket_inner_mtu_or_zero(avs_net_abstract_socket_t *sock) {
-    avs_net_socket_opt_value_t opt_value;
-    if (avs_net_socket_get_opt(sock, AVS_NET_SOCKET_OPT_INNER_MTU,
-                               &opt_value)) {
-        return 0;
-    } else {
-        return opt_value.mtu;
-    }
-}
-
 #ifdef HAVE_DTLS
 #if OPENSSL_VERSION_NUMBER_LT(1,1,0)
 static const EVP_CIPHER *get_evp_cipher(SSL *ssl) {
@@ -499,48 +489,6 @@ static BIO *avs_bio_spawn(ssl_socket_t *socket) {
     return NULL;
 }
 #endif /* BIO_TYPE_SOURCE_SINK */
-
-static int get_opt_ssl(avs_net_abstract_socket_t *ssl_socket_,
-                       avs_net_socket_opt_key_t option_key,
-                       avs_net_socket_opt_value_t *out_option_value) {
-    ssl_socket_t *ssl_socket = (ssl_socket_t *) ssl_socket_;
-    int retval;
-    ssl_socket->error_code = 0;
-    switch (option_key) {
-    case AVS_NET_SOCKET_OPT_INNER_MTU:
-    {
-        /* getting inner MTU will fail for non-datagram sockets */
-        int mtu = get_socket_inner_mtu_or_zero(ssl_socket->backend_socket);
-        if (mtu > 0) {
-            int header, padding;
-            if (get_dtls_overhead(ssl_socket, &header, &padding)) {
-                return -1;
-            }
-            mtu -= header;
-            if (padding > 0) {
-                /* SSL padding is always present - when data is an exact
-                 * multiply of block size, a full block of padding is added;
-                 * the maximum user data we can pass is thus the maximum number
-                 * of full blocks minus one byte */
-                mtu = (mtu / padding) * padding - 1;
-            }
-        }
-        if (mtu < 0) {
-            return -1;
-        }
-        out_option_value->mtu = mtu;
-        return 0;
-    }
-    default:
-        retval = avs_net_socket_get_opt(ssl_socket->backend_socket, option_key,
-                                        out_option_value);
-    }
-    if (retval && !(ssl_socket->error_code =
-                avs_net_socket_errno(ssl_socket->backend_socket))) {
-        ssl_socket->error_code = EPROTO;
-    }
-    return retval;
-}
 
 static void close_ssl_raw(ssl_socket_t *socket) {
     if (socket->ssl) {

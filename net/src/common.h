@@ -15,6 +15,9 @@
 static int is_ssl_started(ssl_socket_t *socket);
 static int start_ssl(ssl_socket_t *socket, const char *host);
 static void close_ssl_raw(ssl_socket_t *socket);
+static int get_dtls_overhead(ssl_socket_t *socket,
+                             int *out_header,
+                             int *out_padding_size);
 
 /* avs_net_socket_v_table_t ssl handlers */
 static int decorate_ssl(avs_net_abstract_socket_t *socket,
@@ -193,5 +196,56 @@ static int local_port_ssl(avs_net_abstract_socket_t *socket_,
     return retval;
 }
 
+static int get_socket_inner_mtu_or_zero(avs_net_abstract_socket_t *sock) {
+    avs_net_socket_opt_value_t opt_value;
+    if (avs_net_socket_get_opt(sock, AVS_NET_SOCKET_OPT_INNER_MTU,
+                               &opt_value)) {
+        return 0;
+    } else {
+        return opt_value.mtu;
+    }
+}
+
+static int get_opt_ssl(avs_net_abstract_socket_t *ssl_socket_,
+                       avs_net_socket_opt_key_t option_key,
+                       avs_net_socket_opt_value_t *out_option_value) {
+    ssl_socket_t *ssl_socket = (ssl_socket_t *) ssl_socket_;
+    int retval;
+    ssl_socket->error_code = 0;
+    switch (option_key) {
+    case AVS_NET_SOCKET_OPT_INNER_MTU:
+    {
+        /* getting inner MTU will fail for non-datagram sockets */
+        int mtu = get_socket_inner_mtu_or_zero(ssl_socket->backend_socket);
+        if (mtu > 0) {
+            int header, padding;
+            if (get_dtls_overhead(ssl_socket, &header, &padding)) {
+                return -1;
+            }
+            mtu -= header;
+            if (padding > 0) {
+                /* SSL padding is always present - when data is an exact
+                 * multiply of block size, a full block of padding is added;
+                 * the maximum user data we can pass is thus the maximum number
+                 * of full blocks minus one byte */
+                mtu = (mtu / padding) * padding - 1;
+            }
+        }
+        if (mtu < 0) {
+            return -1;
+        }
+        out_option_value->mtu = mtu;
+        return 0;
+    }
+    default:
+        retval = avs_net_socket_get_opt(ssl_socket->backend_socket, option_key,
+                                        out_option_value);
+    }
+    if (retval && !(ssl_socket->error_code =
+                avs_net_socket_errno(ssl_socket->backend_socket))) {
+        ssl_socket->error_code = EPROTO;
+    }
+    return retval;
+}
 
 #endif /* NET_COMMON_H */
