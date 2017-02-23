@@ -93,8 +93,16 @@ static int create_ssl_socket(avs_net_abstract_socket_t **socket,
                              const void *socket_configuration) {
     LOG(TRACE, "create_ssl_socket(socket=%p)", (void *) socket);
 
+    if (!socket_configuration) {
+        LOG(ERROR, "SSL configuration not specified");
+        return -1;
+    }
+
     *socket = (avs_net_abstract_socket_t *) calloc(1, sizeof (ssl_socket_t));
     if (*socket) {
+        LOG(TRACE, "configure_ssl(socket=%p, configuration=%p)",
+            (void *) socket, (const void *) socket_configuration);
+
         if (initialize_ssl_socket((ssl_socket_t *) * socket, backend_type,
                                   (const avs_net_ssl_configuration_t *)
                                   socket_configuration)) {

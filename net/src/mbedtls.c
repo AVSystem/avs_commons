@@ -900,14 +900,6 @@ static int initialize_ssl_socket(ssl_socket_t *socket,
     *(const avs_net_socket_v_table_t **) (intptr_t) &socket->operations =
             &ssl_vtable;
 
-    LOG(TRACE, "configure_ssl(socket=%p, configuration=%p)",
-              (void *) socket, (const void *) configuration);
-
-    if (!configuration) {
-        LOG(WARNING, "configuration not provided");
-        return 0;
-    }
-
     socket->backend_type = backend_type;
     socket->version = configuration->version;
     socket->additional_configuration_clb =

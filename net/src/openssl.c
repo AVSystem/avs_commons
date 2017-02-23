@@ -1689,11 +1689,6 @@ static SSL_CTX *make_ssl_context(avs_net_socket_type_t backend_type,
 static int initialize_ssl_socket(ssl_socket_t *socket,
                                  avs_net_socket_type_t backend_type,
                                  const avs_net_ssl_configuration_t *configuration) {
-    if (!configuration) {
-        LOG(ERROR, "SSL configuration not specified");
-        return -1;
-    }
-
     if (avs_ssl_init()) {
         LOG(ERROR, "OpenSSL initialization error");
         return -1;
