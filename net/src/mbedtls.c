@@ -131,56 +131,6 @@ static int avs_bio_send(void *ctx, const unsigned char *buf, size_t len) {
     }
 }
 
-static int interface_name_ssl(avs_net_abstract_socket_t *ssl_socket_,
-                              avs_net_socket_interface_name_t *if_name) {
-    ssl_socket_t *ssl_socket = (ssl_socket_t *) ssl_socket_;
-    int retval;
-    WRAP_ERRNO(ssl_socket, retval,
-               avs_net_socket_interface_name(ssl_socket->backend_socket,
-                                             if_name));
-    return retval;
-}
-
-static int remote_host_ssl(avs_net_abstract_socket_t *socket_,
-                           char *out_buffer, size_t out_buffer_size) {
-    ssl_socket_t *socket = (ssl_socket_t *) socket_;
-    int retval;
-    WRAP_ERRNO(socket, retval,
-               avs_net_socket_get_remote_host(socket->backend_socket,
-                                              out_buffer, out_buffer_size));
-    return retval;
-}
-
-static int remote_hostname_ssl(avs_net_abstract_socket_t *socket_,
-                               char *out_buffer, size_t out_buffer_size) {
-    ssl_socket_t *socket = (ssl_socket_t *) socket_;
-    int retval;
-    WRAP_ERRNO(socket, retval,
-               avs_net_socket_get_remote_hostname(socket->backend_socket,
-                                                  out_buffer, out_buffer_size));
-    return retval;
-}
-
-static int remote_port_ssl(avs_net_abstract_socket_t *socket_,
-                           char *out_buffer, size_t out_buffer_size) {
-    ssl_socket_t *socket = (ssl_socket_t *) socket_;
-    int retval;
-    WRAP_ERRNO(socket, retval,
-               avs_net_socket_get_remote_port(socket->backend_socket,
-                                              out_buffer, out_buffer_size));
-    return retval;
-}
-
-static int local_port_ssl(avs_net_abstract_socket_t *socket_,
-                          char *out_buffer, size_t out_buffer_size) {
-    ssl_socket_t *socket = (ssl_socket_t *) socket_;
-    int retval;
-    WRAP_ERRNO(socket, retval,
-               avs_net_socket_get_local_port(socket->backend_socket,
-                                             out_buffer, out_buffer_size));
-    return retval;
-}
-
 static void get_dtls_overhead(ssl_socket_t *socket,
                               unsigned *out_header,
                               unsigned *out_padding_size) {
@@ -264,14 +214,6 @@ static void close_ssl_raw(ssl_socket_t *socket) {
 
     mbedtls_entropy_free(&socket->entropy);
     memset(&socket->entropy, 0, sizeof(socket->entropy));
-}
-
-static int close_ssl(avs_net_abstract_socket_t *socket_) {
-    ssl_socket_t *socket = (ssl_socket_t *) socket_;
-    LOG(TRACE, "close_ssl(socket=%p)", (void *) socket);
-    close_ssl_raw(socket);
-    socket->error_code = 0;
-    return 0;
 }
 
 static int set_min_ssl_version(mbedtls_ssl_config *config,

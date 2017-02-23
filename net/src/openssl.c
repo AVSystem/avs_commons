@@ -500,56 +500,6 @@ static BIO *avs_bio_spawn(ssl_socket_t *socket) {
 }
 #endif /* BIO_TYPE_SOURCE_SINK */
 
-static int interface_name_ssl(avs_net_abstract_socket_t *ssl_socket_,
-                              avs_net_socket_interface_name_t *if_name) {
-    ssl_socket_t *ssl_socket = (ssl_socket_t *) ssl_socket_;
-    int retval;
-    WRAP_ERRNO(ssl_socket, retval,
-               avs_net_socket_interface_name(ssl_socket->backend_socket,
-                                             if_name));
-    return retval;
-}
-
-static int remote_host_ssl(avs_net_abstract_socket_t *socket_,
-                           char *out_buffer, size_t out_buffer_size) {
-    ssl_socket_t *socket = (ssl_socket_t *) socket_;
-    int retval;
-    WRAP_ERRNO(socket, retval,
-               avs_net_socket_get_remote_host(socket->backend_socket,
-                                              out_buffer, out_buffer_size));
-    return retval;
-}
-
-static int remote_hostname_ssl(avs_net_abstract_socket_t *socket_,
-                               char *out_buffer, size_t out_buffer_size) {
-    ssl_socket_t *socket = (ssl_socket_t *) socket_;
-    int retval;
-    WRAP_ERRNO(socket, retval,
-               avs_net_socket_get_remote_hostname(socket->backend_socket,
-                                                  out_buffer, out_buffer_size));
-    return retval;
-}
-
-static int remote_port_ssl(avs_net_abstract_socket_t *socket_,
-                           char *out_buffer, size_t out_buffer_size) {
-    ssl_socket_t *socket = (ssl_socket_t *) socket_;
-    int retval;
-    WRAP_ERRNO(socket, retval,
-               avs_net_socket_get_remote_port(socket->backend_socket,
-                                              out_buffer, out_buffer_size));
-    return retval;
-}
-
-static int local_port_ssl(avs_net_abstract_socket_t *socket_,
-                          char *out_buffer, size_t out_buffer_size) {
-    ssl_socket_t *socket = (ssl_socket_t *) socket_;
-    int retval;
-    WRAP_ERRNO(socket, retval,
-               avs_net_socket_get_local_port(socket->backend_socket,
-                                             out_buffer, out_buffer_size));
-    return retval;
-}
-
 static int get_opt_ssl(avs_net_abstract_socket_t *ssl_socket_,
                        avs_net_socket_opt_key_t option_key,
                        avs_net_socket_opt_value_t *out_option_value) {
@@ -601,14 +551,6 @@ static void close_ssl_raw(ssl_socket_t *socket) {
     if (socket->backend_socket) {
         avs_net_socket_close(socket->backend_socket);
     }
-}
-
-static int close_ssl(avs_net_abstract_socket_t *socket_) {
-    ssl_socket_t *socket = (ssl_socket_t *) socket_;
-    LOG(TRACE, "close_ssl(socket=%p)", (void *) socket);
-    close_ssl_raw(socket);
-    socket->error_code = 0;
-    return 0;
 }
 
 static int verify_peer_subject_cn(ssl_socket_t *ssl_socket,
