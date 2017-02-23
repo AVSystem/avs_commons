@@ -114,6 +114,39 @@ static int connect_ssl(avs_net_abstract_socket_t *socket_,
     return result;
 }
 
+static int decorate_ssl(avs_net_abstract_socket_t *socket_,
+                        avs_net_abstract_socket_t *backend_socket) {
+    char host[NET_MAX_HOSTNAME_SIZE];
+    int result;
+    ssl_socket_t *socket = (ssl_socket_t *) socket_;
+    LOG(TRACE, "decorate_ssl(socket=%p, backend_socket=%p)",
+        (void *) socket, (void *) backend_socket);
+
+    if (is_ssl_started(socket)) {
+        LOG(ERROR, "SSL socket already connected");
+        socket->error_code = EISCONN;
+        return -1;
+    }
+    if (socket->backend_socket) {
+        avs_net_socket_cleanup(&socket->backend_socket);
+    }
+
+    WRAP_ERRNO_IMPL(socket, backend_socket, result,
+                    avs_net_socket_get_remote_hostname(backend_socket,
+                                                   host, sizeof(host)));
+    if (result) {
+        return result;
+    }
+
+    socket->backend_socket = backend_socket;
+    result = start_ssl(socket, host);
+    if (result) {
+        socket->backend_socket = NULL;
+        close_ssl_raw(socket);
+    }
+    return result;
+}
+
 static int set_opt_ssl(avs_net_abstract_socket_t *ssl_socket_,
                        avs_net_socket_opt_key_t option_key,
                        avs_net_socket_opt_value_t option_value) {

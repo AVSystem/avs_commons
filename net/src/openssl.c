@@ -616,39 +616,6 @@ static int is_ssl_started(ssl_socket_t *socket) {
     return socket->ssl != NULL;
 }
 
-static int decorate_ssl(avs_net_abstract_socket_t *socket_,
-                        avs_net_abstract_socket_t *backend_socket) {
-    char host[NET_MAX_HOSTNAME_SIZE];
-    int result;
-    ssl_socket_t *socket = (ssl_socket_t *) socket_;
-    LOG(TRACE, "decorate_ssl(socket=%p, backend_socket=%p)",
-        (void *) socket, (void *) backend_socket);
-
-    if (socket->ssl) {
-        LOG(ERROR, "SSL socket already connected");
-        socket->error_code = EISCONN;
-        return -1;
-    }
-    if (socket->backend_socket) {
-        avs_net_socket_cleanup(&socket->backend_socket);
-    }
-
-    WRAP_ERRNO_IMPL(socket, backend_socket, result,
-                    avs_net_socket_get_remote_hostname(backend_socket,
-                                                       host, sizeof(host)));
-    if (result) {
-        return result;
-    }
-
-    socket->backend_socket = backend_socket;
-    result = start_ssl(socket, host);
-    if (result) {
-        socket->backend_socket = NULL;
-        close_ssl_raw(socket);
-    }
-    return result;
-}
-
 static int password_cb(char *buf, int num, int rwflag, void *userdata) {
     if (!userdata) {
         buf[0] = '\0';
