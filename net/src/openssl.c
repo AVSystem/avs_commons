@@ -1123,18 +1123,6 @@ static int load_client_private_key(ssl_socket_t *socket,
     }
 }
 
-static int is_client_cert_empty(const avs_net_client_cert_t *cert) {
-    switch (cert->impl.source) {
-    case AVS_NET_DATA_SOURCE_FILE:
-        return !cert->impl.data.file.path;
-    case AVS_NET_DATA_SOURCE_BUFFER:
-        return !cert->impl.data.cert.data;
-    default:
-        assert(0 && "invalid enum value");
-        return 1;
-    }
-}
-
 static int load_client_cert_from_file(ssl_socket_t *socket,
                                       const avs_net_client_cert_t *cert) {
     switch (cert->impl.format) {

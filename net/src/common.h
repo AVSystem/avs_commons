@@ -307,4 +307,16 @@ static int get_opt_ssl(avs_net_abstract_socket_t *ssl_socket_,
     return retval;
 }
 
+static int is_client_cert_empty(const avs_net_client_cert_t *cert) {
+    switch (cert->impl.source) {
+    case AVS_NET_DATA_SOURCE_FILE:
+        return !cert->impl.data.file.path;
+    case AVS_NET_DATA_SOURCE_BUFFER:
+        return !cert->impl.data.cert.data;
+    default:
+        assert(0 && "invalid enum value");
+        return 1;
+    }
+}
+
 #endif /* NET_COMMON_H */
