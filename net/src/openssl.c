@@ -1,7 +1,7 @@
 /*
  * AVSystem Commons Library
  *
- * Copyright (C) 2016 AVSystem <http://www.avsystem.com/>
+ * Copyright (C) 2017 AVSystem <http://www.avsystem.com/>
  *
  * This code is free and open source software licensed under the MIT License.
  * See the LICENSE file for details.

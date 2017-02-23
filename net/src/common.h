@@ -10,7 +10,6 @@
 #ifndef NET_COMMON_H
 #define NET_COMMON_H
 
-
 /* Required non-common static method implementations */
 static int is_ssl_started(ssl_socket_t *socket);
 static int start_ssl(ssl_socket_t *socket, const char *host);
