@@ -84,6 +84,32 @@ static int ensure_have_backend_socket(ssl_socket_t *socket) {
     return 0;
 }
 
+static int initialize_ssl_socket(ssl_socket_t *socket,
+                                 avs_net_socket_type_t backend_type,
+                                 const avs_net_ssl_configuration_t *configuration);
+
+static int create_ssl_socket(avs_net_abstract_socket_t **socket,
+                             avs_net_socket_type_t backend_type,
+                             const void *socket_configuration) {
+    LOG(TRACE, "create_ssl_socket(socket=%p)", (void *) socket);
+
+    *socket = (avs_net_abstract_socket_t *) calloc(1, sizeof (ssl_socket_t));
+    if (*socket) {
+        if (initialize_ssl_socket((ssl_socket_t *) * socket, backend_type,
+                                  (const avs_net_ssl_configuration_t *)
+                                  socket_configuration)) {
+            LOG(ERROR, "socket initialization error");
+            avs_net_socket_cleanup(socket);
+            return -1;
+        } else {
+            return 0;
+        }
+    } else {
+        LOG(ERROR, "memory allocation error");
+        return -1;
+    }
+}
+
 static int connect_ssl(avs_net_abstract_socket_t *socket_,
                        const char *host,
                        const char *port) {
