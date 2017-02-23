@@ -690,11 +690,15 @@ static int shutdown_ssl(avs_net_abstract_socket_t *socket_) {
     return retval;
 }
 
-static void update_error_code(ssl_socket_t *socket, int mbedtls_result) {
+static void update_send_or_recv_error_code(ssl_socket_t *socket,
+                                           int mbedtls_result) {
     if (!socket->error_code
             && (mbedtls_result == MBEDTLS_ERR_NET_RECV_FAILED
                     || mbedtls_result == MBEDTLS_ERR_NET_SEND_FAILED)) {
         socket->error_code = avs_net_socket_errno(socket->backend_socket);
+    }
+    if (!socket->error_code) {
+        socket->error_code = errno;
     }
     if (!socket->error_code) {
         socket->error_code = EPROTO;
@@ -711,6 +715,7 @@ static int send_ssl(avs_net_abstract_socket_t *socket_,
         (void *) socket, buffer, (unsigned long) buffer_length);
 
     while (bytes_sent < buffer_length) {
+        errno = 0;
         result = mbedtls_ssl_write(
                 &socket->context,
                 ((const unsigned char *) buffer) + bytes_sent,
@@ -730,7 +735,7 @@ static int send_ssl(avs_net_abstract_socket_t *socket_,
     if (bytes_sent < buffer_length) {
         LOG(ERROR, "send failed (%lu/%lu): %d",
             bytes_sent, buffer_length, result);
-        update_error_code(socket, result);
+        update_send_or_recv_error_code(socket, result);
         return -1;
     }
     socket->error_code = 0;
@@ -747,19 +752,18 @@ static int receive_ssl(avs_net_abstract_socket_t *socket_,
     LOG(TRACE, "receive_ssl(socket=%p, buffer=%p, buffer_length=%lu)",
         (void *) socket, buffer, (unsigned long) buffer_length);
 
-    while ((result = mbedtls_ssl_read(&socket->context,
-                                      (unsigned char *) buffer,
-                                      buffer_length)) < 0) {
-        if (result != MBEDTLS_ERR_SSL_WANT_READ
-                && result != MBEDTLS_ERR_SSL_WANT_WRITE) {
-            break;
-        }
+    while (result < 0
+            && result != MBEDTLS_ERR_SSL_WANT_READ
+            && result != MBEDTLS_ERR_SSL_WANT_WRITE) {
+        errno = 0;
+        result = mbedtls_ssl_read(&socket->context,
+                                  (unsigned char *) buffer, buffer_length);
     }
     if (result < 0) {
         *out_bytes_received = 0;
         if (result != MBEDTLS_ERR_SSL_PEER_CLOSE_NOTIFY) {
             LOG(ERROR, "receive failed: %d", result);
-            update_error_code(socket, result);
+            update_send_or_recv_error_code(socket, result);
             return -1;
         }
     } else {

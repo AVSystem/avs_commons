@@ -1629,7 +1629,7 @@ static int shutdown_ssl(avs_net_abstract_socket_t *socket_) {
     return retval;
 }
 
-static void update_error_code(ssl_socket_t *socket) {
+static void update_send_or_recv_error_code(ssl_socket_t *socket) {
     (void) (socket->error_code
             || (socket->error_code =
                     avs_net_socket_errno(socket->backend_socket))
@@ -1649,7 +1649,7 @@ static int send_ssl(avs_net_abstract_socket_t *socket_,
     errno = 0;
     result = SSL_write(socket->ssl, buffer, (int) buffer_length);
     if (result < 0 || (size_t) result < buffer_length) {
-        update_error_code(socket);
+        update_send_or_recv_error_code(socket);
         LOG(ERROR, "write failed");
         return -1;
     } else {
@@ -1671,7 +1671,7 @@ static int receive_ssl(avs_net_abstract_socket_t *socket_,
     result = SSL_read(socket->ssl, buffer, (int) buffer_length);
     VALGRIND_MAKE_MEM_DEFINED_IF_ADDRESSABLE(&result, sizeof(result));
     if (result < 0) {
-        update_error_code(socket);
+        update_send_or_recv_error_code(socket);
         *out = 0;
         return result;
     } else {
