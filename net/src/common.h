@@ -18,6 +18,9 @@ static void close_ssl_raw(ssl_socket_t *socket);
 static int get_dtls_overhead(ssl_socket_t *socket,
                              int *out_header,
                              int *out_padding_size);
+static int initialize_ssl_socket(ssl_socket_t *socket,
+                                 avs_net_socket_type_t backend_type,
+                                 const avs_net_ssl_configuration_t *configuration);
 
 /* avs_net_socket_v_table_t ssl handlers */
 static int decorate_ssl(avs_net_abstract_socket_t *socket,
@@ -83,10 +86,6 @@ static int ensure_have_backend_socket(ssl_socket_t *socket) {
     }
     return 0;
 }
-
-static int initialize_ssl_socket(ssl_socket_t *socket,
-                                 avs_net_socket_type_t backend_type,
-                                 const avs_net_ssl_configuration_t *configuration);
 
 static int create_ssl_socket(avs_net_abstract_socket_t **socket,
                              avs_net_socket_type_t backend_type,
@@ -181,17 +180,6 @@ static int decorate_ssl(avs_net_abstract_socket_t *socket_,
     return result;
 }
 
-static int set_opt_ssl(avs_net_abstract_socket_t *ssl_socket_,
-                       avs_net_socket_opt_key_t option_key,
-                       avs_net_socket_opt_value_t option_value) {
-    ssl_socket_t *ssl_socket = (ssl_socket_t *) ssl_socket_;
-    int retval;
-    WRAP_ERRNO(ssl_socket, retval,
-               avs_net_socket_set_opt(ssl_socket->backend_socket, option_key,
-                                      option_value));
-    return retval;
-}
-
 static int system_socket_ssl(avs_net_abstract_socket_t *socket_,
                              const void **out) {
     ssl_socket_t *socket = (ssl_socket_t *) socket_;
@@ -271,6 +259,17 @@ static int get_socket_inner_mtu_or_zero(avs_net_abstract_socket_t *sock) {
     } else {
         return opt_value.mtu;
     }
+}
+
+static int set_opt_ssl(avs_net_abstract_socket_t *ssl_socket_,
+                       avs_net_socket_opt_key_t option_key,
+                       avs_net_socket_opt_value_t option_value) {
+    ssl_socket_t *ssl_socket = (ssl_socket_t *) ssl_socket_;
+    int retval;
+    WRAP_ERRNO(ssl_socket, retval,
+               avs_net_socket_set_opt(ssl_socket->backend_socket, option_key,
+                                      option_value));
+    return retval;
 }
 
 static int get_opt_ssl(avs_net_abstract_socket_t *ssl_socket_,
