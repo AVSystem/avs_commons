@@ -319,4 +319,14 @@ static int is_client_cert_empty(const avs_net_client_cert_t *cert) {
     }
 }
 
+int _avs_net_create_ssl_socket(avs_net_abstract_socket_t **socket,
+                               const void *socket_configuration) {
+    return create_ssl_socket(socket, AVS_NET_TCP_SOCKET, socket_configuration);
+}
+
+int _avs_net_create_dtls_socket(avs_net_abstract_socket_t **socket,
+                                const void *socket_configuration) {
+    return create_ssl_socket(socket, AVS_NET_UDP_SOCKET, socket_configuration);
+}
+
 #endif /* NET_COMMON_H */
