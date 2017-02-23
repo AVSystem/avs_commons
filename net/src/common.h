@@ -21,9 +21,7 @@ static int initialize_ssl_socket(ssl_socket_t *socket,
                                  avs_net_socket_type_t backend_type,
                                  const avs_net_ssl_configuration_t *configuration);
 
-/* avs_net_socket_v_table_t ssl handlers */
-static int decorate_ssl(avs_net_abstract_socket_t *socket,
-                        avs_net_abstract_socket_t *backend_socket);
+/* avs_net_socket_v_table_t ssl handlers implemented differently per backend */
 static int send_ssl(avs_net_abstract_socket_t *ssl_socket,
                     const void *buffer,
                     size_t buffer_length);
@@ -35,8 +33,12 @@ static int bind_ssl(avs_net_abstract_socket_t *socket,
                     const char *localaddr,
                     const char *port);
 static int shutdown_ssl(avs_net_abstract_socket_t *socket);
-static int close_ssl(avs_net_abstract_socket_t *ssl_socket);
 static int cleanup_ssl(avs_net_abstract_socket_t **ssl_socket);
+
+/* avs_net_socket_v_table_t ssl handlers implemented in this file */
+static int decorate_ssl(avs_net_abstract_socket_t *socket,
+                        avs_net_abstract_socket_t *backend_socket);
+static int close_ssl(avs_net_abstract_socket_t *ssl_socket);
 static int system_socket_ssl(avs_net_abstract_socket_t *ssl_socket,
                              const void **out);
 static int interface_name_ssl(avs_net_abstract_socket_t *ssl_socket,
@@ -248,6 +250,10 @@ static int local_port_ssl(avs_net_abstract_socket_t *socket_,
                avs_net_socket_get_local_port(socket->backend_socket,
                                              out_buffer, out_buffer_size));
     return retval;
+}
+
+static int errno_ssl(avs_net_abstract_socket_t *net_socket) {
+    return ((ssl_socket_t *) net_socket)->error_code;
 }
 
 static int get_socket_inner_mtu_or_zero(avs_net_abstract_socket_t *sock) {

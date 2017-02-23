@@ -1481,10 +1481,6 @@ static int receive_ssl(avs_net_abstract_socket_t *socket_,
     }
 }
 
-static int errno_ssl(avs_net_abstract_socket_t *net_socket) {
-    return ((ssl_socket_t *) net_socket)->error_code;
-}
-
 static int cleanup_ssl(avs_net_abstract_socket_t **socket_) {
     ssl_socket_t **socket = (ssl_socket_t **) socket_;
     LOG(TRACE, "cleanup_ssl(*socket=%p)", (void *) *socket);

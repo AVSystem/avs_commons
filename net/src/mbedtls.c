@@ -547,10 +547,6 @@ static int receive_ssl(avs_net_abstract_socket_t *socket_,
     return 0;
 }
 
-static int errno_ssl(avs_net_abstract_socket_t *net_socket) {
-    return ((ssl_socket_t *) net_socket)->error_code;
-}
-
 static void cleanup_security_cert(ssl_socket_certs_t *certs) {
     if (certs->ca_cert) {
         mbedtls_x509_crt_free(certs->ca_cert);
