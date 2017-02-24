@@ -93,7 +93,8 @@ typedef struct {
 #endif
 } ssl_socket_t;
 
-#include "common.h"
+#define NET_SSL_COMMON_PRIVATE_HEADER
+#include "ssl_common.h"
 
 static const avs_net_socket_v_table_t ssl_vtable = {
     connect_ssl,

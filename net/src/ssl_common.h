@@ -7,8 +7,12 @@
  * See the LICENSE file for details.
  */
 
-#ifndef NET_COMMON_H
-#define NET_COMMON_H
+#ifndef NET_SSL_COMMON_H
+#define NET_SSL_COMMON_H
+
+#ifndef NET_SSL_COMMON_PRIVATE_HEADER
+#error "This header is not meant to be included from outside"
+#endif
 
 /* Required non-common static method implementations */
 static int is_ssl_started(ssl_socket_t *socket);
@@ -341,4 +345,4 @@ int _avs_net_create_dtls_socket(avs_net_abstract_socket_t **socket,
     return create_ssl_socket(socket, AVS_NET_UDP_SOCKET, socket_configuration);
 }
 
-#endif /* NET_COMMON_H */
+#endif /* NET_SSL_COMMON_H */
