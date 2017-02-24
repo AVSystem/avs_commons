@@ -27,6 +27,7 @@ elseif(WITH_MBEDTLS)
 endif()
 
 set(PRIVATE_HEADERS
+    src/compat.h
     src/net.h
     src/lwip_compat.h)
 

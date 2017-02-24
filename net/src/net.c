@@ -41,6 +41,7 @@
 #include <ifaddrs.h>
 #endif
 
+#include "compat.h"
 #include "net.h"
 
 #ifdef HAVE_VISIBILITY
@@ -109,7 +110,7 @@ typedef struct {
 AVS_STATIC_ASSERT(offsetof(sockaddr_endpoint_t, header)
                           == offsetof(avs_net_resolved_endpoint_t, size),
                   sockaddr_endpoint_size_offset);
-AVS_STATIC_ASSERT(sizeof(((sockaddr_endpoint_t) { 
+AVS_STATIC_ASSERT(sizeof(((sockaddr_endpoint_t) {
                               .header = { .size = 0 } }).header.size)
                           == sizeof(((avs_net_resolved_endpoint_t) {
                                          .size = 0 }).size),
@@ -988,21 +989,17 @@ static int try_bind(avs_net_socket_t *net_socket, avs_net_af_t family,
         net_socket->error_code = EINVAL;
         return -1;
     }
-    if (localaddr || port) {
-        if (!(info = avs_net_addrinfo_resolve_ex(
-                        net_socket->type, family, localaddr, port,
-                        AVS_NET_ADDRINFO_RESOLVE_F_PASSIVE, NULL))
-                || (retval = avs_net_addrinfo_next(info, &address.api_ep))) {
-            LOG(WARNING, "Cannot get %s address info for %s",
-                get_af_name(family), localaddr ? localaddr : "(null)");
-            net_socket->error_code = EINVAL;
-            goto bind_net_end;
-        }
-    } else {
-        memset(&address, 0, sizeof(address));
-        address.sockaddr_ep.header.size = sizeof(address.api_ep.data);
-        address.sockaddr_ep.addr.sa_family =
-                (sa_family_t) _avs_net_get_af(family);
+    if (!port) {
+        port = "0";
+    }
+    if (!(info = avs_net_addrinfo_resolve_ex(
+                    net_socket->type, family, localaddr, port,
+                    AVS_NET_ADDRINFO_RESOLVE_F_PASSIVE, NULL))
+            || (retval = avs_net_addrinfo_next(info, &address.api_ep))) {
+        LOG(WARNING, "Cannot get %s address info for %s",
+            get_af_name(family), localaddr ? localaddr : "(null)");
+        net_socket->error_code = EINVAL;
+        goto bind_net_end;
     }
     net_socket->state = AVS_NET_SOCKET_STATE_LISTENING;
     retval = create_listening_socket(net_socket, &address.sockaddr_ep.addr,

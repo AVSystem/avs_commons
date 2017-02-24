@@ -132,7 +132,7 @@ endmacro()
 avs_find_library("
     find_package(OpenSSL)
     if(OPENSSL_FOUND)
-        include_directories(\\\${OPENSSL_INCLUDE_DIRS})
+        include_directories(\\\${OPENSSL_INCLUDE_DIR})
         add_library(ssl UNKNOWN IMPORTED)
         add_library(crypto UNKNOWN IMPORTED)
         set_property(TARGET ssl PROPERTY IMPORTED_LOCATION \\\${OPENSSL_SSL_LIBRARY})
@@ -173,8 +173,10 @@ if(CMAKE_C_COMPILE_OPTIONS_PIC)
 endif()
 
 # -fvisibility, #pragma GCC visibility
-file(WRITE ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp/visibility.c "#pragma GCC visibility push(default)\nint f();\n#pragma GCC visibility push(hidden)\nint f() { return 0; }\n#pragma GCC visibility pop\nint main() { return f(); }\n\n")
-try_compile(HAVE_VISIBILITY ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp/visibility.c COMPILE_DEFINITIONS -Wall -Wextra -Werror -fvisibility=default)
+if(NOT DEFINED HAVE_VISIBILITY)
+    file(WRITE ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp/visibility.c "#pragma GCC visibility push(default)\nint f();\n#pragma GCC visibility push(hidden)\nint f() { return 0; }\n#pragma GCC visibility pop\nint main() { return f(); }\n\n")
+    try_compile(HAVE_VISIBILITY ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp/visibility.c COMPILE_DEFINITIONS -Wall -Wextra -Werror -fvisibility=default)
+endif()
 
 include(CheckIncludeFiles)
 check_include_files("net/if.h" AVS_HAS_NET_IF_H)
