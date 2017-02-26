@@ -369,6 +369,17 @@ typedef struct {
      * IPv4 address.
      */
     avs_net_af_t address_family;
+
+    /**
+     * Specifies a forced value for the MTU to use when communicating over the
+     * socket.
+     *
+     * If set to a positive value, calls to @ref avs_net_socket_get_opt with
+     * <c>AVS_NET_SOCKET_OPT_MTU</c> key will always return this forced value.
+     * Likewise, <c>AVS_NET_SOCKET_OPT_INNER_MTU</c> will return this value
+     * minus IP and UDP header sizes.
+     */
+    int force_mtu;
 } avs_net_socket_configuration_t;
 
 /**
