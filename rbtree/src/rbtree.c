@@ -113,7 +113,7 @@ static AVS_RBTREE_ELEM(void) rb_subtree_clone(AVS_RBTREE_ELEM(void) node,
 AVS_RBTREE(void) avs_rbtree_simple_clone__(AVS_RBTREE_CONST(void) tree,
                                            size_t elem_size) {
     assert(tree);
-    AVS_RBTREE(void) result = avs_rbtree_new__(_AVS_RB_TREE_CONST(tree)->cmp);
+    AVS_RBTREE(void) result = avs_rbtree_new__(_AVS_RB_TREE(tree)->cmp);
     if (result && *tree) {
         *result = rb_subtree_clone((AVS_RBTREE_ELEM(void)) (intptr_t) *tree,
                                    NULL, elem_size);
@@ -129,7 +129,7 @@ AVS_RBTREE(void) avs_rbtree_simple_clone__(AVS_RBTREE_CONST(void) tree,
 size_t avs_rbtree_size__(AVS_RBTREE_CONST(void) tree) {
     assert(!rb_is_cleanup_in_progress(tree)
            && "avs_rbtree_size__ called while tree deletion in progress");
-    return _AVS_RB_TREE_CONST(tree)->size;
+    return _AVS_RB_TREE(tree)->size;
 }
 
 AVS_RBTREE_ELEM(void) avs_rbtree_elem_new_buffer__(size_t elem_size) {
@@ -189,7 +189,7 @@ AVS_RBTREE_ELEM(void) avs_rbtree_lower_bound__(AVS_RBTREE_CONST(void) tree,
     result = NULL;
 
     while (curr) {
-        if (_AVS_RB_TREE_CONST(tree)->cmp(value, curr) <= 0) {
+        if (_AVS_RB_TREE(tree)->cmp(value, curr) <= 0) {
             result = curr;
             curr = _AVS_RB_LEFT(curr);
         } else {
@@ -214,7 +214,7 @@ AVS_RBTREE_ELEM(void) avs_rbtree_upper_bound__(AVS_RBTREE_CONST(void) tree,
     result = NULL;
 
     while (curr) {
-        if (_AVS_RB_TREE_CONST(tree)->cmp(value, curr) < 0) {
+        if (_AVS_RB_TREE(tree)->cmp(value, curr) < 0) {
             result = curr;
             curr = _AVS_RB_LEFT(curr);
         } else {

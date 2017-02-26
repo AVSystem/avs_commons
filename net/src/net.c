@@ -428,6 +428,7 @@ static int configure_socket(avs_net_socket_t *net_socket) {
 #endif /* WITH_IPV6 */
 
         default:
+            (void) value;
             net_socket->error_code = EINVAL;
             return -1;
         }
@@ -1267,7 +1268,7 @@ static int get_mtu(avs_net_socket_t *net_socket, int *out_mtu) {
         return 0;
     }
 
-    int mtu, retval;
+    int mtu = -1, retval = -1;
     socklen_t dummy = sizeof(mtu);
     switch (get_socket_family(net_socket->socket)) {
 #if defined(WITH_IPV4) && defined(IP_MTU)
@@ -1289,6 +1290,7 @@ static int get_mtu(avs_net_socket_t *net_socket, int *out_mtu) {
 #endif /* defined(WITH_IPV6) && defined(IPV6_MTU) */
 
     default:
+        (void) dummy;
         net_socket->error_code = EINVAL;
         retval = -1;
     }
