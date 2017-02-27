@@ -38,8 +38,6 @@ struct rb_tree {
 
 #define _AVS_RB_TREE(ptr) \
     AVS_CONTAINER_OF((ptr), struct rb_tree, root)
-#define _AVS_RB_TREE_CONST(ptr) \
-    AVS_CONTAINER_OF_CONST((ptr), const struct rb_tree, root)
 
 #define _AVS_RB_ALLOC(size) calloc(1, size)
 #define _AVS_RB_DEALLOC(ptr) free(ptr)
