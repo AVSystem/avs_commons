@@ -893,11 +893,14 @@ pkcs12_unpacked_new_from_file(const char *pkcs12_file,
     if (fseek(f, 0L, SEEK_END)) {
         goto cleanup;
     }
-    size_t length = (size_t) ftell(f);
-    if (fseek(f, 0L, SEEK_SET)) {
+
+    long length_signed = ftell(f);
+    if (length_signed < 0
+            || fseek(f, 0L, SEEK_SET)) {
         goto cleanup;
     }
 
+    size_t length = (size_t) length_signed;
     if (!(pkcs12_data = malloc(length))
             || fread(pkcs12_data, 1, length, f) != length) {
         goto cleanup;
