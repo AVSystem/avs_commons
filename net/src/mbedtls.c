@@ -131,8 +131,11 @@ static int avs_bio_recv(void *ctx, unsigned char *buf, size_t len,
     size_t read_bytes;
     int result;
     socket->error_code = 0;
-    avs_net_socket_get_opt(socket->backend_socket,
-                           AVS_NET_SOCKET_OPT_RECV_TIMEOUT, &orig_timeout);
+    if (avs_net_socket_get_opt(socket->backend_socket,
+                               AVS_NET_SOCKET_OPT_RECV_TIMEOUT,
+                               &orig_timeout)) {
+        return MBEDTLS_ERR_NET_RECV_FAILED;
+    }
     new_timeout = orig_timeout;
     if (timeout_ms) {
         new_timeout.recv_timeout = (avs_net_timeout_t) timeout_ms;
