@@ -1564,6 +1564,11 @@ static int configure_ssl(ssl_socket_t *socket,
     LOG(TRACE, "configure_ssl(socket=%p, configuration=%p)",
         (void *) socket, (const void *) configuration);
 
+    if (!configuration) {
+        LOG(WARNING, "configuration not provided");
+        return 0;
+    }
+
     socket->backend_configuration = configuration->backend_configuration;
     if (!socket->backend_configuration.preferred_endpoint) {
         socket->backend_configuration.preferred_endpoint =
@@ -1579,11 +1584,6 @@ static int configure_ssl(ssl_socket_t *socket,
         return -1;
     }
 #endif /* WITH_OPENSSL_CUSTOM_CIPHERS */
-
-    if (!configuration) {
-        LOG(WARNING, "configuration not provided");
-        return 0;
-    }
 
     switch (configuration->security.mode) {
     case AVS_NET_SECURITY_PSK:
