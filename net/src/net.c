@@ -28,6 +28,7 @@
 #   include <sys/socket.h>
 #   include <sys/types.h>
 #   include <arpa/inet.h>
+#   include <netinet/in.h>
 #endif
 
 #include <assert.h>
@@ -1261,8 +1262,8 @@ static int local_port_net(avs_net_abstract_socket_t *socket,
 }
 
 static int get_mtu(avs_net_socket_t *net_socket, int *out_mtu) {
-    if (net_socket->configuration.force_mtu > 0) {
-        *out_mtu = net_socket->configuration.force_mtu;
+    if (net_socket->configuration.forced_mtu > 0) {
+        *out_mtu = net_socket->configuration.forced_mtu;
         return 0;
     }
 

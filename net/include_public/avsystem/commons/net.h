@@ -379,7 +379,7 @@ typedef struct {
      * Likewise, <c>AVS_NET_SOCKET_OPT_INNER_MTU</c> will return this value
      * minus IP and UDP header sizes.
      */
-    int force_mtu;
+    int forced_mtu;
 } avs_net_socket_configuration_t;
 
 /**
