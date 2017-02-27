@@ -283,13 +283,14 @@ static int get_dtls_overhead(ssl_socket_t *socket,
 #endif
 
 static int avs_bio_write(BIO *bio, const char *data, int size) {
+    ssl_socket_t *sock = (ssl_socket_t *) BIO_get_data(bio);
+    sock->error_code = 0;
     if (!data || size < 0) {
         return 0;
     }
     BIO_clear_retry_flags(bio);
-    if (avs_net_socket_send(
-            ((ssl_socket_t *) BIO_get_data(bio))->backend_socket,
-            data, (size_t) size)) {
+    if (avs_net_socket_send(sock->backend_socket, data, (size_t) size)) {
+        sock->error_code = avs_net_socket_errno(sock->backend_socket);
         return -1;
     } else {
         return size;
@@ -333,6 +334,7 @@ static int avs_bio_read(BIO *bio, char *buffer, int size) {
     avs_net_timeout_t prev_timeout = -1;
     size_t read_bytes;
     int result;
+    sock->error_code = 0;
     if (!buffer || size < 0) {
         return 0;
     }
@@ -343,6 +345,7 @@ static int avs_bio_read(BIO *bio, char *buffer, int size) {
     if (avs_net_socket_receive(sock->backend_socket,
                                &read_bytes, buffer, (size_t) size)) {
         result = -1;
+        sock->error_code = avs_net_socket_errno(sock->backend_socket);
     } else {
         result = (int) read_bytes;
     }
@@ -714,7 +717,9 @@ static int start_ssl(ssl_socket_t *socket, const char *host) {
             LOG(ERROR, "SSL handshake failed.");
             log_openssl_error();
             LOG(TRACE, "handshake_result = %d", handshake_result);
-            socket->error_code = EPROTO;
+            if (!socket->error_code) {
+                socket->error_code = EPROTO;
+            }
             return -1;
         }
     }
@@ -1624,6 +1629,14 @@ static int shutdown_ssl(avs_net_abstract_socket_t *socket_) {
     return retval;
 }
 
+static void update_send_or_recv_error_code(ssl_socket_t *socket) {
+    (void) (socket->error_code
+            || (socket->error_code =
+                    avs_net_socket_errno(socket->backend_socket))
+            || (socket->error_code = errno)
+            || (socket->error_code = EPROTO));
+}
+
 static int send_ssl(avs_net_abstract_socket_t *socket_,
                     const void *buffer,
                     size_t buffer_length) {
@@ -1636,10 +1649,7 @@ static int send_ssl(avs_net_abstract_socket_t *socket_,
     errno = 0;
     result = SSL_write(socket->ssl, buffer, (int) buffer_length);
     if (result < 0 || (size_t) result < buffer_length) {
-        (void) ((socket->error_code =
-                        avs_net_socket_errno(socket->backend_socket))
-                || (socket->error_code = errno)
-                || (socket->error_code = EPROTO));
+        update_send_or_recv_error_code(socket);
         LOG(ERROR, "write failed");
         return -1;
     } else {
@@ -1661,10 +1671,7 @@ static int receive_ssl(avs_net_abstract_socket_t *socket_,
     result = SSL_read(socket->ssl, buffer, (int) buffer_length);
     VALGRIND_MAKE_MEM_DEFINED_IF_ADDRESSABLE(&result, sizeof(result));
     if (result < 0) {
-        (void) ((socket->error_code =
-                        avs_net_socket_errno(socket->backend_socket))
-                || (socket->error_code = errno)
-                || (socket->error_code = EPROTO));
+        update_send_or_recv_error_code(socket);
         *out = 0;
         return result;
     } else {
