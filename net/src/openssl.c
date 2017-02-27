@@ -305,7 +305,9 @@ static int64_t current_time_ms(void) {
 
 static avs_net_timeout_t get_socket_timeout(avs_net_abstract_socket_t *sock) {
     avs_net_socket_opt_value_t opt_value;
-    avs_net_socket_get_opt(sock, AVS_NET_SOCKET_OPT_RECV_TIMEOUT, &opt_value);
+    if (avs_net_socket_get_opt(sock, AVS_NET_SOCKET_OPT_RECV_TIMEOUT, &opt_value)) {
+        return 0;
+    }
     return opt_value.recv_timeout;
 }
 
