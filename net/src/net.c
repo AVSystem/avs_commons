@@ -485,8 +485,10 @@ static int connect_with_timeout(int sockfd,
     if (fcntl(sockfd, F_SETFL, O_NONBLOCK) == -1) {
         return -1;
     }
-    connect(sockfd, &endpoint->sockaddr_ep.addr,
-            endpoint->sockaddr_ep.header.size);
+    if (connect(sockfd, &endpoint->sockaddr_ep.addr,
+                endpoint->sockaddr_ep.header.size) == -1) {
+        return -1;
+    }
     if (!wait_until_ready(sockfd, NET_CONNECT_TIMEOUT, 1, 1, is_stream)) {
         errno = ETIMEDOUT;
         return -1;
