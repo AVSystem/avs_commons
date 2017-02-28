@@ -43,7 +43,8 @@
 
 #cmakedefine WITH_OPENSSL
 #cmakedefine WITH_MBEDTLS
-#if defined(WITH_OPENSSL) || defined(WITH_MBEDTLS)
+#cmakedefine WITH_TINYDTLS
+#if defined(WITH_OPENSSL) || defined(WITH_MBEDTLS) || defined(WITH_TINYDTLS)
 #define WITH_SSL
 #endif
 
