@@ -150,10 +150,18 @@ avs_find_library("
 " ${MBEDTLS_TARGETS})
 set(MBEDTLS_INCLUDE_DIRS "" CACHE PATH "mbed TLS include directory")
 
-# SSL
-option(WITH_OPENSSL "Enable OpenSSL" ON)
-option(WITH_MBEDTLS "Enable mbed TLS" OFF)
+# tinyDTLS
+avs_find_library("
+find_library(TINYDTLS_FOUND tinydtls)
+    set(TINYDTLS_INCLUDE_DIR /usr/include/tinydtls)
+" tinydtls)
 
+# SSL
+option(WITH_OPENSSL "Enable OpenSSL" OFF)
+option(WITH_MBEDTLS "Enable mbed TLS" OFF)
+option(WITH_TINYDTLS "Enable tinyDTLS" ON)
+
+# FIXME: mutually exclusive options
 if(WITH_OPENSSL AND WITH_MBEDTLS)
     message(FATAL_ERROR "Only one SSL/TLS library can be enabled at the same time")
 endif()
@@ -355,6 +363,14 @@ if(WITH_AVS_NET)
         separate_arguments(MBEDTLS_INCLUDE_DIRS)
         if(MBEDTLS_INCLUDE_DIRS)
             include_directories(${MBEDTLS_INCLUDE_DIRS})
+        endif()
+    elseif(WITH_TINYDTLS)
+        if (NOT TINYDTLS_FOUND)
+            message(FATAL_ERROR "tinyDTLS libraries not found")
+        endif()
+        separate_arguments(TINYDTLS_INCLUDE_DIRS)
+        if(TINYDTLS_INCLUDE_DIRS)
+            include_directories(${TINYDTLS_INCLUDE_DIRS})
         endif()
     endif()
 
