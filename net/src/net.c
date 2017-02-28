@@ -485,8 +485,10 @@ static int connect_with_timeout(int sockfd,
     if (fcntl(sockfd, F_SETFL, O_NONBLOCK) == -1) {
         return -1;
     }
-    connect(sockfd, &endpoint->sockaddr_ep.addr,
-            endpoint->sockaddr_ep.header.size);
+    if (connect(sockfd, &endpoint->sockaddr_ep.addr,
+                endpoint->sockaddr_ep.header.size) == -1) {
+        return -1;
+    }
     if (!wait_until_ready(sockfd, NET_CONNECT_TIMEOUT, 1, 1, is_stream)) {
         errno = ETIMEDOUT;
         return -1;
@@ -1227,16 +1229,19 @@ int avs_net_local_address_for_target_host(const char *target_host,
         int test_socket = socket(address.sockaddr_ep.addr.sa_family, SOCK_DGRAM,
                                  0);
 
-        if (test_socket >= 0
-                && !connect_with_timeout(test_socket, &address, 0)) {
-            sockaddr_union_t addr;
-            socklen_t addrlen = sizeof(addr);
+        if (test_socket >= 0) {
+            if (!connect_with_timeout(test_socket, &address, 0)) {
+                sockaddr_union_t addr;
+                socklen_t addrlen = sizeof(addr);
 
-            if (!getsockname(test_socket, &addr.addr, &addrlen)) {
-                result = get_string_ip(&addr, address_buffer, buffer_size);
+                if (!getsockname(test_socket, &addr.addr, &addrlen)) {
+                    result = get_string_ip(&addr, address_buffer, buffer_size);
+                }
             }
+
+            close(test_socket);
         }
-        close(test_socket);
+
         if (!result) {
             break;
         }

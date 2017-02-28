@@ -361,7 +361,8 @@ static void compare_bytes(const void *actual,
                           bool expect_same,
                           const char *file,
                           int line) {
-    if (!memcmp(actual, expected, num_bytes) == expect_same) {
+    bool values_equal = !memcmp(actual, expected, num_bytes);
+    if (values_equal == expect_same) {
         return;
     }
 

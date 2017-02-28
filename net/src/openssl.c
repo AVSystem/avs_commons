@@ -305,7 +305,9 @@ static int64_t current_time_ms(void) {
 
 static avs_net_timeout_t get_socket_timeout(avs_net_abstract_socket_t *sock) {
     avs_net_socket_opt_value_t opt_value;
-    avs_net_socket_get_opt(sock, AVS_NET_SOCKET_OPT_RECV_TIMEOUT, &opt_value);
+    if (avs_net_socket_get_opt(sock, AVS_NET_SOCKET_OPT_RECV_TIMEOUT, &opt_value)) {
+        return 0;
+    }
     return opt_value.recv_timeout;
 }
 
@@ -893,11 +895,14 @@ pkcs12_unpacked_new_from_file(const char *pkcs12_file,
     if (fseek(f, 0L, SEEK_END)) {
         goto cleanup;
     }
-    size_t length = (size_t) ftell(f);
-    if (fseek(f, 0L, SEEK_SET)) {
+
+    long length_signed = ftell(f);
+    if (length_signed < 0
+            || fseek(f, 0L, SEEK_SET)) {
         goto cleanup;
     }
 
+    size_t length = (size_t) length_signed;
     if (!(pkcs12_data = malloc(length))
             || fread(pkcs12_data, 1, length, f) != length) {
         goto cleanup;
@@ -1564,6 +1569,11 @@ static int configure_ssl(ssl_socket_t *socket,
     LOG(TRACE, "configure_ssl(socket=%p, configuration=%p)",
         (void *) socket, (const void *) configuration);
 
+    if (!configuration) {
+        LOG(WARNING, "configuration not provided");
+        return 0;
+    }
+
     socket->backend_configuration = configuration->backend_configuration;
     if (!socket->backend_configuration.preferred_endpoint) {
         socket->backend_configuration.preferred_endpoint =
@@ -1579,11 +1589,6 @@ static int configure_ssl(ssl_socket_t *socket,
         return -1;
     }
 #endif /* WITH_OPENSSL_CUSTOM_CIPHERS */
-
-    if (!configuration) {
-        LOG(WARNING, "configuration not provided");
-        return 0;
-    }
 
     switch (configuration->security.mode) {
     case AVS_NET_SECURITY_PSK:

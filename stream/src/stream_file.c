@@ -125,7 +125,13 @@ static int stream_file_peek(avs_stream_abstract_t *stream_,
         file->error_code = ERANGE;
         return -1;
     }
+
     current = ftell(file->fp);
+    if (current < 0) {
+        file->error_code = errno;
+        return -1;
+    }
+
     if (fseek(file->fp, (long) offset, SEEK_CUR)) {
         file->error_code = EIO;
         return -1;
