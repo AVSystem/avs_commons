@@ -183,6 +183,8 @@ void avs_unit_mocksock_enable_inner_mtu_getopt(
         avs_net_abstract_socket_t *socket_,
         int inner_mtu);
 
+void avs_unit_mocksock_enable_state_getopt(avs_net_abstract_socket_t *socket);
+
 #ifdef  __cplusplus
 }
 #endif
