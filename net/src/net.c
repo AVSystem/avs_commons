@@ -486,7 +486,8 @@ static int connect_with_timeout(int sockfd,
         return -1;
     }
     if (connect(sockfd, &endpoint->sockaddr_ep.addr,
-                endpoint->sockaddr_ep.header.size) == -1) {
+                endpoint->sockaddr_ep.header.size) == -1
+            && errno != EINPROGRESS) { // see man connect for details
         return -1;
     }
     if (!wait_until_ready(sockfd, NET_CONNECT_TIMEOUT, 1, 1, is_stream)) {
