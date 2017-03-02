@@ -254,9 +254,79 @@ static const char *get_af_name(avs_net_af_t af) {
     }
 }
 
-static int remote_host_net(avs_net_abstract_socket_t *socket_,
+static int get_string_ip(const sockaddr_union_t *addr,
+                         char *buffer, size_t buffer_size) {
+    const void *addr_data;
+    socklen_t addrlen;
+
+    switch(addr->addr.sa_family) {
+#ifdef WITH_IPV4
+        case AF_INET:
+            addr_data = &addr->addr_in.sin_addr;
+            addrlen = INET_ADDRSTRLEN;
+            break;
+#endif /* WITH_IPV4 */
+
+#ifdef WITH_IPV6
+        case AF_INET6:
+            addr_data = &addr->addr_in6.sin6_addr;
+            addrlen = INET6_ADDRSTRLEN;
+            break;
+#endif /* WITH_IPV6 */
+
+        default:
+            return -1;
+    }
+
+    if (buffer_size < (size_t) addrlen) {
+        return -1;
+    } else {
+        return _avs_inet_ntop(addr->addr.sa_family, addr_data, buffer, addrlen)
+                == NULL ? -1 : 0;
+    }
+}
+
+static int get_string_port(const sockaddr_union_t *addr,
+                           char *buffer, size_t buffer_size) {
+    uint16_t port;
+    int retval;
+
+    switch(addr->addr.sa_family) {
+#ifdef WITH_IPV4
+        case AF_INET:
+            port = addr->addr_in.sin_port;
+            break;
+#endif /* WITH_IPV4 */
+
+#ifdef WITH_IPV6
+        case AF_INET6:
+            port = addr->addr_in6.sin6_port;
+            break;
+#endif /* WITH_IPV6 */
+
+        default:
+            return -1;
+    }
+
+    retval = snprintf(buffer, buffer_size, "%u", ntohs(port));
+    return (retval < 0 || (size_t) retval >= buffer_size) ? -1 : 0;
+}
+
+static int remote_host_net(avs_net_abstract_socket_t *socket,
                            char *out_buffer, size_t out_buffer_size) {
-    avs_net_socket_t *socket = (avs_net_socket_t *) socket_;
+    avs_net_socket_t *net_socket = (avs_net_socket_t *) socket;
+    sockaddr_union_t addr;
+    socklen_t addrlen = sizeof(addr);
+
+    errno = 0;
+    if (!getpeername(net_socket->socket, &addr.addr, &addrlen)) {
+        int result = get_string_ip(&addr, out_buffer, out_buffer_size);
+        net_socket->error_code = (result ? ERANGE : 0);
+        return result;
+    } else {
+        net_socket->error_code = errno;
+        return -1;
+    }
 }
 
 static int remote_hostname_net(avs_net_abstract_socket_t *socket_,
@@ -277,9 +347,21 @@ static int remote_hostname_net(avs_net_abstract_socket_t *socket_,
     }
 }
 
-static int remote_port_net(avs_net_abstract_socket_t *socket_,
+static int remote_port_net(avs_net_abstract_socket_t *socket,
                            char *out_buffer, size_t out_buffer_size) {
-    avs_net_socket_t *socket = (avs_net_socket_t *) socket_;
+    avs_net_socket_t *net_socket = (avs_net_socket_t *) socket;
+    sockaddr_union_t addr;
+    socklen_t addrlen = sizeof(addr);
+
+    errno = 0;
+    if (!getpeername(net_socket->socket, &addr.addr, &addrlen)) {
+        int result = get_string_port(&addr, out_buffer, out_buffer_size);
+        net_socket->error_code = (result ? ERANGE : 0);
+        return result;
+    } else {
+        net_socket->error_code = errno;
+        return -1;
+    }
 }
 
 static int system_socket_net(avs_net_abstract_socket_t *net_socket_,
@@ -335,6 +417,41 @@ static sa_family_t get_socket_family(int fd) {
         return addr.addr.sa_family;
     } else {
         return AF_UNSPEC;
+    }
+}
+
+#if defined(WITH_IPV4) && defined(WITH_IPV6)
+static bool is_v4mapped(const struct sockaddr_in6 *addr) {
+#if 0//def IN6_IS_ADDR_V4MAPPED
+    return IN6_IS_ADDR_V4MAPPED(&addr->sin6_addr);
+#else
+    static const uint8_t V4MAPPED_ADDR_HEADER[] = {
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xFF, 0xFF
+    };
+    return memcmp(addr->sin6_addr.s6_addr, V4MAPPED_ADDR_HEADER,
+                  sizeof(V4MAPPED_ADDR_HEADER)) == 0;
+#endif
+}
+#endif
+
+/**
+ * Differs from get_socket_family() by the fact that if the socket is AF_INET6
+ * at the kernel level, but is connected to an IPv4-mapped address, it returns
+ * AF_INET.
+ */
+static sa_family_t get_connection_family(int fd) {
+    sockaddr_union_t addr;
+    socklen_t addrlen = sizeof(addr);
+
+    if (getpeername(fd, &addr.addr, &addrlen)) {
+        return get_socket_family(fd);
+#if defined(WITH_IPV4) && defined(WITH_IPV6)
+    } else if (addr.addr.sa_family == AF_INET6
+            && is_v4mapped(&addr.addr_in6)) {
+        return AF_INET;
+#endif
+    } else {
+        return addr.addr.sa_family;
     }
 }
 
@@ -1152,64 +1269,6 @@ int _avs_net_create_udp_socket(avs_net_abstract_socket_t **socket,
     return create_net_socket(socket, AVS_NET_UDP_SOCKET, socket_configuration);
 }
 
-static int get_string_ip(const sockaddr_union_t *addr,
-                         char *buffer, size_t buffer_size) {
-    const void *addr_data;
-    socklen_t addrlen;
-
-    switch(addr->addr.sa_family) {
-#ifdef WITH_IPV4
-        case AF_INET:
-            addr_data = &addr->addr_in.sin_addr;
-            addrlen = INET_ADDRSTRLEN;
-            break;
-#endif /* WITH_IPV4 */
-
-#ifdef WITH_IPV6
-        case AF_INET6:
-            addr_data = &addr->addr_in6.sin6_addr;
-            addrlen = INET6_ADDRSTRLEN;
-            break;
-#endif /* WITH_IPV6 */
-
-        default:
-            return -1;
-    }
-
-    if (buffer_size < (size_t) addrlen) {
-        return -1;
-    } else {
-        return _avs_inet_ntop(addr->addr.sa_family, addr_data, buffer, addrlen)
-                == NULL ? -1 : 0;
-    }
-}
-
-static int get_string_port(const sockaddr_union_t *addr,
-                           char *buffer, size_t buffer_size) {
-    uint16_t port;
-    int retval;
-
-    switch(addr->addr.sa_family) {
-#ifdef WITH_IPV4
-        case AF_INET:
-            port = addr->addr_in.sin_port;
-            break;
-#endif /* WITH_IPV4 */
-
-#ifdef WITH_IPV6
-        case AF_INET6:
-            port = addr->addr_in6.sin6_port;
-            break;
-#endif /* WITH_IPV6 */
-
-        default:
-            return -1;
-    }
-
-    retval = snprintf(buffer, buffer_size, "%u", ntohs(port));
-    return (retval < 0 || (size_t) retval >= buffer_size) ? -1 : 0;
-}
-
 int avs_net_local_address_for_target_host(const char *target_host,
                                           avs_net_af_t addr_family,
                                           char *address_buffer,
@@ -1306,14 +1365,16 @@ static int get_mtu(avs_net_socket_t *net_socket, int *out_mtu) {
 }
 
 static int get_fallback_inner_mtu(avs_net_socket_t *socket) {
-#warning "FIXME"
-#if 0
-    if (strchr(socket->host, ':')) { /* IPv6 */
+#ifdef WITH_IPV6
+    if (socket->socket >= 0
+            && get_connection_family(socket->socket) == AF_INET6) { /* IPv6 */
         return 1232; /* 1280 - 48 */
-    } else { /* probably IPv4 */
+    } else
+#endif
+    { /* probably IPv4 */
+        (void) socket;
         return 548; /* 576 - 28 */
     }
-#endif
 }
 
 static int get_udp_overhead(avs_net_socket_t *net_socket, int *out) {
