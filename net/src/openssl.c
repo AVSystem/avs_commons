@@ -626,7 +626,6 @@ static void close_ssl_raw(ssl_socket_t *socket) {
     }
     if (socket->backend_socket) {
         avs_net_socket_close(socket->backend_socket);
-        avs_net_socket_cleanup(&socket->backend_socket);
     }
 }
 
@@ -1713,6 +1712,7 @@ static int cleanup_ssl(avs_net_abstract_socket_t **socket_) {
 #endif
 
     close_ssl(*socket_);
+    avs_net_socket_cleanup(&(*socket)->backend_socket);
     if ((*socket)->ctx) {
         SSL_CTX_free((*socket)->ctx);
         (*socket)->ctx = NULL;

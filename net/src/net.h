@@ -33,6 +33,8 @@
  */
 #define NET_MAX_HOSTNAME_SIZE 256
 
+#define NET_PORT_SIZE 6
+
 #define AVS_NET_RESOLVE_DUMMY_PORT "1337"
 
 int _avs_net_create_tcp_socket(avs_net_abstract_socket_t **socket,

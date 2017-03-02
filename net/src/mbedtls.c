@@ -321,7 +321,6 @@ static int system_socket_ssl(avs_net_abstract_socket_t *socket_,
 static void close_ssl_raw(ssl_socket_t *socket) {
     if (socket->backend_socket) {
         avs_net_socket_close(socket->backend_socket);
-        avs_net_socket_cleanup(&socket->backend_socket);
     }
     mbedtls_ssl_free(&socket->context);
     memset(&socket->context, 0, sizeof(socket->context));
@@ -822,6 +821,7 @@ static int cleanup_ssl(avs_net_abstract_socket_t **socket_) {
     LOG(TRACE, "cleanup_ssl(*socket=%p)", (void *) *socket);
 
     close_ssl(*socket_);
+    avs_net_socket_cleanup(&(*socket)->backend_socket);
 
     switch ((*socket)->security_mode) {
     case AVS_NET_SECURITY_PSK:

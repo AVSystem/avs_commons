@@ -212,6 +212,7 @@ typedef struct {
     avs_net_socket_type_t                  type;
     avs_net_socket_state_t                 state;
     char                                   hostname[NET_MAX_HOSTNAME_SIZE];
+    char                                   port[NET_PORT_SIZE];
     avs_net_socket_configuration_t         configuration;
 
     avs_net_timeout_t recv_timeout;
@@ -332,11 +333,11 @@ static int remote_host_net(avs_net_abstract_socket_t *socket,
 static int remote_hostname_net(avs_net_abstract_socket_t *socket_,
                                char *out_buffer, size_t out_buffer_size) {
     avs_net_socket_t *socket = (avs_net_socket_t *) socket_;
-    int retval;
-    if (socket->socket < 0) {
+    if (!socket->hostname[0]) {
         socket->error_code = EBADF;
         return -1;
     }
+    int retval;
     retval = snprintf(out_buffer, out_buffer_size, "%s", socket->hostname);
     if (retval < 0 || (size_t) retval >= out_buffer_size) {
         socket->error_code = ERANGE;
@@ -347,20 +348,21 @@ static int remote_hostname_net(avs_net_abstract_socket_t *socket_,
     }
 }
 
-static int remote_port_net(avs_net_abstract_socket_t *socket,
+static int remote_port_net(avs_net_abstract_socket_t *socket_,
                            char *out_buffer, size_t out_buffer_size) {
-    avs_net_socket_t *net_socket = (avs_net_socket_t *) socket;
-    sockaddr_union_t addr;
-    socklen_t addrlen = sizeof(addr);
-
-    errno = 0;
-    if (!getpeername(net_socket->socket, &addr.addr, &addrlen)) {
-        int result = get_string_port(&addr, out_buffer, out_buffer_size);
-        net_socket->error_code = (result ? ERANGE : 0);
-        return result;
-    } else {
-        net_socket->error_code = errno;
+    avs_net_socket_t *socket = (avs_net_socket_t *) socket_;
+    if (!socket->port[0]) {
+        socket->error_code = EBADF;
         return -1;
+    }
+    int retval;
+    retval = snprintf(out_buffer, out_buffer_size, "%s", socket->port);
+    if (retval < 0 || (size_t) retval >= out_buffer_size) {
+        socket->error_code = ERANGE;
+        return -1;
+    } else {
+        socket->error_code = 0;
+        return 0;
     }
 }
 
@@ -422,7 +424,7 @@ static sa_family_t get_socket_family(int fd) {
 
 #if defined(WITH_IPV4) && defined(WITH_IPV6)
 static bool is_v4mapped(const struct sockaddr_in6 *addr) {
-#if 0//def IN6_IS_ADDR_V4MAPPED
+#ifdef IN6_IS_ADDR_V4MAPPED
     return IN6_IS_ADDR_V4MAPPED(&addr->sin6_addr);
 #else
     static const uint8_t V4MAPPED_ADDR_HEADER[] = {
@@ -832,6 +834,13 @@ static int connect_net(avs_net_abstract_socket_t *net_socket_,
                     LOG(WARNING, "Hostname %s is too long, not storing", host);
                     net_socket->hostname[0] = '\0';
                 }
+                pfresult = snprintf(net_socket->port, sizeof(net_socket->port),
+                                    "%s", port);
+                if (pfresult < 0
+                        || (size_t) pfresult >= sizeof(net_socket->port)) {
+                    LOG(WARNING, "Port %s is too long, not storing", port);
+                    net_socket->hostname[0] = '\0';
+                }
                 return 0;
             }
         }
@@ -1184,7 +1193,9 @@ static int accept_net(avs_net_abstract_socket_t *server_net_socket_,
 
     if (host_port_to_string(&remote_address.addr,
                             remote_address_length, new_net_socket->hostname,
-                            sizeof(new_net_socket->hostname), NULL, 0) < 0) {
+                            sizeof(new_net_socket->hostname),
+                            new_net_socket->port,
+                            sizeof(new_net_socket->port)) < 0) {
         new_net_socket->error_code = errno;
         close_net_raw(new_net_socket);
         return -1;
