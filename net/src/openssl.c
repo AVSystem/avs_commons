@@ -118,6 +118,8 @@ static int interface_name_ssl(avs_net_abstract_socket_t *ssl_socket,
                               avs_net_socket_interface_name_t *if_name);
 static int remote_host_ssl(avs_net_abstract_socket_t *socket,
                            char *out_buffer, size_t ouf_buffer_size);
+static int remote_hostname_ssl(avs_net_abstract_socket_t *socket,
+                               char *out_buffer, size_t ouf_buffer_size);
 static int remote_port_ssl(avs_net_abstract_socket_t *socket,
                            char *out_buffer, size_t ouf_buffer_size);
 static int local_port_ssl(avs_net_abstract_socket_t *socket,
@@ -149,6 +151,7 @@ static const avs_net_socket_v_table_t ssl_vtable = {
     system_socket_ssl,
     interface_name_ssl,
     remote_host_ssl,
+    remote_hostname_ssl,
     remote_port_ssl,
     local_port_ssl,
     get_opt_ssl,
@@ -518,6 +521,16 @@ static int remote_host_ssl(avs_net_abstract_socket_t *socket_,
     return retval;
 }
 
+static int remote_hostname_ssl(avs_net_abstract_socket_t *socket_,
+                               char *out_buffer, size_t out_buffer_size) {
+    ssl_socket_t *socket = (ssl_socket_t *) socket_;
+    int retval;
+    WRAP_ERRNO(socket, retval,
+               avs_net_socket_get_remote_hostname(socket->backend_socket,
+                                                  out_buffer, out_buffer_size));
+    return retval;
+}
+
 static int remote_port_ssl(avs_net_abstract_socket_t *socket_,
                            char *out_buffer, size_t out_buffer_size) {
     ssl_socket_t *socket = (ssl_socket_t *) socket_;
@@ -794,8 +807,8 @@ static int decorate_ssl(avs_net_abstract_socket_t *socket_,
     }
 
     WRAP_ERRNO_IMPL(socket, backend_socket, result,
-                    avs_net_socket_get_remote_host(backend_socket,
-                                                   host, sizeof(host)));
+                    avs_net_socket_get_remote_hostname(backend_socket,
+                                                       host, sizeof(host)));
     if (result) {
         return result;
     }

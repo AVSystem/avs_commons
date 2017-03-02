@@ -748,6 +748,9 @@ int avs_net_socket_interface_name(avs_net_abstract_socket_t *socket,
                                   avs_net_socket_interface_name_t *if_name);
 int avs_net_socket_get_remote_host(avs_net_abstract_socket_t *socket,
                                    char *out_buffer, size_t out_buffer_size);
+int avs_net_socket_get_remote_hostname(avs_net_abstract_socket_t *socket,
+                                       char *out_buffer,
+                                       size_t out_buffer_size);
 int avs_net_socket_get_remote_port(avs_net_abstract_socket_t *socket,
                                    char *out_buffer, size_t out_buffer_size);
 int avs_net_socket_get_local_port(avs_net_abstract_socket_t *socket,

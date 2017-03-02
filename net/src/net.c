@@ -165,6 +165,8 @@ static int interface_name_net(avs_net_abstract_socket_t *socket,
                               avs_net_socket_interface_name_t *if_name);
 static int remote_host_net(avs_net_abstract_socket_t *socket,
                            char *out_buffer, size_t out_buffer_size);
+static int remote_hostname_net(avs_net_abstract_socket_t *socket,
+                               char *out_buffer, size_t out_buffer_size);
 static int remote_port_net(avs_net_abstract_socket_t *socket,
                            char *out_buffer, size_t out_buffer_size);
 static int local_port_net(avs_net_abstract_socket_t *socket,
@@ -196,6 +198,7 @@ static const avs_net_socket_v_table_t net_vtable = {
     system_socket_net,
     interface_name_net,
     remote_host_net,
+    remote_hostname_net,
     remote_port_net,
     local_port_net,
     get_opt_net,
@@ -268,6 +271,10 @@ static int remote_host_net(avs_net_abstract_socket_t *socket_,
         socket->error_code = 0;
         return 0;
     }
+}
+
+static int remote_hostname_net(avs_net_abstract_socket_t *socket_,
+                               char *out_buffer, size_t out_buffer_size) {
 }
 
 static int remote_port_net(avs_net_abstract_socket_t *socket_,
