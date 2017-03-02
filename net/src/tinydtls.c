@@ -86,7 +86,16 @@ static int get_dtls_overhead(ssl_socket_t *socket,
  * similar is not an easy task in an API that tries to abstract lower networking
  * layers as much as possible.
  */
-static const session_t DTLS_SESSION;
+static const session_t DTLS_SESSION = {
+    .addr = (struct sockaddr) {
+        /**
+         * Need to set it to something non-zero, or tinyDTLS won't be able to
+         * compare sessions, and in effect it won't be able to free some
+         * internally used memory -- don't ask me, I didn't create tinyDTLS.
+         */
+        .sa_family = AF_INET
+    }
+};
 
 static int send_ssl(avs_net_abstract_socket_t *ssl_socket,
                     const void *buffer,
@@ -165,17 +174,21 @@ static int cleanup_ssl(avs_net_abstract_socket_t **socket_) {
     cleanup_psk(&socket->psk);
 #endif
     close_ssl(*socket_);
-    if (socket->ctx) {
-        dtls_free_context(socket->ctx);
-        socket->ctx = NULL;
-    }
     free(socket);
     *socket_ = NULL;
     return 0;
 }
 
 static void close_ssl_raw(ssl_socket_t *socket) {
-    return;
+    LOG(TRACE, "close_ssl_raw(socket=%p)", (void *) socket);
+    if (socket->ctx) {
+        dtls_free_context(socket->ctx);
+        socket->ctx = NULL;
+    }
+    if (socket->backend_socket) {
+        avs_net_socket_close(socket->backend_socket);
+        avs_net_socket_cleanup(&socket->backend_socket);
+    }
 }
 
 static int is_ssl_started(ssl_socket_t *socket) {
@@ -192,6 +205,7 @@ static int ssl_handshake(dtls_context_t *ctx) {
     const dtls_peer_t *peer = dtls_get_peer(ctx, &DTLS_SESSION);
 
     while (dtls_peer_state(peer) != DTLS_STATE_CONNECTED) {
+        LOG(DEBUG, "ssl_handshake(): client state %d", (int) dtls_peer_state(peer));
         char message[DTLS_MAX_BUF];
         size_t message_length;
         int result =
@@ -381,6 +395,21 @@ int dtls_verify_ecdsa_key_handler(dtls_context_t *ctx,
 
 #endif /* #ifdef DTLS_ECC */
 
+static int dtls_event_handler(dtls_context_t *ctx,
+                              session_t *session,
+                              dtls_alert_level_t level,
+                              unsigned short code) {
+    (void) ctx;
+    (void) session;
+#ifndef NDEBUG
+    LOG(DEBUG, "tinyDTLS reported an event (level=%d, code=%d)\n", (int) level,
+        (int) code);
+#endif
+    (void) level;
+    (void) code;
+    return 0;
+}
+
 static int initialize_ssl_socket(ssl_socket_t *socket,
                                  avs_net_socket_type_t backend_type,
                                  const avs_net_ssl_configuration_t *configuration) {
@@ -409,7 +438,7 @@ static int initialize_ssl_socket(ssl_socket_t *socket,
     static dtls_handler_t handlers = {
         .write = dtls_write_handler,
         .read = dtls_read_handler,
-        .event = NULL, /* we don't seem to need that now */
+        .event = dtls_event_handler,
 #ifdef DTLS_PSK
         .get_psk_info = dtls_get_psk_info_handler,
 #endif
