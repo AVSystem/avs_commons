@@ -444,19 +444,6 @@ static int start_ssl(ssl_socket_t *socket, const char *host) {
     }
 }
 
-static int bind_ssl(avs_net_abstract_socket_t *socket_,
-                    const char *localaddr,
-                    const char *port) {
-    ssl_socket_t *socket = (ssl_socket_t *) socket_;
-    int retval;
-    if (ensure_have_backend_socket(socket)) {
-        return -1;
-    }
-    WRAP_ERRNO(socket, retval, avs_net_socket_bind(socket->backend_socket,
-                                                   localaddr, port));
-    return retval;
-}
-
 static int shutdown_ssl(avs_net_abstract_socket_t *socket_) {
     ssl_socket_t *socket = (ssl_socket_t *) socket_;
     int retval;

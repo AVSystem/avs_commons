@@ -508,7 +508,7 @@ static int verify_peer_subject_cn(ssl_socket_t *ssl_socket,
     char *cn = NULL;
     X509* peer_certificate = NULL;
 
-    /* check whether CN matches host portion of ACS URL */
+    /* check whether CN matches host portion of the URL */
     peer_certificate = SSL_get_peer_certificate(ssl_socket->ssl);
     if (!peer_certificate) {
         LOG(ERROR, "Cannot load peer certificate");
@@ -525,7 +525,7 @@ static int verify_peer_subject_cn(ssl_socket_t *ssl_socket,
         cn += 3;
     }
     if (cn == NULL || strcmp(cn, host)) {
-        LOG(ERROR, "Subject CN(%s) does not match ACS URL (%s)", cn, host);
+        LOG(ERROR, "Subject CN(%s) does not match the URL (%s)", cn, host);
         return -1;
     }
 
@@ -1407,19 +1407,6 @@ static int configure_ssl(ssl_socket_t *socket,
         return -1;
     }
     return 0;
-}
-
-static int bind_ssl(avs_net_abstract_socket_t *socket_,
-                    const char *localaddr,
-                    const char *port) {
-    ssl_socket_t *socket = (ssl_socket_t *) socket_;
-    int retval;
-    if (ensure_have_backend_socket(socket)) {
-        return -1;
-    }
-    WRAP_ERRNO(socket, retval, avs_net_socket_bind(socket->backend_socket,
-                                                   localaddr, port));
-    return retval;
 }
 
 static int shutdown_ssl(avs_net_abstract_socket_t *socket_) {

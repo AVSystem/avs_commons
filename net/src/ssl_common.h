@@ -33,9 +33,6 @@ static int receive_ssl(avs_net_abstract_socket_t *ssl_socket,
                        size_t *out,
                        void *buffer,
                        size_t buffer_length);
-static int bind_ssl(avs_net_abstract_socket_t *socket,
-                    const char *localaddr,
-                    const char *port);
 static int shutdown_ssl(avs_net_abstract_socket_t *socket);
 static int cleanup_ssl(avs_net_abstract_socket_t **ssl_socket);
 
@@ -120,6 +117,19 @@ static int create_ssl_socket(avs_net_abstract_socket_t **socket,
         LOG(ERROR, "memory allocation error");
         return -1;
     }
+}
+
+static int bind_ssl(avs_net_abstract_socket_t *socket_,
+                    const char *localaddr,
+                    const char *port) {
+    ssl_socket_t *socket = (ssl_socket_t *) socket_;
+    int retval;
+    if (ensure_have_backend_socket(socket)) {
+        return -1;
+    }
+    WRAP_ERRNO(socket, retval,
+               avs_net_socket_bind(socket->backend_socket, localaddr, port));
+    return retval;
 }
 
 static int connect_ssl(avs_net_abstract_socket_t *socket_,
