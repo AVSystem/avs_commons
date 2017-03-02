@@ -13,7 +13,6 @@
 #include <inttypes.h>
 #include <string.h>
 
-#define DTLS_PSK
 #include <tinydtls/dtls.h>
 
 #include "net.h"
@@ -21,6 +20,12 @@
 #ifdef HAVE_VISIBILITY
 #pragma GCC visibility push(hidden)
 #endif
+
+typedef struct {
+    void *out_buffer;
+    size_t buffer_size;
+    size_t *out_bytes_read;
+} ssl_read_context_t;
 
 typedef struct {
     const avs_net_socket_v_table_t *const operations;
@@ -32,6 +37,8 @@ typedef struct {
     avs_net_ssl_version_t version;
     avs_ssl_additional_configuration_clb_t *additional_configuration_clb;
     avs_net_socket_configuration_t backend_configuration;
+
+    avs_net_psk_t psk;
 } ssl_socket_t;
 
 #define NET_SSL_COMMON_PRIVATE_HEADER
@@ -62,44 +69,109 @@ static const avs_net_socket_v_table_t ssl_vtable = {
 static int get_dtls_overhead(ssl_socket_t *socket,
                              int *out_header,
                              int *out_padding_size) {
-    return -1;
+    (void) socket;
+    (void) out_header;
+    (void) out_padding_size;
+    /* TODO: this should be computed */
+    return 64;
 }
+
+/**
+ * tinyDTLS stores struct sockaddr inside the session_t. It is internally used
+ * by tinyDTLS to distinguish between different peers using the same socket.
+ *
+ * Yet, in avs_commons, we use single SSL socket to handle single SSL connection,
+ * therefore we could just use this fake handle to uniquely identify the peer,
+ * and at the sime time to simplify code a lot, as extracting sockaddrs and
+ * similar is not an easy task in an API that tries to abstract lower networking
+ * layers as much as possible.
+ */
+static const session_t DTLS_SESSION;
 
 static int send_ssl(avs_net_abstract_socket_t *ssl_socket,
                     const void *buffer,
                     size_t buffer_length) {
-    return -1;
+    ssl_socket_t *socket = (ssl_socket_t *) ssl_socket;
+
+    while (buffer_length > 0) {
+        session_t session = DTLS_SESSION;
+        int result = dtls_write(socket->ctx, &session, (uint8 *) buffer,
+                                buffer_length);
+        if (result < 0) {
+            LOG(ERROR, "send_ssl() failed");
+            return result;
+        }
+        assert(result <= buffer_length);
+        buffer += (size_t) result;
+        buffer_length -= (size_t) result;
+    }
+    return 0;
 }
 
-static int receive_ssl(avs_net_abstract_socket_t *ssl_socket,
-                       size_t *out,
-                       void *buffer,
-                       size_t buffer_length) {
-    int *socket_fd = (int *) (intptr_t) avs_net_socket_get_system(ssl_socket);
-    session_t session;
-    session.size = sizeof(session.addr);
+static int receive_ssl(avs_net_abstract_socket_t *socket_,
+                       size_t *out_bytes_read,
+                       void *out_buffer,
+                       size_t buffer_size) {
+    ssl_socket_t *socket = (ssl_socket_t *) socket_;
+    /* This is technically incorrect as the @p out_buffer is supposed to be used
+     * for decoded data, but we use it for encoded data as well to avoid excessive
+     * memory usage. So, in the end, user will never get this buffer completely
+     * filled. */
+    size_t message_length;
+    int result = avs_net_socket_receive(socket->backend_socket, &message_length,
+                                        out_buffer, buffer_size);
 
-    ssize_t result = recvfrom(*socket_fd, buffer, buffer_length, 0,
-                              &session.addr.sa, &session.size);
-    if (result < 0) {
+    if (result) {
         return result;
     }
-    return dtls_handle_message(((ssl_socket_t *) ssl_socket)->ctx, &session,
-                               buffer, buffer_length);
+
+    ssl_read_context_t read_context = {
+        .buffer_size = buffer_size,
+        .out_buffer = out_buffer,
+        .out_bytes_read = out_bytes_read
+    };
+
+    session_t session = DTLS_SESSION;
+    dtls_set_app_data(socket->ctx, &read_context);
+    result = dtls_handle_message(socket->ctx, &session, out_buffer,
+                                 message_length);
+    dtls_set_app_data(socket->ctx, socket);
+
+    return result;
 }
 
-static int bind_ssl(avs_net_abstract_socket_t *socket,
-                    const char *localaddr,
-                    const char *port) {
-    return -1;
+static int shutdown_ssl(avs_net_abstract_socket_t *socket_) {
+    ssl_socket_t *socket = (ssl_socket_t *) socket_;
+    int retval;
+    LOG(TRACE, "shutdown_ssl(socket=%p)", (void *) socket);
+    WRAP_ERRNO(socket, retval, avs_net_socket_shutdown(socket->backend_socket));
+    return retval;
 }
 
-static int shutdown_ssl(avs_net_abstract_socket_t *socket) {
-    return -1;
+#ifdef DTLS_PSK
+static void cleanup_psk(avs_net_psk_t *psk) {
+    free(psk->psk);
+    psk->psk = NULL;
+    free(psk->identity);
+    psk->identity = NULL;
 }
+#endif
 
-static int cleanup_ssl(avs_net_abstract_socket_t **ssl_socket) {
-    return -1;
+static int cleanup_ssl(avs_net_abstract_socket_t **socket_) {
+    ssl_socket_t *socket = *(ssl_socket_t **) socket_;
+    LOG(TRACE, "cleanup_ssl(*socket=%p)", (void *) socket);
+
+#ifdef DTLS_PSK
+    cleanup_psk(&socket->psk);
+#endif
+    close_ssl(*socket_);
+    if (socket->ctx) {
+        dtls_free_context(socket->ctx);
+        socket->ctx = NULL;
+    }
+    free(socket);
+    *socket_ = NULL;
+    return 0;
 }
 
 static void close_ssl_raw(ssl_socket_t *socket) {
@@ -107,21 +179,80 @@ static void close_ssl_raw(ssl_socket_t *socket) {
 }
 
 static int is_ssl_started(ssl_socket_t *socket) {
-    return -1;
+    if (!socket->ctx) {
+        return 0;
+    }
+    const dtls_peer_t *peer = dtls_get_peer(socket->ctx, &DTLS_SESSION);
+
+    return peer && dtls_peer_is_connected(peer);
+}
+
+static int ssl_handshake(dtls_context_t *ctx) {
+    ssl_socket_t *socket = dtls_get_app_data(ctx);
+    const dtls_peer_t *peer = dtls_get_peer(ctx, &DTLS_SESSION);
+
+    while (dtls_peer_state(peer) != DTLS_STATE_CONNECTED) {
+        char message[DTLS_MAX_BUF];
+        size_t message_length;
+        int result =
+                avs_net_socket_receive(socket->backend_socket, &message_length,
+                                       message, sizeof(message));
+        if (result) {
+            return result;
+        }
+
+        session_t session = DTLS_SESSION;
+        result = dtls_handle_message(ctx, &session, message, message_length);
+        if (result) {
+            LOG(ERROR, "ssl_handshake() failed");
+            return result;
+        }
+    }
+    return 0;
 }
 
 static int start_ssl(ssl_socket_t *socket, const char *host) {
-    return -1;
+    int retval = dtls_connect(socket->ctx, &DTLS_SESSION);
+    if (retval > 0) {
+        retval = ssl_handshake(socket->ctx);
+    }
+    return retval;
 }
 
 static int configure_ssl_psk(ssl_socket_t *socket,
                              const avs_net_psk_t *psk) {
+    LOG(TRACE, "configure_ssl_psk");
+
+#ifndef DTLS_PSK
+    LOG(ERROR, "support for psk is disabled");
     return -1;
+#else
+    cleanup_psk(&socket->psk);
+
+    socket->psk.psk_size = psk->psk_size;
+    socket->psk.psk = (char *) malloc(psk->psk_size);
+    if (!socket->psk.psk) {
+        LOG(ERROR, "out of memory");
+        return -1;
+    }
+
+    socket->psk.identity_size = psk->identity_size;
+    socket->psk.identity = (char *) malloc(psk->identity_size);
+    if (!socket->psk.identity) {
+        LOG(ERROR, "out of memory");
+        cleanup_psk(&socket->psk);
+        return -1;
+    }
+    memcpy(socket->psk.psk, psk->psk, psk->psk_size);
+    memcpy(socket->psk.identity, psk->identity, psk->identity_size);
+
+    return 0;
+#endif /* DTLS_PSK */
 }
 
 static int configure_ssl_certs(ssl_socket_t *socket,
                                const avs_net_certificate_info_t *cert_info) {
-    LOG(ERROR, "tinyDTLS backend has no support for certificate mode yet");
+    LOG(ERROR, "support for certificate mode is not yet implemented");
     return -1;
 }
 
@@ -155,42 +286,106 @@ static int configure_ssl(ssl_socket_t *socket,
 
 static int dtls_write_handler(dtls_context_t *ctx,
                               session_t *session,
-                              uint8 *buf,
-                              size_t len) {
-    return -1;
+                              uint8 *buffer,
+                              size_t length) {
+    (void) session;
+    ssl_socket_t *socket = (ssl_socket_t *) dtls_get_app_data(ctx);
+    int result = avs_net_socket_send(socket->backend_socket,
+                                     (const void *) buffer, length);
+    if (result) {
+        return result;
+    }
+    return (int) length;
 }
 
 static int dtls_read_handler(dtls_context_t *ctx,
                              session_t *session,
                              uint8 *buf,
                              size_t len) {
-    return -1;
-}
+    ssl_read_context_t *read_context =
+            (ssl_read_context_t *) dtls_get_app_data(ctx);
+    assert(read_context);
+    assert(len <= read_context->buffer_size);
 
-static int dtls_event_handler(dtls_context_t *ctx,
-                              session_t *session,
-                              dtls_alert_level_t level,
-                              unsigned short code) {
-    LOG(TRACE, "Ignoring tinyDTLS event (session=%p, level=%d, code=%hu)",
-        session, (int) level, code);
+    memmove(read_context->out_buffer, buf, len);
+    *read_context->out_bytes_read = len;
+
     return 0;
 }
 
+#ifdef DTLS_PSK
 static int dtls_get_psk_info_handler(dtls_context_t *ctx,
                                      const session_t *session,
                                      dtls_credentials_type_t type,
-                                     const unsigned char *desc,
-                                     size_t desc_len,
-                                     unsigned char *result,
-                                     size_t result_length) {
+                                     const unsigned char *id,
+                                     size_t id_size,
+                                     unsigned char *out_buffer,
+                                     size_t size) {
+    (void) session;
+
+    ssl_socket_t *socket = (ssl_socket_t *) dtls_get_app_data(ctx);
+    assert(socket->psk.psk);
+    assert(socket->psk.identity);
+
+    switch (type) {
+    case DTLS_PSK_HINT:
+    case DTLS_PSK_IDENTITY:
+        /**
+         * We ignore whathever is being provided to us in @p id parameter, as
+         * it didn't seem to be used in any way in the example tinyDTLS client.
+         */
+        (void) id;
+
+        if (size < socket->psk.identity_size) {
+            LOG(WARNING, "tinyDTLS buffer for PSK identity is too small");
+            return dtls_alert_fatal_create(DTLS_ALERT_INTERNAL_ERROR);
+        }
+        memcpy(out_buffer, socket->psk.identity, socket->psk.identity_size);
+        return socket->psk.identity_size;
+    case DTLS_PSK_KEY:
+        if (socket->psk.identity_size != id_size
+                || memcmp(socket->psk.identity, id, id_size)) {
+            return dtls_alert_fatal_create(DTLS_ALERT_DECRYPT_ERROR);
+        }
+
+        if (size < socket->psk.psk_size) {
+            LOG(WARNING, "tinyDTLS buffer for PSK key is too small");
+            return dtls_alert_fatal_create(DTLS_ALERT_INTERNAL_ERROR);
+        }
+        memcpy(out_buffer, socket->psk.psk, socket->psk.psk_size);
+        return socket->psk.psk_size;
+    default:
+        LOG(ERROR, "unsupported request type %d", (int) type);
+        break;
+    }
+    return dtls_alert_fatal_create(DTLS_ALERT_INTERNAL_ERROR);
+}
+#endif /* #ifdef DTLS_PSK */
+
+#ifdef DTLS_ECC
+int dtls_get_ecdsa_key_handler(dtls_context_t *ctx,
+                               const session_t *session,
+                               const dtls_ecdsa_key_t **result) {
+    LOG(ERROR, "tinyDTLS with ECC is not supported");
     return -1;
 }
+
+int dtls_verify_ecdsa_key_handler(dtls_context_t *ctx,
+                                  const session_t *session,
+                                  const unsigned char *other_pub_x,
+                                  const unsigned char *other_pub_y,
+                                  size_t key_size) {
+    LOG(ERROR, "tinyDTLS with ECC is not supported");
+    return -1;
+}
+
+#endif /* #ifdef DTLS_ECC */
 
 static int initialize_ssl_socket(ssl_socket_t *socket,
                                  avs_net_socket_type_t backend_type,
                                  const avs_net_ssl_configuration_t *configuration) {
-    if (backend_type != AVS_NET_DTLS_SOCKET) {
-        LOG(ERROR, "tinyDTLS backend supports DTLS sockets only");
+    if (backend_type != AVS_NET_UDP_SOCKET) {
+        LOG(ERROR, "tinyDTLS backend supports UDP sockets only");
         return -1;
     }
     dtls_init();
@@ -199,7 +394,7 @@ static int initialize_ssl_socket(ssl_socket_t *socket,
             &ssl_vtable;
 
     socket->backend_type = backend_type;
-    socket->ctx = dtls_new_context(NULL);
+    socket->ctx = dtls_new_context(socket);
     if (!socket->ctx) {
         LOG(ERROR, "could not instantiate tinyDTLS context");
         return -1;
@@ -214,8 +409,15 @@ static int initialize_ssl_socket(ssl_socket_t *socket,
     static dtls_handler_t handlers = {
         .write = dtls_write_handler,
         .read = dtls_read_handler,
-        .event = dtls_event_handler,
-        .get_psk_info = dtls_get_psk_info_handler
+        .event = NULL, /* we don't seem to need that now */
+#ifdef DTLS_PSK
+        .get_psk_info = dtls_get_psk_info_handler,
+#endif
+
+#ifdef DTLS_ECC
+        .get_ecdsa_key = dtls_get_ecdsa_key_handler,
+        .verify_ecdsa_key = dtls_verify_ecdsa_key_handler
+#endif
     };
     dtls_set_handler(socket->ctx, &handlers);
 
