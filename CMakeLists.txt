@@ -151,19 +151,28 @@ avs_find_library("
 set(MBEDTLS_INCLUDE_DIRS "" CACHE PATH "mbed TLS include directory")
 
 # tinyDTLS
-avs_find_library("
-find_library(TINYDTLS_FOUND tinydtls)
-    set(TINYDTLS_INCLUDE_DIR /usr/include/tinydtls)
-" tinydtls)
+avs_find_library("find_library(TINYDTLS_FOUND tinydtls)" tinydtls)
 
 # SSL
 option(WITH_OPENSSL "Enable OpenSSL" OFF)
 option(WITH_MBEDTLS "Enable mbed TLS" OFF)
-option(WITH_TINYDTLS "Enable tinyDTLS" ON)
+option(WITH_TINYDTLS "Enable tinyDTLS" OFF)
 
-# FIXME: mutually exclusive options
-if(WITH_OPENSSL AND WITH_MBEDTLS)
-    message(FATAL_ERROR "Only one SSL/TLS library can be enabled at the same time")
+set(_AVS_TLS_BACKENDS "")
+if(WITH_OPENSSL)
+    list(APPEND _AVS_TLS_BACKENDS "openssl")
+endif()
+if(WITH_MBEDTLS)
+    list(APPEND _AVS_TLS_BACKENDS "mbedtls")
+endif()
+if(WITH_TINYDTLS)
+    list(APPEND _AVS_TLS_BACKENDS "tinydtls")
+endif()
+
+list(LENGTH _AVS_TLS_BACKENDS _AVS_NUM_TLS_BACKENDS)
+if(_AVS_NUM_TLS_BACKENDS GREATER 1)
+    string(REPLACE ";" ", " _AVS_TLS_BACKENDS "${_AVS_TLS_BACKENDS}")
+    message(FATAL_ERROR "Selected ${_AVS_TLS_BACKENDS} as TLS backends but only one may be used.")
 endif()
 
 ################################################################################
