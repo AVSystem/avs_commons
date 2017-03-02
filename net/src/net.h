@@ -21,8 +21,17 @@
 #pragma GCC visibility push(hidden)
 #endif
 
-#define NET_MAX_HOSTNAME_SIZE    64
-#define NET_PORT_SIZE            6
+/**
+ * Note: the _actual_ maximum hostname length is not precisely defined.
+ * NI_MAXHOST on Linux is actually a very generous 1025 (incl. nullbyte). DNS
+ * frame format allows for up to 253 (excl. nullbyte), and also each segment
+ * (substring between the dots) may be at most 64 characters long. Maximum
+ * length of a TLS certificate's CN is 64 (excl. nullbyte), but it may contain
+ * wildcards (even though we don't support them here in Commons).
+ *
+ * So... let's use 256 ;)
+ */
+#define NET_MAX_HOSTNAME_SIZE 256
 
 #define AVS_NET_RESOLVE_DUMMY_PORT "1337"
 
