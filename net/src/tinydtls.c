@@ -80,7 +80,7 @@ static int get_dtls_overhead(ssl_socket_t *socket,
  *
  * Yet, in avs_commons, we use single SSL socket to handle single SSL connection,
  * therefore we could just use this fake handle to uniquely identify the peer,
- * and at the sime time to simplify code a lot, as extracting sockaddrs and
+ * and at the same time to simplify code a lot, as extracting sockaddrs and
  * similar is not an easy task in an API that tries to abstract lower networking
  * layers as much as possible.
  */
@@ -89,7 +89,7 @@ static const session_t *get_dtls_session() {
     /**
      * Need to set it to something non-zero, or tinyDTLS won't be able to
      * compare sessions, and in effect it won't be able to free some
-     * internally used memory -- don't ask me, I didn't create tinyDTLS.
+     * internally used memory.
      */
     DTLS_SESSION.addr.sa.sa_family = AF_INET;
 
@@ -106,7 +106,7 @@ static int send_ssl(avs_net_abstract_socket_t *ssl_socket,
         /* Welcome to the world of tinyDTLS, where dtls_write takes a non-const
          * pointer to the data to be send. Empirical check proved however that
          * in fact this buffer is not modified, so I guess we may leave that
-         * ugly const_cast here. */
+         * ugly const-cast here. */
         int result = dtls_write(socket->ctx, &session, (uint8 *) (intptr_t) buffer,
                                 buffer_length);
         if (result < 0) {
@@ -127,8 +127,8 @@ static int receive_ssl(avs_net_abstract_socket_t *socket_,
     ssl_socket_t *socket = (ssl_socket_t *) socket_;
     /* This is technically incorrect as the @p out_buffer is supposed to be used
      * for decoded data, but we use it for encoded data as well to avoid excessive
-     * memory usage. So, in the end, user will never get this buffer completely
-     * filled. */
+     * memory consumption. So, in the end, this buffer will never be completely
+     * filled with decoded data. */
     size_t message_length;
     int result = avs_net_socket_receive(socket->backend_socket, &message_length,
                                         out_buffer, buffer_size);
@@ -144,18 +144,21 @@ static int receive_ssl(avs_net_abstract_socket_t *socket_,
     };
 
     session_t session = *get_dtls_session();
+    /* Switching app-data to a temporary read context. It is going to be
+     * used inside dtls_read_handler() */
     dtls_set_app_data(socket->ctx, &read_context);
     result = dtls_handle_message(socket->ctx, &session, (uint8 *) out_buffer,
                                  (int) message_length);
+    /* Restoring previously set app data. */
     dtls_set_app_data(socket->ctx, socket);
 
     return result;
 }
 
 static int shutdown_ssl(avs_net_abstract_socket_t *socket_) {
+    LOG(TRACE, "shutdown_ssl(socket=%p)", (void *) socket);
     ssl_socket_t *socket = (ssl_socket_t *) socket_;
     int retval;
-    LOG(TRACE, "shutdown_ssl(socket=%p)", (void *) socket);
     WRAP_ERRNO(socket, retval, avs_net_socket_shutdown(socket->backend_socket));
     return retval;
 }
@@ -205,8 +208,18 @@ static int is_ssl_started(ssl_socket_t *socket) {
 
 static int ssl_handshake(ssl_socket_t *socket) {
     const dtls_peer_t *peer = dtls_get_peer(socket->ctx, get_dtls_session());
+    /* Arbitrary constant limiting the number of packet exchanges between our
+     * client and a server. It is definitely enough to handle normal DTLS
+     * handshakes, and should protect us from looping indefinitely if for some
+     * reason we couldn't reach the connected state. */
+    int max_handshake_exchanges = 64;
 
     while (dtls_peer_state(peer) != DTLS_STATE_CONNECTED) {
+        if (!max_handshake_exchanges--) {
+            LOG(ERROR, "ssl_handshake(): too many handshake retries");
+            return -1;
+        }
+
         LOG(DEBUG, "ssl_handshake(): client state %d", (int) dtls_peer_state(peer));
         char message[DTLS_MAX_BUF];
         size_t message_length;
@@ -409,7 +422,7 @@ static int dtls_event_handler(dtls_context_t *ctx,
     (void) ctx;
     (void) session;
 #ifndef NDEBUG
-    LOG(DEBUG, "tinyDTLS reported an event (level=%d, code=%d)\n", (int) level,
+    LOG(DEBUG, "tinyDTLS reported an event (level=%d, code=%d)", (int) level,
         (int) code);
 #endif
     (void) level;
