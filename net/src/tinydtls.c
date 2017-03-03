@@ -149,6 +149,7 @@ static int receive_ssl(avs_net_abstract_socket_t *socket_,
     /* Switching app-data to a temporary read context. It is going to be
      * used inside dtls_read_handler() */
     dtls_set_app_data(socket->ctx, &read_context);
+    assert(message_length <= INT_MAX);
     result = dtls_handle_message(socket->ctx, &session, (uint8 *) out_buffer,
                                  (int) message_length);
     /* Restoring previously set app data. */
@@ -237,6 +238,7 @@ static int ssl_handshake(ssl_socket_t *socket) {
         }
 
         session_t session = *get_dtls_session();
+        assert(message_length <= INT_MAX);
         result = dtls_handle_message(socket->ctx, &session, (uint8 *) message,
                                      (int) message_length);
         if (result) {
@@ -336,6 +338,7 @@ static int dtls_write_handler(dtls_context_t *ctx,
     if (result) {
         return result;
     }
+    assert(length <= INT_MAX);
     return (int) length;
 }
 
@@ -382,6 +385,7 @@ static int dtls_get_psk_info_handler(dtls_context_t *ctx,
             LOG(WARNING, "tinyDTLS buffer for PSK identity is too small");
             return dtls_alert_fatal_create(DTLS_ALERT_INTERNAL_ERROR);
         }
+        assert(socket->psk.identity_size <= INT_MAX);
         memcpy(out_buffer, socket->psk.identity, socket->psk.identity_size);
         return (int) socket->psk.identity_size;
     case DTLS_PSK_KEY:
@@ -394,6 +398,7 @@ static int dtls_get_psk_info_handler(dtls_context_t *ctx,
             LOG(WARNING, "tinyDTLS buffer for PSK key is too small");
             return dtls_alert_fatal_create(DTLS_ALERT_INTERNAL_ERROR);
         }
+        assert(socket->psk.psk_size <= INT_MAX);
         memcpy(out_buffer, socket->psk.psk, socket->psk.psk_size);
         return (int) socket->psk.psk_size;
     default:
