@@ -65,7 +65,7 @@ static int is_ssl_started(ssl_socket_t *socket) {
     return socket->context.conf != NULL;
 }
 
-#define NET_SSL_COMMON_PRIVATE_HEADER
+#define NET_SSL_COMMON_INTERNALS
 #include "ssl_common.h"
 
 static const avs_net_socket_v_table_t ssl_vtable = {

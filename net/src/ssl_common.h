@@ -10,7 +10,7 @@
 #ifndef NET_SSL_COMMON_H
 #define NET_SSL_COMMON_H
 
-#ifndef NET_SSL_COMMON_PRIVATE_HEADER
+#ifndef NET_SSL_COMMON_INTERNALS
 #error "This header is not meant to be included from outside"
 #endif
 

@@ -41,7 +41,7 @@ typedef struct {
     avs_net_psk_t psk;
 } ssl_socket_t;
 
-#define NET_SSL_COMMON_PRIVATE_HEADER
+#define NET_SSL_COMMON_INTERNALS
 #include "ssl_common.h"
 
 static const avs_net_socket_v_table_t ssl_vtable = {
