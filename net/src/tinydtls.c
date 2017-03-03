@@ -86,16 +86,17 @@ static int get_dtls_overhead(ssl_socket_t *socket,
  * similar is not an easy task in an API that tries to abstract lower networking
  * layers as much as possible.
  */
-static const session_t DTLS_SESSION = {
-    .addr = (struct sockaddr) {
-        /**
-         * Need to set it to something non-zero, or tinyDTLS won't be able to
-         * compare sessions, and in effect it won't be able to free some
-         * internally used memory -- don't ask me, I didn't create tinyDTLS.
-         */
-        .sa_family = AF_INET
-    }
-};
+static const session_t *get_dtls_session() {
+    static session_t DTLS_SESSION;
+    /**
+     * Need to set it to something non-zero, or tinyDTLS won't be able to
+     * compare sessions, and in effect it won't be able to free some
+     * internally used memory -- don't ask me, I didn't create tinyDTLS.
+     */
+    DTLS_SESSION.addr.sa.sa_family = AF_INET;
+
+    return &DTLS_SESSION;
+}
 
 static int send_ssl(avs_net_abstract_socket_t *ssl_socket,
                     const void *buffer,
@@ -103,15 +104,19 @@ static int send_ssl(avs_net_abstract_socket_t *ssl_socket,
     ssl_socket_t *socket = (ssl_socket_t *) ssl_socket;
 
     while (buffer_length > 0) {
-        session_t session = DTLS_SESSION;
-        int result = dtls_write(socket->ctx, &session, (uint8 *) buffer,
+        session_t session = *get_dtls_session();
+        /* Welcome to the world of tinyDTLS, where dtls_write takes a non-const
+         * pointer to the data to be send. Empirical check proved however that
+         * in fact this buffer is not modified, so I guess we may leave that
+         * ugly const_cast here. */
+        int result = dtls_write(socket->ctx, &session, (uint8 *) (intptr_t) buffer,
                                 buffer_length);
         if (result < 0) {
             LOG(ERROR, "send_ssl() failed");
             return result;
         }
-        assert(result <= buffer_length);
-        buffer += (size_t) result;
+        assert((size_t) result <= buffer_length);
+        buffer = (const uint8_t *) buffer + result;
         buffer_length -= (size_t) result;
     }
     return 0;
@@ -140,10 +145,10 @@ static int receive_ssl(avs_net_abstract_socket_t *socket_,
         .out_bytes_read = out_bytes_read
     };
 
-    session_t session = DTLS_SESSION;
+    session_t session = *get_dtls_session();
     dtls_set_app_data(socket->ctx, &read_context);
-    result = dtls_handle_message(socket->ctx, &session, out_buffer,
-                                 message_length);
+    result = dtls_handle_message(socket->ctx, &session, (uint8 *) out_buffer,
+                                 (int) message_length);
     dtls_set_app_data(socket->ctx, socket);
 
     return result;
@@ -195,14 +200,13 @@ static int is_ssl_started(ssl_socket_t *socket) {
     if (!socket->ctx) {
         return 0;
     }
-    const dtls_peer_t *peer = dtls_get_peer(socket->ctx, &DTLS_SESSION);
+    const dtls_peer_t *peer = dtls_get_peer(socket->ctx, get_dtls_session());
 
     return peer && dtls_peer_is_connected(peer);
 }
 
-static int ssl_handshake(dtls_context_t *ctx) {
-    ssl_socket_t *socket = dtls_get_app_data(ctx);
-    const dtls_peer_t *peer = dtls_get_peer(ctx, &DTLS_SESSION);
+static int ssl_handshake(ssl_socket_t *socket) {
+    const dtls_peer_t *peer = dtls_get_peer(socket->ctx, get_dtls_session());
 
     while (dtls_peer_state(peer) != DTLS_STATE_CONNECTED) {
         LOG(DEBUG, "ssl_handshake(): client state %d", (int) dtls_peer_state(peer));
@@ -215,8 +219,9 @@ static int ssl_handshake(dtls_context_t *ctx) {
             return result;
         }
 
-        session_t session = DTLS_SESSION;
-        result = dtls_handle_message(ctx, &session, message, message_length);
+        session_t session = *get_dtls_session();
+        result = dtls_handle_message(socket->ctx, &session, (uint8 *) message,
+                                     (int) message_length);
         if (result) {
             LOG(ERROR, "ssl_handshake() failed");
             return result;
@@ -226,9 +231,10 @@ static int ssl_handshake(dtls_context_t *ctx) {
 }
 
 static int start_ssl(ssl_socket_t *socket, const char *host) {
-    int retval = dtls_connect(socket->ctx, &DTLS_SESSION);
+    (void) host;
+    int retval = dtls_connect(socket->ctx, get_dtls_session());
     if (retval > 0) {
-        retval = ssl_handshake(socket->ctx);
+        retval = ssl_handshake(socket);
     }
     return retval;
 }
@@ -266,6 +272,8 @@ static int configure_ssl_psk(ssl_socket_t *socket,
 
 static int configure_ssl_certs(ssl_socket_t *socket,
                                const avs_net_certificate_info_t *cert_info) {
+    (void) socket;
+    (void) cert_info;
     LOG(ERROR, "support for certificate mode is not yet implemented");
     return -1;
 }
@@ -316,6 +324,7 @@ static int dtls_read_handler(dtls_context_t *ctx,
                              session_t *session,
                              uint8 *buf,
                              size_t len) {
+    (void) session;
     ssl_read_context_t *read_context =
             (ssl_read_context_t *) dtls_get_app_data(ctx);
     assert(read_context);
@@ -355,7 +364,7 @@ static int dtls_get_psk_info_handler(dtls_context_t *ctx,
             return dtls_alert_fatal_create(DTLS_ALERT_INTERNAL_ERROR);
         }
         memcpy(out_buffer, socket->psk.identity, socket->psk.identity_size);
-        return socket->psk.identity_size;
+        return (int) socket->psk.identity_size;
     case DTLS_PSK_KEY:
         if (socket->psk.identity_size != id_size
                 || memcmp(socket->psk.identity, id, id_size)) {
@@ -367,7 +376,7 @@ static int dtls_get_psk_info_handler(dtls_context_t *ctx,
             return dtls_alert_fatal_create(DTLS_ALERT_INTERNAL_ERROR);
         }
         memcpy(out_buffer, socket->psk.psk, socket->psk.psk_size);
-        return socket->psk.psk_size;
+        return (int) socket->psk.psk_size;
     default:
         LOG(ERROR, "unsupported request type %d", (int) type);
         break;
