@@ -188,7 +188,7 @@ static int mock_connect(avs_net_abstract_socket_t *socket_,
                             MOCKSOCK_COMMAND_CONNECT);
 
     AVS_UNIT_ASSERT_TRUE(socket->state == AVS_NET_SOCKET_STATE_CLOSED
-            || socket->state == AVS_NET_SOCKET_STATE_LISTENING);
+            || socket->state == AVS_NET_SOCKET_STATE_BOUND);
     AVS_UNIT_ASSERT_EQUAL_STRING(host,
                                  socket->expected_commands->data.connect.host);
     AVS_UNIT_ASSERT_EQUAL_STRING(port,
@@ -196,7 +196,7 @@ static int mock_connect(avs_net_abstract_socket_t *socket_,
     retval = socket->expected_commands->retval;
     AVS_LIST_DELETE(&socket->expected_commands);
     if (!retval) {
-        socket->state = AVS_NET_SOCKET_STATE_CONSUMING;
+        socket->state = AVS_NET_SOCKET_STATE_CONNECTED;
     }
     return retval;
 }
@@ -208,9 +208,9 @@ static int mock_send_to(avs_net_abstract_socket_t *socket_,
                         const char *host,
                         const char *port) {
     mocksock_t *socket = (mocksock_t *) socket_;
-    AVS_UNIT_ASSERT_TRUE(socket->state == AVS_NET_SOCKET_STATE_LISTENING
-            || socket->state == AVS_NET_SOCKET_STATE_SERVING
-            || socket->state == AVS_NET_SOCKET_STATE_CONSUMING);
+    AVS_UNIT_ASSERT_TRUE(socket->state == AVS_NET_SOCKET_STATE_BOUND
+            || socket->state == AVS_NET_SOCKET_STATE_ACCEPTED
+            || socket->state == AVS_NET_SOCKET_STATE_CONNECTED);
     *out_bytes_sent = 0;
     while (buffer_length > 0) {
         AVS_UNIT_ASSERT_NOT_NULL(socket->expected_data);
@@ -271,9 +271,9 @@ static int mock_receive_from(avs_net_abstract_socket_t *socket_,
                              char *out_host, size_t out_host_size,
                              char *out_port, size_t out_port_size) {
     mocksock_t *socket = (mocksock_t *) socket_;
-    AVS_UNIT_ASSERT_TRUE(socket->state == AVS_NET_SOCKET_STATE_LISTENING
-            || socket->state == AVS_NET_SOCKET_STATE_SERVING
-            || socket->state == AVS_NET_SOCKET_STATE_CONSUMING);
+    AVS_UNIT_ASSERT_TRUE(socket->state == AVS_NET_SOCKET_STATE_BOUND
+            || socket->state == AVS_NET_SOCKET_STATE_ACCEPTED
+            || socket->state == AVS_NET_SOCKET_STATE_CONNECTED);
     *out = 0;
     if (!socket->expected_data) {
         return 0;
@@ -329,7 +329,7 @@ static int mock_bind(avs_net_abstract_socket_t *socket_,
     retval = socket->expected_commands->retval;
     AVS_LIST_DELETE(&socket->expected_commands);
     if (!retval) {
-        socket->state = AVS_NET_SOCKET_STATE_LISTENING;
+        socket->state = AVS_NET_SOCKET_STATE_BOUND;
     }
     return retval;
 }
@@ -344,13 +344,13 @@ static int mock_accept(avs_net_abstract_socket_t *server_socket_,
             MOCKSOCK_COMMAND_ACCEPT);
 
     AVS_UNIT_ASSERT_TRUE(
-            server_socket->state == AVS_NET_SOCKET_STATE_LISTENING);
+            server_socket->state == AVS_NET_SOCKET_STATE_BOUND);
     AVS_UNIT_ASSERT_TRUE(new_socket->state == AVS_NET_SOCKET_STATE_CLOSED);
     AVS_LIST_DELETE(&server_socket->expected_commands);
     retval = server_socket->expected_commands->retval;
     AVS_LIST_DELETE(&server_socket->expected_commands);
     if (!retval) {
-        new_socket->state = AVS_NET_SOCKET_STATE_SERVING;
+        new_socket->state = AVS_NET_SOCKET_STATE_ACCEPTED;
     }
     return retval;
 }

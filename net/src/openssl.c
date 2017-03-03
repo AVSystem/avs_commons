@@ -674,10 +674,10 @@ static int ssl_handshake(ssl_socket_t *socket) {
         LOG(ERROR, "ssl_handshake: could not get socket state");
         return -1;
     }
-    if (state_opt.state == AVS_NET_SOCKET_STATE_CONSUMING) {
+    if (state_opt.state == AVS_NET_SOCKET_STATE_CONNECTED) {
         return SSL_connect(socket->ssl);
     }
-    if (state_opt.state == AVS_NET_SOCKET_STATE_SERVING) {
+    if (state_opt.state == AVS_NET_SOCKET_STATE_ACCEPTED) {
 #ifndef FAKE_OPENSSL
         return SSL_accept(socket->ssl);
 #else

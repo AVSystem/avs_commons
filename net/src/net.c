@@ -208,16 +208,34 @@ static const avs_net_socket_v_table_t net_vtable = {
 
 typedef struct {
     const avs_net_socket_v_table_t * const operations;
-    int                                    socket;
-    avs_net_socket_type_t                  type;
-    avs_net_socket_state_t                 state;
-    char                                   hostname[NET_MAX_HOSTNAME_SIZE];
-    char                                   port[NET_PORT_SIZE];
-    avs_net_socket_configuration_t         configuration;
+    int socket;
+    avs_net_socket_type_t type;
+    avs_net_socket_state_t state;
+    char remote_hostname[NET_MAX_HOSTNAME_SIZE];
+    char remote_port[NET_PORT_SIZE];
+    avs_net_socket_configuration_t configuration;
 
     avs_net_timeout_t recv_timeout;
     volatile int error_code;
 } avs_net_socket_t;
+
+static inline int
+simple_snprintf(char *out, size_t size, const char *format, ...)
+AVS_F_PRINTF(3, 4);
+
+/**
+ * Contrary to standard snprintf(), this one will always return negative if not
+ * fully successful.
+ */
+static inline int
+simple_snprintf(char *out, size_t size, const char *format, ...) {
+    assert(out || !size);
+    va_list args;
+    va_start(args, format);
+    int result = vsnprintf(out, size, format, args);
+    va_end(args);
+    return (result >= 0 && (size_t) result >= size) ? -1 : 0;
+}
 
 int _avs_net_get_af(avs_net_af_t addr_family) {
     switch (addr_family) {
@@ -290,8 +308,6 @@ static int get_string_ip(const sockaddr_union_t *addr,
 static int get_string_port(const sockaddr_union_t *addr,
                            char *buffer, size_t buffer_size) {
     uint16_t port;
-    int retval;
-
     switch(addr->addr.sa_family) {
 #ifdef WITH_IPV4
         case AF_INET:
@@ -309,8 +325,7 @@ static int get_string_port(const sockaddr_union_t *addr,
             return -1;
     }
 
-    retval = snprintf(buffer, buffer_size, "%u", ntohs(port));
-    return (retval < 0 || (size_t) retval >= buffer_size) ? -1 : 0;
+    return simple_snprintf(buffer, buffer_size, "%u", ntohs(port));
 }
 
 static int remote_host_net(avs_net_abstract_socket_t *socket,
@@ -333,13 +348,12 @@ static int remote_host_net(avs_net_abstract_socket_t *socket,
 static int remote_hostname_net(avs_net_abstract_socket_t *socket_,
                                char *out_buffer, size_t out_buffer_size) {
     avs_net_socket_t *socket = (avs_net_socket_t *) socket_;
-    if (!socket->hostname[0]) {
-        socket->error_code = EBADF;
+    if (!socket->remote_hostname[0]) {
+        socket->error_code = (socket->socket < 0 ? EBADF : ENOBUFS);
         return -1;
     }
-    int retval;
-    retval = snprintf(out_buffer, out_buffer_size, "%s", socket->hostname);
-    if (retval < 0 || (size_t) retval >= out_buffer_size) {
+    if (simple_snprintf(out_buffer, out_buffer_size,
+                        "%s", socket->remote_hostname)) {
         socket->error_code = ERANGE;
         return -1;
     } else {
@@ -351,13 +365,12 @@ static int remote_hostname_net(avs_net_abstract_socket_t *socket_,
 static int remote_port_net(avs_net_abstract_socket_t *socket_,
                            char *out_buffer, size_t out_buffer_size) {
     avs_net_socket_t *socket = (avs_net_socket_t *) socket_;
-    if (!socket->port[0]) {
-        socket->error_code = EBADF;
+    if (!socket->remote_port[0]) {
+        socket->error_code = (socket->socket < 0 ? EBADF : ENOBUFS);
         return -1;
     }
-    int retval;
-    retval = snprintf(out_buffer, out_buffer_size, "%s", socket->port);
-    if (retval < 0 || (size_t) retval >= out_buffer_size) {
+    if (simple_snprintf(out_buffer, out_buffer_size,
+                        "%s", socket->remote_port)) {
         socket->error_code = ERANGE;
         return -1;
     } else {
@@ -666,14 +679,12 @@ static int host_port_to_string(const struct sockaddr *sa, socklen_t salen,
 # endif /* WITH_IPV6 */
 
     if (!result) {
-        int retval = 0;
         if (host) {
             result = (!_avs_inet_ntop(sa->sa_family, addr_ptr, host, hostlen)
                     ? -1 : 0);
         }
         if (!result && serv) {
-            result = ((retval = snprintf(serv, servlen, "%" PRIu16, *port_ptr)) < 0
-                    || (size_t) retval >= servlen) ? -1 : 0;
+            result = simple_snprintf(serv, servlen, "%" PRIu16, *port_ptr);
         }
     }
 #endif /* HAVE_GETNAMEINFO */
@@ -764,7 +775,7 @@ static int try_connect_open_socket(avs_net_socket_t *net_socket,
         return -1;
     } else {
         /* SUCCESS */
-        net_socket->state = AVS_NET_SOCKET_STATE_CONSUMING;
+        net_socket->state = AVS_NET_SOCKET_STATE_CONNECTED;
         /* store address affinity */
         if (net_socket->configuration.preferred_endpoint) {
             *net_socket->configuration.preferred_endpoint = address->api_ep;
@@ -809,7 +820,7 @@ static int connect_net(avs_net_abstract_socket_t *net_socket_,
 
     if (net_socket->socket >= 0) {
         if (net_socket->type != AVS_NET_UDP_SOCKET
-                || net_socket->state != AVS_NET_SOCKET_STATE_LISTENING) {
+                || net_socket->state != AVS_NET_SOCKET_STATE_BOUND) {
             LOG(ERROR, "socket is already connected or bound");
             net_socket->error_code = EISCONN;
             return -1;
@@ -826,20 +837,17 @@ static int connect_net(avs_net_abstract_socket_t *net_socket_,
             if (!try_connect(net_socket, &address)) {
                 avs_net_addrinfo_delete(&info);
 
-                int pfresult = snprintf(net_socket->hostname,
-                                        sizeof(net_socket->hostname),
-                                        "%s", host);
-                if (pfresult < 0
-                        || (size_t) pfresult >= sizeof(net_socket->hostname)) {
+                if (simple_snprintf(net_socket->remote_hostname,
+                                    sizeof(net_socket->remote_hostname),
+                                    "%s", host)) {
                     LOG(WARNING, "Hostname %s is too long, not storing", host);
-                    net_socket->hostname[0] = '\0';
+                    net_socket->remote_hostname[0] = '\0';
                 }
-                pfresult = snprintf(net_socket->port, sizeof(net_socket->port),
-                                    "%s", port);
-                if (pfresult < 0
-                        || (size_t) pfresult >= sizeof(net_socket->port)) {
+                if (simple_snprintf(net_socket->remote_port,
+                                    sizeof(net_socket->remote_port),
+                                    "%s", port)) {
                     LOG(WARNING, "Port %s is too long, not storing", port);
-                    net_socket->hostname[0] = '\0';
+                    net_socket->remote_hostname[0] = '\0';
                 }
                 return 0;
             }
@@ -1131,7 +1139,7 @@ static int try_bind(avs_net_socket_t *net_socket, avs_net_af_t family,
         net_socket->error_code = EINVAL;
         goto bind_net_end;
     }
-    net_socket->state = AVS_NET_SOCKET_STATE_LISTENING;
+    net_socket->state = AVS_NET_SOCKET_STATE_BOUND;
     retval = create_listening_socket(net_socket, &address.sockaddr_ep.addr,
                                      address.sockaddr_ep.header.size);
 bind_net_end:
@@ -1192,15 +1200,16 @@ static int accept_net(avs_net_abstract_socket_t *server_net_socket_,
     }
 
     if (host_port_to_string(&remote_address.addr,
-                            remote_address_length, new_net_socket->hostname,
-                            sizeof(new_net_socket->hostname),
-                            new_net_socket->port,
-                            sizeof(new_net_socket->port)) < 0) {
+                            remote_address_length,
+                            new_net_socket->remote_hostname,
+                            sizeof(new_net_socket->remote_hostname),
+                            new_net_socket->remote_port,
+                            sizeof(new_net_socket->remote_port)) < 0) {
         new_net_socket->error_code = errno;
         close_net_raw(new_net_socket);
         return -1;
     }
-    new_net_socket->state = AVS_NET_SOCKET_STATE_SERVING;
+    new_net_socket->state = AVS_NET_SOCKET_STATE_ACCEPTED;
     new_net_socket->error_code = 0;
     return 0;
 }
@@ -1376,9 +1385,9 @@ static int get_mtu(avs_net_socket_t *net_socket, int *out_mtu) {
 }
 
 static int get_fallback_inner_mtu(avs_net_socket_t *socket) {
+    assert(socket->socket >= 0);
 #ifdef WITH_IPV6
-    if (socket->socket >= 0
-            && get_connection_family(socket->socket) == AF_INET6) { /* IPv6 */
+    if (get_connection_family(socket->socket) == AF_INET6) { /* IPv6 */
         return 1232; /* 1280 - 48 */
     } else
 #endif
@@ -1517,10 +1526,8 @@ static int find_interface(const struct sockaddr *addr,
     do { \
         if ((TriedAddr) && (TriedName) \
                 && ifaddr_ip_equal(addr, (TriedAddr)) == 0) { \
-            retval = snprintf(*if_name, sizeof(*if_name), "%s", (TriedName)); \
-            if (retval > 0) { \
-                retval = ((size_t) retval >= sizeof(*if_name)) ? -1 : 0; \
-            } \
+            retval = simple_snprintf(*if_name, sizeof(*if_name), \
+                                     "%s", (TriedName)); \
             goto interface_name_end; \
         } \
     } while (0)

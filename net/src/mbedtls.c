@@ -484,9 +484,9 @@ static int initialize_ssl_config(ssl_socket_t *socket) {
         LOG(ERROR, "initialize_ssl_config: could not get socket state");
         return -1;
     }
-    if (state_opt.state == AVS_NET_SOCKET_STATE_CONSUMING) {
+    if (state_opt.state == AVS_NET_SOCKET_STATE_CONNECTED) {
         endpoint = MBEDTLS_SSL_IS_CLIENT;
-    } else if (state_opt.state == AVS_NET_SOCKET_STATE_SERVING) {
+    } else if (state_opt.state == AVS_NET_SOCKET_STATE_ACCEPTED) {
         endpoint = MBEDTLS_SSL_IS_SERVER;
     } else {
         socket->error_code = EINVAL;
