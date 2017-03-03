@@ -130,8 +130,10 @@ static int receive_ssl(avs_net_abstract_socket_t *socket_,
      * memory consumption. So, in the end, this buffer will never be completely
      * filled with decoded data. */
     size_t message_length;
-    int result = avs_net_socket_receive(socket->backend_socket, &message_length,
-                                        out_buffer, buffer_size);
+    int result;
+    WRAP_ERRNO(socket, result,
+               avs_net_socket_receive(socket->backend_socket, &message_length,
+                                      out_buffer, buffer_size));
 
     if (result) {
         return result;
@@ -192,7 +194,9 @@ static void close_ssl_raw(ssl_socket_t *socket) {
         socket->ctx = NULL;
     }
     if (socket->backend_socket) {
-        avs_net_socket_close(socket->backend_socket);
+        int retval;
+        WRAP_ERRNO(socket, retval, avs_net_socket_close(socket->backend_socket));
+        (void) retval;
         avs_net_socket_cleanup(&socket->backend_socket);
     }
 }
@@ -223,9 +227,11 @@ static int ssl_handshake(ssl_socket_t *socket) {
         LOG(DEBUG, "ssl_handshake(): client state %d", (int) dtls_peer_state(peer));
         char message[DTLS_MAX_BUF];
         size_t message_length;
-        int result =
-                avs_net_socket_receive(socket->backend_socket, &message_length,
-                                       message, sizeof(message));
+        int result;
+        WRAP_ERRNO(socket, result,
+                   avs_net_socket_receive(socket->backend_socket,
+                                          &message_length, message,
+                                          sizeof(message)));
         if (result) {
             return result;
         }
@@ -323,8 +329,10 @@ static int dtls_write_handler(dtls_context_t *ctx,
                               size_t length) {
     (void) session;
     ssl_socket_t *socket = (ssl_socket_t *) dtls_get_app_data(ctx);
-    int result = avs_net_socket_send(socket->backend_socket,
-                                     (const void *) buffer, length);
+    int result;
+    WRAP_ERRNO(socket, result,
+               avs_net_socket_send(socket->backend_socket,
+                                   (const void *) buffer, length));
     if (result) {
         return result;
     }
