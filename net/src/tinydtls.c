@@ -156,7 +156,7 @@ static int receive_ssl(avs_net_abstract_socket_t *socket_,
 }
 
 static int shutdown_ssl(avs_net_abstract_socket_t *socket_) {
-    LOG(TRACE, "shutdown_ssl(socket=%p)", (void *) socket);
+    LOG(TRACE, "shutdown_ssl(socket=%p)", (void *) socket_);
     ssl_socket_t *socket = (ssl_socket_t *) socket_;
     int retval;
     WRAP_ERRNO(socket, retval, avs_net_socket_shutdown(socket->backend_socket));
@@ -397,18 +397,26 @@ static int dtls_get_psk_info_handler(dtls_context_t *ctx,
 #endif /* #ifdef DTLS_PSK */
 
 #ifdef DTLS_ECC
-int dtls_get_ecdsa_key_handler(dtls_context_t *ctx,
-                               const session_t *session,
-                               const dtls_ecdsa_key_t **result) {
+static int dtls_get_ecdsa_key_handler(dtls_context_t *ctx,
+                                      const session_t *session,
+                                      const dtls_ecdsa_key_t **result) {
+    (void) ctx;
+    (void) session;
+    (void) result;
     LOG(ERROR, "tinyDTLS with ECC is not supported");
     return -1;
 }
 
-int dtls_verify_ecdsa_key_handler(dtls_context_t *ctx,
-                                  const session_t *session,
-                                  const unsigned char *other_pub_x,
-                                  const unsigned char *other_pub_y,
-                                  size_t key_size) {
+static int dtls_verify_ecdsa_key_handler(dtls_context_t *ctx,
+                                         const session_t *session,
+                                         const unsigned char *other_pub_x,
+                                         const unsigned char *other_pub_y,
+                                         size_t key_size) {
+    (void) ctx;
+    (void) session;
+    (void) other_pub_x;
+    (void) other_pub_y;
+    (void) key_size;
     LOG(ERROR, "tinyDTLS with ECC is not supported");
     return -1;
 }
