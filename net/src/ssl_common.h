@@ -333,8 +333,7 @@ static int get_opt_ssl(avs_net_abstract_socket_t *ssl_socket_,
     return retval;
 }
 
-#ifndef WITH_TINYDTLS
-static int is_client_cert_empty(const avs_net_client_cert_t *cert) {
+static inline int is_client_cert_empty(const avs_net_client_cert_t *cert) {
     switch (cert->impl.source) {
     case AVS_NET_DATA_SOURCE_FILE:
         return !cert->impl.data.file.path;
@@ -345,7 +344,6 @@ static int is_client_cert_empty(const avs_net_client_cert_t *cert) {
         return 1;
     }
 }
-#endif
 
 int _avs_net_create_ssl_socket(avs_net_abstract_socket_t **socket,
                                const void *socket_configuration) {
