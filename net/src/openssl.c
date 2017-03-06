@@ -20,6 +20,7 @@
 #endif
 
 #include <assert.h>
+#include <ctype.h>
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
@@ -243,6 +244,80 @@ static int cipher_is_aead(const EVP_CIPHER *cipher) {
     return 0;
 }
 
+static bool cipher_has_suffix(const char *cipher_desc, const char *suffix) {
+    const char *found = strstr(cipher_desc, suffix);
+    if (!found) {
+        return false;
+    }
+    found += strlen(suffix);
+    return !isalnum(*found);
+}
+
+static bool cipher_is_ccm8(const char *cipher_desc) {
+    return cipher_has_suffix(cipher_desc, "-CCM8");
+}
+
+static bool cipher_is_gcm8(const char *cipher_desc) {
+    return cipher_has_suffix(cipher_desc, "-GCM8");
+}
+
+static bool cipher_is_chachapoly(const char *cipher_desc) {
+    return cipher_has_suffix(cipher_desc, "-CHACHA20-POLY1305");
+}
+
+/* values from OpenSSL-git */
+#ifndef EVP_CCM_TLS_TAG_LEN
+#define EVP_CCM_TLS_TAG_LEN 16
+#endif
+#ifndef EVP_CCM8_TLS_TAG_LEN
+#define EVP_CCM8_TLS_TAG_LEN 8
+#endif
+#ifndef EVP_GCM8_TLS_TAG_LEN
+#define EVP_GCM8_TLS_TAG_LEN 8
+#endif
+#ifndef EVP_CHACHAPOLY_TLS_TAG_LEN
+#define EVP_CHACHAPOLY_TLS_TAG_LEN 16
+#endif
+
+static int aead_cipher_tag_len(SSL *ssl) {
+    const EVP_CIPHER *cipher = get_evp_cipher(ssl);
+    assert(cipher_is_aead(cipher));
+#if OPENSSL_VERSION_NUMBER_LT(1,1,0)
+    if (EVP_CIPHER_mode(cipher) & EVP_CIPH_GCM_MODE) {
+        return EVP_GCM_TLS_TAG_LEN;
+    } else if (EVP_CIPHER_mode(cipher) & EVP_CIPH_CCM_MODE) {
+        /* There is no tag information about tag length in CCM mode, yet
+         * the EVP_CIPH_CCM_MODE is defined in OpenSSL public headers. */
+        return EVP_CCM_TLS_TAG_LEN;
+    }
+#else
+    /* Seems like there is no way to obtain information on whether the cipher
+     * is in CCM/GCM or CCM/GCM-8 mode, which leads to this ugly solution. */
+    char cipher_desc[128];
+    if (!SSL_CIPHER_description(SSL_get_current_cipher(ssl), cipher_desc,
+                                sizeof(cipher_desc))) {
+        LOG(ERROR, "SSL_CIPHER_description() failed");
+        return -1;
+    }
+
+    if (EVP_CIPHER_mode(cipher) & EVP_CIPH_CCM_MODE) {
+        if (cipher_is_ccm8(cipher_desc)) {
+            return EVP_CCM8_TLS_TAG_LEN;
+        }
+        return EVP_CCM_TLS_TAG_LEN;
+    } else if (EVP_CIPHER_mode(cipher) & EVP_CIPH_GCM_MODE) {
+        if (cipher_is_gcm8(cipher_desc)) {
+            return EVP_GCM8_TLS_TAG_LEN;
+        }
+        return EVP_GCM_TLS_TAG_LEN;
+    } else if (cipher_is_chachapoly(cipher_desc)) {
+        return EVP_CHACHAPOLY_TLS_TAG_LEN;
+    }
+#endif
+    LOG(ERROR, "Unsupported cipher mode");
+    return -1;
+}
+
 static int get_dtls_overhead(ssl_socket_t *socket,
                              int *out_header,
                              int *out_padding_size) {
@@ -264,8 +339,15 @@ static int get_dtls_overhead(ssl_socket_t *socket,
         }
         *out_header += get_explicit_iv_length(cipher);
     }
-    /* adapted from mac_size calculation in dtls1_do_write() in OpenSSL */
-    if (!cipher_is_aead(cipher) && (md = get_evp_md(socket->ssl))) {
+
+    if (cipher_is_aead(cipher)) {
+        int tag_len = aead_cipher_tag_len(socket->ssl);
+        if (tag_len < 0) {
+            return tag_len;
+        }
+        *out_header += tag_len;
+    } else if ((md = get_evp_md(socket->ssl))) {
+        /* adapted from mac_size calculation in dtls1_do_write() in OpenSSL */
         *out_header += EVP_MD_size(md);
     }
     if (SSL_get_current_compression(socket->ssl) != NULL) {
