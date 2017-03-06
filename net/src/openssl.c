@@ -301,15 +301,11 @@ static int aead_cipher_tag_len(SSL *ssl) {
     }
 
     if (EVP_CIPHER_mode(cipher) & EVP_CIPH_CCM_MODE) {
-        if (cipher_is_ccm8(cipher_desc)) {
-            return EVP_CCM8_TLS_TAG_LEN;
-        }
-        return EVP_CCM_TLS_TAG_LEN;
+        return cipher_is_ccm8(cipher_desc) ? EVP_CCM8_TLS_TAG_LEN
+                                           : EVP_CCM_TLS_TAG_LEN;
     } else if (EVP_CIPHER_mode(cipher) & EVP_CIPH_GCM_MODE) {
-        if (cipher_is_gcm8(cipher_desc)) {
-            return EVP_GCM8_TLS_TAG_LEN;
-        }
-        return EVP_GCM_TLS_TAG_LEN;
+        return cipher_is_gcm8(cipher_desc) ? EVP_GCM8_TLS_TAG_LEN
+                                           : EVP_GCM_TLS_TAG_LEN;
     } else if (cipher_is_chachapoly(cipher_desc)) {
         return EVP_CHACHAPOLY_TLS_TAG_LEN;
     }
