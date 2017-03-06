@@ -68,10 +68,12 @@ static int get_dtls_overhead(ssl_socket_t *socket,
                              int *out_header,
                              int *out_padding_size) {
     (void) socket;
-    (void) out_header;
-    (void) out_padding_size;
-    /* TODO: this should be computed */
-    return 64;
+    /* tinyDTLS supports AES-128-CCM-8 ciphersuite only */
+    *out_header = 13 /* header */
+                + 8 /* nonce */
+                + 8 /* integrity verification code */;
+    *out_padding_size = 0;
+    return 0;
 }
 
 /**
