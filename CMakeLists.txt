@@ -173,6 +173,8 @@ list(LENGTH _AVS_TLS_BACKENDS _AVS_NUM_TLS_BACKENDS)
 if(_AVS_NUM_TLS_BACKENDS GREATER 1)
     string(REPLACE ";" ", " _AVS_TLS_BACKENDS "${_AVS_TLS_BACKENDS}")
     message(FATAL_ERROR "Selected ${_AVS_TLS_BACKENDS} as TLS backends but only one may be used.")
+elseif(_AVS_NUM_TLS_BACKENDS GREATER 0)
+    set(WITH_SSL ON)
 endif()
 
 ################################################################################
