@@ -20,6 +20,7 @@
 #endif
 
 #include <assert.h>
+#include <ctype.h>
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
@@ -243,6 +244,53 @@ static int cipher_is_aead(const EVP_CIPHER *cipher) {
     return 0;
 }
 
+static bool cipher_has_suffix(const char *cipher_desc, const char *suffix) {
+    const char *found = strstr(cipher_desc, suffix);
+    if (!found) {
+        return false;
+    }
+    found += strlen(suffix);
+    return *found == '\0';
+}
+
+static bool cipher_is_ccm8(const char *cipher_desc) {
+    return cipher_has_suffix(cipher_desc, "-CCM8");
+}
+
+static bool cipher_is_chachapoly(const char *cipher_desc) {
+    return cipher_has_suffix(cipher_desc, "-CHACHA20-POLY1305");
+}
+
+/* values from OpenSSL-git */
+#ifndef EVP_CCM_TLS_TAG_LEN
+#define EVP_CCM_TLS_TAG_LEN 16
+#endif
+#ifndef EVP_CCM8_TLS_TAG_LEN
+#define EVP_CCM8_TLS_TAG_LEN 8
+#endif
+#ifndef EVP_CHACHAPOLY_TLS_TAG_LEN
+#define EVP_CHACHAPOLY_TLS_TAG_LEN 16
+#endif
+
+static int aead_cipher_tag_len(SSL *ssl) {
+    const EVP_CIPHER *cipher = get_evp_cipher(ssl);
+    assert(cipher_is_aead(cipher));
+    const char *cipher_name = SSL_CIPHER_get_name(SSL_get_current_cipher(ssl));
+
+    if (cipher_is_ccm8(cipher_name)) {
+        return EVP_CCM8_TLS_TAG_LEN;
+    } else if (cipher_is_chachapoly(cipher_name)) {
+        return EVP_CHACHAPOLY_TLS_TAG_LEN;
+    } else if (EVP_CIPHER_mode(cipher) & EVP_CIPH_CCM_MODE) {
+        return EVP_CCM_TLS_TAG_LEN;
+    } else if (EVP_CIPHER_mode(cipher) & EVP_CIPH_GCM_MODE) {
+        return EVP_GCM_TLS_TAG_LEN;
+    }
+
+    LOG(ERROR, "Unsupported cipher mode");
+    return -1;
+}
+
 static int get_dtls_overhead(ssl_socket_t *socket,
                              int *out_header,
                              int *out_padding_size) {
@@ -264,8 +312,15 @@ static int get_dtls_overhead(ssl_socket_t *socket,
         }
         *out_header += get_explicit_iv_length(cipher);
     }
-    /* adapted from mac_size calculation in dtls1_do_write() in OpenSSL */
-    if (!cipher_is_aead(cipher) && (md = get_evp_md(socket->ssl))) {
+
+    if (cipher_is_aead(cipher)) {
+        int tag_len = aead_cipher_tag_len(socket->ssl);
+        if (tag_len < 0) {
+            return tag_len;
+        }
+        *out_header += tag_len;
+    } else if ((md = get_evp_md(socket->ssl))) {
+        /* adapted from mac_size calculation in dtls1_do_write() in OpenSSL */
         *out_header += EVP_MD_size(md);
     }
     if (SSL_get_current_compression(socket->ssl) != NULL) {
