@@ -250,7 +250,7 @@ static bool cipher_has_suffix(const char *cipher_desc, const char *suffix) {
         return false;
     }
     found += strlen(suffix);
-    return !isalnum(*found);
+    return *found == '\0';
 }
 
 static bool cipher_is_ccm8(const char *cipher_desc) {
@@ -275,33 +275,18 @@ static bool cipher_is_chachapoly(const char *cipher_desc) {
 static int aead_cipher_tag_len(SSL *ssl) {
     const EVP_CIPHER *cipher = get_evp_cipher(ssl);
     assert(cipher_is_aead(cipher));
-#if OPENSSL_VERSION_NUMBER_LT(1,1,0)
-    if (EVP_CIPHER_mode(cipher) & EVP_CIPH_GCM_MODE) {
-        return EVP_GCM_TLS_TAG_LEN;
-    } else if (EVP_CIPHER_mode(cipher) & EVP_CIPH_CCM_MODE) {
-        /* There is no tag information about tag length in CCM mode, yet
-         * the EVP_CIPH_CCM_MODE is defined in OpenSSL public headers. */
-        return EVP_CCM_TLS_TAG_LEN;
-    }
-#else
-    /* Seems like there is no way to obtain information on whether the cipher
-     * is in CCM/GCM or CCM/GCM-8 mode, which leads to this ugly solution. */
-    char cipher_desc[128];
-    if (!SSL_CIPHER_description(SSL_get_current_cipher(ssl), cipher_desc,
-                                sizeof(cipher_desc))) {
-        LOG(ERROR, "SSL_CIPHER_description() failed");
-        return -1;
-    }
+    const char *cipher_name = SSL_CIPHER_get_name(SSL_get_current_cipher(ssl));
 
-    if (EVP_CIPHER_mode(cipher) & EVP_CIPH_CCM_MODE) {
-        return cipher_is_ccm8(cipher_desc) ? EVP_CCM8_TLS_TAG_LEN
-                                           : EVP_CCM_TLS_TAG_LEN;
+    if (cipher_is_ccm8(cipher_name)) {
+        return EVP_CCM8_TLS_TAG_LEN;
+    } else if (cipher_is_chachapoly(cipher_name)) {
+        return EVP_CHACHAPOLY_TLS_TAG_LEN;
+    } else if (EVP_CIPHER_mode(cipher) & EVP_CIPH_CCM_MODE) {
+        return EVP_CCM_TLS_TAG_LEN;
     } else if (EVP_CIPHER_mode(cipher) & EVP_CIPH_GCM_MODE) {
         return EVP_GCM_TLS_TAG_LEN;
-    } else if (cipher_is_chachapoly(cipher_desc)) {
-        return EVP_CHACHAPOLY_TLS_TAG_LEN;
     }
-#endif
+
     LOG(ERROR, "Unsupported cipher mode");
     return -1;
 }
