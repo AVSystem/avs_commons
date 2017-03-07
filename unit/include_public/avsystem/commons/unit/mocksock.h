@@ -130,6 +130,14 @@ void avs_unit_mocksock_expect_remote_host__(avs_net_abstract_socket_t *socket,
     avs_unit_mocksock_expect_remote_host__((Socket), (ToReturn), \
                                            __FILE__, __LINE__)
 
+void
+avs_unit_mocksock_expect_remote_hostname__(avs_net_abstract_socket_t *socket,
+                                           const char *to_return,
+                                           const char *file, int line);
+#define avs_unit_mocksock_expect_remote_hostname(Socket, ToReturn) \
+    avs_unit_mocksock_expect_remote_hostname__((Socket), (ToReturn), \
+                                               __FILE__, __LINE__)
+
 void avs_unit_mocksock_expect_remote_port__(avs_net_abstract_socket_t *socket,
                                             const char *to_return,
                                             const char *file,
@@ -174,6 +182,8 @@ void avs_unit_mocksock_enable_recv_timeout_getsetopt(
 void avs_unit_mocksock_enable_inner_mtu_getopt(
         avs_net_abstract_socket_t *socket_,
         int inner_mtu);
+
+void avs_unit_mocksock_enable_state_getopt(avs_net_abstract_socket_t *socket);
 
 #ifdef  __cplusplus
 }

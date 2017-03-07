@@ -607,11 +607,44 @@ typedef enum {
 } avs_net_socket_opt_key_t;
 
 typedef enum {
+    /**
+     * Socket is either newly constructed, or it has been closed by calling
+     * @ref avs_net_socket_close.
+     */
     AVS_NET_SOCKET_STATE_CLOSED,
+
+    /**
+     * Socket was previously in either BOUND, ACCEPTED or CONNECTED state, but
+     * @ref avs_net_socket_shutdown was called.
+     */
     AVS_NET_SOCKET_STATE_SHUTDOWN,
-    AVS_NET_SOCKET_STATE_LISTENING,
-    AVS_NET_SOCKET_STATE_SERVING,
-    AVS_NET_SOCKET_STATE_CONSUMING
+
+    /**
+     * @ref avs_net_socket_bind has been called:
+     * - In case of a datagram socket (@ref AVS_NET_UDP_SOCKET or
+     *   @ref AVS_NET_DTLS_SOCKET), it is ready for @ref avs_net_socket_send_to
+     *   and @ref avs_net_socket_receive_from operations.
+     * - In case of a stream socket (@ref AVS_NET_TCP_SOCKET or
+     *   @ref AVS_NET_SSL_SOCKET), it is ready for @ref avs_net_socket_accept
+     *   operation.
+     */
+    AVS_NET_SOCKET_STATE_BOUND,
+
+    /**
+     * This is a server-side stream socket, serving a connection from one
+     * concrete client brought up using @ref avs_net_socket_accept. It is ready
+     * for @ref avs_net_socket_send and @ref avs_net_socket_receive operations.
+     */
+    AVS_NET_SOCKET_STATE_ACCEPTED,
+
+    /**
+     * @ref avs_net_socket_connect has been called. The socket is connected to
+     * some concrete server. In case of a stream socket (@ref AVS_NET_TCP_SOCKET
+     * or @ref AVS_NET_SSL_SOCKET), it is strictly the client end of the
+     * connection. It is ready for @ref avs_net_socket_send and
+     * @ref avs_net_socket_receive operations.
+     */
+    AVS_NET_SOCKET_STATE_CONNECTED
 } avs_net_socket_state_t;
 
 #if INT_MAX >= INT_LEAST32_MAX
@@ -748,6 +781,9 @@ int avs_net_socket_interface_name(avs_net_abstract_socket_t *socket,
                                   avs_net_socket_interface_name_t *if_name);
 int avs_net_socket_get_remote_host(avs_net_abstract_socket_t *socket,
                                    char *out_buffer, size_t out_buffer_size);
+int avs_net_socket_get_remote_hostname(avs_net_abstract_socket_t *socket,
+                                       char *out_buffer,
+                                       size_t out_buffer_size);
 int avs_net_socket_get_remote_port(avs_net_abstract_socket_t *socket,
                                    char *out_buffer, size_t out_buffer_size);
 int avs_net_socket_get_local_port(avs_net_abstract_socket_t *socket,

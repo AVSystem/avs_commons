@@ -85,6 +85,8 @@ static int interface_name_ssl(avs_net_abstract_socket_t *ssl_socket,
                               avs_net_socket_interface_name_t *if_name);
 static int remote_host_ssl(avs_net_abstract_socket_t *socket,
                            char *out_buffer, size_t ouf_buffer_size);
+static int remote_hostname_ssl(avs_net_abstract_socket_t *socket,
+                               char *out_buffer, size_t ouf_buffer_size);
 static int remote_port_ssl(avs_net_abstract_socket_t *socket,
                            char *out_buffer, size_t ouf_buffer_size);
 static int local_port_ssl(avs_net_abstract_socket_t *socket,
@@ -116,6 +118,7 @@ static const avs_net_socket_v_table_t ssl_vtable = {
     system_socket_ssl,
     interface_name_ssl,
     remote_host_ssl,
+    remote_hostname_ssl,
     remote_port_ssl,
     local_port_ssl,
     get_opt_ssl,
@@ -195,6 +198,16 @@ static int remote_host_ssl(avs_net_abstract_socket_t *socket_,
     WRAP_ERRNO(socket, retval,
                avs_net_socket_get_remote_host(socket->backend_socket,
                                               out_buffer, out_buffer_size));
+    return retval;
+}
+
+static int remote_hostname_ssl(avs_net_abstract_socket_t *socket_,
+                               char *out_buffer, size_t out_buffer_size) {
+    ssl_socket_t *socket = (ssl_socket_t *) socket_;
+    int retval;
+    WRAP_ERRNO(socket, retval,
+               avs_net_socket_get_remote_hostname(socket->backend_socket,
+                                                  out_buffer, out_buffer_size));
     return retval;
 }
 
@@ -308,7 +321,6 @@ static int system_socket_ssl(avs_net_abstract_socket_t *socket_,
 static void close_ssl_raw(ssl_socket_t *socket) {
     if (socket->backend_socket) {
         avs_net_socket_close(socket->backend_socket);
-        avs_net_socket_cleanup(&socket->backend_socket);
     }
     mbedtls_ssl_free(&socket->context);
     memset(&socket->context, 0, sizeof(socket->context));
@@ -472,9 +484,9 @@ static int initialize_ssl_config(ssl_socket_t *socket) {
         LOG(ERROR, "initialize_ssl_config: could not get socket state");
         return -1;
     }
-    if (state_opt.state == AVS_NET_SOCKET_STATE_CONSUMING) {
+    if (state_opt.state == AVS_NET_SOCKET_STATE_CONNECTED) {
         endpoint = MBEDTLS_SSL_IS_CLIENT;
-    } else if (state_opt.state == AVS_NET_SOCKET_STATE_SERVING) {
+    } else if (state_opt.state == AVS_NET_SOCKET_STATE_ACCEPTED) {
         endpoint = MBEDTLS_SSL_IS_SERVER;
     } else {
         socket->error_code = EINVAL;
@@ -657,8 +669,8 @@ static int decorate_ssl(avs_net_abstract_socket_t *socket_,
     }
 
     WRAP_ERRNO_IMPL(socket, backend_socket, result,
-                    avs_net_socket_get_remote_host(backend_socket,
-                                                   host, sizeof(host)));
+                    avs_net_socket_get_remote_hostname(backend_socket,
+                                                       host, sizeof(host)));
     if (result) {
         return result;
     }
@@ -809,6 +821,7 @@ static int cleanup_ssl(avs_net_abstract_socket_t **socket_) {
     LOG(TRACE, "cleanup_ssl(*socket=%p)", (void *) *socket);
 
     close_ssl(*socket_);
+    avs_net_socket_cleanup(&(*socket)->backend_socket);
 
     switch ((*socket)->security_mode) {
     case AVS_NET_SECURITY_PSK:
