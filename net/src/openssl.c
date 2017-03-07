@@ -1293,39 +1293,16 @@ static unsigned int psk_client_cb(SSL *ssl,
     return (unsigned int) socket->psk.psk_size;
 }
 
-static void free_psk(avs_net_psk_t *psk) {
-    free(psk->psk);
-    psk->psk = NULL;
-    free(psk->identity);
-    psk->identity = NULL;
-}
-
 static int configure_ssl_psk(ssl_socket_t *socket,
                              const avs_net_psk_t *psk) {
     LOG(TRACE, "configure_ssl_psk");
 
-    free_psk(&socket->psk);
-
-    socket->psk.psk_size = psk->psk_size;
-    socket->psk.psk = (char*)malloc(psk->psk_size);
-    if (!socket->psk.psk) {
-        LOG(ERROR, "out of memory");
-        return -1;
+    int result = _avs_net_psk_copy(&socket->psk, psk);
+    if (result) {
+        return result;
     }
-
-    socket->psk.identity_size = psk->identity_size;
-    socket->psk.identity = (char*)malloc(psk->identity_size);
-    if (!socket->psk.identity) {
-        LOG(ERROR, "out of memory");
-        free_psk(&socket->psk);
-        return -1;
-    }
-
-    memcpy(socket->psk.psk, psk->psk, psk->psk_size);
-    memcpy(socket->psk.identity, psk->identity, psk->identity_size);
 
     SSL_CTX_set_psk_client_callback(socket->ctx, psk_client_cb);
-
     return 0;
 }
 #else
@@ -1409,13 +1386,6 @@ static int configure_ssl(ssl_socket_t *socket,
     return 0;
 }
 
-static int shutdown_ssl(avs_net_abstract_socket_t *socket_) {
-    ssl_socket_t *socket = (ssl_socket_t *) socket_;
-    int retval;
-    WRAP_ERRNO(socket, retval, avs_net_socket_shutdown(socket->backend_socket));
-    return retval;
-}
-
 static void update_send_or_recv_error_code(ssl_socket_t *socket) {
     (void) (socket->error_code
             || (socket->error_code =
@@ -1474,7 +1444,7 @@ static int cleanup_ssl(avs_net_abstract_socket_t **socket_) {
     LOG(TRACE, "cleanup_ssl(*socket=%p)", (void *) *socket);
 
 #ifdef HAVE_OPENSSL_PSK
-    free_psk(&(*socket)->psk);
+    _avs_net_psk_cleanup(&(*socket)->psk);
 #endif
 
     close_ssl(*socket_);

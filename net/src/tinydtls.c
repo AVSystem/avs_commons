@@ -36,6 +36,8 @@ typedef struct {
     int error_code;
     avs_net_socket_configuration_t backend_configuration;
 
+    ssl_read_context_t *read_ctx;
+
     avs_net_psk_t psk;
 } ssl_socket_t;
 
@@ -109,8 +111,8 @@ static int send_ssl(avs_net_abstract_socket_t *ssl_socket,
          * pointer to the data to be send. Empirical check proved however that
          * in fact this buffer is not modified, so I guess we may leave that
          * ugly const-cast here. */
-        int result = dtls_write(socket->ctx, &session, (uint8 *) (intptr_t) buffer,
-                                buffer_length);
+        int result = dtls_write(socket->ctx, &session,
+                                (uint8 *) (intptr_t) buffer, buffer_length);
         if (result < 0) {
             LOG(ERROR, "send_ssl() failed");
             return result;
@@ -128,9 +130,9 @@ static int receive_ssl(avs_net_abstract_socket_t *socket_,
                        size_t buffer_size) {
     ssl_socket_t *socket = (ssl_socket_t *) socket_;
     /* This is technically incorrect as the @p out_buffer is supposed to be used
-     * for decoded data, but we use it for encoded data as well to avoid excessive
-     * memory consumption. So, in the end, this buffer will never be completely
-     * filled with decoded data. */
+     * for decoded data, but we use it for encoded data as well to avoid
+     * excessive memory consumption. So, in the end, this buffer will never be
+     * completely filled with decoded data. */
     size_t message_length;
     int result;
     WRAP_ERRNO(socket, result,
@@ -148,41 +150,22 @@ static int receive_ssl(avs_net_abstract_socket_t *socket_,
     };
 
     session_t session = *get_dtls_session();
-    /* Switching app-data to a temporary read context. It is going to be
-     * used inside dtls_read_handler() */
-    dtls_set_app_data(socket->ctx, &read_context);
+    assert(socket->read_ctx == NULL);
+    socket->read_ctx = &read_context;
     assert(message_length <= INT_MAX);
     result = dtls_handle_message(socket->ctx, &session, (uint8 *) out_buffer,
                                  (int) message_length);
-    /* Restoring previously set app data. */
-    dtls_set_app_data(socket->ctx, socket);
+    socket->read_ctx = NULL;
 
     return result;
 }
-
-static int shutdown_ssl(avs_net_abstract_socket_t *socket_) {
-    LOG(TRACE, "shutdown_ssl(socket=%p)", (void *) socket_);
-    ssl_socket_t *socket = (ssl_socket_t *) socket_;
-    int retval;
-    WRAP_ERRNO(socket, retval, avs_net_socket_shutdown(socket->backend_socket));
-    return retval;
-}
-
-#ifdef DTLS_PSK
-static void cleanup_psk(avs_net_psk_t *psk) {
-    free(psk->psk);
-    psk->psk = NULL;
-    free(psk->identity);
-    psk->identity = NULL;
-}
-#endif
 
 static int cleanup_ssl(avs_net_abstract_socket_t **socket_) {
     ssl_socket_t *socket = *(ssl_socket_t **) socket_;
     LOG(TRACE, "cleanup_ssl(*socket=%p)", (void *) socket);
 
 #ifdef DTLS_PSK
-    cleanup_psk(&socket->psk);
+    _avs_net_psk_cleanup(&socket->psk);
 #endif
     close_ssl(*socket_);
     free(socket);
@@ -219,15 +202,16 @@ static int ssl_handshake(ssl_socket_t *socket) {
      * client and a server. It is definitely enough to handle normal DTLS
      * handshakes, and should protect us from looping indefinitely if for some
      * reason we couldn't reach the connected state. */
-    int max_handshake_exchanges = 64;
+    int handshake_exchanges_remaining = 64;
 
     while (dtls_peer_state(peer) != DTLS_STATE_CONNECTED) {
-        if (!max_handshake_exchanges--) {
+        if (!handshake_exchanges_remaining--) {
             LOG(ERROR, "ssl_handshake(): too many handshake retries");
             return -1;
         }
 
-        LOG(DEBUG, "ssl_handshake(): client state %d", (int) dtls_peer_state(peer));
+        LOG(DEBUG, "ssl_handshake(): client state %d",
+            (int) dtls_peer_state(peer));
         char message[DTLS_MAX_BUF];
         size_t message_length;
         int result;
@@ -268,26 +252,7 @@ static int configure_ssl_psk(ssl_socket_t *socket,
     LOG(ERROR, "support for psk is disabled");
     return -1;
 #else
-    cleanup_psk(&socket->psk);
-
-    socket->psk.psk_size = psk->psk_size;
-    socket->psk.psk = (char *) malloc(psk->psk_size);
-    if (!socket->psk.psk) {
-        LOG(ERROR, "out of memory");
-        return -1;
-    }
-
-    socket->psk.identity_size = psk->identity_size;
-    socket->psk.identity = (char *) malloc(psk->identity_size);
-    if (!socket->psk.identity) {
-        LOG(ERROR, "out of memory");
-        cleanup_psk(&socket->psk);
-        return -1;
-    }
-    memcpy(socket->psk.psk, psk->psk, psk->psk_size);
-    memcpy(socket->psk.identity, psk->identity, psk->identity_size);
-
-    return 0;
+    return _avs_net_psk_copy(&socket->psk, psk);
 #endif /* DTLS_PSK */
 }
 
@@ -350,7 +315,7 @@ static int dtls_read_handler(dtls_context_t *ctx,
                              size_t len) {
     (void) session;
     ssl_read_context_t *read_context =
-            (ssl_read_context_t *) dtls_get_app_data(ctx);
+            ((ssl_socket_t *) dtls_get_app_data(ctx))->read_ctx;
     assert(read_context);
     assert(len <= read_context->buffer_size);
 

@@ -444,14 +444,6 @@ static int start_ssl(ssl_socket_t *socket, const char *host) {
     }
 }
 
-static int shutdown_ssl(avs_net_abstract_socket_t *socket_) {
-    ssl_socket_t *socket = (ssl_socket_t *) socket_;
-    int retval;
-    LOG(TRACE, "shutdown_ssl(socket=%p)", (void *) socket);
-    WRAP_ERRNO(socket, retval, avs_net_socket_shutdown(socket->backend_socket));
-    return retval;
-}
-
 static void update_send_or_recv_error_code(ssl_socket_t *socket,
                                            int mbedtls_result) {
     if (!socket->error_code
@@ -553,10 +545,7 @@ static void cleanup_security_cert(ssl_socket_certs_t *certs) {
 static void cleanup_security_psk(ssl_socket_psk_t *psk) {
     free(psk->ciphersuites);
     psk->ciphersuites = NULL;
-    free(psk->value.psk);
-    psk->value.psk = NULL;
-    free(psk->value.identity);
-    psk->value.identity = NULL;
+    _avs_net_psk_cleanup(&psk->value);
 }
 
 static int cleanup_ssl(avs_net_abstract_socket_t **socket_) {
@@ -853,29 +842,7 @@ static int configure_ssl_certs(ssl_socket_certs_t *certs,
 static int configure_ssl_psk(ssl_socket_t *socket,
                              const avs_net_psk_t *psk) {
     LOG(TRACE, "configure_ssl_psk");
-
-    cleanup_security_psk(&socket->security.psk);
-
-    socket->security.psk.value.psk_size = psk->psk_size;
-    socket->security.psk.value.psk = (char *) malloc(psk->psk_size);
-    if (!socket->security.psk.value.psk) {
-        LOG(ERROR, "out of memory");
-        return -1;
-    }
-
-    socket->security.psk.value.identity_size = psk->identity_size;
-    socket->security.psk.value.identity = (char *) malloc(psk->identity_size);
-    if (!socket->security.psk.value.identity) {
-        LOG(ERROR, "out of memory");
-        cleanup_security_psk(&socket->security.psk);
-        return -1;
-    }
-
-    memcpy(socket->security.psk.value.psk, psk->psk, psk->psk_size);
-    memcpy(socket->security.psk.value.identity, psk->identity,
-           psk->identity_size);
-
-    return 0;
+    return _avs_net_psk_copy(&socket->security.psk.value, psk);
 }
 
 static int initialize_ssl_socket(ssl_socket_t *socket,

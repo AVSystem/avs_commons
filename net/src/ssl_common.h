@@ -33,7 +33,6 @@ static int receive_ssl(avs_net_abstract_socket_t *ssl_socket,
                        size_t *out,
                        void *buffer,
                        size_t buffer_length);
-static int shutdown_ssl(avs_net_abstract_socket_t *socket);
 static int cleanup_ssl(avs_net_abstract_socket_t **ssl_socket);
 
 /* avs_net_socket_v_table_t ssl handlers implemented in this file */
@@ -208,6 +207,14 @@ static int system_socket_ssl(avs_net_abstract_socket_t *socket_,
     return *out ? 0 : -1;
 }
 
+static int shutdown_ssl(avs_net_abstract_socket_t *socket_) {
+    LOG(TRACE, "shutdown_ssl(socket=%p)", (void *) socket_);
+    ssl_socket_t *socket = (ssl_socket_t *) socket_;
+    int retval;
+    WRAP_ERRNO(socket, retval, avs_net_socket_shutdown(socket->backend_socket));
+    return retval;
+}
+
 static int close_ssl(avs_net_abstract_socket_t *socket_) {
     ssl_socket_t *socket = (ssl_socket_t *) socket_;
     LOG(TRACE, "close_ssl(socket=%p)", (void *) socket);
@@ -353,6 +360,34 @@ int _avs_net_create_ssl_socket(avs_net_abstract_socket_t **socket,
 int _avs_net_create_dtls_socket(avs_net_abstract_socket_t **socket,
                                 const void *socket_configuration) {
     return create_ssl_socket(socket, AVS_NET_UDP_SOCKET, socket_configuration);
+}
+
+static inline void _avs_net_psk_cleanup(avs_net_psk_t *psk) {
+    free(psk->psk);
+    psk->psk = NULL;
+    free(psk->identity);
+    psk->identity = NULL;
+}
+
+static inline int _avs_net_psk_copy(avs_net_psk_t *dst, const avs_net_psk_t *src) {
+    _avs_net_psk_cleanup(dst);
+    dst->psk_size = src->psk_size;
+    dst->psk = (char *) malloc(src->psk_size);
+    if (!dst->psk) {
+        LOG(ERROR, "out of memory");
+        return -1;
+    }
+
+    dst->identity_size = src->identity_size;
+    dst->identity = (char *) malloc(src->identity_size);
+    if (!dst->identity) {
+        LOG(ERROR, "out of memory");
+        _avs_net_psk_cleanup(dst);
+        return -1;
+    }
+    memcpy(dst->psk, src->psk, src->psk_size);
+    memcpy(dst->identity, src->identity, src->identity_size);
+    return 0;
 }
 
 #endif /* NET_SSL_COMMON_H */
