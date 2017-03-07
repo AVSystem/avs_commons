@@ -41,12 +41,7 @@
 # define IPV6_AVAILABLE 0
 #endif
 
-#cmakedefine WITH_OPENSSL
-#cmakedefine WITH_MBEDTLS
-#cmakedefine WITH_TINYDTLS
-#if defined(WITH_OPENSSL) || defined(WITH_MBEDTLS) || defined(WITH_TINYDTLS)
-#define WITH_SSL
-#endif
+#cmakedefine WITH_SSL
 
 #cmakedefine WITH_AVS_LOG
 #cmakedefine WITH_SOCKET_LOG
