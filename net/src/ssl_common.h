@@ -370,21 +370,29 @@ static inline void _avs_net_psk_cleanup(avs_net_psk_t *psk) {
 }
 
 static inline int _avs_net_psk_copy(avs_net_psk_t *dst, const avs_net_psk_t *src) {
-    _avs_net_psk_cleanup(dst);
-    dst->psk_size = src->psk_size;
-    dst->psk = (char *) malloc(src->psk_size);
-    if (!dst->psk) {
+    if (dst == src) {
+        return 0;
+    }
+    assert(src->psk_size);
+    assert(src->identity_size);
+    avs_net_psk_t out_psk;
+    memset(&out_psk, 0, sizeof(out_psk));
+    out_psk.psk_size = src->psk_size;
+    out_psk.psk = (char *) malloc(src->psk_size);
+    if (!out_psk.psk) {
         LOG(ERROR, "out of memory");
         return -1;
     }
 
-    dst->identity_size = src->identity_size;
-    dst->identity = (char *) malloc(src->identity_size);
-    if (!dst->identity) {
+    out_psk.identity_size = src->identity_size;
+    out_psk.identity = (char *) malloc(src->identity_size);
+    if (!out_psk.identity) {
         LOG(ERROR, "out of memory");
-        _avs_net_psk_cleanup(dst);
         return -1;
     }
+    _avs_net_psk_cleanup(dst);
+    *dst = out_psk;
+
     memcpy(dst->psk, src->psk, src->psk_size);
     memcpy(dst->identity, src->identity, src->identity_size);
     return 0;
