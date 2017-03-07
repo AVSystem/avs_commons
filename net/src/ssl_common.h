@@ -401,4 +401,27 @@ static inline int _avs_net_psk_copy(avs_net_psk_t *dst, const avs_net_psk_t *src
     return 0;
 }
 
+static const avs_net_socket_v_table_t ssl_vtable = {
+    connect_ssl,
+    decorate_ssl,
+    send_ssl,
+    (avs_net_socket_send_to_t) unimplemented,
+    receive_ssl,
+    (avs_net_socket_receive_from_t) unimplemented,
+    bind_ssl,
+    (avs_net_socket_accept_t) unimplemented,
+    close_ssl,
+    shutdown_ssl,
+    cleanup_ssl,
+    system_socket_ssl,
+    interface_name_ssl,
+    remote_host_ssl,
+    remote_hostname_ssl,
+    remote_port_ssl,
+    local_port_ssl,
+    get_opt_ssl,
+    set_opt_ssl,
+    errno_ssl
+};
+
 #endif /* NET_SSL_COMMON_H */

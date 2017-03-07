@@ -68,29 +68,6 @@ static int is_ssl_started(ssl_socket_t *socket) {
 #define NET_SSL_COMMON_INTERNALS
 #include "ssl_common.h"
 
-static const avs_net_socket_v_table_t ssl_vtable = {
-    connect_ssl,
-    decorate_ssl,
-    send_ssl,
-    (avs_net_socket_send_to_t) unimplemented,
-    receive_ssl,
-    (avs_net_socket_receive_from_t) unimplemented,
-    bind_ssl,
-    (avs_net_socket_accept_t) unimplemented,
-    close_ssl,
-    shutdown_ssl,
-    cleanup_ssl,
-    system_socket_ssl,
-    interface_name_ssl,
-    remote_host_ssl,
-    remote_hostname_ssl,
-    remote_port_ssl,
-    local_port_ssl,
-    get_opt_ssl,
-    set_opt_ssl,
-    errno_ssl
-};
-
 static int avs_bio_recv(void *ctx, unsigned char *buf, size_t len,
                         uint32_t timeout_ms) {
     ssl_socket_t *socket = (ssl_socket_t *) ctx;
