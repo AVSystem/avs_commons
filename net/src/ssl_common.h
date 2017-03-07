@@ -373,7 +373,10 @@ static inline int _avs_net_psk_copy(avs_net_psk_t *dst, const avs_net_psk_t *src
     if (dst == src) {
         return 0;
     }
-    assert(src->psk_size);
+    if (!src->psk_size) {
+        LOG(ERROR, "PSK cannot be empty");
+        return -1;
+    }
     avs_net_psk_t out_psk;
     memset(&out_psk, 0, sizeof(out_psk));
     out_psk.psk_size = src->psk_size;
