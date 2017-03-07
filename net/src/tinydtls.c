@@ -425,7 +425,12 @@ static int initialize_ssl_socket(ssl_socket_t *socket,
         LOG(ERROR, "tinyDTLS backend supports UDP sockets only");
         return -1;
     }
-    dtls_init();
+    static bool dtls_initialized;
+
+    if (!dtls_initialized) {
+        dtls_initialized = true;
+        dtls_init();
+    }
 
     *(const avs_net_socket_v_table_t **) (intptr_t) &socket->operations =
             &ssl_vtable;
