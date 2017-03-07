@@ -409,10 +409,8 @@ static int dtls_event_handler(dtls_context_t *ctx,
                               unsigned short code) {
     (void) ctx;
     (void) session;
-#ifndef NDEBUG
     LOG(DEBUG, "tinyDTLS reported an event (level=%d, code=%d)", (int) level,
         (int) code);
-#endif
     (void) level;
     (void) code;
     return 0;
