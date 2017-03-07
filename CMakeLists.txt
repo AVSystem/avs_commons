@@ -150,12 +150,31 @@ avs_find_library("
 " ${MBEDTLS_TARGETS})
 set(MBEDTLS_INCLUDE_DIRS "" CACHE PATH "mbed TLS include directory")
 
-# SSL
-option(WITH_OPENSSL "Enable OpenSSL" ON)
-option(WITH_MBEDTLS "Enable mbed TLS" OFF)
+# tinyDTLS
+avs_find_library("find_library(TINYDTLS_FOUND tinydtls)" tinydtls)
 
-if(WITH_OPENSSL AND WITH_MBEDTLS)
-    message(FATAL_ERROR "Only one SSL/TLS library can be enabled at the same time")
+# SSL
+option(WITH_OPENSSL "Enable OpenSSL" OFF)
+option(WITH_MBEDTLS "Enable mbed TLS" OFF)
+option(WITH_TINYDTLS "Enable tinyDTLS" OFF)
+
+set(_AVS_TLS_BACKENDS "")
+if(WITH_OPENSSL)
+    list(APPEND _AVS_TLS_BACKENDS "openssl")
+endif()
+if(WITH_MBEDTLS)
+    list(APPEND _AVS_TLS_BACKENDS "mbedtls")
+endif()
+if(WITH_TINYDTLS)
+    list(APPEND _AVS_TLS_BACKENDS "tinydtls")
+endif()
+
+list(LENGTH _AVS_TLS_BACKENDS _AVS_NUM_TLS_BACKENDS)
+if(_AVS_NUM_TLS_BACKENDS GREATER 1)
+    string(REPLACE ";" ", " _AVS_TLS_BACKENDS "${_AVS_TLS_BACKENDS}")
+    message(FATAL_ERROR "Selected ${_AVS_TLS_BACKENDS} as TLS backends but only one may be used.")
+elseif(_AVS_NUM_TLS_BACKENDS GREATER 0)
+    set(WITH_SSL ON)
 endif()
 
 ################################################################################
@@ -355,6 +374,10 @@ if(WITH_AVS_NET)
         separate_arguments(MBEDTLS_INCLUDE_DIRS)
         if(MBEDTLS_INCLUDE_DIRS)
             include_directories(${MBEDTLS_INCLUDE_DIRS})
+        endif()
+    elseif(WITH_TINYDTLS)
+        if (NOT TINYDTLS_FOUND)
+            message(FATAL_ERROR "tinyDTLS libraries not found")
         endif()
     endif()
 
