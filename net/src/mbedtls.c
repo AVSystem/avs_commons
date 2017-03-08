@@ -131,7 +131,7 @@ static int get_dtls_overhead(ssl_socket_t *socket,
         *out_padding_size = (int) cipher->block_size;
         /* Looking at the mbedtls_ssl_get_record_expansion it adds size
          * of the block to the record size, and we don't want that */
-        result -= cipher->block_size;
+        result -= (int) cipher->block_size;
     }
 
     *out_header = result;
