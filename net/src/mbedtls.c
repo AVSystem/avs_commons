@@ -127,6 +127,7 @@ static int get_dtls_overhead(ssl_socket_t *socket,
     const mbedtls_cipher_info_t *cipher =
             mbedtls_cipher_info_from_type(ciphersuite->cipher);
 
+    *out_padding_size = 0;
     if (cipher->mode == MBEDTLS_MODE_CBC) {
         *out_padding_size = (int) cipher->block_size;
         /* Looking at the mbedtls_ssl_get_record_expansion it adds size
