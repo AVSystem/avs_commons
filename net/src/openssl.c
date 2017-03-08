@@ -220,35 +220,42 @@ static int aead_cipher_tag_len(SSL *ssl) {
 static int get_dtls_overhead(ssl_socket_t *socket,
                              int *out_header,
                              int *out_padding_size) {
-    const EVP_CIPHER *cipher;
-    const EVP_MD *md;
     *out_header = DTLS1_RT_HEADER_LENGTH;
     *out_padding_size = 0;
     if (!socket || !socket->ssl) {
         return 0;
     }
-    /* actual logic is inspired by GnuTLS' record_overhead() */
-    if ((cipher = get_evp_cipher(socket->ssl))) {
-        int block_size = EVP_CIPHER_block_size(cipher);
-        if (block_size < 0) {
-            return -1;
-        }
-        if (!(EVP_CIPHER_flags(cipher) & EVP_CIPH_NO_PADDING)) {
-            *out_padding_size = block_size;
-        }
-        *out_header += get_explicit_iv_length(cipher);
+
+    /* actual logic is inspired by OpenSSL's ssl_cipher_get_overhead */
+    const EVP_CIPHER *cipher = get_evp_cipher(socket->ssl);
+    if (!cipher) {
+        return -1;
     }
+
+    *out_header += get_explicit_iv_length(cipher);
 
     if (cipher_is_aead(cipher)) {
         int tag_len = aead_cipher_tag_len(socket->ssl);
         if (tag_len < 0) {
-            return tag_len;
+            return -1;
         }
         *out_header += tag_len;
-    } else if ((md = get_evp_md(socket->ssl))) {
-        /* adapted from mac_size calculation in dtls1_do_write() in OpenSSL */
-        *out_header += EVP_MD_size(md);
+    } else {
+        const EVP_MD *md = get_evp_md(socket->ssl);
+        if (md) {
+            *out_header += EVP_MD_size(md);
+        }
+
+        int block_size = EVP_CIPHER_block_size(cipher);
+        if (block_size < 0) {
+            return -1;
+        }
+
+        if (!(EVP_CIPHER_flags(cipher) & EVP_CIPH_NO_PADDING)) {
+            *out_padding_size = block_size;
+        }
     }
+
     if (SSL_get_current_compression(socket->ssl) != NULL) {
         *out_header += SSL3_RT_MAX_COMPRESSED_OVERHEAD;
     }
