@@ -115,29 +115,26 @@ static int get_dtls_overhead(ssl_socket_t *socket,
     const mbedtls_ssl_ciphersuite_t *ciphersuite =
             mbedtls_ssl_ciphersuite_from_string(
                     mbedtls_ssl_get_ciphersuite(&socket->context));
-    *out_header = 13; /* base DTLS header size */
-    *out_padding_size = 0;
-    if (ciphersuite) {
-        const mbedtls_cipher_info_t *cipher =
-                mbedtls_cipher_info_from_type(ciphersuite->cipher);
-        const mbedtls_md_info_t *mac =
-                mbedtls_md_info_from_type(ciphersuite->mac);
-        if (cipher) {
-            if (cipher->mode == MBEDTLS_MODE_CBC) {
-                *out_padding_size = (int) cipher->block_size; /* padding */
-                *out_header += (int) cipher->iv_size; /* explicit IV */
-            } else if (cipher->mode == MBEDTLS_MODE_GCM
-                    || cipher->mode == MBEDTLS_MODE_CCM) {
-                *out_header += 8; /* explicit IV length for GCM and CCM */
-            }
-        }
-        if (mac && !(cipher && (cipher->mode == MBEDTLS_MODE_GCM
-                                        || cipher->mode == MBEDTLS_MODE_CCM))) {
-            *out_header += (int) mbedtls_md_get_size(mac);
-        }
+
+    int result = mbedtls_ssl_get_record_expansion(&socket->context);
+    if (result == MBEDTLS_ERR_SSL_FEATURE_UNAVAILABLE
+            || result == MBEDTLS_ERR_SSL_INTERNAL_ERROR) {
+        /* This is either a result of compression mode or some internal error,
+         * and in both cases we can't predict the size. */
+        return -1;
     }
-    /* ignoring the compression for now */
-    /* mbed TLS does not declare any overhead constants */
+
+    const mbedtls_cipher_info_t *cipher =
+            mbedtls_cipher_info_from_type(ciphersuite->cipher);
+
+    if (cipher->mode == MBEDTLS_MODE_CBC) {
+        *out_padding_size = (int) cipher->block_size;
+        /* Looking at the mbedtls_ssl_get_record_expansion it adds size
+         * of the block to the record size, and we don't want that */
+        result -= cipher->block_size;
+    }
+
+    *out_header = result;
     return 0;
 }
 
