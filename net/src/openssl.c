@@ -56,7 +56,7 @@
 #define OPENSSL_VERSION_NUMBER_LT(Major, Minor, Fix) \
         (!OPENSSL_VERSION_NUMBER_GE(Major, Minor, Fix))
 
-#if OPENSSL_VERSION_NUMBER_GE(0,9,7) && !defined(OPENSSL_NO_EC)
+#if defined(EVP_PKEY_EC) && !defined(OPENSSL_NO_EC)
 #define HAVE_EC
 #endif
 
@@ -262,7 +262,14 @@ static int get_dtls_overhead(ssl_socket_t *socket,
     return 0;
 }
 #else /* HAVE_DTLS */
-#define get_dtls_overhead(Socket, OutHeader, OutPaddingSize) (-1)
+static int get_dtls_overhead(ssl_socket_t *socket,
+                             int *out_header,
+                             int *out_padding_size) {
+    (void) socket;
+    (void) out_header;
+    (void) out_padding_size;
+    return -1;
+}
 #endif /* HAVE_DTLS */
 
 #ifdef BIO_TYPE_SOURCE_SINK
@@ -763,6 +770,17 @@ static int load_ca_certs_from_pkcs12(ssl_socket_t *socket,
     return retval;
 }
 
+static int load_client_key_from_pkcs12_unpacked(ssl_socket_t *socket,
+                                                pkcs12_unpacked_t *pkcs12) {
+    if (!pkcs12 || !pkcs12->private_key
+        || (SSL_CTX_use_PrivateKey(socket->ctx, pkcs12->private_key) != 1)) {
+        log_openssl_error();
+        return -1;
+    }
+    return 0;
+}
+
+#ifdef HAVE_EC
 static int load_client_key_from_pkcs8(ssl_socket_t *socket,
                                       const void *data,
                                       size_t size,
@@ -777,18 +795,8 @@ static int load_client_key_from_pkcs8(ssl_socket_t *socket,
      * a method for auto-detection of key type.
      */
     if (SSL_CTX_use_PrivateKey_ASN1(EVP_PKEY_EC, socket->ctx,
-                                    (const unsigned char *) data, (long) size)
-            != 1) {
-        log_openssl_error();
-        return -1;
-    }
-    return 0;
-}
-
-static int load_client_key_from_pkcs12_unpacked(ssl_socket_t *socket,
-                                                pkcs12_unpacked_t *pkcs12) {
-    if (!pkcs12 || !pkcs12->private_key
-        || (SSL_CTX_use_PrivateKey(socket->ctx, pkcs12->private_key) != 1)) {
+                                    (unsigned char *) (intptr_t) data,
+                                    (long) size) != 1) {
         log_openssl_error();
         return -1;
     }
@@ -804,6 +812,7 @@ static int load_client_key_from_pkcs12(ssl_socket_t *socket,
     pkcs12_unpacked_delete(&pkcs12);
     return retval;
 }
+#endif // HAVE_EC
 
 static int load_client_key_from_pkcs12_file(ssl_socket_t *socket,
                                             const char *client_key_file,
@@ -1152,7 +1161,7 @@ static int load_client_cert_from_der(ssl_socket_t *socket,
                "library version");
     return -1;
 #else
-    const unsigned char *der = (const unsigned char *) data;
+    unsigned char *der = (unsigned char *) (intptr_t) data;
     if (SSL_CTX_use_certificate_ASN1(socket->ctx, (int) size, der) != 1) {
         return -1;
     }
