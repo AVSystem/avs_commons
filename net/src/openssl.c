@@ -262,7 +262,14 @@ static int get_dtls_overhead(ssl_socket_t *socket,
     return 0;
 }
 #else /* HAVE_DTLS */
-#define get_dtls_overhead(Socket, OutHeader, OutPaddingSize) (-1)
+static int get_dtls_overhead(ssl_socket_t *socket,
+                             int *out_header,
+                             int *out_padding_size) {
+    (void) socket;
+    (void) out_header;
+    (void) out_padding_size;
+    return -1;
+}
 #endif /* HAVE_DTLS */
 
 #ifdef BIO_TYPE_SOURCE_SINK
