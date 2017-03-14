@@ -475,9 +475,21 @@ static BIO *avs_bio_spawn(ssl_socket_t *socket) {
 }
 #endif /* BIO_TYPE_SOURCE_SINK */
 
+static bool socket_can_communicate(avs_net_abstract_socket_t *socket) {
+    avs_net_socket_opt_value_t opt;
+    return socket
+            && !avs_net_socket_get_opt(socket, AVS_NET_SOCKET_OPT_STATE, &opt)
+            && (opt.state == AVS_NET_SOCKET_STATE_ACCEPTED
+                    || opt.state == AVS_NET_SOCKET_STATE_CONNECTED);
+}
+
 static void close_ssl_raw(ssl_socket_t *socket) {
     if (socket->ssl) {
-        SSL_shutdown(socket->ssl);
+        if (socket_can_communicate(socket->backend_socket)) {
+            // SSL_shutdown attempts to send and receive packets,
+            // so do it only if we know we can do it
+            SSL_shutdown(socket->ssl);
+        }
         SSL_free(socket->ssl);
         socket->ssl = NULL;
     }
