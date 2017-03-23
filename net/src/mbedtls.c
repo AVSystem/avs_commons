@@ -481,13 +481,13 @@ static int receive_ssl(avs_net_abstract_socket_t *socket_,
     LOG(TRACE, "receive_ssl(socket=%p, buffer=%p, buffer_length=%lu)",
         (void *) socket, buffer, (unsigned long) buffer_length);
 
-    while (result < 0
-            && result != MBEDTLS_ERR_SSL_WANT_READ
-            && result != MBEDTLS_ERR_SSL_WANT_WRITE) {
+    do {
         errno = 0;
-        result = mbedtls_ssl_read(&socket->context,
-                                  (unsigned char *) buffer, buffer_length);
-    }
+        result = mbedtls_ssl_read(&socket->context, (unsigned char *)buffer,
+                                  buffer_length);
+    } while (result == MBEDTLS_ERR_SSL_WANT_READ
+                || result == MBEDTLS_ERR_SSL_WANT_WRITE);
+
     if (result < 0) {
         *out_bytes_received = 0;
         if (result != MBEDTLS_ERR_SSL_PEER_CLOSE_NOTIFY) {
