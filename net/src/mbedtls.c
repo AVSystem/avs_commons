@@ -387,16 +387,15 @@ static int start_ssl(ssl_socket_t *socket, const char *host) {
         return -1;
     }
 
-    for (;;) {
+    do {
         result = mbedtls_ssl_handshake(&socket->context);
-        if (result == 0) {
-            LOG(TRACE, "handshake success");
-            break;
-        } else if (result != MBEDTLS_ERR_SSL_WANT_READ
-                && result != MBEDTLS_ERR_SSL_WANT_WRITE) {
-            LOG(ERROR, "handshake failed: %d", result);
-            break;
-        }
+    } while (result == MBEDTLS_ERR_SSL_WANT_READ
+                || result == MBEDTLS_ERR_SSL_WANT_WRITE);
+
+    if (result == 0) {
+        LOG(TRACE, "handshake success");
+    } else {
+        LOG(ERROR, "handshake failed: %d", result);
     }
 
     if (!result && is_verification_enabled(socket)) {
@@ -444,23 +443,23 @@ static int send_ssl(avs_net_abstract_socket_t *socket_,
         (void *) socket, buffer, (unsigned long) buffer_length);
 
     while (bytes_sent < buffer_length) {
-        errno = 0;
-        result = mbedtls_ssl_write(
-                &socket->context,
-                ((const unsigned char *) buffer) + bytes_sent,
-                (size_t) (buffer_length - bytes_sent));
+        do {
+            errno = 0;
+            result = mbedtls_ssl_write(
+                    &socket->context,
+                    ((const unsigned char *) buffer) + bytes_sent,
+                    (size_t) (buffer_length - bytes_sent));
+        } while (result == MBEDTLS_ERR_SSL_WANT_WRITE
+                    || result == MBEDTLS_ERR_SSL_WANT_READ);
+
         if (result <= 0) {
-            if (result == MBEDTLS_ERR_SSL_WANT_READ
-                    || result == MBEDTLS_ERR_SSL_WANT_WRITE) {
-                continue;
-            } else {
-                LOG(DEBUG, "ssl_write result %d", result);
-                break;
-            }
+            LOG(DEBUG, "ssl_write result %d", result);
+            break;
         } else {
             bytes_sent += (size_t) result;
         }
     }
+
     if (bytes_sent < buffer_length) {
         LOG(ERROR, "send failed (%lu/%lu): %d",
             bytes_sent, buffer_length, result);
@@ -481,13 +480,13 @@ static int receive_ssl(avs_net_abstract_socket_t *socket_,
     LOG(TRACE, "receive_ssl(socket=%p, buffer=%p, buffer_length=%lu)",
         (void *) socket, buffer, (unsigned long) buffer_length);
 
-    while (result < 0
-            && result != MBEDTLS_ERR_SSL_WANT_READ
-            && result != MBEDTLS_ERR_SSL_WANT_WRITE) {
+    do {
         errno = 0;
-        result = mbedtls_ssl_read(&socket->context,
-                                  (unsigned char *) buffer, buffer_length);
-    }
+        result = mbedtls_ssl_read(&socket->context, (unsigned char *)buffer,
+                                  buffer_length);
+    } while (result == MBEDTLS_ERR_SSL_WANT_READ
+                || result == MBEDTLS_ERR_SSL_WANT_WRITE);
+
     if (result < 0) {
         *out_bytes_received = 0;
         if (result != MBEDTLS_ERR_SSL_PEER_CLOSE_NOTIFY) {
