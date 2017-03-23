@@ -351,6 +351,11 @@ static int initialize_ssl_config(ssl_socket_t *socket) {
     return 0;
 }
 
+static bool should_try_again(int result) {
+    return result == MBEDTLS_ERR_SSL_WANT_READ
+            || result == MBEDTLS_ERR_SSL_WANT_WRITE;
+}
+
 static int start_ssl(ssl_socket_t *socket, const char *host) {
     int result;
     mbedtls_entropy_init(&socket->entropy);
@@ -387,16 +392,14 @@ static int start_ssl(ssl_socket_t *socket, const char *host) {
         return -1;
     }
 
-    for (;;) {
+    do {
         result = mbedtls_ssl_handshake(&socket->context);
-        if (result == 0) {
-            LOG(TRACE, "handshake success");
-            break;
-        } else if (result != MBEDTLS_ERR_SSL_WANT_READ
-                && result != MBEDTLS_ERR_SSL_WANT_WRITE) {
-            LOG(ERROR, "handshake failed: %d", result);
-            break;
-        }
+    } while (should_try_again(result));
+
+    if (result == 0) {
+        LOG(TRACE, "handshake success");
+    } else {
+        LOG(ERROR, "handshake failed: %d", result);
     }
 
     if (!result && is_verification_enabled(socket)) {
@@ -450,8 +453,7 @@ static int send_ssl(avs_net_abstract_socket_t *socket_,
                 ((const unsigned char *) buffer) + bytes_sent,
                 (size_t) (buffer_length - bytes_sent));
         if (result <= 0) {
-            if (result == MBEDTLS_ERR_SSL_WANT_READ
-                    || result == MBEDTLS_ERR_SSL_WANT_WRITE) {
+            if (should_try_again(result)) {
                 continue;
             } else {
                 LOG(DEBUG, "ssl_write result %d", result);
@@ -485,8 +487,7 @@ static int receive_ssl(avs_net_abstract_socket_t *socket_,
         errno = 0;
         result = mbedtls_ssl_read(&socket->context, (unsigned char *)buffer,
                                   buffer_length);
-    } while (result == MBEDTLS_ERR_SSL_WANT_READ
-                || result == MBEDTLS_ERR_SSL_WANT_WRITE);
+    } while (should_try_again(result));
 
     if (result < 0) {
         *out_bytes_received = 0;
