@@ -51,7 +51,7 @@ extern "C" {
  * @param offset     Offset in bytes from <c>struct_ptr</c>.
  */
 #define AVS_APPLY_OFFSET(type, struct_ptr, offset) \
-        ((type *) (((char *) (intptr_t) (struct_ptr)) + (offset)))
+        ((type *) (void *) (((char *) (intptr_t) (struct_ptr)) + (offset)))
 
 /**
  * Concatenates two tokens. Can be used to do macro expansion before standard C
@@ -200,6 +200,6 @@ typedef long avs_off_t;
 #endif
 
 #define AVS_CONTAINER_OF(ptr, type, member) \
-    ((type*)((char*)(intptr_t)(ptr) - offsetof(type, member)))
+    ((type*)(void*)((char*)(intptr_t)(ptr) - offsetof(type, member)))
 
 #endif	/* AVS_COMMONS_DEFS_H */
