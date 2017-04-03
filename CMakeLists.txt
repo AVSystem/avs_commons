@@ -178,9 +178,9 @@ elseif(_AVS_NUM_TLS_BACKENDS GREATER 0)
 endif()
 
 include(CMakeDependentOption)
-cmake_dependent_option(WITH_OPENSSL_DTLS "Enable OpenSSL DTLS support" ON WITH_OPENSSL OFF)
-cmake_dependent_option(WITH_OPENSSL_EC_KEY "Enable OpenSSL EC_KEY support" ON WITH_OPENSSL OFF)
-cmake_dependent_option(WITH_OPENSSL_PSK "Enable OpenSSL pre-shared key support" ON WITH_OPENSSL OFF)
+cmake_dependent_option(WITH_DTLS "Enable OpenSSL DTLS support" ON WITH_SSL OFF)
+cmake_dependent_option(WITH_EC_KEY "Enable OpenSSL EC_KEY support" ON WITH_SSL OFF)
+cmake_dependent_option(WITH_PSK "Enable OpenSSL pre-shared key support" ON WITH_SSL OFF)
 
 ################################################################################
 

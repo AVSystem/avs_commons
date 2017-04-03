@@ -56,19 +56,19 @@
 #define OPENSSL_VERSION_NUMBER_LT(Major, Minor, Fix) \
         (!OPENSSL_VERSION_NUMBER_GE(Major, Minor, Fix))
 
-#if (!defined(EVP_PKEY_EC) || defined(OPENSSL_NO_EC)) && defined(WITH_OPENSSL_EC_KEY)
+#if (!defined(EVP_PKEY_EC) || defined(OPENSSL_NO_EC)) && defined(WITH_EC_KEY)
 #warning "Detected OpenSSL version does not support EC keys - disabling"
-#undef WITH_OPENSSL_EC_KEY
+#undef WITH_EC_KEY
 #endif
 
-#if (OPENSSL_VERSION_NUMBER_LT(1,0,0) || defined(OPENSSL_NO_PSK)) && defined(WITH_OPENSSL_PSK)
+#if (OPENSSL_VERSION_NUMBER_LT(1,0,0) || defined(OPENSSL_NO_PSK)) && defined(WITH_PSK)
 #warning "Detected OpenSSL version does not support PSK - disabling"
-#undef WITH_OPENSSL_PSK
+#undef WITH_PSK
 #endif
 
-#if OPENSSL_VERSION_NUMBER_LT(1,0,1) && defined(WITH_OPENSSL_DTLS)
+#if OPENSSL_VERSION_NUMBER_LT(1,0,1) && defined(WITH_DTLS)
 #warning "Detected OpenSSL version does not support DTLS - disabling"
-#undef WITH_OPENSSL_DTLS
+#undef WITH_DTLS
 #endif
 
 #ifndef HEADER_SSL_H
@@ -91,7 +91,7 @@ typedef struct {
     avs_net_socket_configuration_t backend_configuration;
     avs_net_resolved_endpoint_t endpoint_buffer;
 
-#ifdef WITH_OPENSSL_PSK
+#ifdef WITH_PSK
     avs_net_psk_t psk;
 #endif
 } ssl_socket_t;
@@ -105,7 +105,7 @@ typedef struct {
         LOG(ERROR, "%s", ERR_error_string(ERR_get_error(), error_buffer)); \
     } while (0)
 
-#ifdef WITH_OPENSSL_DTLS
+#ifdef WITH_DTLS
 #if OPENSSL_VERSION_NUMBER_LT(1,1,0)
 static const EVP_CIPHER *get_evp_cipher(SSL *ssl) {
     EVP_CIPHER_CTX *ctx = ssl->enc_write_ctx;
@@ -264,7 +264,7 @@ static int get_dtls_overhead(ssl_socket_t *socket,
     }
     return 0;
 }
-#else /* WITH_OPENSSL_DTLS */
+#else /* WITH_DTLS */
 static int get_dtls_overhead(ssl_socket_t *socket,
                              int *out_header,
                              int *out_padding_size) {
@@ -273,7 +273,7 @@ static int get_dtls_overhead(ssl_socket_t *socket,
     (void) out_padding_size;
     return -1;
 }
-#endif /* WITH_OPENSSL_DTLS */
+#endif /* WITH_DTLS */
 
 #ifdef BIO_TYPE_SOURCE_SINK
 
@@ -377,7 +377,7 @@ static long avs_bio_ctrl(BIO *bio, int command, long intarg, void *ptrarg) {
     switch (command) {
     case BIO_CTRL_FLUSH:
         return 1;
-#ifdef WITH_OPENSSL_DTLS
+#ifdef WITH_DTLS
     case BIO_CTRL_DGRAM_QUERY_MTU:
     case BIO_CTRL_DGRAM_GET_FALLBACK_MTU:
         return get_socket_inner_mtu_or_zero(sock->backend_socket);
@@ -472,7 +472,7 @@ static BIO *avs_bio_spawn(ssl_socket_t *socket) {
         if (socket->backend_type == AVS_NET_TCP_SOCKET) {
             return BIO_new_socket(fd, 0);
         }
-#ifdef WITH_OPENSSL_DTLS
+#ifdef WITH_DTLS
         if (socket->backend_type == AVS_NET_UDP_SOCKET) {
             BIO *bio = BIO_new_dgram(fd, 0);
             BIO_ctrl(bio, BIO_CTRL_DGRAM_SET_CONNECTED, 0,
@@ -560,7 +560,7 @@ static int ssl_handshake(ssl_socket_t *socket) {
     return -1;
 }
 
-#if !defined(WITH_OPENSSL_PSK) && !defined(SSL_set_app_data)
+#if !defined(WITH_PSK) && !defined(SSL_set_app_data)
 /*
  * SSL_set_app_data is not available in some versions, but also not used
  * anywhere if PSK is not used.
@@ -783,7 +783,7 @@ static int load_client_key_from_pkcs12_unpacked(ssl_socket_t *socket,
     return 0;
 }
 
-#ifdef WITH_OPENSSL_EC_KEY
+#ifdef WITH_EC_KEY
 static int load_client_key_from_pkcs8(ssl_socket_t *socket,
                                       const void *data,
                                       size_t size,
@@ -815,7 +815,7 @@ static int load_client_key_from_pkcs12(ssl_socket_t *socket,
     pkcs12_unpacked_delete(&pkcs12);
     return retval;
 }
-#endif // WITH_OPENSSL_EC_KEY
+#endif // WITH_EC_KEY
 
 static int load_client_key_from_pkcs12_file(ssl_socket_t *socket,
                                             const char *client_key_file,
@@ -950,7 +950,7 @@ static int load_ca_certs_from_file(ssl_socket_t *socket,
                                           certs->impl.data.file.password);
 }
 
-#ifdef WITH_OPENSSL_EC_KEY
+#ifdef WITH_EC_KEY
 static const EC_POINT *get_ec_public_key(ssl_socket_t *socket) {
     X509 *cert = NULL;
     EVP_PKEY *evp_key = NULL;
@@ -1071,9 +1071,9 @@ static int load_client_key_from_data(ssl_socket_t *socket,
         return -1;
     }
 }
-#else /* WITH_OPENSSL_EC_KEY */
+#else /* WITH_EC_KEY */
 #define load_client_key_from_data(...) ((int) -1)
-#endif /* WITH_OPENSSL_EC_KEY */
+#endif /* WITH_EC_KEY */
 
 static int load_client_key_from_typed_file(ssl_socket_t *socket,
                                            const char *client_key_file,
@@ -1275,7 +1275,7 @@ static int configure_ssl_certs(ssl_socket_t *socket,
     return 0;
 }
 
-#ifdef WITH_OPENSSL_PSK
+#ifdef WITH_PSK
 static unsigned int psk_client_cb(SSL *ssl,
                                   const char *hint,
                                   char *identity,
@@ -1451,7 +1451,7 @@ static int cleanup_ssl(avs_net_abstract_socket_t **socket_) {
     ssl_socket_t **socket = (ssl_socket_t **) socket_;
     LOG(TRACE, "cleanup_ssl(*socket=%p)", (void *) *socket);
 
-#ifdef WITH_OPENSSL_PSK
+#ifdef WITH_PSK
     _avs_net_psk_cleanup(&(*socket)->psk);
 #endif
 
@@ -1535,9 +1535,9 @@ static const SSL_METHOD *stream_method(avs_net_ssl_version_t version) {
     }
 }
 
-#ifndef WITH_OPENSSL_DTLS
+#ifndef WITH_DTLS
 #define dgram_method(x) ((void)(x), (const SSL_METHOD*)NULL)
-#else /* WITH_OPENSSL_DTLS */
+#else /* WITH_DTLS */
 
 static const SSL_METHOD *dgram_method(avs_net_ssl_version_t version) {
     switch (version) {
@@ -1560,7 +1560,7 @@ static const SSL_METHOD *dgram_method(avs_net_ssl_version_t version) {
     }
 }
 
-#endif /* WITH_OPENSSL_DTLS */
+#endif /* WITH_DTLS */
 
 static SSL_CTX *make_ssl_context(avs_net_socket_type_t backend_type,
                                  avs_net_ssl_version_t version) {
@@ -1603,9 +1603,9 @@ static int stream_proto_version(avs_net_ssl_version_t version) {
     }
 }
 
-#ifndef WITH_OPENSSL_DTLS
+#ifndef WITH_DTLS
 #define dgram_proto_version(x) ((void)(x), -1)
-#else /* WITH_OPENSSL_DTLS */
+#else /* WITH_DTLS */
 
 static int dgram_proto_version(avs_net_ssl_version_t version) {
     switch (version) {
@@ -1621,7 +1621,7 @@ static int dgram_proto_version(avs_net_ssl_version_t version) {
     }
 }
 
-#endif /* WITH_OPENSSL_DTLS */
+#endif /* WITH_DTLS */
 
 static SSL_CTX *make_ssl_context(avs_net_socket_type_t backend_type,
                                  avs_net_ssl_version_t version) {
@@ -1634,7 +1634,7 @@ static SSL_CTX *make_ssl_context(avs_net_socket_type_t backend_type,
         ossl_proto_version = stream_proto_version(version);
         break;
     case AVS_NET_UDP_SOCKET:
-#ifdef WITH_OPENSSL_DTLS
+#ifdef WITH_DTLS
         method = OPENSSL_METHOD(DTLS)();
         ossl_proto_version = dgram_proto_version(version);
 #endif
