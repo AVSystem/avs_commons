@@ -61,8 +61,9 @@
 #undef WITH_OPENSSL_EC_KEY
 #endif
 
-#if OPENSSL_VERSION_NUMBER_GE(1,0,0) && !defined(OPENSSL_NO_PSK)
-#define HAVE_OPENSSL_PSK
+#if (OPENSSL_VERSION_NUMBER_LT(1,0,0) || defined(OPENSSL_NO_PSK)) && defined(WITH_OPENSSL_PSK)
+#warning "Detected OpenSSL version does not support PSK - disabling"
+#undef WITH_OPENSSL_PSK
 #endif
 
 #if OPENSSL_VERSION_NUMBER_LT(1,0,1) && defined(WITH_OPENSSL_DTLS)
@@ -90,7 +91,7 @@ typedef struct {
     avs_net_socket_configuration_t backend_configuration;
     avs_net_resolved_endpoint_t endpoint_buffer;
 
-#ifdef HAVE_OPENSSL_PSK
+#ifdef WITH_OPENSSL_PSK
     avs_net_psk_t psk;
 #endif
 } ssl_socket_t;
@@ -559,7 +560,7 @@ static int ssl_handshake(ssl_socket_t *socket) {
     return -1;
 }
 
-#if !defined(HAVE_OPENSSL_PSK) && !defined(SSL_set_app_data)
+#if !defined(WITH_OPENSSL_PSK) && !defined(SSL_set_app_data)
 /*
  * SSL_set_app_data is not available in some versions, but also not used
  * anywhere if PSK is not used.
@@ -1274,7 +1275,7 @@ static int configure_ssl_certs(ssl_socket_t *socket,
     return 0;
 }
 
-#ifdef HAVE_OPENSSL_PSK
+#ifdef WITH_OPENSSL_PSK
 static unsigned int psk_client_cb(SSL *ssl,
                                   const char *hint,
                                   char *identity,
@@ -1450,7 +1451,7 @@ static int cleanup_ssl(avs_net_abstract_socket_t **socket_) {
     ssl_socket_t **socket = (ssl_socket_t **) socket_;
     LOG(TRACE, "cleanup_ssl(*socket=%p)", (void *) *socket);
 
-#ifdef HAVE_OPENSSL_PSK
+#ifdef WITH_OPENSSL_PSK
     _avs_net_psk_cleanup(&(*socket)->psk);
 #endif
 
