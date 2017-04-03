@@ -43,6 +43,7 @@
 
 #cmakedefine WITH_SSL
 #cmakedefine WITH_OPENSSL_DTLS
+#cmakedefine WITH_OPENSSL_EC_KEY
 
 #cmakedefine WITH_AVS_LOG
 #cmakedefine WITH_SOCKET_LOG

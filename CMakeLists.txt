@@ -179,6 +179,7 @@ endif()
 
 include(CMakeDependentOption)
 cmake_dependent_option(WITH_OPENSSL_DTLS "Enable OpenSSL DTLS support" ON WITH_OPENSSL OFF)
+cmake_dependent_option(WITH_OPENSSL_EC_KEY "Enable OpenSSL EC_KEY support" ON WITH_OPENSSL OFF)
 
 ################################################################################
 

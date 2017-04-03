@@ -56,8 +56,9 @@
 #define OPENSSL_VERSION_NUMBER_LT(Major, Minor, Fix) \
         (!OPENSSL_VERSION_NUMBER_GE(Major, Minor, Fix))
 
-#if defined(EVP_PKEY_EC) && !defined(OPENSSL_NO_EC)
-#define HAVE_EC
+#if (!defined(EVP_PKEY_EC) || defined(OPENSSL_NO_EC)) && defined(WITH_OPENSSL_EC_KEY)
+#warning "Detected OpenSSL version does not support EC keys - disabling"
+#undef WITH_OPENSSL_EC_KEY
 #endif
 
 #if OPENSSL_VERSION_NUMBER_GE(1,0,0) && !defined(OPENSSL_NO_PSK)
@@ -781,7 +782,7 @@ static int load_client_key_from_pkcs12_unpacked(ssl_socket_t *socket,
     return 0;
 }
 
-#ifdef HAVE_EC
+#ifdef WITH_OPENSSL_EC_KEY
 static int load_client_key_from_pkcs8(ssl_socket_t *socket,
                                       const void *data,
                                       size_t size,
@@ -813,7 +814,7 @@ static int load_client_key_from_pkcs12(ssl_socket_t *socket,
     pkcs12_unpacked_delete(&pkcs12);
     return retval;
 }
-#endif // HAVE_EC
+#endif // WITH_OPENSSL_EC_KEY
 
 static int load_client_key_from_pkcs12_file(ssl_socket_t *socket,
                                             const char *client_key_file,
@@ -948,7 +949,7 @@ static int load_ca_certs_from_file(ssl_socket_t *socket,
                                           certs->impl.data.file.password);
 }
 
-#ifdef HAVE_EC
+#ifdef WITH_OPENSSL_EC_KEY
 static const EC_POINT *get_ec_public_key(ssl_socket_t *socket) {
     X509 *cert = NULL;
     EVP_PKEY *evp_key = NULL;
@@ -1069,9 +1070,9 @@ static int load_client_key_from_data(ssl_socket_t *socket,
         return -1;
     }
 }
-#else
+#else /* WITH_OPENSSL_EC_KEY */
 #define load_client_key_from_data(...) ((int) -1)
-#endif
+#endif /* WITH_OPENSSL_EC_KEY */
 
 static int load_client_key_from_typed_file(ssl_socket_t *socket,
                                            const char *client_key_file,
