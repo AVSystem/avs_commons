@@ -177,6 +177,9 @@ elseif(_AVS_NUM_TLS_BACKENDS GREATER 0)
     set(WITH_SSL ON)
 endif()
 
+include(CMakeDependentOption)
+cmake_dependent_option(WITH_DTLS "Enable DTLS support" ON WITH_SSL OFF)
+
 ################################################################################
 
 option(WITH_EXTRA_WARNINGS "Enable extra compilation warnings" OFF)
@@ -291,8 +294,6 @@ option(WITH_AVS_NET "AVSystem network communication abstraction layer" ${MODULES
 option(WITH_AVS_STREAM "AVSystem IO stream abstraction layer" ${MODULES_ENABLED})
 option(WITH_AVS_LOG "AVSystem logging framework" ${MODULES_ENABLED})
 option(WITH_AVS_RBTREE "AVSystem generic red-black tree implementation" ${MODULES_ENABLED})
-
-include(CMakeDependentOption)
 
 cmake_dependent_option(WITH_INTERNAL_LOGS "Enable logging from inside AVSystem Commons libraries" ON WITH_AVS_LOG OFF)
 cmake_dependent_option(WITH_INTERNAL_TRACE "Enable TRACE-level logs inside AVSystem Commons libraries" OFF WITH_INTERNAL_LOGS OFF)

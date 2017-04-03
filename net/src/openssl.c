@@ -64,8 +64,9 @@
 #define HAVE_OPENSSL_PSK
 #endif
 
-#if OPENSSL_VERSION_NUMBER_GE(1,0,1)
-#define HAVE_DTLS
+#if OPENSSL_VERSION_NUMBER_LT(1,0,1) && !defined(WITH_DTLS)
+#warning "Detected OpenSSL version does not support DTLS - disabling"
+#undef WITH_DTLS
 #endif
 
 #ifndef HEADER_SSL_H
@@ -102,7 +103,7 @@ typedef struct {
         LOG(ERROR, "%s", ERR_error_string(ERR_get_error(), error_buffer)); \
     } while (0)
 
-#ifdef HAVE_DTLS
+#ifdef WITH_DTLS
 #if OPENSSL_VERSION_NUMBER_LT(1,1,0)
 static const EVP_CIPHER *get_evp_cipher(SSL *ssl) {
     EVP_CIPHER_CTX *ctx = ssl->enc_write_ctx;
@@ -261,7 +262,7 @@ static int get_dtls_overhead(ssl_socket_t *socket,
     }
     return 0;
 }
-#else /* HAVE_DTLS */
+#else /* WITH_DTLS */
 static int get_dtls_overhead(ssl_socket_t *socket,
                              int *out_header,
                              int *out_padding_size) {
@@ -270,7 +271,7 @@ static int get_dtls_overhead(ssl_socket_t *socket,
     (void) out_padding_size;
     return -1;
 }
-#endif /* HAVE_DTLS */
+#endif /* WITH_DTLS */
 
 #ifdef BIO_TYPE_SOURCE_SINK
 
@@ -374,7 +375,7 @@ static long avs_bio_ctrl(BIO *bio, int command, long intarg, void *ptrarg) {
     switch (command) {
     case BIO_CTRL_FLUSH:
         return 1;
-#ifdef HAVE_DTLS
+#ifdef WITH_DTLS
     case BIO_CTRL_DGRAM_QUERY_MTU:
     case BIO_CTRL_DGRAM_GET_FALLBACK_MTU:
         return get_socket_inner_mtu_or_zero(sock->backend_socket);
@@ -469,7 +470,7 @@ static BIO *avs_bio_spawn(ssl_socket_t *socket) {
         if (socket->backend_type == AVS_NET_TCP_SOCKET) {
             return BIO_new_socket(fd, 0);
         }
-#ifdef HAVE_DTLS
+#ifdef WITH_DTLS
         if (socket->backend_type == AVS_NET_UDP_SOCKET) {
             BIO *bio = BIO_new_dgram(fd, 0);
             BIO_ctrl(bio, BIO_CTRL_DGRAM_SET_CONNECTED, 0,
@@ -1532,6 +1533,10 @@ static const SSL_METHOD *stream_method(avs_net_ssl_version_t version) {
     }
 }
 
+#ifndef WITH_DTLS
+#define dgram_method(x) ((void)(x), (const SSL_METHOD*)NULL)
+#else /* WITH_DTLS */
+
 static const SSL_METHOD *dgram_method(avs_net_ssl_version_t version) {
     switch (version) {
     case AVS_NET_SSL_VERSION_DEFAULT:
@@ -1552,6 +1557,8 @@ static const SSL_METHOD *dgram_method(avs_net_ssl_version_t version) {
         return NULL;
     }
 }
+
+#endif /* WITH_DTLS */
 
 static SSL_CTX *make_ssl_context(avs_net_socket_type_t backend_type,
                                  avs_net_ssl_version_t version) {
@@ -1594,6 +1601,10 @@ static int stream_proto_version(avs_net_ssl_version_t version) {
     }
 }
 
+#ifndef WITH_DTLS
+#define dgram_proto_version(x) ((void)(x), -1)
+#else /* WITH_DTLS */
+
 static int dgram_proto_version(avs_net_ssl_version_t version) {
     switch (version) {
     case AVS_NET_SSL_VERSION_DEFAULT:
@@ -1608,6 +1619,8 @@ static int dgram_proto_version(avs_net_ssl_version_t version) {
     }
 }
 
+#endif /* WITH_DTLS */
+
 static SSL_CTX *make_ssl_context(avs_net_socket_type_t backend_type,
                                  avs_net_ssl_version_t version) {
     const SSL_METHOD *method = NULL;
@@ -1619,8 +1632,10 @@ static SSL_CTX *make_ssl_context(avs_net_socket_type_t backend_type,
         ossl_proto_version = stream_proto_version(version);
         break;
     case AVS_NET_UDP_SOCKET:
+#ifdef WITH_DTLS
         method = OPENSSL_METHOD(DTLS)();
         ossl_proto_version = dgram_proto_version(version);
+#endif
         break;
     default:;
     }

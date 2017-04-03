@@ -42,6 +42,7 @@
 #endif
 
 #cmakedefine WITH_SSL
+#cmakedefine WITH_DTLS
 
 #cmakedefine WITH_AVS_LOG
 #cmakedefine WITH_SOCKET_LOG
