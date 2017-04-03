@@ -178,7 +178,7 @@ elseif(_AVS_NUM_TLS_BACKENDS GREATER 0)
 endif()
 
 include(CMakeDependentOption)
-cmake_dependent_option(WITH_DTLS "Enable DTLS support" ON WITH_SSL OFF)
+cmake_dependent_option(WITH_OPENSSL_DTLS "Enable OpenSSL DTLS support" ON WITH_OPENSSL OFF)
 
 ################################################################################
 
