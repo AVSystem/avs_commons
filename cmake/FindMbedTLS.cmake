@@ -48,12 +48,17 @@
 # Set ``MBEDTLS_ROOT_DIR`` to the root directory of an mbedTLS installation.
 # Set ``MBEDTLS_USE_STATIC_LIBS`` to ``TRUE`` to look for static libraries.
 
+if(MBEDTLS_ROOT_DIR)
+    # Disable re-rooting paths in find_path/find_library.
+    # This assumes MBEDTLS_ROOT_DIR is an absolute path.
+    set(_EXTRA_FIND_ARGS "NO_CMAKE_FIND_ROOT_PATH")
+endif()
 
 find_path(MBEDTLS_INCLUDE_DIR
           NAMES mbedtls/ssl.h
           PATH_SUFFIXES include
-          HINTS ${MBEDTLS_ROOT_DIR})
-
+          HINTS ${MBEDTLS_ROOT_DIR}
+          ${_EXTRA_FIND_ARGS})
 
 # based on https://github.com/ARMmbed/mbedtls/issues/298
 if(MBEDTLS_INCLUDE_DIR AND EXISTS "${MBEDTLS_INCLUDE_DIR}/mbedtls/version.h")
@@ -69,7 +74,7 @@ if(MBEDTLS_INCLUDE_DIR AND EXISTS "${MBEDTLS_INCLUDE_DIR}/mbedtls/version.h")
 endif()
 
 
-if(MBEDTLS_STATIC_LIBRARIES)
+if(MBEDTLS_USE_STATIC_LIBS)
     set(_MBEDTLS_LIB_NAME libmbedtls.a)
     set(_MBEDTLS_CRYPTO_LIB_NAME libmbedcrypto.a)
     set(_MBEDTLS_X509_LIB_NAME libmbedx509.a)
@@ -82,17 +87,20 @@ endif()
 find_library(MBEDTLS_LIBRARY
              NAMES ${_MBEDTLS_LIB_NAME}
              PATH_SUFFIXES lib
-             HINTS ${MBEDTLS_ROOT_DIR})
+             HINTS ${MBEDTLS_ROOT_DIR}
+             ${_EXTRA_FIND_ARGS})
 
 find_library(MBEDTLS_CRYPTO_LIBRARY
              NAMES ${_MBEDTLS_CRYPTO_LIB_NAME}
              PATH_SUFFIXES lib
-             HINTS ${MBEDTLS_ROOT_DIR})
+             HINTS ${MBEDTLS_ROOT_DIR}
+             ${_EXTRA_FIND_ARGS})
 
 find_library(MBEDTLS_X509_LIBRARY
              NAMES ${_MBEDTLS_X509_LIB_NAME}
              PATH_SUFFIXES lib
-             HINTS ${MBEDTLS_ROOT_DIR})
+             HINTS ${MBEDTLS_ROOT_DIR}
+             ${_EXTRA_FIND_ARGS})
 
 set(MBEDTLS_LIBRARIES ${MBEDTLS_LIBRARY} ${MBEDCRYPTO_LIBRARY} ${MBEDX509_LIBRARY})
 
