@@ -149,55 +149,94 @@ AVS_UNIT_TEST(list, find) {
     AVS_LIST_CLEAR(&list);
 }
 
-static int int_comparator(const void *left, const void *right, size_t sz) {
-    (void) sz;
-    return *((const int *) left) - *((const int *) right);
+typedef struct {
+    size_t orig_position;
+    int value;
+} test_elem_t;
+
+static int test_elem_comparator(const void *left,
+                                const void *right,
+                                size_t sz) {
+    AVS_UNIT_ASSERT_EQUAL(sz, sizeof(test_elem_t));
+    return ((const test_elem_t *) left)->value
+            - ((const test_elem_t *) right)->value;
 }
 
 AVS_UNIT_TEST(list, sort) {
-    int *list = NULL;
-    int *element = NULL;
+    AVS_LIST(test_elem_t) list = NULL;
+    AVS_LIST(test_elem_t) element = NULL;
     size_t i;
 
     for (i = 0; i < 10; ++i) {
-        AVS_UNIT_ASSERT_NOT_NULL((element = AVS_LIST_NEW_ELEMENT(int)));
+        AVS_UNIT_ASSERT_NOT_NULL((element = AVS_LIST_NEW_ELEMENT(test_elem_t)));
+        element->orig_position = i;
         switch (i) {
-        case 0: *element = 1; break;
-        case 1: *element = 51; break;
-        case 2: *element = 77; break;
-        case 3: *element = 35; break;
-        case 4: *element = 11; break;
-        case 5: *element = 67; break;
-        case 6: *element = 58; break;
-        case 7: *element = 69; break;
-        case 8: *element = 56; break;
-        case 9: *element = 17; break;
+        case 0: element->value = 11; break;
+        case 1: element->value = 51; break;
+        case 2: element->value = 77; break;
+        case 3: element->value = 35; break;
+        case 4: element->value = 11; break;
+        case 5: element->value = 69; break;
+        case 6: element->value = 58; break;
+        case 7: element->value = 69; break;
+        case 8: element->value = 56; break;
+        case 9: element->value = 11; break;
         }
         AVS_LIST_APPEND(&list, element);
     }
 
-    AVS_LIST_SORT(&list, int_comparator);
+    AVS_LIST_SORT(&list, test_elem_comparator);
 
     i = 0;
     AVS_LIST_CLEAR(&list) {
         switch (i++) {
-        case 0: AVS_UNIT_ASSERT_EQUAL(*list, 1); break;
-        case 1: AVS_UNIT_ASSERT_EQUAL(*list, 11); break;
-        case 2: AVS_UNIT_ASSERT_EQUAL(*list, 17); break;
-        case 3: AVS_UNIT_ASSERT_EQUAL(*list, 35); break;
-        case 4: AVS_UNIT_ASSERT_EQUAL(*list, 51); break;
-        case 5: AVS_UNIT_ASSERT_EQUAL(*list, 56); break;
-        case 6: AVS_UNIT_ASSERT_EQUAL(*list, 58); break;
-        case 7: AVS_UNIT_ASSERT_EQUAL(*list, 67); break;
-        case 8: AVS_UNIT_ASSERT_EQUAL(*list, 69); break;
-        case 9: AVS_UNIT_ASSERT_EQUAL(*list, 77); break;
+        case 0:
+            AVS_UNIT_ASSERT_EQUAL(list->orig_position, 0);
+            AVS_UNIT_ASSERT_EQUAL(list->value, 11);
+            break;
+        case 1:
+            AVS_UNIT_ASSERT_EQUAL(list->orig_position, 4);
+            AVS_UNIT_ASSERT_EQUAL(list->value, 11);
+            break;
+        case 2:
+            AVS_UNIT_ASSERT_EQUAL(list->orig_position, 9);
+            AVS_UNIT_ASSERT_EQUAL(list->value, 11);
+            break;
+        case 3:
+            AVS_UNIT_ASSERT_EQUAL(list->orig_position, 3);
+            AVS_UNIT_ASSERT_EQUAL(list->value, 35);
+            break;
+        case 4:
+            AVS_UNIT_ASSERT_EQUAL(list->orig_position, 1);
+            AVS_UNIT_ASSERT_EQUAL(list->value, 51);
+            break;
+        case 5:
+            AVS_UNIT_ASSERT_EQUAL(list->orig_position, 8);
+            AVS_UNIT_ASSERT_EQUAL(list->value, 56);
+            break;
+        case 6:
+            AVS_UNIT_ASSERT_EQUAL(list->orig_position, 6);
+            AVS_UNIT_ASSERT_EQUAL(list->value, 58);
+            break;
+        case 7:
+            AVS_UNIT_ASSERT_EQUAL(list->orig_position, 5);
+            AVS_UNIT_ASSERT_EQUAL(list->value, 69);
+            break;
+        case 8:
+            AVS_UNIT_ASSERT_EQUAL(list->orig_position, 7);
+            AVS_UNIT_ASSERT_EQUAL(list->value, 69);
+            break;
+        case 9:
+            AVS_UNIT_ASSERT_EQUAL(list->orig_position, 2);
+            AVS_UNIT_ASSERT_EQUAL(list->value, 77);
+            break;
         }
     }
 }
 
 AVS_UNIT_TEST(list, sort_empty) {
-    AVS_LIST(int) empty_list = NULL;
-    AVS_LIST_SORT(&empty_list, int_comparator);
+    AVS_LIST(test_elem_t) empty_list = NULL;
+    AVS_LIST_SORT(&empty_list, test_elem_comparator);
 }
 
 AVS_UNIT_TEST(list, is_cyclic) {
@@ -250,29 +289,49 @@ AVS_UNIT_TEST(list, simple_clone) {
 }
 
 AVS_UNIT_TEST(list, merge) {
-   AVS_LIST(int) first = NULL;
-   AVS_LIST(int) second = NULL;
+   AVS_LIST(test_elem_t) first = NULL;
+   AVS_LIST(test_elem_t) second = NULL;
 
-   *AVS_LIST_APPEND(&first, AVS_LIST_NEW_ELEMENT(int)) = 1;
-   *AVS_LIST_APPEND(&first, AVS_LIST_NEW_ELEMENT(int)) = 3;
-   *AVS_LIST_APPEND(&first, AVS_LIST_NEW_ELEMENT(int)) = 4;
-   *AVS_LIST_APPEND(&first, AVS_LIST_NEW_ELEMENT(int)) = 5;
+   *AVS_LIST_APPEND(&first, AVS_LIST_NEW_ELEMENT(test_elem_t)) =
+           (test_elem_t) { 0, 1 };
+   *AVS_LIST_APPEND(&first, AVS_LIST_NEW_ELEMENT(test_elem_t)) =
+           (test_elem_t) { 1, 3 };
+   *AVS_LIST_APPEND(&first, AVS_LIST_NEW_ELEMENT(test_elem_t)) =
+           (test_elem_t) { 2, 4 };
+   *AVS_LIST_APPEND(&first, AVS_LIST_NEW_ELEMENT(test_elem_t)) =
+           (test_elem_t) { 3, 5 };
 
-   *AVS_LIST_APPEND(&second, AVS_LIST_NEW_ELEMENT(int)) = 0;
-   *AVS_LIST_APPEND(&second, AVS_LIST_NEW_ELEMENT(int)) = 2;
-   *AVS_LIST_APPEND(&second, AVS_LIST_NEW_ELEMENT(int)) = 3;
-   *AVS_LIST_APPEND(&second, AVS_LIST_NEW_ELEMENT(int)) = 4;
-   *AVS_LIST_APPEND(&second, AVS_LIST_NEW_ELEMENT(int)) = 6;
+   *AVS_LIST_APPEND(&second, AVS_LIST_NEW_ELEMENT(test_elem_t)) =
+           (test_elem_t) { 10, 0 };
+   *AVS_LIST_APPEND(&second, AVS_LIST_NEW_ELEMENT(test_elem_t)) =
+           (test_elem_t) { 11, 2 };
+   *AVS_LIST_APPEND(&second, AVS_LIST_NEW_ELEMENT(test_elem_t)) =
+           (test_elem_t) { 12, 3 };
+   *AVS_LIST_APPEND(&second, AVS_LIST_NEW_ELEMENT(test_elem_t)) =
+           (test_elem_t) { 13, 4 };
+   *AVS_LIST_APPEND(&second, AVS_LIST_NEW_ELEMENT(test_elem_t)) =
+           (test_elem_t) { 14, 6 };
 
-   static const int expected_elements[] = {
-       0, 1, 2, 3, 3, 4, 4, 5, 6
+   static const test_elem_t expected_elements_1[] = {
+       { 10, 0 },
+       { 0, 1 },
+       { 11, 2 },
+       { 1, 3 },
+       { 12, 3 },
+       { 2, 4 },
+       { 13, 4 },
+       { 3, 5 },
+       { 14, 6 }
    };
 
-   AVS_LIST_MERGE(&first, &second, int_comparator);
-   AVS_LIST(int) it;
+   AVS_LIST_MERGE(&first, &second, test_elem_comparator);
+   AVS_LIST(test_elem_t) it;
    int i = 0;
    AVS_LIST_FOREACH(it, first) {
-       AVS_UNIT_ASSERT_EQUAL(*it, expected_elements[i]);
+       AVS_UNIT_ASSERT_EQUAL(it->orig_position,
+                             expected_elements_1[i].orig_position);
+       AVS_UNIT_ASSERT_EQUAL(it->value,
+                             expected_elements_1[i].value);
        ++i;
    }
    AVS_UNIT_ASSERT_EQUAL(AVS_LIST_SIZE(second), 0);
@@ -280,22 +339,46 @@ AVS_UNIT_TEST(list, merge) {
    AVS_LIST_CLEAR(&first);
 
    // Once again, but now let's merge `first` with the `second`
-   *AVS_LIST_APPEND(&first, AVS_LIST_NEW_ELEMENT(int)) = 1;
-   *AVS_LIST_APPEND(&first, AVS_LIST_NEW_ELEMENT(int)) = 3;
-   *AVS_LIST_APPEND(&first, AVS_LIST_NEW_ELEMENT(int)) = 4;
-   *AVS_LIST_APPEND(&first, AVS_LIST_NEW_ELEMENT(int)) = 5;
+   *AVS_LIST_APPEND(&first, AVS_LIST_NEW_ELEMENT(test_elem_t)) =
+           (test_elem_t) { 0, 1 };
+   *AVS_LIST_APPEND(&first, AVS_LIST_NEW_ELEMENT(test_elem_t)) =
+           (test_elem_t) { 1, 3 };
+   *AVS_LIST_APPEND(&first, AVS_LIST_NEW_ELEMENT(test_elem_t)) =
+           (test_elem_t) { 2, 4 };
+   *AVS_LIST_APPEND(&first, AVS_LIST_NEW_ELEMENT(test_elem_t)) =
+           (test_elem_t) { 3, 5 };
 
-   *AVS_LIST_APPEND(&second, AVS_LIST_NEW_ELEMENT(int)) = 0;
-   *AVS_LIST_APPEND(&second, AVS_LIST_NEW_ELEMENT(int)) = 2;
-   *AVS_LIST_APPEND(&second, AVS_LIST_NEW_ELEMENT(int)) = 3;
-   *AVS_LIST_APPEND(&second, AVS_LIST_NEW_ELEMENT(int)) = 4;
-   *AVS_LIST_APPEND(&second, AVS_LIST_NEW_ELEMENT(int)) = 6;
+   *AVS_LIST_APPEND(&second, AVS_LIST_NEW_ELEMENT(test_elem_t)) =
+           (test_elem_t) { 10, 0 };
+   *AVS_LIST_APPEND(&second, AVS_LIST_NEW_ELEMENT(test_elem_t)) =
+           (test_elem_t) { 11, 2 };
+   *AVS_LIST_APPEND(&second, AVS_LIST_NEW_ELEMENT(test_elem_t)) =
+           (test_elem_t) { 12, 3 };
+   *AVS_LIST_APPEND(&second, AVS_LIST_NEW_ELEMENT(test_elem_t)) =
+           (test_elem_t) { 13, 4 };
+   *AVS_LIST_APPEND(&second, AVS_LIST_NEW_ELEMENT(test_elem_t)) =
+           (test_elem_t) { 14, 6 };
 
-   AVS_LIST_MERGE(&second, &first, int_comparator);
+   static const test_elem_t expected_elements_2[] = {
+       { 10, 0 },
+       { 0, 1 },
+       { 11, 2 },
+       { 12, 3 },
+       { 1, 3 },
+       { 13, 4 },
+       { 2, 4 },
+       { 3, 5 },
+       { 14, 6 }
+   };
+
+   AVS_LIST_MERGE(&second, &first, test_elem_comparator);
    AVS_UNIT_ASSERT_EQUAL(AVS_LIST_SIZE(second), 9);
    i = 0;
    AVS_LIST_FOREACH(it, second) {
-       AVS_UNIT_ASSERT_EQUAL(*it, expected_elements[i]);
+       AVS_UNIT_ASSERT_EQUAL(it->orig_position,
+                             expected_elements_2[i].orig_position);
+       AVS_UNIT_ASSERT_EQUAL(it->value,
+                             expected_elements_2[i].value);
        ++i;
    }
    AVS_LIST_CLEAR(&second);
@@ -303,21 +386,22 @@ AVS_UNIT_TEST(list, merge) {
 }
 
 AVS_UNIT_TEST(list, merge_empty_lists) {
-    AVS_LIST(int) first = NULL;
-    AVS_LIST(int) second = NULL;
-    AVS_LIST_MERGE(&first, &second, int_comparator);
+    AVS_LIST(test_elem_t) first = NULL;
+    AVS_LIST(test_elem_t) second = NULL;
+    AVS_LIST_MERGE(&first, &second, test_elem_comparator);
     AVS_UNIT_ASSERT_EQUAL(AVS_LIST_SIZE(first), 0);
 }
 
 AVS_UNIT_TEST(list, merge_when_one_list_is_empty) {
-    AVS_LIST(int) first = NULL;
-    AVS_LIST(int) second = NULL;
+    AVS_LIST(test_elem_t) first = NULL;
+    AVS_LIST(test_elem_t) second = NULL;
 
-    *AVS_LIST_APPEND(&first, AVS_LIST_NEW_ELEMENT(int)) = 1;
-    AVS_LIST_MERGE(&first, &second, int_comparator);
+    *AVS_LIST_APPEND(&first, AVS_LIST_NEW_ELEMENT(test_elem_t)) =
+            (test_elem_t) { 1, 1 };
+    AVS_LIST_MERGE(&first, &second, test_elem_comparator);
     AVS_UNIT_ASSERT_EQUAL(AVS_LIST_SIZE(first), 1);
 
-    AVS_LIST_MERGE(&second, &first, int_comparator);
+    AVS_LIST_MERGE(&second, &first, test_elem_comparator);
     AVS_UNIT_ASSERT_EQUAL(AVS_LIST_SIZE(first), 0);
     AVS_UNIT_ASSERT_EQUAL(AVS_LIST_SIZE(second), 1);
 

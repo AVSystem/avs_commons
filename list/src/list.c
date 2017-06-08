@@ -209,7 +209,7 @@ void avs_list_merge__(void **target,
                       avs_list_comparator_func_t comparator,
                       size_t element_size) {
     while (*source) {
-        while (*target && comparator(*target, *source, element_size) < 0) {
+        while (*target && comparator(*target, *source, element_size) <= 0) {
             target = AVS_LIST_NEXT_PTR(target);
         }
         AVS_LIST_INSERT(target, AVS_LIST_DETACH(source));
