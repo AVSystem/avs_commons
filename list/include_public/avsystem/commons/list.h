@@ -676,6 +676,9 @@ for (; *(first_element_ptr); AVS_LIST_DELETE(first_element_ptr))
  *
  * The sorting is performed using the recursive merge sort algorithm.
  *
+ * The sort is guaranteed to be stable - in case of elements that compare equal,
+ * their relative order is preserved.
+ *
  * @param list_ptr   Pointer to a list variable.
  *
  * @param comparator Comparator function of type
@@ -716,8 +719,12 @@ avs_list_sort__((void **)(intptr_t)(list_ptr), (comparator), \
  * Merges two sorted lists @p target_ptr and @p source_ptr, writing the results
  * into @p target_ptr list, and leaving @p source_ptr list empty in the end.
  *
+ * The merge is guranteed to be stable - in case of elements that compare equal,
+ * elements pre-existing in @p target_ptr will appear before elements moved from
+ * @p source_ptr.
+ *
  * WARNING: If at least one of the lists is not sorted (according to the
- * ordering established by @ref comparator) then the behavior is undefined.
+ * ordering established by @p comparator) then the behavior is undefined.
  *
  * @param target_ptr    Pointer to a list where the result will be stored.
  * @param source_ptr    Pointer to a list which shall be merged with @p target_ptr.
