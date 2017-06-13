@@ -26,7 +26,10 @@ struct avs_buffer_struct {
     size_t capacity;
     char *begin;
     char *end;
-    char data[1]; /* variable length */
+    union {
+        char data[1]; /* variable length */
+        avs_max_align_t align;
+    } data;
 };
 
 size_t avs_buffer_space_left(avs_buffer_t *buffer) {
@@ -34,12 +37,12 @@ size_t avs_buffer_space_left(avs_buffer_t *buffer) {
 }
 
 static size_t space_left_without_moving(avs_buffer_t *buffer) {
-    return buffer->capacity - (size_t)(buffer->end - buffer->data);
+    return buffer->capacity - (size_t)(buffer->end - buffer->data.data);
 }
 
 void avs_buffer_reset(avs_buffer_t *buffer) {
-    buffer->begin = buffer->data;
-    buffer->end = buffer->data;
+    buffer->begin = buffer->data.data;
+    buffer->end = buffer->data.data;
 }
 
 int avs_buffer_create(avs_buffer_t **buffer_ptr, size_t capacity) {
@@ -73,11 +76,11 @@ char *avs_buffer_data(avs_buffer_t *buffer) {
 }
 
 static void defragment_buffer(avs_buffer_t *buffer) {
-    if (buffer->begin != buffer->data) {
+    if (buffer->begin != buffer->data.data) {
         size_t used = avs_buffer_data_size(buffer);
-        memmove(buffer->data, buffer->begin, used);
-        buffer->end = buffer->data + used;
-        buffer->begin = buffer->data;
+        memmove(buffer->data.data, buffer->begin, used);
+        buffer->end = buffer->data.data + used;
+        buffer->begin = buffer->data.data;
     }
 }
 
