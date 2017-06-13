@@ -37,7 +37,9 @@ extern "C" {
 #define AVS_CONCAT_INTERNAL__(prefix, suffix) prefix##suffix
 
 #define AVS_ALIGN_POINTER_INTERNAL__(type, ptr, alignment) \
-    (type)((uintptr_t)(ptr) + (alignment) - (uintptr_t)(ptr) % (alignment))
+    (type)((uintptr_t)(ptr) \
+            + ((alignment) - 1 \
+                    - ((uintptr_t)(ptr) + ((alignment) - 1)) % (alignment)))
 /**@}*/
 
 /**
