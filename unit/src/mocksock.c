@@ -161,6 +161,9 @@ typedef struct {
     bool inner_mtu_enabled;
     int inner_mtu;
 
+    bool mtu_enabled;
+    int mtu;
+
     bool state_enabled;
     avs_net_socket_state_t state;
 } mocksock_t;
@@ -454,6 +457,11 @@ static int mock_get_opt(avs_net_abstract_socket_t *socket_,
     if (socket->inner_mtu_enabled
             && option_key == AVS_NET_SOCKET_OPT_INNER_MTU) {
         out_option_value->mtu = socket->inner_mtu;
+        return 0;
+    }
+
+    if (socket->mtu_enabled && option_key == AVS_NET_SOCKET_OPT_MTU) {
+        out_option_value->mtu = socket->mtu;
         return 0;
     }
 
@@ -821,6 +829,14 @@ void avs_unit_mocksock_enable_inner_mtu_getopt(
     mocksock_t *socket = (mocksock_t *) socket_;
     socket->inner_mtu_enabled = true;
     socket->inner_mtu = inner_mtu;
+}
+
+void avs_unit_mocksock_enable_mtu_getopt(
+        avs_net_abstract_socket_t *socket_,
+        int mtu) {
+    mocksock_t *socket = (mocksock_t *) socket_;
+    socket->mtu_enabled = true;
+    socket->mtu = mtu;
 }
 
 void avs_unit_mocksock_enable_state_getopt(avs_net_abstract_socket_t *socket) {
