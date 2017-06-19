@@ -461,7 +461,7 @@ static int mock_get_opt(avs_net_abstract_socket_t *socket_,
     }
 
     if (socket->mtu_enabled && option_key == AVS_NET_SOCKET_OPT_MTU) {
-        out_option_value->mtu = socket->inner_mtu;
+        out_option_value->mtu = socket->mtu;
         return 0;
     }
 
