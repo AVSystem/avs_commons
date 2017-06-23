@@ -461,7 +461,7 @@ static int send_ssl(avs_net_abstract_socket_t *socket_,
     }
 
     if (bytes_sent < buffer_length) {
-        LOG(ERROR, "send failed (%lu/%lu): %d",
+        LOG(ERROR, "send failed (%zu/%zu): %d",
             bytes_sent, buffer_length, result);
         update_send_or_recv_error_code(socket, result);
         return -1;
