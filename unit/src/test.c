@@ -14,13 +14,15 @@
 
 #include <config.h>
 
-#include <stdio.h>
-#include <stdarg.h>
-#include <string.h>
-#include <inttypes.h>
-#include <getopt.h>
-#include <stdbool.h>
 #include <ctype.h>
+#include <inttypes.h>
+#include <math.h>
+#include <stdarg.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <string.h>
+
+#include <getopt.h>
 
 #include <avsystem/commons/defs.h>
 #include <avsystem/commons/list.h>
@@ -238,28 +240,35 @@ void avs_unit_assert_false__(int result,
     _avs_unit_assert(result == 0, file, line, "expected false\n");
 }
 
-#define CHECK_EQUAL_BODY(format)                                               \
+#define CHECK_EQUAL_BODY(format, ...)                                          \
 {                                                                              \
     snprintf(strings->actual_str, sizeof(strings->actual_str),                 \
              format, actual);                                                  \
     snprintf(strings->expected_str, sizeof(strings->expected_str),             \
              format, expected);                                                \
-    return memcmp(&actual, &expected, sizeof(actual)) == 0;                    \
+    return (__VA_ARGS__);                                                      \
 }
 
-AVS_UNIT_CHECK_EQUAL_FUNCTION__(char, c) CHECK_EQUAL_BODY("%c")
-AVS_UNIT_CHECK_EQUAL_FUNCTION__(short, s) CHECK_EQUAL_BODY("%d")
-AVS_UNIT_CHECK_EQUAL_FUNCTION__(int, i) CHECK_EQUAL_BODY("%d")
-AVS_UNIT_CHECK_EQUAL_FUNCTION__(long, l) CHECK_EQUAL_BODY("%ld")
-AVS_UNIT_CHECK_EQUAL_FUNCTION__(long long, ll) CHECK_EQUAL_BODY("%lld")
-AVS_UNIT_CHECK_EQUAL_FUNCTION__(unsigned char, uc) CHECK_EQUAL_BODY("0x%02x")
-AVS_UNIT_CHECK_EQUAL_FUNCTION__(unsigned short, us) CHECK_EQUAL_BODY("%u")
-AVS_UNIT_CHECK_EQUAL_FUNCTION__(unsigned int, ui) CHECK_EQUAL_BODY("%u")
-AVS_UNIT_CHECK_EQUAL_FUNCTION__(unsigned long, ul) CHECK_EQUAL_BODY("%lu")
-AVS_UNIT_CHECK_EQUAL_FUNCTION__(unsigned long long, ull) CHECK_EQUAL_BODY("%llu")
-AVS_UNIT_CHECK_EQUAL_FUNCTION__(float, f) CHECK_EQUAL_BODY("%.12g")
-AVS_UNIT_CHECK_EQUAL_FUNCTION__(double, d) CHECK_EQUAL_BODY("%.12g")
-AVS_UNIT_CHECK_EQUAL_FUNCTION__(long double, ld) CHECK_EQUAL_BODY("%.12Lg")
+#define CHECK_EQUAL_BODY_INT(format) \
+    CHECK_EQUAL_BODY(format, actual == expected)
+
+#define CHECK_EQUAL_BODY_FLOAT(format) \
+    CHECK_EQUAL_BODY(format, \
+                     isnan(actual) ? isnan(expected) : actual == expected)
+
+AVS_UNIT_CHECK_EQUAL_FUNCTION__(char, c) CHECK_EQUAL_BODY_INT("%c")
+AVS_UNIT_CHECK_EQUAL_FUNCTION__(short, s) CHECK_EQUAL_BODY_INT("%d")
+AVS_UNIT_CHECK_EQUAL_FUNCTION__(int, i) CHECK_EQUAL_BODY_INT("%d")
+AVS_UNIT_CHECK_EQUAL_FUNCTION__(long, l) CHECK_EQUAL_BODY_INT("%ld")
+AVS_UNIT_CHECK_EQUAL_FUNCTION__(long long, ll) CHECK_EQUAL_BODY_INT("%lld")
+AVS_UNIT_CHECK_EQUAL_FUNCTION__(unsigned char, uc) CHECK_EQUAL_BODY_INT("0x%02x")
+AVS_UNIT_CHECK_EQUAL_FUNCTION__(unsigned short, us) CHECK_EQUAL_BODY_INT("%u")
+AVS_UNIT_CHECK_EQUAL_FUNCTION__(unsigned int, ui) CHECK_EQUAL_BODY_INT("%u")
+AVS_UNIT_CHECK_EQUAL_FUNCTION__(unsigned long, ul) CHECK_EQUAL_BODY_INT("%lu")
+AVS_UNIT_CHECK_EQUAL_FUNCTION__(unsigned long long, ull) CHECK_EQUAL_BODY_INT("%llu")
+AVS_UNIT_CHECK_EQUAL_FUNCTION__(float, f) CHECK_EQUAL_BODY_FLOAT("%.12g")
+AVS_UNIT_CHECK_EQUAL_FUNCTION__(double, d) CHECK_EQUAL_BODY_FLOAT("%.12g")
+AVS_UNIT_CHECK_EQUAL_FUNCTION__(long double, ld) CHECK_EQUAL_BODY_FLOAT("%.12Lg")
 
 void avs_unit_assert_equal_func__(int check_result,
                                   const char *actual_str,
