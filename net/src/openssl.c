@@ -85,9 +85,10 @@ typedef struct {
     SSL *ssl;
     int verification;
     int error_code;
-    int64_t next_deadline_ms;
+    struct timespec next_deadline;
     avs_net_socket_type_t backend_type;
     avs_net_abstract_socket_t *backend_socket;
+    avs_net_dtls_handshake_timeouts_t dtls_handshake_timeouts;
     avs_net_socket_configuration_t backend_configuration;
     avs_net_resolved_endpoint_t endpoint_buffer;
 
@@ -298,12 +299,6 @@ static int avs_bio_write(BIO *bio, const char *data, int size) {
     }
 }
 
-static int64_t current_time_ms(void) {
-    struct timespec t;
-    clock_gettime(CLOCK_REALTIME, &t);
-    return (int64_t) t.tv_sec * 1000 + t.tv_nsec / 1000000;
-}
-
 static avs_net_timeout_t get_socket_timeout(avs_net_abstract_socket_t *sock) {
     avs_net_socket_opt_value_t opt_value;
     if (avs_net_socket_get_opt(sock, AVS_NET_SOCKET_OPT_RECV_TIMEOUT, &opt_value)) {
@@ -321,12 +316,21 @@ static void set_socket_timeout(avs_net_abstract_socket_t *sock,
 
 static avs_net_timeout_t adjust_receive_timeout(ssl_socket_t *sock) {
     avs_net_timeout_t socket_timeout = get_socket_timeout(sock->backend_socket);
-    if (sock->next_deadline_ms >= 0) {
-        int64_t now_ms = current_time_ms();
-        avs_net_timeout_t timeout =
-                (avs_net_timeout_t) (sock->next_deadline_ms - now_ms);
-        if (socket_timeout <= 0 || socket_timeout > timeout) {
-            set_socket_timeout(sock->backend_socket, timeout);
+    if (sock->next_deadline.tv_sec >= 0) {
+        struct timespec now;
+        clock_gettime(CLOCK_REALTIME, &now);
+        struct timespec timeout = {
+            .tv_sec = sock->next_deadline.tv_sec - now.tv_sec,
+            .tv_nsec = sock->next_deadline.tv_nsec - now.tv_nsec
+        };
+        if (timeout.tv_nsec < 0) {
+            timeout.tv_sec--;
+            timeout.tv_nsec += 1000000000l;
+        }
+        avs_net_timeout_t timeout_ms = (avs_net_timeout_t)
+                (timeout.tv_sec * 1000 + timeout.tv_nsec / 1000000);
+        if (socket_timeout <= 0 || socket_timeout > timeout_ms) {
+            set_socket_timeout(sock->backend_socket, timeout_ms);
         }
     }
     return socket_timeout;
@@ -381,11 +385,34 @@ static long avs_bio_ctrl(BIO *bio, int command, long intarg, void *ptrarg) {
     case BIO_CTRL_DGRAM_QUERY_MTU:
     case BIO_CTRL_DGRAM_GET_FALLBACK_MTU:
         return get_socket_inner_mtu_or_zero(sock->backend_socket);
-    case BIO_CTRL_DGRAM_SET_NEXT_TIMEOUT:
-        sock->next_deadline_ms =
-                (int64_t) ((const struct timeval *) ptrarg)->tv_sec * 1000 +
-                ((const struct timeval *) ptrarg)->tv_usec / 1000;
+    case BIO_CTRL_DGRAM_SET_NEXT_TIMEOUT: {
+        struct timeval next_deadline = *(const struct timeval *) ptrarg;
+        struct timespec now;
+        clock_gettime(CLOCK_REALTIME, &now);
+        struct timespec next_timeout = {
+            .tv_sec = next_deadline.tv_sec - now.tv_sec,
+            .tv_nsec = next_deadline.tv_usec * 1000l - now.tv_nsec
+        };
+        if (next_timeout.tv_nsec < 0) {
+            next_timeout.tv_sec--;
+            next_timeout.tv_nsec += 1000000000l;
+        }
+        if (next_timeout.tv_sec < sock->dtls_handshake_timeouts.min_seconds) {
+            next_timeout.tv_sec = sock->dtls_handshake_timeouts.min_seconds;
+            next_timeout.tv_nsec = 0;
+        } else if (next_timeout.tv_sec
+                >= sock->dtls_handshake_timeouts.max_seconds) {
+            next_timeout.tv_sec = sock->dtls_handshake_timeouts.max_seconds;
+            next_timeout.tv_nsec = 0;
+        }
+        sock->next_deadline.tv_sec = now.tv_sec + next_timeout.tv_sec;
+        sock->next_deadline.tv_nsec = now.tv_nsec + next_timeout.tv_nsec;
+        if (sock->next_deadline.tv_nsec >= 1000000000l) {
+            sock->next_deadline.tv_sec++;
+            sock->next_deadline.tv_nsec -= 1000000000l;
+        }
         return 0;
+    }
     case BIO_CTRL_DGRAM_GET_SEND_TIMER_EXP:
     case BIO_CTRL_DGRAM_GET_RECV_TIMER_EXP:
         if (sock->error_code == ETIMEDOUT) {
@@ -1394,6 +1421,13 @@ static int configure_ssl(ssl_socket_t *socket,
         return -1;
     }
 
+    if (configuration->dtls_handshake_timeouts) {
+        socket->dtls_handshake_timeouts =
+                *configuration->dtls_handshake_timeouts;
+    } else {
+        socket->dtls_handshake_timeouts.min_seconds = 1;
+        socket->dtls_handshake_timeouts.max_seconds = 60;
+    }
     if (configuration->additional_configuration_clb
             && configuration->additional_configuration_clb(socket->ctx)) {
         LOG(ERROR, "Error while setting additional SSL configuration");

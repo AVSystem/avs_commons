@@ -57,6 +57,7 @@ typedef struct {
     avs_net_abstract_socket_t *backend_socket;
     int error_code;
     avs_net_ssl_version_t version;
+    avs_net_dtls_handshake_timeouts_t dtls_handshake_timeouts;
     avs_ssl_additional_configuration_clb_t *additional_configuration_clb;
     avs_net_socket_configuration_t backend_configuration;
 } ssl_socket_t;
@@ -343,6 +344,10 @@ static int initialize_ssl_config(ssl_socket_t *socket) {
         assert(0 && "invalid enum value");
         return -1;
     }
+    mbedtls_ssl_conf_handshake_timeout(
+            &socket->config,
+            socket->dtls_handshake_timeouts.min_seconds * 1000,
+            socket->dtls_handshake_timeouts.max_seconds * 1000);
 
     if (socket->additional_configuration_clb
             && socket->additional_configuration_clb(&socket->config)) {
@@ -831,6 +836,13 @@ static int initialize_ssl_socket(ssl_socket_t *socket,
 
     socket->backend_type = backend_type;
     socket->version = configuration->version;
+    if (configuration->dtls_handshake_timeouts) {
+        socket->dtls_handshake_timeouts =
+                *configuration->dtls_handshake_timeouts;
+    } else {
+        socket->dtls_handshake_timeouts.min_seconds = 1;
+        socket->dtls_handshake_timeouts.max_seconds = 60;
+    }
     socket->additional_configuration_clb =
             configuration->additional_configuration_clb;
     socket->backend_configuration = configuration->backend_configuration;
