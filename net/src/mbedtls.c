@@ -88,8 +88,12 @@ static int avs_bio_recv(void *ctx, unsigned char *buf, size_t len,
     avs_net_socket_set_opt(socket->backend_socket,
                            AVS_NET_SOCKET_OPT_RECV_TIMEOUT, new_timeout);
     if (avs_net_socket_receive(socket->backend_socket, &read_bytes, buf, len)) {
-        result = MBEDTLS_ERR_NET_RECV_FAILED;
         socket->error_code = avs_net_socket_errno(socket->backend_socket);
+        if (socket->error_code == ETIMEDOUT) {
+            result = MBEDTLS_ERR_SSL_TIMEOUT;
+        } else {
+            result = MBEDTLS_ERR_NET_RECV_FAILED;
+        }
     } else {
         result = (int) read_bytes;
     }

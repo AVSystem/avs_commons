@@ -386,6 +386,14 @@ static long avs_bio_ctrl(BIO *bio, int command, long intarg, void *ptrarg) {
                 (int64_t) ((const struct timeval *) ptrarg)->tv_sec * 1000 +
                 ((const struct timeval *) ptrarg)->tv_usec / 1000;
         return 0;
+    case BIO_CTRL_DGRAM_GET_SEND_TIMER_EXP:
+    case BIO_CTRL_DGRAM_GET_RECV_TIMER_EXP:
+        if (sock->error_code == ETIMEDOUT) {
+            sock->error_code = 0;
+            return 1;
+        } else {
+            return 0;
+        }
     case BIO_CTRL_DGRAM_GET_PEER:
         memcpy(ptrarg, sock->backend_configuration.preferred_endpoint->data.buf,
                sock->backend_configuration.preferred_endpoint->size);
