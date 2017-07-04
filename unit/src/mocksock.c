@@ -10,7 +10,10 @@
 #include <config.h>
 
 #include <string.h>
+#include <stdio.h>
+#include <ctype.h>
 
+#include <avsystem/commons/log.h>
 #include <avsystem/commons/list.h>
 #include <avsystem/commons/net.h>
 #include <avsystem/commons/socket_v_table.h>
@@ -204,6 +207,44 @@ static int mock_connect(avs_net_abstract_socket_t *socket_,
     return retval;
 }
 
+static void hexdump_data(const void *raw_data,
+                         size_t data_size) {
+    const uint8_t *data = (const uint8_t *) raw_data;
+    const size_t bytes_per_segment = 8;
+    const size_t segments_per_row = 2;
+    const size_t bytes_per_row = bytes_per_segment * segments_per_row;
+
+    for (size_t row = 0; row < (data_size + bytes_per_row - 1) / bytes_per_row; ++row) {
+        char buffer[bytes_per_row * 4 + segments_per_row + 2];
+        char *at = buffer;
+
+        for (size_t seg = 0; seg < segments_per_row; ++seg) {
+            for (size_t i = 0; i < bytes_per_segment; ++i) {
+                size_t idx = row * bytes_per_row + seg * bytes_per_segment + i;
+                snprintf(at, (size_t)(sizeof(buffer) - (size_t)(at - buffer)),
+                         idx < data_size ? "%02x " : "   ", data[idx]);
+                at += 3;
+            }
+            *at++ = ' ';
+        }
+
+        for (size_t seg = 0; seg < segments_per_row; ++seg) {
+            for (size_t i = 0; i < bytes_per_segment; ++i) {
+                size_t idx = row * bytes_per_row + seg * bytes_per_segment + i;
+                snprintf(at, (size_t)(sizeof(buffer) - (size_t)(at - buffer)),
+                         idx < data_size ? (isprint(data[idx]) ? "%c" : ".")
+                                         : " ",
+                         data[idx]);
+                at += 1;
+            }
+            *at++ = ' ';
+        }
+
+        buffer[sizeof(buffer) - 1] = '\0';
+        avs_log(mocksock, DEBUG, "%s", buffer);
+    }
+}
+
 static int mock_send_to(avs_net_abstract_socket_t *socket_,
                         size_t *out_bytes_sent,
                         const void *buffer,
@@ -220,9 +261,14 @@ static int mock_send_to(avs_net_abstract_socket_t *socket_,
         if (socket->expected_data->type == MOCKSOCK_DATA_TYPE_OUTPUT) {
             size_t to_send = socket->expected_data->args.valid.size
                              - socket->expected_data->args.valid.ptr;
+
+            avs_log(mocksock, DEBUG, "mock_send_to: sending %zu/%zuB", buffer_length, to_send);
+            hexdump_data(buffer, buffer_length);
+
             if (buffer_length < to_send) {
                 to_send = buffer_length;
             }
+
             AVS_UNIT_ASSERT_EQUAL_BYTES_SIZED(buffer,
                                               (const char*)socket->expected_data->args.valid.data
                                               + socket->expected_data->args.valid.ptr,
@@ -282,6 +328,11 @@ static int mock_receive_from(avs_net_abstract_socket_t *socket_,
         return 0;
     }
     if (socket->expected_data->type == MOCKSOCK_DATA_TYPE_INPUT) {
+        size_t bytes_remaining = socket->expected_data->args.valid.size - socket->expected_data->args.valid.ptr;
+        avs_log(mocksock, DEBUG, "mock_receive_from: reading %zu/%zuB", buffer_length, bytes_remaining);
+        hexdump_data((const char*)socket->expected_data->args.valid.data + socket->expected_data->args.valid.ptr,
+                     bytes_remaining < buffer_length ? bytes_remaining : buffer_length);
+
         *out = socket->expected_data->args.valid.size
                - socket->expected_data->args.valid.ptr;
         if (buffer_length < *out) {
@@ -616,6 +667,9 @@ void avs_unit_mocksock_expect_output_to__(avs_net_abstract_socket_t *socket_,
                                           const void *expect, size_t length,
                                           const char *host, const char *port,
                                           const char *file, int line) {
+    avs_log(mocksock, DEBUG, "expect_output: %zuB", length);
+    hexdump_data(expect, length);
+
     mocksock_t *socket = (mocksock_t *) socket_;
     mocksock_expected_data_t *new_data = new_expected_data(socket, file, line);
     new_data->type = MOCKSOCK_DATA_TYPE_OUTPUT;
