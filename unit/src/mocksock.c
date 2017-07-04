@@ -116,7 +116,7 @@ typedef struct {
         struct {
             const char *remote_host;
             const char *remote_port;
-            const char *data;
+            const void *data;
             size_t ptr;
             size_t size;
         } valid;
@@ -224,7 +224,7 @@ static int mock_send_to(avs_net_abstract_socket_t *socket_,
                 to_send = buffer_length;
             }
             AVS_UNIT_ASSERT_EQUAL_BYTES_SIZED(buffer,
-                                              socket->expected_data->args.valid.data
+                                              (const char*)socket->expected_data->args.valid.data
                                               + socket->expected_data->args.valid.ptr,
                                               to_send);
             AVS_UNIT_ASSERT_EQUAL_STRING(
@@ -287,7 +287,7 @@ static int mock_receive_from(avs_net_abstract_socket_t *socket_,
         if (buffer_length < *out) {
             *out = buffer_length;
         }
-        memcpy(buffer, socket->expected_data->args.valid.data
+        memcpy(buffer, (const char*)socket->expected_data->args.valid.data
                + socket->expected_data->args.valid.ptr, *out);
         socket->expected_data->args.valid.ptr += *out;
         fill_remote_addr(out_host, out_host_size,
@@ -566,7 +566,7 @@ static mocksock_expected_data_t *new_expected_data(mocksock_t *socket,
 }
 
 void avs_unit_mocksock_input_from__(avs_net_abstract_socket_t *socket_,
-                                    const char *data,
+                                    const void *data,
                                     size_t length,
                                     const char *host,
                                     const char *port,
@@ -583,7 +583,7 @@ void avs_unit_mocksock_input_from__(avs_net_abstract_socket_t *socket_,
 }
 
 void avs_unit_mocksock_input__(avs_net_abstract_socket_t *socket,
-                               const char *data,
+                               const void *data,
                                size_t length,
                                const char *file,
                                int line) {
@@ -612,7 +612,7 @@ size_t avs_unit_mocksock_data_read(avs_net_abstract_socket_t *socket_) {
 }
 
 void avs_unit_mocksock_expect_output_to__(avs_net_abstract_socket_t *socket_,
-                                          const char *expect, size_t length,
+                                          const void *expect, size_t length,
                                           const char *host, const char *port,
                                           const char *file, int line) {
     mocksock_t *socket = (mocksock_t *) socket_;
@@ -626,7 +626,7 @@ void avs_unit_mocksock_expect_output_to__(avs_net_abstract_socket_t *socket_,
 }
 
 void avs_unit_mocksock_expect_output__(avs_net_abstract_socket_t *socket,
-                                       const char *expect, size_t length,
+                                       const void *expect, size_t length,
                                        const char *file, int line) {
     avs_unit_mocksock_expect_output_to__(socket, expect, length, NULL, NULL,
                                          file, line);
