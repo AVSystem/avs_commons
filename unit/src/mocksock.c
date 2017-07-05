@@ -321,6 +321,7 @@ static int mock_send_to(avs_net_abstract_socket_t *socket_,
             socket->expected_data->args.valid.ptr += to_send;
             if (socket->expected_data->args.valid.ptr
                     == socket->expected_data->args.valid.size) {
+                free((void*)(intptr_t)socket->expected_data->args.valid.data);
                 AVS_LIST_DELETE(&socket->expected_data);
             }
             buffer_length -= to_send;
@@ -391,6 +392,7 @@ static int mock_receive_from(avs_net_abstract_socket_t *socket_,
         if (socket->expected_data->args.valid.ptr
                 == socket->expected_data->args.valid.size) {
             socket->last_data_read = socket->expected_data->args.valid.ptr;
+            free((void*)(intptr_t)socket->expected_data->args.valid.data);
             AVS_LIST_DELETE(&socket->expected_data);
         }
     } else if (socket->expected_data->type
