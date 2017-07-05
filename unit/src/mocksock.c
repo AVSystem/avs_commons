@@ -9,6 +9,9 @@
 
 #include <config.h>
 
+#define MODULE_NAME mocksock
+#include <x_log_config.h>
+
 #include <string.h>
 #include <stdio.h>
 #include <ctype.h>
@@ -22,8 +25,6 @@
 #include <avsystem/commons/unit/test.h>
 
 #include "test.h"
-
-#define mock_log(Level, ...) avs_log(mocksock, Level, __VA_ARGS__)
 
 typedef struct {
     const char *host;
@@ -190,7 +191,7 @@ static void assert_command_expected(const mocksock_expected_command_t *expected,
 static int mock_connect(avs_net_abstract_socket_t *socket_,
                         const char *host,
                         const char *port) {
-    mock_log(TRACE, "mock_connect: host <%s>, port <%s>", host, port);
+    LOG(TRACE, "mock_connect: host <%s>, port <%s>", host, port);
 
     int retval = 0;
     mocksock_t *socket = (mocksock_t *) socket_;
@@ -237,7 +238,7 @@ static void hexdumpify(char *out_buf,
             size_t bytes_rem = (size_t)(buf_size - (size_t)(at - out_buf));
 
             if (idx < data_size) {
-                snprintf(at, bytes_rem, "%02x", data[idx]);
+                snprintf(at, bytes_rem, "%02x ", data[idx]);
             } else {
                 snprintf(at, bytes_rem, "   ");
             }
@@ -278,11 +279,11 @@ static void hexdump_data(const void *raw_data,
     const size_t bytes_per_row = bytes_per_segment * segments_per_row;
 
     for (size_t offset = 0; offset < data_size; offset += bytes_per_row) {
-        char buffer[bytes_per_row * 4 + segments_per_row + 2];
+        char buffer[bytes_per_row * 4 + segments_per_row * 2];
         hexdumpify(buffer, sizeof(buffer),
                    data + offset, data_size - offset,
                    bytes_per_segment, segments_per_row);
-        mock_log(TRACE, "%s", buffer);
+        LOG(TRACE, "%s", buffer);
     }
 }
 
@@ -292,8 +293,8 @@ static int mock_send_to(avs_net_abstract_socket_t *socket_,
                         size_t buffer_length,
                         const char *host,
                         const char *port) {
-    mock_log(TRACE, "mock_send_to: host <%s>, port <%s>, %zu bytes",
-             host, port, buffer_length);
+    LOG(TRACE, "mock_send_to: host <%s>, port <%s>, %zu bytes",
+        host, port, buffer_length);
     hexdump_data(buffer, buffer_length);
 
     mocksock_t *socket = (mocksock_t *) socket_;
@@ -332,13 +333,12 @@ static int mock_send_to(avs_net_abstract_socket_t *socket_,
             int retval = socket->expected_data->args.retval;
             AVS_LIST_DELETE(&socket->expected_data);
 
-            mock_log(TRACE, "mock_send_to: failure, result == %d", retval);
+            LOG(TRACE, "mock_send_to: failure, result == %d", retval);
             return retval;
         }
     }
 
-    mock_log(TRACE, "mock_send_to: sent %zu/%zu B",
-             *out_bytes_sent, buffer_length);
+    LOG(TRACE, "mock_send_to: sent %zu/%zu B", *out_bytes_sent, buffer_length);
     return 0;
 }
 
@@ -366,7 +366,7 @@ static int mock_receive_from(avs_net_abstract_socket_t *socket_,
                              size_t buffer_length,
                              char *out_host, size_t out_host_size,
                              char *out_port, size_t out_port_size) {
-    mock_log(TRACE, "mock_receive_from: buffer_length %zu", buffer_length);
+    LOG(TRACE, "mock_receive_from: buffer_length %zu", buffer_length);
 
     mocksock_t *socket = (mocksock_t *) socket_;
     AVS_UNIT_ASSERT_TRUE(socket->state == AVS_NET_SOCKET_STATE_BOUND
@@ -400,13 +400,13 @@ static int mock_receive_from(avs_net_abstract_socket_t *socket_,
         int retval = socket->expected_data->args.retval;
         AVS_LIST_DELETE(&socket->expected_data);
 
-        mock_log(TRACE, "mock_receive_from: failure, result = %d", retval);
+        LOG(TRACE, "mock_receive_from: failure, result = %d", retval);
         return retval;
     }
 
-    mock_log(TRACE, "mock_receive_from: recv %zu/%zu B, host <%s>, port <%s>",
-             *out, buffer_length, *out_host, *out_port);
-    hexdump_data(buffer, buffer_length);
+    LOG(TRACE, "mock_receive_from: recv %zu/%zu B, host <%s>, port <%s>",
+        *out, buffer_length, out_host, out_port);
+    hexdump_data(buffer, *out);
     return 0;
 }
 
@@ -421,7 +421,7 @@ static int mock_receive(avs_net_abstract_socket_t *socket,
 static int mock_bind(avs_net_abstract_socket_t *socket_,
                      const char *localaddr,
                      const char *port) {
-    mock_log(TRACE, "mock_bind: localaddr <%s>, port <%s>", localaddr, port);
+    LOG(TRACE, "mock_bind: localaddr <%s>, port <%s>", localaddr, port);
 
     int retval = 0;
     mocksock_t *socket = (mocksock_t *) socket_;
