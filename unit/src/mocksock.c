@@ -207,6 +207,64 @@ static int mock_connect(avs_net_abstract_socket_t *socket_,
     return retval;
 }
 
+static void hexdumpify(char *out_buf,
+                       size_t buf_size,
+                       const uint8_t *data,
+                       size_t data_size,
+                       size_t bytes_per_segment,
+                       size_t segments_per_row) {
+    const size_t bytes_per_row = bytes_per_segment * segments_per_row;
+
+    // bytes_per_row * 3 chars for hex segments (00 00)
+    // + (segments_per_row - 1) extra spaces between hex segments (00 00  00 00)
+    // + 1 extra space between hex segments and char segments
+    // + bytes_per_row chars for char segments (xx)
+    // + (segments_per_row - 1) extra spaces between char segments (xx xx)
+    // + nullbyte at the end
+    assert(buf_size >= bytes_per_row * 4 + segments_per_row * 2);
+
+    char *at = out_buf;
+
+    // hex segments: 00 00 00 00  00 00 00 00
+    for (size_t seg = 0; seg < segments_per_row; ++seg) {
+        for (size_t i = 0; i < bytes_per_segment; ++i) {
+            size_t idx = seg * bytes_per_segment + i;
+            size_t bytes_rem = (size_t)(buf_size - (size_t)(at - out_buf));
+
+            if (idx < data_size) {
+                snprintf(at, bytes_rem, "%02x", data[idx]);
+            } else {
+                snprintf(at, bytes_rem, "   ");
+            }
+
+            at += 3;
+        }
+        *at++ = ' ';
+    }
+
+    // char segment: xxxx xxxx
+    for (size_t seg = 0; seg < segments_per_row; ++seg) {
+        for (size_t i = 0; i < bytes_per_segment; ++i) {
+            size_t idx = seg * bytes_per_segment + i;
+            size_t bytes_rem = (size_t)(buf_size - (size_t)(at - out_buf));
+
+            if (idx < data_size) {
+                snprintf(at, bytes_rem, isprint(data[idx]) ? "%c" : ".",
+                         data[idx]);
+            } else {
+                snprintf(at, bytes_rem, " ");
+            }
+
+            at += 1;
+        }
+        *at++ = ' ';
+    }
+
+    // trailing space is useless
+    *--at = '\0';
+}
+
+
 static void hexdump_data(const void *raw_data,
                          size_t data_size) {
     const uint8_t *data = (const uint8_t *) raw_data;
@@ -214,33 +272,11 @@ static void hexdump_data(const void *raw_data,
     const size_t segments_per_row = 2;
     const size_t bytes_per_row = bytes_per_segment * segments_per_row;
 
-    for (size_t row = 0; row < (data_size + bytes_per_row - 1) / bytes_per_row; ++row) {
+    for (size_t offset = 0; offset < data_size; offset += bytes_per_row) {
         char buffer[bytes_per_row * 4 + segments_per_row + 2];
-        char *at = buffer;
-
-        for (size_t seg = 0; seg < segments_per_row; ++seg) {
-            for (size_t i = 0; i < bytes_per_segment; ++i) {
-                size_t idx = row * bytes_per_row + seg * bytes_per_segment + i;
-                snprintf(at, (size_t)(sizeof(buffer) - (size_t)(at - buffer)),
-                         idx < data_size ? "%02x " : "   ", data[idx]);
-                at += 3;
-            }
-            *at++ = ' ';
-        }
-
-        for (size_t seg = 0; seg < segments_per_row; ++seg) {
-            for (size_t i = 0; i < bytes_per_segment; ++i) {
-                size_t idx = row * bytes_per_row + seg * bytes_per_segment + i;
-                snprintf(at, (size_t)(sizeof(buffer) - (size_t)(at - buffer)),
-                         idx < data_size ? (isprint(data[idx]) ? "%c" : ".")
-                                         : " ",
-                         data[idx]);
-                at += 1;
-            }
-            *at++ = ' ';
-        }
-
-        buffer[sizeof(buffer) - 1] = '\0';
+        hexdumpify(buffer, sizeof(buffer),
+                   data + offset, data_size - offset,
+                   bytes_per_segment, segments_per_row);
         avs_log(mocksock, DEBUG, "%s", buffer);
     }
 }
