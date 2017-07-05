@@ -12,6 +12,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <ctype.h>
+#include <assert.h>
 
 #include <avsystem/commons/log.h>
 #include <avsystem/commons/list.h>
