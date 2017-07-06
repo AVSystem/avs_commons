@@ -720,7 +720,7 @@ void avs_unit_mocksock_expect_output_to__(avs_net_abstract_socket_t *socket_,
                                           const void *expect, size_t length,
                                           const char *host, const char *port,
                                           const char *file, int line) {
-    avs_log(mocksock, DEBUG, "expect_output: %zuB", length);
+    LOG(TRACE, "expect_output: %zuB", length);
     hexdump_data(expect, length);
 
     mocksock_t *socket = (mocksock_t *) socket_;
