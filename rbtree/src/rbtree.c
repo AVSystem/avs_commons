@@ -662,9 +662,13 @@ static void rb_detach_fix(struct rb_tree *tree,
     _AVS_RB_NODE(parent)->color = BLACK;
 
     if (elem == _AVS_RB_LEFT(parent)) {
+        assert(_AVS_RB_RIGHT(sibling));
+
         _AVS_RB_NODE(_AVS_RB_RIGHT(sibling))->color = BLACK;
         rb_rotate_left(tree, parent);
     } else {
+        assert(_AVS_RB_LEFT(sibling));
+
         _AVS_RB_NODE(_AVS_RB_LEFT(sibling))->color = BLACK;
         rb_rotate_right(tree, parent);
     }
