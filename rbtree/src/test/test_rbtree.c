@@ -5,13 +5,12 @@
 #include <avsystem/commons/log.h>
 #include <avsystem/commons/unit/test.h>
 
-static long test_rb_alloc_null_countdown = -1;
+static size_t test_rb_alloc_null_countdown = 0;
 
 static void *test_rb_alloc(size_t num_bytes) {
     if (test_rb_alloc_null_countdown > 0) {
         if (--test_rb_alloc_null_countdown == 0) {
             return NULL;
-            test_rb_alloc_null_countdown = -1;
         }
     }
 
