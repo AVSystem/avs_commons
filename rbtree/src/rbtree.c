@@ -1,6 +1,16 @@
 #include <avsystem/commons/rbtree.h>
 #include "rbtree.h"
 
+#ifdef AVS_UNIT_TESTING
+static void *test_rb_alloc(size_t num_bytes);
+static void test_rb_dealloc(void *ptr);
+
+#undef _AVS_RB_ALLOC
+#undef _AVS_RB_DEALLOC
+#define _AVS_RB_ALLOC test_rb_alloc
+#define _AVS_RB_DEALLOC test_rb_dealloc
+#endif
+
 #ifndef NDEBUG
 static int rb_is_cleanup_in_progress(AVS_RBTREE_CONST(void) tree) {
     return *tree && (_AVS_RB_PARENT_CONST(*tree) != NULL);
