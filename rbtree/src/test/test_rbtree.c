@@ -5,6 +5,22 @@
 #include <avsystem/commons/log.h>
 #include <avsystem/commons/unit/test.h>
 
+static size_t test_rb_alloc_null_countdown = 0;
+
+static void *test_rb_alloc(size_t num_bytes) {
+    if (test_rb_alloc_null_countdown > 0) {
+        if (--test_rb_alloc_null_countdown == 0) {
+            return NULL;
+        }
+    }
+
+    return calloc(1, num_bytes);
+}
+
+static void test_rb_dealloc(void *ptr) {
+    free(ptr);
+}
+
 #define INTPTR(Value) (&(int[]) { (Value) }[0])
 
 static int int_comparator(const void *a_,
@@ -961,5 +977,14 @@ AVS_UNIT_TEST(rbtree, fuzz2) {
 
     assert_rb_properties_hold(tree);
 
+    AVS_RBTREE_DELETE(&tree);
+}
+
+AVS_UNIT_TEST(rbtree, clone_segfault) {
+    AVS_RBTREE(int) tree = make_tree(2, 5, 3, 1, 0);
+
+    // return NULL for third allocation
+    test_rb_alloc_null_countdown = 3;
+    AVS_UNIT_ASSERT_NULL(AVS_RBTREE_SIMPLE_CLONE(tree));
     AVS_RBTREE_DELETE(&tree);
 }
