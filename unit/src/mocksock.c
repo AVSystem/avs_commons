@@ -682,6 +682,7 @@ void avs_unit_mocksock_input_from__(avs_net_abstract_socket_t *socket_,
     new_data->args.valid.remote_host = host;
     new_data->args.valid.remote_port = port;
     new_data->args.valid.data = malloc(length);
+    AVS_UNIT_ASSERT_NOT_NULL(new_data->args.valid.data);
     memcpy((void*)(intptr_t)new_data->args.valid.data, data, length);
     new_data->args.valid.ptr = 0;
     new_data->args.valid.size = length;
