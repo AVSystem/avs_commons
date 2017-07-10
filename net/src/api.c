@@ -695,8 +695,9 @@ static int create_socket_debug(avs_net_abstract_socket_t **debug_socket,
                                avs_net_abstract_socket_t *backend_socket) {
     avs_net_socket_cleanup(debug_socket);
 
-    *debug_socket =
-            (avs_net_abstract_socket_t *) malloc(sizeof(avs_net_socket_debug_t));
+    avs_net_socket_debug_t *sock = (avs_net_socket_debug_t *)
+            malloc(sizeof(avs_net_socket_debug_t));
+    *debug_socket = (avs_net_abstract_socket_t *) sock;
     if (*debug_socket) {
         avs_net_socket_debug_t new_socket = { &debug_vtable, NULL };
         new_socket.socket = backend_socket;

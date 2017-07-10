@@ -300,13 +300,15 @@ int avs_stream_netbuf_create(avs_stream_abstract_t **stream_,
                              avs_net_abstract_socket_t *socket,
                              size_t in_buffer_size,
                              size_t out_buffer_size) {
-    buffered_netstream_t *stream = NULL;
-    *stream_ = (avs_stream_abstract_t*) calloc(1, sizeof(buffered_netstream_t));
+    buffered_netstream_t *stream = (buffered_netstream_t*)
+            calloc(1, sizeof(buffered_netstream_t));
+    *stream_ = (avs_stream_abstract_t*) stream;
+
     if (!*stream_) {
         LOG(ERROR, "cannot allocate memory");
         return -1;
     }
-    stream = (buffered_netstream_t*) * stream_;
+
     *(const avs_stream_v_table_t **) (intptr_t) &stream->vtable =
             &buffered_netstream_vtable;
 
