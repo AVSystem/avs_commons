@@ -10,8 +10,6 @@
 
 #cmakedefine HAVE_POLL
 
-#cmakedefine HAVE_RAND_R
-
 #cmakedefine HAVE_BACKTRACE
 
 #cmakedefine HAVE_BACKTRACE_SYMBOLS

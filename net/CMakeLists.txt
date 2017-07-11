@@ -59,6 +59,8 @@ elseif(WITH_TINYDTLS)
     avs_emit_deps(avs_net tinydtls)
 endif()
 
+avs_emit_deps(avs_net avs_utils)
+
 avs_install_export(avs_net net)
 avs_propagate_exports()
 install(DIRECTORY include_public/
