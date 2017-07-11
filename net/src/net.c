@@ -383,12 +383,12 @@ static int remote_port_net(avs_net_abstract_socket_t *socket_,
 static int system_socket_net(avs_net_abstract_socket_t *net_socket_,
                              const void **out) {
     avs_net_socket_t *net_socket = (avs_net_socket_t *) net_socket_;
-    *out = &net_socket->socket;
-    if (*out) {
+    if (net_socket->socket >= 0) {
+        *out = &net_socket->socket;
         net_socket->error_code = 0;
         return 0;
     } else {
-        net_socket->error_code = ERANGE;
+        net_socket->error_code = EBADF;
         return -1;
     }
 }
