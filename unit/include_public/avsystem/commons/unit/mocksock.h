@@ -25,7 +25,7 @@ void avs_unit_mocksock_create__(avs_net_abstract_socket_t **socket,
     avs_unit_mocksock_create__((Socket), __FILE__, __LINE__)
 
 void avs_unit_mocksock_input__(avs_net_abstract_socket_t *socket,
-                               const char *data,
+                               const void *data,
                                size_t length,
                                const char *file,
                                int line);
@@ -33,7 +33,7 @@ void avs_unit_mocksock_input__(avs_net_abstract_socket_t *socket,
     avs_unit_mocksock_input__((Socket), (Data), (Length), __FILE__, __LINE__)
 
 void avs_unit_mocksock_input_from__(avs_net_abstract_socket_t *socket_,
-                                    const char *data,
+                                    const void *data,
                                     size_t length,
                                     const char *host,
                                     const char *port,
@@ -64,7 +64,7 @@ void avs_unit_mocksock_fail_command__(avs_net_abstract_socket_t *socket,
     avs_unit_mocksock_fail_command__((Socket), __FILE__, __LINE__)
 
 void avs_unit_mocksock_expect_output__(avs_net_abstract_socket_t *socket,
-                                       const char *expect,
+                                       const void *expect,
                                        size_t length,
                                        const char *file,
                                        int line);
@@ -73,7 +73,7 @@ void avs_unit_mocksock_expect_output__(avs_net_abstract_socket_t *socket,
                                       __FILE__, __LINE__)
 
 void avs_unit_mocksock_expect_output_to__(avs_net_abstract_socket_t *socket_,
-                                          const char *expect, size_t length,
+                                          const void *expect, size_t length,
                                           const char *host, const char *port,
                                           const char *file, int line);
 #define avs_unit_mocksock_expect_output_to(Socket, Expect, Length, Host, Port) \

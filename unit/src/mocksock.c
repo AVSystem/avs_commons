@@ -9,8 +9,15 @@
 
 #include <config.h>
 
-#include <string.h>
+#define MODULE_NAME mocksock
+#include <x_log_config.h>
 
+#include <string.h>
+#include <stdio.h>
+#include <ctype.h>
+#include <assert.h>
+
+#include <avsystem/commons/log.h>
 #include <avsystem/commons/list.h>
 #include <avsystem/commons/net.h>
 #include <avsystem/commons/socket_v_table.h>
@@ -116,7 +123,7 @@ typedef struct {
         struct {
             const char *remote_host;
             const char *remote_port;
-            const char *data;
+            const void *data;
             size_t ptr;
             size_t size;
         } valid;
@@ -184,6 +191,8 @@ static void assert_command_expected(const mocksock_expected_command_t *expected,
 static int mock_connect(avs_net_abstract_socket_t *socket_,
                         const char *host,
                         const char *port) {
+    LOG(TRACE, "mock_connect: host <%s>, port <%s>", host, port);
+
     int retval = 0;
     mocksock_t *socket = (mocksock_t *) socket_;
 
@@ -204,12 +213,90 @@ static int mock_connect(avs_net_abstract_socket_t *socket_,
     return retval;
 }
 
+static void hexdumpify(char *out_buf,
+                       size_t buf_size,
+                       const uint8_t *data,
+                       size_t data_size,
+                       size_t bytes_per_segment,
+                       size_t segments_per_row) {
+    const size_t bytes_per_row = bytes_per_segment * segments_per_row;
+
+    // bytes_per_row * 3 chars for hex segments (00 00)
+    // + (segments_per_row - 1) extra spaces between hex segments (00 00  00 00)
+    // + 1 extra space between hex segments and char segments
+    // + bytes_per_row chars for char segments (xx)
+    // + (segments_per_row - 1) extra spaces between char segments (xx xx)
+    // + nullbyte at the end
+    assert(buf_size >= bytes_per_row * 4 + segments_per_row * 2);
+
+    char *at = out_buf;
+
+    // hex segments: 00 00 00 00  00 00 00 00
+    for (size_t seg = 0; seg < segments_per_row; ++seg) {
+        for (size_t i = 0; i < bytes_per_segment; ++i) {
+            size_t idx = seg * bytes_per_segment + i;
+            size_t bytes_rem = (size_t)(buf_size - (size_t)(at - out_buf));
+
+            if (idx < data_size) {
+                snprintf(at, bytes_rem, "%02x ", data[idx]);
+            } else {
+                snprintf(at, bytes_rem, "   ");
+            }
+
+            at += 3;
+        }
+        *at++ = ' ';
+    }
+
+    // char segment: xxxx xxxx
+    for (size_t seg = 0; seg < segments_per_row; ++seg) {
+        for (size_t i = 0; i < bytes_per_segment; ++i) {
+            size_t idx = seg * bytes_per_segment + i;
+            size_t bytes_rem = (size_t)(buf_size - (size_t)(at - out_buf));
+
+            if (idx < data_size) {
+                snprintf(at, bytes_rem, isprint(data[idx]) ? "%c" : ".",
+                         data[idx]);
+            } else {
+                snprintf(at, bytes_rem, " ");
+            }
+
+            at += 1;
+        }
+        *at++ = ' ';
+    }
+
+    // trailing space is useless
+    *--at = '\0';
+}
+
+
+static void hexdump_data(const void *raw_data,
+                         size_t data_size) {
+    const uint8_t *data = (const uint8_t *) raw_data;
+    const size_t bytes_per_segment = 8;
+    const size_t segments_per_row = 2;
+    const size_t bytes_per_row = bytes_per_segment * segments_per_row;
+
+    for (size_t offset = 0; offset < data_size; offset += bytes_per_row) {
+        char buffer[bytes_per_row * 4 + segments_per_row * 2];
+        hexdumpify(buffer, sizeof(buffer),
+                   data + offset, data_size - offset,
+                   bytes_per_segment, segments_per_row);
+        LOG(TRACE, "%s", buffer);
+    }
+}
+
 static int mock_send_to(avs_net_abstract_socket_t *socket_,
                         size_t *out_bytes_sent,
                         const void *buffer,
                         size_t buffer_length,
                         const char *host,
                         const char *port) {
+    LOG(TRACE, "mock_send_to: host <%s>, port <%s>, %zu bytes",
+        host, port, buffer_length);
+    hexdump_data(buffer, buffer_length);
+
     mocksock_t *socket = (mocksock_t *) socket_;
     AVS_UNIT_ASSERT_TRUE(socket->state == AVS_NET_SOCKET_STATE_BOUND
             || socket->state == AVS_NET_SOCKET_STATE_ACCEPTED
@@ -223,8 +310,9 @@ static int mock_send_to(avs_net_abstract_socket_t *socket_,
             if (buffer_length < to_send) {
                 to_send = buffer_length;
             }
+
             AVS_UNIT_ASSERT_EQUAL_BYTES_SIZED(buffer,
-                                              socket->expected_data->args.valid.data
+                                              (const char*)socket->expected_data->args.valid.data
                                               + socket->expected_data->args.valid.ptr,
                                               to_send);
             AVS_UNIT_ASSERT_EQUAL_STRING(
@@ -234,6 +322,7 @@ static int mock_send_to(avs_net_abstract_socket_t *socket_,
             socket->expected_data->args.valid.ptr += to_send;
             if (socket->expected_data->args.valid.ptr
                     == socket->expected_data->args.valid.size) {
+                free((void*)(intptr_t)socket->expected_data->args.valid.data);
                 AVS_LIST_DELETE(&socket->expected_data);
             }
             buffer_length -= to_send;
@@ -243,9 +332,13 @@ static int mock_send_to(avs_net_abstract_socket_t *socket_,
                    == MOCKSOCK_DATA_TYPE_OUTPUT_FAIL) {
             int retval = socket->expected_data->args.retval;
             AVS_LIST_DELETE(&socket->expected_data);
+
+            LOG(TRACE, "mock_send_to: failure, result == %d", retval);
             return retval;
         }
     }
+
+    LOG(TRACE, "mock_send_to: sent %zu/%zu B", *out_bytes_sent, buffer_length);
     return 0;
 }
 
@@ -273,6 +366,8 @@ static int mock_receive_from(avs_net_abstract_socket_t *socket_,
                              size_t buffer_length,
                              char *out_host, size_t out_host_size,
                              char *out_port, size_t out_port_size) {
+    LOG(TRACE, "mock_receive_from: buffer_length %zu", buffer_length);
+
     mocksock_t *socket = (mocksock_t *) socket_;
     AVS_UNIT_ASSERT_TRUE(socket->state == AVS_NET_SOCKET_STATE_BOUND
             || socket->state == AVS_NET_SOCKET_STATE_ACCEPTED
@@ -287,7 +382,7 @@ static int mock_receive_from(avs_net_abstract_socket_t *socket_,
         if (buffer_length < *out) {
             *out = buffer_length;
         }
-        memcpy(buffer, socket->expected_data->args.valid.data
+        memcpy(buffer, (const char*)socket->expected_data->args.valid.data
                + socket->expected_data->args.valid.ptr, *out);
         socket->expected_data->args.valid.ptr += *out;
         fill_remote_addr(out_host, out_host_size,
@@ -297,14 +392,21 @@ static int mock_receive_from(avs_net_abstract_socket_t *socket_,
         if (socket->expected_data->args.valid.ptr
                 == socket->expected_data->args.valid.size) {
             socket->last_data_read = socket->expected_data->args.valid.ptr;
+            free((void*)(intptr_t)socket->expected_data->args.valid.data);
             AVS_LIST_DELETE(&socket->expected_data);
         }
     } else if (socket->expected_data->type
                == MOCKSOCK_DATA_TYPE_INPUT_FAIL) {
         int retval = socket->expected_data->args.retval;
         AVS_LIST_DELETE(&socket->expected_data);
+
+        LOG(TRACE, "mock_receive_from: failure, result = %d", retval);
         return retval;
     }
+
+    LOG(TRACE, "mock_receive_from: recv %zu/%zu B, host <%s>, port <%s>",
+        *out, buffer_length, out_host, out_port);
+    hexdump_data(buffer, *out);
     return 0;
 }
 
@@ -319,6 +421,8 @@ static int mock_receive(avs_net_abstract_socket_t *socket,
 static int mock_bind(avs_net_abstract_socket_t *socket_,
                      const char *localaddr,
                      const char *port) {
+    LOG(TRACE, "mock_bind: localaddr <%s>, port <%s>", localaddr, port);
+
     int retval = 0;
     mocksock_t *socket = (mocksock_t *) socket_;
 
@@ -566,7 +670,7 @@ static mocksock_expected_data_t *new_expected_data(mocksock_t *socket,
 }
 
 void avs_unit_mocksock_input_from__(avs_net_abstract_socket_t *socket_,
-                                    const char *data,
+                                    const void *data,
                                     size_t length,
                                     const char *host,
                                     const char *port,
@@ -577,13 +681,15 @@ void avs_unit_mocksock_input_from__(avs_net_abstract_socket_t *socket_,
     new_data->type = MOCKSOCK_DATA_TYPE_INPUT;
     new_data->args.valid.remote_host = host;
     new_data->args.valid.remote_port = port;
-    new_data->args.valid.data = data;
+    new_data->args.valid.data = malloc(length);
+    AVS_UNIT_ASSERT_NOT_NULL(new_data->args.valid.data);
+    memcpy((void*)(intptr_t)new_data->args.valid.data, data, length);
     new_data->args.valid.ptr = 0;
     new_data->args.valid.size = length;
 }
 
 void avs_unit_mocksock_input__(avs_net_abstract_socket_t *socket,
-                               const char *data,
+                               const void *data,
                                size_t length,
                                const char *file,
                                int line) {
@@ -612,21 +718,26 @@ size_t avs_unit_mocksock_data_read(avs_net_abstract_socket_t *socket_) {
 }
 
 void avs_unit_mocksock_expect_output_to__(avs_net_abstract_socket_t *socket_,
-                                          const char *expect, size_t length,
+                                          const void *expect, size_t length,
                                           const char *host, const char *port,
                                           const char *file, int line) {
+    LOG(TRACE, "expect_output: %zuB", length);
+    hexdump_data(expect, length);
+
     mocksock_t *socket = (mocksock_t *) socket_;
     mocksock_expected_data_t *new_data = new_expected_data(socket, file, line);
     new_data->type = MOCKSOCK_DATA_TYPE_OUTPUT;
     new_data->args.valid.remote_host = host;
     new_data->args.valid.remote_port = port;
-    new_data->args.valid.data = expect;
+    new_data->args.valid.data = malloc(length);
+    AVS_UNIT_ASSERT_NOT_NULL(new_data->args.valid.data);
+    memcpy((void*)(intptr_t)new_data->args.valid.data, expect, length);
     new_data->args.valid.ptr = 0;
     new_data->args.valid.size = length;
 }
 
 void avs_unit_mocksock_expect_output__(avs_net_abstract_socket_t *socket,
-                                       const char *expect, size_t length,
+                                       const void *expect, size_t length,
                                        const char *file, int line) {
     avs_unit_mocksock_expect_output_to__(socket, expect, length, NULL, NULL,
                                          file, line);
