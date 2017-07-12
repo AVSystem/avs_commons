@@ -1445,13 +1445,9 @@ static int configure_ssl(ssl_socket_t *socket,
         return -1;
     }
 
-    if (configuration->dtls_handshake_timeouts) {
-        socket->dtls_handshake_timeouts =
-                *configuration->dtls_handshake_timeouts;
-    } else {
-        socket->dtls_handshake_timeouts.min_ms = 1000;
-        socket->dtls_handshake_timeouts.max_ms = 60000;
-    }
+    socket->dtls_handshake_timeouts = (configuration->dtls_handshake_timeouts
+            ? *configuration->dtls_handshake_timeouts
+            : DEFAULT_DTLS_HANDSHAKE_TIMEOUTS);
     if (configuration->additional_configuration_clb
             && configuration->additional_configuration_clb(socket->ctx)) {
         LOG(ERROR, "Error while setting additional SSL configuration");

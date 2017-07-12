@@ -836,13 +836,9 @@ static int initialize_ssl_socket(ssl_socket_t *socket,
 
     socket->backend_type = backend_type;
     socket->version = configuration->version;
-    if (configuration->dtls_handshake_timeouts) {
-        socket->dtls_handshake_timeouts =
-                *configuration->dtls_handshake_timeouts;
-    } else {
-        socket->dtls_handshake_timeouts.min_ms= 1000;
-        socket->dtls_handshake_timeouts.max_ms= 60000;
-    }
+    socket->dtls_handshake_timeouts = (configuration->dtls_handshake_timeouts
+            ? *configuration->dtls_handshake_timeouts
+            : DEFAULT_DTLS_HANDSHAKE_TIMEOUTS);
     socket->additional_configuration_clb =
             configuration->additional_configuration_clb;
     socket->backend_configuration = configuration->backend_configuration;
