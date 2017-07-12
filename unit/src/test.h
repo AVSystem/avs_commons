@@ -16,6 +16,6 @@ void _avs_unit_assert_fail(const char *file,
         if (!(Condition)) { \
             _avs_unit_assert_fail((File), (Line), __VA_ARGS__); \
         } \
-    while (0)
+    } while (0)
 
 #endif /* AVS_COMMONS_UNIT_SRC_TEST_H */
