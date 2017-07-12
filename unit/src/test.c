@@ -199,11 +199,6 @@ void avs_unit_add_test__(const char *suite_name,
 void _avs_unit_assert_fail(const char *file,
                            int line,
                            const char *format,
-                           ...) __attribute__((noreturn));
-
-void _avs_unit_assert_fail(const char *file,
-                           int line,
-                           const char *format,
                            ...) {
     va_list list;
 

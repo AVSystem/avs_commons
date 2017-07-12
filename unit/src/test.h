@@ -9,7 +9,7 @@ void _avs_unit_test_fail_printf(const char *file,
 void _avs_unit_assert_fail(const char *file,
                            int line,
                            const char *format,
-                           ...);
+                           ...) __attribute__((noreturn));
 
 #define _avs_unit_assert(Condition, File, Line, ...) \
     do { \
