@@ -196,15 +196,16 @@ void avs_unit_add_test__(const char *suite_name,
     AVS_LIST_APPEND(&suite->tests, new_test);
 }
 
-void _avs_unit_assert(int condition,
-                      const char *file,
-                      int line,
-                      const char *format,
-                      ...) {
+void _avs_unit_assert_fail(const char *file,
+                           int line,
+                           const char *format,
+                           ...) __attribute__((noreturn));
+
+void _avs_unit_assert_fail(const char *file,
+                           int line,
+                           const char *format,
+                           ...) {
     va_list list;
-    if (condition) {
-        return;
-    }
 
     va_start(list, format);
     test_fail_vprintf(file, line, format, list);
