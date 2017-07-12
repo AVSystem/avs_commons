@@ -373,6 +373,29 @@ static int avs_bio_gets(BIO *bio, char *buffer, int size) {
     return -1;
 }
 
+static struct timespec timespec_from_ms(avs_net_timeout_t ms) {
+    struct timespec result = {
+        .tv_sec = ms / 1000,
+        .tv_nsec = (ms % 1000) * 1000000
+    };
+    return result;
+}
+
+static int compare_timespec(const struct timespec *left,
+                            const struct timespec *right) {
+    return left->tv_sec < right->tv_sec ? -1
+            : left->tv_sec > right->tv_sec ? 1
+            : left->tv_nsec < right->tv_nsec ? -1
+            : left->tv_nsec > right->tv_nsec ? 1
+            : 0;
+}
+
+static int compare_timespec_with_ms(const struct timespec *left,
+                                    avs_net_timeout_t right_ms) {
+    struct timespec right = timespec_from_ms(right_ms);
+    return compare_timespec(left, &right);
+}
+
 static long avs_bio_ctrl(BIO *bio, int command, long intarg, void *ptrarg) {
     ssl_socket_t *sock = (ssl_socket_t *) BIO_get_data(bio);
     (void) sock;
@@ -397,13 +420,14 @@ static long avs_bio_ctrl(BIO *bio, int command, long intarg, void *ptrarg) {
             next_timeout.tv_sec--;
             next_timeout.tv_nsec += 1000000000l;
         }
-        if (next_timeout.tv_sec < sock->dtls_handshake_timeouts.min_seconds) {
-            next_timeout.tv_sec = sock->dtls_handshake_timeouts.min_seconds;
-            next_timeout.tv_nsec = 0;
-        } else if (next_timeout.tv_sec
-                >= sock->dtls_handshake_timeouts.max_seconds) {
-            next_timeout.tv_sec = sock->dtls_handshake_timeouts.max_seconds;
-            next_timeout.tv_nsec = 0;
+        if (compare_timespec_with_ms(
+                &next_timeout, sock->dtls_handshake_timeouts.min_ms) < 0) {
+            next_timeout =
+                    timespec_from_ms(sock->dtls_handshake_timeouts.min_ms);
+        } else if (compare_timespec_with_ms(
+                &next_timeout, sock->dtls_handshake_timeouts.max_ms) > 0) {
+            next_timeout =
+                    timespec_from_ms(sock->dtls_handshake_timeouts.max_ms);
         }
         sock->next_deadline.tv_sec = now.tv_sec + next_timeout.tv_sec;
         sock->next_deadline.tv_nsec = now.tv_nsec + next_timeout.tv_nsec;
@@ -1425,8 +1449,8 @@ static int configure_ssl(ssl_socket_t *socket,
         socket->dtls_handshake_timeouts =
                 *configuration->dtls_handshake_timeouts;
     } else {
-        socket->dtls_handshake_timeouts.min_seconds = 1;
-        socket->dtls_handshake_timeouts.max_seconds = 60;
+        socket->dtls_handshake_timeouts.min_ms = 1000;
+        socket->dtls_handshake_timeouts.max_ms = 60000;
     }
     if (configuration->additional_configuration_clb
             && configuration->additional_configuration_clb(socket->ctx)) {

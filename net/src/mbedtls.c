@@ -346,8 +346,8 @@ static int initialize_ssl_config(ssl_socket_t *socket) {
     }
     mbedtls_ssl_conf_handshake_timeout(
             &socket->config,
-            socket->dtls_handshake_timeouts.min_seconds * 1000,
-            socket->dtls_handshake_timeouts.max_seconds * 1000);
+            (uint32_t) socket->dtls_handshake_timeouts.min_ms,
+            (uint32_t) socket->dtls_handshake_timeouts.max_ms);
 
     if (socket->additional_configuration_clb
             && socket->additional_configuration_clb(&socket->config)) {
@@ -840,8 +840,8 @@ static int initialize_ssl_socket(ssl_socket_t *socket,
         socket->dtls_handshake_timeouts =
                 *configuration->dtls_handshake_timeouts;
     } else {
-        socket->dtls_handshake_timeouts.min_seconds = 1;
-        socket->dtls_handshake_timeouts.max_seconds = 60;
+        socket->dtls_handshake_timeouts.min_ms= 1000;
+        socket->dtls_handshake_timeouts.max_ms= 60000;
     }
     socket->additional_configuration_clb =
             configuration->additional_configuration_clb;

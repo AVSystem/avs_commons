@@ -566,9 +566,17 @@ avs_net_security_info_t avs_net_security_info_from_psk(avs_net_psk_t psk);
 avs_net_security_info_t
 avs_net_security_info_from_certificates(avs_net_certificate_info_t info);
 
+#if INT_MAX >= INT_LEAST32_MAX
+typedef int avs_net_timeout_t;
+#define AVS_FORMAT_NET_TIMEOUT(Type, Letter) #Letter
+#else
+typedef int_least32_t avs_net_timeout_t;
+#define AVS_FORMAT_NET_TIMEOUT(Type, Letter) Type##Letter##LEAST32
+#endif
+
 typedef struct {
-    uint32_t min_seconds;
-    uint32_t max_seconds;
+    avs_net_timeout_t min_ms;
+    avs_net_timeout_t max_ms;
 } avs_net_dtls_handshake_timeouts_t;
 
 typedef struct {
@@ -652,14 +660,6 @@ typedef enum {
      */
     AVS_NET_SOCKET_STATE_CONNECTED
 } avs_net_socket_state_t;
-
-#if INT_MAX >= INT_LEAST32_MAX
-typedef int avs_net_timeout_t;
-#define AVS_FORMAT_NET_TIMEOUT(Type, Letter) #Letter
-#else
-typedef int_least32_t avs_net_timeout_t;
-#define AVS_FORMAT_NET_TIMEOUT(Type, Letter) Type##Letter##LEAST32
-#endif
 
 typedef union {
     avs_net_timeout_t recv_timeout;
