@@ -383,6 +383,10 @@ static struct timespec timespec_from_ms(avs_net_timeout_t ms) {
 
 static int compare_timespec(const struct timespec *left,
                             const struct timespec *right) {
+    assert(left->tv_nsec >= 0);
+    assert(left->tv_nsec < 1000000000l);
+    assert(right->tv_nsec >= 0);
+    assert(right->tv_nsec < 1000000000l);
     return left->tv_sec < right->tv_sec ? -1
             : left->tv_sec > right->tv_sec ? 1
             : left->tv_nsec < right->tv_nsec ? -1
