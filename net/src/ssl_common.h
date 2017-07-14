@@ -425,4 +425,10 @@ static const avs_net_socket_v_table_t ssl_vtable = {
     errno_ssl
 };
 
+static const avs_net_dtls_handshake_timeouts_t
+DEFAULT_DTLS_HANDSHAKE_TIMEOUTS = {
+    .min_ms = 1000,
+    .max_ms = 60000
+};
+
 #endif /* NET_SSL_COMMON_H */

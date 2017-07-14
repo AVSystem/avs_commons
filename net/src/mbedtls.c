@@ -57,6 +57,7 @@ typedef struct {
     avs_net_abstract_socket_t *backend_socket;
     int error_code;
     avs_net_ssl_version_t version;
+    avs_net_dtls_handshake_timeouts_t dtls_handshake_timeouts;
     avs_ssl_additional_configuration_clb_t *additional_configuration_clb;
     avs_net_socket_configuration_t backend_configuration;
 } ssl_socket_t;
@@ -88,8 +89,12 @@ static int avs_bio_recv(void *ctx, unsigned char *buf, size_t len,
     avs_net_socket_set_opt(socket->backend_socket,
                            AVS_NET_SOCKET_OPT_RECV_TIMEOUT, new_timeout);
     if (avs_net_socket_receive(socket->backend_socket, &read_bytes, buf, len)) {
-        result = MBEDTLS_ERR_NET_RECV_FAILED;
         socket->error_code = avs_net_socket_errno(socket->backend_socket);
+        if (socket->error_code == ETIMEDOUT) {
+            result = MBEDTLS_ERR_SSL_TIMEOUT;
+        } else {
+            result = MBEDTLS_ERR_NET_RECV_FAILED;
+        }
     } else {
         result = (int) read_bytes;
     }
@@ -339,6 +344,10 @@ static int initialize_ssl_config(ssl_socket_t *socket) {
         assert(0 && "invalid enum value");
         return -1;
     }
+    mbedtls_ssl_conf_handshake_timeout(
+            &socket->config,
+            (uint32_t) socket->dtls_handshake_timeouts.min_ms,
+            (uint32_t) socket->dtls_handshake_timeouts.max_ms);
 
     if (socket->additional_configuration_clb
             && socket->additional_configuration_clb(&socket->config)) {
@@ -827,6 +836,9 @@ static int initialize_ssl_socket(ssl_socket_t *socket,
 
     socket->backend_type = backend_type;
     socket->version = configuration->version;
+    socket->dtls_handshake_timeouts = (configuration->dtls_handshake_timeouts
+            ? *configuration->dtls_handshake_timeouts
+            : DEFAULT_DTLS_HANDSHAKE_TIMEOUTS);
     socket->additional_configuration_clb =
             configuration->additional_configuration_clb;
     socket->backend_configuration = configuration->backend_configuration;
