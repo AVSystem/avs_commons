@@ -151,7 +151,10 @@ avs_find_library("
 set(MBEDTLS_INCLUDE_DIRS "" CACHE PATH "mbed TLS include directory")
 
 # tinyDTLS
-avs_find_library("find_library(TINYDTLS_FOUND tinydtls)" tinydtls)
+avs_find_library("
+    set(TINYDTLS_ROOT_DIR \"${TINYDTLS_ROOT_DIR}\")
+    find_package(TinyDTLS)
+" tinydtls)
 
 # SSL
 option(WITH_OPENSSL "Enable OpenSSL" OFF)
@@ -421,6 +424,7 @@ install(FILES
         DESTINATION ${LIB_INSTALL_DIR}/avs_commons)
 install(FILES
         ${CMAKE_CURRENT_SOURCE_DIR}/cmake/FindMbedTLS.cmake
+        ${CMAKE_CURRENT_SOURCE_DIR}/cmake/FindTinyDTLS.cmake
         DESTINATION ${LIB_INSTALL_DIR}/avs_commons/cmake)
 install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/include_public/"
         DESTINATION ${INCLUDE_INSTALL_DIR}
