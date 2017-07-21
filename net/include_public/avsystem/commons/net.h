@@ -429,11 +429,18 @@ typedef enum {
 } avs_net_security_mode_t;
 
 typedef struct {
+    const void *psk;
+    size_t psk_size;
+    const void *identity;
+    size_t identity_size;
+} avs_net_psk_t;
+
+typedef struct {
     void *psk;
     size_t psk_size;
     void *identity;
     size_t identity_size;
-} avs_net_psk_t;
+} avs_net_owned_psk_t;
 
 typedef enum {
     AVS_NET_DATA_FORMAT_EC,

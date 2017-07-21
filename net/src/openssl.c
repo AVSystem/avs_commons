@@ -93,7 +93,7 @@ typedef struct {
     avs_net_resolved_endpoint_t endpoint_buffer;
 
 #ifdef WITH_PSK
-    avs_net_psk_t psk;
+    avs_net_owned_psk_t psk;
 #endif
 } ssl_socket_t;
 
@@ -1388,6 +1388,7 @@ static int configure_ssl_psk(ssl_socket_t *socket,
 }
 #endif
 
+#ifdef WITH_OPENSSL_CUSTOM_CIPHERS
 static int configure_cipher_list(ssl_socket_t *socket,
                                  const char *cipher_list) {
     static const char *DEFAULT_OPENSSL_CIPHER_LIST = "DEFAULT";
@@ -1408,6 +1409,7 @@ static int configure_cipher_list(ssl_socket_t *socket,
     log_openssl_error();
     return -1;
 }
+#endif /* WITH_OPENSSL_CUSTOM_CIPHERS */
 
 static int configure_ssl(ssl_socket_t *socket,
                          const avs_net_ssl_configuration_t *configuration) {
