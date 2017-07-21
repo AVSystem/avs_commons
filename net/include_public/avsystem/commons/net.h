@@ -428,6 +428,10 @@ typedef enum {
     AVS_NET_SECURITY_CERTIFICATE = AVS_NET_SECURITY_DEFAULT /**< X509 Certificate + private key */
 } avs_net_security_mode_t;
 
+/**
+ * A PSK/identity pair with borrowed pointers. avs_commons will never attempt
+ * to modify these values.
+ */
 typedef struct {
     const void *psk;
     size_t psk_size;
@@ -435,6 +439,11 @@ typedef struct {
     size_t identity_size;
 } avs_net_psk_t;
 
+/**
+ * An owned PSK/identity pair. avs_commons will free()
+ * @ref avs_net_owned_psk_t#psk and @ref avs_net_owned_psk_t#identity pointers
+ * when they are no longer needed.
+ */
 typedef struct {
     void *psk;
     size_t psk_size;
