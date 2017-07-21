@@ -439,18 +439,6 @@ typedef struct {
     size_t identity_size;
 } avs_net_psk_t;
 
-/**
- * An owned PSK/identity pair. avs_commons will free()
- * @ref avs_net_owned_psk_t#psk and @ref avs_net_owned_psk_t#identity pointers
- * when they are no longer needed.
- */
-typedef struct {
-    void *psk;
-    size_t psk_size;
-    void *identity;
-    size_t identity_size;
-} avs_net_owned_psk_t;
-
 typedef enum {
     AVS_NET_DATA_FORMAT_EC,
     AVS_NET_DATA_FORMAT_DER,

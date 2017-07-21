@@ -22,6 +22,18 @@
 #endif
 
 /**
+ * An owned PSK/identity pair. avs_commons will free()
+ * @ref avs_net_owned_psk_t#psk and @ref avs_net_owned_psk_t#identity pointers
+ * when they are no longer needed.
+ */
+typedef struct {
+    void *psk;
+    size_t psk_size;
+    void *identity;
+    size_t identity_size;
+} avs_net_owned_psk_t;
+
+/**
  * Note: the _actual_ maximum hostname length is not precisely defined.
  * NI_MAXHOST on Linux is actually a very generous 1025 (incl. nullbyte). DNS
  * frame format allows for up to 253 (excl. nullbyte), and also each segment
