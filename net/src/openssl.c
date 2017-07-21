@@ -373,6 +373,7 @@ static int avs_bio_gets(BIO *bio, char *buffer, int size) {
     return -1;
 }
 
+#ifdef WITH_DTLS
 static struct timespec timespec_from_ms(avs_net_timeout_t ms) {
     struct timespec result = {
         .tv_sec = ms / 1000,
@@ -399,6 +400,7 @@ static int compare_timespec_with_ms(const struct timespec *left,
     struct timespec right = timespec_from_ms(right_ms);
     return compare_timespec(left, &right);
 }
+#endif // WITH_DTLS
 
 static long avs_bio_ctrl(BIO *bio, int command, long intarg, void *ptrarg) {
     ssl_socket_t *sock = (ssl_socket_t *) BIO_get_data(bio);
@@ -453,7 +455,7 @@ static long avs_bio_ctrl(BIO *bio, int command, long intarg, void *ptrarg) {
         memcpy(ptrarg, sock->backend_configuration.preferred_endpoint->data.buf,
                sock->backend_configuration.preferred_endpoint->size);
         return sock->backend_configuration.preferred_endpoint->size;
-#endif
+#endif // WITH_DTLS
     default:
         return 0;
     }

@@ -195,7 +195,7 @@ static int create_v4mapped(struct sockaddr_in6 *out,
                            const struct addrinfo *in) {
     struct sockaddr_in v4_address;
     if (in->ai_addr->sa_family != AF_INET
-            || in->ai_addrlen > sizeof(v4_address)) {
+            || in->ai_addrlen > (socklen_t) sizeof(v4_address)) {
         return -1;
     }
     memset(&v4_address, 0, sizeof(v4_address));
@@ -214,7 +214,7 @@ static int return_resolved_endpoint(avs_net_resolved_endpoint_t *out,
                                     void *addr,
                                     socklen_t addrlen) {
     AVS_STATIC_ASSERT(sizeof(out->data) <= UINT8_MAX, resolved_enpoint_size);
-    if (addrlen > sizeof(out->data)) {
+    if (addrlen > (socklen_t) sizeof(out->data)) {
         return -1;
     }
     out->size = (uint8_t) addrlen;
