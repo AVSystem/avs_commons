@@ -37,7 +37,7 @@ typedef struct {
 } ssl_socket_certs_t;
 
 typedef struct {
-    avs_net_psk_t value;
+    avs_net_owned_psk_t value;
     int *ciphersuites;
 } ssl_socket_psk_t;
 

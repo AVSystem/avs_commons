@@ -363,22 +363,20 @@ int _avs_net_create_dtls_socket(avs_net_abstract_socket_t **socket,
     return create_ssl_socket(socket, AVS_NET_UDP_SOCKET, socket_configuration);
 }
 
-static inline void _avs_net_psk_cleanup(avs_net_psk_t *psk) {
+static inline void _avs_net_psk_cleanup(avs_net_owned_psk_t *psk) {
     free(psk->psk);
     psk->psk = NULL;
     free(psk->identity);
     psk->identity = NULL;
 }
 
-static inline int _avs_net_psk_copy(avs_net_psk_t *dst, const avs_net_psk_t *src) {
-    if (dst == src) {
-        return 0;
-    }
+static inline int _avs_net_psk_copy(avs_net_owned_psk_t *dst,
+                                    const avs_net_psk_t *src) {
     if (!src->psk_size) {
         LOG(ERROR, "PSK cannot be empty");
         return -1;
     }
-    avs_net_psk_t out_psk;
+    avs_net_owned_psk_t out_psk;
     memset(&out_psk, 0, sizeof(out_psk));
     out_psk.psk_size = src->psk_size;
     out_psk.psk = (char *) malloc(src->psk_size);
