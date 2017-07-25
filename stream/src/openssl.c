@@ -48,13 +48,13 @@ static int avs_md5_reset(avs_stream_abstract_t *stream) {
 
 static int avs_md5_update(avs_stream_abstract_t *stream,
                            const void *buf,
-                           size_t len) {
+                           size_t *len) {
     openssl_md5_stream_t * str = (openssl_md5_stream_t *) stream;
 
     if (_avs_stream_md5_common_is_finalized(&str->common)) {
         return -1;
     }
-    MD5_Update(&str->ctx, buf, len);
+    MD5_Update(&str->ctx, buf, *len);
     return 0;
 }
 

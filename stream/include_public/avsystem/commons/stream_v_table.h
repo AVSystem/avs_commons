@@ -19,20 +19,24 @@ extern "C" {
 #include <avsystem/commons/stream.h>
 
 /**
- * @ref avs_stream_write implementation callback type.
+ * @ref avs_stream_write_some implementation callback type.
  *
- * Writes data to the stream. Implementation MUST fail if less than
- * @p buffer_length bytes were successfully written.
+ * Writes data to the stream. Implementation may support "short writes" - in
+ * such case, it shall return success, but modify the value of
+ * @p inout_data_length .
  *
- * @param stream        Stream to operate on.
- * @param buffer        Data to write, never NULL.
- * @param buffer_length Amount of bytes to write.
+ * @param stream            Stream to operate on.
+ * @param buffer            Data to write, never NULL.
+ * @param inout_data_length MUST NOT be NULL. Pointer to a variable that on
+ *                          input, shall contain the number of bytes to write.
+ *                          After successful return, it will contain the number
+ *                          of bytes actually written.
  *
  * @returns 0 on success, negative value on error.
  */
-typedef int (*avs_stream_write_t)(avs_stream_abstract_t *stream,
-                                  const void *buffer,
-                                  size_t buffer_length);
+typedef int (*avs_stream_write_some_t)(avs_stream_abstract_t *stream,
+                                       const void *buffer,
+                                       size_t *inout_data_length);
 
 /**
  * @ref avs_stream_finish_message implementation callback type.
@@ -133,7 +137,7 @@ typedef struct {
 #define AVS_STREAM_V_TABLE_EXTENSION_NULL { 0, NULL }
 
 typedef struct {
-    avs_stream_write_t write;
+    avs_stream_write_some_t write_some;
     avs_stream_finish_message_t finish_message;
     avs_stream_read_t read;
     avs_stream_peek_t peek;

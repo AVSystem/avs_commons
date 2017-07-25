@@ -36,13 +36,24 @@ struct avs_stream_abstract_struct {
     const avs_stream_v_table_t * const vtable;
 };
 
+int avs_stream_write_some(avs_stream_abstract_t *stream,
+                          const void *buffer,
+                          size_t *inout_data_length) {
+    if (!stream->vtable->write_some) {
+        return -1;
+    }
+    return stream->vtable->write_some(stream, buffer, inout_data_length);
+}
+
 int avs_stream_write(avs_stream_abstract_t *stream,
                      const void *buffer,
                      size_t buffer_length) {
-    if (!stream->vtable->write) {
-        return -1;
+    size_t data_length = buffer_length;
+    int result = avs_stream_write_some(stream, buffer, &data_length);
+    if (!result && data_length != buffer_length) {
+        result = -1;
     }
-    return stream->vtable->write(stream, buffer, buffer_length);
+    return result;
 }
 
 int avs_stream_finish_message(avs_stream_abstract_t *stream) {

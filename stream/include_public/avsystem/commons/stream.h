@@ -48,13 +48,32 @@ struct avs_stream_abstract_struct;
 typedef struct avs_stream_abstract_struct avs_stream_abstract_t;
 
 /**
- * Writes data to the stream by calling @ref avs_stream_vtable_t#write method
- * on the underlying stream. Implementation MUST fail if less than
- * @p buffer_length bytes were successfully written.
+ * Writes data to the stream by calling @ref avs_stream_vtable_t#write_some
+ * method on the underlying stream. Implementation may support "short writes" -
+ * in such case, it shall return success, but modify the value of
+ * @p inout_data_length .
+ *
+ * @param stream            Stream to operate on.
+ * @param buffer            Data to write, MUST NOT be NULL.
+ * @param inout_data_length MUST NOT be NULL. Pointer to a variable that on
+ *                          input, shall contain the number of bytes to write.
+ *                          After successful return, it will contain the number
+ *                          of bytes actually written.
+ *
+ * @returns 0 on success, negative value on error.
+ */
+int avs_stream_write_some(avs_stream_abstract_t *stream,
+                          const void *buffer,
+                          size_t *inout_data_length);
+
+/**
+ * Convenience method that calls @ref avs_stream_write_some but additionally
+ * returns an error if less than @p buffer_length bytes were successfully
+ * written.
  *
  * @param stream        Stream to write data to.
  * @param buffer        Data to write, MUST NOT be NULL.
- * @param buffer_length Amount of bytes to write.
+ * @param buffer_length Number of bytes to write.
  *
  * @returns 0 on success, negative value on error.
  */

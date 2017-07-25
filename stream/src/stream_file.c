@@ -73,17 +73,16 @@ int avs_stream_file_seek(avs_stream_abstract_t *stream,
     return -1;
 }
 
-static int stream_file_write(avs_stream_abstract_t *stream_,
-                             const void *buffer,
-                             size_t buffer_length) {
+static int stream_file_write_some(avs_stream_abstract_t *stream_,
+                                  const void *buffer,
+                                  size_t *inout_data_length) {
     avs_stream_file_t *file = (avs_stream_file_t *) stream_;
-    size_t written;
     if ((file->mode & AVS_STREAM_FILE_WRITE) == 0) {
         file->error_code = EBADF;
         return -1;
     }
-    written = fwrite(buffer, 1, buffer_length, file->fp);
-    if (ferror(file->fp) || written != buffer_length) {
+    *inout_data_length = fwrite(buffer, 1, *inout_data_length, file->fp);
+    if (ferror(file->fp)) {
         file->error_code = EIO;
         return -1;
     }
@@ -230,7 +229,7 @@ static const avs_stream_v_table_extension_t stream_file_extensions[] = {
 };
 
 static const avs_stream_v_table_t file_stream_vtable = {
-    stream_file_write,
+    stream_file_write_some,
     (avs_stream_finish_message_t) unimplemented,
     stream_file_read,
     stream_file_peek,

@@ -60,18 +60,19 @@ static int out_buffer_flush(buffered_netstream_t *stream) {
     return result;
 }
 
-static int buffered_netstream_write(avs_stream_abstract_t *stream_,
-                                    const void *data,
-                                    size_t data_length) {
+static int buffered_netstream_write_some(avs_stream_abstract_t *stream_,
+                                         const void *data,
+                                         size_t *inout_data_length) {
     buffered_netstream_t *stream = (buffered_netstream_t *) stream_;
     int result;
-    if (data_length < avs_buffer_space_left(stream->out_buffer)) {
-        return avs_buffer_append_bytes(stream->out_buffer, data, data_length);
+    if (*inout_data_length < avs_buffer_space_left(stream->out_buffer)) {
+        return avs_buffer_append_bytes(stream->out_buffer, data,
+                                       *inout_data_length);
     } else if ((result = out_buffer_flush(stream))) {
         return result;
     } else {
-        WRAP_ERRNO(stream, result,
-                   avs_net_socket_send(stream->socket, data, data_length));
+        WRAP_ERRNO(stream, result, avs_net_socket_send(stream->socket, data,
+                                                       *inout_data_length));
         return result;
     }
 }
@@ -286,7 +287,7 @@ buffered_netstream_vtable_extensions[] = {
 };
 
 static const avs_stream_v_table_t buffered_netstream_vtable = {
-    buffered_netstream_write,
+    buffered_netstream_write_some,
     buffered_netstream_finish_message,
     buffered_netstream_read,
     buffered_netstream_peek,

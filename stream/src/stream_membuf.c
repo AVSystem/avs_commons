@@ -45,25 +45,26 @@ int avs_stream_membuf_fit(avs_stream_abstract_t *stream) {
     return -1;
 }
 
-static int stream_membuf_write(avs_stream_abstract_t *stream_,
-                               const void *buffer,
-                               size_t buffer_length) {
+static int stream_membuf_write_some(avs_stream_abstract_t *stream_,
+                                    const void *buffer,
+                                    size_t *inout_data_length) {
     avs_stream_membuf_t *stream = (avs_stream_membuf_t *) stream_;
     stream->error_code = 0;
-    if (buffer_length == 0) {
+    if (*inout_data_length == 0) {
         return 0;
-    } else if (stream->buffer_size < stream->index_write + buffer_length) {
-        size_t new_size = 2 * stream->buffer_size + buffer_length;
+    }
+    if (stream->buffer_size < stream->index_write + *inout_data_length) {
+        size_t new_size = 2 * stream->buffer_size + *inout_data_length;
         char *new_buffer = (char *) realloc(stream->buffer, new_size);
         if (!new_buffer) {
-            stream->error_code = ENOMEM;
-            return -1;
+            *inout_data_length = stream->buffer_size - stream->index_write;
+        } else {
+            stream->buffer = new_buffer;
+            stream->buffer_size = new_size;
         }
-        stream->buffer = new_buffer;
-        stream->buffer_size = new_size;
     }
-    memcpy(stream->buffer + stream->index_write, buffer, buffer_length);
-    stream->index_write += buffer_length;
+    memcpy(stream->buffer + stream->index_write, buffer, *inout_data_length);
+    stream->index_write += *inout_data_length;
     return 0;
 }
 
@@ -152,7 +153,7 @@ static const avs_stream_v_table_extension_t stream_membuf_extensions[] = {
 };
 
 static const avs_stream_v_table_t membuf_stream_vtable = {
-    stream_membuf_write,
+    stream_membuf_write_some,
     (avs_stream_finish_message_t) unimplemented,
     stream_membuf_read,
     stream_membuf_peek,

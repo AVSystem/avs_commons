@@ -22,16 +22,18 @@
 #pragma GCC visibility push(hidden)
 #endif
 
-static int outbuf_stream_write(avs_stream_abstract_t *stream_,
-                               const void *buffer,
-                               size_t buffer_length) {
+static int outbuf_stream_write_some(avs_stream_abstract_t *stream_,
+                                    const void *buffer,
+                                    size_t *inout_data_length) {
     avs_stream_outbuf_t *stream = (avs_stream_outbuf_t *) stream_;
-    if (stream->message_finished
-            || stream->buffer_offset + buffer_length > stream->buffer_size) {
+    if (stream->message_finished) {
         return -1;
     }
-    memcpy(stream->buffer + stream->buffer_offset, buffer, buffer_length);
-    stream->buffer_offset += buffer_length;
+    if (stream->buffer_offset + *inout_data_length > stream->buffer_size) {
+        *inout_data_length = stream->buffer_size - stream->buffer_offset;
+    }
+    memcpy(stream->buffer + stream->buffer_offset, buffer, *inout_data_length);
+    stream->buffer_offset += *inout_data_length;
     return 0;
 }
 
@@ -54,7 +56,7 @@ static int outbuf_stream_close(avs_stream_abstract_t *stream) {
 static const avs_stream_v_table_t outbuf_stream_vtable = {
     .close = outbuf_stream_close,
     .reset = outbuf_stream_reset,
-    .write = outbuf_stream_write,
+    .write_some = outbuf_stream_write_some,
     .finish_message = outbuf_stream_finish,
     .extension_list = AVS_STREAM_V_TABLE_NO_EXTENSIONS
 };

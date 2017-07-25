@@ -26,26 +26,27 @@ typedef struct {
     size_t write_ptr;
 } memstream_t;
 
-static int memstream_write(avs_stream_abstract_t *_stream,
-                           const void *buffer,
-                           size_t buffer_length) {
+static int memstream_write_some(avs_stream_abstract_t *_stream,
+                                const void *buffer,
+                                size_t *inout_data_length) {
     memstream_t *stream = (memstream_t*)_stream;
 
-    if (stream->write_ptr + buffer_length > stream->buffer_size) {
-        if (stream->write_ptr + buffer_length - stream->read_ptr
-                <= stream->buffer_size) {
-            memmove(stream->buffer, (char*)stream->buffer + stream->read_ptr,
-                    stream->write_ptr - stream->read_ptr);
-
-            stream->write_ptr -= stream->read_ptr;
-            stream->read_ptr = 0;
-        } else {
-            return -1;
+    if (stream->write_ptr + *inout_data_length > stream->buffer_size) {
+        if (stream->write_ptr + *inout_data_length - stream->read_ptr
+                > stream->buffer_size) {
+            *inout_data_length =
+                    stream->buffer_size - stream->write_ptr + stream->read_ptr;
         }
+        memmove(stream->buffer, (char*)stream->buffer + stream->read_ptr,
+                stream->write_ptr - stream->read_ptr);
+
+        stream->write_ptr -= stream->read_ptr;
+        stream->read_ptr = 0;
     }
 
-    memcpy((char*)stream->buffer + stream->write_ptr, buffer, buffer_length);
-    stream->write_ptr += buffer_length;
+    memcpy((char*)stream->buffer + stream->write_ptr,
+           buffer, *inout_data_length);
+    stream->write_ptr += *inout_data_length;
     return 0;
 }
 
@@ -98,7 +99,7 @@ static int memstream_fail() {
 int avs_unit_memstream_alloc(avs_stream_abstract_t** stream,
                              size_t buffer_size) {
     static const avs_stream_v_table_t V_TABLE = {
-        memstream_write,
+        memstream_write_some,
         (avs_stream_finish_message_t) memstream_fail,
         memstream_read,
         memstream_peek,

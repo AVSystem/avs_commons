@@ -215,9 +215,10 @@ static int avs_md5_finish(avs_stream_abstract_t *stream) {
  */
 static int avs_md5_update(avs_stream_abstract_t *stream,
                           const void *buf_,
-                          size_t len) {
+                          size_t *len) {
     const char *buf = (const char *) buf_;
     md5_stream_t *ctx = (md5_stream_t *) stream;
+    size_t remaining = *len;
     uint32_t t;
 
     if (_avs_stream_md5_common_is_finalized(&ctx->common)) {
@@ -227,9 +228,9 @@ static int avs_md5_update(avs_stream_abstract_t *stream,
     /* Update bitcount */
 
     t = ctx->bits[0];
-    if ((ctx->bits[0] = (t + ((uint32_t) len << 3)) & 0xffffffff) < t)
+    if ((ctx->bits[0] = (t + ((uint32_t) remaining << 3)) & 0xffffffff) < t)
         ctx->bits[1]++; /* Carry from low to high */
-    ctx->bits[1] += (uint32_t) (len >> 29);
+    ctx->bits[1] += (uint32_t) (remaining >> 29);
 
     t = (t >> 3) & 0x3f; /* Bytes already in shsInfo->data */
 
@@ -239,28 +240,28 @@ static int avs_md5_update(avs_stream_abstract_t *stream,
         unsigned char *p = ctx->in + t;
 
         t = 64 - t;
-        if (len < t) {
-            memcpy(p, buf, len);
+        if (remaining < t) {
+            memcpy(p, buf, remaining);
             return 0;
         }
         memcpy(p, buf, t);
         avs_md5_transform(ctx->common.result, ctx->in);
         buf += t;
-        len -= t;
+        remaining -= t;
     }
 
     /* Process data in 64-byte chunks */
 
-    while (len >= 64) {
+    while (remaining >= 64) {
         memcpy(ctx->in, buf, 64);
         avs_md5_transform(ctx->common.result, ctx->in);
         buf += 64;
-        len -= 64;
+        remaining -= 64;
     }
 
     /* Handle any remaining bytes of data. */
 
-    memcpy(ctx->in, buf, len);
+    memcpy(ctx->in, buf, remaining);
     return 0;
 }
 

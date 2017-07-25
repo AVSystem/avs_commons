@@ -52,14 +52,14 @@ static int avs_md5_reset(avs_stream_abstract_t *stream) {
 
 static int avs_md5_update(avs_stream_abstract_t *stream,
                           const void *buf,
-                          size_t len) {
+                          size_t *len) {
     mbedtls_md5_stream_t * str = (mbedtls_md5_stream_t *) stream;
 
     if (_avs_stream_md5_common_is_finalized(&str->common)) {
         return -1;
     }
 
-    mbedtls_md5_update(&str->ctx, (const unsigned char *) buf, len);
+    mbedtls_md5_update(&str->ctx, (const unsigned char *) buf, *len);
     return 0;
 }
 
