@@ -206,5 +206,5 @@ typedef long avs_off_t;
 
 #define AVS_MIN(a, b) ((a) < (b) ? (a) : (b))
 #define AVS_MAX(a, b) ((a) < (b) ? (b) : (a))
-
+#define AVS_ARRAY_SIZE(arr) (sizeof(arr) / sizeof(arr[0]))
 #endif	/* AVS_COMMONS_DEFS_H */
