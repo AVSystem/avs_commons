@@ -310,6 +310,7 @@ option(WITH_AVS_NET "AVSystem network communication abstraction layer" ${MODULES
 option(WITH_AVS_STREAM "AVSystem IO stream abstraction layer" ${MODULES_ENABLED})
 option(WITH_AVS_LOG "AVSystem logging framework" ${MODULES_ENABLED})
 option(WITH_AVS_RBTREE "AVSystem generic red-black tree implementation" ${MODULES_ENABLED})
+option(WITH_AVS_COAP "AVSystem CoAP abstraction layer" ${MODULES_ENABLED})
 
 cmake_dependent_option(WITH_INTERNAL_LOGS "Enable logging from inside AVSystem Commons libraries" ON WITH_AVS_LOG OFF)
 cmake_dependent_option(WITH_INTERNAL_TRACE "Enable TRACE-level logs inside AVSystem Commons libraries" OFF WITH_INTERNAL_LOGS OFF)
@@ -415,6 +416,13 @@ endif()
 
 if (WITH_AVS_RBTREE)
     add_module_with_include_dirs(rbtree MODULE_INCLUDE_DIRS)
+endif()
+
+cmake_dependent_option(WITH_AVS_COAP_MESSAGE_CACHE
+                       "Enable support for message caching to detect and automatically handle duplicate messages"
+                       ON WITH_AVS_COAP OFF)
+if(WITH_AVS_COAP)
+    add_module_with_include_dirs(coap MODULE_INCLUDE_DIRS)
 endif()
 
 # Export general avs_commons includes as well as module level includes.

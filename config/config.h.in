@@ -94,3 +94,5 @@ extern void *sbrk (intptr_t __delta);
 #cmakedefine WITH_INTERNAL_LOGS
 
 #cmakedefine WITH_INTERNAL_TRACE
+
+#cmakedefine WITH_AVS_COAP_MESSAGE_CACHE

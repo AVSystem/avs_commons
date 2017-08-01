@@ -16,14 +16,14 @@
 
 #include <config.h>
 
-#include "block_utils.h"
-#include "log.h"
-#include "msg_opt.h"
-
+#include <avsystem/commons/coap/block_utils.h>
+#include <avsystem/commons/coap/msg_opt.h>
 // For _anjay_is_power_of_2
-#include "../utils.h"
+#include <avsystem/commons/utils.h>
 
-VISIBILITY_SOURCE_BEGIN
+#include "log.h"
+
+#pragma GCC visibility push(hidden)
 
 int _anjay_coap_get_block_info(const anjay_coap_msg_t *msg,
                                coap_block_type_t type,

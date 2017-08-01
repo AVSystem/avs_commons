@@ -16,10 +16,12 @@
 
 #include <config.h>
 
-#include "block_builder.h"
+#include <avsystem/commons/coap/block_builder.h>
+#include <avsystem/commons/utils.h>
+
 #include "log.h"
 
-VISIBILITY_SOURCE_BEGIN
+#pragma GCC visibility push(hidden)
 
 anjay_coap_block_builder_t
 _anjay_coap_block_builder_init(anjay_coap_msg_builder_t *msg_builder) {
@@ -78,7 +80,7 @@ _anjay_coap_block_builder_append_payload(anjay_coap_block_builder_t *builder,
     shift_payload(builder);
 
     size_t bytes_available = builder->payload_capacity - builder->write_offset;
-    size_t bytes_to_write = ANJAY_MIN(bytes_available, payload_size);
+    size_t bytes_to_write = AVS_MIN(bytes_available, payload_size);
 
     memcpy(payload_write_ptr(builder), payload, bytes_to_write);
     builder->write_offset += bytes_to_write;
@@ -121,10 +123,10 @@ _anjay_coap_block_builder_build(anjay_coap_block_builder_t *builder,
                 _anjay_coap_block_builder_payload_remaining(builder);
         size_t msg_builder_payload_remaining =
                 _anjay_coap_msg_builder_payload_remaining(&msg_builder);
-        bytes_available = ANJAY_MIN(block_builder_payload_remaining,
+        bytes_available = AVS_MIN(block_builder_payload_remaining,
                                     msg_builder_payload_remaining);
     }
-    size_t bytes_to_write = ANJAY_MIN(bytes_available, block_size);
+    size_t bytes_to_write = AVS_MIN(bytes_available, block_size);
     assert(builder->read_offset + bytes_to_write <= builder->write_offset);
 
     size_t bytes_written = _anjay_coap_msg_builder_payload(
@@ -140,6 +142,6 @@ _anjay_coap_block_builder_build(anjay_coap_block_builder_t *builder,
 
 void _anjay_coap_block_builder_next(anjay_coap_block_builder_t *builder,
                                     size_t block_size) {
-    builder->read_offset = ANJAY_MIN(builder->read_offset + block_size,
+    builder->read_offset = AVS_MIN(builder->read_offset + block_size,
                                      builder->write_offset);
 }

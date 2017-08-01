@@ -20,9 +20,7 @@
 #include <stdlib.h>
 #include <assert.h>
 
-#include "msg_info.h"
-#include "../utils.h"
-
+#include <avsystem/commons/coap/msg_info.h>
 
 typedef struct anjay_coap_msg_buffer {
     anjay_coap_msg_t *msg;

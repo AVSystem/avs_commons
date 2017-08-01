@@ -17,11 +17,8 @@
 #ifndef ANJAY_COAP_SOCKET_H
 #define ANJAY_COAP_SOCKET_H
 
-#include <anjay/core.h>
-
-#include "msg.h"
-#include "tx_params.h"
-
+#include <avsystem/commons/coap/msg.h>
+#include <avsystem/commons/coap/tx_params.h>
 
 #define ANJAY_COAP_SOCKET_ERR_TIMEOUT       (-0x5E1)
 #define ANJAY_COAP_SOCKET_ERR_MSG_MALFORMED (-0x5E2)

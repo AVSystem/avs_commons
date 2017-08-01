@@ -12,9 +12,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set(SOURCES)
+set(SOURCES
+    src/block_builder.c
+    src/block_utils.c
+    src/msg_builder.c
+    src/msg.c
+    src/msg_cache.c
+    src/msg_info.c
+    src/msg_opt.c
+    src/socket.c)
 
-set(PUBLIC_HEADERS)
+set(PUBLIC_HEADERS
+    include_public/avsystem/commons/coap/block_builder.h
+    include_public/avsystem/commons/coap/block_utils.h
+    include_public/avsystem/commons/coap/msg_builder.h
+    include_public/avsystem/commons/coap/msg.h
+    include_public/avsystem/commons/coap/msg_identity.h
+    include_public/avsystem/commons/coap/msg_info.h
+    include_public/avsystem/commons/coap/parse_utils.h
+    include_public/avsystem/commons/coap/socket.h
+    include_public/avsystem/commons/coap/tx_params.h)
 
 set(ALL_SOURCES ${SOURCES} ${PUBLIC_HEADERS})
 

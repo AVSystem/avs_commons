@@ -22,10 +22,9 @@
 
 #include <avsystem/commons/defs.h>
 
-#include "opt.h"
-#include "parse_utils.h"
-#include "msg_identity.h"
-
+#include <avsystem/commons/coap/opt.h>
+#include <avsystem/commons/coap/parse_utils.h>
+#include <avsystem/commons/coap/msg_identity.h>
 
 #define ANJAY_COAP_MSG_MIN_SIZE ((unsigned) sizeof(anjay_coap_msg_header_t))
 

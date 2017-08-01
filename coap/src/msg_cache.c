@@ -14,20 +14,27 @@
  * limitations under the License.
  */
 
+/* for clock_gettime() and struct timespec */
+#define _POSIX_C_SOURCE 200809L
 #include <config.h>
 
+#include <time.h>
 #include <unistd.h>
+
 #include <avsystem/commons/buffer.h>
+#include <avsystem/commons/defs.h>
 #include <avsystem/commons/list.h>
+#include <avsystem/commons/time.h>
 
-#include <anjay_modules/time.h>
-#include <anjay_modules/utils.h>
+//#include <anjay_modules/time.h>
+//#include <anjay_modules/utils.h>
 
-#include "msg_cache.h"
-#include "msg.h"
+#include <avsystem/commons/coap/msg.h>
+
 #include "log.h"
+#include "msg_cache.h"
 
-VISIBILITY_SOURCE_BEGIN
+#pragma GCC visibility push(hidden)
 
 typedef struct endpoint {
     uint16_t refcount;
@@ -191,7 +198,7 @@ static const anjay_coap_msg_t *entry_msg(const cache_entry_t *entry) {
 
 static bool entry_expired(const cache_entry_t *entry,
                           const struct timespec *now) {
-    return _anjay_time_before(&entry->expiration_time, now);
+    return avs_time_before(&entry->expiration_time, now);
 }
 
 /* returns total size of anjay_coap_msg_t, including length field
@@ -320,7 +327,7 @@ int _anjay_coap_msg_cache_add(coap_msg_cache_t *cache,
     struct timespec expiration_time = now;
     const struct timespec exchange_lifetime =
             _anjay_coap_exchange_lifetime(tx_params);
-    _anjay_time_add(&expiration_time, &exchange_lifetime);
+    avs_time_add(&expiration_time, &exchange_lifetime);
 
     cache_put_entry(cache, &expiration_time, ep, msg);
     return 0;
@@ -381,5 +388,5 @@ void _anjay_coap_msg_cache_debug_print(const coap_msg_cache_t *cache) {
 }
 
 #ifdef ANJAY_TEST
-#include "test/msg_cache.c"
+utils.h"st/msg_cache.c"
 #endif // ANJAY_TEST

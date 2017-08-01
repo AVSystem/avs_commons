@@ -16,7 +16,8 @@
 
 #include <config.h>
 
-#include "socket.h"
+#include <avsystem/commons/coap/socket.h>
+#include <avsystem/commons/coap/msg_builder.h>
 
 #include <assert.h>
 #include <stdbool.h>
@@ -26,11 +27,9 @@
 #include <avsystem/commons/list.h>
 
 #include "log.h"
-
 #include "msg_cache.h"
-#include "msg_builder.h"
 
-VISIBILITY_SOURCE_BEGIN
+#pragma GCC visibility push(hidden)
 
 struct anjay_coap_socket {
     avs_net_abstract_socket_t *dtls_socket;
@@ -39,8 +38,11 @@ struct anjay_coap_socket {
     coap_msg_cache_t *msg_cache;
 };
 
-static const anjay_coap_tx_params_t DEFAULT_SOCKET_TX_PARAMS =
-        ANJAY_COAP_DEFAULT_UDP_TX_PARAMS;
+static const anjay_coap_tx_params_t DEFAULT_SOCKET_TX_PARAMS = {
+    .ack_timeout_ms = 2000,
+    .ack_random_factor = 1.5,
+    .max_retransmit = 4
+};
 
 int _anjay_coap_socket_create(anjay_coap_socket_t **sock,
                               avs_net_abstract_socket_t *backend,
@@ -340,5 +342,5 @@ void _anjay_coap_send_service_unavailable(anjay_coap_socket_t *socket,
 }
 
 #ifdef ANJAY_TEST
-#include "test/socket.c"
+// TODO
 #endif // ANJAY_TEST

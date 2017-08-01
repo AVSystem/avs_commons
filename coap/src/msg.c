@@ -16,18 +16,19 @@
 
 #include <config.h>
 
-#include "msg.h"
-#include "msg_internal.h"
 #include "log.h"
-#include "msg_opt.h"
+#include "msg_internal.h"
 
-#include "../utils.h"
+#include <avsystem/commons/coap/msg.h>
+#include <avsystem/commons/coap/msg_opt.h>
+
+#include <avsystem/commons/utils.h>
 
 #include <string.h>
 #include <stdio.h>
 #include <assert.h>
 
-VISIBILITY_SOURCE_BEGIN
+#pragma GCC visibility push(hidden)
 
 const char *_anjay_coap_msg_code_to_string(uint8_t code,
                                            char *buf,
@@ -69,7 +70,7 @@ const char *_anjay_coap_msg_code_to_string(uint8_t code,
     };
 
     const char *name = "unknown";
-    for (size_t i = 0; i < ANJAY_ARRAY_SIZE(CODE_NAMES); ++i) {
+    for (size_t i = 0; i < AVS_ARRAY_SIZE(CODE_NAMES); ++i) {
         if (CODE_NAMES[i].code == code) {
             name = CODE_NAMES[i].name;
             break;
@@ -251,7 +252,7 @@ static const char *msg_type_string(anjay_coap_msg_type_t type) {
          "ACKNOWLEDGEMENT",
          "RESET"
      };
-     assert((unsigned)type < ANJAY_ARRAY_SIZE(TYPES));
+     assert((unsigned)type < AVS_ARRAY_SIZE(TYPES));
      return TYPES[type];
 }
 
@@ -364,5 +365,5 @@ const char *_anjay_coap_msg_summary(const anjay_coap_msg_t *msg,
 }
 
 #ifdef ANJAY_TEST
-#include "test/msg.c"
+utils.h"st/msg.c"
 #endif // ANJAY_TEST

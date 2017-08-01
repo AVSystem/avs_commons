@@ -17,12 +17,10 @@
 #ifndef ANJAY_COAP_LOG_H
 #define ANJAY_COAP_LOG_H
 
-#include <anjay_modules/utils.h>
+#include <avsystem/commons/log.h>
 
-VISIBILITY_PRIVATE_HEADER_BEGIN
-
-#define coap_log(...) _anjay_log(coap, __VA_ARGS__)
-
-VISIBILITY_PRIVATE_HEADER_END
+#warning "TODO"
+#define coap_log(...)
+//avs_log(coap, __VA_ARGS__)
 
 #endif // ANJAY_COAP_LOG_H

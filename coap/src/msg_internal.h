@@ -17,9 +17,9 @@
 #ifndef ANJAY_COAP_MSG_INTERNAL_H
 #define ANJAY_COAP_MSG_INTERNAL_H
 
-#include "msg.h"
+#include <avsystem/commons/coap/msg.h>
 
-VISIBILITY_PRIVATE_HEADER_BEGIN
+#pragma GCC visibility push(hidden)
 
 #define ANJAY_COAP_HEADER_VERSION_MASK 0xC0
 #define ANJAY_COAP_HEADER_VERSION_SHIFT 6
@@ -118,6 +118,6 @@ struct anjay_coap_msg_info_opt {
     uint8_t data[];
 };
 
-VISIBILITY_PRIVATE_HEADER_END
+#pragma GCC visibility pop
 
 #endif // ANJAY_COAP_MSG_INTERNAL_H

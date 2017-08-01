@@ -18,10 +18,11 @@
 
 #include "content_format.h"
 #include "log.h"
-#include "msg_info.h"
-#include "msg_opt.h"
 
-VISIBILITY_SOURCE_BEGIN
+#include <avsystem/commons/coap/msg_info.h>
+#include <avsystem/commons/coap/msg_opt.h>
+
+#pragma GCC visibility push(hidden)
 
 int _anjay_coap_msg_find_unique_opt(const anjay_coap_msg_t *msg,
                                     uint16_t opt_number,

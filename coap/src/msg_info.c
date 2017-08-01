@@ -18,13 +18,14 @@
 
 #include <sys/types.h>
 
-#include "log.h"
-#include "msg_builder.h"
-#include "msg_internal.h"
-#include "content_format.h"
-#include "../utils.h"
+#include <avsystem/commons/coap/msg_builder.h>
+#include <avsystem/commons/utils.h>
 
-VISIBILITY_SOURCE_BEGIN
+#include "content_format.h"
+#include "log.h"
+#include "msg_internal.h"
+
+#pragma GCC visibility push(hidden)
 
 const anjay_coap_msg_t _ANJAY_COAP_EMPTY_MSG_TEMPLATE = {
     .length = sizeof(anjay_coap_msg_header_t)

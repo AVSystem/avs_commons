@@ -19,7 +19,7 @@
 
 #include <stdlib.h>
 
-#include "msg_builder.h"
+#include <avsystem/commons/coap/msg_builder.h>
 
 
 typedef struct anjay_coap_block_builder {

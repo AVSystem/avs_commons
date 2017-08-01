@@ -17,7 +17,7 @@
 #ifndef ANJAY_COAP_MSG_OPT_H
 #define ANJAY_COAP_MSG_OPT_H
 
-#include "msg.h"
+#include <avsystem/commons/coap/msg.h>
 
 
 #define ANJAY_COAP_OPTION_MISSING 1

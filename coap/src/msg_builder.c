@@ -18,14 +18,15 @@
 
 #include <sys/types.h>
 
+#include <avsystem/commons/coap/msg_builder.h>
+#include <avsystem/commons/utils.h>
+
 #include "log.h"
-#include "msg_builder.h"
 #include "msg_internal.h"
-#include "../utils.h"
 
-VISIBILITY_SOURCE_BEGIN
+#pragma GCC visibility push(hidden)
 
-#define builder_log(...) _anjay_log(coap_builder, __VA_ARGS__)
+#define builder_log(...) avs_log(coap_builder, __VA_ARGS__)
 
 static void append_header(anjay_coap_msg_buffer_t *buffer,
                           anjay_coap_msg_type_t msg_type,
@@ -240,7 +241,7 @@ size_t _anjay_coap_msg_builder_payload(anjay_coap_msg_builder_t *builder,
     {
         size_t msg_builder_payload_remaining =
                 _anjay_coap_msg_builder_payload_remaining(builder);
-        bytes_to_write = ANJAY_MIN(payload_size, msg_builder_payload_remaining);
+        bytes_to_write = AVS_MIN(payload_size, msg_builder_payload_remaining);
     }
     if (!builder->has_payload_marker && bytes_to_write) {
         result = append_byte(&builder->msg_buffer, ANJAY_COAP_PAYLOAD_MARKER);
@@ -262,5 +263,5 @@ _anjay_coap_msg_builder_get_msg(const anjay_coap_msg_builder_t *builder) {
 }
 
 #ifdef ANJAY_TEST
-#include "test/msg_builder.c"
+utils.h"st/msg_builder.c"
 #endif // ANJAY_TEST

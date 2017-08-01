@@ -17,15 +17,11 @@
 #ifndef ANJAY_COAP_PARSE_UTILS_H
 #define ANJAY_COAP_PARSE_UTILS_H
 
-#include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
-#include <sys/time.h>
 #include <netinet/in.h>
 
 #include <avsystem/commons/net.h>
-#include <anjay_modules/time.h>
-
 
 #define ANJAY_COAP_EXT_U8 13
 #define ANJAY_COAP_EXT_U16 14

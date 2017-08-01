@@ -20,7 +20,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "msg.h"
+#include <avsystem/commons/coap/msg.h>
 
 
 #define ANJAY_COAP_MSG_BLOCK_MIN_SIZE (1 << 4)

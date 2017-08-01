@@ -21,8 +21,8 @@
 
 #include <avsystem/commons/list.h>
 
-#include "msg.h"
-#include "block_utils.h"
+#include <avsystem/commons/coap/msg.h>
+#include <avsystem/commons/coap/block_utils.h>
 
 
 typedef struct anjay_coap_msg_info_opt anjay_coap_msg_info_opt_t;
