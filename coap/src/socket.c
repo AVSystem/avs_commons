@@ -26,10 +26,9 @@
 #include <avsystem/commons/list.h>
 
 #include "log.h"
-#include "msg_cache.h"
 
-#define ANJAY_COAP_STREAM_INTERNALS
-#include "stream/common.h"
+#include "msg_cache.h"
+#include "msg_builder.h"
 
 VISIBILITY_SOURCE_BEGIN
 
