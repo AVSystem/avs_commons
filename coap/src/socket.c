@@ -37,15 +37,6 @@ struct anjay_coap_socket {
 
     const anjay_coap_tx_params_t *tx_params;
     coap_msg_cache_t *msg_cache;
-// AVSYSTEM_ANJAY_COMMERCIAL_BEGIN
-#ifdef WITH_NET_STATS
-    uint64_t rx_bytes;
-    uint64_t tx_bytes;
-    uint64_t num_incoming_retransmissions;
-    uint64_t num_outgoing_retransmissions;
-    anjay_coap_msg_identity_t last_request_identity;
-#endif
-// AVSYSTEM_ANJAY_COMMERCIAL_END
 };
 
 static const anjay_coap_tx_params_t DEFAULT_SOCKET_TX_PARAMS =
@@ -80,25 +71,6 @@ int _anjay_coap_socket_close(anjay_coap_socket_t *sock) {
     }
     return avs_net_socket_close(sock->dtls_socket);
 }
-#ifdef WITH_NET_STATS // AVSYSTEM_ANJAY_COMMERCIAL_BEGIN
-uint64_t _anjay_coap_socket_get_rx_bytes(anjay_coap_socket_t *sock) {
-    return sock->rx_bytes;
-}
-
-uint64_t _anjay_coap_socket_get_tx_bytes(anjay_coap_socket_t *sock) {
-    return sock->tx_bytes;
-}
-
-uint64_t
-_anjay_coap_socket_get_num_incoming_retransmissions(anjay_coap_socket_t *sock) {
-    return sock->num_incoming_retransmissions;
-}
-
-uint64_t
-_anjay_coap_socket_get_num_outgoing_retransmissions(anjay_coap_socket_t *sock) {
-    return sock->num_outgoing_retransmissions;
-}
-#endif // WITH_NET_STATS // AVSYSTEM_ANJAY_COMMERCIAL_END
 
 void _anjay_coap_socket_cleanup(anjay_coap_socket_t **sock) {
     if (!sock || !*sock) {
@@ -129,9 +101,9 @@ static int map_io_error(avs_net_abstract_socket_t *socket,
     return result;
 }
 
-#ifndef WITH_MESSAGE_CACHE
+#ifndef WITH_AVS_COAP_MESSAGE_CACHE
 #define try_cache_response(...) (void)0
-#else // WITH_MESSAGE_CACHE
+#else // WITH_AVS_COAP_MESSAGE_CACHE
 
 static int try_cache_response(anjay_coap_socket_t *sock,
                                const anjay_coap_msg_t *res) {
@@ -152,26 +124,7 @@ static int try_cache_response(anjay_coap_socket_t *sock,
                                      sock->tx_params);
 }
 
-#endif // WITH_MESSAGE_CACHE
-
-#ifdef WITH_NET_STATS // AVSYSTEM_ANJAY_COMMERCIAL_BEGIN
-static size_t packet_overhead(avs_net_abstract_socket_t *socket) {
-    avs_net_socket_opt_value_t mtu;
-    avs_net_socket_opt_value_t mtu_inner;
-    if (avs_net_socket_get_opt(socket, AVS_NET_SOCKET_OPT_MTU, &mtu)
-        || avs_net_socket_get_opt(socket, AVS_NET_SOCKET_OPT_INNER_MTU,
-                                  &mtu_inner)) {
-        goto error;
-    }
-    if (mtu.mtu < mtu_inner.mtu) {
-        goto error;
-    }
-    return (size_t) mtu.mtu - (size_t) mtu_inner.mtu;
-
-error:
-    return 0;
-}
-#endif // WITH_NET_STATS // AVSYSTEM_ANJAY_COMMERCIAL_END
+#endif // WITH_AVS_COAP_MESSAGE_CACHE
 
 int _anjay_coap_socket_send(anjay_coap_socket_t *sock,
                             const anjay_coap_msg_t *msg) {
@@ -186,31 +139,14 @@ int _anjay_coap_socket_send(anjay_coap_socket_t *sock,
                                      &msg->header, msg->length);
     if (!result) {
         int cache_result = try_cache_response(sock, msg);
-#ifdef WITH_NET_STATS // AVSYSTEM_ANJAY_COMMERCIAL_BEGIN
-        bool request_retransmission = false;
-        if (_anjay_coap_msg_is_request(msg)) {
-            const anjay_coap_msg_identity_t msg_identity =
-                    _anjay_coap_msg_get_identity(msg);
-
-            request_retransmission = _anjay_coap_identity_equal(
-                    &msg_identity, &sock->last_request_identity);
-            sock->last_request_identity = msg_identity;
-        }
-
-        if (cache_result == ANJAY_COAP_MSG_CACHE_DUPLICATE
-                || request_retransmission) {
-            ++sock->num_outgoing_retransmissions;
-        }
-        sock->tx_bytes += msg->length + packet_overhead(sock->dtls_socket);
-#endif // WITH_NET_STATS // AVSYSTEM_ANJAY_COMMERCIAL_END
         (void) cache_result;
     }
     return map_io_error(sock->dtls_socket, result, "send");
 }
 
-#ifndef WITH_MESSAGE_CACHE
+#ifndef WITH_AVS_COAP_MESSAGE_CACHE
 #define try_send_cached_response(...) (-1)
-#else // WITH_MESSAGE_CACHE
+#else // WITH_AVS_COAP_MESSAGE_CACHE
 
 static int try_send_cached_response(anjay_coap_socket_t *sock,
                                     const anjay_coap_msg_t *req) {
@@ -231,16 +167,13 @@ static int try_send_cached_response(anjay_coap_socket_t *sock,
     const anjay_coap_msg_t *res = _anjay_coap_msg_cache_get(sock->msg_cache,
                                                             addr, port, msg_id);
     if (res) {
-#ifdef WITH_NET_STATS // AVSYSTEM_ANJAY_COMMERCIAL_BEGIN
-        ++sock->num_incoming_retransmissions;
-#endif // WITH_NET_STATS // AVSYSTEM_ANJAY_COMMERCIAL_END
         return _anjay_coap_socket_send(sock, res);
     } else {
         return -1;
     }
 }
 
-#endif // WITH_MESSAGE_CACHE
+#endif // WITH_AVS_COAP_MESSAGE_CACHE
 
 static inline bool is_coap_ping(const anjay_coap_msg_t *msg) {
     return _anjay_coap_msg_header_get_type(&msg->header)
@@ -263,9 +196,6 @@ int _anjay_coap_socket_recv(anjay_coap_socket_t *sock,
     if (result) {
         return map_io_error(sock->dtls_socket, result, "receive");
     }
-#ifdef WITH_NET_STATS // AVSYSTEM_ANJAY_COMMERCIAL_BEGIN
-    sock->rx_bytes += msg_length + packet_overhead(sock->dtls_socket);
-#endif // WITH_NET_STATS // AVSYSTEM_ANJAY_COMMERCIAL_END
 
     if (!_anjay_coap_msg_is_valid(out_msg)) {
         coap_log(DEBUG, "recv: malformed message");

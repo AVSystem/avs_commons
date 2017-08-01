@@ -27,7 +27,7 @@ VISIBILITY_PRIVATE_HEADER_BEGIN
 
 typedef struct coap_msg_cache coap_msg_cache_t;
 
-#ifdef WITH_MESSAGE_CACHE
+#ifdef WITH_AVS_COAP_MESSAGE_CACHE
 
 /**
  * Creates a message cache object.
@@ -107,7 +107,7 @@ const anjay_coap_msg_t *_anjay_coap_msg_cache_get(coap_msg_cache_t *cache,
  */
 void _anjay_coap_msg_cache_debug_print(const coap_msg_cache_t *cache);
 
-#else // WITH_MESSAGE_CACHE
+#else // WITH_AVS_COAP_MESSAGE_CACHE
 
 #define _anjay_coap_msg_cache_create(...) \
     (coap_log(ERROR, "message cache support disabled"), NULL)
@@ -116,7 +116,7 @@ void _anjay_coap_msg_cache_debug_print(const coap_msg_cache_t *cache);
 #define _anjay_coap_msg_cache_get(...) NULL
 #define _anjay_coap_msg_cache_debug_print(...) (void)0
 
-#endif // WITH_MESSAGE_CACHE
+#endif // WITH_AVS_COAP_MESSAGE_CACHE
 
 VISIBILITY_PRIVATE_HEADER_END
 
