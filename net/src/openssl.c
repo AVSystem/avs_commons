@@ -35,6 +35,8 @@
 #include <openssl/bn.h>
 #include <openssl/pkcs12.h>
 
+#include <avsystem/commons/time.h>
+
 #include "net.h"
 
 #ifdef HAVE_VISIBILITY
@@ -319,14 +321,8 @@ static avs_net_timeout_t adjust_receive_timeout(ssl_socket_t *sock) {
     if (sock->next_deadline.tv_sec >= 0) {
         struct timespec now;
         clock_gettime(CLOCK_REALTIME, &now);
-        struct timespec timeout = {
-            .tv_sec = sock->next_deadline.tv_sec - now.tv_sec,
-            .tv_nsec = sock->next_deadline.tv_nsec - now.tv_nsec
-        };
-        if (timeout.tv_nsec < 0) {
-            timeout.tv_sec--;
-            timeout.tv_nsec += 1000000000l;
-        }
+        struct timespec timeout;
+        avs_time_diff(&timeout, &sock->next_deadline, &now);
         avs_net_timeout_t timeout_ms = (avs_net_timeout_t)
                 (timeout.tv_sec * 1000 + timeout.tv_nsec / 1000000);
         if (socket_timeout <= 0 || socket_timeout > timeout_ms) {
@@ -375,24 +371,22 @@ static int avs_bio_gets(BIO *bio, char *buffer, int size) {
 
 #ifdef WITH_DTLS
 static struct timespec timespec_from_ms(avs_net_timeout_t ms) {
-    struct timespec result = {
-        .tv_sec = ms / 1000,
-        .tv_nsec = (ms % 1000) * 1000000
-    };
+    struct timespec result;
+    avs_time_from_ms(&result, ms);
     return result;
 }
 
 static int compare_timespec(const struct timespec *left,
                             const struct timespec *right) {
-    assert(left->tv_nsec >= 0);
-    assert(left->tv_nsec < 1000000000l);
-    assert(right->tv_nsec >= 0);
-    assert(right->tv_nsec < 1000000000l);
-    return left->tv_sec < right->tv_sec ? -1
-            : left->tv_sec > right->tv_sec ? 1
-            : left->tv_nsec < right->tv_nsec ? -1
-            : left->tv_nsec > right->tv_nsec ? 1
-            : 0;
+    assert(avs_time_is_valid(left));
+    assert(avs_time_is_valid(right));
+    if (avs_time_before(left, right)) {
+        return -1;
+    } else if (avs_time_before(right, left)) {
+        return 1;
+    } else {
+        return 0;
+    }
 }
 
 static int compare_timespec_with_ms(const struct timespec *left,
