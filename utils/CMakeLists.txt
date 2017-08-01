@@ -8,8 +8,9 @@
 #
 
 set(SOURCES
+    src/format.c
     src/rand.c
-    src/format.c)
+    src/time.c)
 
 set(ALL_SOURCES ${SOURCES})
 

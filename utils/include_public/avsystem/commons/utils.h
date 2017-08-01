@@ -7,8 +7,8 @@
  * See the LICENSE file for details.
  */
 
-#ifndef AVS_COMMONS_UTILS_H
-#define AVS_COMMONS_UTILS_H
+#ifndef AVS_COMMONS_UTILS_UTILS_H
+#define AVS_COMMONS_UTILS_UTILS_H
 
 #include <avsystem/commons/defs.h>
 
@@ -48,4 +48,4 @@ int avs_simple_snprintf(char *out, size_t out_size, const char *format, ...)
 }
 #endif
 
-#endif /* AVS_COMMONS_UTILS_H */
+#endif /* AVS_COMMONS_UTILS_UTILS_H */
