@@ -204,4 +204,7 @@ typedef long avs_off_t;
 #define AVS_CONTAINER_OF(ptr, type, member) \
     ((type*)(void*)((char*)(intptr_t)(ptr) - offsetof(type, member)))
 
+#define AVS_MIN(a, b) ((a) < (b) ? (a) : (b))
+#define AVS_MAX(a, b) ((a) < (b) ? (b) : (a))
+
 #endif	/* AVS_COMMONS_DEFS_H */
