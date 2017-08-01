@@ -22,7 +22,6 @@
 #include "msg.h"
 #include "tx_params.h"
 
-VISIBILITY_PRIVATE_HEADER_BEGIN
 
 #define ANJAY_COAP_SOCKET_ERR_TIMEOUT       (-0x5E1)
 #define ANJAY_COAP_SOCKET_ERR_MSG_MALFORMED (-0x5E2)
@@ -124,6 +123,5 @@ void _anjay_coap_send_service_unavailable(anjay_coap_socket_t *socket,
 
 /** @} */
 
-VISIBILITY_PRIVATE_HEADER_END
 
 #endif // ANJAY_COAP_SOCKET_H

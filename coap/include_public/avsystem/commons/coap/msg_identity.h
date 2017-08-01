@@ -17,7 +17,6 @@
 #ifndef ANJAY_COAP_MSG_IDENTITY_H
 #define ANJAY_COAP_MSG_IDENTITY_H
 
-VISIBILITY_PRIVATE_HEADER_BEGIN
 
 #define ANJAY_COAP_MAX_TOKEN_LENGTH 8
 
@@ -51,6 +50,5 @@ bool _anjay_coap_identity_equal(const anjay_coap_msg_identity_t *a,
         && !memcmp(&a->token, &b->token, a->token_size);
 }
 
-VISIBILITY_PRIVATE_HEADER_END
 
 #endif // ANJAY_COAP_MSG_IDENTITY_H

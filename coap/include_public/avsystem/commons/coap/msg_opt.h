@@ -19,7 +19,6 @@
 
 #include "msg.h"
 
-VISIBILITY_PRIVATE_HEADER_BEGIN
 
 #define ANJAY_COAP_OPTION_MISSING 1
 
@@ -63,6 +62,5 @@ int _anjay_coap_msg_validate_critical_options(
         const anjay_coap_msg_t *msg,
         anjay_coap_critical_option_validator_t validator);
 
-VISIBILITY_PRIVATE_HEADER_END
 
 #endif // ANJAY_COAP_MSG_OPT_H

@@ -26,7 +26,6 @@
 #include <avsystem/commons/net.h>
 #include <anjay_modules/time.h>
 
-VISIBILITY_PRIVATE_HEADER_BEGIN
 
 #define ANJAY_COAP_EXT_U8 13
 #define ANJAY_COAP_EXT_U16 14
@@ -48,6 +47,5 @@ static inline uint16_t extract_u16(const uint8_t *data) {
     return ntohs(result);
 }
 
-VISIBILITY_PRIVATE_HEADER_END
 
 #endif // ANJAY_COAP_PARSE_UTILS_H

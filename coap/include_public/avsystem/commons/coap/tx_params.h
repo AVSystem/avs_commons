@@ -25,7 +25,6 @@
 
 #include "../utils.h"
 
-VISIBILITY_PRIVATE_HEADER_BEGIN
 
 static inline bool
 _anjay_coap_tx_params_valid(const anjay_coap_tx_params_t *tx_params,
@@ -103,6 +102,5 @@ void _anjay_coap_update_retry_state(coap_retry_state_t *retry_state,
                                     const anjay_coap_tx_params_t *tx_params,
                                     anjay_rand_seed_t *rand_seed);
 
-VISIBILITY_PRIVATE_HEADER_END
 
 #endif // ANJAY_COAP_TX_PARAMS_H

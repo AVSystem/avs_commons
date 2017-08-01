@@ -26,7 +26,6 @@
 #include "parse_utils.h"
 #include "msg_identity.h"
 
-VISIBILITY_PRIVATE_HEADER_BEGIN
 
 #define ANJAY_COAP_MSG_MIN_SIZE ((unsigned) sizeof(anjay_coap_msg_header_t))
 
@@ -319,7 +318,6 @@ const char *_anjay_coap_msg_summary(const anjay_coap_msg_t *msg,
 #define ANJAY_COAP_MSG_SUMMARY(Msg) \
         _anjay_coap_msg_summary((Msg), &(char[256]){0}[0], 256)
 
-VISIBILITY_PRIVATE_HEADER_END
 
 #endif // ANJAY_COAP_MSG_H
 

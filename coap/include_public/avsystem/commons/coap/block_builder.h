@@ -21,7 +21,6 @@
 
 #include "msg_builder.h"
 
-VISIBILITY_PRIVATE_HEADER_BEGIN
 
 typedef struct anjay_coap_block_builder {
     void *payload_buffer;
@@ -101,6 +100,5 @@ _anjay_coap_block_builder_append_payload(anjay_coap_block_builder_t *builder,
                                          const void *payload,
                                          size_t payload_size);
 
-VISIBILITY_PRIVATE_HEADER_END
 
 #endif // ANJAY_COAP_BLOCKBUILDER_H

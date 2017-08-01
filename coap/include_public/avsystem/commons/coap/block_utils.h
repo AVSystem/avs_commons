@@ -22,7 +22,6 @@
 
 #include "msg.h"
 
-VISIBILITY_PRIVATE_HEADER_BEGIN
 
 #define ANJAY_COAP_MSG_BLOCK_MIN_SIZE (1 << 4)
 #define ANJAY_COAP_MSG_BLOCK_MAX_SIZE (1 << 10)
@@ -67,6 +66,5 @@ int _anjay_coap_get_block_info(const anjay_coap_msg_t *msg,
 
 bool _anjay_coap_is_valid_block_size(uint16_t size);
 
-VISIBILITY_PRIVATE_HEADER_END
 
 #endif // ANJAY_COAP_BLOCK_UTILS_H

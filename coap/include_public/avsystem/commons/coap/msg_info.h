@@ -24,7 +24,6 @@
 #include "msg.h"
 #include "block_utils.h"
 
-VISIBILITY_PRIVATE_HEADER_BEGIN
 
 typedef struct anjay_coap_msg_info_opt anjay_coap_msg_info_opt_t;
 
@@ -196,6 +195,5 @@ static inline int _anjay_coap_msg_info_opt_u32(anjay_coap_msg_info_t *info,
                                          &value, sizeof(value));
 }
 
-VISIBILITY_PRIVATE_HEADER_END
 
 #endif // ANJAY_COAP_MSGINFO_H

@@ -23,7 +23,6 @@
 #include "msg_info.h"
 #include "../utils.h"
 
-VISIBILITY_PRIVATE_HEADER_BEGIN
 
 typedef struct anjay_coap_msg_buffer {
     anjay_coap_msg_t *msg;
@@ -159,6 +158,5 @@ _anjay_coap_msg_build_without_payload(anjay_coap_aligned_msg_buffer_t *buffer,
     return _anjay_coap_msg_builder_get_msg(&builder);
 }
 
-VISIBILITY_PRIVATE_HEADER_END
 
 #endif // ANJAY_COAP_MSGBUILDER_H
