@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef AVS_COAP_PARSE_UTILS_H
-#define AVS_COAP_PARSE_UTILS_H
+#ifndef AVS_COMMONS_COAP_PARSE_UTILS_H
+#define AVS_COMMONS_COAP_PARSE_UTILS_H
 
 #include <stdint.h>
 #include <string.h>
@@ -44,4 +44,4 @@ static inline uint16_t extract_u16(const uint8_t *data) {
 }
 
 
-#endif // AVS_COAP_PARSE_UTILS_H
+#endif // AVS_COMMONS_COAP_PARSE_UTILS_H

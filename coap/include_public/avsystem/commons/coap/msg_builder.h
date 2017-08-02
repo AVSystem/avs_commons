@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef AVS_COAP_MSGBUILDER_H
-#define AVS_COAP_MSGBUILDER_H
+#ifndef AVS_COMMONS_COAP_MSGBUILDER_H
+#define AVS_COMMONS_COAP_MSGBUILDER_H
 
 #include <stdlib.h>
 #include <assert.h>
@@ -157,4 +157,4 @@ avs_coap_msg_build_without_payload(anjay_coap_aligned_msg_buffer_t *buffer,
 }
 
 
-#endif // AVS_COAP_MSGBUILDER_H
+#endif // AVS_COMMONS_COAP_MSGBUILDER_H

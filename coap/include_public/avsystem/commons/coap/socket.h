@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef AVS_COAP_SOCKET_H
-#define AVS_COAP_SOCKET_H
+#ifndef AVS_COMMONS_COAP_SOCKET_H
+#define AVS_COMMONS_COAP_SOCKET_H
 
 #include <avsystem/commons/coap/msg.h>
 #include <avsystem/commons/coap/tx_params.h>
@@ -121,4 +121,4 @@ void avs_coap_send_service_unavailable(anjay_coap_socket_t *socket,
 /** @} */
 
 
-#endif // AVS_COAP_SOCKET_H
+#endif // AVS_COMMONS_COAP_SOCKET_H

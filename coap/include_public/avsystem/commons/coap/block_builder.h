@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef AVS_COAP_BLOCKBUILDER_H
-#define AVS_COAP_BLOCKBUILDER_H
+#ifndef AVS_COMMONS_COAP_BLOCKBUILDER_H
+#define AVS_COMMONS_COAP_BLOCKBUILDER_H
 
 #include <stdlib.h>
 
@@ -101,4 +101,4 @@ avs_coap_block_builder_append_payload(anjay_coap_block_builder_t *builder,
                                          size_t payload_size);
 
 
-#endif // AVS_COAP_BLOCKBUILDER_H
+#endif // AVS_COMMONS_COAP_BLOCKBUILDER_H

@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef AVS_COAP_TX_PARAMS_H
-#define AVS_COAP_TX_PARAMS_H
+#ifndef AVS_COMMONS_COAP_TX_PARAMS_H
+#define AVS_COMMONS_COAP_TX_PARAMS_H
 
 #include <stdint.h>
 #include <unistd.h>
@@ -65,4 +65,4 @@ void avs_coap_update_retry_state(coap_retry_state_t *retry_state,
                                     const anjay_coap_tx_params_t *tx_params,
                                     unsigned *rand_seed);
 
-#endif // AVS_COAP_TX_PARAMS_H
+#endif // AVS_COMMONS_COAP_TX_PARAMS_H

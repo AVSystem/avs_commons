@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef AVS_COAP_MSG_IDENTITY_H
-#define AVS_COAP_MSG_IDENTITY_H
+#ifndef AVS_COMMONS_COAP_MSG_IDENTITY_H
+#define AVS_COMMONS_COAP_MSG_IDENTITY_H
 
 
 #define AVS_COAP_MAX_TOKEN_LENGTH 8
@@ -51,4 +51,4 @@ bool avs_coap_identity_equal(const anjay_coap_msg_identity_t *a,
 }
 
 
-#endif // AVS_COAP_MSG_IDENTITY_H
+#endif // AVS_COMMONS_COAP_MSG_IDENTITY_H

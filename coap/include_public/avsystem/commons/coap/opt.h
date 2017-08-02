@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-#ifndef AVS_COAP_OPT_H
-#define AVS_COAP_OPT_H
+#ifndef AVS_COMMONS_COAP_OPT_H
+#define AVS_COMMONS_COAP_OPT_H
 
 #include <stdint.h>
 #include <stdbool.h>
 #include <stddef.h>
 
 #define AVS_COAP_OPT_IF_MATCH 1
-#define AVS_COAP_OPT_URI_HOST 3
+#define AVS_COMMONS_COAP_OPT_URI_HOST 3
 #define AVS_COAP_OPT_ETAG 4
 #define AVS_COAP_OPT_IF_NONE_MATCH 5
 #define AVS_COAP_OPT_OBSERVE 6
@@ -133,4 +133,4 @@ size_t avs_coap_opt_sizeof(const anjay_coap_opt_t *opt);
 
 void avs_coap_opt_debug_print(const anjay_coap_opt_t *opt);
 
-#endif // AVS_COAP_OPT_H
+#endif // AVS_COMMONS_COAP_OPT_H

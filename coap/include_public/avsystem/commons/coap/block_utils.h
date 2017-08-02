@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef AVS_COAP_BLOCK_UTILS_H
-#define AVS_COAP_BLOCK_UTILS_H
+#ifndef AVS_COMMONS_COAP_BLOCK_UTILS_H
+#define AVS_COMMONS_COAP_BLOCK_UTILS_H
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -67,4 +67,4 @@ int avs_coap_get_block_info(const anjay_coap_msg_t *msg,
 bool avs_coap_is_valid_block_size(uint16_t size);
 
 
-#endif // AVS_COAP_BLOCK_UTILS_H
+#endif // AVS_COMMONS_COAP_BLOCK_UTILS_H

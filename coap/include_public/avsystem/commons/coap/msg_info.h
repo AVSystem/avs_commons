@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef AVS_COAP_MSGINFO_H
-#define AVS_COAP_MSGINFO_H
+#ifndef AVS_COMMONS_COAP_MSGINFO_H
+#define AVS_COMMONS_COAP_MSGINFO_H
 
 #include <stdlib.h>
 
@@ -195,4 +195,4 @@ static inline int avs_coap_msg_info_opt_u32(anjay_coap_msg_info_t *info,
                                          &value, sizeof(value));
 }
 
-#endif // AVS_COAP_MSGINFO_H
+#endif // AVS_COMMONS_COAP_MSGINFO_H

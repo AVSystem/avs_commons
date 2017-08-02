@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef AVS_COAP_MSG_H
-#define AVS_COAP_MSG_H
+#ifndef AVS_COMMONS_COAP_MSG_H
+#define AVS_COMMONS_COAP_MSG_H
 
 #include <assert.h>
 #include <stdint.h>
@@ -320,5 +320,5 @@ const char *avs_coap_msg_summary(const anjay_coap_msg_t *msg,
 uint8_t
 avs_coap_msg_header_get_token_length(const anjay_coap_msg_header_t *hdr);
 
-#endif // AVS_COAP_MSG_H
+#endif // AVS_COMMONS_COAP_MSG_H
 

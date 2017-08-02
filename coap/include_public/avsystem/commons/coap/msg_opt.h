@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef AVS_COAP_MSG_OPT_H
-#define AVS_COAP_MSG_OPT_H
+#ifndef AVS_COMMONS_COAP_MSG_OPT_H
+#define AVS_COMMONS_COAP_MSG_OPT_H
 
 #include <avsystem/commons/coap/msg.h>
 
@@ -63,4 +63,4 @@ int avs_coap_msg_validate_critical_options(
         anjay_coap_critical_option_validator_t validator);
 
 
-#endif // AVS_COAP_MSG_OPT_H
+#endif // AVS_COMMONS_COAP_MSG_OPT_H

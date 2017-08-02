@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef AVS_COAP_CONTENT_FORMAT_H
-#define AVS_COAP_CONTENT_FORMAT_H
+#ifndef AVS_COMMONS_COAP_CONTENT_FORMAT_H
+#define AVS_COMMONS_COAP_CONTENT_FORMAT_H
 
 /** Auxiliary constants for common Content-Format Option values */
 
@@ -38,4 +38,4 @@
  * */
 #define AVS_COAP_FORMAT_NONE 65535
 
-#endif // AVS_COAP_CONTENT_FORMAT_H
+#endif // AVS_COMMONS_COAP_CONTENT_FORMAT_H
