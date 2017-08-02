@@ -20,6 +20,7 @@
 
 #include <avsystem/commons/coap/tx_params.h>
 #include <avsystem/commons/time.h>
+#include <avsystem/commons/utils.h>
 
 #if AVS_RAND_MAX >= UINT32_MAX
 #define RAND32_ITERATIONS 1
