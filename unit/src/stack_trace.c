@@ -14,6 +14,8 @@
 
 #include <config.h>
 
+#include <avsystem/commons/defs.h>
+
 #include "stack_trace.h"
 
 #ifndef WITH_AVS_STACK_TRACE
@@ -48,7 +50,6 @@ void _avs_unit_stack_trace_print(FILE *file) {
 #include "test.h"
 
 #define MAX_TRACE_LEVELS 256
-#define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
 
 typedef struct stack_frame {
     void *address;
@@ -370,7 +371,7 @@ static int fill_stack_trace(stack_trace_t *trace,
 
 static stack_trace_t *stack_trace_create(size_t skip_entries_count) {
     void *addrs[MAX_TRACE_LEVELS];
-    int num_addrs = backtrace(addrs, ARRAY_SIZE(addrs));
+    int num_addrs = backtrace(addrs, AVS_ARRAY_SIZE(addrs));
     char **symbols = NULL;
     int result;
     stack_trace_t *trace = NULL;
