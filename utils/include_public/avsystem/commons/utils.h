@@ -35,6 +35,15 @@ static inline bool avs_is_power_of_2(size_t value) {
     return value > 0 && !(value & (value - 1));
 }
 
+/**
+ * Wrapper around snprintf(), which always return a negative in case of
+ * an error (which is the only thing differentiating it from snprintf()).
+ *
+ * @returns 0 on success, negative value on error.
+ */
+int avs_simple_snprintf(char *out, size_t out_size, const char *format, ...)
+        AVS_F_PRINTF(3, 4);
+
 #ifdef	__cplusplus
 }
 #endif
