@@ -35,23 +35,23 @@ typedef struct {
     unsigned max_retransmit;
 } anjay_coap_tx_params_t;
 
-bool _anjay_coap_tx_params_valid(const anjay_coap_tx_params_t *tx_params,
+bool avs_coap_tx_params_valid(const anjay_coap_tx_params_t *tx_params,
                                  const char **error_details);
 
 int32_t
-_anjay_coap_max_transmit_wait_ms(const anjay_coap_tx_params_t *tx_params);
+avs_coap_max_transmit_wait_ms(const anjay_coap_tx_params_t *tx_params);
 
 int32_t
-_anjay_coap_exchange_lifetime_ms(const anjay_coap_tx_params_t *tx_params);
+avs_coap_exchange_lifetime_ms(const anjay_coap_tx_params_t *tx_params);
 
 struct timespec
-_anjay_coap_exchange_lifetime(const anjay_coap_tx_params_t *tx_params);
+avs_coap_exchange_lifetime(const anjay_coap_tx_params_t *tx_params);
 
 int32_t
-_anjay_coap_max_transmit_span_ms(const anjay_coap_tx_params_t *tx_params);
+avs_coap_max_transmit_span_ms(const anjay_coap_tx_params_t *tx_params);
 
 struct timespec
-_anjay_coap_max_transmit_span(const anjay_coap_tx_params_t *tx_params);
+avs_coap_max_transmit_span(const anjay_coap_tx_params_t *tx_params);
 
 /** Maximum time the client can wait for a Separate Response */
 #define ANJAY_COAP_SEPARATE_RESPONSE_TIMEOUT_MS (30 * 1000)
@@ -61,7 +61,7 @@ typedef struct {
     int32_t recv_timeout_ms;
 } coap_retry_state_t;
 
-void _anjay_coap_update_retry_state(coap_retry_state_t *retry_state,
+void avs_coap_update_retry_state(coap_retry_state_t *retry_state,
                                     const anjay_coap_tx_params_t *tx_params,
                                     unsigned *rand_seed);
 

@@ -24,39 +24,39 @@ AVS_UNIT_TEST(coap_opt, sizeof) {
 
     buffer[0] = 0x00;
     // header byte + extended delta + extended length + value
-    AVS_UNIT_ASSERT_EQUAL(_anjay_coap_opt_sizeof(opt), 1 + 0 + 0 + 0);
+    AVS_UNIT_ASSERT_EQUAL(avs_coap_opt_sizeof(opt), 1 + 0 + 0 + 0);
 
     buffer[0] = 0xC0;
-    AVS_UNIT_ASSERT_EQUAL(_anjay_coap_opt_sizeof(opt), 1 + 0 + 0 + 0);
+    AVS_UNIT_ASSERT_EQUAL(avs_coap_opt_sizeof(opt), 1 + 0 + 0 + 0);
 
     buffer[0] = 0xD0;
-    AVS_UNIT_ASSERT_EQUAL(_anjay_coap_opt_sizeof(opt), 1 + 1 + 0 + 0);
+    AVS_UNIT_ASSERT_EQUAL(avs_coap_opt_sizeof(opt), 1 + 1 + 0 + 0);
 
     buffer[0] = 0xE0;
-    AVS_UNIT_ASSERT_EQUAL(_anjay_coap_opt_sizeof(opt), 1 + 2 + 0 + 0);
+    AVS_UNIT_ASSERT_EQUAL(avs_coap_opt_sizeof(opt), 1 + 2 + 0 + 0);
 
     buffer[0] = 0x01;
-    AVS_UNIT_ASSERT_EQUAL(_anjay_coap_opt_sizeof(opt), 1 + 0 + 0 + 1);
+    AVS_UNIT_ASSERT_EQUAL(avs_coap_opt_sizeof(opt), 1 + 0 + 0 + 1);
 
     buffer[0] = 0x0C;
-    AVS_UNIT_ASSERT_EQUAL(_anjay_coap_opt_sizeof(opt), 1 + 0 + 0 + 12);
+    AVS_UNIT_ASSERT_EQUAL(avs_coap_opt_sizeof(opt), 1 + 0 + 0 + 12);
 
     buffer[0] = 0x0D;
-    AVS_UNIT_ASSERT_EQUAL(_anjay_coap_opt_sizeof(opt), 1 + 0 + 1 + 13);
+    AVS_UNIT_ASSERT_EQUAL(avs_coap_opt_sizeof(opt), 1 + 0 + 1 + 13);
 
     buffer[0] = 0x0E;
-    AVS_UNIT_ASSERT_EQUAL(_anjay_coap_opt_sizeof(opt), 1 + 0 + 2 + 269);
+    AVS_UNIT_ASSERT_EQUAL(avs_coap_opt_sizeof(opt), 1 + 0 + 2 + 269);
 
     buffer[0] = 0x11;
-    AVS_UNIT_ASSERT_EQUAL(_anjay_coap_opt_sizeof(opt), 1 + 0 + 0 + 1);
+    AVS_UNIT_ASSERT_EQUAL(avs_coap_opt_sizeof(opt), 1 + 0 + 0 + 1);
 
     buffer[0] = 0xCC;
-    AVS_UNIT_ASSERT_EQUAL(_anjay_coap_opt_sizeof(opt), 1 + 0 + 0 + 12);
+    AVS_UNIT_ASSERT_EQUAL(avs_coap_opt_sizeof(opt), 1 + 0 + 0 + 12);
 
     buffer[0] = 0xDD;
-    AVS_UNIT_ASSERT_EQUAL(_anjay_coap_opt_sizeof(opt), 1 + 1 + 1 + 13);
+    AVS_UNIT_ASSERT_EQUAL(avs_coap_opt_sizeof(opt), 1 + 1 + 1 + 13);
 
     buffer[0] = 0xEE;
-    AVS_UNIT_ASSERT_EQUAL(_anjay_coap_opt_sizeof(opt), 1 + 2 + 2 + 269);
+    AVS_UNIT_ASSERT_EQUAL(avs_coap_opt_sizeof(opt), 1 + 2 + 2 + 269);
 }
 

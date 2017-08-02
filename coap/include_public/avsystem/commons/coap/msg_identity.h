@@ -26,7 +26,7 @@ typedef struct {
 
 #define ANJAY_COAP_TOKEN_EMPTY ((anjay_coap_token_t){{0}})
 
-static inline bool _anjay_coap_token_equal(const anjay_coap_token_t *first,
+static inline bool avs_coap_token_equal(const anjay_coap_token_t *first,
                                            size_t first_size,
                                            const anjay_coap_token_t *second,
                                            size_t second_size) {
@@ -43,7 +43,7 @@ typedef struct anjay_coap_msg_identity {
 #define ANJAY_COAP_MSG_IDENTITY_EMPTY ((anjay_coap_msg_identity_t){0,{{0}},0})
 
 static inline
-bool _anjay_coap_identity_equal(const anjay_coap_msg_identity_t *a,
+bool avs_coap_identity_equal(const anjay_coap_msg_identity_t *a,
                                 const anjay_coap_msg_identity_t *b) {
     return a->msg_id == b->msg_id
         && a->token_size == b->token_size

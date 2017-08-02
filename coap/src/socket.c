@@ -44,7 +44,7 @@ static const anjay_coap_tx_params_t DEFAULT_SOCKET_TX_PARAMS = {
     .max_retransmit = 4
 };
 
-int _anjay_coap_socket_create(anjay_coap_socket_t **sock,
+int avs_coap_socket_create(anjay_coap_socket_t **sock,
                               avs_net_abstract_socket_t *backend,
                               size_t msg_cache_size) {
     *sock = (anjay_coap_socket_t *) calloc(1, sizeof(anjay_coap_socket_t));
@@ -66,7 +66,7 @@ int _anjay_coap_socket_create(anjay_coap_socket_t **sock,
     return 0;
 }
 
-int _anjay_coap_socket_close(anjay_coap_socket_t *sock) {
+int avs_coap_socket_close(anjay_coap_socket_t *sock) {
     assert(sock);
     if (!sock->dtls_socket) {
         return 0;
@@ -74,13 +74,13 @@ int _anjay_coap_socket_close(anjay_coap_socket_t *sock) {
     return avs_net_socket_close(sock->dtls_socket);
 }
 
-void _anjay_coap_socket_cleanup(anjay_coap_socket_t **sock) {
+void avs_coap_socket_cleanup(anjay_coap_socket_t **sock) {
     if (!sock || !*sock) {
         return;
     }
 
     _anjay_coap_msg_cache_release(&(*sock)->msg_cache);
-    _anjay_coap_socket_close(*sock);
+    avs_coap_socket_close(*sock);
     avs_net_socket_cleanup(&(*sock)->dtls_socket);
     free(*sock);
     *sock = NULL;
@@ -109,7 +109,7 @@ static int map_io_error(avs_net_abstract_socket_t *socket,
 
 static int try_cache_response(anjay_coap_socket_t *sock,
                                const anjay_coap_msg_t *res) {
-    if (!_anjay_coap_msg_is_response(res) || !sock->msg_cache) {
+    if (!avs_coap_msg_is_response(res) || !sock->msg_cache) {
         return 0;
     }
 
@@ -128,10 +128,10 @@ static int try_cache_response(anjay_coap_socket_t *sock,
 
 #endif // WITH_AVS_COAP_MESSAGE_CACHE
 
-int _anjay_coap_socket_send(anjay_coap_socket_t *sock,
+int avs_coap_socket_send(anjay_coap_socket_t *sock,
                             const anjay_coap_msg_t *msg) {
     assert(sock && sock->dtls_socket);
-    if (!_anjay_coap_msg_is_valid(msg)) {
+    if (!avs_coap_msg_is_valid(msg)) {
         LOG(ERROR, "cannot send an invalid CoAP message\n");
         return -1;
     }
@@ -152,7 +152,7 @@ int _anjay_coap_socket_send(anjay_coap_socket_t *sock,
 
 static int try_send_cached_response(anjay_coap_socket_t *sock,
                                     const anjay_coap_msg_t *req) {
-    if (!_anjay_coap_msg_is_request(req) || !sock->msg_cache) {
+    if (!avs_coap_msg_is_request(req) || !sock->msg_cache) {
         return -1;
     }
 
@@ -165,11 +165,11 @@ static int try_send_cached_response(anjay_coap_socket_t *sock,
         return -1;
     }
 
-    uint16_t msg_id = _anjay_coap_msg_get_id(req);
+    uint16_t msg_id = avs_coap_msg_get_id(req);
     const anjay_coap_msg_t *res = _anjay_coap_msg_cache_get(sock->msg_cache,
                                                             addr, port, msg_id);
     if (res) {
-        return _anjay_coap_socket_send(sock, res);
+        return avs_coap_socket_send(sock, res);
     } else {
         return -1;
     }
@@ -178,12 +178,12 @@ static int try_send_cached_response(anjay_coap_socket_t *sock,
 #endif // WITH_AVS_COAP_MESSAGE_CACHE
 
 static inline bool is_coap_ping(const anjay_coap_msg_t *msg) {
-    return _anjay_coap_msg_header_get_type(&msg->header)
+    return avs_coap_msg_header_get_type(&msg->header)
                    == ANJAY_COAP_MSG_CONFIRMABLE
            && msg->header.code == ANJAY_COAP_CODE_EMPTY;
 }
 
-int _anjay_coap_socket_recv(anjay_coap_socket_t *sock,
+int avs_coap_socket_recv(anjay_coap_socket_t *sock,
                             anjay_coap_msg_t *out_msg,
                             size_t msg_capacity) {
     assert(sock && sock->dtls_socket);
@@ -199,7 +199,7 @@ int _anjay_coap_socket_recv(anjay_coap_socket_t *sock,
         return map_io_error(sock->dtls_socket, result, "receive");
     }
 
-    if (!_anjay_coap_msg_is_valid(out_msg)) {
+    if (!avs_coap_msg_is_valid(out_msg)) {
         LOG(DEBUG, "recv: malformed message");
         return ANJAY_COAP_SOCKET_ERR_MSG_MALFORMED;
     }
@@ -207,8 +207,8 @@ int _anjay_coap_socket_recv(anjay_coap_socket_t *sock,
     LOG(TRACE, "recv: %s", ANJAY_COAP_MSG_SUMMARY(out_msg));
 
     if (is_coap_ping(out_msg)) {
-        _anjay_coap_send_empty(sock, ANJAY_COAP_MSG_RESET,
-                               _anjay_coap_msg_get_id(out_msg));
+        avs_coap_send_empty(sock, ANJAY_COAP_MSG_RESET,
+                               avs_coap_msg_get_id(out_msg));
         return ANJAY_COAP_SOCKET_ERR_MSG_WAS_PING;
     }
 
@@ -219,7 +219,7 @@ int _anjay_coap_socket_recv(anjay_coap_socket_t *sock,
     return 0;
 }
 
-int _anjay_coap_socket_get_recv_timeout(anjay_coap_socket_t *sock) {
+int avs_coap_socket_get_recv_timeout(anjay_coap_socket_t *sock) {
     avs_net_socket_opt_value_t value;
 
     if (avs_net_socket_get_opt(sock->dtls_socket,
@@ -232,7 +232,7 @@ int _anjay_coap_socket_get_recv_timeout(anjay_coap_socket_t *sock) {
     return value.recv_timeout;
 }
 
-void _anjay_coap_socket_set_recv_timeout(anjay_coap_socket_t *sock,
+void avs_coap_socket_set_recv_timeout(anjay_coap_socket_t *sock,
                                          int timeout_ms) {
     avs_net_socket_opt_value_t value = {
         .recv_timeout = timeout_ms
@@ -246,30 +246,30 @@ void _anjay_coap_socket_set_recv_timeout(anjay_coap_socket_t *sock,
 }
 
 const anjay_coap_tx_params_t *
-_anjay_coap_socket_get_tx_params(anjay_coap_socket_t *sock) {
+avs_coap_socket_get_tx_params(anjay_coap_socket_t *sock) {
     return sock->tx_params;
 }
 
 void
-_anjay_coap_socket_set_tx_params(anjay_coap_socket_t *sock,
+avs_coap_socket_set_tx_params(anjay_coap_socket_t *sock,
                                  const anjay_coap_tx_params_t *tx_params) {
     sock->tx_params = tx_params;
 }
 
 avs_net_abstract_socket_t *
-_anjay_coap_socket_get_backend(anjay_coap_socket_t *sock) {
+avs_coap_socket_get_backend(anjay_coap_socket_t *sock) {
     return sock->dtls_socket;
 }
 
-void _anjay_coap_socket_set_backend(anjay_coap_socket_t *sock,
+void avs_coap_socket_set_backend(anjay_coap_socket_t *sock,
                                     avs_net_abstract_socket_t *backend) {
     sock->dtls_socket = backend;
 }
 
-int _anjay_coap_send_empty(anjay_coap_socket_t *socket,
+int avs_coap_send_empty(anjay_coap_socket_t *socket,
                            anjay_coap_msg_type_t msg_type,
                            uint16_t msg_id) {
-    anjay_coap_msg_info_t info = _anjay_coap_msg_info_init();
+    anjay_coap_msg_info_t info = avs_coap_msg_info_init();
 
     info.type = msg_type;
     info.code = ANJAY_COAP_CODE_EMPTY;
@@ -279,27 +279,27 @@ int _anjay_coap_send_empty(anjay_coap_socket_t *socket,
         uint8_t buffer[offsetof(anjay_coap_msg_t, content)];
         anjay_coap_msg_t force_align_;
     } aligned_buffer;
-    const anjay_coap_msg_t *msg = _anjay_coap_msg_build_without_payload(
-            _anjay_coap_ensure_aligned_buffer(&aligned_buffer),
+    const anjay_coap_msg_t *msg = avs_coap_msg_build_without_payload(
+            avs_coap_ensure_aligned_buffer(&aligned_buffer),
             sizeof(aligned_buffer), &info);
     assert(msg);
 
-    return _anjay_coap_socket_send(socket, msg);
+    return avs_coap_socket_send(socket, msg);
 }
 
 static void send_response(anjay_coap_socket_t *socket,
                           const anjay_coap_msg_t *msg,
                           uint8_t code,
                           const uint32_t *max_age) {
-    anjay_coap_msg_info_t info = _anjay_coap_msg_info_init();
+    anjay_coap_msg_info_t info = avs_coap_msg_info_init();
 
     info.type = ANJAY_COAP_MSG_ACKNOWLEDGEMENT;
     info.code = code;
-    info.identity.msg_id = _anjay_coap_msg_get_id(msg);
-    info.identity.token_size = _anjay_coap_msg_get_token(msg,
+    info.identity.msg_id = avs_coap_msg_get_id(msg);
+    info.identity.token_size = avs_coap_msg_get_token(msg,
                                                          &info.identity.token);
 
-    if (max_age && _anjay_coap_msg_info_opt_u32(&info, ANJAY_COAP_OPT_MAX_AGE,
+    if (max_age && avs_coap_msg_info_opt_u32(&info, ANJAY_COAP_OPT_MAX_AGE,
                                                 *max_age)) {
         LOG(WARNING, "unable to add Max-Age option to response");
     }
@@ -310,25 +310,25 @@ static void send_response(anjay_coap_socket_t *socket,
                        + ANJAY_COAP_OPT_INT_MAX_SIZE];
         anjay_coap_msg_t force_align_;
     } aligned_buffer;
-    const anjay_coap_msg_t *error = _anjay_coap_msg_build_without_payload(
-            _anjay_coap_ensure_aligned_buffer(&aligned_buffer),
+    const anjay_coap_msg_t *error = avs_coap_msg_build_without_payload(
+            avs_coap_ensure_aligned_buffer(&aligned_buffer),
             sizeof(aligned_buffer), &info);
     assert(error);
 
-    if (_anjay_coap_socket_send(socket, error)) {
+    if (avs_coap_socket_send(socket, error)) {
         LOG(WARNING, "failed to send error message");
     }
 
-    _anjay_coap_msg_info_reset(&info);
+    avs_coap_msg_info_reset(&info);
 }
 
-void _anjay_coap_send_error(anjay_coap_socket_t *socket,
+void avs_coap_send_error(anjay_coap_socket_t *socket,
                             const anjay_coap_msg_t *msg,
                             uint8_t error_code) {
     send_response(socket, msg, error_code, NULL);
 }
 
-void _anjay_coap_send_service_unavailable(anjay_coap_socket_t *socket,
+void avs_coap_send_service_unavailable(anjay_coap_socket_t *socket,
                                           const anjay_coap_msg_t *msg,
                                           int32_t retry_after_ms) {
     uint32_t ms_to_retry_after =

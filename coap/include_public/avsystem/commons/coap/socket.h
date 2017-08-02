@@ -32,13 +32,13 @@
 
 typedef struct anjay_coap_socket anjay_coap_socket_t;
 
-int _anjay_coap_socket_create(anjay_coap_socket_t **sock,
+int avs_coap_socket_create(anjay_coap_socket_t **sock,
                               avs_net_abstract_socket_t *backend,
                               size_t msg_cache_size);
 
-int _anjay_coap_socket_close(anjay_coap_socket_t *sock);
+int avs_coap_socket_close(anjay_coap_socket_t *sock);
 
-void _anjay_coap_socket_cleanup(anjay_coap_socket_t **sock);
+void avs_coap_socket_cleanup(anjay_coap_socket_t **sock);
 
 /**
  * @returns 0 on success, a negative value in case of error:
@@ -49,7 +49,7 @@ void _anjay_coap_socket_cleanup(anjay_coap_socket_t **sock);
  * - ANJAY_COAP_SOCKET_ERR_NETWORK in case of other error on a layer below the
  *   application layer
  */
-int _anjay_coap_socket_send(anjay_coap_socket_t *sock,
+int avs_coap_socket_send(anjay_coap_socket_t *sock,
                             const anjay_coap_msg_t *msg);
 
 /**
@@ -63,32 +63,32 @@ int _anjay_coap_socket_send(anjay_coap_socket_t *sock,
  * - ANJAY_COAP_SOCKET_ERR_NETWORK in case of other error on a layer below the
  *   application layer
  **/
-int _anjay_coap_socket_recv(anjay_coap_socket_t *sock,
+int avs_coap_socket_recv(anjay_coap_socket_t *sock,
                             anjay_coap_msg_t *out_msg,
                             size_t msg_capacity);
 // AVSYSTEM_ANJAY_COMMERCIAL_BEGIN
-uint64_t _anjay_coap_socket_get_rx_bytes(anjay_coap_socket_t *sock);
-uint64_t _anjay_coap_socket_get_tx_bytes(anjay_coap_socket_t *sock);
+uint64_t avs_coap_socket_get_rx_bytes(anjay_coap_socket_t *sock);
+uint64_t avs_coap_socket_get_tx_bytes(anjay_coap_socket_t *sock);
 uint64_t
-_anjay_coap_socket_get_num_incoming_retransmissions(anjay_coap_socket_t *sock);
+avs_coap_socket_get_num_incoming_retransmissions(anjay_coap_socket_t *sock);
 uint64_t
-_anjay_coap_socket_get_num_outgoing_retransmissions(anjay_coap_socket_t *sock);
+avs_coap_socket_get_num_outgoing_retransmissions(anjay_coap_socket_t *sock);
 // AVSYSTEM_ANJAY_COMMERCIAL_END
 
-int _anjay_coap_socket_get_recv_timeout(anjay_coap_socket_t *sock);
-void _anjay_coap_socket_set_recv_timeout(anjay_coap_socket_t *sock,
+int avs_coap_socket_get_recv_timeout(anjay_coap_socket_t *sock);
+void avs_coap_socket_set_recv_timeout(anjay_coap_socket_t *sock,
                                          int timeout_ms);
 
 const anjay_coap_tx_params_t *
-_anjay_coap_socket_get_tx_params(anjay_coap_socket_t *sock);
+avs_coap_socket_get_tx_params(anjay_coap_socket_t *sock);
 void
-_anjay_coap_socket_set_tx_params(anjay_coap_socket_t *sock,
+avs_coap_socket_set_tx_params(anjay_coap_socket_t *sock,
                                  const anjay_coap_tx_params_t *tx_params);
 
 avs_net_abstract_socket_t *
-_anjay_coap_socket_get_backend(anjay_coap_socket_t *sock);
+avs_coap_socket_get_backend(anjay_coap_socket_t *sock);
 
-void _anjay_coap_socket_set_backend(anjay_coap_socket_t *sock,
+void avs_coap_socket_set_backend(anjay_coap_socket_t *sock,
                                     avs_net_abstract_socket_t *backend);
 
 /**
@@ -99,14 +99,14 @@ void _anjay_coap_socket_set_backend(anjay_coap_socket_t *sock,
 /**
  * Sends an Empty message with given values of @p msg_type and @p msg_id.
  */
-int _anjay_coap_send_empty(anjay_coap_socket_t *socket,
+int avs_coap_send_empty(anjay_coap_socket_t *socket,
                            anjay_coap_msg_type_t msg_type,
                            uint16_t msg_id);
 
 /**
  * Responds with error specified as @p error_code to the message @p msg.
  */
-void _anjay_coap_send_error(anjay_coap_socket_t *socket,
+void avs_coap_send_error(anjay_coap_socket_t *socket,
                             const anjay_coap_msg_t *msg,
                             uint8_t error_code);
 
@@ -114,7 +114,7 @@ void _anjay_coap_send_error(anjay_coap_socket_t *socket,
  * Responds with a Service Unavailable messages, with Max-Age option set to
  * @p retry_after_ms converted to seconds.
  */
-void _anjay_coap_send_service_unavailable(anjay_coap_socket_t *socket,
+void avs_coap_send_service_unavailable(anjay_coap_socket_t *socket,
                                           const anjay_coap_msg_t *msg,
                                           int32_t retry_after_ms);
 

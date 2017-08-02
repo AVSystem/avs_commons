@@ -25,7 +25,7 @@
 
 #pragma GCC visibility push(hidden)
 
-int _anjay_coap_get_block_info(const anjay_coap_msg_t *msg,
+int avs_coap_get_block_info(const anjay_coap_msg_t *msg,
                                coap_block_type_t type,
                                coap_block_info_t *out_info) {
     assert(msg);
@@ -35,7 +35,7 @@ int _anjay_coap_get_block_info(const anjay_coap_msg_t *msg,
             : ANJAY_COAP_OPT_BLOCK2;
     const anjay_coap_opt_t *opt;
     memset(out_info, 0, sizeof(*out_info));
-    if (_anjay_coap_msg_find_unique_opt(msg, opt_number, &opt)) {
+    if (avs_coap_msg_find_unique_opt(msg, opt_number, &opt)) {
         if (opt) {
             int num = opt_number == ANJAY_COAP_OPT_BLOCK1 ? 1 : 2;
             LOG(ERROR, "multiple BLOCK%d options found", num);
@@ -44,14 +44,14 @@ int _anjay_coap_get_block_info(const anjay_coap_msg_t *msg,
         return 0;
     }
     out_info->type = type;
-    out_info->valid = !_anjay_coap_opt_block_seq_number(opt, &out_info->seq_num)
-            && !_anjay_coap_opt_block_has_more(opt, &out_info->has_more)
-            && !_anjay_coap_opt_block_size(opt, &out_info->size);
+    out_info->valid = !avs_coap_opt_block_seq_number(opt, &out_info->seq_num)
+            && !avs_coap_opt_block_has_more(opt, &out_info->has_more)
+            && !avs_coap_opt_block_size(opt, &out_info->size);
 
     return out_info->valid ? 0 : -1;
 }
 
-bool _anjay_coap_is_valid_block_size(uint16_t size) {
+bool avs_coap_is_valid_block_size(uint16_t size) {
     return avs_is_power_of_2(size)
             && size <= ANJAY_COAP_MSG_BLOCK_MAX_SIZE
             && size >= ANJAY_COAP_MSG_BLOCK_MIN_SIZE;

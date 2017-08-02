@@ -39,12 +39,12 @@ typedef struct anjay_coap_msg_builder {
     })
 
 static inline bool
-_anjay_coap_msg_builder_is_initialized(anjay_coap_msg_builder_t *builder) {
+avs_coap_msg_builder_is_initialized(anjay_coap_msg_builder_t *builder) {
     return builder->msg_buffer.msg != NULL;
 }
 
 static inline bool
-_anjay_coap_msg_builder_has_payload(anjay_coap_msg_builder_t *builder) {
+avs_coap_msg_builder_has_payload(anjay_coap_msg_builder_t *builder) {
     return builder->has_payload_marker;
 }
 
@@ -52,7 +52,7 @@ _anjay_coap_msg_builder_has_payload(anjay_coap_msg_builder_t *builder) {
 typedef struct anjay_coap_aligned_msg_buffer anjay_coap_aligned_msg_buffer_t;
 
 static inline anjay_coap_aligned_msg_buffer_t *
-_anjay_coap_ensure_aligned_buffer(void *buffer) {
+avs_coap_ensure_aligned_buffer(void *buffer) {
     assert((uintptr_t)buffer % AVS_ALIGNOF(anjay_coap_msg_t) == 0
            && "the buffer MUST have the same alignment as anjay_coap_msg_t");
 
@@ -73,7 +73,7 @@ _anjay_coap_ensure_aligned_buffer(void *buffer) {
  * @returns 0 on success, a negative value in case of error (including incorrect
  *          alignment of @p buffer).
  */
-int _anjay_coap_msg_builder_init(anjay_coap_msg_builder_t *builder,
+int avs_coap_msg_builder_init(anjay_coap_msg_builder_t *builder,
                                  anjay_coap_aligned_msg_buffer_t *buffer,
                                  size_t buffer_size_bytes,
                                  const anjay_coap_msg_info_t *info);
@@ -89,7 +89,7 @@ int _anjay_coap_msg_builder_init(anjay_coap_msg_builder_t *builder,
  *
  * @return 0 on success, a negative value in case of error.
  */
-int _anjay_coap_msg_builder_reset(anjay_coap_msg_builder_t *builder,
+int avs_coap_msg_builder_reset(anjay_coap_msg_builder_t *builder,
                                   const anjay_coap_msg_info_t *info);
 
 /**
@@ -100,7 +100,7 @@ int _anjay_coap_msg_builder_reset(anjay_coap_msg_builder_t *builder,
  *
  * @return Number of bytes available for the payload.
  */
-size_t _anjay_coap_msg_builder_payload_remaining(
+size_t avs_coap_msg_builder_payload_remaining(
         const anjay_coap_msg_builder_t *builder);
 
 /**
@@ -113,7 +113,7 @@ size_t _anjay_coap_msg_builder_payload_remaining(
  *
  * @return Number of bytes written. NOTE: this may be less than @p payload_size.
  */
-size_t _anjay_coap_msg_builder_payload(anjay_coap_msg_builder_t *builder,
+size_t avs_coap_msg_builder_payload(anjay_coap_msg_builder_t *builder,
                                        const void *payload,
                                        size_t payload_size);
 
@@ -132,7 +132,7 @@ size_t _anjay_coap_msg_builder_payload(anjay_coap_msg_builder_t *builder,
  *         message build in @p buffer .
  */
 const anjay_coap_msg_t *
-_anjay_coap_msg_builder_get_msg(const anjay_coap_msg_builder_t *builder);
+avs_coap_msg_builder_get_msg(const anjay_coap_msg_builder_t *builder);
 
 /**
  * Helper function for building messages with no payload.
@@ -144,16 +144,16 @@ _anjay_coap_msg_builder_get_msg(const anjay_coap_msg_builder_t *builder);
  * @return Constructed message object on success, NULL in case of error.
  */
 static inline const anjay_coap_msg_t *
-_anjay_coap_msg_build_without_payload(anjay_coap_aligned_msg_buffer_t *buffer,
+avs_coap_msg_build_without_payload(anjay_coap_aligned_msg_buffer_t *buffer,
                                       size_t buffer_size,
                                       const anjay_coap_msg_info_t *info) {
     anjay_coap_msg_builder_t builder;
-    if (_anjay_coap_msg_builder_init(&builder, buffer, buffer_size, info)) {
+    if (avs_coap_msg_builder_init(&builder, buffer, buffer_size, info)) {
         assert(0 && "could not initialize msg builder");
         return NULL;
     }
 
-    return _anjay_coap_msg_builder_get_msg(&builder);
+    return avs_coap_msg_builder_get_msg(&builder);
 }
 
 

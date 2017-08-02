@@ -217,7 +217,7 @@ static size_t entry_size(const cache_entry_t *entry) {
 }
 
 static uint16_t entry_id(const cache_entry_t *entry) {
-    return _anjay_coap_msg_get_id(entry_msg(entry));
+    return avs_coap_msg_get_id(entry_msg(entry));
 }
 
 static const cache_entry_t *entry_next(const cache_entry_t *entry) {
@@ -309,7 +309,7 @@ int _anjay_coap_msg_cache_add(coap_msg_cache_t *cache,
     clock_gettime(CLOCK_MONOTONIC, &now);
     cache_drop_expired(cache, &now);
 
-    uint16_t msg_id = _anjay_coap_msg_get_id(msg);
+    uint16_t msg_id = avs_coap_msg_get_id(msg);
     if (find_entry(cache, remote_addr, remote_port, msg_id)) {
         LOG(DEBUG, "msg_cache: message ID %u already in cache", msg_id);
         return ANJAY_COAP_MSG_CACHE_DUPLICATE;
@@ -324,7 +324,7 @@ int _anjay_coap_msg_cache_add(coap_msg_cache_t *cache,
 
     struct timespec expiration_time = now;
     const struct timespec exchange_lifetime =
-            _anjay_coap_exchange_lifetime(tx_params);
+            avs_coap_exchange_lifetime(tx_params);
     avs_time_add(&expiration_time, &exchange_lifetime);
 
     cache_put_entry(cache, &expiration_time, ep, msg);
@@ -381,7 +381,7 @@ void _anjay_coap_msg_cache_debug_print(const coap_msg_cache_t *cache) {
         LOG(DEBUG, "expiration time: %zd:%09zu",
             (ssize_t) entry->expiration_time.tv_sec,
             (size_t) entry->expiration_time.tv_nsec);
-        _anjay_coap_msg_debug_print(entry_msg(entry));
+        avs_coap_msg_debug_print(entry_msg(entry));
     }
 }
 

@@ -30,7 +30,7 @@ static void append_header(anjay_coap_msg_buffer_t *buffer,
                           anjay_coap_msg_type_t msg_type,
                           uint8_t msg_code,
                           uint16_t msg_id) {
-    _anjay_coap_msg_header_set_type(&buffer->msg->header, msg_type);
+    avs_coap_msg_header_set_type(&buffer->msg->header, msg_type);
     _anjay_coap_msg_header_set_version(&buffer->msg->header, 1);
     _anjay_coap_msg_header_set_token_length(&buffer->msg->header, 0);
 
@@ -163,7 +163,7 @@ static int append_option(anjay_coap_msg_buffer_t *buffer,
     return 0;
 }
 
-int _anjay_coap_msg_builder_init(anjay_coap_msg_builder_t *builder,
+int avs_coap_msg_builder_init(anjay_coap_msg_builder_t *builder,
                                  anjay_coap_aligned_msg_buffer_t *buffer,
                                  size_t buffer_size_bytes,
                                  const anjay_coap_msg_info_t *header) {
@@ -175,17 +175,17 @@ int _anjay_coap_msg_builder_init(anjay_coap_msg_builder_t *builder,
         }
     };
 
-    return _anjay_coap_msg_builder_reset(builder, header);
+    return avs_coap_msg_builder_reset(builder, header);
 }
 
 int
-_anjay_coap_msg_builder_reset(anjay_coap_msg_builder_t *builder,
+avs_coap_msg_builder_reset(anjay_coap_msg_builder_t *builder,
                               const anjay_coap_msg_info_t *header) {
     if (builder->msg_buffer.capacity
-            < _anjay_coap_msg_info_get_headers_size(header)) {
+            < avs_coap_msg_info_get_headers_size(header)) {
         LOG(ERROR, "message buffer too small: %u/%u B available",
             (unsigned) builder->msg_buffer.capacity,
-            (unsigned) _anjay_coap_msg_info_get_storage_size(header));
+            (unsigned) avs_coap_msg_info_get_storage_size(header));
         return -1;
     }
 
@@ -215,7 +215,7 @@ _anjay_coap_msg_builder_reset(anjay_coap_msg_builder_t *builder,
     return 0;
 }
 
-size_t _anjay_coap_msg_builder_payload_remaining(
+size_t avs_coap_msg_builder_payload_remaining(
         const anjay_coap_msg_builder_t *builder) {
     size_t total_bytes_remaining = bytes_remaining(&builder->msg_buffer);
     if (total_bytes_remaining && !builder->has_payload_marker) {
@@ -224,11 +224,11 @@ size_t _anjay_coap_msg_builder_payload_remaining(
     return total_bytes_remaining;
 }
 
-size_t _anjay_coap_msg_builder_payload(anjay_coap_msg_builder_t *builder,
+size_t avs_coap_msg_builder_payload(anjay_coap_msg_builder_t *builder,
                                        const void *payload,
                                        size_t payload_size) {
-    assert(_anjay_coap_msg_builder_is_initialized(builder)
-           && "_anjay_coap_msg_builder_payload called on uninitialized builder");
+    assert(avs_coap_msg_builder_is_initialized(builder)
+           && "avs_coap_msg_builder_payload called on uninitialized builder");
 
     if (payload_size == 0) {
         return 0;
@@ -238,7 +238,7 @@ size_t _anjay_coap_msg_builder_payload(anjay_coap_msg_builder_t *builder,
     size_t bytes_to_write = 0;
     {
         size_t msg_builder_payload_remaining =
-                _anjay_coap_msg_builder_payload_remaining(builder);
+                avs_coap_msg_builder_payload_remaining(builder);
         bytes_to_write = AVS_MIN(payload_size, msg_builder_payload_remaining);
     }
     if (!builder->has_payload_marker && bytes_to_write) {
@@ -256,7 +256,7 @@ size_t _anjay_coap_msg_builder_payload(anjay_coap_msg_builder_t *builder,
 }
 
 const anjay_coap_msg_t *
-_anjay_coap_msg_builder_get_msg(const anjay_coap_msg_builder_t *builder) {
+avs_coap_msg_builder_get_msg(const anjay_coap_msg_builder_t *builder) {
     return builder->msg_buffer.msg;
 }
 

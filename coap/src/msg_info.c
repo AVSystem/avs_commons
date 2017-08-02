@@ -32,10 +32,10 @@ const anjay_coap_msg_t _ANJAY_COAP_EMPTY_MSG_TEMPLATE = {
 };
 
 void
-_anjay_coap_msg_info_reset(anjay_coap_msg_info_t *info) {
+avs_coap_msg_info_reset(anjay_coap_msg_info_t *info) {
     AVS_LIST_CLEAR(&info->options_);
 
-    *info = _anjay_coap_msg_info_init();
+    *info = avs_coap_msg_info_init();
 }
 
 static size_t
@@ -57,28 +57,28 @@ get_options_size_bytes(const AVS_LIST(anjay_coap_msg_info_opt_t) opts) {
 }
 
 size_t
-_anjay_coap_msg_info_get_headers_size(const anjay_coap_msg_info_t *info) {
+avs_coap_msg_info_get_headers_size(const anjay_coap_msg_info_t *info) {
     return sizeof(anjay_coap_msg_header_t)
            + info->identity.token_size
            + get_options_size_bytes(info->options_);
 }
 
 size_t
-_anjay_coap_msg_info_get_storage_size(const anjay_coap_msg_info_t *info) {
+avs_coap_msg_info_get_storage_size(const anjay_coap_msg_info_t *info) {
     return offsetof(anjay_coap_msg_t, content)
            + ANJAY_COAP_MAX_TOKEN_LENGTH
            + get_options_size_bytes(info->options_);
 }
 
 size_t
-_anjay_coap_msg_info_get_packet_storage_size(const anjay_coap_msg_info_t *info,
+avs_coap_msg_info_get_packet_storage_size(const anjay_coap_msg_info_t *info,
                                              size_t payload_size) {
-    return _anjay_coap_msg_info_get_storage_size(info)
+    return avs_coap_msg_info_get_storage_size(info)
            + (payload_size ? sizeof(ANJAY_COAP_PAYLOAD_MARKER) + payload_size
                            : 0);
 }
 
-void _anjay_coap_msg_info_opt_remove_by_number(anjay_coap_msg_info_t *info,
+void avs_coap_msg_info_opt_remove_by_number(anjay_coap_msg_info_t *info,
                                                uint16_t option_number) {
     anjay_coap_msg_info_opt_t **opt;
     anjay_coap_msg_info_opt_t *helper;
@@ -91,13 +91,13 @@ void _anjay_coap_msg_info_opt_remove_by_number(anjay_coap_msg_info_t *info,
     }
 }
 
-int _anjay_coap_msg_info_opt_content_format(anjay_coap_msg_info_t *info,
+int avs_coap_msg_info_opt_content_format(anjay_coap_msg_info_t *info,
                                             uint16_t format) {
     if (format == ANJAY_COAP_FORMAT_NONE) {
         return 0;
     }
 
-    return _anjay_coap_msg_info_opt_u16(info, ANJAY_COAP_OPT_CONTENT_FORMAT,
+    return avs_coap_msg_info_opt_u16(info, ANJAY_COAP_OPT_CONTENT_FORMAT,
                                         format);
 }
 
@@ -139,21 +139,21 @@ static int add_block_opt(anjay_coap_msg_info_t *info,
     uint32_t value = ((seq_number & 0x000fffff) << 4)
                    | ((uint32_t)is_last_chunk << 3)
                    | (uint32_t)size_exponent;
-    return _anjay_coap_msg_info_opt_u32(info, option_number, value);
+    return avs_coap_msg_info_opt_u32(info, option_number, value);
 }
 
-int _anjay_coap_msg_info_opt_block(anjay_coap_msg_info_t *info,
+int avs_coap_msg_info_opt_block(anjay_coap_msg_info_t *info,
                                    const coap_block_info_t *block) {
     if (!block->valid) {
         LOG(ERROR, "could not add invalid BLOCK option");
         return -1;
     }
 
-    return add_block_opt(info, _anjay_coap_opt_num_from_block_type(block->type),
+    return add_block_opt(info, avs_coap_opt_num_from_block_type(block->type),
                          block->seq_num, block->has_more, block->size);
 }
 
-int _anjay_coap_msg_info_opt_opaque(anjay_coap_msg_info_t *info,
+int avs_coap_msg_info_opt_opaque(anjay_coap_msg_info_t *info,
                                     uint16_t opt_number,
                                     const void *opt_data,
                                     uint16_t opt_data_size) {
@@ -179,7 +179,7 @@ int _anjay_coap_msg_info_opt_opaque(anjay_coap_msg_info_t *info,
     return 0;
 }
 
-int _anjay_coap_msg_info_opt_string(anjay_coap_msg_info_t *info,
+int avs_coap_msg_info_opt_string(anjay_coap_msg_info_t *info,
                                     uint16_t opt_number,
                                     const char *opt_data) {
     size_t size = strlen(opt_data);
@@ -187,16 +187,16 @@ int _anjay_coap_msg_info_opt_string(anjay_coap_msg_info_t *info,
         return -1;
     }
 
-    return _anjay_coap_msg_info_opt_opaque(info, opt_number,
+    return avs_coap_msg_info_opt_opaque(info, opt_number,
                                            opt_data, (uint16_t)size);
 }
 
-int _anjay_coap_msg_info_opt_empty(anjay_coap_msg_info_t *info,
+int avs_coap_msg_info_opt_empty(anjay_coap_msg_info_t *info,
                                    uint16_t opt_number) {
-    return _anjay_coap_msg_info_opt_opaque(info, opt_number, "", 0);
+    return avs_coap_msg_info_opt_opaque(info, opt_number, "", 0);
 }
 
-int _anjay_coap_msg_info_opt_uint(anjay_coap_msg_info_t *info,
+int avs_coap_msg_info_opt_uint(anjay_coap_msg_info_t *info,
                                   uint16_t opt_number,
                                   const void *value,
                                   size_t value_size) {
@@ -212,7 +212,7 @@ int _anjay_coap_msg_info_opt_uint(anjay_coap_msg_info_t *info,
     while (start < value_size && !converted[start]) {
         ++start;
     }
-    return _anjay_coap_msg_info_opt_opaque(
+    return avs_coap_msg_info_opt_opaque(
             info, opt_number, &converted[start],
             (uint16_t) (value_size - start));
 }

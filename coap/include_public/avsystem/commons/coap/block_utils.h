@@ -32,7 +32,7 @@ typedef enum {
 } coap_block_type_t;
 
 static inline uint16_t
-_anjay_coap_opt_num_from_block_type(coap_block_type_t type) {
+avs_coap_opt_num_from_block_type(coap_block_type_t type) {
     return type == COAP_BLOCK1 ? ANJAY_COAP_OPT_BLOCK1 : ANJAY_COAP_OPT_BLOCK2;
 }
 
@@ -60,11 +60,11 @@ typedef struct coap_block_info {
  * |      Not present      |       0        |      false      |
  * +-----------------------+----------------+-----------------+
  */
-int _anjay_coap_get_block_info(const anjay_coap_msg_t *msg,
+int avs_coap_get_block_info(const anjay_coap_msg_t *msg,
                                coap_block_type_t type,
                                coap_block_info_t *out_info);
 
-bool _anjay_coap_is_valid_block_size(uint16_t size);
+bool avs_coap_is_valid_block_size(uint16_t size);
 
 
 #endif // ANJAY_COAP_BLOCK_UTILS_H
