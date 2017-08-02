@@ -12,6 +12,8 @@
 
 #include <avsystem/commons/defs.h>
 
+#include <stdbool.h>
+
 #ifdef	__cplusplus
 extern "C" {
 #endif
@@ -27,6 +29,11 @@ extern "C" {
  * thread-safe.
  */
 int avs_rand_r(unsigned int *seed);
+
+/** Tests whether @p value is a power of two */
+static inline bool avs_is_power_of_2(size_t value) {
+    return value > 0 && !(value & (value - 1));
+}
 
 #ifdef	__cplusplus
 }
