@@ -317,6 +317,8 @@ const char *_anjay_coap_msg_summary(const anjay_coap_msg_t *msg,
 #define ANJAY_COAP_MSG_SUMMARY(Msg) \
         _anjay_coap_msg_summary((Msg), &(char[256]){0}[0], 256)
 
+uint8_t
+_anjay_coap_msg_header_get_token_length(const anjay_coap_msg_header_t *hdr);
 
 #endif // ANJAY_COAP_MSG_H
 

@@ -195,5 +195,4 @@ static inline int _anjay_coap_msg_info_opt_u32(anjay_coap_msg_info_t *info,
                                          &value, sizeof(value));
 }
 
-
 #endif // ANJAY_COAP_MSGINFO_H

@@ -43,14 +43,6 @@ _anjay_coap_msg_header_set_version(anjay_coap_msg_header_t *hdr,
                     ANJAY_COAP_HEADER_VERSION_SHIFT, version);
 }
 
-static inline uint8_t
-_anjay_coap_msg_header_get_token_length(const anjay_coap_msg_header_t *hdr) {
-    int val = ANJAY_FIELD_GET(hdr->version_type_token_length,
-                              ANJAY_COAP_HEADER_TOKEN_LENGTH_MASK,
-                              ANJAY_COAP_HEADER_TOKEN_LENGTH_SHIFT);
-    assert(val >= 0 && val <= ANJAY_COAP_HEADER_TOKEN_LENGTH_MASK);
-    return (uint8_t)val;
-}
 static inline void
 _anjay_coap_msg_header_set_token_length(anjay_coap_msg_header_t *hdr,
                                         uint8_t token_length) {
