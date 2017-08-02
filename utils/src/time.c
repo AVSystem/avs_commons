@@ -27,6 +27,16 @@ bool avs_time_is_valid(const struct timespec *t) {
     return (t->tv_nsec >= 0 && t->tv_nsec < NS_IN_S);
 }
 
+static inline void normalize(struct timespec *inout) {
+    if (inout->tv_nsec < 0) {
+        inout->tv_nsec += NS_IN_S;
+        inout->tv_sec--;
+    } else if (inout->tv_nsec >= NS_IN_S) {
+        inout->tv_nsec -= NS_IN_S;
+        inout->tv_sec++;
+    }
+}
+
 void avs_time_add(struct timespec *result, const struct timespec *duration) {
     if (!avs_time_is_valid(result) || !avs_time_is_valid(duration)) {
         result->tv_sec = 0;
@@ -35,10 +45,7 @@ void avs_time_add(struct timespec *result, const struct timespec *duration) {
         result->tv_sec += duration->tv_sec;
         result->tv_nsec += duration->tv_nsec;
 
-        if (result->tv_nsec >= NS_IN_S) {
-            result->tv_nsec -= NS_IN_S;
-            ++result->tv_sec;
-        }
+        normalize(result);
     }
 
     assert(avs_time_is_valid(result));
@@ -51,10 +58,7 @@ void avs_time_diff(struct timespec *result,
     assert(avs_time_is_valid(result));
     result->tv_sec = minuend->tv_sec - subtrahend->tv_sec;
     result->tv_nsec = minuend->tv_nsec - subtrahend->tv_nsec;
-    if (result->tv_nsec < 0) {
-        result->tv_nsec += NS_IN_S;
-        --result->tv_sec;
-    }
+    normalize(result);
 
     assert(avs_time_is_valid(result));
 }
@@ -69,10 +73,7 @@ ssize_t avs_time_diff_ms(const struct timespec *minuend,
 void avs_time_from_ms(struct timespec *result, int32_t ms) {
     result->tv_sec = (time_t) (ms / 1000);
     result->tv_nsec = (ms % 1000) * 1000000L;
-    if (result->tv_nsec < 0) {
-        result->tv_nsec += NS_IN_S;
-        --result->tv_sec;
-    }
+    normalize(result);
 
     assert(avs_time_is_valid(result));
 }
@@ -93,16 +94,14 @@ void avs_time_add_ms(struct timespec *result, int32_t ms) {
 void avs_time_div(struct timespec *result,
                   const struct timespec *dividend,
                   uint32_t divisor) {
-    time_t s_rest = (time_t) (dividend->tv_sec % (int64_t) divisor);
+    assert(avs_time_is_valid(dividend));
+    time_t s_rest = (time_t)(dividend->tv_sec % (int64_t) divisor);
     result->tv_sec = (time_t)(dividend->tv_sec / (int64_t) divisor);
     result->tv_nsec = (long)(((double)dividend->tv_nsec
                                 + (double)s_rest * NS_IN_S)
                              / divisor);
 
-    if (result->tv_nsec < 0) {
-        result->tv_nsec += NS_IN_S;
-        --result->tv_sec;
-    }
+    normalize(result);
 
     assert(avs_time_is_valid(result));
 }
