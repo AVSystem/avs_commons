@@ -13,6 +13,8 @@
 
 #include <config.h>
 
+#include <avsystem/commons/utils.h>
+
 #ifdef WITH_LWIP
 #   include "lwip_compat.h"
 #else /* WITH_LWIP */
@@ -220,24 +222,6 @@ typedef struct {
     volatile int error_code;
 } avs_net_socket_t;
 
-static inline int
-simple_snprintf(char *out, size_t size, const char *format, ...)
-AVS_F_PRINTF(3, 4);
-
-/**
- * Contrary to standard snprintf(), this one will always return negative if not
- * fully successful.
- */
-static inline int
-simple_snprintf(char *out, size_t size, const char *format, ...) {
-    assert(out || !size);
-    va_list args;
-    va_start(args, format);
-    int result = vsnprintf(out, size, format, args);
-    va_end(args);
-    return (result >= 0 && (size_t) result >= size) ? -1 : 0;
-}
-
 int _avs_net_get_af(avs_net_af_t addr_family) {
     switch (addr_family) {
 #ifdef WITH_IPV4
@@ -326,7 +310,7 @@ static int get_string_port(const sockaddr_union_t *addr,
             return -1;
     }
 
-    return simple_snprintf(buffer, buffer_size, "%u", ntohs(port));
+    return avs_simple_snprintf(buffer, buffer_size, "%u", ntohs(port));
 }
 
 static int remote_host_net(avs_net_abstract_socket_t *socket,
@@ -353,8 +337,8 @@ static int remote_hostname_net(avs_net_abstract_socket_t *socket_,
         socket->error_code = (socket->socket < 0 ? EBADF : ENOBUFS);
         return -1;
     }
-    if (simple_snprintf(out_buffer, out_buffer_size,
-                        "%s", socket->remote_hostname)) {
+    if (avs_simple_snprintf(out_buffer, out_buffer_size, "%s",
+                            socket->remote_hostname)) {
         socket->error_code = ERANGE;
         return -1;
     } else {
@@ -370,8 +354,8 @@ static int remote_port_net(avs_net_abstract_socket_t *socket_,
         socket->error_code = (socket->socket < 0 ? EBADF : ENOBUFS);
         return -1;
     }
-    if (simple_snprintf(out_buffer, out_buffer_size,
-                        "%s", socket->remote_port)) {
+    if (avs_simple_snprintf(out_buffer, out_buffer_size, "%s",
+                            socket->remote_port)) {
         socket->error_code = ERANGE;
         return -1;
     } else {
@@ -685,7 +669,7 @@ static int host_port_to_string(const struct sockaddr *sa, socklen_t salen,
                     ? -1 : 0);
         }
         if (!result && serv) {
-            result = simple_snprintf(serv, servlen, "%" PRIu16, *port_ptr);
+            result = avs_simple_snprintf(serv, servlen, "%" PRIu16, *port_ptr);
         }
     }
 #endif /* HAVE_GETNAMEINFO */
@@ -838,15 +822,15 @@ static int connect_net(avs_net_abstract_socket_t *net_socket_,
             if (!try_connect(net_socket, &address)) {
                 avs_net_addrinfo_delete(&info);
 
-                if (simple_snprintf(net_socket->remote_hostname,
-                                    sizeof(net_socket->remote_hostname),
-                                    "%s", host)) {
+                if (avs_simple_snprintf(net_socket->remote_hostname,
+                                        sizeof(net_socket->remote_hostname),
+                                        "%s", host)) {
                     LOG(WARNING, "Hostname %s is too long, not storing", host);
                     net_socket->remote_hostname[0] = '\0';
                 }
-                if (simple_snprintf(net_socket->remote_port,
-                                    sizeof(net_socket->remote_port),
-                                    "%s", port)) {
+                if (avs_simple_snprintf(net_socket->remote_port,
+                                        sizeof(net_socket->remote_port), "%s",
+                                        port)) {
                     LOG(WARNING, "Port %s is too long, not storing", port);
                     net_socket->remote_hostname[0] = '\0';
                 }
@@ -1527,8 +1511,8 @@ static int find_interface(const struct sockaddr *addr,
     do { \
         if ((TriedAddr) && (TriedName) \
                 && ifaddr_ip_equal(addr, (TriedAddr)) == 0) { \
-            retval = simple_snprintf(*if_name, sizeof(*if_name), \
-                                     "%s", (TriedName)); \
+            retval = avs_simple_snprintf(*if_name, sizeof(*if_name), \
+                                         "%s", (TriedName)); \
             goto interface_name_end; \
         } \
     } while (0)
