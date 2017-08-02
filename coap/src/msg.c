@@ -77,9 +77,10 @@ const char *_anjay_coap_msg_code_to_string(uint8_t code,
         }
     }
 
-    if (_anjay_snprintf(buf, buf_size, "%u.%02u %s",
-                        _anjay_coap_msg_code_get_class(&code),
-                        _anjay_coap_msg_code_get_detail(&code), name) < 0) {
+    if (avs_simple_snprintf(buf, buf_size, "%u.%02u %s",
+                            _anjay_coap_msg_code_get_class(&code),
+                            _anjay_coap_msg_code_get_detail(&code), name)
+            < 0) {
         assert(0 && "buffer too small for CoAP msg code string");
         return "<error>";
     }
@@ -296,8 +297,8 @@ static void fill_block_summary(const anjay_coap_msg_t *msg,
 
     const anjay_coap_opt_t *opt;
     if (_anjay_coap_msg_find_unique_opt(msg, block_opt_num, &opt)) {
-        if (opt && _anjay_snprintf(buf, buf_size,
-                                   ", multiple BLOCK%d options", num) < 0) {
+        if (opt && avs_simple_snprintf(buf, buf_size,
+                                       ", multiple BLOCK%d options", num) < 0) {
            assert(0 && "should never happen");
            *buf = '\0';
         }
@@ -310,7 +311,8 @@ static void fill_block_summary(const anjay_coap_msg_t *msg,
 
     if (_anjay_coap_opt_block_seq_number(opt, &seq_num)
             || _anjay_coap_opt_block_has_more(opt, &has_more)) {
-        if (_anjay_snprintf(buf, buf_size, ", BLOCK%d (bad content)", num) < 0) {
+        if (avs_simple_snprintf(buf, buf_size, ", BLOCK%d (bad content)", num)
+                < 0) {
             assert(0 && "should never happen");
             *buf = '\0';
         }
@@ -318,15 +320,18 @@ static void fill_block_summary(const anjay_coap_msg_t *msg,
     }
 
     if (_anjay_coap_opt_block_size(opt, &block_size)) {
-        if (_anjay_snprintf(buf, buf_size, ", BLOCK%d (bad size)", num) < 0) {
+        if (avs_simple_snprintf(buf, buf_size, ", BLOCK%d (bad size)", num)
+                < 0) {
             assert(0 && "should never happen");
             *buf = '\0';
         }
         return;
     }
 
-    if (_anjay_snprintf(buf, buf_size, ", BLOCK%d (seq %u, size %u, more %d)",
-                        num, seq_num, block_size, (int)has_more) < 0) {
+    if (avs_simple_snprintf(buf, buf_size,
+                            ", BLOCK%d (seq %u, size %u, more %d)", num,
+                            seq_num, block_size, (int) has_more)
+            < 0) {
         assert(0 && "should never happen");
         *buf = '\0';
     }
@@ -351,7 +356,7 @@ const char *_anjay_coap_msg_summary(const anjay_coap_msg_t *msg,
     char block2[64] = "";
     fill_block_summary(msg, ANJAY_COAP_OPT_BLOCK2, block2, sizeof(block2));
 
-    if (_anjay_snprintf(
+    if (avs_simple_snprintf(
              buf, buf_size, "%s, %s, id %u, token %s (%luB)%s%s",
              ANJAY_COAP_CODE_STRING(msg->header.code),
              msg_type_string(_anjay_coap_msg_header_get_type(&msg->header)),
@@ -365,5 +370,5 @@ const char *_anjay_coap_msg_summary(const anjay_coap_msg_t *msg,
 }
 
 #ifdef ANJAY_TEST
-utils.h"st/msg.c"
+"test/msg.c"
 #endif // ANJAY_TEST

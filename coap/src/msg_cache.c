@@ -25,9 +25,7 @@
 #include <avsystem/commons/defs.h>
 #include <avsystem/commons/list.h>
 #include <avsystem/commons/time.h>
-
-//#include <anjay_modules/time.h>
-//#include <anjay_modules/utils.h>
+#include <avsystem/commons/utils.h>
 
 #include <avsystem/commons/coap/msg.h>
 
@@ -112,10 +110,10 @@ static endpoint_t *cache_endpoint_add_ref(coap_msg_cache_t *cache,
         return NULL;
     }
 
-    if (_anjay_snprintf(new_ep->addr, sizeof(new_ep->addr), "%s",
-                        remote_addr) < 0
-            || _anjay_snprintf(new_ep->port, sizeof(new_ep->port), "%s",
-                               remote_port) < 0) {
+    if (avs_simple_snprintf(new_ep->addr, sizeof(new_ep->addr), "%s",
+                            remote_addr) < 0
+            || avs_simple_snprintf(new_ep->port, sizeof(new_ep->port), "%s",
+                                   remote_port) < 0) {
         coap_log(WARNING, "endpoint address or port too long: addr = %s, "
                  "port = %s", remote_addr, remote_port);
         AVS_LIST_DELETE(&new_ep);

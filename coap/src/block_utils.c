@@ -18,7 +18,7 @@
 
 #include <avsystem/commons/coap/block_utils.h>
 #include <avsystem/commons/coap/msg_opt.h>
-// For _anjay_is_power_of_2
+// For avs_is_power_of_2
 #include <avsystem/commons/utils.h>
 
 #include "log.h"
@@ -52,7 +52,7 @@ int _anjay_coap_get_block_info(const anjay_coap_msg_t *msg,
 }
 
 bool _anjay_coap_is_valid_block_size(uint16_t size) {
-    return _anjay_is_power_of_2(size)
+    return avs_is_power_of_2(size)
             && size <= ANJAY_COAP_MSG_BLOCK_MAX_SIZE
             && size >= ANJAY_COAP_MSG_BLOCK_MIN_SIZE;
 }
