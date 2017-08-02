@@ -22,45 +22,45 @@
 
 #define AVS_COAP_OPTION_MISSING 1
 
-typedef bool anjay_coap_critical_option_validator_t(uint8_t msg_code,
+typedef bool avs_coap_critical_option_validator_t(uint8_t msg_code,
                                                            uint32_t optnum);
 
-int avs_coap_msg_find_unique_opt(const anjay_coap_msg_t *msg,
+int avs_coap_msg_find_unique_opt(const avs_coap_msg_t *msg,
                                     uint16_t opt_number,
-                                    const anjay_coap_opt_t **out_opt);
+                                    const avs_coap_opt_t **out_opt);
 
-int avs_coap_msg_get_option_uint(const anjay_coap_msg_t *msg,
+int avs_coap_msg_get_option_uint(const avs_coap_msg_t *msg,
                                     uint16_t option_number,
                                     void *out_fmt,
                                     size_t out_fmt_size);
 
-static inline int avs_coap_msg_get_option_u16(const anjay_coap_msg_t *msg,
+static inline int avs_coap_msg_get_option_u16(const avs_coap_msg_t *msg,
                                                  uint16_t option_number,
                                                  uint16_t *out_value) {
     return avs_coap_msg_get_option_uint(msg, option_number,
                                            out_value, sizeof(*out_value));
 }
 
-static inline int avs_coap_msg_get_option_u32(const anjay_coap_msg_t *msg,
+static inline int avs_coap_msg_get_option_u32(const avs_coap_msg_t *msg,
                                                  uint16_t option_number,
                                                  uint32_t *out_value) {
     return avs_coap_msg_get_option_uint(msg, option_number,
                                            out_value, sizeof(*out_value));
 }
 
-int avs_coap_msg_get_option_string_it(const anjay_coap_msg_t *msg,
+int avs_coap_msg_get_option_string_it(const avs_coap_msg_t *msg,
                                          uint16_t option_number,
-                                         anjay_coap_opt_iterator_t *it,
+                                         avs_coap_opt_iterator_t *it,
                                          size_t *out_bytes_read,
                                          char *buffer,
                                          size_t buffer_size);
 
-int avs_coap_msg_get_content_format(const anjay_coap_msg_t *msg,
+int avs_coap_msg_get_content_format(const avs_coap_msg_t *msg,
                                        uint16_t *out_value);
 
 int avs_coap_msg_validate_critical_options(
-        const anjay_coap_msg_t *msg,
-        anjay_coap_critical_option_validator_t validator);
+        const avs_coap_msg_t *msg,
+        avs_coap_critical_option_validator_t validator);
 
 
 #endif // AVS_COMMONS_COAP_MSG_OPT_H

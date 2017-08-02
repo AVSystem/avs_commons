@@ -20,7 +20,7 @@
 
 AVS_UNIT_TEST(coap_opt, sizeof) {
     uint8_t buffer[512] = "";
-    const anjay_coap_opt_t *opt = (const anjay_coap_opt_t*)buffer;
+    const avs_coap_opt_t *opt = (const avs_coap_opt_t*)buffer;
 
     buffer[0] = 0x00;
     // header byte + extended delta + extended length + value

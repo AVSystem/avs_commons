@@ -26,8 +26,8 @@
 
 #pragma GCC visibility push(hidden)
 
-static void append_header(anjay_coap_msg_buffer_t *buffer,
-                          anjay_coap_msg_type_t msg_type,
+static void append_header(avs_coap_msg_buffer_t *buffer,
+                          avs_coap_msg_type_t msg_type,
                           uint8_t msg_code,
                           uint16_t msg_id) {
     avs_coap_msg_header_set_type(&buffer->msg->header, msg_type);
@@ -39,17 +39,17 @@ static void append_header(anjay_coap_msg_buffer_t *buffer,
            sizeof(buffer->msg->header.message_id));
 }
 
-static uint8_t *msg_end_ptr(const anjay_coap_msg_buffer_t *buffer) {
+static uint8_t *msg_end_ptr(const avs_coap_msg_buffer_t *buffer) {
     return &buffer->msg->content[buffer->msg->length
                                   - sizeof(buffer->msg->header)];
 }
 
-static size_t bytes_remaining(const anjay_coap_msg_buffer_t *buffer) {
+static size_t bytes_remaining(const avs_coap_msg_buffer_t *buffer) {
     return buffer->capacity
            - sizeof(buffer->msg->length) - buffer->msg->length;
 }
 
-static int append_data(anjay_coap_msg_buffer_t *buffer,
+static int append_data(avs_coap_msg_buffer_t *buffer,
                        const void *data,
                        size_t data_size) {
     if (data_size > bytes_remaining(buffer)) {
@@ -63,13 +63,13 @@ static int append_data(anjay_coap_msg_buffer_t *buffer,
     return 0;
 }
 
-static int append_byte(anjay_coap_msg_buffer_t *buffer,
+static int append_byte(avs_coap_msg_buffer_t *buffer,
                        uint8_t value) {
     return append_data(buffer, &value, sizeof(value));
 }
 
-static int append_token(anjay_coap_msg_buffer_t *buffer,
-                         const anjay_coap_token_t *token,
+static int append_token(avs_coap_msg_buffer_t *buffer,
+                         const avs_coap_token_t *token,
                          size_t token_length) {
     assert(token_length <= AVS_COAP_MAX_TOKEN_LENGTH);
 
@@ -108,7 +108,7 @@ static inline size_t encode_ext_value(uint8_t *ptr,
 static inline size_t opt_write_header(uint8_t *ptr,
                                       uint16_t opt_number_delta,
                                       uint16_t opt_length) {
-    anjay_coap_opt_t *opt = (anjay_coap_opt_t *)ptr;
+    avs_coap_opt_t *opt = (avs_coap_opt_t *)ptr;
     ptr = opt->content;
 
     if (opt_number_delta >= AVS_COAP_EXT_U16_BASE) {
@@ -134,7 +134,7 @@ static inline size_t opt_write_header(uint8_t *ptr,
 }
 
 
-static int append_option(anjay_coap_msg_buffer_t *buffer,
+static int append_option(avs_coap_msg_buffer_t *buffer,
                          uint16_t opt_number_delta,
                          const void *opt_data,
                          uint16_t opt_data_size) {
@@ -163,14 +163,14 @@ static int append_option(anjay_coap_msg_buffer_t *buffer,
     return 0;
 }
 
-int avs_coap_msg_builder_init(anjay_coap_msg_builder_t *builder,
-                                 anjay_coap_aligned_msg_buffer_t *buffer,
+int avs_coap_msg_builder_init(avs_coap_msg_builder_t *builder,
+                                 avs_coap_aligned_msg_buffer_t *buffer,
                                  size_t buffer_size_bytes,
-                                 const anjay_coap_msg_info_t *header) {
-    *builder = (anjay_coap_msg_builder_t){
+                                 const avs_coap_msg_info_t *header) {
+    *builder = (avs_coap_msg_builder_t){
         .has_payload_marker = false,
         .msg_buffer = {
-            .msg = (anjay_coap_msg_t *)buffer,
+            .msg = (avs_coap_msg_t *)buffer,
             .capacity = buffer_size_bytes
         }
     };
@@ -179,8 +179,8 @@ int avs_coap_msg_builder_init(anjay_coap_msg_builder_t *builder,
 }
 
 int
-avs_coap_msg_builder_reset(anjay_coap_msg_builder_t *builder,
-                              const anjay_coap_msg_info_t *header) {
+avs_coap_msg_builder_reset(avs_coap_msg_builder_t *builder,
+                              const avs_coap_msg_info_t *header) {
     if (builder->msg_buffer.capacity
             < avs_coap_msg_info_get_headers_size(header)) {
         LOG(ERROR, "message buffer too small: %u/%u B available",
@@ -199,7 +199,7 @@ avs_coap_msg_builder_reset(anjay_coap_msg_builder_t *builder,
         return -1;
     }
 
-    anjay_coap_msg_info_opt_t *opt;
+    avs_coap_msg_info_opt_t *opt;
     uint16_t prev_opt_num = 0;
     AVS_LIST_FOREACH(opt, header->options_) {
         assert(prev_opt_num <= opt->number);
@@ -216,7 +216,7 @@ avs_coap_msg_builder_reset(anjay_coap_msg_builder_t *builder,
 }
 
 size_t avs_coap_msg_builder_payload_remaining(
-        const anjay_coap_msg_builder_t *builder) {
+        const avs_coap_msg_builder_t *builder) {
     size_t total_bytes_remaining = bytes_remaining(&builder->msg_buffer);
     if (total_bytes_remaining && !builder->has_payload_marker) {
         return --total_bytes_remaining;
@@ -224,7 +224,7 @@ size_t avs_coap_msg_builder_payload_remaining(
     return total_bytes_remaining;
 }
 
-size_t avs_coap_msg_builder_payload(anjay_coap_msg_builder_t *builder,
+size_t avs_coap_msg_builder_payload(avs_coap_msg_builder_t *builder,
                                        const void *payload,
                                        size_t payload_size) {
     assert(avs_coap_msg_builder_is_initialized(builder)
@@ -255,8 +255,8 @@ size_t avs_coap_msg_builder_payload(anjay_coap_msg_builder_t *builder,
     return bytes_to_write;
 }
 
-const anjay_coap_msg_t *
-avs_coap_msg_builder_get_msg(const anjay_coap_msg_builder_t *builder) {
+const avs_coap_msg_t *
+avs_coap_msg_builder_get_msg(const avs_coap_msg_builder_t *builder) {
     return builder->msg_buffer.msg;
 }
 

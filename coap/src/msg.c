@@ -88,8 +88,8 @@ const char *avs_coap_msg_code_to_string(uint8_t code,
     return buf;
 }
 
-size_t avs_coap_msg_get_token(const anjay_coap_msg_t *msg,
-                                 anjay_coap_token_t *out_token) {
+size_t avs_coap_msg_get_token(const avs_coap_msg_t *msg,
+                                 avs_coap_token_t *out_token) {
     size_t token_length = avs_coap_msg_header_get_token_length(&msg->header);
     assert(token_length <= AVS_COAP_MAX_TOKEN_LENGTH);
 
@@ -97,19 +97,19 @@ size_t avs_coap_msg_get_token(const anjay_coap_msg_t *msg,
     return token_length;
 }
 
-static const anjay_coap_opt_t *get_first_opt(const anjay_coap_msg_t *msg) {
+static const avs_coap_opt_t *get_first_opt(const avs_coap_msg_t *msg) {
     size_t token_length = avs_coap_msg_header_get_token_length(&msg->header);
     assert(token_length <= AVS_COAP_MAX_TOKEN_LENGTH);
 
-    return (const anjay_coap_opt_t *)(msg->content + token_length);
+    return (const avs_coap_opt_t *)(msg->content + token_length);
 }
 
-static bool is_payload_marker(const anjay_coap_opt_t *ptr) {
+static bool is_payload_marker(const avs_coap_opt_t *ptr) {
     return *(const uint8_t *)ptr == AVS_COAP_PAYLOAD_MARKER;
 }
 
-anjay_coap_opt_iterator_t avs_coap_opt_begin(const anjay_coap_msg_t *msg) {
-    anjay_coap_opt_iterator_t optit = {
+avs_coap_opt_iterator_t avs_coap_opt_begin(const avs_coap_msg_t *msg) {
+    avs_coap_opt_iterator_t optit = {
         .msg = msg,
         .curr_opt = get_first_opt(msg),
         .prev_opt_number = 0
@@ -118,14 +118,14 @@ anjay_coap_opt_iterator_t avs_coap_opt_begin(const anjay_coap_msg_t *msg) {
     return optit;
 }
 
-anjay_coap_opt_iterator_t *
-avs_coap_opt_next(anjay_coap_opt_iterator_t *optit) {
+avs_coap_opt_iterator_t *
+avs_coap_opt_next(avs_coap_opt_iterator_t *optit) {
     optit->prev_opt_number += avs_coap_opt_delta(optit->curr_opt);
     optit->curr_opt += avs_coap_opt_sizeof(optit->curr_opt);
     return optit;
 }
 
-bool avs_coap_opt_end(const anjay_coap_opt_iterator_t *optit) {
+bool avs_coap_opt_end(const avs_coap_opt_iterator_t *optit) {
     assert((const uint8_t *)optit->curr_opt >= optit->msg->content);
 
     size_t offset = (size_t)((const uint8_t *)optit->curr_opt
@@ -136,19 +136,19 @@ bool avs_coap_opt_end(const anjay_coap_opt_iterator_t *optit) {
            || is_payload_marker(optit->curr_opt);
 }
 
-uint32_t avs_coap_opt_number(const anjay_coap_opt_iterator_t *optit) {
+uint32_t avs_coap_opt_number(const avs_coap_opt_iterator_t *optit) {
     return optit->prev_opt_number + avs_coap_opt_delta(optit->curr_opt);
 }
 
-static const uint8_t *coap_opt_find_end(const anjay_coap_msg_t *msg) {
-    anjay_coap_opt_iterator_t optit = avs_coap_opt_begin(msg);
+static const uint8_t *coap_opt_find_end(const avs_coap_msg_t *msg) {
+    avs_coap_opt_iterator_t optit = avs_coap_opt_begin(msg);
     while (!avs_coap_opt_end(&optit)) {
         avs_coap_opt_next(&optit);
     }
     return (const uint8_t *)optit.curr_opt;
 }
 
-const void *avs_coap_msg_payload(const anjay_coap_msg_t *msg) {
+const void *avs_coap_msg_payload(const avs_coap_msg_t *msg) {
     const uint8_t *end = coap_opt_find_end(msg);
 
     if (end < (const uint8_t*)&msg->header + msg->length
@@ -159,12 +159,12 @@ const void *avs_coap_msg_payload(const anjay_coap_msg_t *msg) {
     }
 }
 
-size_t avs_coap_msg_payload_length(const anjay_coap_msg_t *msg) {
+size_t avs_coap_msg_payload_length(const avs_coap_msg_t *msg) {
     return (size_t)msg->length - (size_t)
            ((const uint8_t *)avs_coap_msg_payload(msg) - (const uint8_t *)&msg->header);
 }
 
-static bool is_header_valid(const anjay_coap_msg_t *msg) {
+static bool is_header_valid(const avs_coap_msg_t *msg) {
     uint8_t version = _avs_coap_msg_header_get_version(&msg->header);
     if (version != 1) {
         LOG(DEBUG, "unsupported CoAP version: %u", version);
@@ -187,7 +187,7 @@ static bool is_header_valid(const anjay_coap_msg_t *msg) {
     return true;
 }
 
-static bool are_options_valid(const anjay_coap_msg_t *msg) {
+static bool are_options_valid(const avs_coap_msg_t *msg) {
     size_t length_so_far = sizeof(msg->header)
             + avs_coap_msg_header_get_token_length(&msg->header);
 
@@ -195,7 +195,7 @@ static bool are_options_valid(const anjay_coap_msg_t *msg) {
         return true;
     }
 
-    anjay_coap_opt_iterator_t optit = avs_coap_opt_begin(msg);
+    avs_coap_opt_iterator_t optit = avs_coap_opt_begin(msg);
     for (; length_so_far != msg->length && !avs_coap_opt_end(&optit);
             avs_coap_opt_next(&optit)) {
         if (!avs_coap_opt_is_valid(optit.curr_opt,
@@ -231,7 +231,7 @@ static bool are_options_valid(const anjay_coap_msg_t *msg) {
     return true;
 }
 
-bool avs_coap_msg_is_valid(const anjay_coap_msg_t *msg) {
+bool avs_coap_msg_is_valid(const avs_coap_msg_t *msg) {
     if (msg->length < AVS_COAP_MSG_MIN_SIZE) {
         LOG(DEBUG, "message too short (%uB, expected >= %u)", msg->length,
             AVS_COAP_MSG_MIN_SIZE);
@@ -247,7 +247,7 @@ bool avs_coap_msg_is_valid(const anjay_coap_msg_t *msg) {
                 || msg->length == AVS_COAP_MSG_MIN_SIZE);
 }
 
-static const char *msg_type_string(anjay_coap_msg_type_t type) {
+static const char *msg_type_string(avs_coap_msg_type_t type) {
      static const char *TYPES[] = {
          "CONFIRMABLE",
          "NON_CONFIRMABLE",
@@ -258,7 +258,7 @@ static const char *msg_type_string(anjay_coap_msg_type_t type) {
      return TYPES[type];
 }
 
-void avs_coap_msg_debug_print(const anjay_coap_msg_t *msg) {
+void avs_coap_msg_debug_print(const avs_coap_msg_t *msg) {
     LOG(DEBUG, "sizeof(*msg) = %lu, sizeof(len) = %lu, sizeof(header) = %lu",
         (unsigned long) sizeof(*msg), (unsigned long) sizeof(msg->length),
         (unsigned long) sizeof(msg->header));
@@ -279,14 +279,14 @@ void avs_coap_msg_debug_print(const anjay_coap_msg_t *msg) {
     }
 
     LOG(DEBUG, "opts:");
-    for (anjay_coap_opt_iterator_t optit = avs_coap_opt_begin(msg);
+    for (avs_coap_opt_iterator_t optit = avs_coap_opt_begin(msg);
             !avs_coap_opt_end(&optit);
             avs_coap_opt_next(&optit)) {
         avs_coap_opt_debug_print(optit.curr_opt);
     }
 }
 
-static void fill_block_summary(const anjay_coap_msg_t *msg,
+static void fill_block_summary(const avs_coap_msg_t *msg,
                                uint16_t block_opt_num,
                                char *buf,
                                size_t buf_size) {
@@ -295,7 +295,7 @@ static void fill_block_summary(const anjay_coap_msg_t *msg,
 
     const int num = block_opt_num == AVS_COAP_OPT_BLOCK1 ? 1 : 2;
 
-    const anjay_coap_opt_t *opt;
+    const avs_coap_opt_t *opt;
     if (avs_coap_msg_find_unique_opt(msg, block_opt_num, &opt)) {
         if (opt && avs_simple_snprintf(buf, buf_size,
                                        ", multiple BLOCK%d options", num) < 0) {
@@ -337,12 +337,12 @@ static void fill_block_summary(const anjay_coap_msg_t *msg,
     }
 }
 
-const char *avs_coap_msg_summary(const anjay_coap_msg_t *msg,
+const char *avs_coap_msg_summary(const avs_coap_msg_t *msg,
                                     char *buf,
                                     size_t buf_size) {
     assert(avs_coap_msg_is_valid(msg));
 
-    anjay_coap_token_t token;
+    avs_coap_token_t token;
     size_t token_size = avs_coap_msg_get_token(msg, &token);
     char token_string[sizeof(token) * 2 + 1] = "";
     for (size_t i = 0; i < token_size; ++i) {
@@ -370,7 +370,7 @@ const char *avs_coap_msg_summary(const anjay_coap_msg_t *msg,
 }
 
 uint8_t
-avs_coap_msg_header_get_token_length(const anjay_coap_msg_header_t *hdr) {
+avs_coap_msg_header_get_token_length(const avs_coap_msg_header_t *hdr) {
     int val = AVS_FIELD_GET(hdr->version_type_token_length,
                               AVS_COAP_HEADER_TOKEN_LENGTH_MASK,
                               AVS_COAP_HEADER_TOKEN_LENGTH_SHIFT);

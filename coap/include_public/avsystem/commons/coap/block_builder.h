@@ -22,13 +22,13 @@
 #include <avsystem/commons/coap/msg_builder.h>
 
 
-typedef struct anjay_coap_block_builder {
+typedef struct avs_coap_block_builder {
     void *payload_buffer;
     size_t payload_capacity;
 
     size_t read_offset;
     size_t write_offset;
-} anjay_coap_block_builder_t;
+} avs_coap_block_builder_t;
 
 /**
  * Initializes a block builder object with payload stored in @p msg_builder.
@@ -38,14 +38,14 @@ typedef struct anjay_coap_block_builder {
  *
  * @returns Initialized block builder object.
  */
-anjay_coap_block_builder_t
-avs_coap_block_builder_init(anjay_coap_msg_builder_t *msg_builder);
+avs_coap_block_builder_t
+avs_coap_block_builder_init(avs_coap_msg_builder_t *msg_builder);
 
 /**
  * @returns Number of payload bytes ready to read from the block builder.
  */
 size_t avs_coap_block_builder_payload_remaining(
-        const anjay_coap_block_builder_t *builder);
+        const avs_coap_block_builder_t *builder);
 
 /**
  * Retrieves a message containing next payload block.
@@ -66,11 +66,11 @@ size_t avs_coap_block_builder_payload_remaining(
  * @returns A pointer to the message constructed inside @p buffer on success,
  *          NULL if the builder contains no payload data.
  */
-const anjay_coap_msg_t *
-avs_coap_block_builder_build(anjay_coap_block_builder_t *builder,
-                                const anjay_coap_msg_info_t *info,
+const avs_coap_msg_t *
+avs_coap_block_builder_build(avs_coap_block_builder_t *builder,
+                                const avs_coap_msg_info_t *info,
                                 size_t block_size,
-                                anjay_coap_aligned_msg_buffer_t *buffer,
+                                avs_coap_aligned_msg_buffer_t *buffer,
                                 size_t buffer_size);
 
 /**
@@ -80,7 +80,7 @@ avs_coap_block_builder_build(anjay_coap_block_builder_t *builder,
  * @param builder    Block builder object to modify.
  * @param block_size Number of payload bytes to discard.
  */
-void avs_coap_block_builder_next(anjay_coap_block_builder_t *builder,
+void avs_coap_block_builder_next(avs_coap_block_builder_t *builder,
                                     size_t block_size);
 
 /**
@@ -96,7 +96,7 @@ void avs_coap_block_builder_next(anjay_coap_block_builder_t *builder,
  *          inserted into @p builder.
  */
 size_t
-avs_coap_block_builder_append_payload(anjay_coap_block_builder_t *builder,
+avs_coap_block_builder_append_payload(avs_coap_block_builder_t *builder,
                                          const void *payload,
                                          size_t payload_size);
 

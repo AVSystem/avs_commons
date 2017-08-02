@@ -30,15 +30,15 @@
 /** A ping was received and it had been handled in a socket layer. */
 #define AVS_COAP_SOCKET_ERR_MSG_WAS_PING  (-0x5E6)
 
-typedef struct anjay_coap_socket anjay_coap_socket_t;
+typedef struct avs_coap_socket avs_coap_socket_t;
 
-int avs_coap_socket_create(anjay_coap_socket_t **sock,
+int avs_coap_socket_create(avs_coap_socket_t **sock,
                               avs_net_abstract_socket_t *backend,
                               size_t msg_cache_size);
 
-int avs_coap_socket_close(anjay_coap_socket_t *sock);
+int avs_coap_socket_close(avs_coap_socket_t *sock);
 
-void avs_coap_socket_cleanup(anjay_coap_socket_t **sock);
+void avs_coap_socket_cleanup(avs_coap_socket_t **sock);
 
 /**
  * @returns 0 on success, a negative value in case of error:
@@ -49,8 +49,8 @@ void avs_coap_socket_cleanup(anjay_coap_socket_t **sock);
  * - AVS_COAP_SOCKET_ERR_NETWORK in case of other error on a layer below the
  *   application layer
  */
-int avs_coap_socket_send(anjay_coap_socket_t *sock,
-                            const anjay_coap_msg_t *msg);
+int avs_coap_socket_send(avs_coap_socket_t *sock,
+                            const avs_coap_msg_t *msg);
 
 /**
  * @returns 0 on success, a negative value in case of error:
@@ -63,32 +63,32 @@ int avs_coap_socket_send(anjay_coap_socket_t *sock,
  * - AVS_COAP_SOCKET_ERR_NETWORK in case of other error on a layer below the
  *   application layer
  **/
-int avs_coap_socket_recv(anjay_coap_socket_t *sock,
-                            anjay_coap_msg_t *out_msg,
+int avs_coap_socket_recv(avs_coap_socket_t *sock,
+                            avs_coap_msg_t *out_msg,
                             size_t msg_capacity);
 // AVSYSTEM_AVS_COMMERCIAL_BEGIN
-uint64_t avs_coap_socket_get_rx_bytes(anjay_coap_socket_t *sock);
-uint64_t avs_coap_socket_get_tx_bytes(anjay_coap_socket_t *sock);
+uint64_t avs_coap_socket_get_rx_bytes(avs_coap_socket_t *sock);
+uint64_t avs_coap_socket_get_tx_bytes(avs_coap_socket_t *sock);
 uint64_t
-avs_coap_socket_get_num_incoming_retransmissions(anjay_coap_socket_t *sock);
+avs_coap_socket_get_num_incoming_retransmissions(avs_coap_socket_t *sock);
 uint64_t
-avs_coap_socket_get_num_outgoing_retransmissions(anjay_coap_socket_t *sock);
+avs_coap_socket_get_num_outgoing_retransmissions(avs_coap_socket_t *sock);
 // AVSYSTEM_AVS_COMMERCIAL_END
 
-int avs_coap_socket_get_recv_timeout(anjay_coap_socket_t *sock);
-void avs_coap_socket_set_recv_timeout(anjay_coap_socket_t *sock,
+int avs_coap_socket_get_recv_timeout(avs_coap_socket_t *sock);
+void avs_coap_socket_set_recv_timeout(avs_coap_socket_t *sock,
                                          int timeout_ms);
 
-const anjay_coap_tx_params_t *
-avs_coap_socket_get_tx_params(anjay_coap_socket_t *sock);
+const avs_coap_tx_params_t *
+avs_coap_socket_get_tx_params(avs_coap_socket_t *sock);
 void
-avs_coap_socket_set_tx_params(anjay_coap_socket_t *sock,
-                                 const anjay_coap_tx_params_t *tx_params);
+avs_coap_socket_set_tx_params(avs_coap_socket_t *sock,
+                                 const avs_coap_tx_params_t *tx_params);
 
 avs_net_abstract_socket_t *
-avs_coap_socket_get_backend(anjay_coap_socket_t *sock);
+avs_coap_socket_get_backend(avs_coap_socket_t *sock);
 
-void avs_coap_socket_set_backend(anjay_coap_socket_t *sock,
+void avs_coap_socket_set_backend(avs_coap_socket_t *sock,
                                     avs_net_abstract_socket_t *backend);
 
 /**
@@ -99,23 +99,23 @@ void avs_coap_socket_set_backend(anjay_coap_socket_t *sock,
 /**
  * Sends an Empty message with given values of @p msg_type and @p msg_id.
  */
-int avs_coap_send_empty(anjay_coap_socket_t *socket,
-                           anjay_coap_msg_type_t msg_type,
+int avs_coap_send_empty(avs_coap_socket_t *socket,
+                           avs_coap_msg_type_t msg_type,
                            uint16_t msg_id);
 
 /**
  * Responds with error specified as @p error_code to the message @p msg.
  */
-void avs_coap_send_error(anjay_coap_socket_t *socket,
-                            const anjay_coap_msg_t *msg,
+void avs_coap_send_error(avs_coap_socket_t *socket,
+                            const avs_coap_msg_t *msg,
                             uint8_t error_code);
 
 /**
  * Responds with a Service Unavailable messages, with Max-Age option set to
  * @p retry_after_ms converted to seconds.
  */
-void avs_coap_send_service_unavailable(anjay_coap_socket_t *socket,
-                                          const anjay_coap_msg_t *msg,
+void avs_coap_send_service_unavailable(avs_coap_socket_t *socket,
+                                          const avs_coap_msg_t *msg,
                                           int32_t retry_after_ms);
 
 /** @} */

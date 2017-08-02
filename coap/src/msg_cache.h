@@ -80,8 +80,8 @@ void _avs_coap_msg_cache_release(coap_msg_cache_t **cache_ptr);
 int _avs_coap_msg_cache_add(coap_msg_cache_t *cache,
                               const char *remote_addr,
                               const char *remote_port,
-                              const anjay_coap_msg_t *msg,
-                              const anjay_coap_tx_params_t *tx_params);
+                              const avs_coap_msg_t *msg,
+                              const avs_coap_tx_params_t *tx_params);
 
 /**
  * Looks up @p cache for a message with given @p msg_id and returns it if found.
@@ -95,7 +95,7 @@ int _avs_coap_msg_cache_add(coap_msg_cache_t *cache,
  * @return Found cached message, or NULL if it was not found
  *         or @p cache is NULL.
  */
-const anjay_coap_msg_t *_avs_coap_msg_cache_get(coap_msg_cache_t *cache,
+const avs_coap_msg_t *_avs_coap_msg_cache_get(coap_msg_cache_t *cache,
                                                   const char *remote_addr,
                                                   const char *remote_port,
                                                   uint16_t msg_id);

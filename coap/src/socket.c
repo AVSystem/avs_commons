@@ -31,23 +31,23 @@
 
 #pragma GCC visibility push(hidden)
 
-struct anjay_coap_socket {
+struct avs_coap_socket {
     avs_net_abstract_socket_t *dtls_socket;
 
-    const anjay_coap_tx_params_t *tx_params;
+    const avs_coap_tx_params_t *tx_params;
     coap_msg_cache_t *msg_cache;
 };
 
-static const anjay_coap_tx_params_t DEFAULT_SOCKET_TX_PARAMS = {
+static const avs_coap_tx_params_t DEFAULT_SOCKET_TX_PARAMS = {
     .ack_timeout_ms = 2000,
     .ack_random_factor = 1.5,
     .max_retransmit = 4
 };
 
-int avs_coap_socket_create(anjay_coap_socket_t **sock,
+int avs_coap_socket_create(avs_coap_socket_t **sock,
                               avs_net_abstract_socket_t *backend,
                               size_t msg_cache_size) {
-    *sock = (anjay_coap_socket_t *) calloc(1, sizeof(anjay_coap_socket_t));
+    *sock = (avs_coap_socket_t *) calloc(1, sizeof(avs_coap_socket_t));
     if (!*sock) {
         return -1;
     }
@@ -66,7 +66,7 @@ int avs_coap_socket_create(anjay_coap_socket_t **sock,
     return 0;
 }
 
-int avs_coap_socket_close(anjay_coap_socket_t *sock) {
+int avs_coap_socket_close(avs_coap_socket_t *sock) {
     assert(sock);
     if (!sock->dtls_socket) {
         return 0;
@@ -74,7 +74,7 @@ int avs_coap_socket_close(anjay_coap_socket_t *sock) {
     return avs_net_socket_close(sock->dtls_socket);
 }
 
-void avs_coap_socket_cleanup(anjay_coap_socket_t **sock) {
+void avs_coap_socket_cleanup(avs_coap_socket_t **sock) {
     if (!sock || !*sock) {
         return;
     }
@@ -107,8 +107,8 @@ static int map_io_error(avs_net_abstract_socket_t *socket,
 #define try_cache_response(...) (void)0
 #else // WITH_AVS_COAP_MESSAGE_CACHE
 
-static int try_cache_response(anjay_coap_socket_t *sock,
-                               const anjay_coap_msg_t *res) {
+static int try_cache_response(avs_coap_socket_t *sock,
+                               const avs_coap_msg_t *res) {
     if (!avs_coap_msg_is_response(res) || !sock->msg_cache) {
         return 0;
     }
@@ -128,8 +128,8 @@ static int try_cache_response(anjay_coap_socket_t *sock,
 
 #endif // WITH_AVS_COAP_MESSAGE_CACHE
 
-int avs_coap_socket_send(anjay_coap_socket_t *sock,
-                            const anjay_coap_msg_t *msg) {
+int avs_coap_socket_send(avs_coap_socket_t *sock,
+                            const avs_coap_msg_t *msg) {
     assert(sock && sock->dtls_socket);
     if (!avs_coap_msg_is_valid(msg)) {
         LOG(ERROR, "cannot send an invalid CoAP message\n");
@@ -150,8 +150,8 @@ int avs_coap_socket_send(anjay_coap_socket_t *sock,
 #define try_send_cached_response(...) (-1)
 #else // WITH_AVS_COAP_MESSAGE_CACHE
 
-static int try_send_cached_response(anjay_coap_socket_t *sock,
-                                    const anjay_coap_msg_t *req) {
+static int try_send_cached_response(avs_coap_socket_t *sock,
+                                    const avs_coap_msg_t *req) {
     if (!avs_coap_msg_is_request(req) || !sock->msg_cache) {
         return -1;
     }
@@ -166,7 +166,7 @@ static int try_send_cached_response(anjay_coap_socket_t *sock,
     }
 
     uint16_t msg_id = avs_coap_msg_get_id(req);
-    const anjay_coap_msg_t *res = _avs_coap_msg_cache_get(sock->msg_cache,
+    const avs_coap_msg_t *res = _avs_coap_msg_cache_get(sock->msg_cache,
                                                             addr, port, msg_id);
     if (res) {
         return avs_coap_socket_send(sock, res);
@@ -177,14 +177,14 @@ static int try_send_cached_response(anjay_coap_socket_t *sock,
 
 #endif // WITH_AVS_COAP_MESSAGE_CACHE
 
-static inline bool is_coap_ping(const anjay_coap_msg_t *msg) {
+static inline bool is_coap_ping(const avs_coap_msg_t *msg) {
     return avs_coap_msg_header_get_type(&msg->header)
                    == AVS_COAP_MSG_CONFIRMABLE
            && msg->header.code == AVS_COAP_CODE_EMPTY;
 }
 
-int avs_coap_socket_recv(anjay_coap_socket_t *sock,
-                            anjay_coap_msg_t *out_msg,
+int avs_coap_socket_recv(avs_coap_socket_t *sock,
+                            avs_coap_msg_t *out_msg,
                             size_t msg_capacity) {
     assert(sock && sock->dtls_socket);
     assert(msg_capacity < UINT32_MAX);
@@ -219,7 +219,7 @@ int avs_coap_socket_recv(anjay_coap_socket_t *sock,
     return 0;
 }
 
-int avs_coap_socket_get_recv_timeout(anjay_coap_socket_t *sock) {
+int avs_coap_socket_get_recv_timeout(avs_coap_socket_t *sock) {
     avs_net_socket_opt_value_t value;
 
     if (avs_net_socket_get_opt(sock->dtls_socket,
@@ -232,7 +232,7 @@ int avs_coap_socket_get_recv_timeout(anjay_coap_socket_t *sock) {
     return value.recv_timeout;
 }
 
-void avs_coap_socket_set_recv_timeout(anjay_coap_socket_t *sock,
+void avs_coap_socket_set_recv_timeout(avs_coap_socket_t *sock,
                                          int timeout_ms) {
     avs_net_socket_opt_value_t value = {
         .recv_timeout = timeout_ms
@@ -245,41 +245,41 @@ void avs_coap_socket_set_recv_timeout(anjay_coap_socket_t *sock,
     }
 }
 
-const anjay_coap_tx_params_t *
-avs_coap_socket_get_tx_params(anjay_coap_socket_t *sock) {
+const avs_coap_tx_params_t *
+avs_coap_socket_get_tx_params(avs_coap_socket_t *sock) {
     return sock->tx_params;
 }
 
 void
-avs_coap_socket_set_tx_params(anjay_coap_socket_t *sock,
-                                 const anjay_coap_tx_params_t *tx_params) {
+avs_coap_socket_set_tx_params(avs_coap_socket_t *sock,
+                                 const avs_coap_tx_params_t *tx_params) {
     sock->tx_params = tx_params;
 }
 
 avs_net_abstract_socket_t *
-avs_coap_socket_get_backend(anjay_coap_socket_t *sock) {
+avs_coap_socket_get_backend(avs_coap_socket_t *sock) {
     return sock->dtls_socket;
 }
 
-void avs_coap_socket_set_backend(anjay_coap_socket_t *sock,
+void avs_coap_socket_set_backend(avs_coap_socket_t *sock,
                                     avs_net_abstract_socket_t *backend) {
     sock->dtls_socket = backend;
 }
 
-int avs_coap_send_empty(anjay_coap_socket_t *socket,
-                           anjay_coap_msg_type_t msg_type,
+int avs_coap_send_empty(avs_coap_socket_t *socket,
+                           avs_coap_msg_type_t msg_type,
                            uint16_t msg_id) {
-    anjay_coap_msg_info_t info = avs_coap_msg_info_init();
+    avs_coap_msg_info_t info = avs_coap_msg_info_init();
 
     info.type = msg_type;
     info.code = AVS_COAP_CODE_EMPTY;
     info.identity.msg_id = msg_id;
 
     union {
-        uint8_t buffer[offsetof(anjay_coap_msg_t, content)];
-        anjay_coap_msg_t force_align_;
+        uint8_t buffer[offsetof(avs_coap_msg_t, content)];
+        avs_coap_msg_t force_align_;
     } aligned_buffer;
-    const anjay_coap_msg_t *msg = avs_coap_msg_build_without_payload(
+    const avs_coap_msg_t *msg = avs_coap_msg_build_without_payload(
             avs_coap_ensure_aligned_buffer(&aligned_buffer),
             sizeof(aligned_buffer), &info);
     assert(msg);
@@ -287,11 +287,11 @@ int avs_coap_send_empty(anjay_coap_socket_t *socket,
     return avs_coap_socket_send(socket, msg);
 }
 
-static void send_response(anjay_coap_socket_t *socket,
-                          const anjay_coap_msg_t *msg,
+static void send_response(avs_coap_socket_t *socket,
+                          const avs_coap_msg_t *msg,
                           uint8_t code,
                           const uint32_t *max_age) {
-    anjay_coap_msg_info_t info = avs_coap_msg_info_init();
+    avs_coap_msg_info_t info = avs_coap_msg_info_init();
 
     info.type = AVS_COAP_MSG_ACKNOWLEDGEMENT;
     info.code = code;
@@ -305,12 +305,12 @@ static void send_response(anjay_coap_socket_t *socket,
     }
 
     union {
-        uint8_t buffer[offsetof(anjay_coap_msg_t, content)
+        uint8_t buffer[offsetof(avs_coap_msg_t, content)
                        + AVS_COAP_MAX_TOKEN_LENGTH
                        + AVS_COAP_OPT_INT_MAX_SIZE];
-        anjay_coap_msg_t force_align_;
+        avs_coap_msg_t force_align_;
     } aligned_buffer;
-    const anjay_coap_msg_t *error = avs_coap_msg_build_without_payload(
+    const avs_coap_msg_t *error = avs_coap_msg_build_without_payload(
             avs_coap_ensure_aligned_buffer(&aligned_buffer),
             sizeof(aligned_buffer), &info);
     assert(error);
@@ -322,14 +322,14 @@ static void send_response(anjay_coap_socket_t *socket,
     avs_coap_msg_info_reset(&info);
 }
 
-void avs_coap_send_error(anjay_coap_socket_t *socket,
-                            const anjay_coap_msg_t *msg,
+void avs_coap_send_error(avs_coap_socket_t *socket,
+                            const avs_coap_msg_t *msg,
                             uint8_t error_code) {
     send_response(socket, msg, error_code, NULL);
 }
 
-void avs_coap_send_service_unavailable(anjay_coap_socket_t *socket,
-                                          const anjay_coap_msg_t *msg,
+void avs_coap_send_service_unavailable(avs_coap_socket_t *socket,
+                                          const avs_coap_msg_t *msg,
                                           int32_t retry_after_ms) {
     uint32_t ms_to_retry_after =
         retry_after_ms >= 0 ? (uint32_t)retry_after_ms : 0;

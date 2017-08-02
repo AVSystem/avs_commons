@@ -27,23 +27,23 @@
 
 #pragma GCC visibility push(hidden)
 
-const anjay_coap_msg_t _AVS_COAP_EMPTY_MSG_TEMPLATE = {
-    .length = sizeof(anjay_coap_msg_header_t)
+const avs_coap_msg_t _AVS_COAP_EMPTY_MSG_TEMPLATE = {
+    .length = sizeof(avs_coap_msg_header_t)
 };
 
 void
-avs_coap_msg_info_reset(anjay_coap_msg_info_t *info) {
+avs_coap_msg_info_reset(avs_coap_msg_info_t *info) {
     AVS_LIST_CLEAR(&info->options_);
 
     *info = avs_coap_msg_info_init();
 }
 
 static size_t
-get_options_size_bytes(const AVS_LIST(anjay_coap_msg_info_opt_t) opts) {
+get_options_size_bytes(const AVS_LIST(avs_coap_msg_info_opt_t) opts) {
     size_t size = 0;
     uint16_t prev_opt_num = 0;
 
-    const anjay_coap_msg_info_opt_t *opt;
+    const avs_coap_msg_info_opt_t *opt;
     AVS_LIST_FOREACH(opt, opts) {
         assert(opt->number >= prev_opt_num);
 
@@ -57,31 +57,31 @@ get_options_size_bytes(const AVS_LIST(anjay_coap_msg_info_opt_t) opts) {
 }
 
 size_t
-avs_coap_msg_info_get_headers_size(const anjay_coap_msg_info_t *info) {
-    return sizeof(anjay_coap_msg_header_t)
+avs_coap_msg_info_get_headers_size(const avs_coap_msg_info_t *info) {
+    return sizeof(avs_coap_msg_header_t)
            + info->identity.token_size
            + get_options_size_bytes(info->options_);
 }
 
 size_t
-avs_coap_msg_info_get_storage_size(const anjay_coap_msg_info_t *info) {
-    return offsetof(anjay_coap_msg_t, content)
+avs_coap_msg_info_get_storage_size(const avs_coap_msg_info_t *info) {
+    return offsetof(avs_coap_msg_t, content)
            + AVS_COAP_MAX_TOKEN_LENGTH
            + get_options_size_bytes(info->options_);
 }
 
 size_t
-avs_coap_msg_info_get_packet_storage_size(const anjay_coap_msg_info_t *info,
+avs_coap_msg_info_get_packet_storage_size(const avs_coap_msg_info_t *info,
                                              size_t payload_size) {
     return avs_coap_msg_info_get_storage_size(info)
            + (payload_size ? sizeof(AVS_COAP_PAYLOAD_MARKER) + payload_size
                            : 0);
 }
 
-void avs_coap_msg_info_opt_remove_by_number(anjay_coap_msg_info_t *info,
+void avs_coap_msg_info_opt_remove_by_number(avs_coap_msg_info_t *info,
                                                uint16_t option_number) {
-    anjay_coap_msg_info_opt_t **opt;
-    anjay_coap_msg_info_opt_t *helper;
+    avs_coap_msg_info_opt_t **opt;
+    avs_coap_msg_info_opt_t *helper;
     AVS_LIST_DELETABLE_FOREACH_PTR(opt, helper, &info->options_) {
         if ((*opt)->number == option_number) {
             AVS_LIST_DELETE(opt);
@@ -91,7 +91,7 @@ void avs_coap_msg_info_opt_remove_by_number(anjay_coap_msg_info_t *info,
     }
 }
 
-int avs_coap_msg_info_opt_content_format(anjay_coap_msg_info_t *info,
+int avs_coap_msg_info_opt_content_format(avs_coap_msg_info_t *info,
                                             uint16_t format) {
     if (format == AVS_COAP_FORMAT_NONE) {
         return 0;
@@ -120,7 +120,7 @@ static int encode_block_size(uint16_t size,
     return 0;
 }
 
-static int add_block_opt(anjay_coap_msg_info_t *info,
+static int add_block_opt(avs_coap_msg_info_t *info,
                          uint16_t option_number,
                          uint32_t seq_number,
                          bool is_last_chunk,
@@ -142,7 +142,7 @@ static int add_block_opt(anjay_coap_msg_info_t *info,
     return avs_coap_msg_info_opt_u32(info, option_number, value);
 }
 
-int avs_coap_msg_info_opt_block(anjay_coap_msg_info_t *info,
+int avs_coap_msg_info_opt_block(avs_coap_msg_info_t *info,
                                    const coap_block_info_t *block) {
     if (!block->valid) {
         LOG(ERROR, "could not add invalid BLOCK option");
@@ -153,11 +153,11 @@ int avs_coap_msg_info_opt_block(anjay_coap_msg_info_t *info,
                          block->seq_num, block->has_more, block->size);
 }
 
-int avs_coap_msg_info_opt_opaque(anjay_coap_msg_info_t *info,
+int avs_coap_msg_info_opt_opaque(avs_coap_msg_info_t *info,
                                     uint16_t opt_number,
                                     const void *opt_data,
                                     uint16_t opt_data_size) {
-    anjay_coap_msg_info_opt_t *opt = (anjay_coap_msg_info_opt_t*)
+    avs_coap_msg_info_opt_t *opt = (avs_coap_msg_info_opt_t*)
             AVS_LIST_NEW_BUFFER(sizeof(*opt) + opt_data_size);
     if (!opt) {
         LOG(ERROR, "out of memory");
@@ -168,7 +168,7 @@ int avs_coap_msg_info_opt_opaque(anjay_coap_msg_info_t *info,
     opt->data_size = opt_data_size;
     memcpy(opt->data, opt_data, opt_data_size);
 
-    anjay_coap_msg_info_opt_t **insert_ptr = NULL;
+    avs_coap_msg_info_opt_t **insert_ptr = NULL;
     AVS_LIST_FOREACH_PTR(insert_ptr, &info->options_) {
         if ((*insert_ptr)->number > opt->number) {
             break;
@@ -179,7 +179,7 @@ int avs_coap_msg_info_opt_opaque(anjay_coap_msg_info_t *info,
     return 0;
 }
 
-int avs_coap_msg_info_opt_string(anjay_coap_msg_info_t *info,
+int avs_coap_msg_info_opt_string(avs_coap_msg_info_t *info,
                                     uint16_t opt_number,
                                     const char *opt_data) {
     size_t size = strlen(opt_data);
@@ -191,12 +191,12 @@ int avs_coap_msg_info_opt_string(anjay_coap_msg_info_t *info,
                                            opt_data, (uint16_t)size);
 }
 
-int avs_coap_msg_info_opt_empty(anjay_coap_msg_info_t *info,
+int avs_coap_msg_info_opt_empty(avs_coap_msg_info_t *info,
                                    uint16_t opt_number) {
     return avs_coap_msg_info_opt_opaque(info, opt_number, "", 0);
 }
 
-int avs_coap_msg_info_opt_uint(anjay_coap_msg_info_t *info,
+int avs_coap_msg_info_opt_uint(avs_coap_msg_info_t *info,
                                   uint16_t opt_number,
                                   const void *value,
                                   size_t value_size) {

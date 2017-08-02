@@ -27,7 +27,7 @@
 #define AVS_COAP_HEADER_TOKEN_LENGTH_SHIFT 0
 
 static inline uint8_t
-_avs_coap_msg_header_get_version(const anjay_coap_msg_header_t *hdr) {
+_avs_coap_msg_header_get_version(const avs_coap_msg_header_t *hdr) {
     int val = AVS_FIELD_GET(hdr->version_type_token_length,
                               AVS_COAP_HEADER_VERSION_MASK,
                               AVS_COAP_HEADER_VERSION_SHIFT);
@@ -35,7 +35,7 @@ _avs_coap_msg_header_get_version(const anjay_coap_msg_header_t *hdr) {
     return (uint8_t)val;
 }
 static inline void
-_avs_coap_msg_header_set_version(anjay_coap_msg_header_t *hdr,
+_avs_coap_msg_header_set_version(avs_coap_msg_header_t *hdr,
                                    uint8_t version) {
     assert(version <= 3);
     AVS_FIELD_SET(hdr->version_type_token_length,
@@ -44,7 +44,7 @@ _avs_coap_msg_header_set_version(anjay_coap_msg_header_t *hdr,
 }
 
 static inline void
-_avs_coap_msg_header_set_token_length(anjay_coap_msg_header_t *hdr,
+_avs_coap_msg_header_set_token_length(avs_coap_msg_header_t *hdr,
                                         uint8_t token_length) {
     assert(token_length <= AVS_COAP_MAX_TOKEN_LENGTH);
     AVS_FIELD_SET(hdr->version_type_token_length,
@@ -57,13 +57,13 @@ _avs_coap_msg_header_set_token_length(anjay_coap_msg_header_t *hdr,
 #define AVS_COAP_OPT_LENGTH_MASK 0x0F
 #define AVS_COAP_OPT_LENGTH_SHIFT 0
 
-static inline uint8_t _avs_coap_opt_get_short_delta(const anjay_coap_opt_t *opt) {
+static inline uint8_t _avs_coap_opt_get_short_delta(const avs_coap_opt_t *opt) {
     return AVS_FIELD_GET(opt->delta_length,
                            AVS_COAP_OPT_DELTA_MASK,
                            AVS_COAP_OPT_DELTA_SHIFT);
 }
 
-static inline void _avs_coap_opt_set_short_delta(anjay_coap_opt_t *opt,
+static inline void _avs_coap_opt_set_short_delta(avs_coap_opt_t *opt,
                                                    uint8_t delta) {
     assert(delta <= AVS_COAP_EXT_RESERVED);
     AVS_FIELD_SET(opt->delta_length,
@@ -71,13 +71,13 @@ static inline void _avs_coap_opt_set_short_delta(anjay_coap_opt_t *opt,
                     AVS_COAP_OPT_DELTA_SHIFT, delta);
 }
 
-static inline uint8_t _avs_coap_opt_get_short_length(const anjay_coap_opt_t *opt) {
+static inline uint8_t _avs_coap_opt_get_short_length(const avs_coap_opt_t *opt) {
     return AVS_FIELD_GET(opt->delta_length,
                            AVS_COAP_OPT_LENGTH_MASK,
                            AVS_COAP_OPT_LENGTH_SHIFT);
 }
 
-static inline void _avs_coap_opt_set_short_length(anjay_coap_opt_t *opt,
+static inline void _avs_coap_opt_set_short_length(avs_coap_opt_t *opt,
                                                     uint8_t length) {
     assert(length <= AVS_COAP_EXT_RESERVED);
     AVS_FIELD_SET(opt->delta_length,
@@ -104,7 +104,7 @@ static inline size_t _avs_coap_get_opt_header_size(uint16_t opt_number_delta,
     return header_size;
 }
 
-struct anjay_coap_msg_info_opt {
+struct avs_coap_msg_info_opt {
     uint16_t number;
     uint16_t data_size;
     uint8_t data[];

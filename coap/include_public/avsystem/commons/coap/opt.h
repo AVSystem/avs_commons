@@ -61,7 +61,7 @@
 #define AVS_COAP_OPT_ETAG_MAX_SIZE (1 /* option header */ \
                                       + 8) /* max ETag length */
 
-typedef struct anjay_coap_opt {
+typedef struct avs_coap_opt {
     /**
      * Note: when working with CoAP options do not access these fields directly,
      * since they may not represent the actual encoded values. Use
@@ -70,34 +70,34 @@ typedef struct anjay_coap_opt {
      */
     uint8_t delta_length;
     uint8_t content[];
-} anjay_coap_opt_t;
+} avs_coap_opt_t;
 
 /**
  * @param opt Option to operate on.
  *
  * @returns Pointer to the start of the option content.
  */
-const uint8_t *avs_coap_opt_value(const anjay_coap_opt_t *opt);
+const uint8_t *avs_coap_opt_value(const avs_coap_opt_t *opt);
 
-int avs_coap_opt_uint_value(const anjay_coap_opt_t *opt,
+int avs_coap_opt_uint_value(const avs_coap_opt_t *opt,
                                void *out_value,
                                size_t out_value_size);
 
-static inline int avs_coap_opt_u32_value(const anjay_coap_opt_t *opt,
+static inline int avs_coap_opt_u32_value(const avs_coap_opt_t *opt,
                                             uint32_t *out_value) {
     return avs_coap_opt_uint_value(opt, out_value, sizeof(*out_value));
 }
 
-int avs_coap_opt_string_value(const anjay_coap_opt_t *opt,
+int avs_coap_opt_string_value(const avs_coap_opt_t *opt,
                                  size_t *out_bytes_read,
                                  char *buffer,
                                  size_t buffer_size);
 
-int avs_coap_opt_block_seq_number(const anjay_coap_opt_t *opt,
+int avs_coap_opt_block_seq_number(const avs_coap_opt_t *opt,
                                      uint32_t *out_seq_num);
-int avs_coap_opt_block_has_more(const anjay_coap_opt_t *opt,
+int avs_coap_opt_block_has_more(const avs_coap_opt_t *opt,
                                    bool *out_has_more);
-int avs_coap_opt_block_size(const anjay_coap_opt_t *opt,
+int avs_coap_opt_block_size(const avs_coap_opt_t *opt,
                                uint16_t *out_size);
 
 /**
@@ -105,14 +105,14 @@ int avs_coap_opt_block_size(const anjay_coap_opt_t *opt,
  *
  * @returns Pointer to the start of the option content.
  */
-uint32_t avs_coap_opt_delta(const anjay_coap_opt_t *opt);
+uint32_t avs_coap_opt_delta(const avs_coap_opt_t *opt);
 
 /**
  * @param opt Option to operate on.
  *
  * @returns Pointer to the start of the option content.
  */
-uint32_t avs_coap_opt_content_length(const anjay_coap_opt_t *opt);
+uint32_t avs_coap_opt_content_length(const avs_coap_opt_t *opt);
 
 /**
  * @param opt           Option to operate on.
@@ -121,7 +121,7 @@ uint32_t avs_coap_opt_content_length(const anjay_coap_opt_t *opt);
  *
  * @returns True if the option has a valid format, false otherwise.
  */
-bool avs_coap_opt_is_valid(const anjay_coap_opt_t *opt,
+bool avs_coap_opt_is_valid(const avs_coap_opt_t *opt,
                               size_t max_opt_bytes);
 
 /**
@@ -129,8 +129,8 @@ bool avs_coap_opt_is_valid(const anjay_coap_opt_t *opt,
  *
  * @returns Total size of the option including content, in bytes.
  */
-size_t avs_coap_opt_sizeof(const anjay_coap_opt_t *opt);
+size_t avs_coap_opt_sizeof(const avs_coap_opt_t *opt);
 
-void avs_coap_opt_debug_print(const anjay_coap_opt_t *opt);
+void avs_coap_opt_debug_print(const avs_coap_opt_t *opt);
 
 #endif // AVS_COMMONS_COAP_OPT_H

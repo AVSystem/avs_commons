@@ -23,8 +23,8 @@
 
 #pragma GCC visibility push(hidden)
 
-anjay_coap_block_builder_t
-avs_coap_block_builder_init(anjay_coap_msg_builder_t *msg_builder) {
+avs_coap_block_builder_t
+avs_coap_block_builder_init(avs_coap_msg_builder_t *msg_builder) {
     assert(msg_builder->msg_buffer.msg != NULL);
     assert(msg_builder->msg_buffer.capacity > 0);
 
@@ -38,7 +38,7 @@ avs_coap_block_builder_init(anjay_coap_msg_builder_t *msg_builder) {
     size_t payload_size =
             avs_coap_msg_payload_length(msg_builder->msg_buffer.msg);
 
-    anjay_coap_block_builder_t block_builder = (anjay_coap_block_builder_t){
+    avs_coap_block_builder_t block_builder = (avs_coap_block_builder_t){
         .payload_buffer = msg_builder->msg_buffer.msg,
         .payload_capacity = msg_builder->msg_buffer.capacity,
 
@@ -50,15 +50,15 @@ avs_coap_block_builder_init(anjay_coap_msg_builder_t *msg_builder) {
     return block_builder;
 }
 
-static void *payload_read_ptr(anjay_coap_block_builder_t *builder) {
+static void *payload_read_ptr(avs_coap_block_builder_t *builder) {
     return (uint8_t*)builder->payload_buffer + builder->read_offset;
 }
 
-static void *payload_write_ptr(anjay_coap_block_builder_t *builder) {
+static void *payload_write_ptr(avs_coap_block_builder_t *builder) {
     return (uint8_t*)builder->payload_buffer + builder->write_offset;
 }
 
-static void shift_payload(anjay_coap_block_builder_t *builder) {
+static void shift_payload(avs_coap_block_builder_t *builder) {
     if (builder->read_offset == 0) {
         return;
     }
@@ -74,7 +74,7 @@ static void shift_payload(anjay_coap_block_builder_t *builder) {
 }
 
 size_t
-avs_coap_block_builder_append_payload(anjay_coap_block_builder_t *builder,
+avs_coap_block_builder_append_payload(avs_coap_block_builder_t *builder,
                                          const void *payload,
                                          size_t payload_size) {
     shift_payload(builder);
@@ -89,16 +89,16 @@ avs_coap_block_builder_append_payload(anjay_coap_block_builder_t *builder,
 }
 
 size_t avs_coap_block_builder_payload_remaining(
-        const anjay_coap_block_builder_t *builder) {
+        const avs_coap_block_builder_t *builder) {
     assert(builder->read_offset <= builder->write_offset);
     return builder->write_offset - builder->read_offset;
 }
 
-const anjay_coap_msg_t *
-avs_coap_block_builder_build(anjay_coap_block_builder_t *builder,
-                                const anjay_coap_msg_info_t *info,
+const avs_coap_msg_t *
+avs_coap_block_builder_build(avs_coap_block_builder_t *builder,
+                                const avs_coap_msg_info_t *info,
                                 size_t block_size,
-                                anjay_coap_aligned_msg_buffer_t *buffer,
+                                avs_coap_aligned_msg_buffer_t *buffer,
                                 size_t buffer_size) {
     assert(buffer_size
            >= avs_coap_msg_info_get_packet_storage_size(info, block_size));
@@ -111,7 +111,7 @@ avs_coap_block_builder_build(anjay_coap_block_builder_t *builder,
         return NULL;
     }
 
-    anjay_coap_msg_builder_t msg_builder;
+    avs_coap_msg_builder_t msg_builder;
     if (avs_coap_msg_builder_init(&msg_builder, buffer, buffer_size, info)) {
         assert(0 && "Failed to init msg_builder");
         return NULL;
@@ -140,7 +140,7 @@ avs_coap_block_builder_build(anjay_coap_block_builder_t *builder,
     return avs_coap_msg_builder_get_msg(&msg_builder);
 }
 
-void avs_coap_block_builder_next(anjay_coap_block_builder_t *builder,
+void avs_coap_block_builder_next(avs_coap_block_builder_t *builder,
                                     size_t block_size) {
     builder->read_offset = AVS_MIN(builder->read_offset + block_size,
                                      builder->write_offset);

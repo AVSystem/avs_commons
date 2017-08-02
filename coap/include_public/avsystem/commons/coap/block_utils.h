@@ -60,7 +60,7 @@ typedef struct coap_block_info {
  * |      Not present      |       0        |      false      |
  * +-----------------------+----------------+-----------------+
  */
-int avs_coap_get_block_info(const anjay_coap_msg_t *msg,
+int avs_coap_get_block_info(const avs_coap_msg_t *msg,
                                coap_block_type_t type,
                                coap_block_info_t *out_info);
 

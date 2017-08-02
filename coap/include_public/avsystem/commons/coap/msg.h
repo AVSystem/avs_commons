@@ -26,9 +26,9 @@
 #include <avsystem/commons/coap/parse_utils.h>
 #include <avsystem/commons/coap/msg_identity.h>
 
-#define AVS_COAP_MSG_MIN_SIZE ((unsigned) sizeof(anjay_coap_msg_header_t))
+#define AVS_COAP_MSG_MIN_SIZE ((unsigned) sizeof(avs_coap_msg_header_t))
 
-typedef enum anjay_coap_msg_type {
+typedef enum avs_coap_msg_type {
     AVS_COAP_MSG_CONFIRMABLE,
     AVS_COAP_MSG_NON_CONFIRMABLE,
     AVS_COAP_MSG_ACKNOWLEDGEMENT,
@@ -36,7 +36,7 @@ typedef enum anjay_coap_msg_type {
 
     _AVS_COAP_MSG_FIRST = AVS_COAP_MSG_CONFIRMABLE,
     _AVS_COAP_MSG_LAST = AVS_COAP_MSG_RESET
-} anjay_coap_msg_type_t;
+} avs_coap_msg_type_t;
 
 #define AVS_COAP_CODE_CLASS_MASK 0xE0
 #define AVS_COAP_CODE_CLASS_SHIFT 5
@@ -127,59 +127,59 @@ static inline bool avs_coap_msg_code_is_response(uint8_t code) {
     return avs_coap_msg_code_get_class(&code) > 0;
 }
 
-typedef struct anjay_coap_msg_header {
+typedef struct avs_coap_msg_header {
     uint8_t version_type_token_length;
     uint8_t code;
     uint8_t message_id[2];
-} anjay_coap_msg_header_t;
+} avs_coap_msg_header_t;
 
-AVS_STATIC_ASSERT(offsetof(anjay_coap_msg_header_t, version_type_token_length) == 0,
+AVS_STATIC_ASSERT(offsetof(avs_coap_msg_header_t, version_type_token_length) == 0,
                   vttl_field_is_at_start_of_msg_header_t);
-AVS_STATIC_ASSERT(offsetof(anjay_coap_msg_header_t, code) == 1,
+AVS_STATIC_ASSERT(offsetof(avs_coap_msg_header_t, code) == 1,
                   no_padding_before_code_field_of_msg_header_t);
-AVS_STATIC_ASSERT(offsetof(anjay_coap_msg_header_t, message_id) == 2,
+AVS_STATIC_ASSERT(offsetof(avs_coap_msg_header_t, message_id) == 2,
                   no_padding_before_message_id_field_of_msg_header_t);
-AVS_STATIC_ASSERT(sizeof(anjay_coap_msg_header_t) == 4,
+AVS_STATIC_ASSERT(sizeof(avs_coap_msg_header_t) == 4,
                   no_padding_in_msg_header_t);
 
 #define AVS_COAP_HEADER_TYPE_MASK 0x30
 #define AVS_COAP_HEADER_TYPE_SHIFT 4
 
-static inline anjay_coap_msg_type_t
-avs_coap_msg_header_get_type(const anjay_coap_msg_header_t *hdr) {
+static inline avs_coap_msg_type_t
+avs_coap_msg_header_get_type(const avs_coap_msg_header_t *hdr) {
     int val = AVS_FIELD_GET(hdr->version_type_token_length,
                               AVS_COAP_HEADER_TYPE_MASK,
                               AVS_COAP_HEADER_TYPE_SHIFT);
     assert(val >= _AVS_COAP_MSG_FIRST && val <= _AVS_COAP_MSG_LAST);
-    return (anjay_coap_msg_type_t)val;
+    return (avs_coap_msg_type_t)val;
 }
 static inline void
-avs_coap_msg_header_set_type(anjay_coap_msg_header_t *hdr,
-                                anjay_coap_msg_type_t type) {
+avs_coap_msg_header_set_type(avs_coap_msg_header_t *hdr,
+                                avs_coap_msg_type_t type) {
     AVS_FIELD_SET(hdr->version_type_token_length,
                     AVS_COAP_HEADER_TYPE_MASK,
                     AVS_COAP_HEADER_TYPE_SHIFT, type);
 }
 
-typedef struct anjay_coap_msg {
+typedef struct avs_coap_msg {
     uint32_t length; // whole message (header + content)
-    anjay_coap_msg_header_t header;
+    avs_coap_msg_header_t header;
     uint8_t content[1]; // actually a FAM; token + opts + payload
-} anjay_coap_msg_t;
+} avs_coap_msg_t;
 
-AVS_STATIC_ASSERT(offsetof(anjay_coap_msg_t, header) == 4,
+AVS_STATIC_ASSERT(offsetof(avs_coap_msg_t, header) == 4,
                   no_padding_before_header_field_of_msg_t);
-AVS_STATIC_ASSERT(offsetof(anjay_coap_msg_t, content) == 8,
+AVS_STATIC_ASSERT(offsetof(avs_coap_msg_t, content) == 8,
                   no_padding_before_content_field_of_msg_t);
 
 typedef struct {
-    const anjay_coap_msg_t *const msg;
-    const anjay_coap_opt_t *curr_opt;
+    const avs_coap_msg_t *const msg;
+    const avs_coap_opt_t *curr_opt;
     uint32_t prev_opt_number;
-} anjay_coap_opt_iterator_t;
+} avs_coap_opt_iterator_t;
 
 #define AVS_COAP_OPT_ITERATOR_EMPTY \
-    (anjay_coap_opt_iterator_t) { \
+    (avs_coap_opt_iterator_t) { \
         NULL, NULL, 0 \
     }
 
@@ -187,7 +187,7 @@ typedef struct {
  * @param msg Message to retrieve ID from.
  * @returns Message ID in the host byte order.
  */
-static inline uint16_t avs_coap_msg_get_id(const anjay_coap_msg_t *msg) {
+static inline uint16_t avs_coap_msg_get_id(const avs_coap_msg_t *msg) {
     return extract_u16((const uint8_t *) &msg->header.message_id);
 }
 
@@ -196,7 +196,7 @@ static inline uint16_t avs_coap_msg_get_id(const anjay_coap_msg_t *msg) {
  * @return true if message is a request message (RFC7252 section 5.1),
  *      false otherwise
  */
-static inline bool avs_coap_msg_is_request(const anjay_coap_msg_t *msg) {
+static inline bool avs_coap_msg_is_request(const avs_coap_msg_t *msg) {
     return avs_coap_msg_code_is_request(msg->header.code);
 }
 
@@ -205,25 +205,25 @@ static inline bool avs_coap_msg_is_request(const anjay_coap_msg_t *msg) {
  * @return true if message is a response message (RFC7252 section 5.1),
  *      false otherwise
  */
-static inline bool avs_coap_msg_is_response(const anjay_coap_msg_t *msg) {
+static inline bool avs_coap_msg_is_response(const avs_coap_msg_t *msg) {
     return avs_coap_msg_code_is_response(msg->header.code);
 }
 
 /**
  * @param msg       Message to retrieve token from.
  * @param out_token Buffer for the extracted token.
- * @returns Token length in bytes (0 <= length <= sizeof(anjay_coap_token_t)).
+ * @returns Token length in bytes (0 <= length <= sizeof(avs_coap_token_t)).
  */
-size_t avs_coap_msg_get_token(const anjay_coap_msg_t *msg,
-                                 anjay_coap_token_t *out_token);
+size_t avs_coap_msg_get_token(const avs_coap_msg_t *msg,
+                                 avs_coap_token_t *out_token);
 
 /**
  * @param msg Message to retrieve identity from.
- * @returns @ref anjay_coap_msg_identity_t object with message ID and token.
+ * @returns @ref avs_coap_msg_identity_t object with message ID and token.
  */
-static inline anjay_coap_msg_identity_t
-avs_coap_msg_get_identity(const anjay_coap_msg_t *msg) {
-    anjay_coap_msg_identity_t id;
+static inline avs_coap_msg_identity_t
+avs_coap_msg_get_identity(const avs_coap_msg_t *msg) {
+    avs_coap_msg_identity_t id;
     memset(&id, 0, sizeof(id));
     id.msg_id = avs_coap_msg_get_id(msg);
     id.token_size = avs_coap_msg_get_token(msg, &id.token);
@@ -231,9 +231,9 @@ avs_coap_msg_get_identity(const anjay_coap_msg_t *msg) {
 }
 
 static inline
-bool avs_coap_msg_token_matches(const anjay_coap_msg_t *msg,
-                                   const anjay_coap_msg_identity_t *id) {
-    anjay_coap_token_t msg_token;
+bool avs_coap_msg_token_matches(const avs_coap_msg_t *msg,
+                                   const avs_coap_msg_identity_t *id) {
+    avs_coap_token_t msg_token;
     size_t msg_token_size = avs_coap_msg_get_token(msg, &msg_token);
 
     return avs_coap_token_equal(&msg_token, msg_token_size,
@@ -244,7 +244,7 @@ bool avs_coap_msg_token_matches(const anjay_coap_msg_t *msg,
  * @param msg Message to iterate over.
  * @returns An CoAP Option iterator object.
  */
-anjay_coap_opt_iterator_t avs_coap_opt_begin(const anjay_coap_msg_t *msg);
+avs_coap_opt_iterator_t avs_coap_opt_begin(const avs_coap_msg_t *msg);
 
 /**
  * Advances the @p optit iterator to the next CoAP Option.
@@ -252,8 +252,8 @@ anjay_coap_opt_iterator_t avs_coap_opt_begin(const anjay_coap_msg_t *msg);
  * @param optit CoAP Option iterator to operate on.
  * @returns @p optit.
  */
-anjay_coap_opt_iterator_t *
-avs_coap_opt_next(anjay_coap_opt_iterator_t *optit);
+avs_coap_opt_iterator_t *
+avs_coap_opt_next(avs_coap_opt_iterator_t *optit);
 
 /**
  * Checks if the @p optit points to the area after CoAP options list.
@@ -262,13 +262,13 @@ avs_coap_opt_next(anjay_coap_opt_iterator_t *optit);
  * @returns true if there are no more Options to iterate over (i.e. the iterator
  *          is invalidated), false if it points to a valid Option.
  */
-bool avs_coap_opt_end(const anjay_coap_opt_iterator_t *optit);
+bool avs_coap_opt_end(const avs_coap_opt_iterator_t *optit);
 
 /**
  * @param optit Iterator to operate on.
  * @returns Number of the option currently pointed to by @p optit
  */
-uint32_t avs_coap_opt_number(const anjay_coap_opt_iterator_t *optit);
+uint32_t avs_coap_opt_number(const avs_coap_opt_iterator_t *optit);
 
 /**
  * Note: this function is NOT SAFE to use on invalid messages.
@@ -277,7 +277,7 @@ uint32_t avs_coap_opt_number(const anjay_coap_opt_iterator_t *optit);
  * @returns Pointer to the start of a message payload, or end-of-message if it
  *          does not contain payload.
  */
-const void *avs_coap_msg_payload(const anjay_coap_msg_t *msg);
+const void *avs_coap_msg_payload(const avs_coap_msg_t *msg);
 
 /**
  * Note: this function is NOT SAFE to use on invalid messages.
@@ -285,20 +285,20 @@ const void *avs_coap_msg_payload(const anjay_coap_msg_t *msg);
  * @param msg Message to operate on.
  * @returns Message payload size in bytes.
  */
-size_t avs_coap_msg_payload_length(const anjay_coap_msg_t *msg);
+size_t avs_coap_msg_payload_length(const avs_coap_msg_t *msg);
 
 /**
  * @param msg Message to operate on.
  * @returns true if the message has a valid format, false otherwise.
  */
-bool avs_coap_msg_is_valid(const anjay_coap_msg_t *msg);
+bool avs_coap_msg_is_valid(const avs_coap_msg_t *msg);
 
 /**
  * Prints the @p msg content to standard output.
  *
  * @param msg Message to print.
  */
-void avs_coap_msg_debug_print(const anjay_coap_msg_t *msg);
+void avs_coap_msg_debug_print(const avs_coap_msg_t *msg);
 
 /**
  * Prints a short summary of the @p msg to @p buf and returns a pointer
@@ -310,7 +310,7 @@ void avs_coap_msg_debug_print(const anjay_coap_msg_t *msg);
  *
  * @returns @p buf.
  */
-const char *avs_coap_msg_summary(const anjay_coap_msg_t *msg,
+const char *avs_coap_msg_summary(const avs_coap_msg_t *msg,
                                     char *buf,
                                     size_t buf_size);
 
@@ -318,7 +318,7 @@ const char *avs_coap_msg_summary(const anjay_coap_msg_t *msg,
         avs_coap_msg_summary((Msg), &(char[256]){0}[0], 256)
 
 uint8_t
-avs_coap_msg_header_get_token_length(const anjay_coap_msg_header_t *hdr);
+avs_coap_msg_header_get_token_length(const avs_coap_msg_header_t *hdr);
 
 #endif // AVS_COMMONS_COAP_MSG_H
 

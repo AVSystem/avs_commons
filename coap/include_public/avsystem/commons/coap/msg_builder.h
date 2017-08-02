@@ -22,61 +22,61 @@
 
 #include <avsystem/commons/coap/msg_info.h>
 
-typedef struct anjay_coap_msg_buffer {
-    anjay_coap_msg_t *msg;
+typedef struct avs_coap_msg_buffer {
+    avs_coap_msg_t *msg;
     size_t capacity;
-} anjay_coap_msg_buffer_t;
+} avs_coap_msg_buffer_t;
 
-typedef struct anjay_coap_msg_builder {
+typedef struct avs_coap_msg_builder {
     bool has_payload_marker;
-    anjay_coap_msg_buffer_t msg_buffer;
-} anjay_coap_msg_builder_t;
+    avs_coap_msg_buffer_t msg_buffer;
+} avs_coap_msg_builder_t;
 
 #define AVS_COAP_MSG_BUILDER_UNINITIALIZED \
-    ((anjay_coap_msg_builder_t){ \
+    ((avs_coap_msg_builder_t){ \
         .has_payload_marker = false, \
         .msg_buffer = { .msg = NULL, .capacity = 0 } \
     })
 
 static inline bool
-avs_coap_msg_builder_is_initialized(anjay_coap_msg_builder_t *builder) {
+avs_coap_msg_builder_is_initialized(avs_coap_msg_builder_t *builder) {
     return builder->msg_buffer.msg != NULL;
 }
 
 static inline bool
-avs_coap_msg_builder_has_payload(anjay_coap_msg_builder_t *builder) {
+avs_coap_msg_builder_has_payload(avs_coap_msg_builder_t *builder) {
     return builder->has_payload_marker;
 }
 
 /* the struct itself is not defined, as the pointer is never defererenced */
-typedef struct anjay_coap_aligned_msg_buffer anjay_coap_aligned_msg_buffer_t;
+typedef struct avs_coap_aligned_msg_buffer avs_coap_aligned_msg_buffer_t;
 
-static inline anjay_coap_aligned_msg_buffer_t *
+static inline avs_coap_aligned_msg_buffer_t *
 avs_coap_ensure_aligned_buffer(void *buffer) {
-    assert((uintptr_t)buffer % AVS_ALIGNOF(anjay_coap_msg_t) == 0
-           && "the buffer MUST have the same alignment as anjay_coap_msg_t");
+    assert((uintptr_t)buffer % AVS_ALIGNOF(avs_coap_msg_t) == 0
+           && "the buffer MUST have the same alignment as avs_coap_msg_t");
 
-    return (anjay_coap_aligned_msg_buffer_t *)buffer;
+    return (avs_coap_aligned_msg_buffer_t *)buffer;
 }
 
 /**
- * Creates an @ref anjay_coap_msg_builder_t backed by @p buffer . @p buffer MUST
+ * Creates an @ref avs_coap_msg_builder_t backed by @p buffer . @p buffer MUST
  * live at least as long as @p builder.
  *
  * @param[out] builder     Builder to initialize.
  * @param[in]  buffer      Buffer to use as storage for constructed CoAP
  *                         message. WARNING: this buffer MUST have the same
- *                         alignment as @ref anjay_coap_msg_t .
+ *                         alignment as @ref avs_coap_msg_t .
  * @param[in]  buffer_size Number of bytes available in @p buffer.
  * @param[in]  header      Set of headers to initialize @p builder with.
  *
  * @returns 0 on success, a negative value in case of error (including incorrect
  *          alignment of @p buffer).
  */
-int avs_coap_msg_builder_init(anjay_coap_msg_builder_t *builder,
-                                 anjay_coap_aligned_msg_buffer_t *buffer,
+int avs_coap_msg_builder_init(avs_coap_msg_builder_t *builder,
+                                 avs_coap_aligned_msg_buffer_t *buffer,
                                  size_t buffer_size_bytes,
-                                 const anjay_coap_msg_info_t *info);
+                                 const avs_coap_msg_info_t *info);
 
 #define AVS_COAP_BLOCK_MAX_SEQ_NUMBER 0xFFFFF
 
@@ -89,8 +89,8 @@ int avs_coap_msg_builder_init(anjay_coap_msg_builder_t *builder,
  *
  * @return 0 on success, a negative value in case of error.
  */
-int avs_coap_msg_builder_reset(anjay_coap_msg_builder_t *builder,
-                                  const anjay_coap_msg_info_t *info);
+int avs_coap_msg_builder_reset(avs_coap_msg_builder_t *builder,
+                                  const avs_coap_msg_info_t *info);
 
 /**
  * Returns amount of bytes that can be written as a payload using this builder
@@ -101,7 +101,7 @@ int avs_coap_msg_builder_reset(anjay_coap_msg_builder_t *builder,
  * @return Number of bytes available for the payload.
  */
 size_t avs_coap_msg_builder_payload_remaining(
-        const anjay_coap_msg_builder_t *builder);
+        const avs_coap_msg_builder_t *builder);
 
 /**
  * Appends at most @p payload_size bytes of @p payload to the message
@@ -113,7 +113,7 @@ size_t avs_coap_msg_builder_payload_remaining(
  *
  * @return Number of bytes written. NOTE: this may be less than @p payload_size.
  */
-size_t avs_coap_msg_builder_payload(anjay_coap_msg_builder_t *builder,
+size_t avs_coap_msg_builder_payload(avs_coap_msg_builder_t *builder,
                                        const void *payload,
                                        size_t payload_size);
 
@@ -126,13 +126,13 @@ size_t avs_coap_msg_builder_payload(anjay_coap_msg_builder_t *builder,
  *
  * @param builder Builder object to retrieve a message from.
  *
- * @return Pointer to a @ref anjay_coap_msg_t object stored in the @p builder
+ * @return Pointer to a @ref avs_coap_msg_t object stored in the @p builder
  *         buffer. The message is guaranteed to be syntactically valid.
  *         This function always returns a non-NULL pointer to a serialized
  *         message build in @p buffer .
  */
-const anjay_coap_msg_t *
-avs_coap_msg_builder_get_msg(const anjay_coap_msg_builder_t *builder);
+const avs_coap_msg_t *
+avs_coap_msg_builder_get_msg(const avs_coap_msg_builder_t *builder);
 
 /**
  * Helper function for building messages with no payload.
@@ -143,11 +143,11 @@ avs_coap_msg_builder_get_msg(const anjay_coap_msg_builder_t *builder);
  *
  * @return Constructed message object on success, NULL in case of error.
  */
-static inline const anjay_coap_msg_t *
-avs_coap_msg_build_without_payload(anjay_coap_aligned_msg_buffer_t *buffer,
+static inline const avs_coap_msg_t *
+avs_coap_msg_build_without_payload(avs_coap_aligned_msg_buffer_t *buffer,
                                       size_t buffer_size,
-                                      const anjay_coap_msg_info_t *info) {
-    anjay_coap_msg_builder_t builder;
+                                      const avs_coap_msg_info_t *info) {
+    avs_coap_msg_builder_t builder;
     if (avs_coap_msg_builder_init(&builder, buffer, buffer_size, info)) {
         assert(0 && "could not initialize msg builder");
         return NULL;

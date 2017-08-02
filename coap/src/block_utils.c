@@ -25,7 +25,7 @@
 
 #pragma GCC visibility push(hidden)
 
-int avs_coap_get_block_info(const anjay_coap_msg_t *msg,
+int avs_coap_get_block_info(const avs_coap_msg_t *msg,
                                coap_block_type_t type,
                                coap_block_info_t *out_info) {
     assert(msg);
@@ -33,7 +33,7 @@ int avs_coap_get_block_info(const anjay_coap_msg_t *msg,
     uint16_t opt_number = type == COAP_BLOCK1
             ? AVS_COAP_OPT_BLOCK1
             : AVS_COAP_OPT_BLOCK2;
-    const anjay_coap_opt_t *opt;
+    const avs_coap_opt_t *opt;
     memset(out_info, 0, sizeof(*out_info));
     if (avs_coap_msg_find_unique_opt(msg, opt_number, &opt)) {
         if (opt) {

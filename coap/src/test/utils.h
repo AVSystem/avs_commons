@@ -19,10 +19,10 @@
 #define VTTL(version, type, token_length) \
     ((((version) & 0x03) << 6) | (((type) & 0x03) << 4) | ((token_length) & 0x0f))
 
-static inline void setup_msg(anjay_coap_msg_t *msg,
+static inline void setup_msg(avs_coap_msg_t *msg,
                              const uint8_t *content,
                              size_t content_length) {
-    static const anjay_coap_msg_t TEMPLATE = {
+    static const avs_coap_msg_t TEMPLATE = {
         .header = {
             .version_type_token_length = VTTL(1, AVS_COAP_MSG_ACKNOWLEDGEMENT, 0),
             .code = AVS_COAP_CODE(3, 4),
@@ -30,7 +30,7 @@ static inline void setup_msg(anjay_coap_msg_t *msg,
         }
     };
     memset(msg, 0, sizeof(*msg) + content_length);
-    memcpy(msg, &TEMPLATE, offsetof(anjay_coap_msg_t, content));
+    memcpy(msg, &TEMPLATE, offsetof(avs_coap_msg_t, content));
     assert(content || content_length == 0);
     if (content_length) {
         memcpy(msg->content, content, content_length);

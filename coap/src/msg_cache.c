@@ -50,16 +50,16 @@ struct coap_msg_cache {
 typedef struct cache_entry {
     endpoint_t *endpoint;
     struct timespec expiration_time;
-    const char data[1]; // actually a FAM: anjay_coap_msg_t + padding
+    const char data[1]; // actually a FAM: avs_coap_msg_t + padding
 } cache_entry_t;
 
 /* Ensure that if cache_entry_t is properly aligned, one can safely cast
- * entry.data to anjay_coap_msg_t* */
+ * entry.data to avs_coap_msg_t* */
 AVS_STATIC_ASSERT(AVS_ALIGNOF(cache_entry_t)
-                      % AVS_ALIGNOF(anjay_coap_msg_t) == 0,
+                      % AVS_ALIGNOF(avs_coap_msg_t) == 0,
                   cache_entry_alignment_not_a_multiple_of_msg_alignment);
 AVS_STATIC_ASSERT(offsetof(cache_entry_t, data)
-                      % AVS_ALIGNOF(anjay_coap_msg_t) == 0,
+                      % AVS_ALIGNOF(avs_coap_msg_t) == 0,
                   invalid_msg_alignment_in_cache_entry_t);
 
 coap_msg_cache_t *_avs_coap_msg_cache_create(size_t capacity) {
@@ -139,7 +139,7 @@ static void cache_endpoint_del_ref(coap_msg_cache_t *cache,
     }
 }
 
-static size_t padding_bytes_after_msg(const anjay_coap_msg_t *msg) {
+static size_t padding_bytes_after_msg(const avs_coap_msg_t *msg) {
     static const size_t entry_alignment = AVS_ALIGNOF(cache_entry_t);
     if (msg->length % entry_alignment) {
         return entry_alignment - msg->length % entry_alignment;
@@ -152,17 +152,17 @@ static size_t padding_bytes_after_msg(const anjay_coap_msg_t *msg) {
  * @return Extra overhead, in bytes, required to put @p msg in cache. Total
  *         number of bytes used by a message is:
  *         <c>_avs_coap_msg_cache_overhead(msg)
- *         + msg->length + offsetof(anjay_coap_msg_t, header)</c>
+ *         + msg->length + offsetof(avs_coap_msg_t, header)</c>
  */
-static inline size_t cache_msg_overhead(const anjay_coap_msg_t *msg) {
+static inline size_t cache_msg_overhead(const avs_coap_msg_t *msg) {
     return offsetof(cache_entry_t, data) + padding_bytes_after_msg(msg);
 }
 
 static void cache_put_entry(coap_msg_cache_t *cache,
                             const struct timespec *expiration_time,
                             endpoint_t *endpoint,
-                            const anjay_coap_msg_t *msg) {
-    size_t msg_size = offsetof(anjay_coap_msg_t, header) + msg->length;
+                            const avs_coap_msg_t *msg) {
+    size_t msg_size = offsetof(avs_coap_msg_t, header) + msg->length;
 
     cache_entry_t entry = {
         .endpoint = endpoint,
@@ -191,8 +191,8 @@ static bool entry_valid(const coap_msg_cache_t *cache,
         < (const char*)avs_buffer_raw_insert_ptr(cache->buffer);
 }
 
-static const anjay_coap_msg_t *entry_msg(const cache_entry_t *entry) {
-    return (const anjay_coap_msg_t *)entry->data;
+static const avs_coap_msg_t *entry_msg(const cache_entry_t *entry) {
+    return (const avs_coap_msg_t *)entry->data;
 }
 
 static bool entry_expired(const cache_entry_t *entry,
@@ -200,11 +200,11 @@ static bool entry_expired(const cache_entry_t *entry,
     return avs_time_before(&entry->expiration_time, now);
 }
 
-/* returns total size of anjay_coap_msg_t, including length field
+/* returns total size of avs_coap_msg_t, including length field
  * and padding after the message */
 static size_t entry_msg_size(const cache_entry_t *entry) {
-    const anjay_coap_msg_t *msg = entry_msg(entry);
-    return offsetof(anjay_coap_msg_t, header)
+    const avs_coap_msg_t *msg = entry_msg(entry);
+    return offsetof(avs_coap_msg_t, header)
             + msg->length
             + padding_bytes_after_msg(msg);
 }
@@ -291,14 +291,14 @@ static const cache_entry_t *find_entry(const coap_msg_cache_t *cache,
 int _avs_coap_msg_cache_add(coap_msg_cache_t *cache,
                               const char *remote_addr,
                               const char *remote_port,
-                              const anjay_coap_msg_t *msg,
-                              const anjay_coap_tx_params_t *tx_params) {
+                              const avs_coap_msg_t *msg,
+                              const avs_coap_tx_params_t *tx_params) {
     if (!cache) {
         return -1;
     }
 
     size_t cap_req = cache_msg_overhead(msg)
-                   + offsetof(anjay_coap_msg_t, header)
+                   + offsetof(avs_coap_msg_t, header)
                    + msg->length;
     if (avs_buffer_capacity(cache->buffer) < cap_req) {
         LOG(DEBUG, "msg_cache: not enough space for %u B message", msg->length);
@@ -331,7 +331,7 @@ int _avs_coap_msg_cache_add(coap_msg_cache_t *cache,
     return 0;
 }
 
-const anjay_coap_msg_t *_avs_coap_msg_cache_get(coap_msg_cache_t *cache,
+const avs_coap_msg_t *_avs_coap_msg_cache_get(coap_msg_cache_t *cache,
                                                   const char *remote_addr,
                                                   const char *remote_port,
                                                   uint16_t msg_id) {

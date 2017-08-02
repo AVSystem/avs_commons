@@ -39,10 +39,10 @@
 AVS_UNIT_TEST(coap_socket, coap_socket) {
     avs_net_socket_opt_value_t mtu;
     { // udp_client_send_recv
-        anjay_coap_socket_t *socket =
+        avs_coap_socket_t *socket =
                 _avs_test_setup_udp_echo_socket(TEST_PORT_UDP);
 
-        anjay_coap_msg_info_t info = avs_coap_msg_info_init();
+        avs_coap_msg_info_t info = avs_coap_msg_info_init();
         info.type = AVS_COAP_MSG_CONFIRMABLE;
         info.code = AVS_COAP_CODE_CONTENT;
         info.identity.msg_id = 4;
@@ -50,7 +50,7 @@ AVS_UNIT_TEST(coap_socket, coap_socket) {
         size_t storage_size = COAP_MSG_MAX_SIZE;
         void *storage = malloc(storage_size);
 
-        const anjay_coap_msg_t *msg = avs_coap_msg_build_without_payload(
+        const avs_coap_msg_t *msg = avs_coap_msg_build_without_payload(
                 avs_coap_ensure_aligned_buffer(storage),
                 storage_size, &info);
 
@@ -67,8 +67,8 @@ AVS_UNIT_TEST(coap_socket, coap_socket) {
 
         AVS_UNIT_ASSERT_SUCCESS(avs_coap_socket_send(socket, msg));
 
-        anjay_coap_msg_t *recv_msg =
-                (anjay_coap_msg_t *) alloca(COAP_MSG_MAX_SIZE);
+        avs_coap_msg_t *recv_msg =
+                (avs_coap_msg_t *) alloca(COAP_MSG_MAX_SIZE);
         memset(recv_msg, 0, COAP_MSG_MAX_SIZE);
         AVS_UNIT_ASSERT_SUCCESS(
                 avs_coap_socket_recv(socket, recv_msg,
@@ -79,10 +79,10 @@ AVS_UNIT_TEST(coap_socket, coap_socket) {
         free(storage);
     }
     { // dtls_client_send_recv
-        anjay_coap_socket_t *socket =
+        avs_coap_socket_t *socket =
                 _avs_test_setup_dtls_echo_socket(TEST_PORT_DTLS);
 
-        anjay_coap_msg_info_t info = avs_coap_msg_info_init();
+        avs_coap_msg_info_t info = avs_coap_msg_info_init();
         info.type = AVS_COAP_MSG_CONFIRMABLE;
         info.code = AVS_COAP_CODE_CONTENT;
         info.identity.msg_id = 4;
@@ -90,7 +90,7 @@ AVS_UNIT_TEST(coap_socket, coap_socket) {
         size_t storage_size = COAP_MSG_MAX_SIZE;
         void *storage = malloc(storage_size);
 
-        const anjay_coap_msg_t *msg = avs_coap_msg_build_without_payload(
+        const avs_coap_msg_t *msg = avs_coap_msg_build_without_payload(
                 avs_coap_ensure_aligned_buffer(storage),
                 storage_size, &info);
 
@@ -116,8 +116,8 @@ AVS_UNIT_TEST(coap_socket, coap_socket) {
 
         AVS_UNIT_ASSERT_SUCCESS(avs_coap_socket_send(socket, msg));
 
-        anjay_coap_msg_t *recv_msg =
-                (anjay_coap_msg_t *) alloca(COAP_MSG_MAX_SIZE);
+        avs_coap_msg_t *recv_msg =
+                (avs_coap_msg_t *) alloca(COAP_MSG_MAX_SIZE);
         memset(recv_msg, 0, COAP_MSG_MAX_SIZE);
         AVS_UNIT_ASSERT_SUCCESS(
                 avs_coap_socket_recv(socket, recv_msg,

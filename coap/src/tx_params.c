@@ -42,7 +42,7 @@ static uint32_t rand32(unsigned *seed) {
 }
 
 void avs_coap_update_retry_state(coap_retry_state_t *retry_state,
-                                    const anjay_coap_tx_params_t *tx_params,
+                                    const avs_coap_tx_params_t *tx_params,
                                     unsigned *rand_seed) {
     ++retry_state->retry_count;
     if (retry_state->retry_count == 1) {
@@ -56,7 +56,7 @@ void avs_coap_update_retry_state(coap_retry_state_t *retry_state,
 }
 
 bool
-avs_coap_tx_params_valid(const anjay_coap_tx_params_t *tx_params,
+avs_coap_tx_params_valid(const avs_coap_tx_params_t *tx_params,
                             const char **error_details) {
     // ACK_TIMEOUT below 1 second would violate the guidelines of [RFC5405].
     // -- RFC 7252, 4.8.1
@@ -84,35 +84,35 @@ avs_coap_tx_params_valid(const anjay_coap_tx_params_t *tx_params,
 }
 
 int32_t
-avs_coap_max_transmit_wait_ms(const anjay_coap_tx_params_t *tx_params) {
+avs_coap_max_transmit_wait_ms(const avs_coap_tx_params_t *tx_params) {
     return (int32_t) (tx_params->ack_timeout_ms *
             ((1 << (tx_params->max_retransmit + 1)) - 1) *
                     tx_params->ack_random_factor);
 }
 
 int32_t
-avs_coap_exchange_lifetime_ms(const anjay_coap_tx_params_t *tx_params) {
+avs_coap_exchange_lifetime_ms(const avs_coap_tx_params_t *tx_params) {
     return (int32_t) (tx_params->ack_timeout_ms *
             (((1 << tx_params->max_retransmit) - 1) *
                     tx_params->ack_random_factor + 1.0)) + 200000;
 }
 
 struct timespec
-avs_coap_exchange_lifetime(const anjay_coap_tx_params_t *tx_params) {
+avs_coap_exchange_lifetime(const avs_coap_tx_params_t *tx_params) {
     struct timespec result;
     avs_time_from_ms(&result, avs_coap_exchange_lifetime_ms(tx_params));
     return result;
 }
 
 int32_t
-avs_coap_max_transmit_span_ms(const anjay_coap_tx_params_t *tx_params) {
+avs_coap_max_transmit_span_ms(const avs_coap_tx_params_t *tx_params) {
     return (int32_t)((double)tx_params->ack_timeout_ms
                      * (double)((1 << tx_params->max_retransmit) - 1)
                      * tx_params->ack_random_factor);
 }
 
 struct timespec
-avs_coap_max_transmit_span(const anjay_coap_tx_params_t *tx_params) {
+avs_coap_max_transmit_span(const avs_coap_tx_params_t *tx_params) {
     struct timespec result;
     avs_time_from_ms(&result, avs_coap_max_transmit_span_ms(tx_params));
     return result;

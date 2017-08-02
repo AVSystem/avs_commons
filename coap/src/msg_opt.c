@@ -24,12 +24,12 @@
 
 #pragma GCC visibility push(hidden)
 
-int avs_coap_msg_find_unique_opt(const anjay_coap_msg_t *msg,
+int avs_coap_msg_find_unique_opt(const avs_coap_msg_t *msg,
                                     uint16_t opt_number,
-                                    const anjay_coap_opt_t **out_opt) {
+                                    const avs_coap_opt_t **out_opt) {
     *out_opt = NULL;
 
-    for (anjay_coap_opt_iterator_t it = avs_coap_opt_begin(msg);
+    for (avs_coap_opt_iterator_t it = avs_coap_opt_begin(msg);
             !avs_coap_opt_end(&it);
             avs_coap_opt_next(&it)) {
         uint32_t curr_opt_number = avs_coap_opt_number(&it);
@@ -49,11 +49,11 @@ int avs_coap_msg_find_unique_opt(const anjay_coap_msg_t *msg,
     return *out_opt ? 0 : -1;
 }
 
-int avs_coap_msg_get_option_uint(const anjay_coap_msg_t *msg,
+int avs_coap_msg_get_option_uint(const avs_coap_msg_t *msg,
                                     uint16_t option_number,
                                     void *out_fmt,
                                     size_t out_fmt_size) {
-    const anjay_coap_opt_t *opt;
+    const avs_coap_opt_t *opt;
     if (avs_coap_msg_find_unique_opt(msg, option_number, &opt)) {
         if (opt) {
             LOG(DEBUG, "multiple instances of option %d found",
@@ -68,14 +68,14 @@ int avs_coap_msg_get_option_uint(const anjay_coap_msg_t *msg,
     return avs_coap_opt_uint_value(opt, out_fmt, out_fmt_size);
 }
 
-int avs_coap_msg_get_option_string_it(const anjay_coap_msg_t *msg,
+int avs_coap_msg_get_option_string_it(const avs_coap_msg_t *msg,
                                          uint16_t option_number,
-                                         anjay_coap_opt_iterator_t *it,
+                                         avs_coap_opt_iterator_t *it,
                                          size_t *out_bytes_read,
                                          char *buffer,
                                          size_t buffer_size) {
     if (!it->msg) {
-        anjay_coap_opt_iterator_t begin = avs_coap_opt_begin(msg);
+        avs_coap_opt_iterator_t begin = avs_coap_opt_begin(msg);
         memcpy(it, &begin, sizeof(*it));
     } else {
         assert(it->msg == msg);
@@ -92,7 +92,7 @@ int avs_coap_msg_get_option_string_it(const anjay_coap_msg_t *msg,
     return 1;
 }
 
-int avs_coap_msg_get_content_format(const anjay_coap_msg_t *msg,
+int avs_coap_msg_get_content_format(const avs_coap_msg_t *msg,
                                        uint16_t *out_value) {
     int result = avs_coap_msg_get_option_u16(
             msg, AVS_COAP_OPT_CONTENT_FORMAT, out_value);
@@ -110,7 +110,7 @@ static bool is_opt_critical(uint32_t opt_number) {
 }
 
 static bool is_critical_opt_valid(uint8_t msg_code, uint32_t opt_number,
-            anjay_coap_critical_option_validator_t fallback_validator) {
+            avs_coap_critical_option_validator_t fallback_validator) {
     switch (opt_number) {
     case AVS_COAP_OPT_BLOCK1:
         return msg_code == AVS_COAP_CODE_PUT
@@ -125,10 +125,10 @@ static bool is_critical_opt_valid(uint8_t msg_code, uint32_t opt_number,
 }
 
 int avs_coap_msg_validate_critical_options(
-        const anjay_coap_msg_t *msg,
-        anjay_coap_critical_option_validator_t validator) {
+        const avs_coap_msg_t *msg,
+        avs_coap_critical_option_validator_t validator) {
     int result = 0;
-    for (anjay_coap_opt_iterator_t it = avs_coap_opt_begin(msg);
+    for (avs_coap_opt_iterator_t it = avs_coap_opt_begin(msg);
             !avs_coap_opt_end(&it);
             avs_coap_opt_next(&it)) {
         if (is_opt_critical(avs_coap_opt_number(&it))) {

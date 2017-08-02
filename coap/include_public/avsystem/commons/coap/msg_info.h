@@ -25,23 +25,23 @@
 #include <avsystem/commons/coap/block_utils.h>
 
 
-typedef struct anjay_coap_msg_info_opt anjay_coap_msg_info_opt_t;
+typedef struct avs_coap_msg_info_opt avs_coap_msg_info_opt_t;
 
-typedef struct anjay_coap_msg_info {
-    anjay_coap_msg_type_t type;
+typedef struct avs_coap_msg_info {
+    avs_coap_msg_type_t type;
     uint8_t code;
-    anjay_coap_msg_identity_t identity;
+    avs_coap_msg_identity_t identity;
 
     /* Fields below are NOT meant to be modified directly. Use provided
      * accessor functions instead. */
-    AVS_LIST(anjay_coap_msg_info_opt_t) options_;
-} anjay_coap_msg_info_t;
+    AVS_LIST(avs_coap_msg_info_opt_t) options_;
+} avs_coap_msg_info_t;
 
 /**
- * Initializes a @ref anjay_coap_header_msg_info_t .
+ * Initializes a @ref avs_coap_header_msg_info_t .
  */
 #define avs_coap_msg_info_init() \
-    ((anjay_coap_msg_info_t){ \
+    ((avs_coap_msg_info_t){ \
         .code = AVS_COAP_CODE_EMPTY, \
         .identity = { \
             .msg_id = 0, \
@@ -55,7 +55,7 @@ typedef struct anjay_coap_msg_info {
  * Frees any memory allocated for temporary storage required by the info object.
  * Resets all header fields to defaults.
  */
-void avs_coap_msg_info_reset(anjay_coap_msg_info_t *info);
+void avs_coap_msg_info_reset(avs_coap_msg_info_t *info);
 
 /**
  * Calculates number of header bytes in the CoAP packet constructed from the
@@ -65,31 +65,31 @@ void avs_coap_msg_info_reset(anjay_coap_msg_info_t *info);
  *          over the wire.
  *
  * NOTE: Unlike @ref avs_coap_msg_info_get_storage_size , this DOES NOT
- * include the size of @ref anjay_coap_msg_info_t#length field. Because of that
+ * include the size of @ref avs_coap_msg_info_t#length field. Because of that
  * this function is NOT suitable for calculating size of the buffer for a
  * serialized message.
  */
-size_t avs_coap_msg_info_get_headers_size(const anjay_coap_msg_info_t *info);
+size_t avs_coap_msg_info_get_headers_size(const avs_coap_msg_info_t *info);
 
 /**
  * Calculates number of bytes required to serialize the message stored in a
- * @ref anjay_coap_msg_info_t object.
+ * @ref avs_coap_msg_info_t object.
  *
  * @returns total number of bytes required for serialized message, assuming
  *          no payload and a token of maximum possible size.
  *
- * NOTE: This includes the @ref anjay_coap_msg_info_t length field size.
+ * NOTE: This includes the @ref avs_coap_msg_info_t length field size.
  */
-size_t avs_coap_msg_info_get_storage_size(const anjay_coap_msg_info_t *info);
+size_t avs_coap_msg_info_get_storage_size(const avs_coap_msg_info_t *info);
 
 /**
  * @returns total number of bytes of a serialized message that will be sent over
  *          the wire, assuming no payload and a token of maximum possible size.
  */
 static inline size_t
-avs_coap_msg_info_get_max_mtu_overhead(const anjay_coap_msg_info_t *info) {
+avs_coap_msg_info_get_max_mtu_overhead(const avs_coap_msg_info_t *info) {
     return avs_coap_msg_info_get_storage_size(info)
-           - offsetof(anjay_coap_msg_t, header);
+           - offsetof(avs_coap_msg_t, header);
 }
 
 /**
@@ -97,13 +97,13 @@ avs_coap_msg_info_get_max_mtu_overhead(const anjay_coap_msg_info_t *info) {
  *          @p block_size bytes of payload and a token of maximum possible size.
  */
 size_t
-avs_coap_msg_info_get_packet_storage_size(const anjay_coap_msg_info_t *info,
+avs_coap_msg_info_get_packet_storage_size(const avs_coap_msg_info_t *info,
                                              size_t payload_size);
 
 /**
  * Removes all options with given @p option_number added to @p info.
  */
-void avs_coap_msg_info_opt_remove_by_number(anjay_coap_msg_info_t *info,
+void avs_coap_msg_info_opt_remove_by_number(avs_coap_msg_info_t *info,
                                                uint16_t option_number);
 
 /**
@@ -117,7 +117,7 @@ void avs_coap_msg_info_opt_remove_by_number(anjay_coap_msg_info_t *info,
  *
  * @return 0 on success, -1 in case of error.
  */
-int avs_coap_msg_info_opt_content_format(anjay_coap_msg_info_t *info,
+int avs_coap_msg_info_opt_content_format(avs_coap_msg_info_t *info,
                                             uint16_t format);
 
 /**
@@ -128,7 +128,7 @@ int avs_coap_msg_info_opt_content_format(anjay_coap_msg_info_t *info,
  *
  * @return 0 on success, -1 in case of error.
  */
-int avs_coap_msg_info_opt_block(anjay_coap_msg_info_t *info,
+int avs_coap_msg_info_opt_block(avs_coap_msg_info_t *info,
                                    const coap_block_info_t *block);
 
 /**
@@ -145,7 +145,7 @@ int avs_coap_msg_info_opt_block(anjay_coap_msg_info_t *info,
  *         - the message code is set to @ref AVS_COAP_CODE_EMPTY, which must
  *           not contain any options.
  */
-int avs_coap_msg_info_opt_opaque(anjay_coap_msg_info_t *info,
+int avs_coap_msg_info_opt_opaque(avs_coap_msg_info_t *info,
                                     uint16_t opt_number,
                                     const void *opt_data,
                                     uint16_t opt_data_size);
@@ -158,7 +158,7 @@ int avs_coap_msg_info_opt_opaque(anjay_coap_msg_info_t *info,
  *                                 opt_data, strlen(opt_data))
  * @endcode
  */
-int avs_coap_msg_info_opt_string(anjay_coap_msg_info_t *info,
+int avs_coap_msg_info_opt_string(avs_coap_msg_info_t *info,
                                     uint16_t opt_number,
                                     const char *opt_data);
 
@@ -166,7 +166,7 @@ int avs_coap_msg_info_opt_string(anjay_coap_msg_info_t *info,
  * Adds an arbitrary CoAP option with no value.
  * See @ref avs_coap_msg_info_opt_opaque for more info.
  */
-int avs_coap_msg_info_opt_empty(anjay_coap_msg_info_t *info,
+int avs_coap_msg_info_opt_empty(avs_coap_msg_info_t *info,
                                    uint16_t opt_number);
 
 /**
@@ -176,19 +176,19 @@ int avs_coap_msg_info_opt_empty(anjay_coap_msg_info_t *info,
  *
  * See @ref avs_coap_msg_info_opt_opaque for more info.
  */
-int avs_coap_msg_info_opt_uint(anjay_coap_msg_info_t *info,
+int avs_coap_msg_info_opt_uint(avs_coap_msg_info_t *info,
                                   uint16_t opt_number,
                                   const void *value,
                                   size_t value_size);
 
-static inline int avs_coap_msg_info_opt_u16(anjay_coap_msg_info_t *info,
+static inline int avs_coap_msg_info_opt_u16(avs_coap_msg_info_t *info,
                                                uint16_t opt_number,
                                                uint16_t value) {
     return avs_coap_msg_info_opt_uint(info, opt_number,
                                          &value, sizeof(value));
 }
 
-static inline int avs_coap_msg_info_opt_u32(anjay_coap_msg_info_t *info,
+static inline int avs_coap_msg_info_opt_u32(avs_coap_msg_info_t *info,
                                                uint16_t opt_number,
                                                uint32_t value) {
     return avs_coap_msg_info_opt_uint(info, opt_number,
