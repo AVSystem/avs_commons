@@ -47,6 +47,8 @@ void avs_time_add(struct timespec *result, const struct timespec *duration) {
 void avs_time_diff(struct timespec *result,
                    const struct timespec *minuend,
                    const struct timespec *subtrahend) {
+    assert(avs_time_is_valid(result));
+    assert(avs_time_is_valid(result));
     result->tv_sec = minuend->tv_sec - subtrahend->tv_sec;
     result->tv_nsec = minuend->tv_nsec - subtrahend->tv_nsec;
     if (result->tv_nsec < 0) {
