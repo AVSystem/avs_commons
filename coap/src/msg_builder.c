@@ -31,8 +31,8 @@ static void append_header(anjay_coap_msg_buffer_t *buffer,
                           uint8_t msg_code,
                           uint16_t msg_id) {
     avs_coap_msg_header_set_type(&buffer->msg->header, msg_type);
-    _anjay_coap_msg_header_set_version(&buffer->msg->header, 1);
-    _anjay_coap_msg_header_set_token_length(&buffer->msg->header, 0);
+    _avs_coap_msg_header_set_version(&buffer->msg->header, 1);
+    _avs_coap_msg_header_set_token_length(&buffer->msg->header, 0);
 
     buffer->msg->header.code = msg_code;
     memcpy(buffer->msg->header.message_id, &(uint16_t){htons(msg_id)},
@@ -79,7 +79,7 @@ static int append_token(anjay_coap_msg_buffer_t *buffer,
         return -1;
     }
 
-    _anjay_coap_msg_header_set_token_length(&buffer->msg->header,
+    _avs_coap_msg_header_set_token_length(&buffer->msg->header,
                                             (uint8_t)token_length);
     if (append_data(buffer, token, token_length)) {
         LOG(ERROR, "could not append token");
@@ -112,19 +112,19 @@ static inline size_t opt_write_header(uint8_t *ptr,
     ptr = opt->content;
 
     if (opt_number_delta >= AVS_COAP_EXT_U16_BASE) {
-        _anjay_coap_opt_set_short_delta(opt, AVS_COAP_EXT_U16);
+        _avs_coap_opt_set_short_delta(opt, AVS_COAP_EXT_U16);
     } else if (opt_number_delta >= AVS_COAP_EXT_U8_BASE) {
-        _anjay_coap_opt_set_short_delta(opt, AVS_COAP_EXT_U8);
+        _avs_coap_opt_set_short_delta(opt, AVS_COAP_EXT_U8);
     } else {
-        _anjay_coap_opt_set_short_delta(opt, (uint8_t)(opt_number_delta & 0xF));
+        _avs_coap_opt_set_short_delta(opt, (uint8_t)(opt_number_delta & 0xF));
     }
 
     if (opt_length >= AVS_COAP_EXT_U16_BASE) {
-        _anjay_coap_opt_set_short_length(opt, AVS_COAP_EXT_U16);
+        _avs_coap_opt_set_short_length(opt, AVS_COAP_EXT_U16);
     } else if (opt_length >= AVS_COAP_EXT_U8_BASE) {
-        _anjay_coap_opt_set_short_length(opt, AVS_COAP_EXT_U8);
+        _avs_coap_opt_set_short_length(opt, AVS_COAP_EXT_U8);
     } else {
-        _anjay_coap_opt_set_short_length(opt, (uint8_t)(opt_length & 0xF));
+        _avs_coap_opt_set_short_length(opt, (uint8_t)(opt_length & 0xF));
     }
 
     ptr += encode_ext_value(ptr, opt_number_delta);
@@ -143,7 +143,7 @@ static int append_option(anjay_coap_msg_buffer_t *buffer,
         return -1;
     }
 
-    size_t header_size = _anjay_coap_get_opt_header_size(opt_number_delta,
+    size_t header_size = _avs_coap_get_opt_header_size(opt_number_delta,
                                                          opt_data_size);
 
     if (header_size + opt_data_size > bytes_remaining(buffer)) {

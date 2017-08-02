@@ -58,7 +58,7 @@ AVS_UNIT_TEST(coap_msg, header_fields) {
     anjay_coap_msg_t *msg = (anjay_coap_msg_t *) alloca(sizeof(*msg));
     setup_msg(msg, NULL, 0);
 
-    AVS_UNIT_ASSERT_EQUAL(_anjay_coap_msg_header_get_version(&msg->header), 1);
+    AVS_UNIT_ASSERT_EQUAL(_avs_coap_msg_header_get_version(&msg->header), 1);
     AVS_UNIT_ASSERT_EQUAL(avs_coap_msg_header_get_type(&msg->header), AVS_COAP_MSG_ACKNOWLEDGEMENT);
     AVS_UNIT_ASSERT_EQUAL(avs_coap_msg_header_get_token_length(&msg->header), 0);
 
@@ -212,15 +212,15 @@ AVS_UNIT_TEST(coap_msg, validate_unrecognized_version) {
             (anjay_coap_msg_t *) alloca(sizeof(*msg));
     setup_msg(msg, NULL, 0);
 
-    _anjay_coap_msg_header_set_version(&msg->header, 0);
+    _avs_coap_msg_header_set_version(&msg->header, 0);
     AVS_UNIT_ASSERT_FALSE(avs_coap_msg_is_valid(msg));
     AVS_UNIT_ASSERT_EQUAL(count_opts(msg), 0);
 
-    _anjay_coap_msg_header_set_version(&msg->header, 2);
+    _avs_coap_msg_header_set_version(&msg->header, 2);
     AVS_UNIT_ASSERT_FALSE(avs_coap_msg_is_valid(msg));
     AVS_UNIT_ASSERT_EQUAL(count_opts(msg), 0);
 
-    _anjay_coap_msg_header_set_version(&msg->header, 3);
+    _avs_coap_msg_header_set_version(&msg->header, 3);
     AVS_UNIT_ASSERT_FALSE(avs_coap_msg_is_valid(msg));
     AVS_UNIT_ASSERT_EQUAL(count_opts(msg), 0);
 }

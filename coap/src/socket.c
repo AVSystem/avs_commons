@@ -53,7 +53,7 @@ int avs_coap_socket_create(anjay_coap_socket_t **sock,
     }
 
     if (msg_cache_size > 0) {
-        (*sock)->msg_cache = _anjay_coap_msg_cache_create(msg_cache_size);
+        (*sock)->msg_cache = _avs_coap_msg_cache_create(msg_cache_size);
         if (!(*sock)->msg_cache) {
             LOG(ERROR, "could not create message cache");
             free(*sock);
@@ -79,7 +79,7 @@ void avs_coap_socket_cleanup(anjay_coap_socket_t **sock) {
         return;
     }
 
-    _anjay_coap_msg_cache_release(&(*sock)->msg_cache);
+    _avs_coap_msg_cache_release(&(*sock)->msg_cache);
     avs_coap_socket_close(*sock);
     avs_net_socket_cleanup(&(*sock)->dtls_socket);
     free(*sock);
@@ -122,7 +122,7 @@ static int try_cache_response(anjay_coap_socket_t *sock,
         return -1;
     }
 
-    return _anjay_coap_msg_cache_add(sock->msg_cache, addr, port, res,
+    return _avs_coap_msg_cache_add(sock->msg_cache, addr, port, res,
                                      sock->tx_params);
 }
 
@@ -166,7 +166,7 @@ static int try_send_cached_response(anjay_coap_socket_t *sock,
     }
 
     uint16_t msg_id = avs_coap_msg_get_id(req);
-    const anjay_coap_msg_t *res = _anjay_coap_msg_cache_get(sock->msg_cache,
+    const anjay_coap_msg_t *res = _avs_coap_msg_cache_get(sock->msg_cache,
                                                             addr, port, msg_id);
     if (res) {
         return avs_coap_socket_send(sock, res);

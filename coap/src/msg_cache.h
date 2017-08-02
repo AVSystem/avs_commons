@@ -40,7 +40,7 @@ typedef struct coap_msg_cache coap_msg_cache_t;
  * NOTE: NULL @ref coap_msg_cache_t objects is equivalent to a correct,
  * always-empty cache object.
  */
-coap_msg_cache_t *_anjay_coap_msg_cache_create(size_t capacity);
+coap_msg_cache_t *_avs_coap_msg_cache_create(size_t capacity);
 
 /**
  * Frees any resources used by given @p cache_ptr and sets <c>*cache_ptr</c>
@@ -49,7 +49,7 @@ coap_msg_cache_t *_anjay_coap_msg_cache_create(size_t capacity);
  * @param cache_ptr Pointer to the cache object to free. May be NULL, or point
  *                  to NULL, in which case a call to this function is a no-op.
  */
-void _anjay_coap_msg_cache_release(coap_msg_cache_t **cache_ptr);
+void _avs_coap_msg_cache_release(coap_msg_cache_t **cache_ptr);
 
 #define AVS_COAP_MSG_CACHE_DUPLICATE -2
 /**
@@ -77,7 +77,7 @@ void _anjay_coap_msg_cache_release(coap_msg_cache_t **cache_ptr);
  * cache, we should have used it instead of preparing a new response, so that
  * indicates a bug hiding somewhere.
  */
-int _anjay_coap_msg_cache_add(coap_msg_cache_t *cache,
+int _avs_coap_msg_cache_add(coap_msg_cache_t *cache,
                               const char *remote_addr,
                               const char *remote_port,
                               const anjay_coap_msg_t *msg,
@@ -95,7 +95,7 @@ int _anjay_coap_msg_cache_add(coap_msg_cache_t *cache,
  * @return Found cached message, or NULL if it was not found
  *         or @p cache is NULL.
  */
-const anjay_coap_msg_t *_anjay_coap_msg_cache_get(coap_msg_cache_t *cache,
+const anjay_coap_msg_t *_avs_coap_msg_cache_get(coap_msg_cache_t *cache,
                                                   const char *remote_addr,
                                                   const char *remote_port,
                                                   uint16_t msg_id);
@@ -105,16 +105,16 @@ const anjay_coap_msg_t *_anjay_coap_msg_cache_get(coap_msg_cache_t *cache,
  *
  * @p cache Cache object to print.
  */
-void _anjay_coap_msg_cache_debug_print(const coap_msg_cache_t *cache);
+void _avs_coap_msg_cache_debug_print(const coap_msg_cache_t *cache);
 
 #else // WITH_AVS_COAP_MESSAGE_CACHE
 
-#define _anjay_coap_msg_cache_create(...) \
+#define _avs_coap_msg_cache_create(...) \
     (LOG(ERROR, "message cache support disabled"), NULL)
-#define _anjay_coap_msg_cache_release(...) (void)0
-#define _anjay_coap_msg_cache_add(...) (void)(-1)
-#define _anjay_coap_msg_cache_get(...) NULL
-#define _anjay_coap_msg_cache_debug_print(...) (void)0
+#define _avs_coap_msg_cache_release(...) (void)0
+#define _avs_coap_msg_cache_add(...) (void)(-1)
+#define _avs_coap_msg_cache_get(...) NULL
+#define _avs_coap_msg_cache_debug_print(...) (void)0
 
 #endif // WITH_AVS_COAP_MESSAGE_CACHE
 

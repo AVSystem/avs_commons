@@ -40,7 +40,7 @@ AVS_UNIT_TEST(coap_socket, coap_socket) {
     avs_net_socket_opt_value_t mtu;
     { // udp_client_send_recv
         anjay_coap_socket_t *socket =
-                _anjay_test_setup_udp_echo_socket(TEST_PORT_UDP);
+                _avs_test_setup_udp_echo_socket(TEST_PORT_UDP);
 
         anjay_coap_msg_info_t info = avs_coap_msg_info_init();
         info.type = AVS_COAP_MSG_CONFIRMABLE;
@@ -80,7 +80,7 @@ AVS_UNIT_TEST(coap_socket, coap_socket) {
     }
     { // dtls_client_send_recv
         anjay_coap_socket_t *socket =
-                _anjay_test_setup_dtls_echo_socket(TEST_PORT_DTLS);
+                _avs_test_setup_dtls_echo_socket(TEST_PORT_DTLS);
 
         anjay_coap_msg_info_t info = avs_coap_msg_info_init();
         info.type = AVS_COAP_MSG_CONFIRMABLE;

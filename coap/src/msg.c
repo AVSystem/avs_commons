@@ -165,7 +165,7 @@ size_t avs_coap_msg_payload_length(const anjay_coap_msg_t *msg) {
 }
 
 static bool is_header_valid(const anjay_coap_msg_t *msg) {
-    uint8_t version = _anjay_coap_msg_header_get_version(&msg->header);
+    uint8_t version = _avs_coap_msg_header_get_version(&msg->header);
     if (version != 1) {
         LOG(DEBUG, "unsupported CoAP version: %u", version);
         return false;
@@ -267,7 +267,7 @@ void avs_coap_msg_debug_print(const anjay_coap_msg_t *msg) {
         msg_type_string(avs_coap_msg_header_get_type(&msg->header)));
 
     LOG(DEBUG, "  version: %u",
-        _anjay_coap_msg_header_get_version(&msg->header));
+        _avs_coap_msg_header_get_version(&msg->header));
     LOG(DEBUG, "  token_length: %u",
         avs_coap_msg_header_get_token_length(&msg->header));
     LOG(DEBUG, "  code: %s", AVS_COAP_CODE_STRING(msg->header.code));

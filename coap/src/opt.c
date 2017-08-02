@@ -69,12 +69,12 @@ static inline const uint8_t *ext_delta_ptr(const anjay_coap_opt_t *opt) {
 }
 
 static inline const uint8_t *ext_length_ptr(const anjay_coap_opt_t *opt) {
-    return opt->content + get_ext_field_size(_anjay_coap_opt_get_short_delta(opt));
+    return opt->content + get_ext_field_size(_avs_coap_opt_get_short_delta(opt));
 }
 
 const uint8_t *avs_coap_opt_value(const anjay_coap_opt_t *opt) {
     return ext_length_ptr(opt)
-           + get_ext_field_size(_anjay_coap_opt_get_short_length(opt));
+           + get_ext_field_size(_avs_coap_opt_get_short_length(opt));
 }
 
 int avs_coap_opt_uint_value(const anjay_coap_opt_t *opt,
@@ -147,14 +147,14 @@ int avs_coap_opt_block_size(const anjay_coap_opt_t *opt,
 }
 
 uint32_t avs_coap_opt_delta(const anjay_coap_opt_t *opt) {
-    uint32_t delta = decode_ext_value(_anjay_coap_opt_get_short_delta(opt),
+    uint32_t delta = decode_ext_value(_avs_coap_opt_get_short_delta(opt),
                                       ext_delta_ptr(opt));
     assert(delta <= UINT16_MAX + AVS_COAP_EXT_U16_BASE);
     return delta;
 }
 
 uint32_t avs_coap_opt_content_length(const anjay_coap_opt_t *opt) {
-    uint32_t length = decode_ext_value(_anjay_coap_opt_get_short_length(opt),
+    uint32_t length = decode_ext_value(_avs_coap_opt_get_short_length(opt),
                                        ext_length_ptr(opt));
     assert(length <= UINT16_MAX + AVS_COAP_EXT_U16_BASE);
     return length;
@@ -162,7 +162,7 @@ uint32_t avs_coap_opt_content_length(const anjay_coap_opt_t *opt) {
 
 static inline bool is_delta_valid(const anjay_coap_opt_t *opt,
                                   size_t max_opt_bytes) {
-    uint8_t short_delta = _anjay_coap_opt_get_short_delta(opt);
+    uint8_t short_delta = _avs_coap_opt_get_short_delta(opt);
     if (short_delta == AVS_COAP_EXT_RESERVED) {
         return false;
     }
@@ -174,12 +174,12 @@ static inline bool is_delta_valid(const anjay_coap_opt_t *opt,
 
 static inline bool is_length_valid(const anjay_coap_opt_t *opt,
                                   size_t max_opt_bytes) {
-    uint8_t short_length = _anjay_coap_opt_get_short_length(opt);
+    uint8_t short_length = _avs_coap_opt_get_short_length(opt);
     if (short_length == AVS_COAP_EXT_RESERVED) {
         return false;
     }
 
-    uint8_t short_delta = _anjay_coap_opt_get_short_delta(opt);
+    uint8_t short_delta = _avs_coap_opt_get_short_delta(opt);
     size_t required_bytes = 1 + get_ext_field_size(short_delta)
                               + get_ext_field_size(short_length);
     return required_bytes <= max_opt_bytes

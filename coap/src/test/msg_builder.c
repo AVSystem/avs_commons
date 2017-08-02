@@ -104,7 +104,7 @@ AVS_UNIT_TEST(coap_info, token) {
             offsetof(anjay_coap_msg_t, content) + AVS_COAP_MAX_TOKEN_LENGTH;
     anjay_coap_msg_t *msg_tpl = make_msg_template_with_data(
             alloca(msg_tpl_size), &TOKEN, AVS_COAP_MAX_TOKEN_LENGTH);
-    _anjay_coap_msg_header_set_token_length(&msg_tpl->header, sizeof(TOKEN));
+    _avs_coap_msg_header_set_token_length(&msg_tpl->header, sizeof(TOKEN));
 
     anjay_coap_msg_info_t info =
             INFO_WITH_HEADER(&msg_tpl->header);
@@ -142,7 +142,7 @@ AVS_UNIT_TEST(coap_builder, option_empty) {
 
 AVS_UNIT_TEST(coap_builder, option_opaque) {
     DECLARE_MSG_TEMPLATE_WITH_DATA(msg_tpl, msg_tpl_size, "\x00" "foo");
-    _anjay_coap_opt_set_short_length((anjay_coap_opt_t *)msg_tpl->content, 3);
+    _avs_coap_opt_set_short_length((anjay_coap_opt_t *)msg_tpl->content, 3);
 
     anjay_coap_msg_info_t info = INFO_WITH_HEADER(&msg_tpl->header);
     AVS_UNIT_ASSERT_SUCCESS(avs_coap_msg_info_opt_opaque(&info, 0, "foo", sizeof("foo") - 1));
@@ -169,17 +169,17 @@ AVS_UNIT_TEST(coap_builder, option_multiple_ints) {
                             + sizeof(uint8_t);
     DECLARE_MSG_TEMPLATE(msg_tpl, msg_tpl_size, content_length);
 
-    _anjay_coap_opt_set_short_length((anjay_coap_opt_t *)&msg_tpl->content[0], 1);
+    _avs_coap_opt_set_short_length((anjay_coap_opt_t *)&msg_tpl->content[0], 1);
     msg_tpl->content[1] = 0x10;
-    _anjay_coap_opt_set_short_length((anjay_coap_opt_t *)&msg_tpl->content[2], 2);
+    _avs_coap_opt_set_short_length((anjay_coap_opt_t *)&msg_tpl->content[2], 2);
     msg_tpl->content[3] = 0x21;
     msg_tpl->content[4] = 0x20;
-    _anjay_coap_opt_set_short_length((anjay_coap_opt_t *)&msg_tpl->content[5], 4);
+    _avs_coap_opt_set_short_length((anjay_coap_opt_t *)&msg_tpl->content[5], 4);
     msg_tpl->content[6] = 0x43;
     msg_tpl->content[7] = 0x42;
     msg_tpl->content[8] = 0x41;
     msg_tpl->content[9] = 0x40;
-    _anjay_coap_opt_set_short_length((anjay_coap_opt_t *)&msg_tpl->content[10], 8);
+    _avs_coap_opt_set_short_length((anjay_coap_opt_t *)&msg_tpl->content[10], 8);
     msg_tpl->content[11] = 0x87;
     msg_tpl->content[12] = 0x86;
     msg_tpl->content[13] = 0x85;
@@ -188,9 +188,9 @@ AVS_UNIT_TEST(coap_builder, option_multiple_ints) {
     msg_tpl->content[16] = 0x82;
     msg_tpl->content[17] = 0x81;
     msg_tpl->content[18] = 0x80;
-    _anjay_coap_opt_set_short_length((anjay_coap_opt_t *)&msg_tpl->content[19], 1);
+    _avs_coap_opt_set_short_length((anjay_coap_opt_t *)&msg_tpl->content[19], 1);
     msg_tpl->content[20] = 0xFF;
-    _anjay_coap_opt_set_short_length((anjay_coap_opt_t *)&msg_tpl->content[21], 0);
+    _avs_coap_opt_set_short_length((anjay_coap_opt_t *)&msg_tpl->content[21], 0);
 
     anjay_coap_msg_info_t info = INFO_WITH_HEADER(&msg_tpl->header);
     AVS_UNIT_ASSERT_SUCCESS(avs_coap_msg_info_opt_uint(&info, 0, &(uint8_t)  { 0x10 },               1));
@@ -216,8 +216,8 @@ AVS_UNIT_TEST(coap_builder, option_multiple_ints) {
 AVS_UNIT_TEST(coap_builder, option_content_format) {
     uint32_t content_length = sizeof(uint8_t) + sizeof(uint16_t);
     DECLARE_MSG_TEMPLATE(msg_tpl, msg_tpl_size, content_length);
-    _anjay_coap_opt_set_short_length((anjay_coap_opt_t *)&msg_tpl->content[0], 2);
-    _anjay_coap_opt_set_short_delta((anjay_coap_opt_t *)&msg_tpl->content[0], AVS_COAP_OPT_CONTENT_FORMAT);
+    _avs_coap_opt_set_short_length((anjay_coap_opt_t *)&msg_tpl->content[0], 2);
+    _avs_coap_opt_set_short_delta((anjay_coap_opt_t *)&msg_tpl->content[0], AVS_COAP_OPT_CONTENT_FORMAT);
     memcpy(&msg_tpl->content[1], &(uint16_t){htons(AVS_COAP_FORMAT_TLV)}, 2);
 
     anjay_coap_msg_info_t info = INFO_WITH_HEADER(&msg_tpl->header);

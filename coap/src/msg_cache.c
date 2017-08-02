@@ -62,7 +62,7 @@ AVS_STATIC_ASSERT(offsetof(cache_entry_t, data)
                       % AVS_ALIGNOF(anjay_coap_msg_t) == 0,
                   invalid_msg_alignment_in_cache_entry_t);
 
-coap_msg_cache_t *_anjay_coap_msg_cache_create(size_t capacity) {
+coap_msg_cache_t *_avs_coap_msg_cache_create(size_t capacity) {
     if (capacity == 0) {
         return NULL;
     }
@@ -83,7 +83,7 @@ coap_msg_cache_t *_anjay_coap_msg_cache_create(size_t capacity) {
     return cache;
 }
 
-void _anjay_coap_msg_cache_release(coap_msg_cache_t **cache_ptr) {
+void _avs_coap_msg_cache_release(coap_msg_cache_t **cache_ptr) {
     if (cache_ptr && *cache_ptr) {
         avs_buffer_free(&(*cache_ptr)->buffer);
         AVS_LIST_CLEAR(&(*cache_ptr)->endpoints);
@@ -151,7 +151,7 @@ static size_t padding_bytes_after_msg(const anjay_coap_msg_t *msg) {
 /**
  * @return Extra overhead, in bytes, required to put @p msg in cache. Total
  *         number of bytes used by a message is:
- *         <c>_anjay_coap_msg_cache_overhead(msg)
+ *         <c>_avs_coap_msg_cache_overhead(msg)
  *         + msg->length + offsetof(anjay_coap_msg_t, header)</c>
  */
 static inline size_t cache_msg_overhead(const anjay_coap_msg_t *msg) {
@@ -288,7 +288,7 @@ static const cache_entry_t *find_entry(const coap_msg_cache_t *cache,
     return NULL;
 }
 
-int _anjay_coap_msg_cache_add(coap_msg_cache_t *cache,
+int _avs_coap_msg_cache_add(coap_msg_cache_t *cache,
                               const char *remote_addr,
                               const char *remote_port,
                               const anjay_coap_msg_t *msg,
@@ -331,7 +331,7 @@ int _anjay_coap_msg_cache_add(coap_msg_cache_t *cache,
     return 0;
 }
 
-const anjay_coap_msg_t *_anjay_coap_msg_cache_get(coap_msg_cache_t *cache,
+const anjay_coap_msg_t *_avs_coap_msg_cache_get(coap_msg_cache_t *cache,
                                                   const char *remote_addr,
                                                   const char *remote_port,
                                                   uint16_t msg_id) {
@@ -355,7 +355,7 @@ const anjay_coap_msg_t *_anjay_coap_msg_cache_get(coap_msg_cache_t *cache,
     return entry_msg(entry);
 }
 
-void _anjay_coap_msg_cache_debug_print(const coap_msg_cache_t *cache) {
+void _avs_coap_msg_cache_debug_print(const coap_msg_cache_t *cache) {
     if (!cache) {
         LOG(DEBUG, "msg_cache: NULL");
         return;

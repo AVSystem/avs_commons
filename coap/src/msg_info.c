@@ -48,7 +48,7 @@ get_options_size_bytes(const AVS_LIST(anjay_coap_msg_info_opt_t) opts) {
         assert(opt->number >= prev_opt_num);
 
         uint16_t delta = (uint16_t)(opt->number - prev_opt_num);
-        size += _anjay_coap_get_opt_header_size(delta, opt->data_size)
+        size += _avs_coap_get_opt_header_size(delta, opt->data_size)
                 + opt->data_size;
         prev_opt_num = opt->number;
     }
