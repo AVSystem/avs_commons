@@ -18,10 +18,10 @@
 
 #include <sys/types.h>
 
+#include <avsystem/commons/coap/content_format.h>
 #include <avsystem/commons/coap/msg_builder.h>
 #include <avsystem/commons/utils.h>
 
-#include "content_format.h"
 #include "log.h"
 #include "msg_internal.h"
 

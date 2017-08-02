@@ -17,8 +17,6 @@
 #ifndef ANJAY_COAP_CONTENT_FORMAT_H
 #define ANJAY_COAP_CONTENT_FORMAT_H
 
-#pragma GCC visibility push(hidden)
-
 /** Auxiliary constants for common Content-Format Option values */
 
 #define ANJAY_COAP_FORMAT_APPLICATION_LINK 40
@@ -28,12 +26,10 @@
 #define ANJAY_COAP_FORMAT_TLV 11542
 #define ANJAY_COAP_FORMAT_JSON 11543
 
-#ifdef WITH_LEGACY_CONTENT_FORMAT_SUPPORT
 #define ANJAY_COAP_FORMAT_LEGACY_PLAINTEXT 1541
 #define ANJAY_COAP_FORMAT_LEGACY_TLV 1542
 #define ANJAY_COAP_FORMAT_LEGACY_JSON 1543
 #define ANJAY_COAP_FORMAT_LEGACY_OPAQUE 1544
-#endif // WITH_LEGACY_CONTENT_FORMAT_SUPPORT
 
 /**
  * A magic value used to indicate the absence of the Content-Format option.
@@ -41,7 +37,5 @@
  * nothing.
  * */
 #define ANJAY_COAP_FORMAT_NONE 65535
-
-#pragma GCC visibility pop
 
 #endif // ANJAY_COAP_CONTENT_FORMAT_H
