@@ -167,20 +167,20 @@ size_t _anjay_coap_msg_payload_length(const anjay_coap_msg_t *msg) {
 static bool is_header_valid(const anjay_coap_msg_t *msg) {
     uint8_t version = _anjay_coap_msg_header_get_version(&msg->header);
     if (version != 1) {
-        coap_log(DEBUG, "unsupported CoAP version: %u", version);
+        LOG(DEBUG, "unsupported CoAP version: %u", version);
         return false;
     }
 
     uint8_t token_length = _anjay_coap_msg_header_get_token_length(&msg->header);
     if (token_length > ANJAY_COAP_MAX_TOKEN_LENGTH) {
-        coap_log(DEBUG, "token too long (%dB, expected 0 <= size <= %d)",
-                 token_length, ANJAY_COAP_MAX_TOKEN_LENGTH);
+        LOG(DEBUG, "token too long (%dB, expected 0 <= size <= %d)",
+            token_length, ANJAY_COAP_MAX_TOKEN_LENGTH);
         return false;
     }
 
     if (sizeof(msg->header) + token_length > msg->length) {
-        coap_log(DEBUG, "missing/incomplete token (got %uB, expected %u)",
-                 msg->length - (uint32_t)sizeof(msg->header), token_length);
+        LOG(DEBUG, "missing/incomplete token (got %uB, expected %u)",
+            msg->length - (uint32_t) sizeof(msg->header), token_length);
         return false;
     }
 
@@ -200,21 +200,22 @@ static bool are_options_valid(const anjay_coap_msg_t *msg) {
             _anjay_coap_opt_next(&optit)) {
         if (!_anjay_coap_opt_is_valid(optit.curr_opt,
                                       msg->length - length_so_far)) {
-            coap_log(DEBUG, "option validation failed");
+            LOG(DEBUG, "option validation failed");
             return false;
         }
 
         length_so_far += _anjay_coap_opt_sizeof(optit.curr_opt);
 
         if (length_so_far > msg->length) {
-            coap_log(DEBUG, "invalid option length (ends %lu bytes after end of message)",
-                     (unsigned long)(length_so_far - msg->length));
+            LOG(DEBUG,
+                "invalid option length (ends %lu bytes after end of message)",
+                (unsigned long) (length_so_far - msg->length));
             return false;
         }
 
         uint32_t opt_number = _anjay_coap_opt_number(&optit);
         if (opt_number > UINT16_MAX) {
-            coap_log(DEBUG, "invalid option number (%u)", opt_number);
+            LOG(DEBUG, "invalid option number (%u)", opt_number);
             return false;
         }
     }
@@ -223,7 +224,7 @@ static bool are_options_valid(const anjay_coap_msg_t *msg) {
             && is_payload_marker(optit.curr_opt)) {
         // RFC 7252 3.1: The presence of a Payload Marker followed by a
         // zero-length payload MUST be processed as a message format error.
-        coap_log(DEBUG, "validation failed: payload marker at end of message");
+        LOG(DEBUG, "validation failed: payload marker at end of message");
         return false;
     }
 
@@ -232,8 +233,8 @@ static bool are_options_valid(const anjay_coap_msg_t *msg) {
 
 bool _anjay_coap_msg_is_valid(const anjay_coap_msg_t *msg) {
     if (msg->length < ANJAY_COAP_MSG_MIN_SIZE) {
-        coap_log(DEBUG, "message too short (%uB, expected >= %u)",
-                 msg->length, ANJAY_COAP_MSG_MIN_SIZE);
+        LOG(DEBUG, "message too short (%uB, expected >= %u)", msg->length,
+            ANJAY_COAP_MSG_MIN_SIZE);
         return false;
     }
 
@@ -258,27 +259,26 @@ static const char *msg_type_string(anjay_coap_msg_type_t type) {
 }
 
 void _anjay_coap_msg_debug_print(const anjay_coap_msg_t *msg) {
-    coap_log(DEBUG, "sizeof(*msg) = %lu, sizeof(len) = %lu, sizeof(header) = %lu",
-             (unsigned long)sizeof(*msg), (unsigned long)sizeof(msg->length),
-             (unsigned long)sizeof(msg->header));
-    coap_log(DEBUG, "message (length = %u):", msg->length);
-    coap_log(DEBUG, "type: %u (%s)",
-             _anjay_coap_msg_header_get_type(&msg->header),
-             msg_type_string(_anjay_coap_msg_header_get_type(&msg->header)));
+    LOG(DEBUG, "sizeof(*msg) = %lu, sizeof(len) = %lu, sizeof(header) = %lu",
+        (unsigned long) sizeof(*msg), (unsigned long) sizeof(msg->length),
+        (unsigned long) sizeof(msg->header));
+    LOG(DEBUG, "message (length = %u):", msg->length);
+    LOG(DEBUG, "type: %u (%s)", _anjay_coap_msg_header_get_type(&msg->header),
+        msg_type_string(_anjay_coap_msg_header_get_type(&msg->header)));
 
-    coap_log(DEBUG, "  version: %u",
-             _anjay_coap_msg_header_get_version(&msg->header));
-    coap_log(DEBUG, "  token_length: %u",
-             _anjay_coap_msg_header_get_token_length(&msg->header));
-    coap_log(DEBUG, "  code: %s", ANJAY_COAP_CODE_STRING(msg->header.code));
-    coap_log(DEBUG, "  message_id: %u", _anjay_coap_msg_get_id(msg));
-    coap_log(DEBUG, "  content:");
+    LOG(DEBUG, "  version: %u",
+        _anjay_coap_msg_header_get_version(&msg->header));
+    LOG(DEBUG, "  token_length: %u",
+        _anjay_coap_msg_header_get_token_length(&msg->header));
+    LOG(DEBUG, "  code: %s", ANJAY_COAP_CODE_STRING(msg->header.code));
+    LOG(DEBUG, "  message_id: %u", _anjay_coap_msg_get_id(msg));
+    LOG(DEBUG, "  content:");
 
     for (size_t i = 0; i < msg->length - sizeof(msg->header); i += 8) {
-        coap_log(DEBUG, "%02x", msg->content[i]);
+        LOG(DEBUG, "%02x", msg->content[i]);
     }
 
-    coap_log(DEBUG, "opts:");
+    LOG(DEBUG, "opts:");
     for (anjay_coap_opt_iterator_t optit = _anjay_coap_opt_begin(msg);
             !_anjay_coap_opt_end(&optit);
             _anjay_coap_opt_next(&optit)) {

@@ -55,7 +55,7 @@ int _anjay_coap_socket_create(anjay_coap_socket_t **sock,
     if (msg_cache_size > 0) {
         (*sock)->msg_cache = _anjay_coap_msg_cache_create(msg_cache_size);
         if (!(*sock)->msg_cache) {
-            coap_log(ERROR, "could not create message cache");
+            LOG(ERROR, "could not create message cache");
             free(*sock);
             return -1;
         }
@@ -91,7 +91,7 @@ static int map_io_error(avs_net_abstract_socket_t *socket,
                         const char *operation) {
     if (result) {
         int error = avs_net_socket_errno(socket);
-        coap_log(ERROR, "%s failed: errno = %d", operation, error);
+        LOG(ERROR, "%s failed: errno = %d", operation, error);
         if (error == ETIMEDOUT) {
             result = ANJAY_COAP_SOCKET_ERR_TIMEOUT;
         } else if (error == EMSGSIZE) {
@@ -118,7 +118,7 @@ static int try_cache_response(anjay_coap_socket_t *sock,
     if (avs_net_socket_get_remote_host(sock->dtls_socket, addr, sizeof(addr))
             || avs_net_socket_get_remote_port(sock->dtls_socket,
                                               port, sizeof(port))) {
-        coap_log(DEBUG, "could not get remote remote host/port");
+        LOG(DEBUG, "could not get remote remote host/port");
         return -1;
     }
 
@@ -132,11 +132,11 @@ int _anjay_coap_socket_send(anjay_coap_socket_t *sock,
                             const anjay_coap_msg_t *msg) {
     assert(sock && sock->dtls_socket);
     if (!_anjay_coap_msg_is_valid(msg)) {
-        coap_log(ERROR, "cannot send an invalid CoAP message\n");
+        LOG(ERROR, "cannot send an invalid CoAP message\n");
         return -1;
     }
 
-    coap_log(TRACE, "send: %s", ANJAY_COAP_MSG_SUMMARY(msg));
+    LOG(TRACE, "send: %s", ANJAY_COAP_MSG_SUMMARY(msg));
     int result = avs_net_socket_send(sock->dtls_socket,
                                      &msg->header, msg->length);
     if (!result) {
@@ -161,7 +161,7 @@ static int try_send_cached_response(anjay_coap_socket_t *sock,
     if (avs_net_socket_get_remote_host(sock->dtls_socket, addr, sizeof(addr))
             || avs_net_socket_get_remote_port(sock->dtls_socket,
                                               port, sizeof(port))) {
-        coap_log(DEBUG, "could not get remote remote host/port");
+        LOG(DEBUG, "could not get remote remote host/port");
         return -1;
     }
 
@@ -200,11 +200,11 @@ int _anjay_coap_socket_recv(anjay_coap_socket_t *sock,
     }
 
     if (!_anjay_coap_msg_is_valid(out_msg)) {
-        coap_log(DEBUG, "recv: malformed message");
+        LOG(DEBUG, "recv: malformed message");
         return ANJAY_COAP_SOCKET_ERR_MSG_MALFORMED;
     }
 
-    coap_log(TRACE, "recv: %s", ANJAY_COAP_MSG_SUMMARY(out_msg));
+    LOG(TRACE, "recv: %s", ANJAY_COAP_MSG_SUMMARY(out_msg));
 
     if (is_coap_ping(out_msg)) {
         _anjay_coap_send_empty(sock, ANJAY_COAP_MSG_RESET,
@@ -225,7 +225,7 @@ int _anjay_coap_socket_get_recv_timeout(anjay_coap_socket_t *sock) {
     if (avs_net_socket_get_opt(sock->dtls_socket,
                                AVS_NET_SOCKET_OPT_RECV_TIMEOUT, &value)) {
         assert(0 && "should never happen");
-        coap_log(ERROR, "could not get socket recv timeout");
+        LOG(ERROR, "could not get socket recv timeout");
         return 0;
     }
 
@@ -241,7 +241,7 @@ void _anjay_coap_socket_set_recv_timeout(anjay_coap_socket_t *sock,
     if (avs_net_socket_set_opt(sock->dtls_socket,
                                AVS_NET_SOCKET_OPT_RECV_TIMEOUT, value)) {
         assert(0 && "should never happen");
-        coap_log(ERROR, "could not set socket recv timeout");
+        LOG(ERROR, "could not set socket recv timeout");
     }
 }
 
@@ -301,7 +301,7 @@ static void send_response(anjay_coap_socket_t *socket,
 
     if (max_age && _anjay_coap_msg_info_opt_u32(&info, ANJAY_COAP_OPT_MAX_AGE,
                                                 *max_age)) {
-        coap_log(WARNING, "unable to add Max-Age option to response");
+        LOG(WARNING, "unable to add Max-Age option to response");
     }
 
     union {
@@ -316,7 +316,7 @@ static void send_response(anjay_coap_socket_t *socket,
     assert(error);
 
     if (_anjay_coap_socket_send(socket, error)) {
-        coap_log(WARNING, "failed to send error message");
+        LOG(WARNING, "failed to send error message");
     }
 
     _anjay_coap_msg_info_reset(&info);

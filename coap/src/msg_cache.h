@@ -110,7 +110,7 @@ void _anjay_coap_msg_cache_debug_print(const coap_msg_cache_t *cache);
 #else // WITH_AVS_COAP_MESSAGE_CACHE
 
 #define _anjay_coap_msg_cache_create(...) \
-    (coap_log(ERROR, "message cache support disabled"), NULL)
+    (LOG(ERROR, "message cache support disabled"), NULL)
 #define _anjay_coap_msg_cache_release(...) (void)0
 #define _anjay_coap_msg_cache_add(...) (void)(-1)
 #define _anjay_coap_msg_cache_get(...) NULL

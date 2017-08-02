@@ -26,9 +26,6 @@
 #include <avsystem/commons/net.h>
 #include <avsystem/commons/time.h>
 
-#warning "TODO: Fixme"
-typedef unsigned anjay_rand_seed_t;
-
 typedef struct {
     /** RFC 7252: ACK_TIMEOUT */
     avs_net_timeout_t ack_timeout_ms;
@@ -66,6 +63,6 @@ typedef struct {
 
 void _anjay_coap_update_retry_state(coap_retry_state_t *retry_state,
                                     const anjay_coap_tx_params_t *tx_params,
-                                    anjay_rand_seed_t *rand_seed);
+                                    unsigned *rand_seed);
 
 #endif // ANJAY_COAP_TX_PARAMS_H

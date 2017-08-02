@@ -106,7 +106,7 @@ static endpoint_t *cache_endpoint_add_ref(coap_msg_cache_t *cache,
 
     AVS_LIST(endpoint_t) new_ep = AVS_LIST_NEW_ELEMENT(endpoint_t);
     if (!new_ep) {
-        coap_log(DEBUG, "out of memory");
+        LOG(DEBUG, "out of memory");
         return NULL;
     }
 
@@ -114,8 +114,9 @@ static endpoint_t *cache_endpoint_add_ref(coap_msg_cache_t *cache,
                             remote_addr) < 0
             || avs_simple_snprintf(new_ep->port, sizeof(new_ep->port), "%s",
                                    remote_port) < 0) {
-        coap_log(WARNING, "endpoint address or port too long: addr = %s, "
-                 "port = %s", remote_addr, remote_port);
+        LOG(WARNING, "endpoint address or port too long: addr = %s, "
+                     "port = %s",
+            remote_addr, remote_port);
         AVS_LIST_DELETE(&new_ep);
         return NULL;
     }
@@ -123,7 +124,7 @@ static endpoint_t *cache_endpoint_add_ref(coap_msg_cache_t *cache,
     new_ep->refcount = 1;
     AVS_LIST_INSERT(&cache->endpoints, new_ep);
 
-    coap_log(TRACE, "added cache endpoint: %s:%s", new_ep->addr, new_ep->port);
+    LOG(TRACE, "added cache endpoint: %s:%s", new_ep->addr, new_ep->port);
     return new_ep;
 }
 
@@ -132,8 +133,8 @@ static void cache_endpoint_del_ref(coap_msg_cache_t *cache,
     if (--endpoint->refcount == 0) {
         AVS_LIST(endpoint_t) *ep_ptr = AVS_LIST_FIND_PTR(&cache->endpoints,
                                                          endpoint);
-        coap_log(TRACE, "removed cache endpoint: %s:%s",
-                 (*ep_ptr)->addr, (*ep_ptr)->port);
+        LOG(TRACE, "removed cache endpoint: %s:%s", (*ep_ptr)->addr,
+            (*ep_ptr)->port);
         AVS_LIST_DELETE(ep_ptr);
     }
 }
@@ -236,9 +237,9 @@ static void cache_free_bytes(coap_msg_cache_t *cache,
             entry = entry_next(entry)) {
         assert(entry_valid(cache, entry));
 
-        coap_log(TRACE, "msg_cache: dropping msg (id = %u) to make room for"
-                 " a new one (size = %zu)",
-                 entry_id(entry), bytes_required);
+        LOG(TRACE, "msg_cache: dropping msg (id = %u) to make room for"
+                   " a new one (size = %zu)",
+            entry_id(entry), bytes_required);
         cache_endpoint_del_ref(cache, entry->endpoint);
         bytes_free += entry_size(entry);
     }
@@ -256,8 +257,8 @@ static void cache_drop_expired(coap_msg_cache_t *cache,
             entry_valid(cache, entry);
             entry = entry_next(entry)) {
         if (entry_expired(entry, now)) {
-            coap_log(TRACE, "msg_cache: dropping expired msg (id = %u)",
-                     entry_id(entry));
+            LOG(TRACE, "msg_cache: dropping expired msg (id = %u)",
+                entry_id(entry));
             cache_endpoint_del_ref(cache, entry->endpoint);
         } else {
             break;
@@ -300,8 +301,7 @@ int _anjay_coap_msg_cache_add(coap_msg_cache_t *cache,
                    + offsetof(anjay_coap_msg_t, header)
                    + msg->length;
     if (avs_buffer_capacity(cache->buffer) < cap_req) {
-        coap_log(DEBUG, "msg_cache: not enough space for %u B message",
-                 msg->length);
+        LOG(DEBUG, "msg_cache: not enough space for %u B message", msg->length);
         return -1;
     }
 
@@ -311,7 +311,7 @@ int _anjay_coap_msg_cache_add(coap_msg_cache_t *cache,
 
     uint16_t msg_id = _anjay_coap_msg_get_id(msg);
     if (find_entry(cache, remote_addr, remote_port, msg_id)) {
-        coap_log(DEBUG, "msg_cache: message ID %u already in cache", msg_id);
+        LOG(DEBUG, "msg_cache: message ID %u already in cache", msg_id);
         return ANJAY_COAP_MSG_CACHE_DUPLICATE;
     }
 
@@ -351,36 +351,36 @@ const anjay_coap_msg_t *_anjay_coap_msg_cache_get(coap_msg_cache_t *cache,
 
     assert(!entry_expired(entry, &now));
 
-    coap_log(TRACE, "msg_cache hit (id = %u)", msg_id);
+    LOG(TRACE, "msg_cache hit (id = %u)", msg_id);
     return entry_msg(entry);
 }
 
 void _anjay_coap_msg_cache_debug_print(const coap_msg_cache_t *cache) {
     if (!cache) {
-        coap_log(DEBUG, "msg_cache: NULL");
+        LOG(DEBUG, "msg_cache: NULL");
         return;
     }
 
-    coap_log(DEBUG, "msg_cache: %zu/%zu bytes used",
-             avs_buffer_data_size(cache->buffer),
-             avs_buffer_capacity(cache->buffer));
+    LOG(DEBUG, "msg_cache: %zu/%zu bytes used",
+        avs_buffer_data_size(cache->buffer),
+        avs_buffer_capacity(cache->buffer));
 
     AVS_LIST(endpoint_t) ep;
     AVS_LIST_FOREACH(ep, cache->endpoints) {
-        coap_log(DEBUG, "endpoint: refcount %u, addr %s, port %s",
-                 ep->refcount, ep->addr, ep->port);
+        LOG(DEBUG, "endpoint: refcount %u, addr %s, port %s", ep->refcount,
+            ep->addr, ep->port);
     }
 
     for (const cache_entry_t *entry = entry_first(cache);
             entry_valid(cache, entry);
             entry = entry_next(entry)) {
-        coap_log(DEBUG, "entry: %p, msg padding: %zu",
-                 (const void*)entry, padding_bytes_after_msg(entry_msg(entry)));
-        coap_log(DEBUG, "endpoint: %s:%s",
-                 entry->endpoint->addr, entry->endpoint->port);
-        coap_log(DEBUG, "expiration time: %zd:%09zu",
-                 (ssize_t) entry->expiration_time.tv_sec,
-                 (size_t) entry->expiration_time.tv_nsec);
+        LOG(DEBUG, "entry: %p, msg padding: %zu", (const void *) entry,
+            padding_bytes_after_msg(entry_msg(entry)));
+        LOG(DEBUG, "endpoint: %s:%s", entry->endpoint->addr,
+            entry->endpoint->port);
+        LOG(DEBUG, "expiration time: %zd:%09zu",
+            (ssize_t) entry->expiration_time.tv_sec,
+            (size_t) entry->expiration_time.tv_nsec);
         _anjay_coap_msg_debug_print(entry_msg(entry));
     }
 }

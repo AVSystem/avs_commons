@@ -19,8 +19,7 @@
 
 #include <avsystem/commons/log.h>
 
-#warning "TODO"
-#define coap_log(...)
-//avs_log(coap, __VA_ARGS__)
+#define MODULE_NAME avs_coap
+#include <x_log_config.h>
 
 #endif // ANJAY_COAP_LOG_H

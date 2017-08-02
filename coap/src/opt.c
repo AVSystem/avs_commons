@@ -205,13 +205,13 @@ size_t _anjay_coap_opt_sizeof(const anjay_coap_opt_t *opt) {
 }
 
 void _anjay_coap_opt_debug_print(const anjay_coap_opt_t *opt) {
-    coap_log(DEBUG, "opt: delta %u, length %u, content:",
+    LOG(DEBUG, "opt: delta %u, length %u, content:",
              _anjay_coap_opt_delta(opt),
              _anjay_coap_opt_content_length(opt));
 
     const uint8_t *value = _anjay_coap_opt_value(opt);
     for (size_t i = 0; i < _anjay_coap_opt_content_length(opt); ++i) {
-        coap_log(DEBUG, "%02x", value[i]);
+        LOG(DEBUG, "%02x", value[i]);
     }
 }
 

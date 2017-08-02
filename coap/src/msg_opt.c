@@ -56,11 +56,11 @@ int _anjay_coap_msg_get_option_uint(const anjay_coap_msg_t *msg,
     const anjay_coap_opt_t *opt;
     if (_anjay_coap_msg_find_unique_opt(msg, option_number, &opt)) {
         if (opt) {
-            coap_log(DEBUG, "multiple instances of option %d found",
+            LOG(DEBUG, "multiple instances of option %d found",
                      option_number);
             return -1;
         } else {
-            coap_log(TRACE, "option %d not found", option_number);
+            LOG(TRACE, "option %d not found", option_number);
             return ANJAY_COAP_OPTION_MISSING;
         }
     }
@@ -136,7 +136,7 @@ int _anjay_coap_msg_validate_critical_options(
 
             if (!is_critical_opt_valid(it.msg->header.code, opt_number,
                                        validator)) {
-                coap_log(DEBUG,
+                LOG(DEBUG,
                          "warning: invalid critical option in query %s: %u",
                          ANJAY_COAP_CODE_STRING(it.msg->header.code),
                          opt_number);

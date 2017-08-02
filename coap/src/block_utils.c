@@ -38,7 +38,7 @@ int _anjay_coap_get_block_info(const anjay_coap_msg_t *msg,
     if (_anjay_coap_msg_find_unique_opt(msg, opt_number, &opt)) {
         if (opt) {
             int num = opt_number == ANJAY_COAP_OPT_BLOCK1 ? 1 : 2;
-            coap_log(ERROR, "multiple BLOCK%d options found", num);
+            LOG(ERROR, "multiple BLOCK%d options found", num);
             return -1;
         }
         return 0;

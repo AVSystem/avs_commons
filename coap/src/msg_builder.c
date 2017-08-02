@@ -26,8 +26,6 @@
 
 #pragma GCC visibility push(hidden)
 
-#define builder_log(...) avs_log(coap_builder, __VA_ARGS__)
-
 static void append_header(anjay_coap_msg_buffer_t *buffer,
                           anjay_coap_msg_type_t msg_type,
                           uint8_t msg_code,
@@ -55,8 +53,8 @@ static int append_data(anjay_coap_msg_buffer_t *buffer,
                        const void *data,
                        size_t data_size) {
     if (data_size > bytes_remaining(buffer)) {
-        builder_log(ERROR, "cannot append %u bytes, only %u available",
-                    (unsigned)data_size, (unsigned)bytes_remaining(buffer));
+        LOG(ERROR, "cannot append %u bytes, only %u available",
+            (unsigned) data_size, (unsigned) bytes_remaining(buffer));
         return -1;
     }
 
@@ -77,14 +75,14 @@ static int append_token(anjay_coap_msg_buffer_t *buffer,
 
     if (buffer->msg->header.code == ANJAY_COAP_CODE_EMPTY
             && token_length > 0) {
-        builder_log(ERROR, "0.00 Empty message must not contain a token");
+        LOG(ERROR, "0.00 Empty message must not contain a token");
         return -1;
     }
 
     _anjay_coap_msg_header_set_token_length(&buffer->msg->header,
                                             (uint8_t)token_length);
     if (append_data(buffer, token, token_length)) {
-        builder_log(ERROR, "could not append token");
+        LOG(ERROR, "could not append token");
         return -1;
     }
 
@@ -141,7 +139,7 @@ static int append_option(anjay_coap_msg_buffer_t *buffer,
                          const void *opt_data,
                          uint16_t opt_data_size) {
     if (buffer->msg->header.code == ANJAY_COAP_CODE_EMPTY) {
-        builder_log(ERROR, "0.00 Empty message must not contain options");
+        LOG(ERROR, "0.00 Empty message must not contain options");
         return -1;
     }
 
@@ -149,7 +147,7 @@ static int append_option(anjay_coap_msg_buffer_t *buffer,
                                                          opt_data_size);
 
     if (header_size + opt_data_size > bytes_remaining(buffer)) {
-        builder_log(ERROR, "not enough space to serialize option");
+        LOG(ERROR, "not enough space to serialize option");
         return -1;
     }
 
@@ -158,7 +156,7 @@ static int append_option(anjay_coap_msg_buffer_t *buffer,
                                                       opt_data_size);
 
     if (append_data(buffer, opt_data, opt_data_size)) {
-        builder_log(ERROR, "could not serialize option");
+        LOG(ERROR, "could not serialize option");
         return -1;
     }
 
@@ -185,9 +183,9 @@ _anjay_coap_msg_builder_reset(anjay_coap_msg_builder_t *builder,
                               const anjay_coap_msg_info_t *header) {
     if (builder->msg_buffer.capacity
             < _anjay_coap_msg_info_get_headers_size(header)) {
-        coap_log(ERROR, "message buffer too small: %u/%u B available",
-                 (unsigned)builder->msg_buffer.capacity,
-                 (unsigned)_anjay_coap_msg_info_get_storage_size(header));
+        LOG(ERROR, "message buffer too small: %u/%u B available",
+            (unsigned) builder->msg_buffer.capacity,
+            (unsigned) _anjay_coap_msg_info_get_storage_size(header));
         return -1;
     }
 

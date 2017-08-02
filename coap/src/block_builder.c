@@ -107,7 +107,7 @@ _anjay_coap_block_builder_build(anjay_coap_block_builder_t *builder,
 
 
     if (builder->read_offset == builder->write_offset) {
-        coap_log(WARNING, "no payload data to extract!");
+        LOG(WARNING, "no payload data to extract!");
         return NULL;
     }
 
