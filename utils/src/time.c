@@ -17,7 +17,6 @@
 #include <avsystem/commons/time.h>
 
 #define NS_IN_S (1L * 1000L * 1000L * 1000L)
-#define DAY_IN_S 86400
 
 bool avs_time_before(const struct timespec *a, const struct timespec *b) {
     return (a->tv_sec < b->tv_sec)
