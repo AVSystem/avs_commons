@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef ANJAY_COAP_BLOCK_UTILS_H
-#define ANJAY_COAP_BLOCK_UTILS_H
+#ifndef AVS_COAP_BLOCK_UTILS_H
+#define AVS_COAP_BLOCK_UTILS_H
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -23,8 +23,8 @@
 #include <avsystem/commons/coap/msg.h>
 
 
-#define ANJAY_COAP_MSG_BLOCK_MIN_SIZE (1 << 4)
-#define ANJAY_COAP_MSG_BLOCK_MAX_SIZE (1 << 10)
+#define AVS_COAP_MSG_BLOCK_MIN_SIZE (1 << 4)
+#define AVS_COAP_MSG_BLOCK_MAX_SIZE (1 << 10)
 
 typedef enum {
     COAP_BLOCK1,
@@ -33,7 +33,7 @@ typedef enum {
 
 static inline uint16_t
 avs_coap_opt_num_from_block_type(coap_block_type_t type) {
-    return type == COAP_BLOCK1 ? ANJAY_COAP_OPT_BLOCK1 : ANJAY_COAP_OPT_BLOCK2;
+    return type == COAP_BLOCK1 ? AVS_COAP_OPT_BLOCK1 : AVS_COAP_OPT_BLOCK2;
 }
 
 typedef struct coap_block_info {
@@ -67,4 +67,4 @@ int avs_coap_get_block_info(const anjay_coap_msg_t *msg,
 bool avs_coap_is_valid_block_size(uint16_t size);
 
 
-#endif // ANJAY_COAP_BLOCK_UTILS_H
+#endif // AVS_COAP_BLOCK_UTILS_H

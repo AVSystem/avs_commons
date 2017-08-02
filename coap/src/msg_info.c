@@ -27,7 +27,7 @@
 
 #pragma GCC visibility push(hidden)
 
-const anjay_coap_msg_t _ANJAY_COAP_EMPTY_MSG_TEMPLATE = {
+const anjay_coap_msg_t _AVS_COAP_EMPTY_MSG_TEMPLATE = {
     .length = sizeof(anjay_coap_msg_header_t)
 };
 
@@ -66,7 +66,7 @@ avs_coap_msg_info_get_headers_size(const anjay_coap_msg_info_t *info) {
 size_t
 avs_coap_msg_info_get_storage_size(const anjay_coap_msg_info_t *info) {
     return offsetof(anjay_coap_msg_t, content)
-           + ANJAY_COAP_MAX_TOKEN_LENGTH
+           + AVS_COAP_MAX_TOKEN_LENGTH
            + get_options_size_bytes(info->options_);
 }
 
@@ -74,7 +74,7 @@ size_t
 avs_coap_msg_info_get_packet_storage_size(const anjay_coap_msg_info_t *info,
                                              size_t payload_size) {
     return avs_coap_msg_info_get_storage_size(info)
-           + (payload_size ? sizeof(ANJAY_COAP_PAYLOAD_MARKER) + payload_size
+           + (payload_size ? sizeof(AVS_COAP_PAYLOAD_MARKER) + payload_size
                            : 0);
 }
 
@@ -93,11 +93,11 @@ void avs_coap_msg_info_opt_remove_by_number(anjay_coap_msg_info_t *info,
 
 int avs_coap_msg_info_opt_content_format(anjay_coap_msg_info_t *info,
                                             uint16_t format) {
-    if (format == ANJAY_COAP_FORMAT_NONE) {
+    if (format == AVS_COAP_FORMAT_NONE) {
         return 0;
     }
 
-    return avs_coap_msg_info_opt_u16(info, ANJAY_COAP_OPT_CONTENT_FORMAT,
+    return avs_coap_msg_info_opt_u16(info, AVS_COAP_OPT_CONTENT_FORMAT,
                                         format);
 }
 
@@ -200,7 +200,7 @@ int avs_coap_msg_info_opt_uint(anjay_coap_msg_info_t *info,
                                   uint16_t opt_number,
                                   const void *value,
                                   size_t value_size) {
-#ifdef ANJAY_BIG_ENDIAN
+#ifdef AVS_BIG_ENDIAN
     const uint8_t *converted = (const uint8_t *) value;
 #else
     uint8_t converted[value_size];

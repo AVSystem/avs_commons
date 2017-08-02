@@ -46,7 +46,7 @@ avs_coap_block_builder_init(anjay_coap_msg_builder_t *msg_builder) {
         .write_offset = read_offset + payload_size,
     };
 
-    *msg_builder = ANJAY_COAP_MSG_BUILDER_UNINITIALIZED;
+    *msg_builder = AVS_COAP_MSG_BUILDER_UNINITIALIZED;
     return block_builder;
 }
 

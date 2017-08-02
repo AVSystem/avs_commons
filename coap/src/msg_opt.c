@@ -61,7 +61,7 @@ int avs_coap_msg_get_option_uint(const anjay_coap_msg_t *msg,
             return -1;
         } else {
             LOG(TRACE, "option %d not found", option_number);
-            return ANJAY_COAP_OPTION_MISSING;
+            return AVS_COAP_OPTION_MISSING;
         }
     }
 
@@ -95,10 +95,10 @@ int avs_coap_msg_get_option_string_it(const anjay_coap_msg_t *msg,
 int avs_coap_msg_get_content_format(const anjay_coap_msg_t *msg,
                                        uint16_t *out_value) {
     int result = avs_coap_msg_get_option_u16(
-            msg, ANJAY_COAP_OPT_CONTENT_FORMAT, out_value);
+            msg, AVS_COAP_OPT_CONTENT_FORMAT, out_value);
 
-    if (result == ANJAY_COAP_OPTION_MISSING) {
-        *out_value = ANJAY_COAP_FORMAT_NONE;
+    if (result == AVS_COAP_OPTION_MISSING) {
+        *out_value = AVS_COAP_FORMAT_NONE;
         return 0;
     }
 
@@ -112,13 +112,13 @@ static bool is_opt_critical(uint32_t opt_number) {
 static bool is_critical_opt_valid(uint8_t msg_code, uint32_t opt_number,
             anjay_coap_critical_option_validator_t fallback_validator) {
     switch (opt_number) {
-    case ANJAY_COAP_OPT_BLOCK1:
-        return msg_code == ANJAY_COAP_CODE_PUT
-            || msg_code == ANJAY_COAP_CODE_POST;
-    case ANJAY_COAP_OPT_BLOCK2:
-        return msg_code == ANJAY_COAP_CODE_GET
-            || msg_code == ANJAY_COAP_CODE_PUT
-            || msg_code == ANJAY_COAP_CODE_POST;
+    case AVS_COAP_OPT_BLOCK1:
+        return msg_code == AVS_COAP_CODE_PUT
+            || msg_code == AVS_COAP_CODE_POST;
+    case AVS_COAP_OPT_BLOCK2:
+        return msg_code == AVS_COAP_CODE_GET
+            || msg_code == AVS_COAP_CODE_PUT
+            || msg_code == AVS_COAP_CODE_POST;
     default:
         return fallback_validator(msg_code, opt_number);
     }
@@ -138,7 +138,7 @@ int avs_coap_msg_validate_critical_options(
                                        validator)) {
                 LOG(DEBUG,
                          "warning: invalid critical option in query %s: %u",
-                         ANJAY_COAP_CODE_STRING(it.msg->header.code),
+                         AVS_COAP_CODE_STRING(it.msg->header.code),
                          opt_number);
                 result = -1;
             }

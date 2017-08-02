@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef ANJAY_COAP_MSGINFO_H
-#define ANJAY_COAP_MSGINFO_H
+#ifndef AVS_COAP_MSGINFO_H
+#define AVS_COAP_MSGINFO_H
 
 #include <stdlib.h>
 
@@ -42,7 +42,7 @@ typedef struct anjay_coap_msg_info {
  */
 #define avs_coap_msg_info_init() \
     ((anjay_coap_msg_info_t){ \
-        .code = ANJAY_COAP_CODE_EMPTY, \
+        .code = AVS_COAP_CODE_EMPTY, \
         .identity = { \
             .msg_id = 0, \
             .token = {{0}}, \
@@ -107,13 +107,13 @@ void avs_coap_msg_info_opt_remove_by_number(anjay_coap_msg_info_t *info,
                                                uint16_t option_number);
 
 /**
- * Adds a Content-Format Option (@ref ANJAY_COAP_OPT_CONTENT_FORMAT = 12) to the
+ * Adds a Content-Format Option (@ref AVS_COAP_OPT_CONTENT_FORMAT = 12) to the
  * message being built.
  *
  * @param info    Info object to operate on.
  * @param format  Numeric value of the Content-Format option. May be one of the
- *                ANJAY_COAP_FORMAT_* contants. Calling this function with
- *                @ref ANJAY_COAP_FORMAT_NONE removes the Content-Format option.
+ *                AVS_COAP_FORMAT_* contants. Calling this function with
+ *                @ref AVS_COAP_FORMAT_NONE removes the Content-Format option.
  *
  * @return 0 on success, -1 in case of error.
  */
@@ -142,7 +142,7 @@ int avs_coap_msg_info_opt_block(anjay_coap_msg_info_t *info,
  * @param opt_data_size Number of bytes in the @p opt_data buffer.
  *
  * @return 0 on success, -1 in case of error:
- *         - the message code is set to @ref ANJAY_COAP_CODE_EMPTY, which must
+ *         - the message code is set to @ref AVS_COAP_CODE_EMPTY, which must
  *           not contain any options.
  */
 int avs_coap_msg_info_opt_opaque(anjay_coap_msg_info_t *info,
@@ -195,4 +195,4 @@ static inline int avs_coap_msg_info_opt_u32(anjay_coap_msg_info_t *info,
                                          &value, sizeof(value));
 }
 
-#endif // ANJAY_COAP_MSGINFO_H
+#endif // AVS_COAP_MSGINFO_H

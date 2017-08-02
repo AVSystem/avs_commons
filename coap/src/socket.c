@@ -93,11 +93,11 @@ static int map_io_error(avs_net_abstract_socket_t *socket,
         int error = avs_net_socket_errno(socket);
         LOG(ERROR, "%s failed: errno = %d", operation, error);
         if (error == ETIMEDOUT) {
-            result = ANJAY_COAP_SOCKET_ERR_TIMEOUT;
+            result = AVS_COAP_SOCKET_ERR_TIMEOUT;
         } else if (error == EMSGSIZE) {
-            result = ANJAY_COAP_SOCKET_ERR_MSG_TOO_LONG;
+            result = AVS_COAP_SOCKET_ERR_MSG_TOO_LONG;
         } else {
-            result = ANJAY_COAP_SOCKET_ERR_NETWORK;
+            result = AVS_COAP_SOCKET_ERR_NETWORK;
         }
     }
     return result;
@@ -136,7 +136,7 @@ int avs_coap_socket_send(anjay_coap_socket_t *sock,
         return -1;
     }
 
-    LOG(TRACE, "send: %s", ANJAY_COAP_MSG_SUMMARY(msg));
+    LOG(TRACE, "send: %s", AVS_COAP_MSG_SUMMARY(msg));
     int result = avs_net_socket_send(sock->dtls_socket,
                                      &msg->header, msg->length);
     if (!result) {
@@ -179,8 +179,8 @@ static int try_send_cached_response(anjay_coap_socket_t *sock,
 
 static inline bool is_coap_ping(const anjay_coap_msg_t *msg) {
     return avs_coap_msg_header_get_type(&msg->header)
-                   == ANJAY_COAP_MSG_CONFIRMABLE
-           && msg->header.code == ANJAY_COAP_CODE_EMPTY;
+                   == AVS_COAP_MSG_CONFIRMABLE
+           && msg->header.code == AVS_COAP_CODE_EMPTY;
 }
 
 int avs_coap_socket_recv(anjay_coap_socket_t *sock,
@@ -201,19 +201,19 @@ int avs_coap_socket_recv(anjay_coap_socket_t *sock,
 
     if (!avs_coap_msg_is_valid(out_msg)) {
         LOG(DEBUG, "recv: malformed message");
-        return ANJAY_COAP_SOCKET_ERR_MSG_MALFORMED;
+        return AVS_COAP_SOCKET_ERR_MSG_MALFORMED;
     }
 
-    LOG(TRACE, "recv: %s", ANJAY_COAP_MSG_SUMMARY(out_msg));
+    LOG(TRACE, "recv: %s", AVS_COAP_MSG_SUMMARY(out_msg));
 
     if (is_coap_ping(out_msg)) {
-        avs_coap_send_empty(sock, ANJAY_COAP_MSG_RESET,
+        avs_coap_send_empty(sock, AVS_COAP_MSG_RESET,
                                avs_coap_msg_get_id(out_msg));
-        return ANJAY_COAP_SOCKET_ERR_MSG_WAS_PING;
+        return AVS_COAP_SOCKET_ERR_MSG_WAS_PING;
     }
 
     if (!try_send_cached_response(sock, out_msg)) {
-        return ANJAY_COAP_SOCKET_ERR_DUPLICATE;
+        return AVS_COAP_SOCKET_ERR_DUPLICATE;
     }
 
     return 0;
@@ -272,7 +272,7 @@ int avs_coap_send_empty(anjay_coap_socket_t *socket,
     anjay_coap_msg_info_t info = avs_coap_msg_info_init();
 
     info.type = msg_type;
-    info.code = ANJAY_COAP_CODE_EMPTY;
+    info.code = AVS_COAP_CODE_EMPTY;
     info.identity.msg_id = msg_id;
 
     union {
@@ -293,21 +293,21 @@ static void send_response(anjay_coap_socket_t *socket,
                           const uint32_t *max_age) {
     anjay_coap_msg_info_t info = avs_coap_msg_info_init();
 
-    info.type = ANJAY_COAP_MSG_ACKNOWLEDGEMENT;
+    info.type = AVS_COAP_MSG_ACKNOWLEDGEMENT;
     info.code = code;
     info.identity.msg_id = avs_coap_msg_get_id(msg);
     info.identity.token_size = avs_coap_msg_get_token(msg,
                                                          &info.identity.token);
 
-    if (max_age && avs_coap_msg_info_opt_u32(&info, ANJAY_COAP_OPT_MAX_AGE,
+    if (max_age && avs_coap_msg_info_opt_u32(&info, AVS_COAP_OPT_MAX_AGE,
                                                 *max_age)) {
         LOG(WARNING, "unable to add Max-Age option to response");
     }
 
     union {
         uint8_t buffer[offsetof(anjay_coap_msg_t, content)
-                       + ANJAY_COAP_MAX_TOKEN_LENGTH
-                       + ANJAY_COAP_OPT_INT_MAX_SIZE];
+                       + AVS_COAP_MAX_TOKEN_LENGTH
+                       + AVS_COAP_OPT_INT_MAX_SIZE];
         anjay_coap_msg_t force_align_;
     } aligned_buffer;
     const anjay_coap_msg_t *error = avs_coap_msg_build_without_payload(
@@ -337,7 +337,7 @@ void avs_coap_send_service_unavailable(anjay_coap_socket_t *socket,
     // round up to nearest full second
     uint32_t s_to_retry_after = (ms_to_retry_after + 999) / 1000;
 
-    send_response(socket, msg, ANJAY_COAP_CODE_SERVICE_UNAVAILABLE,
+    send_response(socket, msg, AVS_COAP_CODE_SERVICE_UNAVAILABLE,
                   &s_to_retry_after);
 }
 

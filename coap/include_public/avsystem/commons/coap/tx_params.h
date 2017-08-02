@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef ANJAY_COAP_TX_PARAMS_H
-#define ANJAY_COAP_TX_PARAMS_H
+#ifndef AVS_COAP_TX_PARAMS_H
+#define AVS_COAP_TX_PARAMS_H
 
 #include <stdint.h>
 #include <unistd.h>
@@ -54,7 +54,7 @@ struct timespec
 avs_coap_max_transmit_span(const anjay_coap_tx_params_t *tx_params);
 
 /** Maximum time the client can wait for a Separate Response */
-#define ANJAY_COAP_SEPARATE_RESPONSE_TIMEOUT_MS (30 * 1000)
+#define AVS_COAP_SEPARATE_RESPONSE_TIMEOUT_MS (30 * 1000)
 
 typedef struct {
     unsigned retry_count;
@@ -65,4 +65,4 @@ void avs_coap_update_retry_state(coap_retry_state_t *retry_state,
                                     const anjay_coap_tx_params_t *tx_params,
                                     unsigned *rand_seed);
 
-#endif // ANJAY_COAP_TX_PARAMS_H
+#endif // AVS_COAP_TX_PARAMS_H

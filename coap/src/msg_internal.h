@@ -14,23 +14,23 @@
  * limitations under the License.
  */
 
-#ifndef ANJAY_COAP_MSG_INTERNAL_H
-#define ANJAY_COAP_MSG_INTERNAL_H
+#ifndef AVS_COAP_MSG_INTERNAL_H
+#define AVS_COAP_MSG_INTERNAL_H
 
 #include <avsystem/commons/coap/msg.h>
 
 #pragma GCC visibility push(hidden)
 
-#define ANJAY_COAP_HEADER_VERSION_MASK 0xC0
-#define ANJAY_COAP_HEADER_VERSION_SHIFT 6
-#define ANJAY_COAP_HEADER_TOKEN_LENGTH_MASK 0x0F
-#define ANJAY_COAP_HEADER_TOKEN_LENGTH_SHIFT 0
+#define AVS_COAP_HEADER_VERSION_MASK 0xC0
+#define AVS_COAP_HEADER_VERSION_SHIFT 6
+#define AVS_COAP_HEADER_TOKEN_LENGTH_MASK 0x0F
+#define AVS_COAP_HEADER_TOKEN_LENGTH_SHIFT 0
 
 static inline uint8_t
 _anjay_coap_msg_header_get_version(const anjay_coap_msg_header_t *hdr) {
-    int val = ANJAY_FIELD_GET(hdr->version_type_token_length,
-                              ANJAY_COAP_HEADER_VERSION_MASK,
-                              ANJAY_COAP_HEADER_VERSION_SHIFT);
+    int val = AVS_FIELD_GET(hdr->version_type_token_length,
+                              AVS_COAP_HEADER_VERSION_MASK,
+                              AVS_COAP_HEADER_VERSION_SHIFT);
     assert(val >= 0 && val <= 3);
     return (uint8_t)val;
 }
@@ -38,66 +38,66 @@ static inline void
 _anjay_coap_msg_header_set_version(anjay_coap_msg_header_t *hdr,
                                    uint8_t version) {
     assert(version <= 3);
-    ANJAY_FIELD_SET(hdr->version_type_token_length,
-                    ANJAY_COAP_HEADER_VERSION_MASK,
-                    ANJAY_COAP_HEADER_VERSION_SHIFT, version);
+    AVS_FIELD_SET(hdr->version_type_token_length,
+                    AVS_COAP_HEADER_VERSION_MASK,
+                    AVS_COAP_HEADER_VERSION_SHIFT, version);
 }
 
 static inline void
 _anjay_coap_msg_header_set_token_length(anjay_coap_msg_header_t *hdr,
                                         uint8_t token_length) {
-    assert(token_length <= ANJAY_COAP_MAX_TOKEN_LENGTH);
-    ANJAY_FIELD_SET(hdr->version_type_token_length,
-                    ANJAY_COAP_HEADER_TOKEN_LENGTH_MASK,
-                    ANJAY_COAP_HEADER_TOKEN_LENGTH_SHIFT, token_length);
+    assert(token_length <= AVS_COAP_MAX_TOKEN_LENGTH);
+    AVS_FIELD_SET(hdr->version_type_token_length,
+                    AVS_COAP_HEADER_TOKEN_LENGTH_MASK,
+                    AVS_COAP_HEADER_TOKEN_LENGTH_SHIFT, token_length);
 }
 
-#define ANJAY_COAP_OPT_DELTA_MASK 0xF0
-#define ANJAY_COAP_OPT_DELTA_SHIFT 4
-#define ANJAY_COAP_OPT_LENGTH_MASK 0x0F
-#define ANJAY_COAP_OPT_LENGTH_SHIFT 0
+#define AVS_COAP_OPT_DELTA_MASK 0xF0
+#define AVS_COAP_OPT_DELTA_SHIFT 4
+#define AVS_COAP_OPT_LENGTH_MASK 0x0F
+#define AVS_COAP_OPT_LENGTH_SHIFT 0
 
 static inline uint8_t _anjay_coap_opt_get_short_delta(const anjay_coap_opt_t *opt) {
-    return ANJAY_FIELD_GET(opt->delta_length,
-                           ANJAY_COAP_OPT_DELTA_MASK,
-                           ANJAY_COAP_OPT_DELTA_SHIFT);
+    return AVS_FIELD_GET(opt->delta_length,
+                           AVS_COAP_OPT_DELTA_MASK,
+                           AVS_COAP_OPT_DELTA_SHIFT);
 }
 
 static inline void _anjay_coap_opt_set_short_delta(anjay_coap_opt_t *opt,
                                                    uint8_t delta) {
-    assert(delta <= ANJAY_COAP_EXT_RESERVED);
-    ANJAY_FIELD_SET(opt->delta_length,
-                    ANJAY_COAP_OPT_DELTA_MASK,
-                    ANJAY_COAP_OPT_DELTA_SHIFT, delta);
+    assert(delta <= AVS_COAP_EXT_RESERVED);
+    AVS_FIELD_SET(opt->delta_length,
+                    AVS_COAP_OPT_DELTA_MASK,
+                    AVS_COAP_OPT_DELTA_SHIFT, delta);
 }
 
 static inline uint8_t _anjay_coap_opt_get_short_length(const anjay_coap_opt_t *opt) {
-    return ANJAY_FIELD_GET(opt->delta_length,
-                           ANJAY_COAP_OPT_LENGTH_MASK,
-                           ANJAY_COAP_OPT_LENGTH_SHIFT);
+    return AVS_FIELD_GET(opt->delta_length,
+                           AVS_COAP_OPT_LENGTH_MASK,
+                           AVS_COAP_OPT_LENGTH_SHIFT);
 }
 
 static inline void _anjay_coap_opt_set_short_length(anjay_coap_opt_t *opt,
                                                     uint8_t length) {
-    assert(length <= ANJAY_COAP_EXT_RESERVED);
-    ANJAY_FIELD_SET(opt->delta_length,
-                    ANJAY_COAP_OPT_LENGTH_MASK,
-                    ANJAY_COAP_OPT_LENGTH_SHIFT, length);
+    assert(length <= AVS_COAP_EXT_RESERVED);
+    AVS_FIELD_SET(opt->delta_length,
+                    AVS_COAP_OPT_LENGTH_MASK,
+                    AVS_COAP_OPT_LENGTH_SHIFT, length);
 }
 
 static inline size_t _anjay_coap_get_opt_header_size(uint16_t opt_number_delta,
                                                      uint16_t opt_data_size) {
     size_t header_size = 1;
 
-    if (opt_number_delta >= ANJAY_COAP_EXT_U16_BASE) {
+    if (opt_number_delta >= AVS_COAP_EXT_U16_BASE) {
         header_size += 2;
-    } else if (opt_number_delta >= ANJAY_COAP_EXT_U8_BASE) {
+    } else if (opt_number_delta >= AVS_COAP_EXT_U8_BASE) {
         header_size += 1;
     }
 
-    if (opt_data_size >= ANJAY_COAP_EXT_U16_BASE) {
+    if (opt_data_size >= AVS_COAP_EXT_U16_BASE) {
         header_size += 2;
-    } else if (opt_data_size >= ANJAY_COAP_EXT_U8_BASE) {
+    } else if (opt_data_size >= AVS_COAP_EXT_U8_BASE) {
         header_size += 1;
     }
 
@@ -112,4 +112,4 @@ struct anjay_coap_msg_info_opt {
 
 #pragma GCC visibility pop
 
-#endif // ANJAY_COAP_MSG_INTERNAL_H
+#endif // AVS_COAP_MSG_INTERNAL_H

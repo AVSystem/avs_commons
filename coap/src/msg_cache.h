@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef ANJAY_COAP_MSG_CACHE_H
-#define ANJAY_COAP_MSG_CACHE_H
+#ifndef AVS_COAP_MSG_CACHE_H
+#define AVS_COAP_MSG_CACHE_H
 
 #include <stddef.h>
 #include <stdint.h>
@@ -51,7 +51,7 @@ coap_msg_cache_t *_anjay_coap_msg_cache_create(size_t capacity);
  */
 void _anjay_coap_msg_cache_release(coap_msg_cache_t **cache_ptr);
 
-#define ANJAY_COAP_MSG_CACHE_DUPLICATE -2
+#define AVS_COAP_MSG_CACHE_DUPLICATE -2
 /**
  * Adds a message to cache. Drops oldest cache entries if needed to fit
  * @p msg, even if they did not expire yet.
@@ -70,7 +70,7 @@ void _anjay_coap_msg_cache_release(coap_msg_cache_t **cache_ptr);
  *         @li there was not enough memory to allocate endpoint data,
  *         @li @p cache is too small to fit @p msg,
  *         @li @p cache already contains a message with the same remote endpoint
- *             and message ID (@ref ANJAY_COAP_MSG_CACHE_DUPLICATE).
+ *             and message ID (@ref AVS_COAP_MSG_CACHE_DUPLICATE).
  *
  * NOTE: this function intentionally fails if a message with the same remote
  * endpoint and message ID is already present. If there is a valid one in the
@@ -120,4 +120,4 @@ void _anjay_coap_msg_cache_debug_print(const coap_msg_cache_t *cache);
 
 #pragma GCC visibility pop
 
-#endif // ANJAY_COAP_MSG_CACHE_H
+#endif // AVS_COAP_MSG_CACHE_H

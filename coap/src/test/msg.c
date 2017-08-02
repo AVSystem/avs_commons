@@ -26,8 +26,8 @@ AVS_UNIT_TEST(coap_msg, header_memory_layout) {
     anjay_coap_msg_t msg = {
         .length = sizeof(anjay_coap_msg_header_t),
         .header = {
-            .version_type_token_length = VTTL(1, ANJAY_COAP_MSG_ACKNOWLEDGEMENT, 0),
-            .code = ANJAY_COAP_CODE(3, 4),
+            .version_type_token_length = VTTL(1, AVS_COAP_MSG_ACKNOWLEDGEMENT, 0),
+            .code = AVS_COAP_CODE(3, 4),
             .message_id = { 5, 6 }
         }
     };
@@ -40,8 +40,8 @@ AVS_UNIT_TEST(coap_msg, header_memory_layout) {
     // hex:     6    0      6   4     0   5     0   6
     AVS_UNIT_ASSERT_EQUAL_BYTES(&msg.header, "\x60\x64\x05\x06");
 
-    msg.header.version_type_token_length = VTTL(3, ANJAY_COAP_MSG_RESET, 7);
-    msg.header.code = ANJAY_COAP_CODE(7, 31);
+    msg.header.version_type_token_length = VTTL(3, AVS_COAP_MSG_RESET, 7);
+    msg.header.code = AVS_COAP_CODE(7, 31);
     msg.header.message_id[0] = 255;
     msg.header.message_id[1] = 255;
 
@@ -59,7 +59,7 @@ AVS_UNIT_TEST(coap_msg, header_fields) {
     setup_msg(msg, NULL, 0);
 
     AVS_UNIT_ASSERT_EQUAL(_anjay_coap_msg_header_get_version(&msg->header), 1);
-    AVS_UNIT_ASSERT_EQUAL(avs_coap_msg_header_get_type(&msg->header), ANJAY_COAP_MSG_ACKNOWLEDGEMENT);
+    AVS_UNIT_ASSERT_EQUAL(avs_coap_msg_header_get_type(&msg->header), AVS_COAP_MSG_ACKNOWLEDGEMENT);
     AVS_UNIT_ASSERT_EQUAL(avs_coap_msg_header_get_token_length(&msg->header), 0);
 
     AVS_UNIT_ASSERT_EQUAL(avs_coap_msg_code_get_class(&msg->header.code), 3);
@@ -181,7 +181,7 @@ AVS_UNIT_TEST(coap_msg, validate_valid) {
 AVS_UNIT_TEST(coap_msg, validate_empty) {
     anjay_coap_msg_t *msg = (anjay_coap_msg_t *) alloca(sizeof(*msg));
     setup_msg(msg, NULL, 0);
-    msg->header.code = ANJAY_COAP_CODE_EMPTY;
+    msg->header.code = AVS_COAP_CODE_EMPTY;
 
     AVS_UNIT_ASSERT_TRUE(avs_coap_msg_is_valid(msg));
 }
@@ -191,7 +191,7 @@ AVS_UNIT_TEST(coap_msg, validate_empty_with_token) {
     anjay_coap_msg_t *msg =
             (anjay_coap_msg_t *) alloca(sizeof(*msg) + sizeof(content));
     setup_msg(msg, content, sizeof(content));
-    msg->header.code = ANJAY_COAP_CODE_EMPTY;
+    msg->header.code = AVS_COAP_CODE_EMPTY;
     msg->header.version_type_token_length = VTTL(1, 0, sizeof(content));
 
     AVS_UNIT_ASSERT_FALSE(avs_coap_msg_is_valid(msg));
@@ -202,7 +202,7 @@ AVS_UNIT_TEST(coap_msg, validate_empty_with_payload) {
     anjay_coap_msg_t *msg =
             (anjay_coap_msg_t *) alloca(sizeof(*msg) + sizeof(content) - 1);
     setup_msg(msg, content, sizeof(content) - 1);
-    msg->header.code = ANJAY_COAP_CODE_EMPTY;
+    msg->header.code = AVS_COAP_CODE_EMPTY;
 
     AVS_UNIT_ASSERT_FALSE(avs_coap_msg_is_valid(msg));
 }
@@ -292,10 +292,10 @@ AVS_UNIT_TEST(coap_msg, validate_opt_ext_delta_byte) {
 
     anjay_coap_opt_iterator_t optit = avs_coap_opt_begin(msg);
     AVS_UNIT_ASSERT_TRUE(optit.msg == msg);
-    AVS_UNIT_ASSERT_EQUAL(avs_coap_opt_number(&optit), 1 + ANJAY_COAP_EXT_U8_BASE);
+    AVS_UNIT_ASSERT_EQUAL(avs_coap_opt_number(&optit), 1 + AVS_COAP_EXT_U8_BASE);
     AVS_UNIT_ASSERT_NOT_NULL(optit.curr_opt);
 
-    AVS_UNIT_ASSERT_EQUAL(avs_coap_opt_delta(optit.curr_opt), 1 + ANJAY_COAP_EXT_U8_BASE);
+    AVS_UNIT_ASSERT_EQUAL(avs_coap_opt_delta(optit.curr_opt), 1 + AVS_COAP_EXT_U8_BASE);
     AVS_UNIT_ASSERT_EQUAL(avs_coap_opt_content_length(optit.curr_opt), 0);
     AVS_UNIT_ASSERT_TRUE(avs_coap_opt_value(optit.curr_opt) == (const uint8_t*)optit.curr_opt + 2);
     AVS_UNIT_ASSERT_EQUAL(avs_coap_opt_sizeof(optit.curr_opt), 1 + 1);
@@ -329,7 +329,7 @@ AVS_UNIT_TEST(coap_msg, validate_opt_ext_delta_short) {
 }
 
 AVS_UNIT_TEST(coap_msg, validate_opt_ext_length_byte) {
-    #define OPTS_SIZE (2 + (1 + ANJAY_COAP_EXT_U8_BASE))
+    #define OPTS_SIZE (2 + (1 + AVS_COAP_EXT_U8_BASE))
     uint8_t opts[OPTS_SIZE] = "\x0d\x01";
     anjay_coap_msg_t *msg = (anjay_coap_msg_t *) alloca(sizeof(*msg) + OPTS_SIZE);
     setup_msg(msg, opts, OPTS_SIZE);
@@ -344,20 +344,20 @@ AVS_UNIT_TEST(coap_msg, validate_opt_ext_length_byte) {
     AVS_UNIT_ASSERT_NOT_NULL(optit.curr_opt);
 
     AVS_UNIT_ASSERT_EQUAL(avs_coap_opt_delta(optit.curr_opt), 0);
-    AVS_UNIT_ASSERT_EQUAL(avs_coap_opt_content_length(optit.curr_opt), 1 + ANJAY_COAP_EXT_U8_BASE);
+    AVS_UNIT_ASSERT_EQUAL(avs_coap_opt_content_length(optit.curr_opt), 1 + AVS_COAP_EXT_U8_BASE);
     AVS_UNIT_ASSERT_TRUE(avs_coap_opt_value(optit.curr_opt) == (const uint8_t*)optit.curr_opt + 2);
-    AVS_UNIT_ASSERT_EQUAL(avs_coap_opt_sizeof(optit.curr_opt), 1 + 1 + (1 + ANJAY_COAP_EXT_U8_BASE));
+    AVS_UNIT_ASSERT_EQUAL(avs_coap_opt_sizeof(optit.curr_opt), 1 + 1 + (1 + AVS_COAP_EXT_U8_BASE));
 
     avs_coap_opt_next(&optit);
     AVS_UNIT_ASSERT_TRUE(avs_coap_opt_end(&optit));
 }
 
 AVS_UNIT_TEST(coap_msg, validate_opt_ext_length_short) {
-    uint8_t opts[3 + 256 + ANJAY_COAP_EXT_U16_BASE] = "\x0e\x01\x00";
+    uint8_t opts[3 + 256 + AVS_COAP_EXT_U16_BASE] = "\x0e\x01\x00";
 
     anjay_coap_msg_t *msg = (anjay_coap_msg_t *) alloca(
-            sizeof(*msg) + sizeof(opts) + (256 + ANJAY_COAP_EXT_U16_BASE) - 1);
-    setup_msg(msg, opts, 3 + (256 + ANJAY_COAP_EXT_U16_BASE));
+            sizeof(*msg) + sizeof(opts) + (256 + AVS_COAP_EXT_U16_BASE) - 1);
+    setup_msg(msg, opts, 3 + (256 + AVS_COAP_EXT_U16_BASE));
 
     AVS_UNIT_ASSERT_TRUE(avs_coap_msg_is_valid(msg));
     AVS_UNIT_ASSERT_EQUAL(count_opts(msg), 1);
@@ -368,9 +368,9 @@ AVS_UNIT_TEST(coap_msg, validate_opt_ext_length_short) {
     AVS_UNIT_ASSERT_NOT_NULL(optit.curr_opt);
 
     AVS_UNIT_ASSERT_EQUAL(avs_coap_opt_delta(optit.curr_opt), 0);
-    AVS_UNIT_ASSERT_EQUAL(avs_coap_opt_content_length(optit.curr_opt), 256 + ANJAY_COAP_EXT_U16_BASE);
+    AVS_UNIT_ASSERT_EQUAL(avs_coap_opt_content_length(optit.curr_opt), 256 + AVS_COAP_EXT_U16_BASE);
     AVS_UNIT_ASSERT_TRUE(avs_coap_opt_value(optit.curr_opt) == (const uint8_t*)optit.curr_opt + 3);
-    AVS_UNIT_ASSERT_EQUAL(avs_coap_opt_sizeof(optit.curr_opt), 1 + 2 + (256 + ANJAY_COAP_EXT_U16_BASE));
+    AVS_UNIT_ASSERT_EQUAL(avs_coap_opt_sizeof(optit.curr_opt), 1 + 2 + (256 + AVS_COAP_EXT_U16_BASE));
 
     avs_coap_opt_next(&optit);
     AVS_UNIT_ASSERT_TRUE(avs_coap_opt_end(&optit));

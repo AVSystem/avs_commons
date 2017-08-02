@@ -43,8 +43,8 @@ AVS_UNIT_TEST(coap_socket, coap_socket) {
                 _anjay_test_setup_udp_echo_socket(TEST_PORT_UDP);
 
         anjay_coap_msg_info_t info = avs_coap_msg_info_init();
-        info.type = ANJAY_COAP_MSG_CONFIRMABLE;
-        info.code = ANJAY_COAP_CODE_CONTENT;
+        info.type = AVS_COAP_MSG_CONFIRMABLE;
+        info.code = AVS_COAP_CODE_CONTENT;
         info.identity.msg_id = 4;
 
         size_t storage_size = COAP_MSG_MAX_SIZE;
@@ -83,8 +83,8 @@ AVS_UNIT_TEST(coap_socket, coap_socket) {
                 _anjay_test_setup_dtls_echo_socket(TEST_PORT_DTLS);
 
         anjay_coap_msg_info_t info = avs_coap_msg_info_init();
-        info.type = ANJAY_COAP_MSG_CONFIRMABLE;
-        info.code = ANJAY_COAP_CODE_CONTENT;
+        info.type = AVS_COAP_MSG_CONFIRMABLE;
+        info.code = AVS_COAP_CODE_CONTENT;
         info.identity.msg_id = 4;
 
         size_t storage_size = COAP_MSG_MAX_SIZE;

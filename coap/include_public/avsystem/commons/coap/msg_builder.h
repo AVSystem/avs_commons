@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef ANJAY_COAP_MSGBUILDER_H
-#define ANJAY_COAP_MSGBUILDER_H
+#ifndef AVS_COAP_MSGBUILDER_H
+#define AVS_COAP_MSGBUILDER_H
 
 #include <stdlib.h>
 #include <assert.h>
@@ -32,7 +32,7 @@ typedef struct anjay_coap_msg_builder {
     anjay_coap_msg_buffer_t msg_buffer;
 } anjay_coap_msg_builder_t;
 
-#define ANJAY_COAP_MSG_BUILDER_UNINITIALIZED \
+#define AVS_COAP_MSG_BUILDER_UNINITIALIZED \
     ((anjay_coap_msg_builder_t){ \
         .has_payload_marker = false, \
         .msg_buffer = { .msg = NULL, .capacity = 0 } \
@@ -78,7 +78,7 @@ int avs_coap_msg_builder_init(anjay_coap_msg_builder_t *builder,
                                  size_t buffer_size_bytes,
                                  const anjay_coap_msg_info_t *info);
 
-#define ANJAY_COAP_BLOCK_MAX_SEQ_NUMBER 0xFFFFF
+#define AVS_COAP_BLOCK_MAX_SEQ_NUMBER 0xFFFFF
 
 /**
  * Initializes a @p builder with message headers stored in @p header. Resets any
@@ -157,4 +157,4 @@ avs_coap_msg_build_without_payload(anjay_coap_aligned_msg_buffer_t *buffer,
 }
 
 
-#endif // ANJAY_COAP_MSGBUILDER_H
+#endif // AVS_COAP_MSGBUILDER_H

@@ -14,31 +14,31 @@
  * limitations under the License.
  */
 
-#ifndef ANJAY_COAP_OPT_H
-#define ANJAY_COAP_OPT_H
+#ifndef AVS_COAP_OPT_H
+#define AVS_COAP_OPT_H
 
 #include <stdint.h>
 #include <stdbool.h>
 #include <stddef.h>
 
-#define ANJAY_COAP_OPT_IF_MATCH 1
-#define ANJAY_COAP_OPT_URI_HOST 3
-#define ANJAY_COAP_OPT_ETAG 4
-#define ANJAY_COAP_OPT_IF_NONE_MATCH 5
-#define ANJAY_COAP_OPT_OBSERVE 6
-#define ANJAY_COAP_OPT_URI_PORT 7
-#define ANJAY_COAP_OPT_LOCATION_PATH 8
-#define ANJAY_COAP_OPT_URI_PATH 11
-#define ANJAY_COAP_OPT_CONTENT_FORMAT 12
-#define ANJAY_COAP_OPT_MAX_AGE 14
-#define ANJAY_COAP_OPT_URI_QUERY 15
-#define ANJAY_COAP_OPT_ACCEPT 17
-#define ANJAY_COAP_OPT_LOCATION_QUERY 20
-#define ANJAY_COAP_OPT_BLOCK2 23
-#define ANJAY_COAP_OPT_BLOCK1 27
-#define ANJAY_COAP_OPT_PROXY_URI 35
-#define ANJAY_COAP_OPT_PROXY_SCHEME 39
-#define ANJAY_COAP_OPT_SIZE1 60
+#define AVS_COAP_OPT_IF_MATCH 1
+#define AVS_COAP_OPT_URI_HOST 3
+#define AVS_COAP_OPT_ETAG 4
+#define AVS_COAP_OPT_IF_NONE_MATCH 5
+#define AVS_COAP_OPT_OBSERVE 6
+#define AVS_COAP_OPT_URI_PORT 7
+#define AVS_COAP_OPT_LOCATION_PATH 8
+#define AVS_COAP_OPT_URI_PATH 11
+#define AVS_COAP_OPT_CONTENT_FORMAT 12
+#define AVS_COAP_OPT_MAX_AGE 14
+#define AVS_COAP_OPT_URI_QUERY 15
+#define AVS_COAP_OPT_ACCEPT 17
+#define AVS_COAP_OPT_LOCATION_QUERY 20
+#define AVS_COAP_OPT_BLOCK2 23
+#define AVS_COAP_OPT_BLOCK1 27
+#define AVS_COAP_OPT_PROXY_URI 35
+#define AVS_COAP_OPT_PROXY_SCHEME 39
+#define AVS_COAP_OPT_SIZE1 60
 
 // Technically, CoAP options may contain up to 2 bytes of extended option number
 // and up to 2 bytes of extended length. This should never be required for BLOCK
@@ -46,11 +46,11 @@
 // >= 269. BLOCK uses 23/27 option numbers and allows up to 3 content bytes.
 // Therefore correct BLOCK options will use at most 1 byte for extended number
 // (since wrapping is not allowed) and will never use extended length field.
-#define ANJAY_COAP_OPT_BLOCK_MAX_SIZE (1    /* option header   */ \
+#define AVS_COAP_OPT_BLOCK_MAX_SIZE (1    /* option header   */ \
                                        + 1  /* extended number */ \
                                        + 3) /* block option value */
 
-#define ANJAY_COAP_OPT_INT_MAX_SIZE (1 /* option header */ \
+#define AVS_COAP_OPT_INT_MAX_SIZE (1 /* option header */ \
                                      + 2 /* extended number */ \
                                      + 2 /* extended length */ \
                                      + sizeof(uint64_t))
@@ -58,7 +58,7 @@
 // ETag option has number 4, which means it will never use "extended number"
 // format. Since the maximum allowed option size is 8, it won't ever use the
 // "extended length" either.
-#define ANJAY_COAP_OPT_ETAG_MAX_SIZE (1 /* option header */ \
+#define AVS_COAP_OPT_ETAG_MAX_SIZE (1 /* option header */ \
                                       + 8) /* max ETag length */
 
 typedef struct anjay_coap_opt {
@@ -133,4 +133,4 @@ size_t avs_coap_opt_sizeof(const anjay_coap_opt_t *opt);
 
 void avs_coap_opt_debug_print(const anjay_coap_opt_t *opt);
 
-#endif // ANJAY_COAP_OPT_H
+#endif // AVS_COAP_OPT_H

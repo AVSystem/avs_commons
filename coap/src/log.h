@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-#ifndef ANJAY_COAP_LOG_H
-#define ANJAY_COAP_LOG_H
+#ifndef AVS_COAP_LOG_H
+#define AVS_COAP_LOG_H
 
 #include <avsystem/commons/log.h>
 
 #define MODULE_NAME avs_coap
 #include <x_log_config.h>
 
-#endif // ANJAY_COAP_LOG_H
+#endif // AVS_COAP_LOG_H

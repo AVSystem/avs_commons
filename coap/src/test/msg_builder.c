@@ -39,8 +39,8 @@ static anjay_coap_msg_t *make_msg_template(void *buffer,
     memset(buffer, 0, buffer_size);
     msg->length = (uint32_t)(buffer_size - sizeof(msg->length));
     msg->header = (anjay_coap_msg_header_t) {
-        .version_type_token_length = VTTL(1, ANJAY_COAP_MSG_CONFIRMABLE, 0),
-        .code = ANJAY_COAP_CODE_CONTENT,
+        .version_type_token_length = VTTL(1, AVS_COAP_MSG_CONFIRMABLE, 0),
+        .code = AVS_COAP_CODE_CONTENT,
         .message_id = RANDOM_MSGID_INIT
     };
 
@@ -72,8 +72,8 @@ static anjay_coap_msg_t *make_msg_template_with_data(void *buffer,
 
 #define INFO_WITH_DUMMY_HEADER \
     avs_coap_msg_info_init(); \
-    info.type = ANJAY_COAP_MSG_CONFIRMABLE; \
-    info.code = ANJAY_COAP_CODE_CONTENT; \
+    info.type = AVS_COAP_MSG_CONFIRMABLE; \
+    info.code = AVS_COAP_CODE_CONTENT; \
     info.identity.msg_id = 0
 
 #define INFO_WITH_HEADER(HeaderPtr) \
@@ -101,9 +101,9 @@ AVS_UNIT_TEST(coap_builder, header_only) {
 AVS_UNIT_TEST(coap_info, token) {
     anjay_coap_token_t TOKEN = {"A Token"};
     const size_t msg_tpl_size =
-            offsetof(anjay_coap_msg_t, content) + ANJAY_COAP_MAX_TOKEN_LENGTH;
+            offsetof(anjay_coap_msg_t, content) + AVS_COAP_MAX_TOKEN_LENGTH;
     anjay_coap_msg_t *msg_tpl = make_msg_template_with_data(
-            alloca(msg_tpl_size), &TOKEN, ANJAY_COAP_MAX_TOKEN_LENGTH);
+            alloca(msg_tpl_size), &TOKEN, AVS_COAP_MAX_TOKEN_LENGTH);
     _anjay_coap_msg_header_set_token_length(&msg_tpl->header, sizeof(TOKEN));
 
     anjay_coap_msg_info_t info =
@@ -217,11 +217,11 @@ AVS_UNIT_TEST(coap_builder, option_content_format) {
     uint32_t content_length = sizeof(uint8_t) + sizeof(uint16_t);
     DECLARE_MSG_TEMPLATE(msg_tpl, msg_tpl_size, content_length);
     _anjay_coap_opt_set_short_length((anjay_coap_opt_t *)&msg_tpl->content[0], 2);
-    _anjay_coap_opt_set_short_delta((anjay_coap_opt_t *)&msg_tpl->content[0], ANJAY_COAP_OPT_CONTENT_FORMAT);
-    memcpy(&msg_tpl->content[1], &(uint16_t){htons(ANJAY_COAP_FORMAT_TLV)}, 2);
+    _anjay_coap_opt_set_short_delta((anjay_coap_opt_t *)&msg_tpl->content[0], AVS_COAP_OPT_CONTENT_FORMAT);
+    memcpy(&msg_tpl->content[1], &(uint16_t){htons(AVS_COAP_FORMAT_TLV)}, 2);
 
     anjay_coap_msg_info_t info = INFO_WITH_HEADER(&msg_tpl->header);
-    AVS_UNIT_ASSERT_SUCCESS(avs_coap_msg_info_opt_content_format(&info, ANJAY_COAP_FORMAT_TLV));
+    AVS_UNIT_ASSERT_SUCCESS(avs_coap_msg_info_opt_content_format(&info, AVS_COAP_FORMAT_TLV));
 
     size_t storage_size = avs_coap_msg_info_get_storage_size(&info);
     void *storage = malloc(storage_size);
@@ -243,7 +243,7 @@ AVS_UNIT_TEST(coap_builder, payload_only) {
     anjay_coap_msg_info_t info = INFO_WITH_HEADER(&msg_tpl->header);
 
     size_t storage_size = avs_coap_msg_info_get_storage_size(&info)
-                          + sizeof(ANJAY_COAP_PAYLOAD_MARKER)
+                          + sizeof(AVS_COAP_PAYLOAD_MARKER)
                           + sizeof(PAYLOAD) - 1;
     void *storage = malloc(storage_size);
 
@@ -274,7 +274,7 @@ AVS_UNIT_TEST(coap_builder, incremental_payload) {
     anjay_coap_msg_info_t info = INFO_WITH_HEADER(&msg_tpl->header);
 
     size_t storage_size = avs_coap_msg_info_get_storage_size(&info)
-                          + sizeof(ANJAY_COAP_PAYLOAD_MARKER)
+                          + sizeof(AVS_COAP_PAYLOAD_MARKER)
                           + PAYLOAD_SIZE;
     void *storage = malloc(storage_size);
 
@@ -427,7 +427,7 @@ AVS_UNIT_TEST(coap_builder, payload_call_with_zero_size_then_nonzero) {
     anjay_coap_msg_info_t info = INFO_WITH_HEADER(&msg_tpl->header);
 
     size_t storage_size = avs_coap_msg_info_get_storage_size(&info)
-                          + sizeof(ANJAY_COAP_PAYLOAD_MARKER)
+                          + sizeof(AVS_COAP_PAYLOAD_MARKER)
                           + sizeof(PAYLOAD);
     void *storage = malloc(storage_size);
 

@@ -24,8 +24,8 @@ static inline void setup_msg(anjay_coap_msg_t *msg,
                              size_t content_length) {
     static const anjay_coap_msg_t TEMPLATE = {
         .header = {
-            .version_type_token_length = VTTL(1, ANJAY_COAP_MSG_ACKNOWLEDGEMENT, 0),
-            .code = ANJAY_COAP_CODE(3, 4),
+            .version_type_token_length = VTTL(1, AVS_COAP_MSG_ACKNOWLEDGEMENT, 0),
+            .code = AVS_COAP_CODE(3, 4),
             .message_id = { 5, 6 }
         }
     };

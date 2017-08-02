@@ -71,9 +71,9 @@ static int append_byte(anjay_coap_msg_buffer_t *buffer,
 static int append_token(anjay_coap_msg_buffer_t *buffer,
                          const anjay_coap_token_t *token,
                          size_t token_length) {
-    assert(token_length <= ANJAY_COAP_MAX_TOKEN_LENGTH);
+    assert(token_length <= AVS_COAP_MAX_TOKEN_LENGTH);
 
-    if (buffer->msg->header.code == ANJAY_COAP_CODE_EMPTY
+    if (buffer->msg->header.code == AVS_COAP_CODE_EMPTY
             && token_length > 0) {
         LOG(ERROR, "0.00 Empty message must not contain a token");
         return -1;
@@ -91,14 +91,14 @@ static int append_token(anjay_coap_msg_buffer_t *buffer,
 
 static inline size_t encode_ext_value(uint8_t *ptr,
                                       uint16_t ext_value) {
-    if (ext_value >= ANJAY_COAP_EXT_U16_BASE) {
+    if (ext_value >= AVS_COAP_EXT_U16_BASE) {
         uint16_t value_net_byte_order =
-            htons((uint16_t)(ext_value - ANJAY_COAP_EXT_U16_BASE));
+            htons((uint16_t)(ext_value - AVS_COAP_EXT_U16_BASE));
 
         memcpy(ptr, &value_net_byte_order, sizeof(value_net_byte_order));
         return sizeof(value_net_byte_order);
-    } else if (ext_value >= ANJAY_COAP_EXT_U8_BASE) {
-        *ptr = (uint8_t)(ext_value - ANJAY_COAP_EXT_U8_BASE);
+    } else if (ext_value >= AVS_COAP_EXT_U8_BASE) {
+        *ptr = (uint8_t)(ext_value - AVS_COAP_EXT_U8_BASE);
         return 1;
     }
 
@@ -111,18 +111,18 @@ static inline size_t opt_write_header(uint8_t *ptr,
     anjay_coap_opt_t *opt = (anjay_coap_opt_t *)ptr;
     ptr = opt->content;
 
-    if (opt_number_delta >= ANJAY_COAP_EXT_U16_BASE) {
-        _anjay_coap_opt_set_short_delta(opt, ANJAY_COAP_EXT_U16);
-    } else if (opt_number_delta >= ANJAY_COAP_EXT_U8_BASE) {
-        _anjay_coap_opt_set_short_delta(opt, ANJAY_COAP_EXT_U8);
+    if (opt_number_delta >= AVS_COAP_EXT_U16_BASE) {
+        _anjay_coap_opt_set_short_delta(opt, AVS_COAP_EXT_U16);
+    } else if (opt_number_delta >= AVS_COAP_EXT_U8_BASE) {
+        _anjay_coap_opt_set_short_delta(opt, AVS_COAP_EXT_U8);
     } else {
         _anjay_coap_opt_set_short_delta(opt, (uint8_t)(opt_number_delta & 0xF));
     }
 
-    if (opt_length >= ANJAY_COAP_EXT_U16_BASE) {
-        _anjay_coap_opt_set_short_length(opt, ANJAY_COAP_EXT_U16);
-    } else if (opt_length >= ANJAY_COAP_EXT_U8_BASE) {
-        _anjay_coap_opt_set_short_length(opt, ANJAY_COAP_EXT_U8);
+    if (opt_length >= AVS_COAP_EXT_U16_BASE) {
+        _anjay_coap_opt_set_short_length(opt, AVS_COAP_EXT_U16);
+    } else if (opt_length >= AVS_COAP_EXT_U8_BASE) {
+        _anjay_coap_opt_set_short_length(opt, AVS_COAP_EXT_U8);
     } else {
         _anjay_coap_opt_set_short_length(opt, (uint8_t)(opt_length & 0xF));
     }
@@ -138,7 +138,7 @@ static int append_option(anjay_coap_msg_buffer_t *buffer,
                          uint16_t opt_number_delta,
                          const void *opt_data,
                          uint16_t opt_data_size) {
-    if (buffer->msg->header.code == ANJAY_COAP_CODE_EMPTY) {
+    if (buffer->msg->header.code == AVS_COAP_CODE_EMPTY) {
         LOG(ERROR, "0.00 Empty message must not contain options");
         return -1;
     }
@@ -242,7 +242,7 @@ size_t avs_coap_msg_builder_payload(anjay_coap_msg_builder_t *builder,
         bytes_to_write = AVS_MIN(payload_size, msg_builder_payload_remaining);
     }
     if (!builder->has_payload_marker && bytes_to_write) {
-        result = append_byte(&builder->msg_buffer, ANJAY_COAP_PAYLOAD_MARKER);
+        result = append_byte(&builder->msg_buffer, AVS_COAP_PAYLOAD_MARKER);
         assert(!result && "attempted to write an invalid amount of bytes");
 
         builder->has_payload_marker = true;

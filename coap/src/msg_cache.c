@@ -312,7 +312,7 @@ int _anjay_coap_msg_cache_add(coap_msg_cache_t *cache,
     uint16_t msg_id = avs_coap_msg_get_id(msg);
     if (find_entry(cache, remote_addr, remote_port, msg_id)) {
         LOG(DEBUG, "msg_cache: message ID %u already in cache", msg_id);
-        return ANJAY_COAP_MSG_CACHE_DUPLICATE;
+        return AVS_COAP_MSG_CACHE_DUPLICATE;
     }
 
     endpoint_t *ep = cache_endpoint_add_ref(cache, remote_addr, remote_port);

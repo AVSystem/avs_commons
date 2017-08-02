@@ -32,12 +32,12 @@
 #pragma GCC visibility push(hidden)
 
 static inline size_t get_ext_field_size(uint8_t base_value) {
-    assert(base_value < ANJAY_COAP_EXT_RESERVED);
+    assert(base_value < AVS_COAP_EXT_RESERVED);
 
     switch (base_value) {
-    case ANJAY_COAP_EXT_U8:
+    case AVS_COAP_EXT_U8:
         return sizeof(uint8_t);
-    case ANJAY_COAP_EXT_U16:
+    case AVS_COAP_EXT_U16:
         return sizeof(uint16_t);
     default:
         return 0;
@@ -46,13 +46,13 @@ static inline size_t get_ext_field_size(uint8_t base_value) {
 
 static inline uint32_t decode_ext_value(uint8_t base_value,
                                         const uint8_t *ext_value_ptr) {
-    assert(base_value < ANJAY_COAP_EXT_RESERVED);
+    assert(base_value < AVS_COAP_EXT_RESERVED);
 
     switch (base_value) {
-    case ANJAY_COAP_EXT_U8:
-        return (uint32_t) * (const uint8_t *)ext_value_ptr + ANJAY_COAP_EXT_U8_BASE;
-    case ANJAY_COAP_EXT_U16:
-        return (uint32_t)extract_u16(ext_value_ptr) + ANJAY_COAP_EXT_U16_BASE;
+    case AVS_COAP_EXT_U8:
+        return (uint32_t) * (const uint8_t *)ext_value_ptr + AVS_COAP_EXT_U8_BASE;
+    case AVS_COAP_EXT_U16:
+        return (uint32_t)extract_u16(ext_value_ptr) + AVS_COAP_EXT_U16_BASE;
     default:
         return base_value;
     }
@@ -60,8 +60,8 @@ static inline uint32_t decode_ext_value(uint8_t base_value,
 
 static inline bool ext_value_overflows(uint8_t base_value,
                                        const uint8_t *ext_value_ptr) {
-    return base_value == ANJAY_COAP_EXT_U16
-           && extract_u16(ext_value_ptr) > UINT16_MAX - ANJAY_COAP_EXT_U16_BASE;
+    return base_value == AVS_COAP_EXT_U16
+           && extract_u16(ext_value_ptr) > UINT16_MAX - AVS_COAP_EXT_U16_BASE;
 }
 
 static inline const uint8_t *ext_delta_ptr(const anjay_coap_opt_t *opt) {
@@ -86,7 +86,7 @@ int avs_coap_opt_uint_value(const anjay_coap_opt_t *opt,
         return -1;
     }
     memset(out_value, 0, out_value_size);
-#ifdef ANJAY_BIG_ENDIAN
+#ifdef AVS_BIG_ENDIAN
     memcpy(((char *) out_value) + (out_value_size - length), value, length);
 #else
     for (size_t i = 0; i < length; ++i) {
@@ -149,21 +149,21 @@ int avs_coap_opt_block_size(const anjay_coap_opt_t *opt,
 uint32_t avs_coap_opt_delta(const anjay_coap_opt_t *opt) {
     uint32_t delta = decode_ext_value(_anjay_coap_opt_get_short_delta(opt),
                                       ext_delta_ptr(opt));
-    assert(delta <= UINT16_MAX + ANJAY_COAP_EXT_U16_BASE);
+    assert(delta <= UINT16_MAX + AVS_COAP_EXT_U16_BASE);
     return delta;
 }
 
 uint32_t avs_coap_opt_content_length(const anjay_coap_opt_t *opt) {
     uint32_t length = decode_ext_value(_anjay_coap_opt_get_short_length(opt),
                                        ext_length_ptr(opt));
-    assert(length <= UINT16_MAX + ANJAY_COAP_EXT_U16_BASE);
+    assert(length <= UINT16_MAX + AVS_COAP_EXT_U16_BASE);
     return length;
 }
 
 static inline bool is_delta_valid(const anjay_coap_opt_t *opt,
                                   size_t max_opt_bytes) {
     uint8_t short_delta = _anjay_coap_opt_get_short_delta(opt);
-    if (short_delta == ANJAY_COAP_EXT_RESERVED) {
+    if (short_delta == AVS_COAP_EXT_RESERVED) {
         return false;
     }
 
@@ -175,7 +175,7 @@ static inline bool is_delta_valid(const anjay_coap_opt_t *opt,
 static inline bool is_length_valid(const anjay_coap_opt_t *opt,
                                   size_t max_opt_bytes) {
     uint8_t short_length = _anjay_coap_opt_get_short_length(opt);
-    if (short_length == ANJAY_COAP_EXT_RESERVED) {
+    if (short_length == AVS_COAP_EXT_RESERVED) {
         return false;
     }
 

@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-#ifndef ANJAY_COAP_MSG_OPT_H
-#define ANJAY_COAP_MSG_OPT_H
+#ifndef AVS_COAP_MSG_OPT_H
+#define AVS_COAP_MSG_OPT_H
 
 #include <avsystem/commons/coap/msg.h>
 
 
-#define ANJAY_COAP_OPTION_MISSING 1
+#define AVS_COAP_OPTION_MISSING 1
 
 typedef bool anjay_coap_critical_option_validator_t(uint8_t msg_code,
                                                            uint32_t optnum);
@@ -63,4 +63,4 @@ int avs_coap_msg_validate_critical_options(
         anjay_coap_critical_option_validator_t validator);
 
 
-#endif // ANJAY_COAP_MSG_OPT_H
+#endif // AVS_COAP_MSG_OPT_H

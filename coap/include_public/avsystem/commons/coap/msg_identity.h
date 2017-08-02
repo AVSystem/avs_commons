@@ -14,17 +14,17 @@
  * limitations under the License.
  */
 
-#ifndef ANJAY_COAP_MSG_IDENTITY_H
-#define ANJAY_COAP_MSG_IDENTITY_H
+#ifndef AVS_COAP_MSG_IDENTITY_H
+#define AVS_COAP_MSG_IDENTITY_H
 
 
-#define ANJAY_COAP_MAX_TOKEN_LENGTH 8
+#define AVS_COAP_MAX_TOKEN_LENGTH 8
 
 typedef struct {
-    char bytes[ANJAY_COAP_MAX_TOKEN_LENGTH];
+    char bytes[AVS_COAP_MAX_TOKEN_LENGTH];
 } anjay_coap_token_t;
 
-#define ANJAY_COAP_TOKEN_EMPTY ((anjay_coap_token_t){{0}})
+#define AVS_COAP_TOKEN_EMPTY ((anjay_coap_token_t){{0}})
 
 static inline bool avs_coap_token_equal(const anjay_coap_token_t *first,
                                            size_t first_size,
@@ -40,7 +40,7 @@ typedef struct anjay_coap_msg_identity {
     size_t token_size;
 } anjay_coap_msg_identity_t;
 
-#define ANJAY_COAP_MSG_IDENTITY_EMPTY ((anjay_coap_msg_identity_t){0,{{0}},0})
+#define AVS_COAP_MSG_IDENTITY_EMPTY ((anjay_coap_msg_identity_t){0,{{0}},0})
 
 static inline
 bool avs_coap_identity_equal(const anjay_coap_msg_identity_t *a,
@@ -51,4 +51,4 @@ bool avs_coap_identity_equal(const anjay_coap_msg_identity_t *a,
 }
 
 
-#endif // ANJAY_COAP_MSG_IDENTITY_H
+#endif // AVS_COAP_MSG_IDENTITY_H

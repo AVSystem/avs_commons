@@ -14,21 +14,21 @@
  * limitations under the License.
  */
 
-#ifndef ANJAY_COAP_SOCKET_H
-#define ANJAY_COAP_SOCKET_H
+#ifndef AVS_COAP_SOCKET_H
+#define AVS_COAP_SOCKET_H
 
 #include <avsystem/commons/coap/msg.h>
 #include <avsystem/commons/coap/tx_params.h>
 
-#define ANJAY_COAP_SOCKET_ERR_TIMEOUT       (-0x5E1)
-#define ANJAY_COAP_SOCKET_ERR_MSG_MALFORMED (-0x5E2)
-#define ANJAY_COAP_SOCKET_ERR_NETWORK       (-0x5E3)
-#define ANJAY_COAP_SOCKET_ERR_MSG_TOO_LONG  (-0x5E4)
+#define AVS_COAP_SOCKET_ERR_TIMEOUT       (-0x5E1)
+#define AVS_COAP_SOCKET_ERR_MSG_MALFORMED (-0x5E2)
+#define AVS_COAP_SOCKET_ERR_NETWORK       (-0x5E3)
+#define AVS_COAP_SOCKET_ERR_MSG_TOO_LONG  (-0x5E4)
 
 /** A duplicate request was received and was handled by response cache. */
-#define ANJAY_COAP_SOCKET_ERR_DUPLICATE     (-0x5E5)
+#define AVS_COAP_SOCKET_ERR_DUPLICATE     (-0x5E5)
 /** A ping was received and it had been handled in a socket layer. */
-#define ANJAY_COAP_SOCKET_ERR_MSG_WAS_PING  (-0x5E6)
+#define AVS_COAP_SOCKET_ERR_MSG_WAS_PING  (-0x5E6)
 
 typedef struct anjay_coap_socket anjay_coap_socket_t;
 
@@ -42,11 +42,11 @@ void avs_coap_socket_cleanup(anjay_coap_socket_t **sock);
 
 /**
  * @returns 0 on success, a negative value in case of error:
- * - ANJAY_COAP_SOCKET_ERR_TIMEOUT if the socket timeout expired, but message
+ * - AVS_COAP_SOCKET_ERR_TIMEOUT if the socket timeout expired, but message
  *   could not be sent
- * - ANJAY_COAP_SOCKET_ERR_MSG_TOO_LONG when the message to be sent was too big
+ * - AVS_COAP_SOCKET_ERR_MSG_TOO_LONG when the message to be sent was too big
  *   for the socket
- * - ANJAY_COAP_SOCKET_ERR_NETWORK in case of other error on a layer below the
+ * - AVS_COAP_SOCKET_ERR_NETWORK in case of other error on a layer below the
  *   application layer
  */
 int avs_coap_socket_send(anjay_coap_socket_t *sock,
@@ -54,26 +54,26 @@ int avs_coap_socket_send(anjay_coap_socket_t *sock,
 
 /**
  * @returns 0 on success, a negative value in case of error:
- * - ANJAY_COAP_SOCKET_ERR_TIMEOUT if the socket timeout expired, but no message
+ * - AVS_COAP_SOCKET_ERR_TIMEOUT if the socket timeout expired, but no message
  *   was received
- * - ANJAY_COAP_SOCKET_ERR_MSG_MALFORMED when a packet was successfully
+ * - AVS_COAP_SOCKET_ERR_MSG_MALFORMED when a packet was successfully
  *   received, but it was not a correct CoAP message
- * - ANJAY_COAP_SOCKET_ERR_MSG_TOO_LONG when the buffer was too small to receive
+ * - AVS_COAP_SOCKET_ERR_MSG_TOO_LONG when the buffer was too small to receive
  *   the packet in its entirety
- * - ANJAY_COAP_SOCKET_ERR_NETWORK in case of other error on a layer below the
+ * - AVS_COAP_SOCKET_ERR_NETWORK in case of other error on a layer below the
  *   application layer
  **/
 int avs_coap_socket_recv(anjay_coap_socket_t *sock,
                             anjay_coap_msg_t *out_msg,
                             size_t msg_capacity);
-// AVSYSTEM_ANJAY_COMMERCIAL_BEGIN
+// AVSYSTEM_AVS_COMMERCIAL_BEGIN
 uint64_t avs_coap_socket_get_rx_bytes(anjay_coap_socket_t *sock);
 uint64_t avs_coap_socket_get_tx_bytes(anjay_coap_socket_t *sock);
 uint64_t
 avs_coap_socket_get_num_incoming_retransmissions(anjay_coap_socket_t *sock);
 uint64_t
 avs_coap_socket_get_num_outgoing_retransmissions(anjay_coap_socket_t *sock);
-// AVSYSTEM_ANJAY_COMMERCIAL_END
+// AVSYSTEM_AVS_COMMERCIAL_END
 
 int avs_coap_socket_get_recv_timeout(anjay_coap_socket_t *sock);
 void avs_coap_socket_set_recv_timeout(anjay_coap_socket_t *sock,
@@ -121,4 +121,4 @@ void avs_coap_send_service_unavailable(anjay_coap_socket_t *socket,
 /** @} */
 
 
-#endif // ANJAY_COAP_SOCKET_H
+#endif // AVS_COAP_SOCKET_H

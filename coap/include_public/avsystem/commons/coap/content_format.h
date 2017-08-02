@@ -14,28 +14,28 @@
  * limitations under the License.
  */
 
-#ifndef ANJAY_COAP_CONTENT_FORMAT_H
-#define ANJAY_COAP_CONTENT_FORMAT_H
+#ifndef AVS_COAP_CONTENT_FORMAT_H
+#define AVS_COAP_CONTENT_FORMAT_H
 
 /** Auxiliary constants for common Content-Format Option values */
 
-#define ANJAY_COAP_FORMAT_APPLICATION_LINK 40
+#define AVS_COAP_FORMAT_APPLICATION_LINK 40
 
-#define ANJAY_COAP_FORMAT_PLAINTEXT 0
-#define ANJAY_COAP_FORMAT_OPAQUE 42
-#define ANJAY_COAP_FORMAT_TLV 11542
-#define ANJAY_COAP_FORMAT_JSON 11543
+#define AVS_COAP_FORMAT_PLAINTEXT 0
+#define AVS_COAP_FORMAT_OPAQUE 42
+#define AVS_COAP_FORMAT_TLV 11542
+#define AVS_COAP_FORMAT_JSON 11543
 
-#define ANJAY_COAP_FORMAT_LEGACY_PLAINTEXT 1541
-#define ANJAY_COAP_FORMAT_LEGACY_TLV 1542
-#define ANJAY_COAP_FORMAT_LEGACY_JSON 1543
-#define ANJAY_COAP_FORMAT_LEGACY_OPAQUE 1544
+#define AVS_COAP_FORMAT_LEGACY_PLAINTEXT 1541
+#define AVS_COAP_FORMAT_LEGACY_TLV 1542
+#define AVS_COAP_FORMAT_LEGACY_JSON 1543
+#define AVS_COAP_FORMAT_LEGACY_OPAQUE 1544
 
 /**
  * A magic value used to indicate the absence of the Content-Format option.
  * Mainly used during CoAP message parsing, passing it to the info object does
  * nothing.
  * */
-#define ANJAY_COAP_FORMAT_NONE 65535
+#define AVS_COAP_FORMAT_NONE 65535
 
-#endif // ANJAY_COAP_CONTENT_FORMAT_H
+#endif // AVS_COAP_CONTENT_FORMAT_H

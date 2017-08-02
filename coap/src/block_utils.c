@@ -31,13 +31,13 @@ int avs_coap_get_block_info(const anjay_coap_msg_t *msg,
     assert(msg);
     assert(out_info);
     uint16_t opt_number = type == COAP_BLOCK1
-            ? ANJAY_COAP_OPT_BLOCK1
-            : ANJAY_COAP_OPT_BLOCK2;
+            ? AVS_COAP_OPT_BLOCK1
+            : AVS_COAP_OPT_BLOCK2;
     const anjay_coap_opt_t *opt;
     memset(out_info, 0, sizeof(*out_info));
     if (avs_coap_msg_find_unique_opt(msg, opt_number, &opt)) {
         if (opt) {
-            int num = opt_number == ANJAY_COAP_OPT_BLOCK1 ? 1 : 2;
+            int num = opt_number == AVS_COAP_OPT_BLOCK1 ? 1 : 2;
             LOG(ERROR, "multiple BLOCK%d options found", num);
             return -1;
         }
@@ -53,6 +53,6 @@ int avs_coap_get_block_info(const anjay_coap_msg_t *msg,
 
 bool avs_coap_is_valid_block_size(uint16_t size) {
     return avs_is_power_of_2(size)
-            && size <= ANJAY_COAP_MSG_BLOCK_MAX_SIZE
-            && size >= ANJAY_COAP_MSG_BLOCK_MIN_SIZE;
+            && size <= AVS_COAP_MSG_BLOCK_MAX_SIZE
+            && size >= AVS_COAP_MSG_BLOCK_MIN_SIZE;
 }

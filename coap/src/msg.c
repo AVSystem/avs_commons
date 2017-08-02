@@ -37,36 +37,36 @@ const char *avs_coap_msg_code_to_string(uint8_t code,
         uint8_t code;
         const char *name;
     } CODE_NAMES[] = {
-        { ANJAY_COAP_CODE_GET,                        "Get"                        },
-        { ANJAY_COAP_CODE_POST,                       "Post"                       },
-        { ANJAY_COAP_CODE_PUT,                        "Put"                        },
-        { ANJAY_COAP_CODE_DELETE,                     "Delete"                     },
+        { AVS_COAP_CODE_GET,                        "Get"                        },
+        { AVS_COAP_CODE_POST,                       "Post"                       },
+        { AVS_COAP_CODE_PUT,                        "Put"                        },
+        { AVS_COAP_CODE_DELETE,                     "Delete"                     },
 
-        { ANJAY_COAP_CODE_CREATED,                    "Created"                    },
-        { ANJAY_COAP_CODE_DELETED,                    "Deleted"                    },
-        { ANJAY_COAP_CODE_VALID,                      "Valid"                      },
-        { ANJAY_COAP_CODE_CHANGED,                    "Changed"                    },
-        { ANJAY_COAP_CODE_CONTENT,                    "Content"                    },
-        { ANJAY_COAP_CODE_CONTINUE,                   "Continue"                   },
+        { AVS_COAP_CODE_CREATED,                    "Created"                    },
+        { AVS_COAP_CODE_DELETED,                    "Deleted"                    },
+        { AVS_COAP_CODE_VALID,                      "Valid"                      },
+        { AVS_COAP_CODE_CHANGED,                    "Changed"                    },
+        { AVS_COAP_CODE_CONTENT,                    "Content"                    },
+        { AVS_COAP_CODE_CONTINUE,                   "Continue"                   },
 
-        { ANJAY_COAP_CODE_BAD_REQUEST,                "Bad Request"                },
-        { ANJAY_COAP_CODE_UNAUTHORIZED,               "Unauthorized"               },
-        { ANJAY_COAP_CODE_BAD_OPTION,                 "Bad Option"                 },
-        { ANJAY_COAP_CODE_FORBIDDEN,                  "Forbidden"                  },
-        { ANJAY_COAP_CODE_NOT_FOUND,                  "Not Found"                  },
-        { ANJAY_COAP_CODE_METHOD_NOT_ALLOWED,         "Method Not Allowed"         },
-        { ANJAY_COAP_CODE_NOT_ACCEPTABLE,             "Not Acceptable"             },
-        { ANJAY_COAP_CODE_REQUEST_ENTITY_INCOMPLETE,  "Request Entity Incomplete"  },
-        { ANJAY_COAP_CODE_PRECONDITION_FAILED,        "Precondition Failed"        },
-        { ANJAY_COAP_CODE_REQUEST_ENTITY_TOO_LARGE,   "Entity Too Large"           },
-        { ANJAY_COAP_CODE_UNSUPPORTED_CONTENT_FORMAT, "Unsupported Content Format" },
+        { AVS_COAP_CODE_BAD_REQUEST,                "Bad Request"                },
+        { AVS_COAP_CODE_UNAUTHORIZED,               "Unauthorized"               },
+        { AVS_COAP_CODE_BAD_OPTION,                 "Bad Option"                 },
+        { AVS_COAP_CODE_FORBIDDEN,                  "Forbidden"                  },
+        { AVS_COAP_CODE_NOT_FOUND,                  "Not Found"                  },
+        { AVS_COAP_CODE_METHOD_NOT_ALLOWED,         "Method Not Allowed"         },
+        { AVS_COAP_CODE_NOT_ACCEPTABLE,             "Not Acceptable"             },
+        { AVS_COAP_CODE_REQUEST_ENTITY_INCOMPLETE,  "Request Entity Incomplete"  },
+        { AVS_COAP_CODE_PRECONDITION_FAILED,        "Precondition Failed"        },
+        { AVS_COAP_CODE_REQUEST_ENTITY_TOO_LARGE,   "Entity Too Large"           },
+        { AVS_COAP_CODE_UNSUPPORTED_CONTENT_FORMAT, "Unsupported Content Format" },
 
-        { ANJAY_COAP_CODE_INTERNAL_SERVER_ERROR,      "Internal Server Error"      },
-        { ANJAY_COAP_CODE_NOT_IMPLEMENTED,            "Not Implemented"            },
-        { ANJAY_COAP_CODE_BAD_GATEWAY,                "Bad Gateway"                },
-        { ANJAY_COAP_CODE_SERVICE_UNAVAILABLE,        "Service Unavailable"        },
-        { ANJAY_COAP_CODE_GATEWAY_TIMEOUT,            "Gateway Timeout"            },
-        { ANJAY_COAP_CODE_PROXYING_NOT_SUPPORTED,     "Proxying Not Supported"     },
+        { AVS_COAP_CODE_INTERNAL_SERVER_ERROR,      "Internal Server Error"      },
+        { AVS_COAP_CODE_NOT_IMPLEMENTED,            "Not Implemented"            },
+        { AVS_COAP_CODE_BAD_GATEWAY,                "Bad Gateway"                },
+        { AVS_COAP_CODE_SERVICE_UNAVAILABLE,        "Service Unavailable"        },
+        { AVS_COAP_CODE_GATEWAY_TIMEOUT,            "Gateway Timeout"            },
+        { AVS_COAP_CODE_PROXYING_NOT_SUPPORTED,     "Proxying Not Supported"     },
     };
 
     const char *name = "unknown";
@@ -91,7 +91,7 @@ const char *avs_coap_msg_code_to_string(uint8_t code,
 size_t avs_coap_msg_get_token(const anjay_coap_msg_t *msg,
                                  anjay_coap_token_t *out_token) {
     size_t token_length = avs_coap_msg_header_get_token_length(&msg->header);
-    assert(token_length <= ANJAY_COAP_MAX_TOKEN_LENGTH);
+    assert(token_length <= AVS_COAP_MAX_TOKEN_LENGTH);
 
     memcpy(out_token, msg->content, token_length);
     return token_length;
@@ -99,13 +99,13 @@ size_t avs_coap_msg_get_token(const anjay_coap_msg_t *msg,
 
 static const anjay_coap_opt_t *get_first_opt(const anjay_coap_msg_t *msg) {
     size_t token_length = avs_coap_msg_header_get_token_length(&msg->header);
-    assert(token_length <= ANJAY_COAP_MAX_TOKEN_LENGTH);
+    assert(token_length <= AVS_COAP_MAX_TOKEN_LENGTH);
 
     return (const anjay_coap_opt_t *)(msg->content + token_length);
 }
 
 static bool is_payload_marker(const anjay_coap_opt_t *ptr) {
-    return *(const uint8_t *)ptr == ANJAY_COAP_PAYLOAD_MARKER;
+    return *(const uint8_t *)ptr == AVS_COAP_PAYLOAD_MARKER;
 }
 
 anjay_coap_opt_iterator_t avs_coap_opt_begin(const anjay_coap_msg_t *msg) {
@@ -152,7 +152,7 @@ const void *avs_coap_msg_payload(const anjay_coap_msg_t *msg) {
     const uint8_t *end = coap_opt_find_end(msg);
 
     if (end < (const uint8_t*)&msg->header + msg->length
-            && *end == ANJAY_COAP_PAYLOAD_MARKER) {
+            && *end == AVS_COAP_PAYLOAD_MARKER) {
         return end + 1;
     } else {
         return end;
@@ -172,9 +172,9 @@ static bool is_header_valid(const anjay_coap_msg_t *msg) {
     }
 
     uint8_t token_length = avs_coap_msg_header_get_token_length(&msg->header);
-    if (token_length > ANJAY_COAP_MAX_TOKEN_LENGTH) {
+    if (token_length > AVS_COAP_MAX_TOKEN_LENGTH) {
         LOG(DEBUG, "token too long (%dB, expected 0 <= size <= %d)",
-            token_length, ANJAY_COAP_MAX_TOKEN_LENGTH);
+            token_length, AVS_COAP_MAX_TOKEN_LENGTH);
         return false;
     }
 
@@ -232,9 +232,9 @@ static bool are_options_valid(const anjay_coap_msg_t *msg) {
 }
 
 bool avs_coap_msg_is_valid(const anjay_coap_msg_t *msg) {
-    if (msg->length < ANJAY_COAP_MSG_MIN_SIZE) {
+    if (msg->length < AVS_COAP_MSG_MIN_SIZE) {
         LOG(DEBUG, "message too short (%uB, expected >= %u)", msg->length,
-            ANJAY_COAP_MSG_MIN_SIZE);
+            AVS_COAP_MSG_MIN_SIZE);
         return false;
     }
 
@@ -243,8 +243,8 @@ bool avs_coap_msg_is_valid(const anjay_coap_msg_t *msg) {
         // [RFC 7272, 1.2]
         // Empty Message: A message with a Code of 0.00; neither a request nor
         // a response. An Empty message only contains the 4-byte header.
-        && (msg->header.code != ANJAY_COAP_CODE_EMPTY
-                || msg->length == ANJAY_COAP_MSG_MIN_SIZE);
+        && (msg->header.code != AVS_COAP_CODE_EMPTY
+                || msg->length == AVS_COAP_MSG_MIN_SIZE);
 }
 
 static const char *msg_type_string(anjay_coap_msg_type_t type) {
@@ -270,7 +270,7 @@ void avs_coap_msg_debug_print(const anjay_coap_msg_t *msg) {
         _anjay_coap_msg_header_get_version(&msg->header));
     LOG(DEBUG, "  token_length: %u",
         avs_coap_msg_header_get_token_length(&msg->header));
-    LOG(DEBUG, "  code: %s", ANJAY_COAP_CODE_STRING(msg->header.code));
+    LOG(DEBUG, "  code: %s", AVS_COAP_CODE_STRING(msg->header.code));
     LOG(DEBUG, "  message_id: %u", avs_coap_msg_get_id(msg));
     LOG(DEBUG, "  content:");
 
@@ -290,10 +290,10 @@ static void fill_block_summary(const anjay_coap_msg_t *msg,
                                uint16_t block_opt_num,
                                char *buf,
                                size_t buf_size) {
-    assert(block_opt_num == ANJAY_COAP_OPT_BLOCK1
-           || block_opt_num == ANJAY_COAP_OPT_BLOCK2);
+    assert(block_opt_num == AVS_COAP_OPT_BLOCK1
+           || block_opt_num == AVS_COAP_OPT_BLOCK2);
 
-    const int num = block_opt_num == ANJAY_COAP_OPT_BLOCK1 ? 1 : 2;
+    const int num = block_opt_num == AVS_COAP_OPT_BLOCK1 ? 1 : 2;
 
     const anjay_coap_opt_t *opt;
     if (avs_coap_msg_find_unique_opt(msg, block_opt_num, &opt)) {
@@ -351,14 +351,14 @@ const char *avs_coap_msg_summary(const anjay_coap_msg_t *msg,
     }
 
     char block1[64] = "";
-    fill_block_summary(msg, ANJAY_COAP_OPT_BLOCK1, block1, sizeof(block1));
+    fill_block_summary(msg, AVS_COAP_OPT_BLOCK1, block1, sizeof(block1));
 
     char block2[64] = "";
-    fill_block_summary(msg, ANJAY_COAP_OPT_BLOCK2, block2, sizeof(block2));
+    fill_block_summary(msg, AVS_COAP_OPT_BLOCK2, block2, sizeof(block2));
 
     if (avs_simple_snprintf(
              buf, buf_size, "%s, %s, id %u, token %s (%luB)%s%s",
-             ANJAY_COAP_CODE_STRING(msg->header.code),
+             AVS_COAP_CODE_STRING(msg->header.code),
              msg_type_string(avs_coap_msg_header_get_type(&msg->header)),
              avs_coap_msg_get_id(msg),
              token_string, (unsigned long)token_size,
@@ -371,10 +371,10 @@ const char *avs_coap_msg_summary(const anjay_coap_msg_t *msg,
 
 uint8_t
 avs_coap_msg_header_get_token_length(const anjay_coap_msg_header_t *hdr) {
-    int val = ANJAY_FIELD_GET(hdr->version_type_token_length,
-                              ANJAY_COAP_HEADER_TOKEN_LENGTH_MASK,
-                              ANJAY_COAP_HEADER_TOKEN_LENGTH_SHIFT);
-    assert(val >= 0 && val <= ANJAY_COAP_HEADER_TOKEN_LENGTH_MASK);
+    int val = AVS_FIELD_GET(hdr->version_type_token_length,
+                              AVS_COAP_HEADER_TOKEN_LENGTH_MASK,
+                              AVS_COAP_HEADER_TOKEN_LENGTH_SHIFT);
+    assert(val >= 0 && val <= AVS_COAP_HEADER_TOKEN_LENGTH_MASK);
     return (uint8_t)val;
 }
 

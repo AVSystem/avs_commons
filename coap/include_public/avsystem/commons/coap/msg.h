@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef ANJAY_COAP_MSG_H
-#define ANJAY_COAP_MSG_H
+#ifndef AVS_COAP_MSG_H
+#define AVS_COAP_MSG_H
 
 #include <assert.h>
 #include <stdint.h>
@@ -26,88 +26,88 @@
 #include <avsystem/commons/coap/parse_utils.h>
 #include <avsystem/commons/coap/msg_identity.h>
 
-#define ANJAY_COAP_MSG_MIN_SIZE ((unsigned) sizeof(anjay_coap_msg_header_t))
+#define AVS_COAP_MSG_MIN_SIZE ((unsigned) sizeof(anjay_coap_msg_header_t))
 
 typedef enum anjay_coap_msg_type {
-    ANJAY_COAP_MSG_CONFIRMABLE,
-    ANJAY_COAP_MSG_NON_CONFIRMABLE,
-    ANJAY_COAP_MSG_ACKNOWLEDGEMENT,
-    ANJAY_COAP_MSG_RESET,
+    AVS_COAP_MSG_CONFIRMABLE,
+    AVS_COAP_MSG_NON_CONFIRMABLE,
+    AVS_COAP_MSG_ACKNOWLEDGEMENT,
+    AVS_COAP_MSG_RESET,
 
-    _ANJAY_COAP_MSG_FIRST = ANJAY_COAP_MSG_CONFIRMABLE,
-    _ANJAY_COAP_MSG_LAST = ANJAY_COAP_MSG_RESET
+    _AVS_COAP_MSG_FIRST = AVS_COAP_MSG_CONFIRMABLE,
+    _AVS_COAP_MSG_LAST = AVS_COAP_MSG_RESET
 } anjay_coap_msg_type_t;
 
-#define ANJAY_COAP_CODE_CLASS_MASK 0xE0
-#define ANJAY_COAP_CODE_CLASS_SHIFT 5
-#define ANJAY_COAP_CODE_DETAIL_MASK 0x1F
-#define ANJAY_COAP_CODE_DETAIL_SHIFT 0
+#define AVS_COAP_CODE_CLASS_MASK 0xE0
+#define AVS_COAP_CODE_CLASS_SHIFT 5
+#define AVS_COAP_CODE_DETAIL_MASK 0x1F
+#define AVS_COAP_CODE_DETAIL_SHIFT 0
 
-#define ANJAY_COAP_CODE(cls, detail) \
-    ((((cls) << ANJAY_COAP_CODE_CLASS_SHIFT) \
-      & ANJAY_COAP_CODE_CLASS_MASK) \
-     | (((detail) << ANJAY_COAP_CODE_DETAIL_SHIFT) \
-        & ANJAY_COAP_CODE_DETAIL_MASK))
+#define AVS_COAP_CODE(cls, detail) \
+    ((((cls) << AVS_COAP_CODE_CLASS_SHIFT) \
+      & AVS_COAP_CODE_CLASS_MASK) \
+     | (((detail) << AVS_COAP_CODE_DETAIL_SHIFT) \
+        & AVS_COAP_CODE_DETAIL_MASK))
 
-#define ANJAY_COAP_CODE_EMPTY  ANJAY_COAP_CODE(0, 0)
+#define AVS_COAP_CODE_EMPTY  AVS_COAP_CODE(0, 0)
 
-#define ANJAY_COAP_CODE_GET    ANJAY_COAP_CODE(0, 1)
-#define ANJAY_COAP_CODE_POST   ANJAY_COAP_CODE(0, 2)
-#define ANJAY_COAP_CODE_PUT    ANJAY_COAP_CODE(0, 3)
-#define ANJAY_COAP_CODE_DELETE ANJAY_COAP_CODE(0, 4)
+#define AVS_COAP_CODE_GET    AVS_COAP_CODE(0, 1)
+#define AVS_COAP_CODE_POST   AVS_COAP_CODE(0, 2)
+#define AVS_COAP_CODE_PUT    AVS_COAP_CODE(0, 3)
+#define AVS_COAP_CODE_DELETE AVS_COAP_CODE(0, 4)
 
-#define ANJAY_COAP_CODE_CREATED  ANJAY_COAP_CODE(2, 1)
-#define ANJAY_COAP_CODE_DELETED  ANJAY_COAP_CODE(2, 2)
-#define ANJAY_COAP_CODE_VALID    ANJAY_COAP_CODE(2, 3)
-#define ANJAY_COAP_CODE_CHANGED  ANJAY_COAP_CODE(2, 4)
-#define ANJAY_COAP_CODE_CONTENT  ANJAY_COAP_CODE(2, 5)
-#define ANJAY_COAP_CODE_CONTINUE ANJAY_COAP_CODE(2, 31)
+#define AVS_COAP_CODE_CREATED  AVS_COAP_CODE(2, 1)
+#define AVS_COAP_CODE_DELETED  AVS_COAP_CODE(2, 2)
+#define AVS_COAP_CODE_VALID    AVS_COAP_CODE(2, 3)
+#define AVS_COAP_CODE_CHANGED  AVS_COAP_CODE(2, 4)
+#define AVS_COAP_CODE_CONTENT  AVS_COAP_CODE(2, 5)
+#define AVS_COAP_CODE_CONTINUE AVS_COAP_CODE(2, 31)
 
-#define ANJAY_COAP_CODE_BAD_REQUEST                ANJAY_COAP_CODE(4, 0)
-#define ANJAY_COAP_CODE_UNAUTHORIZED               ANJAY_COAP_CODE(4, 1)
-#define ANJAY_COAP_CODE_BAD_OPTION                 ANJAY_COAP_CODE(4, 2)
-#define ANJAY_COAP_CODE_FORBIDDEN                  ANJAY_COAP_CODE(4, 3)
-#define ANJAY_COAP_CODE_NOT_FOUND                  ANJAY_COAP_CODE(4, 4)
-#define ANJAY_COAP_CODE_METHOD_NOT_ALLOWED         ANJAY_COAP_CODE(4, 5)
-#define ANJAY_COAP_CODE_NOT_ACCEPTABLE             ANJAY_COAP_CODE(4, 6)
-#define ANJAY_COAP_CODE_REQUEST_ENTITY_INCOMPLETE  ANJAY_COAP_CODE(4, 8)
-#define ANJAY_COAP_CODE_PRECONDITION_FAILED        ANJAY_COAP_CODE(4, 12)
-#define ANJAY_COAP_CODE_REQUEST_ENTITY_TOO_LARGE   ANJAY_COAP_CODE(4, 13)
-#define ANJAY_COAP_CODE_UNSUPPORTED_CONTENT_FORMAT ANJAY_COAP_CODE(4, 15)
+#define AVS_COAP_CODE_BAD_REQUEST                AVS_COAP_CODE(4, 0)
+#define AVS_COAP_CODE_UNAUTHORIZED               AVS_COAP_CODE(4, 1)
+#define AVS_COAP_CODE_BAD_OPTION                 AVS_COAP_CODE(4, 2)
+#define AVS_COAP_CODE_FORBIDDEN                  AVS_COAP_CODE(4, 3)
+#define AVS_COAP_CODE_NOT_FOUND                  AVS_COAP_CODE(4, 4)
+#define AVS_COAP_CODE_METHOD_NOT_ALLOWED         AVS_COAP_CODE(4, 5)
+#define AVS_COAP_CODE_NOT_ACCEPTABLE             AVS_COAP_CODE(4, 6)
+#define AVS_COAP_CODE_REQUEST_ENTITY_INCOMPLETE  AVS_COAP_CODE(4, 8)
+#define AVS_COAP_CODE_PRECONDITION_FAILED        AVS_COAP_CODE(4, 12)
+#define AVS_COAP_CODE_REQUEST_ENTITY_TOO_LARGE   AVS_COAP_CODE(4, 13)
+#define AVS_COAP_CODE_UNSUPPORTED_CONTENT_FORMAT AVS_COAP_CODE(4, 15)
 
-#define ANJAY_COAP_CODE_INTERNAL_SERVER_ERROR  ANJAY_COAP_CODE(5, 0)
-#define ANJAY_COAP_CODE_NOT_IMPLEMENTED        ANJAY_COAP_CODE(5, 1)
-#define ANJAY_COAP_CODE_BAD_GATEWAY            ANJAY_COAP_CODE(5, 2)
-#define ANJAY_COAP_CODE_SERVICE_UNAVAILABLE    ANJAY_COAP_CODE(5, 3)
-#define ANJAY_COAP_CODE_GATEWAY_TIMEOUT        ANJAY_COAP_CODE(5, 4)
-#define ANJAY_COAP_CODE_PROXYING_NOT_SUPPORTED ANJAY_COAP_CODE(5, 5)
+#define AVS_COAP_CODE_INTERNAL_SERVER_ERROR  AVS_COAP_CODE(5, 0)
+#define AVS_COAP_CODE_NOT_IMPLEMENTED        AVS_COAP_CODE(5, 1)
+#define AVS_COAP_CODE_BAD_GATEWAY            AVS_COAP_CODE(5, 2)
+#define AVS_COAP_CODE_SERVICE_UNAVAILABLE    AVS_COAP_CODE(5, 3)
+#define AVS_COAP_CODE_GATEWAY_TIMEOUT        AVS_COAP_CODE(5, 4)
+#define AVS_COAP_CODE_PROXYING_NOT_SUPPORTED AVS_COAP_CODE(5, 5)
 
 const char *avs_coap_msg_code_to_string(uint8_t code,
                                            char *buf,
                                            size_t buf_size);
 
-#define ANJAY_COAP_CODE_STRING(Code) \
+#define AVS_COAP_CODE_STRING(Code) \
         avs_coap_msg_code_to_string((Code), &(char[32]){0}[0], 32)
 
 static inline uint8_t avs_coap_msg_code_get_class(const uint8_t *code) {
-    return ANJAY_FIELD_GET(*code, ANJAY_COAP_CODE_CLASS_MASK,
-                           ANJAY_COAP_CODE_CLASS_SHIFT);
+    return AVS_FIELD_GET(*code, AVS_COAP_CODE_CLASS_MASK,
+                           AVS_COAP_CODE_CLASS_SHIFT);
 }
 static inline void avs_coap_msg_code_set_class(uint8_t *code,
                                                   uint8_t cls) {
     assert(cls < 8);
-    ANJAY_FIELD_SET(*code, ANJAY_COAP_CODE_CLASS_MASK,
-                    ANJAY_COAP_CODE_CLASS_SHIFT, cls);
+    AVS_FIELD_SET(*code, AVS_COAP_CODE_CLASS_MASK,
+                    AVS_COAP_CODE_CLASS_SHIFT, cls);
 }
 static inline uint8_t avs_coap_msg_code_get_detail(const uint8_t *code) {
-    return ANJAY_FIELD_GET(*code, ANJAY_COAP_CODE_DETAIL_MASK,
-                           ANJAY_COAP_CODE_DETAIL_SHIFT);
+    return AVS_FIELD_GET(*code, AVS_COAP_CODE_DETAIL_MASK,
+                           AVS_COAP_CODE_DETAIL_SHIFT);
 }
 static inline void avs_coap_msg_code_set_detail(uint8_t *code,
                                                    uint8_t detail) {
     assert(detail < 32);
-    ANJAY_FIELD_SET(*code, ANJAY_COAP_CODE_DETAIL_MASK,
-                    ANJAY_COAP_CODE_DETAIL_SHIFT, detail);
+    AVS_FIELD_SET(*code, AVS_COAP_CODE_DETAIL_MASK,
+                    AVS_COAP_CODE_DETAIL_SHIFT, detail);
 }
 
 static inline bool avs_coap_msg_code_is_client_error(uint8_t code) {
@@ -142,23 +142,23 @@ AVS_STATIC_ASSERT(offsetof(anjay_coap_msg_header_t, message_id) == 2,
 AVS_STATIC_ASSERT(sizeof(anjay_coap_msg_header_t) == 4,
                   no_padding_in_msg_header_t);
 
-#define ANJAY_COAP_HEADER_TYPE_MASK 0x30
-#define ANJAY_COAP_HEADER_TYPE_SHIFT 4
+#define AVS_COAP_HEADER_TYPE_MASK 0x30
+#define AVS_COAP_HEADER_TYPE_SHIFT 4
 
 static inline anjay_coap_msg_type_t
 avs_coap_msg_header_get_type(const anjay_coap_msg_header_t *hdr) {
-    int val = ANJAY_FIELD_GET(hdr->version_type_token_length,
-                              ANJAY_COAP_HEADER_TYPE_MASK,
-                              ANJAY_COAP_HEADER_TYPE_SHIFT);
-    assert(val >= _ANJAY_COAP_MSG_FIRST && val <= _ANJAY_COAP_MSG_LAST);
+    int val = AVS_FIELD_GET(hdr->version_type_token_length,
+                              AVS_COAP_HEADER_TYPE_MASK,
+                              AVS_COAP_HEADER_TYPE_SHIFT);
+    assert(val >= _AVS_COAP_MSG_FIRST && val <= _AVS_COAP_MSG_LAST);
     return (anjay_coap_msg_type_t)val;
 }
 static inline void
 avs_coap_msg_header_set_type(anjay_coap_msg_header_t *hdr,
                                 anjay_coap_msg_type_t type) {
-    ANJAY_FIELD_SET(hdr->version_type_token_length,
-                    ANJAY_COAP_HEADER_TYPE_MASK,
-                    ANJAY_COAP_HEADER_TYPE_SHIFT, type);
+    AVS_FIELD_SET(hdr->version_type_token_length,
+                    AVS_COAP_HEADER_TYPE_MASK,
+                    AVS_COAP_HEADER_TYPE_SHIFT, type);
 }
 
 typedef struct anjay_coap_msg {
@@ -178,7 +178,7 @@ typedef struct {
     uint32_t prev_opt_number;
 } anjay_coap_opt_iterator_t;
 
-#define ANJAY_COAP_OPT_ITERATOR_EMPTY \
+#define AVS_COAP_OPT_ITERATOR_EMPTY \
     (anjay_coap_opt_iterator_t) { \
         NULL, NULL, 0 \
     }
@@ -314,11 +314,11 @@ const char *avs_coap_msg_summary(const anjay_coap_msg_t *msg,
                                     char *buf,
                                     size_t buf_size);
 
-#define ANJAY_COAP_MSG_SUMMARY(Msg) \
+#define AVS_COAP_MSG_SUMMARY(Msg) \
         avs_coap_msg_summary((Msg), &(char[256]){0}[0], 256)
 
 uint8_t
 avs_coap_msg_header_get_token_length(const anjay_coap_msg_header_t *hdr);
 
-#endif // ANJAY_COAP_MSG_H
+#endif // AVS_COAP_MSG_H
 
