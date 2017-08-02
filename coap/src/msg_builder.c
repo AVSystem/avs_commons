@@ -260,6 +260,6 @@ _anjay_coap_msg_builder_get_msg(const anjay_coap_msg_builder_t *builder) {
     return builder->msg_buffer.msg;
 }
 
-#ifdef ANJAY_TEST
-utils.h"st/msg_builder.c"
-#endif // ANJAY_TEST
+#ifdef AVS_UNIT_TESTING
+#include "test/msg_builder.c"
+#endif // AVS_UNIT_TESTING

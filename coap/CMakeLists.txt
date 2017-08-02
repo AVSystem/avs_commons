@@ -42,6 +42,7 @@ set(INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/include_public")
 set(avs_coap_INCLUDE_DIRS ${INCLUDE_DIRS} PARENT_SCOPE)
 
 include_directories(${INCLUDE_DIRS})
+add_avs_test(avs_coap ${ALL_SOURCES})
 
 add_library(avs_coap STATIC ${ALL_SOURCES})
 

@@ -378,6 +378,6 @@ _anjay_coap_msg_header_get_token_length(const anjay_coap_msg_header_t *hdr) {
     return (uint8_t)val;
 }
 
-#ifdef ANJAY_TEST
-"test/msg.c"
-#endif // ANJAY_TEST
+#ifdef AVS_UNIT_TESTING
+#include "test/msg.c"
+#endif // AVS_UNIT_TESTING

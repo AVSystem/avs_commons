@@ -217,6 +217,6 @@ void _anjay_coap_opt_debug_print(const anjay_coap_opt_t *opt) {
     }
 }
 
-#ifdef ANJAY_TEST
-utils.h"st/opt.c"
-#endif // ANJAY_TEST
+#ifdef AVS_UNIT_TESTING
+#include "test/opt.c"
+#endif // AVS_UNIT_TESTING

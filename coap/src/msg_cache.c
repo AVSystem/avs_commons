@@ -385,6 +385,6 @@ void _anjay_coap_msg_cache_debug_print(const coap_msg_cache_t *cache) {
     }
 }
 
-#ifdef ANJAY_TEST
-utils.h"st/msg_cache.c"
-#endif // ANJAY_TEST
+#ifdef AVS_UNIT_TESTING
+#include "test/msg_cache.c"
+#endif // AVS_UNIT_TESTING

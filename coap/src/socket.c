@@ -341,6 +341,6 @@ void _anjay_coap_send_service_unavailable(anjay_coap_socket_t *socket,
                   &s_to_retry_after);
 }
 
-#ifdef ANJAY_TEST
-// TODO
-#endif // ANJAY_TEST
+#ifdef AVS_UNIT_TESTING
+#include "test/socket.c"
+#endif // AVS_UNIT_TESTING
