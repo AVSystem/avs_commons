@@ -143,7 +143,7 @@ static int add_block_opt(avs_coap_msg_info_t *info,
 }
 
 int avs_coap_msg_info_opt_block(avs_coap_msg_info_t *info,
-                                   const coap_block_info_t *block) {
+                                   const avs_coap_block_info_t *block) {
     if (!block->valid) {
         LOG(ERROR, "could not add invalid BLOCK option");
         return -1;

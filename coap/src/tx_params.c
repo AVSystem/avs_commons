@@ -41,7 +41,7 @@ static uint32_t rand32(unsigned *seed) {
     return result;
 }
 
-void avs_coap_update_retry_state(coap_retry_state_t *retry_state,
+void avs_coap_update_retry_state(avs_coap_retry_state_t *retry_state,
                                     const avs_coap_tx_params_t *tx_params,
                                     unsigned *rand_seed) {
     ++retry_state->retry_count;

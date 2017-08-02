@@ -26,11 +26,11 @@
 #pragma GCC visibility push(hidden)
 
 int avs_coap_get_block_info(const avs_coap_msg_t *msg,
-                               coap_block_type_t type,
-                               coap_block_info_t *out_info) {
+                               avs_coap_block_type_t type,
+                               avs_coap_block_info_t *out_info) {
     assert(msg);
     assert(out_info);
-    uint16_t opt_number = type == COAP_BLOCK1
+    uint16_t opt_number = type == AVS_COAP_BLOCK1
             ? AVS_COAP_OPT_BLOCK1
             : AVS_COAP_OPT_BLOCK2;
     const avs_coap_opt_t *opt;

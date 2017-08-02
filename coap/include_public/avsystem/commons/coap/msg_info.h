@@ -129,7 +129,7 @@ int avs_coap_msg_info_opt_content_format(avs_coap_msg_info_t *info,
  * @return 0 on success, -1 in case of error.
  */
 int avs_coap_msg_info_opt_block(avs_coap_msg_info_t *info,
-                                   const coap_block_info_t *block);
+                                   const avs_coap_block_info_t *block);
 
 /**
  * Adds an arbitrary CoAP option with custom value.

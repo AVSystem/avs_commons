@@ -27,22 +27,22 @@
 #define AVS_COAP_MSG_BLOCK_MAX_SIZE (1 << 10)
 
 typedef enum {
-    COAP_BLOCK1,
-    COAP_BLOCK2
-} coap_block_type_t;
+    AVS_COAP_BLOCK1,
+    AVS_COAP_BLOCK2
+} avs_coap_block_type_t;
 
 static inline uint16_t
-avs_coap_opt_num_from_block_type(coap_block_type_t type) {
-    return type == COAP_BLOCK1 ? AVS_COAP_OPT_BLOCK1 : AVS_COAP_OPT_BLOCK2;
+avs_coap_opt_num_from_block_type(avs_coap_block_type_t type) {
+    return type == AVS_COAP_BLOCK1 ? AVS_COAP_OPT_BLOCK1 : AVS_COAP_OPT_BLOCK2;
 }
 
 typedef struct coap_block_info {
-    coap_block_type_t type;
+    avs_coap_block_type_t type;
     bool valid;
     uint32_t seq_num;
     bool has_more;
     uint16_t size;
-} coap_block_info_t;
+} avs_coap_block_info_t;
 
 /**
  * Attempts to obtain block info of given block @p type. Possible return values
@@ -61,8 +61,8 @@ typedef struct coap_block_info {
  * +-----------------------+----------------+-----------------+
  */
 int avs_coap_get_block_info(const avs_coap_msg_t *msg,
-                               coap_block_type_t type,
-                               coap_block_info_t *out_info);
+                               avs_coap_block_type_t type,
+                               avs_coap_block_info_t *out_info);
 
 bool avs_coap_is_valid_block_size(uint16_t size);
 

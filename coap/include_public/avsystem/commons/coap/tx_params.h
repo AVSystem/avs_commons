@@ -59,9 +59,9 @@ avs_coap_max_transmit_span(const avs_coap_tx_params_t *tx_params);
 typedef struct {
     unsigned retry_count;
     int32_t recv_timeout_ms;
-} coap_retry_state_t;
+} avs_coap_retry_state_t;
 
-void avs_coap_update_retry_state(coap_retry_state_t *retry_state,
+void avs_coap_update_retry_state(avs_coap_retry_state_t *retry_state,
                                     const avs_coap_tx_params_t *tx_params,
                                     unsigned *rand_seed);
 
