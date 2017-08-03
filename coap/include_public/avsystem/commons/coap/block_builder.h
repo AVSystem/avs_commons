@@ -21,6 +21,9 @@
 
 #include <avsystem/commons/coap/msg_builder.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 typedef struct avs_coap_block_builder {
     void *payload_buffer;
@@ -100,5 +103,8 @@ avs_coap_block_builder_append_payload(avs_coap_block_builder_t *builder,
                                          const void *payload,
                                          size_t payload_size);
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif // AVS_COMMONS_COAP_BLOCKBUILDER_H

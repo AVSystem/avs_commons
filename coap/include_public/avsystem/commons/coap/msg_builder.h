@@ -22,6 +22,10 @@
 
 #include <avsystem/commons/coap/msg_info.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct avs_coap_msg_buffer {
     avs_coap_msg_t *msg;
     size_t capacity;
@@ -156,5 +160,8 @@ avs_coap_msg_build_without_payload(avs_coap_aligned_msg_buffer_t *buffer,
     return avs_coap_msg_builder_get_msg(&builder);
 }
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif // AVS_COMMONS_COAP_MSGBUILDER_H

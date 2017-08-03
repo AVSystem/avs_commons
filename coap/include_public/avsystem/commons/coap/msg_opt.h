@@ -19,6 +19,9 @@
 
 #include <avsystem/commons/coap/msg.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #define AVS_COAP_OPTION_MISSING 1
 
@@ -62,5 +65,8 @@ int avs_coap_msg_validate_critical_options(
         const avs_coap_msg_t *msg,
         avs_coap_critical_option_validator_t validator);
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif // AVS_COMMONS_COAP_MSG_OPT_H

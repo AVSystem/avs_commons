@@ -21,6 +21,10 @@
 #include <stdbool.h>
 #include <stddef.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define AVS_COAP_OPT_IF_MATCH 1
 #define AVS_COMMONS_COAP_OPT_URI_HOST 3
 #define AVS_COAP_OPT_ETAG 4
@@ -132,5 +136,9 @@ bool avs_coap_opt_is_valid(const avs_coap_opt_t *opt,
 size_t avs_coap_opt_sizeof(const avs_coap_opt_t *opt);
 
 void avs_coap_opt_debug_print(const avs_coap_opt_t *opt);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // AVS_COMMONS_COAP_OPT_H

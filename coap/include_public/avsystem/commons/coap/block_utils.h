@@ -22,6 +22,9 @@
 
 #include <avsystem/commons/coap/msg.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #define AVS_COAP_MSG_BLOCK_MIN_SIZE (1 << 4)
 #define AVS_COAP_MSG_BLOCK_MAX_SIZE (1 << 10)
@@ -66,5 +69,8 @@ int avs_coap_get_block_info(const avs_coap_msg_t *msg,
 
 bool avs_coap_is_valid_block_size(uint16_t size);
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif // AVS_COMMONS_COAP_BLOCK_UTILS_H

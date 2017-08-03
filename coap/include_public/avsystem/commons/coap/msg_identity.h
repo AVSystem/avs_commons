@@ -17,6 +17,9 @@
 #ifndef AVS_COMMONS_COAP_MSG_IDENTITY_H
 #define AVS_COMMONS_COAP_MSG_IDENTITY_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #define AVS_COAP_MAX_TOKEN_LENGTH 8
 
@@ -50,5 +53,8 @@ bool avs_coap_identity_equal(const avs_coap_msg_identity_t *a,
         && !memcmp(&a->token, &b->token, a->token_size);
 }
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif // AVS_COMMONS_COAP_MSG_IDENTITY_H

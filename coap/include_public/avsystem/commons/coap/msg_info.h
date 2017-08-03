@@ -24,6 +24,9 @@
 #include <avsystem/commons/coap/msg.h>
 #include <avsystem/commons/coap/block_utils.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 typedef struct avs_coap_msg_info_opt avs_coap_msg_info_opt_t;
 
@@ -194,5 +197,9 @@ static inline int avs_coap_msg_info_opt_u32(avs_coap_msg_info_t *info,
     return avs_coap_msg_info_opt_uint(info, opt_number,
                                          &value, sizeof(value));
 }
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // AVS_COMMONS_COAP_MSGINFO_H

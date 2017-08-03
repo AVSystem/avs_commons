@@ -17,6 +17,10 @@
 #ifndef AVS_COMMONS_COAP_CONTENT_FORMAT_H
 #define AVS_COMMONS_COAP_CONTENT_FORMAT_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /** Auxiliary constants for common Content-Format Option values */
 
 #define AVS_COAP_FORMAT_APPLICATION_LINK 40
@@ -37,5 +41,9 @@
  * nothing.
  * */
 #define AVS_COAP_FORMAT_NONE 65535
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // AVS_COMMONS_COAP_CONTENT_FORMAT_H

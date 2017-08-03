@@ -20,6 +20,10 @@
 #include <avsystem/commons/coap/msg.h>
 #include <avsystem/commons/coap/tx_params.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define AVS_COAP_SOCKET_ERR_TIMEOUT       (-0x5E1)
 #define AVS_COAP_SOCKET_ERR_MSG_MALFORMED (-0x5E2)
 #define AVS_COAP_SOCKET_ERR_NETWORK       (-0x5E3)
@@ -120,5 +124,8 @@ void avs_coap_send_service_unavailable(avs_coap_socket_t *socket,
 
 /** @} */
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif // AVS_COMMONS_COAP_SOCKET_H

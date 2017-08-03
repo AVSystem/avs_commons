@@ -26,6 +26,10 @@
 #include <avsystem/commons/coap/parse_utils.h>
 #include <avsystem/commons/coap/msg_identity.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define AVS_COAP_MSG_MIN_SIZE ((unsigned) sizeof(avs_coap_msg_header_t))
 
 typedef enum avs_coap_msg_type {
@@ -320,5 +324,8 @@ const char *avs_coap_msg_summary(const avs_coap_msg_t *msg,
 uint8_t
 avs_coap_msg_header_get_token_length(const avs_coap_msg_header_t *hdr);
 
-#endif // AVS_COMMONS_COAP_MSG_H
+#ifdef __cplusplus
+}
+#endif
 
+#endif // AVS_COMMONS_COAP_MSG_H

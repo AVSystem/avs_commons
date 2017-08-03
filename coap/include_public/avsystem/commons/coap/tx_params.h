@@ -26,6 +26,10 @@
 #include <avsystem/commons/net.h>
 #include <avsystem/commons/time.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct {
     /** RFC 7252: ACK_TIMEOUT */
     avs_net_timeout_t ack_timeout_ms;
@@ -64,5 +68,9 @@ typedef struct {
 void avs_coap_update_retry_state(avs_coap_retry_state_t *retry_state,
                                     const avs_coap_tx_params_t *tx_params,
                                     unsigned *rand_seed);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // AVS_COMMONS_COAP_TX_PARAMS_H
