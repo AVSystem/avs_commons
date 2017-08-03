@@ -104,7 +104,7 @@ static int map_io_error(avs_net_abstract_socket_t *socket,
 }
 
 #ifndef WITH_AVS_COAP_MESSAGE_CACHE
-#define try_cache_response(...) (void)0
+#define try_cache_response(...) 0
 #else // WITH_AVS_COAP_MESSAGE_CACHE
 
 static int try_cache_response(avs_coap_socket_t *sock,

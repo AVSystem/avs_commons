@@ -110,10 +110,10 @@ void _avs_coap_msg_cache_debug_print(const coap_msg_cache_t *cache);
 #else // WITH_AVS_COAP_MESSAGE_CACHE
 
 #define _avs_coap_msg_cache_create(...) \
-    (LOG(ERROR, "message cache support disabled"), NULL)
+    (LOG(ERROR, "message cache support disabled"), (coap_msg_cache_t *) NULL)
 #define _avs_coap_msg_cache_release(...) (void)0
 #define _avs_coap_msg_cache_add(...) (void)(-1)
-#define _avs_coap_msg_cache_get(...) NULL
+#define _avs_coap_msg_cache_get(...) ((avs_coap_msg_t *) NULL)
 #define _avs_coap_msg_cache_debug_print(...) (void)0
 
 #endif // WITH_AVS_COAP_MESSAGE_CACHE
