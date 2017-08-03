@@ -17,12 +17,16 @@ set(SOURCES
     src/block_utils.c
     src/msg_builder.c
     src/msg.c
-    src/msg_cache.c
     src/msg_info.c
     src/msg_opt.c
     src/opt.c
     src/socket.c
     src/tx_params.c)
+
+if(WITH_AVS_COAP_MESSAGE_CACHE)
+    set(SOURCES ${SOURCES}
+                src/msg_cache.c)
+endif()
 
 set(PUBLIC_HEADERS
     include_public/avsystem/commons/coap/block_builder.h
