@@ -30,11 +30,11 @@ typedef struct {
 #define AVS_COAP_TOKEN_EMPTY ((avs_coap_token_t){{0}})
 
 static inline bool avs_coap_token_equal(const avs_coap_token_t *first,
-                                           size_t first_size,
-                                           const avs_coap_token_t *second,
-                                           size_t second_size) {
+                                        size_t first_size,
+                                        const avs_coap_token_t *second,
+                                        size_t second_size) {
     return first_size == second_size
-        && !memcmp(first->bytes, second->bytes, first_size);
+               && !memcmp(first->bytes, second->bytes, first_size);
 }
 
 typedef struct avs_coap_msg_identity {
@@ -45,12 +45,11 @@ typedef struct avs_coap_msg_identity {
 
 #define AVS_COAP_MSG_IDENTITY_EMPTY ((avs_coap_msg_identity_t){0,{{0}},0})
 
-static inline
-bool avs_coap_identity_equal(const avs_coap_msg_identity_t *a,
-                                const avs_coap_msg_identity_t *b) {
+static inline bool avs_coap_identity_equal(const avs_coap_msg_identity_t *a,
+                                           const avs_coap_msg_identity_t *b) {
     return a->msg_id == b->msg_id
-        && a->token_size == b->token_size
-        && !memcmp(&a->token, &b->token, a->token_size);
+                && a->token_size == b->token_size
+                && !memcmp(&a->token, &b->token, a->token_size);
 }
 
 #ifdef __cplusplus

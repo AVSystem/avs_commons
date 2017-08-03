@@ -17,9 +17,9 @@
 #ifndef AVS_COMMONS_COAP_PARSE_UTILS_H
 #define AVS_COMMONS_COAP_PARSE_UTILS_H
 
+#include <netinet/in.h>
 #include <stdint.h>
 #include <string.h>
-#include <netinet/in.h>
 
 #include <avsystem/commons/net.h>
 
@@ -31,14 +31,14 @@ extern "C" {
 #define AVS_COAP_EXT_U16 14
 #define AVS_COAP_EXT_RESERVED 15
 
-#define AVS_COAP_EXT_U8_BASE ((uint32_t)13)
-#define AVS_COAP_EXT_U16_BASE ((uint32_t)269)
+#define AVS_COAP_EXT_U8_BASE ((uint32_t) 13)
+#define AVS_COAP_EXT_U16_BASE ((uint32_t) 269)
 
-#define AVS_COAP_PAYLOAD_MARKER ((uint8_t)0xFF)
+#define AVS_COAP_PAYLOAD_MARKER ((uint8_t) 0xFF)
 
 #define AVS_FIELD_GET(field, mask, shift) (((field) & (mask)) >> (shift))
 #define AVS_FIELD_SET(field, mask, shift, value) \
-    ((field) = (uint8_t)(((field) & ~(mask)) \
+    ((field) = (uint8_t)(((field) & ~(mask))     \
                          | (uint8_t)(((value) << (shift)) & (mask))))
 
 static inline uint16_t extract_u16(const uint8_t *data) {

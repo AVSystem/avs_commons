@@ -17,9 +17,9 @@
 #ifndef AVS_COMMONS_COAP_TX_PARAMS_H
 #define AVS_COMMONS_COAP_TX_PARAMS_H
 
+#include <assert.h>
 #include <stdint.h>
 #include <unistd.h>
-#include <assert.h>
 
 #include <sys/time.h>
 
@@ -40,19 +40,16 @@ typedef struct {
 } avs_coap_tx_params_t;
 
 bool avs_coap_tx_params_valid(const avs_coap_tx_params_t *tx_params,
-                                 const char **error_details);
+                              const char **error_details);
 
-int32_t
-avs_coap_max_transmit_wait_ms(const avs_coap_tx_params_t *tx_params);
+int32_t avs_coap_max_transmit_wait_ms(const avs_coap_tx_params_t *tx_params);
 
-int32_t
-avs_coap_exchange_lifetime_ms(const avs_coap_tx_params_t *tx_params);
+int32_t avs_coap_exchange_lifetime_ms(const avs_coap_tx_params_t *tx_params);
 
 struct timespec
 avs_coap_exchange_lifetime(const avs_coap_tx_params_t *tx_params);
 
-int32_t
-avs_coap_max_transmit_span_ms(const avs_coap_tx_params_t *tx_params);
+int32_t avs_coap_max_transmit_span_ms(const avs_coap_tx_params_t *tx_params);
 
 struct timespec
 avs_coap_max_transmit_span(const avs_coap_tx_params_t *tx_params);
@@ -66,8 +63,8 @@ typedef struct {
 } avs_coap_retry_state_t;
 
 void avs_coap_update_retry_state(avs_coap_retry_state_t *retry_state,
-                                    const avs_coap_tx_params_t *tx_params,
-                                    unsigned *rand_seed);
+                                 const avs_coap_tx_params_t *tx_params,
+                                 unsigned *rand_seed);
 
 #ifdef __cplusplus
 }

@@ -17,9 +17,9 @@
 #ifndef AVS_COMMONS_COAP_OPT_H
 #define AVS_COMMONS_COAP_OPT_H
 
-#include <stdint.h>
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -50,20 +50,23 @@ extern "C" {
 // >= 269. BLOCK uses 23/27 option numbers and allows up to 3 content bytes.
 // Therefore correct BLOCK options will use at most 1 byte for extended number
 // (since wrapping is not allowed) and will never use extended length field.
-#define AVS_COAP_OPT_BLOCK_MAX_SIZE (1    /* option header   */ \
-                                       + 1  /* extended number */ \
-                                       + 3) /* block option value */
+#define AVS_COAP_OPT_BLOCK_MAX_SIZE \
+    (1    /* option header   */     \
+     + 1  /* extended number */     \
+     + 3) /* block option value */
 
-#define AVS_COAP_OPT_INT_MAX_SIZE (1 /* option header */ \
-                                     + 2 /* extended number */ \
-                                     + 2 /* extended length */ \
-                                     + sizeof(uint64_t))
+#define AVS_COAP_OPT_INT_MAX_SIZE \
+    (1   /* option header */      \
+     + 2 /* extended number */    \
+     + 2 /* extended length */    \
+     + sizeof(uint64_t))
 
 // ETag option has number 4, which means it will never use "extended number"
 // format. Since the maximum allowed option size is 8, it won't ever use the
 // "extended length" either.
-#define AVS_COAP_OPT_ETAG_MAX_SIZE (1 /* option header */ \
-                                      + 8) /* max ETag length */
+#define AVS_COAP_OPT_ETAG_MAX_SIZE \
+    (1    /* option header */      \
+     + 8) /* max ETag length */
 
 typedef struct avs_coap_opt {
     /**
@@ -84,25 +87,23 @@ typedef struct avs_coap_opt {
 const uint8_t *avs_coap_opt_value(const avs_coap_opt_t *opt);
 
 int avs_coap_opt_uint_value(const avs_coap_opt_t *opt,
-                               void *out_value,
-                               size_t out_value_size);
+                            void *out_value,
+                            size_t out_value_size);
 
 static inline int avs_coap_opt_u32_value(const avs_coap_opt_t *opt,
-                                            uint32_t *out_value) {
+                                         uint32_t *out_value) {
     return avs_coap_opt_uint_value(opt, out_value, sizeof(*out_value));
 }
 
 int avs_coap_opt_string_value(const avs_coap_opt_t *opt,
-                                 size_t *out_bytes_read,
-                                 char *buffer,
-                                 size_t buffer_size);
+                              size_t *out_bytes_read,
+                              char *buffer,
+                              size_t buffer_size);
 
 int avs_coap_opt_block_seq_number(const avs_coap_opt_t *opt,
-                                     uint32_t *out_seq_num);
-int avs_coap_opt_block_has_more(const avs_coap_opt_t *opt,
-                                   bool *out_has_more);
-int avs_coap_opt_block_size(const avs_coap_opt_t *opt,
-                               uint16_t *out_size);
+                                  uint32_t *out_seq_num);
+int avs_coap_opt_block_has_more(const avs_coap_opt_t *opt, bool *out_has_more);
+int avs_coap_opt_block_size(const avs_coap_opt_t *opt, uint16_t *out_size);
 
 /**
  * @param opt Option to operate on.
@@ -125,8 +126,7 @@ uint32_t avs_coap_opt_content_length(const avs_coap_opt_t *opt);
  *
  * @returns True if the option has a valid format, false otherwise.
  */
-bool avs_coap_opt_is_valid(const avs_coap_opt_t *opt,
-                              size_t max_opt_bytes);
+bool avs_coap_opt_is_valid(const avs_coap_opt_t *opt, size_t max_opt_bytes);
 
 /**
  * @param opt Option to operate on.

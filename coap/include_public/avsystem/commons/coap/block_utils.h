@@ -64,8 +64,8 @@ typedef struct coap_block_info {
  * +-----------------------+----------------+-----------------+
  */
 int avs_coap_get_block_info(const avs_coap_msg_t *msg,
-                               avs_coap_block_type_t type,
-                               avs_coap_block_info_t *out_info);
+                            avs_coap_block_type_t type,
+                            avs_coap_block_info_t *out_info);
 
 bool avs_coap_is_valid_block_size(uint16_t size);
 

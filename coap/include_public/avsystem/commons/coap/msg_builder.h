@@ -78,9 +78,9 @@ avs_coap_ensure_aligned_buffer(void *buffer) {
  *          alignment of @p buffer).
  */
 int avs_coap_msg_builder_init(avs_coap_msg_builder_t *builder,
-                                 avs_coap_aligned_msg_buffer_t *buffer,
-                                 size_t buffer_size_bytes,
-                                 const avs_coap_msg_info_t *info);
+                              avs_coap_aligned_msg_buffer_t *buffer,
+                              size_t buffer_size_bytes,
+                              const avs_coap_msg_info_t *info);
 
 #define AVS_COAP_BLOCK_MAX_SEQ_NUMBER 0xFFFFF
 
@@ -94,7 +94,7 @@ int avs_coap_msg_builder_init(avs_coap_msg_builder_t *builder,
  * @return 0 on success, a negative value in case of error.
  */
 int avs_coap_msg_builder_reset(avs_coap_msg_builder_t *builder,
-                                  const avs_coap_msg_info_t *info);
+                               const avs_coap_msg_info_t *info);
 
 /**
  * Returns amount of bytes that can be written as a payload using this builder
@@ -104,8 +104,8 @@ int avs_coap_msg_builder_reset(avs_coap_msg_builder_t *builder,
  *
  * @return Number of bytes available for the payload.
  */
-size_t avs_coap_msg_builder_payload_remaining(
-        const avs_coap_msg_builder_t *builder);
+size_t
+avs_coap_msg_builder_payload_remaining(const avs_coap_msg_builder_t *builder);
 
 /**
  * Appends at most @p payload_size bytes of @p payload to the message
@@ -118,8 +118,8 @@ size_t avs_coap_msg_builder_payload_remaining(
  * @return Number of bytes written. NOTE: this may be less than @p payload_size.
  */
 size_t avs_coap_msg_builder_payload(avs_coap_msg_builder_t *builder,
-                                       const void *payload,
-                                       size_t payload_size);
+                                    const void *payload,
+                                    size_t payload_size);
 
 /**
  * Finalizes creation of the message. At least message header MUST be set in
@@ -149,8 +149,8 @@ avs_coap_msg_builder_get_msg(const avs_coap_msg_builder_t *builder);
  */
 static inline const avs_coap_msg_t *
 avs_coap_msg_build_without_payload(avs_coap_aligned_msg_buffer_t *buffer,
-                                      size_t buffer_size,
-                                      const avs_coap_msg_info_t *info) {
+                                   size_t buffer_size,
+                                   const avs_coap_msg_info_t *info) {
     avs_coap_msg_builder_t builder;
     if (avs_coap_msg_builder_init(&builder, buffer, buffer_size, info)) {
         assert(0 && "could not initialize msg builder");

@@ -86,9 +86,8 @@ typedef enum avs_coap_msg_type {
 #define AVS_COAP_CODE_GATEWAY_TIMEOUT        AVS_COAP_CODE(5, 4)
 #define AVS_COAP_CODE_PROXYING_NOT_SUPPORTED AVS_COAP_CODE(5, 5)
 
-const char *avs_coap_msg_code_to_string(uint8_t code,
-                                           char *buf,
-                                           size_t buf_size);
+const char *
+avs_coap_msg_code_to_string(uint8_t code, char *buf, size_t buf_size);
 
 #define AVS_COAP_CODE_STRING(Code) \
         avs_coap_msg_code_to_string((Code), &(char[32]){0}[0], 32)
@@ -97,8 +96,7 @@ static inline uint8_t avs_coap_msg_code_get_class(const uint8_t *code) {
     return AVS_FIELD_GET(*code, AVS_COAP_CODE_CLASS_MASK,
                            AVS_COAP_CODE_CLASS_SHIFT);
 }
-static inline void avs_coap_msg_code_set_class(uint8_t *code,
-                                                  uint8_t cls) {
+static inline void avs_coap_msg_code_set_class(uint8_t *code, uint8_t cls) {
     assert(cls < 8);
     AVS_FIELD_SET(*code, AVS_COAP_CODE_CLASS_MASK,
                     AVS_COAP_CODE_CLASS_SHIFT, cls);
@@ -107,8 +105,7 @@ static inline uint8_t avs_coap_msg_code_get_detail(const uint8_t *code) {
     return AVS_FIELD_GET(*code, AVS_COAP_CODE_DETAIL_MASK,
                            AVS_COAP_CODE_DETAIL_SHIFT);
 }
-static inline void avs_coap_msg_code_set_detail(uint8_t *code,
-                                                   uint8_t detail) {
+static inline void avs_coap_msg_code_set_detail(uint8_t *code, uint8_t detail) {
     assert(detail < 32);
     AVS_FIELD_SET(*code, AVS_COAP_CODE_DETAIL_MASK,
                     AVS_COAP_CODE_DETAIL_SHIFT, detail);
@@ -157,9 +154,9 @@ avs_coap_msg_header_get_type(const avs_coap_msg_header_t *hdr) {
     assert(val >= _AVS_COAP_MSG_FIRST && val <= _AVS_COAP_MSG_LAST);
     return (avs_coap_msg_type_t)val;
 }
-static inline void
-avs_coap_msg_header_set_type(avs_coap_msg_header_t *hdr,
-                                avs_coap_msg_type_t type) {
+
+static inline void avs_coap_msg_header_set_type(avs_coap_msg_header_t *hdr,
+                                                avs_coap_msg_type_t type) {
     AVS_FIELD_SET(hdr->version_type_token_length,
                     AVS_COAP_HEADER_TYPE_MASK,
                     AVS_COAP_HEADER_TYPE_SHIFT, type);
@@ -219,7 +216,7 @@ static inline bool avs_coap_msg_is_response(const avs_coap_msg_t *msg) {
  * @returns Token length in bytes (0 <= length <= sizeof(avs_coap_token_t)).
  */
 size_t avs_coap_msg_get_token(const avs_coap_msg_t *msg,
-                                 avs_coap_token_t *out_token);
+                              avs_coap_token_t *out_token);
 
 /**
  * @param msg Message to retrieve identity from.
@@ -234,9 +231,9 @@ avs_coap_msg_get_identity(const avs_coap_msg_t *msg) {
     return id;
 }
 
-static inline
-bool avs_coap_msg_token_matches(const avs_coap_msg_t *msg,
-                                   const avs_coap_msg_identity_t *id) {
+static inline bool
+avs_coap_msg_token_matches(const avs_coap_msg_t *msg,
+                           const avs_coap_msg_identity_t *id) {
     avs_coap_token_t msg_token;
     size_t msg_token_size = avs_coap_msg_get_token(msg, &msg_token);
 
@@ -314,15 +311,13 @@ void avs_coap_msg_debug_print(const avs_coap_msg_t *msg);
  *
  * @returns @p buf.
  */
-const char *avs_coap_msg_summary(const avs_coap_msg_t *msg,
-                                    char *buf,
-                                    size_t buf_size);
+const char *
+avs_coap_msg_summary(const avs_coap_msg_t *msg, char *buf, size_t buf_size);
 
 #define AVS_COAP_MSG_SUMMARY(Msg) \
         avs_coap_msg_summary((Msg), &(char[256]){0}[0], 256)
 
-uint8_t
-avs_coap_msg_header_get_token_length(const avs_coap_msg_header_t *hdr);
+uint8_t avs_coap_msg_header_get_token_length(const avs_coap_msg_header_t *hdr);
 
 #ifdef __cplusplus
 }

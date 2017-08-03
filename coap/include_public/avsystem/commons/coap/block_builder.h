@@ -71,10 +71,10 @@ size_t avs_coap_block_builder_payload_remaining(
  */
 const avs_coap_msg_t *
 avs_coap_block_builder_build(avs_coap_block_builder_t *builder,
-                                const avs_coap_msg_info_t *info,
-                                size_t block_size,
-                                avs_coap_aligned_msg_buffer_t *buffer,
-                                size_t buffer_size);
+                             const avs_coap_msg_info_t *info,
+                             size_t block_size,
+                             avs_coap_aligned_msg_buffer_t *buffer,
+                             size_t buffer_size);
 
 /**
  * Discards first @p block_size bytes of stored payload, so that following calls
@@ -84,7 +84,7 @@ avs_coap_block_builder_build(avs_coap_block_builder_t *builder,
  * @param block_size Number of payload bytes to discard.
  */
 void avs_coap_block_builder_next(avs_coap_block_builder_t *builder,
-                                    size_t block_size);
+                                 size_t block_size);
 
 /**
  * Appends payload to the block builder.
@@ -98,10 +98,9 @@ void avs_coap_block_builder_next(avs_coap_block_builder_t *builder,
  *          @p avs_coap_block_builder_build_next before more payload can be
  *          inserted into @p builder.
  */
-size_t
-avs_coap_block_builder_append_payload(avs_coap_block_builder_t *builder,
-                                         const void *payload,
-                                         size_t payload_size);
+size_t avs_coap_block_builder_append_payload(avs_coap_block_builder_t *builder,
+                                             const void *payload,
+                                             size_t payload_size);
 
 #ifdef __cplusplus
 }

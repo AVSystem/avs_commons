@@ -21,8 +21,8 @@
 
 #include <avsystem/commons/list.h>
 
-#include <avsystem/commons/coap/msg.h>
 #include <avsystem/commons/coap/block_utils.h>
+#include <avsystem/commons/coap/msg.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -101,13 +101,13 @@ avs_coap_msg_info_get_max_mtu_overhead(const avs_coap_msg_info_t *info) {
  */
 size_t
 avs_coap_msg_info_get_packet_storage_size(const avs_coap_msg_info_t *info,
-                                             size_t payload_size);
+                                          size_t payload_size);
 
 /**
  * Removes all options with given @p option_number added to @p info.
  */
 void avs_coap_msg_info_opt_remove_by_number(avs_coap_msg_info_t *info,
-                                               uint16_t option_number);
+                                            uint16_t option_number);
 
 /**
  * Adds a Content-Format Option (@ref AVS_COAP_OPT_CONTENT_FORMAT = 12) to the
@@ -121,7 +121,7 @@ void avs_coap_msg_info_opt_remove_by_number(avs_coap_msg_info_t *info,
  * @return 0 on success, -1 in case of error.
  */
 int avs_coap_msg_info_opt_content_format(avs_coap_msg_info_t *info,
-                                            uint16_t format);
+                                         uint16_t format);
 
 /**
  * Adds the Block1 or Block2 Option to the message being built.
@@ -132,7 +132,7 @@ int avs_coap_msg_info_opt_content_format(avs_coap_msg_info_t *info,
  * @return 0 on success, -1 in case of error.
  */
 int avs_coap_msg_info_opt_block(avs_coap_msg_info_t *info,
-                                   const avs_coap_block_info_t *block);
+                                const avs_coap_block_info_t *block);
 
 /**
  * Adds an arbitrary CoAP option with custom value.
@@ -149,9 +149,9 @@ int avs_coap_msg_info_opt_block(avs_coap_msg_info_t *info,
  *           not contain any options.
  */
 int avs_coap_msg_info_opt_opaque(avs_coap_msg_info_t *info,
-                                    uint16_t opt_number,
-                                    const void *opt_data,
-                                    uint16_t opt_data_size);
+                                 uint16_t opt_number,
+                                 const void *opt_data,
+                                 uint16_t opt_data_size);
 
 /**
  * Equivalent to:
@@ -162,15 +162,14 @@ int avs_coap_msg_info_opt_opaque(avs_coap_msg_info_t *info,
  * @endcode
  */
 int avs_coap_msg_info_opt_string(avs_coap_msg_info_t *info,
-                                    uint16_t opt_number,
-                                    const char *opt_data);
+                                 uint16_t opt_number,
+                                 const char *opt_data);
 
 /**
  * Adds an arbitrary CoAP option with no value.
  * See @ref avs_coap_msg_info_opt_opaque for more info.
  */
-int avs_coap_msg_info_opt_empty(avs_coap_msg_info_t *info,
-                                   uint16_t opt_number);
+int avs_coap_msg_info_opt_empty(avs_coap_msg_info_t *info, uint16_t opt_number);
 
 /**
  * Functions below add an arbitrary CoAP option with an integer value. The value
@@ -180,22 +179,20 @@ int avs_coap_msg_info_opt_empty(avs_coap_msg_info_t *info,
  * See @ref avs_coap_msg_info_opt_opaque for more info.
  */
 int avs_coap_msg_info_opt_uint(avs_coap_msg_info_t *info,
-                                  uint16_t opt_number,
-                                  const void *value,
-                                  size_t value_size);
+                               uint16_t opt_number,
+                               const void *value,
+                               size_t value_size);
 
 static inline int avs_coap_msg_info_opt_u16(avs_coap_msg_info_t *info,
-                                               uint16_t opt_number,
-                                               uint16_t value) {
-    return avs_coap_msg_info_opt_uint(info, opt_number,
-                                         &value, sizeof(value));
+                                            uint16_t opt_number,
+                                            uint16_t value) {
+    return avs_coap_msg_info_opt_uint(info, opt_number, &value, sizeof(value));
 }
 
 static inline int avs_coap_msg_info_opt_u32(avs_coap_msg_info_t *info,
-                                               uint16_t opt_number,
-                                               uint32_t value) {
-    return avs_coap_msg_info_opt_uint(info, opt_number,
-                                         &value, sizeof(value));
+                                            uint16_t opt_number,
+                                            uint32_t value) {
+    return avs_coap_msg_info_opt_uint(info, opt_number, &value, sizeof(value));
 }
 
 #ifdef __cplusplus
