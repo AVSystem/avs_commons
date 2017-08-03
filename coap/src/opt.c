@@ -78,8 +78,8 @@ const uint8_t *avs_coap_opt_value(const avs_coap_opt_t *opt) {
 }
 
 int avs_coap_opt_uint_value(const avs_coap_opt_t *opt,
-                               void *out_value,
-                               size_t out_value_size) {
+                            void *out_value,
+                            size_t out_value_size) {
     const uint8_t *value = avs_coap_opt_value(opt);
     uint32_t length = avs_coap_opt_content_length(opt);
     if (length > out_value_size) {
@@ -97,9 +97,9 @@ int avs_coap_opt_uint_value(const avs_coap_opt_t *opt,
 }
 
 int avs_coap_opt_string_value(const avs_coap_opt_t *opt,
-                                 size_t *out_bytes_read,
-                                 char *buffer,
-                                 size_t buffer_size) {
+                              size_t *out_bytes_read,
+                              char *buffer,
+                              size_t buffer_size) {
     size_t str_length = avs_coap_opt_content_length(opt);
     if (buffer_size <= str_length) {
         return -1;
@@ -111,7 +111,7 @@ int avs_coap_opt_string_value(const avs_coap_opt_t *opt,
 }
 
 int avs_coap_opt_block_seq_number(const avs_coap_opt_t *opt,
-                                     uint32_t *out_seq_num) {
+                                  uint32_t *out_seq_num) {
     uint32_t value;
     if (avs_coap_opt_u32_value(opt, &value) || value >= (1 << 24)) {
         return -1;
@@ -121,8 +121,7 @@ int avs_coap_opt_block_seq_number(const avs_coap_opt_t *opt,
     return 0;
 }
 
-int avs_coap_opt_block_has_more(const avs_coap_opt_t *opt,
-                                   bool *out_has_more) {
+int avs_coap_opt_block_has_more(const avs_coap_opt_t *opt, bool *out_has_more) {
     uint32_t value;
     if (avs_coap_opt_u32_value(opt, &value) || value >= (1 << 24)) {
         return -1;
@@ -132,8 +131,7 @@ int avs_coap_opt_block_has_more(const avs_coap_opt_t *opt,
     return 0;
 }
 
-int avs_coap_opt_block_size(const avs_coap_opt_t *opt,
-                               uint16_t *out_size) {
+int avs_coap_opt_block_size(const avs_coap_opt_t *opt, uint16_t *out_size) {
     uint32_t value;
     if (avs_coap_opt_u32_value(opt, &value) || value >= (1 << 24)) {
         return -1;
@@ -173,7 +171,7 @@ static inline bool is_delta_valid(const avs_coap_opt_t *opt,
 }
 
 static inline bool is_length_valid(const avs_coap_opt_t *opt,
-                                  size_t max_opt_bytes) {
+                                   size_t max_opt_bytes) {
     uint8_t short_length = _avs_coap_opt_get_short_length(opt);
     if (short_length == AVS_COAP_EXT_RESERVED) {
         return false;
@@ -186,8 +184,7 @@ static inline bool is_length_valid(const avs_coap_opt_t *opt,
            && !ext_value_overflows(short_length, ext_length_ptr(opt));
 }
 
-bool avs_coap_opt_is_valid(const avs_coap_opt_t *opt,
-                              size_t max_opt_bytes) {
+bool avs_coap_opt_is_valid(const avs_coap_opt_t *opt, size_t max_opt_bytes) {
     if (max_opt_bytes == 0
            || !is_delta_valid(opt, max_opt_bytes)
            || !is_length_valid(opt, max_opt_bytes)) {
@@ -200,7 +197,8 @@ bool avs_coap_opt_is_valid(const avs_coap_opt_t *opt,
 }
 
 size_t avs_coap_opt_sizeof(const avs_coap_opt_t *opt) {
-    const uint8_t *endptr = avs_coap_opt_value(opt) + avs_coap_opt_content_length(opt);
+    const uint8_t *endptr =
+            avs_coap_opt_value(opt) + avs_coap_opt_content_length(opt);
 
     assert((const uint8_t *)opt < endptr);
     return (size_t)(endptr - (const uint8_t *)opt);

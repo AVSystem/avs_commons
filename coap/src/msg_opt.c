@@ -25,8 +25,8 @@
 #pragma GCC visibility push(hidden)
 
 int avs_coap_msg_find_unique_opt(const avs_coap_msg_t *msg,
-                                    uint16_t opt_number,
-                                    const avs_coap_opt_t **out_opt) {
+                                 uint16_t opt_number,
+                                 const avs_coap_opt_t **out_opt) {
     *out_opt = NULL;
 
     for (avs_coap_opt_iterator_t it = avs_coap_opt_begin(msg);
@@ -50,9 +50,9 @@ int avs_coap_msg_find_unique_opt(const avs_coap_msg_t *msg,
 }
 
 int avs_coap_msg_get_option_uint(const avs_coap_msg_t *msg,
-                                    uint16_t option_number,
-                                    void *out_fmt,
-                                    size_t out_fmt_size) {
+                                 uint16_t option_number,
+                                 void *out_fmt,
+                                 size_t out_fmt_size) {
     const avs_coap_opt_t *opt;
     if (avs_coap_msg_find_unique_opt(msg, option_number, &opt)) {
         if (opt) {
@@ -69,11 +69,11 @@ int avs_coap_msg_get_option_uint(const avs_coap_msg_t *msg,
 }
 
 int avs_coap_msg_get_option_string_it(const avs_coap_msg_t *msg,
-                                         uint16_t option_number,
-                                         avs_coap_opt_iterator_t *it,
-                                         size_t *out_bytes_read,
-                                         char *buffer,
-                                         size_t buffer_size) {
+                                      uint16_t option_number,
+                                      avs_coap_opt_iterator_t *it,
+                                      size_t *out_bytes_read,
+                                      char *buffer,
+                                      size_t buffer_size) {
     if (!it->msg) {
         avs_coap_opt_iterator_t begin = avs_coap_opt_begin(msg);
         memcpy(it, &begin, sizeof(*it));
@@ -93,7 +93,7 @@ int avs_coap_msg_get_option_string_it(const avs_coap_msg_t *msg,
 }
 
 int avs_coap_msg_get_content_format(const avs_coap_msg_t *msg,
-                                       uint16_t *out_value) {
+                                    uint16_t *out_value) {
     int result = avs_coap_msg_get_option_u16(
             msg, AVS_COAP_OPT_CONTENT_FORMAT, out_value);
 

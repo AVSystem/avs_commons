@@ -72,14 +72,14 @@ avs_coap_msg_info_get_storage_size(const avs_coap_msg_info_t *info) {
 
 size_t
 avs_coap_msg_info_get_packet_storage_size(const avs_coap_msg_info_t *info,
-                                             size_t payload_size) {
+                                          size_t payload_size) {
     return avs_coap_msg_info_get_storage_size(info)
            + (payload_size ? sizeof(AVS_COAP_PAYLOAD_MARKER) + payload_size
                            : 0);
 }
 
 void avs_coap_msg_info_opt_remove_by_number(avs_coap_msg_info_t *info,
-                                               uint16_t option_number) {
+                                            uint16_t option_number) {
     avs_coap_msg_info_opt_t **opt;
     avs_coap_msg_info_opt_t *helper;
     AVS_LIST_DELETABLE_FOREACH_PTR(opt, helper, &info->options_) {
@@ -92,13 +92,12 @@ void avs_coap_msg_info_opt_remove_by_number(avs_coap_msg_info_t *info,
 }
 
 int avs_coap_msg_info_opt_content_format(avs_coap_msg_info_t *info,
-                                            uint16_t format) {
+                                         uint16_t format) {
     if (format == AVS_COAP_FORMAT_NONE) {
         return 0;
     }
 
-    return avs_coap_msg_info_opt_u16(info, AVS_COAP_OPT_CONTENT_FORMAT,
-                                        format);
+    return avs_coap_msg_info_opt_u16(info, AVS_COAP_OPT_CONTENT_FORMAT, format);
 }
 
 static int encode_block_size(uint16_t size,
@@ -143,7 +142,7 @@ static int add_block_opt(avs_coap_msg_info_t *info,
 }
 
 int avs_coap_msg_info_opt_block(avs_coap_msg_info_t *info,
-                                   const avs_coap_block_info_t *block) {
+                                const avs_coap_block_info_t *block) {
     if (!block->valid) {
         LOG(ERROR, "could not add invalid BLOCK option");
         return -1;
@@ -154,9 +153,9 @@ int avs_coap_msg_info_opt_block(avs_coap_msg_info_t *info,
 }
 
 int avs_coap_msg_info_opt_opaque(avs_coap_msg_info_t *info,
-                                    uint16_t opt_number,
-                                    const void *opt_data,
-                                    uint16_t opt_data_size) {
+                                 uint16_t opt_number,
+                                 const void *opt_data,
+                                 uint16_t opt_data_size) {
     avs_coap_msg_info_opt_t *opt = (avs_coap_msg_info_opt_t*)
             AVS_LIST_NEW_BUFFER(sizeof(*opt) + opt_data_size);
     if (!opt) {
@@ -180,26 +179,26 @@ int avs_coap_msg_info_opt_opaque(avs_coap_msg_info_t *info,
 }
 
 int avs_coap_msg_info_opt_string(avs_coap_msg_info_t *info,
-                                    uint16_t opt_number,
-                                    const char *opt_data) {
+                                 uint16_t opt_number,
+                                 const char *opt_data) {
     size_t size = strlen(opt_data);
     if (size > UINT16_MAX) {
         return -1;
     }
 
-    return avs_coap_msg_info_opt_opaque(info, opt_number,
-                                           opt_data, (uint16_t)size);
+    return avs_coap_msg_info_opt_opaque(info, opt_number, opt_data,
+                                        (uint16_t) size);
 }
 
 int avs_coap_msg_info_opt_empty(avs_coap_msg_info_t *info,
-                                   uint16_t opt_number) {
+                                uint16_t opt_number) {
     return avs_coap_msg_info_opt_opaque(info, opt_number, "", 0);
 }
 
 int avs_coap_msg_info_opt_uint(avs_coap_msg_info_t *info,
-                                  uint16_t opt_number,
-                                  const void *value,
-                                  size_t value_size) {
+                               uint16_t opt_number,
+                               const void *value,
+                               size_t value_size) {
 #ifdef AVS_BIG_ENDIAN
     const uint8_t *converted = (const uint8_t *) value;
 #else
@@ -212,7 +211,6 @@ int avs_coap_msg_info_opt_uint(avs_coap_msg_info_t *info,
     while (start < value_size && !converted[start]) {
         ++start;
     }
-    return avs_coap_msg_info_opt_opaque(
-            info, opt_number, &converted[start],
-            (uint16_t) (value_size - start));
+    return avs_coap_msg_info_opt_opaque(info, opt_number, &converted[start],
+                                        (uint16_t)(value_size - start));
 }

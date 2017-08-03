@@ -69,8 +69,8 @@ static int append_byte(avs_coap_msg_buffer_t *buffer,
 }
 
 static int append_token(avs_coap_msg_buffer_t *buffer,
-                         const avs_coap_token_t *token,
-                         size_t token_length) {
+                        const avs_coap_token_t *token,
+                        size_t token_length) {
     assert(token_length <= AVS_COAP_MAX_TOKEN_LENGTH);
 
     if (buffer->msg->header.code == AVS_COAP_CODE_EMPTY
@@ -80,7 +80,7 @@ static int append_token(avs_coap_msg_buffer_t *buffer,
     }
 
     _avs_coap_msg_header_set_token_length(&buffer->msg->header,
-                                            (uint8_t)token_length);
+                                          (uint8_t) token_length);
     if (append_data(buffer, token, token_length)) {
         LOG(ERROR, "could not append token");
         return -1;
@@ -143,8 +143,8 @@ static int append_option(avs_coap_msg_buffer_t *buffer,
         return -1;
     }
 
-    size_t header_size = _avs_coap_get_opt_header_size(opt_number_delta,
-                                                         opt_data_size);
+    size_t header_size =
+            _avs_coap_get_opt_header_size(opt_number_delta, opt_data_size);
 
     if (header_size + opt_data_size > bytes_remaining(buffer)) {
         LOG(ERROR, "not enough space to serialize option");
@@ -164,9 +164,9 @@ static int append_option(avs_coap_msg_buffer_t *buffer,
 }
 
 int avs_coap_msg_builder_init(avs_coap_msg_builder_t *builder,
-                                 avs_coap_aligned_msg_buffer_t *buffer,
-                                 size_t buffer_size_bytes,
-                                 const avs_coap_msg_info_t *header) {
+                              avs_coap_aligned_msg_buffer_t *buffer,
+                              size_t buffer_size_bytes,
+                              const avs_coap_msg_info_t *header) {
     *builder = (avs_coap_msg_builder_t){
         .has_payload_marker = false,
         .msg_buffer = {
@@ -178,9 +178,8 @@ int avs_coap_msg_builder_init(avs_coap_msg_builder_t *builder,
     return avs_coap_msg_builder_reset(builder, header);
 }
 
-int
-avs_coap_msg_builder_reset(avs_coap_msg_builder_t *builder,
-                              const avs_coap_msg_info_t *header) {
+int avs_coap_msg_builder_reset(avs_coap_msg_builder_t *builder,
+                               const avs_coap_msg_info_t *header) {
     if (builder->msg_buffer.capacity
             < avs_coap_msg_info_get_headers_size(header)) {
         LOG(ERROR, "message buffer too small: %u/%u B available",
@@ -215,8 +214,8 @@ avs_coap_msg_builder_reset(avs_coap_msg_builder_t *builder,
     return 0;
 }
 
-size_t avs_coap_msg_builder_payload_remaining(
-        const avs_coap_msg_builder_t *builder) {
+size_t
+avs_coap_msg_builder_payload_remaining(const avs_coap_msg_builder_t *builder) {
     size_t total_bytes_remaining = bytes_remaining(&builder->msg_buffer);
     if (total_bytes_remaining && !builder->has_payload_marker) {
         return --total_bytes_remaining;
@@ -225,8 +224,8 @@ size_t avs_coap_msg_builder_payload_remaining(
 }
 
 size_t avs_coap_msg_builder_payload(avs_coap_msg_builder_t *builder,
-                                       const void *payload,
-                                       size_t payload_size) {
+                                    const void *payload,
+                                    size_t payload_size) {
     assert(avs_coap_msg_builder_is_initialized(builder)
            && "avs_coap_msg_builder_payload called on uninitialized builder");
 

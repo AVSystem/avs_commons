@@ -30,9 +30,8 @@
 
 #pragma GCC visibility push(hidden)
 
-const char *avs_coap_msg_code_to_string(uint8_t code,
-                                           char *buf,
-                                           size_t buf_size) {
+const char *
+avs_coap_msg_code_to_string(uint8_t code, char *buf, size_t buf_size) {
     static const struct {
         uint8_t code;
         const char *name;
@@ -89,7 +88,7 @@ const char *avs_coap_msg_code_to_string(uint8_t code,
 }
 
 size_t avs_coap_msg_get_token(const avs_coap_msg_t *msg,
-                                 avs_coap_token_t *out_token) {
+                              avs_coap_token_t *out_token) {
     size_t token_length = avs_coap_msg_header_get_token_length(&msg->header);
     assert(token_length <= AVS_COAP_MAX_TOKEN_LENGTH);
 
@@ -337,9 +336,8 @@ static void fill_block_summary(const avs_coap_msg_t *msg,
     }
 }
 
-const char *avs_coap_msg_summary(const avs_coap_msg_t *msg,
-                                    char *buf,
-                                    size_t buf_size) {
+const char *
+avs_coap_msg_summary(const avs_coap_msg_t *msg, char *buf, size_t buf_size) {
     assert(avs_coap_msg_is_valid(msg));
 
     avs_coap_token_t token;
@@ -369,11 +367,10 @@ const char *avs_coap_msg_summary(const avs_coap_msg_t *msg,
     return buf;
 }
 
-uint8_t
-avs_coap_msg_header_get_token_length(const avs_coap_msg_header_t *hdr) {
+uint8_t avs_coap_msg_header_get_token_length(const avs_coap_msg_header_t *hdr) {
     int val = AVS_FIELD_GET(hdr->version_type_token_length,
-                              AVS_COAP_HEADER_TOKEN_LENGTH_MASK,
-                              AVS_COAP_HEADER_TOKEN_LENGTH_SHIFT);
+                            AVS_COAP_HEADER_TOKEN_LENGTH_MASK,
+                            AVS_COAP_HEADER_TOKEN_LENGTH_SHIFT);
     assert(val >= 0 && val <= AVS_COAP_HEADER_TOKEN_LENGTH_MASK);
     return (uint8_t)val;
 }

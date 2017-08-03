@@ -78,10 +78,10 @@ void _avs_coap_msg_cache_release(coap_msg_cache_t **cache_ptr);
  * indicates a bug hiding somewhere.
  */
 int _avs_coap_msg_cache_add(coap_msg_cache_t *cache,
-                              const char *remote_addr,
-                              const char *remote_port,
-                              const avs_coap_msg_t *msg,
-                              const avs_coap_tx_params_t *tx_params);
+                            const char *remote_addr,
+                            const char *remote_port,
+                            const avs_coap_msg_t *msg,
+                            const avs_coap_tx_params_t *tx_params);
 
 /**
  * Looks up @p cache for a message with given @p msg_id and returns it if found.
@@ -96,9 +96,9 @@ int _avs_coap_msg_cache_add(coap_msg_cache_t *cache,
  *         or @p cache is NULL.
  */
 const avs_coap_msg_t *_avs_coap_msg_cache_get(coap_msg_cache_t *cache,
-                                                  const char *remote_addr,
-                                                  const char *remote_port,
-                                                  uint16_t msg_id);
+                                              const char *remote_addr,
+                                              const char *remote_port,
+                                              uint16_t msg_id);
 
 /**
  * Prints @p cache contents to log output.

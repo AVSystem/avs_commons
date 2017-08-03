@@ -289,10 +289,10 @@ static const cache_entry_t *find_entry(const coap_msg_cache_t *cache,
 }
 
 int _avs_coap_msg_cache_add(coap_msg_cache_t *cache,
-                              const char *remote_addr,
-                              const char *remote_port,
-                              const avs_coap_msg_t *msg,
-                              const avs_coap_tx_params_t *tx_params) {
+                            const char *remote_addr,
+                            const char *remote_port,
+                            const avs_coap_msg_t *msg,
+                            const avs_coap_tx_params_t *tx_params) {
     if (!cache) {
         return -1;
     }
@@ -332,9 +332,9 @@ int _avs_coap_msg_cache_add(coap_msg_cache_t *cache,
 }
 
 const avs_coap_msg_t *_avs_coap_msg_cache_get(coap_msg_cache_t *cache,
-                                                  const char *remote_addr,
-                                                  const char *remote_port,
-                                                  uint16_t msg_id) {
+                                              const char *remote_addr,
+                                              const char *remote_port,
+                                              uint16_t msg_id) {
     if (!cache) {
         return NULL;
     }

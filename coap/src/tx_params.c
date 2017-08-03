@@ -42,8 +42,8 @@ static uint32_t rand32(unsigned *seed) {
 }
 
 void avs_coap_update_retry_state(avs_coap_retry_state_t *retry_state,
-                                    const avs_coap_tx_params_t *tx_params,
-                                    unsigned *rand_seed) {
+                                 const avs_coap_tx_params_t *tx_params,
+                                 unsigned *rand_seed) {
     ++retry_state->retry_count;
     if (retry_state->retry_count == 1) {
         uint32_t delta = (uint32_t) (tx_params->ack_timeout_ms *
@@ -55,9 +55,8 @@ void avs_coap_update_retry_state(avs_coap_retry_state_t *retry_state,
     }
 }
 
-bool
-avs_coap_tx_params_valid(const avs_coap_tx_params_t *tx_params,
-                            const char **error_details) {
+bool avs_coap_tx_params_valid(const avs_coap_tx_params_t *tx_params,
+                              const char **error_details) {
     // ACK_TIMEOUT below 1 second would violate the guidelines of [RFC5405].
     // -- RFC 7252, 4.8.1
     if (tx_params->ack_timeout_ms < 1000) {

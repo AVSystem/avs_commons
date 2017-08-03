@@ -73,10 +73,9 @@ static void shift_payload(avs_coap_block_builder_t *builder) {
     builder->write_offset = unread_bytes;
 }
 
-size_t
-avs_coap_block_builder_append_payload(avs_coap_block_builder_t *builder,
-                                         const void *payload,
-                                         size_t payload_size) {
+size_t avs_coap_block_builder_append_payload(avs_coap_block_builder_t *builder,
+                                             const void *payload,
+                                             size_t payload_size) {
     shift_payload(builder);
 
     size_t bytes_available = builder->payload_capacity - builder->write_offset;
@@ -96,10 +95,10 @@ size_t avs_coap_block_builder_payload_remaining(
 
 const avs_coap_msg_t *
 avs_coap_block_builder_build(avs_coap_block_builder_t *builder,
-                                const avs_coap_msg_info_t *info,
-                                size_t block_size,
-                                avs_coap_aligned_msg_buffer_t *buffer,
-                                size_t buffer_size) {
+                             const avs_coap_msg_info_t *info,
+                             size_t block_size,
+                             avs_coap_aligned_msg_buffer_t *buffer,
+                             size_t buffer_size) {
     assert(buffer_size
            >= avs_coap_msg_info_get_packet_storage_size(info, block_size));
     assert(block_size < builder->payload_capacity
@@ -124,7 +123,7 @@ avs_coap_block_builder_build(avs_coap_block_builder_t *builder,
         size_t msg_builder_payload_remaining =
                 avs_coap_msg_builder_payload_remaining(&msg_builder);
         bytes_available = AVS_MIN(block_builder_payload_remaining,
-                                    msg_builder_payload_remaining);
+                                  msg_builder_payload_remaining);
     }
     size_t bytes_to_write = AVS_MIN(bytes_available, block_size);
     assert(builder->read_offset + bytes_to_write <= builder->write_offset);
@@ -141,7 +140,7 @@ avs_coap_block_builder_build(avs_coap_block_builder_t *builder,
 }
 
 void avs_coap_block_builder_next(avs_coap_block_builder_t *builder,
-                                    size_t block_size) {
-    builder->read_offset = AVS_MIN(builder->read_offset + block_size,
-                                     builder->write_offset);
+                                 size_t block_size) {
+    builder->read_offset =
+            AVS_MIN(builder->read_offset + block_size, builder->write_offset);
 }
