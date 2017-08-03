@@ -38,15 +38,11 @@ static inline void normalize(struct timespec *inout) {
 }
 
 void avs_time_add(struct timespec *result, const struct timespec *duration) {
-    if (!avs_time_is_valid(result) || !avs_time_is_valid(duration)) {
-        result->tv_sec = 0;
-        result->tv_nsec = -1;
-    } else {
-        result->tv_sec += duration->tv_sec;
-        result->tv_nsec += duration->tv_nsec;
-
-        normalize(result);
-    }
+    assert(avs_time_is_valid(duration));
+    assert(avs_time_is_valid(result));
+    result->tv_sec += duration->tv_sec;
+    result->tv_nsec += duration->tv_nsec;
+    normalize(result);
 
     assert(avs_time_is_valid(result));
 }
@@ -105,3 +101,7 @@ void avs_time_div(struct timespec *result,
 
     assert(avs_time_is_valid(result));
 }
+
+#ifdef AVS_UNIT_TESTING
+#include "test/time.c"
+#endif // AVS_UNIT_TESTING
