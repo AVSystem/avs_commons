@@ -22,6 +22,7 @@ include_directories(${INCLUDE_DIRS})
 
 add_library(avs_utils STATIC ${ALL_SOURCES})
 
+add_avs_test(avs_utils ${ALL_SOURCES})
 avs_install_export(avs_utils utils)
 avs_propagate_exports()
 install(DIRECTORY include_public/
