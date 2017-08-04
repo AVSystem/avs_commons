@@ -17,6 +17,8 @@
 #ifndef AVS_COMMONS_COAP_MSG_IDENTITY_H
 #define AVS_COMMONS_COAP_MSG_IDENTITY_H
 
+#include <string.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif

@@ -23,7 +23,6 @@
 #include <avsystem/commons/defs.h>
 
 #include <avsystem/commons/coap/opt.h>
-#include <avsystem/commons/coap/parse_utils.h>
 #include <avsystem/commons/coap/msg_identity.h>
 
 #ifdef __cplusplus
@@ -92,24 +91,10 @@ avs_coap_msg_code_to_string(uint8_t code, char *buf, size_t buf_size);
 #define AVS_COAP_CODE_STRING(Code) \
         avs_coap_msg_code_to_string((Code), &(char[32]){0}[0], 32)
 
-static inline uint8_t avs_coap_msg_code_get_class(const uint8_t *code) {
-    return AVS_FIELD_GET(*code, AVS_COAP_CODE_CLASS_MASK,
-                           AVS_COAP_CODE_CLASS_SHIFT);
-}
-static inline void avs_coap_msg_code_set_class(uint8_t *code, uint8_t cls) {
-    assert(cls < 8);
-    AVS_FIELD_SET(*code, AVS_COAP_CODE_CLASS_MASK,
-                    AVS_COAP_CODE_CLASS_SHIFT, cls);
-}
-static inline uint8_t avs_coap_msg_code_get_detail(const uint8_t *code) {
-    return AVS_FIELD_GET(*code, AVS_COAP_CODE_DETAIL_MASK,
-                           AVS_COAP_CODE_DETAIL_SHIFT);
-}
-static inline void avs_coap_msg_code_set_detail(uint8_t *code, uint8_t detail) {
-    assert(detail < 32);
-    AVS_FIELD_SET(*code, AVS_COAP_CODE_DETAIL_MASK,
-                    AVS_COAP_CODE_DETAIL_SHIFT, detail);
-}
+uint8_t avs_coap_msg_code_get_class(const uint8_t *code);
+void avs_coap_msg_code_set_class(uint8_t *code, uint8_t cls);
+uint8_t avs_coap_msg_code_get_detail(const uint8_t *code);
+void avs_coap_msg_code_set_detail(uint8_t *code, uint8_t detail);
 
 static inline bool avs_coap_msg_code_is_client_error(uint8_t code) {
     return avs_coap_msg_code_get_class(&code) == 4;
@@ -146,21 +131,11 @@ AVS_STATIC_ASSERT(sizeof(avs_coap_msg_header_t) == 4,
 #define AVS_COAP_HEADER_TYPE_MASK 0x30
 #define AVS_COAP_HEADER_TYPE_SHIFT 4
 
-static inline avs_coap_msg_type_t
-avs_coap_msg_header_get_type(const avs_coap_msg_header_t *hdr) {
-    int val = AVS_FIELD_GET(hdr->version_type_token_length,
-                              AVS_COAP_HEADER_TYPE_MASK,
-                              AVS_COAP_HEADER_TYPE_SHIFT);
-    assert(val >= _AVS_COAP_MSG_FIRST && val <= _AVS_COAP_MSG_LAST);
-    return (avs_coap_msg_type_t)val;
-}
+avs_coap_msg_type_t
+avs_coap_msg_header_get_type(const avs_coap_msg_header_t *hdr);
 
-static inline void avs_coap_msg_header_set_type(avs_coap_msg_header_t *hdr,
-                                                avs_coap_msg_type_t type) {
-    AVS_FIELD_SET(hdr->version_type_token_length,
-                    AVS_COAP_HEADER_TYPE_MASK,
-                    AVS_COAP_HEADER_TYPE_SHIFT, type);
-}
+void avs_coap_msg_header_set_type(avs_coap_msg_header_t *hdr,
+                                  avs_coap_msg_type_t type);
 
 typedef struct avs_coap_msg {
     uint32_t length; // whole message (header + content)
@@ -188,9 +163,7 @@ typedef struct {
  * @param msg Message to retrieve ID from.
  * @returns Message ID in the host byte order.
  */
-static inline uint16_t avs_coap_msg_get_id(const avs_coap_msg_t *msg) {
-    return extract_u16((const uint8_t *) &msg->header.message_id);
-}
+uint16_t avs_coap_msg_get_id(const avs_coap_msg_t *msg);
 
 /**
  * @param msg Message to check

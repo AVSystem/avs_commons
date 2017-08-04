@@ -19,6 +19,8 @@
 
 #include <avsystem/commons/coap/msg.h>
 
+#include "parse_utils.h"
+
 #pragma GCC visibility push(hidden)
 
 #define AVS_COAP_HEADER_VERSION_MASK 0xC0

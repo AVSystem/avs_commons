@@ -35,7 +35,6 @@ set(PUBLIC_HEADERS
     include_public/avsystem/commons/coap/msg.h
     include_public/avsystem/commons/coap/msg_identity.h
     include_public/avsystem/commons/coap/msg_info.h
-    include_public/avsystem/commons/coap/parse_utils.h
     include_public/avsystem/commons/coap/socket.h
     include_public/avsystem/commons/coap/tx_params.h)
 

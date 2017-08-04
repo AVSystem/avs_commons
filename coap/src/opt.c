@@ -23,11 +23,11 @@
 #include <stdio.h>
 
 #include <avsystem/commons/coap/block_utils.h>
-#include <avsystem/commons/coap/parse_utils.h>
 #include <avsystem/commons/utils.h>
 
-#include "msg_internal.h"
 #include "log.h"
+#include "msg_internal.h"
+#include "parse_utils.h"
 
 #pragma GCC visibility push(hidden)
 

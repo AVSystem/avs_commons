@@ -375,6 +375,48 @@ uint8_t avs_coap_msg_header_get_token_length(const avs_coap_msg_header_t *hdr) {
     return (uint8_t)val;
 }
 
+uint8_t avs_coap_msg_code_get_class(const uint8_t *code) {
+    return AVS_FIELD_GET(*code, AVS_COAP_CODE_CLASS_MASK,
+                           AVS_COAP_CODE_CLASS_SHIFT);
+}
+
+void avs_coap_msg_code_set_class(uint8_t *code, uint8_t cls) {
+    assert(cls < 8);
+    AVS_FIELD_SET(*code, AVS_COAP_CODE_CLASS_MASK,
+                    AVS_COAP_CODE_CLASS_SHIFT, cls);
+}
+
+uint8_t avs_coap_msg_code_get_detail(const uint8_t *code) {
+    return AVS_FIELD_GET(*code, AVS_COAP_CODE_DETAIL_MASK,
+                           AVS_COAP_CODE_DETAIL_SHIFT);
+}
+
+void avs_coap_msg_code_set_detail(uint8_t *code, uint8_t detail) {
+    assert(detail < 32);
+    AVS_FIELD_SET(*code, AVS_COAP_CODE_DETAIL_MASK,
+                    AVS_COAP_CODE_DETAIL_SHIFT, detail);
+}
+
+avs_coap_msg_type_t
+avs_coap_msg_header_get_type(const avs_coap_msg_header_t *hdr) {
+    int val = AVS_FIELD_GET(hdr->version_type_token_length,
+                            AVS_COAP_HEADER_TYPE_MASK,
+                            AVS_COAP_HEADER_TYPE_SHIFT);
+    assert(val >= _AVS_COAP_MSG_FIRST && val <= _AVS_COAP_MSG_LAST);
+    return (avs_coap_msg_type_t)val;
+}
+
+void avs_coap_msg_header_set_type(avs_coap_msg_header_t *hdr,
+                                  avs_coap_msg_type_t type) {
+    AVS_FIELD_SET(hdr->version_type_token_length,
+                  AVS_COAP_HEADER_TYPE_MASK,
+                  AVS_COAP_HEADER_TYPE_SHIFT, type);
+}
+
+uint16_t avs_coap_msg_get_id(const avs_coap_msg_t *msg) {
+    return extract_u16((const uint8_t *) &msg->header.message_id);
+}
+
 #ifdef AVS_UNIT_TESTING
 #include "test/msg.c"
 #endif // AVS_UNIT_TESTING

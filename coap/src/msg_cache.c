@@ -18,6 +18,7 @@
 #define _POSIX_C_SOURCE 200809L
 #include <config.h>
 
+#include <netinet/in.h>
 #include <time.h>
 #include <unistd.h>
 

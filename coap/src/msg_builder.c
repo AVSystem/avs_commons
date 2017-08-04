@@ -23,6 +23,7 @@
 
 #include "log.h"
 #include "msg_internal.h"
+#include "parse_utils.h"
 
 #pragma GCC visibility push(hidden)
 

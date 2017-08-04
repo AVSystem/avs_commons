@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef AVS_COMMONS_COAP_PARSE_UTILS_H
-#define AVS_COMMONS_COAP_PARSE_UTILS_H
+#ifndef AVS_COAP_PARSE_UTILS_H
+#define AVS_COAP_PARSE_UTILS_H
 
 #include <netinet/in.h>
 #include <stdint.h>
@@ -23,9 +23,7 @@
 
 #include <avsystem/commons/net.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#pragma GCC visibility push(hidden)
 
 #define AVS_COAP_EXT_U8 13
 #define AVS_COAP_EXT_U16 14
@@ -47,8 +45,6 @@ static inline uint16_t extract_u16(const uint8_t *data) {
     return ntohs(result);
 }
 
-#ifdef __cplusplus
-}
-#endif
+#pragma GCC visibility pop
 
-#endif // AVS_COMMONS_COAP_PARSE_UTILS_H
+#endif // AVS_COAP_PARSE_UTILS_H

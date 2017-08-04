@@ -24,6 +24,8 @@
 #include <stdlib.h>
 #include <errno.h>
 
+#include <netinet/in.h>
+
 #include <avsystem/commons/list.h>
 
 #include "log.h"
