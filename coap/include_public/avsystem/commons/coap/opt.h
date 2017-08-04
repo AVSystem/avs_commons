@@ -26,7 +26,7 @@ extern "C" {
 #endif
 
 #define AVS_COAP_OPT_IF_MATCH 1
-#define AVS_COMMONS_COAP_OPT_URI_HOST 3
+#define AVS_COAP_OPT_URI_HOST 3
 #define AVS_COAP_OPT_ETAG 4
 #define AVS_COAP_OPT_IF_NONE_MATCH 5
 #define AVS_COAP_OPT_OBSERVE 6
