@@ -87,16 +87,6 @@ size_t avs_coap_msg_info_get_headers_size(const avs_coap_msg_info_t *info);
 size_t avs_coap_msg_info_get_storage_size(const avs_coap_msg_info_t *info);
 
 /**
- * @returns total number of bytes of a serialized message that will be sent over
- *          the wire, assuming no payload and a token of maximum possible size.
- */
-static inline size_t
-avs_coap_msg_info_get_max_mtu_overhead(const avs_coap_msg_info_t *info) {
-    return avs_coap_msg_info_get_storage_size(info)
-           - offsetof(avs_coap_msg_t, header);
-}
-
-/**
  * @returns total number of bytes required for serialized message, assuming
  *          @p block_size bytes of payload and a token of maximum possible size.
  */
