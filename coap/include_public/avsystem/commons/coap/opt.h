@@ -108,14 +108,14 @@ int avs_coap_opt_block_size(const avs_coap_opt_t *opt, uint16_t *out_size);
 /**
  * @param opt Option to operate on.
  *
- * @returns Pointer to the start of the option content.
+ * @returns Option Delta (as per RFC7252 section 3.1).
  */
 uint32_t avs_coap_opt_delta(const avs_coap_opt_t *opt);
 
 /**
  * @param opt Option to operate on.
  *
- * @returns Pointer to the start of the option content.
+ * @returns Length of the option content, in bytes.
  */
 uint32_t avs_coap_opt_content_length(const avs_coap_opt_t *opt);
 
