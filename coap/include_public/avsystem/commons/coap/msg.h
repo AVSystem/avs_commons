@@ -29,6 +29,8 @@
 extern "C" {
 #endif
 
+#define AVS_COAP_PAYLOAD_MARKER ((uint8_t) 0xFF)
+
 #define AVS_COAP_MSG_MIN_SIZE ((unsigned) sizeof(avs_coap_msg_header_t))
 
 typedef enum avs_coap_msg_type {

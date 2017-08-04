@@ -32,8 +32,6 @@
 #define AVS_COAP_EXT_U8_BASE ((uint32_t) 13)
 #define AVS_COAP_EXT_U16_BASE ((uint32_t) 269)
 
-#define AVS_COAP_PAYLOAD_MARKER ((uint8_t) 0xFF)
-
 #define AVS_FIELD_GET(field, mask, shift) (((field) & (mask)) >> (shift))
 #define AVS_FIELD_SET(field, mask, shift, value) \
     ((field) = (uint8_t)(((field) & ~(mask))     \
