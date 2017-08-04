@@ -15,7 +15,8 @@
 set(SOURCES
     src/addrinfo.c
     src/api.c
-    src/net.c)
+    src/net.c
+    src/url.c)
 
 if(NOT HAVE_INET_NTOP)
     set(SOURCES ${SOURCES} src/inet_ntop.c)
@@ -40,7 +41,8 @@ set(PRIVATE_HEADERS
 
 set(PUBLIC_HEADERS
     include_public/avsystem/commons/net.h
-    include_public/avsystem/commons/socket_v_table.h)
+    include_public/avsystem/commons/socket_v_table.h
+    include_public/avsystem/commons/url.h)
 
 set(ALL_SOURCES ${SOURCES} ${PRIVATE_HEADERS} ${PUBLIC_HEADERS})
 
