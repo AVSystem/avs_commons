@@ -43,16 +43,17 @@ typedef struct avs_coap_msg_info {
 /**
  * Initializes a @ref avs_coap_header_msg_info_t .
  */
-#define avs_coap_msg_info_init() \
-    ((avs_coap_msg_info_t){ \
-        .code = AVS_COAP_CODE_EMPTY, \
-        .identity = { \
-            .msg_id = 0, \
-            .token = {{0}}, \
-            .token_size = 0 \
-        }, \
-        .options_ = NULL \
-    })
+static inline avs_coap_msg_info_t avs_coap_msg_info_init() {
+    return (avs_coap_msg_info_t){
+        .code = AVS_COAP_CODE_EMPTY,
+        .identity = {
+            .msg_id = 0,
+            .token = {{0}},
+            .token_size = 0
+        },
+        .options_ = NULL
+    };
+}
 
 /**
  * Frees any memory allocated for temporary storage required by the info object.
