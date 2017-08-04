@@ -18,7 +18,6 @@
 
 #include "log.h"
 
-#include <avsystem/commons/coap/content_format.h>
 #include <avsystem/commons/coap/msg_info.h>
 #include <avsystem/commons/coap/msg_opt.h>
 

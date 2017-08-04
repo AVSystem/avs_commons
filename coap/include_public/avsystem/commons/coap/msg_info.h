@@ -109,6 +109,14 @@ avs_coap_msg_info_get_packet_storage_size(const avs_coap_msg_info_t *info,
 void avs_coap_msg_info_opt_remove_by_number(avs_coap_msg_info_t *info,
                                             uint16_t option_number);
 
+
+/**
+ * A magic value used to indicate the absence of the Content-Format option.
+ * Mainly used during CoAP message parsing, passing it to the info object does
+ * nothing.
+ * */
+#define AVS_COAP_FORMAT_NONE UINT16_MAX
+
 /**
  * Adds a Content-Format Option (@ref AVS_COAP_OPT_CONTENT_FORMAT = 12) to the
  * message being built.

@@ -19,7 +19,7 @@
 #include <sys/types.h>
 #include <alloca.h>
 
-#include <avsystem/commons/coap/content_format.h>
+#include <avsystem/commons/coap/msg_info.h>
 #include <avsystem/commons/unit/test.h>
 
 #define RANDOM_MSGID ((uint16_t)4)
@@ -218,10 +218,10 @@ AVS_UNIT_TEST(coap_builder, option_content_format) {
     DECLARE_MSG_TEMPLATE(msg_tpl, msg_tpl_size, content_length);
     _avs_coap_opt_set_short_length((avs_coap_opt_t *)&msg_tpl->content[0], 2);
     _avs_coap_opt_set_short_delta((avs_coap_opt_t *)&msg_tpl->content[0], AVS_COAP_OPT_CONTENT_FORMAT);
-    memcpy(&msg_tpl->content[1], &(uint16_t){htons(AVS_COAP_FORMAT_TLV)}, 2);
+    memcpy(&msg_tpl->content[1], &(uint16_t){htons(11542)}, 2);
 
     avs_coap_msg_info_t info = INFO_WITH_HEADER(&msg_tpl->header);
-    AVS_UNIT_ASSERT_SUCCESS(avs_coap_msg_info_opt_content_format(&info, AVS_COAP_FORMAT_TLV));
+    AVS_UNIT_ASSERT_SUCCESS(avs_coap_msg_info_opt_content_format(&info, 11542));
 
     size_t storage_size = avs_coap_msg_info_get_storage_size(&info);
     void *storage = malloc(storage_size);
