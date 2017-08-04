@@ -346,7 +346,9 @@ if(WITH_AVS_UNIT)
     macro(add_avs_test NAME)
         add_executable(${NAME}_test EXCLUDE_FROM_ALL ${ARGN})
         target_link_libraries(${NAME}_test avs_unit)
-        set_property(TARGET ${NAME}_test APPEND PROPERTY COMPILE_DEFINITIONS AVS_UNIT_TESTING)
+        set_property(TARGET ${NAME}_test APPEND PROPERTY COMPILE_DEFINITIONS
+                     AVS_UNIT_TESTING
+                     AVS_COMMONS_BIN_DIR="${CMAKE_CURRENT_BINARY_DIR}")
         set_property(TARGET ${NAME}_test APPEND PROPERTY COMPILE_FLAGS "-Wno-clobbered -Wno-overlength-strings -Wno-c++-compat -Wno-sign-conversion")
 
         if(VALGRIND)
