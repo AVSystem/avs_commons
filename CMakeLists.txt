@@ -421,6 +421,10 @@ endif()
 cmake_dependent_option(WITH_AVS_COAP_MESSAGE_CACHE
                        "Enable support for message caching to detect and automatically handle duplicate messages"
                        ON WITH_AVS_COAP OFF)
+cmake_dependent_option(WITH_AVS_COAP_NET_STATS
+                       "Enable support for measuring some CoAP socket statistics"
+                       ON WITH_AVS_COAP OFF)
+
 if(WITH_AVS_COAP)
     add_module_with_include_dirs(coap MODULE_INCLUDE_DIRS)
 endif()

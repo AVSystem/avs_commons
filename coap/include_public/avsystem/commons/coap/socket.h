@@ -111,6 +111,39 @@ void avs_coap_send_service_unavailable(avs_coap_socket_t *socket,
                                        const avs_coap_msg_t *msg,
                                        int32_t retry_after_ms);
 
+/**
+ * @returns the total amount of bytes transmitted through the socket.
+ *
+ * NOTE: When AVS_COAP_WITH_NET_STATS is disabled this function always return 0.
+ */
+uint64_t avs_coap_socket_get_tx_bytes(avs_coap_socket_t *socket);
+
+/**
+ * @returns the amount of bytes received through the socket.
+ *
+ * NOTE: When AVS_COAP_WITH_NET_STATS is disabled this function always return 0.
+ */
+uint64_t avs_coap_socket_get_rx_bytes(avs_coap_socket_t *socket);
+
+/**
+ * @returns the number of packets received through the socket to which cached
+ *          responses were found.
+ *
+ * NOTE: When AVS_COAP_WITH_NET_STATS is disabled this function always return 0.
+ */
+uint64_t
+avs_coap_socket_get_num_incoming_retransmissions(avs_coap_socket_t *socket);
+
+/**
+ * @returns the number of packets sent through the client that were already
+ *          cached as well as requests which the client did not get any
+ *          response to.
+ *
+ * NOTE: When AVS_COAP_WITH_NET_STATS is disabled this function always return 0.
+ */
+uint64_t
+avs_coap_socket_get_num_outgoing_retransmissions(avs_coap_socket_t *socket);
+
 /** @} */
 
 #ifdef __cplusplus

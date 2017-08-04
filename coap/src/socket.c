@@ -38,6 +38,13 @@ struct avs_coap_socket {
 
     const avs_coap_tx_params_t *tx_params;
     coap_msg_cache_t *msg_cache;
+#ifdef WITH_AVS_COAP_NET_STATS
+    uint64_t rx_bytes;
+    uint64_t tx_bytes;
+    uint64_t num_incoming_retransmissions;
+    uint64_t num_outgoing_retransmissions;
+    avs_coap_msg_identity_t last_request_identity;
+#endif
 };
 
 static const avs_coap_tx_params_t DEFAULT_SOCKET_TX_PARAMS = {
@@ -74,6 +81,44 @@ int avs_coap_socket_close(avs_coap_socket_t *sock) {
         return 0;
     }
     return avs_net_socket_close(sock->dtls_socket);
+}
+
+uint64_t avs_coap_socket_get_rx_bytes(avs_coap_socket_t *sock) {
+#ifdef WITH_AVS_COAP_NET_STATS
+    return sock->rx_bytes;
+#else
+    (void) sock;
+    return 0;
+#endif // WITH_AVS_COAP_NET_STATS
+}
+
+uint64_t avs_coap_socket_get_tx_bytes(avs_coap_socket_t *sock) {
+#ifdef WITH_AVS_COAP_NET_STATS
+    return sock->tx_bytes;
+#else
+    (void) sock;
+    return 0;
+#endif // WITH_AVS_COAP_NET_STATS
+}
+
+uint64_t
+avs_coap_socket_get_num_incoming_retransmissions(avs_coap_socket_t *sock) {
+#ifdef WITH_AVS_COAP_NET_STATS
+    return sock->num_incoming_retransmissions;
+#else
+    (void) sock;
+    return 0;
+#endif // WITH_AVS_COAP_NET_STATS
+}
+
+uint64_t
+avs_coap_socket_get_num_outgoing_retransmissions(avs_coap_socket_t *sock) {
+#ifdef WITH_AVS_COAP_NET_STATS
+    return sock->num_outgoing_retransmissions;
+#else
+    (void) sock;
+    return 0;
+#endif // WITH_AVS_COAP_NET_STATS
 }
 
 void avs_coap_socket_cleanup(avs_coap_socket_t **sock) {
@@ -130,6 +175,25 @@ static int try_cache_response(avs_coap_socket_t *sock,
 
 #endif // WITH_AVS_COAP_MESSAGE_CACHE
 
+#ifdef WITH_AVS_COAP_NET_STATS
+static size_t packet_overhead(avs_net_abstract_socket_t *socket) {
+    avs_net_socket_opt_value_t mtu;
+    avs_net_socket_opt_value_t mtu_inner;
+    if (avs_net_socket_get_opt(socket, AVS_NET_SOCKET_OPT_MTU, &mtu)
+        || avs_net_socket_get_opt(socket, AVS_NET_SOCKET_OPT_INNER_MTU,
+                                  &mtu_inner)) {
+        goto error;
+    }
+    if (mtu.mtu < mtu_inner.mtu) {
+        goto error;
+    }
+    return (size_t) mtu.mtu - (size_t) mtu_inner.mtu;
+
+error:
+    return 0;
+}
+#endif // WITH_AVS_COAP_NET_STATS
+
 int avs_coap_socket_send(avs_coap_socket_t *sock, const avs_coap_msg_t *msg) {
     assert(sock && sock->dtls_socket);
     if (!avs_coap_msg_is_valid(msg)) {
@@ -142,6 +206,24 @@ int avs_coap_socket_send(avs_coap_socket_t *sock, const avs_coap_msg_t *msg) {
                                      &msg->header, msg->length);
     if (!result) {
         int cache_result = try_cache_response(sock, msg);
+#ifdef WITH_AVS_COAP_NET_STATS
+        bool request_retransmission = false;
+        if (avs_coap_msg_is_request(msg)) {
+            const avs_coap_msg_identity_t msg_identity =
+                    avs_coap_msg_get_identity(msg);
+
+            request_retransmission =
+                    avs_coap_identity_equal(&msg_identity,
+                                            &sock->last_request_identity);
+            sock->last_request_identity = msg_identity;
+        }
+
+        if (cache_result == AVS_COAP_MSG_CACHE_DUPLICATE
+                || request_retransmission) {
+            ++sock->num_outgoing_retransmissions;
+        }
+        sock->tx_bytes += msg->length + packet_overhead(sock->dtls_socket);
+#endif // WITH_AVS_COAP_NET_STATS
         (void) cache_result;
     }
     return map_io_error(sock->dtls_socket, result, "send");
@@ -170,6 +252,9 @@ static int try_send_cached_response(avs_coap_socket_t *sock,
     const avs_coap_msg_t *res =
             _avs_coap_msg_cache_get(sock->msg_cache, addr, port, msg_id);
     if (res) {
+#ifdef WITH_AVS_COAP_NET_STATS
+        ++sock->num_incoming_retransmissions;
+#endif // WITH_AVS_COAP_NET_STATS
         return avs_coap_socket_send(sock, res);
     } else {
         return -1;
@@ -199,6 +284,9 @@ int avs_coap_socket_recv(avs_coap_socket_t *sock,
     if (result) {
         return map_io_error(sock->dtls_socket, result, "receive");
     }
+#ifdef WITH_AVS_COAP_NET_STATS
+    sock->rx_bytes += msg_length + packet_overhead(sock->dtls_socket);
+#endif // WITH_AVS_COAP_NET_STATS
 
     if (!avs_coap_msg_is_valid(out_msg)) {
         LOG(DEBUG, "recv: malformed message");
