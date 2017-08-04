@@ -135,8 +135,8 @@ uint64_t
 avs_coap_socket_get_num_incoming_retransmissions(avs_coap_socket_t *socket);
 
 /**
- * @returns the number of packets sent through the client that were already
- *          cached as well as requests which the client did not get any
+ * @returns the number of packets sent through the socket that were already
+ *          cached as well as requests which the CoAP client did not get any
  *          response to.
  *
  * NOTE: When AVS_COAP_WITH_NET_STATS is disabled this function always return 0.
