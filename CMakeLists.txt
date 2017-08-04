@@ -343,8 +343,10 @@ macro(add_module_with_include_dirs MODULE_NAME MODULE_INCLUDE_DIRS_VAR)
 endmacro()
 
 if(WITH_AVS_UNIT)
+    add_subdirectory(tools)
     macro(add_avs_test NAME)
         add_executable(${NAME}_test EXCLUDE_FROM_ALL ${ARGN})
+        add_dependencies(${NAME}_test dtls_echo_server)
         target_link_libraries(${NAME}_test avs_unit)
         set_property(TARGET ${NAME}_test APPEND PROPERTY COMPILE_DEFINITIONS
                      AVS_UNIT_TESTING

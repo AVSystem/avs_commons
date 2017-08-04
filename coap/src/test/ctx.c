@@ -76,7 +76,7 @@ static void spawn_dtls_echo_server(uint16_t port) {
         }
     }
 
-    char cmdline[] = AVS_COMMONS_BIN_DIR "/dtls_echo_server\0"
+    char cmdline[] = AVS_COMMONS_BIN_DIR "/../tools/dtls_echo_server\0"
                      "-p\0"
                      "_____";
     char *args[4] = { cmdline };
