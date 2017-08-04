@@ -40,6 +40,21 @@ static avs_coap_msg_t *setup_msg_with_id(void *buffer,
     return msg;
 }
 
+static struct timespec MOCK_CLOCK = { 0, 0 };
+
+static void clock_advance(const struct timespec *t) {
+    AVS_UNIT_ASSERT_TRUE(avs_time_is_valid(&MOCK_CLOCK));
+    AVS_UNIT_ASSERT_TRUE(avs_time_is_valid(t));
+    avs_time_add(&MOCK_CLOCK, t);
+}
+
+int clock_gettime(clockid_t clock, struct timespec *t) {
+    (void) clock;
+    *t = MOCK_CLOCK;
+    avs_time_add(&MOCK_CLOCK, &(const struct timespec) { 0, 1 });
+    return 0;
+}
+
 AVS_UNIT_TEST(coap_msg_cache, null) {
     static const uint16_t id = 123;
     avs_coap_msg_t *msg = setup_msg_with_id(alloca(sizeof(*msg)), id, "");
@@ -84,9 +99,8 @@ AVS_UNIT_TEST(coap_msg_cache, hit_multiple) {
     };
 
     for (size_t i = 0; i < AVS_ARRAY_SIZE(msg); ++i) {
-        AVS_UNIT_ASSERT_SUCCESS(
-                _avs_coap_msg_cache_add(cache, "host", "port",
-                                          msg[i], &tx_params));
+        AVS_UNIT_ASSERT_SUCCESS(_avs_coap_msg_cache_add(cache, "host", "port",
+                                                        msg[i], &tx_params));
     }
 
     // request message existing in cache
@@ -102,27 +116,21 @@ AVS_UNIT_TEST(coap_msg_cache, hit_multiple) {
     _avs_coap_msg_cache_release(&cache);
 }
 
-#warning "TODO: fix coap_msg_cache::hit_expired after mock-clock is ported"
-#if 0
 AVS_UNIT_TEST(coap_msg_cache, hit_expired) {
     coap_msg_cache_t *cache = _avs_coap_msg_cache_create(1024);
 
     static const uint16_t id = 123;
     avs_coap_msg_t *msg = setup_msg_with_id(alloca(sizeof(*msg)), id, "");
 
-    _avs_mock_clock_start(&(struct timespec){ 100, 0 });
-
     AVS_UNIT_ASSERT_SUCCESS(
             _avs_coap_msg_cache_add(cache, "host", "port", msg, &tx_params));
-    _avs_mock_clock_advance(&(struct timespec){ 247, 0 });
+    clock_advance(&(struct timespec){ 247, 0 });
 
     // request expired message existing in cache
     AVS_UNIT_ASSERT_NULL(_avs_coap_msg_cache_get(cache, "host", "port", id));
 
     _avs_coap_msg_cache_release(&cache);
-    _avs_mock_clock_finish();
 }
-#endif
 
 AVS_UNIT_TEST(coap_msg_cache, miss_empty) {
     coap_msg_cache_t *cache = _avs_coap_msg_cache_create(1024);
@@ -144,8 +152,8 @@ AVS_UNIT_TEST(coap_msg_cache, miss_non_empty) {
             _avs_coap_msg_cache_add(cache, "host", "port", msg, &tx_params));
 
     // request message not in cache
-    AVS_UNIT_ASSERT_NULL(_avs_coap_msg_cache_get(cache, "host", "port",
-                                                   (uint16_t)(id + 1)));
+    AVS_UNIT_ASSERT_NULL(
+            _avs_coap_msg_cache_get(cache, "host", "port", (uint16_t)(id + 1)));
 
     _avs_coap_msg_cache_release(&cache);
 }
@@ -166,27 +174,21 @@ AVS_UNIT_TEST(coap_msg_cache, add_existing) {
     _avs_coap_msg_cache_release(&cache);
 }
 
-#warning "TODO: fix coap_msg_cache::add_existing_expired after mock-clock is ported"
-#if 0
 AVS_UNIT_TEST(coap_msg_cache, add_existing_expired) {
     coap_msg_cache_t *cache = _avs_coap_msg_cache_create(1024);
 
     static const uint16_t id = 123;
     avs_coap_msg_t *msg = setup_msg_with_id(alloca(sizeof(*msg)), id, "");
 
-    _avs_mock_clock_start(&(struct timespec){ 100, 0 });
-
     // replacing existing expired cached messages is not allowed
     AVS_UNIT_ASSERT_SUCCESS(
             _avs_coap_msg_cache_add(cache, "host", "port", msg, &tx_params));
-    _avs_mock_clock_advance(&(struct timespec){ 247, 0 });
+    clock_advance(&(struct timespec){ 247, 0 });
     AVS_UNIT_ASSERT_SUCCESS(
             _avs_coap_msg_cache_add(cache, "host", "port", msg, &tx_params));
 
     _avs_coap_msg_cache_release(&cache);
-    _avs_mock_clock_finish();
 }
-#endif
 
 AVS_UNIT_TEST(coap_msg_cache, add_evict) {
     static const uint16_t id = 123;
@@ -203,19 +205,19 @@ AVS_UNIT_TEST(coap_msg_cache, add_evict) {
 
     // message with another ID removes oldest existing entry if extra space
     // is required
-    AVS_UNIT_ASSERT_SUCCESS(_avs_coap_msg_cache_add(cache, "host", "port",
-                                                      msg[0], &tx_params));
-    AVS_UNIT_ASSERT_SUCCESS(_avs_coap_msg_cache_add(cache, "host", "port",
-                                                      msg[1], &tx_params));
-    AVS_UNIT_ASSERT_SUCCESS(_avs_coap_msg_cache_add(cache, "host", "port",
-                                                      msg[2], &tx_params));
+    AVS_UNIT_ASSERT_SUCCESS(
+            _avs_coap_msg_cache_add(cache, "host", "port", msg[0], &tx_params));
+    AVS_UNIT_ASSERT_SUCCESS(
+            _avs_coap_msg_cache_add(cache, "host", "port", msg[1], &tx_params));
+    AVS_UNIT_ASSERT_SUCCESS(
+            _avs_coap_msg_cache_add(cache, "host", "port", msg[2], &tx_params));
 
     // oldest entry was removed
     AVS_UNIT_ASSERT_NULL(_avs_coap_msg_cache_get(cache, "host", "port", id));
 
     // newer entry still exists
-    cached_msg = _avs_coap_msg_cache_get(cache, "host", "port",
-                                           (uint16_t)(id + 1));
+    cached_msg =
+            _avs_coap_msg_cache_get(cache, "host", "port", (uint16_t)(id + 1));
     AVS_UNIT_ASSERT_NOT_NULL(cached_msg);
     AVS_UNIT_ASSERT_EQUAL_BYTES_SIZED(msg[1], cached_msg,
                                       offsetof(avs_coap_msg_t, content));
@@ -245,22 +247,21 @@ AVS_UNIT_TEST(coap_msg_cache, add_evict_multiple) {
 
     // message with another ID removes oldest existing entries if extra space
     // is required
-    AVS_UNIT_ASSERT_SUCCESS(_avs_coap_msg_cache_add(cache, "host", "port",
-                                                      msg[0], &tx_params));
-    AVS_UNIT_ASSERT_SUCCESS(_avs_coap_msg_cache_add(cache, "host", "port",
-                                                      msg[1], &tx_params));
-    AVS_UNIT_ASSERT_SUCCESS(_avs_coap_msg_cache_add(cache, "host", "port",
-                                                      msg[2], &tx_params));
+    AVS_UNIT_ASSERT_SUCCESS(
+            _avs_coap_msg_cache_add(cache, "host", "port", msg[0], &tx_params));
+    AVS_UNIT_ASSERT_SUCCESS(
+            _avs_coap_msg_cache_add(cache, "host", "port", msg[1], &tx_params));
+    AVS_UNIT_ASSERT_SUCCESS(
+            _avs_coap_msg_cache_add(cache, "host", "port", msg[2], &tx_params));
 
     // oldest entries were removed
     AVS_UNIT_ASSERT_NULL(_avs_coap_msg_cache_get(cache, "host", "port", id));
-    AVS_UNIT_ASSERT_NULL(_avs_coap_msg_cache_get(cache, "host", "port",
-                                                   (uint16_t)(id + 1)));
+    AVS_UNIT_ASSERT_NULL(
+            _avs_coap_msg_cache_get(cache, "host", "port", (uint16_t)(id + 1)));
 
     // newest entry was inserted
     const avs_coap_msg_t *cached_msg =
-            _avs_coap_msg_cache_get(cache, "host", "port",
-                                      (uint16_t)(id + 2));
+            _avs_coap_msg_cache_get(cache, "host", "port", (uint16_t)(id + 2));
     AVS_UNIT_ASSERT_NOT_NULL(cached_msg);
     AVS_UNIT_ASSERT_EQUAL_BYTES_SIZED(msg[2], cached_msg,
                                       sizeof(*msg[2])
@@ -271,13 +272,13 @@ AVS_UNIT_TEST(coap_msg_cache, add_evict_multiple) {
 
 AVS_UNIT_TEST(coap_msg_cache, add_too_big) {
     static const uint16_t id = 123;
-    avs_coap_msg_t *m1 = setup_msg_with_id(alloca(sizeof(*m1)),
-                                             (uint16_t)(id + 0), "");
+    avs_coap_msg_t *m1 =
+            setup_msg_with_id(alloca(sizeof(*m1)), (uint16_t)(id + 0), "");
     avs_coap_msg_t *m2 = setup_msg_with_id(alloca(sizeof(*m2)
                                                     + sizeof("\xFF" "foobarbaz")
                                                     - 1),
-                                             (uint16_t)(id + 1),
-                                             "\xFF" "foobarbaz");
+                                           (uint16_t)(id + 1),
+                                           "\xFF" "foobarbaz");
 
     coap_msg_cache_t *cache =
             _avs_coap_msg_cache_create(cache_msg_overhead(m1)
@@ -297,8 +298,8 @@ AVS_UNIT_TEST(coap_msg_cache, add_too_big) {
                                       offsetof(avs_coap_msg_t, content));
 
     // "too big" entry was not inserted
-    AVS_UNIT_ASSERT_NULL(_avs_coap_msg_cache_get(cache, "host", "port",
-                                                   (uint16_t)(id + 1)));
+    AVS_UNIT_ASSERT_NULL(
+            _avs_coap_msg_cache_get(cache, "host", "port", (uint16_t)(id + 1)));
 
     _avs_coap_msg_cache_release(&cache);
 }
@@ -309,14 +310,14 @@ AVS_UNIT_TEST(coap_msg_cache, multiple_hosts_same_ids) {
     avs_coap_msg_t *m2 = setup_msg_with_id(alloca(sizeof(*m2)
                                                     + sizeof("\xFF" "foobarbaz")
                                                     - 1),
-                                             id, "\xFF" "foobarbaz");
+                                           id, "\xFF" "foobarbaz");
 
     coap_msg_cache_t *cache = _avs_coap_msg_cache_create(4096);
 
-    AVS_UNIT_ASSERT_SUCCESS(_avs_coap_msg_cache_add(cache, "h1", "port",
-                                                      m1, &tx_params));
-    AVS_UNIT_ASSERT_SUCCESS(_avs_coap_msg_cache_add(cache, "h2", "port",
-                                                      m2, &tx_params));
+    AVS_UNIT_ASSERT_SUCCESS(
+            _avs_coap_msg_cache_add(cache, "h1", "port", m1, &tx_params));
+    AVS_UNIT_ASSERT_SUCCESS(
+            _avs_coap_msg_cache_add(cache, "h2", "port", m2, &tx_params));
 
     // both entries should be present despite having identical IDs
     const avs_coap_msg_t *cached_msg =
