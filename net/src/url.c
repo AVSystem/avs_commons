@@ -143,10 +143,6 @@ static int parse_username_and_password(const char *begin,
                                        char **data_out_ptr,
                                        const char *out_limit,
                                        avs_url_t *parsed_url) {
-    if (begin >= end) {
-        return 0; // nothing to do
-    }
-
     // parse username
     char *user = *data_out_ptr;
     while (begin < end && *data_out_ptr < out_limit && *begin != ':') {
@@ -295,10 +291,14 @@ static int url_parse_port(const char **url,
 
     parsed_url->port = *data_out_ptr;
     ++*url; // move after ':'
-    while (*data_out_ptr < out_limit && isdigit(**url)) {
+    const char *port_limit = AVS_MIN(out_limit, *data_out_ptr + 5);
+    while (*data_out_ptr < port_limit && isdigit(**url)) {
         *(*data_out_ptr)++ = *(*url)++;
     }
-    assert(!isdigit(**url));
+    if (isdigit(**url)) {
+        LOG(ERROR, "port too long");
+        return -1;
+    }
     if (**url != '\0' && **url != '/') {
         LOG(ERROR, "port should have numeric value");
         return -1;
@@ -434,3 +434,7 @@ const char *avs_url_path(const avs_url_t *url) {
 void avs_url_free(avs_url_t *url) {
     free(url);
 }
+
+#ifdef AVS_UNIT_TESTING
+#include "test/url.c"
+#endif // AVS_UNIT_TESTING

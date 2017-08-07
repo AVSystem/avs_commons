@@ -68,6 +68,7 @@ endif()
 
 avs_emit_deps(avs_net avs_utils)
 
+add_avs_test(avs_net ${ALL_SOURCES})
 avs_install_export(avs_net net)
 avs_propagate_exports()
 install(DIRECTORY include_public/
