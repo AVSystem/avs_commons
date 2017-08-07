@@ -54,7 +54,7 @@ static int url_parse_protocol(const char **url,
     memcpy(*data_out_ptr, *url, proto_len);
     *data_out_ptr += proto_len;
     *(*data_out_ptr)++ = '\0';
-    *url += proto_len + 3; // 3 for "://"
+    *url += proto_len + sizeof("://") - 1;
     return 0;
 }
 
