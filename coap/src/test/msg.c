@@ -329,11 +329,11 @@ AVS_UNIT_TEST(coap_msg, validate_opt_ext_delta_short) {
 }
 
 AVS_UNIT_TEST(coap_msg, validate_opt_ext_length_byte) {
-    #define OPTS_SIZE (2 + (1 + AVS_COAP_EXT_U8_BASE))
+#define OPTS_SIZE (2 + (1 + AVS_COAP_EXT_U8_BASE))
     uint8_t opts[OPTS_SIZE] = "\x0d\x01";
     avs_coap_msg_t *msg = (avs_coap_msg_t *) alloca(sizeof(*msg) + OPTS_SIZE);
     setup_msg(msg, opts, OPTS_SIZE);
-    #undef OPTS_SIZE
+#undef OPTS_SIZE
 
     AVS_UNIT_ASSERT_TRUE(avs_coap_msg_is_valid(msg));
     AVS_UNIT_ASSERT_EQUAL(count_opts(msg), 1);
@@ -473,9 +473,8 @@ AVS_UNIT_TEST(coap_msg, payload_shorter_than_4b) {
     AVS_UNIT_ASSERT_TRUE(avs_coap_msg_payload(msg) == msg->content + 1);
 }
 
-static avs_coap_msg_t *deserialize_msg(void *out_buffer,
-                                         const char *raw_data,
-                                         size_t data_size) {
+static avs_coap_msg_t *
+deserialize_msg(void *out_buffer, const char *raw_data, size_t data_size) {
     avs_coap_msg_t *msg = (avs_coap_msg_t*)out_buffer;
     msg->length = (uint32_t)data_size;
     memcpy(&msg->header, raw_data, data_size);
@@ -497,8 +496,8 @@ AVS_UNIT_TEST(coap_msg, fuzz_2_missing_option_ext_length) {
 
 AVS_UNIT_TEST(coap_msg, fuzz_3_token_and_options) {
     avs_coap_msg_t *msg = DESERIALIZE_MSG("\x64\x2d\x8d\x20" // header
-                                            "\x50\x16\xf8\x5b" // token
-                                            "\x73\x77\x4c\x4f\x03\xe8\x0a");
+                                          "\x50\x16\xf8\x5b" // token
+                                          "\x73\x77\x4c\x4f\x03\xe8\x0a");
     AVS_UNIT_ASSERT_FALSE(avs_coap_msg_is_valid(msg));
 }
 
