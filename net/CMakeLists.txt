@@ -15,7 +15,8 @@
 set(SOURCES
     src/addrinfo.c
     src/api.c
-    src/net.c)
+    src/net.c
+    src/url.c)
 
 if(NOT HAVE_INET_NTOP)
     set(SOURCES ${SOURCES} src/inet_ntop.c)
@@ -40,7 +41,8 @@ set(PRIVATE_HEADERS
 
 set(PUBLIC_HEADERS
     include_public/avsystem/commons/net.h
-    include_public/avsystem/commons/socket_v_table.h)
+    include_public/avsystem/commons/socket_v_table.h
+    include_public/avsystem/commons/url.h)
 
 set(ALL_SOURCES ${SOURCES} ${PRIVATE_HEADERS} ${PUBLIC_HEADERS})
 
@@ -66,6 +68,7 @@ endif()
 
 avs_emit_deps(avs_net avs_utils)
 
+add_avs_test(avs_net ${ALL_SOURCES})
 avs_install_export(avs_net net)
 avs_propagate_exports()
 install(DIRECTORY include_public/

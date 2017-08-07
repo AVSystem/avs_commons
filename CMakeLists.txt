@@ -255,7 +255,7 @@ if(WITH_VALGRIND)
     else()
         set(VALGRIND_ARGS --leak-check=full --track-origins=yes)
     endif()
-    set(VALGRIND ${VALGRIND_EXECUTABLE} ${VALGRIND_ARGS} -q --error-exitcode=63)
+    set(VALGRIND ${VALGRIND_EXECUTABLE} ${VALGRIND_ARGS} -q --error-exitcode=63 --suppressions=${CMAKE_SOURCE_DIR}/avs_commons_test.supp)
 endif()
 
 enable_testing()
