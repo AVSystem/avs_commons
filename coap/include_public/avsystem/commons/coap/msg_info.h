@@ -88,7 +88,7 @@ size_t avs_coap_msg_info_get_storage_size(const avs_coap_msg_info_t *info);
 
 /**
  * @returns total number of bytes required for serialized message, assuming
- *          @p block_size bytes of payload and a token of maximum possible size.
+ *          @p payload_size bytes of payload and a token of maximum possible size.
  */
 size_t
 avs_coap_msg_info_get_packet_storage_size(const avs_coap_msg_info_t *info,
