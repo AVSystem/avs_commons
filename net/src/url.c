@@ -30,17 +30,17 @@
 #endif
 
 struct avs_url {
-    const char *user;
-    const char *password;
-    const char *host;
-    const char *port;
-    const char *path;
+    size_t user_ptr;
+    size_t password_ptr;
+    size_t host_ptr;
+    size_t port_ptr;
+    size_t path_ptr;
     char data[];
 };
 
 static int url_parse_protocol(const char **url,
-                              char **data_out_ptr,
-                              const char *out_limit,
+                              size_t *data_out_ptr,
+                              size_t out_limit,
                               avs_url_t *parsed_url) {
     const char *proto_end = strstr(*url, "://");
     size_t proto_len = 0;
@@ -50,10 +50,10 @@ static int url_parse_protocol(const char **url,
     }
     proto_len = (size_t) (proto_end - *url);
     assert(*data_out_ptr + proto_len < out_limit);
-    assert(*data_out_ptr == parsed_url->data);
-    memcpy(*data_out_ptr, *url, proto_len);
+    assert(*data_out_ptr == 0);
+    memcpy(parsed_url->data, *url, proto_len);
     *data_out_ptr += proto_len;
-    *(*data_out_ptr)++ = '\0';
+    parsed_url->data[(*data_out_ptr)++] = '\0';
     *url += proto_len + sizeof("://") - 1;
     return 0;
 }
@@ -140,49 +140,51 @@ static int is_valid_credential(const char *str) {
 
 static int parse_username_and_password(const char *begin,
                                        const char *end,
-                                       char **data_out_ptr,
-                                       const char *out_limit,
+                                       size_t *data_out_ptr,
+                                       size_t out_limit,
                                        avs_url_t *parsed_url) {
     // parse username
-    char *user = *data_out_ptr;
+    size_t user_ptr = *data_out_ptr;
     while (begin < end && *data_out_ptr < out_limit && *begin != ':') {
-        *(*data_out_ptr)++ = *begin++;
+        parsed_url->data[(*data_out_ptr)++] = *begin++;
     }
-    *(*data_out_ptr)++ = '\0';
+    parsed_url->data[(*data_out_ptr)++] = '\0';
     assert(begin == end || *begin == ':');
 
-    if (!is_valid_credential(user) || prepare_string(user)) {
+    if (!is_valid_credential(&parsed_url->data[user_ptr])
+            || prepare_string(&parsed_url->data[user_ptr])) {
         LOG(ERROR, "invalid username");
         return -1;
     }
-    parsed_url->user = user;
-    *data_out_ptr = user + strlen(user) + 1;
+    parsed_url->user_ptr = user_ptr;
+    *data_out_ptr = user_ptr + strlen(&parsed_url->data[user_ptr]) + 1;
 
     if (begin >= end) {
         return 0; // no password
     }
 
     // parse password
-    char *password = *data_out_ptr;
+    size_t password_ptr = *data_out_ptr;
     ++begin; // move after ':'
     while (begin < end && *data_out_ptr < out_limit) {
-        *(*data_out_ptr)++ = *begin++;
+        parsed_url->data[(*data_out_ptr)++] = *begin++;
     }
-    *(*data_out_ptr)++ = '\0';
+    parsed_url->data[(*data_out_ptr)++] = '\0';
     assert(begin == end);
 
-    if (!is_valid_credential(password) || prepare_string(password)) {
+    if (!is_valid_credential(&parsed_url->data[password_ptr])
+            || prepare_string(&parsed_url->data[password_ptr])) {
         LOG(ERROR, "invalid username");
         return -1;
     }
-    parsed_url->password = password;
-    *data_out_ptr = password + strlen(password) + 1;
+    parsed_url->password_ptr = password_ptr;
+    *data_out_ptr = password_ptr + strlen(&parsed_url->data[password_ptr]) + 1;
     return 0;
 }
 
 static int url_parse_credentials(const char **url,
-                                 char **data_out_ptr,
-                                 const char *out_limit,
+                                 size_t *data_out_ptr,
+                                 size_t out_limit,
                                  avs_url_t *parsed_url) {
     /* According to grammar from RFC1738, username and password must not
      * contain slashes */
@@ -246,14 +248,14 @@ static int is_valid_host(const char *str) {
 }
 
 static int url_parse_host(const char **url,
-                          char **data_out_ptr,
-                          const char *out_limit,
+                          size_t *data_out_ptr,
+                          size_t out_limit,
                           avs_url_t *parsed_url) {
-    parsed_url->host = *data_out_ptr;
+    parsed_url->host_ptr = *data_out_ptr;
     if (**url == '[') {
         ++*url;
         while (*data_out_ptr < out_limit && **url != '\0' && **url != ']') {
-            *(*data_out_ptr)++ = *(*url)++;
+            parsed_url->data[(*data_out_ptr)++] = *(*url)++;
         }
         assert(**url == '\0' || **url == ']');
         if (*(*url)++ != ']') {
@@ -265,35 +267,35 @@ static int url_parse_host(const char **url,
                 && **url != '\0'
                 && **url != '/'
                 && **url != ':') {
-            *(*data_out_ptr)++ = *(*url)++;
+            parsed_url->data[(*data_out_ptr)++] = *(*url)++;
         }
         assert(**url == '\0' || **url == '/' || **url == ':');
     }
-    if (*data_out_ptr == parsed_url->host) {
+    if (*data_out_ptr == parsed_url->host_ptr) {
         LOG(ERROR, "host part cannot be empty");
         return -1;
     }
-    *(*data_out_ptr)++ = '\0';
+    parsed_url->data[(*data_out_ptr)++] = '\0';
 
-    if (!is_valid_host(parsed_url->host)) {
+    if (!is_valid_host(&parsed_url->data[parsed_url->host_ptr])) {
         return -1;
     }
     return 0;
 }
 
 static int url_parse_port(const char **url,
-                          char **data_out_ptr,
-                          const char *out_limit,
+                          size_t *data_out_ptr,
+                          size_t out_limit,
                           avs_url_t *parsed_url) {
     if (**url != ':') {
         return 0;
     }
 
-    parsed_url->port = *data_out_ptr;
+    parsed_url->port_ptr = *data_out_ptr;
     ++*url; // move after ':'
-    const char *port_limit = AVS_MIN(out_limit, *data_out_ptr + 5);
+    size_t port_limit = AVS_MIN(out_limit, *data_out_ptr + 5);
     while (*data_out_ptr < port_limit && isdigit(**url)) {
-        *(*data_out_ptr)++ = *(*url)++;
+        parsed_url->data[(*data_out_ptr)++] = *(*url)++;
     }
     if (isdigit(**url)) {
         LOG(ERROR, "port too long");
@@ -303,11 +305,11 @@ static int url_parse_port(const char **url,
         LOG(ERROR, "port should have numeric value");
         return -1;
     }
-    if (*data_out_ptr == parsed_url->port) {
+    if (*data_out_ptr == parsed_url->port_ptr) {
         LOG(ERROR, "expected at least 1 digit for port number");
         return -1;
     }
-    *(*data_out_ptr)++ = '\0';
+    parsed_url->data[(*data_out_ptr)++] = '\0';
     return 0;
 }
 
@@ -326,21 +328,21 @@ static int is_valid_path(const char *str) {
 }
 
 static int url_parse_path(const char **url,
-                          char **data_out_ptr,
-                          const char *out_limit,
+                          size_t *data_out_ptr,
+                          size_t out_limit,
                           avs_url_t *parsed_url) {
-    parsed_url->path = *data_out_ptr;
+    parsed_url->path_ptr = *data_out_ptr;
     if (**url) {
         while (*data_out_ptr < out_limit && **url != '\0') {
-            *(*data_out_ptr)++ = *(*url)++;
+            parsed_url->data[(*data_out_ptr)++] = *(*url)++;
         }
     } else {
-        *(*data_out_ptr)++ = '/';
+        parsed_url->data[(*data_out_ptr)++] = '/';
     }
     assert(*data_out_ptr < out_limit);
-    *(*data_out_ptr)++ = '\0';
+    parsed_url->data[(*data_out_ptr)++] = '\0';
 
-    if (!is_valid_path(parsed_url->path)) {
+    if (!is_valid_path(&parsed_url->data[parsed_url->path_ptr])) {
         return -1;
     }
     return 0;
@@ -379,14 +381,13 @@ avs_url_t *avs_url_parse(const char *raw_url) {
         LOG(ERROR, "out of memory");
         return NULL;
     }
-    char *data_out_ptr = out->data;
-    char *data_out_limit = out->data + data_length;
-    if (url_parse_protocol(&raw_url, &data_out_ptr, data_out_limit, out)
+    size_t data_out_ptr = 0;
+    if (url_parse_protocol(&raw_url, &data_out_ptr, data_length, out)
             || url_parse_credentials(&raw_url,
-                                     &data_out_ptr, data_out_limit, out)
-            || url_parse_host(&raw_url, &data_out_ptr, data_out_limit, out)
-            || url_parse_port(&raw_url, &data_out_ptr, data_out_limit, out)
-            || url_parse_path(&raw_url, &data_out_ptr, data_out_limit, out)
+                                     &data_out_ptr, data_length, out)
+            || url_parse_host(&raw_url, &data_out_ptr, data_length, out)
+            || url_parse_port(&raw_url, &data_out_ptr, data_length, out)
+            || url_parse_path(&raw_url, &data_out_ptr, data_length, out)
             || url_parsed(raw_url)) {
         free(out);
         return NULL;
@@ -395,7 +396,8 @@ avs_url_t *avs_url_parse(const char *raw_url) {
 }
 
 avs_url_t *avs_url_copy(const avs_url_t *url) {
-    const char *last_nullbyte = url->path + strlen(url->path);
+    const char *path = &url->data[url->path_ptr];
+    const char *last_nullbyte = path + strlen(path);
     ptrdiff_t alloc_size = last_nullbyte + 1 - (const char *) url;
     assert(alloc_size > 0 && (size_t) alloc_size > offsetof(avs_url_t, data));
     avs_url_t *out = (avs_url_t *) malloc((size_t) alloc_size);
@@ -412,23 +414,23 @@ const char *avs_url_protocol(const avs_url_t *url) {
 }
 
 const char *avs_url_user(const avs_url_t *url) {
-    return url->user;
+    return url->user_ptr ? &url->data[url->user_ptr] : NULL;
 }
 
 const char *avs_url_password(const avs_url_t *url) {
-    return url->password;
+    return url->password_ptr ? &url->data[url->password_ptr] : NULL;
 }
 
 const char *avs_url_host(const avs_url_t *url) {
-    return url->host;
+    return &url->data[url->host_ptr];
 }
 
 const char *avs_url_port(const avs_url_t *url) {
-    return url->port;
+    return url->port_ptr ? &url->data[url->port_ptr] : NULL;
 }
 
 const char *avs_url_path(const avs_url_t *url) {
-    return url->path;
+    return &url->data[url->path_ptr];
 }
 
 void avs_url_free(avs_url_t *url) {
