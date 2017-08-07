@@ -157,7 +157,7 @@ int avs_coap_msg_info_opt_opaque(avs_coap_msg_info_t *info,
  *
  * @code
  * avs_coap_msg_info_opt_opaque(info, opt_number,
- *                                 opt_data, strlen(opt_data))
+ *                              opt_data, strlen(opt_data))
  * @endcode
  */
 int avs_coap_msg_info_opt_string(avs_coap_msg_info_t *info,
