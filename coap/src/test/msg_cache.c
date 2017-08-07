@@ -48,6 +48,10 @@ static void clock_advance(const struct timespec *t) {
     avs_time_add(&MOCK_CLOCK, t);
 }
 
+/**
+ * NOTE: This overrides the standard library's clock_gettime(). It's safe
+ * though, because it affects a coap_test executable only.
+ */
 int clock_gettime(clockid_t clock, struct timespec *t) {
     (void) clock;
     *t = MOCK_CLOCK;
