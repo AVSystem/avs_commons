@@ -28,10 +28,7 @@ extern "C" {
 #define AVS_COAP_SOCKET_ERR_MSG_MALFORMED (-0x5E2)
 #define AVS_COAP_SOCKET_ERR_NETWORK       (-0x5E3)
 #define AVS_COAP_SOCKET_ERR_MSG_TOO_LONG  (-0x5E4)
-
-/** A duplicate request was received and was handled by response cache. */
 #define AVS_COAP_SOCKET_ERR_DUPLICATE     (-0x5E5)
-/** A ping was received and it had been handled in a socket layer. */
 #define AVS_COAP_SOCKET_ERR_MSG_WAS_PING  (-0x5E6)
 
 typedef struct avs_coap_socket avs_coap_socket_t;
@@ -52,6 +49,10 @@ void avs_coap_socket_cleanup(avs_coap_socket_t **sock);
  *   for the socket
  * - AVS_COAP_SOCKET_ERR_NETWORK in case of other error on a layer below the
  *   application layer
+ * - AVS_COAP_SOCKET_ERR_DUPLICATE in case duplicate request was received
+ *   and then handled by response cache
+ * - AVS_COAP_SOCKET_ERR_MSG_WAS_PING in case a ping was received and then
+ *   handled by the socket layer
  */
 int avs_coap_socket_send(avs_coap_socket_t *sock, const avs_coap_msg_t *msg);
 
