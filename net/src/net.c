@@ -317,7 +317,8 @@ static int get_string_port(const sockaddr_union_t *addr,
             return -1;
     }
 
-    return avs_simple_snprintf(buffer, buffer_size, "%u", ntohs(port));
+    return avs_simple_snprintf(buffer, buffer_size, "%u", ntohs(port)) < 0 ? -1
+                                                                           : 0;
 }
 
 static int remote_host_net(avs_net_abstract_socket_t *socket,
@@ -345,7 +346,7 @@ static int remote_hostname_net(avs_net_abstract_socket_t *socket_,
         return -1;
     }
     if (avs_simple_snprintf(out_buffer, out_buffer_size, "%s",
-                            socket->remote_hostname)) {
+                            socket->remote_hostname) < 0) {
         socket->error_code = ERANGE;
         return -1;
     } else {
@@ -362,7 +363,7 @@ static int remote_port_net(avs_net_abstract_socket_t *socket_,
         return -1;
     }
     if (avs_simple_snprintf(out_buffer, out_buffer_size, "%s",
-                            socket->remote_port)) {
+                            socket->remote_port) < 0) {
         socket->error_code = ERANGE;
         return -1;
     } else {
@@ -676,7 +677,10 @@ static int host_port_to_string(const struct sockaddr *sa, socklen_t salen,
                     ? -1 : 0);
         }
         if (!result && serv) {
-            result = avs_simple_snprintf(serv, servlen, "%" PRIu16, *port_ptr);
+            result = avs_simple_snprintf(serv, servlen, "%" PRIu16, *port_ptr)
+                                     < 0
+                             ? -1
+                             : 0;
         }
     }
 #endif /* HAVE_GETNAMEINFO */
@@ -831,13 +835,13 @@ static int connect_net(avs_net_abstract_socket_t *net_socket_,
 
                 if (avs_simple_snprintf(net_socket->remote_hostname,
                                         sizeof(net_socket->remote_hostname),
-                                        "%s", host)) {
+                                        "%s", host) < 0) {
                     LOG(WARNING, "Hostname %s is too long, not storing", host);
                     net_socket->remote_hostname[0] = '\0';
                 }
                 if (avs_simple_snprintf(net_socket->remote_port,
                                         sizeof(net_socket->remote_port), "%s",
-                                        port)) {
+                                        port) < 0) {
                     LOG(WARNING, "Port %s is too long, not storing", port);
                     net_socket->remote_hostname[0] = '\0';
                 }
@@ -1519,7 +1523,7 @@ static int find_interface(const struct sockaddr *addr,
         if ((TriedAddr) && (TriedName) \
                 && ifaddr_ip_equal(addr, (TriedAddr)) == 0) { \
             retval = avs_simple_snprintf(*if_name, sizeof(*if_name), \
-                                         "%s", (TriedName)); \
+                                         "%s", (TriedName)) < 0 ? -1 : 0; \
             goto interface_name_end; \
         } \
     } while (0)
