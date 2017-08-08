@@ -46,7 +46,7 @@ static inline bool avs_is_power_of_2(size_t value) {
  * Wrapper around snprintf(), which always return a negative in case of
  * an error (which is the only thing differentiating it from snprintf()).
  *
- * @returns 0 on success, negative value on error.
+ * @returns number of bytes written on success, negative value on error.
  */
 int avs_simple_snprintf(char *out, size_t out_size, const char *format, ...)
         AVS_F_PRINTF(3, 4);
