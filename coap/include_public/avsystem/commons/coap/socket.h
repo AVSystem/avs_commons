@@ -49,10 +49,6 @@ void avs_coap_socket_cleanup(avs_coap_socket_t **sock);
  *   for the socket
  * - AVS_COAP_SOCKET_ERR_NETWORK in case of other error on a layer below the
  *   application layer
- * - AVS_COAP_SOCKET_ERR_DUPLICATE in case duplicate request was received
- *   and then handled by response cache
- * - AVS_COAP_SOCKET_ERR_MSG_WAS_PING in case a ping was received and then
- *   handled by the socket layer
  */
 int avs_coap_socket_send(avs_coap_socket_t *sock, const avs_coap_msg_t *msg);
 
@@ -66,6 +62,10 @@ int avs_coap_socket_send(avs_coap_socket_t *sock, const avs_coap_msg_t *msg);
  *   the packet in its entirety
  * - AVS_COAP_SOCKET_ERR_NETWORK in case of other error on a layer below the
  *   application layer
+ * - AVS_COAP_SOCKET_ERR_DUPLICATE in case duplicate request was received
+ *   and then handled by response cache
+ * - AVS_COAP_SOCKET_ERR_MSG_WAS_PING in case a ping was received and then
+ *   handled by the socket layer
  **/
 int avs_coap_socket_recv(avs_coap_socket_t *sock,
                          avs_coap_msg_t *out_msg,
