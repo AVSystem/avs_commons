@@ -22,11 +22,19 @@
 
 #include <avsystem/commons/utils.h>
 
-int avs_simple_snprintf(char *out, size_t out_size, const char *format, ...) {
+int avs_simple_vsnprintf(char *out,
+                         size_t out_size,
+                         const char *format,
+                         va_list args) {
     assert(out || !out_size);
+    int result = vsnprintf(out, out_size, format, args);
+    return (result < 0 || (size_t) result >= out_size) ? -1 : result;
+}
+
+int avs_simple_snprintf(char *out, size_t out_size, const char *format, ...) {
     va_list args;
     va_start(args, format);
-    int result = vsnprintf(out, out_size, format, args);
+    int result = avs_simple_vsnprintf(out, out_size, format, args);
     va_end(args);
-    return (result < 0 || (size_t) result >= out_size) ? -1 : result;
+    return result;
 }
