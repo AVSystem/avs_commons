@@ -18,6 +18,7 @@
 
 #include <stdio.h>
 #include <assert.h>
+#include <stdarg.h>
 
 #include <avsystem/commons/utils.h>
 
