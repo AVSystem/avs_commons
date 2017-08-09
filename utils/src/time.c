@@ -26,9 +26,18 @@
 
 #define NS_IN_S (1L * 1000L * 1000L * 1000L)
 
+const struct timespec AVS_TIME_INVALID = {
+    .tv_sec = 0,
+    .tv_nsec = -1
+};
+
 bool avs_time_before(const struct timespec *a, const struct timespec *b) {
-    return (a->tv_sec < b->tv_sec)
-            || (a->tv_sec == b->tv_sec && a->tv_nsec < b->tv_nsec);
+    if (!avs_time_is_valid(a) || !avs_time_is_valid(b)) {
+        return false;
+    } else {
+        return (a->tv_sec < b->tv_sec)
+                || (a->tv_sec == b->tv_sec && a->tv_nsec < b->tv_nsec);
+    }
 }
 
 bool avs_time_is_valid(const struct timespec *t) {
@@ -46,32 +55,49 @@ static inline void normalize(struct timespec *inout) {
 }
 
 void avs_time_add(struct timespec *result, const struct timespec *duration) {
-    assert(avs_time_is_valid(duration));
-    assert(avs_time_is_valid(result));
-    result->tv_sec += duration->tv_sec;
-    result->tv_nsec += duration->tv_nsec;
-    normalize(result);
+    if (!avs_time_is_valid(result)) {
+        return;
+    } else if (!avs_time_is_valid(duration)) {
+        *result = AVS_TIME_INVALID;
+    } else {
+        result->tv_sec += duration->tv_sec;
+        result->tv_nsec += duration->tv_nsec;
+        normalize(result);
 
-    assert(avs_time_is_valid(result));
+        assert(avs_time_is_valid(result));
+    }
 }
 
 void avs_time_diff(struct timespec *result,
                    const struct timespec *minuend,
                    const struct timespec *subtrahend) {
-    assert(avs_time_is_valid(minuend));
-    assert(avs_time_is_valid(subtrahend));
-    result->tv_sec = minuend->tv_sec - subtrahend->tv_sec;
-    result->tv_nsec = minuend->tv_nsec - subtrahend->tv_nsec;
-    normalize(result);
+    if (!avs_time_is_valid(minuend) || !avs_time_is_valid(subtrahend)) {
+        *result = AVS_TIME_INVALID;
+    } else {
+        result->tv_sec = minuend->tv_sec - subtrahend->tv_sec;
+        result->tv_nsec = minuend->tv_nsec - subtrahend->tv_nsec;
+        normalize(result);
 
-    assert(avs_time_is_valid(result));
+        assert(avs_time_is_valid(result));
+    }
 }
 
-ssize_t avs_time_diff_ms(const struct timespec *minuend,
-                         const struct timespec *subtrahend) {
+int avs_time_to_ms(ssize_t *out_ms, const struct timespec *value) {
+    if (!avs_time_is_valid(value)) {
+        return -1;
+    } else {
+        *out_ms = (ssize_t)
+                (value->tv_sec * 1000L + value->tv_nsec / (1000L * 1000L));
+        return 0;
+    }
+}
+
+int avs_time_diff_ms(ssize_t *out_ms,
+                     const struct timespec *minuend,
+                     const struct timespec *subtrahend) {
     struct timespec diff;
     avs_time_diff(&diff, minuend, subtrahend);
-    return (ssize_t)(diff.tv_sec * 1000L + diff.tv_nsec / (1000L * 1000L));
+    return avs_time_to_ms(out_ms, &diff);
 }
 
 void avs_time_from_ms(struct timespec *result, int32_t ms) {
@@ -98,16 +124,19 @@ void avs_time_add_ms(struct timespec *result, int32_t ms) {
 void avs_time_div(struct timespec *result,
                   const struct timespec *dividend,
                   uint32_t divisor) {
-    assert(avs_time_is_valid(dividend));
-    time_t s_rest = (time_t)(dividend->tv_sec % (int64_t) divisor);
-    result->tv_sec = (time_t)(dividend->tv_sec / (int64_t) divisor);
-    result->tv_nsec = (long)(((double)dividend->tv_nsec
-                                + (double)s_rest * NS_IN_S)
-                             / divisor);
+    if (!avs_time_is_valid(dividend) || divisor == 0) {
+        *result = AVS_TIME_INVALID;
+    } else {
+        time_t s_rest = (time_t)(dividend->tv_sec % (int64_t) divisor);
+        result->tv_sec = (time_t)(dividend->tv_sec / (int64_t) divisor);
+        result->tv_nsec = (long)(((double)dividend->tv_nsec
+                                    + (double)s_rest * NS_IN_S)
+                                 / divisor);
 
-    normalize(result);
+        normalize(result);
 
-    assert(avs_time_is_valid(result));
+        assert(avs_time_is_valid(result));
+    }
 }
 
 #ifdef AVS_UNIT_TESTING

@@ -27,14 +27,18 @@ extern "C" {
 
 struct timespec;
 
+extern const struct timespec AVS_TIME_INVALID;
+
 bool avs_time_before(const struct timespec *a, const struct timespec *b);
 bool avs_time_is_valid(const struct timespec *t);
 void avs_time_add(struct timespec *result, const struct timespec *duration);
 void avs_time_diff(struct timespec *result,
                    const struct timespec *minuend,
                    const struct timespec *subtrahend);
-ssize_t avs_time_diff_ms(const struct timespec *minuend,
-                         const struct timespec *subtrahend);
+int avs_time_to_ms(ssize_t *out_ms, const struct timespec *value);
+int avs_time_diff_ms(ssize_t *out_ms,
+                     const struct timespec *minuend,
+                     const struct timespec *subtrahend);
 void avs_time_from_ms(struct timespec *result, int32_t ms);
 void avs_time_from_s(struct timespec *result, time_t s);
 void avs_time_add_ms(struct timespec *result, int32_t ms);
