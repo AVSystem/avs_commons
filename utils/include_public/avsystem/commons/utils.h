@@ -19,6 +19,7 @@
 
 #include <avsystem/commons/defs.h>
 
+#include <stdarg.h>
 #include <stdbool.h>
 
 #ifdef	__cplusplus
@@ -41,6 +42,17 @@ int avs_rand_r(unsigned int *seed);
 static inline bool avs_is_power_of_2(size_t value) {
     return value > 0 && !(value & (value - 1));
 }
+
+/**
+ * Wrapper around vsnprintf(), which always return a negative in case of
+ * an error (which is the only thing differentiating it from vsnprintf()).
+ *
+ * @returns number of bytes written on success, negative value on error.
+ */
+int avs_simple_vsnprintf(char *out,
+                         size_t out_size,
+                         const char *format,
+                         va_list args) AVS_F_PRINTF(3, 0);
 
 /**
  * Wrapper around snprintf(), which always return a negative in case of
