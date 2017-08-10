@@ -26,35 +26,67 @@
 extern "C" {
 #endif
 
+/** Internal helper object used to store a buffer and its capacity. */
 typedef struct avs_coap_msg_buffer {
     avs_coap_msg_t *msg;
     size_t capacity;
 } avs_coap_msg_buffer_t;
 
+/**
+ * Builder object used to construct a single CoAP packet.
+ *
+ * Its fields should not be modified directly. Use <c>avs_coap_msg_builder_*</c>
+ * functions instead.
+ */
 typedef struct avs_coap_msg_builder {
     bool has_payload_marker;
     avs_coap_msg_buffer_t msg_buffer;
 } avs_coap_msg_builder_t;
 
+/**
+ * Internal use only.
+ *
+ * Initializes a dummy @ref avs_coap_msg_builder_t object with no buffer for
+ * the constructed message.
+ */
 #define AVS_COAP_MSG_BUILDER_UNINITIALIZED \
     ((avs_coap_msg_builder_t){ \
         .has_payload_marker = false, \
         .msg_buffer = { .msg = NULL, .capacity = 0 } \
     })
 
+/**
+ * @returns true if the builder object is backed by some non-NULL buffer,
+ *          false otherwise.
+ */
 static inline bool
 avs_coap_msg_builder_is_initialized(avs_coap_msg_builder_t *builder) {
     return builder->msg_buffer.msg != NULL;
 }
 
+/**
+ * @return true if any payload has already been fed to the @p builder ,
+ *         false otherwise.
+ */
 static inline bool
 avs_coap_msg_builder_has_payload(avs_coap_msg_builder_t *builder) {
     return builder->has_payload_marker;
 }
 
-/* the struct itself is not defined, as the pointer is never defererenced */
+/**
+ * Internal helper function for ensuring correct alignment
+ * of the message buffer.
+ *
+ * The struct itself is not defined, as the pointer is never defererenced.
+ */
 typedef struct avs_coap_aligned_msg_buffer avs_coap_aligned_msg_buffer_t;
 
+/**
+ * Ensures @p buffer is appropriately aligned for use with
+ * @ref avs_coap_msg_builder_t .
+ *
+ * @returns @p buffer cast to @ref avs_coap_aligned_msg_buffer_t .
+ */
 static inline avs_coap_aligned_msg_buffer_t *
 avs_coap_ensure_aligned_buffer(void *buffer) {
     assert((uintptr_t)buffer % AVS_ALIGNOF(avs_coap_msg_t) == 0
@@ -81,8 +113,6 @@ int avs_coap_msg_builder_init(avs_coap_msg_builder_t *builder,
                               avs_coap_aligned_msg_buffer_t *buffer,
                               size_t buffer_size_bytes,
                               const avs_coap_msg_info_t *info);
-
-#define AVS_COAP_BLOCK_MAX_SEQ_NUMBER 0xFFFFF
 
 /**
  * Initializes a @p builder with message headers stored in @p header. Resets any

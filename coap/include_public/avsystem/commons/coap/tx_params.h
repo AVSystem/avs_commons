@@ -30,6 +30,7 @@
 extern "C" {
 #endif
 
+/** CoAP transmission params object. */
 typedef struct {
     /** RFC 7252: ACK_TIMEOUT */
     avs_net_timeout_t ack_timeout_ms;
@@ -39,29 +40,68 @@ typedef struct {
     unsigned max_retransmit;
 } avs_coap_tx_params_t;
 
+/**
+ * @param[in]  tx_params     Transmission parameters to check.
+ * @param[out] error_details If not NULL, <c>*error_details</c> is set to
+ *                           a string describing what part of @p tx_params
+ *                           is invalid, or to NULL if @p tx_params are valid.
+ *
+ * @returns true if @p tx_params are valid according to RFC7252,
+ *          false otherwise.
+ */
 bool avs_coap_tx_params_valid(const avs_coap_tx_params_t *tx_params,
                               const char **error_details);
 
+/**
+ * @returns MAX_TRANSMIT_WAIT value in milliseconds derived from @p tx_params
+ *          according to the formula specified in RFC7252.
+ */
 int32_t avs_coap_max_transmit_wait_ms(const avs_coap_tx_params_t *tx_params);
 
+/**
+ * @returns EXCHANGE_LIFETIME value in milliseconds derived from @p tx_params
+ *          according to the formula specified in RFC7252.
+ */
 int32_t avs_coap_exchange_lifetime_ms(const avs_coap_tx_params_t *tx_params);
 
+/**
+ * @returns EXCHANGE_LIFETIME value derived from @p tx_params according
+ *          to the formula specified in RFC7252.
+ */
 struct timespec
 avs_coap_exchange_lifetime(const avs_coap_tx_params_t *tx_params);
 
+/**
+ * @returns MAX_TRANSMIT_SPAN value in milliseconds derived from @p tx_params
+ *          according to the formula specified in RFC7252.
+ */
 int32_t avs_coap_max_transmit_span_ms(const avs_coap_tx_params_t *tx_params);
 
+/**
+ * @returns MAX_TRANSMIT_SPAN value derived from @p tx_params according
+ *          to the formula specified in RFC7252.
+ */
 struct timespec
 avs_coap_max_transmit_span(const avs_coap_tx_params_t *tx_params);
 
 /** Maximum time the client can wait for a Separate Response */
 #define AVS_COAP_SEPARATE_RESPONSE_TIMEOUT_MS (30 * 1000)
 
+/** Retry state object used to calculate retransmission timeouts. */
 typedef struct {
     unsigned retry_count;
     int32_t recv_timeout_ms;
 } avs_coap_retry_state_t;
 
+/**
+ * Updates @p retry_state and calculates next retransmission timeout that
+ * should be used according to @p tx_params .
+ *
+ * @param[inout] retry_state Retry state to update.
+ * @param[in]    tx_params   CoAP transmission parameters.
+ * @param[inout] rand_seed   Random seed to use for deriving a random factor
+ *                           of the retransmission state.
+ */
 void avs_coap_update_retry_state(avs_coap_retry_state_t *retry_state,
                                  const avs_coap_tx_params_t *tx_params,
                                  unsigned *rand_seed);

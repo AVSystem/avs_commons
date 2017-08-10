@@ -28,8 +28,10 @@
 extern "C" {
 #endif
 
+/** Internal, opaque struct that holds a single CoAP option. */
 typedef struct avs_coap_msg_info_opt avs_coap_msg_info_opt_t;
 
+/** Unserialized form of CoAP message header + token + options. */
 typedef struct avs_coap_msg_info {
     avs_coap_msg_type_t type;
     uint8_t code;
@@ -170,7 +172,7 @@ int avs_coap_msg_info_opt_string(avs_coap_msg_info_t *info,
  */
 int avs_coap_msg_info_opt_empty(avs_coap_msg_info_t *info, uint16_t opt_number);
 
-/**
+/** @{
  * Functions below add an arbitrary CoAP option with an integer value. The value
  * is encoded in the most compact way available, so e.g. for @p value equal to 0
  * the option has no payload when added using any of them.
@@ -193,6 +195,8 @@ static inline int avs_coap_msg_info_opt_u32(avs_coap_msg_info_t *info,
                                             uint32_t value) {
     return avs_coap_msg_info_opt_uint(info, opt_number, &value, sizeof(value));
 }
+
+/** @} */
 
 #ifdef __cplusplus
 }

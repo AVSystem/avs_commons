@@ -84,11 +84,11 @@ int avs_coap_msg_get_option_string_it(const avs_coap_msg_t *msg,
     for (; !avs_coap_opt_end(it); avs_coap_opt_next(it)) {
         if (avs_coap_opt_number(it) == option_number) {
             return avs_coap_opt_string_value(it->curr_opt, out_bytes_read,
-                                                buffer, buffer_size);
+                                             buffer, buffer_size);
         }
     }
 
-    return 1;
+    return AVS_COAP_OPTION_MISSING;
 }
 
 int avs_coap_msg_get_content_format(const avs_coap_msg_t *msg,

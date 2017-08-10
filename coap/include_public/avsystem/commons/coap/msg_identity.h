@@ -23,14 +23,21 @@
 extern "C" {
 #endif
 
+/** Maximum size, in bytes, of a CoAP token allowed by RFC7252. */
 #define AVS_COAP_MAX_TOKEN_LENGTH 8
 
+/** CoAP token object. */
 typedef struct {
     char bytes[AVS_COAP_MAX_TOKEN_LENGTH];
 } avs_coap_token_t;
 
+/** All-zeros CoAP token initializer. */
 #define AVS_COAP_TOKEN_EMPTY ((avs_coap_token_t){{0}})
 
+/**
+ * @returns true if @p first and @p second CoAP tokens are equal,
+ *          false otherwise.
+ */
 static inline bool avs_coap_token_equal(const avs_coap_token_t *first,
                                         size_t first_size,
                                         const avs_coap_token_t *second,
@@ -39,14 +46,19 @@ static inline bool avs_coap_token_equal(const avs_coap_token_t *first,
                && !memcmp(first->bytes, second->bytes, first_size);
 }
 
+/** A struct combining CoAP message ID and its token. */
 typedef struct avs_coap_msg_identity {
     uint16_t msg_id;
     avs_coap_token_t token;
     size_t token_size;
 } avs_coap_msg_identity_t;
 
+/** All-zeros message identity initializer. */
 #define AVS_COAP_MSG_IDENTITY_EMPTY ((avs_coap_msg_identity_t){0,{{0}},0})
 
+/**
+ * @returns true if @p a and @p b message identities are equal, false otherwise.
+ */
 static inline bool avs_coap_identity_equal(const avs_coap_msg_identity_t *a,
                                            const avs_coap_msg_identity_t *b) {
     return a->msg_id == b->msg_id

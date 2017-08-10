@@ -25,6 +25,10 @@
 extern "C" {
 #endif
 
+/**
+ * A builder object used to split a stream of data into multiple CoAP BLOCK
+ * messages.
+ */
 typedef struct avs_coap_block_builder {
     void *payload_buffer;
     size_t payload_capacity;

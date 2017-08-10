@@ -22,39 +22,6 @@
 #include <avsystem/commons/time.h>
 #include <avsystem/commons/utils.h>
 
-#if AVS_RAND_MAX >= UINT32_MAX
-#define RAND32_ITERATIONS 1
-#elif AVS_RAND_MAX >= UINT16_MAX
-#define RAND32_ITERATIONS 2
-#else
-/* standard guarantees RAND_MAX to be at least 32767 */
-#define RAND32_ITERATIONS 3
-#endif
-
-static uint32_t rand32(unsigned *seed) {
-    uint32_t result = 0;
-    int i;
-    for (i = 0; i < RAND32_ITERATIONS; ++i) {
-        result *= (uint32_t) AVS_RAND_MAX + 1;
-        result += (uint32_t) avs_rand_r(seed);
-    }
-    return result;
-}
-
-void avs_coap_update_retry_state(avs_coap_retry_state_t *retry_state,
-                                 const avs_coap_tx_params_t *tx_params,
-                                 unsigned *rand_seed) {
-    ++retry_state->retry_count;
-    if (retry_state->retry_count == 1) {
-        uint32_t delta = (uint32_t) (tx_params->ack_timeout_ms *
-                (tx_params->ack_random_factor - 1.0));
-        retry_state->recv_timeout_ms = tx_params->ack_timeout_ms +
-                (int32_t) (rand32(rand_seed) % delta);
-    } else {
-        retry_state->recv_timeout_ms *= 2;
-    }
-}
-
 bool avs_coap_tx_params_valid(const avs_coap_tx_params_t *tx_params,
                               const char **error_details) {
     // ACK_TIMEOUT below 1 second would violate the guidelines of [RFC5405].
@@ -117,3 +84,35 @@ avs_coap_max_transmit_span(const avs_coap_tx_params_t *tx_params) {
     return result;
 }
 
+#if AVS_RAND_MAX >= UINT32_MAX
+#define RAND32_ITERATIONS 1
+#elif AVS_RAND_MAX >= UINT16_MAX
+#define RAND32_ITERATIONS 2
+#else
+/* standard guarantees RAND_MAX to be at least 32767 */
+#define RAND32_ITERATIONS 3
+#endif
+
+static uint32_t rand32(unsigned *seed) {
+    uint32_t result = 0;
+    int i;
+    for (i = 0; i < RAND32_ITERATIONS; ++i) {
+        result *= (uint32_t) AVS_RAND_MAX + 1;
+        result += (uint32_t) avs_rand_r(seed);
+    }
+    return result;
+}
+
+void avs_coap_update_retry_state(avs_coap_retry_state_t *retry_state,
+                                 const avs_coap_tx_params_t *tx_params,
+                                 unsigned *rand_seed) {
+    ++retry_state->retry_count;
+    if (retry_state->retry_count == 1) {
+        uint32_t delta = (uint32_t) (tx_params->ack_timeout_ms *
+                (tx_params->ack_random_factor - 1.0));
+        retry_state->recv_timeout_ms = tx_params->ack_timeout_ms +
+                (int32_t) (rand32(rand_seed) % delta);
+    } else {
+        retry_state->recv_timeout_ms *= 2;
+    }
+}

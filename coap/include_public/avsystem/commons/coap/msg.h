@@ -29,10 +29,16 @@
 extern "C" {
 #endif
 
+/**
+ * Magic value defined in RFC7252, used internally when constructing/parsing
+ * CoAP packets.
+ */
 #define AVS_COAP_PAYLOAD_MARKER ((uint8_t) 0xFF)
 
+/** Miminum size, in bytes, of a correct CoAP message. */
 #define AVS_COAP_MSG_MIN_SIZE ((unsigned) sizeof(avs_coap_msg_header_t))
 
+/** CoAP message type, as defined in RFC7252. */
 typedef enum avs_coap_msg_type {
     AVS_COAP_MSG_CONFIRMABLE,
     AVS_COAP_MSG_NON_CONFIRMABLE,
@@ -43,6 +49,9 @@ typedef enum avs_coap_msg_type {
     _AVS_COAP_MSG_LAST = AVS_COAP_MSG_RESET
 } avs_coap_msg_type_t;
 
+/** @{
+ * Internal macros used for constructing/parsing CoAP codes.
+ */
 #define AVS_COAP_CODE_CLASS_MASK 0xE0
 #define AVS_COAP_CODE_CLASS_SHIFT 5
 #define AVS_COAP_CODE_DETAIL_MASK 0x1F
@@ -53,7 +62,13 @@ typedef enum avs_coap_msg_type {
       & AVS_COAP_CODE_CLASS_MASK) \
      | (((detail) << AVS_COAP_CODE_DETAIL_SHIFT) \
         & AVS_COAP_CODE_DETAIL_MASK))
+/** @} */
 
+/** @{
+ * CoAP code constants, as defined in RFC7252/RFC7959.
+ *
+ * For detailed description of their semantics, refer to appropriate RFCs.
+ */
 #define AVS_COAP_CODE_EMPTY  AVS_COAP_CODE(0, 0)
 
 #define AVS_COAP_CODE_GET    AVS_COAP_CODE(0, 1)
@@ -86,41 +101,79 @@ typedef enum avs_coap_msg_type {
 #define AVS_COAP_CODE_SERVICE_UNAVAILABLE    AVS_COAP_CODE(5, 3)
 #define AVS_COAP_CODE_GATEWAY_TIMEOUT        AVS_COAP_CODE(5, 4)
 #define AVS_COAP_CODE_PROXYING_NOT_SUPPORTED AVS_COAP_CODE(5, 5)
+/** @} */
 
+/**
+ * Converts CoAP code to a human-readable form.
+ *
+ * @param code     CoAP code to convert.
+ * @param buf      Buffer to store the code string in.
+ * @param buf_size @p buf capacity, in bytes.
+ *
+ * @returns @p buf on success, a pointer to a implementation-defined constant
+ *          string if @p code is unknown or @p buf is too small.
+ */
 const char *
 avs_coap_msg_code_to_string(uint8_t code, char *buf, size_t buf_size);
 
+/**
+ * Convenience macro that calls @ref avs_coap_msg_code_to_string with
+ * a stack-allocated buffer big enough to store any CoAP code string.
+ */
 #define AVS_COAP_CODE_STRING(Code) \
         avs_coap_msg_code_to_string((Code), &(char[32]){0}[0], 32)
 
-uint8_t avs_coap_msg_code_get_class(const uint8_t *code);
+/** @{
+ * CoAP code class/detail accessors. See RFC7252 for details.
+ */
+uint8_t avs_coap_msg_code_get_class(uint8_t code);
 void avs_coap_msg_code_set_class(uint8_t *code, uint8_t cls);
-uint8_t avs_coap_msg_code_get_detail(const uint8_t *code);
+uint8_t avs_coap_msg_code_get_detail(uint8_t code);
 void avs_coap_msg_code_set_detail(uint8_t *code, uint8_t detail);
+/** @} */
 
+/**
+ * @returns true if @p code belongs to a "client error" code class,
+ *          false otherwise.
+ */
 static inline bool avs_coap_msg_code_is_client_error(uint8_t code) {
-    return avs_coap_msg_code_get_class(&code) == 4;
+    return avs_coap_msg_code_get_class(code) == 4;
 }
 
+/**
+ * @returns true if @p code belongs to a "server error" code class,
+ *          false otherwise.
+ */
 static inline bool avs_coap_msg_code_is_server_error(uint8_t code) {
-    return avs_coap_msg_code_get_class(&code) == 5;
+    return avs_coap_msg_code_get_class(code) == 5;
 }
 
+/**
+ * @returns true if @p code represents a request, false otherwise.
+ *          Note: Empty (0.00) is NOT considered a request. See RFC7252
+ *          for details.
+ */
 static inline bool avs_coap_msg_code_is_request(uint8_t code) {
-    return avs_coap_msg_code_get_class(&code) == 0
-            && avs_coap_msg_code_get_detail(&code) > 0;
+    return avs_coap_msg_code_get_class(code) == 0
+            && avs_coap_msg_code_get_detail(code) > 0;
 }
 
+/** @returns true if @p code represents a response, false otherwise. */
 static inline bool avs_coap_msg_code_is_response(uint8_t code) {
-    return avs_coap_msg_code_get_class(&code) > 0;
+    return avs_coap_msg_code_get_class(code) > 0;
 }
 
+/** Serialized CoAP message header. For internal use only. */
 typedef struct avs_coap_msg_header {
     uint8_t version_type_token_length;
     uint8_t code;
     uint8_t message_id[2];
 } avs_coap_msg_header_t;
 
+/** @{
+ * Sanity checks that ensure no padding is inserted anywhere inside
+ * @ref avs_coap_msg_header_t .
+ */
 AVS_STATIC_ASSERT(offsetof(avs_coap_msg_header_t, version_type_token_length) == 0,
                   vttl_field_is_at_start_of_msg_header_t);
 AVS_STATIC_ASSERT(offsetof(avs_coap_msg_header_t, code) == 1,
@@ -129,33 +182,68 @@ AVS_STATIC_ASSERT(offsetof(avs_coap_msg_header_t, message_id) == 2,
                   no_padding_before_message_id_field_of_msg_header_t);
 AVS_STATIC_ASSERT(sizeof(avs_coap_msg_header_t) == 4,
                   no_padding_in_msg_header_t);
+/** @} */
 
+/** @{
+ * Internal macros used for retrieving CoAP message type from
+ * @ref avs_coap_msg_header_t .
+ */
 #define AVS_COAP_HEADER_TYPE_MASK 0x30
 #define AVS_COAP_HEADER_TYPE_SHIFT 4
+/** @} */
 
+/** @returns CoAP message type encoded in @p hdr . */
 avs_coap_msg_type_t
 avs_coap_msg_header_get_type(const avs_coap_msg_header_t *hdr);
 
+/** Sets CoAP message type of @p hdr to @p type . */
 void avs_coap_msg_header_set_type(avs_coap_msg_header_t *hdr,
                                   avs_coap_msg_type_t type);
 
+/** @returns Length, in bytes, of the CoAP message token encoded in @p hdr. */
+uint8_t avs_coap_msg_header_get_token_length(const avs_coap_msg_header_t *hdr);
+
+/** CoAP message object. */
 typedef struct avs_coap_msg {
+    /**
+     * Length of the whole message (header + content). Does not include the
+     * length field itself.
+     */
     uint32_t length; // whole message (header + content)
+
+    /** CoAP message header. */
     avs_coap_msg_header_t header;
-    uint8_t content[1]; // actually a FAM; token + opts + payload
+
+    /**
+     * Not really a single-element array, but a FAM; rest of the CoAP
+     * message: token + options + payload.
+     */
+    uint8_t content[1];
 } avs_coap_msg_t;
 
+/** @{
+ * Sanity checks ensuring no padding is inserted in @ref avs_coap_msg_t .
+ */
 AVS_STATIC_ASSERT(offsetof(avs_coap_msg_t, header) == 4,
                   no_padding_before_header_field_of_msg_t);
 AVS_STATIC_ASSERT(offsetof(avs_coap_msg_t, content) == 8,
                   no_padding_before_content_field_of_msg_t);
+/** @} */
 
+/**
+ * Iterator object used to access CoAP message options.
+ *
+ * Its fields should not be modified directly after initialization.
+ * Use @ref avs_coap_opt_begin , @ref avs_coap_opt_next and
+ * @ref avs_coap_opt_end instead.
+ */
 typedef struct {
     const avs_coap_msg_t *const msg;
     const avs_coap_opt_t *curr_opt;
     uint32_t prev_opt_number;
 } avs_coap_opt_iterator_t;
 
+/** Empty iterator object initializer. */
 #define AVS_COAP_OPT_ITERATOR_EMPTY \
     (avs_coap_opt_iterator_t) { \
         NULL, NULL, 0 \
@@ -206,6 +294,10 @@ avs_coap_msg_get_identity(const avs_coap_msg_t *msg) {
     return id;
 }
 
+/**
+ * @returns true if CoAP token of @p msg matches one from @p id ,
+ *          false otherwise.
+ */
 static inline bool
 avs_coap_msg_token_matches(const avs_coap_msg_t *msg,
                            const avs_coap_msg_identity_t *id) {
@@ -289,10 +381,12 @@ void avs_coap_msg_debug_print(const avs_coap_msg_t *msg);
 const char *
 avs_coap_msg_summary(const avs_coap_msg_t *msg, char *buf, size_t buf_size);
 
+/**
+ * Convenience macro that calls @ref avs_coap_msg_summary with
+ * a stack-allocated buffer big enough to store any summary.
+ */
 #define AVS_COAP_MSG_SUMMARY(Msg) \
         avs_coap_msg_summary((Msg), &(char[256]){0}[0], 256)
-
-uint8_t avs_coap_msg_header_get_token_length(const avs_coap_msg_header_t *hdr);
 
 #ifdef __cplusplus
 }
