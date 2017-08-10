@@ -42,3 +42,7 @@ int avs_match_token(const char **stream, const char *token,
     }
     return result;
 }
+
+#ifdef AVS_UNIT_TESTING
+#include "test/token.c"
+#endif // AVS_UNIT_TESTING
