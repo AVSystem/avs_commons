@@ -45,7 +45,7 @@ static struct timespec MOCK_CLOCK = { 0, 0 };
 static void clock_advance(const struct timespec *t) {
     AVS_UNIT_ASSERT_TRUE(avs_time_is_valid(&MOCK_CLOCK));
     AVS_UNIT_ASSERT_TRUE(avs_time_is_valid(t));
-    avs_time_add(&MOCK_CLOCK, t);
+    MOCK_CLOCK = avs_time_add(&MOCK_CLOCK, t);
 }
 
 /**
@@ -55,7 +55,7 @@ static void clock_advance(const struct timespec *t) {
 int clock_gettime(clockid_t clock, struct timespec *t) {
     (void) clock;
     *t = MOCK_CLOCK;
-    avs_time_add(&MOCK_CLOCK, &(const struct timespec) { 0, 1 });
+    MOCK_CLOCK = avs_time_add(&MOCK_CLOCK, &(const struct timespec) { 0, 1 });
     return 0;
 }
 

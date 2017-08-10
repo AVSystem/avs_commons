@@ -48,25 +48,25 @@ bool avs_time_before(const struct timespec *a, const struct timespec *b);
 bool avs_time_is_valid(const struct timespec *t);
 
 /**
- * Adds one time value into another, much like the <c>+=</c> operator.
+ * Adds one time value into another.
  *
- * Note that if for any of the terms @ref avs_time_is_valid returns false, the
- * result will be an invalid time value as well.
+ * @param a The first time value to add.
+ * @param b The second time value to add.
  *
- * @param result   Pointer to one of the terms on input, that the result will be
- *                 stored in on output.
- * @param duration Pointer to the other term.
+ * @return Sum value, or an invalid time value if any of the terms is an invalid
+ *         time value.
  */
-void avs_time_add(struct timespec *result, const struct timespec *duration);
+struct timespec avs_time_add(const struct timespec *a,
+                             const struct timespec *b);
 
 /**
  * Subtracts one time value from another, calculating the difference.
  *
- * Note that if for any of the input arguments @ref avs_time_is_valid returns
- * false, the result will be an invalid time value as well.
- *
  * @param minuend    The value to subtract from.
  * @param subtrahend The duration to subtract.
+ *
+ * @return Difference value, or an invalid time value if any of the input
+ *         arguments is an invalid time value.
  */
 struct timespec avs_time_diff(const struct timespec *minuend,
                               const struct timespec *subtrahend);
@@ -112,15 +112,15 @@ struct timespec avs_time_from_ms(int32_t ms);
 struct timespec avs_time_from_s(time_t s);
 
 /**
- * Increases a <c>timespec</c> value by a specified count of milliseconds.
+ * Add a specified count of milliseconds to a <c>timespec</c> value.
  *
- * Addition will not be performed if <c>result</c> is not a valid time value.
+ * @param value The time value to add to.
+ * @param ms    Number of milliseconds to add.
  *
- * @param result Pointer to the variable that holds the initial value and the
- *               result will be stored in.
- * @param ms     Number of milliseconds to add.
+ * @return Sum value, or an invalid time value if the <c>value</c> argument is
+ *         an invalid time value.
  */
-void avs_time_add_ms(struct timespec *result, int32_t ms);
+struct timespec avs_time_add_ms(const struct timespec *value, int32_t ms);
 
 /**
  * Creates a time value that is an integer fraction of another.

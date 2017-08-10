@@ -323,10 +323,9 @@ int _avs_coap_msg_cache_add(coap_msg_cache_t *cache,
 
     cache_free_bytes(cache, cap_req);
 
-    struct timespec expiration_time = now;
     const struct timespec exchange_lifetime =
             avs_coap_exchange_lifetime(tx_params);
-    avs_time_add(&expiration_time, &exchange_lifetime);
+    struct timespec expiration_time = avs_time_add(&now, &exchange_lifetime);
 
     cache_put_entry(cache, &expiration_time, ep, msg);
     return 0;

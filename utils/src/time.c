@@ -54,17 +54,19 @@ static inline void normalize(struct timespec *inout) {
     }
 }
 
-void avs_time_add(struct timespec *result, const struct timespec *duration) {
-    if (!avs_time_is_valid(result)) {
-        return;
-    } else if (!avs_time_is_valid(duration)) {
-        *result = AVS_TIME_INVALID;
+struct timespec avs_time_add(const struct timespec *a,
+                             const struct timespec *b) {
+    if (!avs_time_is_valid(a) || !avs_time_is_valid(b)) {
+        return AVS_TIME_INVALID;
     } else {
-        result->tv_sec += duration->tv_sec;
-        result->tv_nsec += duration->tv_nsec;
-        normalize(result);
+        struct timespec result = {
+            .tv_sec = a->tv_sec + b->tv_sec,
+            .tv_nsec = a->tv_nsec + b->tv_nsec
+        };
+        normalize(&result);
 
-        assert(avs_time_is_valid(result));
+        assert(avs_time_is_valid(&result));
+        return result;
     }
 }
 
@@ -120,11 +122,9 @@ struct timespec avs_time_from_s(time_t s) {
     return result;
 }
 
-void avs_time_add_ms(struct timespec *result, int32_t ms) {
+struct timespec avs_time_add_ms(const struct timespec *value, int32_t ms) {
     struct timespec duration = avs_time_from_ms(ms);
-    avs_time_add(result, &duration);
-
-    assert(avs_time_is_valid(result));
+    return avs_time_add(value, &duration);
 }
 
 struct timespec avs_time_div(const struct timespec *dividend,

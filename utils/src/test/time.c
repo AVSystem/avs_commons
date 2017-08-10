@@ -34,29 +34,28 @@ AVS_UNIT_TEST(time, time_from_ms) {
 
 AVS_UNIT_TEST(time, add_ms_positive) {
     struct timespec value = { 0, 0 };
-    avs_time_add_ms(&value, 1);
+    value = avs_time_add_ms(&value, 1);
     AVS_UNIT_ASSERT_EQUAL(value.tv_sec, 0);
     AVS_UNIT_ASSERT_EQUAL(1 * 1000 * 1000, value.tv_nsec);
 }
 
 AVS_UNIT_TEST(time, add_ms_negative) {
     struct timespec value = { 0, 1 * 1000 * 1000 };
-    avs_time_add_ms(&value, -1);
+    value = avs_time_add_ms(&value, -1);
     AVS_UNIT_ASSERT_EQUAL(value.tv_sec, 0);
     AVS_UNIT_ASSERT_EQUAL(0, value.tv_nsec);
-
 }
 
 AVS_UNIT_TEST(time, add_ms_positive_overflow) {
     struct timespec value = { 0, 999 * 1000 * 1000 };
-    avs_time_add_ms(&value, 1);
+    value = avs_time_add_ms(&value, 1);
     AVS_UNIT_ASSERT_EQUAL(value.tv_sec, 1);
     AVS_UNIT_ASSERT_EQUAL(0, value.tv_nsec);
 }
 
 AVS_UNIT_TEST(time, add_ms_negative_underflow) {
     struct timespec value = { 0, 0 };
-    avs_time_add_ms(&value, -1);
+    value = avs_time_add_ms(&value, -1);
     AVS_UNIT_ASSERT_EQUAL(value.tv_sec, -1);
     AVS_UNIT_ASSERT_EQUAL(999 * 1000 * 1000, value.tv_nsec);
 }
