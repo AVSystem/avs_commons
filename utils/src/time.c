@@ -68,17 +68,19 @@ void avs_time_add(struct timespec *result, const struct timespec *duration) {
     }
 }
 
-void avs_time_diff(struct timespec *result,
-                   const struct timespec *minuend,
-                   const struct timespec *subtrahend) {
+struct timespec avs_time_diff(const struct timespec *minuend,
+                              const struct timespec *subtrahend) {
     if (!avs_time_is_valid(minuend) || !avs_time_is_valid(subtrahend)) {
-        *result = AVS_TIME_INVALID;
+        return AVS_TIME_INVALID;
     } else {
-        result->tv_sec = minuend->tv_sec - subtrahend->tv_sec;
-        result->tv_nsec = minuend->tv_nsec - subtrahend->tv_nsec;
-        normalize(result);
+        struct timespec result = {
+            .tv_sec = minuend->tv_sec - subtrahend->tv_sec,
+            .tv_nsec = minuend->tv_nsec - subtrahend->tv_nsec
+        };
+        normalize(&result);
 
-        assert(avs_time_is_valid(result));
+        assert(avs_time_is_valid(&result));
+        return result;
     }
 }
 
@@ -95,47 +97,52 @@ int avs_time_to_ms(ssize_t *out_ms, const struct timespec *value) {
 int avs_time_diff_ms(ssize_t *out_ms,
                      const struct timespec *minuend,
                      const struct timespec *subtrahend) {
-    struct timespec diff;
-    avs_time_diff(&diff, minuend, subtrahend);
+    struct timespec diff = avs_time_diff(minuend, subtrahend);
     return avs_time_to_ms(out_ms, &diff);
 }
 
-void avs_time_from_ms(struct timespec *result, int32_t ms) {
-    result->tv_sec = (time_t) (ms / 1000);
-    result->tv_nsec = (ms % 1000) * 1000000L;
-    normalize(result);
+struct timespec avs_time_from_ms(int32_t ms) {
+    struct timespec result = {
+        .tv_sec = (time_t) (ms / 1000),
+        .tv_nsec = (ms % 1000) * 1000000L
+    };
+    normalize(&result);
 
-    assert(avs_time_is_valid(result));
+    assert(avs_time_is_valid(&result));
+    return result;
 }
 
-void avs_time_from_s(struct timespec *result, time_t s) {
-    result->tv_sec = s;
-    result->tv_nsec = 0;
+struct timespec avs_time_from_s(time_t s) {
+    struct timespec result = {
+        .tv_sec = s,
+        .tv_nsec = 0
+    };
+    return result;
 }
 
 void avs_time_add_ms(struct timespec *result, int32_t ms) {
-    struct timespec duration;
-    avs_time_from_ms(&duration, ms);
+    struct timespec duration = avs_time_from_ms(ms);
     avs_time_add(result, &duration);
 
     assert(avs_time_is_valid(result));
 }
 
-void avs_time_div(struct timespec *result,
-                  const struct timespec *dividend,
-                  uint32_t divisor) {
+struct timespec avs_time_div(const struct timespec *dividend,
+                             uint32_t divisor) {
     if (!avs_time_is_valid(dividend) || divisor == 0) {
-        *result = AVS_TIME_INVALID;
+        return AVS_TIME_INVALID;
     } else {
         time_t s_rest = (time_t)(dividend->tv_sec % (int64_t) divisor);
-        result->tv_sec = (time_t)(dividend->tv_sec / (int64_t) divisor);
-        result->tv_nsec = (long)(((double)dividend->tv_nsec
-                                    + (double)s_rest * NS_IN_S)
-                                 / divisor);
+        struct timespec result = {
+            .tv_sec = (time_t)(dividend->tv_sec / (int64_t) divisor),
+            .tv_nsec = (long)(((double)dividend->tv_nsec
+                                 + (double)s_rest * NS_IN_S)
+                              / divisor)
+        };
+        normalize(&result);
 
-        normalize(result);
-
-        assert(avs_time_is_valid(result));
+        assert(avs_time_is_valid(&result));
+        return result;
     }
 }
 

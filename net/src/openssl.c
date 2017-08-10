@@ -328,8 +328,7 @@ static avs_net_timeout_t adjust_receive_timeout(ssl_socket_t *sock) {
     if (sock->next_deadline.tv_sec >= 0) {
         struct timespec now;
         clock_gettime(CLOCK_REALTIME, &now);
-        struct timespec timeout;
-        avs_time_diff(&timeout, &sock->next_deadline, &now);
+        struct timespec timeout = avs_time_diff(&sock->next_deadline, &now);
         avs_net_timeout_t timeout_ms = (avs_net_timeout_t)
                 (timeout.tv_sec * 1000 + timeout.tv_nsec / 1000000);
         if (socket_timeout <= 0 || socket_timeout > timeout_ms) {
@@ -377,12 +376,6 @@ static int avs_bio_gets(BIO *bio, char *buffer, int size) {
 }
 
 #ifdef WITH_DTLS
-static struct timespec timespec_from_ms(avs_net_timeout_t ms) {
-    struct timespec result;
-    avs_time_from_ms(&result, ms);
-    return result;
-}
-
 static int compare_timespec(const struct timespec *left,
                             const struct timespec *right) {
     assert(avs_time_is_valid(left));
@@ -398,7 +391,7 @@ static int compare_timespec(const struct timespec *left,
 
 static int compare_timespec_with_ms(const struct timespec *left,
                                     avs_net_timeout_t right_ms) {
-    struct timespec right = timespec_from_ms(right_ms);
+    struct timespec right = avs_time_from_ms(right_ms);
     return compare_timespec(left, &right);
 }
 #endif // WITH_DTLS
@@ -430,11 +423,11 @@ static long avs_bio_ctrl(BIO *bio, int command, long intarg, void *ptrarg) {
         if (compare_timespec_with_ms(
                 &next_timeout, sock->dtls_handshake_timeouts.min_ms) < 0) {
             next_timeout =
-                    timespec_from_ms(sock->dtls_handshake_timeouts.min_ms);
+                    avs_time_from_ms(sock->dtls_handshake_timeouts.min_ms);
         } else if (compare_timespec_with_ms(
                 &next_timeout, sock->dtls_handshake_timeouts.max_ms) > 0) {
             next_timeout =
-                    timespec_from_ms(sock->dtls_handshake_timeouts.max_ms);
+                    avs_time_from_ms(sock->dtls_handshake_timeouts.max_ms);
         }
         sock->next_deadline.tv_sec = now.tv_sec + next_timeout.tv_sec;
         sock->next_deadline.tv_nsec = now.tv_nsec + next_timeout.tv_nsec;
