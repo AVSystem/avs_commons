@@ -24,10 +24,10 @@
 
 AVS_UNIT_TEST(time, time_from_ms) {
     struct timespec value;
-    avs_time_from_ms(&value, 1234);
+    value = avs_time_from_ms(1234);
     AVS_UNIT_ASSERT_EQUAL(value.tv_sec, 1);
     AVS_UNIT_ASSERT_EQUAL(value.tv_nsec, 234000000L);
-    avs_time_from_ms(&value, -1234);
+    value = avs_time_from_ms(-1234);
     AVS_UNIT_ASSERT_EQUAL(value.tv_sec, -2);
     AVS_UNIT_ASSERT_EQUAL(value.tv_nsec, 766000000L);
 }
@@ -63,56 +63,56 @@ AVS_UNIT_TEST(time, add_ms_negative_underflow) {
 
 AVS_UNIT_TEST(time, div_ns_only) {
     struct timespec value = { 0, 10 };
-    avs_time_div(&value, &value, 2);
+    value = avs_time_div(&value, 2);
     AVS_UNIT_ASSERT_EQUAL(value.tv_sec, 0);
     AVS_UNIT_ASSERT_EQUAL(5, value.tv_nsec);
 }
 
 AVS_UNIT_TEST(time, div) {
     struct timespec value = { 1, 10 };
-    avs_time_div(&value, &value, 2);
+    value = avs_time_div(&value, 2);
     AVS_UNIT_ASSERT_EQUAL(value.tv_sec, 0);
     AVS_UNIT_ASSERT_EQUAL(value.tv_nsec, 500 * 1000 * 1000 + 5);
 }
 
 AVS_UNIT_TEST(time, div_s_rest) {
     struct timespec value = { 3, 500 * 1000 * 1000 };
-    avs_time_div(&value, &value, 2);
+    value = avs_time_div(&value, 2);
     AVS_UNIT_ASSERT_EQUAL(value.tv_sec, 1);
     AVS_UNIT_ASSERT_EQUAL(value.tv_nsec, 750 * 1000 * 1000);
 }
 
 AVS_UNIT_TEST(time, div_big_divisor) {
     struct timespec value = { 1, 0 };
-    avs_time_div(&value, &value, 1 * 1000 * 1000 * 1000);
+    value = avs_time_div(&value, 1 * 1000 * 1000 * 1000);
     AVS_UNIT_ASSERT_EQUAL(value.tv_sec, 0);
     AVS_UNIT_ASSERT_EQUAL(value.tv_nsec, 1);
 }
 
 AVS_UNIT_TEST(time, div_big_seconds) {
     struct timespec value = { 999 * 1000 * 1000, 0 };
-    avs_time_div(&value, &value, 1 * 1000 * 1000 * 1000);
+    value = avs_time_div(&value, 1 * 1000 * 1000 * 1000);
     AVS_UNIT_ASSERT_EQUAL(value.tv_sec, 0);
     AVS_UNIT_ASSERT_EQUAL(value.tv_nsec, 999 * 1000 * 1000);
 }
 
 AVS_UNIT_TEST(time, div_negative) {
     struct timespec value = { -1, 0 };
-    avs_time_div(&value, &value, 2);
+    value = avs_time_div(&value, 2);
     AVS_UNIT_ASSERT_EQUAL(value.tv_sec, -1);
     AVS_UNIT_ASSERT_EQUAL(value.tv_nsec, 500 * 1000 * 1000);
 }
 
 AVS_UNIT_TEST(time, div_negative_ns) {
     struct timespec value = { -1, 500 * 1000 * 1000 };
-    avs_time_div(&value, &value, 2);
+    value = avs_time_div(&value, 2);
     AVS_UNIT_ASSERT_EQUAL(value.tv_sec, -1);
     AVS_UNIT_ASSERT_EQUAL(value.tv_nsec, 750 * 1000 * 1000);
 }
 
 AVS_UNIT_TEST(time, div_big_negative) {
     struct timespec value = { -999 * 1000 * 1000, 0 };
-    avs_time_div(&value, &value, 1 * 1000 * 1000 * 1000);
+    value = avs_time_div(&value, 1 * 1000 * 1000 * 1000);
     AVS_UNIT_ASSERT_EQUAL(value.tv_sec, -1);
     AVS_UNIT_ASSERT_EQUAL(value.tv_nsec, 1 * 1000 * 1000);
 }
