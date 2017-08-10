@@ -66,7 +66,7 @@ elseif(WITH_TINYDTLS)
     avs_emit_deps(avs_net tinydtls)
 endif()
 
-avs_emit_deps(avs_net avs_utils)
+avs_emit_deps(avs_net avs_stream avs_utils)
 
 add_avs_test(avs_net ${ALL_SOURCES})
 avs_install_export(avs_net net)

@@ -293,7 +293,7 @@ AVS_UNIT_TEST(url_unescape, empty_string) {
     char data[] = "";
     size_t length;
 
-    AVS_UNIT_ASSERT_SUCCESS(unescape(data, &length));
+    AVS_UNIT_ASSERT_SUCCESS(avs_url_percent_decode(data, &length));
     AVS_UNIT_ASSERT_EQUAL_STRING(data, "");
     AVS_UNIT_ASSERT_EQUAL(length, 0);
 }
@@ -302,7 +302,7 @@ AVS_UNIT_TEST(url_unescape, nothing_to_escape) {
     char data[] = "avsystem";
     size_t length;
 
-    AVS_UNIT_ASSERT_SUCCESS(unescape(data, &length));
+    AVS_UNIT_ASSERT_SUCCESS(avs_url_percent_decode(data, &length));
     AVS_UNIT_ASSERT_EQUAL_STRING(data, "avsystem");
     AVS_UNIT_ASSERT_EQUAL(length, strlen("avsystem"));
 }
@@ -311,7 +311,7 @@ AVS_UNIT_TEST(url_unescape, example_data) {
     char data[] = "%25%40";
     size_t length;
 
-    AVS_UNIT_ASSERT_SUCCESS(unescape(data, &length));
+    AVS_UNIT_ASSERT_SUCCESS(avs_url_percent_decode(data, &length));
     AVS_UNIT_ASSERT_EQUAL_STRING(data, "%@");
     AVS_UNIT_ASSERT_EQUAL(length, 2);
 }
@@ -320,21 +320,21 @@ AVS_UNIT_TEST(url_unescape, invalid_format) {
     char data[] = "%0";
     size_t length;
 
-    AVS_UNIT_ASSERT_FAILED(unescape(data, &length));
+    AVS_UNIT_ASSERT_FAILED(avs_url_percent_decode(data, &length));
 }
 
 AVS_UNIT_TEST(url_unescape, invalid_characters) {
     char data[] = "%8z";
     size_t length;
 
-    AVS_UNIT_ASSERT_FAILED(unescape(data, &length));
+    AVS_UNIT_ASSERT_FAILED(avs_url_percent_decode(data, &length));
 }
 
 AVS_UNIT_TEST(url_unescape, lowercase_hex) {
     char data[] = "%3a%4b%7c%5d%6e%5f";
     size_t length;
 
-    AVS_UNIT_ASSERT_SUCCESS(unescape(data, &length));
+    AVS_UNIT_ASSERT_SUCCESS(avs_url_percent_decode(data, &length));
     AVS_UNIT_ASSERT_EQUAL_STRING(data, ":K|]n_");
     AVS_UNIT_ASSERT_EQUAL(length, 6);
 }
@@ -343,7 +343,7 @@ AVS_UNIT_TEST(url_unescape, uppercase_hex) {
     char data[] = "%3A%4B%7C%5D%6E%5F";
     size_t length;
 
-    AVS_UNIT_ASSERT_SUCCESS(unescape(data, &length));
+    AVS_UNIT_ASSERT_SUCCESS(avs_url_percent_decode(data, &length));
     AVS_UNIT_ASSERT_EQUAL_STRING(data, ":K|]n_");
     AVS_UNIT_ASSERT_EQUAL(length, 6);
 }
@@ -352,7 +352,7 @@ AVS_UNIT_TEST(url_unescape, null_character) {
     char data[] = "%40vsystem%00%40vsystem";
     size_t length;
 
-    AVS_UNIT_ASSERT_SUCCESS(unescape(data, &length));
+    AVS_UNIT_ASSERT_SUCCESS(avs_url_percent_decode(data, &length));
     AVS_UNIT_ASSERT_EQUAL_STRING(data, "@vsystem");
     AVS_UNIT_ASSERT_EQUAL(data[8], '\0');
     AVS_UNIT_ASSERT_EQUAL_STRING(data + 9, "@vsystem");
