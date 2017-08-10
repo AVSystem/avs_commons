@@ -63,6 +63,28 @@ int avs_simple_vsnprintf(char *out,
 int avs_simple_snprintf(char *out, size_t out_size, const char *format, ...)
         AVS_F_PRINTF(3, 4);
 
+/* Checks for presence of the specified <c>token</c> at the current position in
+ * <c>stream</c>, and advances the stream (moves the pointer forward) if it
+ * matches.
+ *
+ * Stream position is always advanced at least to the first non-space character.
+ * If the token matches, it is also advanced past the token <strong>and the one
+ * delimiter character immediately following it</strong>.
+ *
+ * @param stream Pointer to a pointer to the current position in string being
+ *               parsed.
+ *
+ * @param token  Token to match.
+ *
+ * @param delims Null-terminated set of delimiter characters expected after the
+ *               token. Null character (end-of-string) is also implicitly
+ *               treated as a valid expected delimiter (the pointer is not
+ *               advanced past it in that case).
+ *
+ * @return The return value convention is equivalent to that of <c>strcmp()</c>.
+ */
+int avs_match_token(const char **stream, const char *token, const char *delims);
+
 #ifdef	__cplusplus
 }
 #endif

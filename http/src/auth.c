@@ -24,6 +24,8 @@
 #include <string.h>
 #include <strings.h>
 
+#include <avsystem/commons/utils.h>
+
 #include "auth.h"
 #include "log.h"
 #include "stream.h"
@@ -45,27 +47,6 @@ void _avs_http_auth_reset(http_auth_t *auth) {
     free(auth->state.realm);
     free(auth->state.opaque);
     memset(&auth->state, 0, sizeof(auth->state));
-}
-
-static int match_token(const char **stream, const char *token,
-                       const char *delims) {
-    size_t len = strlen(token);
-    int result;
-    /* skip leading whitespace, if any */
-    while (**stream && isspace((unsigned char) **stream)) {
-        ++*stream;
-    }
-    result = strncasecmp(*stream, token, len);
-    if (result == 0) {
-        if ((*stream)[len] && !strchr(delims, (unsigned char) (*stream)[len])) {
-            return 1;
-        }
-        *stream += len;
-        if (**stream) {
-            ++*stream; // skip the (first) delimiter character
-        }
-    }
-    return result;
 }
 
 #define SPACES " \t\v\f\r\n"
@@ -118,10 +99,10 @@ static char *consume_alloc_quotable_token(const char **src) {
 
 int _avs_http_auth_setup(http_auth_t *auth, const char *challenge) {
     http_auth_new_header(auth);
-    if (match_token(&challenge, "Basic", SPACES) == 0) {
+    if (avs_match_token(&challenge, "Basic", SPACES) == 0) {
         LOG(TRACE, "Basic authentication");
         auth->state.flags.type = HTTP_AUTH_TYPE_BASIC;
-    } else if (match_token(&challenge, "Digest", SPACES) == 0) {
+    } else if (avs_match_token(&challenge, "Digest", SPACES) == 0) {
         LOG(TRACE, "Digest authentication");
         auth->state.flags.type = HTTP_AUTH_TYPE_DIGEST;
     } else {
@@ -131,7 +112,7 @@ int _avs_http_auth_setup(http_auth_t *auth, const char *challenge) {
     }
 
     while (*challenge) {
-        if (match_token(&challenge, "realm", "=") == 0) {
+        if (avs_match_token(&challenge, "realm", "=") == 0) {
             free(auth->state.realm);
             if (!(auth->state.realm =
                     consume_alloc_quotable_token(&challenge))) {
@@ -139,7 +120,7 @@ int _avs_http_auth_setup(http_auth_t *auth, const char *challenge) {
                 return -1;
             }
             LOG(TRACE, "Auth realm: %s", auth->state.realm);
-        } else if (match_token(&challenge, "nonce", "=") == 0) {
+        } else if (avs_match_token(&challenge, "nonce", "=") == 0) {
             free(auth->state.nonce);
             if (!(auth->state.nonce =
                     consume_alloc_quotable_token(&challenge))) {
@@ -148,7 +129,7 @@ int _avs_http_auth_setup(http_auth_t *auth, const char *challenge) {
             }
             auth->state.nc = 1;
             LOG(TRACE, "Auth nonce: %s", auth->state.nonce);
-        } else if (match_token(&challenge, "opaque", "=") == 0) {
+        } else if (avs_match_token(&challenge, "opaque", "=") == 0) {
             free(auth->state.opaque);
             if (!(auth->state.opaque =
                     consume_alloc_quotable_token(&challenge))) {
@@ -156,7 +137,7 @@ int _avs_http_auth_setup(http_auth_t *auth, const char *challenge) {
                 return -1;
             }
             LOG(TRACE, "Auth opaque: %s", auth->state.opaque);
-        } else if (match_token(&challenge, "algorithm", "=") == 0) {
+        } else if (avs_match_token(&challenge, "algorithm", "=") == 0) {
             char algorithm[16];
             consume_quotable_token(&challenge, algorithm, sizeof(algorithm));
             if (strcasecmp(algorithm, "MD5-sess") == 0) {
@@ -168,7 +149,7 @@ int _avs_http_auth_setup(http_auth_t *auth, const char *challenge) {
                 LOG(ERROR, "Unknown auth algorithm: %s", algorithm);
                 return -1;
             }
-        } else if (match_token(&challenge, "qop", "=") == 0) {
+        } else if (avs_match_token(&challenge, "qop", "=") == 0) {
             char *qop_options_buf = consume_alloc_quotable_token(&challenge);
             if (!qop_options_buf) {
                 LOG(ERROR, "Could not allocate memory for qop");
