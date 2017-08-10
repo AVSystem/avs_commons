@@ -1,0 +1,128 @@
+/*
+ * Copyright 2017 AVSystem <avsystem@avsystem.com>
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#ifndef _POSIX_C_SOURCE
+#define _POSIX_C_SOURCE 200809L /* strdup() */
+#endif
+
+#include <config.h>
+
+#include <string.h>
+
+#include "client.h"
+#include "log.h"
+
+#ifdef HAVE_VISIBILITY
+#pragma GCC visibility push(hidden)
+#endif
+
+const avs_http_buffer_sizes_t AVS_HTTP_DEFAULT_BUFFER_SIZES = {
+    .body_recv = 4096,
+    .body_send = 4096,
+#ifdef WITH_AVS_HTTP_ZLIB
+    .content_coding_input = 4096,
+    .content_coding_min_input = 128,
+#endif
+    .header_line = 512,
+    .recv_shaper = 128,
+    .send_shaper = 128
+};
+
+const char *const _AVS_HTTP_METHOD_NAMES[] = { "GET", "POST", "PUT" };
+
+avs_http_t *avs_http_new(const avs_http_buffer_sizes_t *buffer_sizes) {
+    avs_http_t *result = (avs_http_t *) calloc(1, sizeof(avs_http_t));
+    if (!result) {
+        LOG(ERROR, "Out of memory");
+        return NULL;
+    }
+    result->buffer_sizes = *buffer_sizes;
+    return result;
+}
+
+void avs_http_free(avs_http_t *http) {
+    if (http) {
+        avs_http_clear_cookies(http);
+        free(http->user_agent);
+        free(http);
+    }
+}
+
+void avs_http_ssl_configuration(
+        avs_http_t *http,
+        const volatile avs_net_ssl_configuration_t *ssl_configuration) {
+    http->ssl_configuration = ssl_configuration;
+}
+
+void avs_http_tcp_configuration(
+        avs_http_t* http,
+        const volatile avs_net_socket_configuration_t *tcp_configuration) {
+    http->tcp_configuration = tcp_configuration;
+}
+
+int avs_http_set_user_agent(avs_http_t *http, const char *user_agent) {
+    char *new_user_agent = NULL;
+    if (user_agent) {
+        if (!(new_user_agent = strdup(user_agent))) {
+            LOG(ERROR, "Out of memory");
+            return -1;
+        }
+    }
+    free(http->user_agent);
+    http->user_agent = new_user_agent;
+    return 0;
+}
+
+void avs_http_clear_cookies(avs_http_t *http) {
+    AVS_LIST_CLEAR(&http->cookies);
+    http->use_cookie2 = false;
+}
+
+int _avs_http_set_cookie(avs_http_t *client,
+                         bool use_cookie2,
+                         const char *cookie_header) {
+    const char *equal_sign = strchr(cookie_header, '=');
+    const char *end = strchr(cookie_header, ';');
+    LOG(TRACE, "Set-Cookie%s: %s", use_cookie2 ? "2" : "", cookie_header);
+    if (!equal_sign) {
+        LOG(ERROR, "Invalid cookie format: %s", cookie_header);
+        return -1;
+    }
+    if (!end) { /* no semicolon; read to the end */
+        end = cookie_header + strlen(cookie_header);
+    }
+
+    // remove old cookie, if any
+    AVS_LIST(http_cookie_t) *it;
+    AVS_LIST_FOREACH_PTR(it, &client->cookies) {
+        if (strncmp((*it)->value, cookie_header,
+                    (size_t) (equal_sign + 1 - cookie_header)) == 0) {
+            AVS_LIST_DELETE(it);
+            break;
+        }
+    }
+    // it now points either at the place of the old cookie, or at the tail
+
+    if (!AVS_LIST_INSERT(it, (AVS_LIST(http_cookie_t))
+            AVS_LIST_NEW_BUFFER((size_t) ((end - cookie_header) + 1)))) {
+        LOG(ERROR, "Not enough space to store the cookie");
+        return -1;
+    }
+    memcpy((*it)->value, cookie_header, (size_t) (end - cookie_header));
+    (*it)->value[end - cookie_header] = '\0';
+    client->use_cookie2 = use_cookie2;
+    return 0;
+}

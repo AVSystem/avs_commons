@@ -161,6 +161,15 @@ avs_find_library("
     find_package(TinyDTLS)
 " tinydtls)
 
+# zlib
+avs_find_library("
+    find_package(ZLIB)
+    if(ZLIB_FOUND AND NOT TARGET z)
+        add_library(z STATIC IMPORTED)
+        set_property(TARGET z PROPERTY IMPORTED_LOCATION \\\${ZLIB_LIBRARIES})
+    endif()
+" z)
+
 # SSL
 option(WITH_OPENSSL "Enable OpenSSL" OFF)
 option(WITH_MBEDTLS "Enable mbed TLS" OFF)
@@ -311,6 +320,7 @@ option(WITH_AVS_STREAM "AVSystem IO stream abstraction layer" ${MODULES_ENABLED}
 option(WITH_AVS_LOG "AVSystem logging framework" ${MODULES_ENABLED})
 option(WITH_AVS_RBTREE "AVSystem generic red-black tree implementation" ${MODULES_ENABLED})
 option(WITH_AVS_COAP "AVSystem CoAP abstraction layer" ${MODULES_ENABLED})
+option(WITH_AVS_HTTP "AVSystem HTTP client" ${MODULES_ENABLED})
 
 cmake_dependent_option(WITH_INTERNAL_LOGS "Enable logging from inside AVSystem Commons libraries" ON WITH_AVS_LOG OFF)
 cmake_dependent_option(WITH_INTERNAL_TRACE "Enable TRACE-level logs inside AVSystem Commons libraries" OFF WITH_INTERNAL_LOGS OFF)
@@ -427,6 +437,22 @@ cmake_dependent_option(WITH_AVS_COAP_NET_STATS
 
 if(WITH_AVS_COAP)
     add_module_with_include_dirs(coap MODULE_INCLUDE_DIRS)
+endif()
+
+cmake_dependent_option(WITH_AVS_HTTP_ZLIB
+                       "Enable support for HTTP compression using zlib"
+                       ON WITH_AVS_HTTP OFF)
+if(WITH_AVS_HTTP)
+    add_module_with_include_dirs(http MODULE_INCLUDE_DIRS)
+    if(WITH_AVS_HTTP_ZLIB)
+        if(NOT ZLIB_FOUND)
+            message(FATAL_ERROR "zlib not found")
+        endif()
+        if(ZLIB_INCLUDE_DIRS)
+            separate_arguments(ZLIB_INCLUDE_DIRS)
+            include_directories(${ZLIB_INCLUDE_DIRS})
+        endif()
+    endif()
 endif()
 
 # Export general avs_commons includes as well as module level includes.

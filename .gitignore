@@ -6,6 +6,7 @@
 /list/avs_list_test
 /buffer/avs_buffer_test
 /coap/avs_coap_test
+/http/avs_http_test
 /log/avs_log_test
 /net/avs_net_test
 /rbtree/avs_rbtree_test

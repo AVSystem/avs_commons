@@ -98,3 +98,5 @@ extern void *sbrk (intptr_t __delta);
 #cmakedefine WITH_AVS_COAP_MESSAGE_CACHE
 
 #cmakedefine WITH_AVS_COAP_NET_STATS
+
+#cmakedefine WITH_AVS_HTTP_ZLIB
