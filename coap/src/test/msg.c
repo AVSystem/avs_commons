@@ -62,8 +62,8 @@ AVS_UNIT_TEST(coap_msg, header_fields) {
     AVS_UNIT_ASSERT_EQUAL(avs_coap_msg_header_get_type(&msg->header), AVS_COAP_MSG_ACKNOWLEDGEMENT);
     AVS_UNIT_ASSERT_EQUAL(avs_coap_msg_header_get_token_length(&msg->header), 0);
 
-    AVS_UNIT_ASSERT_EQUAL(avs_coap_msg_code_get_class(&msg->header.code), 3);
-    AVS_UNIT_ASSERT_EQUAL(avs_coap_msg_code_get_detail(&msg->header.code), 4);
+    AVS_UNIT_ASSERT_EQUAL(avs_coap_msg_code_get_class(msg->header.code), 3);
+    AVS_UNIT_ASSERT_EQUAL(avs_coap_msg_code_get_detail(msg->header.code), 4);
 
     AVS_UNIT_ASSERT_EQUAL(avs_coap_msg_get_id(msg), 0x0506);
 }

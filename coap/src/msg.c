@@ -77,8 +77,8 @@ avs_coap_msg_code_to_string(uint8_t code, char *buf, size_t buf_size) {
     }
 
     if (avs_simple_snprintf(buf, buf_size, "%u.%02u %s",
-                            avs_coap_msg_code_get_class(&code),
-                            avs_coap_msg_code_get_detail(&code), name)
+                            avs_coap_msg_code_get_class(code),
+                            avs_coap_msg_code_get_detail(code), name)
             < 0) {
         assert(0 && "buffer too small for CoAP msg code string");
         return "<error>";
@@ -375,26 +375,26 @@ uint8_t avs_coap_msg_header_get_token_length(const avs_coap_msg_header_t *hdr) {
     return (uint8_t)val;
 }
 
-uint8_t avs_coap_msg_code_get_class(const uint8_t *code) {
-    return AVS_FIELD_GET(*code, AVS_COAP_CODE_CLASS_MASK,
-                           AVS_COAP_CODE_CLASS_SHIFT);
+uint8_t avs_coap_msg_code_get_class(uint8_t code) {
+    return AVS_FIELD_GET(code, AVS_COAP_CODE_CLASS_MASK,
+                         AVS_COAP_CODE_CLASS_SHIFT);
 }
 
 void avs_coap_msg_code_set_class(uint8_t *code, uint8_t cls) {
     assert(cls < 8);
     AVS_FIELD_SET(*code, AVS_COAP_CODE_CLASS_MASK,
-                    AVS_COAP_CODE_CLASS_SHIFT, cls);
+                  AVS_COAP_CODE_CLASS_SHIFT, cls);
 }
 
-uint8_t avs_coap_msg_code_get_detail(const uint8_t *code) {
-    return AVS_FIELD_GET(*code, AVS_COAP_CODE_DETAIL_MASK,
-                           AVS_COAP_CODE_DETAIL_SHIFT);
+uint8_t avs_coap_msg_code_get_detail(uint8_t code) {
+    return AVS_FIELD_GET(code, AVS_COAP_CODE_DETAIL_MASK,
+                         AVS_COAP_CODE_DETAIL_SHIFT);
 }
 
 void avs_coap_msg_code_set_detail(uint8_t *code, uint8_t detail) {
     assert(detail < 32);
     AVS_FIELD_SET(*code, AVS_COAP_CODE_DETAIL_MASK,
-                    AVS_COAP_CODE_DETAIL_SHIFT, detail);
+                  AVS_COAP_CODE_DETAIL_SHIFT, detail);
 }
 
 avs_coap_msg_type_t
