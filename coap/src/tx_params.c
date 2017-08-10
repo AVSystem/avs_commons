@@ -65,9 +65,7 @@ avs_coap_exchange_lifetime_ms(const avs_coap_tx_params_t *tx_params) {
 
 struct timespec
 avs_coap_exchange_lifetime(const avs_coap_tx_params_t *tx_params) {
-    struct timespec result;
-    avs_time_from_ms(&result, avs_coap_exchange_lifetime_ms(tx_params));
-    return result;
+    return avs_time_from_ms(avs_coap_exchange_lifetime_ms(tx_params));
 }
 
 int32_t
@@ -79,9 +77,7 @@ avs_coap_max_transmit_span_ms(const avs_coap_tx_params_t *tx_params) {
 
 struct timespec
 avs_coap_max_transmit_span(const avs_coap_tx_params_t *tx_params) {
-    struct timespec result;
-    avs_time_from_ms(&result, avs_coap_max_transmit_span_ms(tx_params));
-    return result;
+    return avs_time_from_ms(avs_coap_max_transmit_span_ms(tx_params));
 }
 
 #if AVS_RAND_MAX >= UINT32_MAX
