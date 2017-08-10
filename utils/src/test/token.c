@@ -32,3 +32,28 @@ AVS_UNIT_TEST(token, match_token) {
                                               "kthanksbye", "="), 0);
     AVS_UNIT_ASSERT_EQUAL_STRING(test_stream2, "helloworld=not");
 }
+
+AVS_UNIT_TEST(http_utils, consume_quotable_token) {
+    char buf[256];
+    const char *src = NULL;
+
+    src = "  hello";
+    avs_consume_quotable_token(&src, buf, sizeof(buf));
+    AVS_UNIT_ASSERT_EQUAL_STRING(buf, "");
+    AVS_UNIT_ASSERT_EQUAL_STRING(src, " hello");
+
+    src = "hello\" wor\"ld, 2ndtoken";
+    avs_consume_quotable_token(&src, buf, sizeof(buf));
+    AVS_UNIT_ASSERT_EQUAL_STRING(buf, "hello world");
+    AVS_UNIT_ASSERT_EQUAL_STRING(src, " 2ndtoken");
+
+    src = "\"hello \\\"world\\\"";
+    avs_consume_quotable_token(&src, buf, sizeof(buf));
+    AVS_UNIT_ASSERT_EQUAL_STRING(buf, "hello \"world\"");
+    AVS_UNIT_ASSERT_EQUAL_STRING(src, "");
+
+    src = "helloworld";
+    avs_consume_quotable_token(&src, buf, 5);
+    AVS_UNIT_ASSERT_EQUAL_STRING(buf, "hell");
+    AVS_UNIT_ASSERT_EQUAL_STRING(src, "");
+}

@@ -43,6 +43,42 @@ int avs_match_token(const char **stream, const char *token,
     return result;
 }
 
+void avs_consume_quotable_token(const char **src,
+                                char *dest,
+                                size_t dest_size) {
+    char quote = 0;
+
+    if (dest_size == 0) {
+        dest = NULL;
+    }
+    for (char value; (value = **src); ++*src) {
+        if (value == '"') {
+            quote = !quote;
+            continue;
+        } else if (quote && value == '\\') {
+            value = *++*src;
+        }
+        if (!value
+                || (!quote && strchr("," AVS_SPACES, (unsigned char) value))) {
+            break;
+        }
+        if (dest_size) {
+            *dest++ = value;
+            --dest_size;
+        }
+    }
+    if (**src) {
+        ++*src; // skip the (first) delimiter character
+    }
+    if (dest) {
+        if (dest_size) {
+            *dest = '\0';
+        } else {
+            *--dest = '\0';
+        }
+    }
+}
+
 #ifdef AVS_UNIT_TESTING
 #include "test/token.c"
 #endif // AVS_UNIT_TESTING
