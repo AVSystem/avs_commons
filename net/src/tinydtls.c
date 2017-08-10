@@ -45,7 +45,7 @@ typedef struct {
 
     ssl_read_context_t *read_ctx;
 
-    avs_net_psk_t psk;
+    avs_net_owned_psk_t psk;
 } ssl_socket_t;
 
 #define NET_SSL_COMMON_INTERNALS
