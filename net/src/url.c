@@ -59,13 +59,17 @@ static int url_parse_protocol(const char **url,
     return 0;
 }
 
+static bool needs_percent_encoding(char value) {
+    return (*(const unsigned char *) &value >= 0x80) // non-ASCII character
+            || !(isalnum(value) || strchr("-_.~", value));
+}
+
 int avs_url_percent_encode(avs_stream_abstract_t *stream,
                            const char *input) {
     const char *start = input;
     char escaped_buf[4];
     for (; *input; ++input) {
-        if ((*input & '\x80')
-                || !(isalnum(*input) || *input == '_' || *input == '-')) {
+        if (needs_percent_encoding(*input)) {
             if (input - start > 0) {
                 if (avs_stream_write(stream, start, (size_t) (input - start))) {
                     return -1;

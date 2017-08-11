@@ -29,7 +29,7 @@ extern "C" {
  *
  * @param stream Output stream into which to write the result.
  *
- * @param input  Input string
+ * @param input  Input data as a NULL-terminated string.
  *
  * @return 0 for success, or -1 in case of error
  */
