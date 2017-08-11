@@ -22,6 +22,7 @@
 #include <string.h>
 
 #include <avsystem/commons/url.h>
+#include <avsystem/commons/utils.h>
 
 #include "net.h"
 
@@ -58,7 +59,39 @@ static int url_parse_protocol(const char **url,
     return 0;
 }
 
-static int unescape(char *const data, size_t *unescaped_length) {
+static bool needs_percent_encoding(char value) {
+    return (*(const unsigned char *) &value >= 0x80) // non-ASCII character
+            || !(isalnum(value) || strchr("-_.~", value));
+}
+
+int avs_url_percent_encode(avs_stream_abstract_t *stream,
+                           const char *input) {
+    const char *start = input;
+    char escaped_buf[4];
+    for (; *input; ++input) {
+        if (needs_percent_encoding(*input)) {
+            if (input - start > 0) {
+                if (avs_stream_write(stream, start, (size_t) (input - start))) {
+                    return -1;
+                }
+            }
+            if (avs_simple_snprintf(escaped_buf, sizeof(escaped_buf), "%%%02x",
+                                    (unsigned char) *input) != 3
+                    || avs_stream_write(stream, escaped_buf, 3)) {
+                return -1;
+            }
+            start = input + 1;
+        }
+    }
+    if (input - start > 0) {
+        if (avs_stream_write(stream, start, (size_t) (input - start))) {
+            return -1;
+        }
+    }
+    return 0;
+}
+
+int avs_url_percent_decode(char *data, size_t *unescaped_length) {
     char *src = data, *dst = data;
 
     if (!strchr(data, '%')) {
@@ -93,7 +126,7 @@ static int unescape(char *const data, size_t *unescaped_length) {
 
 static int prepare_string(char *data) {
     size_t new_length = 0;
-    if (unescape(data, &new_length)) {
+    if (avs_url_percent_decode(data, &new_length)) {
         LOG(ERROR, "unescape failure");
         return -1;
     }

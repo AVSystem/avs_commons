@@ -17,9 +17,48 @@
 #ifndef AVS_COMMONS_URL_H
 #define AVS_COMMONS_URL_H
 
+#include <avsystem/commons/stream.h>
+
 #ifdef	__cplusplus
 extern "C" {
 #endif
+
+/**
+ * Encodes a string with percent-encoding as defined in RFC 3986 section 2.1 and
+ * writes the result to a stream.
+ *
+ * @param stream Output stream into which to write the result.
+ *
+ * @param input  Input data as a NULL-terminated string.
+ *
+ * @return 0 for success, or -1 in case of error
+ */
+int avs_url_percent_encode(avs_stream_abstract_t *stream,
+                           const char *input);
+
+/**
+ * Decodes a string that uses percent-encoding as defined in RFC 3986 section
+ * 2.1. Data is decoded in-place, so that each "%xx" substring is replaced
+ * within the input buffer.
+ *
+ * @param data             Pointer to the data to decode. On input, it shall
+ *                         point at a null-terminated percent-encoded string.
+ *                         After successful return from this function, it will
+ *                         hold the decoded data. It is safe to do so, because
+ *                         the decoded string is never longer than an encoded
+ *                         one.
+ *
+ * @param unescaped_length Pointer to a variable that, upon successful return
+ *                         from this function, will contain the number of bytes
+ *                         in the decoded string. It will usually be equal to
+ *                         <c>strlen(data)</c>, but might be different if a
+ *                         percent-encoded null-byte was present in the input.
+ *
+ * @return 0 for success, or -1 in case of error (invalid input string format).
+ *         Note that upon returning -1, the contents of the string pointed to by
+ *         <c>data</c> are undefined.
+ */
+int avs_url_percent_decode(char *data, size_t *unescaped_length);
 
 /**
  * Opaque internal type used to hold parsed URL data.
@@ -64,6 +103,8 @@ const char *avs_url_protocol(const avs_url_t *url);
  * Returns the username part of the userinfo portion of the parsed URL, or
  * <c>NULL</c> if it was not present.
  *
+ * NOTE: Any percent-encoding in the password is already decoded.
+ *
  * @param url A parsed URL object previously returned by @ref avs_url_parse.
  *
  * @return Value of the username given in the URL.
@@ -73,6 +114,8 @@ const char *avs_url_user(const avs_url_t *url);
 /**
  * Returns the password part of the userinfo portion of the parsed URL, or
  * <c>NULL</c> if it was not present.
+ *
+ * NOTE: Any percent-encoding in the password is already decoded.
  *
  * @param url A parsed URL object previously returned by @ref avs_url_parse.
  *
@@ -101,6 +144,8 @@ const char *avs_url_port(const avs_url_t *url);
 
 /**
  * Returns the path portion of the parsed URL.
+ *
+ * NOTE: Any percent-encoding in the path is NOT decoded automatically.
  *
  * @param url A parsed URL object previously returned by @ref avs_url_parse.
  *
