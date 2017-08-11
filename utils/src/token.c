@@ -22,22 +22,22 @@
 
 #include <avsystem/commons/utils.h>
 
-int avs_match_token(const char **stream, const char *token,
+int avs_match_token(const char **src, const char *token,
                     const char *delims) {
     size_t len = strlen(token);
     int result;
     /* skip leading whitespace, if any */
-    while (**stream && isspace((unsigned char) **stream)) {
-        ++*stream;
+    while (**src && isspace((unsigned char) **src)) {
+        ++*src;
     }
-    result = strncasecmp(*stream, token, len);
+    result = strncasecmp(*src, token, len);
     if (result == 0) {
-        if ((*stream)[len] && !strchr(delims, (unsigned char) (*stream)[len])) {
+        if ((*src)[len] && !strchr(delims, (unsigned char) (*src)[len])) {
             return 1;
         }
-        *stream += len;
-        if (**stream) {
-            ++*stream; // skip the (first) delimiter character
+        *src += len;
+        if (**src) {
+            ++*src; // skip the (first) delimiter character
         }
     }
     return result;

@@ -70,14 +70,13 @@ int avs_simple_snprintf(char *out, size_t out_size, const char *format, ...)
 
 /**
  * Checks for presence of the specified <c>token</c> at the current position in
- * <c>stream</c>, and advances the stream (moves the pointer forward) if it
- * matches.
+ * <c>src</c>, and advances the input (moves the pointer forward) if it matches.
  *
  * Stream position is always advanced at least to the first non-space character.
  * If the token matches, it is also advanced past the token <strong>and the one
  * delimiter character immediately following it</strong>.
  *
- * @param stream Pointer to a pointer to the current position in string being
+ * @param src    Pointer to a pointer to the current position in string being
  *               parsed.
  *
  * @param token  Token to match.
@@ -89,7 +88,7 @@ int avs_simple_snprintf(char *out, size_t out_size, const char *format, ...)
  *
  * @return The return value convention is equivalent to that of <c>strcmp()</c>.
  */
-int avs_match_token(const char **stream, const char *token, const char *delims);
+int avs_match_token(const char **src, const char *token, const char *delims);
 
 /**
  * Reads and copies a string token up to a whitespace character or a comma.
