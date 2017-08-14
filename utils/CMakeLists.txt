@@ -15,7 +15,8 @@
 set(SOURCES
     src/format.c
     src/rand.c
-    src/time.c)
+    src/time.c
+    src/token.c)
 
 set(ALL_SOURCES ${SOURCES})
 
