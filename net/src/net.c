@@ -1328,8 +1328,19 @@ int avs_net_local_address_for_target_host(const char *target_host,
 
 static int local_host_net(avs_net_abstract_socket_t *socket,
                           char *out_buffer, size_t out_buffer_size) {
-#warning "TODO"
-    return -1;
+    avs_net_socket_t *net_socket = (avs_net_socket_t *) socket;
+    sockaddr_union_t addr;
+    socklen_t addrlen = sizeof(addr);
+
+    errno = 0;
+    if (!getsockname(net_socket->socket, &addr.addr, &addrlen)) {
+        int result = get_string_ip(&addr, out_buffer, out_buffer_size);
+        net_socket->error_code = (result ? ERANGE : 0);
+        return result;
+    } else {
+        net_socket->error_code = errno;
+        return -1;
+    }
 }
 
 static int local_port_net(avs_net_abstract_socket_t *socket,
