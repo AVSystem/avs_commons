@@ -77,6 +77,10 @@ int (*avs_net_socket_get_remote_port_t)(avs_net_abstract_socket_t *socket,
                                         char *out_buffer, size_t out_buffer_size);
 
 typedef
+int (*avs_net_socket_get_local_host_t)(avs_net_abstract_socket_t *socket,
+                                       char *out_buffer, size_t out_buffer_size);
+
+typedef
 int (*avs_net_socket_get_local_port_t)(avs_net_abstract_socket_t *socket,
                                        char *out_buffer, size_t out_buffer_size);
 
@@ -107,6 +111,7 @@ typedef struct {
     avs_net_socket_get_remote_host_t get_remote_host;
     avs_net_socket_get_remote_hostname_t get_remote_hostname;
     avs_net_socket_get_remote_port_t get_remote_port;
+    avs_net_socket_get_local_host_t get_local_host;
     avs_net_socket_get_local_port_t get_local_port;
     avs_net_socket_get_opt_t get_opt;
     avs_net_socket_set_opt_t set_opt;
