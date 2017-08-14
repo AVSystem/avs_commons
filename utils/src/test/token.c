@@ -38,22 +38,22 @@ AVS_UNIT_TEST(http_utils, consume_quotable_token) {
     const char *src = NULL;
 
     src = "  hello";
-    avs_consume_quotable_token(&src, buf, sizeof(buf));
+    avs_consume_quotable_token(&src, buf, sizeof(buf), "," AVS_SPACES);
     AVS_UNIT_ASSERT_EQUAL_STRING(buf, "");
     AVS_UNIT_ASSERT_EQUAL_STRING(src, " hello");
 
     src = "hello\" wor\"ld, 2ndtoken";
-    avs_consume_quotable_token(&src, buf, sizeof(buf));
+    avs_consume_quotable_token(&src, buf, sizeof(buf), "," AVS_SPACES);
     AVS_UNIT_ASSERT_EQUAL_STRING(buf, "hello world");
     AVS_UNIT_ASSERT_EQUAL_STRING(src, " 2ndtoken");
 
     src = "\"hello \\\"world\\\"";
-    avs_consume_quotable_token(&src, buf, sizeof(buf));
+    avs_consume_quotable_token(&src, buf, sizeof(buf), "," AVS_SPACES);
     AVS_UNIT_ASSERT_EQUAL_STRING(buf, "hello \"world\"");
     AVS_UNIT_ASSERT_EQUAL_STRING(src, "");
 
     src = "helloworld";
-    avs_consume_quotable_token(&src, buf, 5);
+    avs_consume_quotable_token(&src, buf, 5, "," AVS_SPACES);
     AVS_UNIT_ASSERT_EQUAL_STRING(buf, "hell");
     AVS_UNIT_ASSERT_EQUAL_STRING(src, "");
 }

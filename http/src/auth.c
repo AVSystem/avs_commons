@@ -51,11 +51,11 @@ void _avs_http_auth_reset(http_auth_t *auth) {
 
 static char *consume_alloc_quotable_token(const char **src) {
     const char *src_copy = *src;
-    avs_consume_quotable_token(&src_copy, NULL, 0);
+    avs_consume_quotable_token(&src_copy, NULL, 0, "," AVS_SPACES);
     size_t bufsize = (size_t) (src_copy - *src) + 1;
     char *buf = (char *) malloc(bufsize);
     if (buf) {
-        avs_consume_quotable_token(src, buf, bufsize);
+        avs_consume_quotable_token(src, buf, bufsize, "," AVS_SPACES);
     }
     return buf;
 }
@@ -102,8 +102,8 @@ int _avs_http_auth_setup(http_auth_t *auth, const char *challenge) {
             LOG(TRACE, "Auth opaque: %s", auth->state.opaque);
         } else if (avs_match_token(&challenge, "algorithm", "=") == 0) {
             char algorithm[16];
-            avs_consume_quotable_token(&challenge,
-                                       algorithm, sizeof(algorithm));
+            avs_consume_quotable_token(&challenge, algorithm, sizeof(algorithm),
+                                       "," AVS_SPACES);
             if (strcasecmp(algorithm, "MD5-sess") == 0) {
                 auth->state.flags.use_md5_sess = 1;
                 LOG(TRACE, "Auth algorithm: MD5-sess");
@@ -137,7 +137,7 @@ int _avs_http_auth_setup(http_auth_t *auth, const char *challenge) {
                 return -1;
             }
         } else {
-            avs_consume_quotable_token(&challenge, NULL, 0);
+            avs_consume_quotable_token(&challenge, NULL, 0, "," AVS_SPACES);
         }
     }
     return 0;

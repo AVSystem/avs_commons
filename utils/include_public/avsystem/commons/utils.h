@@ -72,8 +72,9 @@ int avs_simple_snprintf(char *out, size_t out_size, const char *format, ...)
  * Checks for presence of the specified <c>token</c> at the current position in
  * <c>src</c>, and advances the input (moves the pointer forward) if it matches.
  *
- * Stream position is always advanced at least to the first non-space character.
- * If the token matches, it is also advanced past the token <strong>and the one
+ * Stream position is always advanced at least to the first non-space (not
+ * contained in @ref AVS_SPACES) character. If the token matches
+ * (case-insensitively), it is also advanced past the token <strong>and the one
  * delimiter character immediately following it</strong>.
  *
  * @param src    Pointer to a pointer to the current position in string being
@@ -86,14 +87,17 @@ int avs_simple_snprintf(char *out, size_t out_size, const char *format, ...)
  *               treated as a valid expected delimiter (the pointer is not
  *               advanced past it in that case).
  *
- * @return The return value convention is equivalent to that of <c>strcmp()</c>.
+ * @return The return value convention is similar to that of <c>strcmp()</c>:
+ *         0 if the token matched, negative if the actual input is
+ *         lexicographically less than the expected token, or positive if the
+ *         input is lexicographically greater than the expected token.
  */
 int avs_match_token(const char **src, const char *token, const char *delims);
 
 /**
- * Reads and copies a string token up to a whitespace character or a comma.
- * Those can be included by using double-quotes. Backslash is supported as an
- * escape character inside the quotes.
+ * Reads and copies a string token up to a delimiter character. Those can be
+ * included by using double-quotes. Backslash is supported as an escape
+ * character inside the quotes.
  *
  * As many characters as possible are copied into <c>dest</c>. The string copied
  * to <c>dest</c> is always null-terminated, unless <c>dest</c> is NULL or
@@ -101,7 +105,7 @@ int avs_match_token(const char **src, const char *token, const char *delims);
  *
  * The <c>src</c> pointer is always advanced past the string token <strong>and
  * the one delimiter character immediately following it</strong>, regardless of
- * if the copy in <c>dest</c> has been truncated or not. Thus, calling this
+ * whether the copy in <c>dest</c> has been truncated or not. Thus, calling this
  * function with <c>dest_size</c> set to zero will just skip the current string
  * token, without copying it anywhere.
  *
@@ -111,10 +115,16 @@ int avs_match_token(const char **src, const char *token, const char *delims);
  * @param dest      Destination buffer.
  *
  * @param dest_size Size of the buffer pointed to by <c>dest</c>.
+ *
+ * @param delims Null-terminated set of delimiter characters expected after the
+ *               token. Null character (end-of-string) is also implicitly
+ *               treated as a valid expected delimiter (the pointer is not
+ *               advanced past it in that case).
  */
 void avs_consume_quotable_token(const char **src,
                                 char *dest,
-                                size_t dest_size);
+                                size_t dest_size,
+                                const char *delims);
 
 #ifdef	__cplusplus
 }

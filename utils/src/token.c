@@ -27,7 +27,7 @@ int avs_match_token(const char **src, const char *token,
     size_t len = strlen(token);
     int result;
     /* skip leading whitespace, if any */
-    while (**src && isspace((unsigned char) **src)) {
+    while (**src && strchr(AVS_SPACES, (unsigned char) **src)) {
         ++*src;
     }
     result = strncasecmp(*src, token, len);
@@ -45,7 +45,8 @@ int avs_match_token(const char **src, const char *token,
 
 void avs_consume_quotable_token(const char **src,
                                 char *dest,
-                                size_t dest_size) {
+                                size_t dest_size,
+                                const char *delims) {
     char quote = 0;
 
     if (dest_size == 0) {
@@ -58,8 +59,7 @@ void avs_consume_quotable_token(const char **src,
         } else if (quote && value == '\\') {
             value = *++*src;
         }
-        if (!value
-                || (!quote && strchr("," AVS_SPACES, (unsigned char) value))) {
+        if (!value || (!quote && strchr(delims, (unsigned char) value))) {
             break;
         }
         if (dest_size) {
