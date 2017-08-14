@@ -24,17 +24,29 @@ extern "C" {
 #endif
 
 /**
+ * Default set of unreserved characters for percent-encoding, as defined in
+ * RFC 3986 section 2.1.
+ */
+#define AVS_URL_PERCENT_UNRESERVED "-_.~"
+
+/**
  * Encodes a string with percent-encoding as defined in RFC 3986 section 2.1 and
  * writes the result to a stream.
  *
- * @param stream Output stream into which to write the result.
+ * @param stream           Output stream into which to write the result.
  *
- * @param input  Input data as a NULL-terminated string.
+ * @param input            Input data as a NULL-terminated string.
+ *
+ * @param unreserved_chars A null-terminated string containing non-alphanumeric
+ *                         characters that do not need percent-encoding. For
+ *                         maximum RFC compatibility, use
+ *                         @ref AVS_URL_PERCENT_UNRESERVED.
  *
  * @return 0 for success, or -1 in case of error
  */
 int avs_url_percent_encode(avs_stream_abstract_t *stream,
-                           const char *input);
+                           const char *input,
+                           const char *unreserved_chars);
 
 /**
  * Decodes a string that uses percent-encoding as defined in RFC 3986 section
