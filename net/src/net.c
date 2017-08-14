@@ -250,6 +250,36 @@ int _avs_net_get_af(avs_net_af_t addr_family) {
     }
 }
 
+#if defined(WITH_IPV4) && defined(WITH_IPV6)
+static bool is_v4mapped(const struct sockaddr_in6 *addr) {
+#ifdef IN6_IS_ADDR_V4MAPPED
+    return IN6_IS_ADDR_V4MAPPED(&addr->sin6_addr);
+#else
+    static const uint8_t V4MAPPED_ADDR_HEADER[] = {
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xFF, 0xFF
+    };
+    return memcmp(addr->sin6_addr.s6_addr, V4MAPPED_ADDR_HEADER,
+                  sizeof(V4MAPPED_ADDR_HEADER)) == 0;
+#endif
+}
+
+static int unmap_v4mapped(sockaddr_union_t *addr) {
+    if (addr->addr.sa_family != AF_INET6 || !is_v4mapped(&addr->addr_in6)) {
+        return -1;
+    } else {
+        struct sockaddr_in unmapped;
+        memset(&unmapped, 0, sizeof(unmapped));
+        unmapped.sin_family = AF_INET;
+        unmapped.sin_port = addr->addr_in6.sin6_port;
+        memcpy(&unmapped.sin_addr, &addr->addr_in6.sin6_addr.s6_addr[12], 4);
+        addr->addr_in = unmapped;
+        return 0;
+    }
+}
+#else // defined(WITH_IPV4) && defined(WITH_IPV6)
+#define unmap_v4mapped(Addr) (-1)
+#endif // defined(WITH_IPV4) && defined(WITH_IPV6)
+
 static const char *get_af_name(avs_net_af_t af) {
     switch (af) {
 #ifdef WITH_IPV4
@@ -332,6 +362,7 @@ static int remote_host_net(avs_net_abstract_socket_t *socket,
 
     errno = 0;
     if (!getpeername(net_socket->socket, &addr.addr, &addrlen)) {
+        unmap_v4mapped(&addr);
         int result = get_string_ip(&addr, out_buffer, out_buffer_size);
         net_socket->error_code = (result ? ERANGE : 0);
         return result;
@@ -430,20 +461,6 @@ static sa_family_t get_socket_family(int fd) {
         return AF_UNSPEC;
     }
 }
-
-#if defined(WITH_IPV4) && defined(WITH_IPV6)
-static bool is_v4mapped(const struct sockaddr_in6 *addr) {
-#ifdef IN6_IS_ADDR_V4MAPPED
-    return IN6_IS_ADDR_V4MAPPED(&addr->sin6_addr);
-#else
-    static const uint8_t V4MAPPED_ADDR_HEADER[] = {
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xFF, 0xFF
-    };
-    return memcmp(addr->sin6_addr.s6_addr, V4MAPPED_ADDR_HEADER,
-                  sizeof(V4MAPPED_ADDR_HEADER)) == 0;
-#endif
-}
-#endif
 
 /**
  * Differs from get_socket_family() by the fact that if the socket is AF_INET6
@@ -1334,6 +1351,7 @@ static int local_host_net(avs_net_abstract_socket_t *socket,
 
     errno = 0;
     if (!getsockname(net_socket->socket, &addr.addr, &addrlen)) {
+        unmap_v4mapped(&addr);
         int result = get_string_ip(&addr, out_buffer, out_buffer_size);
         net_socket->error_code = (result ? ERANGE : 0);
         return result;
