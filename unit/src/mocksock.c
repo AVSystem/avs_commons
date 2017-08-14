@@ -647,6 +647,7 @@ static const avs_net_socket_v_table_t mock_vtable = {
     mock_remote_host,
     mock_remote_hostname,
     mock_remote_port,
+    (avs_net_socket_get_local_host_t) unimplemented,
     (avs_net_socket_get_local_port_t) unimplemented,
     mock_get_opt,
     mock_set_opt,

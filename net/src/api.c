@@ -316,6 +316,12 @@ int avs_net_socket_get_remote_port(avs_net_abstract_socket_t *socket,
                                                out_buffer, out_buffer_size);
 }
 
+int avs_net_socket_get_local_host(avs_net_abstract_socket_t *socket,
+                                  char *out_buffer, size_t out_buffer_size) {
+    return socket->operations->get_local_host(socket,
+                                              out_buffer, out_buffer_size);
+}
+
 int avs_net_socket_get_local_port(avs_net_abstract_socket_t *socket,
                                   char *out_buffer, size_t out_buffer_size) {
     return socket->operations->get_local_port(socket,
@@ -613,6 +619,19 @@ static int remote_port_debug(avs_net_abstract_socket_t *debug_socket,
     return result;
 }
 
+static int local_host_debug(avs_net_abstract_socket_t *debug_socket,
+                            char *out_buffer, size_t out_buffer_size) {
+    int result = avs_net_socket_get_local_host(
+            ((avs_net_socket_debug_t *) debug_socket)->socket,
+            out_buffer, out_buffer_size);
+    if (result) {
+        fprintf(communication_log, "cannot get local host\n");
+    } else {
+        fprintf(communication_log, "local host: %s\n", out_buffer);
+    }
+    return result;
+}
+
 static int local_port_debug(avs_net_abstract_socket_t *debug_socket,
                             char *out_buffer, size_t out_buffer_size) {
     int result = avs_net_socket_get_local_port(
@@ -692,6 +711,7 @@ static const avs_net_socket_v_table_t debug_vtable = {
     remote_host_debug,
     remote_hostname_debug,
     remote_port_debug,
+    local_host_debug,
     local_port_debug,
     get_opt_debug,
     set_opt_debug,

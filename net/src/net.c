@@ -179,8 +179,10 @@ static int remote_hostname_net(avs_net_abstract_socket_t *socket,
                                char *out_buffer, size_t out_buffer_size);
 static int remote_port_net(avs_net_abstract_socket_t *socket,
                            char *out_buffer, size_t out_buffer_size);
+static int local_host_net(avs_net_abstract_socket_t *socket,
+                          char *out_buffer, size_t out_buffer_size);
 static int local_port_net(avs_net_abstract_socket_t *socket,
-                           char *out_buffer, size_t out_buffer_size);
+                          char *out_buffer, size_t out_buffer_size);
 static int get_opt_net(avs_net_abstract_socket_t *net_socket,
                        avs_net_socket_opt_key_t option_key,
                        avs_net_socket_opt_value_t *out_option_value);
@@ -210,6 +212,7 @@ static const avs_net_socket_v_table_t net_vtable = {
     remote_host_net,
     remote_hostname_net,
     remote_port_net,
+    local_host_net,
     local_port_net,
     get_opt_net,
     set_opt_net,
@@ -1321,6 +1324,12 @@ int avs_net_local_address_for_target_host(const char *target_host,
     }
     avs_net_addrinfo_delete(&info);
     return result <= 0 ? result : -1;;
+}
+
+static int local_host_net(avs_net_abstract_socket_t *socket,
+                          char *out_buffer, size_t out_buffer_size) {
+#warning "TODO"
+    return -1;
 }
 
 static int local_port_net(avs_net_abstract_socket_t *socket,

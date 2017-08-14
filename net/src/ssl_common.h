@@ -271,6 +271,16 @@ static int remote_port_ssl(avs_net_abstract_socket_t *socket_,
     return retval;
 }
 
+static int local_host_ssl(avs_net_abstract_socket_t *socket_,
+                          char *out_buffer, size_t out_buffer_size) {
+    ssl_socket_t *socket = (ssl_socket_t *) socket_;
+    int retval;
+    WRAP_ERRNO(socket, retval,
+               avs_net_socket_get_local_host(socket->backend_socket,
+                                             out_buffer, out_buffer_size));
+    return retval;
+}
+
 static int local_port_ssl(avs_net_abstract_socket_t *socket_,
                           char *out_buffer, size_t out_buffer_size) {
     ssl_socket_t *socket = (ssl_socket_t *) socket_;
@@ -424,6 +434,7 @@ static const avs_net_socket_v_table_t ssl_vtable = {
     remote_host_ssl,
     remote_hostname_ssl,
     remote_port_ssl,
+    local_host_ssl,
     local_port_ssl,
     get_opt_ssl,
     set_opt_ssl,
