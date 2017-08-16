@@ -67,6 +67,7 @@ elseif(WITH_TINYDTLS)
 endif()
 
 avs_emit_deps(avs_net avs_stream avs_utils)
+include_directories(../stream/include_public ../utils/include_public)
 
 add_avs_test(avs_net ${ALL_SOURCES})
 avs_install_export(avs_net net)
