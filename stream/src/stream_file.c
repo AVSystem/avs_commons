@@ -14,10 +14,6 @@
  * limitations under the License.
  */
 
-#ifdef AVS_UNIT_TESTING
-#define _XOPEN_SOURCE 500 /* for mkstemp */
-#endif
-
 #include <config.h>
 
 #include <assert.h>

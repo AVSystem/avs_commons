@@ -14,10 +14,8 @@
  * limitations under the License.
  */
 
-/* for struct timespec and ssize_t */
-#define _GNU_SOURCE
-
 #include <config.h>
+#include <posix-config.h>
 
 #include <time.h>
 #include <assert.h>

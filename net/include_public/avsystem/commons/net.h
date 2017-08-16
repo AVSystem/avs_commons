@@ -743,7 +743,7 @@ int avs_net_socket_send_to(avs_net_abstract_socket_t *socket,
  * That means, one can still access the truncated message if required. Note
  * that the actual length of received datagram is lost.
  *
- * WARNING: When LwIP is used as a UDP/IP stack, this function will report the
+ * WARNING: If recvmsg() is not available, this function will report the
  * UDP datagram as truncated if it is exactly @p buffer_length bytes long.
  */
 int avs_net_socket_receive(avs_net_abstract_socket_t *socket,
@@ -778,7 +778,7 @@ int avs_net_socket_receive(avs_net_abstract_socket_t *socket,
  * That means, one can still access the truncated message if required. Note
  * that the actual length of received datagram is lost.
  *
- * WARNING: When LwIP is used as a UDP/IP stack, this function will report the
+ * WARNING: If recvmsg() is not available, this function will report the
  * UDP datagram as truncated if it is exactly @p buffer_length bytes long.
  */
 int avs_net_socket_receive_from(avs_net_abstract_socket_t *socket,

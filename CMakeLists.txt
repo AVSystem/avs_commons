@@ -219,20 +219,19 @@ if(NOT DEFINED HAVE_VISIBILITY)
     try_compile(HAVE_VISIBILITY ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp/visibility.c COMPILE_DEFINITIONS -Wall -Wextra -Werror -fvisibility=default)
 endif()
 
-include(CheckIncludeFiles)
-check_include_files("net/if.h" AVS_HAS_NET_IF_H)
+option(WITH_POSIX "Enable use of system-installed POSIX APIs" ON)
+if(WITH_POSIX)
+    add_definitions(-D_DEFAULT_SOURCE)
+    set(CMAKE_REQUIRED_DEFINITIONS -D_DEFAULT_SOURCE)
+else()
+    set(POSIX_COMPAT_HEADER "" CACHE STRING "POSIX compatibility header path")
+endif()
+include(${CMAKE_CURRENT_LIST_DIR}/cmake/PosixFeatures.cmake)
 
 include(CheckFunctionExists)
-check_function_exists(gai_strerror HAVE_GAI_STRERROR)
 check_function_exists(getifaddrs HAVE_GETIFADDRS)
-check_function_exists(getnameinfo HAVE_GETNAMEINFO)
-check_function_exists(inet_ntop HAVE_INET_NTOP)
-check_function_exists(inet_pton HAVE_INET_PTON)
-check_function_exists(poll HAVE_POLL)
 check_function_exists(backtrace HAVE_BACKTRACE)
 check_function_exists(backtrace_symbols HAVE_BACKTRACE_SYMBOLS)
-
-option(WITH_LWIP "Use lwIP library for networking" OFF)
 
 option(WITH_IPV4 "Enable IPv4 support" ON)
 option(WITH_IPV6 "Enable IPv6 support" ON)
@@ -461,6 +460,7 @@ if(NOT ${CMAKE_PROJECT_NAME} STREQUAL ${PROJECT_NAME})
 endif()
 
 configure_file("config/config.h.in" "config/config.h")
+configure_file("config/posix-config.h.in" "config/posix-config.h")
 configure_file("include_public/avsystem/commons/defs.h.in"
                "include_public/avsystem/commons/defs.h")
 

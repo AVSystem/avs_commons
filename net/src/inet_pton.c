@@ -34,19 +34,13 @@
  * WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#include "config.h"
+#include <config.h>
+#include <posix-config.h>
 
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
-
-#ifdef WITH_LWIP
-#   include "lwip_compat.h"
-#else
-#   include <errno.h>
-#   include <sys/types.h>
-#   include <sys/socket.h>
-#endif
+#include <errno.h>
 
 #include <avsystem/commons/defs.h>
 

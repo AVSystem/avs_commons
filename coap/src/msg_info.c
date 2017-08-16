@@ -16,7 +16,6 @@
 
 #include <config.h>
 
-#include <sys/types.h>
 
 #include <avsystem/commons/coap/msg_info.h>
 #include <avsystem/commons/coap/msg_builder.h>

@@ -14,12 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef _GNU_SOURCE
-#define _GNU_SOURCE /* for ssize_t, snprintf, and strcasecmp */
-/* avs_unit is currently GNU-specific anyway */
-#endif
-
 #include <config.h>
+#include <posix-config.h>
 
 #include <ctype.h>
 #include <inttypes.h>

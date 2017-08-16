@@ -14,10 +14,6 @@
  * limitations under the License.
  */
 
-#ifdef __STRICT_ANSI__
-#undef __STRICT_ANSI__ /* for va_copy() */
-#endif
-
 #include <config.h>
 
 #include <assert.h>

@@ -15,6 +15,7 @@
  */
 
 #include <config.h>
+#include <posix-config.h>
 
 #include <avsystem/commons/coap/socket.h>
 #include <avsystem/commons/coap/msg_builder.h>
@@ -24,14 +25,18 @@
 #include <stdlib.h>
 #include <errno.h>
 
-#include <netinet/in.h>
-
 #include <avsystem/commons/list.h>
 
 #include "log.h"
 #include "msg_cache.h"
 
 #pragma GCC visibility push(hidden)
+
+#ifdef WITH_IPV6
+# define AVS_ADDRSTRLEN INET6_ADDRSTRLEN
+#elif defined(WITH_IPV4)
+# define AVS_ADDRSTRLEN INET_ADDRSTRLEN
+#endif
 
 struct avs_coap_socket {
     avs_net_abstract_socket_t *dtls_socket;
@@ -160,7 +165,7 @@ static int try_cache_response(avs_coap_socket_t *sock,
         return 0;
     }
 
-    char addr[INET6_ADDRSTRLEN];
+    char addr[AVS_ADDRSTRLEN];
     char port[sizeof("65535")];
     if (avs_net_socket_get_remote_host(sock->dtls_socket, addr, sizeof(addr))
             || avs_net_socket_get_remote_port(sock->dtls_socket,
@@ -239,7 +244,7 @@ static int try_send_cached_response(avs_coap_socket_t *sock,
         return -1;
     }
 
-    char addr[INET6_ADDRSTRLEN];
+    char addr[AVS_ADDRSTRLEN];
     char port[sizeof("65535")];
     if (avs_net_socket_get_remote_host(sock->dtls_socket, addr, sizeof(addr))
             || avs_net_socket_get_remote_port(sock->dtls_socket,

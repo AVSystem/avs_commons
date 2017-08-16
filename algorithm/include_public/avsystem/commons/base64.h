@@ -22,7 +22,6 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include <sys/types.h>
 
 /**
  * @file base64.h

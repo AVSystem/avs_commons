@@ -14,27 +14,10 @@
  * limitations under the License.
  */
 
-#cmakedefine HAVE_GAI_STRERROR
-
 #cmakedefine HAVE_GETIFADDRS
-
-#cmakedefine HAVE_GETNAMEINFO
-
-#cmakedefine HAVE_INET_NTOP
-
-#cmakedefine HAVE_INET_PTON
-
-#cmakedefine HAVE_POLL
-
 #cmakedefine HAVE_BACKTRACE
-
 #cmakedefine HAVE_BACKTRACE_SYMBOLS
-
-#if defined(HAVE_BACKTRACE) && defined(HAVE_BACKTRACE_SYMBOLS)
-#define WITH_AVS_STACK_TRACE
-#endif
-
-#cmakedefine WITH_LWIP
+#cmakedefine HAVE_POLL
 
 #cmakedefine WITH_IPV4
 #cmakedefine WITH_IPV6
@@ -53,6 +36,12 @@
 # define IPV6_AVAILABLE 1
 #else
 # define IPV6_AVAILABLE 0
+#endif
+
+#ifdef WITH_IPV6
+# define AVS_ADDRSTRLEN INET6_ADDRSTRLEN
+#elif defined(WITH_IPV4)
+# define AVS_ADDRSTRLEN INET_ADDRSTRLEN
 #endif
 
 #cmakedefine WITH_SSL

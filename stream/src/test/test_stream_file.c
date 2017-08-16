@@ -20,6 +20,8 @@
 
 #include <avsystem/commons/unit/test.h>
 
+int mkstemp(char *template);
+
 static char TEMPLATE[] = "/tmp/test_stream_file-XXXXXX";
 
 static int make_temporary(char *out_filename) {

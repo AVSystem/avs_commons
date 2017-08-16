@@ -30,12 +30,23 @@ extern "C" {
  * Global common definitions.
 */
 
-#cmakedefine AVS_HAS_NET_IF_H
-#ifdef AVS_HAS_NET_IF_H
-#include <net/if.h>
-#else
-#define IF_NAMESIZE 16
-#endif
+#ifndef IF_NAMESIZE
+#cmakedefine HAVE_NET_IF_H
+# ifdef HAVE_NET_IF_H
+#  include <net/if.h>
+# else
+#  define IF_NAMESIZE 16
+# endif
+#endif // IF_NAMESIZE
+
+#ifndef AVS_SSIZE_T_DEFINED
+#cmakedefine HAVE_SYS_TYPES_H
+# ifdef HAVE_SYS_TYPES_H
+#  include <sys/types.h>
+# else
+typedef long ssize_t;
+# endif
+#endif // AVS_SSIZE_T_DEFINED
 
 /**
  * Internal definitions used by the library to implement the functionality.
@@ -214,4 +225,5 @@ typedef long avs_off_t;
 #define AVS_MIN(a, b) ((a) < (b) ? (a) : (b))
 #define AVS_MAX(a, b) ((a) < (b) ? (b) : (a))
 #define AVS_ARRAY_SIZE(arr) (sizeof(arr) / sizeof(arr[0]))
+
 #endif	/* AVS_COMMONS_DEFS_H */

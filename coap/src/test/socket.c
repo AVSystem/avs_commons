@@ -15,9 +15,9 @@
  */
 
 #include <config.h>
+#include <posix-config.h>
 
 #include <alloca.h>
-#include <netinet/in.h>
 
 #include <avsystem/commons/unit/test.h>
 #include <avsystem/commons/stream.h>

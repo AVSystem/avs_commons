@@ -19,7 +19,6 @@
 #include <avsystem/commons/coap/opt.h>
 
 #include <assert.h>
-#include <sys/types.h>
 #include <stdio.h>
 
 #include <avsystem/commons/coap/block_utils.h>

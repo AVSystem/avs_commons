@@ -14,31 +14,12 @@
  * limitations under the License.
  */
 
-#ifndef _GNU_SOURCE
-#define _GNU_SOURCE /* for rand_r(), addrinfo and many others */
-#endif
+#define _AVS_NEED_POSIX_SOCKET
 
 #include <config.h>
+#include <posix-config.h>
 
 #include <avsystem/commons/utils.h>
-
-#ifdef WITH_LWIP
-#   include "lwip_compat.h"
-#else /* WITH_LWIP */
-#   include <fcntl.h>
-#   include <netdb.h>
-#   include <unistd.h>
-#   ifdef HAVE_POLL
-#       include <poll.h>
-#   else
-#       include <sys/select.h>
-#   endif
-#   include <sys/ioctl.h>
-#   include <sys/socket.h>
-#   include <sys/types.h>
-#   include <arpa/inet.h>
-#   include <netinet/in.h>
-#endif
 
 #include <assert.h>
 #include <errno.h>
@@ -79,6 +60,8 @@ const char *_avs_inet_ntop(int af, const void *src, char *dst, socklen_t size);
 #else
 int _avs_inet_pton(int af, const char *src, void *dst);
 #endif
+
+int close(int fd);
 
 typedef union {
     struct sockaddr         addr;
@@ -362,8 +345,10 @@ static int remote_host_net(avs_net_abstract_socket_t *socket,
 
     errno = 0;
     if (!getpeername(net_socket->socket, &addr.addr, &addrlen)) {
-        unmap_v4mapped(&addr);
-        int result = get_string_ip(&addr, out_buffer, out_buffer_size);
+        int result = unmap_v4mapped(&addr);
+        if (!result) {
+            result = get_string_ip(&addr, out_buffer, out_buffer_size);
+        }
         net_socket->error_code = (result ? ERANGE : 0);
         return result;
     } else {
@@ -462,6 +447,7 @@ static sa_family_t get_socket_family(int fd) {
     }
 }
 
+#ifdef WITH_IPV6
 /**
  * Differs from get_socket_family() by the fact that if the socket is AF_INET6
  * at the kernel level, but is connected to an IPv4-mapped address, it returns
@@ -482,6 +468,7 @@ static sa_family_t get_connection_family(int fd) {
         return addr.addr.sa_family;
     }
 }
+#endif // WITH_IPV6
 
 #if !defined(IP_TRANSPARENT) && defined(__linux__)
 #define IP_TRANSPARENT 19
@@ -951,7 +938,7 @@ static int send_to_net(avs_net_abstract_socket_t *net_socket_,
     }
 }
 
-#ifdef WITH_LWIP
+#ifndef HAVE_RECVMSG
 
 /* (2017-01-03) LwIP does not implement recvmsg call, try to simulate it using
  * plain recv(), with a little hack to try to detect truncated packets. */
@@ -980,7 +967,7 @@ static ssize_t recvfrom_impl(avs_net_socket_t *net_socket,
     return recv_out;
 }
 
-#else /* WITH_LWIP */
+#else /* HAVE_RECVMSG */
 
 static ssize_t recvfrom_impl(avs_net_socket_t *net_socket,
                              void *buffer,
@@ -1016,7 +1003,7 @@ static ssize_t recvfrom_impl(avs_net_socket_t *net_socket,
     return recv_out;
 }
 
-#endif /* WITH_LWIP */
+#endif /* HAVE_RECVMSG */
 
 static int receive_net(avs_net_abstract_socket_t *net_socket_,
                        size_t *out,
@@ -1351,8 +1338,10 @@ static int local_host_net(avs_net_abstract_socket_t *socket,
 
     errno = 0;
     if (!getsockname(net_socket->socket, &addr.addr, &addrlen)) {
-        unmap_v4mapped(&addr);
-        int result = get_string_ip(&addr, out_buffer, out_buffer_size);
+        int result = unmap_v4mapped(&addr);
+        if (!result) {
+            result = get_string_ip(&addr, out_buffer, out_buffer_size);
+        }
         net_socket->error_code = (result ? ERANGE : 0);
         return result;
     } else {
@@ -1616,9 +1605,6 @@ interface_name_end:
     free(reqs);
     close(null_socket);
     return retval;
-#elif defined(WITH_LWIP)
-#warning "TODO"
-    return -1;
 #else
     return -1;
 #endif

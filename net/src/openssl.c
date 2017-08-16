@@ -14,25 +14,14 @@
  * limitations under the License.
  */
 
-#ifndef _POSIX_C_SOURCE
-#define _POSIX_C_SOURCE 200112L /* for snprintf() on C89 and clock_gettime() */
-#endif
-
 #include <config.h>
-
-#ifdef WITH_LWIP
-#   include "lwip_compat.h"
-#else
-#   include <sys/socket.h>
-#endif
+#include <posix-config.h>
 
 #include <assert.h>
 #include <ctype.h>
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
-#include <unistd.h>
-#include <sys/time.h>
 #include <openssl/ssl.h>
 #include <openssl/rand.h>
 #include <openssl/err.h>

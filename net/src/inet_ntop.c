@@ -38,18 +38,12 @@ static char rcsid[] = "$Id: inet_ntop.c,v 8.5 1996/05/22 04:56:30 vixie Exp $";
 #endif /* LIBC_SCCS and not lint */
 
 #include <config.h>
+#include <posix-config.h>
 
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
-
-#ifdef WITH_LWIP
-#   include "lwip_compat.h"
-#else
-#   include <errno.h>
-#   include <sys/types.h>
-#   include <sys/socket.h>
-#endif
+#include <errno.h>
 
 #ifndef __u_char_defined
 

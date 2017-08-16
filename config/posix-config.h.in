@@ -1,0 +1,136 @@
+/*
+ * Copyright 2017 AVSystem <avsystem@avsystem.com>
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#ifndef CONFIG_POSIX_CONFIG_H
+#define CONFIG_POSIX_CONFIG_H
+
+#cmakedefine WITH_POSIX
+
+/* POSIX headers */
+#cmakedefine HAVE_SYS_SELECT_H
+#cmakedefine HAVE_SYS_SOCKET_H
+#cmakedefine HAVE_SYS_TIME_H
+#cmakedefine HAVE_SYS_TYPES_H
+#cmakedefine HAVE_ARPA_INET_H
+#cmakedefine HAVE_FCNTL_H
+#cmakedefine HAVE_NET_IF_H
+#cmakedefine HAVE_NETDB_H
+#cmakedefine HAVE_NETINET_IN_H
+#cmakedefine HAVE_POLL_H
+#cmakedefine HAVE_STRINGS_H
+#cmakedefine HAVE_UNISTD_H
+
+/* POSIX types */
+#cmakedefine HAVE_STRUCT_TIMESPEC
+#cmakedefine HAVE_CLOCKID_T
+#cmakedefine HAVE_STRUCT_TIMEVAL
+#cmakedefine HAVE_STRUCT_FD_SET
+#cmakedefine HAVE_SSIZE_T
+#cmakedefine HAVE_SOCKLEN_T
+#cmakedefine HAVE_STRUCT_ADDRINFO
+
+/* POSIX macros */
+#cmakedefine HAVE_F_GETFL
+#cmakedefine HAVE_F_SETFL
+#cmakedefine HAVE_IF_NAMESIZE
+#cmakedefine HAVE_INET6_ADDRSTRLEN
+#cmakedefine HAVE_INET_ADDRSTRLEN
+#cmakedefine HAVE_O_NONBLOCK
+#cmakedefine HAVE_CLOCK_REALTIME
+#cmakedefine HAVE_CLOCK_MONOTONIC
+
+/* POSIX functions */
+#cmakedefine HAVE_CLOCK_GETTIME
+#cmakedefine HAVE_FCNTL
+#cmakedefine HAVE_FREEADDRINFO
+#cmakedefine HAVE_GAI_STRERROR
+#cmakedefine HAVE_GETADDRINFO
+#cmakedefine HAVE_GETNAMEINFO
+#cmakedefine HAVE_INET_NTOP
+#cmakedefine HAVE_INET_PTON
+#cmakedefine HAVE_POLL
+#cmakedefine HAVE_SELECT
+#cmakedefine HAVE_STRCASECMP
+#cmakedefine HAVE_HTONS
+#cmakedefine HAVE_NTOHS
+#cmakedefine HAVE_HTONL
+#cmakedefine HAVE_HTONL
+#cmakedefine HAVE_RECVMSG
+
+#ifdef WITH_POSIX
+# include <sys/select.h>
+# include <sys/socket.h>
+# include <sys/time.h>
+# include <sys/types.h>
+# include <arpa/inet.h>
+# include <fcntl.h>
+# include <net/if.h>
+# include <netdb.h>
+# include <netinet/in.h>
+# include <poll.h>
+# include <strings.h>
+# include <unistd.h>
+# include <time.h>
+#else // WITH_POSIX
+#cmakedefine POSIX_COMPAT_HEADER
+# ifndef POSIX_COMPAT_HEADER
+#  error "Compiling for a non-POSIX platform and POSIX_CONFIG_HEADER not defined"
+# else
+#  include "@POSIX_COMPAT_HEADER@"
+// If POSIX socket APIs are implemented as macros (e.g. LwIP), redefining
+// common words like close to something else wreaks havoc all over the place.
+#  ifndef _AVS_NEED_POSIX_SOCKET
+#   ifdef accept
+#    undef accept
+#   endif
+#   ifdef bind
+#    undef bind
+#   endif
+#   ifdef shutdown
+#    undef shutdown
+#   endif
+#   ifdef connect
+#    undef connect
+#   endif
+#   ifdef listen
+#    undef listen
+#   endif
+#   ifdef recv
+#    undef recv
+#   endif
+#   ifdef send
+#    undef send
+#   endif
+#   ifdef socket
+#    undef socket
+#   endif
+#   ifdef select
+#    undef select
+#   endif
+#   ifdef read
+#    undef read
+#   endif
+#   ifdef write
+#    undef write
+#   endif
+#   ifdef close
+#    undef close
+#   endif
+#  endif // _AVS_NEED_POSIX_SOCKET
+# endif
+#endif // WITH_POSIX
+
+#endif /* CONFIG_POSIX_CONFIG_H */

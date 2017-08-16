@@ -14,20 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef _GNU_SOURCE
-#define _GNU_SOURCE /* for addrinfo */
-#endif
-
 #include <config.h>
-
-#ifdef WITH_LWIP
-#   include "lwip_compat.h"
-#else /* WITH_LWIP */
-#   include <netdb.h>
-#   include <sys/socket.h>
-#   include <sys/types.h>
-#   include <netinet/in.h>
-#endif
+#include <posix-config.h>
 
 #include <assert.h>
 #include <stdbool.h>

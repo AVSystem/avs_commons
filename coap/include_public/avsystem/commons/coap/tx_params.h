@@ -19,9 +19,7 @@
 
 #include <assert.h>
 #include <stdint.h>
-#include <unistd.h>
 
-#include <sys/time.h>
 
 #include <avsystem/commons/net.h>
 #include <avsystem/commons/time.h>

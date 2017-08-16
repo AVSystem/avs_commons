@@ -185,20 +185,6 @@ AVS_UNIT_TEST(parse_url, space_within_credentials) {
             "http://user:password @acs.avsystem.com"));
 }
 
-AVS_UNIT_TEST(parse_url, ftp_ipv6) {
-    avs_url_t *parsed_url = avs_url_parse("ftp://[12::34]");
-    AVS_UNIT_ASSERT_NOT_NULL(parsed_url);
-
-    AVS_UNIT_ASSERT_EQUAL_STRING(avs_url_protocol(parsed_url), "ftp");
-    AVS_UNIT_ASSERT_EQUAL_STRING(avs_url_host(parsed_url), "12::34");
-    AVS_UNIT_ASSERT_NULL(avs_url_port(parsed_url));
-    AVS_UNIT_ASSERT_EQUAL_STRING(avs_url_path(parsed_url), "/");
-    AVS_UNIT_ASSERT_NULL(avs_url_user(parsed_url));
-    AVS_UNIT_ASSERT_NULL(avs_url_password(parsed_url));
-
-    avs_url_free(parsed_url);
-}
-
 AVS_UNIT_TEST(parse_url, null_in_username_and_password) {
     AVS_UNIT_ASSERT_NULL(
             avs_url_parse("http://user%00:password@acs.avsystem.com/path"));
@@ -226,6 +212,21 @@ AVS_UNIT_TEST(parse_url, port_invalid_characters) {
     AVS_UNIT_ASSERT_NULL(avs_url_parse("http://acs.avsystem.com:1_234/path"));
     AVS_UNIT_ASSERT_NULL(avs_url_parse("http://acs.avsystem.com:http/path"));
     AVS_UNIT_ASSERT_NULL(avs_url_parse("http://acs.avsystem.com:12345_/path"));
+}
+
+#ifdef WITH_IPV6
+AVS_UNIT_TEST(parse_url, ftp_ipv6) {
+    avs_url_t *parsed_url = avs_url_parse("ftp://[12::34]");
+    AVS_UNIT_ASSERT_NOT_NULL(parsed_url);
+
+    AVS_UNIT_ASSERT_EQUAL_STRING(avs_url_protocol(parsed_url), "ftp");
+    AVS_UNIT_ASSERT_EQUAL_STRING(avs_url_host(parsed_url), "12::34");
+    AVS_UNIT_ASSERT_NULL(avs_url_port(parsed_url));
+    AVS_UNIT_ASSERT_EQUAL_STRING(avs_url_path(parsed_url), "/");
+    AVS_UNIT_ASSERT_NULL(avs_url_user(parsed_url));
+    AVS_UNIT_ASSERT_NULL(avs_url_password(parsed_url));
+
+    avs_url_free(parsed_url);
 }
 
 AVS_UNIT_TEST(parse_url, ipv6_address) {
@@ -279,6 +280,7 @@ AVS_UNIT_TEST(parse_url, invalid_ipv6_address) {
     AVS_UNIT_ASSERT_NULL(avs_url_parse("http://[12:ff:ff::34"));
     AVS_UNIT_ASSERT_NULL(avs_url_parse("http://[12:ff:ff::34]:"));
 }
+#endif // WITH_IPV6
 
 AVS_UNIT_TEST(parse_url, empty_host) {
     avs_url_t *parsed_url = avs_url_parse("http://host");

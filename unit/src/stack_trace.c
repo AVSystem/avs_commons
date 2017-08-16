@@ -14,16 +14,16 @@
  * limitations under the License.
  */
 
-#ifndef _POSIX_C_SOURCE
-#define _POSIX_C_SOURCE 200809L /* a lot of things (nanosleep, strdup, ...) */
-/* avs_unit is currently GNU-specific anyway */
-#endif
-
 #include <config.h>
+#include <posix-config.h>
 
 #include <avsystem/commons/defs.h>
 
 #include "stack_trace.h"
+
+#if defined(WITH_POSIX) && defined(HAVE_BACKTRACE) && defined(HAVE_BACKTRACE_SYMBOLS)
+#define WITH_AVS_STACK_TRACE
+#endif
 
 #ifndef WITH_AVS_STACK_TRACE
 

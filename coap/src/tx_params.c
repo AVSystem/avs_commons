@@ -14,9 +14,8 @@
  * limitations under the License.
  */
 
-/* for timespec */
-#define _GNU_SOURCE
 #include <config.h>
+#include <posix-config.h>
 
 #include <avsystem/commons/coap/tx_params.h>
 #include <avsystem/commons/time.h>

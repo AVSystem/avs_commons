@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-#include <unistd.h>
 #include <string.h>
 
 #include <avsystem/commons/unit/test.h>

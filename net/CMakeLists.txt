@@ -15,8 +15,12 @@
 set(SOURCES
     src/addrinfo.c
     src/api.c
-    src/net.c
     src/url.c)
+
+option(WITH_POSIX_AVS_SOCKET "Enable avs_socket implementation based on POSIX socket API" ${WITH_POSIX})
+if(WITH_POSIX_AVS_SOCKET)
+    set(SOURCES ${SOURCES} src/net.c)
+endif()
 
 if(NOT HAVE_INET_NTOP)
     set(SOURCES ${SOURCES} src/inet_ntop.c)
@@ -36,8 +40,7 @@ endif()
 
 set(PRIVATE_HEADERS
     src/compat.h
-    src/net.h
-    src/lwip_compat.h)
+    src/net.h)
 
 set(PUBLIC_HEADERS
     include_public/avsystem/commons/net.h

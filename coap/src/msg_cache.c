@@ -14,13 +14,8 @@
  * limitations under the License.
  */
 
-/* for clock_gettime() and struct timespec */
-#define _POSIX_C_SOURCE 200809L
 #include <config.h>
-
-#include <netinet/in.h>
-#include <time.h>
-#include <unistd.h>
+#include <posix-config.h>
 
 #include <avsystem/commons/buffer.h>
 #include <avsystem/commons/defs.h>
@@ -35,9 +30,15 @@
 
 #pragma GCC visibility push(hidden)
 
+#ifdef WITH_IPV6
+# define AVS_ADDRSTRLEN INET6_ADDRSTRLEN
+#elif defined(WITH_IPV4)
+# define AVS_ADDRSTRLEN INET_ADDRSTRLEN
+#endif
+
 typedef struct endpoint {
     uint16_t refcount;
-    char addr[INET6_ADDRSTRLEN];
+    char addr[AVS_ADDRSTRLEN];
     char port[sizeof("65535")];
 } endpoint_t;
 
