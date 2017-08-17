@@ -33,6 +33,7 @@ install_manifest.txt
 _CPack_Packages/
 Testing/
 /config/config.h
+/config/posix-config.h
 /include_public/avsystem/commons/defs.h
 
 # documentation
