@@ -14,11 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef _POSIX_C_SOURCE
-#define _POSIX_C_SOURCE 200809L /* strdup() */
-#endif
-
 #include <config.h>
+#include <posix-config.h>
 
 #include <string.h>
 

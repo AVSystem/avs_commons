@@ -15,10 +15,10 @@
  */
 
 #include <config.h>
+#include <posix-config.h>
 
 #include <ctype.h>
 #include <string.h>
-#include <strings.h>
 
 #include <avsystem/commons/utils.h>
 

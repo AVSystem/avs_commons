@@ -170,7 +170,7 @@ static int try_cache_response(avs_coap_socket_t *sock,
     if (avs_net_socket_get_remote_host(sock->dtls_socket, addr, sizeof(addr))
             || avs_net_socket_get_remote_port(sock->dtls_socket,
                                               port, sizeof(port))) {
-        LOG(DEBUG, "could not get remote remote host/port");
+        LOG(DEBUG, "could not get remote host/port");
         return -1;
     }
 

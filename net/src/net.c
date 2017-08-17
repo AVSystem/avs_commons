@@ -61,8 +61,6 @@ const char *_avs_inet_ntop(int af, const void *src, char *dst, socklen_t size);
 int _avs_inet_pton(int af, const char *src, void *dst);
 #endif
 
-int close(int fd);
-
 typedef union {
     struct sockaddr         addr;
     struct sockaddr_storage addr_storage;
@@ -345,10 +343,8 @@ static int remote_host_net(avs_net_abstract_socket_t *socket,
 
     errno = 0;
     if (!getpeername(net_socket->socket, &addr.addr, &addrlen)) {
-        int result = unmap_v4mapped(&addr);
-        if (!result) {
-            result = get_string_ip(&addr, out_buffer, out_buffer_size);
-        }
+        (void)unmap_v4mapped(&addr);
+        int result = get_string_ip(&addr, out_buffer, out_buffer_size);
         net_socket->error_code = (result ? ERANGE : 0);
         return result;
     } else {
@@ -1338,10 +1334,8 @@ static int local_host_net(avs_net_abstract_socket_t *socket,
 
     errno = 0;
     if (!getsockname(net_socket->socket, &addr.addr, &addrlen)) {
-        int result = unmap_v4mapped(&addr);
-        if (!result) {
-            result = get_string_ip(&addr, out_buffer, out_buffer_size);
-        }
+        (void)unmap_v4mapped(&addr);
+        int result = get_string_ip(&addr, out_buffer, out_buffer_size);
         net_socket->error_code = (result ? ERANGE : 0);
         return result;
     } else {

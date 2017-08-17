@@ -1130,6 +1130,7 @@ AVS_UNIT_TEST(http, send_headers_fail) {
     avs_http_free(client);
 }
 
+#ifdef WITH_IPV6
 AVS_UNIT_TEST(http, ipv6_host_header_has_square_brackets) {
     const char *tmp_data = NULL;
     avs_http_t *client = avs_http_new(&AVS_HTTP_DEFAULT_BUFFER_SIZES);
@@ -1158,3 +1159,4 @@ AVS_UNIT_TEST(http, ipv6_host_header_has_square_brackets) {
     avs_stream_cleanup(&stream);
     avs_http_free(client);
 }
+#endif // WITH_IPV6

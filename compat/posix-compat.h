@@ -73,6 +73,24 @@ int clock_gettime(clockid_t clk_id, struct timespec *tp);
 int strcasecmp(const char *s1, const char *s2);
 #endif
 
+#if defined(HAVE_STRNCASECMP) && defined(HAVE_STRINGS_H)
+#include <strings.h>
+#else
+int strncasecmp(const char *s1, const char *s2, size_t n);
+#endif
+
+#if defined(HAVE_STRTOK_R)
+# include <string.h>
+#else
+char *strtok_r(char *str, const char *delim, char **saveptr);
+#endif
+
+#if defined(HAVE_CLOSE) && defined(HAVE_UNISTD_H)
+# include <unistd.h>
+#else
+int close(int fd);
+#endif
+
 
 #if defined(WITH_IPV4)
 # if defined(HAVE_INET_ADDRSTRLEN) && defined(HAVE_NETINET_IN_H)

@@ -64,11 +64,13 @@
 #cmakedefine HAVE_POLL
 #cmakedefine HAVE_SELECT
 #cmakedefine HAVE_STRCASECMP
+#cmakedefine HAVE_STRNCASECMP
 #cmakedefine HAVE_HTONS
 #cmakedefine HAVE_NTOHS
 #cmakedefine HAVE_HTONL
 #cmakedefine HAVE_HTONL
 #cmakedefine HAVE_RECVMSG
+#cmakedefine HAVE_CLOSE
 
 #ifdef WITH_POSIX
 # include <sys/select.h>
