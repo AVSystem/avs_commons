@@ -159,8 +159,7 @@ const void *avs_stream_v_table_find_extension(avs_stream_abstract_t *stream,
 
 #define AVS_STREAM_V_TABLE_EXTENSION_NONBLOCK 0x4E424C4BUL /* "NBLK" */
 
-typedef int (*avs_stream_nonblock_read_ready_t)(avs_stream_abstract_t *stream,
-                                                size_t *out_ready_bytes);
+typedef int (*avs_stream_nonblock_read_ready_t)(avs_stream_abstract_t *stream);
 
 typedef int (*avs_stream_nonblock_write_ready_t)(
         avs_stream_abstract_t *stream,

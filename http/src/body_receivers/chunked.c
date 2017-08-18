@@ -89,6 +89,7 @@ static int read_chunk_size_getline_reader(void *state,
                               buffer, buffer_length);
 }
 
+#warning "TODO: Refactor this so that we don't block prematurely on reading chunk size"
 static int chunked_read(avs_stream_abstract_t *stream_,
                         size_t *out_bytes_read,
                         char *out_message_finished,
@@ -129,6 +130,11 @@ static int chunked_read(avs_stream_abstract_t *stream_,
         LOG(ERROR, "chunked_read: result == %d", result);
     }
     return result;
+}
+
+static int chunked_nonblock_read_ready(avs_stream_abstract_t *stream_) {
+    chunked_receiver_t *stream = (chunked_receiver_t *) stream_;
+    return avs_stream_nonblock_read_ready(stream->backend);
 }
 
 typedef struct {
@@ -197,7 +203,18 @@ static const avs_stream_v_table_t chunked_receiver_vtable = {
     (avs_stream_reset_t) unimplemented,
     chunked_close,
     chunked_errno,
-    NULL
+    &(avs_stream_v_table_extension_t[]) {
+        {
+            AVS_STREAM_V_TABLE_EXTENSION_NONBLOCK,
+            &(avs_stream_v_table_extension_nonblock_t[]) {
+                {
+                    chunked_nonblock_read_ready,
+                    (avs_stream_nonblock_write_ready_t) unimplemented
+                }
+            }[0]
+        },
+        AVS_STREAM_V_TABLE_EXTENSION_NULL
+    }[0]
 };
 
 avs_stream_abstract_t *_avs_http_body_receiver_chunked_create(

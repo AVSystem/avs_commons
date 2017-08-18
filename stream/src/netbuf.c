@@ -226,11 +226,9 @@ static int buffered_netstream_read(avs_stream_abstract_t *stream_,
 }
 
 static int
-buffered_netstream_nonblock_read_ready(avs_stream_abstract_t *stream_,
-                                       size_t *out_ready_bytes) {
-    buffered_netstream_t *stream = (buffered_netstream_t *) stream_;
-    *out_ready_bytes = avs_buffer_data_size(stream->in_buffer);
-    return 0;
+buffered_netstream_nonblock_read_ready(avs_stream_abstract_t *stream) {
+    return avs_buffer_data_size(((buffered_netstream_t *) stream)->in_buffer)
+            > 0;
 }
 
 static int buffered_netstream_peek(avs_stream_abstract_t *stream_,

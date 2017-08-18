@@ -122,8 +122,11 @@ static int http_nonblock_write_ready(avs_stream_abstract_t *stream_,
     if (!stream->encoder) {
         *out_ready_capacity_bytes =
                 stream->http->buffer_sizes.body_send - stream->out_buffer_pos;
+        return 0;
     } else {
-#warning "TODO"
+        // This is somewhat innacurate
+        return avs_stream_nonblock_write_ready(stream->encoder,
+                                               out_ready_capacity_bytes);
     }
     return 0;
 }
@@ -210,15 +213,12 @@ static int http_receive(avs_stream_abstract_t *stream_,
     return result;
 }
 
-static int http_nonblock_read_ready(avs_stream_abstract_t *stream_,
-                                    size_t *out_ready_bytes) {
+static int http_nonblock_read_ready(avs_stream_abstract_t *stream_) {
     http_stream_t *stream = (http_stream_t *) stream_;
     if (!stream->body_receiver) {
         return -1;
     }
-#warning "TODO: Support in receivers"
-    return avs_stream_nonblock_read_ready(stream->body_receiver,
-                                          out_ready_bytes);
+    return avs_stream_nonblock_read_ready(stream->body_receiver);
 }
 
 static int http_peek(avs_stream_abstract_t *stream_, size_t offset) {

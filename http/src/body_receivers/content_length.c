@@ -66,6 +66,15 @@ static int content_length_read(avs_stream_abstract_t *stream_,
     return result;
 }
 
+static int content_length_nonblock_read_ready(avs_stream_abstract_t *stream_) {
+    content_length_receiver_t *stream =
+            (content_length_receiver_t *) stream_;
+    if (stream->content_left) {
+        return avs_stream_nonblock_read_ready(stream->backend);
+    }
+    return 1;
+}
+
 static int content_length_peek(avs_stream_abstract_t *stream_, size_t offset) {
     content_length_receiver_t *stream =
             (content_length_receiver_t *) stream_;
@@ -102,7 +111,18 @@ static const avs_stream_v_table_t content_length_receiver_vtable = {
     (avs_stream_reset_t) unimplemented,
     content_length_close,
     content_length_errno,
-    NULL
+    &(avs_stream_v_table_extension_t[]) {
+        {
+            AVS_STREAM_V_TABLE_EXTENSION_NONBLOCK,
+            &(avs_stream_v_table_extension_nonblock_t[]) {
+                {
+                    content_length_nonblock_read_ready,
+                    (avs_stream_nonblock_write_ready_t) unimplemented
+                }
+            }[0]
+        },
+        AVS_STREAM_V_TABLE_EXTENSION_NULL
+    }[0]
 };
 
 avs_stream_abstract_t *_avs_http_body_receiver_content_length_create(

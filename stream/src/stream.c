@@ -380,14 +380,13 @@ const void *avs_stream_v_table_find_extension(avs_stream_abstract_t *stream,
     return NULL;
 }
 
-int avs_stream_nonblock_read_ready(avs_stream_abstract_t *stream,
-                                   size_t *out_bytes_ready) {
+int avs_stream_nonblock_read_ready(avs_stream_abstract_t *stream) {
     const avs_stream_v_table_extension_nonblock_t *nonblock =
             (const avs_stream_v_table_extension_nonblock_t *)
             avs_stream_v_table_find_extension(
                     stream, AVS_STREAM_V_TABLE_EXTENSION_NONBLOCK);
     if (nonblock) {
-        return nonblock->read_ready(stream, out_bytes_ready);
+        return nonblock->read_ready(stream);
     } else {
         return -1;
     }

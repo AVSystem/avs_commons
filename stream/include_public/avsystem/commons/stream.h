@@ -344,8 +344,7 @@ void avs_stream_cleanup(avs_stream_abstract_t **stream);
  */
 int avs_stream_errno(avs_stream_abstract_t *stream);
 
-int avs_stream_nonblock_read_ready(avs_stream_abstract_t *stream,
-                                   size_t *out_ready_bytes);
+int avs_stream_nonblock_read_ready(avs_stream_abstract_t *stream);
 
 int avs_stream_nonblock_write_ready(avs_stream_abstract_t *stream,
                                     size_t *out_ready_capacity_bytes);

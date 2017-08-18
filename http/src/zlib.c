@@ -262,6 +262,7 @@ static int compressor_close(avs_stream_abstract_t *stream) {
     return deflateEnd(&((zlib_stream_t *) stream)->zlib) == Z_OK ? 0 : -1;
 }
 
+#warning "TODO: Support NONBLOCK"
 static const avs_stream_v_table_t compressor_vtable = {
     zlib_stream_write_some,
     zlib_stream_finish_message,
