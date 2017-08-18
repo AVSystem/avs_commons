@@ -159,8 +159,36 @@ const void *avs_stream_v_table_find_extension(avs_stream_abstract_t *stream,
 
 #define AVS_STREAM_V_TABLE_EXTENSION_NONBLOCK 0x4E424C4BUL /* "NBLK" */
 
+/**
+ * @ref avs_stream_nonblock_read_ready implementation callback type
+ *
+ * Checks whether the following call to @ref avs_stream_read can be performed in
+ * a non-blocking manner, without performing external I/O.
+ *
+ * @param stream Stream to operate on.
+ * @returns Positive value if non-blocking operation is possible, zero if not,
+ *          or a negative value in case of error.
+ */
 typedef int (*avs_stream_nonblock_read_ready_t)(avs_stream_abstract_t *stream);
 
+/**
+ * @ref avs_stream_nonblock_write_ready implementation callback type
+ *
+ * Checks how much data can be passed to the stream with
+ * @ref avs_stream_write_some in a non-blocking manner, without performing
+ * external I/O.
+ *
+ * @param stream                   Stream to operate on.
+ *
+ * @param out_ready_capacity_bytes Pointer to a variable that, on successful
+ *                                 return, will be filled with the maximum
+ *                                 number of bytes that can be written to the
+ *                                 stream in a non-blocking manner.
+ *
+ * @returns 0 on success, negative value on error. Note that if non-blocking
+ *          operation is not possible, success may be returned, but
+ *          <c>*out_ready_capacity_bytes</c> will be set to 0.
+ */
 typedef int (*avs_stream_nonblock_write_ready_t)(
         avs_stream_abstract_t *stream,
         size_t *out_ready_capacity_bytes);
