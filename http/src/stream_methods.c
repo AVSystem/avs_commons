@@ -116,6 +116,18 @@ static int http_send_some(avs_stream_abstract_t *stream_,
     return 0;
 }
 
+static int http_nonblock_write_ready(avs_stream_abstract_t *stream_,
+                                     size_t *out_ready_capacity_bytes) {
+    http_stream_t *stream = (http_stream_t *) stream_;
+    if (!stream->encoder) {
+        *out_ready_capacity_bytes =
+                stream->http->buffer_sizes.body_send - stream->out_buffer_pos;
+    } else {
+#warning "TODO"
+    }
+    return 0;
+}
+
 static int http_finish(avs_stream_abstract_t *stream_) {
     http_stream_t *stream = (http_stream_t *) stream_;
     if (stream->encoder && stream->encoder_touched) {
@@ -196,6 +208,17 @@ static int http_receive(avs_stream_abstract_t *stream_,
         avs_stream_cleanup(&stream->body_receiver);
     }
     return result;
+}
+
+static int http_nonblock_read_ready(avs_stream_abstract_t *stream_,
+                                    size_t *out_ready_bytes) {
+    http_stream_t *stream = (http_stream_t *) stream_;
+    if (!stream->body_receiver) {
+        return -1;
+    }
+#warning "TODO: Support in receivers"
+    return avs_stream_nonblock_read_ready(stream->body_receiver,
+                                          out_ready_bytes);
 }
 
 static int http_peek(avs_stream_abstract_t *stream_, size_t offset) {
@@ -291,6 +314,15 @@ static const avs_stream_v_table_t http_vtable = {
                 {
                     http_getsock,
                     http_setsock
+                }
+            }[0]
+        },
+        {
+            AVS_STREAM_V_TABLE_EXTENSION_NONBLOCK,
+            &(avs_stream_v_table_extension_nonblock_t[]) {
+                {
+                    http_nonblock_read_ready,
+                    http_nonblock_write_ready
                 }
             }[0]
         },
