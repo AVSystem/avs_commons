@@ -42,6 +42,11 @@ static int dumb_proxy_read(avs_stream_abstract_t *stream,
                            buffer_length);
 }
 
+static int dumb_proxy_nonblock_read_ready(avs_stream_abstract_t *stream) {
+    return avs_stream_nonblock_read_ready(
+            ((dumb_proxy_receiver_t *) stream)->backend);
+}
+
 static int dumb_proxy_peek(avs_stream_abstract_t *stream, size_t offset) {
     return avs_stream_peek(((dumb_proxy_receiver_t *) stream)->backend,
                            offset);
@@ -71,7 +76,18 @@ static const avs_stream_v_table_t dumb_body_receiver_vtable = {
     (avs_stream_reset_t) unimplemented,
     dumb_close,
     dumb_errno,
-    NULL
+    &(avs_stream_v_table_extension_t[]) {
+        {
+            AVS_STREAM_V_TABLE_EXTENSION_NONBLOCK,
+            &(avs_stream_v_table_extension_nonblock_t[]) {
+                {
+                    dumb_proxy_nonblock_read_ready,
+                    (avs_stream_nonblock_write_ready_t) unimplemented
+                }
+            }[0]
+        },
+        AVS_STREAM_V_TABLE_EXTENSION_NULL
+    }[0]
 };
 
 avs_stream_abstract_t *

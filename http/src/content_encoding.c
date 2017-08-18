@@ -106,6 +106,25 @@ static int decoding_read(avs_stream_abstract_t *stream_,
     }
 }
 
+static int decoding_nonblock_read_ready(avs_stream_abstract_t *stream_) {
+    decoding_stream_t *stream = (decoding_stream_t *) stream_;
+    char no_more_data = 0;
+    while (avs_stream_peek(stream->decoder, 0) == EOF) {
+        int result = avs_stream_nonblock_read_ready(stream->backend);
+        if (result <= 0) {
+            return result;
+        }
+        // this will allocate a temporary buffer inside
+        if ((result = decode_more_data(stream, NULL, 0, &no_more_data))) {
+            return result < 0 ? result : -1;
+        }
+        if (no_more_data) {
+            return 1;
+        }
+    }
+    return 1;
+}
+
 static int decoding_peek(avs_stream_abstract_t *stream_, size_t offset) {
     decoding_stream_t *stream = (decoding_stream_t *) stream_;
     char no_more_data = 0;
@@ -145,7 +164,18 @@ static const avs_stream_v_table_t decoding_vtable = {
     (avs_stream_reset_t) unimplemented,
     decoding_close,
     decoding_errno,
-    NULL
+    &(avs_stream_v_table_extension_t[]) {
+        {
+            AVS_STREAM_V_TABLE_EXTENSION_NONBLOCK,
+            &(avs_stream_v_table_extension_nonblock_t[]) {
+                {
+                    decoding_nonblock_read_ready,
+                    (avs_stream_nonblock_write_ready_t) unimplemented
+                }
+            }[0]
+        },
+        AVS_STREAM_V_TABLE_EXTENSION_NULL
+    }[0]
 };
 
 avs_stream_abstract_t *

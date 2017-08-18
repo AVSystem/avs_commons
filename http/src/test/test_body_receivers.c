@@ -339,10 +339,19 @@ AVS_UNIT_TEST(http, chunked_receiver_error) {
     avs_stream_netbuf_create(&helper_stream, socket, 0, 0);
     AVS_UNIT_ASSERT_NOT_NULL(helper_stream);
     avs_unit_mocksock_input(socket, NULL, 0);
-    AVS_UNIT_ASSERT_NULL(create_body_receiver(helper_stream,
-                                              &AVS_HTTP_DEFAULT_BUFFER_SIZES,
-                                              TRANSFER_CHUNKED, 0));
+    avs_stream_abstract_t *receiver =
+            create_body_receiver(helper_stream,
+                                 &AVS_HTTP_DEFAULT_BUFFER_SIZES,
+                                 TRANSFER_CHUNKED, 0);
+    AVS_UNIT_ASSERT_NOT_NULL(receiver);
+    size_t bytes_received;
+    char message_finished;
+    char buffer[256];
+    AVS_UNIT_ASSERT_FAILED(avs_stream_read(receiver, &bytes_received,
+                                           &message_finished,
+                                           buffer, sizeof(buffer)));
     avs_unit_mocksock_expect_shutdown(socket);
+    avs_stream_cleanup(&receiver);
     avs_stream_cleanup(&helper_stream);
 }
 

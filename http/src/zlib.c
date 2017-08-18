@@ -131,6 +131,17 @@ static int zlib_stream_write_some(avs_stream_abstract_t *stream_,
     return zlib_stream_flush(stream);
 }
 
+static int zlib_stream_nonblock_write_ready(avs_stream_abstract_t *stream_,
+                                            size_t *out_ready_capacity_bytes) {
+    zlib_stream_t *stream = (zlib_stream_t *) stream_;
+    if (stream->zlib.avail_in > 0 && zlib_stream_flush(stream)) {
+        return -1;
+    }
+    *out_ready_capacity_bytes =
+            stream->input_buffer_size - stream->zlib.avail_in;
+    return 0;
+}
+
 static int zlib_stream_finish_message(avs_stream_abstract_t *stream_) {
     zlib_stream_t *stream = (zlib_stream_t *) stream_;
     stream->flush = Z_FINISH;
@@ -177,6 +188,17 @@ static int zlib_stream_read(avs_stream_abstract_t *stream_,
         return -1;
     }
     return 0;
+}
+
+static int zlib_stream_nonblock_read_ready(avs_stream_abstract_t *stream_) {
+    zlib_stream_t *stream = (zlib_stream_t *) stream_;
+    if (stream->zlib.avail_out < stream->output_buffer_size) {
+        return 1;
+    }
+    if (zlib_stream_flush(stream)) {
+        return -1;
+    }
+    return stream->zlib.avail_out < stream->output_buffer_size;
 }
 
 static int zlib_stream_peek(avs_stream_abstract_t *stream_,
@@ -262,6 +284,19 @@ static int compressor_close(avs_stream_abstract_t *stream) {
     return deflateEnd(&((zlib_stream_t *) stream)->zlib) == Z_OK ? 0 : -1;
 }
 
+static const avs_stream_v_table_extension_t zlib_vtable_extensions[] = {
+    {
+        AVS_STREAM_V_TABLE_EXTENSION_NONBLOCK,
+        &(avs_stream_v_table_extension_nonblock_t[]) {
+            {
+                zlib_stream_nonblock_read_ready,
+                zlib_stream_nonblock_write_ready
+            }
+        }[0]
+    },
+    AVS_STREAM_V_TABLE_EXTENSION_NULL
+};
+
 static const avs_stream_v_table_t compressor_vtable = {
     zlib_stream_write_some,
     zlib_stream_finish_message,
@@ -270,7 +305,7 @@ static const avs_stream_v_table_t compressor_vtable = {
     compressor_reset,
     compressor_close,
     zlib_stream_error,
-    NULL
+    zlib_vtable_extensions
 };
 
 avs_stream_abstract_t *
@@ -321,7 +356,7 @@ static const avs_stream_v_table_t decompressor_vtable = {
     decompressor_reset,
     decompressor_close,
     zlib_stream_error,
-    NULL
+    zlib_vtable_extensions
 };
 
 avs_stream_abstract_t *

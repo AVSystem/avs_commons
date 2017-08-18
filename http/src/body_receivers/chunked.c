@@ -32,6 +32,7 @@ typedef struct {
     avs_stream_abstract_t *backend;
     const avs_http_buffer_sizes_t *buffer_sizes;
     size_t chunk_left;
+    bool finished;
 } chunked_receiver_t;
 
 typedef int (*read_chunk_size_getline_func_t)(void *state,
@@ -97,38 +98,54 @@ static int chunked_read(avs_stream_abstract_t *stream_,
     chunked_receiver_t *stream = (chunked_receiver_t *) stream_;
     size_t bytes_read = 0;
     char backend_message_finished;
-    int result;
+    int result = 0;
     if (!out_bytes_read) {
         out_bytes_read = &bytes_read;
     }
     if (stream->chunk_left == 0) {
         *out_bytes_read = 0;
-        if (out_message_finished) {
-            *out_message_finished = 1;
+        if (!stream->finished
+                && !(result = read_chunk_size(stream->buffer_sizes,
+                                              read_chunk_size_getline_reader,
+                                              stream->backend,
+                                              &stream->chunk_left))
+                && stream->chunk_left == 0) {
+            stream->finished = true;
         }
-        return 0;
+        if (out_message_finished) {
+            *out_message_finished = stream->finished;
+        }
+        if (result || stream->finished
+                || avs_stream_nonblock_read_ready(stream->backend) <= 0) {
+            goto finish;
+        }
     }
     result = avs_stream_read(stream->backend, out_bytes_read,
                              &backend_message_finished, buffer,
                              AVS_MIN(buffer_length, stream->chunk_left));
     stream->chunk_left -= *out_bytes_read;
-    if (result == 0) {
-        if (backend_message_finished) {
-            LOG(ERROR, "unexpected end of stream");
-            result = -1;
-        } else if (stream->chunk_left == 0) {
-            result = read_chunk_size(stream->buffer_sizes,
-                                     read_chunk_size_getline_reader,
-                                     stream->backend, &stream->chunk_left);
-        }
+    if (!result && backend_message_finished) {
+        LOG(ERROR, "unexpected end of stream");
+        result = -1;
     }
     if (out_message_finished) {
-        *out_message_finished = (stream->chunk_left == 0);
+        // Note that this means that the final read will always be zero-length
+        *out_message_finished = 0;
     }
+finish:
     if (result) {
         LOG(ERROR, "chunked_read: result == %d", result);
     }
     return result;
+}
+
+static int chunked_nonblock_read_ready(avs_stream_abstract_t *stream_) {
+    chunked_receiver_t *stream = (chunked_receiver_t *) stream_;
+    // This is somewhat inaccurate. If there is a packet boundary somewhere
+    // *within* the chunk header, then the next read operation might indeed
+    // block. But I don't think there's a good solution to this problem that
+    // would not be overkill.
+    return avs_stream_nonblock_read_ready(stream->backend);
 }
 
 typedef struct {
@@ -147,21 +164,21 @@ static int read_chunk_size_getline_peeker(void *state_,
 static int chunked_peek(avs_stream_abstract_t *stream_, size_t offset) {
     chunked_receiver_t *stream =
             (chunked_receiver_t *) stream_;
+    if (stream->finished) {
+        return EOF;
+    }
     read_chunk_size_getline_peeker_state_t state;
     size_t chunk_left = stream->chunk_left;
     int result;
     state.stream = stream->backend;
     state.offset = 0;
     while (offset >= chunk_left) {
-        if (chunk_left == 0) {
-            return EOF;
-        }
         offset -= chunk_left;
         state.offset += chunk_left;
         result = read_chunk_size(stream->buffer_sizes,
                                  read_chunk_size_getline_peeker, &state,
                                  &chunk_left);
-        if (result) {
+        if (result || chunk_left == 0) {
             return EOF;
         }
     }
@@ -197,24 +214,31 @@ static const avs_stream_v_table_t chunked_receiver_vtable = {
     (avs_stream_reset_t) unimplemented,
     chunked_close,
     chunked_errno,
-    NULL
+    &(avs_stream_v_table_extension_t[]) {
+        {
+            AVS_STREAM_V_TABLE_EXTENSION_NONBLOCK,
+            &(avs_stream_v_table_extension_nonblock_t[]) {
+                {
+                    chunked_nonblock_read_ready,
+                    (avs_stream_nonblock_write_ready_t) unimplemented
+                }
+            }[0]
+        },
+        AVS_STREAM_V_TABLE_EXTENSION_NULL
+    }[0]
 };
 
 avs_stream_abstract_t *_avs_http_body_receiver_chunked_create(
         avs_stream_abstract_t *backend,
         const avs_http_buffer_sizes_t *buffer_sizes) {
-    chunked_receiver_t *retval = (chunked_receiver_t *) malloc(sizeof(*retval));
+    chunked_receiver_t *retval =
+            (chunked_receiver_t *) calloc(1, sizeof(*retval));
     LOG(TRACE, "create_content_length_receiver");
     if (retval) {
         *(const avs_stream_v_table_t **) (intptr_t) &retval->vtable =
                 &chunked_receiver_vtable;
         retval->backend = backend;
         retval->buffer_sizes = buffer_sizes;
-        if (read_chunk_size(buffer_sizes, read_chunk_size_getline_reader,
-                            backend, &retval->chunk_left)) {
-            free(retval);
-            retval = NULL;
-        }
     }
     return (avs_stream_abstract_t *) retval;
 }
