@@ -368,8 +368,8 @@ int avs_stream_nonblock_read_ready(avs_stream_abstract_t *stream);
  *                                 stream in a non-blocking manner.
  *
  * @returns 0 on success, negative value on error. Note that if non-blocking
- *          operation is not possible, success may be returned, but
- *          <c>*out_ready_capacity_bytes</c> will be set to 0.
+ *          operation is not possible, the expected result is success with
+ *          <c>*out_ready_capacity_bytes</c> set to 0.
  */
 int avs_stream_nonblock_write_ready(avs_stream_abstract_t *stream,
                                     size_t *out_ready_capacity_bytes);
