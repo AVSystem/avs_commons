@@ -287,8 +287,8 @@ int avs_coap_ctx_recv(avs_coap_ctx_t *ctx,
     LOG(TRACE, "recv: %s", AVS_COAP_MSG_SUMMARY(out_msg));
 
     if (is_coap_ping(out_msg)) {
-        avs_coap_send_empty(ctx, socket, AVS_COAP_MSG_RESET,
-                            avs_coap_msg_get_id(out_msg));
+        avs_coap_ctx_send_empty(ctx, socket, AVS_COAP_MSG_RESET,
+                                avs_coap_msg_get_id(out_msg));
         return AVS_COAP_CTX_ERR_MSG_WAS_PING;
     }
 
@@ -309,10 +309,10 @@ void avs_coap_ctx_set_tx_params(avs_coap_ctx_t *sock,
     sock->tx_params = tx_params;
 }
 
-int avs_coap_send_empty(avs_coap_ctx_t *ctx,
-                        avs_net_abstract_socket_t *socket,
-                        avs_coap_msg_type_t msg_type,
-                        uint16_t msg_id) {
+int avs_coap_ctx_send_empty(avs_coap_ctx_t *ctx,
+                            avs_net_abstract_socket_t *socket,
+                            avs_coap_msg_type_t msg_type,
+                            uint16_t msg_id) {
     avs_coap_msg_info_t info = avs_coap_msg_info_init();
 
     info.type = msg_type;
@@ -365,17 +365,17 @@ static void send_response(avs_coap_ctx_t *ctx,
     avs_coap_msg_info_reset(&info);
 }
 
-void avs_coap_send_error(avs_coap_ctx_t *ctx,
-                         avs_net_abstract_socket_t *socket,
-                         const avs_coap_msg_t *msg,
-                         uint8_t error_code) {
+void avs_coap_ctx_send_error(avs_coap_ctx_t *ctx,
+                             avs_net_abstract_socket_t *socket,
+                             const avs_coap_msg_t *msg,
+                             uint8_t error_code) {
     send_response(ctx, socket, msg, error_code, NULL);
 }
 
-void avs_coap_send_service_unavailable(avs_coap_ctx_t *ctx,
-                                       avs_net_abstract_socket_t *socket,
-                                       const avs_coap_msg_t *msg,
-                                       int32_t retry_after_ms) {
+void avs_coap_ctx_send_service_unavailable(avs_coap_ctx_t *ctx,
+                                           avs_net_abstract_socket_t *socket,
+                                           const avs_coap_msg_t *msg,
+                                           int32_t retry_after_ms) {
     uint32_t ms_to_retry_after =
         retry_after_ms >= 0 ? (uint32_t)retry_after_ms : 0;
 

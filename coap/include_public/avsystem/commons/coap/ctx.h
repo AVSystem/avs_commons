@@ -83,27 +83,27 @@ void avs_coap_ctx_set_tx_params(avs_coap_ctx_t *sock,
 /**
  * Sends an Empty message with given values of @p msg_type and @p msg_id.
  */
-int avs_coap_send_empty(avs_coap_ctx_t *ctx,
-                        avs_net_abstract_socket_t *socket,
-                        avs_coap_msg_type_t msg_type,
-                        uint16_t msg_id);
+int avs_coap_ctx_send_empty(avs_coap_ctx_t *ctx,
+                            avs_net_abstract_socket_t *socket,
+                            avs_coap_msg_type_t msg_type,
+                            uint16_t msg_id);
 
 /**
  * Responds with error specified as @p error_code to the message @p msg.
  */
-void avs_coap_send_error(avs_coap_ctx_t *ctx,
-                         avs_net_abstract_socket_t *socket,
-                         const avs_coap_msg_t *msg,
-                         uint8_t error_code);
+void avs_coap_ctx_send_error(avs_coap_ctx_t *ctx,
+                             avs_net_abstract_socket_t *socket,
+                             const avs_coap_msg_t *msg,
+                             uint8_t error_code);
 
 /**
  * Responds with a Service Unavailable messages, with Max-Age option set to
  * @p retry_after_ms converted to seconds.
  */
-void avs_coap_send_service_unavailable(avs_coap_ctx_t *ctx,
-                                       avs_net_abstract_socket_t *socket,
-                                       const avs_coap_msg_t *msg,
-                                       int32_t retry_after_ms);
+void avs_coap_ctx_send_service_unavailable(avs_coap_ctx_t *ctx,
+                                           avs_net_abstract_socket_t *socket,
+                                           const avs_coap_msg_t *msg,
+                                           int32_t retry_after_ms);
 
 /**
  * @returns the total amount of bytes transmitted through the ctx.
