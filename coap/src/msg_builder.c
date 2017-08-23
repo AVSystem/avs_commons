@@ -69,19 +69,17 @@ static int append_byte(avs_coap_msg_buffer_t *buffer,
 }
 
 static int append_token(avs_coap_msg_buffer_t *buffer,
-                        const avs_coap_token_t *token,
-                        size_t token_length) {
-    assert(token_length <= AVS_COAP_MAX_TOKEN_LENGTH);
+                        const avs_coap_token_t *token) {
+    assert(token->size <= AVS_COAP_MAX_TOKEN_LENGTH);
 
     if (buffer->msg->header.code == AVS_COAP_CODE_EMPTY
-            && token_length > 0) {
+            && token->size > 0) {
         LOG(ERROR, "0.00 Empty message must not contain a token");
         return -1;
     }
 
-    _avs_coap_msg_header_set_token_length(&buffer->msg->header,
-                                          (uint8_t) token_length);
-    if (append_data(buffer, token, token_length)) {
+    _avs_coap_msg_header_set_token_length(&buffer->msg->header, token->size);
+    if (append_data(buffer, token->bytes, token->size)) {
         LOG(ERROR, "could not append token");
         return -1;
     }
@@ -193,8 +191,7 @@ int avs_coap_msg_builder_reset(avs_coap_msg_builder_t *builder,
 
     append_header(&builder->msg_buffer,
                   header->type, header->code, header->identity.msg_id);
-    if (append_token(&builder->msg_buffer,
-                     &header->identity.token, header->identity.token_size)) {
+    if (append_token(&builder->msg_buffer, &header->identity.token)) {
         return -1;
     }
 

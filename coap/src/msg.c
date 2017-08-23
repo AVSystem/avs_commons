@@ -87,13 +87,14 @@ avs_coap_msg_code_to_string(uint8_t code, char *buf, size_t buf_size) {
     return buf;
 }
 
-size_t avs_coap_msg_get_token(const avs_coap_msg_t *msg,
-                              avs_coap_token_t *out_token) {
-    size_t token_length = avs_coap_msg_header_get_token_length(&msg->header);
-    assert(token_length <= AVS_COAP_MAX_TOKEN_LENGTH);
+avs_coap_token_t avs_coap_msg_get_token(const avs_coap_msg_t *msg) {
+    avs_coap_token_t token = {
+        .size = avs_coap_msg_header_get_token_length(&msg->header)
+    };
+    assert(token.size <= AVS_COAP_MAX_TOKEN_LENGTH);
 
-    memcpy(out_token, msg->content, token_length);
-    return token_length;
+    memcpy(token.bytes, msg->content, token.size);
+    return token;
 }
 
 static const avs_coap_opt_t *get_first_opt(const avs_coap_msg_t *msg) {
@@ -340,10 +341,9 @@ const char *
 avs_coap_msg_summary(const avs_coap_msg_t *msg, char *buf, size_t buf_size) {
     assert(avs_coap_msg_is_valid(msg));
 
-    avs_coap_token_t token;
-    size_t token_size = avs_coap_msg_get_token(msg, &token);
-    char token_string[sizeof(token) * 2 + 1] = "";
-    for (size_t i = 0; i < token_size; ++i) {
+    avs_coap_token_t token = avs_coap_msg_get_token(msg);
+    char token_string[sizeof(token.bytes) * 2 + 1] = "";
+    for (size_t i = 0; i < token.size; ++i) {
         snprintf(token_string + 2 * i, sizeof(token_string) - 2 * i,
                  "%02x", (uint8_t)token.bytes[i]);
     }
@@ -359,7 +359,7 @@ avs_coap_msg_summary(const avs_coap_msg_t *msg, char *buf, size_t buf_size) {
              AVS_COAP_CODE_STRING(msg->header.code),
              msg_type_string(avs_coap_msg_header_get_type(&msg->header)),
              avs_coap_msg_get_id(msg),
-             token_string, (unsigned long)token_size,
+             token_string, (unsigned long)token.size,
              block1, block2) < 0) {
         assert(0 && "should never happen");
         return "(cannot create summary)";

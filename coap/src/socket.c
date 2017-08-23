@@ -387,9 +387,7 @@ static void send_response(avs_coap_socket_t *socket,
 
     info.type = AVS_COAP_MSG_ACKNOWLEDGEMENT;
     info.code = code;
-    info.identity.msg_id = avs_coap_msg_get_id(msg);
-    info.identity.token_size =
-            avs_coap_msg_get_token(msg, &info.identity.token);
+    info.identity = avs_coap_msg_get_identity(msg);
 
     if (max_age
         && avs_coap_msg_info_opt_u32(&info, AVS_COAP_OPT_MAX_AGE, *max_age)) {

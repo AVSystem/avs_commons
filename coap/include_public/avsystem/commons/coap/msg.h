@@ -276,10 +276,9 @@ static inline bool avs_coap_msg_is_response(const avs_coap_msg_t *msg) {
 /**
  * @param msg       Message to retrieve token from.
  * @param out_token Buffer for the extracted token.
- * @returns Token length in bytes (0 <= length <= sizeof(avs_coap_token_t)).
+ * @returns Token length in bytes (0 <= length <= AVS_COAP_MAX_TOKEN_LENGTH).
  */
-size_t avs_coap_msg_get_token(const avs_coap_msg_t *msg,
-                              avs_coap_token_t *out_token);
+avs_coap_token_t avs_coap_msg_get_token(const avs_coap_msg_t *msg);
 
 /**
  * @param msg Message to retrieve identity from.
@@ -287,11 +286,10 @@ size_t avs_coap_msg_get_token(const avs_coap_msg_t *msg,
  */
 static inline avs_coap_msg_identity_t
 avs_coap_msg_get_identity(const avs_coap_msg_t *msg) {
-    avs_coap_msg_identity_t id;
-    memset(&id, 0, sizeof(id));
-    id.msg_id = avs_coap_msg_get_id(msg);
-    id.token_size = avs_coap_msg_get_token(msg, &id.token);
-    return id;
+    return (avs_coap_msg_identity_t) {
+        .msg_id = avs_coap_msg_get_id(msg),
+        .token = avs_coap_msg_get_token(msg)
+    };
 }
 
 /**
@@ -301,11 +299,8 @@ avs_coap_msg_get_identity(const avs_coap_msg_t *msg) {
 static inline bool
 avs_coap_msg_token_matches(const avs_coap_msg_t *msg,
                            const avs_coap_msg_identity_t *id) {
-    avs_coap_token_t msg_token;
-    size_t msg_token_size = avs_coap_msg_get_token(msg, &msg_token);
-
-    return avs_coap_token_equal(&msg_token, msg_token_size,
-                                   &id->token, id->token_size);
+    avs_coap_token_t msg_token = avs_coap_msg_get_token(msg);
+    return avs_coap_token_equal(&msg_token, &id->token);
 }
 
 /**

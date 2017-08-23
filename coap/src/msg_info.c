@@ -58,7 +58,7 @@ get_options_size_bytes(const AVS_LIST(avs_coap_msg_info_opt_t) opts) {
 size_t
 avs_coap_msg_info_get_headers_size(const avs_coap_msg_info_t *info) {
     return sizeof(avs_coap_msg_header_t)
-           + info->identity.token_size
+           + info->identity.token.size
            + get_options_size_bytes(info->options_);
 }
 

@@ -98,17 +98,16 @@ AVS_UNIT_TEST(coap_builder, header_only) {
 }
 
 AVS_UNIT_TEST(coap_info, token) {
-    avs_coap_token_t TOKEN = {"A Token"};
+    avs_coap_token_t TOKEN = {sizeof("A Token"), "A Token"};
     const size_t msg_tpl_size =
             offsetof(avs_coap_msg_t, content) + AVS_COAP_MAX_TOKEN_LENGTH;
     avs_coap_msg_t *msg_tpl = make_msg_template_with_data(
-            alloca(msg_tpl_size), &TOKEN, AVS_COAP_MAX_TOKEN_LENGTH);
-    _avs_coap_msg_header_set_token_length(&msg_tpl->header, sizeof(TOKEN));
+            alloca(msg_tpl_size), TOKEN.bytes, AVS_COAP_MAX_TOKEN_LENGTH);
+    _avs_coap_msg_header_set_token_length(&msg_tpl->header, TOKEN.size);
 
     avs_coap_msg_info_t info =
             INFO_WITH_HEADER(&msg_tpl->header);
     info.identity.token = TOKEN;
-    info.identity.token_size = sizeof(TOKEN);
 
     size_t storage_size = avs_coap_msg_info_get_storage_size(&info);
     void *storage = malloc(storage_size);
