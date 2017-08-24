@@ -160,7 +160,7 @@ AVS_UNIT_TEST(http, content_length_receiver_good) {
 }
 
 AVS_UNIT_TEST(http, content_length_receiver_not_enough) {
-    const char *input_data = "Azu-nyan!";
+    const char input_data[] = "Azu-nyan!";
     size_t content_length = sizeof(input_data) * 2;
     char buffer[64];
     char *buffer_ptr = buffer;
