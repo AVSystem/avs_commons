@@ -50,77 +50,77 @@ struct avs_coap_ctx {
 #endif
 };
 
-static const avs_coap_tx_params_t DEFAULT_SOCKET_TX_PARAMS = {
+static const avs_coap_tx_params_t DEFAULT_TX_PARAMS = {
     .ack_timeout_ms = 2000,
     .ack_random_factor = 1.5,
     .max_retransmit = 4
 };
 
-int avs_coap_ctx_create(avs_coap_ctx_t **sock, size_t msg_cache_size) {
-    *sock = (avs_coap_ctx_t *) calloc(1, sizeof(avs_coap_ctx_t));
-    if (!*sock) {
+int avs_coap_ctx_create(avs_coap_ctx_t **ctx, size_t msg_cache_size) {
+    *ctx = (avs_coap_ctx_t *) calloc(1, sizeof(avs_coap_ctx_t));
+    if (!*ctx) {
         return -1;
     }
 
     if (msg_cache_size > 0) {
-        (*sock)->msg_cache = _avs_coap_msg_cache_create(msg_cache_size);
-        if (!(*sock)->msg_cache) {
+        (*ctx)->msg_cache = _avs_coap_msg_cache_create(msg_cache_size);
+        if (!(*ctx)->msg_cache) {
             LOG(ERROR, "could not create message cache");
-            free(*sock);
+            free(*ctx);
             return -1;
         }
     }
 
-    (*sock)->tx_params = &DEFAULT_SOCKET_TX_PARAMS;
+    (*ctx)->tx_params = &DEFAULT_TX_PARAMS;
     return 0;
 }
 
-uint64_t avs_coap_ctx_get_rx_bytes(avs_coap_ctx_t *sock) {
+uint64_t avs_coap_ctx_get_rx_bytes(avs_coap_ctx_t *ctx) {
 #ifdef WITH_AVS_COAP_NET_STATS
-    return sock->rx_bytes;
+    return ctx->rx_bytes;
 #else
-    (void) sock;
-    return 0;
-#endif // WITH_AVS_COAP_NET_STATS
-}
-
-uint64_t avs_coap_ctx_get_tx_bytes(avs_coap_ctx_t *sock) {
-#ifdef WITH_AVS_COAP_NET_STATS
-    return sock->tx_bytes;
-#else
-    (void) sock;
+    (void) ctx;
     return 0;
 #endif // WITH_AVS_COAP_NET_STATS
 }
 
-uint64_t
-avs_coap_ctx_get_num_incoming_retransmissions(avs_coap_ctx_t *sock) {
+uint64_t avs_coap_ctx_get_tx_bytes(avs_coap_ctx_t *ctx) {
 #ifdef WITH_AVS_COAP_NET_STATS
-    return sock->num_incoming_retransmissions;
+    return ctx->tx_bytes;
 #else
-    (void) sock;
+    (void) ctx;
     return 0;
 #endif // WITH_AVS_COAP_NET_STATS
 }
 
 uint64_t
-avs_coap_ctx_get_num_outgoing_retransmissions(avs_coap_ctx_t *sock) {
+avs_coap_ctx_get_num_incoming_retransmissions(avs_coap_ctx_t *ctx) {
 #ifdef WITH_AVS_COAP_NET_STATS
-    return sock->num_outgoing_retransmissions;
+    return ctx->num_incoming_retransmissions;
 #else
-    (void) sock;
+    (void) ctx;
     return 0;
 #endif // WITH_AVS_COAP_NET_STATS
 }
 
-void avs_coap_ctx_cleanup(avs_coap_ctx_t **sock) {
-    if (!sock || !*sock) {
+uint64_t
+avs_coap_ctx_get_num_outgoing_retransmissions(avs_coap_ctx_t *ctx) {
+#ifdef WITH_AVS_COAP_NET_STATS
+    return ctx->num_outgoing_retransmissions;
+#else
+    (void) ctx;
+    return 0;
+#endif // WITH_AVS_COAP_NET_STATS
+}
+
+void avs_coap_ctx_cleanup(avs_coap_ctx_t **ctx) {
+    if (!ctx || !*ctx) {
         return;
     }
 
-    _avs_coap_msg_cache_release(&(*sock)->msg_cache);
-    free(*sock);
-    *sock = NULL;
+    _avs_coap_msg_cache_release(&(*ctx)->msg_cache);
+    free(*ctx);
+    *ctx = NULL;
 }
 
 static int map_io_error(avs_net_abstract_socket_t *socket,
@@ -300,13 +300,13 @@ int avs_coap_ctx_recv(avs_coap_ctx_t *ctx,
 }
 
 const avs_coap_tx_params_t *
-avs_coap_ctx_get_tx_params(avs_coap_ctx_t *sock) {
-    return sock->tx_params;
+avs_coap_ctx_get_tx_params(avs_coap_ctx_t *ctx) {
+    return ctx->tx_params;
 }
 
-void avs_coap_ctx_set_tx_params(avs_coap_ctx_t *sock,
-                                   const avs_coap_tx_params_t *tx_params) {
-    sock->tx_params = tx_params;
+void avs_coap_ctx_set_tx_params(avs_coap_ctx_t *ctx,
+                                const avs_coap_tx_params_t *tx_params) {
+    ctx->tx_params = tx_params;
 }
 
 int avs_coap_ctx_send_empty(avs_coap_ctx_t *ctx,
@@ -333,14 +333,14 @@ int avs_coap_ctx_send_empty(avs_coap_ctx_t *ctx,
 
 static void send_response(avs_coap_ctx_t *ctx,
                           avs_net_abstract_socket_t *socket,
-                          const avs_coap_msg_t *msg,
+                          const avs_coap_msg_t *request,
                           uint8_t code,
                           const uint32_t *max_age) {
     avs_coap_msg_info_t info = avs_coap_msg_info_init();
 
     info.type = AVS_COAP_MSG_ACKNOWLEDGEMENT;
     info.code = code;
-    info.identity = avs_coap_msg_get_identity(msg);
+    info.identity = avs_coap_msg_get_identity(request);
 
     if (max_age
         && avs_coap_msg_info_opt_u32(&info, AVS_COAP_OPT_MAX_AGE, *max_age)) {
@@ -367,9 +367,9 @@ static void send_response(avs_coap_ctx_t *ctx,
 
 void avs_coap_ctx_send_error(avs_coap_ctx_t *ctx,
                              avs_net_abstract_socket_t *socket,
-                             const avs_coap_msg_t *msg,
+                             const avs_coap_msg_t *request,
                              uint8_t error_code) {
-    send_response(ctx, socket, msg, error_code, NULL);
+    send_response(ctx, socket, request, error_code, NULL);
 }
 
 void avs_coap_ctx_send_service_unavailable(avs_coap_ctx_t *ctx,
