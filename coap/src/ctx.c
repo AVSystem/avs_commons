@@ -39,7 +39,7 @@
 #endif
 
 struct avs_coap_ctx {
-    const avs_coap_tx_params_t *tx_params;
+    avs_coap_tx_params_t tx_params;
     coap_msg_cache_t *msg_cache;
 #ifdef WITH_AVS_COAP_NET_STATS
     uint64_t rx_bytes;
@@ -71,7 +71,7 @@ int avs_coap_ctx_create(avs_coap_ctx_t **ctx, size_t msg_cache_size) {
         }
     }
 
-    (*ctx)->tx_params = &DEFAULT_TX_PARAMS;
+    (*ctx)->tx_params = DEFAULT_TX_PARAMS;
     return 0;
 }
 
@@ -160,7 +160,7 @@ static int try_cache_response(avs_coap_ctx_t *ctx,
     }
 
     return _avs_coap_msg_cache_add(ctx->msg_cache, addr, port, res,
-                                   ctx->tx_params);
+                                   &ctx->tx_params);
 }
 
 #endif // WITH_AVS_COAP_MESSAGE_CACHE
@@ -299,14 +299,14 @@ int avs_coap_ctx_recv(avs_coap_ctx_t *ctx,
     return 0;
 }
 
-const avs_coap_tx_params_t *
-avs_coap_ctx_get_tx_params(avs_coap_ctx_t *ctx) {
+avs_coap_tx_params_t avs_coap_ctx_get_tx_params(avs_coap_ctx_t *ctx) {
     return ctx->tx_params;
 }
 
 void avs_coap_ctx_set_tx_params(avs_coap_ctx_t *ctx,
                                 const avs_coap_tx_params_t *tx_params) {
-    ctx->tx_params = tx_params;
+    assert(avs_coap_tx_params_valid(tx_params, NULL));
+    ctx->tx_params = *tx_params;
 }
 
 int avs_coap_ctx_send_empty(avs_coap_ctx_t *ctx,

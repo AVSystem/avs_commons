@@ -145,22 +145,17 @@ int avs_coap_ctx_recv(avs_coap_ctx_t *ctx,
  *
  * @param ctx CoAP context to operate on.
  *
- * @returns Pointer to CoAP transmission parameters structure currently used by
+ * @returns Copy of the CoAP transmission parameters structure currently used by
  *          the context.
  */
-const avs_coap_tx_params_t *
-avs_coap_ctx_get_tx_params(avs_coap_ctx_t *ctx);
+avs_coap_tx_params_t avs_coap_ctx_get_tx_params(avs_coap_ctx_t *ctx);
 
 /**
  * Sets the CoAP transmission parameters used by the CoAP context.
  *
  * @param ctx       CoAP context to operate on.
  * @param tx_params CoAP transmission parameters structure to use. The structure
- *                  is <strong>NOT</strong> copied - just the pointer is
- *                  changed. For this reason, the passed structure must remain
- *                  valid and shall not be modified for as long as the CoAP
- *                  context exists, unless the transmission parameters are
- *                  changed again.
+ *                  is copied into the CoAP context.
  */
 void avs_coap_ctx_set_tx_params(avs_coap_ctx_t *ctx,
                                 const avs_coap_tx_params_t *tx_params);
