@@ -207,8 +207,8 @@ void avs_coap_ctx_send_error(avs_coap_ctx_t *ctx,
  * @param socket         Network socket to send the message through.
  * @param request        CoAP message that the error is intended to be a
  *                       response to.
- * @param retry_after_ms Acode of the error to send, e.g.
- *                   <c>AVS_COAP_CODE_BAD_REQUEST</c>.
+ * @param retry_after_ms Code of the error to send, e.g.
+ *                       <c>AVS_COAP_CODE_BAD_REQUEST</c>.
  *
  * @returns 0 on success, or a negative value (possibly one of the
  *          <c>AVS_COAP_CTX_ERR_*</c> constants) in case of error.
