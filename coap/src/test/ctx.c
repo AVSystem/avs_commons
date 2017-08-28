@@ -24,7 +24,7 @@
 #include <avsystem/commons/stream_v_table.h>
 
 #include <avsystem/commons/coap/msg_builder.h>
-#include <avsystem/commons/coap/socket.h>
+#include <avsystem/commons/coap/ctx.h>
 
 #define TEST_PORT_DTLS 4321
 #define TEST_PORT_UDP 4322
@@ -34,9 +34,9 @@
 #define _STR(x) #x
 #define STR(x) _STR(x)
 
-#warning "TODO: fix coap_socket::coap_socket after setup_udp_echo_socket is ported"
+#warning "TODO: fix coap_ctx::coap_ctx after setup_udp_echo_socket is ported"
 #if 0
-AVS_UNIT_TEST(coap_socket, coap_socket) {
+AVS_UNIT_TEST(coap_ctx, coap_ctx) {
     avs_net_socket_opt_value_t mtu;
     { // udp_client_send_recv
         avs_coap_socket_t *socket =
