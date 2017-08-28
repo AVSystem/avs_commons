@@ -589,7 +589,7 @@ int avs_net_socket_send(avs_net_abstract_socket_t *socket,
                         size_t buffer_length);
 
 /**
- * Sends up to @p buffer_length bytes from @p buffer to @p host / @p port,
+ * Sends exactly @p buffer_length bytes from @p buffer to @p host / @p port,
  * using @p socket.
  *
  * @li For TCP sockets: @p host and @p are ignored if @p socket is already
@@ -598,17 +598,13 @@ int avs_net_socket_send(avs_net_abstract_socket_t *socket,
  *     too much data to fit into a single datagram, the function fails.
  *
  * @param[in]  socket         Socket object to send data to.
- * @param[out] out_bytes_sent On success, set to number of bytes successfully
- *                            sent to @p socket .
  * @param[in]  buffer         Data to send.
  * @param[in]  buffer_length  Number of bytes to send.
  * @param[in]  host           Remote host to send data to. May be an IP address
  *                            as a string, or a domain name.
  * @param[in]  port           Remote port to send data to: an integer as string.
  *
- * @returns @li 0 on success. Unlike @ref avs_net_socket_send, this does not
- *              necessarily mean all @p buffer_length bytes were written.
- *              Inspect @p out_bytes_sent value to check for a short write.
+ * @returns @li 0 if exactly @p buffer_length bytes were written.
  *          @li a negative value in case of error, in which case @p socket
  *              errno (see @ref avs_net_socket_errno) is set to an appropriate
  *              value.
