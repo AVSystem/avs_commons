@@ -227,13 +227,12 @@ int avs_net_socket_send(avs_net_abstract_socket_t *socket,
 }
 
 int avs_net_socket_send_to(avs_net_abstract_socket_t *socket,
-                           size_t *out_bytes_sent,
                            const void *buffer,
                            size_t buffer_length,
                            const char *host,
                            const char *port) {
-    return socket->operations->send_to(socket, out_bytes_sent,
-                                       buffer, buffer_length, host, port);
+    return socket->operations->send_to(socket, buffer, buffer_length,
+                                       host, port);
 }
 
 int avs_net_socket_receive(avs_net_abstract_socket_t *socket,
@@ -456,14 +455,13 @@ static int send_debug(avs_net_abstract_socket_t *debug_socket,
 }
 
 static int send_to_debug(avs_net_abstract_socket_t *debug_socket,
-                         size_t *out_bytes_sent,
                          const void *buffer,
                          size_t buffer_length,
                          const char *host,
                          const char *port) {
     int result = avs_net_socket_send_to(
             ((avs_net_socket_debug_t *) debug_socket)->socket,
-            out_bytes_sent, buffer, buffer_length, host, port);
+            buffer, buffer_length, host, port);
     if (result) {
         fprintf(communication_log, "\n----SEND-TO-FAILURE-----\n");
     } else {

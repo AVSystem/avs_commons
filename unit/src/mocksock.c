@@ -295,7 +295,6 @@ static void hexdump_data(const void *raw_data,
 }
 
 static int mock_send_to(avs_net_abstract_socket_t *socket_,
-                        size_t *out_bytes_sent,
                         const void *buffer,
                         size_t buffer_length,
                         const char *host,
@@ -308,7 +307,6 @@ static int mock_send_to(avs_net_abstract_socket_t *socket_,
     AVS_UNIT_ASSERT_TRUE(socket->state == AVS_NET_SOCKET_STATE_BOUND
             || socket->state == AVS_NET_SOCKET_STATE_ACCEPTED
             || socket->state == AVS_NET_SOCKET_STATE_CONNECTED);
-    *out_bytes_sent = 0;
     while (buffer_length > 0) {
         AVS_UNIT_ASSERT_NOT_NULL(socket->expected_data);
         if (socket->expected_data->type == MOCKSOCK_DATA_TYPE_OUTPUT) {
@@ -334,7 +332,6 @@ static int mock_send_to(avs_net_abstract_socket_t *socket_,
             }
             buffer_length -= to_send;
             buffer = ((const char *) buffer) + to_send;
-            *out_bytes_sent += to_send;
         } else if (socket->expected_data->type
                    == MOCKSOCK_DATA_TYPE_OUTPUT_FAIL) {
             int retval = socket->expected_data->args.retval;
@@ -345,16 +342,14 @@ static int mock_send_to(avs_net_abstract_socket_t *socket_,
         }
     }
 
-    LOG(TRACE, "mock_send_to: sent %zu/%zu B", *out_bytes_sent, buffer_length);
+    LOG(TRACE, "mock_send_to: sent %zu B", buffer_length);
     return 0;
 }
 
 static int mock_send(avs_net_abstract_socket_t *socket,
                      const void *buffer,
                      size_t buffer_length) {
-    size_t tmp_bytes_sent;
-    return mock_send_to(socket, &tmp_bytes_sent, buffer, buffer_length,
-                        NULL, NULL);
+    return mock_send_to(socket, buffer, buffer_length, NULL, NULL);
 }
 
 static void fill_remote_addr(char *out, size_t size, const char *in) {

@@ -32,7 +32,6 @@ typedef int (*avs_net_socket_send_t)(avs_net_abstract_socket_t *socket,
                                      const void *buffer,
                                      size_t buffer_length);
 typedef int (*avs_net_socket_send_to_t)(avs_net_abstract_socket_t *socket,
-                                        size_t *out_bytes_sent,
                                         const void *buffer,
                                         size_t buffer_length,
                                         const char *host,

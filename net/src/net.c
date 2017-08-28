@@ -128,7 +128,6 @@ static int send_net(avs_net_abstract_socket_t *net_socket,
                     const void* buffer,
                     size_t buffer_length);
 static int send_to_net(avs_net_abstract_socket_t *socket,
-                       size_t *out,
                        const void *buffer,
                        size_t buffer_length,
                        const char *host,
@@ -902,7 +901,6 @@ static int send_net(avs_net_abstract_socket_t *net_socket_,
 }
 
 static int send_to_net(avs_net_abstract_socket_t *net_socket_,
-                       size_t *out,
                        const void *buffer,
                        size_t buffer_length,
                        const char *host,
@@ -926,10 +924,13 @@ static int send_to_net(avs_net_abstract_socket_t *net_socket_,
 
     avs_net_addrinfo_delete(&info);
     if (result < 0) {
-        *out = 0;
         return (int) result;
+    } else if ((size_t) result != buffer_length) {
+        LOG(ERROR, "send_to fail (%lu/%lu)",
+            (unsigned long) result, (unsigned long) buffer_length);
+        net_socket->error_code = EIO;
+        return -1;
     } else {
-        *out = (size_t) result;
         return 0;
     }
 }
