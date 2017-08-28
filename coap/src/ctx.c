@@ -387,5 +387,6 @@ void avs_coap_ctx_send_service_unavailable(avs_coap_ctx_t *ctx,
 }
 
 #ifdef AVS_UNIT_TESTING
+#pragma GCC visibility pop
 #include "test/ctx.c"
 #endif // AVS_UNIT_TESTING
