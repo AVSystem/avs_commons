@@ -28,6 +28,8 @@
 #include "log.h"
 #include "msg_cache.h"
 
+#include <inttypes.h>
+
 #pragma GCC visibility push(hidden)
 
 #ifdef WITH_IPV6
@@ -303,7 +305,8 @@ int _avs_coap_msg_cache_add(coap_msg_cache_t *cache,
                    + offsetof(avs_coap_msg_t, header)
                    + msg->length;
     if (avs_buffer_capacity(cache->buffer) < cap_req) {
-        LOG(DEBUG, "msg_cache: not enough space for %u B message", msg->length);
+        LOG(DEBUG, "msg_cache: not enough space for %" PRIu32 " B message",
+            msg->length);
         return -1;
     }
 

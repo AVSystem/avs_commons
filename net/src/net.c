@@ -583,20 +583,33 @@ static short wait_until_ready(int sockfd, avs_net_timeout_t timeout,
     FD_ZERO(&infds);
     FD_ZERO(&outfds);
     FD_ZERO(&errfds);
+
+#if LWIP_VERSION_MAJOR < 2
+// LwIP < 2.0 lacks cast to unsigned inside FD_* macros
+# define AVS_FD_SET(fd, set) FD_SET((unsigned)(fd), (set))
+# define AVS_FD_ISSET(fd, set) FD_ISSET((unsigned)(fd), (set))
+#else
+# define AVS_FD_SET FD_SET
+# define AVS_FD_ISSET FD_ISSET
+#endif // LWIP_VERSION_MAJOR < 2
+
     if (in) {
-        FD_SET(sockfd, &infds);
+        AVS_FD_SET(sockfd, &infds);
     }
     if (out) {
-        FD_SET(sockfd, &outfds);
+        AVS_FD_SET(sockfd, &outfds);
     }
-    FD_SET(sockfd, &errfds);
+    AVS_FD_SET(sockfd, &errfds);
     if (select(sockfd + 1, &infds, &outfds, &errfds,
                timeout >= 0 ? &timeval_timeout : NULL) <= 0) {
         return 0;
     }
-    return (err && FD_ISSET(sockfd, &errfds))
-            || (in && FD_ISSET(sockfd, &infds))
-            || (out && FD_ISSET(sockfd, &outfds));
+    return (err && AVS_FD_ISSET(sockfd, &errfds))
+            || (in && AVS_FD_ISSET(sockfd, &infds))
+            || (out && AVS_FD_ISSET(sockfd, &outfds));
+#undef AVS_FD_SET
+#undef AVS_FD_ISSET
+
 #endif
 }
 
@@ -1505,6 +1518,7 @@ static int errno_net(avs_net_abstract_socket_t *net_socket) {
     return ((avs_net_socket_t *) net_socket)->error_code;
 }
 
+#ifdef HAVE_GETIFADDRS
 static int ifaddr_ip_equal(const struct sockaddr *left,
                            const struct sockaddr *right) {
     size_t offset;
@@ -1537,6 +1551,7 @@ static int ifaddr_ip_equal(const struct sockaddr *left,
     return memcmp(((const char *) left) + offset,
                   ((const char *) right) + offset, length);
 }
+#endif /* HAVE_GETIFADDRS */
 
 static int find_interface(const struct sockaddr *addr,
                           avs_net_socket_interface_name_t *if_name) {
@@ -1601,6 +1616,8 @@ interface_name_end:
     close(null_socket);
     return retval;
 #else
+    (void) addr;
+    (void) if_name;
     return -1;
 #endif
 #undef TRY_ADDRESS

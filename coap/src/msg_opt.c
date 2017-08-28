@@ -21,6 +21,8 @@
 #include <avsystem/commons/coap/msg_info.h>
 #include <avsystem/commons/coap/msg_opt.h>
 
+#include <inttypes.h>
+
 #pragma GCC visibility push(hidden)
 
 int avs_coap_msg_find_unique_opt(const avs_coap_msg_t *msg,
@@ -135,8 +137,9 @@ int avs_coap_msg_validate_critical_options(
 
             if (!is_critical_opt_valid(it.msg->header.code, opt_number,
                                        validator)) {
-                LOG(DEBUG, "warning: invalid critical option in query %s: %u",
-                    AVS_COAP_CODE_STRING(it.msg->header.code), opt_number);
+                LOG(DEBUG, "warning: invalid critical option in query %s: %"
+                    PRIu32, AVS_COAP_CODE_STRING(it.msg->header.code),
+                    opt_number);
                 result = -1;
             }
         }

@@ -27,6 +27,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <assert.h>
+#include <inttypes.h>
 
 #pragma GCC visibility push(hidden)
 
@@ -179,8 +180,8 @@ static bool is_header_valid(const avs_coap_msg_t *msg) {
     }
 
     if (sizeof(msg->header) + token_length > msg->length) {
-        LOG(DEBUG, "missing/incomplete token (got %uB, expected %u)",
-            msg->length - (uint32_t) sizeof(msg->header), token_length);
+        LOG(DEBUG, "missing/incomplete token (got %u, expected %" PRIu8 ")",
+            (unsigned)(msg->length - sizeof(msg->header)), token_length);
         return false;
     }
 
@@ -215,7 +216,7 @@ static bool are_options_valid(const avs_coap_msg_t *msg) {
 
         uint32_t opt_number = avs_coap_opt_number(&optit);
         if (opt_number > UINT16_MAX) {
-            LOG(DEBUG, "invalid option number (%u)", opt_number);
+            LOG(DEBUG, "invalid option number (%" PRIu32 ")", opt_number);
             return false;
         }
     }
@@ -233,8 +234,8 @@ static bool are_options_valid(const avs_coap_msg_t *msg) {
 
 bool avs_coap_msg_is_valid(const avs_coap_msg_t *msg) {
     if (msg->length < AVS_COAP_MSG_MIN_SIZE) {
-        LOG(DEBUG, "message too short (%uB, expected >= %u)", msg->length,
-            AVS_COAP_MSG_MIN_SIZE);
+        LOG(DEBUG, "message too short (%" PRIu32 "B, expected >= %u)",
+            msg->length, AVS_COAP_MSG_MIN_SIZE);
         return false;
     }
 
@@ -262,7 +263,7 @@ void avs_coap_msg_debug_print(const avs_coap_msg_t *msg) {
     LOG(DEBUG, "sizeof(*msg) = %lu, sizeof(len) = %lu, sizeof(header) = %lu",
         (unsigned long) sizeof(*msg), (unsigned long) sizeof(msg->length),
         (unsigned long) sizeof(msg->header));
-    LOG(DEBUG, "message (length = %u):", msg->length);
+    LOG(DEBUG, "message (length = %" PRIu32 "):", msg->length);
     LOG(DEBUG, "type: %u (%s)", avs_coap_msg_header_get_type(&msg->header),
         msg_type_string(avs_coap_msg_header_get_type(&msg->header)));
 
@@ -329,8 +330,9 @@ static void fill_block_summary(const avs_coap_msg_t *msg,
     }
 
     if (avs_simple_snprintf(buf, buf_size,
-                            ", BLOCK%d (seq %u, size %u, more %d)", num,
-                            seq_num, block_size, (int) has_more)
+                            ", BLOCK%d (seq %" PRIu32 ", size %" PRIu16
+                            ", more %d)", num, seq_num, block_size,
+                            (int) has_more)
             < 0) {
         assert(0 && "should never happen");
         *buf = '\0';

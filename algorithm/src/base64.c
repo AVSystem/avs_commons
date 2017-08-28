@@ -164,7 +164,8 @@ typedef struct {
 static int base64_decode_strict_validator(const char *current, void *args) {
     base64_strict_validator_ctx_t *ctx = (base64_strict_validator_ctx_t *) args;
     ctx->last = current;
-    if (base64_decode_validator(current, NULL) || isspace(*current)) {
+    if (base64_decode_validator(current, NULL)
+            || isspace((unsigned char)*current)) {
         return -1;
     }
     if (*current == '=') {

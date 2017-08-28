@@ -20,6 +20,7 @@
 
 #include <assert.h>
 #include <stdio.h>
+#include <inttypes.h>
 
 #include <avsystem/commons/coap/block_utils.h>
 #include <avsystem/commons/utils.h>
@@ -204,7 +205,7 @@ size_t avs_coap_opt_sizeof(const avs_coap_opt_t *opt) {
 }
 
 void avs_coap_opt_debug_print(const avs_coap_opt_t *opt) {
-    LOG(DEBUG, "opt: delta %u, length %u, content:",
+    LOG(DEBUG, "opt: delta %" PRIu32 ", length %" PRIu32 ", content:",
         avs_coap_opt_delta(opt), avs_coap_opt_content_length(opt));
 
     const uint8_t *value = avs_coap_opt_value(opt);

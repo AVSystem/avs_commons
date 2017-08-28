@@ -66,7 +66,8 @@ int avs_url_percent_encode(avs_stream_abstract_t *stream,
     char escaped_buf[4];
     for (; *input; ++input) {
         if (*(const unsigned char *) input >= 0x80 // non-ASCII character
-                || !(isalnum(*input) || strchr(unreserved_chars, *input))) {
+                || !(isalnum((unsigned char)*input)
+                || strchr(unreserved_chars, *input))) {
             if (input - start > 0) {
                 if (avs_stream_write(stream, start, (size_t) (input - start))) {
                     return -1;
@@ -99,7 +100,8 @@ int avs_url_percent_decode(char *data, size_t *unescaped_length) {
 
     while (*src) {
         if (*src == '%') {
-            if (isxdigit(src[1]) && isxdigit(src[2])) {
+            if (isxdigit((unsigned char)src[1])
+                    && isxdigit((unsigned char)src[2])) {
                 char ascii[3];
                 ascii[0] = src[1];
                 ascii[1] = src[2];
@@ -135,14 +137,17 @@ static int prepare_string(char *data) {
 }
 
 static int is_valid_credential_char(char c) {
-    return isalnum(c) || strchr(";?&=" /* explicitly allowed for user/pass */
-                                "$-_.+" /* "safe" set */
-                                "!*'(),", /* "extra" set */
-                                c) != NULL;
+    return isalnum((unsigned char)c)
+        || strchr(";?&=" /* explicitly allowed for user/pass */
+                  "$-_.+" /* "safe" set */
+                  "!*'(),", /* "extra" set */
+                  c) != NULL;
 }
 
 static int is_valid_escape_sequence(const char *str) {
-    return str[0] == '%' && isxdigit(str[1]) && isxdigit(str[2]);
+    return str[0] == '%'
+        && isxdigit((unsigned char)str[1])
+        && isxdigit((unsigned char)str[2]);
 }
 
 static int is_valid_url_part(const char *str,
@@ -236,7 +241,7 @@ static int is_valid_url_domain_char(char c) {
      * According to RFC 1783, domains may not contain non-alphanumeric
      * characters beside dot and hyphen. The dot may only be used as
      * domain segment separator. */
-    return c == '-' || isalnum(c);
+    return c == '-' || isalnum((unsigned char)c);
 }
 
 static int is_valid_domain(const char *str) {
@@ -262,7 +267,7 @@ static int is_valid_domain(const char *str) {
     }
 
     /* Last segment MUST start with a letter */
-    if (!isalpha(last_segment[0])) {
+    if (!isalpha((unsigned char)last_segment[0])) {
         LOG(ERROR, "top-level domain does not start with a letter: %s",
             last_segment);
         return 0;
@@ -324,10 +329,10 @@ static int url_parse_port(const char **url,
     parsed_url->port_ptr = *data_out_ptr;
     ++*url; // move after ':'
     size_t port_limit = AVS_MIN(out_limit, *data_out_ptr + 5);
-    while (*data_out_ptr < port_limit && isdigit(**url)) {
+    while (*data_out_ptr < port_limit && isdigit((unsigned char)**url)) {
         parsed_url->data[(*data_out_ptr)++] = *(*url)++;
     }
-    if (isdigit(**url)) {
+    if (isdigit((unsigned char)**url)) {
         LOG(ERROR, "port too long");
         return -1;
     }
@@ -345,12 +350,13 @@ static int url_parse_port(const char **url,
 
 static int is_valid_url_path_char(char c) {
     /* Assumes English locale. */
-    return isalnum(c) || !!strchr("/"
-                                  "?" /* this technically is reserved, but our
-                                         tests ensure it works too */
-                                  ";:@&="
-                                  "$-_.+" /* "safe" set defined in RFC 1783 */
-                                  "!*'(),", c); /* "extra" set */
+    return isalnum((unsigned char)c)
+        || !!strchr("/"
+                    "?" /* this technically is reserved, but our
+                           tests ensure it works too */
+                    ";:@&="
+                    "$-_.+" /* "safe" set defined in RFC 1783 */
+                    "!*'(),", c); /* "extra" set */
 }
 
 static int is_valid_path(const char *str) {
