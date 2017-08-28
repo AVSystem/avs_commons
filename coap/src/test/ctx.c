@@ -130,12 +130,12 @@ static avs_net_abstract_socket_t *setup_dtls_socket(uint16_t port) {
             .data.cert = {
                 .server_cert_validation = true,
                 .trusted_certs = avs_net_trusted_cert_source_from_paths(
-                                        NULL, "test_certs/root.crt"),
+                                        NULL, AVS_COMMONS_BIN_DIR "/certs/root.crt"),
                 .client_cert = avs_net_client_cert_from_file(
-                                        "test_certs/client.crt", NULL,
+                                        AVS_COMMONS_BIN_DIR "/certs/client.crt", NULL,
                                         AVS_NET_DATA_FORMAT_PEM),
                 .client_key = avs_net_private_key_from_file(
-                                        "test_certs/client.key", NULL,
+                                        AVS_COMMONS_BIN_DIR "/certs/client.key", NULL,
                                         AVS_NET_DATA_FORMAT_PEM)
             }
         },
