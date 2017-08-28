@@ -614,7 +614,6 @@ int avs_net_socket_send(avs_net_abstract_socket_t *socket,
  *              value.
  */
 int avs_net_socket_send_to(avs_net_abstract_socket_t *socket,
-                           size_t *out_bytes_sent,
                            const void *buffer,
                            size_t buffer_length,
                            const char *host,
