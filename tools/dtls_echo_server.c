@@ -80,12 +80,14 @@ int cookie_initialized=0;
 char Usage[] =
 "Usage: dtls_udp_echo [options]\n"
 "Options:\n"
-"        -l      message length (Default: 100 Bytes)\n"
-"        -p      port (Default: 23232)\n"
-"        -n      number of messages to send (Default: 5)\n"
-"        -L      local address\n"
-"        -v      verbose\n"
-"        -V      very verbose\n";
+"        -l          message length (Default: 100 Bytes)\n"
+"        -p          port (Default: 23232)\n"
+"        -n          number of messages to send (Default: 5)\n"
+"        -L          local address\n"
+"        -v          verbose\n"
+"        -V          very verbose\n"
+"        -cafile     PEM file from which certificate chain shall be loaded\n"
+"        -pkeyfile   PEM file from which server private key shall be loaded\n";
 
 int handle_socket_error() {
     switch (errno) {
@@ -458,8 +460,10 @@ cleanup:
         printf("done, connection closed.\n");
 }
 
-
-void start_server(int port, char *local_address) {
+void start_server(int port,
+                  char *local_address,
+                  const char *ca_file,
+                  const char *pkey_file) {
     int fd;
     union {
         struct sockaddr_storage ss;
@@ -508,14 +512,14 @@ void start_server(int port, char *local_address) {
     SSL_CTX_set_cipher_list(ctx, "ALL:NULL:eNULL:aNULL");
     SSL_CTX_set_session_cache_mode(ctx, SSL_SESS_CACHE_OFF);
 
-    if (!SSL_CTX_use_certificate_chain_file(ctx, "output/certs/server-and-root.crt"))
-        printf("\nERROR: no certificate found!");
+    if (!SSL_CTX_use_certificate_chain_file(ctx, ca_file))
+        printf("ERROR: no certificate '%s' found!\n", ca_file);
 
-    if (!SSL_CTX_use_PrivateKey_file(ctx, "output/certs/server.key", SSL_FILETYPE_PEM))
-        printf("\nERROR: no private key found!");
+    if (!SSL_CTX_use_PrivateKey_file(ctx, pkey_file, SSL_FILETYPE_PEM))
+        printf("ERROR: no private key '%s' found!\n", pkey_file);
 
     if (!SSL_CTX_check_private_key (ctx))
-        printf("\nERROR: invalid private key!");
+        puts("ERROR: invalid private key!");
 
     /* Client has to authenticate */
     SSL_CTX_set_verify(ctx, SSL_VERIFY_PEER | SSL_VERIFY_CLIENT_ONCE, dtls_verify_callback);
@@ -594,6 +598,8 @@ int main(int argc, char **argv)
     argc--;
     argv++;
 
+    const char *ca_file = NULL;
+    const char *pkey_file = NULL;
     while (argc >= 1) {
         if (strcmp(*argv, "-l") == 0) {
             if (--argc < 1) goto cmd_err;
@@ -620,6 +626,14 @@ int main(int argc, char **argv)
             verbose = 1;
             veryverbose = 1;
         }
+        else if (strcmp(*argv, "-cafile") == 0) {
+            if (--argc < 1) goto cmd_err;
+            ca_file = *++argv;
+        }
+        else if (strcmp(*argv, "-pkeyfile") == 0) {
+            if (--argc < 1) goto cmd_err;
+            pkey_file = *++argv;
+        }
         else if (((*argv)[0]) == '-') {
             goto cmd_err;
         }
@@ -631,7 +645,7 @@ int main(int argc, char **argv)
 
     if (argc > 0) goto cmd_err;
 
-    start_server(port, local_addr);
+    start_server(port, local_addr, ca_file, pkey_file);
 
     while (1) sleep(10); /* wait for getting killed by parent */
     return 0;
