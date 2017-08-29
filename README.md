@@ -11,7 +11,7 @@ Currently the included components are:
 
 `avs_buffer` and `avs_list` are written in standard and portable C90. `avs_unit` relies on some GCC-isms.
 
-The code is available under the permissive [MIT License](LICENSE).
+The code is available under [Apache 2.0 License](LICENSE).
 
 avs_buffer
 ----------
