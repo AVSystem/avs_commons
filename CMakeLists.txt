@@ -343,10 +343,14 @@ macro(add_module_with_include_dirs MODULE_NAME MODULE_INCLUDE_DIRS_VAR)
 endmacro()
 
 if(WITH_AVS_UNIT)
+    add_subdirectory(tools)
     macro(add_avs_test NAME)
         add_executable(${NAME}_test EXCLUDE_FROM_ALL ${ARGN})
+        add_dependencies(${NAME}_test dtls_echo_server)
         target_link_libraries(${NAME}_test avs_unit)
-        set_property(TARGET ${NAME}_test APPEND PROPERTY COMPILE_DEFINITIONS AVS_UNIT_TESTING)
+        set_property(TARGET ${NAME}_test APPEND PROPERTY COMPILE_DEFINITIONS
+                     AVS_UNIT_TESTING
+                     AVS_TEST_BIN_DIR="${CMAKE_CURRENT_BINARY_DIR}")
         set_property(TARGET ${NAME}_test APPEND PROPERTY COMPILE_FLAGS "-Wno-clobbered -Wno-overlength-strings -Wno-c++-compat -Wno-sign-conversion")
 
         if(VALGRIND)
@@ -394,10 +398,8 @@ if(WITH_AVS_NET)
             message(FATAL_ERROR "OpenSSL libraries not found")
         endif()
 
-        option(OPENSSL_CUSTOM_CIPHERS_ENABLED "Customize OpenSSL cipher suite list" ON)
-        if(OPENSSL_CUSTOM_CIPHERS_ENABLED)
-            set(WITH_OPENSSL_CUSTOM_CIPHERS "DEFAULT:!ECDSA" CACHE STRING "Customized OpenSSL cipher suite list")
-        endif()
+        set(WITH_OPENSSL_CUSTOM_CIPHERS OFF CACHE STRING "Customized OpenSSL cipher suite list")
+
     elseif(WITH_MBEDTLS)
         if(NOT MBEDTLS_FOUND)
             message(FATAL_ERROR "mbed TLS libraries not found")

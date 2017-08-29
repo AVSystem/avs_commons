@@ -16,6 +16,9 @@
 /vector/avs_vector_test
 /algorithm/avs_algorithm_test
 
+/tools/dtls_echo_server
+/coap/certs
+
 # NetBeans Project
 nbproject
 
