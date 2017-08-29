@@ -350,7 +350,7 @@ if(WITH_AVS_UNIT)
         target_link_libraries(${NAME}_test avs_unit)
         set_property(TARGET ${NAME}_test APPEND PROPERTY COMPILE_DEFINITIONS
                      AVS_UNIT_TESTING
-                     AVS_COMMONS_BIN_DIR="${CMAKE_CURRENT_BINARY_DIR}")
+                     AVS_TEST_BIN_DIR="${CMAKE_CURRENT_BINARY_DIR}")
         set_property(TARGET ${NAME}_test APPEND PROPERTY COMPILE_FLAGS "-Wno-clobbered -Wno-overlength-strings -Wno-c++-compat -Wno-sign-conversion")
 
         if(VALGRIND)
