@@ -398,7 +398,7 @@ if(WITH_AVS_NET)
             message(FATAL_ERROR "OpenSSL libraries not found")
         endif()
 
-        option(OPENSSL_CUSTOM_CIPHERS_ENABLED "Customize OpenSSL cipher suite list" ON)
+        option(OPENSSL_CUSTOM_CIPHERS_ENABLED "Customize OpenSSL cipher suite list" OFF)
         if(OPENSSL_CUSTOM_CIPHERS_ENABLED)
             set(WITH_OPENSSL_CUSTOM_CIPHERS "DEFAULT:!ECDSA" CACHE STRING "Customized OpenSSL cipher suite list")
         endif()
