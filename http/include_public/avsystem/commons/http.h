@@ -210,7 +210,7 @@ void avs_http_ssl_configuration(
  * NOTE: If both @ref avs_http_ssl_configuration and
  * @ref avs_http_tcp_configuration are set with non-NULL configuration
  * structures, when connecting to HTTPS addresses, the structure passed to
- * @ref avs_http_tcp_configuration will be used to replace the
+ * @ref avs_http_tcp_configuration takes precedence over the
  * <c>backend_configuration</c> field from the structure passed to
  * @ref avs_http_ssl_configuration.
  *
@@ -398,7 +398,7 @@ int avs_http_add_header(avs_stream_abstract_t *stream,
                         const char *key, const char *value);
 
 /**
- * Determines whether an unsuccessful request should be retried.
+ * Determines whether an unsuccessful request should be repeated by user code.
  *
  * The HTTP stream implementation attempts to retry requests whenever they fail
  * for reasons that can be automatically handled - including the 401
@@ -416,8 +416,8 @@ int avs_http_add_header(avs_stream_abstract_t *stream,
  *
  * The site that called <c>avs_stream_finish_message()</c> and received an error
  * return value may then use this function to determine whether the error is a
- * fatal one, or if simply retrying the request is appropriate for the current
- * state of the stream.
+ * fatal one, or if simply repeating the request (regenerating it from scratch)
+ * is appropriate for the current state of the stream.
  *
  * @param stream Stream to operate on. Need to be a stream created by
  *               @ref avs_http_open_stream.
