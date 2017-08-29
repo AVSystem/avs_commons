@@ -76,18 +76,16 @@ static void spawn_dtls_echo_server(uint16_t port) {
         }
     }
 
-    char cmdline[] = AVS_COMMONS_BIN_DIR "/../tools/dtls_echo_server\0"
-                     "-p\0"
-                     "_____";
-    char *args[4] = { cmdline };
+    char port_string[6];
+    AVS_UNIT_ASSERT_TRUE(avs_simple_snprintf(port_string, sizeof(port_string), "%u", port) >= 0);
 
-    for (size_t i = 1; i < sizeof(args) / sizeof(args[0]) - 1; ++i) {
-        args[i] = args[i - 1] + strlen(args[i - 1]) + 1;
-    }
-
-    AVS_UNIT_ASSERT_TRUE(
-            avs_simple_snprintf(args[2], strlen(args[2]), "%u", port) >= 0);
-
+    char *cmdline[] = {
+        AVS_TEST_BIN_DIR "/../tools/dtls_echo_server",
+        "-cafile", AVS_TEST_BIN_DIR "/certs/server-and-root.crt",
+        "-pkeyfile", AVS_TEST_BIN_DIR "/certs/server.key",
+        "-p", port_string,
+        NULL
+    };
     set_sigusr1_mask(SIG_BLOCK);
 
     int pid = -1;
@@ -98,11 +96,11 @@ static void spawn_dtls_echo_server(uint16_t port) {
             LOG(WARNING, "prctl failed: %s", strerror(errno));
         }
 #endif // __linux__
-        execve(args[0], args, NULL);
+        execve(cmdline[0], cmdline, NULL);
         // fall-through
     case -1:
         LOG(ERROR, "could not start DTLS echo server: %s", strerror(errno));
-        LOG(ERROR, "command: %s %s %s", args[0], args[1], args[2]);
+        LOG(ERROR, "command: %s %s %s %s", cmdline[0], cmdline[1], cmdline[2], cmdline[3]);
         abort();
     default:
         break;
@@ -123,6 +121,13 @@ static void spawn_dtls_echo_server(uint16_t port) {
 static avs_net_abstract_socket_t *setup_dtls_socket(uint16_t port) {
     spawn_dtls_echo_server(port);
     avs_net_abstract_socket_t *backend = NULL;
+    static const char *ROOT_CRT_FILE = AVS_TEST_BIN_DIR "/certs/root.crt";
+    static const char *CLIENT_CRT_FILE = AVS_TEST_BIN_DIR "/certs/client.crt";
+    static const char *CLIENT_KEY_FILE = AVS_TEST_BIN_DIR "/certs/client.key";
+    AVS_UNIT_ASSERT_SUCCESS(access(ROOT_CRT_FILE, F_OK));
+    AVS_UNIT_ASSERT_SUCCESS(access(CLIENT_CRT_FILE, F_OK));
+    AVS_UNIT_ASSERT_SUCCESS(access(CLIENT_KEY_FILE, F_OK));
+
     avs_net_ssl_configuration_t config = {
         .version = AVS_NET_SSL_VERSION_DEFAULT,
         .security = {
@@ -130,12 +135,12 @@ static avs_net_abstract_socket_t *setup_dtls_socket(uint16_t port) {
             .data.cert = {
                 .server_cert_validation = true,
                 .trusted_certs = avs_net_trusted_cert_source_from_paths(
-                                        NULL, AVS_COMMONS_BIN_DIR "/certs/root.crt"),
+                                        NULL, ROOT_CRT_FILE),
                 .client_cert = avs_net_client_cert_from_file(
-                                        AVS_COMMONS_BIN_DIR "/certs/client.crt", NULL,
+                                        CLIENT_CRT_FILE, NULL,
                                         AVS_NET_DATA_FORMAT_PEM),
                 .client_key = avs_net_private_key_from_file(
-                                        AVS_COMMONS_BIN_DIR "/certs/client.key", NULL,
+                                        CLIENT_KEY_FILE, NULL,
                                         AVS_NET_DATA_FORMAT_PEM)
             }
         },
@@ -159,95 +164,98 @@ static avs_net_abstract_socket_t *setup_dtls_socket(uint16_t port) {
     return backend;
 }
 
-AVS_UNIT_TEST(coap_ctx, coap_ctx) {
+#if 0
+AVS_UNIT_TEST(coap_ctx, coap_udp) {
     avs_net_socket_opt_value_t mtu;
-    { // udp_client_send_recv
-        avs_coap_ctx_t *ctx = NULL;
-        AVS_UNIT_ASSERT_SUCCESS(avs_coap_ctx_create(&ctx, 0));
+    // udp_client_send_recv
+    avs_coap_ctx_t *ctx = NULL;
+    AVS_UNIT_ASSERT_SUCCESS(avs_coap_ctx_create(&ctx, 0));
 
-        avs_net_abstract_socket_t *backend = setup_dtls_socket(TEST_PORT_UDP);
+    avs_net_abstract_socket_t *backend = setup_dtls_socket(TEST_PORT_DTLS);
 
-        avs_coap_msg_info_t info = avs_coap_msg_info_init();
-        info.type = AVS_COAP_MSG_CONFIRMABLE;
-        info.code = AVS_COAP_CODE_CONTENT;
-        info.identity.msg_id = 4;
+    avs_coap_msg_info_t info = avs_coap_msg_info_init();
+    info.type = AVS_COAP_MSG_CONFIRMABLE;
+    info.code = AVS_COAP_CODE_CONTENT;
+    info.identity.msg_id = 4;
 
-        size_t storage_size = COAP_MSG_MAX_SIZE;
-        void *storage = malloc(storage_size);
+    size_t storage_size = COAP_MSG_MAX_SIZE;
+    void *storage = malloc(storage_size);
 
-        const avs_coap_msg_t *msg = avs_coap_msg_build_without_payload(
-                avs_coap_ensure_aligned_buffer(storage),
-                storage_size, &info);
+    const avs_coap_msg_t *msg = avs_coap_msg_build_without_payload(
+            avs_coap_ensure_aligned_buffer(storage),
+            storage_size, &info);
 
-        AVS_UNIT_ASSERT_NOT_NULL(msg);
+    AVS_UNIT_ASSERT_NOT_NULL(msg);
 
-        AVS_UNIT_ASSERT_SUCCESS(avs_net_socket_get_opt(
-                backend, AVS_NET_SOCKET_OPT_MTU, &mtu));
-        AVS_UNIT_ASSERT_EQUAL(mtu.mtu, 1500);
-        AVS_UNIT_ASSERT_SUCCESS(avs_net_socket_get_opt(
-                backend, AVS_NET_SOCKET_OPT_INNER_MTU, &mtu));
-        AVS_UNIT_ASSERT_EQUAL(mtu.mtu, 1472); // 20 bytes IPv4 + 8 bytes UDP
+    AVS_UNIT_ASSERT_SUCCESS(avs_net_socket_get_opt(
+            backend, AVS_NET_SOCKET_OPT_MTU, &mtu));
+    AVS_UNIT_ASSERT_EQUAL(mtu.mtu, 1500);
+    AVS_UNIT_ASSERT_SUCCESS(avs_net_socket_get_opt(
+            backend, AVS_NET_SOCKET_OPT_INNER_MTU, &mtu));
+    AVS_UNIT_ASSERT_EQUAL(mtu.mtu, 1472); // 20 bytes IPv4 + 8 bytes UDP
 
-        AVS_UNIT_ASSERT_SUCCESS(avs_coap_ctx_send(ctx, backend, msg));
+    AVS_UNIT_ASSERT_SUCCESS(avs_coap_ctx_send(ctx, backend, msg));
 
-        avs_coap_msg_t *recv_msg =
-                (avs_coap_msg_t *) alloca(COAP_MSG_MAX_SIZE);
-        memset(recv_msg, 0, COAP_MSG_MAX_SIZE);
-        AVS_UNIT_ASSERT_SUCCESS(
-                avs_coap_ctx_recv(ctx, backend, recv_msg, COAP_MSG_MAX_SIZE));
+    avs_coap_msg_t *recv_msg =
+            (avs_coap_msg_t *) alloca(COAP_MSG_MAX_SIZE);
+    memset(recv_msg, 0, COAP_MSG_MAX_SIZE);
+    AVS_UNIT_ASSERT_SUCCESS(
+            avs_coap_ctx_recv(ctx, backend, recv_msg, COAP_MSG_MAX_SIZE));
 
-        AVS_UNIT_ASSERT_EQUAL_BYTES_SIZED(recv_msg, msg, msg->length);
-        avs_net_socket_cleanup(&backend);
-        free(storage);
-        avs_coap_ctx_cleanup(&ctx);
-    }
-    { // dtls_client_send_recv
-        avs_coap_ctx_t *ctx = NULL;
-        AVS_UNIT_ASSERT_SUCCESS(avs_coap_ctx_create(&ctx, 0));
+    AVS_UNIT_ASSERT_EQUAL_BYTES_SIZED(recv_msg, msg, msg->length);
+    avs_net_socket_cleanup(&backend);
+    free(storage);
+    avs_coap_ctx_cleanup(&ctx);
+}
+#endif
 
-        avs_net_abstract_socket_t *backend = setup_dtls_socket(TEST_PORT_UDP);
+AVS_UNIT_TEST(coap_ctx, coap_dtls) {
+    avs_net_socket_opt_value_t mtu;
+    avs_coap_ctx_t *ctx = NULL;
+    AVS_UNIT_ASSERT_SUCCESS(avs_coap_ctx_create(&ctx, 0));
 
-        avs_coap_msg_info_t info = avs_coap_msg_info_init();
-        info.type = AVS_COAP_MSG_CONFIRMABLE;
-        info.code = AVS_COAP_CODE_CONTENT;
-        info.identity.msg_id = 4;
+    avs_net_abstract_socket_t *backend = setup_dtls_socket(TEST_PORT_DTLS);
 
-        size_t storage_size = COAP_MSG_MAX_SIZE;
-        void *storage = malloc(storage_size);
+    avs_coap_msg_info_t info = avs_coap_msg_info_init();
+    info.type = AVS_COAP_MSG_CONFIRMABLE;
+    info.code = AVS_COAP_CODE_CONTENT;
+    info.identity.msg_id = 4;
 
-        const avs_coap_msg_t *msg = avs_coap_msg_build_without_payload(
-                avs_coap_ensure_aligned_buffer(storage),
-                storage_size, &info);
+    size_t storage_size = COAP_MSG_MAX_SIZE;
+    void *storage = malloc(storage_size);
 
-        AVS_UNIT_ASSERT_NOT_NULL(msg);
+    const avs_coap_msg_t *msg = avs_coap_msg_build_without_payload(
+            avs_coap_ensure_aligned_buffer(storage),
+            storage_size, &info);
 
-        AVS_UNIT_ASSERT_SUCCESS(avs_net_socket_get_opt(
-                backend, AVS_NET_SOCKET_OPT_MTU, &mtu));
-        AVS_UNIT_ASSERT_EQUAL(mtu.mtu, 1500);
-        AVS_UNIT_ASSERT_SUCCESS(avs_net_socket_get_opt(
-                backend, AVS_NET_SOCKET_OPT_INNER_MTU, &mtu));
-        // The negotiated cipher is not well-defined, so it's a range:
-        // -- minimum ---- maximum --------------------------------------------
-        //         20           20      bytes of IPv4 header
-        //          8            8      bytes of UDP header
-        //         13           13      bytes of DTLS header
-        //          0            8      bytes of explicit IV
-        //          0           16      bytes of AEAD tag or MD+padding
-        // --------------------------------------------------------------------
-        //         41           65      bytes of headers subtracted from 1500
-        AVS_UNIT_ASSERT_TRUE(mtu.mtu >= 1435 && mtu.mtu <= 1459);
+    AVS_UNIT_ASSERT_NOT_NULL(msg);
 
-        AVS_UNIT_ASSERT_SUCCESS(avs_coap_ctx_send(ctx, backend, msg));
+    AVS_UNIT_ASSERT_SUCCESS(avs_net_socket_get_opt(
+            backend, AVS_NET_SOCKET_OPT_MTU, &mtu));
+    AVS_UNIT_ASSERT_EQUAL(mtu.mtu, 1500);
+    AVS_UNIT_ASSERT_SUCCESS(avs_net_socket_get_opt(
+            backend, AVS_NET_SOCKET_OPT_INNER_MTU, &mtu));
+    // The negotiated cipher is not well-defined, so it's a range:
+    // -- minimum ---- maximum --------------------------------------------
+    //         20           20      bytes of IPv4 header
+    //          8            8      bytes of UDP header
+    //         13           13      bytes of DTLS header
+    //          0            8      bytes of explicit IV
+    //          0           16      bytes of AEAD tag or MD+padding
+    // --------------------------------------------------------------------
+    //         41           65      bytes of headers subtracted from 1500
+    AVS_UNIT_ASSERT_TRUE(mtu.mtu >= 1435 && mtu.mtu <= 1459);
 
-        avs_coap_msg_t *recv_msg =
-                (avs_coap_msg_t *) alloca(COAP_MSG_MAX_SIZE);
-        memset(recv_msg, 0, COAP_MSG_MAX_SIZE);
-        AVS_UNIT_ASSERT_SUCCESS(
-                avs_coap_ctx_recv(ctx, backend, recv_msg, COAP_MSG_MAX_SIZE));
+    AVS_UNIT_ASSERT_SUCCESS(avs_coap_ctx_send(ctx, backend, msg));
 
-        AVS_UNIT_ASSERT_EQUAL_BYTES_SIZED(recv_msg, msg, msg->length);
-        avs_net_socket_cleanup(&backend);
-        avs_coap_ctx_cleanup(&ctx);
-        free(storage);
-    }
+    avs_coap_msg_t *recv_msg =
+            (avs_coap_msg_t *) alloca(COAP_MSG_MAX_SIZE);
+    memset(recv_msg, 0, COAP_MSG_MAX_SIZE);
+    AVS_UNIT_ASSERT_SUCCESS(
+            avs_coap_ctx_recv(ctx, backend, recv_msg, COAP_MSG_MAX_SIZE));
+
+    AVS_UNIT_ASSERT_EQUAL_BYTES_SIZED(recv_msg, msg, msg->length);
+    avs_net_socket_cleanup(&backend);
+    avs_coap_ctx_cleanup(&ctx);
+    free(storage);
 }
