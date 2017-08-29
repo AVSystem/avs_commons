@@ -261,6 +261,12 @@ if(${CMAKE_PROJECT_NAME} STREQUAL ${PROJECT_NAME})
     add_dependencies(check avs_commons_check)
 endif()
 
+# license check is only possible if running in a Git working tree
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/.git")
+    add_custom_target(license_check COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/tools/check-license-headers.py")
+    add_dependencies(avs_commons_check license_check)
+endif()
+
 if(NOT LIB_INSTALL_DIR)
     set(LIB_INSTALL_DIR lib)
 endif()
