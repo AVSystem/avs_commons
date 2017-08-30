@@ -27,6 +27,39 @@ extern "C" {
  * @file buffer.h
  *
  * Implementation of a byte buffer with circular semantics.
+ *
+ * <example>
+ * @code
+ * #include <stdio.h>
+ * #include <string.h>
+ * #include <avsystem/commons/buffer.h>
+ *
+ * int main() {
+ *     avs_buffer_t *buffer;
+ *     avs_buffer_create(&buffer, 1024);
+ *
+ *     // append immediate data
+ *     avs_buffer_append_bytes(buffer, "Hello! ", 7);
+ *
+ *     // pass to library function
+ *     const char *read_data =
+ *             fgets(avs_buffer_raw_insert_ptr(buffer),
+ *                   avs_buffer_space_left(buffer),
+ *                   stdin);
+ *     avs_buffer_advance_ptr(buffer, strlen(read_data));
+ *
+ *     while (avs_buffer_data_size(buffer) > 0) {
+ *         size_t printed_bytes =
+ *                 fwrite(avs_buffer_data(buffer), 1,
+ *                        avs_buffer_data_size(buffer),
+ *                        stdout);
+ *         avs_buffer_consume_bytes(buffer, printed_bytes);
+ *     }
+ *
+ *     avs_buffer_free(&buffer);
+ * }
+ * @endcode
+ * </example>
  */
 
 struct avs_buffer_struct;

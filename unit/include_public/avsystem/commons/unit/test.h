@@ -68,6 +68,60 @@ extern "C" {
  * Any verbosity level higher than 0 will cause additional information about
  * each test case to be printed. The verbosity level will also be passed to
  * user-defined initialization functions, if any.
+ *
+ * <example>
+ * @code
+ * //// file_under_test.c ////
+ *
+ * int square(int arg) {
+ *     return arg * arg;
+ * }
+ *
+ * void uppercase(char *input) {
+ *     for (; input && *input; ++input) {
+ *         if (*input >= 'a' && *input < 'z') { // <-- bug! :-E
+ *             *input += 'A' - 'a';
+ *         }
+ *     }
+ * }
+ *
+ * #ifdef UNIT_TESTING
+ * #include "test_file.c"
+ * #endif
+ * @endcode
+ *
+ * @code
+ * //// test_file.c ////
+ * #include <avsystem/commons/unit/test.h>
+ *
+ * AVS_UNIT_TEST(square, small_numbers) {
+ *     AVS_UNIT_ASSERT_EQUAL(square(2), 4);
+ *     AVS_UNIT_ASSERT_EQUAL(square(5), 25);
+ * }
+ *
+ * AVS_UNIT_TEST(uppercase, hello) {
+ *     char input[] = "Hello, world123!";
+ *     uppercase(input);
+ *     AVS_UNIT_ASSERT_EQUAL_STRING(input, "HELLO, WORLD123!");
+ * }
+ *
+ * AVS_UNIT_TEST(uppercase, zanzibar) {
+ *     char input[] = "Zanzibar";
+ *     uppercase(input);
+ *     AVS_UNIT_ASSERT_EQUAL_STRING(input, "ZANZIBAR");
+ * }
+ * @endcode
+ *
+ * Compilation and execution:
+ * @code
+ * $ cc -DUNIT_TESTING file_under_test.c -lavs_unit -lavs_list -o test
+ * $ ./test
+ * square                                                           1/1
+ * [test_file.c:18] expected <ZANZIBAR> was <ZANzIBAR>
+ *     zanzibar                                                     FAIL
+ * uppercase                                                        1/2
+ * @endcode
+ * </example>
  */
 
 /**

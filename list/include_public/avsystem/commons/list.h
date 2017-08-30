@@ -27,8 +27,49 @@
  *
  * A generic singly linked list implementation.
  *
- * The testing code (<c>test_list.c</c>) may be a good starting point for usage
- * examples.
+ * <example>
+ * @code
+ * #define _GNU_SOURCE // for asprintf()
+ * #include <stdio.h>
+ * #include <avsystem/commons/list.h>
+ *
+ * typedef struct {
+ *     int index;
+ *     char *string;
+ * } my_struct_t;
+ *
+ * int main() {
+ *     // declare a list - just like that!
+ *     AVS_LIST(my_struct_t) list = NULL;
+ *
+ *     // let's fill it!
+ *     AVS_LIST(my_struct_t) *last_element = &list;
+ *     for (int i = 0; i < 10; ++i) {
+ *         // create a new list element
+ *         *last_element = AVS_LIST_NEW_ELEMENT(my_struct_t);
+ *         (*last_element)->index = i;
+ *         asprintf(&(*last_element)->string, "This is list element %d", i);
+ *
+ *         // next element will be added after it
+ *         last_element = &AVS_LIST_NEXT(*last_element);
+ *     }
+ *
+ *     // print the contents
+ *     my_struct_t *element;
+ *     AVS_LIST_FOREACH(element, list) {
+ *         printf("%d -- %s\n", element->index, element->string);
+ *     }
+ *
+ *     // now free everything
+ *     AVS_LIST_CLEAR(&list) {
+ *         free(list->string);
+ *     }
+ * }
+ * @endcode
+ *
+ * Another starting point for examples might be the testing code
+ * (<c>test_list.c</c>).
+ * </example>
  */
 
 /**
