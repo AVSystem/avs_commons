@@ -62,7 +62,9 @@ endif()
 
 add_avs_test(avs_http ${ALL_SOURCES}
              src/test/test_http.c)
-target_link_libraries(avs_http_test ${AVS_TARGET_DEPS_avs_http})
+if(WITH_AVS_UNIT)
+    target_link_libraries(avs_http_test ${AVS_TARGET_DEPS_avs_http})
+endif()
 
 avs_install_export(avs_http http)
 install(DIRECTORY include_public/
