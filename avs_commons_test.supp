@@ -2,10 +2,7 @@
    getaddrinfo-globalstate
    Memcheck:Leak
    fun:malloc
-   fun:*
-   fun:*
-   fun:*
-   fun:*
+   ...
    fun:gaih_inet*
    fun:getaddrinfo
 }
