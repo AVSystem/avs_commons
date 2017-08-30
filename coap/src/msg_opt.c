@@ -17,6 +17,7 @@
 #include <config.h>
 
 #include "log.h"
+#include "msg_internal.h"
 
 #include <avsystem/commons/coap/msg_info.h>
 #include <avsystem/commons/coap/msg_opt.h>
@@ -129,16 +130,17 @@ int avs_coap_msg_validate_critical_options(
         const avs_coap_msg_t *msg,
         avs_coap_critical_option_validator_t validator) {
     int result = 0;
+    uint8_t code = _avs_coap_header_get_code(msg);
+
     for (avs_coap_opt_iterator_t it = avs_coap_opt_begin(msg);
             !avs_coap_opt_end(&it);
             avs_coap_opt_next(&it)) {
         if (is_opt_critical(avs_coap_opt_number(&it))) {
             uint32_t opt_number = avs_coap_opt_number(&it);
 
-            if (!is_critical_opt_valid(it.msg->header.code, opt_number,
-                                       validator)) {
+            if (!is_critical_opt_valid(code, opt_number, validator)) {
                 LOG(DEBUG, "warning: invalid critical option in query %s: %"
-                    PRIu32, AVS_COAP_CODE_STRING(it.msg->header.code),
+                    PRIu32, AVS_COAP_CODE_STRING(avs_coap_msg_get_code(it.msg)),
                     opt_number);
                 result = -1;
             }

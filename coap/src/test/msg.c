@@ -23,14 +23,15 @@
 #include "utils.h"
 
 AVS_UNIT_TEST(coap_msg, header_memory_layout) {
-    avs_coap_msg_t msg = {
-        .length = sizeof(avs_coap_msg_header_t),
-        .header = {
-            .version_type_token_length = VTTL(1, AVS_COAP_MSG_ACKNOWLEDGEMENT, 0),
-            .code = AVS_COAP_CODE(3, 4),
-            .message_id = { 5, 6 }
-        }
-    };
+    avs_coap_msg_t *msg = (avs_coap_msg_t *) alloca(sizeof(*msg)
+                                                    + AVS_COAP_MSG_MIN_SIZE);
+    _avs_coap_header_set_version(msg, 1);
+    _avs_coap_header_set_type(msg, AVS_COAP_MSG_ACKNOWLEDGEMENT);
+    _avs_coap_header_set_token_length(msg, 0);
+    _avs_coap_header_set_code(msg, AVS_COAP_CODE(3, 4));
+    // direct memcpy to avoid endianness problems
+    memcpy(((coap_header_t *)msg->content)->message_id, "\x05\x06", 2);
+    msg->length = (uint32_t) _avs_coap_header_size(msg);
 
     //      version
     //      |  type
@@ -38,12 +39,14 @@ AVS_UNIT_TEST(coap_msg, header_memory_layout) {
     //      v  v  v     .- code .  .-- message id --.
     //      01 10 0000  011 00100  00000101  00000110
     // hex:     6    0      6   4     0   5     0   6
-    AVS_UNIT_ASSERT_EQUAL_BYTES(&msg.header, "\x60\x64\x05\x06");
+    AVS_UNIT_ASSERT_EQUAL_BYTES(msg->content, "\x60\x64\x05\x06");
 
-    msg.header.version_type_token_length = VTTL(3, AVS_COAP_MSG_RESET, 7);
-    msg.header.code = AVS_COAP_CODE(7, 31);
-    msg.header.message_id[0] = 255;
-    msg.header.message_id[1] = 255;
+    _avs_coap_header_set_version(msg, 3);
+    _avs_coap_header_set_type(msg, AVS_COAP_MSG_RESET);
+    _avs_coap_header_set_token_length(msg, 7);
+    _avs_coap_header_set_code(msg, AVS_COAP_CODE(7, 31));
+    _avs_coap_header_set_id(msg, 0xffff);
+    msg->length = (uint32_t) _avs_coap_header_size(msg);
 
     //      version
     //      |  type
@@ -51,19 +54,20 @@ AVS_UNIT_TEST(coap_msg, header_memory_layout) {
     //      v  v  v     .- code .  .-- message id --.
     //      11 11 0111  111 11111  11111111  11111111
     // hex:     f    7      f   f     f   f     f   f
-    AVS_UNIT_ASSERT_EQUAL_BYTES(&msg.header, "\xf7\xff\xff\xff");
+    AVS_UNIT_ASSERT_EQUAL_BYTES(msg->content, "\xf7\xff\xff\xff");
 }
 
 AVS_UNIT_TEST(coap_msg, header_fields) {
     avs_coap_msg_t *msg = (avs_coap_msg_t *) alloca(sizeof(*msg));
     setup_msg(msg, NULL, 0);
 
-    AVS_UNIT_ASSERT_EQUAL(_avs_coap_msg_header_get_version(&msg->header), 1);
-    AVS_UNIT_ASSERT_EQUAL(avs_coap_msg_header_get_type(&msg->header), AVS_COAP_MSG_ACKNOWLEDGEMENT);
-    AVS_UNIT_ASSERT_EQUAL(avs_coap_msg_header_get_token_length(&msg->header), 0);
+    AVS_UNIT_ASSERT_EQUAL(_avs_coap_header_get_version(msg), 1);
+    AVS_UNIT_ASSERT_EQUAL(avs_coap_msg_get_type(msg), AVS_COAP_MSG_ACKNOWLEDGEMENT);
+    AVS_UNIT_ASSERT_EQUAL(_avs_coap_header_get_token_length(msg), 0);
 
-    AVS_UNIT_ASSERT_EQUAL(avs_coap_msg_code_get_class(msg->header.code), 3);
-    AVS_UNIT_ASSERT_EQUAL(avs_coap_msg_code_get_detail(msg->header.code), 4);
+    uint8_t code = avs_coap_msg_get_code(msg);
+    AVS_UNIT_ASSERT_EQUAL(avs_coap_msg_code_get_class(code), 3);
+    AVS_UNIT_ASSERT_EQUAL(avs_coap_msg_code_get_detail(code), 4);
 
     AVS_UNIT_ASSERT_EQUAL(avs_coap_msg_get_id(msg), 0x0506);
 }
@@ -119,7 +123,7 @@ AVS_UNIT_TEST(coap_msg, options) {
 
     avs_coap_opt_iterator_t it = avs_coap_opt_begin(msg);
     size_t expected_opt_number = 0;
-    const uint8_t *expected_opt_ptr = msg->content;
+    const uint8_t *expected_opt_ptr = _avs_coap_header_end_const(msg);
 
     AVS_UNIT_ASSERT_FALSE(avs_coap_opt_end(&it));
     AVS_UNIT_ASSERT_EQUAL(avs_coap_opt_number(&it), expected_opt_number);
@@ -181,7 +185,7 @@ AVS_UNIT_TEST(coap_msg, validate_valid) {
 AVS_UNIT_TEST(coap_msg, validate_empty) {
     avs_coap_msg_t *msg = (avs_coap_msg_t *) alloca(sizeof(*msg));
     setup_msg(msg, NULL, 0);
-    msg->header.code = AVS_COAP_CODE_EMPTY;
+    _avs_coap_header_set_code(msg, AVS_COAP_CODE_EMPTY);
 
     AVS_UNIT_ASSERT_TRUE(avs_coap_msg_is_valid(msg));
 }
@@ -191,8 +195,8 @@ AVS_UNIT_TEST(coap_msg, validate_empty_with_token) {
     avs_coap_msg_t *msg =
             (avs_coap_msg_t *) alloca(sizeof(*msg) + sizeof(content));
     setup_msg(msg, content, sizeof(content));
-    msg->header.code = AVS_COAP_CODE_EMPTY;
-    msg->header.version_type_token_length = VTTL(1, 0, sizeof(content));
+    _avs_coap_header_set_code(msg, AVS_COAP_CODE_EMPTY);
+    _avs_coap_header_set_token_length(msg, sizeof(content));
 
     AVS_UNIT_ASSERT_FALSE(avs_coap_msg_is_valid(msg));
 }
@@ -202,7 +206,7 @@ AVS_UNIT_TEST(coap_msg, validate_empty_with_payload) {
     avs_coap_msg_t *msg =
             (avs_coap_msg_t *) alloca(sizeof(*msg) + sizeof(content) - 1);
     setup_msg(msg, content, sizeof(content) - 1);
-    msg->header.code = AVS_COAP_CODE_EMPTY;
+    _avs_coap_header_set_code(msg, AVS_COAP_CODE_EMPTY);
 
     AVS_UNIT_ASSERT_FALSE(avs_coap_msg_is_valid(msg));
 }
@@ -212,15 +216,15 @@ AVS_UNIT_TEST(coap_msg, validate_unrecognized_version) {
             (avs_coap_msg_t *) alloca(sizeof(*msg));
     setup_msg(msg, NULL, 0);
 
-    _avs_coap_msg_header_set_version(&msg->header, 0);
+    _avs_coap_header_set_version(msg, 0);
     AVS_UNIT_ASSERT_FALSE(avs_coap_msg_is_valid(msg));
     AVS_UNIT_ASSERT_EQUAL(count_opts(msg), 0);
 
-    _avs_coap_msg_header_set_version(&msg->header, 2);
+    _avs_coap_header_set_version(msg, 2);
     AVS_UNIT_ASSERT_FALSE(avs_coap_msg_is_valid(msg));
     AVS_UNIT_ASSERT_EQUAL(count_opts(msg), 0);
 
-    _avs_coap_msg_header_set_version(&msg->header, 3);
+    _avs_coap_header_set_version(msg, 3);
     AVS_UNIT_ASSERT_FALSE(avs_coap_msg_is_valid(msg));
     AVS_UNIT_ASSERT_EQUAL(count_opts(msg), 0);
 }
@@ -230,7 +234,8 @@ AVS_UNIT_TEST(coap_msg, validate_with_token) {
     avs_coap_msg_t *msg =
             (avs_coap_msg_t *) alloca(sizeof(*msg) + sizeof(content));
     setup_msg(msg, content, sizeof(content));
-    msg->header.version_type_token_length = VTTL(1, 0, sizeof(content));
+
+    _avs_coap_header_set_token_length(msg, sizeof(content));
 
     AVS_UNIT_ASSERT_TRUE(avs_coap_msg_is_valid(msg));
     AVS_UNIT_ASSERT_EQUAL(count_opts(msg), 0);
@@ -241,7 +246,12 @@ AVS_UNIT_TEST(coap_msg, validate_invalid_token_length) {
     avs_coap_msg_t *msg =
             (avs_coap_msg_t *) alloca(sizeof(*msg) + sizeof(content));
     setup_msg(msg, content, sizeof(content));
-    msg->header.version_type_token_length = VTTL(1, 0, sizeof(content));
+
+    // _avs_coap_header_set_token_length doesn't allow setting an invalid
+    // token length; we need to set the value directly
+    AVS_FIELD_SET(msg->content[0],
+                  AVS_COAP_HEADER_TOKEN_LENGTH_MASK,
+                  AVS_COAP_HEADER_TOKEN_LENGTH_SHIFT, sizeof(content));
 
     AVS_UNIT_ASSERT_FALSE(avs_coap_msg_is_valid(msg));
 }
@@ -454,7 +464,7 @@ AVS_UNIT_TEST(coap_msg, validate_full) {
     avs_coap_msg_t *msg =
             (avs_coap_msg_t *) alloca(sizeof(*msg) + sizeof(content));
     setup_msg(msg, content, sizeof(content));
-    msg->header.version_type_token_length = VTTL(1, 0, 8);
+    _avs_coap_header_set_token_length(msg, 8);
 
     AVS_UNIT_ASSERT_TRUE(avs_coap_msg_is_valid(msg));
     AVS_UNIT_ASSERT_EQUAL(count_opts(msg), 3);
@@ -467,17 +477,17 @@ AVS_UNIT_TEST(coap_msg, payload_shorter_than_4b) {
     avs_coap_msg_t *msg =
             (avs_coap_msg_t *) alloca(sizeof(*msg) + sizeof(content) - 1);
     setup_msg(msg, content, sizeof(content) - 1);
-    msg->header.version_type_token_length = VTTL(1, 0, 0);
 
     AVS_UNIT_ASSERT_TRUE(avs_coap_msg_is_valid(msg));
-    AVS_UNIT_ASSERT_TRUE(avs_coap_msg_payload(msg) == msg->content + 1);
+    AVS_UNIT_ASSERT_TRUE(avs_coap_msg_payload(msg)
+                         == _avs_coap_header_end(msg) + 1);
 }
 
 static avs_coap_msg_t *
 deserialize_msg(void *out_buffer, const char *raw_data, size_t data_size) {
     avs_coap_msg_t *msg = (avs_coap_msg_t*)out_buffer;
     msg->length = (uint32_t)data_size;
-    memcpy(&msg->header, raw_data, data_size);
+    memcpy(msg->content, raw_data, data_size);
     return msg;
 }
 #define DESERIALIZE_MSG(Content) \

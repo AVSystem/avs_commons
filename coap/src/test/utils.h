@@ -14,26 +14,25 @@
  * limitations under the License.
  */
 
-#define PAYLOAD_MARKER "\xFF"
+#include "../msg_internal.h"
 
-#define VTTL(version, type, token_length) \
-    ((((version) & 0x03) << 6) | (((type) & 0x03) << 4) | ((token_length) & 0x0f))
+#define PAYLOAD_MARKER "\xFF"
 
 static inline void setup_msg(avs_coap_msg_t *msg,
                              const uint8_t *content,
                              size_t content_length) {
-    static const avs_coap_msg_t TEMPLATE = {
-        .header = {
-            .version_type_token_length = VTTL(1, AVS_COAP_MSG_ACKNOWLEDGEMENT, 0),
-            .code = AVS_COAP_CODE(3, 4),
-            .message_id = { 5, 6 }
-        }
-    };
     memset(msg, 0, sizeof(*msg) + content_length);
-    memcpy(msg, &TEMPLATE, offsetof(avs_coap_msg_t, content));
+
+    _avs_coap_header_set_version(msg, 1);
+    _avs_coap_header_set_type(msg, AVS_COAP_MSG_ACKNOWLEDGEMENT);
+    _avs_coap_header_set_token_length(msg, 0);
+    _avs_coap_header_set_code(msg, AVS_COAP_CODE(3, 4));
+    _avs_coap_header_set_id(msg, 0x0506);
+
     assert(content || content_length == 0);
     if (content_length) {
-        memcpy(msg->content, content, content_length);
+        memcpy(msg->content + _avs_coap_header_size(msg),
+               content, content_length);
     }
-    msg->length = (uint32_t)(sizeof(msg->header) + content_length);
+    msg->length = (uint32_t)(_avs_coap_header_size(msg) + content_length);
 }

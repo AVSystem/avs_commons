@@ -30,13 +30,18 @@ extern "C" {
 #endif
 
 /**
+ * Maximum size, in bytes, of a CoAP message header (no token, options nor
+ * payload) */
+#define AVS_COAP_MAX_HEADER_SIZE ((size_t) 4)
+
+/** Minimum size, in bytes, of a correct CoAP message. */
+#define AVS_COAP_MSG_MIN_SIZE AVS_COAP_MAX_HEADER_SIZE
+
+/**
  * Magic value defined in RFC7252, used internally when constructing/parsing
  * CoAP packets.
  */
 #define AVS_COAP_PAYLOAD_MARKER ((uint8_t) 0xFF)
-
-/** Miminum size, in bytes, of a correct CoAP message. */
-#define AVS_COAP_MSG_MIN_SIZE ((unsigned) sizeof(avs_coap_msg_header_t))
 
 /** CoAP message type, as defined in RFC7252. */
 typedef enum avs_coap_msg_type {
@@ -163,46 +168,6 @@ static inline bool avs_coap_msg_code_is_response(uint8_t code) {
     return avs_coap_msg_code_get_class(code) > 0;
 }
 
-/** Serialized CoAP message header. For internal use only. */
-typedef struct avs_coap_msg_header {
-    uint8_t version_type_token_length;
-    uint8_t code;
-    uint8_t message_id[2];
-} avs_coap_msg_header_t;
-
-/** @{
- * Sanity checks that ensure no padding is inserted anywhere inside
- * @ref avs_coap_msg_header_t .
- */
-AVS_STATIC_ASSERT(offsetof(avs_coap_msg_header_t, version_type_token_length) == 0,
-                  vttl_field_is_at_start_of_msg_header_t);
-AVS_STATIC_ASSERT(offsetof(avs_coap_msg_header_t, code) == 1,
-                  no_padding_before_code_field_of_msg_header_t);
-AVS_STATIC_ASSERT(offsetof(avs_coap_msg_header_t, message_id) == 2,
-                  no_padding_before_message_id_field_of_msg_header_t);
-AVS_STATIC_ASSERT(sizeof(avs_coap_msg_header_t) == 4,
-                  no_padding_in_msg_header_t);
-/** @} */
-
-/** @{
- * Internal macros used for retrieving CoAP message type from
- * @ref avs_coap_msg_header_t .
- */
-#define AVS_COAP_HEADER_TYPE_MASK 0x30
-#define AVS_COAP_HEADER_TYPE_SHIFT 4
-/** @} */
-
-/** @returns CoAP message type encoded in @p hdr . */
-avs_coap_msg_type_t
-avs_coap_msg_header_get_type(const avs_coap_msg_header_t *hdr);
-
-/** Sets CoAP message type of @p hdr to @p type . */
-void avs_coap_msg_header_set_type(avs_coap_msg_header_t *hdr,
-                                  avs_coap_msg_type_t type);
-
-/** @returns Length, in bytes, of the CoAP message token encoded in @p hdr. */
-uint8_t avs_coap_msg_header_get_token_length(const avs_coap_msg_header_t *hdr);
-
 /** CoAP message object. */
 typedef struct avs_coap_msg {
     /**
@@ -211,24 +176,12 @@ typedef struct avs_coap_msg {
      */
     uint32_t length; // whole message (header + content)
 
-    /** CoAP message header. */
-    avs_coap_msg_header_t header;
-
     /**
-     * Not really a single-element array, but a FAM; rest of the CoAP
-     * message: token + options + payload.
+     * Not really a single-element array, but a FAM containing whole CoAP
+     * message: header + token + options + payload.
      */
     uint8_t content[1];
 } avs_coap_msg_t;
-
-/** @{
- * Sanity checks ensuring no padding is inserted in @ref avs_coap_msg_t .
- */
-AVS_STATIC_ASSERT(offsetof(avs_coap_msg_t, header) == 4,
-                  no_padding_before_header_field_of_msg_t);
-AVS_STATIC_ASSERT(offsetof(avs_coap_msg_t, content) == 8,
-                  no_padding_before_content_field_of_msg_t);
-/** @} */
 
 /**
  * Iterator object used to access CoAP message options.
@@ -256,12 +209,24 @@ typedef struct {
 uint16_t avs_coap_msg_get_id(const avs_coap_msg_t *msg);
 
 /**
+ * @returns CoAP type of the @p msg .
+ */
+avs_coap_msg_type_t avs_coap_msg_get_type(const avs_coap_msg_t *msg);
+
+/**
+ * @returns CoAP code of the @p msg . Use CoAP code accessor functions
+ *          (@ref avs_coap_msg_code_get_class ,
+ *           @ref avs_coap_msg_code_get_detail ) to extract its class/detail.
+ */
+uint8_t avs_coap_msg_get_code(const avs_coap_msg_t *msg);
+
+/**
  * @param msg Message to check
  * @return true if message is a request message (RFC7252 section 5.1),
  *      false otherwise
  */
 static inline bool avs_coap_msg_is_request(const avs_coap_msg_t *msg) {
-    return avs_coap_msg_code_is_request(msg->header.code);
+    return avs_coap_msg_code_is_request(avs_coap_msg_get_code(msg));
 }
 
 /**
@@ -270,7 +235,7 @@ static inline bool avs_coap_msg_is_request(const avs_coap_msg_t *msg) {
  *      false otherwise
  */
 static inline bool avs_coap_msg_is_response(const avs_coap_msg_t *msg) {
-    return avs_coap_msg_code_is_response(msg->header.code);
+    return avs_coap_msg_code_is_response(avs_coap_msg_get_code(msg));
 }
 
 /**

@@ -156,7 +156,7 @@ static size_t padding_bytes_after_msg(const avs_coap_msg_t *msg) {
  * @return Extra overhead, in bytes, required to put @p msg in cache. Total
  *         number of bytes used by a message is:
  *         <c>_avs_coap_msg_cache_overhead(msg)
- *         + msg->length + offsetof(avs_coap_msg_t, header)</c>
+ *         + msg->length + offsetof(avs_coap_msg_t, content)</c>
  */
 static inline size_t cache_msg_overhead(const avs_coap_msg_t *msg) {
     return offsetof(cache_entry_t, data) + padding_bytes_after_msg(msg);
@@ -166,7 +166,7 @@ static void cache_put_entry(coap_msg_cache_t *cache,
                             const struct timespec *expiration_time,
                             endpoint_t *endpoint,
                             const avs_coap_msg_t *msg) {
-    size_t msg_size = offsetof(avs_coap_msg_t, header) + msg->length;
+    size_t msg_size = offsetof(avs_coap_msg_t, content) + msg->length;
 
     cache_entry_t entry = {
         .endpoint = endpoint,
@@ -208,7 +208,7 @@ static bool entry_expired(const cache_entry_t *entry,
  * and padding after the message */
 static size_t entry_msg_size(const cache_entry_t *entry) {
     const avs_coap_msg_t *msg = entry_msg(entry);
-    return offsetof(avs_coap_msg_t, header)
+    return offsetof(avs_coap_msg_t, content)
             + msg->length
             + padding_bytes_after_msg(msg);
 }
@@ -302,7 +302,7 @@ int _avs_coap_msg_cache_add(coap_msg_cache_t *cache,
     }
 
     size_t cap_req = cache_msg_overhead(msg)
-                   + offsetof(avs_coap_msg_t, header)
+                   + offsetof(avs_coap_msg_t, content)
                    + msg->length;
     if (avs_buffer_capacity(cache->buffer) < cap_req) {
         LOG(DEBUG, "msg_cache: not enough space for %" PRIu32 " B message",

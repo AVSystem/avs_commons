@@ -90,19 +90,20 @@ avs_coap_msg_code_to_string(uint8_t code, char *buf, size_t buf_size) {
 
 avs_coap_token_t avs_coap_msg_get_token(const avs_coap_msg_t *msg) {
     avs_coap_token_t token = {
-        .size = avs_coap_msg_header_get_token_length(&msg->header)
+        .size = _avs_coap_header_get_token_length(msg)
     };
     assert(token.size <= AVS_COAP_MAX_TOKEN_LENGTH);
 
-    memcpy(token.bytes, msg->content, token.size);
+    memcpy(token.bytes, _avs_coap_header_end_const(msg), token.size);
     return token;
 }
 
 static const avs_coap_opt_t *get_first_opt(const avs_coap_msg_t *msg) {
-    size_t token_length = avs_coap_msg_header_get_token_length(&msg->header);
+    size_t token_length = _avs_coap_header_get_token_length(msg);
     assert(token_length <= AVS_COAP_MAX_TOKEN_LENGTH);
 
-    return (const avs_coap_opt_t *)(msg->content + token_length);
+    return (const avs_coap_opt_t *)(_avs_coap_header_end_const(msg)
+                                    + token_length);
 }
 
 static bool is_payload_marker(const avs_coap_opt_t *ptr) {
@@ -130,7 +131,7 @@ bool avs_coap_opt_end(const avs_coap_opt_iterator_t *optit) {
     assert((const uint8_t *)optit->curr_opt >= optit->msg->content);
 
     size_t offset = (size_t)((const uint8_t *)optit->curr_opt
-                             - (const uint8_t *)&optit->msg->header);
+                             - optit->msg->content);
 
     assert(offset <= optit->msg->length);
     return offset >= optit->msg->length
@@ -152,7 +153,7 @@ static const uint8_t *coap_opt_find_end(const avs_coap_msg_t *msg) {
 const void *avs_coap_msg_payload(const avs_coap_msg_t *msg) {
     const uint8_t *end = coap_opt_find_end(msg);
 
-    if (end < (const uint8_t*)&msg->header + msg->length
+    if (end < (const uint8_t*)msg->content + msg->length
             && *end == AVS_COAP_PAYLOAD_MARKER) {
         return end + 1;
     } else {
@@ -162,26 +163,27 @@ const void *avs_coap_msg_payload(const avs_coap_msg_t *msg) {
 
 size_t avs_coap_msg_payload_length(const avs_coap_msg_t *msg) {
     return (size_t)msg->length - (size_t)
-           ((const uint8_t *)avs_coap_msg_payload(msg) - (const uint8_t *)&msg->header);
+           ((const uint8_t *)avs_coap_msg_payload(msg) - msg->content);
 }
 
 static bool is_header_valid(const avs_coap_msg_t *msg) {
-    uint8_t version = _avs_coap_msg_header_get_version(&msg->header);
+    uint8_t version = _avs_coap_header_get_version(msg);
     if (version != 1) {
         LOG(DEBUG, "unsupported CoAP version: %u", version);
         return false;
     }
 
-    uint8_t token_length = avs_coap_msg_header_get_token_length(&msg->header);
+    uint8_t token_length = _avs_coap_header_get_token_length(msg);
     if (token_length > AVS_COAP_MAX_TOKEN_LENGTH) {
         LOG(DEBUG, "token too long (%dB, expected 0 <= size <= %d)",
             token_length, AVS_COAP_MAX_TOKEN_LENGTH);
         return false;
     }
 
-    if (sizeof(msg->header) + token_length > msg->length) {
+    size_t hdr_size = _avs_coap_header_size(msg);
+    if (hdr_size + token_length > msg->length) {
         LOG(DEBUG, "missing/incomplete token (got %u, expected %" PRIu8 ")",
-            (unsigned)(msg->length - sizeof(msg->header)), token_length);
+            (unsigned)(msg->length - hdr_size), token_length);
         return false;
     }
 
@@ -189,8 +191,8 @@ static bool is_header_valid(const avs_coap_msg_t *msg) {
 }
 
 static bool are_options_valid(const avs_coap_msg_t *msg) {
-    size_t length_so_far = sizeof(msg->header)
-            + avs_coap_msg_header_get_token_length(&msg->header);
+    size_t length_so_far = _avs_coap_header_size(msg)
+                           + _avs_coap_header_get_token_length(msg);
 
     if (length_so_far == msg->length) {
         return true;
@@ -234,8 +236,8 @@ static bool are_options_valid(const avs_coap_msg_t *msg) {
 
 bool avs_coap_msg_is_valid(const avs_coap_msg_t *msg) {
     if (msg->length < AVS_COAP_MSG_MIN_SIZE) {
-        LOG(DEBUG, "message too short (%" PRIu32 "B, expected >= %u)",
-            msg->length, AVS_COAP_MSG_MIN_SIZE);
+        LOG(DEBUG, "message too short (%" PRIu32 "B, expected >= %" PRIu32 ")",
+            msg->length, (uint32_t)AVS_COAP_MSG_MIN_SIZE);
         return false;
     }
 
@@ -244,8 +246,8 @@ bool avs_coap_msg_is_valid(const avs_coap_msg_t *msg) {
         // [RFC 7272, 1.2]
         // Empty Message: A message with a Code of 0.00; neither a request nor
         // a response. An Empty message only contains the 4-byte header.
-        && (msg->header.code != AVS_COAP_CODE_EMPTY
-                || msg->length == AVS_COAP_MSG_MIN_SIZE);
+        && (avs_coap_msg_get_code(msg) != AVS_COAP_CODE_EMPTY
+                || msg->length == _avs_coap_header_size(msg));
 }
 
 static const char *msg_type_string(avs_coap_msg_type_t type) {
@@ -262,21 +264,20 @@ static const char *msg_type_string(avs_coap_msg_type_t type) {
 void avs_coap_msg_debug_print(const avs_coap_msg_t *msg) {
     LOG(DEBUG, "sizeof(*msg) = %lu, sizeof(len) = %lu, sizeof(header) = %lu",
         (unsigned long) sizeof(*msg), (unsigned long) sizeof(msg->length),
-        (unsigned long) sizeof(msg->header));
+        (unsigned long) _avs_coap_header_size(msg));
     LOG(DEBUG, "message (length = %" PRIu32 "):", msg->length);
-    LOG(DEBUG, "type: %u (%s)", avs_coap_msg_header_get_type(&msg->header),
-        msg_type_string(avs_coap_msg_header_get_type(&msg->header)));
+    LOG(DEBUG, "type: %u (%s)", avs_coap_msg_get_type(msg),
+        msg_type_string(avs_coap_msg_get_type(msg)));
 
-    LOG(DEBUG, "  version: %u",
-        _avs_coap_msg_header_get_version(&msg->header));
-    LOG(DEBUG, "  token_length: %u",
-        avs_coap_msg_header_get_token_length(&msg->header));
-    LOG(DEBUG, "  code: %s", AVS_COAP_CODE_STRING(msg->header.code));
+    LOG(DEBUG, "  version: %u", _avs_coap_header_get_version(msg));
+    LOG(DEBUG, "  token_length: %u", _avs_coap_header_get_token_length(msg));
+    LOG(DEBUG, "  code: %s", AVS_COAP_CODE_STRING(avs_coap_msg_get_code(msg)));
     LOG(DEBUG, "  message_id: %u", avs_coap_msg_get_id(msg));
     LOG(DEBUG, "  content:");
 
-    for (size_t i = 0; i < msg->length - sizeof(msg->header); i += 8) {
-        LOG(DEBUG, "%02x", msg->content[i]);
+    const uint8_t *content = _avs_coap_header_end_const(msg);
+    for (size_t i = 0; i < msg->length - _avs_coap_header_size(msg); i += 8) {
+        LOG(DEBUG, "%02x", content[i]);
     }
 
     LOG(DEBUG, "opts:");
@@ -358,8 +359,8 @@ avs_coap_msg_summary(const avs_coap_msg_t *msg, char *buf, size_t buf_size) {
 
     if (avs_simple_snprintf(
              buf, buf_size, "%s, %s, id %u, token %s (%luB)%s%s",
-             AVS_COAP_CODE_STRING(msg->header.code),
-             msg_type_string(avs_coap_msg_header_get_type(&msg->header)),
+             AVS_COAP_CODE_STRING(avs_coap_msg_get_code(msg)),
+             msg_type_string(avs_coap_msg_get_type(msg)),
              avs_coap_msg_get_id(msg),
              token_string, (unsigned long)token.size,
              block1, block2) < 0) {
@@ -367,14 +368,6 @@ avs_coap_msg_summary(const avs_coap_msg_t *msg, char *buf, size_t buf_size) {
         return "(cannot create summary)";
     }
     return buf;
-}
-
-uint8_t avs_coap_msg_header_get_token_length(const avs_coap_msg_header_t *hdr) {
-    int val = AVS_FIELD_GET(hdr->version_type_token_length,
-                            AVS_COAP_HEADER_TOKEN_LENGTH_MASK,
-                            AVS_COAP_HEADER_TOKEN_LENGTH_SHIFT);
-    assert(val >= 0 && val <= AVS_COAP_HEADER_TOKEN_LENGTH_MASK);
-    return (uint8_t)val;
 }
 
 uint8_t avs_coap_msg_code_get_class(uint8_t code) {
@@ -399,24 +392,16 @@ void avs_coap_msg_code_set_detail(uint8_t *code, uint8_t detail) {
                   AVS_COAP_CODE_DETAIL_SHIFT, detail);
 }
 
-avs_coap_msg_type_t
-avs_coap_msg_header_get_type(const avs_coap_msg_header_t *hdr) {
-    int val = AVS_FIELD_GET(hdr->version_type_token_length,
-                            AVS_COAP_HEADER_TYPE_MASK,
-                            AVS_COAP_HEADER_TYPE_SHIFT);
-    assert(val >= _AVS_COAP_MSG_FIRST && val <= _AVS_COAP_MSG_LAST);
-    return (avs_coap_msg_type_t)val;
+avs_coap_msg_type_t avs_coap_msg_get_type(const avs_coap_msg_t *msg) {
+    return _avs_coap_header_get_type(msg);
 }
 
-void avs_coap_msg_header_set_type(avs_coap_msg_header_t *hdr,
-                                  avs_coap_msg_type_t type) {
-    AVS_FIELD_SET(hdr->version_type_token_length,
-                  AVS_COAP_HEADER_TYPE_MASK,
-                  AVS_COAP_HEADER_TYPE_SHIFT, type);
+uint8_t avs_coap_msg_get_code(const avs_coap_msg_t *msg) {
+    return _avs_coap_header_get_code(msg);
 }
 
 uint16_t avs_coap_msg_get_id(const avs_coap_msg_t *msg) {
-    return extract_u16((const uint8_t *) &msg->header.message_id);
+    return _avs_coap_header_get_id(msg);
 }
 
 #ifdef AVS_UNIT_TESTING

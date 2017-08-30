@@ -30,23 +30,22 @@ static void append_header(avs_coap_msg_buffer_t *buffer,
                           avs_coap_msg_type_t msg_type,
                           uint8_t msg_code,
                           uint16_t msg_id) {
-    avs_coap_msg_header_set_type(&buffer->msg->header, msg_type);
-    _avs_coap_msg_header_set_version(&buffer->msg->header, 1);
-    _avs_coap_msg_header_set_token_length(&buffer->msg->header, 0);
+    _avs_coap_header_set_type(buffer->msg, msg_type);
+    _avs_coap_header_set_version(buffer->msg, 1);
+    _avs_coap_header_set_token_length(buffer->msg, 0);
+    _avs_coap_header_set_code(buffer->msg, msg_code);
+    _avs_coap_header_set_id(buffer->msg, msg_id);
 
-    buffer->msg->header.code = msg_code;
-    memcpy(buffer->msg->header.message_id, &(uint16_t){htons(msg_id)},
-           sizeof(buffer->msg->header.message_id));
+    buffer->msg->length = (uint32_t)_avs_coap_header_size(buffer->msg);
 }
 
 static uint8_t *msg_end_ptr(const avs_coap_msg_buffer_t *buffer) {
-    return &buffer->msg->content[buffer->msg->length
-                                  - sizeof(buffer->msg->header)];
+    return &buffer->msg->content[buffer->msg->length];
 }
 
 static size_t bytes_remaining(const avs_coap_msg_buffer_t *buffer) {
-    return buffer->capacity
-           - sizeof(buffer->msg->length) - buffer->msg->length;
+    return buffer->capacity - buffer->msg->length
+           - offsetof(avs_coap_msg_t, content);
 }
 
 static int append_data(avs_coap_msg_buffer_t *buffer,
@@ -72,13 +71,13 @@ static int append_token(avs_coap_msg_buffer_t *buffer,
                         const avs_coap_token_t *token) {
     assert(token->size <= AVS_COAP_MAX_TOKEN_LENGTH);
 
-    if (buffer->msg->header.code == AVS_COAP_CODE_EMPTY
+    if (_avs_coap_header_get_code(buffer->msg) == AVS_COAP_CODE_EMPTY
             && token->size > 0) {
         LOG(ERROR, "0.00 Empty message must not contain a token");
         return -1;
     }
 
-    _avs_coap_msg_header_set_token_length(&buffer->msg->header, token->size);
+    _avs_coap_header_set_token_length(buffer->msg, token->size);
     if (append_data(buffer, token->bytes, token->size)) {
         LOG(ERROR, "could not append token");
         return -1;
@@ -136,15 +135,15 @@ static int append_option(avs_coap_msg_buffer_t *buffer,
                          uint16_t opt_number_delta,
                          const void *opt_data,
                          uint16_t opt_data_size) {
-    if (buffer->msg->header.code == AVS_COAP_CODE_EMPTY) {
+    if (_avs_coap_header_get_code(buffer->msg) == AVS_COAP_CODE_EMPTY) {
         LOG(ERROR, "0.00 Empty message must not contain options");
         return -1;
     }
 
-    size_t header_size =
+    size_t opt_header_size =
             _avs_coap_get_opt_header_size(opt_number_delta, opt_data_size);
 
-    if (header_size + opt_data_size > bytes_remaining(buffer)) {
+    if (opt_header_size + opt_data_size > bytes_remaining(buffer)) {
         LOG(ERROR, "not enough space to serialize option");
         return -1;
     }
@@ -164,7 +163,7 @@ static int append_option(avs_coap_msg_buffer_t *buffer,
 int avs_coap_msg_builder_init(avs_coap_msg_builder_t *builder,
                               avs_coap_aligned_msg_buffer_t *buffer,
                               size_t buffer_size_bytes,
-                              const avs_coap_msg_info_t *header) {
+                              const avs_coap_msg_info_t *info) {
     *builder = (avs_coap_msg_builder_t){
         .has_payload_marker = false,
         .msg_buffer = {
@@ -173,31 +172,31 @@ int avs_coap_msg_builder_init(avs_coap_msg_builder_t *builder,
         }
     };
 
-    return avs_coap_msg_builder_reset(builder, header);
+    return avs_coap_msg_builder_reset(builder, info);
 }
 
 int avs_coap_msg_builder_reset(avs_coap_msg_builder_t *builder,
-                               const avs_coap_msg_info_t *header) {
+                               const avs_coap_msg_info_t *info) {
     if (builder->msg_buffer.capacity
-            < avs_coap_msg_info_get_headers_size(header)) {
+            < avs_coap_msg_info_get_headers_size(info)) {
         LOG(ERROR, "message buffer too small: %u/%u B available",
             (unsigned) builder->msg_buffer.capacity,
-            (unsigned) avs_coap_msg_info_get_storage_size(header));
+            (unsigned) avs_coap_msg_info_get_storage_size(info));
         return -1;
     }
 
     builder->has_payload_marker = false;
-    builder->msg_buffer.msg->length = sizeof(builder->msg_buffer.msg->header);
+    builder->msg_buffer.msg->length = 0;
 
     append_header(&builder->msg_buffer,
-                  header->type, header->code, header->identity.msg_id);
-    if (append_token(&builder->msg_buffer, &header->identity.token)) {
+                  info->type, info->code, info->identity.msg_id);
+    if (append_token(&builder->msg_buffer, &info->identity.token)) {
         return -1;
     }
 
     avs_coap_msg_info_opt_t *opt;
     uint16_t prev_opt_num = 0;
-    AVS_LIST_FOREACH(opt, header->options_) {
+    AVS_LIST_FOREACH(opt, info->options_) {
         assert(prev_opt_num <= opt->number);
 
         uint16_t delta = (uint16_t)(opt->number - prev_opt_num);

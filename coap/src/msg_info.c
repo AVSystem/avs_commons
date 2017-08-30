@@ -26,10 +26,6 @@
 
 #pragma GCC visibility push(hidden)
 
-const avs_coap_msg_t _AVS_COAP_EMPTY_MSG_TEMPLATE = {
-    .length = sizeof(avs_coap_msg_header_t)
-};
-
 void
 avs_coap_msg_info_reset(avs_coap_msg_info_t *info) {
     AVS_LIST_CLEAR(&info->options_);
@@ -57,7 +53,7 @@ get_options_size_bytes(const AVS_LIST(avs_coap_msg_info_opt_t) opts) {
 
 size_t
 avs_coap_msg_info_get_headers_size(const avs_coap_msg_info_t *info) {
-    return sizeof(avs_coap_msg_header_t)
+    return AVS_COAP_MAX_HEADER_SIZE
            + info->identity.token.size
            + get_options_size_bytes(info->options_);
 }
@@ -65,6 +61,7 @@ avs_coap_msg_info_get_headers_size(const avs_coap_msg_info_t *info) {
 size_t
 avs_coap_msg_info_get_storage_size(const avs_coap_msg_info_t *info) {
     return offsetof(avs_coap_msg_t, content)
+           + AVS_COAP_MAX_HEADER_SIZE
            + AVS_COAP_MAX_TOKEN_LENGTH
            + get_options_size_bytes(info->options_);
 }

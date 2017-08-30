@@ -194,7 +194,7 @@ int avs_coap_ctx_send(avs_coap_ctx_t *ctx,
     }
 
     LOG(TRACE, "send: %s", AVS_COAP_MSG_SUMMARY(msg));
-    int result = avs_net_socket_send(socket, &msg->header, msg->length);
+    int result = avs_net_socket_send(socket, msg->content, msg->length);
     if (!result) {
         int cache_result = try_cache_response(ctx, socket, msg);
 #ifdef WITH_AVS_COAP_NET_STATS
@@ -255,9 +255,8 @@ static int try_send_cached_response(avs_coap_ctx_t *ctx,
 #endif // WITH_AVS_COAP_MESSAGE_CACHE
 
 static inline bool is_coap_ping(const avs_coap_msg_t *msg) {
-    return avs_coap_msg_header_get_type(&msg->header)
-                   == AVS_COAP_MSG_CONFIRMABLE
-           && msg->header.code == AVS_COAP_CODE_EMPTY;
+    return avs_coap_msg_get_type(msg) == AVS_COAP_MSG_CONFIRMABLE
+           && avs_coap_msg_get_code(msg) == AVS_COAP_CODE_EMPTY;
 }
 
 int avs_coap_ctx_recv(avs_coap_ctx_t *ctx,
@@ -268,7 +267,7 @@ int avs_coap_ctx_recv(avs_coap_ctx_t *ctx,
     assert(msg_capacity < UINT32_MAX);
 
     size_t msg_length = 0;
-    int result = avs_net_socket_receive(socket, &msg_length, &out_msg->header,
+    int result = avs_net_socket_receive(socket, &msg_length, out_msg->content,
                                         msg_capacity - sizeof(out_msg->length));
     out_msg->length = (uint32_t) msg_length;
 
