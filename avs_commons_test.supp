@@ -9,3 +9,20 @@
    fun:gaih_inet*
    fun:getaddrinfo
 }
+{
+   getaddrinfo-gaih_inet
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:malloc
+   obj:*
+   obj:*
+   obj:*
+   fun:gaih_inet.constprop.5
+   fun:getaddrinfo
+   fun:avs_net_addrinfo_resolve_ex
+   fun:resolve_addrinfo_for_socket
+   fun:connect_net
+   fun:avs_net_socket_connect
+   fun:_avs_unit_test_starttls_starttls_smtp
+   fun:main
+}
