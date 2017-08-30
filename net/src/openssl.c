@@ -1642,6 +1642,7 @@ static SSL_CTX *make_ssl_context(avs_net_socket_type_t backend_type,
 static int stream_proto_version(avs_net_ssl_version_t version) {
     switch (version) {
     case AVS_NET_SSL_VERSION_DEFAULT:
+    case AVS_NET_SSL_VERSION_SSLv2_OR_3:
         return 0;
     case AVS_NET_SSL_VERSION_SSLv3:
         return SSL3_VERSION;
