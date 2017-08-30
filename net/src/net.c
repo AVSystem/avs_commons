@@ -1192,14 +1192,23 @@ static int accept_net(avs_net_abstract_socket_t *server_net_socket_,
     avs_net_socket_t *new_net_socket =
             (avs_net_socket_t *) new_net_socket_;
 
+    assert(server_net_socket->operations == &net_vtable);
+    if (new_net_socket->operations != &net_vtable
+            || new_net_socket->type != server_net_socket->type) {
+        LOG(ERROR, "accept_net() called with socket of invaild type");
+        server_net_socket->error_code = EINVAL;
+        return -1;
+    }
+
     if (new_net_socket->socket >= 0) {
         LOG(ERROR, "socket is already connected or bound");
+        server_net_socket->error_code = EISCONN;
         return -1;
     }
 
     if (!wait_until_ready(server_net_socket->socket,
                           NET_ACCEPT_TIMEOUT, 1, 0, 1)) {
-        new_net_socket->error_code = ETIMEDOUT;
+        server_net_socket->error_code = ETIMEDOUT;
         return -1;
     }
 
@@ -1208,7 +1217,7 @@ static int accept_net(avs_net_abstract_socket_t *server_net_socket_,
                                     &remote_address.addr,
                                     &remote_address_length);
     if (new_net_socket->socket < 0) {
-        new_net_socket->error_code = errno;
+        server_net_socket->error_code = errno;
         return -1;
     }
 
@@ -1218,11 +1227,12 @@ static int accept_net(avs_net_abstract_socket_t *server_net_socket_,
                             sizeof(new_net_socket->remote_hostname),
                             new_net_socket->remote_port,
                             sizeof(new_net_socket->remote_port)) < 0) {
-        new_net_socket->error_code = errno;
+        server_net_socket->error_code = errno;
         close_net_raw(new_net_socket);
         return -1;
     }
     new_net_socket->state = AVS_NET_SOCKET_STATE_ACCEPTED;
+    server_net_socket->error_code = 0;
     new_net_socket->error_code = 0;
     return 0;
 }

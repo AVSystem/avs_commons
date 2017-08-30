@@ -82,6 +82,77 @@ typedef struct mocksock_expected_command_struct {
     int retval;
 } mocksock_expected_command_t;
 
+static int mock_connect(avs_net_abstract_socket_t *socket,
+                        const char *host,
+                        const char *port);
+static int mock_send(avs_net_abstract_socket_t *socket,
+                     const void *buffer,
+                     size_t buffer_length);
+static int mock_send_to(avs_net_abstract_socket_t *socket,
+                        const void *buffer,
+                        size_t buffer_length,
+                        const char *host,
+                        const char *port);
+static int mock_receive(avs_net_abstract_socket_t *socket,
+                        size_t *out,
+                        void *buffer,
+                        size_t buffer_length);
+static int mock_receive_from(avs_net_abstract_socket_t *socket,
+                             size_t *out,
+                             void *buffer,
+                             size_t buffer_length,
+                             char *out_host, size_t out_host_size,
+                             char *out_port, size_t out_port_size);
+static int mock_bind(avs_net_abstract_socket_t *socket,
+                     const char *localaddr,
+                     const char *port);
+static int mock_accept(avs_net_abstract_socket_t *server_socket,
+                       avs_net_abstract_socket_t *new_socket);
+static int mock_close(avs_net_abstract_socket_t *socket);
+static int mock_shutdown(avs_net_abstract_socket_t *socket);
+static int mock_cleanup(avs_net_abstract_socket_t **socket);
+static int mock_remote_host(avs_net_abstract_socket_t *socket,
+                            char *hostname, size_t hostname_size);
+static int mock_remote_hostname(avs_net_abstract_socket_t *socket,
+                                char *hostname, size_t hostname_size);
+static int mock_remote_port(avs_net_abstract_socket_t *socket,
+                            char *port, size_t port_size);
+static int mock_get_opt(avs_net_abstract_socket_t *socket,
+                        avs_net_socket_opt_key_t option_key,
+                        avs_net_socket_opt_value_t *out_option_value);
+static int mock_set_opt(avs_net_abstract_socket_t *socket,
+                        avs_net_socket_opt_key_t option_key,
+                        avs_net_socket_opt_value_t option_value);
+static int mock_errno(avs_net_abstract_socket_t *socket);
+
+static int unimplemented() {
+    return -1;
+}
+
+static const avs_net_socket_v_table_t mock_vtable = {
+    mock_connect,
+    (avs_net_socket_decorate_t) unimplemented,
+    mock_send,
+    mock_send_to,
+    mock_receive,
+    mock_receive_from,
+    mock_bind,
+    mock_accept,
+    mock_close,
+    mock_shutdown,
+    mock_cleanup,
+    (avs_net_socket_get_system_t) unimplemented,
+    (avs_net_socket_get_interface_t) unimplemented,
+    mock_remote_host,
+    mock_remote_hostname,
+    mock_remote_port,
+    (avs_net_socket_get_local_host_t) unimplemented,
+    (avs_net_socket_get_local_port_t) unimplemented,
+    mock_get_opt,
+    mock_set_opt,
+    mock_errno
+};
+
 static const char *cmd_type_to_string(mocksock_expected_command_type_t type) {
     switch (type) {
     case MOCKSOCK_COMMAND_CONNECT:
@@ -452,6 +523,9 @@ static int mock_accept(avs_net_abstract_socket_t *server_socket_,
     assert_command_expected(server_socket->expected_commands,
             MOCKSOCK_COMMAND_ACCEPT);
 
+    assert(server_socket->vtable == &mock_vtable);
+    AVS_UNIT_ASSERT_TRUE(new_socket->vtable == &mock_vtable);
+
     AVS_UNIT_ASSERT_TRUE(
             server_socket->state == AVS_NET_SOCKET_STATE_BOUND);
     AVS_UNIT_ASSERT_TRUE(new_socket->state == AVS_NET_SOCKET_STATE_CLOSED);
@@ -620,34 +694,6 @@ static int mock_errno(avs_net_abstract_socket_t *socket_) {
     AVS_LIST_DELETE(&socket->expected_commands);
     return retval;
 }
-
-static int unimplemented() {
-    return -1;
-}
-
-static const avs_net_socket_v_table_t mock_vtable = {
-    mock_connect,
-    (avs_net_socket_decorate_t) unimplemented,
-    mock_send,
-    mock_send_to,
-    mock_receive,
-    mock_receive_from,
-    mock_bind,
-    mock_accept,
-    mock_close,
-    mock_shutdown,
-    mock_cleanup,
-    (avs_net_socket_get_system_t) unimplemented,
-    (avs_net_socket_get_interface_t) unimplemented,
-    mock_remote_host,
-    mock_remote_hostname,
-    mock_remote_port,
-    (avs_net_socket_get_local_host_t) unimplemented,
-    (avs_net_socket_get_local_port_t) unimplemented,
-    mock_get_opt,
-    mock_set_opt,
-    mock_errno
-};
 
 void avs_unit_mocksock_create__(avs_net_abstract_socket_t **socket_,
                                 const char *file,

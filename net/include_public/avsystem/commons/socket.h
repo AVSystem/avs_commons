@@ -705,12 +705,15 @@ int avs_net_socket_bind(avs_net_abstract_socket_t *socket,
  *
  * @param server_socket Listening socket.
  * @param client_socket Socket that will be later used for the accepted
- *                      connection.
+ *                      connection. This shall be a newly created (not bound or
+ *                      connected) socket of the same type as
+ *                      <c>server_socket</c>. An error will be returned
+ *                      otherwise.
  *
  * @returns @li 0 on success,
- *          @li a negative value in case of error, in which case @p socket
- *              errno (see @ref avs_net_socket_errno) is set to an appropriate
- *              value.
+ *          @li a negative value in case of error, in which case
+ *              @p server_socket errno (see @ref avs_net_socket_errno) is set to
+ *              an appropriate value.
  *
  * NOTE: this function fails for connectionless sockets (e.g. UDP).
  */
