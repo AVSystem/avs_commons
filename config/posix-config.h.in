@@ -51,6 +51,7 @@
 #cmakedefine HAVE_O_NONBLOCK
 #cmakedefine HAVE_CLOCK_REALTIME
 #cmakedefine HAVE_CLOCK_MONOTONIC
+#cmakedefine HAVE_IN6_IS_ADDR_V4MAPPED
 
 /* POSIX functions */
 #cmakedefine HAVE_CLOCK_GETTIME

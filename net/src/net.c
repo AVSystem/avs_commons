@@ -232,7 +232,7 @@ int _avs_net_get_af(avs_net_af_t addr_family) {
 
 #if defined(WITH_IPV4) && defined(WITH_IPV6)
 static bool is_v4mapped(const struct sockaddr_in6 *addr) {
-#ifdef IN6_IS_ADDR_V4MAPPED
+#ifdef HAVE_IN6_IS_ADDR_V4MAPPED
     return IN6_IS_ADDR_V4MAPPED(&addr->sin6_addr);
 #else
     static const uint8_t V4MAPPED_ADDR_HEADER[] = {
