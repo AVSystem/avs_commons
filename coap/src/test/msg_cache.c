@@ -238,7 +238,7 @@ AVS_UNIT_TEST(coap_msg_cache, add_evict_multiple) {
     avs_coap_msg_t *msg[] = {
         setup_msg_with_id(alloca(MIN_MSG_OBJECT_SIZE), (uint16_t)(id + 0), ""),
         setup_msg_with_id(alloca(MIN_MSG_OBJECT_SIZE), (uint16_t)(id + 1), ""),
-        setup_msg_with_id(alloca(MIN_MSG_OBJECT_SIZE),
+        setup_msg_with_id(alloca(MIN_MSG_OBJECT_SIZE + sizeof("\xFF" "foobarbaz") - 1),
                           (uint16_t)(id + 2), "\xFF" "foobarbaz"),
     };
 
