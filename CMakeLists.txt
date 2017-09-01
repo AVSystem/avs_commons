@@ -276,7 +276,7 @@ endif()
 
 # license check is only possible if running in a Git working tree
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/.git")
-    add_custom_target(license_check COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/tools/check-license-headers.py")
+    add_custom_target(license_check COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/tools/check-license-headers.py" --root "${CMAKE_CURRENT_SOURCE_DIR}")
     add_dependencies(avs_commons_check license_check)
 endif()
 
