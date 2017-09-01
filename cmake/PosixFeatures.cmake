@@ -69,3 +69,20 @@ check_symbol_exists("htonl" "arpa/inet.h" HAVE_HTONL)
 check_symbol_exists("htonl" "arpa/inet.h" HAVE_HTONL)
 check_symbol_exists("recvmsg" "sys/socket.h" HAVE_RECVMSG)
 check_symbol_exists("close" "unistd.h" HAVE_CLOSE)
+
+# When _POSIX_C_SOURCE is defined, but none of _BSD_SOURCE, _SVID_SOURCE and
+# _GNU_SOURCE, some toolchains (e.g. default GCC on Ubuntu 16.04 or CentOS 7)
+# define IN6_IS_ADDR_V4MAPPED using s6_addr32 symbol that is undefined.
+# That makes simple check_symbol_exists() succeed despite it being unusable.
+message(STATUS "Checking if IN6_IS_ADDR_V4MAPPED is usable")
+file(WRITE ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp/in6_is_addr_v4mapped.c
+     "#include <netinet/in.h>\nint main() { struct in6_addr addr; IN6_IS_ADDR_V4MAPPED(&addr); return 0; }\n")
+try_compile(HAVE_IN6_IS_ADDR_V4MAPPED
+            ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp
+            ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp/in6_is_addr_v4mapped.c
+            COMPILE_DEFINITIONS ${CMAKE_REQUIRED_DEFINITIONS})
+if(HAVE_IN6_IS_ADDR_V4MAPPED)
+    message(STATUS "Checking if IN6_IS_ADDR_V4MAPPED is usable - yes")
+else()
+    message(STATUS "Checking if IN6_IS_ADDR_V4MAPPED is usable - no")
+endif()
