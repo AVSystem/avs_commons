@@ -112,7 +112,7 @@ char *strtok_r(char *str, const char *delim, char **saveptr);
 #if defined(WITH_IPV4)
 # if defined(HAVE_INET_ADDRSTRLEN) && defined(HAVE_NETINET_IN_H)
 #  include <netinet/in.h>
-# else
+# elif !defined(INET_ADDRSTRLEN)
 #  define INET_ADDRSTRLEN sizeof("255.255.255.255")
 # endif
 #endif
