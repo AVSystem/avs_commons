@@ -66,7 +66,7 @@ struct timespec {
 
 #if defined(HAVE_STRUCT_TIMEVAL) && defined(HAVE_SYS_TIME_H)
 # include <sys/time.h>
-#else
+#elif LWIP_TIMEVAL_PRIVATE == 0
 struct timeval {
     time_t tv_sec;
     long tv_usec;
