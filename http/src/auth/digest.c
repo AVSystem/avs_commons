@@ -53,9 +53,11 @@ static int http_auth_ha1(avs_stream_abstract_t *md5,
     char bytebuf[16];
 
     if ((result = avs_stream_write_f(md5, "%s:%s:%s",
-                                     auth->credentials.user,
+                                     auth->credentials.user
+                                             ? auth->credentials.user : "",
                                      auth->state.realm,
-                                     auth->credentials.password))
+                                     auth->credentials.password
+                                             ? auth->credentials.password : ""))
             || (result = avs_stream_finish_message(md5))
             || (result = avs_stream_read_reliably(md5, bytebuf,
                                                   sizeof(bytebuf)))) {
@@ -158,7 +160,8 @@ int _avs_http_auth_send_header_digest(http_stream_t *stream) {
 
     result = (avs_stream_write_f(stream->backend, "Authorization: Digest")
             || avs_stream_write_f(stream->backend, " username=\"%s\"",
-                                  stream->auth.credentials.user)
+                                  stream->auth.credentials.user
+                                          ? stream->auth.credentials.user : "")
             || avs_stream_write_f(stream->backend, ", realm=\"%s\"",
                                   stream->auth.state.realm)
             || avs_stream_write_f(stream->backend, ", nonce=\"%s\"",
