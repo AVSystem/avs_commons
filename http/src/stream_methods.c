@@ -414,7 +414,8 @@ int avs_http_open_stream(avs_stream_abstract_t **out,
     }
     stream->flags.keep_connection = 1;
     stream->random_seed = (unsigned) time(NULL);
-    if (strcmp(avs_url_protocol(url), "https") == 0) {
+    if ((stream->auth.credentials.user || stream->auth.credentials.password)
+            && strcmp(avs_url_protocol(url), "https") == 0) {
         stream->auth.state.flags.type = HTTP_AUTH_TYPE_BASIC;
     }
 

@@ -146,7 +146,8 @@ int _avs_http_redirect(http_stream_t *stream, avs_url_t **url_move) {
     *url_move = NULL;
     stream->flags.no_expect = 0;
     stream->flags.keep_connection = 1;
-    if (strcmp(avs_url_protocol(stream->url), "https") == 0) {
+    if ((stream->auth.credentials.user || stream->auth.credentials.password)
+            && strcmp(avs_url_protocol(stream->url), "https") == 0) {
         stream->auth.state.flags.type = HTTP_AUTH_TYPE_BASIC;
     }
     return 0;
