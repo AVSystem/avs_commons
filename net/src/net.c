@@ -1533,7 +1533,6 @@ static int errno_net(avs_net_abstract_socket_t *net_socket) {
     return ((avs_net_socket_t *) net_socket)->error_code;
 }
 
-#ifdef HAVE_GETIFADDRS
 static int ifaddr_ip_equal(const struct sockaddr *left,
                            const struct sockaddr *right) {
     size_t offset;
@@ -1566,7 +1565,6 @@ static int ifaddr_ip_equal(const struct sockaddr *left,
     return memcmp(((const char *) left) + offset,
                   ((const char *) right) + offset, length);
 }
-#endif /* HAVE_GETIFADDRS */
 
 static int find_interface(const struct sockaddr *addr,
                           avs_net_socket_interface_name_t *if_name) {
