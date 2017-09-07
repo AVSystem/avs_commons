@@ -47,13 +47,6 @@
 const char *gai_strerror(int errcode);
 #endif
 
-
-#if defined(HAVE_SSIZE_T) && defined(HAVE_SYS_TYPES_H)
-#include <sys/types.h>
-#else
-typedef ptrdiff_t ssize_t;
-#endif
-
 /* for time_t */
 #include <time.h>
 
