@@ -16,7 +16,6 @@
 
 #include <config.h>
 
-#include <assert.h>
 #include <string.h>
 
 #include <avsystem/commons/base64.h>
@@ -39,8 +38,7 @@ int _avs_http_auth_send_header_basic(http_stream_t *stream) {
         bufsize += strlen(stream->auth.credentials.password) + 1;
     }
     char plaintext[bufsize];
-    size_t encoded_size = avs_base64_encoded_size(sizeof(plaintext));
-    assert(encoded_size <= 4 * sizeof(plaintext));
+    size_t encoded_size = avs_base64_encoded_size(sizeof(plaintext) - 1);
     char encoded[encoded_size];
 
     if (avs_simple_snprintf(plaintext, sizeof(plaintext), "%s%s%s",
