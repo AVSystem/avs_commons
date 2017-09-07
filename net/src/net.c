@@ -503,6 +503,7 @@ static int configure_socket(avs_net_socket_t *net_socket) {
         }
     }
     if (net_socket->configuration.dscp) {
+#ifdef IP_TOS
         uint8_t tos;
         socklen_t length = sizeof(tos);
         if (getsockopt(net_socket->socket, IPPROTO_IP, IP_TOS, &tos, &length)) {
@@ -517,6 +518,10 @@ static int configure_socket(avs_net_socket_t *net_socket) {
             LOG(ERROR, "setsockopt error: %s", strerror(errno));
             return -1;
         }
+#else // IP_TOS
+        net_socket->error_code = EINVAL;
+        return -1;
+#endif// IP_TOS
     }
     if (net_socket->configuration.transparent) {
         int value = 1;

@@ -221,8 +221,11 @@ endif()
 
 option(WITH_POSIX "Enable use of system-installed POSIX APIs" ON)
 if(WITH_POSIX)
-    add_definitions(-D_POSIX_C_SOURCE=200809L)
-    set(CMAKE_REQUIRED_DEFINITIONS -D_POSIX_C_SOURCE=200809L)
+    # macOS is weird and _POSIX_C_SOURCE causes a lot of things to disappear
+    if(NOT APPLE)
+        add_definitions(-D_POSIX_C_SOURCE=200809L)
+        set(CMAKE_REQUIRED_DEFINITIONS -D_POSIX_C_SOURCE=200809L)
+    endif()
 else()
     set(POSIX_COMPAT_HEADER "" CACHE STRING "POSIX compatibility header path")
 endif()
