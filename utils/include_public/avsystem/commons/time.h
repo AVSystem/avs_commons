@@ -19,6 +19,7 @@
 
 #include <avsystem/commons/defs.h>
 
+#include <time.h>
 #include <stdbool.h>
 
 #ifdef	__cplusplus

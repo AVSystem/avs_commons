@@ -47,13 +47,6 @@
 const char *gai_strerror(int errcode);
 #endif
 
-
-#if defined(HAVE_SSIZE_T) && defined(HAVE_SYS_TYPES_H)
-#include <sys/types.h>
-#else
-typedef ptrdiff_t ssize_t;
-#endif
-
 /* for time_t */
 #include <time.h>
 
@@ -66,7 +59,7 @@ struct timespec {
 
 #if defined(HAVE_STRUCT_TIMEVAL) && defined(HAVE_SYS_TIME_H)
 # include <sys/time.h>
-#else
+#elif LWIP_TIMEVAL_PRIVATE == 0
 struct timeval {
     time_t tv_sec;
     long tv_usec;
@@ -120,7 +113,7 @@ char *strtok_r(char *str, const char *delim, char **saveptr);
 #if defined(WITH_IPV6)
 # if defined(HAVE_INET6_ADDRSTRLEN) && defined(HAVE_NETINET_IN_H)
 #  include <netinet/in.h>
-# else
+# elif !defined(INET6_ADDRSTRLEN)
 #  define INET6_ADDRSTRLEN sizeof("ffff:ffff:ffff:ffff:ffff:ffff:255.255.255.255")
 # endif
 #endif
