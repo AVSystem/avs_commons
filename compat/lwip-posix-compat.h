@@ -57,15 +57,6 @@ struct timespec {
 };
 #endif
 
-#if defined(HAVE_STRUCT_TIMEVAL) && defined(HAVE_SYS_TIME_H)
-# include <sys/time.h>
-#elif LWIP_TIMEVAL_PRIVATE == 0
-struct timeval {
-    time_t tv_sec;
-    long tv_usec;
-};
-#endif
-
 #ifndef HAVE_CLOCKID_T
 typedef int clockid_t;
 #endif
