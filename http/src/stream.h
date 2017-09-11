@@ -23,9 +23,7 @@
 
 #include "auth.h"
 
-#ifdef HAVE_VISIBILITY
-#pragma GCC visibility push(hidden)
-#endif
+VISIBILITY_PRIVATE_HEADER_BEGIN
 
 typedef struct {
     /**
@@ -167,8 +165,6 @@ int _avs_http_send_via_buffer(http_stream_t *stream,
 
 int _avs_http_encoder_flush(http_stream_t *stream);
 
-#ifdef HAVE_VISIBILITY
-#pragma GCC visibility pop
-#endif
+VISIBILITY_PRIVATE_HEADER_END
 
 #endif /* AVS_COMMONS_HTTP_STREAM_H */

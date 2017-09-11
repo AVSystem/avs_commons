@@ -20,9 +20,7 @@
 #include <avsystem/commons/http.h>
 #include <avsystem/commons/list.h>
 
-#ifdef HAVE_VISIBILITY
-#pragma GCC visibility push(hidden)
-#endif
+VISIBILITY_PRIVATE_HEADER_BEGIN
 
 typedef struct {
     char value[1]; // actually a FAM
@@ -47,9 +45,6 @@ int _avs_http_set_cookie(avs_http_t *client,
                          bool use_cookie2,
                          const char *cookie_header);
 
-#ifdef HAVE_VISIBILITY
-#pragma GCC visibility pop
-#endif
+VISIBILITY_PRIVATE_HEADER_END
 
 #endif /* AVS_COMMONS_HTTP_CLIENT_H */
-

@@ -24,9 +24,7 @@
 #include "content_encoding.h"
 #include "log.h"
 
-#ifdef HAVE_VISIBILITY
-#pragma GCC visibility push(hidden)
-#endif
+VISIBILITY_SOURCE_BEGIN
 
 /******** Generic constructor */
 static avs_stream_abstract_t *

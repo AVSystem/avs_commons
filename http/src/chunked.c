@@ -25,9 +25,7 @@
 #include "log.h"
 #include "stream.h"
 
-#ifdef HAVE_VISIBILITY
-#pragma GCC visibility push(hidden)
-#endif
+VISIBILITY_SOURCE_BEGIN
 
 static int http_send_single_chunk(http_stream_t *stream,
                                   const void *buffer,

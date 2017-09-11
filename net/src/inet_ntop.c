@@ -64,9 +64,7 @@ typedef unsigned char  u_char;
 #   endif
 #endif /* WITH_IPV6 */
 
-#ifdef HAVE_VISIBILITY
-#pragma GCC visibility push(hidden)
-#endif
+VISIBILITY_SOURCE_BEGIN
 
 /*
  * WARNING: Don't even consider trying to compile this on a system where

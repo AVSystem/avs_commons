@@ -74,6 +74,13 @@ extern void *sbrk (intptr_t __delta);
 #if defined(HAVE_VISIBILITY)
 /* set default visibility for external symbols */
 #pragma GCC visibility push(default)
+#define VISIBILITY_SOURCE_BEGIN         _Pragma("GCC visibility push(hidden)")
+#define VISIBILITY_PRIVATE_HEADER_BEGIN _Pragma("GCC visibility push(hidden)")
+#define VISIBILITY_PRIVATE_HEADER_END   _Pragma("GCC visibility pop")
+#else
+#define VISIBILITY_SOURCE_BEGIN
+#define VISIBILITY_PRIVATE_HEADER_BEGIN
+#define VISIBILITY_PRIVATE_HEADER_END
 #endif
 
 #cmakedefine WITH_INTERNAL_LOGS

@@ -19,9 +19,7 @@
 
 #include <avsystem/commons/stream.h>
 
-#ifdef HAVE_VISIBILITY
-#pragma GCC visibility push(hidden)
-#endif
+VISIBILITY_PRIVATE_HEADER_BEGIN
 
 typedef enum {
     HTTP_COMPRESSION_ZLIB,
@@ -126,8 +124,6 @@ _avs_http_create_decompressor(http_compression_format_t format,
 
 #endif
 
-#ifdef HAVE_VISIBILITY
-#pragma GCC visibility pop
-#endif
+VISIBILITY_PRIVATE_HEADER_END
 
 #endif /* AVS_COMMONS_HTTP_ZLIB_H */

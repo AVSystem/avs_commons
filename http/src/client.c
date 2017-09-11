@@ -22,9 +22,7 @@
 #include "client.h"
 #include "log.h"
 
-#ifdef HAVE_VISIBILITY
-#pragma GCC visibility push(hidden)
-#endif
+VISIBILITY_SOURCE_BEGIN
 
 const avs_http_buffer_sizes_t AVS_HTTP_DEFAULT_BUFFER_SIZES = {
     .body_recv = 4096,

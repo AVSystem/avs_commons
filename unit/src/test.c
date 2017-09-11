@@ -36,9 +36,7 @@
 #include "test.h"
 #include "stack_trace.h"
 
-#ifdef HAVE_VISIBILITY
-#pragma GCC visibility push(hidden)
-#endif
+VISIBILITY_SOURCE_BEGIN
 
 typedef struct avs_unit_test_struct {
     const char *name;

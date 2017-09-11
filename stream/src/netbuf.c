@@ -31,9 +31,7 @@
 #define MODULE_NAME avs_stream
 #include <x_log_config.h>
 
-#ifdef HAVE_VISIBILITY
-#pragma GCC visibility push(hidden)
-#endif
+VISIBILITY_SOURCE_BEGIN
 
 typedef struct buffered_netstream_struct {
     const avs_stream_v_table_t * const vtable;

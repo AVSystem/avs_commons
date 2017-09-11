@@ -25,7 +25,7 @@
 
 #include <inttypes.h>
 
-#pragma GCC visibility push(hidden)
+VISIBILITY_SOURCE_BEGIN
 
 int avs_coap_msg_find_unique_opt(const avs_coap_msg_t *msg,
                                  uint16_t opt_number,

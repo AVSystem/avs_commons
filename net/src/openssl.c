@@ -35,9 +35,7 @@
 
 #include "net.h"
 
-#ifdef HAVE_VISIBILITY
-#pragma GCC visibility push(hidden)
-#endif
+VISIBILITY_SOURCE_BEGIN
 
 #define CERT_SUBJECT_NAME_SIZE 257
 

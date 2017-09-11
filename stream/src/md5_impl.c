@@ -23,9 +23,7 @@
 
 #include "md5_common.h"
 
-#ifdef HAVE_VISIBILITY
-#pragma GCC visibility push(hidden)
-#endif
+VISIBILITY_SOURCE_BEGIN
 
 typedef struct {
     avs_stream_md5_common_t common;

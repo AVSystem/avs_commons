@@ -21,7 +21,7 @@
 
 #include "parse_utils.h"
 
-#pragma GCC visibility push(hidden)
+VISIBILITY_PRIVATE_HEADER_BEGIN
 
 /** Serialized CoAP message header. For internal use only. */
 typedef struct coap_header {
@@ -210,6 +210,6 @@ struct avs_coap_msg_info_opt {
     uint8_t data[];
 };
 
-#pragma GCC visibility pop
+VISIBILITY_PRIVATE_HEADER_END
 
 #endif // AVS_COAP_MSG_INTERNAL_H

@@ -28,9 +28,7 @@
 #include "log.h"
 #include "stream.h"
 
-#ifdef HAVE_VISIBILITY
-#pragma GCC visibility push(hidden)
-#endif
+VISIBILITY_SOURCE_BEGIN
 
 #define HTTP_MOVE_LIMIT 5
 

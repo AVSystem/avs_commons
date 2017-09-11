@@ -19,9 +19,7 @@
 #include <avsystem/commons/stream_v_table.h>
 #include <avsystem/commons/stream/net.h>
 
-#ifdef HAVE_VISIBILITY
-#pragma GCC visibility push(hidden)
-#endif
+VISIBILITY_SOURCE_BEGIN
 
 avs_net_abstract_socket_t *
 avs_stream_net_getsock(avs_stream_abstract_t *stream) {

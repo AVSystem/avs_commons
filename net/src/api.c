@@ -26,9 +26,7 @@
 
 #include "net.h"
 
-#ifdef HAVE_VISIBILITY
-#pragma GCC visibility push(hidden)
-#endif
+VISIBILITY_SOURCE_BEGIN
 
 avs_net_client_cert_t
 avs_net_client_cert_from_file(const char *file,

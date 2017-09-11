@@ -26,9 +26,7 @@
 
 #include "net.h"
 
-#ifdef HAVE_VISIBILITY
-#pragma GCC visibility push(hidden)
-#endif
+VISIBILITY_SOURCE_BEGIN
 
 struct avs_url {
     size_t user_ptr;

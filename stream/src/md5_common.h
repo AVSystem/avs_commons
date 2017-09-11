@@ -20,9 +20,7 @@
 #include <avsystem/commons/stream.h>
 #include <avsystem/commons/stream_v_table.h>
 
-#ifdef HAVE_VISIBILITY
-#pragma GCC visibility push(hidden)
-#endif
+VISIBILITY_PRIVATE_HEADER_BEGIN
 
 #define MD5_LENGTH 16
 
@@ -44,9 +42,6 @@ void _avs_stream_md5_common_init(avs_stream_md5_common_t *stream,
 void _avs_stream_md5_common_finalize(avs_stream_md5_common_t *stream);
 void _avs_stream_md5_common_reset(avs_stream_md5_common_t *stream);
 
-#ifdef HAVE_VISIBILITY
-#pragma GCC visibility pop
-#endif
+VISIBILITY_PRIVATE_HEADER_END
 
 #endif	/* MD5_COMMON_H */
-

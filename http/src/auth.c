@@ -26,9 +26,7 @@
 #include "log.h"
 #include "stream.h"
 
-#ifdef HAVE_VISIBILITY
-#pragma GCC visibility push(hidden)
-#endif
+VISIBILITY_SOURCE_BEGIN
 
 static void http_auth_new_header(http_auth_t *auth) {
     auth->state.flags.type = HTTP_AUTH_TYPE_NONE;

@@ -36,9 +36,7 @@
 
 #include "net.h"
 
-#ifdef HAVE_VISIBILITY
-#pragma GCC visibility push(hidden)
-#endif
+VISIBILITY_SOURCE_BEGIN
 
 typedef struct {
     mbedtls_x509_crt *ca_cert;
