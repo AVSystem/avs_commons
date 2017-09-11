@@ -30,6 +30,9 @@
 #include <mbedtls/net.h>
 #include <mbedtls/ssl.h>
 #include <mbedtls/timing.h>
+#ifdef WITH_MBEDTLS_LOGS
+#include <mbedtls/debug.h>
+#endif // WITH_MBEDTLS_LOGS
 
 #include "net.h"
 
@@ -72,6 +75,22 @@ typedef struct {
 static int is_ssl_started(ssl_socket_t *socket) {
     return socket->context.conf != NULL;
 }
+
+#ifdef WITH_MBEDTLS_LOGS
+static void debug_mbedtls(void *ctx, int level, const char *file, int line, const char *str) {
+    (void) ctx;
+    (void) level;
+    const size_t len = strlen(str);
+    const char *msg = str;
+    char msgbuf[len + 1];
+    if (len > 0 && str[len-1] == '\n') {
+        memset(msgbuf, 0, len);
+        memcpy(msgbuf, str, len-1);
+        msg = msgbuf;
+    }
+    avs_log_internal_l__(AVS_LOG_DEBUG, "mbedtls", file, (unsigned) line, "%s", msg);
+}
+#endif // WITH_MBEDTLS_LOGS
 
 #define NET_SSL_COMMON_INTERNALS
 #include "ssl_common.h"
@@ -328,6 +347,12 @@ static int initialize_ssl_config(ssl_socket_t *socket) {
         socket->error_code = EINVAL;
         return -1;
     }
+
+#ifdef WITH_MBEDTLS_LOGS
+    // most verbose logs available
+    mbedtls_debug_set_threshold(4);
+    mbedtls_ssl_conf_dbg(&socket->config, debug_mbedtls, NULL);
+#endif // WITH_MBEDTLS_LOGS
 
     if (set_min_ssl_version(&socket->config, socket->version)) {
         LOG(ERROR, "Could not set minimum SSL version");

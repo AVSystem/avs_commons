@@ -326,6 +326,7 @@ option(WITH_AVS_HTTP "AVSystem HTTP client" ${MODULES_ENABLED})
 
 cmake_dependent_option(WITH_INTERNAL_LOGS "Enable logging from inside AVSystem Commons libraries" ON WITH_AVS_LOG OFF)
 cmake_dependent_option(WITH_INTERNAL_TRACE "Enable TRACE-level logs inside AVSystem Commons libraries" OFF WITH_INTERNAL_LOGS OFF)
+cmake_dependent_option(WITH_MBEDTLS_LOGS "Enable logging from mbedTLS backend library (if used)" OFF "WITH_AVS_LOG; WITH_MBEDTLS" OFF)
 
 macro(make_absolute_sources ABSVAR)
     set(${ABSVAR})
