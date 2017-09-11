@@ -337,6 +337,9 @@ endmacro()
 
 set(MODULE_INCLUDE_DIRS)
 
+add_custom_target(symbols_check COMMAND ${CMAKE_CTEST_COMMAND} -R "'^test_.*_symbols$$'" --output-on-failure)
+add_dependencies(avs_commons_check symbols_check)
+
 macro(add_module_with_include_dirs MODULE_NAME MODULE_INCLUDE_DIRS_VAR)
     add_subdirectory(${MODULE_NAME})
     include_directories(${avs_${MODULE_NAME}_INCLUDE_DIRS})
@@ -344,6 +347,12 @@ macro(add_module_with_include_dirs MODULE_NAME MODULE_INCLUDE_DIRS_VAR)
     set(${MODULE_INCLUDE_DIRS_VAR}
         "${${MODULE_INCLUDE_DIRS_VAR}}"
         "${avs_${MODULE_NAME}_INCLUDE_DIRS}")
+
+    if(TARGET avs_${MODULE_NAME}_check)
+        add_test(NAME test_avs_${MODULE_NAME}_symbols
+                 COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/test_symbols.sh $<TARGET_FILE:avs_${MODULE_NAME}> avs_ AVS_ _avs _AVS_)
+        add_dependencies(symbols_check avs_${MODULE_NAME})
+    endif()
 endmacro()
 
 if(WITH_AVS_UNIT)
