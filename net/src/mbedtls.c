@@ -82,7 +82,7 @@ static void debug_mbedtls(void *ctx, int level, const char *file, int line, cons
     (void) level;
     const size_t len = strlen(str);
     const char *msg = str;
-    char msgbuf[len + 1];
+    char msgbuf[len+1];
     if (len > 0 && str[len-1] == '\n') {
         memset(msgbuf, 0, len);
         memcpy(msgbuf, str, len-1);
