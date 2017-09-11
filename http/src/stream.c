@@ -16,6 +16,7 @@
 
 #include <config.h>
 
+#include <assert.h>
 #include <errno.h>
 #include <string.h>
 
@@ -65,6 +66,7 @@ int _avs_http_socket_new(avs_net_abstract_socket_t **out,
     int result = 0;
     avs_net_ssl_configuration_t ssl_config_full;
     LOG(TRACE, "http_new_socket");
+    assert(out != NULL);
     *out = NULL;
     if (client->ssl_configuration) {
         ssl_config_full = *client->ssl_configuration;
