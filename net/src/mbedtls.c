@@ -88,7 +88,7 @@ static void debug_mbedtls(void *ctx, int level, const char *file, int line, cons
         memcpy(msgbuf, str, len-1);
         msg = msgbuf;
     }
-    avs_log_internal_l__(AVS_LOG_DEBUG, "mbedtls", file, (unsigned) line, "%s", msg);
+    avs_log_internal_l__(AVS_LOG_TRACE, "mbedtls", file, (unsigned) line, "%s", msg);
 }
 #endif // WITH_MBEDTLS_LOGS
 
