@@ -22,6 +22,8 @@
 #include <avsystem/commons/list.h>
 #include <avsystem/commons/log.h>
 
+VISIBILITY_SOURCE_BEGIN
+
 #define MAX_LOG_LINE_LENGTH 512
 
 static void default_log_handler(avs_log_level_t level,

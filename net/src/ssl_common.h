@@ -21,6 +21,8 @@
 #error "This header is not meant to be included from outside"
 #endif
 
+VISIBILITY_PRIVATE_HEADER_BEGIN
+
 /* Required non-common static method implementations */
 static int is_ssl_started(ssl_socket_t *socket);
 static int start_ssl(ssl_socket_t *socket, const char *host);
@@ -446,5 +448,7 @@ DEFAULT_DTLS_HANDSHAKE_TIMEOUTS = {
     .min_ms = 1000,
     .max_ms = 60000
 };
+
+VISIBILITY_PRIVATE_HEADER_END
 
 #endif /* NET_SSL_COMMON_H */

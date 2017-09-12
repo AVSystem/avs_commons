@@ -22,6 +22,8 @@
 
 #include <avsystem/commons/rbtree.h>
 
+VISIBILITY_PRIVATE_HEADER_BEGIN
+
 enum rb_color {
     DETACHED = 0x50DD,
     RED = 0x50DE,
@@ -83,5 +85,7 @@ struct rb_tree {
 #define _AVS_RB_PARENT_CONST(elem) (*_AVS_RB_PARENT_PTR_CONST(elem))
 
 enum rb_color _avs_rb_node_color(void *elem);
+
+VISIBILITY_PRIVATE_HEADER_END
 
 #endif /* AVS_COMMONS_RBTREE_RBTREE_H */

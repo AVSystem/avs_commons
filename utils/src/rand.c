@@ -20,6 +20,8 @@
 
 #include <stdlib.h>
 
+VISIBILITY_SOURCE_BEGIN
+
 int avs_rand_r(unsigned int *seed) {
     return (*seed = *seed * 1103515245u + 12345u)
            % (unsigned int) (AVS_RAND_MAX + 1);

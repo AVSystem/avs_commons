@@ -22,6 +22,8 @@
 
 #include <avsystem/commons/utils.h>
 
+VISIBILITY_SOURCE_BEGIN
+
 int avs_match_token(const char **src, const char *token,
                     const char *delims) {
     size_t len = strlen(token);

@@ -22,6 +22,8 @@
 
 #include <avsystem/commons/utils.h>
 
+VISIBILITY_SOURCE_BEGIN
+
 int avs_simple_vsnprintf(char *out,
                          size_t out_size,
                          const char *format,

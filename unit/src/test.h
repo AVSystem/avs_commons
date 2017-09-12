@@ -17,6 +17,8 @@
 #ifndef AVS_COMMONS_UNIT_SRC_TEST_H
 #define AVS_COMMONS_UNIT_SRC_TEST_H
 
+VISIBILITY_PRIVATE_HEADER_BEGIN
+
 void _avs_unit_test_fail_printf(const char *file,
                                 int line,
                                 const char *format,
@@ -33,5 +35,7 @@ void _avs_unit_assert_fail(const char *file,
             _avs_unit_assert_fail((File), (Line), __VA_ARGS__); \
         } \
     } while (0)
+
+VISIBILITY_PRIVATE_HEADER_END
 
 #endif /* AVS_COMMONS_UNIT_SRC_TEST_H */
