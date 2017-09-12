@@ -186,6 +186,21 @@ typedef struct {
      * minus IP and UDP header sizes.
      */
     int forced_mtu;
+
+    /**
+     * Sets the IP protocol version preferred for communication. If
+     * <c>address_family</c> is set to <c>AVS_NET_UNSPEC</c> and
+     * <c>preferred_family</c> is set to some specific value
+     * (<c>AVS_NET_AF_INET4</c> or <c>AVS_NET_AF_INET6</c>), the socket will
+     * always attempt connection to an address of the preferred family first.
+     * Domain name resolution will not be requested for other families. Only if
+     * connection via the preferred family is not possible, connection via other
+     * families will be attempted.
+     *
+     * This field is ignored if <c>address_family</c> is not
+     * <c>AVS_NET_UNSPEC</c>.
+     */
+    avs_net_af_t preferred_family;
 } avs_net_socket_configuration_t;
 
 /**

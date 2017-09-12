@@ -754,7 +754,10 @@ static avs_net_addrinfo_t *
 resolve_addrinfo_for_socket(avs_net_socket_t *net_socket,
                             const char *host,
                             const char *port,
-                            bool use_preferred_endpoint) {
+                            bool use_preferred_endpoint,
+                            bool use_preferred_family) {
+#warning "TODO: use_preferred_family"
+#warning "Note: use_preferred_family == AF_UNSPEC shall return everything when true and nothing when false"
     avs_net_af_t family = net_socket->configuration.address_family;
     int resolve_flags = 0;
 
@@ -763,6 +766,7 @@ resolve_addrinfo_for_socket(avs_net_socket_t *net_socket,
                 get_avs_af(get_socket_family(net_socket->socket));
         if (family == AVS_NET_AF_UNSPEC) {
             if (socket_family == AVS_NET_AF_INET6) {
+#warning "TODO: Manual v4mapping whenever applicable?"
                 resolve_flags |= AVS_NET_ADDRINFO_RESOLVE_F_V4MAPPED;
             }
             family = socket_family;
@@ -845,25 +849,22 @@ static int connect_net(avs_net_abstract_socket_t *net_socket_,
 
     errno = 0;
     net_socket->error_code = EPROTO;
-    if ((info = resolve_addrinfo_for_socket(net_socket, host, port, false))) {
+    if ((info = resolve_addrinfo_for_socket(net_socket, host, port,
+                                            false, true))) {
         sockaddr_endpoint_union_t address;
         while (!(result = avs_net_addrinfo_next(info, &address.api_ep))) {
             if (!try_connect(net_socket, &address)) {
-                avs_net_addrinfo_delete(&info);
-
-                if (avs_simple_snprintf(net_socket->remote_hostname,
-                                        sizeof(net_socket->remote_hostname),
-                                        "%s", host) < 0) {
-                    LOG(WARNING, "Hostname %s is too long, not storing", host);
-                    net_socket->remote_hostname[0] = '\0';
-                }
-                if (avs_simple_snprintf(net_socket->remote_port,
-                                        sizeof(net_socket->remote_port), "%s",
-                                        port) < 0) {
-                    LOG(WARNING, "Port %s is too long, not storing", port);
-                    net_socket->remote_hostname[0] = '\0';
-                }
-                return 0;
+                goto success;
+            }
+        }
+    }
+    avs_net_addrinfo_delete(&info);
+    if ((info = resolve_addrinfo_for_socket(net_socket, host, port,
+                                            false, false))) {
+        sockaddr_endpoint_union_t address;
+        while (!(result = avs_net_addrinfo_next(info, &address.api_ep))) {
+            if (!try_connect(net_socket, &address)) {
+                goto success;
             }
         }
     }
@@ -871,6 +872,21 @@ static int connect_net(avs_net_abstract_socket_t *net_socket_,
     LOG(ERROR, "cannot establish connection to [%s]:%s: %s",
         host, port, strerror(net_socket->error_code));
     return result < 0 ? result : -1;
+success:
+    avs_net_addrinfo_delete(&info);
+
+    if (avs_simple_snprintf(net_socket->remote_hostname,
+                            sizeof(net_socket->remote_hostname),
+                            "%s", host) < 0) {
+        LOG(WARNING, "Hostname %s is too long, not storing", host);
+        net_socket->remote_hostname[0] = '\0';
+    }
+    if (avs_simple_snprintf(net_socket->remote_port,
+                            sizeof(net_socket->remote_port), "%s", port) < 0) {
+        LOG(WARNING, "Port %s is too long, not storing", port);
+        net_socket->remote_port[0] = '\0';
+    }
+    return 0;
 }
 
 static int send_net(avs_net_abstract_socket_t *net_socket_,
@@ -926,7 +942,8 @@ static int send_to_net(avs_net_abstract_socket_t *net_socket_,
     sockaddr_endpoint_union_t address;
     ssize_t result = -1;
 
-    if (!(info = resolve_addrinfo_for_socket(net_socket, host, port, false))
+    if (!(info = resolve_addrinfo_for_socket(net_socket, host, port,
+                                             false, true))
             || (result = (ssize_t) avs_net_addrinfo_next(info,
                                                          &address.api_ep))) {
         net_socket->error_code = EPROTO;
