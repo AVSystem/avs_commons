@@ -126,19 +126,23 @@ avs_net_addrinfo_t *avs_net_addrinfo_resolve_ex(
         const char *port,
         int flags,
         const avs_net_resolved_endpoint_t *preferred_endpoint) {
+    struct addrinfo hint;
+    memset((void *) &hint, 0, sizeof (hint));
+    hint.ai_family = _avs_net_get_af(family);
+    if (family != AVS_NET_AF_UNSPEC && hint.ai_family == AF_UNSPEC) {
+        LOG(ERROR, "Unsupported address family");
+        return NULL;
+    }
+    hint.ai_flags = AI_NUMERICSERV | AI_ADDRCONFIG;
+    if (flags & AVS_NET_ADDRINFO_RESOLVE_F_PASSIVE) {
+        hint.ai_flags |= AI_PASSIVE;
+    }
 
     avs_net_addrinfo_t *ctx =
             (avs_net_addrinfo_t *) calloc(1, sizeof(avs_net_addrinfo_t));
     if (!ctx) {
+        LOG(ERROR, "Out of memory");
         return NULL;
-    }
-
-    struct addrinfo hint;
-    memset((void *) &hint, 0, sizeof (hint));
-    hint.ai_family = _avs_net_get_af(family);
-    hint.ai_flags = AI_NUMERICSERV | AI_ADDRCONFIG;
-    if (flags & AVS_NET_ADDRINFO_RESOLVE_F_PASSIVE) {
-        hint.ai_flags |= AI_PASSIVE;
     }
 
 #ifdef WITH_AVS_V4MAPPED

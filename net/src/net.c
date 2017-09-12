@@ -750,15 +750,36 @@ static avs_net_af_t get_avs_af(int af) {
     }
 }
 
+static int get_other_family(avs_net_af_t *out, avs_net_af_t in) {
+    switch (in) {
+    case AVS_NET_AF_INET4:
+        *out = AVS_NET_AF_INET6;
+        return 0;
+    case AVS_NET_AF_INET6:
+        *out = AVS_NET_AF_INET4;
+        return 0;
+    default:
+        return -1;
+    }
+}
+
 static avs_net_addrinfo_t *
 resolve_addrinfo_for_socket(avs_net_socket_t *net_socket,
                             const char *host,
                             const char *port,
                             bool use_preferred_endpoint,
                             bool use_preferred_family) {
-#warning "TODO: use_preferred_family"
-#warning "Note: use_preferred_family == AF_UNSPEC shall return everything when true and nothing when false"
     avs_net_af_t family = net_socket->configuration.address_family;
+    if (family == AVS_NET_AF_UNSPEC) {
+        if (use_preferred_family) {
+            family = net_socket->configuration.preferred_family;
+        } else if (get_other_family(
+                &family, net_socket->configuration.preferred_family)) {
+            return NULL;
+        }
+    } else if (!use_preferred_family) {
+        return NULL;
+    }
     int resolve_flags = 0;
 
     if (net_socket->socket >= 0) {
@@ -766,13 +787,13 @@ resolve_addrinfo_for_socket(avs_net_socket_t *net_socket,
                 get_avs_af(get_socket_family(net_socket->socket));
         if (family == AVS_NET_AF_UNSPEC) {
             if (socket_family == AVS_NET_AF_INET6) {
-#warning "TODO: Manual v4mapping whenever applicable?"
+#warning "FIXME: Handle v4mapping when we want ONLY IPv4 addresses, but socket is IPv6"
                 resolve_flags |= AVS_NET_ADDRINFO_RESOLVE_F_V4MAPPED;
             }
             family = socket_family;
-        } else {
-            assert(socket_family == AVS_NET_AF_UNSPEC
-                    || socket_family == family);
+        } else if (socket_family != AVS_NET_AF_UNSPEC
+                && socket_family != family) {
+            return NULL;
         }
     }
 
