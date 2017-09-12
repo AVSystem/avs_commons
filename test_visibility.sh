@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -e
+set -e -o pipefail
 
 preprocess_file() {
 	# This uses ex/vim regexes and search-and-replace syntax.
