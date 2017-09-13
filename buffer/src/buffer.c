@@ -25,9 +25,7 @@
 #define MODULE_NAME avs_buffer
 #include <x_log_config.h>
 
-#ifdef HAVE_VISIBILITY
-#pragma GCC visibility push(hidden)
-#endif
+VISIBILITY_SOURCE_BEGIN
 
 struct avs_buffer_struct {
     size_t capacity;

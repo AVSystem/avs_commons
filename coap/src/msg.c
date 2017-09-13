@@ -30,7 +30,7 @@
 #include <assert.h>
 #include <inttypes.h>
 
-#pragma GCC visibility push(hidden)
+VISIBILITY_SOURCE_BEGIN
 
 const char *
 avs_coap_msg_code_to_string(uint8_t code, char *buf, size_t buf_size) {

@@ -21,9 +21,7 @@
 
 #include "md5_common.h"
 
-#ifdef HAVE_VISIBILITY
-#pragma GCC visibility push(hidden)
-#endif
+VISIBILITY_SOURCE_BEGIN
 
 int _avs_stream_md5_common_read(avs_stream_abstract_t *stream,
                                 size_t *out_bytes_read,

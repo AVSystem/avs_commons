@@ -24,7 +24,7 @@
 #include "log.h"
 #include "msg_internal.h"
 
-#pragma GCC visibility push(hidden)
+VISIBILITY_SOURCE_BEGIN
 
 void
 avs_coap_msg_info_reset(avs_coap_msg_info_t *info) {

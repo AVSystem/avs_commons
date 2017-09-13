@@ -24,9 +24,7 @@
 #include "content_encoding.h"
 #include "log.h"
 
-#ifdef HAVE_VISIBILITY
-#pragma GCC visibility push(hidden)
-#endif
+VISIBILITY_SOURCE_BEGIN
 
 #define HTTP_CONTENT_CODING_OUT_BUF_FACTOR 1.2
 #define HTTP_CONTENT_CODING_OUT_BUF_SIZE(BufferSizes) \

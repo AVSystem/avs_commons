@@ -33,6 +33,8 @@
 
 #include "test.h"
 
+VISIBILITY_SOURCE_BEGIN
+
 typedef struct {
     const char *host;
     const char *port;

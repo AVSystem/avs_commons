@@ -30,7 +30,7 @@
 #include "msg_internal.h"
 #include "parse_utils.h"
 
-#pragma GCC visibility push(hidden)
+VISIBILITY_SOURCE_BEGIN
 
 static inline size_t get_ext_field_size(uint8_t base_value) {
     assert(base_value < AVS_COAP_EXT_RESERVED);

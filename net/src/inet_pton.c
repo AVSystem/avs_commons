@@ -44,6 +44,8 @@
 
 #include <avsystem/commons/defs.h>
 
+VISIBILITY_SOURCE_BEGIN
+
 #define NS_INT16SZ	 2
 #define NS_INADDRSZ	 4
 #define NS_IN6ADDRSZ	16

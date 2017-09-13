@@ -29,9 +29,7 @@
 #include "log.h"
 #include "zlib.h"
 
-#ifdef HAVE_VISIBILITY
-#pragma GCC visibility push(hidden)
-#endif
+VISIBILITY_SOURCE_BEGIN
 
 #define GET_INPUT_BUFFER(stream) ((stream)->data)
 #define GET_OUTPUT_BUFFER(stream) ((stream)->data + (stream)->input_buffer_size)

@@ -24,7 +24,7 @@
 #include "msg_internal.h"
 #include "parse_utils.h"
 
-#pragma GCC visibility push(hidden)
+VISIBILITY_SOURCE_BEGIN
 
 static void append_header(avs_coap_msg_buffer_t *buffer,
                           avs_coap_msg_type_t msg_type,

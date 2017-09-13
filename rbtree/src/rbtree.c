@@ -13,9 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include <config.h>
 
 #include <avsystem/commons/rbtree.h>
 #include "rbtree.h"
+
+VISIBILITY_SOURCE_BEGIN
 
 #ifdef AVS_UNIT_TESTING
 static void *test_rb_alloc(size_t num_bytes);

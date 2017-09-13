@@ -23,7 +23,7 @@
 #include <avsystem/commons/coap/msg.h>
 #include <avsystem/commons/coap/tx_params.h>
 
-#pragma GCC visibility push(hidden)
+VISIBILITY_PRIVATE_HEADER_BEGIN
 
 typedef struct coap_msg_cache coap_msg_cache_t;
 
@@ -118,6 +118,6 @@ void _avs_coap_msg_cache_debug_print(const coap_msg_cache_t *cache);
 
 #endif // WITH_AVS_COAP_MESSAGE_CACHE
 
-#pragma GCC visibility pop
+VISIBILITY_PRIVATE_HEADER_END
 
 #endif // AVS_COAP_MSG_CACHE_H

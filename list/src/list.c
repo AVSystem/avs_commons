@@ -27,9 +27,7 @@
 #define NDEBUG
 #include <avsystem/commons/list.h>
 
-#ifdef HAVE_VISIBILITY
-#pragma GCC visibility push(hidden)
-#endif
+VISIBILITY_SOURCE_BEGIN
 
 void *avs_list_adjust_allocated_ptr__(void *allocated) {
     if (allocated) {

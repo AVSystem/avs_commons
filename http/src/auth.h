@@ -19,9 +19,7 @@
 
 #include <avsystem/commons/http.h>
 
-#ifdef HAVE_VISIBILITY
-#pragma GCC visibility push(hidden)
-#endif
+VISIBILITY_PRIVATE_HEADER_BEGIN
 
 struct http_stream_struct;
 
@@ -74,9 +72,6 @@ int _avs_http_auth_setup_stream(struct http_stream_struct *stream,
 
 void _avs_http_auth_clear(http_auth_t *auth);
 
-#ifdef HAVE_VISIBILITY
-#pragma GCC visibility pop
-#endif
+VISIBILITY_PRIVATE_HEADER_END
 
 #endif /* AVS_COMMONS_HTTP_AUTH_H */
-

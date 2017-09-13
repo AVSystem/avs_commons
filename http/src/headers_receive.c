@@ -26,9 +26,7 @@
 #include "headers.h"
 #include "log.h"
 
-#ifdef HAVE_VISIBILITY
-#pragma GCC visibility push(hidden)
-#endif
+VISIBILITY_SOURCE_BEGIN
 
 typedef struct {
     http_stream_t *stream;

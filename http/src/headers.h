@@ -19,9 +19,7 @@
 
 #include "stream.h"
 
-#ifdef HAVE_VISIBILITY
-#pragma GCC visibility push(hidden)
-#endif
+VISIBILITY_PRIVATE_HEADER_BEGIN
 
 typedef enum {
     TRANSFER_IDENTITY,
@@ -64,9 +62,6 @@ int _avs_http_receive_headers(http_stream_t *stream);
  */
 #define UINT_STR_BUF_SIZE(type) ((12*sizeof(type))/5 + 2)
 
-#ifdef HAVE_VISIBILITY
-#pragma GCC visibility pop
-#endif
+VISIBILITY_PRIVATE_HEADER_END
 
 #endif /* AVS_COMMONS_HTTP_HEADERS_H */
-

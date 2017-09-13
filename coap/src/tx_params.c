@@ -21,6 +21,8 @@
 #include <avsystem/commons/time.h>
 #include <avsystem/commons/utils.h>
 
+VISIBILITY_SOURCE_BEGIN
+
 bool avs_coap_tx_params_valid(const avs_coap_tx_params_t *tx_params,
                               const char **error_details) {
     // ACK_TIMEOUT below 1 second would violate the guidelines of [RFC5405].

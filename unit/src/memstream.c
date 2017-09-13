@@ -25,6 +25,8 @@
 #include <avsystem/commons/unit/memstream.h>
 #include <avsystem/commons/unit/test.h>
 
+VISIBILITY_SOURCE_BEGIN
+
 typedef struct {
     const avs_stream_v_table_t *v_table;
     void *buffer;

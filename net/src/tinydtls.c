@@ -24,9 +24,7 @@
 
 #include "net.h"
 
-#ifdef HAVE_VISIBILITY
-#pragma GCC visibility push(hidden)
-#endif
+VISIBILITY_SOURCE_BEGIN
 
 typedef struct {
     void *out_buffer;

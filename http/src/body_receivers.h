@@ -19,9 +19,7 @@
 
 #include "headers.h"
 
-#ifdef HAVE_VISIBILITY
-#pragma GCC visibility push(hidden)
-#endif
+VISIBILITY_PRIVATE_HEADER_BEGIN
 
 /**
  * Creates a "dumb" body receiver, appropriate for the "identity" transfer
@@ -83,9 +81,6 @@ _avs_http_body_receiver_init(http_stream_t *stream,
                              avs_http_content_encoding_t content_encoding,
                              size_t content_length);
 
-#ifdef HAVE_VISIBILITY
-#pragma GCC visibility pop
-#endif
+VISIBILITY_PRIVATE_HEADER_END
 
 #endif /* AVS_COMMONS_HTTP_BODY_RECEIVERS_H */
-

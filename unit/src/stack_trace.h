@@ -19,8 +19,12 @@
 
 #include <stdio.h>
 
+VISIBILITY_PRIVATE_HEADER_BEGIN
+
 void _avs_unit_stack_trace_init(int argc, char **argv);
 
 void _avs_unit_stack_trace_print(FILE *file);
+
+VISIBILITY_PRIVATE_HEADER_END
 
 #endif /* AVS_UNIT_STACKTRACE_H */

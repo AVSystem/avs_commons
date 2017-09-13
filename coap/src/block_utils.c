@@ -23,7 +23,7 @@
 
 #include "log.h"
 
-#pragma GCC visibility push(hidden)
+VISIBILITY_SOURCE_BEGIN
 
 int avs_coap_get_block_info(const avs_coap_msg_t *msg,
                             avs_coap_block_type_t type,

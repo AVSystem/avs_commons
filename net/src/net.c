@@ -36,9 +36,7 @@
 #include "compat.h"
 #include "net.h"
 
-#ifdef HAVE_VISIBILITY
-#pragma GCC visibility push(hidden)
-#endif
+VISIBILITY_SOURCE_BEGIN
 
 #ifndef INET_ADDRSTRLEN
 #define INET_ADDRSTRLEN 16

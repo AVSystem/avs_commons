@@ -21,7 +21,7 @@
 
 #include "log.h"
 
-#pragma GCC visibility push(hidden)
+VISIBILITY_SOURCE_BEGIN
 
 avs_coap_block_builder_t
 avs_coap_block_builder_init(avs_coap_msg_builder_t *msg_builder) {

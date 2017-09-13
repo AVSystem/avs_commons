@@ -24,9 +24,7 @@
 #define MODULE_NAME avs_net
 #include <x_log_config.h>
 
-#ifdef HAVE_VISIBILITY
-#pragma GCC visibility push(hidden)
-#endif
+VISIBILITY_PRIVATE_HEADER_BEGIN
 
 /**
  * An owned PSK/identity pair. avs_commons will free()
@@ -72,9 +70,6 @@ int _avs_net_get_af(avs_net_af_t addr_family);
 
 int _avs_net_get_socket_type(avs_net_socket_type_t socket_type);
 
-#ifdef HAVE_VISIBILITY
-#pragma GCC visibility pop
-#endif
+VISIBILITY_PRIVATE_HEADER_END
 
 #endif /* NET_H */
-

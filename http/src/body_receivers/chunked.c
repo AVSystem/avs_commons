@@ -23,9 +23,7 @@
 #include "../body_receivers.h"
 #include "../log.h"
 
-#ifdef HAVE_VISIBILITY
-#pragma GCC visibility push(hidden)
-#endif
+VISIBILITY_SOURCE_BEGIN
 
 typedef struct {
     const avs_stream_v_table_t * const vtable;

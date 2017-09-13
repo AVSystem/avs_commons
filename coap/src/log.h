@@ -22,4 +22,7 @@
 #define MODULE_NAME avs_coap
 #include <x_log_config.h>
 
+VISIBILITY_PRIVATE_HEADER_BEGIN
+VISIBILITY_PRIVATE_HEADER_END
+
 #endif // AVS_COAP_LOG_H

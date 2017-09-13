@@ -25,9 +25,7 @@
 #include "../log.h"
 #include "../stream.h"
 
-#ifdef HAVE_VISIBILITY
-#pragma GCC visibility push(hidden)
-#endif
+VISIBILITY_SOURCE_BEGIN
 
 int _avs_http_auth_send_header_basic(http_stream_t *stream) {
     size_t bufsize = 1; // terminating nullbyte

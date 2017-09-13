@@ -25,9 +25,7 @@
 #include "headers.h"
 #include "log.h"
 
-#ifdef HAVE_VISIBILITY
-#pragma GCC visibility push(hidden)
-#endif
+VISIBILITY_SOURCE_BEGIN
 
 static int send_common_headers(avs_stream_abstract_t *stream,
                                avs_http_method_t method,

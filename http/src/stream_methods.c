@@ -29,9 +29,7 @@
 #include "log.h"
 #include "stream.h"
 
-#ifdef HAVE_VISIBILITY
-#pragma GCC visibility push(hidden)
-#endif
+VISIBILITY_SOURCE_BEGIN
 
 /**
  * Here is a simplified explanation of inner workings of this function.

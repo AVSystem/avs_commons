@@ -24,7 +24,7 @@
 
 #include <avsystem/commons/net.h>
 
-#pragma GCC visibility push(hidden)
+VISIBILITY_PRIVATE_HEADER_BEGIN
 
 #define AVS_COAP_EXT_U8 13
 #define AVS_COAP_EXT_U16 14
@@ -44,6 +44,6 @@ static inline uint16_t extract_u16(const uint8_t *data) {
     return ntohs(result);
 }
 
-#pragma GCC visibility pop
+VISIBILITY_PRIVATE_HEADER_END
 
 #endif // AVS_COAP_PARSE_UTILS_H

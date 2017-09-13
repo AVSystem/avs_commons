@@ -21,23 +21,6 @@
 
 #include "stack_trace.h"
 
-#if defined(WITH_POSIX) && defined(HAVE_BACKTRACE) && defined(HAVE_BACKTRACE_SYMBOLS)
-#define WITH_AVS_STACK_TRACE
-#endif
-
-#ifndef WITH_AVS_STACK_TRACE
-
-void _avs_unit_stack_trace_init(int argc, char **argv) {
-    (void)argc;
-    (void)argv;
-}
-
-void _avs_unit_stack_trace_print(FILE *file) {
-    fprintf(file, "(stack trace not available)\n");
-}
-
-#else /* WITH_AVS_STACK_TRACE */
-
 #include <execinfo.h>
 
 #include <sys/types.h>
@@ -56,7 +39,26 @@ void _avs_unit_stack_trace_print(FILE *file) {
 
 #include "test.h"
 
+VISIBILITY_SOURCE_BEGIN
+
 #define MAX_TRACE_LEVELS 256
+
+#if defined(WITH_POSIX) && defined(HAVE_BACKTRACE) && defined(HAVE_BACKTRACE_SYMBOLS)
+#define WITH_AVS_STACK_TRACE
+#endif
+
+#ifndef WITH_AVS_STACK_TRACE
+
+void _avs_unit_stack_trace_init(int argc, char **argv) {
+    (void)argc;
+    (void)argv;
+}
+
+void _avs_unit_stack_trace_print(FILE *file) {
+    fprintf(file, "(stack trace not available)\n");
+}
+
+#else /* WITH_AVS_STACK_TRACE */
 
 typedef struct stack_frame {
     void *address;

@@ -22,6 +22,8 @@
 
 #include <avsystem/commons/time.h>
 
+VISIBILITY_SOURCE_BEGIN
+
 #define NS_IN_S (1L * 1000L * 1000L * 1000L)
 
 const struct timespec AVS_TIME_INVALID = {

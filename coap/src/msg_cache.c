@@ -30,7 +30,7 @@
 
 #include <inttypes.h>
 
-#pragma GCC visibility push(hidden)
+VISIBILITY_SOURCE_BEGIN
 
 #ifdef WITH_IPV6
 # define AVS_ADDRSTRLEN INET6_ADDRSTRLEN

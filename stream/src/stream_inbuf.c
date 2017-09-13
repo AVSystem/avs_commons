@@ -25,9 +25,7 @@
 #define MODULE_NAME avs_stream
 #include <x_log_config.h>
 
-#ifdef HAVE_VISIBILITY
-#pragma GCC visibility push(hidden)
-#endif
+VISIBILITY_SOURCE_BEGIN
 
 static int inbuf_stream_read(avs_stream_abstract_t *stream_,
                              size_t *out_bytes_read,

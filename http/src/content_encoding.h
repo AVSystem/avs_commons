@@ -19,9 +19,7 @@
 
 #include "stream.h"
 
-#ifdef HAVE_VISIBILITY
-#pragma GCC visibility push(hidden)
-#endif
+VISIBILITY_PRIVATE_HEADER_BEGIN
 
 /**
  * Creates a decorator stream that wraps a backend stream and transparently does
@@ -70,9 +68,6 @@ int _avs_http_content_decoder_create(
  */
 int _avs_http_encoding_init(http_stream_t *stream);
 
-#ifdef HAVE_VISIBILITY
-#pragma GCC visibility pop
-#endif
+VISIBILITY_PRIVATE_HEADER_END
 
 #endif /* AVS_COMMONS_HTTP_CONTENT_ENCODING_H */
-

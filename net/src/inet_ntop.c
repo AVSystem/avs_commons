@@ -33,10 +33,6 @@
  * SOFTWARE.
  */
 
-#if defined(LIBC_SCCS) && !defined(lint)
-static char rcsid[] = "$Id: inet_ntop.c,v 8.5 1996/05/22 04:56:30 vixie Exp $";
-#endif /* LIBC_SCCS and not lint */
-
 #include <config.h>
 #include <posix-config.h>
 
@@ -44,6 +40,12 @@ static char rcsid[] = "$Id: inet_ntop.c,v 8.5 1996/05/22 04:56:30 vixie Exp $";
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
+
+VISIBILITY_SOURCE_BEGIN
+
+#if defined(LIBC_SCCS) && !defined(lint)
+static char rcsid[] = "$Id: inet_ntop.c,v 8.5 1996/05/22 04:56:30 vixie Exp $";
+#endif /* LIBC_SCCS and not lint */
 
 #ifndef __u_char_defined
 
@@ -64,9 +66,7 @@ typedef unsigned char  u_char;
 #   endif
 #endif /* WITH_IPV6 */
 
-#ifdef HAVE_VISIBILITY
-#pragma GCC visibility push(hidden)
-#endif
+VISIBILITY_SOURCE_BEGIN
 
 /*
  * WARNING: Don't even consider trying to compile this on a system where

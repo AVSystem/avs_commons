@@ -28,6 +28,8 @@
 #include "compat.h"
 #include "net.h"
 
+VISIBILITY_SOURCE_BEGIN
+
 #if defined(WITH_IPV4) && defined(WITH_IPV6)
 #define WITH_AVS_V4MAPPED
 #endif

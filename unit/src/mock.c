@@ -22,9 +22,7 @@
 
 #include <avsystem/commons/unit/mock_helpers.h>
 
-#ifdef HAVE_VISIBILITY
-#pragma GCC visibility push(hidden)
-#endif
+VISIBILITY_SOURCE_BEGIN
 
 typedef struct {
     avs_unit_mock_func_ptr *mock_ptr;

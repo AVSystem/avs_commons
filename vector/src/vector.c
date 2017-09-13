@@ -24,9 +24,7 @@
 
 #include <avsystem/commons/vector.h>
 
-#ifdef HAVE_VISIBILITY
-#pragma GCC visibility push(hidden)
-#endif
+VISIBILITY_SOURCE_BEGIN
 
 struct avs_vector_desc_struct {
     uint64_t magic;

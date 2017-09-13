@@ -13,11 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include <config.h>
 
 #include <avsystem/commons/rbtree.h>
 #include "src/rbtree.h"
 
 #include <stdio.h>
+
+VISIBILITY_SOURCE_BEGIN
 
 static void assert_rb_properties_hold_recursive(void *node,
                                                 size_t *out_black_height) {

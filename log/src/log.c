@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include <config.h>
 
 #include <stdarg.h>
 #include <stdio.h>
@@ -20,6 +21,8 @@
 
 #include <avsystem/commons/list.h>
 #include <avsystem/commons/log.h>
+
+VISIBILITY_SOURCE_BEGIN
 
 #define MAX_LOG_LINE_LENGTH 512
 
