@@ -22,4 +22,7 @@
 #define MODULE_NAME avs_http
 #include <x_log_config.h>
 
+VISIBILITY_PRIVATE_HEADER_BEGIN
+VISIBILITY_PRIVATE_HEADER_END
+
 #endif // AVS_COMMONS_HTTP_LOG_H

@@ -17,6 +17,8 @@
 #ifndef AVS_COMMONS_NET_COMPAT_H
 #define AVS_COMMONS_NET_COMPAT_H
 
+VISIBILITY_PRIVATE_HEADER_BEGIN
+
 /* Following values are not defined e.g. in LwIP 1.4.1 */
 #ifndef AI_NUMERICSERV
 #   define AI_NUMERICSERV 0
@@ -40,5 +42,7 @@
 #ifndef MSG_NOSIGNAL
 #   define MSG_NOSIGNAL 0
 #endif
+
+VISIBILITY_PRIVATE_HEADER_END
 
 #endif /* AVS_COMMONS_NET_COMPAT_H */
