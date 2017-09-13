@@ -119,6 +119,9 @@ void avs_net_addrinfo_delete(avs_net_addrinfo_t **ctx) {
     }
 }
 
+#warning "TODO: new AVS_NET_ADDRINFO_RESOLVE_F_V4MAPPED semantics"
+// get all addresses as if no V4MAPPED; map non-IPv6 to IPv6
+// special case, if family == AVS_NET_AF_INET6, act as if AVS_NET_AF_UNSPEC
 avs_net_addrinfo_t *avs_net_addrinfo_resolve_ex(
         avs_net_socket_type_t socket_type,
         avs_net_af_t family,

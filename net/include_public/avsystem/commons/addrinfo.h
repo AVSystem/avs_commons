@@ -48,6 +48,7 @@ typedef struct avs_net_addrinfo_struct avs_net_addrinfo_t;
  */
 #define AVS_NET_ADDRINFO_RESOLVE_F_PASSIVE  (1 << 0)
 
+#warning "TODO: Fix these docs"
 /**
  * When calling @ref avs_net_addrinfo_resolve_ex with this bit set in the
  * <c>flags</c> parameter and with <c>family</c> set to <c>AVS_NET_AF_INET6</c>,

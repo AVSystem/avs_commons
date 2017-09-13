@@ -785,9 +785,19 @@ resolve_addrinfo_for_socket(avs_net_socket_t *net_socket,
     if (net_socket->socket >= 0) {
         avs_net_af_t socket_family =
                 get_avs_af(get_socket_family(net_socket->socket));
+        if (socket_family == AVS_NET_AF_INET6) {
+            if (family != AVS_NET_AF_INET6) {
+                resolve_flags |= AVS_NET_ADDRINFO_RESOLVE_F_V4MAPPED;
+            }
+        } else if (socket_family != family) {
+            if (family == AVS_NET_AF_UNSPEC) {
+                family = socket_family;
+            } else if (socket_family != AVS_NET_AF_UNSPEC) {
+                return NULL;
+            }
+        }
         if (family == AVS_NET_AF_UNSPEC) {
             if (socket_family == AVS_NET_AF_INET6) {
-#warning "FIXME: Handle v4mapping when we want ONLY IPv4 addresses, but socket is IPv6"
                 resolve_flags |= AVS_NET_ADDRINFO_RESOLVE_F_V4MAPPED;
             }
             family = socket_family;
