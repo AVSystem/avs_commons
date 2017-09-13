@@ -48,12 +48,16 @@ typedef struct avs_net_addrinfo_struct avs_net_addrinfo_t;
  */
 #define AVS_NET_ADDRINFO_RESOLVE_F_PASSIVE  (1 << 0)
 
-#warning "TODO: Fix these docs"
 /**
  * When calling @ref avs_net_addrinfo_resolve_ex with this bit set in the
- * <c>flags</c> parameter and with <c>family</c> set to <c>AVS_NET_AF_INET6</c>,
- * IPv4 addresses will be resolved as well, and converted to IPv4-mapped IPv6
- * addresses in output.
+ * <c>flags</c> parameter, all resolved addresses are converted to IPv6
+ * addresses in output. In particular, IPv4 addresses are converted to
+ * IPv4-mapped IPv6 addresses. Addresses that cannot be converted to IPv6 are
+ * discarded.
+ *
+ * As a special compatibility case, if <c>family</c> is set to
+ * <c>AVS_NET_AF_INET6</c>, address resolution will happen as if it was actually
+ * set to <c>AVS_NET_AF_UNSPEC</c>.
  *
  * This is roughly equivalent to <c>AI_V4MAPPED | AI_ALL</c> flags to
  * <c>getaddrinfo()</c>, but implemented independently of them.

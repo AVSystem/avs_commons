@@ -119,9 +119,6 @@ void avs_net_addrinfo_delete(avs_net_addrinfo_t **ctx) {
     }
 }
 
-#warning "TODO: new AVS_NET_ADDRINFO_RESOLVE_F_V4MAPPED semantics"
-// get all addresses as if no V4MAPPED; map non-IPv6 to IPv6
-// special case, if family == AVS_NET_AF_INET6, act as if AVS_NET_AF_UNSPEC
 avs_net_addrinfo_t *avs_net_addrinfo_resolve_ex(
         avs_net_socket_type_t socket_type,
         avs_net_af_t family,
@@ -149,10 +146,11 @@ avs_net_addrinfo_t *avs_net_addrinfo_resolve_ex(
     }
 
 #ifdef WITH_AVS_V4MAPPED
-    if (family == AVS_NET_AF_INET6
-            && (flags & AVS_NET_ADDRINFO_RESOLVE_F_V4MAPPED)) {
+    if (flags & AVS_NET_ADDRINFO_RESOLVE_F_V4MAPPED) {
         ctx->v4mapped = true;
-        hint.ai_family = AF_UNSPEC;
+        if (family == AVS_NET_AF_INET6) {
+            hint.ai_family = AF_UNSPEC;
+        }
     }
 #endif
     hint.ai_socktype = _avs_net_get_socket_type(socket_type);
@@ -228,6 +226,15 @@ static int return_resolved_endpoint(avs_net_resolved_endpoint_t *out,
 
 int avs_net_addrinfo_next(avs_net_addrinfo_t *ctx,
                           avs_net_resolved_endpoint_t *out) {
+#ifdef WITH_AVS_V4MAPPED
+    if (ctx->v4mapped) {
+        while (ctx->to_send
+                && ctx->to_send->ai_family != AF_INET
+                && ctx->to_send->ai_family != AF_INET6) {
+            ctx->to_send = ctx->to_send->ai_next;
+        }
+    }
+#endif
     if (!ctx->to_send) {
         return AVS_NET_ADDRINFO_END;
     }
