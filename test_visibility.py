@@ -77,8 +77,8 @@ if __name__ == '__main__':
         valid = all((lines[0] == 'VISIBILITY_PRIVATE_HEADER_BEGIN',
                      lines[-1] == 'VISIBILITY_PRIVATE_HEADER_END'))
     elif filetype == FileType.PUBLIC_HEADER:
-        valid = all((re.match(r'^VISIBILITY', lines[0]) is None,
-                     re.match(r'^VISIBILITY', lines[-1]) is None))
+        valid = len(lines) == 0 or all((re.match(r'^VISIBILITY', lines[0]) is None,
+                                        re.match(r'^VISIBILITY', lines[-1]) is None))
     elif filetype == FileType.PRIVATE_SOURCE:
         valid = lines[0] == 'VISIBILITY_SOURCE_BEGIN'
 
