@@ -359,7 +359,7 @@ macro(add_module_with_include_dirs MODULE_NAME MODULE_INCLUDE_DIRS_VAR)
     file(GLOB_RECURSE MODULE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/${MODULE_NAME}/*.c
                                    ${CMAKE_CURRENT_SOURCE_DIR}/${MODULE_NAME}/*h)
     foreach(F ${MODULE_FILES})
-        add_test(NAME test_${F}_visibility COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/test_visibility.sh ${F})
+        add_test(NAME test_${F}_visibility COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/test_visibility.py ${F})
     endforeach()
 endmacro()
 

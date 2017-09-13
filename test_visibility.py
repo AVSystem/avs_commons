@@ -80,6 +80,6 @@ if __name__ == '__main__':
         valid = all((re.match(r'^VISIBILITY', lines[0]) is None,
                      re.match(r'^VISIBILITY', lines[-1]) is None))
     elif filetype == FileType.PRIVATE_SOURCE:
-        valid = all((lines[0] == 'VISIBILITY_SOURCE_BEGIN'))
+        valid = lines[0] == 'VISIBILITY_SOURCE_BEGIN'
 
     sys.exit(0 if valid else 1)
