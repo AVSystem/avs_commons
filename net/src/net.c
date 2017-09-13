@@ -119,6 +119,11 @@ typedef union {
     sockaddr_endpoint_t sockaddr_ep;
 } sockaddr_endpoint_union_t;
 
+typedef enum {
+    PREFERRED_FAMILY_ONLY,
+    PREFERRED_FAMILY_BLOCKED
+} preferred_family_mode_t;
+
 static int connect_net(avs_net_abstract_socket_t *net_socket,
                        const char* host,
                        const char *port);
@@ -763,47 +768,69 @@ static int get_other_family(avs_net_af_t *out, avs_net_af_t in) {
     }
 }
 
+static int get_requested_family(avs_net_socket_t *net_socket,
+                                avs_net_af_t *out,
+                                preferred_family_mode_t preferred_family_mode) {
+    switch (net_socket->configuration.address_family) {
+    case AVS_NET_AF_UNSPEC:
+        // If we only have "soft" family preference,
+        // use it as the preferred one, and later try the "opposite" setting
+        switch (preferred_family_mode) {
+        case PREFERRED_FAMILY_ONLY:
+            *out = net_socket->configuration.preferred_family;
+            return 0;
+        case PREFERRED_FAMILY_BLOCKED:
+            return get_other_family(out,
+                                    net_socket->configuration.preferred_family);
+        }
+    default:
+        // If we have "hard" address_family setting,
+        // it is the preferred one, and there is nothing else
+        switch (preferred_family_mode) {
+        case PREFERRED_FAMILY_ONLY:
+            *out = net_socket->configuration.address_family;
+            return 0;
+        case PREFERRED_FAMILY_BLOCKED:
+            return -1;
+        }
+    }
+    assert(0 && "Invalid value of preferred_family_mode");
+    return -1;
+}
+
 static avs_net_addrinfo_t *
 resolve_addrinfo_for_socket(avs_net_socket_t *net_socket,
                             const char *host,
                             const char *port,
                             bool use_preferred_endpoint,
-                            bool use_preferred_family) {
-    avs_net_af_t family = net_socket->configuration.address_family;
-    if (family == AVS_NET_AF_UNSPEC) {
-        if (use_preferred_family) {
-            family = net_socket->configuration.preferred_family;
-        } else if (get_other_family(
-                &family, net_socket->configuration.preferred_family)) {
-            return NULL;
-        }
-    } else if (!use_preferred_family) {
+                            preferred_family_mode_t preferred_family_mode) {
+    int resolve_flags = 0;
+    avs_net_af_t family;
+    if (get_requested_family(net_socket, &family, preferred_family_mode)) {
         return NULL;
     }
-    int resolve_flags = 0;
 
     if (net_socket->socket >= 0) {
         avs_net_af_t socket_family =
                 get_avs_af(get_socket_family(net_socket->socket));
         if (socket_family == AVS_NET_AF_INET6) {
             if (family != AVS_NET_AF_INET6) {
+                // If we have an already created socket that is bound to IPv6,
+                // but the requested family is something else, use v4-mapping
                 resolve_flags |= AVS_NET_ADDRINFO_RESOLVE_F_V4MAPPED;
             }
         } else if (socket_family != family) {
             if (family == AVS_NET_AF_UNSPEC) {
+                // If we have an already created socket, the requested family
+                // is unspecified, and we cannot use IPv6-to-IPv4 mapping,
+                // then use the socket's family instead
                 family = socket_family;
             } else if (socket_family != AVS_NET_AF_UNSPEC) {
+                // If we have an already created socket, we cannot use
+                // IPv6-to-IPv4 mapping, and the requested family is different
+                // than the socket's bound one - we're screwed, just give up
                 return NULL;
             }
-        }
-        if (family == AVS_NET_AF_UNSPEC) {
-            if (socket_family == AVS_NET_AF_INET6) {
-                resolve_flags |= AVS_NET_ADDRINFO_RESOLVE_F_V4MAPPED;
-            }
-            family = socket_family;
-        } else if (socket_family != AVS_NET_AF_UNSPEC
-                && socket_family != family) {
-            return NULL;
         }
     }
 
@@ -881,7 +908,7 @@ static int connect_net(avs_net_abstract_socket_t *net_socket_,
     errno = 0;
     net_socket->error_code = EPROTO;
     if ((info = resolve_addrinfo_for_socket(net_socket, host, port,
-                                            false, true))) {
+                                            false, PREFERRED_FAMILY_ONLY))) {
         sockaddr_endpoint_union_t address;
         while (!(result = avs_net_addrinfo_next(info, &address.api_ep))) {
             if (!try_connect(net_socket, &address)) {
@@ -891,7 +918,7 @@ static int connect_net(avs_net_abstract_socket_t *net_socket_,
     }
     avs_net_addrinfo_delete(&info);
     if ((info = resolve_addrinfo_for_socket(net_socket, host, port,
-                                            false, false))) {
+                                            false, PREFERRED_FAMILY_BLOCKED))) {
         sockaddr_endpoint_union_t address;
         while (!(result = avs_net_addrinfo_next(info, &address.api_ep))) {
             if (!try_connect(net_socket, &address)) {
@@ -974,7 +1001,7 @@ static int send_to_net(avs_net_abstract_socket_t *net_socket_,
     ssize_t result = -1;
 
     if (!(info = resolve_addrinfo_for_socket(net_socket, host, port,
-                                             false, true))
+                                             false, PREFERRED_FAMILY_ONLY))
             || (result = (ssize_t) avs_net_addrinfo_next(info,
                                                          &address.api_ep))) {
         net_socket->error_code = EPROTO;
