@@ -133,22 +133,22 @@ static inline void _avs_coap_header_set_type(avs_coap_msg_t *msg,
 }
 
 static inline uint8_t _avs_coap_header_get_code(const avs_coap_msg_t *msg) {
-    return ((const coap_header_t *) msg->content)->code;
+    return msg->content[offsetof(coap_header_t, code)];
 }
 
 static inline void _avs_coap_header_set_code(avs_coap_msg_t *msg,
                                              uint8_t code) {
-    ((coap_header_t *) msg->content)->code = code;
+    msg->content[offsetof(coap_header_t, code)] = code;
 }
 
 static inline uint16_t _avs_coap_header_get_id(const avs_coap_msg_t *msg) {
-    return extract_u16(((const coap_header_t *) msg->content)->message_id);
+    return extract_u16(&msg->content[offsetof(coap_header_t, message_id)]);
 }
 
 static inline void _avs_coap_header_set_id(avs_coap_msg_t *msg,
                                            uint16_t msg_id) {
     uint16_t msg_id_nbo = htons(msg_id);
-    memcpy(((coap_header_t *) msg->content)->message_id,
+    memcpy(&msg->content[offsetof(coap_header_t, message_id)],
            &msg_id_nbo, sizeof(msg_id_nbo));
 }
 

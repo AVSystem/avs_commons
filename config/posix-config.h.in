@@ -136,4 +136,8 @@
 # endif
 #endif // WITH_POSIX
 
+#ifndef CLOCK_MONOTONIC
+# define CLOCK_MONOTONIC CLOCK_REALTIME
+#endif
+
 #endif /* CONFIG_POSIX_CONFIG_H */
