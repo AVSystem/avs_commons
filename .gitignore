@@ -30,7 +30,12 @@ CMakeFiles/
 CMakeTmp/
 Makefile
 CMakeCache.txt
-*.cmake
+CPackConfig.cmake
+CPackSourceConfig.cmake
+CTestTestfile.cmake
+avs_commons-config.cmake
+avs_commons-version.cmake
+cmake_install.cmake
 compile_commands.json
 install_manifest.txt
 _CPack_Packages/
