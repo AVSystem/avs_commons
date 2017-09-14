@@ -126,26 +126,31 @@ avs_net_addrinfo_t *avs_net_addrinfo_resolve_ex(
         const char *port,
         int flags,
         const avs_net_resolved_endpoint_t *preferred_endpoint) {
-
-    avs_net_addrinfo_t *ctx =
-            (avs_net_addrinfo_t *) calloc(1, sizeof(avs_net_addrinfo_t));
-    if (!ctx) {
-        return NULL;
-    }
-
     struct addrinfo hint;
     memset((void *) &hint, 0, sizeof (hint));
     hint.ai_family = _avs_net_get_af(family);
+    if (family != AVS_NET_AF_UNSPEC && hint.ai_family == AF_UNSPEC) {
+        LOG(ERROR, "Unsupported address family");
+        return NULL;
+    }
     hint.ai_flags = AI_NUMERICSERV | AI_ADDRCONFIG;
     if (flags & AVS_NET_ADDRINFO_RESOLVE_F_PASSIVE) {
         hint.ai_flags |= AI_PASSIVE;
     }
 
+    avs_net_addrinfo_t *ctx =
+            (avs_net_addrinfo_t *) calloc(1, sizeof(avs_net_addrinfo_t));
+    if (!ctx) {
+        LOG(ERROR, "Out of memory");
+        return NULL;
+    }
+
 #ifdef WITH_AVS_V4MAPPED
-    if (family == AVS_NET_AF_INET6
-            && (flags & AVS_NET_ADDRINFO_RESOLVE_F_V4MAPPED)) {
+    if (flags & AVS_NET_ADDRINFO_RESOLVE_F_V4MAPPED) {
         ctx->v4mapped = true;
-        hint.ai_family = AF_UNSPEC;
+        if (family == AVS_NET_AF_INET6) {
+            hint.ai_family = AF_UNSPEC;
+        }
     }
 #endif
     hint.ai_socktype = _avs_net_get_socket_type(socket_type);
@@ -221,6 +226,15 @@ static int return_resolved_endpoint(avs_net_resolved_endpoint_t *out,
 
 int avs_net_addrinfo_next(avs_net_addrinfo_t *ctx,
                           avs_net_resolved_endpoint_t *out) {
+#ifdef WITH_AVS_V4MAPPED
+    if (ctx->v4mapped) {
+        while (ctx->to_send
+                && ctx->to_send->ai_family != AF_INET
+                && ctx->to_send->ai_family != AF_INET6) {
+            ctx->to_send = ctx->to_send->ai_next;
+        }
+    }
+#endif
     if (!ctx->to_send) {
         return AVS_NET_ADDRINFO_END;
     }

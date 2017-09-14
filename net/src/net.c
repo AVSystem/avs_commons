@@ -119,6 +119,11 @@ typedef union {
     sockaddr_endpoint_t sockaddr_ep;
 } sockaddr_endpoint_union_t;
 
+typedef enum {
+    PREFERRED_FAMILY_ONLY,
+    PREFERRED_FAMILY_BLOCKED
+} preferred_family_mode_t;
+
 static int connect_net(avs_net_abstract_socket_t *net_socket,
                        const char* host,
                        const char *port);
@@ -750,25 +755,82 @@ static avs_net_af_t get_avs_af(int af) {
     }
 }
 
+static int get_other_family(avs_net_af_t *out, avs_net_af_t in) {
+    switch (in) {
+    case AVS_NET_AF_INET4:
+        *out = AVS_NET_AF_INET6;
+        return 0;
+    case AVS_NET_AF_INET6:
+        *out = AVS_NET_AF_INET4;
+        return 0;
+    default:
+        return -1;
+    }
+}
+
+static int get_requested_family(avs_net_socket_t *net_socket,
+                                avs_net_af_t *out,
+                                preferred_family_mode_t preferred_family_mode) {
+    switch (net_socket->configuration.address_family) {
+    case AVS_NET_AF_UNSPEC:
+        // If we only have "soft" family preference,
+        // use it as the preferred one, and later try the "opposite" setting
+        switch (preferred_family_mode) {
+        case PREFERRED_FAMILY_ONLY:
+            *out = net_socket->configuration.preferred_family;
+            return 0;
+        case PREFERRED_FAMILY_BLOCKED:
+            return get_other_family(out,
+                                    net_socket->configuration.preferred_family);
+        }
+    default:
+        // If we have "hard" address_family setting,
+        // it is the preferred one, and there is nothing else
+        switch (preferred_family_mode) {
+        case PREFERRED_FAMILY_ONLY:
+            *out = net_socket->configuration.address_family;
+            return 0;
+        case PREFERRED_FAMILY_BLOCKED:
+            return -1;
+        }
+    }
+    assert(0 && "Invalid value of preferred_family_mode");
+    return -1;
+}
+
 static avs_net_addrinfo_t *
 resolve_addrinfo_for_socket(avs_net_socket_t *net_socket,
                             const char *host,
                             const char *port,
-                            bool use_preferred_endpoint) {
-    avs_net_af_t family = net_socket->configuration.address_family;
+                            bool use_preferred_endpoint,
+                            preferred_family_mode_t preferred_family_mode) {
     int resolve_flags = 0;
+    avs_net_af_t family;
+    if (get_requested_family(net_socket, &family, preferred_family_mode)) {
+        return NULL;
+    }
 
     if (net_socket->socket >= 0) {
         avs_net_af_t socket_family =
                 get_avs_af(get_socket_family(net_socket->socket));
-        if (family == AVS_NET_AF_UNSPEC) {
-            if (socket_family == AVS_NET_AF_INET6) {
+        if (socket_family == AVS_NET_AF_INET6) {
+            if (family != AVS_NET_AF_INET6) {
+                // If we have an already created socket that is bound to IPv6,
+                // but the requested family is something else, use v4-mapping
                 resolve_flags |= AVS_NET_ADDRINFO_RESOLVE_F_V4MAPPED;
             }
-            family = socket_family;
-        } else {
-            assert(socket_family == AVS_NET_AF_UNSPEC
-                    || socket_family == family);
+        } else if (socket_family != family) {
+            if (family == AVS_NET_AF_UNSPEC) {
+                // If we have an already created socket, the requested family
+                // is unspecified, and we cannot use IPv6-to-IPv4 mapping,
+                // then use the socket's family instead
+                family = socket_family;
+            } else if (socket_family != AVS_NET_AF_UNSPEC) {
+                // If we have an already created socket, we cannot use
+                // IPv6-to-IPv4 mapping, and the requested family is different
+                // than the socket's bound one - we're screwed, just give up
+                return NULL;
+            }
         }
     }
 
@@ -845,25 +907,22 @@ static int connect_net(avs_net_abstract_socket_t *net_socket_,
 
     errno = 0;
     net_socket->error_code = EPROTO;
-    if ((info = resolve_addrinfo_for_socket(net_socket, host, port, false))) {
+    if ((info = resolve_addrinfo_for_socket(net_socket, host, port,
+                                            false, PREFERRED_FAMILY_ONLY))) {
         sockaddr_endpoint_union_t address;
         while (!(result = avs_net_addrinfo_next(info, &address.api_ep))) {
             if (!try_connect(net_socket, &address)) {
-                avs_net_addrinfo_delete(&info);
-
-                if (avs_simple_snprintf(net_socket->remote_hostname,
-                                        sizeof(net_socket->remote_hostname),
-                                        "%s", host) < 0) {
-                    LOG(WARNING, "Hostname %s is too long, not storing", host);
-                    net_socket->remote_hostname[0] = '\0';
-                }
-                if (avs_simple_snprintf(net_socket->remote_port,
-                                        sizeof(net_socket->remote_port), "%s",
-                                        port) < 0) {
-                    LOG(WARNING, "Port %s is too long, not storing", port);
-                    net_socket->remote_hostname[0] = '\0';
-                }
-                return 0;
+                goto success;
+            }
+        }
+    }
+    avs_net_addrinfo_delete(&info);
+    if ((info = resolve_addrinfo_for_socket(net_socket, host, port,
+                                            false, PREFERRED_FAMILY_BLOCKED))) {
+        sockaddr_endpoint_union_t address;
+        while (!(result = avs_net_addrinfo_next(info, &address.api_ep))) {
+            if (!try_connect(net_socket, &address)) {
+                goto success;
             }
         }
     }
@@ -871,6 +930,21 @@ static int connect_net(avs_net_abstract_socket_t *net_socket_,
     LOG(ERROR, "cannot establish connection to [%s]:%s: %s",
         host, port, strerror(net_socket->error_code));
     return result < 0 ? result : -1;
+success:
+    avs_net_addrinfo_delete(&info);
+
+    if (avs_simple_snprintf(net_socket->remote_hostname,
+                            sizeof(net_socket->remote_hostname),
+                            "%s", host) < 0) {
+        LOG(WARNING, "Hostname %s is too long, not storing", host);
+        net_socket->remote_hostname[0] = '\0';
+    }
+    if (avs_simple_snprintf(net_socket->remote_port,
+                            sizeof(net_socket->remote_port), "%s", port) < 0) {
+        LOG(WARNING, "Port %s is too long, not storing", port);
+        net_socket->remote_port[0] = '\0';
+    }
+    return 0;
 }
 
 static int send_net(avs_net_abstract_socket_t *net_socket_,
@@ -926,7 +1000,8 @@ static int send_to_net(avs_net_abstract_socket_t *net_socket_,
     sockaddr_endpoint_union_t address;
     ssize_t result = -1;
 
-    if (!(info = resolve_addrinfo_for_socket(net_socket, host, port, false))
+    if (!(info = resolve_addrinfo_for_socket(net_socket, host, port,
+                                             false, PREFERRED_FAMILY_ONLY))
             || (result = (ssize_t) avs_net_addrinfo_next(info,
                                                          &address.api_ep))) {
         net_socket->error_code = EPROTO;
