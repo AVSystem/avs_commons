@@ -50,7 +50,7 @@ static inline avs_coap_msg_info_t avs_coap_msg_info_init() {
         .code = AVS_COAP_CODE_EMPTY,
         .identity = {
             .msg_id = 0,
-            .token = {0},
+            .token = { 0, "" },
         },
         .options_ = NULL
     };

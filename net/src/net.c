@@ -805,7 +805,7 @@ resolve_addrinfo_for_socket(avs_net_socket_t *net_socket,
                             bool use_preferred_endpoint,
                             preferred_family_mode_t preferred_family_mode) {
     int resolve_flags = 0;
-    avs_net_af_t family;
+    avs_net_af_t family = AVS_NET_AF_UNSPEC;
     if (get_requested_family(net_socket, &family, preferred_family_mode)) {
         return NULL;
     }
@@ -1606,8 +1606,8 @@ static int errno_net(avs_net_abstract_socket_t *net_socket) {
     return ((avs_net_socket_t *) net_socket)->error_code;
 }
 
-static int ifaddr_ip_equal(const struct sockaddr *left,
-                           const struct sockaddr *right) {
+static inline int ifaddr_ip_equal(const struct sockaddr *left,
+                                  const struct sockaddr *right) {
     size_t offset;
     size_t length;
     int family_diff = left->sa_family - right->sa_family;

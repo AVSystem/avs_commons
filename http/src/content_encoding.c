@@ -197,6 +197,7 @@ int _avs_http_content_decoder_create(
         avs_stream_abstract_t **out_decoder,
         avs_http_content_encoding_t content_encoding,
         const avs_http_buffer_sizes_t *buffer_sizes) {
+    (void) buffer_sizes;
     *out_decoder = NULL;
     switch (content_encoding) {
     case AVS_HTTP_CONTENT_IDENTITY:
