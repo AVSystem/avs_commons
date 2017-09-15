@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include <config.h>
+#include <avs-config.h>
 
 #define MODULE_NAME mocksock
 #include <x_log_config.h>

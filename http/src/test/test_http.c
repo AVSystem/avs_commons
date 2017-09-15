@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include <config.h>
+#include <avs-config.h>
 
 #include <ctype.h>
 #include <errno.h>

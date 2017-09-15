@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#include <config.h>
-#include <posix-config.h>
+#include <avs-config.h>
+#include <avs-posix-config.h>
 
 #include <ctype.h>
 #include <string.h>

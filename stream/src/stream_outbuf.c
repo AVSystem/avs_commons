@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include <config.h>
+#include <avs-config.h>
 
 #include <avsystem/commons/stream/stream_outbuf.h>
 #include <avsystem/commons/stream_v_table.h>

@@ -33,8 +33,8 @@
  * SOFTWARE.
  */
 
-#include <config.h>
-#include <posix-config.h>
+#include <avs-config.h>
+#include <avs-posix-config.h>
 
 #include <stdint.h>
 #include <stdio.h>

@@ -482,8 +482,8 @@ if(NOT ${CMAKE_PROJECT_NAME} STREQUAL ${PROJECT_NAME})
     set(avs_commons_INCLUDE_DIRS ${INCLUDE_DIRS} ${MODULE_INCLUDE_DIRS} PARENT_SCOPE)
 endif()
 
-configure_file("config/config.h.in" "config/config.h")
-configure_file("config/posix-config.h.in" "config/posix-config.h")
+configure_file("config/avs-config.h.in" "config/avs-config.h")
+configure_file("config/avs-posix-config.h.in" "config/avs-posix-config.h")
 configure_file("include_public/avsystem/commons/defs.h.in"
                "include_public/avsystem/commons/defs.h")
 

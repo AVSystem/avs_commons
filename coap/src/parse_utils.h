@@ -17,7 +17,7 @@
 #ifndef AVS_COAP_PARSE_UTILS_H
 #define AVS_COAP_PARSE_UTILS_H
 
-#include <posix-config.h>
+#include <avs-posix-config.h>
 
 #include <stdint.h>
 #include <string.h>

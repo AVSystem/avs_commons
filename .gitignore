@@ -35,8 +35,8 @@ compile_commands.json
 install_manifest.txt
 _CPack_Packages/
 Testing/
-/config/config.h
-/config/posix-config.h
+/config/avs-config.h
+/config/avs-posix-config.h
 /include_public/avsystem/commons/defs.h
 
 # documentation

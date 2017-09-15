@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include <config.h>
+#include <avs-config.h>
 
 #include <avsystem/commons/defs.h>
 #include <avsystem/commons/unit/test.h>
