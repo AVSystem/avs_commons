@@ -27,7 +27,7 @@
 #include "client.h"
 #include "content_encoding.h"
 #include "http_log.h"
-#include "stream.h"
+#include "http_stream.h"
 
 VISIBILITY_SOURCE_BEGIN
 

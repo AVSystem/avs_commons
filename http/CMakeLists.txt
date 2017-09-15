@@ -25,7 +25,7 @@ set(SOURCES
     src/content_encoding.c
     src/headers_receive.c
     src/headers_send.c
-    src/stream.c
+    src/http_stream.c
     src/stream_methods.c)
 
 if(WITH_AVS_HTTP_ZLIB)
@@ -40,7 +40,7 @@ set(PRIVATE_HEADERS
     src/content_encoding.h
     src/headers.h
     src/http_log.h
-    src/stream.h
+    src/http_stream.h
     src/zlib.h)
 
 set(PUBLIC_HEADERS
