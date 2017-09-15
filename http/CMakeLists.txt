@@ -15,9 +15,9 @@
 set(SOURCES
     src/auth/basic.c
     src/auth/digest.c
-    src/body_receivers/chunked.c
+    src/body_receivers/chunked_body_receiver.c
     src/body_receivers/content_length.c
-    src/body_receivers/dumb.c
+    src/body_receivers/dumb_body_receiver.c
     src/auth.c
     src/body_receivers.c
     src/chunked.c
