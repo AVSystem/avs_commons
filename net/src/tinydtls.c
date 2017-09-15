@@ -22,7 +22,7 @@
 
 #include <tinydtls/dtls.h>
 
-#include "net.h"
+#include "net_impl.h"
 
 VISIBILITY_SOURCE_BEGIN
 

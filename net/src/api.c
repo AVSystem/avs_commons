@@ -24,7 +24,7 @@
 #include <avsystem/commons/net.h>
 #include <avsystem/commons/socket_v_table.h>
 
-#include "net.h"
+#include "net_impl.h"
 
 VISIBILITY_SOURCE_BEGIN
 

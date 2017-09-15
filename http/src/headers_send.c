@@ -18,7 +18,7 @@
 
 #include <string.h>
 
-#include <avsystem/commons/stream/net.h>
+#include <avsystem/commons/stream/stream_net.h>
 #include <avsystem/commons/utils.h>
 
 #include "client.h"

@@ -20,7 +20,7 @@
 #include <errno.h>
 #include <string.h>
 
-#include <avsystem/commons/stream/net.h>
+#include <avsystem/commons/stream/stream_net.h>
 
 #include "chunked.h"
 #include "client.h"
