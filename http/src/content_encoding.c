@@ -22,7 +22,7 @@
 
 #include "client.h"
 #include "content_encoding.h"
-#include "log.h"
+#include "http_log.h"
 
 VISIBILITY_SOURCE_BEGIN
 

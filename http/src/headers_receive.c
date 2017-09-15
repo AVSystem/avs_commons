@@ -24,7 +24,7 @@
 #include "body_receivers.h"
 #include "client.h"
 #include "headers.h"
-#include "log.h"
+#include "http_log.h"
 
 VISIBILITY_SOURCE_BEGIN
 

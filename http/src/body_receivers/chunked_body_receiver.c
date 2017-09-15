@@ -21,7 +21,7 @@
 #include <avsystem/commons/stream/net.h>
 
 #include "../body_receivers.h"
-#include "../log.h"
+#include "../http_log.h"
 
 VISIBILITY_SOURCE_BEGIN
 

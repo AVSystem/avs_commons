@@ -20,7 +20,7 @@
 #include <string.h>
 
 #include "client.h"
-#include "log.h"
+#include "http_log.h"
 
 VISIBILITY_SOURCE_BEGIN
 

@@ -25,7 +25,7 @@
 #include "chunked.h"
 #include "client.h"
 #include "headers.h"
-#include "log.h"
+#include "http_log.h"
 #include "stream.h"
 
 VISIBILITY_SOURCE_BEGIN

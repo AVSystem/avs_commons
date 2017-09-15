@@ -23,7 +23,7 @@
 #include <avsystem/commons/utils.h>
 
 #include "auth.h"
-#include "log.h"
+#include "http_log.h"
 #include "stream.h"
 
 VISIBILITY_SOURCE_BEGIN

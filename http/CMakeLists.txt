@@ -39,7 +39,7 @@ set(PRIVATE_HEADERS
     src/client.h
     src/content_encoding.h
     src/headers.h
-    src/log.h
+    src/http_log.h
     src/stream.h
     src/zlib.h)
 

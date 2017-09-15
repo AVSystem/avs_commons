@@ -26,7 +26,7 @@
 
 #include <avsystem/commons/stream_v_table.h>
 
-#include "log.h"
+#include "http_log.h"
 #include "zlib.h"
 
 VISIBILITY_SOURCE_BEGIN
