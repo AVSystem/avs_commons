@@ -19,7 +19,7 @@
 #include <avsystem/commons/coap/block_builder.h>
 #include <avsystem/commons/utils.h>
 
-#include "log.h"
+#include "coap_log.h"
 
 VISIBILITY_SOURCE_BEGIN
 

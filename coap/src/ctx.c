@@ -27,7 +27,7 @@
 
 #include <avsystem/commons/list.h>
 
-#include "log.h"
+#include "coap_log.h"
 #include "msg_cache.h"
 
 VISIBILITY_SOURCE_BEGIN

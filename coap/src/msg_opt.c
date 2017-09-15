@@ -17,7 +17,7 @@
 #include <config.h>
 #include <posix-config.h>
 
-#include "log.h"
+#include "coap_log.h"
 #include "msg_internal.h"
 
 #include <avsystem/commons/coap/msg_info.h>

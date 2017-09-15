@@ -26,7 +26,7 @@
 #include <avsystem/commons/coap/block_utils.h>
 #include <avsystem/commons/utils.h>
 
-#include "log.h"
+#include "coap_log.h"
 #include "msg_internal.h"
 #include "parse_utils.h"
 

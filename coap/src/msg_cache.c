@@ -25,7 +25,7 @@
 
 #include <avsystem/commons/coap/msg.h>
 
-#include "log.h"
+#include "coap_log.h"
 #include "msg_cache.h"
 
 #include <inttypes.h>
