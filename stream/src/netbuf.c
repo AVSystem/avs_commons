@@ -26,7 +26,7 @@
 #include <avsystem/commons/stream_v_table.h>
 #include <avsystem/commons/stream/netbuf.h>
 
-#include "avsystem/commons/stream/net.h"
+#include <avsystem/commons/stream/stream_net.h>
 
 #define MODULE_NAME avs_stream
 #include <x_log_config.h>
