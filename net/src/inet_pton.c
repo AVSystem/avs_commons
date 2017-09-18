@@ -34,8 +34,8 @@
  * WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#include <avs-config.h>
-#include <avs-posix-config.h>
+#include <avs_commons_config.h>
+#include <avs_commons_posix_config.h>
 
 #include <stdint.h>
 #include <stdio.h>

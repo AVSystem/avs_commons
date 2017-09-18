@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include <avs-config.h>
+#include <avs_commons_config.h>
 
 #include <avsystem/commons/coap/block_utils.h>
 #include <avsystem/commons/coap/msg_opt.h>

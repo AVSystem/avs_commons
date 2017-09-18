@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include <avs-config.h>
+#include <avs_commons_config.h>
 #define _GNU_SOURCE
 
 #include <avsystem/commons/unit/test.h>

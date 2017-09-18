@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#include <avs-config.h>
-#include <avs-posix-config.h>
+#include <avs_commons_config.h>
+#include <avs_commons_posix_config.h>
 
 #include <avsystem/commons/coap/ctx.h>
 #include <avsystem/commons/coap/msg_builder.h>

@@ -18,7 +18,7 @@
 #undef NDEBUG /* we want to call assert() in avs_list_assert_acyclic__() */
 #endif
 
-#include <avs-config.h>
+#include <avs_commons_config.h>
 
 #include <assert.h>
 #include <string.h>
