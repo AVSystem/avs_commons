@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <config.h>
-#include <posix-config.h>
+#include <avs_commons_config.h>
+#include <avs_commons_posix_config.h>
 
 #include <alloca.h>
 

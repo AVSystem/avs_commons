@@ -16,8 +16,8 @@
 
 #define _AVS_NEED_POSIX_SOCKET
 
-#include <config.h>
-#include <posix-config.h>
+#include <avs_commons_config.h>
+#include <avs_commons_posix_config.h>
 
 #include <avsystem/commons/utils.h>
 
@@ -34,7 +34,7 @@
 #endif
 
 #include "compat.h"
-#include "net.h"
+#include "net_impl.h"
 
 VISIBILITY_SOURCE_BEGIN
 

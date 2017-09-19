@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef AVS_COMMONS_STREAM_NET_H
-#define	AVS_COMMONS_STREAM_NET_H
+#ifndef AVS_COMMONS_STREAM_STREAM_NET_H
+#define	AVS_COMMONS_STREAM_STREAM_NET_H
 
 #include <stdint.h>
 
@@ -49,5 +49,5 @@ int avs_stream_net_setsock(avs_stream_abstract_t *stream,
 }
 #endif
 
-#endif	/* AVS_COMMONS_STREAM_NET_H */
+#endif	/* AVS_COMMONS_STREAM_STREAM_NET_H */
 

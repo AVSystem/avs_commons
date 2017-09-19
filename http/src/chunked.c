@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include <config.h>
+#include <avs_commons_config.h>
 
 #include <string.h>
 
@@ -22,8 +22,8 @@
 
 #include "chunked.h"
 #include "headers.h"
-#include "log.h"
-#include "stream.h"
+#include "http_log.h"
+#include "http_stream.h"
 
 VISIBILITY_SOURCE_BEGIN
 

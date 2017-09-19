@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include <config.h>
+#include <avs_commons_config.h>
 
 #include <assert.h>
 #include <ctype.h>
@@ -24,7 +24,7 @@
 #include <avsystem/commons/url.h>
 #include <avsystem/commons/utils.h>
 
-#include "net.h"
+#include "net_impl.h"
 
 VISIBILITY_SOURCE_BEGIN
 

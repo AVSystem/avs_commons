@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include <config.h>
+#include <avs_commons_config.h>
 
 #include <assert.h>
 #include <errno.h>
@@ -34,7 +34,7 @@
 #include <mbedtls/debug.h>
 #endif // WITH_MBEDTLS_LOGS
 
-#include "net.h"
+#include "net_impl.h"
 
 VISIBILITY_SOURCE_BEGIN
 

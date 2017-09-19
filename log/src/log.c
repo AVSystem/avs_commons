@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <config.h>
+#include <avs_commons_config.h>
 
 #include <stdarg.h>
 #include <stdio.h>

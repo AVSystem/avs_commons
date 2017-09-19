@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-#include <config.h>
-#include <posix-config.h>
+#include <avs_commons_config.h>
+#include <avs_commons_posix_config.h>
 
-#include "log.h"
+#include "coap_log.h"
 #include "msg_internal.h"
 
 #include <avsystem/commons/coap/msg.h>

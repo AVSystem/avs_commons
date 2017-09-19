@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-#include <config.h>
+#include <avs_commons_config.h>
 
 #include <avsystem/commons/coap/block_utils.h>
 #include <avsystem/commons/coap/msg_opt.h>
 // For avs_is_power_of_2
 #include <avsystem/commons/utils.h>
 
-#include "log.h"
+#include "coap_log.h"
 
 VISIBILITY_SOURCE_BEGIN
 

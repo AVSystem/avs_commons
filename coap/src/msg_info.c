@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-#include <config.h>
-#include <posix-config.h>
+#include <avs_commons_config.h>
+#include <avs_commons_posix_config.h>
 
 #include <avsystem/commons/coap/msg_info.h>
 #include <avsystem/commons/coap/msg_builder.h>
 #include <avsystem/commons/utils.h>
 
-#include "log.h"
+#include "coap_log.h"
 #include "msg_internal.h"
 
 VISIBILITY_SOURCE_BEGIN

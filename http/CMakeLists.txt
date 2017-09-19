@@ -15,9 +15,9 @@
 set(SOURCES
     src/auth/basic.c
     src/auth/digest.c
-    src/body_receivers/chunked.c
+    src/body_receivers/chunked_body_receiver.c
     src/body_receivers/content_length.c
-    src/body_receivers/dumb.c
+    src/body_receivers/dumb_body_receiver.c
     src/auth.c
     src/body_receivers.c
     src/chunked.c
@@ -25,7 +25,7 @@ set(SOURCES
     src/content_encoding.c
     src/headers_receive.c
     src/headers_send.c
-    src/stream.c
+    src/http_stream.c
     src/stream_methods.c)
 
 if(WITH_AVS_HTTP_ZLIB)
@@ -39,8 +39,8 @@ set(PRIVATE_HEADERS
     src/client.h
     src/content_encoding.h
     src/headers.h
-    src/log.h
-    src/stream.h
+    src/http_log.h
+    src/http_stream.h
     src/zlib.h)
 
 set(PUBLIC_HEADERS

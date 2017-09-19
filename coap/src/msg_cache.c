@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#include <config.h>
-#include <posix-config.h>
+#include <avs_commons_config.h>
+#include <avs_commons_posix_config.h>
 
 #include <avsystem/commons/buffer.h>
 #include <avsystem/commons/defs.h>
@@ -25,7 +25,7 @@
 
 #include <avsystem/commons/coap/msg.h>
 
-#include "log.h"
+#include "coap_log.h"
 #include "msg_cache.h"
 
 #include <inttypes.h>

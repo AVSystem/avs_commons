@@ -38,10 +38,10 @@ set(avs_stream_INCLUDE_DIRS ${INCLUDE_DIRS} PARENT_SCOPE)
 
 if(WITH_AVS_BUFFER AND WITH_AVS_NET)
     set(SOURCES ${SOURCES}
-        src/net.c
+        src/stream_net.c
         src/netbuf.c)
     set(PUBLIC_HEADERS ${PUBLIC_HEADERS}
-        include_public/avsystem/commons/stream/net.h
+        include_public/avsystem/commons/stream/stream_net.h
         include_public/avsystem/commons/stream/netbuf.h)
     set(INCLUDE_DIRS ${INCLUDE_DIRS}
         ../buffer/include_public
@@ -49,9 +49,9 @@ if(WITH_AVS_BUFFER AND WITH_AVS_NET)
 endif()
 
 if(WITH_OPENSSL)
-    set(SOURCES ${SOURCES} src/openssl.c)
+    set(SOURCES ${SOURCES} src/stream_openssl.c)
 elseif(WITH_MBEDTLS)
-    set(SOURCES ${SOURCES} src/mbedtls.c)
+    set(SOURCES ${SOURCES} src/stream_mbedtls.c)
 else()
     set(SOURCES ${SOURCES} src/md5_impl.c)
 endif()

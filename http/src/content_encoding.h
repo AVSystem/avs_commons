@@ -17,7 +17,7 @@
 #ifndef AVS_COMMONS_HTTP_CONTENT_ENCODING_H
 #define AVS_COMMONS_HTTP_CONTENT_ENCODING_H
 
-#include "stream.h"
+#include "http_stream.h"
 
 VISIBILITY_PRIVATE_HEADER_BEGIN
 

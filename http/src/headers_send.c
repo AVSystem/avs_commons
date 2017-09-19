@@ -14,16 +14,16 @@
  * limitations under the License.
  */
 
-#include <config.h>
+#include <avs_commons_config.h>
 
 #include <string.h>
 
-#include <avsystem/commons/stream/net.h>
+#include <avsystem/commons/stream/stream_net.h>
 #include <avsystem/commons/utils.h>
 
 #include "client.h"
 #include "headers.h"
-#include "log.h"
+#include "http_log.h"
 
 VISIBILITY_SOURCE_BEGIN
 

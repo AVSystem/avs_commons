@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include <config.h>
+#include <avs_commons_config.h>
 
 #include <avsystem/commons/stream_v_table.h>
 
@@ -22,7 +22,7 @@
 
 #include "client.h"
 #include "content_encoding.h"
-#include "log.h"
+#include "http_log.h"
 
 VISIBILITY_SOURCE_BEGIN
 

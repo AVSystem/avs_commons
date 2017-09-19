@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-#include <config.h>
-#include <posix-config.h>
+#include <avs_commons_config.h>
+#include <avs_commons_posix_config.h>
 
 #include <string.h>
 
 #include "client.h"
-#include "log.h"
+#include "http_log.h"
 
 VISIBILITY_SOURCE_BEGIN
 

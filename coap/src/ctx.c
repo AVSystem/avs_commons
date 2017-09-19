@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#include <config.h>
-#include <posix-config.h>
+#include <avs_commons_config.h>
+#include <avs_commons_posix_config.h>
 
 #include <avsystem/commons/coap/ctx.h>
 #include <avsystem/commons/coap/msg_builder.h>
@@ -27,7 +27,7 @@
 
 #include <avsystem/commons/list.h>
 
-#include "log.h"
+#include "coap_log.h"
 #include "msg_cache.h"
 
 VISIBILITY_SOURCE_BEGIN

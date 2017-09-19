@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#include <config.h>
-#include <posix-config.h>
+#include <avs_commons_config.h>
+#include <avs_commons_posix_config.h>
 
 #include <assert.h>
 #include <stdbool.h>
@@ -26,7 +26,7 @@
 #include <avsystem/commons/utils.h>
 
 #include "compat.h"
-#include "net.h"
+#include "net_impl.h"
 
 VISIBILITY_SOURCE_BEGIN
 
