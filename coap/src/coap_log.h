@@ -17,8 +17,6 @@
 #ifndef AVS_COAP_LOG_H
 #define AVS_COAP_LOG_H
 
-#include <avsystem/commons/log.h>
-
 #define MODULE_NAME avs_coap
 #include <x_log_config.h>
 
