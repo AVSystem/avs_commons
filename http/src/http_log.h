@@ -17,8 +17,6 @@
 #ifndef AVS_COMMONS_HTTP_LOG_H
 #define AVS_COMMONS_HTTP_LOG_H
 
-#include <avsystem/commons/log.h>
-
 #define MODULE_NAME avs_http
 #include <x_log_config.h>
 
