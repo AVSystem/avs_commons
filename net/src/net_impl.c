@@ -773,7 +773,7 @@ static int get_requested_family(avs_net_socket_t *net_socket,
                                 preferred_family_mode_t preferred_family_mode) {
     switch (net_socket->configuration.address_family) {
     case AVS_NET_AF_UNSPEC:
-        // If we only have "soft" family preference,
+        // If we only have "soft" family preference,
         // use it as the preferred one, and later try the "opposite" setting
         switch (preferred_family_mode) {
         case PREFERRED_FAMILY_ONLY:
