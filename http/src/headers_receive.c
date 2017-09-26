@@ -173,7 +173,7 @@ static int http_receive_headers_internal(header_parser_state_t *state) {
         LOG(ERROR, "Bad HTTP headline: %s", header);
         goto http_receive_headers_error;
     }
-    LOG(TRACE, "Received HTTP headline, status == %d", stream->status);
+    LOG(TRACE, "Received HTTP headline, status == %d", state->stream->status);
     /* handle headers */
     while (1) {
         const char *value = NULL;
@@ -290,7 +290,7 @@ int _avs_http_receive_headers(http_stream_t *stream) {
     bool skip_100_continue = !stream->flags.chunked_sending;
 
     LOG(TRACE, "receiving headers, %sskipping 100 Continue",
-              skip_100_continue ? "" : "NOT ");
+        skip_100_continue ? "" : "NOT ");
     do {
         header_parser_state_t parser_state = {
             .stream = stream
