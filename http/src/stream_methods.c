@@ -367,8 +367,9 @@ int avs_http_open_stream(avs_stream_abstract_t **out,
     LOG(TRACE, "avs_http_open_stream, method == %d, encoding == %d, "
                "protocol == %s, host == %s, port == %s, path == %s, "
                "auth_username == %s, auth_password == %s",
-             (int) method, (int) encoding, url->protocol, url->host, url->port,
-             url->path, auth_username, auth_password);
+             (int) method, (int) encoding, avs_url_protocol(url),
+             avs_url_host(url), avs_url_port(url),
+             avs_url_path(url), auth_username, auth_password);
 
     stream = (http_stream_t *) calloc(
             1,
