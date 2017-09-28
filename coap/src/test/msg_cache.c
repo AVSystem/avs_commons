@@ -41,12 +41,12 @@ static avs_coap_msg_t *setup_msg_with_id(void *buffer,
     return msg;
 }
 
-static struct timespec MOCK_CLOCK = { 0, 0 };
+static avs_time_realtime_t MOCK_CLOCK = { 0, 0 };
 
-static void clock_advance(const struct timespec *t) {
-    AVS_UNIT_ASSERT_TRUE(avs_time_is_valid(&MOCK_CLOCK));
-    AVS_UNIT_ASSERT_TRUE(avs_time_is_valid(t));
-    MOCK_CLOCK = avs_time_add(&MOCK_CLOCK, t);
+static void clock_advance(avs_time_duration_t t) {
+    AVS_UNIT_ASSERT_TRUE(avs_time_realtime_valid(MOCK_CLOCK));
+    AVS_UNIT_ASSERT_TRUE(avs_time_duration_valid(t));
+    MOCK_CLOCK = avs_time_realtime_add(MOCK_CLOCK, t);
 }
 
 /**
@@ -55,8 +55,10 @@ static void clock_advance(const struct timespec *t) {
  */
 int clock_gettime(clockid_t clock, struct timespec *t) {
     (void) clock;
-    *t = MOCK_CLOCK;
-    MOCK_CLOCK = avs_time_add(&MOCK_CLOCK, &(const struct timespec) { 0, 1 });
+    t->tv_sec = (time_t) MOCK_CLOCK.seconds;
+    t->tv_nsec = MOCK_CLOCK.nanoseconds;
+    MOCK_CLOCK = avs_time_realtime_add(
+            MOCK_CLOCK, avs_time_duration_from_scalar(1, AVS_TIME_NS));
     return 0;
 }
 
@@ -128,7 +130,7 @@ AVS_UNIT_TEST(coap_msg_cache, hit_expired) {
 
     AVS_UNIT_ASSERT_SUCCESS(
             _avs_coap_msg_cache_add(cache, "host", "port", msg, &tx_params));
-    clock_advance(&(struct timespec){ 247, 0 });
+    clock_advance(avs_time_duration_from_scalar(247, AVS_TIME_S));
 
     // request expired message existing in cache
     AVS_UNIT_ASSERT_NULL(_avs_coap_msg_cache_get(cache, "host", "port", id));
@@ -187,7 +189,7 @@ AVS_UNIT_TEST(coap_msg_cache, add_existing_expired) {
     // replacing existing expired cached messages is not allowed
     AVS_UNIT_ASSERT_SUCCESS(
             _avs_coap_msg_cache_add(cache, "host", "port", msg, &tx_params));
-    clock_advance(&(struct timespec){ 247, 0 });
+    clock_advance(avs_time_duration_from_scalar(247, AVS_TIME_S));
     AVS_UNIT_ASSERT_SUCCESS(
             _avs_coap_msg_cache_add(cache, "host", "port", msg, &tx_params));
 

@@ -144,8 +144,7 @@ extern const avs_time_duration_t AVS_TIME_DURATION_INVALID;
  *         @ref avs_time_realtime_valid returns false, the result is always
  *         false.
  */
-bool avs_time_realtime_before(const avs_time_realtime_t *a,
-                              const avs_time_realtime_t *b);
+bool avs_time_realtime_before(avs_time_realtime_t a, avs_time_realtime_t b);
 
 /**
  * @return True if <c>a</c> is an earlier point in time than <c>b</c>, false
@@ -153,8 +152,7 @@ bool avs_time_realtime_before(const avs_time_realtime_t *a,
  *         @ref avs_time_monotonic_valid returns false, the result is always
  *         false.
  */
-bool avs_time_monotonic_before(const avs_time_monotonic_t *a,
-                               const avs_time_monotonic_t *b);
+bool avs_time_monotonic_before(avs_time_monotonic_t a, avs_time_monotonic_t b);
 
 /**
  * @return True if <c>a</c> is a smaller duration than <c>b</c>, false
@@ -162,29 +160,28 @@ bool avs_time_monotonic_before(const avs_time_monotonic_t *a,
  *         @ref avs_time_duration_valid returns false, the result is always
  *         false.
  */
-bool avs_time_duration_less(const avs_time_duration_t *a,
-                            const avs_time_duration_t *b);
+bool avs_time_duration_less(avs_time_duration_t a, avs_time_duration_t b);
 
 /**
  * Checks whether the argument specifies a valid point in time. Any value that
  * has out-of-range nanoseconds component is treated as invalid time, with
  * semantics similar to the handling of NaN in floating-point arithmetic.
  */
-bool avs_time_realtime_valid(const avs_time_realtime_t *t);
+bool avs_time_realtime_valid(avs_time_realtime_t t);
 
 /**
  * Checks whether the argument specifies a valid point in time. Any value that
  * has out-of-range nanoseconds component is treated as invalid time, with
  * semantics similar to the handling of NaN in floating-point arithmetic.
  */
-bool avs_time_monotonic_valid(const avs_time_monotonic_t *t);
+bool avs_time_monotonic_valid(avs_time_monotonic_t t);
 
 /**
  * Checks whether the argument specifies a valid duration. Any value that has
  * out-of-range nanoseconds component is treated as invalid time, with semantics
  * similar to the handling of NaN in floating-point arithmetic.
  */
-bool avs_time_duration_valid(const avs_time_duration_t *t);
+bool avs_time_duration_valid(avs_time_duration_t t);
 
 /**
  * Adds a duration to a realtime instant.
@@ -195,8 +192,8 @@ bool avs_time_duration_valid(const avs_time_duration_t *t);
  * @return Sum value, or an invalid time value if any of the terms is an invalid
  *         time value.
  */
-avs_time_realtime_t avs_time_realtime_add(const avs_time_realtime_t *a,
-                                          const avs_time_duration_t *b);
+avs_time_realtime_t avs_time_realtime_add(avs_time_realtime_t a,
+                                          avs_time_duration_t b);
 
 /**
  * Adds a duration to a monotonic instant.
@@ -207,8 +204,8 @@ avs_time_realtime_t avs_time_realtime_add(const avs_time_realtime_t *a,
  * @return Sum value, or an invalid time value if any of the terms is an invalid
  *         time value.
  */
-avs_time_monotonic_t avs_time_monotonic_add(const avs_time_monotonic_t *a,
-                                            const avs_time_duration_t *b);
+avs_time_monotonic_t avs_time_monotonic_add(avs_time_monotonic_t a,
+                                            avs_time_duration_t b);
 
 /**
  * Adds two time durations.
@@ -219,8 +216,8 @@ avs_time_monotonic_t avs_time_monotonic_add(const avs_time_monotonic_t *a,
  * @return Sum value, or an invalid time value if any of the terms is an invalid
  *         time value.
  */
-avs_time_duration_t avs_time_duration_add(const avs_time_duration_t *a,
-                                          const avs_time_duration_t *b);
+avs_time_duration_t avs_time_duration_add(avs_time_duration_t a,
+                                          avs_time_duration_t b);
 
 /**
  * Calculates a duration between two realtime instants.
@@ -232,8 +229,8 @@ avs_time_duration_t avs_time_duration_add(const avs_time_duration_t *a,
  *         arguments is an invalid time value.
  */
 avs_time_duration_t
-avs_time_realtime_diff(const avs_time_realtime_t *minuend,
-                       const avs_time_realtime_t *subtrahend);
+avs_time_realtime_diff(avs_time_realtime_t minuend,
+                       avs_time_realtime_t subtrahend);
 
 /**
  * Calculates a duration between two monotonic instants.
@@ -245,8 +242,8 @@ avs_time_realtime_diff(const avs_time_realtime_t *minuend,
  *         arguments is an invalid time value.
  */
 avs_time_duration_t
-avs_time_monotonic_diff(const avs_time_monotonic_t *minuend,
-                        const avs_time_monotonic_t *subtrahend);
+avs_time_monotonic_diff(avs_time_monotonic_t minuend,
+                        avs_time_monotonic_t subtrahend);
 
 /**
  * Calculates a difference between two durations.
@@ -258,8 +255,8 @@ avs_time_monotonic_diff(const avs_time_monotonic_t *minuend,
  *         arguments is an invalid time value.
  */
 avs_time_duration_t
-avs_time_duration_diff(const avs_time_duration_t *minuend,
-                       const avs_time_duration_t *subtrahend);
+avs_time_duration_diff(avs_time_duration_t minuend,
+                       avs_time_duration_t subtrahend);
 
 /**
  * Converts a realtime instant into a scalar value relative to January 1, 1970,
@@ -272,7 +269,7 @@ avs_time_duration_diff(const avs_time_duration_t *minuend,
  * @return 0 for success, or -1 if <c>value</c> is not a valid time value.
  */
 int avs_time_realtime_to_scalar(int64_t *out, avs_time_unit_t unit,
-                                const avs_time_realtime_t *value);
+                                avs_time_realtime_t value);
 
 /**
  * Converts a monotonic instant into a scalar value relative to some unspecified
@@ -285,7 +282,7 @@ int avs_time_realtime_to_scalar(int64_t *out, avs_time_unit_t unit,
  * @return 0 for success, or -1 if <c>value</c> is not a valid time value.
  */
 int avs_time_monotonic_to_scalar(int64_t *out, avs_time_unit_t unit,
-                                 const avs_time_monotonic_t *value);
+                                 avs_time_monotonic_t value);
 
 /**
  * Converts a time duration into a scalar value.
@@ -297,7 +294,7 @@ int avs_time_monotonic_to_scalar(int64_t *out, avs_time_unit_t unit,
  * @return 0 for success, or -1 if <c>value</c> is not a valid time value.
  */
 int avs_time_duration_to_scalar(int64_t *out, avs_time_unit_t unit,
-                                const avs_time_duration_t *value);
+                                avs_time_duration_t value);
 
 /**
  * Creates a realtime instant based on a scalar value.
@@ -305,7 +302,8 @@ int avs_time_duration_to_scalar(int64_t *out, avs_time_unit_t unit,
  * @param value Number of <c>unit</c>s since January 1, 1970, midnight UTC.
  * @param unit  Time unit the <c>value</c> is expressed in.
  *
- * @return Converted value.
+ * @return Converted value. or an invalid time value if <c>value</c> is out of
+ *         range for a given <c>unit</c>.
  */
 avs_time_realtime_t avs_time_realtime_from_scalar(int64_t value,
                                                   avs_time_unit_t unit);
@@ -318,7 +316,8 @@ avs_time_realtime_t avs_time_realtime_from_scalar(int64_t value,
  *              reboot.
  * @param unit  Time unit the <c>value</c> is expressed in.
  *
- * @return Converted value.
+ * @return Converted value. or an invalid time value if <c>value</c> is out of
+ *         range for a given <c>unit</c>.
  */
 avs_time_monotonic_t avs_time_monotonic_from_scalar(int64_t value,
                                                     avs_time_unit_t unit);
@@ -329,7 +328,8 @@ avs_time_monotonic_t avs_time_monotonic_from_scalar(int64_t value,
  * @param value Number of <c>unit</c>s in the duration.
  * @param unit  Time unit the <c>value</c> is expressed in.
  *
- * @return Converted value.
+ * @return Converted value. or an invalid time value if <c>value</c> is out of
+ *         range for a given <c>unit</c>.
  */
 avs_time_duration_t avs_time_duration_from_scalar(int64_t value,
                                                   avs_time_unit_t unit);
@@ -343,7 +343,7 @@ avs_time_duration_t avs_time_duration_from_scalar(int64_t value,
  * @return Multiplication result, or an invalid time value if <c>input</c> is an
  *         invalid time value.
  */
-avs_time_duration_t avs_time_duration_mul(const avs_time_duration_t *input,
+avs_time_duration_t avs_time_duration_mul(avs_time_duration_t input,
                                           int32_t multiplier);
 
 /**
@@ -355,7 +355,7 @@ avs_time_duration_t avs_time_duration_mul(const avs_time_duration_t *input,
  * @return Division result, or an invalid time value if either <c>input</c> is
  *         an invalid time value, or <c>divisor</c> is 0.
  */
-avs_time_duration_t avs_time_duration_div(const avs_time_duration_t *input,
+avs_time_duration_t avs_time_duration_div(avs_time_duration_t input,
                                           int32_t divisor);
 
 /**

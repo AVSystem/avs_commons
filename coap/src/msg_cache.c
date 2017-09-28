@@ -201,7 +201,7 @@ static const avs_coap_msg_t *entry_msg(const cache_entry_t *entry) {
 
 static bool entry_expired(const cache_entry_t *entry,
                           const avs_time_monotonic_t *now) {
-    return avs_time_monotonic_before(&entry->expiration_time, now);
+    return avs_time_monotonic_before(entry->expiration_time, *now);
 }
 
 /* returns total size of avs_coap_msg_t, including length field
@@ -329,7 +329,7 @@ int _avs_coap_msg_cache_add(coap_msg_cache_t *cache,
     const avs_time_duration_t exchange_lifetime =
             avs_coap_exchange_lifetime(tx_params);
     avs_time_monotonic_t expiration_time =
-            avs_time_monotonic_add(&now, &exchange_lifetime);
+            avs_time_monotonic_add(now, exchange_lifetime);
 
     cache_put_entry(cache, &expiration_time, ep, msg);
     return 0;

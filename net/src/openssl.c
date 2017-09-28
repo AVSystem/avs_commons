@@ -315,9 +315,9 @@ static avs_net_timeout_t adjust_receive_timeout(ssl_socket_t *sock) {
     if (sock->next_deadline.seconds >= 0) {
         avs_time_realtime_t now = avs_time_realtime_now();
         avs_time_duration_t timeout =
-                avs_time_realtime_diff(&sock->next_deadline, &now);
+                avs_time_realtime_diff(sock->next_deadline, now);
         int64_t timeout_ms;
-        if (!avs_time_duration_to_scalar(&timeout_ms, AVS_TIME_MS, &timeout)
+        if (!avs_time_duration_to_scalar(&timeout_ms, AVS_TIME_MS, timeout)
                 && (socket_timeout <= 0 || socket_timeout > timeout_ms)) {
             set_socket_timeout(sock->backend_socket,
                                (avs_net_timeout_t) timeout_ms);
@@ -366,11 +366,11 @@ static int avs_bio_gets(BIO *bio, char *buffer, int size) {
 #ifdef WITH_DTLS
 static int compare_durations(const avs_time_duration_t *left,
                              const avs_time_duration_t *right) {
-    assert(avs_time_duration_valid(left));
-    assert(avs_time_duration_valid(right));
-    if (avs_time_duration_less(left, right)) {
+    assert(avs_time_duration_valid(*left));
+    assert(avs_time_duration_valid(*right));
+    if (avs_time_duration_less(*left, *right)) {
         return -1;
-    } else if (avs_time_duration_less(right, left)) {
+    } else if (avs_time_duration_less(*right, *left)) {
         return 1;
     } else {
         return 0;
@@ -418,7 +418,7 @@ static long avs_bio_ctrl(BIO *bio, int command, long intarg, void *ptrarg) {
             next_timeout = avs_time_duration_from_scalar(
                     sock->dtls_handshake_timeouts.max_ms, AVS_TIME_MS);
         }
-        sock->next_deadline = avs_time_realtime_add(&now, &next_timeout);
+        sock->next_deadline = avs_time_realtime_add(now, next_timeout);
         return 0;
     }
     case BIO_CTRL_DGRAM_GET_SEND_TIMER_EXP:
