@@ -66,7 +66,7 @@ int32_t avs_coap_exchange_lifetime_ms(const avs_coap_tx_params_t *tx_params);
  * @returns EXCHANGE_LIFETIME value derived from @p tx_params according
  *          to the formula specified in RFC7252.
  */
-struct timespec
+avs_time_duration_t
 avs_coap_exchange_lifetime(const avs_coap_tx_params_t *tx_params);
 
 /**
@@ -79,7 +79,7 @@ int32_t avs_coap_max_transmit_span_ms(const avs_coap_tx_params_t *tx_params);
  * @returns MAX_TRANSMIT_SPAN value derived from @p tx_params according
  *          to the formula specified in RFC7252.
  */
-struct timespec
+avs_time_duration_t
 avs_coap_max_transmit_span(const avs_coap_tx_params_t *tx_params);
 
 /** Maximum time the client can wait for a Separate Response */

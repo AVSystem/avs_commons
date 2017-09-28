@@ -64,9 +64,10 @@ avs_coap_exchange_lifetime_ms(const avs_coap_tx_params_t *tx_params) {
                     tx_params->ack_random_factor + 1.0)) + 200000;
 }
 
-struct timespec
+avs_time_duration_t
 avs_coap_exchange_lifetime(const avs_coap_tx_params_t *tx_params) {
-    return avs_time_from_ms(avs_coap_exchange_lifetime_ms(tx_params));
+    return avs_time_duration_from_scalar(
+            avs_coap_exchange_lifetime_ms(tx_params), AVS_TIME_MS);
 }
 
 int32_t
@@ -76,9 +77,10 @@ avs_coap_max_transmit_span_ms(const avs_coap_tx_params_t *tx_params) {
                      * tx_params->ack_random_factor);
 }
 
-struct timespec
+avs_time_duration_t
 avs_coap_max_transmit_span(const avs_coap_tx_params_t *tx_params) {
-    return avs_time_from_ms(avs_coap_max_transmit_span_ms(tx_params));
+    return avs_time_duration_from_scalar(
+            avs_coap_max_transmit_span_ms(tx_params), AVS_TIME_MS);
 }
 
 #if AVS_RAND_MAX >= UINT32_MAX
