@@ -34,6 +34,7 @@ VISIBILITY_SOURCE_BEGIN
 const avs_time_realtime_t AVS_TIME_REALTIME_INVALID = AVS_TIME_INVALID_DECL;
 const avs_time_monotonic_t AVS_TIME_MONOTONIC_INVALID = AVS_TIME_INVALID_DECL;
 const avs_time_duration_t AVS_TIME_DURATION_INVALID = AVS_TIME_INVALID_DECL;
+const avs_time_duration_t AVS_TIME_DURATION_ZERO = { 0, 0 };
 
 #define DEFINE_TIME_LESS(Type, Action) \
 bool Type##_##Action (Type##_t a, Type##_t b) { \

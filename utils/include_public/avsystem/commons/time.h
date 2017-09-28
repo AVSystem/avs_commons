@@ -139,6 +139,11 @@ extern const avs_time_monotonic_t AVS_TIME_MONOTONIC_INVALID;
 extern const avs_time_duration_t AVS_TIME_DURATION_INVALID;
 
 /**
+ * Duration of zero length;
+ */
+extern const avs_time_duration_t AVS_TIME_DURATION_ZERO;
+
+/**
  * @return True if <c>a</c> is an earlier point in time than <c>b</c>, false
  *         otherwise. Note that if for either of the arguments
  *         @ref avs_time_realtime_valid returns false, the result is always
