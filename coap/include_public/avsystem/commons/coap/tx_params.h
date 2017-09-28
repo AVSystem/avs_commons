@@ -57,6 +57,13 @@ bool avs_coap_tx_params_valid(const avs_coap_tx_params_t *tx_params,
 int32_t avs_coap_max_transmit_wait_ms(const avs_coap_tx_params_t *tx_params);
 
 /**
+ * @returns MAX_TRANSMIT_WAIT value derived from @p tx_params according to the
+ *          formula specified in RFC7252.
+ */
+avs_time_duration_t
+avs_coap_max_transmit_wait(const avs_coap_tx_params_t *tx_params);
+
+/**
  * @returns EXCHANGE_LIFETIME value in milliseconds derived from @p tx_params
  *          according to the formula specified in RFC7252.
  */

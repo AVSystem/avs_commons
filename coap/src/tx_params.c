@@ -57,6 +57,12 @@ avs_coap_max_transmit_wait_ms(const avs_coap_tx_params_t *tx_params) {
                     tx_params->ack_random_factor);
 }
 
+avs_time_duration_t
+avs_coap_max_transmit_wait(const avs_coap_tx_params_t *tx_params) {
+    return avs_time_duration_from_scalar(
+            avs_coap_max_transmit_wait_ms(tx_params), AVS_TIME_MS);
+}
+
 int32_t
 avs_coap_exchange_lifetime_ms(const avs_coap_tx_params_t *tx_params) {
     return (int32_t) (tx_params->ack_timeout_ms *
