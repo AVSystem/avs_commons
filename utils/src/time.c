@@ -17,8 +17,9 @@
 #include <avs_commons_config.h>
 #include <avs_commons_posix_config.h>
 
-#include <time.h>
 #include <assert.h>
+#include <math.h>
+#include <time.h>
 
 #include <avsystem/commons/time.h>
 
@@ -342,6 +343,64 @@ avs_time_duration_t avs_time_duration_mul(avs_time_duration_t input,
         }
 
         assert(avs_time_duration_valid(result));
+        return result;
+    }
+}
+
+static bool double_is_int64(double value) {
+    static const double DOUBLE_2_63 = 2.0 * (double) (((int64_t) 1) << 62);
+#if INT64_MIN == -INT64_MAX
+    // signed magnitude or U1; max == -min == 2^63 - 1
+    return value > -DOUBLE_2_63 && value < DOUBLE_2_63;
+#else
+    // U2; max == 2^63 - 1; min == -2^63
+    return value >= -DOUBLE_2_63 && value < DOUBLE_2_63;
+#endif
+    // note that the largest value representable as IEEE 754 double that is
+    // smaller than 2^63 is actually 2^63 - 1024
+}
+
+avs_time_duration_t avs_time_duration_fmul(avs_time_duration_t input,
+                                           double multiplier) {
+    if (!avs_time_duration_valid(input) || !isfinite(multiplier)) {
+        return AVS_TIME_DURATION_INVALID;
+    } else {
+        double smul = (double) input.seconds * multiplier;
+        double nsmul = (double) input.nanoseconds * multiplier;
+        if (!isfinite(smul) || !isfinite(nsmul)) {
+            return AVS_TIME_DURATION_INVALID;
+        }
+
+        double smul_ns = fmod(smul, 1.0) * NS_IN_S;
+        smul = trunc(smul);
+
+        double nsmul_s = trunc(nsmul / NS_IN_S);
+        nsmul = fmod(nsmul, NS_IN_S);
+
+        double seconds = smul + nsmul_s;
+        if (!isfinite(seconds) || !double_is_int64(seconds)) {
+            return AVS_TIME_DURATION_INVALID;
+        }
+        avs_time_duration_t result = {
+            .seconds = (int64_t) seconds,
+            .nanoseconds = (int32_t) floor(smul_ns + nsmul + 0.5)
+        };
+        // result.nanoseconds is in [-2*10^9, 2*10^9]
+        // so we cannot use normalize(), which only works for [-10^9, 10^9 - 1]
+        while (result.nanoseconds < 0) {
+            if (result.seconds == INT64_MIN) {
+                return AVS_TIME_DURATION_INVALID;
+            }
+            result.nanoseconds += NS_IN_S;
+            --result.seconds;
+        }
+        while (result.nanoseconds >= NS_IN_S) {
+            if (result.seconds == INT64_MAX) {
+                return AVS_TIME_DURATION_INVALID;
+            }
+            result.nanoseconds -= NS_IN_S;
+            ++result.seconds;
+        }
         return result;
     }
 }

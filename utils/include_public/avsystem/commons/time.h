@@ -267,8 +267,6 @@ avs_time_monotonic_diff(avs_time_monotonic_t minuend,
                                   subtrahend.since_monotonic_epoch);
 }
 
-#warning "TODO: Convenience APIs for all units?"
-
 /**
  * Converts a time duration into a scalar value.
  *
@@ -359,7 +357,7 @@ avs_time_monotonic_from_scalar(int64_t value, avs_time_unit_t unit) {
 }
 
 /**
- * Multiplies a time duration by a scalar value.
+ * Multiplies a time duration by an integer scalar value.
  *
  * @param input      The time duration to multiply.
  * @param multiplier The multiplier.
@@ -369,6 +367,18 @@ avs_time_monotonic_from_scalar(int64_t value, avs_time_unit_t unit) {
  */
 avs_time_duration_t avs_time_duration_mul(avs_time_duration_t input,
                                           int32_t multiplier);
+
+/**
+ * Multiplies a time duration by a floating-point scalar value.
+ *
+ * @param input      The time duration to multiply.
+ * @param multiplier The multiplier.
+ *
+ * @return Multiplication result, or an invalid time value if <c>input</c> is an
+ *         invalid time value.
+ */
+avs_time_duration_t avs_time_duration_fmul(avs_time_duration_t input,
+                                           double multiplier);
 
 /**
  * Creates a time duration that is an integer fraction of another.

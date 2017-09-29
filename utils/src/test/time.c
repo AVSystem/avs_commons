@@ -268,6 +268,28 @@ AVS_UNIT_TEST(time, time_mul) {
     AVS_UNIT_ASSERT_FALSE(avs_time_duration_valid(duration));
 }
 
+AVS_UNIT_TEST(time, fmul) {
+    avs_time_duration_t duration = avs_time_duration_fmul(
+            (avs_time_duration_t) { 123, 456789876 }, 1.5);
+    AVS_UNIT_ASSERT_EQUAL(duration.seconds, 185);
+    AVS_UNIT_ASSERT_EQUAL(duration.nanoseconds, 185184814);
+
+    duration = avs_time_duration_fmul(
+            (avs_time_duration_t) { -124, 543210124 }, 1.5);
+    AVS_UNIT_ASSERT_EQUAL(duration.seconds, -186);
+    AVS_UNIT_ASSERT_EQUAL(duration.nanoseconds, 814815186);
+
+    duration = avs_time_duration_fmul(
+            (avs_time_duration_t) { 123, 456789876 }, -1.5);
+    AVS_UNIT_ASSERT_EQUAL(duration.seconds, -186);
+    AVS_UNIT_ASSERT_EQUAL(duration.nanoseconds, 814815186);
+
+    duration = avs_time_duration_fmul(
+            (avs_time_duration_t) { -124, 543210124 }, -1.5);
+    AVS_UNIT_ASSERT_EQUAL(duration.seconds, 185);
+    AVS_UNIT_ASSERT_EQUAL(duration.nanoseconds, 185184814);
+}
+
 AVS_UNIT_TEST(time, div) {
     avs_time_duration_t value = { 1, 10 };
     value = avs_time_duration_div(value, 2);
