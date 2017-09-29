@@ -243,7 +243,7 @@ typedef struct {
     size_t last_data_read;
 
     bool recv_timeout_enabled;
-    int recv_timeout_ms;
+    avs_time_duration_t recv_timeout;
 
     bool inner_mtu_enabled;
     int inner_mtu;
@@ -632,7 +632,7 @@ static int mock_get_opt(avs_net_abstract_socket_t *socket_,
 
     if (socket->recv_timeout_enabled
             && option_key == AVS_NET_SOCKET_OPT_RECV_TIMEOUT) {
-        out_option_value->recv_timeout = socket->recv_timeout_ms;
+        out_option_value->recv_timeout = socket->recv_timeout;
         return 0;
     }
 
@@ -673,7 +673,7 @@ static int mock_set_opt(avs_net_abstract_socket_t *socket_,
 
     if (socket->recv_timeout_enabled
             && option_key == AVS_NET_SOCKET_OPT_RECV_TIMEOUT) {
-        socket->recv_timeout_ms = option_value.recv_timeout;
+        socket->recv_timeout = option_value.recv_timeout;
         return 0;
     }
 
@@ -979,10 +979,10 @@ void avs_unit_mocksock_assert_expects_met__(avs_net_abstract_socket_t *socket_,
 
 void avs_unit_mocksock_enable_recv_timeout_getsetopt(
         avs_net_abstract_socket_t *socket_,
-        int default_timeout_ms) {
+        avs_time_duration_t default_timeout) {
     mocksock_t *socket = (mocksock_t *) socket_;
     socket->recv_timeout_enabled = true;
-    socket->recv_timeout_ms = default_timeout_ms;
+    socket->recv_timeout = default_timeout;
 }
 
 void avs_unit_mocksock_enable_inner_mtu_getopt(

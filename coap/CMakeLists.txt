@@ -47,7 +47,7 @@ set(avs_coap_INCLUDE_DIRS ${INCLUDE_DIRS} PARENT_SCOPE)
 include_directories(${INCLUDE_DIRS})
 add_avs_test(avs_coap ${ALL_SOURCES})
 
-if (WITH_AVS_UNIT)
+if(WITH_AVS_UNIT AND NOT EXISTS "${CMAKE_CURRENT_BINARY_DIR}/certs/client.crt.der")
     execute_process(COMMAND
                     "${CMAKE_CURRENT_SOURCE_DIR}/../tools/generate-certs.sh"
                     "${CMAKE_CURRENT_BINARY_DIR}/certs"

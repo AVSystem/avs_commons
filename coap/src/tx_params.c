@@ -23,11 +23,14 @@
 
 VISIBILITY_SOURCE_BEGIN
 
+const avs_time_duration_t AVS_COAP_SEPARATE_RESPONSE_TIMEOUT = { 30, 0 };
+
 bool avs_coap_tx_params_valid(const avs_coap_tx_params_t *tx_params,
                               const char **error_details) {
     // ACK_TIMEOUT below 1 second would violate the guidelines of [RFC5405].
     // -- RFC 7252, 4.8.1
-    if (tx_params->ack_timeout_ms < 1000) {
+    if (avs_time_duration_less(tx_params->ack_timeout,
+                               avs_time_duration_from_scalar(1, AVS_TIME_S))) {
         if (error_details) {
             *error_details = "ACK_TIMEOUT below 1000 milliseconds";
         }
@@ -50,60 +53,47 @@ bool avs_coap_tx_params_valid(const avs_coap_tx_params_t *tx_params,
     return true;
 }
 
-int32_t
-avs_coap_max_transmit_wait_ms(const avs_coap_tx_params_t *tx_params) {
-    return (int32_t) (tx_params->ack_timeout_ms *
-            ((1 << (tx_params->max_retransmit + 1)) - 1) *
-                    tx_params->ack_random_factor);
-}
-
 avs_time_duration_t
 avs_coap_max_transmit_wait(const avs_coap_tx_params_t *tx_params) {
-    return avs_time_duration_from_scalar(
-            avs_coap_max_transmit_wait_ms(tx_params), AVS_TIME_MS);
-}
-
-int32_t
-avs_coap_exchange_lifetime_ms(const avs_coap_tx_params_t *tx_params) {
-    return (int32_t) (tx_params->ack_timeout_ms *
-            (((1 << tx_params->max_retransmit) - 1) *
-                    tx_params->ack_random_factor + 1.0)) + 200000;
+    return avs_time_duration_fmul(tx_params->ack_timeout,
+                                  ((1 << (tx_params->max_retransmit + 1)) - 1)
+                                          * tx_params->ack_random_factor);
 }
 
 avs_time_duration_t
 avs_coap_exchange_lifetime(const avs_coap_tx_params_t *tx_params) {
-    return avs_time_duration_from_scalar(
-            avs_coap_exchange_lifetime_ms(tx_params), AVS_TIME_MS);
-}
-
-int32_t
-avs_coap_max_transmit_span_ms(const avs_coap_tx_params_t *tx_params) {
-    return (int32_t)((double)tx_params->ack_timeout_ms
-                     * (double)((1 << tx_params->max_retransmit) - 1)
-                     * tx_params->ack_random_factor);
+    return avs_time_duration_add(
+            avs_time_duration_fmul(tx_params->ack_timeout,
+                                   ((1 << tx_params->max_retransmit) - 1) *
+                                           tx_params->ack_random_factor + 1.0),
+            avs_time_duration_from_scalar(20, AVS_TIME_S));
 }
 
 avs_time_duration_t
 avs_coap_max_transmit_span(const avs_coap_tx_params_t *tx_params) {
-    return avs_time_duration_from_scalar(
-            avs_coap_max_transmit_span_ms(tx_params), AVS_TIME_MS);
+    return avs_time_duration_fmul(tx_params->ack_timeout,
+                                  (double)((1 << tx_params->max_retransmit) - 1)
+                                          * tx_params->ack_random_factor);
 }
 
-#if AVS_RAND_MAX >= UINT32_MAX
-#define RAND32_ITERATIONS 1
-#elif AVS_RAND_MAX >= UINT16_MAX
-#define RAND32_ITERATIONS 2
-#else
-/* standard guarantees RAND_MAX to be at least 32767 */
-#define RAND32_ITERATIONS 3
+#if AVS_RAND_MAX >= INT64_MAX
+#define RAND63_ITERATIONS 1
+#elif AVS_RAND_MAX >= 3037000499
+#define RAND63_ITERATIONS 2
+#elif AVS_RAND_MAX >= ((2 << 21) - 1)
+#define RAND63_ITERATIONS 3
+#elif AVS_RAND_MAX >= 55108
+#define RAND63_ITERATIONS 4
+#else // if AVS_RAND_MAX >= 6208
+#define RAND63_ITERATIONS 5
 #endif
 
-static uint32_t rand32(unsigned *seed) {
-    uint32_t result = 0;
+static int64_t rand63(unsigned *seed) {
+    int64_t result = 0;
     int i;
-    for (i = 0; i < RAND32_ITERATIONS; ++i) {
-        result *= (uint32_t) AVS_RAND_MAX + 1;
-        result += (uint32_t) avs_rand_r(seed);
+    for (i = 0; i < RAND63_ITERATIONS; ++i) {
+        result *= (int64_t) AVS_RAND_MAX + 1;
+        result += (int64_t) avs_rand_r(seed);
     }
     return result;
 }
@@ -113,11 +103,21 @@ void avs_coap_update_retry_state(avs_coap_retry_state_t *retry_state,
                                  unsigned *rand_seed) {
     ++retry_state->retry_count;
     if (retry_state->retry_count == 1) {
-        uint32_t delta = (uint32_t) (tx_params->ack_timeout_ms *
-                (tx_params->ack_random_factor - 1.0));
-        retry_state->recv_timeout_ms = tx_params->ack_timeout_ms +
-                (int32_t) (rand32(rand_seed) % delta);
+        avs_time_duration_t delta =
+                avs_time_duration_fmul(tx_params->ack_timeout,
+                                       tx_params->ack_random_factor - 1.0);
+        int64_t delta_ns;
+        int err = avs_time_duration_to_scalar(&delta_ns, AVS_TIME_NS, delta);
+        (void) err;
+        assert(!err);
+        assert(delta_ns > 0);
+        retry_state->recv_timeout =
+                avs_time_duration_add(tx_params->ack_timeout,
+                                      avs_time_duration_from_scalar(
+                                              rand63(rand_seed) % delta_ns,
+                                              AVS_TIME_NS));
     } else {
-        retry_state->recv_timeout_ms *= 2;
+        retry_state->recv_timeout =
+                avs_time_duration_mul(retry_state->recv_timeout, 2);
     }
 }

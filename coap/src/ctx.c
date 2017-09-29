@@ -51,7 +51,7 @@ struct avs_coap_ctx {
 };
 
 static const avs_coap_tx_params_t DEFAULT_TX_PARAMS = {
-    .ack_timeout_ms = 2000,
+    .ack_timeout = { 2, 0 },
     .ack_random_factor = 1.5,
     .max_retransmit = 4
 };
@@ -373,15 +373,16 @@ void avs_coap_ctx_send_error(avs_coap_ctx_t *ctx,
 
 void avs_coap_ctx_send_service_unavailable(avs_coap_ctx_t *ctx,
                                            avs_net_abstract_socket_t *socket,
-                                           const avs_coap_msg_t *msg,
-                                           int32_t retry_after_ms) {
-    uint32_t ms_to_retry_after =
-        retry_after_ms >= 0 ? (uint32_t)retry_after_ms : 0;
+                                           const avs_coap_msg_t *request,
+                                           avs_time_duration_t retry_after) {
+    uint32_t s_to_retry_after = 0;
+    if (avs_time_duration_valid(retry_after)) {
+        s_to_retry_after = (uint32_t) AVS_MIN(
+                retry_after.seconds + (retry_after.nanoseconds > 0 ? 1 : 0),
+                (int64_t) UINT32_MAX);
+    }
 
-    // round up to nearest full second
-    uint32_t s_to_retry_after = (ms_to_retry_after + 999) / 1000;
-
-    send_response(ctx, socket, msg, AVS_COAP_CODE_SERVICE_UNAVAILABLE,
+    send_response(ctx, socket, request, AVS_COAP_CODE_SERVICE_UNAVAILABLE,
                   &s_to_retry_after);
 }
 

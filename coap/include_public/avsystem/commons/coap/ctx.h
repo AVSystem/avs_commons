@@ -201,14 +201,14 @@ void avs_coap_ctx_send_error(avs_coap_ctx_t *ctx,
 
 /**
  * Responds with a Service Unavailable messages, with Max-Age option set to
- * @p retry_after_ms converted to seconds.
+ * @p retry_after converted to seconds.
  *
- * @param ctx            CoAP context to operate on.
- * @param socket         Network socket to send the message through.
- * @param request        CoAP message that the error is intended to be a
- *                       response to.
- * @param retry_after_ms Code of the error to send, e.g.
- *                       <c>AVS_COAP_CODE_BAD_REQUEST</c>.
+ * @param ctx         CoAP context to operate on.
+ * @param socket      Network socket to send the message through.
+ * @param request     CoAP message that the error is intended to be a response
+ *                    to.
+ * @param retry_after Amount of time after which the remote endpoint shall
+ *                    repeat the request.
  *
  * @returns 0 on success, or a negative value (possibly one of the
  *          <c>AVS_COAP_CTX_ERR_*</c> constants) in case of error.
@@ -216,7 +216,7 @@ void avs_coap_ctx_send_error(avs_coap_ctx_t *ctx,
 void avs_coap_ctx_send_service_unavailable(avs_coap_ctx_t *ctx,
                                            avs_net_abstract_socket_t *socket,
                                            const avs_coap_msg_t *request,
-                                           int32_t retry_after_ms);
+                                           avs_time_duration_t retry_after);
 
 /**
  * @param ctx CoAP context to operate on.

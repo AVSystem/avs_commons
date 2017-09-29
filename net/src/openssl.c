@@ -295,32 +295,33 @@ static int avs_bio_write(BIO *bio, const char *data, int size) {
     }
 }
 
-static avs_net_timeout_t get_socket_timeout(avs_net_abstract_socket_t *sock) {
+static avs_time_duration_t get_socket_timeout(avs_net_abstract_socket_t *sock) {
     avs_net_socket_opt_value_t opt_value;
     if (avs_net_socket_get_opt(sock, AVS_NET_SOCKET_OPT_RECV_TIMEOUT, &opt_value)) {
-        return 0;
+        return AVS_TIME_DURATION_INVALID;
     }
     return opt_value.recv_timeout;
 }
 
 static void set_socket_timeout(avs_net_abstract_socket_t *sock,
-                               avs_net_timeout_t timeout) {
+                               avs_time_duration_t timeout) {
     avs_net_socket_opt_value_t opt_value;
     opt_value.recv_timeout = timeout;
     avs_net_socket_set_opt(sock, AVS_NET_SOCKET_OPT_RECV_TIMEOUT, opt_value);
 }
 
-static avs_net_timeout_t adjust_receive_timeout(ssl_socket_t *sock) {
-    avs_net_timeout_t socket_timeout = get_socket_timeout(sock->backend_socket);
+static avs_time_duration_t adjust_receive_timeout(ssl_socket_t *sock) {
+    avs_time_duration_t socket_timeout =
+            get_socket_timeout(sock->backend_socket);
     if (avs_time_real_valid(sock->next_deadline)) {
         avs_time_real_t now = avs_time_real_now();
         avs_time_duration_t timeout =
                 avs_time_real_diff(sock->next_deadline, now);
-        int64_t timeout_ms;
-        if (!avs_time_duration_to_scalar(&timeout_ms, AVS_TIME_MS, timeout)
-                && (socket_timeout <= 0 || socket_timeout > timeout_ms)) {
-            set_socket_timeout(sock->backend_socket,
-                               (avs_net_timeout_t) timeout_ms);
+        if (!avs_time_duration_valid(socket_timeout)
+                || avs_time_duration_less(socket_timeout,
+                                          AVS_TIME_DURATION_ZERO)
+                || avs_time_duration_less(timeout, socket_timeout)) {
+            set_socket_timeout(sock->backend_socket, timeout);
         }
     }
     return socket_timeout;
@@ -328,7 +329,7 @@ static avs_net_timeout_t adjust_receive_timeout(ssl_socket_t *sock) {
 
 static int avs_bio_read(BIO *bio, char *buffer, int size) {
     ssl_socket_t *sock = (ssl_socket_t *) BIO_get_data(bio);
-    avs_net_timeout_t prev_timeout = -1;
+    avs_time_duration_t prev_timeout = AVS_TIME_DURATION_INVALID;
     size_t read_bytes;
     int result;
     sock->error_code = 0;
@@ -376,13 +377,6 @@ static int compare_durations(const avs_time_duration_t *left,
         return 0;
     }
 }
-
-static int compare_duration_with_ms(const avs_time_duration_t *left,
-                                    avs_net_timeout_t right_ms) {
-    avs_time_duration_t right = avs_time_duration_from_scalar(right_ms,
-                                                              AVS_TIME_MS);
-    return compare_durations(left, &right);
-}
 #endif // WITH_DTLS
 
 static long avs_bio_ctrl(BIO *bio, int command, long intarg, void *ptrarg) {
@@ -409,14 +403,12 @@ static long avs_bio_ctrl(BIO *bio, int command, long intarg, void *ptrarg) {
             next_timeout.seconds--;
             next_timeout.nanoseconds += 1000000000;
         }
-        if (compare_duration_with_ms(
-                &next_timeout, sock->dtls_handshake_timeouts.min_ms) < 0) {
-            next_timeout = avs_time_duration_from_scalar(
-                    sock->dtls_handshake_timeouts.min_ms, AVS_TIME_MS);
-        } else if (compare_duration_with_ms(
-                &next_timeout, sock->dtls_handshake_timeouts.max_ms) > 0) {
-            next_timeout = avs_time_duration_from_scalar(
-                    sock->dtls_handshake_timeouts.max_ms, AVS_TIME_MS);
+        if (compare_durations(
+                &next_timeout, &sock->dtls_handshake_timeouts.min) < 0) {
+            next_timeout = sock->dtls_handshake_timeouts.min;
+        } else if (compare_durations(
+                &next_timeout, &sock->dtls_handshake_timeouts.max) > 0) {
+            next_timeout = sock->dtls_handshake_timeouts.max;
         }
         sock->next_deadline = avs_time_real_add(now, next_timeout);
         return 0;

@@ -20,7 +20,6 @@
 #include <assert.h>
 #include <stdint.h>
 
-
 #include <avsystem/commons/net.h>
 #include <avsystem/commons/time.h>
 
@@ -31,7 +30,7 @@ extern "C" {
 /** CoAP transmission params object. */
 typedef struct {
     /** RFC 7252: ACK_TIMEOUT */
-    avs_net_timeout_t ack_timeout_ms;
+    avs_time_duration_t ack_timeout;
     /** RFC 7252: ACK_RANDOM_FACTOR */
     double ack_random_factor;
     /** RFC 7252: MAX_RETRANSMIT */
@@ -51,23 +50,11 @@ bool avs_coap_tx_params_valid(const avs_coap_tx_params_t *tx_params,
                               const char **error_details);
 
 /**
- * @returns MAX_TRANSMIT_WAIT value in milliseconds derived from @p tx_params
- *          according to the formula specified in RFC7252.
- */
-int32_t avs_coap_max_transmit_wait_ms(const avs_coap_tx_params_t *tx_params);
-
-/**
  * @returns MAX_TRANSMIT_WAIT value derived from @p tx_params according to the
  *          formula specified in RFC7252.
  */
 avs_time_duration_t
 avs_coap_max_transmit_wait(const avs_coap_tx_params_t *tx_params);
-
-/**
- * @returns EXCHANGE_LIFETIME value in milliseconds derived from @p tx_params
- *          according to the formula specified in RFC7252.
- */
-int32_t avs_coap_exchange_lifetime_ms(const avs_coap_tx_params_t *tx_params);
 
 /**
  * @returns EXCHANGE_LIFETIME value derived from @p tx_params according
@@ -77,12 +64,6 @@ avs_time_duration_t
 avs_coap_exchange_lifetime(const avs_coap_tx_params_t *tx_params);
 
 /**
- * @returns MAX_TRANSMIT_SPAN value in milliseconds derived from @p tx_params
- *          according to the formula specified in RFC7252.
- */
-int32_t avs_coap_max_transmit_span_ms(const avs_coap_tx_params_t *tx_params);
-
-/**
  * @returns MAX_TRANSMIT_SPAN value derived from @p tx_params according
  *          to the formula specified in RFC7252.
  */
@@ -90,12 +71,12 @@ avs_time_duration_t
 avs_coap_max_transmit_span(const avs_coap_tx_params_t *tx_params);
 
 /** Maximum time the client can wait for a Separate Response */
-#define AVS_COAP_SEPARATE_RESPONSE_TIMEOUT_MS (30 * 1000)
+extern const avs_time_duration_t AVS_COAP_SEPARATE_RESPONSE_TIMEOUT;
 
 /** Retry state object used to calculate retransmission timeouts. */
 typedef struct {
     unsigned retry_count;
-    int32_t recv_timeout_ms;
+    avs_time_duration_t recv_timeout;
 } avs_coap_retry_state_t;
 
 /**

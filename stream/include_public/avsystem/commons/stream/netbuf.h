@@ -35,7 +35,7 @@ int avs_stream_netbuf_transfer(avs_stream_abstract_t *destination,
 int avs_stream_netbuf_out_buffer_left(avs_stream_abstract_t *str);
 
 void avs_stream_netbuf_set_recv_timeout(avs_stream_abstract_t *str,
-                                        avs_net_timeout_t timeout);
+                                        avs_time_duration_t timeout);
 
 #ifdef	__cplusplus
 }

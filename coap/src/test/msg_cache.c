@@ -27,7 +27,7 @@
     (offsetof(avs_coap_msg_t, content) + AVS_COAP_MSG_MIN_SIZE)
 
 static const avs_coap_tx_params_t tx_params = {
-    .ack_timeout_ms = 2000,
+    .ack_timeout = { 2, 0 },
     .ack_random_factor = 1.5,
     .max_retransmit = 4
 };

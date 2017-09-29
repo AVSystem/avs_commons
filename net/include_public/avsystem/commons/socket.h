@@ -23,6 +23,7 @@
 #include <stdlib.h>
 
 #include <avsystem/commons/defs.h>
+#include <avsystem/commons/time.h>
 
 #ifdef	__cplusplus
 extern "C" {
@@ -31,7 +32,8 @@ extern "C" {
 /* glibc's sockaddr_storage is 128 bytes long, we follow suit */
 #define AVS_NET_SOCKET_RAW_RESOLVED_ENDPOINT_MAX_SIZE 128
 
-#define AVS_NET_SOCKET_DEFAULT_RECV_TIMEOUT (30 * 1000) /* 30 sec timeout */
+/* 30 sec timeout */
+extern const avs_time_duration_t AVS_NET_SOCKET_DEFAULT_RECV_TIMEOUT;
 
 typedef struct {
     uint8_t size;
@@ -391,17 +393,9 @@ avs_net_security_info_t avs_net_security_info_from_psk(avs_net_psk_t psk);
 avs_net_security_info_t
 avs_net_security_info_from_certificates(avs_net_certificate_info_t info);
 
-#if INT_MAX >= INT_LEAST32_MAX
-typedef int avs_net_timeout_t;
-#define AVS_FORMAT_NET_TIMEOUT(Type, Letter) #Letter
-#else
-typedef int_least32_t avs_net_timeout_t;
-#define AVS_FORMAT_NET_TIMEOUT(Type, Letter) Type##Letter##LEAST32
-#endif
-
 typedef struct {
-    avs_net_timeout_t min_ms;
-    avs_net_timeout_t max_ms;
+    avs_time_duration_t min;
+    avs_time_duration_t max;
 } avs_net_dtls_handshake_timeouts_t;
 
 typedef struct {
@@ -487,7 +481,7 @@ typedef enum {
 } avs_net_socket_state_t;
 
 typedef union {
-    avs_net_timeout_t recv_timeout;
+    avs_time_duration_t recv_timeout;
     avs_net_socket_state_t state;
     avs_net_af_t addr_family;
     int mtu;

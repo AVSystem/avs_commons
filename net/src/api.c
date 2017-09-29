@@ -28,6 +28,8 @@
 
 VISIBILITY_SOURCE_BEGIN
 
+const avs_time_duration_t AVS_NET_SOCKET_DEFAULT_RECV_TIMEOUT = { 30, 0 };
+
 avs_net_client_cert_t
 avs_net_client_cert_from_file(const char *file,
                               const char *password,
@@ -651,8 +653,9 @@ static int get_opt_debug(avs_net_abstract_socket_t *debug_socket,
         fprintf(communication_log, "cannot get opt %d\n", option_key);
     } else {
         fprintf(communication_log, "get opt: %d, value: "
-                                   "%" AVS_FORMAT_NET_TIMEOUT(PRI, d) "\n",
-                option_key, out_option_value->recv_timeout);
+                                   "%" PRId64 ".%09" PRId32 "\n",
+                option_key, out_option_value->recv_timeout.seconds,
+                out_option_value->recv_timeout.nanoseconds);
     }
     return result;
 }
