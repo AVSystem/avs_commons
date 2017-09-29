@@ -108,7 +108,8 @@ static int avs_bio_recv(void *ctx, unsigned char *buf, size_t len,
     }
     new_timeout = orig_timeout;
     if (timeout_ms) {
-        new_timeout.recv_timeout = (avs_net_timeout_t) timeout_ms;
+        new_timeout.recv_timeout =
+                avs_time_duration_from_scalar(timeout_ms, AVS_TIME_MS);
     }
     avs_net_socket_set_opt(socket->backend_socket,
                            AVS_NET_SOCKET_OPT_RECV_TIMEOUT, new_timeout);
@@ -374,10 +375,20 @@ static int initialize_ssl_config(ssl_socket_t *socket) {
         assert(0 && "invalid enum value");
         return -1;
     }
-    mbedtls_ssl_conf_handshake_timeout(
-            &socket->config,
-            (uint32_t) socket->dtls_handshake_timeouts.min_ms,
-            (uint32_t) socket->dtls_handshake_timeouts.max_ms);
+
+    int64_t min_ms, max_ms;
+    if (avs_time_duration_to_scalar(&min_ms, AVS_TIME_MS,
+                                    socket->dtls_handshake_timeouts.min)
+            || avs_time_duration_to_scalar(&max_ms, AVS_TIME_MS,
+                                           socket->dtls_handshake_timeouts.max)
+            || min_ms < 0 || min_ms > UINT32_MAX
+            || max_ms < 0 || max_ms > UINT32_MAX) {
+        LOG(ERROR, "Invalid DTLS handshake timeouts");
+        socket->error_code = EINVAL;
+        return -1;
+    }
+    mbedtls_ssl_conf_handshake_timeout(&socket->config,
+                                       (uint32_t) min_ms, (uint32_t) max_ms);
 
     if (socket->additional_configuration_clb
             && socket->additional_configuration_clb(&socket->config)) {
