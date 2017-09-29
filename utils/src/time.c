@@ -24,6 +24,26 @@
 
 VISIBILITY_SOURCE_BEGIN
 
+// Check for builtin safe arithmetic functions
+
+#if defined(__has_builtin) // Clang, perhaps
+#if __has_builtin(__builtin_add_overflow)
+#define HAVE_BUILTIN_ADD_OVERFLOW
+#endif
+#if __has_builtin(__builtin_mul_overflow)
+#define HAVE_BUILTIN_MUL_OVERFLOW
+#endif
+#endif // defined(__has_builtin)
+
+#if __GNUC__ >= 5 // overflow arithmetic available since GCC 5.0
+#ifndef HAVE_BUILTIN_ADD_OVERFLOW
+#define HAVE_BUILTIN_ADD_OVERFLOW
+#endif
+#ifndef HAVE_BUILTIN_MUL_OVERFLOW
+#define HAVE_BUILTIN_MUL_OVERFLOW
+#endif
+#endif // !defined(HAVE_BUILTIN_MUL_OVERFLOW) && __GNUC__ >= 5
+
 #define NS_IN_S INT32_C(1000000000)
 
 #define AVS_TIME_INVALID_DECL { \
@@ -31,34 +51,33 @@ VISIBILITY_SOURCE_BEGIN
     .nanoseconds = -1 \
 }
 
-const avs_time_realtime_t AVS_TIME_REALTIME_INVALID = AVS_TIME_INVALID_DECL;
-const avs_time_monotonic_t AVS_TIME_MONOTONIC_INVALID = AVS_TIME_INVALID_DECL;
+const avs_time_real_t AVS_TIME_REAL_INVALID = {
+    .since_real_epoch = AVS_TIME_INVALID_DECL
+};
+const avs_time_monotonic_t AVS_TIME_MONOTONIC_INVALID = {
+    .since_monotonic_epoch = AVS_TIME_INVALID_DECL
+};
 const avs_time_duration_t AVS_TIME_DURATION_INVALID = AVS_TIME_INVALID_DECL;
 const avs_time_duration_t AVS_TIME_DURATION_ZERO = { 0, 0 };
 
-#define DEFINE_TIME_LESS(Type, Action) \
-bool Type##_##Action (Type##_t a, Type##_t b) { \
-    if (!Type##_valid(a) || !Type##_valid(b)) { \
-        return false; \
-    } else { \
-        return (a.seconds < b.seconds) \
-                || (a.seconds == b.seconds && a.nanoseconds < b.nanoseconds); \
-    } \
+bool avs_time_duration_less(avs_time_duration_t a, avs_time_duration_t b) {
+    if (!avs_time_duration_valid(a) || !avs_time_duration_valid(b)) {
+        return false;
+    } else {
+        return (a.seconds < b.seconds)
+                || (a.seconds == b.seconds && a.nanoseconds < b.nanoseconds);
+    }
 }
 
-DEFINE_TIME_LESS(avs_time_realtime, before)
-DEFINE_TIME_LESS(avs_time_monotonic, before)
-DEFINE_TIME_LESS(avs_time_duration, less)
-
-#define DEFINE_TIME_VALID(Type) \
-bool Type##_valid(Type##_t t) { \
-    return (t.nanoseconds >= 0 && t.nanoseconds < NS_IN_S); \
+bool avs_time_duration_valid(avs_time_duration_t t) {
+    return (t.nanoseconds >= 0 && t.nanoseconds < NS_IN_S);
 }
 
-DEFINE_TIME_VALID(avs_time_realtime)
-DEFINE_TIME_VALID(avs_time_monotonic)
-DEFINE_TIME_VALID(avs_time_duration)
-
+#ifdef HAVE_BUILTIN_ADD_OVERFLOW
+static inline int safe_add(int64_t *out, int64_t a, int64_t b) {
+    return __builtin_add_overflow(a, b, out) ? -1 : 0;
+}
+#else // HAVE_BUILTIN_ADD_OVERFLOW
 static int safe_add(int64_t *out, int64_t a, int64_t b) {
     if (a > 0 && b > 0) {
         uint64_t result = ((uint64_t) a) + ((uint64_t) b);
@@ -66,9 +85,8 @@ static int safe_add(int64_t *out, int64_t a, int64_t b) {
             return -1;
         }
         *out = (int64_t) result;
-        return 0;
     } else if (a < 0 && b < 0) {
-        if (a == INT64_MIN && b == INT64_MIN) {
+        if (a == INT64_MIN || b == INT64_MIN) {
             // this case would result in the addition below being 0
             return -1;
         }
@@ -77,90 +95,83 @@ static int safe_add(int64_t *out, int64_t a, int64_t b) {
             return -1;
         }
         *out = -(int64_t) result;
-        return 0;
     } else {
         *out = a + b;
-        return 0;
     }
+    return 0;
 }
+#endif // HAVE_BUILTIN_ADD_OVERFLOW
 
-static int normalize(int64_t *inout_seconds, int32_t *inout_nanoseconds) {
-    assert(*inout_nanoseconds >= -NS_IN_S);
-    assert(*inout_nanoseconds < 2 * NS_IN_S);
-    if (*inout_nanoseconds < 0) {
-        if (*inout_seconds == INT64_MIN) {
+static int normalize(avs_time_duration_t *inout) {
+    assert(inout->nanoseconds >= -NS_IN_S);
+    assert(inout->nanoseconds < 2 * NS_IN_S);
+    if (inout->nanoseconds < 0) {
+        if (inout->seconds == INT64_MIN) {
             return -1;
         }
-        *inout_nanoseconds += NS_IN_S;
-        --*inout_seconds;
-    } else if (*inout_nanoseconds >= NS_IN_S) {
-        if (*inout_seconds == INT64_MAX) {
+        inout->nanoseconds += NS_IN_S;
+        --inout->seconds;
+    } else if (inout->nanoseconds >= NS_IN_S) {
+        if (inout->seconds == INT64_MAX) {
             return -1;
         }
-        *inout_nanoseconds -= NS_IN_S;
-        ++*inout_seconds;
+        inout->nanoseconds -= NS_IN_S;
+        ++inout->seconds;
     }
     return 0;
 }
 
-#define DEFINE_TIME_ADD(Type) \
-Type##_t Type##_add(Type##_t a, avs_time_duration_t b) { \
-    if (!Type##_valid(a) || !avs_time_duration_valid(b)) { \
-        return (Type##_t) AVS_TIME_INVALID_DECL; \
-    } else { \
-        Type##_t result; \
-        result.nanoseconds = a.nanoseconds + b.nanoseconds; \
-        if (safe_add(&result.seconds, a.seconds, b.seconds) \
-                || normalize(&result.seconds, &result.nanoseconds)) { \
-            return (Type##_t) AVS_TIME_INVALID_DECL; \
-        } \
-        assert(Type##_valid(result)); \
-        return result; \
-    } \
+avs_time_duration_t avs_time_duration_add(avs_time_duration_t a,
+                                          avs_time_duration_t b) {
+    if (!avs_time_duration_valid(a) || !avs_time_duration_valid(b)) {
+        return AVS_TIME_DURATION_INVALID;
+    } else {
+        avs_time_duration_t result;
+        result.nanoseconds = a.nanoseconds + b.nanoseconds;
+        if (safe_add(&result.seconds, a.seconds, b.seconds)
+                || normalize(&result)) {
+            return AVS_TIME_DURATION_INVALID;
+        }
+        assert(avs_time_duration_valid(result));
+        return result;
+    }
 }
 
-DEFINE_TIME_ADD(avs_time_realtime)
-DEFINE_TIME_ADD(avs_time_monotonic)
-DEFINE_TIME_ADD(avs_time_duration)
-
-static int negate(int64_t *inout_seconds, int32_t *inout_nanoseconds) {
-    if (*inout_seconds < 0) {
-        // if *inout_seconds == INT64_MIN on U2 architectures,
+static int negate(avs_time_duration_t *inout) {
+    if (inout->seconds < 0) {
+        // if inout->seconds == INT64_MIN on U2 architectures,
         // attempting to negate it will result in erroneous value
         // even though negated time might still be representable
-        ++*inout_seconds;
-        *inout_nanoseconds -= NS_IN_S;
+        ++inout->seconds;
+        inout->nanoseconds -= NS_IN_S;
     }
-    *inout_seconds *= -1; // safe, because of the above
-    *inout_nanoseconds *= -1; // safe, because the absolute value
+    inout->seconds *= -1; // safe, because of the above
+    inout->nanoseconds *= -1; // safe, because the absolute value
                               // is no greater than 10^9
-    return normalize(inout_seconds, inout_nanoseconds);
+    return normalize(inout);
 }
 
-#define DEFINE_TIME_DIFF(Type) \
-avs_time_duration_t Type##_diff(Type##_t minuend, \
-                                Type##_t subtrahend) { \
-    if (!Type##_valid(minuend) || !Type##_valid(subtrahend)) { \
-        return AVS_TIME_DURATION_INVALID; \
-    } else { \
-        Type##_t negated_subtrahend = subtrahend; \
-        negate(&negated_subtrahend.seconds, &negated_subtrahend.nanoseconds); \
-        avs_time_duration_t result; \
-        result.nanoseconds = minuend.nanoseconds \
-                + negated_subtrahend.nanoseconds; \
-        if (safe_add(&result.seconds, \
-                     minuend.seconds, negated_subtrahend.seconds) \
-                || normalize(&result.seconds, &result.nanoseconds)) { \
-            return AVS_TIME_DURATION_INVALID; \
-        } \
-        assert(avs_time_duration_valid(result)); \
-        return result; \
-    } \
+avs_time_duration_t
+avs_time_duration_diff(avs_time_duration_t minuend,
+                       avs_time_duration_t subtrahend) {
+    if (!avs_time_duration_valid(minuend)
+            || !avs_time_duration_valid(subtrahend)) {
+        return AVS_TIME_DURATION_INVALID;
+    } else {
+        avs_time_duration_t negated_subtrahend = subtrahend;
+        negate(&negated_subtrahend);
+        avs_time_duration_t result;
+        result.nanoseconds = minuend.nanoseconds
+                + negated_subtrahend.nanoseconds;
+        if (safe_add(&result.seconds,
+                     minuend.seconds, negated_subtrahend.seconds)
+                || normalize(&result)) {
+            return AVS_TIME_DURATION_INVALID;
+        }
+        assert(avs_time_duration_valid(result));
+        return result;
+    }
 }
-
-DEFINE_TIME_DIFF(avs_time_realtime)
-DEFINE_TIME_DIFF(avs_time_monotonic)
-DEFINE_TIME_DIFF(avs_time_duration)
 
 typedef enum {
     UCO_MUL,
@@ -246,55 +257,50 @@ static int time_conv_forward(int64_t *output,
     return safe_add(output, converted_s, converted_ns);
 }
 
-static int time_conv_backward(int64_t *output_s,
-                              int32_t *output_ns,
+static int time_conv_backward(avs_time_duration_t *output,
                               int64_t input,
                               const time_conv_t *conv) {
     int64_t seconds_only;
     int64_t output_ns_tmp;
-    if (unit_conv_backward(output_s, input, &conv->conv_s)
-            || unit_conv_forward(&seconds_only, *output_s, &conv->conv_s)
+    if (unit_conv_backward(&output->seconds, input, &conv->conv_s)
+            || unit_conv_forward(&seconds_only, output->seconds, &conv->conv_s)
             || unit_conv_backward(&output_ns_tmp, input - seconds_only,
                                   &conv->conv_ns)
             || output_ns_tmp <= -NS_IN_S || output_ns_tmp >= NS_IN_S) {
         return -1;
     }
-    *output_ns = (int32_t) output_ns_tmp;
-    return normalize(output_s, output_ns);
+    output->nanoseconds = (int32_t) output_ns_tmp;
+    return normalize(output);
 }
 
-#define DEFINE_TIME_TO_SCALAR(Type) \
-int Type##_to_scalar(int64_t *out, avs_time_unit_t unit, \
-                     const Type##_t value) { \
-    if (unit < 0 || unit > AVS_ARRAY_SIZE(CONVERSIONS) \
-            || !Type##_valid(value)) { \
-        return -1; \
-    } \
-    return time_conv_forward(out, value.seconds, value.nanoseconds, \
-                             &CONVERSIONS[unit]); \
+int avs_time_duration_to_scalar(int64_t *out,
+                                avs_time_unit_t unit,
+                                avs_time_duration_t value) {
+    if (unit < 0 || unit > AVS_ARRAY_SIZE(CONVERSIONS)
+            || !avs_time_duration_valid(value)) {
+        return -1;
+    }
+    return time_conv_forward(out, value.seconds, value.nanoseconds,
+                             &CONVERSIONS[unit]);
 }
 
-DEFINE_TIME_TO_SCALAR(avs_time_realtime)
-DEFINE_TIME_TO_SCALAR(avs_time_monotonic)
-DEFINE_TIME_TO_SCALAR(avs_time_duration)
-
-#define DEFINE_TIME_FROM_SCALAR(Type) \
-Type##_t Type##_from_scalar(int64_t value, avs_time_unit_t unit) { \
-    if (unit < 0 && unit >= AVS_ARRAY_SIZE(CONVERSIONS)) { \
-        return (Type##_t) AVS_TIME_INVALID_DECL; \
-    } \
-    Type##_t result; \
-    if (time_conv_backward(&result.seconds, &result.nanoseconds, value, \
-                           &CONVERSIONS[unit])) { \
-        return (Type##_t) AVS_TIME_INVALID_DECL; \
-    } \
-    return result; \
+avs_time_duration_t avs_time_duration_from_scalar(int64_t value,
+                                                  avs_time_unit_t unit) {
+    if (unit < 0 && unit >= AVS_ARRAY_SIZE(CONVERSIONS)) {
+        return AVS_TIME_DURATION_INVALID;
+    }
+    avs_time_duration_t result;
+    if (time_conv_backward(&result, value, &CONVERSIONS[unit])) {
+        return AVS_TIME_DURATION_INVALID;
+    }
+    return result;
 }
 
-DEFINE_TIME_FROM_SCALAR(avs_time_realtime)
-DEFINE_TIME_FROM_SCALAR(avs_time_monotonic)
-DEFINE_TIME_FROM_SCALAR(avs_time_duration)
-
+#ifdef HAVE_BUILTIN_MUL_OVERFLOW
+static inline int safe_mul(int64_t *out, int64_t input, int64_t multiplier) {
+    return __builtin_mul_overflow(input, multiplier, out) ? -1 : 0;
+}
+#else // HAVE_BUILTIN_MUL_OVERFLOW
 static int safe_mul(int64_t *out, int64_t input, int64_t multiplier) {
     if (input == 0 || multiplier == 0) {
         *out = 0;
@@ -316,6 +322,7 @@ static int safe_mul(int64_t *out, int64_t input, int64_t multiplier) {
         return 0;
     }
 }
+#endif // HAVE_BUILTIN_MUL_OVERFLOW
 
 avs_time_duration_t avs_time_duration_mul(avs_time_duration_t input,
                                           int32_t multiplier) {
@@ -330,7 +337,7 @@ avs_time_duration_t avs_time_duration_mul(avs_time_duration_t input,
         result.nanoseconds = (int32_t) (nanoseconds % NS_IN_S);
         if (safe_mul(&result.seconds, input.seconds, multiplier)
                 || safe_add(&result.seconds, result.seconds, seconds_rest)
-                || normalize(&result.seconds, &result.nanoseconds)) {
+                || normalize(&result)) {
             return AVS_TIME_DURATION_INVALID;
         }
 
@@ -341,7 +348,11 @@ avs_time_duration_t avs_time_duration_mul(avs_time_duration_t input,
 
 avs_time_duration_t avs_time_duration_div(avs_time_duration_t dividend,
                                           int32_t divisor) {
-    if (!avs_time_duration_valid(dividend) || divisor == 0) {
+    if (!avs_time_duration_valid(dividend)
+            || divisor == 0
+            || (INT64_MIN + INT64_MAX != 0
+                    && dividend.seconds == INT64_MIN
+                    && divisor == -1)) {
         return AVS_TIME_DURATION_INVALID;
     } else {
         int64_t s_rest = dividend.seconds % divisor;
@@ -351,19 +362,19 @@ avs_time_duration_t avs_time_duration_div(avs_time_duration_t dividend,
                                            + (double) s_rest * NS_IN_S)
                                           / divisor)
         };
-        normalize(&result.seconds, &result.nanoseconds);
+        normalize(&result);
 
         assert(avs_time_duration_valid(result));
         return result;
     }
 }
 
-avs_time_realtime_t avs_time_realtime_now(void) {
+avs_time_real_t avs_time_real_now(void) {
     struct timespec system_value;
-    avs_time_realtime_t result;
+    avs_time_real_t result;
     clock_gettime(CLOCK_REALTIME, &system_value);
-    result.seconds = system_value.tv_sec;
-    result.nanoseconds = (int32_t) system_value.tv_nsec;
+    result.since_real_epoch.seconds = system_value.tv_sec;
+    result.since_real_epoch.nanoseconds = (int32_t) system_value.tv_nsec;
     return result;
 }
 
@@ -371,8 +382,8 @@ avs_time_monotonic_t avs_time_monotonic_now(void) {
     struct timespec system_value;
     avs_time_monotonic_t result;
     clock_gettime(CLOCK_MONOTONIC, &system_value);
-    result.seconds = system_value.tv_sec;
-    result.nanoseconds = (int32_t) system_value.tv_nsec;
+    result.since_monotonic_epoch.seconds = system_value.tv_sec;
+    result.since_monotonic_epoch.nanoseconds = (int32_t) system_value.tv_nsec;
     return result;
 }
 

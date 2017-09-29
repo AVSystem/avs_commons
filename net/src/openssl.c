@@ -81,7 +81,7 @@ typedef struct {
     SSL *ssl;
     int verification;
     int error_code;
-    avs_time_realtime_t next_deadline;
+    avs_time_real_t next_deadline;
     avs_net_socket_type_t backend_type;
     avs_net_abstract_socket_t *backend_socket;
     avs_net_dtls_handshake_timeouts_t dtls_handshake_timeouts;
@@ -312,10 +312,10 @@ static void set_socket_timeout(avs_net_abstract_socket_t *sock,
 
 static avs_net_timeout_t adjust_receive_timeout(ssl_socket_t *sock) {
     avs_net_timeout_t socket_timeout = get_socket_timeout(sock->backend_socket);
-    if (sock->next_deadline.seconds >= 0) {
-        avs_time_realtime_t now = avs_time_realtime_now();
+    if (avs_time_real_valid(sock->next_deadline)) {
+        avs_time_real_t now = avs_time_real_now();
         avs_time_duration_t timeout =
-                avs_time_realtime_diff(sock->next_deadline, now);
+                avs_time_real_diff(sock->next_deadline, now);
         int64_t timeout_ms;
         if (!avs_time_duration_to_scalar(&timeout_ms, AVS_TIME_MS, timeout)
                 && (socket_timeout <= 0 || socket_timeout > timeout_ms)) {
@@ -399,11 +399,11 @@ static long avs_bio_ctrl(BIO *bio, int command, long intarg, void *ptrarg) {
         return get_socket_inner_mtu_or_zero(sock->backend_socket);
     case BIO_CTRL_DGRAM_SET_NEXT_TIMEOUT: {
         struct timeval next_deadline = *(const struct timeval *) ptrarg;
-        avs_time_realtime_t now = avs_time_realtime_now();
+        avs_time_real_t now = avs_time_real_now();
         avs_time_duration_t next_timeout = {
-            .seconds = next_deadline.tv_sec - now.seconds,
-            .nanoseconds =
-                    (int32_t) (next_deadline.tv_usec * 1000) - now.nanoseconds
+            .seconds = next_deadline.tv_sec - now.since_real_epoch.seconds,
+            .nanoseconds = (int32_t) (next_deadline.tv_usec * 1000)
+                    - now.since_real_epoch.nanoseconds
         };
         if (next_timeout.nanoseconds < 0) {
             next_timeout.seconds--;
@@ -418,7 +418,7 @@ static long avs_bio_ctrl(BIO *bio, int command, long intarg, void *ptrarg) {
             next_timeout = avs_time_duration_from_scalar(
                     sock->dtls_handshake_timeouts.max_ms, AVS_TIME_MS);
         }
-        sock->next_deadline = avs_time_realtime_add(now, next_timeout);
+        sock->next_deadline = avs_time_real_add(now, next_timeout);
         return 0;
     }
     case BIO_CTRL_DGRAM_GET_SEND_TIMER_EXP:

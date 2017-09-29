@@ -382,7 +382,8 @@ void _avs_coap_msg_cache_debug_print(const coap_msg_cache_t *cache) {
         LOG(DEBUG, "endpoint: %s:%s", entry->endpoint->addr,
             entry->endpoint->port);
         LOG(DEBUG, "expiration time: %" PRId64 ":%09" PRId32,
-            entry->expiration_time.seconds, entry->expiration_time.nanoseconds);
+            entry->expiration_time.since_monotonic_epoch.seconds,
+            entry->expiration_time.since_monotonic_epoch.nanoseconds);
         avs_coap_msg_debug_print(entry_msg(entry));
     }
 }

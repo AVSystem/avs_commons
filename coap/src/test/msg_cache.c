@@ -41,12 +41,12 @@ static avs_coap_msg_t *setup_msg_with_id(void *buffer,
     return msg;
 }
 
-static avs_time_realtime_t MOCK_CLOCK = { 0, 0 };
+static avs_time_real_t MOCK_CLOCK = { { 0, 0 } };
 
 static void clock_advance(avs_time_duration_t t) {
-    AVS_UNIT_ASSERT_TRUE(avs_time_realtime_valid(MOCK_CLOCK));
+    AVS_UNIT_ASSERT_TRUE(avs_time_real_valid(MOCK_CLOCK));
     AVS_UNIT_ASSERT_TRUE(avs_time_duration_valid(t));
-    MOCK_CLOCK = avs_time_realtime_add(MOCK_CLOCK, t);
+    MOCK_CLOCK = avs_time_real_add(MOCK_CLOCK, t);
 }
 
 /**
@@ -55,9 +55,9 @@ static void clock_advance(avs_time_duration_t t) {
  */
 int clock_gettime(clockid_t clock, struct timespec *t) {
     (void) clock;
-    t->tv_sec = (time_t) MOCK_CLOCK.seconds;
-    t->tv_nsec = MOCK_CLOCK.nanoseconds;
-    MOCK_CLOCK = avs_time_realtime_add(
+    t->tv_sec = (time_t) MOCK_CLOCK.since_real_epoch.seconds;
+    t->tv_nsec = MOCK_CLOCK.since_real_epoch.nanoseconds;
+    MOCK_CLOCK = avs_time_real_add(
             MOCK_CLOCK, avs_time_duration_from_scalar(1, AVS_TIME_NS));
     return 0;
 }
