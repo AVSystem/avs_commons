@@ -348,7 +348,7 @@ avs_time_duration_t avs_time_duration_mul(avs_time_duration_t input,
 }
 
 static bool double_is_int64(double value) {
-    static const double DOUBLE_2_63 = 2.0 * (double) (((int64_t) 1) << 62);
+    static const double DOUBLE_2_63 = (double) (((uint64_t) 1) << 63);
 #if INT64_MIN == -INT64_MAX
     // signed magnitude or U1; max == -min == 2^63 - 1
     return value > -DOUBLE_2_63 && value < DOUBLE_2_63;
@@ -383,7 +383,7 @@ avs_time_duration_t avs_time_duration_fmul(avs_time_duration_t input,
         }
         avs_time_duration_t result = {
             .seconds = (int64_t) seconds,
-            .nanoseconds = (int32_t) floor(smul_ns + nsmul + 0.5)
+            .nanoseconds = (int32_t) round(smul_ns + nsmul)
         };
         // result.nanoseconds is in [-2*10^9, 2*10^9]
         // so we cannot use normalize(), which only works for [-10^9, 10^9 - 1]
@@ -401,6 +401,7 @@ avs_time_duration_t avs_time_duration_fmul(avs_time_duration_t input,
             result.nanoseconds -= NS_IN_S;
             ++result.seconds;
         }
+        assert(avs_time_duration_valid(result));
         return result;
     }
 }
