@@ -16,9 +16,12 @@
 
 #include <avs_commons_config.h>
 
-#include <stdio.h>
+#include <ctype.h>
 #include <assert.h>
 #include <stdarg.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include <avsystem/commons/utils.h>
 
@@ -39,4 +42,45 @@ int avs_simple_snprintf(char *out, size_t out_size, const char *format, ...) {
     int result = avs_simple_vsnprintf(out, out_size, format, args);
     va_end(args);
     return result;
+}
+
+int avs_strcasecmp(const char *s1, const char *s2) {
+    int c1;
+    int c2;
+    do {
+        c1 = toupper(*(const unsigned char *) s1++);
+        c2 = toupper(*(const unsigned char *) s2++);
+    } while (c1 && c2 && c1 == c2);
+    return c1 - c2;
+}
+
+char *avs_strtok(char *restrict str,
+                 char *restrict delim,
+                 char **restrict saveptr) {
+    // adapted from https://git.musl-libc.org/cgit/musl/tree/src/string/strtok_r.c
+    if (!str && !(str = *saveptr)) {
+        return NULL;
+    }
+    str += strspn(str, delim);
+    if (!*str) {
+        *saveptr = NULL;
+        return NULL;
+    }
+    *saveptr = str + strcspn(str, delim);
+    if (**saveptr) {
+        *(*saveptr)++ = '\0';
+    } else {
+        *saveptr = NULL;
+    }
+    return str;
+}
+
+char *avs_strdup(const char *str) {
+    size_t len = strlen(str);
+    char *retval = (char *) malloc(len);
+    if (!retval) {
+        return NULL;
+    }
+    memcpy(retval, str, len + 1);
+    return retval;
 }

@@ -15,7 +15,6 @@
  */
 
 #include <avs_commons_config.h>
-#include <avs_commons_posix_config.h>
 
 #include <assert.h>
 #include <math.h>
@@ -428,24 +427,6 @@ avs_time_duration_t avs_time_duration_div(avs_time_duration_t dividend,
         assert(avs_time_duration_valid(result));
         return result;
     }
-}
-
-avs_time_real_t avs_time_real_now(void) {
-    struct timespec system_value;
-    avs_time_real_t result;
-    clock_gettime(CLOCK_REALTIME, &system_value);
-    result.since_real_epoch.seconds = system_value.tv_sec;
-    result.since_real_epoch.nanoseconds = (int32_t) system_value.tv_nsec;
-    return result;
-}
-
-avs_time_monotonic_t avs_time_monotonic_now(void) {
-    struct timespec system_value;
-    avs_time_monotonic_t result;
-    clock_gettime(CLOCK_MONOTONIC, &system_value);
-    result.since_monotonic_epoch.seconds = system_value.tv_sec;
-    result.since_monotonic_epoch.nanoseconds = (int32_t) system_value.tv_nsec;
-    return result;
 }
 
 #ifdef AVS_UNIT_TESTING

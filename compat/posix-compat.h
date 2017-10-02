@@ -62,10 +62,6 @@ int clock_gettime(clockid_t clk_id, struct timespec *tp);
 # define CLOCK_REALTIME 0 /* TODO */
 #endif
 
-#ifndef CLOCK_MONOTONIC
-# define CLOCK_MONOTONIC CLOCK_REALTIME /* TODO */
-#endif
-
 
 #if defined(HAVE_STRCASECMP) && defined(HAVE_STRINGS_H)
 #include <strings.h>

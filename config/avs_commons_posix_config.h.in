@@ -50,7 +50,6 @@
 #cmakedefine HAVE_INET_ADDRSTRLEN
 #cmakedefine HAVE_O_NONBLOCK
 #cmakedefine HAVE_CLOCK_REALTIME
-#cmakedefine HAVE_CLOCK_MONOTONIC
 #cmakedefine HAVE_IN6_IS_ADDR_V4MAPPED
 
 /* POSIX functions */
@@ -135,9 +134,5 @@
 #  endif // _AVS_NEED_POSIX_SOCKET
 # endif
 #endif // WITH_POSIX
-
-#ifndef CLOCK_MONOTONIC
-# define CLOCK_MONOTONIC CLOCK_REALTIME
-#endif
 
 #endif /* CONFIG_POSIX_CONFIG_H */

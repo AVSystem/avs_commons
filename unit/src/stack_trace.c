@@ -14,6 +14,10 @@
  * limitations under the License.
  */
 
+#ifndef __APPLE__
+#define _POSIX_C_SOURCE 200809L
+#endif
+
 #include <avs_commons_config.h>
 #include <avs_commons_posix_config.h>
 

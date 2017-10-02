@@ -13,13 +13,18 @@
 # limitations under the License.
 
 set(SOURCES
-    src/format.c
     src/rand.c
+    src/strings.c
     src/time.c
     src/token.c)
 
 set(PRIVATE_HEADERS
     src/x_time_conv.h)
+
+if(AVS_COMMONS_COMPAT_PLATFORM)
+    set(SOURCES ${SOURCES}
+        compat/${AVS_COMMONS_COMPAT_PLATFORM}/time.c)
+endif()
 
 set(ALL_SOURCES ${SOURCES})
 

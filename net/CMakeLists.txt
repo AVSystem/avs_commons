@@ -17,6 +17,11 @@ set(SOURCES
     src/api.c
     src/url.c)
 
+if(AVS_COMMONS_COMPAT_PLATFORM)
+    set(SOURCES ${SOURCES}
+        compat/${AVS_COMMONS_COMPAT_PLATFORM}/addrinfo.c)
+endif()
+
 option(WITH_POSIX_AVS_SOCKET "Enable avs_socket implementation based on POSIX socket API" ${WITH_POSIX})
 if(WITH_POSIX_AVS_SOCKET)
     set(SOURCES ${SOURCES} src/net_impl.c)

@@ -26,6 +26,10 @@
 
 VISIBILITY_PRIVATE_HEADER_BEGIN
 
+#if defined(WITH_IPV4) && defined(WITH_IPV6)
+#define WITH_AVS_V4MAPPED
+#endif
+
 /**
  * An owned PSK/identity pair. avs_commons will free()
  * @ref avs_net_owned_psk_t#psk and @ref avs_net_owned_psk_t#identity pointers

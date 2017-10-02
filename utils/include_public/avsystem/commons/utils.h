@@ -64,6 +64,27 @@ int avs_simple_snprintf(char *out, size_t out_size, const char *format, ...)
         AVS_F_PRINTF(3, 4);
 
 /**
+ * Compares two strings in a case-insensitive way.
+ *
+ * @returns negative, zero, or positive value if <c>s1</c> is lexicographically
+ *          less, equal or greater to <c>s2</c>, respectively
+ */
+int avs_strcasecmp(const char *s1, const char *s2);
+
+/**
+ * Portable reentrant version of standard library <c>strtok()</c>; equivalent to
+ * POSIX <c>strtok_r()</c>.
+ */
+char *avs_strtok(char *restrict str,
+                 char *restrict delim,
+                 char **restrict saveptr);
+
+/**
+ * Creates a <c>malloc()</c>-allocated copy of a given string.
+ */
+char *avs_strdup(const char *str);
+
+/**
  * String that contains all the standard whitespace characters.
  */
 #define AVS_SPACES " \t\v\f\r\n"

@@ -15,7 +15,6 @@
  */
 
 #include <avs_commons_config.h>
-#include <avs_commons_posix_config.h>
 
 #include <ctype.h>
 #include <string.h>
@@ -98,10 +97,10 @@ int _avs_http_auth_setup(http_auth_t *auth, const char *challenge) {
             char algorithm[16];
             avs_consume_quotable_token(&challenge, algorithm, sizeof(algorithm),
                                        "," AVS_SPACES);
-            if (strcasecmp(algorithm, "MD5-sess") == 0) {
+            if (avs_strcasecmp(algorithm, "MD5-sess") == 0) {
                 auth->state.flags.use_md5_sess = 1;
                 LOG(TRACE, "Auth algorithm: MD5-sess");
-            } else if (strcasecmp(algorithm, "MD5") == 0) {
+            } else if (avs_strcasecmp(algorithm, "MD5") == 0) {
                 LOG(TRACE, "Auth algorithm: MD5");
             } else {
                 LOG(ERROR, "Unknown auth algorithm: %s", algorithm);
@@ -115,11 +114,11 @@ int _avs_http_auth_setup(http_auth_t *auth, const char *challenge) {
             }
             char *qop_options_tmp, *qop_options = qop_options_buf;
             const char *qop_option;
-            while ((qop_option = strtok_r(qop_options, "," AVS_SPACES,
-                                          &qop_options_tmp))) {
+            while ((qop_option = avs_strtok(qop_options, "," AVS_SPACES,
+                                            &qop_options_tmp))) {
                 qop_options = NULL;
                 LOG(TRACE, "Auth qop: %s", qop_option);
-                if (strcasecmp(qop_option, "auth") == 0) {
+                if (avs_strcasecmp(qop_option, "auth") == 0) {
                     auth->state.flags.use_qop_auth = 1;
                     break;
                 }
@@ -166,12 +165,12 @@ int _avs_http_auth_setup_stream(http_stream_t *stream,
     free(stream->auth.credentials.user);
     stream->auth.credentials.user = NULL;
     if (auth_username) {
-        if (!(stream->auth.credentials.user = strdup(auth_username))) {
+        if (!(stream->auth.credentials.user = avs_strdup(auth_username))) {
             goto error;
         }
     } else {
         const char *user = avs_url_user(parsed_url);
-        if (user && !(stream->auth.credentials.user = strdup(user))) {
+        if (user && !(stream->auth.credentials.user = avs_strdup(user))) {
             goto error;
         }
     }
@@ -179,13 +178,14 @@ int _avs_http_auth_setup_stream(http_stream_t *stream,
     free(stream->auth.credentials.password);
     stream->auth.credentials.password = NULL;
     if (auth_password) {
-        if (!(stream->auth.credentials.password = strdup(auth_password))) {
+        if (!(stream->auth.credentials.password = avs_strdup(auth_password))) {
             goto error;
         }
     } else {
         const char *password = avs_url_password(parsed_url);
         if (password
-                && !(stream->auth.credentials.password = strdup(password))) {
+                && !(stream->auth.credentials.password
+                        = avs_strdup(password))) {
             goto error;
         }
     }
