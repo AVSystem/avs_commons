@@ -221,7 +221,7 @@ typedef enum {
 
 typedef struct {
     unit_conv_op_t operation;
-    int32_t factor;
+    int64_t factor;
 } unit_conv_t;
 
 typedef struct {
@@ -230,30 +230,26 @@ typedef struct {
 } time_conv_t;
 
 static const time_conv_t CONVERSIONS[] = {
-    [AVS_TIME_DAY]  = { { UCO_DIV,      86400 }, { UCO_MUL,       0 } },
-    [AVS_TIME_HOUR] = { { UCO_DIV,       3600 }, { UCO_MUL,       0 } },
-    [AVS_TIME_MIN]  = { { UCO_DIV,         60 }, { UCO_MUL,       0 } },
-    [AVS_TIME_S]    = { { UCO_MUL,          1 }, { UCO_MUL,       0 } },
-    [AVS_TIME_MS]   = { { UCO_MUL,       1000 }, { UCO_DIV, 1000000 } },
-    [AVS_TIME_US]   = { { UCO_MUL,    1000000 }, { UCO_DIV,    1000 } },
-    [AVS_TIME_NS]   = { { UCO_MUL, 1000000000 }, { UCO_MUL,       1 } }
+    [AVS_TIME_DAY]  = {{ UCO_DIV,      86400 }, { UCO_DIV, 86400000000000LL }},
+    [AVS_TIME_HOUR] = {{ UCO_DIV,       3600 }, { UCO_DIV,  3600000000000LL }},
+    [AVS_TIME_MIN]  = {{ UCO_DIV,         60 }, { UCO_DIV,    60000000000LL }},
+    [AVS_TIME_S]    = {{ UCO_MUL,          1 }, { UCO_DIV,     1000000000LL }},
+    [AVS_TIME_MS]   = {{ UCO_MUL,       1000 }, { UCO_DIV,        1000000LL }},
+    [AVS_TIME_US]   = {{ UCO_MUL,    1000000 }, { UCO_DIV,           1000LL }},
+    [AVS_TIME_NS]   = {{ UCO_MUL, 1000000000 }, { UCO_MUL,              1LL }}
 };
 
 #define DECLARE_UNIT_CONV(OutType) \
 static int unit_conv_##OutType##_int64_t (OutType *output, \
                                           int64_t input, \
                                           unit_conv_op_t operation, \
-                                          int32_t factor) { \
-    assert(factor >= 0); \
+                                          int64_t factor) { \
+    assert(factor > 0); \
     switch (operation) { \
     case UCO_MUL: \
-        return safe_mul_##OutType (output, (OutType) input, factor); \
+        return safe_mul_##OutType (output, (OutType) input, (OutType) factor); \
     case UCO_DIV: \
-        if (factor == 0) { \
-            *output = 0; \
-        } else { \
-            *output = (OutType) input / factor; \
-        } \
+        *output = (OutType) input / (OutType) factor; \
         return 0; \
     default: \
         assert(0 && "Invalid unit_conv operation"); \
@@ -305,11 +301,7 @@ static int unit_conv_backward_int64_t_double(int64_t *output,
         tmp = input * (double) conv->factor;
         break;
     case UCO_MUL: // division (because we're operating backwards)
-        if (conv->factor == 0) {
-            tmp = 0.0;
-        } else {
-            tmp = input / (double) conv->factor;
-        }
+        tmp = input / (double) conv->factor;
         break;
     default:
         assert(0 && "Invalid unit_conv operation");
