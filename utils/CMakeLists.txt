@@ -18,6 +18,9 @@ set(SOURCES
     src/time.c
     src/token.c)
 
+set(PRIVATE_HEADERS
+    src/x_time_conv.h)
+
 set(ALL_SOURCES ${SOURCES})
 
 set(INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/include_public")

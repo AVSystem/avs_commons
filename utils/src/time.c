@@ -239,45 +239,6 @@ static const time_conv_t CONVERSIONS[] = {
     [AVS_TIME_NS]   = {{ UCO_MUL, 1000000000 }, { UCO_MUL,              1LL }}
 };
 
-#define DECLARE_UNIT_CONV(OutType) \
-static int unit_conv_##OutType##_int64_t (OutType *output, \
-                                          int64_t input, \
-                                          unit_conv_op_t operation, \
-                                          int64_t factor) { \
-    assert(factor > 0); \
-    switch (operation) { \
-    case UCO_MUL: \
-        return safe_mul_##OutType (output, (OutType) input, (OutType) factor); \
-    case UCO_DIV: \
-        *output = (OutType) input / (OutType) factor; \
-        return 0; \
-    default: \
-        assert(0 && "Invalid unit_conv operation"); \
-        return -1; \
-    } \
-} \
-\
-static inline int \
-unit_conv_forward_##OutType##_int64_t (OutType *output, \
-                                       int64_t input, \
-                                       const unit_conv_t *conv) { \
-    return unit_conv_##OutType##_int64_t (output, input, \
-                                          conv->operation, conv->factor); \
-} \
-\
-static inline int \
-unit_conv_backward_##OutType##_int64_t (OutType *output, \
-                                        int64_t input, \
-                                        const unit_conv_t *conv) { \
-    return unit_conv_##OutType##_int64_t (output, input, \
-                                          conv->operation == UCO_DIV \
-                                                  ? UCO_MUL : UCO_DIV, \
-                                          conv->factor); \
-}
-
-DECLARE_UNIT_CONV(int64_t)
-DECLARE_UNIT_CONV(double)
-
 static bool double_is_int64(double value) {
     static const double DOUBLE_2_63 = (double) (((uint64_t) 1) << 63);
 #if INT64_MIN == -INT64_MAX
@@ -313,52 +274,21 @@ static int unit_conv_backward_int64_t_double(int64_t *output,
     return 0;
 }
 
-#define DECLARE_TIME_CONV(ScalarType) \
-static int time_conv_forward_##ScalarType (ScalarType *output, \
-                                           int64_t seconds, \
-                                           int32_t nanoseconds, \
-                                           const time_conv_t *conv) { \
-    ScalarType converted_s; \
-    ScalarType converted_ns; \
-    if (seconds < 0 && nanoseconds > 0) { \
-        /* if the time is near the range limit, \
-           the negative value of seconds alone might be actually \
-           _out_ of range */ \
-        ++seconds; \
-        nanoseconds -= NS_IN_S; \
-    } \
-    if (unit_conv_forward_##ScalarType##_int64_t (&converted_s, seconds, \
-                                                  &conv->conv_s) \
-            || unit_conv_forward_##ScalarType##_int64_t (&converted_ns, \
-                                                         nanoseconds, \
-                                                         &conv->conv_ns)) { \
-        return -1; \
-    } \
-    return safe_add_##ScalarType (output, converted_s, converted_ns); \
-} \
-\
-static int time_conv_backward_##ScalarType (avs_time_duration_t *output, \
-                                            ScalarType input, \
-                                            const time_conv_t *conv) { \
-    ScalarType seconds_only; \
-    int64_t output_ns_tmp; \
-    if (unit_conv_backward_int64_t_##ScalarType (&output->seconds, input, \
-                                                 &conv->conv_s) \
-            || unit_conv_forward_##ScalarType##_int64_t(&seconds_only, \
-                                                        output->seconds, \
-                                                        &conv->conv_s) \
-            || unit_conv_backward_int64_t_##ScalarType (&output_ns_tmp, \
-                                                        input - seconds_only, \
-                                                        &conv->conv_ns) \
-            || output_ns_tmp <= -NS_IN_S || output_ns_tmp >= NS_IN_S) { \
-        return -1; \
-    } \
-    output->nanoseconds = (int32_t) output_ns_tmp; \
-    return normalize(output); \
-}
+// unit_conv_int64_t_int64_t
+// unit_conv_forward_int64_t_int64_t
+// unit_conv_backward_int64_t_int64_t
+// time_conv_forward_int64_t
+// time_conv_backward_int64_t
+#define SCALAR_TYPE int64_t
+#include "x_time_conv.h"
 
-DECLARE_TIME_CONV(int64_t)
-DECLARE_TIME_CONV(double)
+// unit_conv_double_int64_t
+// unit_conv_forward_double_int64_t
+// unit_conv_backward_double_int64_t
+// time_conv_forward_double
+// time_conv_backward_double
+#define SCALAR_TYPE double
+#include "x_time_conv.h"
 
 int avs_time_duration_to_scalar(int64_t *out,
                                 avs_time_unit_t unit,
