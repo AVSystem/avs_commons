@@ -286,7 +286,7 @@ AVS_UNIT_TEST(rbtree, simple_clone) {
           2,      6,     10,     14,
         1,  3,  5,  7,  9, 11, 13, 15, 0);
 
-    AVS_RBTREE(int) clone = AVS_RBTREE_SIMPLE_CLONE(tree);
+    AVS_RBTREE(int) clone = (AVS_RBTREE(int)) AVS_RBTREE_SIMPLE_CLONE(tree);
     AVS_UNIT_ASSERT_NOT_NULL(clone);
     assert_rb_properties_hold(clone);
 

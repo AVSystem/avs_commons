@@ -107,7 +107,7 @@ typedef struct avs_vector_desc_struct avs_vector_desc_t;
  * Time complexity: amortized O(1)
  */
 #define AVS_VECTOR_PUSH(vecptr, elemptr) \
-    ((void) (sizeof((elemptr) < ((AVS_TYPEOF_PTR(**(vecptr))) (elemptr)))), \
+    ((void) (sizeof((elemptr) < **(vecptr))), \
             avs_vector_push__((void ***) (vecptr), (const void *) (elemptr)))
 /**
  * Returns number of elements in the AVS_VECTOR @p vec.
