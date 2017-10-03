@@ -228,17 +228,14 @@ set(AVS_COMMONS_COMPAT_PLATFORM "${DEFAULT_COMPAT_PLATFORM}" CACHE STRING "Ident
 
 if(AVS_COMMONS_COMPAT_PLATFORM STREQUAL "posix")
     option(WITH_POSIX "Enable use of system-installed POSIX APIs" "${UNIX}")
-    if(WITH_POSIX)
-        # macOS is weird and _POSIX_C_SOURCE causes a lot of things to disappear
-        if(NOT APPLE)
-            #add_definitions(-D_POSIX_C_SOURCE=200809L)
-            #set(CMAKE_REQUIRED_DEFINITIONS -D_POSIX_C_SOURCE=200809L)
-        endif()
-    else()
+    if(NOT WITH_POSIX)
         set(POSIX_COMPAT_HEADER "" CACHE STRING "POSIX compatibility header path")
     endif()
     include(${CMAKE_CURRENT_LIST_DIR}/cmake/PosixFeatures.cmake)
 endif()
+
+include(TestBigEndian)
+test_big_endian(AVS_COMMONS_BIG_ENDIAN)
 
 include(CheckFunctionExists)
 check_function_exists(getifaddrs HAVE_GETIFADDRS)

@@ -24,7 +24,6 @@
 #include <avsystem/commons/net.h>
 #include <avsystem/commons/utils.h>
 
-#include "compat.h"
 #include "net_impl.h"
 
 VISIBILITY_SOURCE_BEGIN

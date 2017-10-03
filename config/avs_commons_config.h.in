@@ -14,6 +14,12 @@
  * limitations under the License.
  */
 
+#if defined(AVS_UNIT_TESTING) && !defined(__APPLE__)
+#define _POSIX_C_SOURCE 200809L
+#endif
+
+#cmakedefine AVS_COMMONS_BIG_ENDIAN
+
 #cmakedefine HAVE_GETIFADDRS
 #cmakedefine HAVE_BACKTRACE
 #cmakedefine HAVE_BACKTRACE_SYMBOLS
@@ -39,9 +45,9 @@
 #endif
 
 #ifdef WITH_IPV6
-# define AVS_ADDRSTRLEN INET6_ADDRSTRLEN
+# define AVS_ADDRSTRLEN sizeof("ffff:ffff:ffff:ffff:ffff:ffff:255.255.255.255")
 #elif defined(WITH_IPV4)
-# define AVS_ADDRSTRLEN INET_ADDRSTRLEN
+# define AVS_ADDRSTRLEN sizeof("255.255.255.255")
 #endif
 
 #cmakedefine WITH_SSL

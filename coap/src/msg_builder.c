@@ -15,7 +15,6 @@
  */
 
 #include <avs_commons_config.h>
-#include <avs_commons_posix_config.h>
 
 #include <avsystem/commons/coap/msg_builder.h>
 #include <avsystem/commons/utils.h>
@@ -90,7 +89,11 @@ static inline size_t encode_ext_value(uint8_t *ptr,
                                       uint16_t ext_value) {
     if (ext_value >= AVS_COAP_EXT_U16_BASE) {
         uint16_t value_net_byte_order =
-            htons((uint16_t)(ext_value - AVS_COAP_EXT_U16_BASE));
+                (uint16_t) (ext_value - AVS_COAP_EXT_U16_BASE);
+#ifndef AVS_COMMONS_BIG_ENDIAN
+        value_net_byte_order = (uint16_t) ((value_net_byte_order >> 8)
+                | (value_net_byte_order << 8));
+#endif
 
         memcpy(ptr, &value_net_byte_order, sizeof(value_net_byte_order));
         return sizeof(value_net_byte_order);

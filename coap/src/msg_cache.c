@@ -15,7 +15,6 @@
  */
 
 #include <avs_commons_config.h>
-#include <avs_commons_posix_config.h>
 
 #include <avsystem/commons/buffer.h>
 #include <avsystem/commons/defs.h>
@@ -31,12 +30,6 @@
 #include <inttypes.h>
 
 VISIBILITY_SOURCE_BEGIN
-
-#ifdef WITH_IPV6
-# define AVS_ADDRSTRLEN INET6_ADDRSTRLEN
-#elif defined(WITH_IPV4)
-# define AVS_ADDRSTRLEN INET_ADDRSTRLEN
-#endif
 
 typedef struct endpoint {
     uint16_t refcount;

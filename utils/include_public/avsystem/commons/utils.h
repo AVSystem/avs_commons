@@ -72,6 +72,15 @@ int avs_simple_snprintf(char *out, size_t out_size, const char *format, ...)
 int avs_strcasecmp(const char *s1, const char *s2);
 
 /**
+ * Compares at most <c>n</c> characters of two strings in a case-insensitive
+ * way.
+ *
+ * @returns negative, zero, or positive value if <c>s1</c> is lexicographically
+ *          less, equal or greater to <c>s2</c>, respectively
+ */
+int avs_strncasecmp(const char *s1, const char *s2, size_t n);
+
+/**
  * Portable reentrant version of standard library <c>strtok()</c>; equivalent to
  * POSIX <c>strtok_r()</c>.
  */

@@ -54,6 +54,19 @@ int avs_strcasecmp(const char *s1, const char *s2) {
     return c1 - c2;
 }
 
+int avs_strncasecmp(const char *s1, const char *s2, size_t n) {
+    int c1 = 0;
+    int c2 = 0;
+    do {
+        if (!n--) {
+            break;
+        }
+        c1 = toupper(*(const unsigned char *) s1++);
+        c2 = toupper(*(const unsigned char *) s2++);
+    } while (c1 && c2 && c1 == c2);
+    return c1 - c2;
+}
+
 char *avs_strtok(char *restrict str,
                  char *restrict delim,
                  char **restrict saveptr) {
@@ -77,7 +90,7 @@ char *avs_strtok(char *restrict str,
 
 char *avs_strdup(const char *str) {
     size_t len = strlen(str);
-    char *retval = (char *) malloc(len);
+    char *retval = (char *) malloc(len + 1);
     if (!retval) {
         return NULL;
     }

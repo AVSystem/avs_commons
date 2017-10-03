@@ -17,16 +17,6 @@ set(SOURCES
     src/api.c
     src/url.c)
 
-if(AVS_COMMONS_COMPAT_PLATFORM)
-    set(SOURCES ${SOURCES}
-        compat/${AVS_COMMONS_COMPAT_PLATFORM}/addrinfo.c)
-endif()
-
-option(WITH_POSIX_AVS_SOCKET "Enable avs_socket implementation based on POSIX socket API" ${WITH_POSIX})
-if(WITH_POSIX_AVS_SOCKET)
-    set(SOURCES ${SOURCES} src/net_impl.c)
-endif()
-
 if(NOT HAVE_INET_NTOP)
     set(SOURCES ${SOURCES} src/inet_ntop.c)
 endif()
@@ -44,8 +34,15 @@ elseif(WITH_TINYDTLS)
 endif()
 
 set(PRIVATE_HEADERS
-    src/compat.h
     src/net_impl.h)
+
+if(AVS_COMMONS_COMPAT_PLATFORM)
+    set(SOURCES ${SOURCES}
+        compat/${AVS_COMMONS_COMPAT_PLATFORM}/addrinfo.c
+        compat/${AVS_COMMONS_COMPAT_PLATFORM}/net_impl.c)
+    set(PRIVATE_HEADERS ${PRIVATE_HEADERS}
+        compat/${AVS_COMMONS_COMPAT_PLATFORM}/compat.h)
+endif()
 
 set(PUBLIC_HEADERS
     include_public/avsystem/commons/net.h

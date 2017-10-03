@@ -14,6 +14,10 @@
  * limitations under the License.
  */
 
+#ifndef __APPLE__
+#define _POSIX_C_SOURCE 200809L
+#endif
+
 #define _AVS_NEED_POSIX_SOCKET
 
 #include <avs_commons_config.h>
@@ -34,7 +38,7 @@
 #endif
 
 #include "compat.h"
-#include "net_impl.h"
+#include "../../src/net_impl.h"
 
 VISIBILITY_SOURCE_BEGIN
 

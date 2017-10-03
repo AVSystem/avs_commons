@@ -15,7 +15,6 @@
  */
 
 #include <avs_commons_config.h>
-#include <avs_commons_posix_config.h>
 
 #include <avsystem/commons/coap/tx_params.h>
 #include <avsystem/commons/time.h>
