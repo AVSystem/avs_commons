@@ -12,6 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+set(STORED_REQUIRED_DEFINITIONS "${CMAKE_REQUIRED_DEFINITIONS}")
+if(NOT APPLE)
+    set(CMAKE_REQUIRED_DEFINITIONS
+        ${CMAKE_REQUIRED_DEFINITIONS} -D_POSIX_C_SOURCE=200809L)
+endif()
+
 include(CheckIncludeFiles)
 check_include_files("sys/select.h" HAVE_SYS_SELECT_H)
 check_include_files("sys/socket.h" HAVE_SYS_SOCKET_H)
@@ -85,3 +91,5 @@ if(HAVE_IN6_IS_ADDR_V4MAPPED)
 else()
     message(STATUS "Checking if IN6_IS_ADDR_V4MAPPED is usable - no")
 endif()
+
+set(CMAKE_REQUIRED_DEFINITIONS "${STORED_REQUIRED_DEFINITIONS}")

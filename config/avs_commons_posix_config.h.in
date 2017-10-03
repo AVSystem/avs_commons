@@ -17,6 +17,11 @@
 #ifndef CONFIG_POSIX_CONFIG_H
 #define CONFIG_POSIX_CONFIG_H
 
+// macOS is weird and _POSIX_C_SOURCE causes a lot of things to disappear
+#if !defined(_POSIX_C_SOURCE) && !defined(__APPLE__)
+#define _POSIX_C_SOURCE 200809L
+#endif
+
 #cmakedefine WITH_POSIX
 
 /* POSIX headers */

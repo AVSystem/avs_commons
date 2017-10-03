@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#if defined(AVS_UNIT_TESTING) && !defined(__APPLE__)
-#define _POSIX_C_SOURCE 200809L
+#ifdef AVS_UNIT_TESTING
+#include <avs_commons_posix_config.h>
 #endif
 
 #cmakedefine AVS_COMMONS_BIG_ENDIAN
