@@ -17,14 +17,6 @@ set(SOURCES
     src/api.c
     src/url.c)
 
-if(NOT HAVE_INET_NTOP)
-    set(SOURCES ${SOURCES} src/inet_ntop.c)
-endif()
-
-if(NOT HAVE_INET_PTON)
-    set(SOURCES ${SOURCES} src/inet_pton.c)
-endif()
-
 if(WITH_OPENSSL)
     set(SOURCES ${SOURCES} src/openssl.c)
 elseif(WITH_MBEDTLS)
@@ -42,6 +34,12 @@ if(AVS_COMMONS_COMPAT_PLATFORM)
         compat/${AVS_COMMONS_COMPAT_PLATFORM}/net_impl.c)
     set(PRIVATE_HEADERS ${PRIVATE_HEADERS}
         compat/${AVS_COMMONS_COMPAT_PLATFORM}/compat.h)
+    if(NOT HAVE_INET_NTOP)
+        set(SOURCES ${SOURCES} src/inet_ntop.c)
+    endif()
+    if(NOT HAVE_INET_PTON)
+        set(SOURCES ${SOURCES} src/inet_pton.c)
+    endif()
 endif()
 
 set(PUBLIC_HEADERS

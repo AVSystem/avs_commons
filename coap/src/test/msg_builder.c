@@ -219,7 +219,7 @@ AVS_UNIT_TEST(coap_builder, option_content_format) {
     avs_coap_opt_t *opt = get_first_opt(msg_tpl, 0);
     _avs_coap_opt_set_short_length(opt, 2);
     _avs_coap_opt_set_short_delta(opt, AVS_COAP_OPT_CONTENT_FORMAT);
-    memcpy(&opt->content[0], &(uint16_t){htons(11542)}, 2);
+    memcpy(&opt->content[0], (uint8_t[]){ 45, 22 }, 2);
 
     avs_coap_msg_info_t info = INFO_WITH_HEADER(msg_tpl);
     AVS_UNIT_ASSERT_SUCCESS(avs_coap_msg_info_opt_content_format(&info, 11542));

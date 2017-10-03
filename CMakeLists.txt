@@ -362,6 +362,9 @@ add_dependencies(avs_commons_check avs_commons_symbols_check)
 add_custom_target(avs_commons_visibility_check COMMAND ${CMAKE_CTEST_COMMAND} -R "'^test_.*_visibility$$'")
 add_dependencies(avs_commons_check avs_commons_visibility_check)
 
+add_custom_target(avs_commons_headers_check COMMAND ${CMAKE_CTEST_COMMAND} -R "'^test_.*_headers$$'")
+add_dependencies(avs_commons_check avs_commons_headers_check)
+
 macro(add_module_with_include_dirs MODULE_NAME MODULE_INCLUDE_DIRS_VAR)
     add_subdirectory(${MODULE_NAME})
     include_directories(${avs_${MODULE_NAME}_INCLUDE_DIRS})
@@ -379,6 +382,7 @@ macro(add_module_with_include_dirs MODULE_NAME MODULE_INCLUDE_DIRS_VAR)
                                    ${CMAKE_CURRENT_SOURCE_DIR}/${MODULE_NAME}/*h)
     foreach(F ${MODULE_FILES})
         add_test(NAME test_${F}_visibility COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/test_visibility.py ${F})
+        add_test(NAME test_${F}_headers COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/test_headers.py ${F})
     endforeach()
 endmacro()
 
