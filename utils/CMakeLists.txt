@@ -27,6 +27,7 @@ set(avs_utils_INCLUDE_DIRS ${INCLUDE_DIRS} PARENT_SCOPE)
 include_directories(${INCLUDE_DIRS})
 
 add_library(avs_utils STATIC ${ALL_SOURCES})
+avs_emit_deps(avs_utils ${MATH_LIBRARY})
 
 add_avs_test(avs_utils ${ALL_SOURCES})
 avs_install_export(avs_utils utils)

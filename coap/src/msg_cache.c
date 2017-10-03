@@ -53,7 +53,7 @@ struct coap_msg_cache {
 
 typedef struct cache_entry {
     endpoint_t *endpoint;
-    struct timespec expiration_time;
+    avs_time_monotonic_t expiration_time;
     const char data[1]; // actually a FAM: avs_coap_msg_t + padding
 } cache_entry_t;
 
@@ -163,7 +163,7 @@ static inline size_t cache_msg_overhead(const avs_coap_msg_t *msg) {
 }
 
 static void cache_put_entry(coap_msg_cache_t *cache,
-                            const struct timespec *expiration_time,
+                            const avs_time_monotonic_t *expiration_time,
                             endpoint_t *endpoint,
                             const avs_coap_msg_t *msg) {
     size_t msg_size = offsetof(avs_coap_msg_t, content) + msg->length;
@@ -200,8 +200,8 @@ static const avs_coap_msg_t *entry_msg(const cache_entry_t *entry) {
 }
 
 static bool entry_expired(const cache_entry_t *entry,
-                          const struct timespec *now) {
-    return avs_time_before(&entry->expiration_time, now);
+                          const avs_time_monotonic_t *now) {
+    return avs_time_monotonic_before(entry->expiration_time, *now);
 }
 
 /* returns total size of avs_coap_msg_t, including length field
@@ -255,7 +255,7 @@ static void cache_free_bytes(coap_msg_cache_t *cache,
 }
 
 static void cache_drop_expired(coap_msg_cache_t *cache,
-                               const struct timespec *now) {
+                               const avs_time_monotonic_t *now) {
     const cache_entry_t *entry;
     for (entry = entry_first(cache);
             entry_valid(cache, entry);
@@ -310,8 +310,7 @@ int _avs_coap_msg_cache_add(coap_msg_cache_t *cache,
         return -1;
     }
 
-    struct timespec now;
-    clock_gettime(CLOCK_MONOTONIC, &now);
+    avs_time_monotonic_t now = avs_time_monotonic_now();
     cache_drop_expired(cache, &now);
 
     uint16_t msg_id = avs_coap_msg_get_id(msg);
@@ -327,9 +326,10 @@ int _avs_coap_msg_cache_add(coap_msg_cache_t *cache,
 
     cache_free_bytes(cache, cap_req);
 
-    const struct timespec exchange_lifetime =
+    const avs_time_duration_t exchange_lifetime =
             avs_coap_exchange_lifetime(tx_params);
-    struct timespec expiration_time = avs_time_add(&now, &exchange_lifetime);
+    avs_time_monotonic_t expiration_time =
+            avs_time_monotonic_add(now, exchange_lifetime);
 
     cache_put_entry(cache, &expiration_time, ep, msg);
     return 0;
@@ -343,8 +343,7 @@ const avs_coap_msg_t *_avs_coap_msg_cache_get(coap_msg_cache_t *cache,
         return NULL;
     }
 
-    struct timespec now;
-    clock_gettime(CLOCK_MONOTONIC, &now);
+    avs_time_monotonic_t now = avs_time_monotonic_now();
     cache_drop_expired(cache, &now);
 
     const cache_entry_t *entry = find_entry(cache, remote_addr, remote_port,
@@ -382,9 +381,9 @@ void _avs_coap_msg_cache_debug_print(const coap_msg_cache_t *cache) {
             padding_bytes_after_msg(entry_msg(entry)));
         LOG(DEBUG, "endpoint: %s:%s", entry->endpoint->addr,
             entry->endpoint->port);
-        LOG(DEBUG, "expiration time: %zd:%09zu",
-            (ssize_t) entry->expiration_time.tv_sec,
-            (size_t) entry->expiration_time.tv_nsec);
+        LOG(DEBUG, "expiration time: %" PRId64 ":%09" PRId32,
+            entry->expiration_time.since_monotonic_epoch.seconds,
+            entry->expiration_time.since_monotonic_epoch.nanoseconds);
         avs_coap_msg_debug_print(entry_msg(entry));
     }
 }

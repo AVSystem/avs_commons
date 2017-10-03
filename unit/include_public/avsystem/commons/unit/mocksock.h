@@ -18,6 +18,7 @@
 #define AVS_COMMONS_UNIT_MOCKSOCK_H
 
 #include <avsystem/commons/net.h>
+#include <avsystem/commons/time.h>
 
 #ifdef  __cplusplus
 extern "C" {
@@ -181,10 +182,9 @@ void avs_unit_mocksock_assert_expects_met__(avs_net_abstract_socket_t *socket,
 #define avs_unit_mocksock_assert_expects_met(Socket) \
     avs_unit_mocksock_assert_expects_met__((Socket), __FILE__, __LINE__);
 
-
 void avs_unit_mocksock_enable_recv_timeout_getsetopt(
         avs_net_abstract_socket_t *socket_,
-        int default_timeout_ms);
+        avs_time_duration_t default_timeout);
 
 void avs_unit_mocksock_enable_inner_mtu_getopt(
         avs_net_abstract_socket_t *socket_,

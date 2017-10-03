@@ -42,10 +42,11 @@ VISIBILITY_SOURCE_BEGIN
 #define INET_ADDRSTRLEN 16
 #endif
 
-#define NET_SEND_TIMEOUT         1000 * 30 /* 30 sec timeout */
-#define NET_CONNECT_TIMEOUT      1000 * 10
-#define NET_ACCEPT_TIMEOUT       1000 * 5
-#define NET_LISTEN_BACKLOG       1024
+static const avs_time_duration_t NET_SEND_TIMEOUT = { 30, 0 };
+static const avs_time_duration_t NET_CONNECT_TIMEOUT = { 10, 0 };
+static const avs_time_duration_t NET_ACCEPT_TIMEOUT = { 5, 0 };
+
+#define NET_LISTEN_BACKLOG 1024
 
 #ifdef HAVE_INET_NTOP
 #define _avs_inet_ntop inet_ntop
@@ -211,7 +212,7 @@ typedef struct {
     char remote_port[NET_PORT_SIZE];
     avs_net_socket_configuration_t configuration;
 
-    avs_net_timeout_t recv_timeout;
+    avs_time_duration_t recv_timeout;
     volatile int error_code;
 } avs_net_socket_t;
 
@@ -566,7 +567,12 @@ static int configure_socket(avs_net_socket_t *net_socket) {
     return 0;
 }
 
-static short wait_until_ready(int sockfd, avs_net_timeout_t timeout,
+static inline bool is_valid_timeout(avs_time_duration_t timeout) {
+    return avs_time_duration_valid(timeout)
+            && !avs_time_duration_less(timeout, AVS_TIME_DURATION_ZERO);
+}
+
+static short wait_until_ready(int sockfd, avs_time_duration_t timeout,
                               char in, char out, char err) {
 #ifdef HAVE_POLL
     struct pollfd p;
@@ -574,7 +580,12 @@ static short wait_until_ready(int sockfd, avs_net_timeout_t timeout,
     p.fd = sockfd;
     p.events = events;
     p.revents = 0;
-    if (poll(&p, 1, timeout) != 1) {
+    int64_t timeout_ms;
+    if (avs_time_duration_to_scalar(&timeout_ms, AVS_TIME_MS, timeout)
+            || timeout_ms < 0 || timeout_ms > INT_MAX) {
+        timeout_ms = -1;
+    }
+    if (poll(&p, 1, (int) timeout_ms) != 1) {
         return 0;
     }
     if (err) {
@@ -586,8 +597,8 @@ static short wait_until_ready(int sockfd, avs_net_timeout_t timeout,
     fd_set outfds;
     fd_set errfds;
     struct timeval timeval_timeout;
-    timeval_timeout.tv_sec = timeout / 1000;
-    timeval_timeout.tv_usec = 1000 * (timeout % 1000);
+    timeval_timeout.tv_sec = timeout.seconds;
+    timeval_timeout.tv_usec = timeout.nanoseconds / 1000;
     FD_ZERO(&infds);
     FD_ZERO(&outfds);
     FD_ZERO(&errfds);
@@ -609,7 +620,7 @@ static short wait_until_ready(int sockfd, avs_net_timeout_t timeout,
     }
     AVS_FD_SET(sockfd, &errfds);
     if (select(sockfd + 1, &infds, &outfds, &errfds,
-               timeout >= 0 ? &timeval_timeout : NULL) <= 0) {
+               is_valid_timeout(timeout) ? &timeval_timeout : NULL) <= 0) {
         return 0;
     }
     return (err && AVS_FD_ISSET(sockfd, &errfds))

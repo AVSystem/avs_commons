@@ -445,8 +445,8 @@ static const avs_net_socket_v_table_t ssl_vtable = {
 
 static const avs_net_dtls_handshake_timeouts_t
 DEFAULT_DTLS_HANDSHAKE_TIMEOUTS = {
-    .min_ms = 1000,
-    .max_ms = 60000
+    .min = { 1, 0 },
+    .max = { 60, 0 }
 };
 
 VISIBILITY_PRIVATE_HEADER_END

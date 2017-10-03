@@ -403,11 +403,11 @@ int avs_stream_netbuf_out_buffer_left(avs_stream_abstract_t *str) {
 }
 
 void avs_stream_netbuf_set_recv_timeout(avs_stream_abstract_t *str,
-                                        avs_net_timeout_t timeout_ms) {
+                                        avs_time_duration_t timeout) {
     buffered_netstream_t *stream = (buffered_netstream_t *) str;
     avs_net_socket_opt_value_t timeout_opt;
 
-    timeout_opt.recv_timeout = timeout_ms;
+    timeout_opt.recv_timeout = timeout;
     avs_net_socket_set_opt(stream->socket,
                            AVS_NET_SOCKET_OPT_RECV_TIMEOUT,
                            timeout_opt);

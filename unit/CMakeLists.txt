@@ -23,8 +23,11 @@ set(PUBLIC_HEADERS
     include_public/avsystem/commons/unit/mocksock.h
     include_public/avsystem/commons/unit/test.h)
 
-set(INCLUDE_DIRS include_public ../list/include_public ../log/include_public)
-set(DEPS_LIBRARIES avs_list)
+set(INCLUDE_DIRS include_public
+    ../list/include_public
+    ../log/include_public
+    ../utils/include_public)
+set(DEPS_LIBRARIES avs_list avs_utils)
 
 if(WITH_AVS_LOG)
     set(DEPS_LIBRARIES ${DEPS_LIBRARIES} avs_log)
