@@ -17,13 +17,6 @@
 #ifndef CONFIG_POSIX_CONFIG_H
 #define CONFIG_POSIX_CONFIG_H
 
-// macOS is weird and _POSIX_C_SOURCE causes a lot of things to disappear
-#if !defined(_POSIX_C_SOURCE) && !defined(__APPLE__)
-#define _POSIX_C_SOURCE 200809L
-#endif
-
-#cmakedefine WITH_POSIX
-
 /* POSIX headers */
 #cmakedefine HAVE_SYS_SELECT_H
 #cmakedefine HAVE_SYS_SOCKET_H
@@ -77,7 +70,8 @@
 #cmakedefine HAVE_RECVMSG
 #cmakedefine HAVE_CLOSE
 
-#ifdef WITH_POSIX
+#cmakedefine POSIX_COMPAT_HEADER
+#ifndef POSIX_COMPAT_HEADER
 # include <sys/select.h>
 # include <sys/socket.h>
 # include <sys/time.h>
@@ -91,53 +85,48 @@
 # include <strings.h>
 # include <unistd.h>
 # include <time.h>
-#else // WITH_POSIX
-#cmakedefine POSIX_COMPAT_HEADER
-# ifndef POSIX_COMPAT_HEADER
-#  error "Compiling for a non-POSIX platform and POSIX_CONFIG_HEADER not defined"
-# else
-#  include "@POSIX_COMPAT_HEADER@"
+#else // POSIX_COMPAT_HEADER
+# include "@POSIX_COMPAT_HEADER@"
 // If POSIX socket APIs are implemented as macros (e.g. LwIP), redefining
 // common words like close to something else wreaks havoc all over the place.
-#  ifndef _AVS_NEED_POSIX_SOCKET
-#   ifdef accept
-#    undef accept
-#   endif
-#   ifdef bind
-#    undef bind
-#   endif
-#   ifdef shutdown
-#    undef shutdown
-#   endif
-#   ifdef connect
-#    undef connect
-#   endif
-#   ifdef listen
-#    undef listen
-#   endif
-#   ifdef recv
-#    undef recv
-#   endif
-#   ifdef send
-#    undef send
-#   endif
-#   ifdef socket
-#    undef socket
-#   endif
-#   ifdef select
-#    undef select
-#   endif
-#   ifdef read
-#    undef read
-#   endif
-#   ifdef write
-#    undef write
-#   endif
-#   ifdef close
-#    undef close
-#   endif
-#  endif // _AVS_NEED_POSIX_SOCKET
-# endif
+# ifndef _AVS_NEED_POSIX_SOCKET
+#  ifdef accept
+#   undef accept
+#  endif
+#  ifdef bind
+#   undef bind
+#  endif
+#  ifdef shutdown
+#   undef shutdown
+#  endif
+#  ifdef connect
+#   undef connect
+#  endif
+#  ifdef listen
+#   undef listen
+#  endif
+#  ifdef recv
+#   undef recv
+#  endif
+#  ifdef send
+#   undef send
+#  endif
+#  ifdef socket
+#   undef socket
+#  endif
+#  ifdef select
+#   undef select
+#  endif
+#  ifdef read
+#   undef read
+#  endif
+#  ifdef write
+#   undef write
+#  endif
+#  ifdef close
+#   undef close
+#  endif
+# endif // _AVS_NEED_POSIX_SOCKET
 #endif // WITH_POSIX
 
 #endif /* CONFIG_POSIX_CONFIG_H */

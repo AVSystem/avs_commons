@@ -219,20 +219,7 @@ if(NOT DEFINED HAVE_VISIBILITY)
     try_compile(HAVE_VISIBILITY ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp/visibility.c COMPILE_DEFINITIONS -Wall -Wextra -Werror -fvisibility=default)
 endif()
 
-if(UNIX)
-    set(DEFAULT_COMPAT_PLATFORM posix)
-else()
-    set(DEFAULT_COMPAT_PLATFORM "")
-endif()
-set(AVS_COMMONS_COMPAT_PLATFORM "${DEFAULT_COMPAT_PLATFORM}" CACHE STRING "Identifier of platform-specific integration code")
-
-if(AVS_COMMONS_COMPAT_PLATFORM STREQUAL "posix")
-    option(WITH_POSIX "Enable use of system-installed POSIX APIs" "${UNIX}")
-    if(NOT WITH_POSIX)
-        set(POSIX_COMPAT_HEADER "" CACHE STRING "POSIX compatibility header path")
-    endif()
-    include(${CMAKE_CURRENT_LIST_DIR}/cmake/PosixFeatures.cmake)
-endif()
+include(${CMAKE_CURRENT_LIST_DIR}/cmake/PosixFeatures.cmake)
 
 include(TestBigEndian)
 test_big_endian(AVS_COMMONS_BIG_ENDIAN)
@@ -506,7 +493,6 @@ if(NOT ${CMAKE_PROJECT_NAME} STREQUAL ${PROJECT_NAME})
 endif()
 
 configure_file("config/avs_commons_config.h.in" "config/avs_commons_config.h")
-configure_file("config/avs_commons_posix_config.h.in" "config/avs_commons_posix_config.h")
 configure_file("include_public/avsystem/commons/defs.h.in"
                "include_public/avsystem/commons/defs.h")
 

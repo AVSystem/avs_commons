@@ -21,9 +21,9 @@ set(SOURCES
 set(PRIVATE_HEADERS
     src/x_time_conv.h)
 
-if(AVS_COMMONS_COMPAT_PLATFORM)
-    set(SOURCES ${SOURCES}
-        compat/${AVS_COMMONS_COMPAT_PLATFORM}/time.c)
+option(WITH_POSIX_AVS_TIME "Enable avs_time_real_now() and avs_time_monotonic_now() implementation based on POSIX clock_gettime()" "${UNIX}")
+if(WITH_POSIX_AVS_TIME)
+    set(SOURCES ${SOURCES} compat/posix/time.c)
 endif()
 
 set(ALL_SOURCES ${SOURCES})

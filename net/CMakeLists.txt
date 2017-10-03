@@ -28,17 +28,22 @@ endif()
 set(PRIVATE_HEADERS
     src/net_impl.h)
 
-if(AVS_COMMONS_COMPAT_PLATFORM)
+option(WITH_POSIX_AVS_SOCKET "Enable avs_socket implementation based on POSIX socket API" "${UNIX}")
+if(WITH_POSIX_AVS_SOCKET)
+    set(POSIX_COMPAT_HEADER "" CACHE STRING "POSIX compatibility header path, if required")
+    configure_file("compat/posix/avs_net_posix_config.h.in"
+                   "compat/posix/avs_net_posix_config.h")
+    include_directories("${CMAKE_CURRENT_BINARY_DIR}/compat/posix")
     set(SOURCES ${SOURCES}
-        compat/${AVS_COMMONS_COMPAT_PLATFORM}/addrinfo.c
-        compat/${AVS_COMMONS_COMPAT_PLATFORM}/net_impl.c)
+        compat/posix/addrinfo.c
+        compat/posix/net_impl.c)
     set(PRIVATE_HEADERS ${PRIVATE_HEADERS}
-        compat/${AVS_COMMONS_COMPAT_PLATFORM}/compat.h)
+        compat/posix/compat.h)
     if(NOT HAVE_INET_NTOP)
-        set(SOURCES ${SOURCES} src/inet_ntop.c)
+        set(SOURCES ${SOURCES} compat/posix/inet_ntop.c)
     endif()
     if(NOT HAVE_INET_PTON)
-        set(SOURCES ${SOURCES} src/inet_pton.c)
+        set(SOURCES ${SOURCES} compat/posix/inet_pton.c)
     endif()
 endif()
 

@@ -21,7 +21,7 @@ from enum import Enum
 FileType = Enum('FileType', 'PUBLIC_HEADER PRIVATE_HEADER PRIVATE_SOURCE IGNORED')
 
 def classify_file(filename) -> FileType:
-    if any(re.search(w, filename) is not None for w in ('/test/', '/tests/', '/compat/.*-compat[.]h$', '/config/')):
+    if any(re.search(w, filename) is not None for w in ('/test/', '/tests/', '/compat/.*-compat[.]h$', '.*_config[.]h')):
         return FileType.IGNORED
 
     if filename.endswith('.h'):

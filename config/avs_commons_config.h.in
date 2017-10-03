@@ -14,9 +14,22 @@
  * limitations under the License.
  */
 
-#ifdef AVS_UNIT_TESTING
-#include <avs_commons_posix_config.h>
+#if !defined(_AVS_NEED_POSIX_API) && defined(AVS_UNIT_TESTING)
+#define _AVS_NEED_POSIX_API
 #endif
+
+#ifdef _AVS_NEED_POSIX_API
+// by default we try to compile in strict ISO C99 mode;
+// if it's enabled, then declare _POSIX_C_SOURCE to enable POSIX APIs;
+// unless on macOS - Apple's headers do not support strict ISO C99 mode in the
+// way glibc and BSD libc do, and _POSIX_C_SOURCE only enables "strict POSIX"
+// mode, i.e. disables a lot of APIs; it doesn't even properly recognize the
+// 200809L value, so it disables a lot of APIs that actually are in POSIX...
+#if (defined(__STRICT_ANSI__) || defined(_ISOC99_SOURCE)) \
+        && !defined(_POSIX_C_SOURCE) && !defined(__APPLE__)
+#define _POSIX_C_SOURCE 200809L
+#endif
+#endif // _AVS_NEED_POSIX_API
 
 #cmakedefine AVS_COMMONS_BIG_ENDIAN
 

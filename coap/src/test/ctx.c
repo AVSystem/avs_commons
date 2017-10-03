@@ -14,18 +14,23 @@
  * limitations under the License.
  */
 
-#include <avs_commons_posix_config.h>
+#define _AVS_NEED_POSIX_API
+
 #include <avs_commons_config.h>
 
+#include <signal.h>
+
 #include <alloca.h>
+#include <poll.h>
+#include <unistd.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
+#include <sys/types.h>
 
 #if __linux__
 #include <sys/prctl.h>
 #endif // __linux__
-
-#include <signal.h>
-#include <unistd.h>
-#include <sys/types.h>
 
 #include <avsystem/commons/stream.h>
 #include <avsystem/commons/stream_v_table.h>
