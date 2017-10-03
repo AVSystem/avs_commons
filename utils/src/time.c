@@ -289,11 +289,14 @@ static int unit_conv_backward_int64_t_double(int64_t *output,
 #define SCALAR_TYPE double
 #include "x_time_conv.h"
 
+static bool unit_valid(avs_time_unit_t unit) {
+    return unit >= 0 && unit < AVS_ARRAY_SIZE(CONVERSIONS);
+}
+
 int avs_time_duration_to_scalar(int64_t *out,
                                 avs_time_unit_t unit,
                                 avs_time_duration_t value) {
-    if (unit < 0 || unit > AVS_ARRAY_SIZE(CONVERSIONS)
-            || !avs_time_duration_valid(value)) {
+    if (!unit_valid(unit) || !avs_time_duration_valid(value)) {
         return -1;
     }
     return time_conv_forward_int64_t(out, value.seconds, value.nanoseconds,
@@ -303,7 +306,7 @@ int avs_time_duration_to_scalar(int64_t *out,
 double avs_time_duration_to_fscalar(avs_time_duration_t value,
                                     avs_time_unit_t unit) {
     double out;
-    if (unit < 0 || unit > AVS_ARRAY_SIZE(CONVERSIONS)
+    if (!unit_valid(unit)
             || !avs_time_duration_valid(value)
             || time_conv_forward_double(&out, value.seconds, value.nanoseconds,
                                         &CONVERSIONS[unit])) {
@@ -314,7 +317,7 @@ double avs_time_duration_to_fscalar(avs_time_duration_t value,
 
 avs_time_duration_t avs_time_duration_from_scalar(int64_t value,
                                                   avs_time_unit_t unit) {
-    if (unit < 0 || unit >= AVS_ARRAY_SIZE(CONVERSIONS)) {
+    if (!unit_valid(unit)) {
         return AVS_TIME_DURATION_INVALID;
     }
     avs_time_duration_t result;
@@ -326,8 +329,7 @@ avs_time_duration_t avs_time_duration_from_scalar(int64_t value,
 
 avs_time_duration_t avs_time_duration_from_fscalar(double value,
                                                    avs_time_unit_t unit) {
-    if (unit < 0 || unit >= AVS_ARRAY_SIZE(CONVERSIONS)
-            || !isfinite(value)) {
+    if (!unit_valid(unit) || !isfinite(value)) {
         return AVS_TIME_DURATION_INVALID;
     }
     avs_time_duration_t result;

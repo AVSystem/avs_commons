@@ -597,7 +597,7 @@ static short wait_until_ready(int sockfd, avs_time_duration_t timeout,
     fd_set outfds;
     fd_set errfds;
     struct timeval timeval_timeout;
-    timeval_timeout.tv_sec = timeout.seconds;
+    timeval_timeout.tv_sec = (time_t) timeout.seconds;
     timeval_timeout.tv_usec = timeout.nanoseconds / 1000;
     FD_ZERO(&infds);
     FD_ZERO(&outfds);
