@@ -35,7 +35,7 @@ if(WITH_POSIX_AVS_SOCKET)
                    "compat/posix/avs_net_posix_config.h")
     include_directories("${CMAKE_CURRENT_BINARY_DIR}/compat/posix")
     set(SOURCES ${SOURCES}
-        compat/posix/addrinfo.c
+        compat/posix/compat_addrinfo.c
         compat/posix/net_impl.c)
     set(PRIVATE_HEADERS ${PRIVATE_HEADERS}
         compat/posix/compat.h)
