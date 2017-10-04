@@ -45,7 +45,7 @@ IGNORE_PATTERNS = list(map(re.compile, [
     '^doc/Doxyfile\.in$',
     '^LICENSE$',
     '^NOTICE$',
-    '^README\.md$',
+    'README',
     '^avs_commons_test\.supp$'
 ]))
 

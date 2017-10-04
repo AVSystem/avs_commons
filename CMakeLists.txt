@@ -219,17 +219,18 @@ if(NOT DEFINED HAVE_VISIBILITY)
     try_compile(HAVE_VISIBILITY ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp/visibility.c COMPILE_DEFINITIONS -Wall -Wextra -Werror -fvisibility=default)
 endif()
 
-option(WITH_POSIX "Enable use of system-installed POSIX APIs" ON)
-if(WITH_POSIX)
-    # macOS is weird and _POSIX_C_SOURCE causes a lot of things to disappear
-    if(NOT APPLE)
-        add_definitions(-D_POSIX_C_SOURCE=200809L)
-        set(CMAKE_REQUIRED_DEFINITIONS -D_POSIX_C_SOURCE=200809L)
-    endif()
-else()
-    set(POSIX_COMPAT_HEADER "" CACHE STRING "POSIX compatibility header path")
-endif()
+# Check for builtin GCC/Clang safe arithmetic functions
+# we need to use try_compile to attempt linking
+# as they might not work on Clang if -rtlib=compiler-rt is not set
+file(WRITE ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp/builtin_add_overflow.c "#include <stdint.h>\nint main() { int64_t a,b,c; return __builtin_add_overflow(a, b, &c); }\n")
+file(WRITE ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp/builtin_mul_overflow.c "#include <stdint.h>\nint main() { int64_t a,b,c; return __builtin_mul_overflow(a, b, &c); }\n")
+try_compile(HAVE_BUILTIN_ADD_OVERFLOW ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp/builtin_add_overflow.c)
+try_compile(HAVE_BUILTIN_MUL_OVERFLOW ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp/builtin_mul_overflow.c)
+
 include(${CMAKE_CURRENT_LIST_DIR}/cmake/PosixFeatures.cmake)
+
+include(TestBigEndian)
+test_big_endian(AVS_COMMONS_BIG_ENDIAN)
 
 include(CheckFunctionExists)
 check_function_exists(getifaddrs HAVE_GETIFADDRS)
@@ -356,6 +357,9 @@ add_dependencies(avs_commons_check avs_commons_symbols_check)
 add_custom_target(avs_commons_visibility_check COMMAND ${CMAKE_CTEST_COMMAND} -R "'^test_.*_visibility$$'")
 add_dependencies(avs_commons_check avs_commons_visibility_check)
 
+add_custom_target(avs_commons_headers_check COMMAND ${CMAKE_CTEST_COMMAND} -R "'^test_.*_headers$$'")
+add_dependencies(avs_commons_check avs_commons_headers_check)
+
 macro(add_module_with_include_dirs MODULE_NAME MODULE_INCLUDE_DIRS_VAR)
     add_subdirectory(${MODULE_NAME})
     include_directories(${avs_${MODULE_NAME}_INCLUDE_DIRS})
@@ -373,6 +377,7 @@ macro(add_module_with_include_dirs MODULE_NAME MODULE_INCLUDE_DIRS_VAR)
                                    ${CMAKE_CURRENT_SOURCE_DIR}/${MODULE_NAME}/*h)
     foreach(F ${MODULE_FILES})
         add_test(NAME test_${F}_visibility COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/test_visibility.py ${F})
+        add_test(NAME test_${F}_headers COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/test_headers.py ${F})
     endforeach()
 endmacro()
 
@@ -496,7 +501,6 @@ if(NOT ${CMAKE_PROJECT_NAME} STREQUAL ${PROJECT_NAME})
 endif()
 
 configure_file("config/avs_commons_config.h.in" "config/avs_commons_config.h")
-configure_file("config/avs_commons_posix_config.h.in" "config/avs_commons_posix_config.h")
 configure_file("include_public/avsystem/commons/defs.h.in"
                "include_public/avsystem/commons/defs.h")
 

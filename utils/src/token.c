@@ -15,7 +15,6 @@
  */
 
 #include <avs_commons_config.h>
-#include <avs_commons_posix_config.h>
 
 #include <ctype.h>
 #include <string.h>
@@ -32,7 +31,7 @@ int avs_match_token(const char **src, const char *token,
     while (**src && strchr(AVS_SPACES, (unsigned char) **src)) {
         ++*src;
     }
-    result = strncasecmp(*src, token, len);
+    result = avs_strncasecmp(*src, token, len);
     if (result == 0) {
         if ((*src)[len] && !strchr(delims, (unsigned char) (*src)[len])) {
             return 1;

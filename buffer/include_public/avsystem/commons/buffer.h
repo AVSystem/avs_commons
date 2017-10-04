@@ -17,6 +17,7 @@
 #ifndef AVS_COMMONS_BUFFER_H
 #define AVS_COMMONS_BUFFER_H
 
+#include <stddef.h>
 #include <stdint.h>
 
 #ifdef	__cplusplus

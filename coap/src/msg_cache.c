@@ -15,7 +15,6 @@
  */
 
 #include <avs_commons_config.h>
-#include <avs_commons_posix_config.h>
 
 #include <avsystem/commons/buffer.h>
 #include <avsystem/commons/defs.h>
@@ -31,12 +30,6 @@
 #include <inttypes.h>
 
 VISIBILITY_SOURCE_BEGIN
-
-#ifdef WITH_IPV6
-# define AVS_ADDRSTRLEN INET6_ADDRSTRLEN
-#elif defined(WITH_IPV4)
-# define AVS_ADDRSTRLEN INET_ADDRSTRLEN
-#endif
 
 typedef struct endpoint {
     uint16_t refcount;
@@ -135,8 +128,8 @@ static endpoint_t *cache_endpoint_add_ref(coap_msg_cache_t *cache,
 static void cache_endpoint_del_ref(coap_msg_cache_t *cache,
                                    endpoint_t *endpoint) {
     if (--endpoint->refcount == 0) {
-        AVS_LIST(endpoint_t) *ep_ptr = AVS_LIST_FIND_PTR(&cache->endpoints,
-                                                         endpoint);
+        AVS_LIST(endpoint_t) *ep_ptr = (AVS_LIST(endpoint_t) *)
+                AVS_LIST_FIND_PTR(&cache->endpoints, endpoint);
         LOG(TRACE, "removed cache endpoint: %s:%s", (*ep_ptr)->addr,
             (*ep_ptr)->port);
         AVS_LIST_DELETE(ep_ptr);

@@ -15,9 +15,10 @@
  */
 
 #include <avs_commons_config.h>
-#include <avs_commons_posix_config.h>
 
 #include <string.h>
+
+#include <avsystem/commons/utils.h>
 
 #include "client.h"
 #include "http_log.h"
@@ -71,7 +72,7 @@ void avs_http_tcp_configuration(
 int avs_http_set_user_agent(avs_http_t *http, const char *user_agent) {
     char *new_user_agent = NULL;
     if (user_agent) {
-        if (!(new_user_agent = strdup(user_agent))) {
+        if (!(new_user_agent = avs_strdup(user_agent))) {
             LOG(ERROR, "Out of memory");
             return -1;
         }

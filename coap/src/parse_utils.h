@@ -17,12 +17,11 @@
 #ifndef AVS_COAP_PARSE_UTILS_H
 #define AVS_COAP_PARSE_UTILS_H
 
-#include <avs_commons_posix_config.h>
-
 #include <stdint.h>
 #include <string.h>
 
 #include <avsystem/commons/net.h>
+#include <avsystem/commons/utils.h>
 
 VISIBILITY_PRIVATE_HEADER_BEGIN
 
@@ -41,7 +40,7 @@ VISIBILITY_PRIVATE_HEADER_BEGIN
 static inline uint16_t extract_u16(const uint8_t *data) {
     uint16_t result;
     memcpy(&result, data, sizeof(uint16_t));
-    return ntohs(result);
+    return avs_convert_be16(result);
 }
 
 VISIBILITY_PRIVATE_HEADER_END

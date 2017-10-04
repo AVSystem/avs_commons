@@ -17,6 +17,8 @@
 #ifndef AVS_COMMONS_NET_COMPAT_H
 #define AVS_COMMONS_NET_COMPAT_H
 
+#include "../../src/net_impl.h"
+
 VISIBILITY_PRIVATE_HEADER_BEGIN
 
 /* Following values are not defined e.g. in LwIP 1.4.1 */
@@ -42,6 +44,10 @@ VISIBILITY_PRIVATE_HEADER_BEGIN
 #ifndef MSG_NOSIGNAL
 #   define MSG_NOSIGNAL 0
 #endif
+
+int _avs_net_get_af(avs_net_af_t addr_family);
+
+int _avs_net_get_socket_type(avs_net_socket_type_t socket_type);
 
 VISIBILITY_PRIVATE_HEADER_END
 

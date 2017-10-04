@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
+#define _AVS_NEED_POSIX_API
+
 #include <avs_commons_config.h>
-#include <avs_commons_posix_config.h>
 
 #include <ctype.h>
 #include <inttypes.h>
@@ -32,6 +33,7 @@
 #include <avsystem/commons/log.h>
 #include <avsystem/commons/unit/mock_helpers.h>
 #include <avsystem/commons/unit/test.h>
+#include <avsystem/commons/utils.h>
 
 #include "test.h"
 #include "stack_trace.h"
@@ -571,17 +573,17 @@ static int parse_command_line_args(int argc, char* argv[],
 #ifdef WITH_AVS_LOG
 static int parse_log_level(const char *str,
                            avs_log_level_t *level) {
-    if (!strcasecmp(str, "trace")) {
+    if (!avs_strcasecmp(str, "trace")) {
         *level = AVS_LOG_TRACE;
-    } else if (!strcasecmp(str, "debug")) {
+    } else if (!avs_strcasecmp(str, "debug")) {
         *level = AVS_LOG_DEBUG;
-    } else if (!strcasecmp(str, "info")) {
+    } else if (!avs_strcasecmp(str, "info")) {
         *level = AVS_LOG_INFO;
-    } else if (!strcasecmp(str, "warning")) {
+    } else if (!avs_strcasecmp(str, "warning")) {
         *level = AVS_LOG_WARNING;
-    } else if (!strcasecmp(str, "error")) {
+    } else if (!avs_strcasecmp(str, "error")) {
         *level = AVS_LOG_ERROR;
-    } else if (!strcasecmp(str, "quiet")) {
+    } else if (!avs_strcasecmp(str, "quiet")) {
         *level = AVS_LOG_QUIET;
     } else {
         return -1;

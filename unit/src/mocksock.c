@@ -950,7 +950,7 @@ void avs_unit_mocksock_expect_errno__(avs_net_abstract_socket_t *socket,
 void avs_unit_mocksock_fail_command__(avs_net_abstract_socket_t *socket,
                                       const char *file,
                                       int line) {
-    mocksock_expected_command_t *command =
+    mocksock_expected_command_t *command = (mocksock_expected_command_t *)
         AVS_LIST_TAIL(((mocksock_t *) socket)->expected_commands);
     _avs_unit_assert(command != NULL, file, line, "no command to fail\n");
     command->retval = -1;

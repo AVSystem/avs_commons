@@ -333,7 +333,7 @@ int avs_http_add_header(avs_stream_abstract_t *stream_,
     http_stream_t *stream = (http_stream_t *) stream_;
     assert(stream->vtable == &http_vtable);
     LOG(TRACE, "http_add_header, %s: %s", key, value);
-    AVS_LIST(http_header_t) new_header =
+    AVS_LIST(http_header_t) new_header = (AVS_LIST(http_header_t))
             AVS_LIST_APPEND_NEW(http_header_t, &stream->user_headers);
     if (!new_header) {
         return -1;

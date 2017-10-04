@@ -15,7 +15,6 @@
  */
 
 #include <avs_commons_config.h>
-#include <avs_commons_posix_config.h>
 
 #include <avsystem/commons/coap/ctx.h>
 #include <avsystem/commons/coap/msg_builder.h>
@@ -31,12 +30,6 @@
 #include "msg_cache.h"
 
 VISIBILITY_SOURCE_BEGIN
-
-#ifdef WITH_IPV6
-# define AVS_ADDRSTRLEN INET6_ADDRSTRLEN
-#elif defined(WITH_IPV4)
-# define AVS_ADDRSTRLEN INET_ADDRSTRLEN
-#endif
 
 struct avs_coap_ctx {
     avs_coap_tx_params_t tx_params;

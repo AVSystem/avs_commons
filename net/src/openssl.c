@@ -15,13 +15,15 @@
  */
 
 #include <avs_commons_config.h>
-#include <avs_commons_posix_config.h>
 
 #include <assert.h>
 #include <ctype.h>
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
+
+#include <sys/time.h> // for struct timeval
+
 #include <openssl/ssl.h>
 #include <openssl/rand.h>
 #include <openssl/err.h>

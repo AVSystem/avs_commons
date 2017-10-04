@@ -148,7 +148,7 @@ AVS_UNIT_TEST(list, find) {
         AVS_UNIT_ASSERT_NOT_EQUAL((intptr_t)*element_ptr, (intptr_t)NULL);
         AVS_UNIT_ASSERT_EQUAL(**element_ptr, element);
 
-        element_ptr = AVS_LIST_NEXT_PTR(element_ptr);
+        element_ptr = (int **) AVS_LIST_NEXT_PTR(element_ptr);
         AVS_UNIT_ASSERT_NOT_EQUAL((intptr_t)element_ptr, (intptr_t)NULL);
         AVS_UNIT_ASSERT_NOT_EQUAL((intptr_t)*element_ptr, (intptr_t)NULL);
         AVS_UNIT_ASSERT_EQUAL(**element_ptr, element + 1);
@@ -265,7 +265,7 @@ AVS_UNIT_TEST(list, is_cyclic) {
         AVS_LIST(int) *ptr;
         elem = AVS_LIST_APPEND_NEW(int, &list);
         *elem = (int) i;
-        ptr = AVS_LIST_APPEND_PTR(&list);
+        ptr = (AVS_LIST(int) *) AVS_LIST_APPEND_PTR(&list);
         /* (i-3) elements in loop */
         *ptr = AVS_LIST_NTH(list, 3);
         AVS_UNIT_ASSERT_TRUE(AVS_LIST_IS_CYCLIC(list));
@@ -299,24 +299,24 @@ AVS_UNIT_TEST(list, merge) {
    AVS_LIST(test_elem_t) first = NULL;
    AVS_LIST(test_elem_t) second = NULL;
 
-   *AVS_LIST_APPEND(&first, AVS_LIST_NEW_ELEMENT(test_elem_t)) =
+   *(test_elem_t *) AVS_LIST_APPEND(&first, AVS_LIST_NEW_ELEMENT(test_elem_t)) =
            (test_elem_t) { 0, 1 };
-   *AVS_LIST_APPEND(&first, AVS_LIST_NEW_ELEMENT(test_elem_t)) =
+   *(test_elem_t *) AVS_LIST_APPEND(&first, AVS_LIST_NEW_ELEMENT(test_elem_t)) =
            (test_elem_t) { 1, 3 };
-   *AVS_LIST_APPEND(&first, AVS_LIST_NEW_ELEMENT(test_elem_t)) =
+   *(test_elem_t *) AVS_LIST_APPEND(&first, AVS_LIST_NEW_ELEMENT(test_elem_t)) =
            (test_elem_t) { 2, 4 };
-   *AVS_LIST_APPEND(&first, AVS_LIST_NEW_ELEMENT(test_elem_t)) =
+   *(test_elem_t *) AVS_LIST_APPEND(&first, AVS_LIST_NEW_ELEMENT(test_elem_t)) =
            (test_elem_t) { 3, 5 };
 
-   *AVS_LIST_APPEND(&second, AVS_LIST_NEW_ELEMENT(test_elem_t)) =
+   *(test_elem_t *) AVS_LIST_APPEND(&second, AVS_LIST_NEW_ELEMENT(test_elem_t)) =
            (test_elem_t) { 10, 0 };
-   *AVS_LIST_APPEND(&second, AVS_LIST_NEW_ELEMENT(test_elem_t)) =
+   *(test_elem_t *) AVS_LIST_APPEND(&second, AVS_LIST_NEW_ELEMENT(test_elem_t)) =
            (test_elem_t) { 11, 2 };
-   *AVS_LIST_APPEND(&second, AVS_LIST_NEW_ELEMENT(test_elem_t)) =
+   *(test_elem_t *) AVS_LIST_APPEND(&second, AVS_LIST_NEW_ELEMENT(test_elem_t)) =
            (test_elem_t) { 12, 3 };
-   *AVS_LIST_APPEND(&second, AVS_LIST_NEW_ELEMENT(test_elem_t)) =
+   *(test_elem_t *) AVS_LIST_APPEND(&second, AVS_LIST_NEW_ELEMENT(test_elem_t)) =
            (test_elem_t) { 13, 4 };
-   *AVS_LIST_APPEND(&second, AVS_LIST_NEW_ELEMENT(test_elem_t)) =
+   *(test_elem_t *) AVS_LIST_APPEND(&second, AVS_LIST_NEW_ELEMENT(test_elem_t)) =
            (test_elem_t) { 14, 6 };
 
    static const test_elem_t expected_elements_1[] = {
@@ -346,24 +346,29 @@ AVS_UNIT_TEST(list, merge) {
    AVS_LIST_CLEAR(&first);
 
    // Once again, but now let's merge `first` with the `second`
-   *AVS_LIST_APPEND(&first, AVS_LIST_NEW_ELEMENT(test_elem_t)) =
+   *(test_elem_t *) AVS_LIST_APPEND(&first,AVS_LIST_NEW_ELEMENT(test_elem_t)) =
            (test_elem_t) { 0, 1 };
-   *AVS_LIST_APPEND(&first, AVS_LIST_NEW_ELEMENT(test_elem_t)) =
+   *(test_elem_t *) AVS_LIST_APPEND(&first, AVS_LIST_NEW_ELEMENT(test_elem_t)) =
            (test_elem_t) { 1, 3 };
-   *AVS_LIST_APPEND(&first, AVS_LIST_NEW_ELEMENT(test_elem_t)) =
+   *(test_elem_t *) AVS_LIST_APPEND(&first, AVS_LIST_NEW_ELEMENT(test_elem_t)) =
            (test_elem_t) { 2, 4 };
-   *AVS_LIST_APPEND(&first, AVS_LIST_NEW_ELEMENT(test_elem_t)) =
+   *(test_elem_t *) AVS_LIST_APPEND(&first, AVS_LIST_NEW_ELEMENT(test_elem_t)) =
            (test_elem_t) { 3, 5 };
 
-   *AVS_LIST_APPEND(&second, AVS_LIST_NEW_ELEMENT(test_elem_t)) =
+   *(test_elem_t *) AVS_LIST_APPEND(&second,
+                                    AVS_LIST_NEW_ELEMENT(test_elem_t)) =
            (test_elem_t) { 10, 0 };
-   *AVS_LIST_APPEND(&second, AVS_LIST_NEW_ELEMENT(test_elem_t)) =
+   *(test_elem_t *) AVS_LIST_APPEND(&second,
+                                    AVS_LIST_NEW_ELEMENT(test_elem_t)) =
            (test_elem_t) { 11, 2 };
-   *AVS_LIST_APPEND(&second, AVS_LIST_NEW_ELEMENT(test_elem_t)) =
+   *(test_elem_t *) AVS_LIST_APPEND(&second,
+                                    AVS_LIST_NEW_ELEMENT(test_elem_t)) =
            (test_elem_t) { 12, 3 };
-   *AVS_LIST_APPEND(&second, AVS_LIST_NEW_ELEMENT(test_elem_t)) =
+   *(test_elem_t *) AVS_LIST_APPEND(&second,
+                                    AVS_LIST_NEW_ELEMENT(test_elem_t)) =
            (test_elem_t) { 13, 4 };
-   *AVS_LIST_APPEND(&second, AVS_LIST_NEW_ELEMENT(test_elem_t)) =
+   *(test_elem_t *) AVS_LIST_APPEND(&second,
+                                    AVS_LIST_NEW_ELEMENT(test_elem_t)) =
            (test_elem_t) { 14, 6 };
 
    static const test_elem_t expected_elements_2[] = {
@@ -403,7 +408,8 @@ AVS_UNIT_TEST(list, merge_when_one_list_is_empty) {
     AVS_LIST(test_elem_t) first = NULL;
     AVS_LIST(test_elem_t) second = NULL;
 
-    *AVS_LIST_APPEND(&first, AVS_LIST_NEW_ELEMENT(test_elem_t)) =
+    *(test_elem_t *) AVS_LIST_APPEND(&first,
+                                     AVS_LIST_NEW_ELEMENT(test_elem_t)) =
             (test_elem_t) { 1, 1 };
     AVS_LIST_MERGE(&first, &second, test_elem_comparator);
     AVS_UNIT_ASSERT_EQUAL(AVS_LIST_SIZE(first), 1);

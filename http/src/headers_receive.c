@@ -15,11 +15,12 @@
  */
 
 #include <avs_commons_config.h>
-#include <avs_commons_posix_config.h>
 
 #include <ctype.h>
 #include <errno.h>
 #include <string.h>
+
+#include <avsystem/commons/utils.h>
 
 #include "body_receivers.h"
 #include "client.h"
@@ -55,47 +56,47 @@ static int parse_size(size_t *out, const char *in) {
 
 static int http_handle_header(const char *key, const char *value,
                               header_parser_state_t *state) {
-    if (strcasecmp(key, "WWW-Authenticate") == 0) {
+    if (avs_strcasecmp(key, "WWW-Authenticate") == 0) {
         _avs_http_auth_setup(&state->stream->auth, value);
-    } else if (strcasecmp(key, "Set-Cookie") == 0) {
+    } else if (avs_strcasecmp(key, "Set-Cookie") == 0) {
         if (_avs_http_set_cookie(state->stream->http, false, value) < 0) {
             return -1;
         }
-    } else if (strcasecmp(key, "Set-Cookie2") == 0) {
+    } else if (avs_strcasecmp(key, "Set-Cookie2") == 0) {
         if (_avs_http_set_cookie(state->stream->http, true, value) < 0) {
             return -1;
         }
-    } else if (strcasecmp(key, "Content-Length") == 0) {
+    } else if (avs_strcasecmp(key, "Content-Length") == 0) {
         if (state->transfer_encoding != TRANSFER_IDENTITY
                 || parse_size(&state->content_length, value)) {
             return -1;
         }
         state->transfer_encoding = TRANSFER_LENGTH;
-    } else if (strcasecmp(key, "Transfer-Encoding") == 0) {
-        if (strcasecmp(value, "identity") != 0) { /* see RFC 2616, sec. 4.4 */
+    } else if (avs_strcasecmp(key, "Transfer-Encoding") == 0) {
+        if (avs_strcasecmp(value, "identity") != 0) { /* see RFC 2616, sec. 4.4 */
             if (state->transfer_encoding != TRANSFER_IDENTITY) {
                 return -1;
             }
             state->transfer_encoding = TRANSFER_CHUNKED;
         }
-    } else if (strcasecmp(key, "Content-Encoding") == 0) {
-        if (strcasecmp(value, "identity") != 0) {
+    } else if (avs_strcasecmp(key, "Content-Encoding") == 0) {
+        if (avs_strcasecmp(value, "identity") != 0) {
             if (state->content_encoding != AVS_HTTP_CONTENT_IDENTITY) {
                 return -1;
             }
-            if (strcasecmp(value, "gzip") == 0
-                    || strcasecmp(value, "x-gzip") == 0) {
+            if (avs_strcasecmp(value, "gzip") == 0
+                    || avs_strcasecmp(value, "x-gzip") == 0) {
                 state->content_encoding = AVS_HTTP_CONTENT_GZIP;
-            } else if (strcasecmp(value, "deflate") == 0) {
+            } else if (avs_strcasecmp(value, "deflate") == 0) {
                 state->content_encoding = AVS_HTTP_CONTENT_DEFLATE;
             }
         }
-    } else if (strcasecmp(key, "Connection") == 0) {
-        if (strcasecmp(value, "close") == 0) {
+    } else if (avs_strcasecmp(key, "Connection") == 0) {
+        if (avs_strcasecmp(value, "close") == 0) {
             state->stream->flags.keep_connection = 0;
         }
     } else if (state->stream->status / 100 == 3
-            && strcasecmp(key, "Location") == 0) {
+            && avs_strcasecmp(key, "Location") == 0) {
         avs_url_free(state->redirect_url);
         state->redirect_url = avs_url_parse(value);
     } else {

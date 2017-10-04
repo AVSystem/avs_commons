@@ -15,7 +15,6 @@
  */
 
 #include <avs_commons_config.h>
-#include <avs_commons_posix_config.h>
 
 #include <avsystem/commons/coap/msg_builder.h>
 #include <avsystem/commons/utils.h>
@@ -89,9 +88,8 @@ static int append_token(avs_coap_msg_buffer_t *buffer,
 static inline size_t encode_ext_value(uint8_t *ptr,
                                       uint16_t ext_value) {
     if (ext_value >= AVS_COAP_EXT_U16_BASE) {
-        uint16_t value_net_byte_order =
-            htons((uint16_t)(ext_value - AVS_COAP_EXT_U16_BASE));
-
+        uint16_t value_net_byte_order = avs_convert_be16(
+                (uint16_t) (ext_value - AVS_COAP_EXT_U16_BASE));
         memcpy(ptr, &value_net_byte_order, sizeof(value_net_byte_order));
         return sizeof(value_net_byte_order);
     } else if (ext_value >= AVS_COAP_EXT_U8_BASE) {

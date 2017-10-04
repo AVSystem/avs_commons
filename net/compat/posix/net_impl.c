@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
+#define _AVS_NEED_POSIX_API
 #define _AVS_NEED_POSIX_SOCKET
 
 #include <avs_commons_config.h>
-#include <avs_commons_posix_config.h>
+#include "avs_net_posix_config.h"
 
 #include <avsystem/commons/utils.h>
 
@@ -34,7 +35,6 @@
 #endif
 
 #include "compat.h"
-#include "net_impl.h"
 
 VISIBILITY_SOURCE_BEGIN
 
@@ -597,7 +597,7 @@ static short wait_until_ready(int sockfd, avs_time_duration_t timeout,
     fd_set outfds;
     fd_set errfds;
     struct timeval timeval_timeout;
-    timeval_timeout.tv_sec = timeout.seconds;
+    timeval_timeout.tv_sec = (time_t) timeout.seconds;
     timeval_timeout.tv_usec = timeout.nanoseconds / 1000;
     FD_ZERO(&infds);
     FD_ZERO(&outfds);
@@ -1778,10 +1778,4 @@ int avs_net_resolved_endpoint_get_host_port(
                                endp->size,
                                host, (socklen_t) hostlen,
                                serv, (socklen_t) servlen);
-}
-
-int avs_net_resolved_endpoint_get_host(const avs_net_resolved_endpoint_t *endp,
-                                       char *host, size_t hostlen) {
-    return avs_net_resolved_endpoint_get_host_port(endp,
-                                                   host, hostlen, NULL, 0);
 }

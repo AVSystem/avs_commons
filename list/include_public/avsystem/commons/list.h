@@ -218,7 +218,10 @@ offsetof(struct avs_list_space_for_next_helper_struct__, value)
  * @param list    Pointer to a first element in a list.
  */
 #define AVS_LIST_FOREACH(element, list) \
-for ((element) = (list); (element); (element) = AVS_LIST_NEXT(element))
+for ((element) = (list); \
+     (element); \
+     *(void **) (intptr_t) &(element) \
+            = (void *) (intptr_t) AVS_LIST_NEXT(element))
 
 /**
  * Iterates over a list, starting with the current element.
@@ -266,7 +269,7 @@ for (; (element); (element) = AVS_LIST_NEXT(element))
 #define AVS_LIST_FOREACH_PTR(element_ptr, list_ptr) \
 for ((element_ptr) = (list_ptr); \
      *(element_ptr); \
-     (element_ptr) = AVS_LIST_NEXT_PTR(element_ptr))
+     *(void **) (intptr_t) &(element_ptr) = AVS_LIST_NEXT_PTR(element_ptr))
 
 /**
  * Iterates over a list as pointers to element pointers, starting with the
@@ -669,7 +672,7 @@ AVS_LIST_CONFIG_FREE( \
 #define AVS_LIST_DELETABLE_FOREACH_PTR(element_ptr, helper_element, list_ptr) \
 for ((element_ptr) = (list_ptr), (helper_element) = *(element_ptr); \
      *(element_ptr); \
-     (element_ptr) =  \
+     *(void **) (intptr_t) &(element_ptr) = \
              AVS_LIST_DELETABLE_FOREACH_PTR_VALID(element_ptr, helper_element) \
              ? AVS_LIST_NEXT_PTR(element_ptr) \
              : (AVS_TYPEOF_PTR(element_ptr)) element_ptr, \

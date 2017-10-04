@@ -44,6 +44,33 @@ static inline bool avs_is_power_of_2(size_t value) {
 }
 
 /**
+ * Convert a 16-bit integer between native byte order and big-endian byte order.
+ *
+ * Note that it is a symmetric operation, so the same function may be used for
+ * conversion in either way. If the host architecture is natively big-endian,
+ * this function is a no-op.
+ */
+uint16_t avs_convert_be16(uint16_t value);
+
+/**
+ * Convert a 32-bit integer between native byte order and big-endian byte order.
+ *
+ * Note that it is a symmetric operation, so the same function may be used for
+ * conversion in either way. If the host architecture is natively big-endian,
+ * this function is a no-op.
+ */
+uint32_t avs_convert_be32(uint32_t value);
+
+/**
+ * Convert a 64-bit integer between native byte order and big-endian byte order.
+ *
+ * Note that it is a symmetric operation, so the same function may be used for
+ * conversion in either way. If the host architecture is natively big-endian,
+ * this function is a no-op.
+ */
+uint64_t avs_convert_be64(uint64_t value);
+
+/**
  * Wrapper around vsnprintf(), which always return a negative in case of
  * an error (which is the only thing differentiating it from vsnprintf()).
  *
@@ -62,6 +89,34 @@ int avs_simple_vsnprintf(char *out,
  */
 int avs_simple_snprintf(char *out, size_t out_size, const char *format, ...)
         AVS_F_PRINTF(3, 4);
+
+/**
+ * Compares two strings in a case-insensitive way.
+ *
+ * @returns negative, zero, or positive value if <c>s1</c> is lexicographically
+ *          less, equal or greater to <c>s2</c>, respectively
+ */
+int avs_strcasecmp(const char *s1, const char *s2);
+
+/**
+ * Compares at most <c>n</c> characters of two strings in a case-insensitive
+ * way.
+ *
+ * @returns negative, zero, or positive value if <c>s1</c> is lexicographically
+ *          less, equal or greater to <c>s2</c>, respectively
+ */
+int avs_strncasecmp(const char *s1, const char *s2, size_t n);
+
+/**
+ * Portable reentrant version of standard library <c>strtok()</c>; equivalent to
+ * POSIX <c>strtok_r()</c>.
+ */
+char *avs_strtok(char *str, char *delim, char **saveptr);
+
+/**
+ * Creates a <c>malloc()</c>-allocated copy of a given string.
+ */
+char *avs_strdup(const char *str);
 
 /**
  * String that contains all the standard whitespace characters.

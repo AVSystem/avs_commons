@@ -147,7 +147,7 @@ static inline uint16_t _avs_coap_header_get_id(const avs_coap_msg_t *msg) {
 
 static inline void _avs_coap_header_set_id(avs_coap_msg_t *msg,
                                            uint16_t msg_id) {
-    uint16_t msg_id_nbo = htons(msg_id);
+    uint16_t msg_id_nbo = avs_convert_be16(msg_id);;
     memcpy(&msg->content[offsetof(coap_header_t, message_id)],
            &msg_id_nbo, sizeof(msg_id_nbo));
 }

@@ -14,6 +14,25 @@
  * limitations under the License.
  */
 
+#if !defined(_AVS_NEED_POSIX_API) && defined(AVS_UNIT_TESTING)
+#define _AVS_NEED_POSIX_API
+#endif
+
+#ifdef _AVS_NEED_POSIX_API
+// by default we try to compile in strict ISO C99 mode;
+// if it's enabled, then declare _POSIX_C_SOURCE to enable POSIX APIs;
+// unless on macOS - Apple's headers do not support strict ISO C99 mode in the
+// way glibc and BSD libc do, and _POSIX_C_SOURCE only enables "strict POSIX"
+// mode, i.e. disables a lot of APIs; it doesn't even properly recognize the
+// 200809L value, so it disables a lot of APIs that actually are in POSIX...
+#if (defined(__STRICT_ANSI__) || defined(_ISOC99_SOURCE)) \
+        && !defined(_POSIX_C_SOURCE) && !defined(__APPLE__)
+#define _POSIX_C_SOURCE 200809L
+#endif
+#endif // _AVS_NEED_POSIX_API
+
+#cmakedefine AVS_COMMONS_BIG_ENDIAN
+
 #cmakedefine HAVE_GETIFADDRS
 #cmakedefine HAVE_BACKTRACE
 #cmakedefine HAVE_BACKTRACE_SYMBOLS
@@ -39,9 +58,9 @@
 #endif
 
 #ifdef WITH_IPV6
-# define AVS_ADDRSTRLEN INET6_ADDRSTRLEN
+# define AVS_ADDRSTRLEN sizeof("ffff:ffff:ffff:ffff:ffff:ffff:255.255.255.255")
 #elif defined(WITH_IPV4)
-# define AVS_ADDRSTRLEN INET_ADDRSTRLEN
+# define AVS_ADDRSTRLEN sizeof("255.255.255.255")
 #endif
 
 #cmakedefine WITH_SSL
@@ -82,6 +101,9 @@ extern void *sbrk (intptr_t __delta);
 #define VISIBILITY_PRIVATE_HEADER_BEGIN
 #define VISIBILITY_PRIVATE_HEADER_END
 #endif
+
+#cmakedefine HAVE_BUILTIN_ADD_OVERFLOW
+#cmakedefine HAVE_BUILTIN_MUL_OVERFLOW
 
 #cmakedefine WITH_INTERNAL_LOGS
 

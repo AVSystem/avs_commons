@@ -26,6 +26,10 @@
 
 VISIBILITY_PRIVATE_HEADER_BEGIN
 
+#if defined(WITH_IPV4) && defined(WITH_IPV6)
+#define WITH_AVS_V4MAPPED
+#endif
+
 /**
  * An owned PSK/identity pair. avs_commons will free()
  * @ref avs_net_owned_psk_t#psk and @ref avs_net_owned_psk_t#identity pointers
@@ -65,10 +69,6 @@ int _avs_net_create_ssl_socket(avs_net_abstract_socket_t **socket,
 int _avs_net_create_dtls_socket(avs_net_abstract_socket_t **socket,
                                const void *socket_configuration);
 #endif
-
-int _avs_net_get_af(avs_net_af_t addr_family);
-
-int _avs_net_get_socket_type(avs_net_socket_type_t socket_type);
 
 VISIBILITY_PRIVATE_HEADER_END
 
