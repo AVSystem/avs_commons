@@ -268,7 +268,7 @@ avs_time_monotonic_diff(avs_time_monotonic_t minuend,
 }
 
 /**
- * Converts a time duration into a scalar value.
+ * Converts a time duration into an integer value.
  *
  * @param out   Pointer to a variable to store the result in.
  * @param unit  Time unit to express the result in.
@@ -281,8 +281,8 @@ int avs_time_duration_to_scalar(int64_t *out,
                                 avs_time_duration_t value);
 
 /**
- * Converts a realtime instant into a scalar value relative to January 1, 1970,
- * midnight UTC.
+ * Converts a realtime instant into an integer value relative to January 1,
+ * 1970, midnight UTC.
  *
  * @param out   Pointer to a variable to store the result in.
  * @param unit  Time unit to express the result in.
@@ -297,8 +297,8 @@ static inline int avs_time_real_to_scalar(int64_t *out,
 }
 
 /**
- * Converts a monotonic instant into a scalar value relative to some unspecified
- * epoch that is guaranteed to be consistent until reboot.
+ * Converts a monotonic instant into an integer value relative to some
+ * unspecified epoch that is guaranteed to be consistent until reboot.
  *
  * @param out   Pointer to a variable to store the result in.
  * @param unit  Time unit to express the result in.
@@ -313,7 +313,49 @@ static inline int avs_time_monotonic_to_scalar(int64_t *out,
 }
 
 /**
- * Creates a time duration based on a scalar value.
+ * Converts a time duration into a floating-point value.
+ *
+ * @param value Input value to convert.
+ * @param unit  Time unit to express the result in.
+ *
+ * @return The converted value, or NaN if <c>value</c> is not a valid time
+ *         value.
+ */
+double avs_time_duration_to_fscalar(avs_time_duration_t value,
+                                    avs_time_unit_t unit);
+
+/**
+ * Converts a realtime instant into an integer value relative to January 1,
+ * 1970, midnight UTC.
+ *
+ * @param value Input value to convert.
+ * @param unit  Time unit to express the result in.
+ *
+ * @return The converted value, or NaN if <c>value</c> is not a valid time
+ *         value.
+ */
+static inline double avs_time_real_to_fscalar(avs_time_real_t value,
+                                              avs_time_unit_t unit) {
+    return avs_time_duration_to_fscalar(value.since_real_epoch, unit);
+}
+
+/**
+ * Converts a monotonic instant into a floating-point value relative to some
+ * unspecified epoch that is guaranteed to be consistent until reboot.
+ *
+ * @param value Input value to convert.
+ * @param unit  Time unit to express the result in.
+ *
+ * @return The converted value, or NaN if <c>value</c> is not a valid time
+ *         value.
+ */
+static inline double avs_time_monotonic_to_fscalar(avs_time_monotonic_t value,
+                                                   avs_time_unit_t unit) {
+    return avs_time_duration_to_fscalar(value.since_monotonic_epoch, unit);
+}
+
+/**
+ * Creates a time duration based on an integer value.
  *
  * @param value Number of <c>unit</c>s in the duration.
  * @param unit  Time unit the <c>value</c> is expressed in.
@@ -325,7 +367,7 @@ avs_time_duration_t avs_time_duration_from_scalar(int64_t value,
                                                   avs_time_unit_t unit);
 
 /**
- * Creates a realtime instant based on a scalar value.
+ * Creates a realtime instant based on an integer value.
  *
  * @param value Number of <c>unit</c>s since January 1, 1970, midnight UTC.
  * @param unit  Time unit the <c>value</c> is expressed in.
@@ -339,7 +381,7 @@ static inline avs_time_real_t avs_time_real_from_scalar(int64_t value,
 }
 
 /**
- * Creates a monotonic instant based on a scalar value.
+ * Creates a monotonic instant based on an integer value.
  *
  * @param value Number of <c>unit</c>s since the system monotonic clock epoch,
  *              which is unspecified but guaranteed to be consistent until
@@ -353,6 +395,50 @@ static inline avs_time_monotonic_t
 avs_time_monotonic_from_scalar(int64_t value, avs_time_unit_t unit) {
     return (avs_time_monotonic_t) {
         avs_time_duration_from_scalar(value, unit)
+    };
+}
+
+/**
+ * Creates a time duration based on a floating-point value.
+ *
+ * @param value Number of <c>unit</c>s in the duration.
+ * @param unit  Time unit the <c>value</c> is expressed in.
+ *
+ * @return Converted value. or an invalid time value if <c>value</c> is out of
+ *         range for a given <c>unit</c>.
+ */
+avs_time_duration_t avs_time_duration_from_fscalar(double value,
+                                                   avs_time_unit_t unit);
+
+/**
+ * Creates a realtime instant based on a floating-point value.
+ *
+ * @param value Number of <c>unit</c>s since January 1, 1970, midnight UTC.
+ * @param unit  Time unit the <c>value</c> is expressed in.
+ *
+ * @return Converted value. or an invalid time value if <c>value</c> is out of
+ *         range for a given <c>unit</c>.
+ */
+static inline avs_time_real_t avs_time_real_from_fscalar(double value,
+                                                         avs_time_unit_t unit) {
+    return (avs_time_real_t) { avs_time_duration_from_fscalar(value, unit) };
+}
+
+/**
+ * Creates a monotonic instant based on a floating-point value.
+ *
+ * @param value Number of <c>unit</c>s since the system monotonic clock epoch,
+ *              which is unspecified but guaranteed to be consistent until
+ *              reboot.
+ * @param unit  Time unit the <c>value</c> is expressed in.
+ *
+ * @return Converted value. or an invalid time value if <c>value</c> is out of
+ *         range for a given <c>unit</c>.
+ */
+static inline avs_time_monotonic_t
+avs_time_monotonic_from_fscalar(double value, avs_time_unit_t unit) {
+    return (avs_time_monotonic_t) {
+        avs_time_duration_from_fscalar(value, unit)
     };
 }
 

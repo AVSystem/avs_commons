@@ -75,11 +75,11 @@ bool avs_time_duration_valid(avs_time_duration_t t) {
 }
 
 #ifdef HAVE_BUILTIN_ADD_OVERFLOW
-static inline int safe_add(int64_t *out, int64_t a, int64_t b) {
+static inline int safe_add_int64_t(int64_t *out, int64_t a, int64_t b) {
     return __builtin_add_overflow(a, b, out) ? -1 : 0;
 }
 #else // HAVE_BUILTIN_ADD_OVERFLOW
-static int safe_add(int64_t *out, int64_t a, int64_t b) {
+static int safe_add_int64_t(int64_t *out, int64_t a, int64_t b) {
     if (a > 0 && b > 0) {
         uint64_t result = ((uint64_t) a) + ((uint64_t) b);
         if (result > (uint64_t) INT64_MAX) {
@@ -102,6 +102,46 @@ static int safe_add(int64_t *out, int64_t a, int64_t b) {
     return 0;
 }
 #endif // HAVE_BUILTIN_ADD_OVERFLOW
+
+static inline int safe_add_double(double *out, double a, double b) {
+    *out = a + b;
+    return isfinite(*out) ? 0 : -1;
+}
+
+#ifdef HAVE_BUILTIN_MUL_OVERFLOW
+static inline int
+safe_mul_int64_t(int64_t *out, int64_t input, int64_t multiplier) {
+    return __builtin_mul_overflow(input, multiplier, out) ? -1 : 0;
+}
+#else // HAVE_BUILTIN_MUL_OVERFLOW
+static int safe_mul_int64_t(int64_t *out, int64_t input, int64_t multiplier) {
+    if (input == 0 || multiplier == 0) {
+        *out = 0;
+        return 0;
+    } else if ((input == INT64_MIN && multiplier == 1)
+            || (input == 1 && multiplier == INT64_MIN)) {
+        *out = INT64_MIN;
+        return 0;
+    } else if (input == INT64_MIN || multiplier == INT64_MIN) {
+        return -1;
+    } else if (multiplier < 0) {
+        return safe_mul_int64_t(out, -input, -multiplier);
+    } else {
+        assert(multiplier > 0);
+        if (input > INT64_MAX / multiplier || input < INT64_MIN / multiplier) {
+            return -1;
+        }
+        *out = input * multiplier;
+        return 0;
+    }
+}
+#endif // HAVE_BUILTIN_MUL_OVERFLOW
+
+static inline int
+safe_mul_double(double *out, double input, double multiplier) {
+    *out = input * multiplier;
+    return isfinite(*out) ? 0 : -1;
+}
 
 static int normalize(avs_time_duration_t *inout) {
     assert(inout->nanoseconds >= -NS_IN_S);
@@ -129,7 +169,7 @@ avs_time_duration_t avs_time_duration_add(avs_time_duration_t a,
     } else {
         avs_time_duration_t result;
         result.nanoseconds = a.nanoseconds + b.nanoseconds;
-        if (safe_add(&result.seconds, a.seconds, b.seconds)
+        if (safe_add_int64_t(&result.seconds, a.seconds, b.seconds)
                 || normalize(&result)) {
             return AVS_TIME_DURATION_INVALID;
         }
@@ -164,8 +204,8 @@ avs_time_duration_diff(avs_time_duration_t minuend,
         avs_time_duration_t result;
         result.nanoseconds = minuend.nanoseconds
                 + negated_subtrahend.nanoseconds;
-        if (safe_add(&result.seconds,
-                     minuend.seconds, negated_subtrahend.seconds)
+        if (safe_add_int64_t(&result.seconds,
+                             minuend.seconds, negated_subtrahend.seconds)
                 || normalize(&result)) {
             return AVS_TIME_DURATION_INVALID;
         }
@@ -181,7 +221,7 @@ typedef enum {
 
 typedef struct {
     unit_conv_op_t operation;
-    int32_t factor;
+    int64_t factor;
 } unit_conv_t;
 
 typedef struct {
@@ -190,162 +230,14 @@ typedef struct {
 } time_conv_t;
 
 static const time_conv_t CONVERSIONS[] = {
-    [AVS_TIME_DAY]  = { { UCO_DIV,      86400 }, { UCO_MUL,       0 } },
-    [AVS_TIME_HOUR] = { { UCO_DIV,       3600 }, { UCO_MUL,       0 } },
-    [AVS_TIME_MIN]  = { { UCO_DIV,         60 }, { UCO_MUL,       0 } },
-    [AVS_TIME_S]    = { { UCO_MUL,          1 }, { UCO_MUL,       0 } },
-    [AVS_TIME_MS]   = { { UCO_MUL,       1000 }, { UCO_DIV, 1000000 } },
-    [AVS_TIME_US]   = { { UCO_MUL,    1000000 }, { UCO_DIV,    1000 } },
-    [AVS_TIME_NS]   = { { UCO_MUL, 1000000000 }, { UCO_MUL,       1 } }
+    [AVS_TIME_DAY]  = {{ UCO_DIV,      86400 }, { UCO_DIV, 86400000000000LL }},
+    [AVS_TIME_HOUR] = {{ UCO_DIV,       3600 }, { UCO_DIV,  3600000000000LL }},
+    [AVS_TIME_MIN]  = {{ UCO_DIV,         60 }, { UCO_DIV,    60000000000LL }},
+    [AVS_TIME_S]    = {{ UCO_MUL,          1 }, { UCO_DIV,     1000000000LL }},
+    [AVS_TIME_MS]   = {{ UCO_MUL,       1000 }, { UCO_DIV,        1000000LL }},
+    [AVS_TIME_US]   = {{ UCO_MUL,    1000000 }, { UCO_DIV,           1000LL }},
+    [AVS_TIME_NS]   = {{ UCO_MUL, 1000000000 }, { UCO_MUL,              1LL }}
 };
-
-static int unit_conv(int64_t *output,
-                     int64_t input,
-                     unit_conv_op_t operation,
-                     int32_t factor) {
-    assert(factor >= 0);
-    switch (operation) {
-    case UCO_MUL:
-        if (factor != 0
-                && (input > INT64_MAX / factor || input < INT64_MIN / factor)) {
-            return -1;
-        }
-        *output = input * factor;
-        return 0;
-    case UCO_DIV:
-        if (factor == 0) {
-            *output = 0;
-        } else {
-            *output = input / factor;
-        }
-        return 0;
-    default:
-        assert(0 && "Invalid unit_conv operation");
-        return -1;
-    }
-}
-
-static int unit_conv_forward(int64_t *output,
-                             int64_t input,
-                             const unit_conv_t *conv) {
-    return unit_conv(output, input, conv->operation, conv->factor);
-}
-
-static int unit_conv_backward(int64_t *output,
-                              int64_t input,
-                              const unit_conv_t *conv) {
-    return unit_conv(output, input,
-                     conv->operation == UCO_DIV ? UCO_MUL : UCO_DIV,
-                     conv->factor);
-}
-
-static int time_conv_forward(int64_t *output,
-                             int64_t seconds,
-                             int32_t nanoseconds,
-                             const time_conv_t *conv) {
-    int64_t converted_s;
-    int64_t converted_ns;
-    if (seconds < 0 && nanoseconds > 0) {
-        // if the time is near the range limit,
-        // the negative value of seconds alone might be actually _out_ of range
-        ++seconds;
-        nanoseconds -= NS_IN_S;
-    }
-    if (unit_conv_forward(&converted_s, seconds, &conv->conv_s)
-            || unit_conv_forward(&converted_ns, nanoseconds, &conv->conv_ns)) {
-        return -1;
-    }
-    return safe_add(output, converted_s, converted_ns);
-}
-
-static int time_conv_backward(avs_time_duration_t *output,
-                              int64_t input,
-                              const time_conv_t *conv) {
-    int64_t seconds_only;
-    int64_t output_ns_tmp;
-    if (unit_conv_backward(&output->seconds, input, &conv->conv_s)
-            || unit_conv_forward(&seconds_only, output->seconds, &conv->conv_s)
-            || unit_conv_backward(&output_ns_tmp, input - seconds_only,
-                                  &conv->conv_ns)
-            || output_ns_tmp <= -NS_IN_S || output_ns_tmp >= NS_IN_S) {
-        return -1;
-    }
-    output->nanoseconds = (int32_t) output_ns_tmp;
-    return normalize(output);
-}
-
-int avs_time_duration_to_scalar(int64_t *out,
-                                avs_time_unit_t unit,
-                                avs_time_duration_t value) {
-    if (unit < 0 || unit > AVS_ARRAY_SIZE(CONVERSIONS)
-            || !avs_time_duration_valid(value)) {
-        return -1;
-    }
-    return time_conv_forward(out, value.seconds, value.nanoseconds,
-                             &CONVERSIONS[unit]);
-}
-
-avs_time_duration_t avs_time_duration_from_scalar(int64_t value,
-                                                  avs_time_unit_t unit) {
-    if (unit < 0 && unit >= AVS_ARRAY_SIZE(CONVERSIONS)) {
-        return AVS_TIME_DURATION_INVALID;
-    }
-    avs_time_duration_t result;
-    if (time_conv_backward(&result, value, &CONVERSIONS[unit])) {
-        return AVS_TIME_DURATION_INVALID;
-    }
-    return result;
-}
-
-#ifdef HAVE_BUILTIN_MUL_OVERFLOW
-static inline int safe_mul(int64_t *out, int64_t input, int64_t multiplier) {
-    return __builtin_mul_overflow(input, multiplier, out) ? -1 : 0;
-}
-#else // HAVE_BUILTIN_MUL_OVERFLOW
-static int safe_mul(int64_t *out, int64_t input, int64_t multiplier) {
-    if (input == 0 || multiplier == 0) {
-        *out = 0;
-        return 0;
-    } else if ((input == INT64_MIN && multiplier == 1)
-            || (input == 1 && multiplier == INT64_MIN)) {
-        *out = INT64_MIN;
-        return 0;
-    } else if (input == INT64_MIN || multiplier == INT64_MIN) {
-        return -1;
-    } else if (multiplier < 0) {
-        return safe_mul(out, -input, -multiplier);
-    } else {
-        assert(multiplier > 0);
-        if (input > INT64_MAX / multiplier || input < INT64_MIN / multiplier) {
-            return -1;
-        }
-        *out = input * multiplier;
-        return 0;
-    }
-}
-#endif // HAVE_BUILTIN_MUL_OVERFLOW
-
-avs_time_duration_t avs_time_duration_mul(avs_time_duration_t input,
-                                          int32_t multiplier) {
-    if (!avs_time_duration_valid(input)) {
-        return AVS_TIME_DURATION_INVALID;
-    } else {
-        // multiplying two int32_t's into int64_t is always safe
-        int64_t nanoseconds =
-                (int64_t) input.nanoseconds * (int64_t) multiplier;
-        int64_t seconds_rest = nanoseconds / NS_IN_S;
-        avs_time_duration_t result;
-        result.nanoseconds = (int32_t) (nanoseconds % NS_IN_S);
-        if (safe_mul(&result.seconds, input.seconds, multiplier)
-                || safe_add(&result.seconds, result.seconds, seconds_rest)
-                || normalize(&result)) {
-            return AVS_TIME_DURATION_INVALID;
-        }
-
-        assert(avs_time_duration_valid(result));
-        return result;
-    }
-}
 
 static bool double_is_int64(double value) {
     static const double DOUBLE_2_63 = (double) (((uint64_t) 1) << 63);
@@ -358,6 +250,115 @@ static bool double_is_int64(double value) {
 #endif
     // note that the largest value representable as IEEE 754 double that is
     // smaller than 2^63 is actually 2^63 - 1024
+}
+
+static int unit_conv_backward_int64_t_double(int64_t *output,
+                                             double input,
+                                             const unit_conv_t *conv) {
+    assert(conv->factor > 0);
+    double tmp = NAN;
+    switch (conv->operation) {
+    case UCO_DIV: // multiplication (because we're operating backwards)
+        tmp = input * (double) conv->factor;
+        break;
+    case UCO_MUL: // division (because we're operating backwards)
+        tmp = input / (double) conv->factor;
+        break;
+    default:
+        assert(0 && "Invalid unit_conv operation");
+    }
+    if (!double_is_int64(tmp)) {
+        return -1;
+    }
+    *output = (int64_t) tmp;
+    return 0;
+}
+
+// unit_conv_int64_t_int64_t
+// unit_conv_forward_int64_t_int64_t
+// unit_conv_backward_int64_t_int64_t
+// time_conv_forward_int64_t
+// time_conv_backward_int64_t
+#define SCALAR_TYPE int64_t
+#include "x_time_conv.h"
+
+// unit_conv_double_int64_t
+// unit_conv_forward_double_int64_t
+// unit_conv_backward_double_int64_t
+// time_conv_forward_double
+// time_conv_backward_double
+#define SCALAR_TYPE double
+#include "x_time_conv.h"
+
+int avs_time_duration_to_scalar(int64_t *out,
+                                avs_time_unit_t unit,
+                                avs_time_duration_t value) {
+    if (unit < 0 || unit > AVS_ARRAY_SIZE(CONVERSIONS)
+            || !avs_time_duration_valid(value)) {
+        return -1;
+    }
+    return time_conv_forward_int64_t(out, value.seconds, value.nanoseconds,
+                                     &CONVERSIONS[unit]);
+}
+
+double avs_time_duration_to_fscalar(avs_time_duration_t value,
+                                    avs_time_unit_t unit) {
+    double out;
+    if (unit < 0 || unit > AVS_ARRAY_SIZE(CONVERSIONS)
+            || !avs_time_duration_valid(value)
+            || time_conv_forward_double(&out, value.seconds, value.nanoseconds,
+                                        &CONVERSIONS[unit])) {
+        return NAN;
+    }
+    return out;
+}
+
+avs_time_duration_t avs_time_duration_from_scalar(int64_t value,
+                                                  avs_time_unit_t unit) {
+    if (unit < 0 || unit >= AVS_ARRAY_SIZE(CONVERSIONS)) {
+        return AVS_TIME_DURATION_INVALID;
+    }
+    avs_time_duration_t result;
+    if (time_conv_backward_int64_t(&result, value, &CONVERSIONS[unit])) {
+        return AVS_TIME_DURATION_INVALID;
+    }
+    return result;
+}
+
+avs_time_duration_t avs_time_duration_from_fscalar(double value,
+                                                   avs_time_unit_t unit) {
+    if (unit < 0 || unit >= AVS_ARRAY_SIZE(CONVERSIONS)
+            || !isfinite(value)) {
+        return AVS_TIME_DURATION_INVALID;
+    }
+    avs_time_duration_t result;
+    if (time_conv_backward_double(&result, value, &CONVERSIONS[unit])) {
+        return AVS_TIME_DURATION_INVALID;
+    }
+    return result;
+}
+
+avs_time_duration_t avs_time_duration_mul(avs_time_duration_t input,
+                                          int32_t multiplier) {
+    if (!avs_time_duration_valid(input)) {
+        return AVS_TIME_DURATION_INVALID;
+    } else {
+        // multiplying two int32_t's into int64_t is always safe
+        int64_t nanoseconds =
+                (int64_t) input.nanoseconds * (int64_t) multiplier;
+        int64_t seconds_rest = nanoseconds / NS_IN_S;
+        avs_time_duration_t result;
+        result.nanoseconds = (int32_t) (nanoseconds % NS_IN_S);
+        if (safe_mul_int64_t(&result.seconds, input.seconds, multiplier)
+                || safe_add_int64_t(&result.seconds,
+                                    result.seconds, seconds_rest)
+                || normalize(&result)) {
+            return AVS_TIME_DURATION_INVALID;
+        }
+
+        assert(avs_time_duration_valid(result));
+        return result;
+    }
 }
 
 avs_time_duration_t avs_time_duration_fmul(avs_time_duration_t input,

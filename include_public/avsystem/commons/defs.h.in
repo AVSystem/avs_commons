@@ -52,13 +52,52 @@ typedef long ssize_t;
  * Internal definitions used by the library to implement the functionality.
  */
 /**@{*/
-#define AVS_CONCAT_INTERNAL__(prefix, suffix) prefix##suffix
+#define AVS_VARARG_LENGTH_INTERNAL__( \
+        _10, _9, _8, _7, _6, _5, _4, _3, _2, _1, N, ...) N
+
+#define AVS_VARARG0_INTERNAL__(Arg, ...) Arg
+
+#define AVS_CONCAT_RAW_INTERNAL__(prefix, suffix) prefix##suffix
+
+#define AVS_CONCAT_INTERNAL__(prefix, suffix) \
+    AVS_CONCAT_RAW_INTERNAL__(prefix, suffix)
+
+#define AVS_CONCAT_INTERNAL_1__(_1) _1
+#define AVS_CONCAT_INTERNAL_2__(_1, _2) AVS_CONCAT_INTERNAL__(_1, _2)
+#define AVS_CONCAT_INTERNAL_3__(_1, ...) \
+        AVS_CONCAT_INTERNAL__(_1, AVS_CONCAT_INTERNAL_2__(__VA_ARGS__))
+#define AVS_CONCAT_INTERNAL_4__(_1, ...) \
+        AVS_CONCAT_INTERNAL__(_1, AVS_CONCAT_INTERNAL_3__(__VA_ARGS__))
+#define AVS_CONCAT_INTERNAL_5__(_1, ...) \
+        AVS_CONCAT_INTERNAL__(_1, AVS_CONCAT_INTERNAL_4__(__VA_ARGS__))
+#define AVS_CONCAT_INTERNAL_6__(_1, ...) \
+        AVS_CONCAT_INTERNAL__(_1, AVS_CONCAT_INTERNAL_5__(__VA_ARGS__))
+#define AVS_CONCAT_INTERNAL_7__(_1, ...) \
+        AVS_CONCAT_INTERNAL__(_1, AVS_CONCAT_INTERNAL_6__(__VA_ARGS__))
+#define AVS_CONCAT_INTERNAL_8__(_1, ...) \
+        AVS_CONCAT_INTERNAL__(_1, AVS_CONCAT_INTERNAL_7__(__VA_ARGS__))
+#define AVS_CONCAT_INTERNAL_9__(_1, ...) \
+        AVS_CONCAT_INTERNAL__(_1, AVS_CONCAT_INTERNAL_8__(__VA_ARGS__))
+#define AVS_CONCAT_INTERNAL_10__(_1, ...) \
+        AVS_CONCAT_INTERNAL__(_1, AVS_CONCAT_INTERNAL_9__(__VA_ARGS__))
 
 #define AVS_ALIGN_POINTER_INTERNAL__(type, ptr, alignment) \
     (type)((uintptr_t)(ptr) \
             + ((alignment) - 1 \
                     - ((uintptr_t)(ptr) + ((alignment) - 1)) % (alignment)))
 /**@}*/
+
+/**
+ * Returns the first argument from a variable argument pack.
+ */
+#define AVS_VARARG0(...) AVS_VARARG0_INTERNAL__(__VA_ARGS__, _)
+
+/**
+ * Calculates the number of arguments to the macro. Works with up to 10
+ * arguments.
+ */
+#define AVS_VARARG_LENGTH(...) \
+    AVS_VARARG_LENGTH_INTERNAL__(__VA_ARGS__, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0)
 
 /**
  * Returns a pointer to a structure member given by offset. Can be thought of as
@@ -74,14 +113,13 @@ typedef long ssize_t;
         ((type *) (void *) (((char *) (intptr_t) (struct_ptr)) + (offset)))
 
 /**
- * Concatenates two tokens. Can be used to do macro expansion before standard C
- * preprocessor concatenation.
- *
- * @param prefix First token to concatenate.
- *
- * @param suffix Second token to concatenate.
+ * Concatenates tokens passed as arguments. Can be used to do macro expansion
+ * before standard C preprocessor concatenation.
  */
-#define AVS_CONCAT(prefix, suffix) AVS_CONCAT_INTERNAL__(prefix, suffix)
+#define AVS_CONCAT(...) \
+    AVS_CONCAT_INTERNAL__( \
+        AVS_CONCAT_INTERNAL__(AVS_CONCAT_INTERNAL_, \
+                              AVS_VARARG_LENGTH(__VA_ARGS__)), __)(__VA_ARGS__)
 
 /**
  * Stringifies a token.
@@ -139,11 +177,11 @@ typedef union {
 #else /* C99 standard fallback (might waste few bytes) */
 #define AVS_ALIGNED_VLA(type, name, size, align_as)                           \
     uint8_t AVS_CONCAT(                                                       \
-            name##__vla_,                                                     \
+            name, __vla_,                                                     \
             __LINE__)[sizeof(type[size]) + (AVS_ALIGNOF(align_as) - 1)];      \
     type *const name =                                                        \
             (AVS_ALIGN_POINTER_INTERNAL__(type *,                             \
-                                          AVS_CONCAT(name##__vla_, __LINE__), \
+                                          AVS_CONCAT(name, __vla_, __LINE__), \
                                           AVS_ALIGNOF(align_as)))
 #endif
 
@@ -157,7 +195,7 @@ typedef union {
  * C89-compliant replacement for <c>static_assert</c>.
  */
 #define AVS_STATIC_ASSERT(condition, message) \
-    struct AVS_CONCAT(static_assert_,message) { \
+    struct AVS_CONCAT(static_assert_, message) { \
         char message[(condition) ? 1 : -1]; \
     }
 

@@ -301,16 +301,16 @@ static void AVS_CONCAT(_avs_unit_global_init_, __LINE__) (int VERBOSE_VAR)
  */
 #define AVS_UNIT_SUITE_INIT(suite, VERBOSE_VAR)                                \
 static void                                                                    \
-AVS_CONCAT(_avs_unit_suite_init_##suite##_, __LINE__) (int VERBOSE_VAR);       \
-void AVS_CONCAT(_avs_unit_suite_init_constructor_##suite##_, __LINE__) (void)  \
+AVS_CONCAT(_avs_unit_suite_init_, suite, _, __LINE__) (int VERBOSE_VAR);       \
+void AVS_CONCAT(_avs_unit_suite_init_constructor_, suite, _, __LINE__) (void)  \
         __attribute__((constructor));                                          \
-void AVS_CONCAT(_avs_unit_suite_init_constructor_##suite##_, __LINE__) (void) {\
+void AVS_CONCAT(_avs_unit_suite_init_constructor_, suite, _, __LINE__) (void) {\
     avs_unit_add_suite_init__(#suite,                                          \
-                              AVS_CONCAT(_avs_unit_suite_init_##suite##_,      \
+                              AVS_CONCAT(_avs_unit_suite_init_, suite, _,      \
                                          __LINE__));                           \
 }                                                                              \
 static void                                                                    \
-AVS_CONCAT(_avs_unit_suite_init_##suite##_, __LINE__) (int VERBOSE_VAR)
+AVS_CONCAT(_avs_unit_suite_init_, suite, _, __LINE__) (int VERBOSE_VAR)
 
 /**
  * Defines a unit test case.

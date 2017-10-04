@@ -148,6 +148,99 @@ AVS_UNIT_TEST(time, time_to_scalar) {
     AVS_UNIT_ASSERT_EQUAL(result, 1428);
 }
 
+AVS_UNIT_TEST(time, time_to_fscalar) {
+    AVS_UNIT_ASSERT_EQUAL(
+            avs_time_real_to_fscalar(
+                    (avs_time_real_t) { { 0, 123456789 } }, AVS_TIME_NS),
+            123456789.0);
+    AVS_UNIT_ASSERT_EQUAL(
+            avs_time_monotonic_to_fscalar(
+                    (avs_time_monotonic_t) { { 0, 1234567898 } }, AVS_TIME_NS),
+            NAN);
+    AVS_UNIT_ASSERT_EQUAL(
+            avs_time_duration_to_fscalar(
+                    (avs_time_duration_t) { 123456789, 876543210 },
+                    AVS_TIME_NS),
+            123456789876543210.0);
+    AVS_UNIT_ASSERT_EQUAL(
+            avs_time_monotonic_to_fscalar(
+                    (avs_time_monotonic_t) { { 0, 123456789 } }, AVS_TIME_US),
+            123456.789);
+    AVS_UNIT_ASSERT_EQUAL(
+            avs_time_duration_to_fscalar(
+                    (avs_time_duration_t) { 0, 1234567898 }, AVS_TIME_US),
+            NAN);
+    AVS_UNIT_ASSERT_EQUAL(
+            avs_time_real_to_fscalar(
+                    (avs_time_real_t) { { 123456789, 876543210 } },
+                    AVS_TIME_US),
+            123456789876543.21);
+    AVS_UNIT_ASSERT_EQUAL(
+            avs_time_duration_to_fscalar(
+                    (avs_time_duration_t) { 0, 123456789 }, AVS_TIME_MS),
+            123.456789);
+    AVS_UNIT_ASSERT_EQUAL(
+            avs_time_real_to_fscalar(
+                    (avs_time_real_t) { { 0, 1234567898 } }, AVS_TIME_MS),
+            NAN);
+    AVS_UNIT_ASSERT_EQUAL(
+            avs_time_monotonic_to_fscalar(
+                    (avs_time_monotonic_t) { { 123456789, 876543210 } },
+                    AVS_TIME_MS),
+            123456789876.54321);
+    AVS_UNIT_ASSERT_EQUAL(
+            avs_time_real_to_fscalar(
+                    (avs_time_real_t) { { 0, 123456789 } }, AVS_TIME_S),
+            0.123456789);
+    AVS_UNIT_ASSERT_EQUAL(
+            avs_time_monotonic_to_fscalar(
+                    (avs_time_monotonic_t) { { 0, 1234567898 } }, AVS_TIME_S),
+            NAN);
+    AVS_UNIT_ASSERT_EQUAL(
+            avs_time_duration_to_fscalar(
+                    (avs_time_duration_t) { 123456789, 876543210 }, AVS_TIME_S),
+            123456789.87654321);
+    AVS_UNIT_ASSERT_EQUAL(
+            avs_time_monotonic_to_fscalar(
+                    (avs_time_monotonic_t) { { 0, 123456789 } }, AVS_TIME_MIN),
+            0.00205761315);
+    AVS_UNIT_ASSERT_EQUAL(
+            avs_time_duration_to_fscalar(
+                    (avs_time_duration_t) { 0, 1234567898 }, AVS_TIME_MIN),
+            NAN);
+    AVS_UNIT_ASSERT_EQUAL(
+            avs_time_real_to_fscalar(
+                    (avs_time_real_t) { { 123456789, 876543210 } },
+                    AVS_TIME_MIN),
+            2057613.1646090534);
+    AVS_UNIT_ASSERT_EQUAL(
+            avs_time_duration_to_fscalar(
+                    (avs_time_duration_t) { 0, 123456789 }, AVS_TIME_HOUR),
+            3.42935525e-5);
+    AVS_UNIT_ASSERT_EQUAL(
+            avs_time_real_to_fscalar(
+                    (avs_time_real_t) { { 0, 1234567898 } }, AVS_TIME_HOUR),
+            NAN);
+    AVS_UNIT_ASSERT_EQUAL(
+            avs_time_monotonic_to_fscalar(
+                    (avs_time_monotonic_t) { { 123456789, 876543210 } },
+                    AVS_TIME_HOUR),
+            34293.55274348422);
+    AVS_UNIT_ASSERT_EQUAL(
+            avs_time_real_to_fscalar(
+                    (avs_time_real_t) { { 0, 123456789 } }, AVS_TIME_DAY),
+            1.4288980208333333e-6);
+    AVS_UNIT_ASSERT_EQUAL(
+            avs_time_monotonic_to_fscalar(
+                    (avs_time_monotonic_t) { { 0, 1234567898 } }, AVS_TIME_DAY),
+            NAN);
+    AVS_UNIT_ASSERT_EQUAL(
+            avs_time_duration_to_fscalar(
+                    (avs_time_duration_t) { 123456789, 876543210 },
+                    AVS_TIME_DAY),
+            1428.8980309785093);
+}
+
 AVS_UNIT_TEST(time, time_from_scalar) {
     avs_time_real_t realtime =
             avs_time_real_from_scalar(1234567898L, AVS_TIME_NS);
@@ -199,6 +292,67 @@ AVS_UNIT_TEST(time, time_from_scalar) {
     AVS_UNIT_ASSERT_EQUAL(monotonic.since_monotonic_epoch.seconds,
                           -106666666387200L);
     AVS_UNIT_ASSERT_EQUAL(monotonic.since_monotonic_epoch.nanoseconds, 0);
+}
+
+AVS_UNIT_TEST(time, time_from_fscalar) {
+    avs_time_real_t realtime =
+            avs_time_real_from_fscalar(1234567898.7654321, AVS_TIME_NS);
+    AVS_UNIT_ASSERT_EQUAL(realtime.since_real_epoch.seconds, 1);
+    AVS_UNIT_ASSERT_EQUAL(realtime.since_real_epoch.nanoseconds, 234567898);
+    avs_time_monotonic_t monotonic =
+            avs_time_monotonic_from_fscalar(-1234567898.7654321, AVS_TIME_NS);
+    AVS_UNIT_ASSERT_EQUAL(monotonic.since_monotonic_epoch.seconds, -2);
+    AVS_UNIT_ASSERT_EQUAL(monotonic.since_monotonic_epoch.nanoseconds,
+                          765432102);
+    avs_time_duration_t duration =
+            avs_time_duration_from_fscalar(1234567898.7654321, AVS_TIME_US);
+    AVS_UNIT_ASSERT_EQUAL(duration.seconds, 1234);
+    AVS_UNIT_ASSERT_EQUAL(duration.nanoseconds, 567898765);
+    realtime = avs_time_real_from_fscalar(-1234567898.7654321, AVS_TIME_US);
+    AVS_UNIT_ASSERT_EQUAL(realtime.since_real_epoch.seconds, -1235);
+    AVS_UNIT_ASSERT_EQUAL(realtime.since_real_epoch.nanoseconds, 432101235);
+    monotonic = avs_time_monotonic_from_fscalar(1234567898.7654321,
+                                                AVS_TIME_MS);
+    AVS_UNIT_ASSERT_EQUAL(monotonic.since_monotonic_epoch.seconds, 1234567);
+    AVS_UNIT_ASSERT_EQUAL(monotonic.since_monotonic_epoch.nanoseconds,
+                          898765432);
+    duration = avs_time_duration_from_fscalar(-1234567898.7654321, AVS_TIME_MS);
+    AVS_UNIT_ASSERT_EQUAL(duration.seconds, -1234568);
+    AVS_UNIT_ASSERT_EQUAL(duration.nanoseconds, 101234568);
+    realtime = avs_time_real_from_fscalar(1234567898.7654321, AVS_TIME_S);
+    AVS_UNIT_ASSERT_EQUAL(realtime.since_real_epoch.seconds, 1234567898L);
+    AVS_UNIT_ASSERT_EQUAL(realtime.since_real_epoch.nanoseconds, 765432119);
+    monotonic = avs_time_monotonic_from_fscalar(-1234567898.7654321,
+                                                AVS_TIME_S);
+    AVS_UNIT_ASSERT_EQUAL(monotonic.since_monotonic_epoch.seconds,
+                          -1234567899L);
+    AVS_UNIT_ASSERT_EQUAL(monotonic.since_monotonic_epoch.nanoseconds,
+                          234567881);
+    duration = avs_time_duration_from_fscalar(1234567898.7654321, AVS_TIME_MIN);
+    AVS_UNIT_ASSERT_EQUAL(duration.seconds, 74074073925L);
+    AVS_UNIT_ASSERT_EQUAL(duration.nanoseconds, 925927162);
+    realtime = avs_time_real_from_fscalar(-1234567898.7654321, AVS_TIME_MIN);
+    AVS_UNIT_ASSERT_EQUAL(realtime.since_real_epoch.seconds, -74074073926L);
+    AVS_UNIT_ASSERT_EQUAL(realtime.since_real_epoch.nanoseconds, 74072838);
+    monotonic = avs_time_monotonic_from_fscalar(1234567898.7654321,
+                                                AVS_TIME_HOUR);
+    AVS_UNIT_ASSERT_EQUAL(monotonic.since_monotonic_epoch.seconds,
+                          4444444435555L);
+    AVS_UNIT_ASSERT_EQUAL(monotonic.since_monotonic_epoch.nanoseconds,
+                          555324554);
+    duration = avs_time_duration_from_fscalar(-1234567898.7654321,
+                                              AVS_TIME_HOUR);
+    AVS_UNIT_ASSERT_EQUAL(duration.seconds, -4444444435556L);
+    AVS_UNIT_ASSERT_EQUAL(duration.nanoseconds, 444675446);
+    realtime = avs_time_real_from_fscalar(1234567898.7654321, AVS_TIME_DAY);
+    AVS_UNIT_ASSERT_EQUAL(realtime.since_real_epoch.seconds, 106666666453333L);
+    AVS_UNIT_ASSERT_EQUAL(realtime.since_real_epoch.nanoseconds, 329589843);
+    monotonic = avs_time_monotonic_from_fscalar(-1234567898.7654321,
+                                                AVS_TIME_DAY);
+    AVS_UNIT_ASSERT_EQUAL(monotonic.since_monotonic_epoch.seconds,
+                          -106666666453334L);
+    AVS_UNIT_ASSERT_EQUAL(monotonic.since_monotonic_epoch.nanoseconds,
+                          670410157);
 }
 
 AVS_UNIT_TEST(time, time_to_scalar_overflow) {
