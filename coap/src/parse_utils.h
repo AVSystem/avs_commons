@@ -21,6 +21,7 @@
 #include <string.h>
 
 #include <avsystem/commons/net.h>
+#include <avsystem/commons/utils.h>
 
 VISIBILITY_PRIVATE_HEADER_BEGIN
 
@@ -39,10 +40,7 @@ VISIBILITY_PRIVATE_HEADER_BEGIN
 static inline uint16_t extract_u16(const uint8_t *data) {
     uint16_t result;
     memcpy(&result, data, sizeof(uint16_t));
-#ifndef AVS_COMMONS_BIG_ENDIAN
-    result = (uint16_t) ((result >> 8) | (result << 8));
-#endif
-    return result;
+    return avs_convert_be16(result);
 }
 
 VISIBILITY_PRIVATE_HEADER_END

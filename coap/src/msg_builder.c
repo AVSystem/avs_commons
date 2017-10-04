@@ -88,13 +88,8 @@ static int append_token(avs_coap_msg_buffer_t *buffer,
 static inline size_t encode_ext_value(uint8_t *ptr,
                                       uint16_t ext_value) {
     if (ext_value >= AVS_COAP_EXT_U16_BASE) {
-        uint16_t value_net_byte_order =
-                (uint16_t) (ext_value - AVS_COAP_EXT_U16_BASE);
-#ifndef AVS_COMMONS_BIG_ENDIAN
-        value_net_byte_order = (uint16_t) ((value_net_byte_order >> 8)
-                | (value_net_byte_order << 8));
-#endif
-
+        uint16_t value_net_byte_order = avs_convert_be16(
+                (uint16_t) (ext_value - AVS_COAP_EXT_U16_BASE));
         memcpy(ptr, &value_net_byte_order, sizeof(value_net_byte_order));
         return sizeof(value_net_byte_order);
     } else if (ext_value >= AVS_COAP_EXT_U8_BASE) {

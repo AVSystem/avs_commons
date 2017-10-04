@@ -13,7 +13,7 @@
 # limitations under the License.
 
 set(SOURCES
-    src/rand.c
+    src/numbers.c
     src/strings.c
     src/time.c
     src/token.c)
