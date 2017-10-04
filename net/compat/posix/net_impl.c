@@ -35,7 +35,6 @@
 #endif
 
 #include "compat.h"
-#include "../../src/net_impl.h"
 
 VISIBILITY_SOURCE_BEGIN
 
@@ -1779,10 +1778,4 @@ int avs_net_resolved_endpoint_get_host_port(
                                endp->size,
                                host, (socklen_t) hostlen,
                                serv, (socklen_t) servlen);
-}
-
-int avs_net_resolved_endpoint_get_host(const avs_net_resolved_endpoint_t *endp,
-                                       char *host, size_t hostlen) {
-    return avs_net_resolved_endpoint_get_host_port(endp,
-                                                   host, hostlen, NULL, 0);
 }

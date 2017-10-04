@@ -196,8 +196,12 @@ int avs_net_resolved_endpoint_get_host_port(
  *
  * @return 0 for success, or a negative value in case of error.
  */
-int avs_net_resolved_endpoint_get_host(const avs_net_resolved_endpoint_t *endp,
-                                       char *host, size_t hostlen);
+static inline int
+avs_net_resolved_endpoint_get_host(const avs_net_resolved_endpoint_t *endp,
+                                   char *host, size_t hostlen) {
+    return avs_net_resolved_endpoint_get_host_port(endp,
+                                                   host, hostlen, NULL, 0);
+}
 
 /**
  * A convenience function that handles the most common use case of host address

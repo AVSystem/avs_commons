@@ -70,10 +70,6 @@ int _avs_net_create_dtls_socket(avs_net_abstract_socket_t **socket,
                                const void *socket_configuration);
 #endif
 
-int _avs_net_get_af(avs_net_af_t addr_family);
-
-int _avs_net_get_socket_type(avs_net_socket_type_t socket_type);
-
 VISIBILITY_PRIVATE_HEADER_END
 
 #endif /* NET_H */
