@@ -67,9 +67,7 @@ int avs_strncasecmp(const char *s1, const char *s2, size_t n) {
     return c1 - c2;
 }
 
-char *avs_strtok(char *restrict str,
-                 char *restrict delim,
-                 char **restrict saveptr) {
+char *avs_strtok(char *str, char *delim, char **saveptr) {
     // adapted from https://git.musl-libc.org/cgit/musl/tree/src/string/strtok_r.c
     if (!str && !(str = *saveptr)) {
         return NULL;
