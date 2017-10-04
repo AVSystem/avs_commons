@@ -102,6 +102,9 @@ extern void *sbrk (intptr_t __delta);
 #define VISIBILITY_PRIVATE_HEADER_END
 #endif
 
+#cmakedefine HAVE_BUILTIN_ADD_OVERFLOW
+#cmakedefine HAVE_BUILTIN_MUL_OVERFLOW
+
 #cmakedefine WITH_INTERNAL_LOGS
 
 #cmakedefine WITH_INTERNAL_TRACE

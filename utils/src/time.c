@@ -24,26 +24,6 @@
 
 VISIBILITY_SOURCE_BEGIN
 
-// Check for builtin safe arithmetic functions
-
-#if defined(__has_builtin) // Clang, perhaps
-#if __has_builtin(__builtin_add_overflow)
-#define HAVE_BUILTIN_ADD_OVERFLOW
-#endif
-#if __has_builtin(__builtin_mul_overflow)
-#define HAVE_BUILTIN_MUL_OVERFLOW
-#endif
-#endif // defined(__has_builtin)
-
-#if __GNUC__ >= 5 // overflow arithmetic available since GCC 5.0
-#ifndef HAVE_BUILTIN_ADD_OVERFLOW
-#define HAVE_BUILTIN_ADD_OVERFLOW
-#endif
-#ifndef HAVE_BUILTIN_MUL_OVERFLOW
-#define HAVE_BUILTIN_MUL_OVERFLOW
-#endif
-#endif // !defined(HAVE_BUILTIN_MUL_OVERFLOW) && __GNUC__ >= 5
-
 #define NS_IN_S INT32_C(1000000000)
 
 #define AVS_TIME_INVALID_DECL { \

@@ -21,6 +21,9 @@
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
+
+#include <sys/time.h> // for struct timeval
+
 #include <openssl/ssl.h>
 #include <openssl/rand.h>
 #include <openssl/err.h>

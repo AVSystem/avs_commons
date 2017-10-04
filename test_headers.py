@@ -49,6 +49,7 @@ INCLUDE_WHITELIST = {
 CONDITIONAL_WHITELIST = {
     (r'mbedtls', r'mbedtls/.*'),
     (r'openssl', r'openssl/.*'),
+    (r'openssl', r'sys/time\.h'),
     (r'tinydtls', r'tinydtls/.*'),
     (r'zlib', r'zlib\.h')
 }
