@@ -127,6 +127,6 @@
 #   undef close
 #  endif
 # endif // _AVS_NEED_POSIX_SOCKET
-#endif // WITH_POSIX
+#endif // POSIX_COMPAT_HEADER
 
 #endif /* CONFIG_POSIX_CONFIG_H */
