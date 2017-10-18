@@ -88,7 +88,10 @@ int _avs_http_socket_new(avs_net_abstract_socket_t **out,
         LOG(TRACE, "socket OK, connecting");
         if (avs_net_socket_connect(*out,
                                    avs_url_host(url), resolve_port(url))) {
-            result = errno ? errno : -1;
+            result = avs_net_socket_errno(*out);
+            if (!result) {
+                result = -1;
+            }
         }
     }
     if (result) {
