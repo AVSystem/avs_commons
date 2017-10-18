@@ -85,6 +85,7 @@ int _avs_http_socket_new(avs_net_abstract_socket_t **out,
                                        &ssl_config_full);
     }
     if (!result) {
+        assert(*out);
         LOG(TRACE, "socket OK, connecting");
         if (avs_net_socket_connect(*out,
                                    avs_url_host(url), resolve_port(url))) {
