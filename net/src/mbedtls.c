@@ -183,12 +183,6 @@ static void close_ssl_raw(ssl_socket_t *socket) {
     socket->config.psk_identity_len = 0;
     mbedtls_ssl_config_free(&socket->config);
     memset(&socket->config, 0, sizeof(socket->config));
-
-    mbedtls_ctr_drbg_free(&socket->rng);
-    memset(&socket->rng, 0, sizeof(socket->rng));
-
-    mbedtls_entropy_free(&socket->entropy);
-    memset(&socket->entropy, 0, sizeof(socket->entropy));
 }
 
 static int set_min_ssl_version(mbedtls_ssl_config *config,
@@ -403,16 +397,6 @@ static int initialize_ssl_config(ssl_socket_t *socket) {
 
 static int start_ssl(ssl_socket_t *socket, const char *host) {
     int result;
-    mbedtls_entropy_init(&socket->entropy);
-
-    mbedtls_ctr_drbg_init(&socket->rng);
-    if ((result = mbedtls_ctr_drbg_seed(&socket->rng, mbedtls_entropy_func,
-                                        &socket->entropy, NULL, 0))) {
-        LOG(ERROR, "mbedtls_ctr_drbg_seed() failed: %d", result);
-        socket->error_code = ENOSYS;
-        return -1;
-    }
-
     if (initialize_ssl_config(socket)) {
         LOG(ERROR, "could not initialize ssl context");
         return -1;
@@ -587,6 +571,10 @@ static int cleanup_ssl(avs_net_abstract_socket_t **socket_) {
         cleanup_security_cert(&(*socket)->security.cert);
         break;
     }
+
+    mbedtls_ctr_drbg_free(&(*socket)->rng);
+    mbedtls_entropy_free(&(*socket)->entropy);
+
     free(*socket);
     *socket = NULL;
     return 0;
@@ -899,6 +887,16 @@ static int initialize_ssl_socket(ssl_socket_t *socket,
         break;
     default:
         assert(0 && "invalid enum value");
+        return -1;
+    }
+
+    mbedtls_entropy_init(&socket->entropy);
+
+    mbedtls_ctr_drbg_init(&socket->rng);
+    int result = mbedtls_ctr_drbg_seed(&socket->rng, mbedtls_entropy_func,
+                                       &socket->entropy, NULL, 0);
+    if (result) {
+        LOG(ERROR, "mbedtls_ctr_drbg_seed() failed: %d", result);
         return -1;
     }
 
