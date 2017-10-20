@@ -432,12 +432,29 @@ typedef enum {
      */
     AVS_NET_SOCKET_OPT_MTU,
     /**
-     * Used the get the maximum size of a buffer that can be passed to
+     * Used to get the maximum size of a buffer that can be passed to
      * @ref avs_net_socket_send or @ref avs_net_socket_send_to and transmitted
      * as a single packet. The value is passed as bytes in the <c>mtu</c> field
      * of the @ref avs_net_socket_opt_value_t union.
      */
-    AVS_NET_SOCKET_OPT_INNER_MTU
+    AVS_NET_SOCKET_OPT_INNER_MTU,
+    /**
+     * Used to check whether the last (D)TLS handshake was a successful session
+     * resumption. The value is passed in the <c>flag</c> field of the
+     * @ref avs_net_socket_opt_value_t union - <c>true</c> if the session was
+     * resumed, or <c>false</c> if it was a full handshake. If the socket is in
+     * any other state than @ref AVS_NET_SOCKET_STATE_CONNECTED, the behaviour
+     * is undefined.
+     *
+     * If <c>use_session_resumption</c> field in
+     * @ref avs_net_ssl_configuration_t is set to <c>true</c>,
+     * @ref avs_net_socket_connect will attempt to resume the session that was
+     * previously used before calling @ref avs_net_socket_close. However, if it
+     * is not possible, a normal handshake will be used instead and the whole
+     * call will still be successfull. This option makes it possible to check
+     * whether the session has been resumed, or is a new unrelated one.
+     */
+    AVS_NET_SOCKET_OPT_SESSION_RESUMED
 } avs_net_socket_opt_key_t;
 
 typedef enum {
@@ -486,6 +503,7 @@ typedef union {
     avs_net_socket_state_t state;
     avs_net_af_t addr_family;
     int mtu;
+    bool flag;
 } avs_net_socket_opt_value_t;
 
 int avs_net_socket_debug(int value);

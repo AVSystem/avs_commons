@@ -179,6 +179,11 @@ static bool is_ssl_started(ssl_socket_t *socket) {
     return peer && dtls_peer_is_connected(peer);
 }
 
+#warning "TODO: Session resumption support"
+static bool is_session_resumed(ssl_socket_t *socket) {
+    return false;
+}
+
 static int ssl_handshake(ssl_socket_t *socket) {
     const dtls_peer_t *peer = dtls_get_peer(socket->ctx, get_dtls_session());
     /* Arbitrary constant limiting the number of packet exchanges between our

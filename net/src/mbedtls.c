@@ -80,6 +80,10 @@ static bool is_ssl_started(ssl_socket_t *socket) {
     return socket->flags.context_valid;
 }
 
+static bool is_session_resumed(ssl_socket_t *socket) {
+    return socket->flags.session_restored;
+}
+
 static mbedtls_ssl_context *get_context(ssl_socket_t *socket) {
     assert(socket->flags.context_valid);
     return &socket->state.context;
