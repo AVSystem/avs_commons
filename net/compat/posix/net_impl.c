@@ -721,7 +721,7 @@ static int host_port_to_string(const struct sockaddr *sa, socklen_t salen,
     if (result) {
         LOG(ERROR, "Could not stringify socket address");
         if (!errno) {
-            errno = ENOSPC;
+            errno = ERANGE;
         }
     } else {
         if (host) {
@@ -917,7 +917,7 @@ static int connect_net(avs_net_abstract_socket_t *net_socket_,
     LOG(TRACE, "connecting to [%s]:%s", host, port);
 
     errno = 0;
-    net_socket->error_code = EPROTO;
+    net_socket->error_code = EADDRNOTAVAIL;
     if ((info = resolve_addrinfo_for_socket(net_socket, host, port,
                                             false, PREFERRED_FAMILY_ONLY))) {
         sockaddr_endpoint_union_t address;
@@ -1015,7 +1015,7 @@ static int send_to_net(avs_net_abstract_socket_t *net_socket_,
                                              false, PREFERRED_FAMILY_ONLY))
             || (result = (ssize_t) avs_net_addrinfo_next(info,
                                                          &address.api_ep))) {
-        net_socket->error_code = EPROTO;
+        net_socket->error_code = EADDRNOTAVAIL;
     } else {
         errno = 0;
         result = sendto(net_socket->socket, buffer, buffer_length, 0,
@@ -1179,7 +1179,7 @@ static int create_listening_socket(avs_net_socket_t *net_socket,
     int retval = -1;
     int reuse_addr = net_socket->configuration.reuse_addr;
     if (reuse_addr != 0 && reuse_addr != 1) {
-        errno = EINVAL;
+        net_socket->error_code = EINVAL;
         return -1;
     }
     errno = 0;

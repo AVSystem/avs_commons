@@ -537,7 +537,10 @@ int avs_net_socket_cleanup(avs_net_abstract_socket_t **socket);
  * @param host   Remote hostname or IP address to connect to.
  * @param port   Remote port to connect to.
  *
- * @returns 0 on success, a negative value in case of error.
+ * @returns 0 on success, or a negative value in case of error, in which case
+ *          @p socket errno (see @ref avs_net_socket_errno) is set to an
+ *          appropriate value; in particular, if DNS resolution fails, it is set
+ *          to <c>EADDRNOTAVAIL</c>
  */
 int avs_net_socket_connect(avs_net_abstract_socket_t *socket,
                            const char *host,
@@ -616,7 +619,8 @@ int avs_net_socket_send(avs_net_abstract_socket_t *socket,
  * @returns @li 0 if exactly @p buffer_length bytes were written.
  *          @li a negative value in case of error, in which case @p socket
  *              errno (see @ref avs_net_socket_errno) is set to an appropriate
- *              value.
+ *              value; in particular, if DNS resolution fails, it is set to
+ *              <c>EADDRNOTAVAIL</c>
  */
 int avs_net_socket_send_to(avs_net_abstract_socket_t *socket,
                            const void *buffer,
