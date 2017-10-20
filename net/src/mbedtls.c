@@ -55,7 +55,8 @@ typedef struct {
         bool context_valid : 1;
         bool stored_session_valid : 1;
         bool session_restored : 1;
-    } state_flags;
+        bool use_session_resumption : 1;
+    } flags;
     union {
         mbedtls_ssl_context context;
         mbedtls_ssl_session stored_session;
@@ -76,11 +77,11 @@ typedef struct {
 } ssl_socket_t;
 
 static bool is_ssl_started(ssl_socket_t *socket) {
-    return socket->state_flags.context_valid;
+    return socket->flags.context_valid;
 }
 
 static mbedtls_ssl_context *get_context(ssl_socket_t *socket) {
-    assert(socket->state_flags.context_valid);
+    assert(socket->flags.context_valid);
     return &socket->state.context;
 }
 
@@ -187,10 +188,25 @@ static void close_ssl_raw(ssl_socket_t *socket) {
     if (socket->backend_socket) {
         avs_net_socket_close(socket->backend_socket);
     }
-#warning "TODO: Session storing"
-    if (socket->state_flags.context_valid) {
-        mbedtls_ssl_free(&socket->state.context);
-        socket->state_flags.context_valid = false;
+
+    if (socket->flags.context_valid) {
+        if (socket->flags.use_session_resumption
+                && socket->config.endpoint == MBEDTLS_SSL_IS_CLIENT) {
+            mbedtls_ssl_session tmp_session;
+            mbedtls_ssl_session_init(&tmp_session);
+            if (mbedtls_ssl_get_session(&socket->state.context, &tmp_session)) {
+                mbedtls_ssl_session_free(&tmp_session);
+            } else {
+                socket->flags.stored_session_valid = true;
+            }
+
+            mbedtls_ssl_free(&socket->state.context);
+            socket->flags.context_valid = false;
+            socket->state.stored_session = tmp_session;
+        } else {
+            mbedtls_ssl_free(&socket->state.context);
+            socket->flags.context_valid = false;
+        }
     }
 }
 
@@ -397,12 +413,14 @@ static int update_ssl_endpoint_config(ssl_socket_t *socket) {
     if (state_opt.state == AVS_NET_SOCKET_STATE_CONNECTED) {
         mbedtls_ssl_conf_endpoint(&socket->config, MBEDTLS_SSL_IS_CLIENT);
 #ifdef MBEDTLS_SSL_SESSION_TICKETS
-        socket->config.session_tickets = MBEDTLS_SSL_SESSION_TICKETS_ENABLED;
+        mbedtls_ssl_conf_session_tickets(&socket->config,
+                                         MBEDTLS_SSL_SESSION_TICKETS_ENABLED);
 #endif // MBEDTLS_SSL_SESSION_TICKETS
     } else if (state_opt.state == AVS_NET_SOCKET_STATE_ACCEPTED) {
         mbedtls_ssl_conf_endpoint(&socket->config, MBEDTLS_SSL_IS_SERVER);
 #ifdef MBEDTLS_SSL_SESSION_TICKETS
-        socket->config.session_tickets = MBEDTLS_SSL_SESSION_TICKETS_DISABLED;
+        mbedtls_ssl_conf_session_tickets(&socket->config,
+                                         MBEDTLS_SSL_SESSION_TICKETS_DISABLED);
 #endif // MBEDTLS_SSL_SESSION_TICKETS
     } else {
         socket->error_code = EINVAL;
@@ -413,6 +431,17 @@ static int update_ssl_endpoint_config(ssl_socket_t *socket) {
     return 0;
 }
 
+static bool sessions_equal(const mbedtls_ssl_session *left,
+                           const mbedtls_ssl_session *right) {
+    return left->ciphersuite == right->ciphersuite
+            && left->compression == right->compression
+#ifdef MBEDTLS_HAVE_TIME
+            && left->start == right->start
+#endif // MBEDTLS_HAVE_TIME
+            && left->id_len == right->id_len
+            && memcmp(left->id, right->id, left->id_len) == 0;
+}
+
 static int start_ssl(ssl_socket_t *socket, const char *host) {
     int result;
     if (update_ssl_endpoint_config(socket)) {
@@ -420,11 +449,14 @@ static int start_ssl(ssl_socket_t *socket, const char *host) {
         return -1;
     }
 
-#warning "TODO: Session restoring"
-    assert(!socket->state_flags.context_valid);
-    assert(!socket->state_flags.stored_session_valid);
+    assert(!socket->flags.context_valid);
+
+    mbedtls_ssl_session tmp_session = socket->state.stored_session;
+    bool restore_session = socket->flags.stored_session_valid;
+    socket->flags.stored_session_valid = false;
+
     mbedtls_ssl_init(&socket->state.context);
-    socket->state_flags.context_valid = true;
+    socket->flags.context_valid = true;
 
     mbedtls_ssl_set_bio(get_context(socket), socket,
                         avs_bio_send, NULL, avs_bio_recv);
@@ -434,14 +466,23 @@ static int start_ssl(ssl_socket_t *socket, const char *host) {
     if ((result = mbedtls_ssl_setup(get_context(socket), &socket->config))) {
         LOG(ERROR, "mbedtls_ssl_setup() failed: %d", result);
         socket->error_code = ENOMEM;
-        return -1;
+        goto finish;
     }
 
     if ((result = mbedtls_ssl_set_hostname(get_context(socket), host))) {
         LOG(ERROR, "mbedtls_ssl_set_hostname() failed: %d", result);
         socket->error_code =
                 (result == MBEDTLS_ERR_SSL_ALLOC_FAILED ? ENOMEM : EINVAL);
-        return -1;
+        goto finish;
+    }
+
+    if (restore_session
+            && socket->config.endpoint == MBEDTLS_SSL_IS_CLIENT
+            && (result = mbedtls_ssl_set_session(get_context(socket),
+                                                 &tmp_session))) {
+        LOG(WARNING,
+            "mbedtls_ssl_set_session() failed: %d; performing full handshake",
+            result);
     }
 
     do {
@@ -450,12 +491,22 @@ static int start_ssl(ssl_socket_t *socket, const char *host) {
                 || result == MBEDTLS_ERR_SSL_WANT_WRITE);
 
     if (result == 0) {
-        LOG(TRACE, "handshake success");
+        if ((socket->flags.session_restored =
+                (restore_session
+                        && get_context(socket)->session
+                        && sessions_equal(get_context(socket)->session,
+                                          &tmp_session)))) {
+            LOG(TRACE, "handshake success: session restored");
+        } else {
+            LOG(TRACE, "handshake success: new session started");
+        }
     } else {
         LOG(ERROR, "handshake failed: %d", result);
     }
 
-    if (!result && is_verification_enabled(socket)) {
+    if (!result
+            && !socket->flags.session_restored
+            && is_verification_enabled(socket)) {
         uint32_t verify_result =
                 mbedtls_ssl_get_verify_result(get_context(socket));
         if (verify_result) {
@@ -463,6 +514,10 @@ static int start_ssl(ssl_socket_t *socket, const char *host) {
                 verify_result);
             result = -1;
         }
+    }
+finish:
+    if (restore_session) {
+        mbedtls_ssl_session_free(&tmp_session);
     }
     if (result) {
         if (!socket->error_code) {
@@ -895,6 +950,8 @@ static int initialize_ssl_socket(ssl_socket_t *socket,
 
     socket->backend_type = backend_type;
     socket->backend_configuration = configuration->backend_configuration;
+    socket->flags.use_session_resumption =
+            configuration->use_session_resumption;
 
     socket->security_mode = configuration->security.mode;
     switch (configuration->security.mode) {

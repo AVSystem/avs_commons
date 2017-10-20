@@ -402,6 +402,7 @@ typedef struct {
     avs_net_ssl_version_t version;
     avs_net_security_info_t security;
     const avs_net_dtls_handshake_timeouts_t *dtls_handshake_timeouts;
+    bool use_session_resumption;
     avs_ssl_additional_configuration_clb_t *additional_configuration_clb;
     avs_net_socket_configuration_t backend_configuration;
 } avs_net_ssl_configuration_t;
