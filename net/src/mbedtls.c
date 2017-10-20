@@ -51,7 +51,15 @@ typedef struct {
 
 typedef struct {
     const avs_net_socket_v_table_t * const operations;
-    mbedtls_ssl_context context;
+    struct {
+        bool context_valid : 1;
+        bool stored_session_valid : 1;
+        bool session_restored : 1;
+    } state_flags;
+    union {
+        mbedtls_ssl_context context;
+        mbedtls_ssl_session stored_session;
+    } state;
     mbedtls_ssl_config config;
     avs_net_security_mode_t security_mode;
     union {
@@ -67,8 +75,13 @@ typedef struct {
     avs_net_socket_configuration_t backend_configuration;
 } ssl_socket_t;
 
-static int is_ssl_started(ssl_socket_t *socket) {
-    return socket->context.conf != NULL;
+static bool is_ssl_started(ssl_socket_t *socket) {
+    return socket->state_flags.context_valid;
+}
+
+static mbedtls_ssl_context *get_context(ssl_socket_t *socket) {
+    assert(socket->state_flags.context_valid);
+    return &socket->state.context;
 }
 
 #ifdef WITH_MBEDTLS_LOGS
@@ -139,11 +152,15 @@ static int avs_bio_send(void *ctx, const unsigned char *buf, size_t len) {
 static int get_dtls_overhead(ssl_socket_t *socket,
                              int *out_header,
                              int *out_padding_size) {
+    if (!is_ssl_started(socket)) {
+        return -1;
+    }
+
     const mbedtls_ssl_ciphersuite_t *ciphersuite =
             mbedtls_ssl_ciphersuite_from_string(
-                    mbedtls_ssl_get_ciphersuite(&socket->context));
+                    mbedtls_ssl_get_ciphersuite(get_context(socket)));
 
-    int result = mbedtls_ssl_get_record_expansion(&socket->context);
+    int result = mbedtls_ssl_get_record_expansion(get_context(socket));
     if (result == MBEDTLS_ERR_SSL_FEATURE_UNAVAILABLE
             || result == MBEDTLS_ERR_SSL_INTERNAL_ERROR) {
         /* This is either a result of compression mode or some internal error,
@@ -170,8 +187,11 @@ static void close_ssl_raw(ssl_socket_t *socket) {
     if (socket->backend_socket) {
         avs_net_socket_close(socket->backend_socket);
     }
-    mbedtls_ssl_free(&socket->context);
-    memset(&socket->context, 0, sizeof(socket->context));
+#warning "TODO: Session storing"
+    if (socket->state_flags.context_valid) {
+        mbedtls_ssl_free(&socket->state.context);
+        socket->state_flags.context_valid = false;
+    }
 }
 
 static int set_min_ssl_version(mbedtls_ssl_config *config,
@@ -400,19 +420,24 @@ static int start_ssl(ssl_socket_t *socket, const char *host) {
         return -1;
     }
 
-    mbedtls_ssl_init(&socket->context);
-    mbedtls_ssl_set_bio(&socket->context, socket,
+#warning "TODO: Session restoring"
+    assert(!socket->state_flags.context_valid);
+    assert(!socket->state_flags.stored_session_valid);
+    mbedtls_ssl_init(&socket->state.context);
+    socket->state_flags.context_valid = true;
+
+    mbedtls_ssl_set_bio(get_context(socket), socket,
                         avs_bio_send, NULL, avs_bio_recv);
-    mbedtls_ssl_set_timer_cb(&socket->context, &socket->timer,
+    mbedtls_ssl_set_timer_cb(get_context(socket), &socket->timer,
                              mbedtls_timing_set_delay,
                              mbedtls_timing_get_delay);
-    if ((result = mbedtls_ssl_setup(&socket->context, &socket->config))) {
+    if ((result = mbedtls_ssl_setup(get_context(socket), &socket->config))) {
         LOG(ERROR, "mbedtls_ssl_setup() failed: %d", result);
         socket->error_code = ENOMEM;
         return -1;
     }
 
-    if ((result = mbedtls_ssl_set_hostname(&socket->context, host))) {
+    if ((result = mbedtls_ssl_set_hostname(get_context(socket), host))) {
         LOG(ERROR, "mbedtls_ssl_set_hostname() failed: %d", result);
         socket->error_code =
                 (result == MBEDTLS_ERR_SSL_ALLOC_FAILED ? ENOMEM : EINVAL);
@@ -420,7 +445,7 @@ static int start_ssl(ssl_socket_t *socket, const char *host) {
     }
 
     do {
-        result = mbedtls_ssl_handshake(&socket->context);
+        result = mbedtls_ssl_handshake(get_context(socket));
     } while (result == MBEDTLS_ERR_SSL_WANT_READ
                 || result == MBEDTLS_ERR_SSL_WANT_WRITE);
 
@@ -432,7 +457,7 @@ static int start_ssl(ssl_socket_t *socket, const char *host) {
 
     if (!result && is_verification_enabled(socket)) {
         uint32_t verify_result =
-                mbedtls_ssl_get_verify_result(&socket->context);
+                mbedtls_ssl_get_verify_result(get_context(socket));
         if (verify_result) {
             LOG(ERROR, "server certificate verification failure: %" PRIu32,
                 verify_result);
@@ -478,7 +503,7 @@ static int send_ssl(avs_net_abstract_socket_t *socket_,
         do {
             errno = 0;
             result = mbedtls_ssl_write(
-                    &socket->context,
+                    get_context(socket),
                     ((const unsigned char *) buffer) + bytes_sent,
                     (size_t) (buffer_length - bytes_sent));
         } while (result == MBEDTLS_ERR_SSL_WANT_WRITE
@@ -514,8 +539,8 @@ static int receive_ssl(avs_net_abstract_socket_t *socket_,
 
     do {
         errno = 0;
-        result = mbedtls_ssl_read(&socket->context, (unsigned char *)buffer,
-                                  buffer_length);
+        result = mbedtls_ssl_read(get_context(socket),
+                                  (unsigned char *) buffer, buffer_length);
     } while (result == MBEDTLS_ERR_SSL_WANT_READ
                 || result == MBEDTLS_ERR_SSL_WANT_WRITE);
 

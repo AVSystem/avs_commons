@@ -656,7 +656,7 @@ static int start_ssl(ssl_socket_t *socket, const char *host) {
     return 0;
 }
 
-static int is_ssl_started(ssl_socket_t *socket) {
+static bool is_ssl_started(ssl_socket_t *socket) {
     return socket->ssl != NULL;
 }
 

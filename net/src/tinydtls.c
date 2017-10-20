@@ -170,9 +170,9 @@ static void close_ssl_raw(ssl_socket_t *socket) {
     }
 }
 
-static int is_ssl_started(ssl_socket_t *socket) {
+static bool is_ssl_started(ssl_socket_t *socket) {
     if (!socket->ctx) {
-        return 0;
+        return false;
     }
     const dtls_peer_t *peer = dtls_get_peer(socket->ctx, get_dtls_session());
 
