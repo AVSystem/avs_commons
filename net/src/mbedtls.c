@@ -71,8 +71,6 @@ typedef struct {
         ssl_socket_certs_t cert;
         ssl_socket_psk_t psk;
     } security;
-    mbedtls_entropy_context entropy;
-    mbedtls_ctr_drbg_context rng;
     mbedtls_timing_delay_context timer;
     avs_net_socket_type_t backend_type;
     avs_net_abstract_socket_t *backend_socket;
@@ -116,6 +114,43 @@ static void debug_mbedtls(void *ctx, int level, const char *file, int line, cons
 
 #define NET_SSL_COMMON_INTERNALS
 #include "ssl_common.h"
+
+static struct {
+    // this weighs almost 40KB because of HAVEGE state
+    mbedtls_entropy_context entropy;
+    mbedtls_ctr_drbg_context rng;
+    volatile bool initialized;
+} AVS_SSL_GLOBAL;
+
+static void avs_ssl_cleanup(void) {
+    mbedtls_ctr_drbg_free(&AVS_SSL_GLOBAL.rng);
+    mbedtls_entropy_free(&AVS_SSL_GLOBAL.entropy);
+}
+
+static int avs_ssl_init(void) {
+    int result = 0;
+    if (!AVS_SSL_GLOBAL.initialized) {
+        mbedtls_entropy_init(&AVS_SSL_GLOBAL.entropy);
+        mbedtls_ctr_drbg_init(&AVS_SSL_GLOBAL.rng);
+        result = mbedtls_ctr_drbg_seed(&AVS_SSL_GLOBAL.rng,
+                                       mbedtls_entropy_func,
+                                       &AVS_SSL_GLOBAL.entropy, NULL, 0);
+        if (result) {
+            LOG(ERROR, "mbedtls_ctr_drbg_seed() failed: %d", result);
+        }
+#ifndef NDEBUG
+        else if ((result = atexit(avs_ssl_cleanup))) {
+            LOG(ERROR, "atexit() failed: %d", result);
+        }
+#endif // NDEBUG
+        if (result) {
+            avs_ssl_cleanup();
+        } else {
+            AVS_SSL_GLOBAL.initialized = true;
+        }
+    }
+    return result;
+}
 
 static int avs_bio_recv(void *ctx, unsigned char *buf, size_t len,
                         uint32_t timeout_ms) {
@@ -380,7 +415,7 @@ static int configure_ssl(ssl_socket_t *socket,
     }
 
     mbedtls_ssl_conf_rng(&socket->config,
-                         mbedtls_ctr_drbg_random, &socket->rng);
+                         mbedtls_ctr_drbg_random, &AVS_SSL_GLOBAL.rng);
 
     switch (socket->security_mode) {
     case AVS_NET_SECURITY_PSK:
@@ -685,9 +720,6 @@ static int cleanup_ssl(avs_net_abstract_socket_t **socket_) {
     (*socket)->config.psk_identity_len = 0;
     mbedtls_ssl_config_free(&(*socket)->config);
 
-    mbedtls_ctr_drbg_free(&(*socket)->rng);
-    mbedtls_entropy_free(&(*socket)->entropy);
-
     free(*socket);
     *socket = NULL;
     return 0;
@@ -973,6 +1005,11 @@ static int configure_ssl_psk(ssl_socket_t *socket,
 static int initialize_ssl_socket(ssl_socket_t *socket,
                                  avs_net_socket_type_t backend_type,
                                  const avs_net_ssl_configuration_t *configuration) {
+    if (avs_ssl_init()) {
+        LOG(ERROR, "SSL global state initialization error");
+        return -1;
+    }
+
     *(const avs_net_socket_v_table_t **) (intptr_t) &socket->operations =
             &ssl_vtable;
 
@@ -996,16 +1033,6 @@ static int initialize_ssl_socket(ssl_socket_t *socket,
         break;
     default:
         assert(0 && "invalid enum value");
-        return -1;
-    }
-
-    mbedtls_entropy_init(&socket->entropy);
-
-    mbedtls_ctr_drbg_init(&socket->rng);
-    int result = mbedtls_ctr_drbg_seed(&socket->rng, mbedtls_entropy_func,
-                                       &socket->entropy, NULL, 0);
-    if (result) {
-        LOG(ERROR, "mbedtls_ctr_drbg_seed() failed: %d", result);
         return -1;
     }
 

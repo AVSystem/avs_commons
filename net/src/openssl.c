@@ -1513,7 +1513,7 @@ static int cleanup_ssl(avs_net_abstract_socket_t **socket_) {
     return 0;
 }
 
-static int avs_ssl_init() {
+static int avs_ssl_init(void) {
     static volatile int initialized = 0;
     if (!initialized) {
         int result = 0;
