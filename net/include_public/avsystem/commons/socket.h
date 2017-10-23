@@ -451,7 +451,7 @@ typedef enum {
      * @ref avs_net_socket_connect will attempt to resume the session that was
      * previously used before calling @ref avs_net_socket_close. However, if it
      * is not possible, a normal handshake will be used instead and the whole
-     * call will still be successfull. This option makes it possible to check
+     * call will still be successful. This option makes it possible to check
      * whether the session has been resumed, or is a new unrelated one.
      */
     AVS_NET_SOCKET_OPT_SESSION_RESUMED

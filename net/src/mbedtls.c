@@ -51,6 +51,8 @@ typedef struct {
 
 typedef struct {
     const avs_net_socket_v_table_t * const operations;
+    /* At most one of "context_valid" and "stored_session_valid" might be true
+     * at a given time; these refer to the fields in the "state" union. */
     struct {
         bool context_valid : 1;
         bool stored_session_valid : 1;
@@ -58,7 +60,9 @@ typedef struct {
         bool use_session_resumption : 1;
     } flags;
     union {
+        // used when the socket is ready for communication
         mbedtls_ssl_context context;
+        // may be used to store pre-existing session when the socket is closed
         mbedtls_ssl_session stored_session;
     } state;
     mbedtls_ssl_config config;
@@ -87,6 +91,11 @@ static bool is_session_resumed(ssl_socket_t *socket) {
 static mbedtls_ssl_context *get_context(ssl_socket_t *socket) {
     assert(socket->flags.context_valid);
     return &socket->state.context;
+}
+
+static mbedtls_ssl_session *get_stored_session(ssl_socket_t *socket) {
+    assert(socket->flags.stored_session_valid);
+    return &socket->state.stored_session;
 }
 
 #ifdef WITH_MBEDTLS_LOGS
@@ -196,21 +205,19 @@ static void close_ssl_raw(ssl_socket_t *socket) {
     if (socket->flags.context_valid) {
         if (socket->flags.use_session_resumption
                 && socket->config.endpoint == MBEDTLS_SSL_IS_CLIENT) {
+            assert(!socket->flags.stored_session_valid);
             mbedtls_ssl_session tmp_session;
             mbedtls_ssl_session_init(&tmp_session);
-            if (mbedtls_ssl_get_session(&socket->state.context, &tmp_session)) {
+            if (mbedtls_ssl_get_session(get_context(socket), &tmp_session)) {
                 mbedtls_ssl_session_free(&tmp_session);
             } else {
+                socket->state.stored_session = tmp_session;
                 socket->flags.stored_session_valid = true;
             }
-
-            mbedtls_ssl_free(&socket->state.context);
-            socket->flags.context_valid = false;
-            socket->state.stored_session = tmp_session;
-        } else {
-            mbedtls_ssl_free(&socket->state.context);
-            socket->flags.context_valid = false;
         }
+
+        mbedtls_ssl_free(get_context(socket));
+        socket->flags.context_valid = false;
     }
 }
 
@@ -345,6 +352,14 @@ static int transport_for_socket_type(avs_net_socket_type_t backend_type) {
 static int configure_ssl(ssl_socket_t *socket,
                          const avs_net_ssl_configuration_t *configuration) {
     mbedtls_ssl_config_init(&socket->config);
+    /* HACK: The config is always initialized with MBEDTLS_SSL_IS_SERVER even
+     * though it may be later reused in a client context. This is because the
+     * default server-side config initializes pretty much everything that the
+     * default client-side config does (aside from endpoint, authmode and
+     * session_tickets, which are just flags that are trivial to set manually),
+     * and more. So it's safer to initialize it with server-side defaults and
+     * then repurpose as a client-side config rather than vice versa. Details:
+     * https://github.com/ARMmbed/mbedtls/blob/mbedtls-2.6.1/library/ssl_tls.c#L7465 */
     if (mbedtls_ssl_config_defaults(
             &socket->config, MBEDTLS_SSL_IS_SERVER,
             transport_for_socket_type(socket->backend_type),
@@ -437,7 +452,11 @@ static int update_ssl_endpoint_config(ssl_socket_t *socket) {
 
 static bool sessions_equal(const mbedtls_ssl_session *left,
                            const mbedtls_ssl_session *right) {
-    return left->ciphersuite == right->ciphersuite
+    if (!left && !right) {
+        return true;
+    }
+    return left && right
+            && left->ciphersuite == right->ciphersuite
             && left->compression == right->compression
 #ifdef MBEDTLS_HAVE_TIME
             && left->start == right->start
@@ -455,9 +474,12 @@ static int start_ssl(ssl_socket_t *socket, const char *host) {
 
     assert(!socket->flags.context_valid);
 
-    mbedtls_ssl_session tmp_session = socket->state.stored_session;
+    mbedtls_ssl_session tmp_session;
     bool restore_session = socket->flags.stored_session_valid;
-    socket->flags.stored_session_valid = false;
+    if (restore_session) {
+        tmp_session = *get_stored_session(socket);
+        socket->flags.stored_session_valid = false;
+    }
 
     mbedtls_ssl_init(&socket->state.context);
     socket->flags.context_valid = true;
@@ -496,10 +518,8 @@ static int start_ssl(ssl_socket_t *socket, const char *host) {
 
     if (result == 0) {
         if ((socket->flags.session_restored =
-                (restore_session
-                        && get_context(socket)->session
-                        && sessions_equal(get_context(socket)->session,
-                                          &tmp_session)))) {
+                (restore_session && sessions_equal(get_context(socket)->session,
+                                                   &tmp_session)))) {
             LOG(TRACE, "handshake success: session restored");
         } else {
             LOG(TRACE, "handshake success: new session started");
@@ -644,6 +664,10 @@ static int cleanup_ssl(avs_net_abstract_socket_t **socket_) {
 
     close_ssl(*socket_);
     avs_net_socket_cleanup(&(*socket)->backend_socket);
+
+    if ((*socket)->flags.stored_session_valid) {
+        mbedtls_ssl_session_free(get_stored_session(*socket));
+    }
 
     switch ((*socket)->security_mode) {
     case AVS_NET_SECURITY_PSK:
