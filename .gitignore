@@ -30,6 +30,8 @@ CMakeFiles/
 CMakeTmp/
 Makefile
 CMakeCache.txt
+CMakeDoxyfile.in
+CMakeDoxygenDefaults.cmake
 CPackConfig.cmake
 CPackSourceConfig.cmake
 CTestTestfile.cmake

@@ -24,7 +24,8 @@
 VISIBILITY_PRIVATE_HEADER_BEGIN
 
 /* Required non-common static method implementations */
-static int is_ssl_started(ssl_socket_t *socket);
+static bool is_ssl_started(ssl_socket_t *socket);
+static bool is_session_resumed(ssl_socket_t *socket);
 static int start_ssl(ssl_socket_t *socket, const char *host);
 static void close_ssl_raw(ssl_socket_t *socket);
 static int get_dtls_overhead(ssl_socket_t *socket,
@@ -349,6 +350,9 @@ static int get_opt_ssl(avs_net_abstract_socket_t *ssl_socket_,
         out_option_value->mtu = mtu;
         return 0;
     }
+    case AVS_NET_SOCKET_OPT_SESSION_RESUMED:
+        out_option_value->flag = is_session_resumed(ssl_socket);
+        return 0;
     default:
         retval = avs_net_socket_get_opt(ssl_socket->backend_socket, option_key,
                                         out_option_value);

@@ -170,13 +170,18 @@ static void close_ssl_raw(ssl_socket_t *socket) {
     }
 }
 
-static int is_ssl_started(ssl_socket_t *socket) {
+static bool is_ssl_started(ssl_socket_t *socket) {
     if (!socket->ctx) {
-        return 0;
+        return false;
     }
     const dtls_peer_t *peer = dtls_get_peer(socket->ctx, get_dtls_session());
 
     return peer && dtls_peer_is_connected(peer);
+}
+
+#warning "TODO: Session resumption support"
+static bool is_session_resumed(ssl_socket_t *socket) {
+    return false;
 }
 
 static int ssl_handshake(ssl_socket_t *socket) {

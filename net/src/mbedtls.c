@@ -51,7 +51,20 @@ typedef struct {
 
 typedef struct {
     const avs_net_socket_v_table_t * const operations;
-    mbedtls_ssl_context context;
+    /* At most one of "context_valid" and "stored_session_valid" might be true
+     * at a given time; these refer to the fields in the "state" union. */
+    struct {
+        bool context_valid : 1;
+        bool stored_session_valid : 1;
+        bool session_restored : 1;
+        bool use_session_resumption : 1;
+    } flags;
+    union {
+        // used when the socket is ready for communication
+        mbedtls_ssl_context context;
+        // may be used to store pre-existing session when the socket is closed
+        mbedtls_ssl_session stored_session;
+    } state;
     mbedtls_ssl_config config;
     avs_net_security_mode_t security_mode;
     union {
@@ -64,14 +77,25 @@ typedef struct {
     avs_net_socket_type_t backend_type;
     avs_net_abstract_socket_t *backend_socket;
     int error_code;
-    avs_net_ssl_version_t version;
-    avs_net_dtls_handshake_timeouts_t dtls_handshake_timeouts;
-    avs_ssl_additional_configuration_clb_t *additional_configuration_clb;
     avs_net_socket_configuration_t backend_configuration;
 } ssl_socket_t;
 
-static int is_ssl_started(ssl_socket_t *socket) {
-    return socket->context.conf != NULL;
+static bool is_ssl_started(ssl_socket_t *socket) {
+    return socket->flags.context_valid;
+}
+
+static bool is_session_resumed(ssl_socket_t *socket) {
+    return socket->flags.session_restored;
+}
+
+static mbedtls_ssl_context *get_context(ssl_socket_t *socket) {
+    assert(socket->flags.context_valid);
+    return &socket->state.context;
+}
+
+static mbedtls_ssl_session *get_stored_session(ssl_socket_t *socket) {
+    assert(socket->flags.stored_session_valid);
+    return &socket->state.stored_session;
 }
 
 #ifdef WITH_MBEDTLS_LOGS
@@ -142,11 +166,15 @@ static int avs_bio_send(void *ctx, const unsigned char *buf, size_t len) {
 static int get_dtls_overhead(ssl_socket_t *socket,
                              int *out_header,
                              int *out_padding_size) {
+    if (!is_ssl_started(socket)) {
+        return -1;
+    }
+
     const mbedtls_ssl_ciphersuite_t *ciphersuite =
             mbedtls_ssl_ciphersuite_from_string(
-                    mbedtls_ssl_get_ciphersuite(&socket->context));
+                    mbedtls_ssl_get_ciphersuite(get_context(socket)));
 
-    int result = mbedtls_ssl_get_record_expansion(&socket->context);
+    int result = mbedtls_ssl_get_record_expansion(get_context(socket));
     if (result == MBEDTLS_ERR_SSL_FEATURE_UNAVAILABLE
             || result == MBEDTLS_ERR_SSL_INTERNAL_ERROR) {
         /* This is either a result of compression mode or some internal error,
@@ -173,22 +201,24 @@ static void close_ssl_raw(ssl_socket_t *socket) {
     if (socket->backend_socket) {
         avs_net_socket_close(socket->backend_socket);
     }
-    mbedtls_ssl_free(&socket->context);
-    memset(&socket->context, 0, sizeof(socket->context));
 
-    /* Detach the uncopied PSK values */
-    socket->config.psk = NULL;
-    socket->config.psk_len = 0;
-    socket->config.psk_identity = NULL;
-    socket->config.psk_identity_len = 0;
-    mbedtls_ssl_config_free(&socket->config);
-    memset(&socket->config, 0, sizeof(socket->config));
+    if (socket->flags.context_valid) {
+        if (socket->flags.use_session_resumption
+                && socket->config.endpoint == MBEDTLS_SSL_IS_CLIENT) {
+            assert(!socket->flags.stored_session_valid);
+            mbedtls_ssl_session tmp_session;
+            mbedtls_ssl_session_init(&tmp_session);
+            if (mbedtls_ssl_get_session(get_context(socket), &tmp_session)) {
+                mbedtls_ssl_session_free(&tmp_session);
+            } else {
+                socket->state.stored_session = tmp_session;
+                socket->flags.stored_session_valid = true;
+            }
+        }
 
-    mbedtls_ctr_drbg_free(&socket->rng);
-    memset(&socket->rng, 0, sizeof(socket->rng));
-
-    mbedtls_entropy_free(&socket->entropy);
-    memset(&socket->entropy, 0, sizeof(socket->entropy));
+        mbedtls_ssl_free(get_context(socket));
+        socket->flags.context_valid = false;
+    }
 }
 
 static int set_min_ssl_version(mbedtls_ssl_config *config,
@@ -319,31 +349,22 @@ static int transport_for_socket_type(avs_net_socket_type_t backend_type) {
     }
 }
 
-static int initialize_ssl_config(ssl_socket_t *socket) {
-    avs_net_socket_opt_value_t state_opt;
-    int endpoint;
-    if (avs_net_socket_get_opt((avs_net_abstract_socket_t *) socket,
-                               AVS_NET_SOCKET_OPT_STATE, &state_opt)) {
-        LOG(ERROR, "initialize_ssl_config: could not get socket state");
-        return -1;
-    }
-    if (state_opt.state == AVS_NET_SOCKET_STATE_CONNECTED) {
-        endpoint = MBEDTLS_SSL_IS_CLIENT;
-    } else if (state_opt.state == AVS_NET_SOCKET_STATE_ACCEPTED) {
-        endpoint = MBEDTLS_SSL_IS_SERVER;
-    } else {
-        socket->error_code = EINVAL;
-        LOG(ERROR, "initialize_ssl_config: invalid socket state");
-        return -1;
-    }
-
+static int configure_ssl(ssl_socket_t *socket,
+                         const avs_net_ssl_configuration_t *configuration) {
     mbedtls_ssl_config_init(&socket->config);
+    /* HACK: The config is always initialized with MBEDTLS_SSL_IS_SERVER even
+     * though it may be later reused in a client context. This is because the
+     * default server-side config initializes pretty much everything that the
+     * default client-side config does (aside from endpoint, authmode and
+     * session_tickets, which are just flags that are trivial to set manually),
+     * and more. So it's safer to initialize it with server-side defaults and
+     * then repurpose as a client-side config rather than vice versa. Details:
+     * https://github.com/ARMmbed/mbedtls/blob/mbedtls-2.6.1/library/ssl_tls.c#L7465 */
     if (mbedtls_ssl_config_defaults(
-            &socket->config, endpoint,
+            &socket->config, MBEDTLS_SSL_IS_SERVER,
             transport_for_socket_type(socket->backend_type),
             MBEDTLS_SSL_PRESET_DEFAULT)) {
         LOG(ERROR, "mbedtls_ssl_config_defaults() failed");
-        socket->error_code = EINVAL;
         return -1;
     }
 
@@ -353,9 +374,8 @@ static int initialize_ssl_config(ssl_socket_t *socket) {
     mbedtls_ssl_conf_dbg(&socket->config, debug_mbedtls, NULL);
 #endif // WITH_MBEDTLS_LOGS
 
-    if (set_min_ssl_version(&socket->config, socket->version)) {
+    if (set_min_ssl_version(&socket->config, configuration->version)) {
         LOG(ERROR, "Could not set minimum SSL version");
-        socket->error_code = EINVAL;
         return -1;
     }
 
@@ -376,86 +396,152 @@ static int initialize_ssl_config(ssl_socket_t *socket) {
         return -1;
     }
 
+    const avs_net_dtls_handshake_timeouts_t *dtls_handshake_timeouts =
+            configuration->dtls_handshake_timeouts
+                    ? configuration->dtls_handshake_timeouts
+                    : &DEFAULT_DTLS_HANDSHAKE_TIMEOUTS;
     int64_t min_ms, max_ms;
     if (avs_time_duration_to_scalar(&min_ms, AVS_TIME_MS,
-                                    socket->dtls_handshake_timeouts.min)
+                                    dtls_handshake_timeouts->min)
             || avs_time_duration_to_scalar(&max_ms, AVS_TIME_MS,
-                                           socket->dtls_handshake_timeouts.max)
+                                           dtls_handshake_timeouts->max)
             || min_ms < 0 || min_ms > UINT32_MAX
             || max_ms < 0 || max_ms > UINT32_MAX) {
         LOG(ERROR, "Invalid DTLS handshake timeouts");
-        socket->error_code = EINVAL;
         return -1;
     }
     mbedtls_ssl_conf_handshake_timeout(&socket->config,
                                        (uint32_t) min_ms, (uint32_t) max_ms);
 
-    if (socket->additional_configuration_clb
-            && socket->additional_configuration_clb(&socket->config)) {
+    if (configuration->additional_configuration_clb
+            && configuration->additional_configuration_clb(&socket->config)) {
         LOG(ERROR, "Error while setting additional SSL configuration");
-        socket->error_code = EINVAL;
         return -1;
     }
 
-    socket->error_code = 0;
     return 0;
+}
+
+static int update_ssl_endpoint_config(ssl_socket_t *socket) {
+    avs_net_socket_opt_value_t state_opt;
+    if (avs_net_socket_get_opt((avs_net_abstract_socket_t *) socket,
+                               AVS_NET_SOCKET_OPT_STATE, &state_opt)) {
+        LOG(ERROR, "initialize_ssl_config: could not get socket state");
+        return -1;
+    }
+    if (state_opt.state == AVS_NET_SOCKET_STATE_CONNECTED) {
+        mbedtls_ssl_conf_endpoint(&socket->config, MBEDTLS_SSL_IS_CLIENT);
+#ifdef MBEDTLS_SSL_SESSION_TICKETS
+        mbedtls_ssl_conf_session_tickets(&socket->config,
+                                         MBEDTLS_SSL_SESSION_TICKETS_ENABLED);
+#endif // MBEDTLS_SSL_SESSION_TICKETS
+    } else if (state_opt.state == AVS_NET_SOCKET_STATE_ACCEPTED) {
+        mbedtls_ssl_conf_endpoint(&socket->config, MBEDTLS_SSL_IS_SERVER);
+#ifdef MBEDTLS_SSL_SESSION_TICKETS
+        mbedtls_ssl_conf_session_tickets(&socket->config,
+                                         MBEDTLS_SSL_SESSION_TICKETS_DISABLED);
+#endif // MBEDTLS_SSL_SESSION_TICKETS
+    } else {
+        socket->error_code = EINVAL;
+        LOG(ERROR, "initialize_ssl_config: invalid socket state");
+        return -1;
+    }
+
+    return 0;
+}
+
+static bool sessions_equal(const mbedtls_ssl_session *left,
+                           const mbedtls_ssl_session *right) {
+    if (!left && !right) {
+        return true;
+    }
+    return left && right
+            && left->ciphersuite == right->ciphersuite
+            && left->compression == right->compression
+#ifdef MBEDTLS_HAVE_TIME
+            && left->start == right->start
+#endif // MBEDTLS_HAVE_TIME
+            && left->id_len == right->id_len
+            && memcmp(left->id, right->id, left->id_len) == 0;
 }
 
 static int start_ssl(ssl_socket_t *socket, const char *host) {
     int result;
-    mbedtls_entropy_init(&socket->entropy);
-
-    mbedtls_ctr_drbg_init(&socket->rng);
-    if ((result = mbedtls_ctr_drbg_seed(&socket->rng, mbedtls_entropy_func,
-                                        &socket->entropy, NULL, 0))) {
-        LOG(ERROR, "mbedtls_ctr_drbg_seed() failed: %d", result);
-        socket->error_code = ENOSYS;
-        return -1;
-    }
-
-    if (initialize_ssl_config(socket)) {
+    if (update_ssl_endpoint_config(socket)) {
         LOG(ERROR, "could not initialize ssl context");
         return -1;
     }
 
-    mbedtls_ssl_init(&socket->context);
-    mbedtls_ssl_set_bio(&socket->context, socket,
-                        avs_bio_send, NULL, avs_bio_recv);
-    mbedtls_ssl_set_timer_cb(&socket->context, &socket->timer,
-                             mbedtls_timing_set_delay,
-                             mbedtls_timing_get_delay);
-    if ((result = mbedtls_ssl_setup(&socket->context, &socket->config))) {
-        LOG(ERROR, "mbedtls_ssl_setup() failed: %d", result);
-        socket->error_code = ENOMEM;
-        return -1;
+    assert(!socket->flags.context_valid);
+
+    mbedtls_ssl_session tmp_session;
+    bool restore_session = socket->flags.stored_session_valid;
+    if (restore_session) {
+        tmp_session = *get_stored_session(socket);
+        socket->flags.stored_session_valid = false;
     }
 
-    if ((result = mbedtls_ssl_set_hostname(&socket->context, host))) {
+    mbedtls_ssl_init(&socket->state.context);
+    socket->flags.context_valid = true;
+
+    mbedtls_ssl_set_bio(get_context(socket), socket,
+                        avs_bio_send, NULL, avs_bio_recv);
+    mbedtls_ssl_set_timer_cb(get_context(socket), &socket->timer,
+                             mbedtls_timing_set_delay,
+                             mbedtls_timing_get_delay);
+    if ((result = mbedtls_ssl_setup(get_context(socket), &socket->config))) {
+        LOG(ERROR, "mbedtls_ssl_setup() failed: %d", result);
+        socket->error_code = ENOMEM;
+        goto finish;
+    }
+
+    if ((result = mbedtls_ssl_set_hostname(get_context(socket), host))) {
         LOG(ERROR, "mbedtls_ssl_set_hostname() failed: %d", result);
         socket->error_code =
                 (result == MBEDTLS_ERR_SSL_ALLOC_FAILED ? ENOMEM : EINVAL);
-        return -1;
+        goto finish;
+    }
+
+    if (restore_session
+            && socket->config.endpoint == MBEDTLS_SSL_IS_CLIENT
+            && (result = mbedtls_ssl_set_session(get_context(socket),
+                                                 &tmp_session))) {
+        LOG(WARNING,
+            "mbedtls_ssl_set_session() failed: %d; performing full handshake",
+            result);
     }
 
     do {
-        result = mbedtls_ssl_handshake(&socket->context);
+        result = mbedtls_ssl_handshake(get_context(socket));
     } while (result == MBEDTLS_ERR_SSL_WANT_READ
                 || result == MBEDTLS_ERR_SSL_WANT_WRITE);
 
     if (result == 0) {
-        LOG(TRACE, "handshake success");
+        if ((socket->flags.session_restored =
+                (restore_session && sessions_equal(get_context(socket)->session,
+                                                   &tmp_session)))) {
+            LOG(TRACE, "handshake success: session restored");
+        } else {
+            LOG(TRACE, "handshake success: new session started");
+        }
     } else {
         LOG(ERROR, "handshake failed: %d", result);
     }
 
-    if (!result && is_verification_enabled(socket)) {
+    if (!result
+            && !socket->flags.session_restored
+            && is_verification_enabled(socket)) {
         uint32_t verify_result =
-                mbedtls_ssl_get_verify_result(&socket->context);
+                mbedtls_ssl_get_verify_result(get_context(socket));
         if (verify_result) {
             LOG(ERROR, "server certificate verification failure: %" PRIu32,
                 verify_result);
             result = -1;
         }
+    }
+finish:
+    if (restore_session) {
+        mbedtls_ssl_session_free(&tmp_session);
     }
     if (result) {
         if (!socket->error_code) {
@@ -496,7 +582,7 @@ static int send_ssl(avs_net_abstract_socket_t *socket_,
         do {
             errno = 0;
             result = mbedtls_ssl_write(
-                    &socket->context,
+                    get_context(socket),
                     ((const unsigned char *) buffer) + bytes_sent,
                     (size_t) (buffer_length - bytes_sent));
         } while (result == MBEDTLS_ERR_SSL_WANT_WRITE
@@ -532,8 +618,8 @@ static int receive_ssl(avs_net_abstract_socket_t *socket_,
 
     do {
         errno = 0;
-        result = mbedtls_ssl_read(&socket->context, (unsigned char *)buffer,
-                                  buffer_length);
+        result = mbedtls_ssl_read(get_context(socket),
+                                  (unsigned char *) buffer, buffer_length);
     } while (result == MBEDTLS_ERR_SSL_WANT_READ
                 || result == MBEDTLS_ERR_SSL_WANT_WRITE);
 
@@ -579,6 +665,10 @@ static int cleanup_ssl(avs_net_abstract_socket_t **socket_) {
     close_ssl(*socket_);
     avs_net_socket_cleanup(&(*socket)->backend_socket);
 
+    if ((*socket)->flags.stored_session_valid) {
+        mbedtls_ssl_session_free(get_stored_session(*socket));
+    }
+
     switch ((*socket)->security_mode) {
     case AVS_NET_SECURITY_PSK:
         cleanup_security_psk(&(*socket)->security.psk);
@@ -587,6 +677,17 @@ static int cleanup_ssl(avs_net_abstract_socket_t **socket_) {
         cleanup_security_cert(&(*socket)->security.cert);
         break;
     }
+
+    /* Detach the uncopied PSK values */
+    (*socket)->config.psk = NULL;
+    (*socket)->config.psk_len = 0;
+    (*socket)->config.psk_identity = NULL;
+    (*socket)->config.psk_identity_len = 0;
+    mbedtls_ssl_config_free(&(*socket)->config);
+
+    mbedtls_ctr_drbg_free(&(*socket)->rng);
+    mbedtls_entropy_free(&(*socket)->entropy);
+
     free(*socket);
     *socket = NULL;
     return 0;
@@ -876,13 +977,9 @@ static int initialize_ssl_socket(ssl_socket_t *socket,
             &ssl_vtable;
 
     socket->backend_type = backend_type;
-    socket->version = configuration->version;
-    socket->dtls_handshake_timeouts = (configuration->dtls_handshake_timeouts
-            ? *configuration->dtls_handshake_timeouts
-            : DEFAULT_DTLS_HANDSHAKE_TIMEOUTS);
-    socket->additional_configuration_clb =
-            configuration->additional_configuration_clb;
     socket->backend_configuration = configuration->backend_configuration;
+    socket->flags.use_session_resumption =
+            configuration->use_session_resumption;
 
     socket->security_mode = configuration->security.mode;
     switch (configuration->security.mode) {
@@ -899,6 +996,20 @@ static int initialize_ssl_socket(ssl_socket_t *socket,
         break;
     default:
         assert(0 && "invalid enum value");
+        return -1;
+    }
+
+    mbedtls_entropy_init(&socket->entropy);
+
+    mbedtls_ctr_drbg_init(&socket->rng);
+    int result = mbedtls_ctr_drbg_seed(&socket->rng, mbedtls_entropy_func,
+                                       &socket->entropy, NULL, 0);
+    if (result) {
+        LOG(ERROR, "mbedtls_ctr_drbg_seed() failed: %d", result);
+        return -1;
+    }
+
+    if (configure_ssl(socket, configuration)) {
         return -1;
     }
 

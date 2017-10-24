@@ -656,8 +656,13 @@ static int start_ssl(ssl_socket_t *socket, const char *host) {
     return 0;
 }
 
-static int is_ssl_started(ssl_socket_t *socket) {
+static bool is_ssl_started(ssl_socket_t *socket) {
     return socket->ssl != NULL;
+}
+
+#warning "TODO: Session resumption support"
+static bool is_session_resumed(ssl_socket_t *socket) {
+    return false;
 }
 
 static int password_cb(char *buf, int num, int rwflag, void *userdata) {
