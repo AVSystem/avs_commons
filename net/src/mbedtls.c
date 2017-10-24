@@ -119,35 +119,22 @@ static struct {
     // this weighs almost 40KB because of HAVEGE state
     mbedtls_entropy_context entropy;
     mbedtls_ctr_drbg_context rng;
-    volatile bool initialized;
 } AVS_SSL_GLOBAL;
 
-static void avs_ssl_cleanup(void) {
+static void cleanup_ssl_global(void) {
     mbedtls_ctr_drbg_free(&AVS_SSL_GLOBAL.rng);
     mbedtls_entropy_free(&AVS_SSL_GLOBAL.entropy);
 }
 
-static int avs_ssl_init(void) {
-    int result = 0;
-    if (!AVS_SSL_GLOBAL.initialized) {
-        mbedtls_entropy_init(&AVS_SSL_GLOBAL.entropy);
-        mbedtls_ctr_drbg_init(&AVS_SSL_GLOBAL.rng);
-        result = mbedtls_ctr_drbg_seed(&AVS_SSL_GLOBAL.rng,
+static int initialize_ssl_global(void) {
+    mbedtls_entropy_init(&AVS_SSL_GLOBAL.entropy);
+    mbedtls_ctr_drbg_init(&AVS_SSL_GLOBAL.rng);
+    int result = mbedtls_ctr_drbg_seed(&AVS_SSL_GLOBAL.rng,
                                        mbedtls_entropy_func,
                                        &AVS_SSL_GLOBAL.entropy, NULL, 0);
-        if (result) {
-            LOG(ERROR, "mbedtls_ctr_drbg_seed() failed: %d", result);
-        }
-#ifndef NDEBUG
-        else if ((result = atexit(avs_ssl_cleanup))) {
-            LOG(ERROR, "atexit() failed: %d", result);
-        }
-#endif // NDEBUG
-        if (result) {
-            avs_ssl_cleanup();
-        } else {
-            AVS_SSL_GLOBAL.initialized = true;
-        }
+    if (result) {
+        LOG(ERROR, "mbedtls_ctr_drbg_seed() failed: %d", result);
+        cleanup_ssl_global();
     }
     return result;
 }
@@ -1005,11 +992,6 @@ static int configure_ssl_psk(ssl_socket_t *socket,
 static int initialize_ssl_socket(ssl_socket_t *socket,
                                  avs_net_socket_type_t backend_type,
                                  const avs_net_ssl_configuration_t *configuration) {
-    if (avs_ssl_init()) {
-        LOG(ERROR, "SSL global state initialization error");
-        return -1;
-    }
-
     *(const avs_net_socket_v_table_t **) (intptr_t) &socket->operations =
             &ssl_vtable;
 

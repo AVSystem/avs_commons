@@ -49,6 +49,15 @@ typedef struct {
 #define NET_SSL_COMMON_INTERNALS
 #include "ssl_common.h"
 
+static int initialize_ssl_global(void) {
+    // no global state - do nothing
+    return 0;
+}
+
+static void cleanup_ssl_global(void) {
+    // do nothing
+}
+
 static int get_dtls_overhead(ssl_socket_t *socket,
                              int *out_header,
                              int *out_padding_size) {

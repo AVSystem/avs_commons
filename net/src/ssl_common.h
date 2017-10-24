@@ -21,6 +21,9 @@
 #error "This header is not meant to be included from outside"
 #endif
 
+#include <signal.h>
+#include <stdatomic.h>
+
 VISIBILITY_PRIVATE_HEADER_BEGIN
 
 /* Required non-common static method implementations */
@@ -34,6 +37,8 @@ static int get_dtls_overhead(ssl_socket_t *socket,
 static int initialize_ssl_socket(ssl_socket_t *socket,
                                  avs_net_socket_type_t backend_type,
                                  const avs_net_ssl_configuration_t *configuration);
+static int initialize_ssl_global(void);
+static void cleanup_ssl_global(void);
 
 /* avs_net_socket_v_table_t ssl handlers implemented differently per backend */
 static int send_ssl(avs_net_abstract_socket_t *ssl_socket,
@@ -98,6 +103,33 @@ static int ensure_have_backend_socket(ssl_socket_t *socket) {
     return 0;
 }
 
+static int ensure_ssl_global(void) {
+    static volatile atomic_bool TOUCHED = ATOMIC_VAR_INIT(false);
+    static volatile sig_atomic_t RESULT = 0; // negative - error; positive - OK
+
+    int result = 0;
+    if (atomic_exchange(&TOUCHED, true)) {
+        // someone has already started initializing the state
+        while (!result) {
+            result = RESULT;
+        }
+        if (result > 0) {
+            result = 0;
+        }
+    } else {
+        // we need to initialize the global state
+        int result = initialize_ssl_global();
+#ifndef NDEBUG
+        if (!result && (result = atexit(cleanup_ssl_global))) {
+            cleanup_ssl_global();
+            LOG(ERROR, "atexit() failed: %d", result);
+        }
+#endif // NDEBUG
+        RESULT = (result < 0 ? result : result == 0 ? 1 : -1);
+    }
+    return result;
+}
+
 static int create_ssl_socket(avs_net_abstract_socket_t **socket,
                              avs_net_socket_type_t backend_type,
                              const void *socket_configuration) {
@@ -105,6 +137,11 @@ static int create_ssl_socket(avs_net_abstract_socket_t **socket,
 
     if (!socket_configuration) {
         LOG(ERROR, "SSL configuration not specified");
+        return -1;
+    }
+
+    if (ensure_ssl_global()) {
+        LOG(ERROR, "SSL global state initialization error");
         return -1;
     }
 

@@ -1513,31 +1513,30 @@ static int cleanup_ssl(avs_net_abstract_socket_t **socket_) {
     return 0;
 }
 
-static int avs_ssl_init(void) {
-    static volatile int initialized = 0;
-    if (!initialized) {
-        int result = 0;
-        LOG(TRACE, "OpenSSL initialization");
+static void cleanup_ssl_global(void) {
+    // do nothing
+}
 
-        SSL_library_init();
+static int initialize_ssl_global(void) {
+    LOG(TRACE, "OpenSSL initialization");
+
+    SSL_library_init();
 #ifdef AVS_LOG_WITH_TRACE
-        SSL_load_error_strings();
+    SSL_load_error_strings();
 #endif
-        OpenSSL_add_all_algorithms();
-        if (!RAND_load_file("/dev/urandom", -1)) {
-            LOG(WARNING, "RAND_load_file error");
-            result = -1;
-        }
-        /* On some OpenSSL version, RAND_load file causes hell to break loose.
-         * Get rid of any "uninitialized" memory that it created :( */
-        VALGRIND_MAKE_MEM_DEFINED_IF_ADDRESSABLE(0, sbrk(0));
-        if (avs_bio_init()) {
-            LOG(WARNING, "avs_bio_init error");
-            result = -1;
-        }
-        initialized = (result ? result : 1);
+    OpenSSL_add_all_algorithms();
+    if (!RAND_load_file("/dev/urandom", -1)) {
+        LOG(WARNING, "RAND_load_file error");
+        return -1;
     }
-    return initialized < 0 ? initialized : 0;
+    /* On some OpenSSL version, RAND_load file causes hell to break loose.
+     * Get rid of any "uninitialized" memory that it created :( */
+    VALGRIND_MAKE_MEM_DEFINED_IF_ADDRESSABLE(0, sbrk(0));
+    if (avs_bio_init()) {
+        LOG(WARNING, "avs_bio_init error");
+        return -1;
+    }
+    return 0;
 }
 
 #ifndef FAKE_OPENSSL
@@ -1713,11 +1712,6 @@ static SSL_CTX *make_ssl_context(avs_net_socket_type_t backend_type,
 static int initialize_ssl_socket(ssl_socket_t *socket,
                                  avs_net_socket_type_t backend_type,
                                  const avs_net_ssl_configuration_t *configuration) {
-    if (avs_ssl_init()) {
-        LOG(ERROR, "OpenSSL initialization error");
-        return -1;
-    }
-
     *(const avs_net_socket_v_table_t **) (intptr_t) &socket->operations =
             &ssl_vtable;
     socket->backend_type = backend_type;
