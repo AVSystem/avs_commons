@@ -22,7 +22,29 @@
 #endif
 
 #include <signal.h>
+
+#ifdef HAVE_C11_STDATOMIC
 #include <stdatomic.h>
+#else // HAVE_C11_STDATOMIC
+
+#define atomic_flag bool
+#define ATOMIC_FLAG_INIT false
+
+#if defined(__GNUC__) && ((__GNUC__ > 4) || (__GNUC__ == 4 && __GNUC_MINOR__ >= 1))
+// also works on Clang
+#define atomic_flag_test_and_set(Ptr) (!__sync_bool_compare_and_swap((Ptr), false, true))
+#else // __GNUC__
+#warning "Atomic boolean operations not available. Initialization of SSL sockets will NOT be thread-safe!"
+static bool atomic_flag_test_and_set(volatile bool *ptr) {
+    if (!*ptr) {
+        *ptr = true;
+        return true;
+    }
+    return false;
+}
+#endif // __GNUC__
+
+#endif // HAVE_C11_STDATOMIC
 
 VISIBILITY_PRIVATE_HEADER_BEGIN
 
@@ -104,11 +126,11 @@ static int ensure_have_backend_socket(ssl_socket_t *socket) {
 }
 
 static int ensure_ssl_global(void) {
-    static volatile atomic_bool TOUCHED = ATOMIC_VAR_INIT(false);
+    static volatile atomic_flag TOUCHED = ATOMIC_FLAG_INIT;
     static volatile sig_atomic_t RESULT = 0; // negative - error; positive - OK
 
     int result = 0;
-    if (atomic_exchange(&TOUCHED, true)) {
+    if (atomic_flag_test_and_set(&TOUCHED)) {
         // someone has already started initializing the state
         while (!result) {
             result = RESULT;

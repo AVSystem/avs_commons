@@ -105,6 +105,8 @@ extern void *sbrk (intptr_t __delta);
 #cmakedefine HAVE_BUILTIN_ADD_OVERFLOW
 #cmakedefine HAVE_BUILTIN_MUL_OVERFLOW
 
+#cmakedefine HAVE_C11_STDATOMIC
+
 #cmakedefine WITH_INTERNAL_LOGS
 
 #cmakedefine WITH_INTERNAL_TRACE
