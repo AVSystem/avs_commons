@@ -25,7 +25,11 @@
 
 #ifdef HAVE_C11_STDATOMIC
 #include <stdatomic.h>
-#else // HAVE_C11_STDATOMIC
+#endif // HAVE_C11_STDATOMIC
+
+VISIBILITY_PRIVATE_HEADER_BEGIN
+
+#ifndef HAVE_C11_STDATOMIC
 
 #define atomic_flag bool
 #define ATOMIC_FLAG_INIT false
@@ -45,8 +49,6 @@ static bool atomic_flag_test_and_set(volatile bool *ptr) {
 #endif // __GNUC__
 
 #endif // HAVE_C11_STDATOMIC
-
-VISIBILITY_PRIVATE_HEADER_BEGIN
 
 /* Required non-common static method implementations */
 static bool is_ssl_started(ssl_socket_t *socket);
