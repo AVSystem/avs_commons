@@ -225,21 +225,24 @@ static void close_ssl_raw(ssl_socket_t *socket) {
     }
 
     if (socket->flags.context_valid) {
+        assert(!socket->flags.stored_session_valid);
+        mbedtls_ssl_session tmp_session;
         if (socket->flags.use_session_resumption
                 && socket->config.endpoint == MBEDTLS_SSL_IS_CLIENT) {
-            assert(!socket->flags.stored_session_valid);
-            mbedtls_ssl_session tmp_session;
             mbedtls_ssl_session_init(&tmp_session);
             if (mbedtls_ssl_get_session(get_context(socket), &tmp_session)) {
                 mbedtls_ssl_session_free(&tmp_session);
             } else {
-                socket->state.stored_session = tmp_session;
                 socket->flags.stored_session_valid = true;
             }
         }
 
         mbedtls_ssl_free(get_context(socket));
         socket->flags.context_valid = false;
+
+        if (socket->flags.stored_session_valid) {
+            socket->state.stored_session = tmp_session;
+        }
     }
 }
 
