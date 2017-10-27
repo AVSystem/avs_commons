@@ -52,14 +52,14 @@ typedef struct {
 typedef struct {
     const avs_net_socket_v_table_t * const operations;
     /* At most one of "context_valid" and "stored_session_valid" might be true
-     * at a given time; these refer to the fields in the "state" union. */
+     * at a given time; these refer to the fields in the "state" struct. */
     struct {
         bool context_valid : 1;
         bool stored_session_valid : 1;
         bool session_restored : 1;
         bool use_session_resumption : 1;
     } flags;
-    union {
+    struct {
         // used when the socket is ready for communication
         mbedtls_ssl_context context;
         // may be used to store pre-existing session when the socket is closed
@@ -71,8 +71,6 @@ typedef struct {
         ssl_socket_certs_t cert;
         ssl_socket_psk_t psk;
     } security;
-    mbedtls_entropy_context entropy;
-    mbedtls_ctr_drbg_context rng;
     mbedtls_timing_delay_context timer;
     avs_net_socket_type_t backend_type;
     avs_net_abstract_socket_t *backend_socket;
@@ -116,6 +114,30 @@ static void debug_mbedtls(void *ctx, int level, const char *file, int line, cons
 
 #define NET_SSL_COMMON_INTERNALS
 #include "ssl_common.h"
+
+static struct {
+    // this weighs almost 40KB because of HAVEGE state
+    mbedtls_entropy_context entropy;
+    mbedtls_ctr_drbg_context rng;
+} AVS_SSL_GLOBAL;
+
+static void cleanup_ssl_global(void) {
+    mbedtls_ctr_drbg_free(&AVS_SSL_GLOBAL.rng);
+    mbedtls_entropy_free(&AVS_SSL_GLOBAL.entropy);
+}
+
+static int initialize_ssl_global(void) {
+    mbedtls_entropy_init(&AVS_SSL_GLOBAL.entropy);
+    mbedtls_ctr_drbg_init(&AVS_SSL_GLOBAL.rng);
+    int result = mbedtls_ctr_drbg_seed(&AVS_SSL_GLOBAL.rng,
+                                       mbedtls_entropy_func,
+                                       &AVS_SSL_GLOBAL.entropy, NULL, 0);
+    if (result) {
+        LOG(ERROR, "mbedtls_ctr_drbg_seed() failed: %d", result);
+        cleanup_ssl_global();
+    }
+    return result;
+}
 
 static int avs_bio_recv(void *ctx, unsigned char *buf, size_t len,
                         uint32_t timeout_ms) {
@@ -205,13 +227,14 @@ static void close_ssl_raw(ssl_socket_t *socket) {
     if (socket->flags.context_valid) {
         if (socket->flags.use_session_resumption
                 && socket->config.endpoint == MBEDTLS_SSL_IS_CLIENT) {
-            assert(!socket->flags.stored_session_valid);
-            mbedtls_ssl_session tmp_session;
-            mbedtls_ssl_session_init(&tmp_session);
-            if (mbedtls_ssl_get_session(get_context(socket), &tmp_session)) {
-                mbedtls_ssl_session_free(&tmp_session);
+            if (socket->flags.stored_session_valid) {
+                mbedtls_ssl_session_free(get_stored_session(socket));
+                socket->flags.stored_session_valid = false;
+            }
+            if (mbedtls_ssl_get_session(get_context(socket),
+                                        &socket->state.stored_session)) {
+                mbedtls_ssl_session_free(&socket->state.stored_session);
             } else {
-                socket->state.stored_session = tmp_session;
                 socket->flags.stored_session_valid = true;
             }
         }
@@ -380,7 +403,7 @@ static int configure_ssl(ssl_socket_t *socket,
     }
 
     mbedtls_ssl_conf_rng(&socket->config,
-                         mbedtls_ctr_drbg_random, &socket->rng);
+                         mbedtls_ctr_drbg_random, &AVS_SSL_GLOBAL.rng);
 
     switch (socket->security_mode) {
     case AVS_NET_SECURITY_PSK:
@@ -474,13 +497,7 @@ static int start_ssl(ssl_socket_t *socket, const char *host) {
 
     assert(!socket->flags.context_valid);
 
-    mbedtls_ssl_session tmp_session;
     bool restore_session = socket->flags.stored_session_valid;
-    if (restore_session) {
-        tmp_session = *get_stored_session(socket);
-        socket->flags.stored_session_valid = false;
-    }
-
     mbedtls_ssl_init(&socket->state.context);
     socket->flags.context_valid = true;
 
@@ -505,7 +522,7 @@ static int start_ssl(ssl_socket_t *socket, const char *host) {
     if (restore_session
             && socket->config.endpoint == MBEDTLS_SSL_IS_CLIENT
             && (result = mbedtls_ssl_set_session(get_context(socket),
-                                                 &tmp_session))) {
+                                                 get_stored_session(socket)))) {
         LOG(WARNING,
             "mbedtls_ssl_set_session() failed: %d; performing full handshake",
             result);
@@ -518,8 +535,9 @@ static int start_ssl(ssl_socket_t *socket, const char *host) {
 
     if (result == 0) {
         if ((socket->flags.session_restored =
-                (restore_session && sessions_equal(get_context(socket)->session,
-                                                   &tmp_session)))) {
+                (restore_session
+                        && sessions_equal(get_context(socket)->session,
+                                          get_stored_session(socket))))) {
             LOG(TRACE, "handshake success: session restored");
         } else {
             LOG(TRACE, "handshake success: new session started");
@@ -540,15 +558,18 @@ static int start_ssl(ssl_socket_t *socket, const char *host) {
         }
     }
 finish:
-    if (restore_session) {
-        mbedtls_ssl_session_free(&tmp_session);
-    }
     if (result) {
+        mbedtls_ssl_free(get_context(socket));
+        socket->flags.context_valid = false;
         if (!socket->error_code) {
             socket->error_code = EPROTO;
         }
         return -1;
     } else {
+        if (restore_session) {
+            mbedtls_ssl_session_free(get_stored_session(socket));
+            socket->flags.stored_session_valid = false;
+        }
         socket->error_code = 0;
         return 0;
     }
@@ -684,9 +705,6 @@ static int cleanup_ssl(avs_net_abstract_socket_t **socket_) {
     (*socket)->config.psk_identity = NULL;
     (*socket)->config.psk_identity_len = 0;
     mbedtls_ssl_config_free(&(*socket)->config);
-
-    mbedtls_ctr_drbg_free(&(*socket)->rng);
-    mbedtls_entropy_free(&(*socket)->entropy);
 
     free(*socket);
     *socket = NULL;
@@ -996,16 +1014,6 @@ static int initialize_ssl_socket(ssl_socket_t *socket,
         break;
     default:
         assert(0 && "invalid enum value");
-        return -1;
-    }
-
-    mbedtls_entropy_init(&socket->entropy);
-
-    mbedtls_ctr_drbg_init(&socket->rng);
-    int result = mbedtls_ctr_drbg_seed(&socket->rng, mbedtls_entropy_func,
-                                       &socket->entropy, NULL, 0);
-    if (result) {
-        LOG(ERROR, "mbedtls_ctr_drbg_seed() failed: %d", result);
         return -1;
     }
 

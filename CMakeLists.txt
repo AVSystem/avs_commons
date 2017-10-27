@@ -227,6 +227,10 @@ file(WRITE ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp/builtin_mul_overflow.c "#incl
 try_compile(HAVE_BUILTIN_ADD_OVERFLOW ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp/builtin_add_overflow.c)
 try_compile(HAVE_BUILTIN_MUL_OVERFLOW ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp/builtin_mul_overflow.c)
 
+# C11 stdatomic
+file(WRITE ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp/c11_stdatomic.c "#include <stdatomic.h>\nint main() { volatile atomic_flag a = ATOMIC_FLAG_INIT; return atomic_flag_test_and_set(&a); }\n")
+try_compile(HAVE_C11_STDATOMIC ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp/c11_stdatomic.c)
+
 include(${CMAKE_CURRENT_LIST_DIR}/cmake/PosixFeatures.cmake)
 
 include(TestBigEndian)

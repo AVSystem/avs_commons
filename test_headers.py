@@ -50,6 +50,8 @@ CONDITIONAL_WHITELIST = {
     (r'mbedtls', r'mbedtls/.*'),
     (r'openssl', r'openssl/.*'),
     (r'openssl', r'sys/time\.h'),
+    (r'ssl_common', r'signal\.h'),
+    (r'ssl_common', r'stdatomic\.h'),
     (r'tinydtls', r'tinydtls/.*'),
     (r'zlib', r'zlib\.h')
 }
