@@ -39,13 +39,70 @@ AVS_UNIT_TEST(parse_url, without_credentials_port_and_path) {
 }
 
 AVS_UNIT_TEST(parse_url, without_credentials_and_port_with_path) {
-    avs_url_t *parsed_url = avs_url_parse("http://acs.avsystem.com/path");
+    avs_url_t *parsed_url = avs_url_parse("http://acs.avsystem.com/~path");
     AVS_UNIT_ASSERT_NOT_NULL(parsed_url);
 
     AVS_UNIT_ASSERT_EQUAL_STRING(avs_url_protocol(parsed_url), "http");
     AVS_UNIT_ASSERT_EQUAL_STRING(avs_url_host(parsed_url), "acs.avsystem.com");
     AVS_UNIT_ASSERT_NULL(avs_url_port(parsed_url));
-    AVS_UNIT_ASSERT_EQUAL_STRING(avs_url_path(parsed_url), "/path");
+    AVS_UNIT_ASSERT_EQUAL_STRING(avs_url_path(parsed_url), "/~path");
+    AVS_UNIT_ASSERT_NULL(avs_url_user(parsed_url));
+    AVS_UNIT_ASSERT_NULL(avs_url_password(parsed_url));
+
+    avs_url_free(parsed_url);
+}
+
+AVS_UNIT_TEST(parse_url, with_query_string) {
+    avs_url_t *parsed_url = avs_url_parse("http://acs.avsystem.com/path?query");
+    AVS_UNIT_ASSERT_NOT_NULL(parsed_url);
+
+    AVS_UNIT_ASSERT_EQUAL_STRING(avs_url_protocol(parsed_url), "http");
+    AVS_UNIT_ASSERT_EQUAL_STRING(avs_url_host(parsed_url), "acs.avsystem.com");
+    AVS_UNIT_ASSERT_NULL(avs_url_port(parsed_url));
+    AVS_UNIT_ASSERT_EQUAL_STRING(avs_url_path(parsed_url), "/path?query");
+    AVS_UNIT_ASSERT_NULL(avs_url_user(parsed_url));
+    AVS_UNIT_ASSERT_NULL(avs_url_password(parsed_url));
+
+    avs_url_free(parsed_url);
+}
+
+AVS_UNIT_TEST(parse_url, with_query_string_only) {
+    avs_url_t *parsed_url = avs_url_parse("http://acs.avsystem.com?query");
+    AVS_UNIT_ASSERT_NOT_NULL(parsed_url);
+
+    AVS_UNIT_ASSERT_EQUAL_STRING(avs_url_protocol(parsed_url), "http");
+    AVS_UNIT_ASSERT_EQUAL_STRING(avs_url_host(parsed_url), "acs.avsystem.com");
+    AVS_UNIT_ASSERT_NULL(avs_url_port(parsed_url));
+    AVS_UNIT_ASSERT_EQUAL_STRING(avs_url_path(parsed_url), "/?query");
+    AVS_UNIT_ASSERT_NULL(avs_url_user(parsed_url));
+    AVS_UNIT_ASSERT_NULL(avs_url_password(parsed_url));
+
+    avs_url_free(parsed_url);
+}
+
+AVS_UNIT_TEST(parse_url, with_port_and_query_string) {
+    avs_url_t *parsed_url =
+            avs_url_parse("http://acs.avsystem.com:123/path?query");
+    AVS_UNIT_ASSERT_NOT_NULL(parsed_url);
+
+    AVS_UNIT_ASSERT_EQUAL_STRING(avs_url_protocol(parsed_url), "http");
+    AVS_UNIT_ASSERT_EQUAL_STRING(avs_url_host(parsed_url), "acs.avsystem.com");
+    AVS_UNIT_ASSERT_EQUAL_STRING(avs_url_port(parsed_url), "123");
+    AVS_UNIT_ASSERT_EQUAL_STRING(avs_url_path(parsed_url), "/path?query");
+    AVS_UNIT_ASSERT_NULL(avs_url_user(parsed_url));
+    AVS_UNIT_ASSERT_NULL(avs_url_password(parsed_url));
+
+    avs_url_free(parsed_url);
+}
+
+AVS_UNIT_TEST(parse_url, with_port_and_query_string_only) {
+    avs_url_t *parsed_url = avs_url_parse("http://acs.avsystem.com:123?query");
+    AVS_UNIT_ASSERT_NOT_NULL(parsed_url);
+
+    AVS_UNIT_ASSERT_EQUAL_STRING(avs_url_protocol(parsed_url), "http");
+    AVS_UNIT_ASSERT_EQUAL_STRING(avs_url_host(parsed_url), "acs.avsystem.com");
+    AVS_UNIT_ASSERT_EQUAL_STRING(avs_url_port(parsed_url), "123");
+    AVS_UNIT_ASSERT_EQUAL_STRING(avs_url_path(parsed_url), "/?query");
     AVS_UNIT_ASSERT_NULL(avs_url_user(parsed_url));
     AVS_UNIT_ASSERT_NULL(avs_url_password(parsed_url));
 

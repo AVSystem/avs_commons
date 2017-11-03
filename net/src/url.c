@@ -299,10 +299,11 @@ static int url_parse_host(const char **url,
         while (*data_out_ptr < out_limit
                 && **url != '\0'
                 && **url != '/'
+                && **url != '?'
                 && **url != ':') {
             parsed_url->data[(*data_out_ptr)++] = *(*url)++;
         }
-        assert(**url == '\0' || **url == '/' || **url == ':');
+        assert(**url == '\0' || **url == '/' || **url == '?' || **url == ':');
     }
     if (*data_out_ptr == parsed_url->host_ptr) {
         LOG(ERROR, "host part cannot be empty");
@@ -334,7 +335,7 @@ static int url_parse_port(const char **url,
         LOG(ERROR, "port too long");
         return -1;
     }
-    if (**url != '\0' && **url != '/') {
+    if (**url != '\0' && **url != '/' && **url != '?') {
         LOG(ERROR, "port should have numeric value");
         return -1;
     }
@@ -350,10 +351,10 @@ static int is_valid_url_path_char(char c) {
     /* Assumes English locale. */
     return isalnum((unsigned char)c)
         || !!strchr("/"
-                    "?" /* this technically is reserved, but our
-                           tests ensure it works too */
+                    "?~" /* these technically are reserved, but our
+                            tests ensure it works too */
                     ";:@&="
-                    "$-_.+" /* "safe" set defined in RFC 1783 */
+                    "$-_.+" /* "safe" set defined in RFC 1738 */
                     "!*'(),", c); /* "extra" set */
 }
 
@@ -366,12 +367,11 @@ static int url_parse_path(const char **url,
                           size_t out_limit,
                           avs_url_t *parsed_url) {
     parsed_url->path_ptr = *data_out_ptr;
-    if (**url) {
-        while (*data_out_ptr < out_limit && **url != '\0') {
-            parsed_url->data[(*data_out_ptr)++] = *(*url)++;
-        }
-    } else {
+    if (!**url || **url == '?') {
         parsed_url->data[(*data_out_ptr)++] = '/';
+    }
+    while (*data_out_ptr < out_limit && **url != '\0') {
+        parsed_url->data[(*data_out_ptr)++] = *(*url)++;
     }
     assert(*data_out_ptr < out_limit);
     parsed_url->data[(*data_out_ptr)++] = '\0';
@@ -398,14 +398,14 @@ avs_url_t *avs_url_parse(const char *raw_url) {
     //
     // A copy of the original string would require strlen(raw_url)+1 bytes.
     // Then:
-    // - we replace "://" with a single nullbyte      :  -2 bytes
-    // - we replace ":" before password with nullbyte : +-0 bytes
-    // - we replace "@" before hostname with nullbyte : +-0 bytes
-    // - we replace ":" before port with nullbyte     : +-0 bytes
-    // - we add a nullbyte before path's "/"          :  +1 byte
-    // - we add a "/" in path if it's completely empty:  +1 byte
-    //                                                -----------
-    // TOTAL DIFFERENCE IN REQUIRED SIZE:                 0 bytes
+    // - we replace "://" with a single nullbyte                :  -2 bytes
+    // - we replace ":" before password with nullbyte           : +-0 bytes
+    // - we replace "@" before hostname with nullbyte           : +-0 bytes
+    // - we replace ":" before port with nullbyte               : +-0 bytes
+    // - we add a nullbyte before path's "/"                    :  +1 byte
+    // - we add a "/" in path if it's empty or query string only:  +1 byte
+    //                                                          -----------
+    // TOTAL DIFFERENCE IN REQUIRED SIZE:                           0 bytes
     //
     // Thus, we know that we need out->data to be strlen(raw_url)+1 bytes long.
     size_t data_length = strlen(raw_url) + 1;
