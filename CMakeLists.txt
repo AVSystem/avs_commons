@@ -309,20 +309,6 @@ if(NOT INCLUDE_INSTALL_DIR)
     set(INCLUDE_INSTALL_DIR include)
 endif()
 
-set(DOXYGEN_SKIP_DOT TRUE)
-find_package(Doxygen)
-
-if(DOXYGEN_FOUND)
-    configure_file(doc/Doxyfile.in doc/Doxyfile @ONLY)
-    add_custom_target(avs_commons_doc
-                      COMMAND ${DOXYGEN_EXECUTABLE} ${CMAKE_BINARY_DIR}/doc/Doxyfile)
-
-    if(${CMAKE_PROJECT_NAME} STREQUAL ${PROJECT_NAME})
-        add_custom_target(doc)
-        add_dependencies(doc avs_commons_doc)
-    endif()
-endif()
-
 if(${CMAKE_PROJECT_NAME} STREQUAL ${PROJECT_NAME})
     set(MODULES_ENABLED ON)
 else()
@@ -496,6 +482,26 @@ if(WITH_AVS_HTTP)
             separate_arguments(ZLIB_INCLUDE_DIRS)
             include_directories(${ZLIB_INCLUDE_DIRS})
         endif()
+    endif()
+endif()
+
+
+# API documentation
+set(DOXYGEN_SKIP_DOT TRUE)
+find_package(Doxygen)
+
+if(DOXYGEN_FOUND)
+    set(DOXYGEN_INPUT_PATHS ${MODULE_INCLUDE_DIRS})
+    # doxygen expects whitespace-separated list, cmake stores them as
+    # semicolon-separated strings
+    string(REPLACE ";" " " DOXYGEN_INPUT_PATHS "${DOXYGEN_INPUT_PATHS}")
+    configure_file(doc/Doxyfile.in doc/Doxyfile @ONLY)
+    add_custom_target(avs_commons_doc
+                      COMMAND ${DOXYGEN_EXECUTABLE} ${CMAKE_BINARY_DIR}/doc/Doxyfile)
+
+    if(${CMAKE_PROJECT_NAME} STREQUAL ${PROJECT_NAME})
+        add_custom_target(doc)
+        add_dependencies(doc avs_commons_doc)
     endif()
 endif()
 
