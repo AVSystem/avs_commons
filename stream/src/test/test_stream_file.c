@@ -57,6 +57,7 @@ AVS_UNIT_TEST(stream_file, write_mode_creates_file) {
     unlink(filename);
     AVS_UNIT_ASSERT_NOT_NULL((stream = avs_stream_file_create(filename, AVS_STREAM_FILE_WRITE)));
     avs_stream_cleanup(&stream);
+    unlink(filename);
 }
 
 AVS_UNIT_TEST(stream_file, write_and_read) {
