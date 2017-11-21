@@ -123,6 +123,7 @@ struct http_stream_struct {
     int error_code;
 
     AVS_LIST(http_header_t) user_headers;
+    AVS_LIST(const avs_http_header_t) *incoming_header_storage;
 
     unsigned random_seed;
 

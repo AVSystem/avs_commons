@@ -16,6 +16,7 @@
 
 #include <avs_commons_config.h>
 
+#include <assert.h>
 #include <ctype.h>
 #include <errno.h>
 #include <string.h>
@@ -31,6 +32,7 @@ VISIBILITY_SOURCE_BEGIN
 
 typedef struct {
     http_stream_t *stream;
+    AVS_LIST(const avs_http_header_t) *header_storage_end_ptr;
     http_transfer_encoding_t transfer_encoding;
     avs_http_content_encoding_t content_encoding;
     size_t content_length;
@@ -55,7 +57,9 @@ static int parse_size(size_t *out, const char *in) {
 }
 
 static int http_handle_header(const char *key, const char *value,
-                              header_parser_state_t *state) {
+                              header_parser_state_t *state,
+                              bool *out_header_handled) {
+    *out_header_handled = true;
     if (avs_strcasecmp(key, "WWW-Authenticate") == 0) {
         _avs_http_auth_setup(&state->stream->auth, value);
     } else if (avs_strcasecmp(key, "Set-Cookie") == 0) {
@@ -100,6 +104,7 @@ static int http_handle_header(const char *key, const char *value,
         avs_url_free(state->redirect_url);
         state->redirect_url = avs_url_parse(value);
     } else {
+        *out_header_handled = false;
         LOG(DEBUG, "Unhandled HTTP header: %s: %s", key, value);
     }
     return 0;
@@ -188,10 +193,32 @@ static int http_receive_headers_internal(header_parser_state_t *state) {
             break;
         }
         LOG(TRACE, "HTTP header: %s", header);
+        bool header_handled;
         if (!(value = http_header_split(header))
-                || http_handle_header(header, value, state)) {
+                || http_handle_header(header, value, state, &header_handled)) {
             LOG(ERROR, "Error parsing or handling headers");
             goto http_receive_headers_error;
+        }
+
+        if (state->header_storage_end_ptr) {
+            assert(!*state->header_storage_end_ptr);
+            size_t key_len = strlen(header);
+            size_t value_len = strlen(value);
+            avs_http_header_t *element = (avs_http_header_t *)
+                    AVS_LIST_NEW_BUFFER(sizeof(avs_http_header_t)
+                            + key_len + value_len + 2);
+            if (!element) {
+                LOG(ERROR, "Could not store received header");
+                goto http_receive_headers_error;
+            }
+            element->key = (char *) element + sizeof(avs_http_header_t);
+            memcpy((char *) (intptr_t) element->key, header, key_len + 1);
+            element->value = element->key + key_len + 1;
+            memcpy((char *) (intptr_t) element->value, value, value_len + 1);
+            element->handled = header_handled;
+            *state->header_storage_end_ptr = element;
+            state->header_storage_end_ptr =
+                    AVS_LIST_NEXT_PTR(state->header_storage_end_ptr);
         }
     }
 
@@ -292,14 +319,27 @@ int _avs_http_receive_headers(http_stream_t *stream) {
 
     LOG(TRACE, "receiving headers, %sskipping 100 Continue",
         skip_100_continue ? "" : "NOT ");
+
+    if (stream->incoming_header_storage) {
+        AVS_LIST_CLEAR(stream->incoming_header_storage);
+    }
+
     do {
         header_parser_state_t parser_state = {
-            .stream = stream
+            .stream = stream,
+            .header_storage_end_ptr =
+                    stream->incoming_header_storage
+                        ? AVS_LIST_APPEND_PTR(stream->incoming_header_storage)
+                        : NULL
         };
         result = http_receive_headers_internal(&parser_state);
         avs_url_free(parser_state.redirect_url);
     } while (!result
              && skip_100_continue && stream->status == 100);
+
+    if (result && stream->incoming_header_storage) {
+        AVS_LIST_CLEAR(stream->incoming_header_storage);
+    }
 
     update_flags_after_receiving_headers(stream);
     return result;

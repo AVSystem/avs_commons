@@ -17,6 +17,7 @@
 #ifndef AVS_COMMONS_HTTP_H
 #define AVS_COMMONS_HTTP_H
 
+#include <avsystem/commons/list.h>
 #include <avsystem/commons/net.h>
 #include <avsystem/commons/stream.h>
 #include <avsystem/commons/url.h>
@@ -58,6 +59,8 @@ typedef struct {
      *
      * Configured to 4096 in @ref AVS_HTTP_DEFAULT_BUFFER_SIZES, which means
      * 4096 bytes in input buffer and 4915 bytes in output buffer.
+     *
+     * Setting this to 0 will disable support for HTTP compression.
      */
     size_t content_coding_input;
 
@@ -157,6 +160,32 @@ typedef enum {
      */
     AVS_HTTP_ERROR_TOO_MANY_REDIRECTS = -2
 } avs_http_error_t;
+
+/**
+ * Information about a header line received in a HTTP response.
+ *
+ * Instances accessible to the user using @ref avs_http_set_header_storage will
+ * contain values of the key and value in the same chunk of allocated memory as
+ * the structure itself, so a single @ref AVS_LIST_DELETE is sufficient to clean
+ * up all used resources.
+ */
+typedef struct {
+    /**
+     * Keyword of the HTTP header.
+     */
+    const char *key;
+
+    /**
+     * Value of the HTTP header.
+     */
+    const char *value;
+
+    /**
+     * True if the header has already been internally interpreted by
+     * <c>avs_http</c>, or false otherwise.
+     */
+    bool handled;
+} avs_http_header_t;
 
 /**
  * HTTP client object type.
@@ -396,6 +425,25 @@ void avs_http_clear_cookies(avs_http_t *http);
  */
 int avs_http_add_header(avs_stream_abstract_t *stream,
                         const char *key, const char *value);
+
+/**
+ * Enables storage of received HTTP headers and sets the storage location to the
+ * specified list variable.
+ *
+ * @param stream             Stream to operate on. Need to be a stream created
+ *                           by @ref avs_http_open_stream.
+ * @param header_storage_ptr Pointer to a variable in which to store received
+ *                           headers, or <c>NULL</c> if header storage is to be
+ *                           disabled. At any given time, the list will contain
+ *                           headers from the most recently received response.
+ *                           The list will automatically be cleaned and
+ *                           repopulated at each received HTTP response. It will
+ *                           also be cleaned upon deleting the stream or
+ *                           resetting this setting to <c>NULL</c>.
+ */
+void avs_http_set_header_storage(
+        avs_stream_abstract_t *stream,
+        AVS_LIST(const avs_http_header_t) *header_storage_ptr);
 
 /**
  * Determines whether an unsuccessful request should be repeated by user code.

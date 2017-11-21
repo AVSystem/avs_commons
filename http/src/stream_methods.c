@@ -343,6 +343,18 @@ int avs_http_add_header(avs_stream_abstract_t *stream_,
     return 0;
 }
 
+void avs_http_set_header_storage(
+        avs_stream_abstract_t *stream_,
+        AVS_LIST(const avs_http_header_t) *header_storage_ptr) {
+    http_stream_t *stream = (http_stream_t *) stream_;
+    assert(stream->vtable == &http_vtable);
+    LOG(TRACE, "http_set_header_storage: %p", (void *) header_storage_ptr);
+    if (stream->incoming_header_storage) {
+        AVS_LIST_CLEAR(stream->incoming_header_storage);
+    }
+    stream->incoming_header_storage = header_storage_ptr;
+}
+
 int avs_http_should_retry(avs_stream_abstract_t *stream_) {
     http_stream_t *stream = (http_stream_t *) stream_;
     if (stream->vtable != &http_vtable) {
