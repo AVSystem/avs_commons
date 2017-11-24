@@ -79,7 +79,7 @@ avs_coap_max_transmit_span(const avs_coap_tx_params_t *tx_params) {
 #define RAND63_ITERATIONS 1
 #elif AVS_RAND_MAX >= 3037000499 // ceil(2^(63/2)) - 1
 #define RAND63_ITERATIONS 2
-#elif AVS_RAND_MAX >= ((2 << 21) - 1)
+#elif AVS_RAND_MAX >= ((1 << 21) - 1)
 #define RAND63_ITERATIONS 3
 #elif AVS_RAND_MAX >= 55108 // ceil(2^(63/4)) - 1
 #define RAND63_ITERATIONS 4
