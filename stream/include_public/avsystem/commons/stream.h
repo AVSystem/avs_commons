@@ -336,8 +336,8 @@ int avs_stream_reset(avs_stream_abstract_t *stream);
 void avs_stream_cleanup(avs_stream_abstract_t **stream);
 
 /**
- * Obtains additional information about last stream error by calling @ref
- * avs_stream_v_table#get_errno .
+ * Obtains additional error code for last performed operation by calling
+ * @ref avs_stream_v_table#get_errno .
  *
  * @param stream    Stream to operate on.
  * @returns last error code or 0 if no error occurred.

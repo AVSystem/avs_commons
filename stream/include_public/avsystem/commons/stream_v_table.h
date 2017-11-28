@@ -128,7 +128,7 @@ typedef int (*avs_stream_close_t)(avs_stream_abstract_t *stream);
 /**
  * @ref avs_stream_errno implementation callback type
  *
- * Obtains additional information about last stream error.
+ * Obtains additional error code for last performed operation.
  *
  * @param stream    Stream to operate on.
  * @returns last error code or 0 if no error occurred.
