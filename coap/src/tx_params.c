@@ -88,13 +88,13 @@ avs_coap_max_transmit_span(const avs_coap_tx_params_t *tx_params) {
 #endif
 
 static int64_t rand63(unsigned *seed) {
-    int64_t result = 0;
+    uint64_t result = 0;
     int i;
     for (i = 0; i < RAND63_ITERATIONS; ++i) {
-        result *= (int64_t) AVS_RAND_MAX + 1;
-        result += (int64_t) avs_rand_r(seed);
+        result *= (uint64_t) AVS_RAND_MAX + 1;
+        result += (uint64_t) avs_rand_r(seed);
     }
-    return result;
+    return (int64_t) (result & INT64_MAX);
 }
 
 void avs_coap_update_retry_state(avs_coap_retry_state_t *retry_state,
