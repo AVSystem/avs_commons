@@ -16,6 +16,7 @@
 
 #include <avs_commons_config.h>
 
+#include <errno.h>
 #include <string.h>
 
 #include <avsystem/commons/utils.h>
@@ -27,7 +28,6 @@
 
 VISIBILITY_SOURCE_BEGIN
 
-#warning "TODO: If we fail with EPIPE, we need to ensure that avs_http_should_retry() == true"
 static int http_send_single_chunk(http_stream_t *stream,
                                   const void *buffer,
                                   size_t buffer_length) {
@@ -41,6 +41,12 @@ static int http_send_single_chunk(http_stream_t *stream,
             || avs_stream_write(stream->backend, buffer, buffer_length)
             || avs_stream_write(stream->backend, "\r\n", 2)
             || avs_stream_finish_message(stream->backend)) ? -1 : 0;
+    if (result
+            && avs_stream_errno(stream->backend) == EPIPE
+            && stream->flags.close_handling_required) {
+        stream->flags.keep_connection = 0;
+        stream->flags.should_retry = 1;
+    }
     LOG(TRACE, "result == %d", result);
     return result;
 }
@@ -53,16 +59,22 @@ int _avs_http_chunked_send_first(http_stream_t *stream,
     stream->flags.chunked_sending = 1;
     stream->auth.state.flags.retried = 0;
     do {
-#warning "TODO: In case sending returns EPIPE, reconnect and retry, but not indefinitely"
-        result = (_avs_http_prepare_for_sending(stream)
-                || _avs_http_send_headers(stream, (size_t) -1)
-#warning "TODO: In case we receive unexpected EOF, reconnect and retry, but not indefinitely"
-                || (!stream->flags.no_expect
-                        && _avs_http_receive_headers(stream)
-                        && stream->status / 100 != 1)
-#warning "TODO: In case sending returns EPIPE, reconnect and retry, but not indefinitely"
-                || _avs_http_chunked_send(stream, 0, data, data_length))
-                ? -1 : 0;
+        result = 0;
+        if (_avs_http_prepare_for_sending(stream)
+                || _avs_http_send_headers(stream, (size_t) -1)) {
+            result = -1;
+            if (avs_stream_errno(stream->backend) == EPIPE
+                    && stream->flags.close_handling_required) {
+                stream->flags.keep_connection = 0;
+                stream->flags.should_retry = 1;
+            }
+        } else {
+            result = ((!stream->flags.no_expect
+                            && _avs_http_receive_headers(stream)
+                            && stream->status / 100 != 1)
+                    || _avs_http_chunked_send(stream, 0, data, data_length))
+                    ? -1 : 0;
+        }
     } while (result && stream->flags.should_retry);
     if (result == 0) {
         AVS_LIST_CLEAR(&stream->user_headers);

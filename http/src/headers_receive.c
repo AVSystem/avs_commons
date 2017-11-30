@@ -311,6 +311,7 @@ static void update_flags_after_receiving_headers(http_stream_t *stream) {
     }
 }
 
+#warning "TODO: In case we receive unexpected EOF, reconnect and retry, but not indefinitely"
 int _avs_http_receive_headers(http_stream_t *stream) {
     int result;
 
