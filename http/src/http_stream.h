@@ -55,6 +55,17 @@ typedef struct {
      * to work.
      */
     unsigned should_retry : 1;
+
+    /**
+     * Set after completing a request-response exchange. Cleared after
+     * reconnecting or receiving any data from the server.
+     *
+     * After a completed request-response exchange, the server is free to close
+     * the connection without any consequences; the client may be informed that
+     * the connection has closed only at a later time. In that case, the request
+     * needs to be retried.
+     */
+    unsigned close_handling_required : 1;
 } http_flags_t;
 
 typedef struct {

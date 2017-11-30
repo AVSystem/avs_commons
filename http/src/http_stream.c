@@ -132,6 +132,7 @@ int _avs_http_redirect(http_stream_t *stream, avs_url_t **url_move) {
         LOG(ERROR, "stream reset failed");
         return -1;
     }
+    stream->flags.close_handling_required = 0;
     _avs_http_auth_reset(&stream->auth);
     avs_net_socket_close(old_socket);
 
@@ -167,6 +168,7 @@ int _avs_http_prepare_for_sending(http_stream_t *stream) {
         if (!avs_stream_read(stream->body_receiver, NULL, &finished, NULL, 0)
                 && finished) {
             avs_stream_cleanup(&stream->body_receiver);
+            stream->flags.close_handling_required = 1;
         } else {
             LOG(ERROR, "trying to send while still receiving");
             stream->error_code = EBUSY;
@@ -177,6 +179,7 @@ int _avs_http_prepare_for_sending(http_stream_t *stream) {
     /* reconnect, if keep-alive not set */
     if (!stream->flags.keep_connection) {
         LOG(TRACE, "reconnecting stream");
+        stream->flags.close_handling_required = 0;
         if (avs_stream_reset(stream->backend)
                 || reconnect_tcp_socket(avs_stream_net_getsock(stream->backend),
                                         stream->url)) {

@@ -273,6 +273,8 @@ static int http_receive_headers_internal(header_parser_state_t *state) {
         if (avs_stream_ignore_to_end(state->stream->body_receiver) < 0) {
             LOG(WARNING, "http_receive_headers: response read error");
             state->stream->flags.keep_connection = 0;
+        } else {
+            state->stream->flags.close_handling_required = 1;
         }
         LOG(TRACE, "http_receive_headers: clearing body receiver");
         avs_stream_cleanup(&state->stream->body_receiver);
