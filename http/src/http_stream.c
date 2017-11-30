@@ -233,11 +233,7 @@ static int http_send_block(http_stream_t *stream,
         if (message_finished) {
             result = http_send_simple_request(stream, data, data_length);
         } else {
-            stream->flags.chunked_sending = 1;
-#warning "TODO: Honor all the should_retry logic here"
-            if (!(result = _avs_http_chunked_request_init(stream))) {
-                result = _avs_http_chunked_send(stream, 0, data, data_length);
-            }
+            result = _avs_http_chunked_send_first(stream, data, data_length);
         }
     }
     return result;

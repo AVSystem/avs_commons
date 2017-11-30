@@ -45,10 +45,12 @@ static int http_send_single_chunk(http_stream_t *stream,
     return result;
 }
 
-#warning "TODO: Extract should_retry logic upwards to http_send_block"
-int _avs_http_chunked_request_init(http_stream_t *stream) {
+int _avs_http_chunked_send_first(http_stream_t *stream,
+                                 const void *data,
+                                 size_t data_length) {
     int result;
-    LOG(TRACE, "http_init_chunked_request");
+    LOG(TRACE, "http_chunked_send_first");
+    stream->flags.chunked_sending = 1;
     stream->auth.state.flags.retried = 0;
     do {
 #warning "TODO: In case sending returns EPIPE, reconnect and retry, but not indefinitely"
@@ -57,7 +59,9 @@ int _avs_http_chunked_request_init(http_stream_t *stream) {
 #warning "TODO: In case we receive unexpected EOF, reconnect and retry, but not indefinitely"
                 || (!stream->flags.no_expect
                         && _avs_http_receive_headers(stream)
-                        && stream->status / 100 != 1))
+                        && stream->status / 100 != 1)
+#warning "TODO: In case sending returns EPIPE, reconnect and retry, but not indefinitely"
+                || _avs_http_chunked_send(stream, 0, data, data_length))
                 ? -1 : 0;
     } while (result && stream->flags.should_retry);
     if (result == 0) {
