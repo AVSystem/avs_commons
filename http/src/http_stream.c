@@ -198,10 +198,12 @@ static int http_send_simple_request(http_stream_t *stream,
              (unsigned long) buffer_length);
     stream->auth.state.flags.retried = 0;
     do {
+#warning "TODO: In case sending returns EPIPE, reconnect and retry, but not indefinitely"
         result = (_avs_http_prepare_for_sending(stream)
                 || _avs_http_send_headers(stream, buffer_length)
                 || avs_stream_write(stream->backend, buffer, buffer_length)
                 || avs_stream_finish_message(stream->backend)
+#warning "TODO: In case we receive unexpected EOF, reconnect and retry, but not indefinitely"
                 || _avs_http_receive_headers(stream)) ? -1 : 0;
     } while (result && stream->flags.should_retry);
     if (result == 0) {
@@ -232,6 +234,7 @@ static int http_send_block(http_stream_t *stream,
             result = http_send_simple_request(stream, data, data_length);
         } else {
             stream->flags.chunked_sending = 1;
+#warning "TODO: Honor all the should_retry logic here"
             if (!(result = _avs_http_chunked_request_init(stream))) {
                 result = _avs_http_chunked_send(stream, 0, data, data_length);
             }

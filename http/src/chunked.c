@@ -27,6 +27,7 @@
 
 VISIBILITY_SOURCE_BEGIN
 
+#warning "TODO: If we fail with EPIPE, we need to ensure that avs_http_should_retry() == true"
 static int http_send_single_chunk(http_stream_t *stream,
                                   const void *buffer,
                                   size_t buffer_length) {
@@ -44,13 +45,16 @@ static int http_send_single_chunk(http_stream_t *stream,
     return result;
 }
 
+#warning "TODO: Extract should_retry logic upwards to http_send_block"
 int _avs_http_chunked_request_init(http_stream_t *stream) {
     int result;
     LOG(TRACE, "http_init_chunked_request");
     stream->auth.state.flags.retried = 0;
     do {
+#warning "TODO: In case sending returns EPIPE, reconnect and retry, but not indefinitely"
         result = (_avs_http_prepare_for_sending(stream)
                 || _avs_http_send_headers(stream, (size_t) -1)
+#warning "TODO: In case we receive unexpected EOF, reconnect and retry, but not indefinitely"
                 || (!stream->flags.no_expect
                         && _avs_http_receive_headers(stream)
                         && stream->status / 100 != 1))
