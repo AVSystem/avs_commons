@@ -193,6 +193,16 @@ int _avs_http_prepare_for_sending(http_stream_t *stream) {
     return 0;
 }
 
+void _avs_http_update_flags_after_send(http_stream_t *stream,
+                                       int result) {
+    if (result
+            && avs_stream_errno(stream->backend) == EPIPE
+            && stream->flags.close_handling_required) {
+        stream->flags.keep_connection = 0;
+        stream->flags.should_retry = 1;
+    }
+}
+
 static int http_send_simple_request(http_stream_t *stream,
                                     const void *buffer,
                                     size_t buffer_length) {
@@ -207,11 +217,7 @@ static int http_send_simple_request(http_stream_t *stream,
                 || avs_stream_write(stream->backend, buffer, buffer_length)
                 || avs_stream_finish_message(stream->backend)) {
             result = -1;
-            if (avs_stream_errno(stream->backend) == EPIPE
-                    && stream->flags.close_handling_required) {
-                stream->flags.keep_connection = 0;
-                stream->flags.should_retry = 1;
-            }
+            _avs_http_update_flags_after_send(stream, result);
         } else {
             result = _avs_http_receive_headers(stream);
         }

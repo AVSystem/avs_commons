@@ -169,6 +169,9 @@ int _avs_http_redirect(http_stream_t *stream, avs_url_t **url_move);
 
 int _avs_http_prepare_for_sending(http_stream_t *stream);
 
+void _avs_http_update_flags_after_send(http_stream_t *stream,
+                                       int result);
+
 int _avs_http_buffer_flush(http_stream_t *stream, char message_finished);
 
 int _avs_http_send_via_buffer(http_stream_t *stream,
