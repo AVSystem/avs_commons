@@ -188,6 +188,7 @@ int _avs_http_prepare_for_sending(http_stream_t *stream) {
             stream->flags.keep_connection = 1;
         }
     }
+    stream->flags.should_retry = 0;
 
     LOG(TRACE, "http_prepare_for_sending: success");
     return 0;

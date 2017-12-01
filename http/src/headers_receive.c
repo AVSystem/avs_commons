@@ -171,15 +171,15 @@ static int http_receive_headers_internal(header_parser_state_t *state) {
     if (avs_stream_getline(state->stream->backend, &bytes_read,
                            &message_finished, header, sizeof(header))) {
         LOG(ERROR, "Could not receive HTTP headline");
-        /* default to 100 Continue if nothing received */
-        state->stream->status = 100;
-        goto http_receive_headers_error;
-    }
-    if (bytes_read == 0 && message_finished
-            && state->stream->flags.close_handling_required) {
-        // end-of-stream: likely a Reset from previous connection
-        // issue a fake redirect so that the stream reconnects
-        state->stream->status = 300;
+        if (bytes_read == 0 && message_finished
+                && state->stream->flags.close_handling_required) {
+            // end-of-stream: likely a Reset from previous connection
+            // issue a fake redirect so that the stream reconnects
+            state->stream->status = 300;
+        } else {
+            /* default to 100 Continue if nothing received */
+            state->stream->status = 100;
+        }
         goto http_receive_headers_error;
     }
     state->stream->flags.close_handling_required = 0;
@@ -316,8 +316,6 @@ static void update_flags_after_receiving_headers(http_stream_t *stream) {
         /* retry without Expect: 100-continue */
         stream->flags.no_expect = 1;
         stream->flags.should_retry = 1;
-    } else {
-        stream->flags.should_retry = 0;
     }
 }
 

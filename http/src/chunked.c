@@ -16,7 +16,6 @@
 
 #include <avs_commons_config.h>
 
-#include <errno.h>
 #include <string.h>
 
 #include <avsystem/commons/utils.h>
