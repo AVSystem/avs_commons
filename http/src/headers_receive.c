@@ -166,13 +166,23 @@ static int http_receive_headers_internal(header_parser_state_t *state) {
     header[0] = '\0';
     state->stream->flags.keep_connection = 1;
     /* read parse headline */
-    if (avs_stream_getline(state->stream->backend, NULL, NULL,
-                           header, sizeof(header))) {
+    size_t bytes_read;
+    char message_finished;
+    if (avs_stream_getline(state->stream->backend, &bytes_read,
+                           &message_finished, header, sizeof(header))) {
         LOG(ERROR, "Could not receive HTTP headline");
         /* default to 100 Continue if nothing received */
         state->stream->status = 100;
         goto http_receive_headers_error;
     }
+    if (bytes_read == 0 && message_finished
+            && state->stream->flags.close_handling_required) {
+        // end-of-stream: likely a Reset from previous connection
+        // issue a fake redirect so that the stream reconnects
+        state->stream->status = 300;
+        goto http_receive_headers_error;
+    }
+    state->stream->flags.close_handling_required = 0;
     if (sscanf(header, "HTTP/%*s %d", &state->stream->status) != 1) {
         /* discard HTTP version
          * some weird servers return HTTP/1.0 to HTTP/1.1 */
@@ -311,7 +321,6 @@ static void update_flags_after_receiving_headers(http_stream_t *stream) {
     }
 }
 
-#warning "TODO: In case we receive unexpected EOF, reconnect and retry, but not indefinitely"
 int _avs_http_receive_headers(http_stream_t *stream) {
     int result;
 
