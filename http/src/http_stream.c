@@ -160,6 +160,7 @@ int _avs_http_redirect(http_stream_t *stream, avs_url_t **url_move) {
 
 int _avs_http_prepare_for_sending(http_stream_t *stream) {
     LOG(TRACE, "http_prepare_for_sending");
+    stream->flags.should_retry = 0;
 
     /* check stream state */
     if (stream->body_receiver) {
@@ -188,7 +189,6 @@ int _avs_http_prepare_for_sending(http_stream_t *stream) {
             stream->flags.keep_connection = 1;
         }
     }
-    stream->flags.should_retry = 0;
 
     LOG(TRACE, "http_prepare_for_sending: success");
     return 0;
@@ -212,7 +212,6 @@ static int http_send_simple_request(http_stream_t *stream,
              (unsigned long) buffer_length);
     stream->auth.state.flags.retried = 0;
     do {
-        result = 0;
         if (_avs_http_prepare_for_sending(stream)
                 || _avs_http_send_headers(stream, buffer_length)
                 || avs_stream_write(stream->backend, buffer, buffer_length)

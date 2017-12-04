@@ -53,7 +53,6 @@ int _avs_http_chunked_send_first(http_stream_t *stream,
     stream->flags.chunked_sending = 1;
     stream->auth.state.flags.retried = 0;
     do {
-        result = 0;
         if (_avs_http_prepare_for_sending(stream)
                 || _avs_http_send_headers(stream, (size_t) -1)) {
             result = -1;
