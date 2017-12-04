@@ -40,7 +40,7 @@ static int http_send_single_chunk(http_stream_t *stream,
             || avs_stream_write(stream->backend, buffer, buffer_length)
             || avs_stream_write(stream->backend, "\r\n", 2)
             || avs_stream_finish_message(stream->backend)) ? -1 : 0;
-    _avs_http_update_flags_after_send(stream, result);
+    _avs_http_maybe_schedule_retry_after_send(stream, result);
     LOG(TRACE, "result == %d", result);
     return result;
 }
@@ -56,7 +56,7 @@ int _avs_http_chunked_send_first(http_stream_t *stream,
         if (_avs_http_prepare_for_sending(stream)
                 || _avs_http_send_headers(stream, (size_t) -1)) {
             result = -1;
-            _avs_http_update_flags_after_send(stream, result);
+            _avs_http_maybe_schedule_retry_after_send(stream, result);
         } else {
             result = ((!stream->flags.no_expect
                             && _avs_http_receive_headers(stream)

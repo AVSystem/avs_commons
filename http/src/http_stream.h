@@ -64,6 +64,39 @@ typedef struct {
      * the connection without any consequences; the client may be informed that
      * the connection has closed only at a later time. In that case, the request
      * needs to be retried.
+     *
+     * We need to consider two scenarios:
+     *
+     * A) After a completed exchange with the server, we try to issue another
+     *    request on the same connection. During sending, a FIN packet arrives -
+     *    in that case, we need to reconnect and try again.
+     * B) After a completed exchange with the server, we issue another request
+     *    and finish sending data to the server. Then, when we wait for the
+     *    response, a FIN packet arrives - even though it was sent after the
+     *    previous exchange, likely due to long round-trip time. Then again, we
+     *    need to reconnect and try again.
+     *
+     * Scenario A is handled by the _avs_http_maybe_schedule_retry_after_send()
+     * function. Scenario B - in http_receive_headers_internal() and
+     * update_flags_after_receiving_headers() (an intermediate "fake" 300 status
+     * code is used as a form of communication between the two functions).
+     *
+     * We also need to consider three cases:
+     *
+     * 1. The request is small enough to fit into a single bufer; chunked
+     *    encoding is not used.
+     * 2. Chunked encoding is used. The FIN packet arrives before we finish
+     *    sending the first chunk.
+     * 3. Chunked encoding is used. The server does not send a "100 Continue"
+     *    intermediate response, and due to long round-trip time, the FIN packet
+     *    arrives during processing of some later (not the first) chunk.
+     *
+     * Case 1 is handled in the http_send_simple_request() function. Case 2 in
+     * _avs_http_chunked_send_first() and in http_send_simple_chunk().
+     * http_send_simple_chunk() also handles case 3 - note that in this case, we
+     * are not able to automatically retry the request, as it needs to be
+     * rebuilt from the beginning. The error thus gets propagated to the user,
+     * who can check avs_http_should_retry() and retry the request manually.
      */
     unsigned close_handling_required : 1;
 } http_flags_t;
@@ -169,7 +202,7 @@ int _avs_http_redirect(http_stream_t *stream, avs_url_t **url_move);
 
 int _avs_http_prepare_for_sending(http_stream_t *stream);
 
-void _avs_http_update_flags_after_send(http_stream_t *stream,
+void _avs_http_maybe_schedule_retry_after_send(http_stream_t *stream,
                                        int result);
 
 int _avs_http_buffer_flush(http_stream_t *stream, char message_finished);

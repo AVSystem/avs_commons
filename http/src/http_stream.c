@@ -194,8 +194,8 @@ int _avs_http_prepare_for_sending(http_stream_t *stream) {
     return 0;
 }
 
-void _avs_http_update_flags_after_send(http_stream_t *stream,
-                                       int result) {
+void _avs_http_maybe_schedule_retry_after_send(http_stream_t *stream,
+                                               int result) {
     if (result
             && avs_stream_errno(stream->backend) == EPIPE
             && stream->flags.close_handling_required) {
@@ -217,7 +217,7 @@ static int http_send_simple_request(http_stream_t *stream,
                 || avs_stream_write(stream->backend, buffer, buffer_length)
                 || avs_stream_finish_message(stream->backend)) {
             result = -1;
-            _avs_http_update_flags_after_send(stream, result);
+            _avs_http_maybe_schedule_retry_after_send(stream, result);
         } else {
             result = _avs_http_receive_headers(stream);
         }
