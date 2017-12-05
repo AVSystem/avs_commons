@@ -193,10 +193,12 @@ static const cache_entry_t *entry_first(const coap_msg_cache_t *cache) {
 
 static bool entry_valid(const coap_msg_cache_t *cache,
                         const cache_entry_t *entry) {
-    assert((const char*) entry >= (const char*) avs_buffer_data(cache->buffer));
-    assert((size_t)(uintptr_t) entry % AVS_ALIGNOF(cache_entry_t) == 0);
-    return (const char*) entry
-        < (const char*) avs_buffer_raw_insert_ptr(cache->buffer);
+    assert((const char*) entry >= avs_buffer_data(cache->buffer));
+    size_t entry_offset = (const char *) entry - avs_buffer_data(cache->buffer);
+    assert(entry_offset % AVS_ALIGNOF(cache_entry_t) == 0);
+    // NOTE: NEVER use avs_buffer_raw_insert_ptr() during iteration,
+    // as it may defragment the buffer and cause UB
+    return entry_offset < avs_buffer_data_size(cache->buffer);
 }
 
 static const avs_coap_msg_t *entry_msg(const cache_entry_t *entry) {
