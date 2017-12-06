@@ -206,6 +206,7 @@ static int http_receive(avs_stream_abstract_t *stream_,
                              buffer_length);
     if (*out_message_finished) {
         LOG(TRACE, "http_receive: clearing body receiver");
+        stream->flags.close_handling_required = 1;
         avs_stream_cleanup(&stream->body_receiver);
     }
     return result;
@@ -233,16 +234,22 @@ static int http_reset(avs_stream_abstract_t *stream_) {
     LOG(TRACE, "http_reset");
     bool keep_connection =
             (stream->flags.keep_connection && !stream->flags.chunked_sending);
+    bool close_handling_required = false;
     if (keep_connection && stream->body_receiver) {
         if (avs_stream_ignore_to_end(stream->body_receiver) < 0) {
             LOG(WARNING, "Could not discard current message");
-            keep_connection = 0;
+            keep_connection = false;
+        } else {
+            close_handling_required = true;
         }
     }
     memset(&stream->flags, 0, sizeof(stream->flags));
     if (keep_connection) {
         /* if we haven't sent some partial data, don't close connection */
         stream->flags.keep_connection = 1;
+    }
+    if (close_handling_required) {
+        stream->flags.close_handling_required = 1;
     }
     avs_stream_cleanup(&stream->body_receiver);
     stream->out_buffer_pos = 0;

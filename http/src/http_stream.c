@@ -132,6 +132,7 @@ int _avs_http_redirect(http_stream_t *stream, avs_url_t **url_move) {
         LOG(ERROR, "stream reset failed");
         return -1;
     }
+    stream->flags.close_handling_required = 0;
     _avs_http_auth_reset(&stream->auth);
     avs_net_socket_close(old_socket);
 
@@ -159,6 +160,7 @@ int _avs_http_redirect(http_stream_t *stream, avs_url_t **url_move) {
 
 int _avs_http_prepare_for_sending(http_stream_t *stream) {
     LOG(TRACE, "http_prepare_for_sending");
+    stream->flags.should_retry = 0;
 
     /* check stream state */
     if (stream->body_receiver) {
@@ -167,6 +169,7 @@ int _avs_http_prepare_for_sending(http_stream_t *stream) {
         if (!avs_stream_read(stream->body_receiver, NULL, &finished, NULL, 0)
                 && finished) {
             avs_stream_cleanup(&stream->body_receiver);
+            stream->flags.close_handling_required = 1;
         } else {
             LOG(ERROR, "trying to send while still receiving");
             stream->error_code = EBUSY;
@@ -177,6 +180,7 @@ int _avs_http_prepare_for_sending(http_stream_t *stream) {
     /* reconnect, if keep-alive not set */
     if (!stream->flags.keep_connection) {
         LOG(TRACE, "reconnecting stream");
+        stream->flags.close_handling_required = 0;
         if (avs_stream_reset(stream->backend)
                 || reconnect_tcp_socket(avs_stream_net_getsock(stream->backend),
                                         stream->url)) {
@@ -190,6 +194,16 @@ int _avs_http_prepare_for_sending(http_stream_t *stream) {
     return 0;
 }
 
+void _avs_http_maybe_schedule_retry_after_send(http_stream_t *stream,
+                                               int result) {
+    if (result
+            && avs_stream_errno(stream->backend) == EPIPE
+            && stream->flags.close_handling_required) {
+        stream->flags.keep_connection = 0;
+        stream->flags.should_retry = 1;
+    }
+}
+
 static int http_send_simple_request(http_stream_t *stream,
                                     const void *buffer,
                                     size_t buffer_length) {
@@ -198,11 +212,15 @@ static int http_send_simple_request(http_stream_t *stream,
              (unsigned long) buffer_length);
     stream->auth.state.flags.retried = 0;
     do {
-        result = (_avs_http_prepare_for_sending(stream)
+        if (_avs_http_prepare_for_sending(stream)
                 || _avs_http_send_headers(stream, buffer_length)
                 || avs_stream_write(stream->backend, buffer, buffer_length)
-                || avs_stream_finish_message(stream->backend)
-                || _avs_http_receive_headers(stream)) ? -1 : 0;
+                || avs_stream_finish_message(stream->backend)) {
+            result = -1;
+            _avs_http_maybe_schedule_retry_after_send(stream, result);
+        } else {
+            result = _avs_http_receive_headers(stream);
+        }
     } while (result && stream->flags.should_retry);
     if (result == 0) {
         AVS_LIST_CLEAR(&stream->user_headers);
@@ -231,10 +249,7 @@ static int http_send_block(http_stream_t *stream,
         if (message_finished) {
             result = http_send_simple_request(stream, data, data_length);
         } else {
-            stream->flags.chunked_sending = 1;
-            if (!(result = _avs_http_chunked_request_init(stream))) {
-                result = _avs_http_chunked_send(stream, 0, data, data_length);
-            }
+            result = _avs_http_chunked_send_first(stream, data, data_length);
         }
     }
     return result;

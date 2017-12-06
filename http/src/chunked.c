@@ -40,21 +40,30 @@ static int http_send_single_chunk(http_stream_t *stream,
             || avs_stream_write(stream->backend, buffer, buffer_length)
             || avs_stream_write(stream->backend, "\r\n", 2)
             || avs_stream_finish_message(stream->backend)) ? -1 : 0;
+    _avs_http_maybe_schedule_retry_after_send(stream, result);
     LOG(TRACE, "result == %d", result);
     return result;
 }
 
-int _avs_http_chunked_request_init(http_stream_t *stream) {
+int _avs_http_chunked_send_first(http_stream_t *stream,
+                                 const void *data,
+                                 size_t data_length) {
     int result;
-    LOG(TRACE, "http_init_chunked_request");
+    LOG(TRACE, "http_chunked_send_first");
+    stream->flags.chunked_sending = 1;
     stream->auth.state.flags.retried = 0;
     do {
-        result = (_avs_http_prepare_for_sending(stream)
-                || _avs_http_send_headers(stream, (size_t) -1)
-                || (!stream->flags.no_expect
-                        && _avs_http_receive_headers(stream)
-                        && stream->status / 100 != 1))
-                ? -1 : 0;
+        if (_avs_http_prepare_for_sending(stream)
+                || _avs_http_send_headers(stream, (size_t) -1)) {
+            result = -1;
+            _avs_http_maybe_schedule_retry_after_send(stream, result);
+        } else {
+            result = ((!stream->flags.no_expect
+                            && _avs_http_receive_headers(stream)
+                            && stream->status / 100 != 1)
+                    || _avs_http_chunked_send(stream, 0, data, data_length))
+                    ? -1 : 0;
+        }
     } while (result && stream->flags.should_retry);
     if (result == 0) {
         AVS_LIST_CLEAR(&stream->user_headers);

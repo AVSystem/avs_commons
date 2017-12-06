@@ -21,7 +21,9 @@
 
 VISIBILITY_PRIVATE_HEADER_BEGIN
 
-int _avs_http_chunked_request_init(http_stream_t *stream);
+int _avs_http_chunked_send_first(http_stream_t *stream,
+                                 const void *data,
+                                 size_t data_length);
 
 int _avs_http_chunked_send(http_stream_t *stream,
                            char message_finished,
