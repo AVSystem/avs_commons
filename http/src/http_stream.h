@@ -78,7 +78,7 @@ typedef struct {
      *
      * Scenario A is handled by the _avs_http_maybe_schedule_retry_after_send()
      * function. Scenario B - in http_receive_headers_internal() and
-     * update_flags_after_receiving_headers() (an intermediate "fake" 300 status
+     * update_flags_after_receiving_headers() (an intermediate "fake" 399 status
      * code is used as a form of communication between the two functions).
      *
      * We also need to consider three cases:
@@ -203,7 +203,7 @@ int _avs_http_redirect(http_stream_t *stream, avs_url_t **url_move);
 int _avs_http_prepare_for_sending(http_stream_t *stream);
 
 void _avs_http_maybe_schedule_retry_after_send(http_stream_t *stream,
-                                       int result);
+                                               int result);
 
 int _avs_http_buffer_flush(http_stream_t *stream, char message_finished);
 

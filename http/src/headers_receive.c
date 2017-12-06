@@ -175,7 +175,7 @@ static int http_receive_headers_internal(header_parser_state_t *state) {
                 && state->stream->flags.close_handling_required) {
             // end-of-stream: likely a Reset from previous connection
             // issue a fake redirect so that the stream reconnects
-            state->stream->status = 300;
+            state->stream->status = 399;
         } else {
             /* default to 100 Continue if nothing received */
             state->stream->status = 100;
