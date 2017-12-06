@@ -126,6 +126,17 @@ size_t avs_buffer_space_left(avs_buffer_t *buffer);
 /**
  * Returns a raw pointer to consumable data in the buffer.
  *
+ * <strong>CAUTION:</strong> The pointer returned by this function may be
+ * invalidated during calls to other functions, as <c>avs_buffer_t</c> may move
+ * the data to ensure its integrity.
+ *
+ * List of functions that may invalidate the pointer returned from this
+ * function:
+ * - @ref avs_buffer_advance_ptr
+ * - @ref avs_buffer_append_bytes
+ * - @ref avs_buffer_fill_bytes
+ * - @ref avs_buffer_raw_insert_ptr
+ *
  * @param buffer Buffer object to operate on.
  *
  * @return Pointer to a contiguous array of @ref avs_buffer_data_size bytes of
@@ -141,6 +152,11 @@ char *avs_buffer_data(avs_buffer_t *buffer);
  *
  * After filling the buffer, @ref avs_buffer_advance_ptr shall be called with
  * the number of bytes filled.
+ *
+ * <strong>CAUTION:</strong> This function is desgined for appending new data
+ * to the buffer and shall be used <strong>only</strong> for that purpose. In
+ * particular, calling it may invalidate any pointer previously returned by
+ * @ref avs_buffer_data or previous call to @ref avs_buffer_raw_insert_ptr.
  *
  * @param buffer Buffer object to operate on.
  *
