@@ -63,7 +63,7 @@ endif()
 add_avs_test(avs_http ${ALL_SOURCES}
              src/test/test_close.c
              src/test/test_http.c)
-if(WITH_AVS_UNIT)
+if(TARGET avs_http_test)
     target_link_libraries(avs_http_test ${AVS_TARGET_DEPS_avs_http})
 endif()
 
