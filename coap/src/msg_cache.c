@@ -138,8 +138,10 @@ static void cache_endpoint_del_ref(coap_msg_cache_t *cache,
 
 static size_t padding_bytes_after_msg(const avs_coap_msg_t *msg) {
     static const size_t entry_alignment = AVS_ALIGNOF(cache_entry_t);
-    if (msg->length % entry_alignment) {
-        return entry_alignment - msg->length % entry_alignment;
+    const size_t entry_length = offsetof(cache_entry_t, data)
+            + offsetof(avs_coap_msg_t, content) + msg->length;
+    if (entry_length % entry_alignment) {
+        return entry_alignment - entry_length % entry_alignment;
     } else {
         return 0;
     }
@@ -166,6 +168,8 @@ static void cache_put_entry(coap_msg_cache_t *cache,
         .expiration_time = *expiration_time
     };
 
+    assert(avs_buffer_data_size(cache->buffer) % AVS_ALIGNOF(cache_entry_t)
+            == 0);
     int res;
     res = avs_buffer_append_bytes(cache->buffer, &entry,
                                   offsetof(cache_entry_t, data));
@@ -175,21 +179,31 @@ static void cache_put_entry(coap_msg_cache_t *cache,
     res = avs_buffer_fill_bytes(cache->buffer, '\xDD',
                                 padding_bytes_after_msg(msg));
     assert(!res);
+    assert(avs_buffer_data_size(cache->buffer) % AVS_ALIGNOF(cache_entry_t)
+            == 0);
     (void) res;
 }
 
 static const cache_entry_t *entry_first(const coap_msg_cache_t *cache) {
-    return (const cache_entry_t *)avs_buffer_data(cache->buffer);
+    const cache_entry_t *result =
+            (const cache_entry_t *) avs_buffer_data(cache->buffer);
+    assert((size_t)(uintptr_t) result % AVS_ALIGNOF(cache_entry_t) == 0);
+    return result;
 }
 
 static bool entry_valid(const coap_msg_cache_t *cache,
                         const cache_entry_t *entry) {
-    return (const char*)entry
-        < (const char*)avs_buffer_raw_insert_ptr(cache->buffer);
+    assert((const char*) entry >= avs_buffer_data(cache->buffer));
+    size_t entry_offset =
+            (size_t) ((const char *) entry - avs_buffer_data(cache->buffer));
+    assert(entry_offset % AVS_ALIGNOF(cache_entry_t) == 0);
+    // NOTE: NEVER use avs_buffer_raw_insert_ptr() during iteration,
+    // as it may defragment the buffer and cause UB
+    return entry_offset < avs_buffer_data_size(cache->buffer);
 }
 
 static const avs_coap_msg_t *entry_msg(const cache_entry_t *entry) {
-    return (const avs_coap_msg_t *)entry->data;
+    return (const avs_coap_msg_t *) entry->data;
 }
 
 static bool entry_expired(const cache_entry_t *entry,
@@ -209,8 +223,9 @@ static size_t entry_msg_size(const cache_entry_t *entry) {
 /* returns total size of cache entry, including header, message, and
  * and padding */
 static size_t entry_size(const cache_entry_t *entry) {
-    return offsetof(cache_entry_t, data)
-            + entry_msg_size(entry);
+    size_t result = offsetof(cache_entry_t, data) + entry_msg_size(entry);
+    assert(result % AVS_ALIGNOF(cache_entry_t) == 0);
+    return result;
 }
 
 static uint16_t entry_id(const cache_entry_t *entry) {
@@ -218,8 +233,10 @@ static uint16_t entry_id(const cache_entry_t *entry) {
 }
 
 static const cache_entry_t *entry_next(const cache_entry_t *entry) {
-    return (const cache_entry_t *)
+    const cache_entry_t *result = (const cache_entry_t *)
             ((const char*)entry + entry_size(entry));
+    assert((size_t)(uintptr_t) result % AVS_ALIGNOF(cache_entry_t) == 0);
+    return result;
 }
 
 static void cache_free_bytes(coap_msg_cache_t *cache,
