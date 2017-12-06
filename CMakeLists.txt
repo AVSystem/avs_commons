@@ -351,6 +351,10 @@ macro(add_module_with_include_dirs MODULE_NAME MODULE_INCLUDE_DIRS_VAR)
     endforeach()
 endmacro()
 
+if(WITH_AVS_UNIT)
+    add_module_with_include_dirs(unit MODULE_INCLUDE_DIRS)
+endif()
+
 if(WITH_TEST)
     add_custom_target(avs_commons_check)
     if(${CMAKE_PROJECT_NAME} STREQUAL ${PROJECT_NAME})
@@ -395,7 +399,6 @@ if(WITH_TEST)
         add_dependencies(avs_commons_check ${NAME}_check)
     endmacro()
 
-    add_module_with_include_dirs(unit MODULE_INCLUDE_DIRS)
     add_subdirectory(tests)
 else(WITH_TEST)
     macro(add_avs_test NAME)
@@ -418,7 +421,7 @@ if(WITH_AVS_VECTOR)
     add_module_with_include_dirs(vector MODULE_INCLUDE_DIRS)
 endif()
 
-if (WITH_AVS_UTILS)
+if(WITH_AVS_UTILS)
     add_module_with_include_dirs(utils MODULE_INCLUDE_DIRS)
 endif()
 
