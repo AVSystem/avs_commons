@@ -33,8 +33,8 @@ static const avs_coap_tx_params_t tx_params = {
 };
 
 static avs_coap_msg_t *setup_msg_with_id(void *buffer,
-                                           uint16_t msg_id,
-                                           const char *payload) {
+                                         uint16_t msg_id,
+                                         const char *payload) {
     avs_coap_msg_t *msg = (avs_coap_msg_t *) buffer;
     setup_msg(msg, (const uint8_t *) payload, strlen(payload));
     _avs_coap_header_set_id(msg, msg_id);
@@ -64,7 +64,7 @@ int clock_gettime(clockid_t clock, struct timespec *t) {
 
 AVS_UNIT_TEST(coap_msg_cache, null) {
     static const uint16_t id = 123;
-    avs_coap_msg_t *msg = setup_msg_with_id(&(uint8_t[MIN_MSG_OBJECT_SIZE]){0}[0], id, "");
+    avs_coap_msg_t *msg __attribute__((cleanup(free_msg))) = setup_msg_with_id(malloc(MIN_MSG_OBJECT_SIZE), id, "");
 
     AVS_UNIT_ASSERT_NULL(_avs_coap_msg_cache_create(0));
     AVS_UNIT_ASSERT_FAILED(
@@ -80,7 +80,7 @@ AVS_UNIT_TEST(coap_msg_cache, hit_single) {
     coap_msg_cache_t *cache = _avs_coap_msg_cache_create(1024);
 
     static const uint16_t id = 123;
-    avs_coap_msg_t *msg = setup_msg_with_id(&(uint8_t[MIN_MSG_OBJECT_SIZE]){0}[0], id, "");
+    avs_coap_msg_t *msg __attribute__((cleanup(free_msg))) = setup_msg_with_id(malloc(MIN_MSG_OBJECT_SIZE), id, "");
 
     AVS_UNIT_ASSERT_SUCCESS(
             _avs_coap_msg_cache_add(cache, "host", "port", msg, &tx_params));
@@ -98,19 +98,20 @@ AVS_UNIT_TEST(coap_msg_cache, hit_multiple) {
     coap_msg_cache_t *cache = _avs_coap_msg_cache_create(1024);
 
     static const uint16_t id = 123;
-    avs_coap_msg_t *msg[] = {
-        setup_msg_with_id(&(uint8_t[MIN_MSG_OBJECT_SIZE]){0}[0], (uint16_t)(id + 0), ""),
-        setup_msg_with_id(&(uint8_t[MIN_MSG_OBJECT_SIZE]){0}[0], (uint16_t)(id + 1), ""),
-        setup_msg_with_id(&(uint8_t[MIN_MSG_OBJECT_SIZE]){0}[0], (uint16_t)(id + 2), ""),
+    avs_coap_msg_t *msg[] __attribute__((cleanup(free_msg_array))) = {
+        setup_msg_with_id(malloc(MIN_MSG_OBJECT_SIZE), (uint16_t)(id + 0), ""),
+        setup_msg_with_id(malloc(MIN_MSG_OBJECT_SIZE), (uint16_t)(id + 1), ""),
+        setup_msg_with_id(malloc(MIN_MSG_OBJECT_SIZE), (uint16_t)(id + 2), ""),
+	NULL
     };
 
-    for (size_t i = 0; i < AVS_ARRAY_SIZE(msg); ++i) {
+    for (size_t i = 0; i < AVS_ARRAY_SIZE(msg) - 1; ++i) {
         AVS_UNIT_ASSERT_SUCCESS(_avs_coap_msg_cache_add(cache, "host", "port",
                                                         msg[i], &tx_params));
     }
 
     // request message existing in cache
-    for (uint16_t i = 0; i < AVS_ARRAY_SIZE(msg); ++i) {
+    for (uint16_t i = 0; i < AVS_ARRAY_SIZE(msg) - 1; ++i) {
         const avs_coap_msg_t *cached_msg =
                 _avs_coap_msg_cache_get(cache, "host", "port",
                                           (uint16_t)(id + i));
@@ -126,7 +127,7 @@ AVS_UNIT_TEST(coap_msg_cache, hit_expired) {
     coap_msg_cache_t *cache = _avs_coap_msg_cache_create(1024);
 
     static const uint16_t id = 123;
-    avs_coap_msg_t *msg = setup_msg_with_id(&(uint8_t[MIN_MSG_OBJECT_SIZE]){0}[0], id, "");
+    avs_coap_msg_t *msg __attribute__((cleanup(free_msg))) = setup_msg_with_id(malloc(MIN_MSG_OBJECT_SIZE), id, "");
 
     AVS_UNIT_ASSERT_SUCCESS(
             _avs_coap_msg_cache_add(cache, "host", "port", msg, &tx_params));
@@ -178,7 +179,7 @@ AVS_UNIT_TEST(coap_msg_cache, miss_non_empty) {
     coap_msg_cache_t *cache = _avs_coap_msg_cache_create(1024);
 
     static const uint16_t id = 123;
-    avs_coap_msg_t *msg = setup_msg_with_id(&(uint8_t[MIN_MSG_OBJECT_SIZE]){0}[0], id, "");
+    avs_coap_msg_t *msg __attribute__((cleanup(free_msg))) = setup_msg_with_id(malloc(MIN_MSG_OBJECT_SIZE), id, "");
 
     AVS_UNIT_ASSERT_SUCCESS(
             _avs_coap_msg_cache_add(cache, "host", "port", msg, &tx_params));
@@ -194,7 +195,7 @@ AVS_UNIT_TEST(coap_msg_cache, add_existing) {
     coap_msg_cache_t *cache = _avs_coap_msg_cache_create(1024);
 
     static const uint16_t id = 123;
-    avs_coap_msg_t *msg = setup_msg_with_id(&(uint8_t[MIN_MSG_OBJECT_SIZE]){0}[0], id, "");
+    avs_coap_msg_t *msg __attribute__((cleanup(free_msg))) = setup_msg_with_id(malloc(MIN_MSG_OBJECT_SIZE), id, "");
 
     // replacing existing non-expired cached messages with updated ones
     // is not allowed
@@ -210,7 +211,7 @@ AVS_UNIT_TEST(coap_msg_cache, add_existing_expired) {
     coap_msg_cache_t *cache = _avs_coap_msg_cache_create(1024);
 
     static const uint16_t id = 123;
-    avs_coap_msg_t *msg = setup_msg_with_id(&(uint8_t[MIN_MSG_OBJECT_SIZE]){0}[0], id, "");
+    avs_coap_msg_t *msg __attribute__((cleanup(free_msg))) = setup_msg_with_id(malloc(MIN_MSG_OBJECT_SIZE), id, "");
 
     // replacing existing expired cached messages is not allowed
     AVS_UNIT_ASSERT_SUCCESS(
@@ -224,10 +225,11 @@ AVS_UNIT_TEST(coap_msg_cache, add_existing_expired) {
 
 AVS_UNIT_TEST(coap_msg_cache, add_evict) {
     static const uint16_t id = 123;
-    avs_coap_msg_t *msg[] = {
-        setup_msg_with_id(&(uint8_t[MIN_MSG_OBJECT_SIZE]){0}[0], (uint16_t)(id + 0), ""),
-        setup_msg_with_id(&(uint8_t[MIN_MSG_OBJECT_SIZE]){0}[0], (uint16_t)(id + 1), ""),
-        setup_msg_with_id(&(uint8_t[MIN_MSG_OBJECT_SIZE]){0}[0], (uint16_t)(id + 2), ""),
+    avs_coap_msg_t *msg[] __attribute__((cleanup(free_msg_array))) = {
+        setup_msg_with_id(malloc(MIN_MSG_OBJECT_SIZE), (uint16_t)(id + 0), ""),
+        setup_msg_with_id(malloc(MIN_MSG_OBJECT_SIZE), (uint16_t)(id + 1), ""),
+        setup_msg_with_id(malloc(MIN_MSG_OBJECT_SIZE), (uint16_t)(id + 2), ""),
+	NULL
     };
     const avs_coap_msg_t *cached_msg;
 
@@ -263,11 +265,12 @@ AVS_UNIT_TEST(coap_msg_cache, add_evict) {
 
 AVS_UNIT_TEST(coap_msg_cache, add_evict_multiple) {
     static const uint16_t id = 123;
-    avs_coap_msg_t *msg[] = {
-        setup_msg_with_id(&(uint8_t[MIN_MSG_OBJECT_SIZE]){0}[0], (uint16_t)(id + 0), ""),
-        setup_msg_with_id(&(uint8_t[MIN_MSG_OBJECT_SIZE]){0}[0], (uint16_t)(id + 1), ""),
-        setup_msg_with_id(&(uint8_t[MIN_MSG_OBJECT_SIZE + sizeof("\xFF" "foobarbaz") - 1]){0}[0],
+    avs_coap_msg_t *msg[] __attribute((cleanup(free_msg_array))) = {
+        setup_msg_with_id(malloc(MIN_MSG_OBJECT_SIZE), (uint16_t)(id + 0), ""),
+        setup_msg_with_id(malloc(MIN_MSG_OBJECT_SIZE), (uint16_t)(id + 1), ""),
+        setup_msg_with_id(malloc(MIN_MSG_OBJECT_SIZE + sizeof("\xFF" "foobarbaz") - 1),
                           (uint16_t)(id + 2), "\xFF" "foobarbaz"),
+	NULL
     };
 
     coap_msg_cache_t *cache = _avs_coap_msg_cache_create(
@@ -300,13 +303,14 @@ AVS_UNIT_TEST(coap_msg_cache, add_evict_multiple) {
 
 AVS_UNIT_TEST(coap_msg_cache, add_too_big) {
     static const uint16_t id = 123;
-    avs_coap_msg_t *m1 = setup_msg_with_id(&(uint8_t[MIN_MSG_OBJECT_SIZE]){0}[0],
-                                           (uint16_t)(id + 0), "");
-    avs_coap_msg_t *m2 = setup_msg_with_id(&(uint8_t[MIN_MSG_OBJECT_SIZE
-                                                    + sizeof("\xFF" "foobarbaz")
-                                                    - 1]){0}[0],
-                                           (uint16_t)(id + 1),
-                                           "\xFF" "foobarbaz");
+    avs_coap_msg_t *m1 __attribute__((cleanup(free_msg))) =
+	    setup_msg_with_id(malloc(MIN_MSG_OBJECT_SIZE),
+                              (uint16_t)(id + 0), "");
+    avs_coap_msg_t *m2 __attribute__((cleanup(free_msg))) =
+	    setup_msg_with_id(malloc(MIN_MSG_OBJECT_SIZE
+                                     + sizeof("\xFF" "foobarbaz") - 1),
+                              (uint16_t)(id + 1),
+                              "\xFF" "foobarbaz");
 
     coap_msg_cache_t *cache =
             _avs_coap_msg_cache_create(cache_msg_overhead(m1)
@@ -333,11 +337,12 @@ AVS_UNIT_TEST(coap_msg_cache, add_too_big) {
 
 AVS_UNIT_TEST(coap_msg_cache, multiple_hosts_same_ids) {
     static const uint16_t id = 123;
-    avs_coap_msg_t *m1 = setup_msg_with_id(&(uint8_t[MIN_MSG_OBJECT_SIZE]){0}[0], id, "");
-    avs_coap_msg_t *m2 = setup_msg_with_id(&(uint8_t[MIN_MSG_OBJECT_SIZE
-                                                    + sizeof("\xFF" "foobarbaz")
-                                                    - 1]){0}[0],
-                                           id, "\xFF" "foobarbaz");
+    avs_coap_msg_t *m1 __attribute__((cleanup(free_msg))) =
+	    setup_msg_with_id(malloc(MIN_MSG_OBJECT_SIZE), id, "");
+    avs_coap_msg_t *m2 __attribute__((cleanup(free_msg))) =
+	    setup_msg_with_id(malloc(MIN_MSG_OBJECT_SIZE
+                                     + sizeof("\xFF" "foobarbaz") - 1),
+                              id, "\xFF" "foobarbaz");
 
     coap_msg_cache_t *cache = _avs_coap_msg_cache_create(4096);
 
