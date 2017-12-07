@@ -289,18 +289,6 @@ endif()
 
 enable_testing()
 
-add_custom_target(avs_commons_check)
-if(${CMAKE_PROJECT_NAME} STREQUAL ${PROJECT_NAME})
-    add_custom_target(check)
-    add_dependencies(check avs_commons_check)
-endif()
-
-# license check is only possible if running in a Git working tree
-if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/.git")
-    add_custom_target(license_check COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/tools/check-license-headers.py" --root "${CMAKE_CURRENT_SOURCE_DIR}")
-    add_dependencies(avs_commons_check license_check)
-endif()
-
 if(NOT LIB_INSTALL_DIR)
     set(LIB_INSTALL_DIR lib)
 endif()
@@ -331,6 +319,7 @@ option(WITH_AVS_HTTP "AVSystem HTTP client" ${MODULES_ENABLED})
 cmake_dependent_option(WITH_INTERNAL_LOGS "Enable logging from inside AVSystem Commons libraries" ON WITH_AVS_LOG OFF)
 cmake_dependent_option(WITH_INTERNAL_TRACE "Enable TRACE-level logs inside AVSystem Commons libraries" OFF WITH_INTERNAL_LOGS OFF)
 cmake_dependent_option(WITH_MBEDTLS_LOGS "Enable logging from mbedTLS backend library (if used)" OFF "WITH_AVS_LOG; WITH_MBEDTLS" OFF)
+cmake_dependent_option(WITH_TEST "Enable unit tests of AVSystem Commons library itself" ON WITH_AVS_UNIT OFF)
 
 macro(make_absolute_sources ABSVAR)
     set(${ABSVAR})
@@ -340,15 +329,6 @@ macro(make_absolute_sources ABSVAR)
 endmacro()
 
 set(MODULE_INCLUDE_DIRS)
-
-add_custom_target(avs_commons_symbols_check COMMAND ${CMAKE_CTEST_COMMAND} -R "'^test_.*_symbols$$'" --output-on-failure)
-add_dependencies(avs_commons_check avs_commons_symbols_check)
-
-add_custom_target(avs_commons_visibility_check COMMAND ${CMAKE_CTEST_COMMAND} -R "'^test_.*_visibility$$'")
-add_dependencies(avs_commons_check avs_commons_visibility_check)
-
-add_custom_target(avs_commons_headers_check COMMAND ${CMAKE_CTEST_COMMAND} -R "'^test_.*_headers$$'")
-add_dependencies(avs_commons_check avs_commons_headers_check)
 
 macro(add_module_with_include_dirs MODULE_NAME MODULE_INCLUDE_DIRS_VAR)
     add_subdirectory(${MODULE_NAME})
@@ -372,6 +352,31 @@ macro(add_module_with_include_dirs MODULE_NAME MODULE_INCLUDE_DIRS_VAR)
 endmacro()
 
 if(WITH_AVS_UNIT)
+    add_module_with_include_dirs(unit MODULE_INCLUDE_DIRS)
+endif()
+
+if(WITH_TEST)
+    add_custom_target(avs_commons_check)
+    if(${CMAKE_PROJECT_NAME} STREQUAL ${PROJECT_NAME})
+        add_custom_target(check)
+        add_dependencies(check avs_commons_check)
+    endif()
+
+    # license check is only possible if running in a Git working tree
+    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/.git")
+        add_custom_target(license_check COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/tools/check-license-headers.py" --root "${CMAKE_CURRENT_SOURCE_DIR}")
+        add_dependencies(avs_commons_check license_check)
+    endif()
+
+    add_custom_target(avs_commons_symbols_check COMMAND ${CMAKE_CTEST_COMMAND} -R "'^test_.*_symbols$$'" --output-on-failure)
+    add_dependencies(avs_commons_check avs_commons_symbols_check)
+
+    add_custom_target(avs_commons_visibility_check COMMAND ${CMAKE_CTEST_COMMAND} -R "'^test_.*_visibility$$'")
+    add_dependencies(avs_commons_check avs_commons_visibility_check)
+
+    add_custom_target(avs_commons_headers_check COMMAND ${CMAKE_CTEST_COMMAND} -R "'^test_.*_headers$$'")
+    add_dependencies(avs_commons_check avs_commons_headers_check)
+
     add_subdirectory(tools)
     macro(add_avs_test NAME)
         add_executable(${NAME}_test EXCLUDE_FROM_ALL ${ARGN})
@@ -394,12 +399,11 @@ if(WITH_AVS_UNIT)
         add_dependencies(avs_commons_check ${NAME}_check)
     endmacro()
 
-    add_module_with_include_dirs(unit MODULE_INCLUDE_DIRS)
     add_subdirectory(tests)
-else()
+else(WITH_TEST)
     macro(add_avs_test NAME)
     endmacro()
-endif()
+endif(WITH_TEST)
 
 if(WITH_AVS_ALGORITHM)
     add_module_with_include_dirs(algorithm MODULE_INCLUDE_DIRS)
@@ -417,7 +421,7 @@ if(WITH_AVS_VECTOR)
     add_module_with_include_dirs(vector MODULE_INCLUDE_DIRS)
 endif()
 
-if (WITH_AVS_UTILS)
+if(WITH_AVS_UTILS)
     add_module_with_include_dirs(utils MODULE_INCLUDE_DIRS)
 endif()
 
