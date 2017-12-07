@@ -99,5 +99,5 @@ if(NOT TARGET tinydtls)
     set_target_properties(tinydtls PROPERTIES
                           INTERFACE_INCLUDE_DIRECTORIES "${TINYDTLS_INCLUDE_DIR}"
                           IMPORTED_LINK_INTERFACE_LANGUAGES "C"
-                          IMPORTED_LOCATION "${TINYDTLS_LIBRARY}")
+                          IMPORTED_LOCATION "${TINYDTLS_LIBRARIES}")
 endif()
