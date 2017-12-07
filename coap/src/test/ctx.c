@@ -20,7 +20,6 @@
 
 #include <signal.h>
 
-#include <alloca.h>
 #include <poll.h>
 #include <unistd.h>
 #include <arpa/inet.h>
@@ -341,7 +340,7 @@ AVS_UNIT_TEST(coap_ctx, coap_udp) {
     AVS_UNIT_ASSERT_SUCCESS(avs_coap_ctx_send(ctx, backend, msg));
 
     avs_coap_msg_t *recv_msg =
-            (avs_coap_msg_t *) alloca(COAP_MSG_MAX_SIZE);
+            (avs_coap_msg_t *) &(uint8_t[COAP_MSG_MAX_SIZE]){0}[0];
     memset(recv_msg, 0, COAP_MSG_MAX_SIZE);
     AVS_UNIT_ASSERT_SUCCESS(
             avs_coap_ctx_recv(ctx, backend, recv_msg, COAP_MSG_MAX_SIZE));
@@ -393,7 +392,7 @@ AVS_UNIT_TEST(coap_ctx, coap_dtls) {
     AVS_UNIT_ASSERT_SUCCESS(avs_coap_ctx_send(ctx, backend, msg));
 
     avs_coap_msg_t *recv_msg =
-            (avs_coap_msg_t *) alloca(COAP_MSG_MAX_SIZE);
+            (avs_coap_msg_t *) &(uint8_t[COAP_MSG_MAX_SIZE]){0}[0];
     memset(recv_msg, 0, COAP_MSG_MAX_SIZE);
     AVS_UNIT_ASSERT_SUCCESS(
             avs_coap_ctx_recv(ctx, backend, recv_msg, COAP_MSG_MAX_SIZE));
