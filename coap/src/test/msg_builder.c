@@ -162,15 +162,13 @@ AVS_UNIT_TEST(coap_builder, option_opaque) {
 }
 
 AVS_UNIT_TEST(coap_builder, option_multiple_ints) {
-    enum {
-        CONTENT_LENGTH = sizeof(uint8_t) + sizeof(uint8_t)
-                         + sizeof(uint8_t) + sizeof(uint16_t)
-                         + sizeof(uint8_t) + sizeof(uint32_t)
-                         + sizeof(uint8_t) + sizeof(uint64_t)
-                         + sizeof(uint8_t) + sizeof(uint8_t)
-                         + sizeof(uint8_t)
-    };
-    DECLARE_MSG_TEMPLATE(msg_tpl, msg_tpl_size, CONTENT_LENGTH);
+    static const size_t content_length = sizeof(uint8_t) + sizeof(uint8_t)
+                                         + sizeof(uint8_t) + sizeof(uint16_t)
+                                         + sizeof(uint8_t) + sizeof(uint32_t)
+                                         + sizeof(uint8_t) + sizeof(uint64_t)
+                                         + sizeof(uint8_t) + sizeof(uint8_t)
+                                         + sizeof(uint8_t);
+    DECLARE_MSG_TEMPLATE(msg_tpl, msg_tpl_size, content_length);
 
     uint8_t *opts = _avs_coap_header_end(msg_tpl);
     _avs_coap_opt_set_short_length((avs_coap_opt_t *)&opts[0], 1);
@@ -218,10 +216,8 @@ AVS_UNIT_TEST(coap_builder, option_multiple_ints) {
 }
 
 AVS_UNIT_TEST(coap_builder, option_content_format) {
-    enum {
-        CONTENT_LENGTH = sizeof(uint8_t) + sizeof(uint16_t)
-    };
-    DECLARE_MSG_TEMPLATE(msg_tpl, msg_tpl_size, CONTENT_LENGTH);
+    static const size_t content_length = sizeof(uint8_t) + sizeof(uint16_t);
+    DECLARE_MSG_TEMPLATE(msg_tpl, msg_tpl_size, content_length);
     avs_coap_opt_t *opt = get_first_opt(msg_tpl, 0);
     _avs_coap_opt_set_short_length(opt, 2);
     _avs_coap_opt_set_short_delta(opt, AVS_COAP_OPT_CONTENT_FORMAT);
