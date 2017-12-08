@@ -42,9 +42,9 @@ VISIBILITY_PRIVATE_HEADER_BEGIN
 static bool atomic_flag_test_and_set(volatile bool *ptr) {
     if (!*ptr) {
         *ptr = true;
-        return true;
+        return false;
     }
-    return false;
+    return true;
 }
 #endif // __GNUC__
 
