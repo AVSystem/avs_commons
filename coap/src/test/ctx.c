@@ -39,6 +39,8 @@
 #include <avsystem/commons/coap/msg_builder.h>
 #include <avsystem/commons/coap/ctx.h>
 
+#include "utils.h"
+
 #define TEST_PORT_DTLS 4321
 #define TEST_PORT_UDP 4322
 
@@ -339,8 +341,8 @@ AVS_UNIT_TEST(coap_ctx, coap_udp) {
 
     AVS_UNIT_ASSERT_SUCCESS(avs_coap_ctx_send(ctx, backend, msg));
 
-    AVS_ALIGNED_STACK_BUF(recv_msg_buf, COAP_MSG_MAX_SIZE);
-    avs_coap_msg_t *recv_msg = (avs_coap_msg_t *) recv_msg_buf;
+    avs_coap_msg_t *recv_msg __attribute__((cleanup(free_msg))) =
+            (avs_coap_msg_t *) malloc(COAP_MSG_MAX_SIZE);
     memset(recv_msg, 0, COAP_MSG_MAX_SIZE);
     AVS_UNIT_ASSERT_SUCCESS(
             avs_coap_ctx_recv(ctx, backend, recv_msg, COAP_MSG_MAX_SIZE));
@@ -391,8 +393,8 @@ AVS_UNIT_TEST(coap_ctx, coap_dtls) {
 
     AVS_UNIT_ASSERT_SUCCESS(avs_coap_ctx_send(ctx, backend, msg));
 
-    AVS_ALIGNED_STACK_BUF(recv_msg_buf, COAP_MSG_MAX_SIZE);
-    avs_coap_msg_t *recv_msg = (avs_coap_msg_t *) recv_msg_buf;
+    avs_coap_msg_t *recv_msg __attribute__((cleanup(free_msg))) =
+            (avs_coap_msg_t *) malloc(COAP_MSG_MAX_SIZE);
     memset(recv_msg, 0, COAP_MSG_MAX_SIZE);
     AVS_UNIT_ASSERT_SUCCESS(
             avs_coap_ctx_recv(ctx, backend, recv_msg, COAP_MSG_MAX_SIZE));
