@@ -103,7 +103,7 @@ AVS_UNIT_TEST(coap_msg_cache, hit_multiple) {
         setup_msg_with_id(malloc(MIN_MSG_OBJECT_SIZE), (uint16_t)(id + 0), ""),
         setup_msg_with_id(malloc(MIN_MSG_OBJECT_SIZE), (uint16_t)(id + 1), ""),
         setup_msg_with_id(malloc(MIN_MSG_OBJECT_SIZE), (uint16_t)(id + 2), ""),
-	NULL
+        NULL
     };
 
     for (size_t i = 0; i < AVS_ARRAY_SIZE(msg) - 1; ++i) {
@@ -231,7 +231,7 @@ AVS_UNIT_TEST(coap_msg_cache, add_evict) {
         setup_msg_with_id(malloc(MIN_MSG_OBJECT_SIZE), (uint16_t)(id + 0), ""),
         setup_msg_with_id(malloc(MIN_MSG_OBJECT_SIZE), (uint16_t)(id + 1), ""),
         setup_msg_with_id(malloc(MIN_MSG_OBJECT_SIZE), (uint16_t)(id + 2), ""),
-	NULL
+        NULL
     };
     const avs_coap_msg_t *cached_msg;
 
@@ -272,7 +272,7 @@ AVS_UNIT_TEST(coap_msg_cache, add_evict_multiple) {
         setup_msg_with_id(malloc(MIN_MSG_OBJECT_SIZE), (uint16_t)(id + 1), ""),
         setup_msg_with_id(malloc(MIN_MSG_OBJECT_SIZE + sizeof("\xFF" "foobarbaz") - 1),
                           (uint16_t)(id + 2), "\xFF" "foobarbaz"),
-	NULL
+        NULL
     };
 
     coap_msg_cache_t *cache = _avs_coap_msg_cache_create(
@@ -306,10 +306,10 @@ AVS_UNIT_TEST(coap_msg_cache, add_evict_multiple) {
 AVS_UNIT_TEST(coap_msg_cache, add_too_big) {
     static const uint16_t id = 123;
     avs_coap_msg_t *m1 __attribute__((cleanup(free_msg))) =
-	    setup_msg_with_id(malloc(MIN_MSG_OBJECT_SIZE),
+            setup_msg_with_id(malloc(MIN_MSG_OBJECT_SIZE),
                               (uint16_t)(id + 0), "");
     avs_coap_msg_t *m2 __attribute__((cleanup(free_msg))) =
-	    setup_msg_with_id(malloc(MIN_MSG_OBJECT_SIZE
+            setup_msg_with_id(malloc(MIN_MSG_OBJECT_SIZE
                                      + sizeof("\xFF" "foobarbaz") - 1),
                               (uint16_t)(id + 1),
                               "\xFF" "foobarbaz");
@@ -340,9 +340,9 @@ AVS_UNIT_TEST(coap_msg_cache, add_too_big) {
 AVS_UNIT_TEST(coap_msg_cache, multiple_hosts_same_ids) {
     static const uint16_t id = 123;
     avs_coap_msg_t *m1 __attribute__((cleanup(free_msg))) =
-	    setup_msg_with_id(malloc(MIN_MSG_OBJECT_SIZE), id, "");
+            setup_msg_with_id(malloc(MIN_MSG_OBJECT_SIZE), id, "");
     avs_coap_msg_t *m2 __attribute__((cleanup(free_msg))) =
-	    setup_msg_with_id(malloc(MIN_MSG_OBJECT_SIZE
+            setup_msg_with_id(malloc(MIN_MSG_OBJECT_SIZE
                                      + sizeof("\xFF" "foobarbaz") - 1),
                               id, "\xFF" "foobarbaz");
 
