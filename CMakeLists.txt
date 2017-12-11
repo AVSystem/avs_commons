@@ -149,7 +149,8 @@ avs_find_library("
 set(MBEDTLS_TARGETS mbedtls mbedcrypto mbedx509)
 avs_find_library("
     set(CMAKE_MODULE_PATH \\\${CMAKE_MODULE_PATH} \"\\\${CMAKE_CURRENT_LIST_DIR}/cmake\")
-    set(MBEDTLS_ROOT_DIR \"${MBEDTLS_ROOT_DIR}\")
+    # Assume mbed TLS is installed to the same root as avs_commons
+    set(MBEDTLS_ROOT_DIR \"\\\${CMAKE_CURRENT_LIST_DIR}/../..\" CACHE STRING \"mbed TLS installation directory\")
     set(MBEDTLS_USE_STATIC_LIBS ${MBEDTLS_USE_STATIC_LIBS})
     find_package(MbedTLS)
 " ${MBEDTLS_TARGETS})
