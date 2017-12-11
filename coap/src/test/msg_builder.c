@@ -16,12 +16,12 @@
 
 #include <avs_commons_config.h>
 
-#include <alloca.h>
-
 #include "../msg_internal.h"
 
 #include <avsystem/commons/coap/msg_info.h>
 #include <avsystem/commons/unit/test.h>
+
+#include "utils.h"
 
 #define RANDOM_MSGID ((uint16_t)4)
 
@@ -61,14 +61,15 @@ static avs_coap_msg_t *make_msg_template_with_data(void *buffer,
 #define DECLARE_MSG_TEMPLATE(VarName, SizeVarName, DataSize) \
     const size_t SizeVarName = offsetof(avs_coap_msg_t, content) \
                                + AVS_COAP_MAX_HEADER_SIZE + (DataSize); \
-    avs_coap_msg_t *VarName = make_msg_template(alloca(SizeVarName), \
-                                                SizeVarName)
+    avs_coap_msg_t *VarName __attribute__((cleanup(free_msg))) = \
+            make_msg_template(malloc(SizeVarName), SizeVarName)
 
 #define DECLARE_MSG_TEMPLATE_WITH_DATA(VarName, SizeVarName, Data) \
     const size_t SizeVarName = offsetof(avs_coap_msg_t, content) \
                                + AVS_COAP_MAX_HEADER_SIZE + sizeof(Data) - 1; \
-    avs_coap_msg_t *VarName = make_msg_template_with_data( \
-            alloca(SizeVarName), SizeVarName, (Data), sizeof(Data) - 1)
+    avs_coap_msg_t *VarName __attribute__((cleanup(free_msg))) = \
+            make_msg_template_with_data(malloc(SizeVarName), SizeVarName, \
+                                        (Data), sizeof(Data) - 1)
 
 #define INFO_WITH_DUMMY_HEADER \
     avs_coap_msg_info_init(); \
@@ -99,11 +100,12 @@ AVS_UNIT_TEST(coap_builder, header_only) {
 
 AVS_UNIT_TEST(coap_info, token) {
     avs_coap_token_t TOKEN = {sizeof("A Token"), "A Token"};
-    const size_t msg_tpl_size = offsetof(avs_coap_msg_t, content)
-                                + AVS_COAP_MAX_HEADER_SIZE
-                                + AVS_COAP_MAX_TOKEN_LENGTH;
-    avs_coap_msg_t *msg_tpl = make_msg_template_with_data(
-            alloca(msg_tpl_size), msg_tpl_size, TOKEN.bytes, TOKEN.size);
+    static const size_t msg_tpl_size = offsetof(avs_coap_msg_t, content)
+                                       + AVS_COAP_MAX_HEADER_SIZE
+                                       + AVS_COAP_MAX_TOKEN_LENGTH;
+    avs_coap_msg_t *msg_tpl __attribute__((cleanup(free_msg))) =
+            make_msg_template_with_data(malloc(msg_tpl_size), msg_tpl_size,
+                                        TOKEN.bytes, TOKEN.size);
     _avs_coap_header_set_token_length(msg_tpl, TOKEN.size);
 
     avs_coap_msg_info_t info = INFO_WITH_HEADER(msg_tpl);
@@ -160,12 +162,12 @@ AVS_UNIT_TEST(coap_builder, option_opaque) {
 }
 
 AVS_UNIT_TEST(coap_builder, option_multiple_ints) {
-    uint32_t content_length = sizeof(uint8_t) + sizeof(uint8_t)
-                            + sizeof(uint8_t) + sizeof(uint16_t)
-                            + sizeof(uint8_t) + sizeof(uint32_t)
-                            + sizeof(uint8_t) + sizeof(uint64_t)
-                            + sizeof(uint8_t) + sizeof(uint8_t)
-                            + sizeof(uint8_t);
+    static const size_t content_length = sizeof(uint8_t) + sizeof(uint8_t)
+                                         + sizeof(uint8_t) + sizeof(uint16_t)
+                                         + sizeof(uint8_t) + sizeof(uint32_t)
+                                         + sizeof(uint8_t) + sizeof(uint64_t)
+                                         + sizeof(uint8_t) + sizeof(uint8_t)
+                                         + sizeof(uint8_t);
     DECLARE_MSG_TEMPLATE(msg_tpl, msg_tpl_size, content_length);
 
     uint8_t *opts = _avs_coap_header_end(msg_tpl);
@@ -214,7 +216,7 @@ AVS_UNIT_TEST(coap_builder, option_multiple_ints) {
 }
 
 AVS_UNIT_TEST(coap_builder, option_content_format) {
-    uint32_t content_length = sizeof(uint8_t) + sizeof(uint16_t);
+    static const size_t content_length = sizeof(uint8_t) + sizeof(uint16_t);
     DECLARE_MSG_TEMPLATE(msg_tpl, msg_tpl_size, content_length);
     avs_coap_opt_t *opt = get_first_opt(msg_tpl, 0);
     _avs_coap_opt_set_short_length(opt, 2);
