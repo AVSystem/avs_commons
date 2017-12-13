@@ -65,11 +65,6 @@ extern int AVS_NET_EBADMSG;
 #define EBADMSG AVS_NET_EBADMSG /**< Bad message */
 #endif
 
-#ifndef ECANCELED
-extern int AVS_NET_ECANCELED;
-#define ECANCELED AVS_NET_ECANCELED /**< Operation canceled */
-#endif
-
 #ifndef ECONNABORTED
 extern int AVS_NET_ECONNABORTED;
 #define ECONNABORTED AVS_NET_ECONNABORTED /**< Connection aborted */
