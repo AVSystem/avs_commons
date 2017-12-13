@@ -45,4 +45,4 @@ extern const int AVS_NET_EPROTO;
 const int AVS_NET_EPROTO = EPROTO;
 
 
-See the public avsystem/commons/net_errno.h header for list of expected values.
+See the public avsystem/commons/errno.h header for list of expected values.

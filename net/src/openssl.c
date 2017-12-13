@@ -33,7 +33,7 @@
 #include <openssl/bn.h>
 #include <openssl/pkcs12.h>
 
-#include <avsystem/commons/net_errno.h>
+#include <avsystem/commons/errno.h>
 #include <avsystem/commons/time.h>
 
 #include "net_impl.h"

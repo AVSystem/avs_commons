@@ -20,10 +20,10 @@
 #include <avs_commons_config.h>
 #include "avs_net_posix_config.h"
 
-#include <avsystem/commons/errno.h>
 #include <avsystem/commons/utils.h>
 
 #include <assert.h>
+#include <errno.h>
 #include <inttypes.h>
 #include <stdarg.h>
 #include <stdio.h>

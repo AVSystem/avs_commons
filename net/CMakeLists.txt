@@ -49,7 +49,6 @@ endif()
 
 set(PUBLIC_HEADERS
     include_public/avsystem/commons/net.h
-    include_public/avsystem/commons/net_errno.h
     include_public/avsystem/commons/socket_v_table.h
     include_public/avsystem/commons/url.h)
 

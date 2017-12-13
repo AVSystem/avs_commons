@@ -23,8 +23,8 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
+#include <avsystem/commons/errno.h>
 #include <avsystem/commons/list.h>
-#include <avsystem/commons/net_errno.h>
 
 #include "coap_log.h"
 #include "msg_cache.h"

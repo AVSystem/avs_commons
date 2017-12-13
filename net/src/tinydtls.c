@@ -22,7 +22,7 @@
 
 #include <tinydtls/dtls.h>
 
-#include <avsystem/commons/net_errno.h>
+#include <avsystem/commons/errno.h>
 
 #include "net_impl.h"
 

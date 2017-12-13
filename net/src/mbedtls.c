@@ -33,7 +33,7 @@
 #include <mbedtls/debug.h>
 #endif // WITH_MBEDTLS_LOGS
 
-#include <avsystem/commons/net_errno.h>
+#include <avsystem/commons/errno.h>
 
 #include "net_impl.h"
 
