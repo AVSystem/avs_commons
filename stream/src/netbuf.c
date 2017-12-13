@@ -16,11 +16,11 @@
 
 #include <avs_commons_config.h>
 
-#include <errno.h>
 #include <stdio.h>
 #include <string.h>
 
 #include <avsystem/commons/buffer.h>
+#include <avsystem/commons/errno.h>
 #include <avsystem/commons/net.h>
 #include <avsystem/commons/stream_v_table.h>
 #include <avsystem/commons/stream/netbuf.h>

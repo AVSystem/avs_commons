@@ -17,7 +17,6 @@
 #include <avs_commons_config.h>
 
 #include <assert.h>
-#include <errno.h>
 #include <inttypes.h>
 #include <string.h>
 
@@ -33,6 +32,8 @@
 #ifdef WITH_MBEDTLS_LOGS
 #include <mbedtls/debug.h>
 #endif // WITH_MBEDTLS_LOGS
+
+#include <avsystem/commons/errno.h>
 
 #include "net_impl.h"
 
