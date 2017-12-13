@@ -18,9 +18,9 @@
 
 #include <assert.h>
 #include <ctype.h>
-#include <errno.h>
 #include <string.h>
 
+#include <avsystem/commons/errno.h>
 #include <avsystem/commons/utils.h>
 
 #include "body_receivers.h"

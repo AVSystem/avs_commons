@@ -22,6 +22,8 @@
 
 #include <tinydtls/dtls.h>
 
+#include <avsystem/commons/errno.h>
+
 #include "net_impl.h"
 
 VISIBILITY_SOURCE_BEGIN

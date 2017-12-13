@@ -17,12 +17,12 @@
 #include <avs_commons_config.h>
 
 #include <assert.h>
-#include <errno.h>
 #include <stdarg.h>
 #include <string.h>
 
 #include <limits.h>
 
+#include <avsystem/commons/errno.h>
 #include <avsystem/commons/stream/stream_membuf.h>
 #include <avsystem/commons/stream_v_table.h>
 

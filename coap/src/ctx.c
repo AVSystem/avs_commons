@@ -22,8 +22,8 @@
 #include <assert.h>
 #include <stdbool.h>
 #include <stdlib.h>
-#include <errno.h>
 
+#include <avsystem/commons/errno.h>
 #include <avsystem/commons/list.h>
 
 #include "coap_log.h"
@@ -122,6 +122,7 @@ static int map_io_error(avs_net_abstract_socket_t *socket,
     if (result) {
         int error = avs_net_socket_errno(socket);
         LOG(ERROR, "%s failed: errno = %d", operation, error);
+
         if (error == ETIMEDOUT) {
             result = AVS_COAP_CTX_ERR_TIMEOUT;
         } else if (error == EMSGSIZE) {
