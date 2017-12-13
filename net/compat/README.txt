@@ -41,8 +41,8 @@ Additionally, AVS_NET_E**** values that may not defined in system-wide errno.h
 need to be exported as follows:
 
 
-extern int AVS_NET_EPROTO;
-int AVS_NET_EPROTO = EPROTO;
+extern const int AVS_NET_EPROTO;
+const int AVS_NET_EPROTO = EPROTO;
 
 
 See the public avsystem/commons/net_errno.h header for list of expected values.
