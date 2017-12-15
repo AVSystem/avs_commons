@@ -220,8 +220,8 @@ offsetof(struct avs_list_space_for_next_helper_struct__, value)
 #define AVS_LIST_FOREACH(element, list) \
 for ((element) = (list); \
      (element); \
-     *(void **) (intptr_t) &(element) \
-            = (void *) (intptr_t) AVS_LIST_NEXT(element))
+     avs_list_update_ptr__((void *) (intptr_t) &(element), \
+                           (void *) (intptr_t) AVS_LIST_NEXT(element)))
 
 /**
  * Iterates over a list, starting with the current element.
@@ -232,7 +232,9 @@ for ((element) = (list); \
  *                elements during iteration.
  */
 #define AVS_LIST_ITERATE(element) \
-for (; (element); (element) = AVS_LIST_NEXT(element))
+for (; (element); \
+     avs_list_update_ptr__((void *) (intptr_t) &(element), \
+                           (void *) (intptr_t) AVS_LIST_NEXT(element)))
 
 /**
  * A for-each loop over pointers to element pointers.
@@ -269,7 +271,8 @@ for (; (element); (element) = AVS_LIST_NEXT(element))
 #define AVS_LIST_FOREACH_PTR(element_ptr, list_ptr) \
 for ((element_ptr) = (list_ptr); \
      *(element_ptr); \
-     *(void **) (intptr_t) &(element_ptr) = AVS_LIST_NEXT_PTR(element_ptr))
+     avs_list_update_ptr__((void *) (intptr_t) &(element_ptr), \
+                           AVS_LIST_NEXT_PTR(element_ptr)))
 
 /**
  * Iterates over a list as pointers to element pointers, starting with the
@@ -283,7 +286,9 @@ for ((element_ptr) = (list_ptr); \
  *                    pointers to consecutive list elements during iteration.
  */
 #define AVS_LIST_ITERATE_PTR(element_ptr) \
-for (; *(element_ptr); (element_ptr) = AVS_LIST_NEXT_PTR(element_ptr))
+for (; *(element_ptr); \
+     avs_list_update_ptr__((void *) (intptr_t) &(element_ptr), \
+                           AVS_LIST_NEXT_PTR(element_ptr)))
 
 /**
  * Comparator type for @ref AVS_LIST_FIND_BY_VALUE_PTR and
@@ -342,6 +347,11 @@ void avs_list_merge__(void **target_ptr,
                       void **source_ptr,
                       avs_list_comparator_func_t comparator,
                       size_t element_size);
+
+static inline void avs_list_update_ptr__(void *ptr, void *value) {
+    *(void **) ptr = value;
+}
+
 #ifdef NDEBUG
 #define AVS_LIST_ASSERT_ACYCLIC__(list) (list)
 #define AVS_LIST_ASSERT_SORTED_PTR__(list_ptr, comparator) (list_ptr)
@@ -672,10 +682,11 @@ AVS_LIST_CONFIG_FREE( \
 #define AVS_LIST_DELETABLE_FOREACH_PTR(element_ptr, helper_element, list_ptr) \
 for ((element_ptr) = (list_ptr), (helper_element) = *(element_ptr); \
      *(element_ptr); \
-     *(void **) (intptr_t) &(element_ptr) = \
+     avs_list_update_ptr__( \
+             (void *) (intptr_t) &(element_ptr), \
              AVS_LIST_DELETABLE_FOREACH_PTR_VALID(element_ptr, helper_element) \
-             ? AVS_LIST_NEXT_PTR(element_ptr) \
-             : (AVS_TYPEOF_PTR(element_ptr)) element_ptr, \
+                     ? AVS_LIST_NEXT_PTR(element_ptr) \
+                     : (AVS_TYPEOF_PTR(element_ptr)) element_ptr), \
              (helper_element) = *(element_ptr))
 
 /**
