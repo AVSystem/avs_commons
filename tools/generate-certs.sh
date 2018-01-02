@@ -23,10 +23,6 @@ canonicalize() {
 TRUSTSTORE_PASSWORD=rootPass
 KEYSTORE_PASSWORD=endPass
 
-SCRIPT_DIR="$(dirname "$(canonicalize "$0")")"
-ROOT_DIR="$(dirname "$SCRIPT_DIR")"
-TOOLS_DIR="$SCRIPT_DIR"
-
 if [ -z "$OPENSSL" ]; then
     if [ -x /usr/local/opt/openssl/bin/openssl ]; then
         # default OpenSSL on macOS is outdated and buggy
