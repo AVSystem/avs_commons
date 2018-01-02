@@ -33,7 +33,7 @@ if [ -z "$OPENSSL" ]; then
     fi
 fi
 
-if [[ "$#" < 1 ]]; then
+if [[ "$#" -lt 1 ]]; then
     CERTS_DIR="$(pwd)/certs"
 else
     CERTS_DIR="$1"
