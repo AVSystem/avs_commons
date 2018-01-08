@@ -203,7 +203,7 @@ AVS_UNIT_TEST(http, advanced_request) {
             "Accept-Encoding: gzip, deflate\r\n"
 #endif
             "Authorization: Basic cm9vdDoxMjM0NQ==\r\n"
-            "Cookie: $Version=\"1\";nyan=azu\r\n"
+            "Cookie: $Version=\"1\"; nyan=azu\r\n"
             "I-Am: h4x0r\r\n"
             "\r\n"; /* no third request - fail after two 401's */
     avs_unit_mocksock_expect_output(socket, tmp_data, strlen(tmp_data));
@@ -253,6 +253,62 @@ AVS_UNIT_TEST(http, invalid_cookies) {
     avs_unit_mocksock_input(socket, tmp_data, strlen(tmp_data));
     AVS_UNIT_ASSERT_FAILED(avs_stream_finish_message(stream));
     AVS_UNIT_ASSERT_EQUAL(avs_stream_errno(stream), 0);
+    avs_unit_mocksock_assert_io_clean(socket);
+    avs_unit_mocksock_expect_shutdown(socket);
+    avs_stream_cleanup(&stream);
+    avs_http_free(client);
+}
+
+AVS_UNIT_TEST(http, multiple_cookies) {
+    const char *tmp_data;
+    avs_http_t *client = avs_http_new(&AVS_HTTP_DEFAULT_BUFFER_SIZES);
+    avs_net_abstract_socket_t *socket = NULL;
+    avs_stream_abstract_t *stream = NULL;
+    avs_url_t *url = avs_url_parse("http://unicodesnowmanforyou.com/");
+    AVS_UNIT_ASSERT_NOT_NULL(url);
+    AVS_UNIT_ASSERT_NOT_NULL(client);
+    avs_unit_mocksock_create(&socket);
+    avs_http_test_expect_create_socket(socket, AVS_NET_TCP_SOCKET);
+    avs_unit_mocksock_expect_connect(socket, "unicodesnowmanforyou.com", "80");
+    AVS_UNIT_ASSERT_SUCCESS(avs_http_open_stream(&stream, client, AVS_HTTP_GET,
+                                                 AVS_HTTP_CONTENT_IDENTITY, url,
+                                                 "omae_wa", "mou_shindeiru"));
+    avs_url_free(url);
+    AVS_UNIT_ASSERT_NOT_NULL(stream);
+    tmp_data =
+            "GET / HTTP/1.1\r\n" /* first request */
+            "Host: unicodesnowmanforyou.com\r\n"
+#ifdef WITH_AVS_HTTP_ZLIB
+            "Accept-Encoding: gzip, deflate\r\n"
+#endif
+            "\r\n";
+    avs_unit_mocksock_expect_output(socket, tmp_data, strlen(tmp_data));
+    tmp_data =
+            "HTTP/1.1 401 Unauthorized\r\n" /* first response */
+            "WWW-Authenticate: Basic realm=\"NANI?!\"\r\n"
+            "Set-Cookie: sleeper=wake_up\r\n"
+            "Set-Cookie: wake_up=sleeper\r\n"
+            "Content-Length: 0\r\n"
+            "\r\n";
+    avs_unit_mocksock_input(socket, tmp_data, strlen(tmp_data));
+    tmp_data =
+            "GET / HTTP/1.1\r\n" /* second request */
+            "Host: unicodesnowmanforyou.com\r\n"
+#ifdef WITH_AVS_HTTP_ZLIB
+            "Accept-Encoding: gzip, deflate\r\n"
+#endif
+            "Authorization: Basic b21hZV93YTptb3Vfc2hpbmRlaXJ1\r\n"
+            "Cookie: sleeper=wake_up; wake_up=sleeper\r\n"
+            "\r\n"; /* no third request - fail after two 401's */
+    avs_unit_mocksock_expect_output(socket, tmp_data, strlen(tmp_data));
+    tmp_data =
+            "HTTP/1.1 401 Unauthorized\r\n" /* second response */
+            "WWW-Authenticate: Basic realm=\"NANI?!\"\r\n"
+            "Content-Length: 0\r\n"
+            "\r\n";
+    avs_unit_mocksock_input(socket, tmp_data, strlen(tmp_data));
+    AVS_UNIT_ASSERT_FAILED(avs_stream_finish_message(stream));
+    AVS_UNIT_ASSERT_EQUAL(avs_stream_errno(stream), 401);
     avs_unit_mocksock_assert_io_clean(socket);
     avs_unit_mocksock_expect_shutdown(socket);
     avs_stream_cleanup(&stream);

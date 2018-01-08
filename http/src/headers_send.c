@@ -62,12 +62,22 @@ int _avs_http_send_headers(http_stream_t *stream, size_t content_length) {
             || _avs_http_auth_send_header(stream)) {
         return -1;
     }
-    AVS_LIST(http_cookie_t) cookie;
-    AVS_LIST_FOREACH(cookie, stream->http->cookies) {
-        if (avs_stream_write_f(stream->backend, "Cookie: %s%s\r\n",
-                               stream->http->use_cookie2
-                                       ? "$Version=\"1\";" : "",
-                               cookie->value)) {
+    if (stream->http->cookies) {
+        bool first_cookie = true;
+        AVS_LIST(http_cookie_t) cookie;
+        AVS_LIST_FOREACH(cookie, stream->http->cookies) {
+            if (avs_stream_write_f(stream->backend, "%s%s",
+                                   first_cookie
+                                           ? (stream->http->use_cookie2
+                                                   ? "Cookie: $Version=\"1\"; "
+                                                   : "Cookie: ")
+                                           : "; ",
+                                   cookie->value)) {
+                return -1;
+            }
+            first_cookie = false;
+        }
+        if (avs_stream_write_f(stream->backend, "\r\n")) {
             return -1;
         }
     }
