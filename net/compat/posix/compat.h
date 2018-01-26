@@ -22,9 +22,6 @@
 VISIBILITY_PRIVATE_HEADER_BEGIN
 
 /* Following values are not defined e.g. in LwIP 1.4.1 */
-#ifndef AI_NUMERICSERV
-#   define AI_NUMERICSERV 0
-#endif
 #ifndef AI_ADDRCONFIG
 #   define AI_ADDRCONFIG 0
 #endif

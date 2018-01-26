@@ -833,10 +833,9 @@ static int host_port_to_string(const struct sockaddr *sa, socklen_t salen,
                     ? -1 : 0);
         }
         if (!result && serv) {
-            result = avs_simple_snprintf(serv, servlen, "%" PRIu16, *port_ptr)
-                                     < 0
-                             ? -1
-                             : 0;
+            result = avs_simple_snprintf(serv, servlen,
+                                         "%" PRIu16, ntohs(*port_ptr)) < 0
+                             ? -1 : 0;
         }
     }
 #endif /* HAVE_GETNAMEINFO */
@@ -889,7 +888,9 @@ static avs_net_af_t get_avs_af(int af) {
 }
 
 static int get_other_family(avs_net_af_t *out, avs_net_af_t in) {
+    (void) out; (void) in;
     switch (in) {
+#if defined(WITH_IPV4) && defined(WITH_IPV6)
     case AVS_NET_AF_INET4:
         *out = AVS_NET_AF_INET6;
         return 0;
@@ -897,6 +898,7 @@ static int get_other_family(avs_net_af_t *out, avs_net_af_t in) {
         *out = AVS_NET_AF_INET4;
         return 0;
     default:
+#endif // defined(WITH_IPV4) && defined(WITH_IPV6)
         return -1;
     }
 }
@@ -1351,9 +1353,6 @@ static int try_bind(avs_net_socket_t *net_socket, avs_net_af_t family,
         net_socket->error_code = EINVAL;
         return -1;
     }
-    if (!port) {
-        port = "0";
-    }
     if (!(info = avs_net_addrinfo_resolve_ex(
                     net_socket->type, family, localaddr, port,
                     AVS_NET_ADDRINFO_RESOLVE_F_PASSIVE, NULL))
@@ -1375,21 +1374,20 @@ static int bind_net(avs_net_abstract_socket_t *net_socket_,
                     const char *localaddr,
                     const char *port) {
     avs_net_socket_t *net_socket = (avs_net_socket_t *) net_socket_;
-    int retval = -1;
-
     if (net_socket->socket >= 0) {
         LOG(ERROR, "socket is already connected or bound");
         return -1;
     }
 
-#ifdef WITH_IPV6
-    retval = try_bind(net_socket, AVS_NET_AF_INET6, localaddr, port);
-    if (retval)
-#endif /* WITH_IPV6 */
-    {
-#ifdef WITH_IPV4
-        retval = try_bind(net_socket, AVS_NET_AF_INET4, localaddr, port);
-#endif /* WITH_IPV4 */
+    avs_net_af_t family;
+    int retval = -1;
+    if (!get_requested_family(net_socket, &family, PREFERRED_FAMILY_ONLY)
+            && !(retval = try_bind(net_socket, family, localaddr, port))) {
+        return 0;
+    }
+    if (!get_requested_family(net_socket, &family, PREFERRED_FAMILY_BLOCKED)
+            && !(retval = try_bind(net_socket, family, localaddr, port))) {
+        return 0;
     }
     return retval;
 }
