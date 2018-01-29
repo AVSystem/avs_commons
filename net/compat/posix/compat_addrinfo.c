@@ -61,14 +61,14 @@ static void update_ports(struct addrinfo *head, uint16_t port) {
             memcpy((char *) head->ai_addr
                            + offsetof(struct sockaddr_in, sin_port),
                    &port, sizeof(uint16_t));
-            return;
+            break;
 #endif // WITH_IPV4
 #ifdef WITH_IPV6
         case AF_INET6:
             memcpy((char *) head->ai_addr
                            + offsetof(struct sockaddr_in6, sin6_port),
                    &port, sizeof(uint16_t));
-            return;
+            break;
 #endif // WITH_IPV6
         default:; // do nothing
         }
