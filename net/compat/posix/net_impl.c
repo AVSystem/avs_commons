@@ -833,10 +833,9 @@ static int host_port_to_string(const struct sockaddr *sa, socklen_t salen,
                     ? -1 : 0);
         }
         if (!result && serv) {
-            result = avs_simple_snprintf(serv, servlen, "%" PRIu16, *port_ptr)
-                                     < 0
-                             ? -1
-                             : 0;
+            result = avs_simple_snprintf(serv, servlen,
+                                         "%" PRIu16, ntohs(*port_ptr)) < 0
+                             ? -1 : 0;
         }
     }
 #endif /* HAVE_GETNAMEINFO */
@@ -889,7 +888,9 @@ static avs_net_af_t get_avs_af(int af) {
 }
 
 static int get_other_family(avs_net_af_t *out, avs_net_af_t in) {
+    (void) out; (void) in;
     switch (in) {
+#if defined(WITH_IPV4) && defined(WITH_IPV6)
     case AVS_NET_AF_INET4:
         *out = AVS_NET_AF_INET6;
         return 0;
@@ -897,6 +898,7 @@ static int get_other_family(avs_net_af_t *out, avs_net_af_t in) {
         *out = AVS_NET_AF_INET4;
         return 0;
     default:
+#endif // defined(WITH_IPV4) && defined(WITH_IPV6)
         return -1;
     }
 }
@@ -904,19 +906,28 @@ static int get_other_family(avs_net_af_t *out, avs_net_af_t in) {
 static int get_requested_family(avs_net_socket_t *net_socket,
                                 avs_net_af_t *out,
                                 preferred_family_mode_t preferred_family_mode) {
-    switch (net_socket->configuration.address_family) {
-    case AVS_NET_AF_UNSPEC:
+    if (net_socket->configuration.address_family == AVS_NET_AF_UNSPEC) {
         // If we only have "soft" family preference,
         // use it as the preferred one, and later try the "opposite" setting
+        avs_net_af_t preferred_family =
+                net_socket->configuration.preferred_family;
+        if (preferred_family == AVS_NET_AF_UNSPEC) {
+#ifdef WITH_IPV6
+            preferred_family = AVS_NET_AF_INET6;
+#elif defined(WITH_IPV4)
+            preferred_family = AVS_NET_AF_INET4;
+#else
+            return -1;
+#endif
+        }
         switch (preferred_family_mode) {
         case PREFERRED_FAMILY_ONLY:
-            *out = net_socket->configuration.preferred_family;
+            *out = preferred_family;
             return 0;
         case PREFERRED_FAMILY_BLOCKED:
-            return get_other_family(out,
-                                    net_socket->configuration.preferred_family);
+            return get_other_family(out, preferred_family);
         }
-    default:
+    } else {
         // If we have "hard" address_family setting,
         // it is the preferred one, and there is nothing else
         switch (preferred_family_mode) {
@@ -943,6 +954,7 @@ resolve_addrinfo_for_socket(avs_net_socket_t *net_socket,
         return NULL;
     }
 
+    assert(family != AVS_NET_AF_UNSPEC);
     if (net_socket->socket >= 0) {
         avs_net_af_t socket_family =
                 get_avs_af(get_socket_family(net_socket->socket));
@@ -952,18 +964,12 @@ resolve_addrinfo_for_socket(avs_net_socket_t *net_socket,
                 // but the requested family is something else, use v4-mapping
                 resolve_flags |= AVS_NET_ADDRINFO_RESOLVE_F_V4MAPPED;
             }
-        } else if (socket_family != family) {
-            if (family == AVS_NET_AF_UNSPEC) {
-                // If we have an already created socket, the requested family
-                // is unspecified, and we cannot use IPv6-to-IPv4 mapping,
-                // then use the socket's family instead
-                family = socket_family;
-            } else if (socket_family != AVS_NET_AF_UNSPEC) {
-                // If we have an already created socket, we cannot use
-                // IPv6-to-IPv4 mapping, and the requested family is different
-                // than the socket's bound one - we're screwed, just give up
-                return NULL;
-            }
+        } else if (socket_family != AVS_NET_AF_UNSPEC
+                && socket_family != family) {
+            // If we have an already created socket, we cannot use
+            // IPv6-to-IPv4 mapping, and the requested family is different
+            // than the socket's bound one - we're screwed, just give up
+            return NULL;
         }
     }
 
@@ -1134,9 +1140,12 @@ static int send_to_net(avs_net_abstract_socket_t *net_socket_,
     ssize_t result = -1;
 
     if (!(info = resolve_addrinfo_for_socket(net_socket, host, port,
-                                             false, PREFERRED_FAMILY_ONLY))
-            || (result = (ssize_t) avs_net_addrinfo_next(info,
-                                                         &address.api_ep))) {
+                                             false, PREFERRED_FAMILY_ONLY))) {
+        info = resolve_addrinfo_for_socket(net_socket, host, port,
+                                           false, PREFERRED_FAMILY_BLOCKED);
+    }
+    if (!info || (result = (ssize_t) avs_net_addrinfo_next(info,
+                                                           &address.api_ep))) {
         net_socket->error_code = EADDRNOTAVAIL;
     } else {
         errno = 0;
@@ -1351,9 +1360,6 @@ static int try_bind(avs_net_socket_t *net_socket, avs_net_af_t family,
         net_socket->error_code = EINVAL;
         return -1;
     }
-    if (!port) {
-        port = "0";
-    }
     if (!(info = avs_net_addrinfo_resolve_ex(
                     net_socket->type, family, localaddr, port,
                     AVS_NET_ADDRINFO_RESOLVE_F_PASSIVE, NULL))
@@ -1375,21 +1381,20 @@ static int bind_net(avs_net_abstract_socket_t *net_socket_,
                     const char *localaddr,
                     const char *port) {
     avs_net_socket_t *net_socket = (avs_net_socket_t *) net_socket_;
-    int retval = -1;
-
     if (net_socket->socket >= 0) {
         LOG(ERROR, "socket is already connected or bound");
         return -1;
     }
 
-#ifdef WITH_IPV6
-    retval = try_bind(net_socket, AVS_NET_AF_INET6, localaddr, port);
-    if (retval)
-#endif /* WITH_IPV6 */
-    {
-#ifdef WITH_IPV4
-        retval = try_bind(net_socket, AVS_NET_AF_INET4, localaddr, port);
-#endif /* WITH_IPV4 */
+    avs_net_af_t family;
+    int retval = -1;
+    if (!get_requested_family(net_socket, &family, PREFERRED_FAMILY_ONLY)
+            && !(retval = try_bind(net_socket, family, localaddr, port))) {
+        return 0;
+    }
+    if (!get_requested_family(net_socket, &family, PREFERRED_FAMILY_BLOCKED)
+            && !(retval = try_bind(net_socket, family, localaddr, port))) {
+        return 0;
     }
     return retval;
 }

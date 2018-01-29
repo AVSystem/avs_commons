@@ -38,6 +38,43 @@ struct avs_net_addrinfo_struct {
 #endif
 };
 
+static int port_from_string(uint16_t *out, const char *port_str) {
+    if (!port_str || !*port_str) {
+        *out = 0;
+        return 0;
+    }
+    char *endptr = NULL;
+    long result = strtol(port_str, &endptr, 10);
+    if (result < 0 || result > UINT16_MAX || !endptr || *endptr) {
+        return -1;
+    }
+    *out = (uint16_t) result;
+    return 0;
+}
+
+static void update_ports(struct addrinfo *head, uint16_t port) {
+    port = htons(port);
+    for (; head; head = head->ai_next) {
+        switch (head->ai_family) {
+#ifdef WITH_IPV4
+        case AF_INET:
+            memcpy((char *) head->ai_addr
+                           + offsetof(struct sockaddr_in, sin_port),
+                   &port, sizeof(uint16_t));
+            return;
+#endif // WITH_IPV4
+#ifdef WITH_IPV6
+        case AF_INET6:
+            memcpy((char *) head->ai_addr
+                           + offsetof(struct sockaddr_in6, sin6_port),
+                   &port, sizeof(uint16_t));
+            return;
+#endif // WITH_IPV6
+        default:; // do nothing
+        }
+    }
+}
+
 static struct addrinfo *detach_preferred(struct addrinfo **list_ptr,
                                          const void *preferred_addr,
                                          socklen_t preferred_addr_len) {
@@ -119,7 +156,7 @@ avs_net_addrinfo_t *avs_net_addrinfo_resolve_ex(
         avs_net_socket_type_t socket_type,
         avs_net_af_t family,
         const char *host,
-        const char *port,
+        const char *port_str,
         int flags,
         const avs_net_resolved_endpoint_t *preferred_endpoint) {
     struct addrinfo hint;
@@ -129,9 +166,17 @@ avs_net_addrinfo_t *avs_net_addrinfo_resolve_ex(
         LOG(ERROR, "Unsupported address family");
         return NULL;
     }
-    hint.ai_flags = AI_NUMERICSERV | AI_ADDRCONFIG;
+    hint.ai_flags = AI_ADDRCONFIG;
     if (flags & AVS_NET_ADDRINFO_RESOLVE_F_PASSIVE) {
         hint.ai_flags |= AI_PASSIVE;
+    }
+
+    // some getaddrinfo() implementations interpret port 0 as invalid,
+    // so we use our own port parsing
+    uint16_t port;
+    if (port_from_string(&port, port_str)) {
+        LOG(ERROR, "Invalid port: %s", port_str);
+        return NULL;
     }
 
     avs_net_addrinfo_t *ctx =
@@ -151,7 +196,19 @@ avs_net_addrinfo_t *avs_net_addrinfo_resolve_ex(
 #endif
     hint.ai_socktype = _avs_net_get_socket_type(socket_type);
 
-    int error = getaddrinfo(host, port, &hint, &ctx->results);
+    if (!host || !*host) {
+        switch (family) {
+        case AVS_NET_AF_INET4:
+            host = "0.0.0.0";
+            break;
+        case AVS_NET_AF_INET6:
+            host = "::";
+            break;
+        default:
+            host = "";
+        }
+    }
+    int error = getaddrinfo(host, NULL, &hint, &ctx->results);
     if (error) {
 #ifdef HAVE_GAI_STRERROR
         LOG(ERROR, "%s", gai_strerror(error));
@@ -161,6 +218,7 @@ avs_net_addrinfo_t *avs_net_addrinfo_resolve_ex(
         avs_net_addrinfo_delete(&ctx);
         return NULL;
     } else {
+        update_ports(ctx->results, port);
         unsigned seed = (unsigned) time(NULL);
         struct addrinfo *preferred = NULL;
         if (preferred_endpoint) {
