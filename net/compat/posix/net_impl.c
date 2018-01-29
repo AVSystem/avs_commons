@@ -1041,7 +1041,7 @@ static int connect_net(avs_net_abstract_socket_t *net_socket_,
     errno = 0;
     net_socket->error_code = EADDRNOTAVAIL;
     if ((info = resolve_addrinfo_for_socket(net_socket, host, port,
-                                            false, PREFERRED_FAMILY_ONLY))) {
+                                            true, PREFERRED_FAMILY_ONLY))) {
         sockaddr_endpoint_union_t address;
         while (!(result = avs_net_addrinfo_next(info, &address.api_ep))) {
             if (!try_connect(net_socket, &address)) {
@@ -1051,7 +1051,7 @@ static int connect_net(avs_net_abstract_socket_t *net_socket_,
     }
     avs_net_addrinfo_delete(&info);
     if ((info = resolve_addrinfo_for_socket(net_socket, host, port,
-                                            false, PREFERRED_FAMILY_BLOCKED))) {
+                                            true, PREFERRED_FAMILY_BLOCKED))) {
         sockaddr_endpoint_union_t address;
         while (!(result = avs_net_addrinfo_next(info, &address.api_ep))) {
             if (!try_connect(net_socket, &address)) {
@@ -1406,7 +1406,7 @@ static int accept_net(avs_net_abstract_socket_t *server_net_socket_,
     assert(server_net_socket->operations == &net_vtable);
     if (new_net_socket->operations != &net_vtable
             || new_net_socket->type != server_net_socket->type) {
-        LOG(ERROR, "accept_net() called with socket of invaild type");
+        LOG(ERROR, "accept_net() called with socket of invalid type");
         server_net_socket->error_code = EINVAL;
         return -1;
     }
