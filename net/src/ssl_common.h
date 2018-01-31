@@ -143,12 +143,10 @@ static int ensure_ssl_global(void) {
     } else {
         // we need to initialize the global state
         int result = initialize_ssl_global();
-#ifndef NDEBUG
-        if (!result && (result = atexit(cleanup_ssl_global))) {
-            cleanup_ssl_global();
-            LOG(ERROR, "atexit() failed: %d", result);
+        if (!result && atexit(cleanup_ssl_global)) {
+            LOG(WARNING,
+                "atexit() failed - global ssl context will not be freed");
         }
-#endif // NDEBUG
         RESULT = (result < 0 ? result : result == 0 ? 1 : -1);
     }
     return result;
