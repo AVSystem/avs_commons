@@ -4,6 +4,7 @@
 *.so
 *.so.*
 /list/avs_list_test
+/list/avs_list_cxx_test
 /buffer/avs_buffer_test
 /coap/avs_coap_test
 /http/avs_http_test

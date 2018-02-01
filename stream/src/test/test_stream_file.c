@@ -20,19 +20,19 @@
 
 #include <avsystem/commons/unit/test.h>
 
-int mkstemp(char *template);
+int mkstemp(char *filename_template);
 
 static char TEMPLATE[] = "/tmp/test_stream_file-XXXXXX";
 
 static int make_temporary(char *out_filename) {
-    char template[sizeof(TEMPLATE)];
+    char filename_template[sizeof(TEMPLATE)];
     int result;
-    memcpy(template, TEMPLATE, sizeof(TEMPLATE));
-    result = mkstemp(template);
+    memcpy(filename_template, TEMPLATE, sizeof(TEMPLATE));
+    result = mkstemp(filename_template);
     if (result != -1) {
         close(result);
     }
-    memcpy(out_filename, template, sizeof(TEMPLATE));
+    memcpy(out_filename, filename_template, sizeof(TEMPLATE));
     return result < 0 ? -1 : 0;
 }
 
@@ -66,7 +66,7 @@ AVS_UNIT_TEST(stream_file, write_and_read) {
     size_t bytes_read;
     char end_of_msg;
     /* let the valgrind check for eventual overflows */
-    char *buf = malloc(sizeof(data));
+    char *buf = (char *) malloc(sizeof(data));
 
     avs_stream_abstract_t *stream;
 

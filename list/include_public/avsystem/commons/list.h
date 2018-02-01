@@ -165,6 +165,50 @@ offsetof(struct avs_list_space_for_next_helper_struct__, value)
  */
 #define AVS_LIST(element_type) element_type*
 
+#ifdef __cplusplus
+} // extern "C"
+
+template <typename T>
+static inline AVS_LIST(T) &avs_list_next__(AVS_LIST(T) element) {
+    return *AVS_APPLY_OFFSET(AVS_LIST(T), element, -AVS_LIST_SPACE_FOR_NEXT__);
+}
+
+template <typename CastTo>
+struct AvsCallWithCast__ {
+    template <typename Func, typename T>
+    static inline T *call(const Func &func, T *arg) {
+        return (T *) (intptr_t) func((CastTo) (intptr_t) arg);
+    }
+
+    template <typename Func, typename T, typename Arg2>
+    static inline T *call(const Func &func, T *arg, const Arg2 &arg2) {
+        return (T *) (intptr_t) func((CastTo) (intptr_t) arg, arg2);
+    }
+
+    template <typename Func, typename T, typename Arg2, typename Arg3>
+    static inline T *call(const Func &func,
+                          T *arg, const Arg2 &arg2, const Arg3 &arg3) {
+        return (T *) (intptr_t) func((CastTo) (intptr_t) arg, arg2, arg3);
+    }
+
+    template <typename Func,
+              typename T, typename Arg2, typename Arg3, typename Arg4>
+    static inline T *call(const Func &func, T *arg, const Arg2 &arg2,
+                          const Arg3 &arg3, const Arg4 &arg4) {
+        return (T *) (intptr_t) func((CastTo) (intptr_t) arg, arg2, arg3, arg4);
+    }
+};
+
+#define AVS_CALL_WITH_CAST(CastTo, Func, ...) \
+        (::AvsCallWithCast__<CastTo>::call(Func, __VA_ARGS__))
+
+extern "C" {
+#else
+#define AVS_CALL_WITH_CAST(CastTo, Func, ...) \
+        ((AVS_TYPEOF_PTR(AVS_VARARG0(__VA_ARGS__))) \
+                Func((CastTo) (intptr_t) __VA_ARGS__))
+#endif
+
 /**
  * Returns a pointer to the next element.
  *
@@ -174,9 +218,13 @@ offsetof(struct avs_list_space_for_next_helper_struct__, value)
  *
  * @return Pointer to the next list element.
  */
+#ifdef __cplusplus
+#define AVS_LIST_NEXT(element) (avs_list_next__((element)))
+#else
 #define AVS_LIST_NEXT(element) \
 (*AVS_APPLY_OFFSET(AVS_TYPEOF_PTR(element), element, \
         -AVS_LIST_SPACE_FOR_NEXT__))
+#endif
 
 /**
  * Returns a pointer to the variable holding the pointer to the next element.
@@ -190,8 +238,7 @@ offsetof(struct avs_list_space_for_next_helper_struct__, value)
  * @return Pointer to a variable in the list element holding a pointer to the
  *         next element.
  */
-#define AVS_LIST_NEXT_PTR(element_ptr) \
-((AVS_TYPEOF_PTR(*(element_ptr)) *) &AVS_LIST_NEXT(*(element_ptr)))
+#define AVS_LIST_NEXT_PTR(element_ptr) (&AVS_LIST_NEXT(*(element_ptr)))
 
 /**
  * A shorthand notation for a for-each loop.
@@ -327,8 +374,8 @@ void *avs_list_insert__(void *list_to_insert, void **insert_ptr);
 void *avs_list_detach__(void **to_detach_ptr);
 size_t avs_list_size__(const void *list);
 void avs_list_sort__(void **list_ptr,
-                      avs_list_comparator_func_t comparator,
-                      size_t element_size);
+                     avs_list_comparator_func_t comparator,
+                     size_t element_size);
 int avs_list_is_cyclic__(const void *list);
 void *avs_list_assert_acyclic__(void *list);
 void **avs_list_assert_sorted_ptr__(void **list,
@@ -346,8 +393,7 @@ void avs_list_merge__(void **target_ptr,
 #define AVS_LIST_ASSERT_SORTED_PTR__(list_ptr, comparator) (list_ptr)
 #else
 #define AVS_LIST_ASSERT_ACYCLIC__(list) \
-((AVS_TYPEOF_PTR(list)) \
-        avs_list_assert_acyclic__((void *) (intptr_t) (list)))
+    AVS_CALL_WITH_CAST(void *, avs_list_assert_acyclic__, (list))
 
 #define AVS_LIST_ASSERT_SORTED_PTR__(list_ptr, comparator)         \
     (avs_list_assert_sorted_ptr__((void **) (intptr_t) list_ptr,   \
@@ -355,6 +401,10 @@ void avs_list_merge__(void **target_ptr,
      list_ptr)
 #endif
 /**@}*/
+
+#ifdef	__cplusplus
+} /* extern "C" */
+#endif
 
 /**
  * Returns a pointer to <i>n</i>-th element in a list.
@@ -366,8 +416,7 @@ void avs_list_merge__(void **target_ptr,
  * @return Pointer to the desired element, or <c>NULL</c> if not found.
  */
 #define AVS_LIST_NTH(list, n) \
-    ((AVS_TYPEOF_PTR(list)) (intptr_t)  \
-            avs_list_nth__((void *) (intptr_t)(list), (n)))
+    AVS_CALL_WITH_CAST(void *, avs_list_nth__, (list), (n))
 
 /**
  * Returns a pointer to a variable holding the <i>n</i>-th element in a list.
@@ -380,8 +429,7 @@ void avs_list_merge__(void **target_ptr,
  *         <c>NULL</c> if not found.
  */
 #define AVS_LIST_NTH_PTR(list_ptr, n) \
-((AVS_TYPEOF_PTR(list_ptr)) (intptr_t) \
-        avs_list_nth_ptr__((void **) (intptr_t) (list_ptr), (n)))
+    AVS_CALL_WITH_CAST(void **, avs_list_nth_ptr__, (list_ptr), (n))
 
 /**
  * Looks for a given element in the list and returns a pointer to the variable
@@ -409,9 +457,8 @@ void avs_list_merge__(void **target_ptr,
  *         <c>NULL</c> if not found.
  */
 #define AVS_LIST_FIND_PTR(list_ptr, element) \
-((AVS_TYPEOF_PTR(list_ptr))(intptr_t) \
-        avs_list_find_ptr__((void **)(intptr_t)(list_ptr), \
-                            (char *)(intptr_t)(element)))
+AVS_CALL_WITH_CAST(void **, avs_list_find_ptr__, \
+                   (list_ptr), (char *)(intptr_t)(element))
 
 /**
  * Looks for an element in the list, given its literal value, and returns a
@@ -442,11 +489,9 @@ void avs_list_merge__(void **target_ptr,
  *         found, or <c>NULL</c> if not found.
  */
 #define AVS_LIST_FIND_BY_VALUE_PTR(list_ptr, value_ptr, comparator) \
-((AVS_TYPEOF_PTR(list_ptr)) (intptr_t) \
-        avs_list_find_by_value_ptr__((void **)(intptr_t)(list_ptr),\
-                                     (void *)(intptr_t)(value_ptr),\
-                                     (comparator),\
-                                     sizeof(*(value_ptr))))
+AVS_CALL_WITH_CAST(void **, avs_list_find_by_value_ptr__, \
+                   (list_ptr), (void *)(intptr_t)(value_ptr),  \
+                   (comparator), sizeof(*(value_ptr)))
 
 /**
  * Returns the last element in a list.
@@ -457,7 +502,7 @@ void avs_list_merge__(void **target_ptr,
  *         empty.
  */
 #define AVS_LIST_TAIL(list) \
-((AVS_TYPEOF_PTR(list)) (intptr_t) avs_list_tail__((void *) (intptr_t) (list)))
+AVS_CALL_WITH_CAST(void *, avs_list_tail__, (list))
 
 /**
  * Returns the next element pointer of last element in a list.
@@ -472,8 +517,7 @@ void avs_list_merge__(void **target_ptr,
  *         will always yield <c>NULL</c>.
  */
 #define AVS_LIST_APPEND_PTR(list_ptr) \
-((AVS_TYPEOF_PTR(*(list_ptr)) *) (intptr_t) \
-        avs_list_append_ptr__((void **) (intptr_t) (list_ptr)))
+AVS_CALL_WITH_CAST(void **, avs_list_append_ptr__, (list_ptr))
 
 /**
  * Allocates a new list element with an arbitrary size.
@@ -532,11 +576,9 @@ void avs_list_merge__(void **target_ptr,
  */
 #define AVS_LIST_INSERT(destination_element_ptr, new_element) \
 ((((void) sizeof(*(destination_element_ptr) = (new_element))), \
-        ((AVS_TYPEOF_PTR(new_element)) \
-        AVS_LIST_ASSERT_ACYCLIC__(avs_list_insert__( \
-                (void *) (intptr_t) (new_element), \
-                (void **) (intptr_t) (AVS_TYPEOF_PTR(*(destination_element_ptr)) *)\
-                (destination_element_ptr))))))
+        AVS_LIST_ASSERT_ACYCLIC__(AVS_CALL_WITH_CAST( \
+                void *, avs_list_insert__, (new_element), \
+                (void **) (intptr_t) (destination_element_ptr)))))
 
 /**
  * Allocates a new element and inserts it into the list.
@@ -573,8 +615,7 @@ AVS_LIST_INSERT(destination_element_ptr, AVS_LIST_NEW_ELEMENT(type))
  */
 #define AVS_LIST_APPEND(list_ptr, new_element) \
 AVS_LIST_ASSERT_ACYCLIC__( \
-        (*(AVS_TYPEOF_PTR(*(list_ptr)) *) \
-                AVS_LIST_APPEND_PTR(list_ptr) = (new_element)))
+        (*AVS_LIST_APPEND_PTR(list_ptr) = (new_element)))
 
 /**
  * Allocates a new element and appends at the end of a list.
@@ -603,9 +644,21 @@ AVS_LIST_APPEND(list_ptr, AVS_LIST_NEW_ELEMENT(type))
  *         the <i>next</i> pointer guaranteed to be <c>NULL</c>.
  */
 /* additional casts through char * work around aliasing rules */
+#ifdef __cplusplus
+template <typename T>
+static inline AVS_LIST(T)
+avs_list_detach_impl__(AVS_LIST(T) *element_to_detach_ptr) {
+    return (AVS_LIST(T)) (char *) avs_list_detach__( \
+            (void **) (intptr_t) (char *) element_to_detach_ptr);
+}
+
+#define AVS_LIST_DETACH(element_to_detach_ptr) \
+        (avs_list_detach_impl__((element_to_detach_ptr)))
+#else
 #define AVS_LIST_DETACH(element_to_detach_ptr) \
 ((AVS_TYPEOF_PTR(*(element_to_detach_ptr))) (char *) \
         avs_list_detach__((void **) (intptr_t) (char *)(element_to_detach_ptr)))
+#endif
 
 /**
  * Deallocates memory claimed by a list element, detaching it beforehand.
@@ -673,8 +726,7 @@ for ((element_ptr) = (list_ptr), (helper_element) = *(element_ptr); \
      *(element_ptr); \
      (element_ptr) = \
              AVS_LIST_DELETABLE_FOREACH_PTR_VALID(element_ptr, helper_element) \
-                     ? AVS_LIST_NEXT_PTR(element_ptr) \
-                     : (AVS_TYPEOF_PTR(element_ptr)) element_ptr, \
+                     ? AVS_LIST_NEXT_PTR(element_ptr) : (element_ptr), \
              (helper_element) = *(element_ptr))
 
 /**
@@ -762,9 +814,8 @@ avs_list_sort__((void **)(intptr_t)(list_ptr), (comparator), \
  * @return pointer to the cloned list, NULL in case of an error.
  */
 #define AVS_LIST_SIMPLE_CLONE(list) \
-((AVS_TYPEOF_PTR(list)) \
-        avs_list_simple_clone__(AVS_LIST_ASSERT_ACYCLIC__(list), \
-                                sizeof(*(list))))
+AVS_CALL_WITH_CAST(void *, avs_list_simple_clone__, \
+                   AVS_LIST_ASSERT_ACYCLIC__(list), sizeof(*(list)))
 
 /**
  * Merges two sorted lists @p target_ptr and @p source_ptr, writing the results
@@ -788,9 +839,5 @@ avs_list_sort__((void **)(intptr_t)(list_ptr), (comparator), \
             (void **) (intptr_t) AVS_LIST_ASSERT_SORTED_PTR__(target_ptr, comparator), \
             (void **) (intptr_t) AVS_LIST_ASSERT_SORTED_PTR__(source_ptr, comparator), \
             (comparator), sizeof(**(target_ptr)));
-
-#ifdef	__cplusplus
-}
-#endif
 
 #endif /* AVS_COMMONS_LIST_H */

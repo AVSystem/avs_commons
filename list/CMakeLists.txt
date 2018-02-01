@@ -37,3 +37,4 @@ install(DIRECTORY include_public/
 
 include_directories(${AVS_TEST_INCLUDE_DIRS})
 add_avs_test(avs_list ${ALL_SOURCES} src/test/test_list.c)
+add_avs_test(avs_list_cxx ${ALL_SOURCES} src/test/test_list_cxx.cpp)
