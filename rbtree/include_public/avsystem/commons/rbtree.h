@@ -123,6 +123,27 @@ AVS_RBTREE_CLEANUP_NEXT__(AVS_RBTREE(T) tree) {
     return (AVS_RBTREE_ELEM(T))
             avs_rbtree_cleanup_next__((AVS_RBTREE(void)) tree);
 }
+
+template <typename Func, typename T>
+static inline AVS_RBTREE_ELEM(T)
+AVS_RBTREE_CALL_WITH_ELEM_CAST__(const Func &func, AVS_RBTREE(T) tree) {
+    return (AVS_RBTREE_ELEM(T)) func((AVS_RBTREE(void)) tree);
+}
+
+template <typename Func, typename T, typename Arg>
+static inline AVS_RBTREE_ELEM(T)
+AVS_RBTREE_CALL_WITH_ELEM_CAST__(const Func &func,
+                                 AVS_RBTREE(T) tree, const Arg &arg) {
+    return (AVS_RBTREE_ELEM(T)) func((AVS_RBTREE(void)) tree, arg);
+}
+
+template <typename Func, typename T, typename Arg>
+static inline AVS_RBTREE_ELEM(T)
+AVS_RBTREE_CALL_WITH_CONST_ELEM_CAST__(const Func &func,
+                                       AVS_RBTREE_CONST(T) tree,
+                                       const Arg &arg) {
+    return (AVS_RBTREE_ELEM(T)) func((AVS_RBTREE_CONST(void)) tree, arg);
+}
 #else
 #define AVS_RBTREE_CLEANUP_FIRST__(tree) \
     (AVS_TYPEOF_PTR(*(tree))) \
@@ -130,6 +151,12 @@ AVS_RBTREE_CLEANUP_NEXT__(AVS_RBTREE(T) tree) {
 #define AVS_RBTREE_CLEANUP_NEXT__(tree) \
     (AVS_TYPEOF_PTR(*(tree))) \
         avs_rbtree_cleanup_next__((AVS_RBTREE(void))(tree))
+#define AVS_RBTREE_CALL_WITH_ELEM_CAST__(func, ...) \
+    ((AVS_TYPEOF_PTR(*(AVS_VARARG0(__VA_ARGS__)))) \
+        func((AVS_RBTREE(void)) __VA_ARGS__))
+#define AVS_RBTREE_CALL_WITH_CONST_ELEM_CAST__(func, ...) \
+    ((AVS_TYPEOF_PTR(*(AVS_VARARG0(__VA_ARGS__)))) \
+        func((AVS_RBTREE_CONST(void)) __VA_ARGS__))
 #endif
 
 /**
@@ -230,10 +257,21 @@ AVS_RBTREE_CLEANUP_NEXT__(AVS_RBTREE(T) tree) {
  *
  * @returns Cloned RB-tree object on success, NULL in case of error.
  */
+#ifdef __cplusplus
+template <typename T>
+static inline AVS_RBTREE(T)
+avs_rbtree_simple_clone_impl__(AVS_RBTREE_CONST(T) tree) {
+    return (AVS_RBTREE(T)) avs_rbtree_simple_clone__(
+            (AVS_RBTREE_CONST(void)) tree, sizeof(T));
+}
+
+#define AVS_RBTREE_SIMPLE_CLONE(tree) (avs_rbtree_simple_clone_impl__((tree)))
+#else
 #define AVS_RBTREE_SIMPLE_CLONE(tree) \
     ((AVS_TYPEOF_PTR(*(tree)) *) \
         avs_rbtree_simple_clone__((AVS_RBTREE_CONST(void)) (tree), \
                                   sizeof(**(tree))))
+#endif
 
 /**
  * Complexity: O(1).
@@ -335,7 +373,7 @@ AVS_RBTREE_CLEANUP_NEXT__(AVS_RBTREE(T) tree) {
  */
 #define AVS_RBTREE_INSERT(tree, elem) \
     (_AVS_RB_TYPECHECK(*(tree), (elem)), \
-     (AVS_TYPEOF_PTR(*(tree)))avs_rbtree_attach__((AVS_RBTREE(void))(tree), (elem)))
+     AVS_RBTREE_CALL_WITH_ELEM_CAST__(avs_rbtree_attach__, (tree), (elem)))
 
 /**
  * Detaches given @p elem from @p tree. Does not free @p elem.
@@ -398,8 +436,8 @@ AVS_RBTREE_CLEANUP_NEXT__(AVS_RBTREE(T) tree) {
  */
 #define AVS_RBTREE_LOWER_BOUND(tree, val_ptr) \
     (_AVS_RB_TYPECHECK(*(tree), (val_ptr)), \
-     ((AVS_TYPEOF_PTR(*(tree))) \
-      avs_rbtree_lower_bound__((AVS_RBTREE_CONST(void))(tree), (val_ptr))))
+     AVS_RBTREE_CALL_WITH_CONST_ELEM_CAST__(avs_rbtree_lower_bound__, \
+                                            (tree), (val_ptr)))
 
 /**
  * Finds the first element in @p tree that has a value strictly greater than
@@ -418,8 +456,8 @@ AVS_RBTREE_CLEANUP_NEXT__(AVS_RBTREE(T) tree) {
  */
 #define AVS_RBTREE_UPPER_BOUND(tree, val_ptr) \
     (_AVS_RB_TYPECHECK(*(tree), (val_ptr)), \
-     ((AVS_TYPEOF_PTR(*(tree))) \
-      avs_rbtree_upper_bound__((AVS_RBTREE_CONST(void))(tree), (val_ptr))))
+     AVS_RBTREE_CALL_WITH_CONST_ELEM_CAST__(avs_rbtree_upper_bound__, \
+                                            (tree), (val_ptr)))
 
 /**
  * Finds an element with value given by @p val_ptr in @p tree.
@@ -437,8 +475,8 @@ AVS_RBTREE_CLEANUP_NEXT__(AVS_RBTREE(T) tree) {
  */
 #define AVS_RBTREE_FIND(tree, val_ptr) \
     (_AVS_RB_TYPECHECK(*(tree), (val_ptr)), \
-     ((AVS_TYPEOF_PTR(*(tree))) \
-      avs_rbtree_find__((AVS_RBTREE_CONST(void))(tree), (val_ptr))))
+     AVS_RBTREE_CALL_WITH_CONST_ELEM_CAST__(avs_rbtree_find__, \
+                                            (tree), (val_ptr)))
 
 /**
  * Complexity: O((log n) * c), where:
@@ -452,7 +490,7 @@ AVS_RBTREE_CLEANUP_NEXT__(AVS_RBTREE(T) tree) {
  * - NULL if there is no successor or the node is detached.
  */
 #define AVS_RBTREE_ELEM_NEXT(elem) \
-    ((AVS_TYPEOF_PTR(elem))avs_rbtree_elem_next__(elem))
+    AVS_CALL_WITH_CAST(AVS_RBTREE_ELEM(void), avs_rbtree_elem_next__, elem)
 
 /**
  * Complexity: O((log n) * c), where:
@@ -466,7 +504,7 @@ AVS_RBTREE_CLEANUP_NEXT__(AVS_RBTREE(T) tree) {
  * - NULL if there is no predecessor or the node is detached.
  */
 #define AVS_RBTREE_ELEM_PREV(elem) \
-    ((AVS_TYPEOF_PTR(elem))avs_rbtree_elem_prev__(elem))
+    AVS_CALL_WITH_CAST(AVS_RBTREE_ELEM(void), avs_rbtree_elem_prev__, elem)
 
 /**
  * Complexity: O((log n) * c), where:
@@ -478,7 +516,7 @@ AVS_RBTREE_CLEANUP_NEXT__(AVS_RBTREE(T) tree) {
  *          @p tree is empty.
  */
 #define AVS_RBTREE_FIRST(tree) \
-    ((AVS_TYPEOF_PTR(*tree))avs_rbtree_first__((AVS_RBTREE(void))(tree)))
+    AVS_RBTREE_CALL_WITH_ELEM_CAST__(avs_rbtree_first__, (tree))
 
 /**
  * Complexity: O((log n) * c), where:
@@ -490,7 +528,7 @@ AVS_RBTREE_CLEANUP_NEXT__(AVS_RBTREE(T) tree) {
  *          tree is empty.
  */
 #define AVS_RBTREE_LAST(tree) \
-    ((AVS_TYPEOF_PTR(*tree))avs_rbtree_last__((AVS_RBTREE(void))(tree)))
+    AVS_RBTREE_CALL_WITH_ELEM_CAST__(avs_rbtree_last__, (tree))
 
 /** Convenience macro for forward iteration on elements of @p tree. */
 #define AVS_RBTREE_FOREACH(it, tree) \

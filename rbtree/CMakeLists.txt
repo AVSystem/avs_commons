@@ -38,3 +38,6 @@ install(DIRECTORY include_public/
 include_directories(${AVS_TEST_INCLUDE_DIRS}
                     "../unit/include_public")
 add_avs_test(avs_rbtree ${ALL_SOURCES})
+if(WITH_CXX_TESTS)
+    add_avs_test(avs_rbtree_cxx src/test/test_rbtree_cxx.cpp)
+endif()

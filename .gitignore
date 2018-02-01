@@ -11,6 +11,7 @@
 /log/avs_log_test
 /net/avs_net_test
 /rbtree/avs_rbtree_test
+/rbtree/avs_rbtree_cxx_test
 /stream/avs_stream_test
 /tests/avs_memory_test
 /utils/avs_utils_test
