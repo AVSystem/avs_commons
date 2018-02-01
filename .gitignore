@@ -15,6 +15,7 @@
 /tests/avs_memory_test
 /utils/avs_utils_test
 /vector/avs_vector_test
+/vector/avs_vector_cxx_test
 /algorithm/avs_algorithm_test
 
 /tools/dtls_echo_server
