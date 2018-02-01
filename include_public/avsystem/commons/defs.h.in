@@ -243,6 +243,41 @@ typedef long avs_off_t;
 #define AVS_TYPEOF_PTR(symbol) void *
 #endif
 
+#ifdef __cplusplus
+template <typename CastTo>
+struct AvsCallWithCast__ {
+    template <typename Func, typename T>
+    static inline T *call(const Func &func, T *arg) {
+        return (T *) (intptr_t) func((CastTo) (intptr_t) arg);
+    }
+
+    template <typename Func, typename T, typename Arg2>
+    static inline T *call(const Func &func, T *arg, const Arg2 &arg2) {
+        return (T *) (intptr_t) func((CastTo) (intptr_t) arg, arg2);
+    }
+
+    template <typename Func, typename T, typename Arg2, typename Arg3>
+    static inline T *call(const Func &func,
+                          T *arg, const Arg2 &arg2, const Arg3 &arg3) {
+        return (T *) (intptr_t) func((CastTo) (intptr_t) arg, arg2, arg3);
+    }
+
+    template <typename Func,
+              typename T, typename Arg2, typename Arg3, typename Arg4>
+    static inline T *call(const Func &func, T *arg, const Arg2 &arg2,
+                          const Arg3 &arg3, const Arg4 &arg4) {
+        return (T *) (intptr_t) func((CastTo) (intptr_t) arg, arg2, arg3, arg4);
+    }
+};
+
+#define AVS_CALL_WITH_CAST(CastTo, Func, ...) \
+        (::AvsCallWithCast__<CastTo>::call(Func, __VA_ARGS__))
+#else
+#define AVS_CALL_WITH_CAST(CastTo, Func, ...) \
+        ((AVS_TYPEOF_PTR(AVS_VARARG0(__VA_ARGS__))) \
+                Func((CastTo) (intptr_t) __VA_ARGS__))
+#endif
+
 #if (__GNUC__ >= 4)
 #define AVS_F_SENTINEL __attribute__((sentinel(0)))
 #endif

@@ -165,48 +165,80 @@ offsetof(struct avs_list_space_for_next_helper_struct__, value)
  */
 #define AVS_LIST(element_type) element_type*
 
-#ifdef __cplusplus
-} // extern "C"
+/**
+ * Comparator type for @ref AVS_LIST_FIND_BY_VALUE_PTR and
+ * @ref AVS_LIST_SORT.
+ *
+ * Standard library <c>memcmp</c> satisfies this type.
+ *
+ * @param a            The left element of comparison.
+ *
+ * @param b            The right element of comparison.
+ *
+ * @param element_size Size in bytes of compared elements.
+ *
+ * @return A negative value if <c>a &lt; b</c>, zero if <c>a == b</c> or
+ *         a positive value if <c>a &gt; b</c>.
+ */
+typedef int (*avs_list_comparator_func_t)(const void *a,
+                                          const void *b,
+                                          size_t element_size);
 
-template <typename T>
-static inline AVS_LIST(T) &avs_list_next__(AVS_LIST(T) element) {
-    return *AVS_APPLY_OFFSET(AVS_LIST(T), element, -AVS_LIST_SPACE_FOR_NEXT__);
-}
+/**
+ * @name Internal functions
+ *
+ * These functions contain actual implementation of some of the list
+ * functionality.
+ *
+ * They are wrapped in macros that offer additional layer of type safety if
+ * <c>typeof</c> is available, so it is preferable to use them instead of these
+ * functions directly.
+ */
+/**@{*/
+void *avs_list_adjust_allocated_ptr__(void *allocated);
+void *avs_list_nth__(void *list, size_t n);
+void **avs_list_nth_ptr__(void **list_ptr, size_t n);
+void **avs_list_find_ptr__(void **list_ptr, void *element);
+void **avs_list_find_by_value_ptr__(void **list_ptr,
+                                    void *value_ptr,
+                                    avs_list_comparator_func_t comparator,
+                                    size_t value_size);
+void *avs_list_tail__(void *list);
+void **avs_list_append_ptr__(void **list_ptr);
+void *avs_list_insert__(void *list_to_insert, void **insert_ptr);
+void *avs_list_detach__(void **to_detach_ptr);
+size_t avs_list_size__(const void *list);
+void avs_list_sort__(void **list_ptr,
+                     avs_list_comparator_func_t comparator,
+                     size_t element_size);
+int avs_list_is_cyclic__(const void *list);
+void *avs_list_assert_acyclic__(void *list);
+void **avs_list_assert_sorted_ptr__(void **list,
+                                    avs_list_comparator_func_t comparator,
+                                    size_t element_size);
 
-template <typename CastTo>
-struct AvsCallWithCast__ {
-    template <typename Func, typename T>
-    static inline T *call(const Func &func, T *arg) {
-        return (T *) (intptr_t) func((CastTo) (intptr_t) arg);
-    }
+void *avs_list_simple_clone__(void *list, size_t elem_size);
+void avs_list_merge__(void **target_ptr,
+                      void **source_ptr,
+                      avs_list_comparator_func_t comparator,
+                      size_t element_size);
 
-    template <typename Func, typename T, typename Arg2>
-    static inline T *call(const Func &func, T *arg, const Arg2 &arg2) {
-        return (T *) (intptr_t) func((CastTo) (intptr_t) arg, arg2);
-    }
-
-    template <typename Func, typename T, typename Arg2, typename Arg3>
-    static inline T *call(const Func &func,
-                          T *arg, const Arg2 &arg2, const Arg3 &arg3) {
-        return (T *) (intptr_t) func((CastTo) (intptr_t) arg, arg2, arg3);
-    }
-
-    template <typename Func,
-              typename T, typename Arg2, typename Arg3, typename Arg4>
-    static inline T *call(const Func &func, T *arg, const Arg2 &arg2,
-                          const Arg3 &arg3, const Arg4 &arg4) {
-        return (T *) (intptr_t) func((CastTo) (intptr_t) arg, arg2, arg3, arg4);
-    }
-};
-
-#define AVS_CALL_WITH_CAST(CastTo, Func, ...) \
-        (::AvsCallWithCast__<CastTo>::call(Func, __VA_ARGS__))
-
-extern "C" {
+#ifdef NDEBUG
+#define AVS_LIST_ASSERT_ACYCLIC__(list) (list)
+#define AVS_LIST_ASSERT_SORTED_PTR__(list_ptr, comparator) (list_ptr)
 #else
-#define AVS_CALL_WITH_CAST(CastTo, Func, ...) \
-        ((AVS_TYPEOF_PTR(AVS_VARARG0(__VA_ARGS__))) \
-                Func((CastTo) (intptr_t) __VA_ARGS__))
+#define AVS_LIST_ASSERT_ACYCLIC__(list) \
+    AVS_CALL_WITH_CAST(void *, avs_list_assert_acyclic__, (list))
+
+#define AVS_LIST_ASSERT_SORTED_PTR__(list_ptr, comparator)         \
+    (avs_list_assert_sorted_ptr__((void **) (intptr_t) list_ptr,   \
+                                  comparator, sizeof(**list_ptr)), \
+     list_ptr)
+#endif
+/**@}*/
+
+#ifdef	__cplusplus
+} /* extern "C" */
 #endif
 
 /**
@@ -219,6 +251,11 @@ extern "C" {
  * @return Pointer to the next list element.
  */
 #ifdef __cplusplus
+template <typename T>
+static inline AVS_LIST(T) &avs_list_next__(AVS_LIST(T) element) {
+    return *AVS_APPLY_OFFSET(AVS_LIST(T), element, -AVS_LIST_SPACE_FOR_NEXT__);
+}
+
 #define AVS_LIST_NEXT(element) (avs_list_next__((element)))
 #else
 #define AVS_LIST_NEXT(element) \
@@ -329,82 +366,6 @@ for ((element_ptr) = (list_ptr); \
 #define AVS_LIST_ITERATE_PTR(element_ptr) \
 for (; *(element_ptr); \
      (element_ptr) = AVS_LIST_NEXT_PTR(element_ptr))
-
-/**
- * Comparator type for @ref AVS_LIST_FIND_BY_VALUE_PTR and
- * @ref AVS_LIST_SORT.
- *
- * Standard library <c>memcmp</c> satisfies this type.
- *
- * @param a            The left element of comparison.
- *
- * @param b            The right element of comparison.
- *
- * @param element_size Size in bytes of compared elements.
- *
- * @return A negative value if <c>a &lt; b</c>, zero if <c>a == b</c> or
- *         a positive value if <c>a &gt; b</c>.
- */
-typedef int (*avs_list_comparator_func_t)(const void *a,
-                                          const void *b,
-                                          size_t element_size);
-
-/**
- * @name Internal functions
- *
- * These functions contain actual implementation of some of the list
- * functionality.
- *
- * They are wrapped in macros that offer additional layer of type safety if
- * <c>typeof</c> is available, so it is preferable to use them instead of these
- * functions directly.
- */
-/**@{*/
-void *avs_list_adjust_allocated_ptr__(void *allocated);
-void *avs_list_nth__(void *list, size_t n);
-void **avs_list_nth_ptr__(void **list_ptr, size_t n);
-void **avs_list_find_ptr__(void **list_ptr, void *element);
-void **avs_list_find_by_value_ptr__(void **list_ptr,
-                                    void *value_ptr,
-                                    avs_list_comparator_func_t comparator,
-                                    size_t value_size);
-void *avs_list_tail__(void *list);
-void **avs_list_append_ptr__(void **list_ptr);
-void *avs_list_insert__(void *list_to_insert, void **insert_ptr);
-void *avs_list_detach__(void **to_detach_ptr);
-size_t avs_list_size__(const void *list);
-void avs_list_sort__(void **list_ptr,
-                     avs_list_comparator_func_t comparator,
-                     size_t element_size);
-int avs_list_is_cyclic__(const void *list);
-void *avs_list_assert_acyclic__(void *list);
-void **avs_list_assert_sorted_ptr__(void **list,
-                                    avs_list_comparator_func_t comparator,
-                                    size_t element_size);
-
-void *avs_list_simple_clone__(void *list, size_t elem_size);
-void avs_list_merge__(void **target_ptr,
-                      void **source_ptr,
-                      avs_list_comparator_func_t comparator,
-                      size_t element_size);
-
-#ifdef NDEBUG
-#define AVS_LIST_ASSERT_ACYCLIC__(list) (list)
-#define AVS_LIST_ASSERT_SORTED_PTR__(list_ptr, comparator) (list_ptr)
-#else
-#define AVS_LIST_ASSERT_ACYCLIC__(list) \
-    AVS_CALL_WITH_CAST(void *, avs_list_assert_acyclic__, (list))
-
-#define AVS_LIST_ASSERT_SORTED_PTR__(list_ptr, comparator)         \
-    (avs_list_assert_sorted_ptr__((void **) (intptr_t) list_ptr,   \
-                                  comparator, sizeof(**list_ptr)), \
-     list_ptr)
-#endif
-/**@}*/
-
-#ifdef	__cplusplus
-} /* extern "C" */
-#endif
 
 /**
  * Returns a pointer to <i>n</i>-th element in a list.

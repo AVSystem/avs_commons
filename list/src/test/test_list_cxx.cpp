@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+#pragma GCC diagnostic ignored "-Wnoexcept-type"
+
 #include <avs_commons_config.h>
 
 #include <stdlib.h>
@@ -24,8 +26,6 @@
 
 AVS_UNIT_MOCK_CREATE(calloc)
 #define calloc(...) AVS_UNIT_MOCK_WRAPPER(calloc)(__VA_ARGS__)
-
-#pragma GCC diagnostic ignored "-Wnoexcept-type"
 
 #include <avsystem/commons/list.h>
 
