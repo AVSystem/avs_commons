@@ -323,7 +323,7 @@ void **avs_list_find_by_value_ptr__(void **list_ptr,
                                     size_t value_size);
 void *avs_list_tail__(void *list);
 void **avs_list_append_ptr__(void **list_ptr);
-void *avs_list_insert__(void **insert_ptr, void *list_to_insert);
+void *avs_list_insert__(void *list_to_insert, void **insert_ptr);
 void *avs_list_detach__(void **to_detach_ptr);
 size_t avs_list_size__(const void *list);
 void avs_list_sort__(void **list_ptr,
@@ -534,9 +534,9 @@ void avs_list_merge__(void **target_ptr,
 ((((void) sizeof(*(destination_element_ptr) = (new_element))), \
         ((AVS_TYPEOF_PTR(new_element)) \
         AVS_LIST_ASSERT_ACYCLIC__(avs_list_insert__( \
+                (void *) (intptr_t) (new_element), \
                 (void **) (intptr_t) (AVS_TYPEOF_PTR(*(destination_element_ptr)) *)\
-                (destination_element_ptr), \
-                (void *) (intptr_t) (new_element))))))
+                (destination_element_ptr))))))
 
 /**
  * Allocates a new element and inserts it into the list.
