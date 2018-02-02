@@ -244,6 +244,8 @@ typedef long avs_off_t;
 #endif
 
 #ifdef __cplusplus
+namespace {
+
 template <typename CastTo>
 struct AvsCallWithCast__ {
     template <typename Func, typename T>
@@ -269,6 +271,8 @@ struct AvsCallWithCast__ {
         return (T *) (intptr_t) func((CastTo) (intptr_t) arg, arg2, arg3, arg4);
     }
 };
+
+}
 
 #define AVS_CALL_WITH_CAST(CastTo, Func, ...) \
         (::AvsCallWithCast__<CastTo>::call(Func, __VA_ARGS__))
