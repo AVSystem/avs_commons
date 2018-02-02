@@ -148,46 +148,6 @@ void avs_unit_assert_false__(int result, const char *file, int line);
 
 void avs_unit_abort__(const char *msg, const char *file, int line);
 
-typedef struct {
-    char actual_str[64];
-    char expected_str[64];
-} avs_unit_check_equal_function_strings_t;
-
-#define AVS_UNIT_CHECK_EQUAL_FUNCTION_DECLARE__(type, name_suffix)             \
-int avs_unit_check_equal_##name_suffix##__(type actual, type expected,         \
-        avs_unit_check_equal_function_strings_t *strings)
-
-#ifdef __cplusplus
-#define AVS_UNIT_CHECK_EQUAL_FUNCTION__(type, name_suffix) \
-        AVS_UNIT_CHECK_EQUAL_FUNCTION_DECLARE__(type, name_suffix); \
-        } /* extern "C" */ \
-        template <typename T> \
-        static inline int AVS_UNIT_CHECK_EQUAL__( \
-                type actual, const T &expected, \
-                avs_unit_check_equal_function_strings_t *strings) { \
-            return avs_unit_check_equal_##name_suffix##__(actual, expected, \
-                                                          strings); \
-        } \
-        extern "C" {
-#else /* __cplusplus */
-#define AVS_UNIT_CHECK_EQUAL_FUNCTION__(type, name_suffix) \
-        AVS_UNIT_CHECK_EQUAL_FUNCTION_DECLARE__(type, name_suffix);
-#endif
-
-AVS_UNIT_CHECK_EQUAL_FUNCTION__(char, c)
-AVS_UNIT_CHECK_EQUAL_FUNCTION__(short, s)
-AVS_UNIT_CHECK_EQUAL_FUNCTION__(int, i)
-AVS_UNIT_CHECK_EQUAL_FUNCTION__(long, l)
-AVS_UNIT_CHECK_EQUAL_FUNCTION__(long long, ll)
-AVS_UNIT_CHECK_EQUAL_FUNCTION__(unsigned char, uc)
-AVS_UNIT_CHECK_EQUAL_FUNCTION__(unsigned short, us)
-AVS_UNIT_CHECK_EQUAL_FUNCTION__(unsigned int, ui)
-AVS_UNIT_CHECK_EQUAL_FUNCTION__(unsigned long, ul)
-AVS_UNIT_CHECK_EQUAL_FUNCTION__(unsigned long long, ull)
-AVS_UNIT_CHECK_EQUAL_FUNCTION__(float, f)
-AVS_UNIT_CHECK_EQUAL_FUNCTION__(double, d)
-AVS_UNIT_CHECK_EQUAL_FUNCTION__(long double, ld)
-
 void avs_unit_assert_equal_func__(int check_result,
                                   const char *actual_str,
                                   const char *expected_str,
@@ -212,7 +172,45 @@ void avs_unit_assert_bytes_not_equal__(const void *actual,
                                        const char *file,
                                        int line);
 
-#ifndef __cplusplus
+void avs_unit_assert_equal_string__(const char *actual,
+                                    const char *expected,
+                                    const char *file,
+                                    int line);
+void avs_unit_assert_not_equal_string__(const char *actual,
+                                        const char *not_expected,
+                                        const char *file,
+                                        int line);
+
+void avs_unit_assert_null__(const void *pointer, const char *file, int line);
+
+void avs_unit_assert_not_null__(const void *pointer, const char *file,
+                                int line);
+
+typedef struct {
+    char actual_str[64];
+    char expected_str[64];
+} avs_unit_check_equal_function_strings_t;
+
+#define AVS_UNIT_CHECK_EQUAL_FUNCTION_DECLARE__(type, name_suffix)             \
+int avs_unit_check_equal_##name_suffix##__(type actual, type expected,         \
+        avs_unit_check_equal_function_strings_t *strings)
+
+#ifdef __cplusplus
+} /* extern "C" */
+
+#define AVS_UNIT_CHECK_EQUAL_FUNCTION__(type, name_suffix) \
+        extern "C" AVS_UNIT_CHECK_EQUAL_FUNCTION_DECLARE__(type, name_suffix); \
+        template <typename T> \
+        static inline int AVS_UNIT_CHECK_EQUAL__( \
+                type actual, const T &expected, \
+                avs_unit_check_equal_function_strings_t *strings) { \
+            return avs_unit_check_equal_##name_suffix##__(actual, expected, \
+                                                          strings); \
+        }
+
+#else /* __cplusplus */
+#define AVS_UNIT_CHECK_EQUAL_FUNCTION__(type, name_suffix) \
+        AVS_UNIT_CHECK_EQUAL_FUNCTION_DECLARE__(type, name_suffix);
 
 #ifdef AVS_UNIT_HAVE_BOOL__
 #define AVS_UNIT_CHECK_BOOL__(actual, expected, strings, inner)\
@@ -256,6 +254,20 @@ __builtin_choose_expr(__builtin_types_compatible_p(__typeof__(actual), long doub
 
 #endif /* __cplusplus */
 
+AVS_UNIT_CHECK_EQUAL_FUNCTION__(char, c)
+AVS_UNIT_CHECK_EQUAL_FUNCTION__(short, s)
+AVS_UNIT_CHECK_EQUAL_FUNCTION__(int, i)
+AVS_UNIT_CHECK_EQUAL_FUNCTION__(long, l)
+AVS_UNIT_CHECK_EQUAL_FUNCTION__(long long, ll)
+AVS_UNIT_CHECK_EQUAL_FUNCTION__(unsigned char, uc)
+AVS_UNIT_CHECK_EQUAL_FUNCTION__(unsigned short, us)
+AVS_UNIT_CHECK_EQUAL_FUNCTION__(unsigned int, ui)
+AVS_UNIT_CHECK_EQUAL_FUNCTION__(unsigned long, ul)
+AVS_UNIT_CHECK_EQUAL_FUNCTION__(unsigned long long, ull)
+AVS_UNIT_CHECK_EQUAL_FUNCTION__(float, f)
+AVS_UNIT_CHECK_EQUAL_FUNCTION__(double, d)
+AVS_UNIT_CHECK_EQUAL_FUNCTION__(long double, ld)
+
 #define AVS_UNIT_ASSERT_EQUAL_BYTES__(actual, expected)\
 __builtin_choose_expr(__builtin_types_compatible_p(__typeof__(expected), const char[])\
                         || __builtin_types_compatible_p(__typeof__(expected), char[]),\
@@ -267,20 +279,6 @@ __builtin_choose_expr(__builtin_types_compatible_p(__typeof__(expected), const c
                         || __builtin_types_compatible_p(__typeof__(expected), char[]),\
         avs_unit_assert_bytes_not_equal__((actual), (expected), sizeof(expected) - 1, __FILE__, __LINE__),\
         avs_unit_abort__("AVS_UNIT_ASSERT_NOT_EQUAL_BYTES called for unsupported data type\n", __FILE__, __LINE__))
-
-void avs_unit_assert_equal_string__(const char *actual,
-                                    const char *expected,
-                                    const char *file,
-                                    int line);
-void avs_unit_assert_not_equal_string__(const char *actual,
-                                        const char *not_expected,
-                                        const char *file,
-                                        int line);
-
-void avs_unit_assert_null__(const void *pointer, const char *file, int line);
-
-void avs_unit_assert_not_null__(const void *pointer, const char *file,
-                                int line);
 /**@}*/
 
 /**
@@ -615,9 +613,5 @@ __builtin_choose_expr( \
     avs_unit_assert_not_null__(pointer, __FILE__, __LINE__)
 
 /**@}*/
-
-#ifdef	__cplusplus
-}
-#endif
 
 #endif /* AVS_COMMONS_UNIT_TEST_H */
