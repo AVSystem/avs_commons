@@ -200,17 +200,35 @@ cmake_dependent_option(WITH_DTLS "Enable OpenSSL DTLS support" ON WITH_SSL OFF)
 cmake_dependent_option(WITH_EC_KEY "Enable OpenSSL EC_KEY support" ON WITH_SSL OFF)
 cmake_dependent_option(WITH_PSK "Enable OpenSSL pre-shared key support" ON WITH_SSL OFF)
 
+option(WITH_TEST "Enable unit tests of AVSystem Commons library itself" OFF)
+if(MODULES_ENABLED OR WITH_TEST)
+    set(WITH_AVS_UNIT_DEFAULT ON)
+else()
+    set(WITH_AVS_UNIT_DEFAULT OFF)
+endif()
+
+cmake_dependent_option(WITH_CXX_TESTS "Enable C++ unit tests" ON WITH_TEST OFF)
+if(WITH_CXX_TESTS)
+    enable_language(CXX)
+endif()
+
 ################################################################################
 
 option(WITH_EXTRA_WARNINGS "Enable extra compilation warnings" OFF)
 if(WITH_EXTRA_WARNINGS)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c99 -pedantic -Wall -Wextra -Winit-self -Wmissing-declarations -Wc++-compat -Wsign-conversion -Wconversion -Wcast-qual -Wno-variadic-macros -Wno-long-long")
+    if(WITH_CXX_TESTS)
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++98 -pedantic -Wall -Wextra -Winit-self -Wmissing-declarations -Wsign-conversion -Wconversion -Wcast-qual -Wno-variadic-macros -Wno-long-long")
+    endif()
 endif()
 
 if(CMAKE_C_COMPILE_OPTIONS_PIC)
     option(WITH_PIC "Generate position-independent code" ON)
     if(WITH_PIC)
         set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${CMAKE_C_COMPILE_OPTIONS_PIC}")
+        if(WITH_CXX_TESTS)
+            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CMAKE_C_COMPILE_OPTIONS_PIC}")
+        endif()
     endif()
 endif()
 
@@ -304,13 +322,6 @@ else()
     set(MODULES_ENABLED OFF)
 endif()
 
-option(WITH_TEST "Enable unit tests of AVSystem Commons library itself" OFF)
-if(MODULES_ENABLED OR WITH_TEST)
-    set(WITH_AVS_UNIT_DEFAULT ON)
-else()
-    set(WITH_AVS_UNIT_DEFAULT OFF)
-endif()
-
 option(WITH_AVS_ALGORITHM "AVSystem algorithm utilities library" ${MODULES_ENABLED})
 option(WITH_AVS_UNIT "AVSystem unit test library" ${WITH_AVS_UNIT_DEFAULT})
 option(WITH_AVS_BUFFER "AVSystem buffer implementation" ${MODULES_ENABLED})
@@ -396,7 +407,7 @@ if(WITH_TEST)
         set_property(TARGET ${NAME}_test APPEND PROPERTY COMPILE_DEFINITIONS
                      AVS_UNIT_TESTING
                      AVS_TEST_BIN_DIR="${CMAKE_CURRENT_BINARY_DIR}")
-        set_property(TARGET ${NAME}_test APPEND PROPERTY COMPILE_FLAGS "-Wno-clobbered -Wno-overlength-strings -Wno-c++-compat -Wno-sign-conversion")
+        set_property(TARGET ${NAME}_test APPEND PROPERTY COMPILE_FLAGS "-Wno-clobbered -Wno-overlength-strings -Wno-sign-conversion")
 
         if(VALGRIND)
             set(VALGRIND_LOG ${VALGRIND} --log-file=VALGRIND.${NAME}.log)
@@ -406,7 +417,7 @@ if(WITH_TEST)
 
         add_test(NAME ${NAME}_test COMMAND ${VALGRIND_LOG} $<TARGET_FILE:${NAME}_test>)
 
-        add_custom_target(${NAME}_check COMMAND ${CMAKE_CTEST_COMMAND} -V DEPENDS ${NAME}_test)
+        add_custom_target(${NAME}_check COMMAND ${CMAKE_CTEST_COMMAND} -V -R "^${NAME}_test$" DEPENDS ${NAME}_test)
         add_dependencies(avs_commons_check ${NAME}_check)
     endmacro()
 

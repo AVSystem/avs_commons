@@ -35,6 +35,10 @@ struct avs_vector_desc_struct {
 };
 static const uint64_t magic = 0xb5e4189902ba0aaULL;
 
+#define AVS_VECTOR_DESC__(vec) \
+    ((avs_vector_desc_t*)(intptr_t) \
+        ((const char*)(vec) - offsetof(avs_vector_desc_t,data)))
+
 static avs_vector_desc_t *get_desc(void **ptr) {
     avs_vector_desc_t *desc;
     assert(ptr && "NULL vector pointer");
@@ -180,6 +184,11 @@ void avs_vector_sort_range__(void ***ptr, size_t beg, size_t end,
     assert(end > beg);
     qsort((char *) desc->data + beg * desc->elem_size, end - beg,
           desc->elem_size, cmp);
+}
+
+void avs_vector_sort__(void ***ptr, avs_vector_comparator_func_t cmp) {
+    avs_vector_desc_t *desc = get_desc(*ptr);
+    qsort((char *) desc->data, desc->size, desc->elem_size, cmp);
 }
 
 void avs_vector_swap__(void ***ptr, size_t i, size_t j) {

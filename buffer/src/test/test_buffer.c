@@ -52,7 +52,7 @@ AVS_UNIT_TEST(byte_buffer, reset) {
 
 AVS_UNIT_TEST(byte_buffer, full_data) {
     static const size_t BUFFER_SIZE = 16;
-    const char DATA[16];
+    const char DATA[16] = "";
     avs_buffer_t *buffer;
     AVS_UNIT_ASSERT_SUCCESS(avs_buffer_create(&buffer, BUFFER_SIZE));
 
@@ -152,7 +152,7 @@ AVS_UNIT_TEST(byte_buffer, consume_bytes_fail) {
 
 AVS_UNIT_TEST(byte_buffer, append_bytes) {
     static const int BUFFER_SIZE = 4;
-    static const char DATA[4];
+    static const char DATA[4] = "";
     avs_buffer_t *buffer;
     AVS_UNIT_ASSERT_SUCCESS(avs_buffer_create(&buffer, BUFFER_SIZE));
 
@@ -165,7 +165,7 @@ AVS_UNIT_TEST(byte_buffer, append_bytes) {
 
 AVS_UNIT_TEST(byte_buffer, append_bytes_fail) {
     static const int BUFFER_SIZE = 4;
-    static const char DATA[5];
+    static const char DATA[5] = "";
     avs_buffer_t *buffer;
     AVS_UNIT_ASSERT_SUCCESS(avs_buffer_create(&buffer, BUFFER_SIZE));
 

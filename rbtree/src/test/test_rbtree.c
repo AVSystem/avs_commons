@@ -37,7 +37,17 @@ static void test_rb_dealloc(void *ptr) {
     free(ptr);
 }
 
+#ifdef __cplusplus
+class IntptrHelper {
+    int value;
+public:
+    IntptrHelper(int value) : value(value) {}
+    int *ptr() { return &value; }
+};
+#define INTPTR(Value) (IntptrHelper((Value)).ptr())
+#else
 #define INTPTR(Value) (&(int[]) { (Value) }[0])
+#endif
 
 static int int_comparator(const void *a_,
                           const void *b_) {
@@ -165,7 +175,7 @@ AVS_UNIT_TEST(rbtree, create) {
     struct rb_tree *tree_struct = _AVS_RB_TREE(tree);
     AVS_UNIT_ASSERT_TRUE(tree_struct->cmp == int_comparator);
     AVS_UNIT_ASSERT_NULL(tree_struct->root);
-    AVS_UNIT_ASSERT_EQUAL(0, AVS_RBTREE_SIZE(tree));
+    AVS_UNIT_ASSERT_EQUAL((size_t) 0, AVS_RBTREE_SIZE(tree));
 
     AVS_RBTREE_DELETE(&tree);
 }
@@ -959,11 +969,11 @@ AVS_UNIT_TEST(rbtree, delete_attached) {
 
     AVS_RBTREE_DELETE_ELEM(tree, &_1);
     AVS_UNIT_ASSERT_TRUE(_2 == _AVS_RB_TREE(tree)->root);
-    AVS_UNIT_ASSERT_EQUAL(1, AVS_RBTREE_SIZE(tree));
+    AVS_UNIT_ASSERT_EQUAL((size_t) 1, AVS_RBTREE_SIZE(tree));
 
     AVS_RBTREE_DELETE_ELEM(tree, &_2);
     AVS_UNIT_ASSERT_TRUE(NULL == _AVS_RB_TREE(tree)->root);
-    AVS_UNIT_ASSERT_EQUAL(0, AVS_RBTREE_SIZE(tree));
+    AVS_UNIT_ASSERT_EQUAL((size_t) 0, AVS_RBTREE_SIZE(tree));
 
     AVS_RBTREE_DELETE(&tree);
 }

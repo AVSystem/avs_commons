@@ -24,7 +24,7 @@ typedef struct {
 } sample_nonpod_t;
 
 static void make_sample_nonpod(size_t data_size, sample_nonpod_t *out) {
-    AVS_UNIT_ASSERT_NOT_NULL((out->data = malloc(data_size)));
+    AVS_UNIT_ASSERT_NOT_NULL((out->data = (int *) malloc(data_size)));
 }
 
 AVS_UNIT_TEST(avs_vector, example_usage_nonpod) {
