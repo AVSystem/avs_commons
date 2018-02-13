@@ -34,6 +34,11 @@ struct rb_node {
     void *right;
 };
 
+struct rb_node_space {
+    struct rb_node node;
+    avs_max_align_t value;
+};
+
 struct rb_tree {
     size_t size;
     avs_rbtree_element_comparator_t *cmp;
@@ -41,10 +46,7 @@ struct rb_tree {
 };
 
 #define _AVS_NODE_SPACE__ \
-    offsetof(struct { \
-        struct rb_node node; \
-        avs_max_align_t value; \
-    }, value)
+    offsetof(struct rb_node_space, value)
 
 #define _AVS_RB_NODE(elem) \
     ((struct rb_node*)((char*)(elem) - _AVS_NODE_SPACE__))

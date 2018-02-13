@@ -46,7 +46,13 @@ AVS_UNIT_TEST(list, one_element) {
     AVS_LIST_CLEAR(&list);
 }
 
-static void *failing_calloc(size_t nmemb, size_t size) {
+static void *failing_calloc(size_t nmemb, size_t size)
+#if __cplusplus >= 201103L
+        noexcept
+#else
+        throw()
+#endif
+{
     AVS_UNIT_ASSERT_EQUAL(nmemb, 1);
     AVS_UNIT_ASSERT_TRUE(size >= AVS_LIST_SPACE_FOR_NEXT__);
     return NULL;
