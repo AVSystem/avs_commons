@@ -70,7 +70,9 @@ typedef struct {
     avs_net_security_mode_t security_mode;
     union {
         ssl_socket_certs_t cert;
+#ifdef WITH_PSK
         ssl_socket_psk_t psk;
+#endif // WITH_PSK
     } security;
     mbedtls_timing_delay_context timer;
     avs_net_socket_type_t backend_type;
@@ -297,6 +299,7 @@ static void initialize_cert_security(ssl_socket_t *socket) {
     }
 }
 
+#ifdef WITH_PSK
 typedef void foreach_psk_ciphersuite_cb_t(int suite, void *arg);
 
 static void foreach_psk_ciphersuite(const int *suites,
@@ -358,6 +361,10 @@ static int initialize_psk_security(ssl_socket_t *socket) {
                                   socket->security.psk.ciphersuites);
     return 0;
 }
+#else // WITH_PSK
+# define initialize_psk_security(...) \
+    (LOG(ERROR, "PSK support disabled"), (-1))
+#endif // WITH_PSK
 
 static int transport_for_socket_type(avs_net_socket_type_t backend_type) {
     switch (backend_type) {
@@ -674,11 +681,15 @@ static void cleanup_security_cert(ssl_socket_certs_t *certs) {
     }
 }
 
+#ifdef WITH_PSK
 static void cleanup_security_psk(ssl_socket_psk_t *psk) {
     free(psk->ciphersuites);
     psk->ciphersuites = NULL;
     _avs_net_psk_cleanup(&psk->value);
 }
+#else // WITH_PSK
+# define cleanup_security_psk(...) (void)0
+#endif // WITH_PSK
 
 static int cleanup_ssl(avs_net_abstract_socket_t **socket_) {
     ssl_socket_t **socket = (ssl_socket_t **) socket_;
@@ -700,11 +711,13 @@ static int cleanup_ssl(avs_net_abstract_socket_t **socket_) {
         break;
     }
 
+#ifdef WITH_PSK
     /* Detach the uncopied PSK values */
     (*socket)->config.psk = NULL;
     (*socket)->config.psk_len = 0;
     (*socket)->config.psk_identity = NULL;
     (*socket)->config.psk_identity_len = 0;
+#endif // WITH_PSK
     mbedtls_ssl_config_free(&(*socket)->config);
 
     free(*socket);
@@ -983,11 +996,16 @@ static int configure_ssl_certs(ssl_socket_certs_t *certs,
     return 0;
 }
 
+#ifdef WITH_PSK
 static int configure_ssl_psk(ssl_socket_t *socket,
                              const avs_net_psk_t *psk) {
     LOG(TRACE, "configure_ssl_psk");
     return _avs_net_psk_copy(&socket->security.psk.value, psk);
 }
+#else // WITH_PSK
+# define configure_ssl_psk(...) \
+    (LOG(ERROR, "PSK support disabled"), (-1))
+#endif // WITH_PSK
 
 static int initialize_ssl_socket(ssl_socket_t *socket,
                                  avs_net_socket_type_t backend_type,
