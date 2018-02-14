@@ -67,6 +67,7 @@
 #cmakedefine WITH_DTLS
 #cmakedefine WITH_EC_KEY
 #cmakedefine WITH_PSK
+#cmakedefine WITH_X509
 
 #cmakedefine WITH_AVS_LOG
 #cmakedefine WITH_SOCKET_LOG
