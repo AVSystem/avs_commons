@@ -39,11 +39,13 @@
 
 VISIBILITY_SOURCE_BEGIN
 
+#ifdef WITH_X509
 typedef struct {
     mbedtls_x509_crt *ca_cert;
     mbedtls_x509_crt *client_cert;
     mbedtls_pk_context *pk_key;
 } ssl_socket_certs_t;
+#endif // WITH_X509
 
 typedef struct {
     avs_net_owned_psk_t value;
@@ -69,7 +71,9 @@ typedef struct {
     mbedtls_ssl_config config;
     avs_net_security_mode_t security_mode;
     union {
+#ifdef WITH_X509
         ssl_socket_certs_t cert;
+#endif // WITH_X509
 #ifdef WITH_PSK
         ssl_socket_psk_t psk;
 #endif // WITH_PSK
@@ -278,6 +282,7 @@ static int set_min_ssl_version(mbedtls_ssl_config *config,
     }
 }
 
+#ifdef WITH_X509
 static uint8_t is_verification_enabled(ssl_socket_t *socket) {
     return socket->security_mode == AVS_NET_SECURITY_CERTIFICATE
             && socket->security.cert.ca_cert != NULL;
@@ -298,6 +303,10 @@ static void initialize_cert_security(ssl_socket_t *socket) {
                                   socket->security.cert.pk_key);
     }
 }
+#else // WITH_X509
+#define is_verification_enabled(...) 0
+#define initialize_cert_security(...) (void)0
+#endif // WITH_X509
 
 #ifdef WITH_PSK
 typedef void foreach_psk_ciphersuite_cb_t(int suite, void *arg);
@@ -520,12 +529,14 @@ static int start_ssl(ssl_socket_t *socket, const char *host) {
         goto finish;
     }
 
+#ifdef WITH_X509
     if ((result = mbedtls_ssl_set_hostname(get_context(socket), host))) {
         LOG(ERROR, "mbedtls_ssl_set_hostname() failed: %d", result);
         socket->error_code =
                 (result == MBEDTLS_ERR_SSL_ALLOC_FAILED ? ENOMEM : EINVAL);
         goto finish;
     }
+#endif // WITH_X509
 
     if (restore_session
             && socket->config.endpoint == MBEDTLS_SSL_IS_CLIENT
@@ -666,6 +677,7 @@ static int receive_ssl(avs_net_abstract_socket_t *socket_,
     return 0;
 }
 
+#ifdef WITH_X509
 static void cleanup_security_cert(ssl_socket_certs_t *certs) {
     if (certs->ca_cert) {
         mbedtls_x509_crt_free(certs->ca_cert);
@@ -680,6 +692,9 @@ static void cleanup_security_cert(ssl_socket_certs_t *certs) {
         free(certs->pk_key);
     }
 }
+#else // WITH_X509
+# define cleanup_security_cert(...) (void)0
+#endif // WITH_X509
 
 #ifdef WITH_PSK
 static void cleanup_security_psk(ssl_socket_psk_t *psk) {
@@ -735,6 +750,7 @@ do { \
     } \
 } while (0)
 
+#ifdef WITH_X509
 static int
 load_ca_certs_from_paths(mbedtls_x509_crt **out,
                          const avs_net_certificate_info_t *cert_info) {
@@ -995,6 +1011,10 @@ static int configure_ssl_certs(ssl_socket_certs_t *certs,
 
     return 0;
 }
+#else // WITH_X509
+# define configure_ssl_certs(...) \
+    (LOG(ERROR, "X.509 support disabled"), (-1))
+#endif // WITH_X509
 
 #ifdef WITH_PSK
 static int configure_ssl_psk(ssl_socket_t *socket,
