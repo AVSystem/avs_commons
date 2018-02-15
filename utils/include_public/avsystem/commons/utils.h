@@ -111,7 +111,7 @@ int avs_strncasecmp(const char *s1, const char *s2, size_t n);
  * Portable reentrant version of standard library <c>strtok()</c>; equivalent to
  * POSIX <c>strtok_r()</c>.
  */
-char *avs_strtok(char *str, char *delim, char **saveptr);
+char *avs_strtok(char *str, const char *delim, char **saveptr);
 
 /**
  * Creates a <c>malloc()</c>-allocated copy of a given string.
