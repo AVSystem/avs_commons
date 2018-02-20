@@ -350,7 +350,8 @@ for (; (element); (element) = AVS_LIST_NEXT(element))
 #define AVS_LIST_FOREACH_PTR(element_ptr, list_ptr) \
 for ((element_ptr) = (list_ptr); \
      *(element_ptr); \
-     (element_ptr) = AVS_LIST_NEXT_PTR(element_ptr))
+     (element_ptr) = AVS_CALL_WITH_CAST(, AVS_IDENTITY_CALL, \
+                                        AVS_LIST_NEXT_PTR(element_ptr)))
 
 /**
  * Iterates over a list as pointers to element pointers, starting with the
@@ -365,7 +366,8 @@ for ((element_ptr) = (list_ptr); \
  */
 #define AVS_LIST_ITERATE_PTR(element_ptr) \
 for (; *(element_ptr); \
-     (element_ptr) = AVS_LIST_NEXT_PTR(element_ptr))
+     (element_ptr) = AVS_CALL_WITH_CAST(, AVS_IDENTITY_CALL, \
+                                        AVS_LIST_NEXT_PTR(element_ptr)))
 
 /**
  * Returns a pointer to <i>n</i>-th element in a list.

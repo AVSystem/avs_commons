@@ -126,7 +126,6 @@ static int http_nonblock_write_ready(avs_stream_abstract_t *stream_,
         return avs_stream_nonblock_write_ready(stream->encoder,
                                                out_ready_capacity_bytes);
     }
-    return 0;
 }
 
 static int http_finish(avs_stream_abstract_t *stream_) {

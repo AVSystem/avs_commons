@@ -32,10 +32,9 @@ static int send_common_headers(avs_stream_abstract_t *stream,
                                const char *host,
                                const char *port,
                                const char *path) {
-    avs_net_abstract_socket_t *socket = NULL;
     int is_ipv6 = !!strchr(host, ':');
 
-    return !(socket = avs_stream_net_getsock(stream))
+    return !avs_stream_net_getsock(stream)
             || avs_stream_write_f(stream, "%s %s HTTP/1.1\r\n",
                                   _AVS_HTTP_METHOD_NAMES[method], path)
             || avs_stream_write_f(stream, "Host: %s%s%s%s%s\r\n",
