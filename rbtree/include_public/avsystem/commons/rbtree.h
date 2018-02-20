@@ -490,7 +490,7 @@ avs_rbtree_simple_clone_impl__(AVS_RBTREE_CONST(T) tree) {
  * - NULL if there is no successor or the node is detached.
  */
 #define AVS_RBTREE_ELEM_NEXT(elem) \
-    AVS_CALL_WITH_CAST(, avs_rbtree_elem_next__, elem)
+    AVS_CALL_WITH_CAST(0, avs_rbtree_elem_next__, elem)
 
 /**
  * Complexity: O((log n) * c), where:
@@ -504,7 +504,7 @@ avs_rbtree_simple_clone_impl__(AVS_RBTREE_CONST(T) tree) {
  * - NULL if there is no predecessor or the node is detached.
  */
 #define AVS_RBTREE_ELEM_PREV(elem) \
-    AVS_CALL_WITH_CAST(, avs_rbtree_elem_prev__, elem)
+    AVS_CALL_WITH_CAST(0, avs_rbtree_elem_prev__, elem)
 
 /**
  * Complexity: O((log n) * c), where:

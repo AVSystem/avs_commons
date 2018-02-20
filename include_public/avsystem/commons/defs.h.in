@@ -243,6 +243,10 @@ typedef long avs_off_t;
 #define AVS_TYPEOF_PTR(symbol) void *
 #endif
 
+#define AVS_0_STARS__
+#define AVS_1_STARS__ *
+#define AVS_STARS__(Count) AVS_CONCAT(AVS_, Count, _STARS__)
+
 #ifdef __cplusplus
 namespace {
 
@@ -272,21 +276,16 @@ struct AvsCallWithCast__ {
     }
 };
 
-template <typename T>
-inline T *AVS_IDENTITY_CALL(T *arg) {
-    return arg;
 }
 
-}
-
-#define AVS_CALL_WITH_CAST(StarsOfIndirection, Func, ...) \
-    (::AvsCallWithCast__<void * StarsOfIndirection>::call(Func, __VA_ARGS__))
+#define AVS_CALL_WITH_CAST(LevelsOfIndirection, Func, ...) \
+    (::AvsCallWithCast__<void * AVS_STARS__(LevelsOfIndirection)>::call( \
+            Func, __VA_ARGS__))
 #else
-#define AVS_IDENTITY_CALL /* deliberately expands to nothing */
-#define AVS_CALL_WITH_CAST(StarsOfIndirection, Func, ...) \
-    ((AVS_TYPEOF_PTR( \
-            StarsOfIndirection (AVS_VARARG0(__VA_ARGS__))) StarsOfIndirection) \
-        Func((void * StarsOfIndirection) (intptr_t) __VA_ARGS__))
+#define AVS_CALL_WITH_CAST(LevelsOfIndirection, Func, ...) \
+    ((AVS_TYPEOF_PTR(AVS_STARS__(LevelsOfIndirection) \
+            (AVS_VARARG0(__VA_ARGS__))) AVS_STARS__(LevelsOfIndirection)) \
+        Func((void * AVS_STARS__(LevelsOfIndirection)) (intptr_t) __VA_ARGS__))
 #endif
 
 #if (__GNUC__ >= 4)
