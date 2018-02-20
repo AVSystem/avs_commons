@@ -17,10 +17,10 @@
 #include <avs_commons_config.h>
 
 #include <assert.h>
-#include <errno.h>
 #include <string.h>
 #include <time.h>
 
+#include <avsystem/commons/errno.h>
 #include <avsystem/commons/stream/stream_net.h>
 #include <avsystem/commons/stream/netbuf.h>
 
