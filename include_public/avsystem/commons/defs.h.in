@@ -272,11 +272,17 @@ struct AvsCallWithCast__ {
     }
 };
 
+template <typename T>
+inline T *AVS_IDENTITY_CALL(T *arg) {
+    return arg;
+}
+
 }
 
 #define AVS_CALL_WITH_CAST(StarsOfIndirection, Func, ...) \
     (::AvsCallWithCast__<void * StarsOfIndirection>::call(Func, __VA_ARGS__))
 #else
+#define AVS_IDENTITY_CALL /* deliberately expands to nothing */
 #define AVS_CALL_WITH_CAST(StarsOfIndirection, Func, ...) \
     ((AVS_TYPEOF_PTR( \
             StarsOfIndirection (AVS_VARARG0(__VA_ARGS__))) StarsOfIndirection) \

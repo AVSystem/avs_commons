@@ -687,8 +687,9 @@ for ((element_ptr) = (list_ptr), (helper_element) = *(element_ptr); \
      *(element_ptr); \
      (element_ptr) = \
              AVS_LIST_DELETABLE_FOREACH_PTR_VALID(element_ptr, helper_element) \
-                     ? AVS_LIST_NEXT_PTR(element_ptr) : (element_ptr), \
-             (helper_element) = *(element_ptr))
+                     ? AVS_CALL_WITH_CAST(, AVS_IDENTITY_CALL, \
+                                          AVS_LIST_NEXT_PTR(element_ptr)) \
+                     : (element_ptr), (helper_element) = *(element_ptr))
 
 /**
  * Deallocates all list elements.
