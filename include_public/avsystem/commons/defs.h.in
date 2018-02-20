@@ -274,12 +274,13 @@ struct AvsCallWithCast__ {
 
 }
 
-#define AVS_CALL_WITH_CAST(CastTo, Func, ...) \
-        (::AvsCallWithCast__<CastTo>::call(Func, __VA_ARGS__))
+#define AVS_CALL_WITH_CAST(StarsOfIndirection, Func, ...) \
+    (::AvsCallWithCast__<void * StarsOfIndirection>::call(Func, __VA_ARGS__))
 #else
-#define AVS_CALL_WITH_CAST(CastTo, Func, ...) \
-        ((AVS_TYPEOF_PTR(AVS_VARARG0(__VA_ARGS__))) \
-                Func((CastTo) (intptr_t) __VA_ARGS__))
+#define AVS_CALL_WITH_CAST(StarsOfIndirection, Func, ...) \
+    ((AVS_TYPEOF_PTR( \
+            StarsOfIndirection (AVS_VARARG0(__VA_ARGS__))) StarsOfIndirection) \
+        Func((void * StarsOfIndirection) (intptr_t) __VA_ARGS__))
 #endif
 
 #if (__GNUC__ >= 4)
