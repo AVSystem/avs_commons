@@ -330,6 +330,11 @@ static avs_time_duration_t adjust_receive_timeout(ssl_socket_t *sock) {
     return socket_timeout;
 }
 
+static bool socket_is_dtls(ssl_socket_t *sock) {
+    return sock->backend_type == AVS_NET_UDP_SOCKET
+            || sock->backend_type == AVS_NET_DTLS_SOCKET;
+}
+
 static int avs_bio_read(BIO *bio, char *buffer, int size) {
     ssl_socket_t *sock = (ssl_socket_t *) BIO_get_data(bio);
     avs_time_duration_t prev_timeout = AVS_TIME_DURATION_INVALID;
@@ -340,7 +345,7 @@ static int avs_bio_read(BIO *bio, char *buffer, int size) {
         return 0;
     }
     BIO_clear_retry_flags(bio);
-    if (sock->backend_type == AVS_NET_UDP_SOCKET) {
+    if (socket_is_dtls(sock)) {
         prev_timeout = adjust_receive_timeout(sock);
     }
     if (avs_net_socket_receive(sock->backend_socket,
@@ -350,7 +355,7 @@ static int avs_bio_read(BIO *bio, char *buffer, int size) {
     } else {
         result = (int) read_bytes;
     }
-    if (sock->backend_type == AVS_NET_UDP_SOCKET) {
+    if (socket_is_dtls(sock)) {
         set_socket_timeout(sock->backend_socket, prev_timeout);
     }
     return result;
@@ -507,11 +512,11 @@ static BIO *avs_bio_spawn(ssl_socket_t *socket) {
             avs_net_socket_get_system((avs_net_abstract_socket_t *) socket);
     if (fd_ptr) {
         int fd = *(const int *) fd_ptr;
-        if (socket->backend_type == AVS_NET_TCP_SOCKET) {
+        if (!socket_is_dtls(socket)) {
             return BIO_new_socket(fd, 0);
         }
 #ifdef WITH_DTLS
-        if (socket->backend_type == AVS_NET_UDP_SOCKET) {
+        if (socket_is_dtls(socket)) {
             BIO *bio = BIO_new_dgram(fd, 0);
             BIO_ctrl(bio, BIO_CTRL_DGRAM_SET_CONNECTED, 0,
                      socket->backend_configuration.preferred_endpoint->data);
@@ -1610,18 +1615,13 @@ static const SSL_METHOD *dgram_method(avs_net_ssl_version_t version) {
 
 #endif /* WITH_DTLS */
 
-static SSL_CTX *make_ssl_context(avs_net_socket_type_t backend_type,
-                                 avs_net_ssl_version_t version) {
+static SSL_CTX *make_ssl_context(bool dtls, avs_net_ssl_version_t version) {
     const SSL_METHOD *method = NULL;
     SSL_CTX *ctx = NULL;
-    switch (backend_type) {
-    case AVS_NET_TCP_SOCKET:
-        method = stream_method(version);
-        break;
-    case AVS_NET_UDP_SOCKET:
+    if (dtls) {
         method = dgram_method(version);
-        break;
-    default:;
+    } else {
+        method = stream_method(version);
     }
     if (!method) {
         LOG(ERROR, "Unsupported SSL version");
@@ -1672,24 +1672,21 @@ static int dgram_proto_version(avs_net_ssl_version_t version) {
 
 #endif /* WITH_DTLS */
 
-static SSL_CTX *make_ssl_context(avs_net_socket_type_t backend_type,
+static SSL_CTX *make_ssl_context(bool dtls,
                                  avs_net_ssl_version_t version) {
     const SSL_METHOD *method = NULL;
     int ossl_proto_version = 0;
     SSL_CTX *ctx = NULL;
-    switch (backend_type) {
-    case AVS_NET_TCP_SOCKET:
+    if (!dtls) {
         method = OPENSSL_METHOD(TLS)();
         ossl_proto_version = stream_proto_version(version);
-        break;
-    case AVS_NET_UDP_SOCKET:
+    }
 #ifdef WITH_DTLS
+    else {
         method = OPENSSL_METHOD(DTLS)();
         ossl_proto_version = dgram_proto_version(version);
-#endif
-        break;
-    default:;
     }
+#endif
     if (ossl_proto_version < 0) {
         LOG(ERROR, "Unsupported SSL version");
         return NULL;
@@ -1718,7 +1715,7 @@ static int initialize_ssl_socket(ssl_socket_t *socket,
             &ssl_vtable;
     socket->backend_type = backend_type;
 
-    if (!(socket->ctx = make_ssl_context(backend_type,
+    if (!(socket->ctx = make_ssl_context(socket_is_dtls(socket),
                                          configuration->version))) {
         return -1;
     }
