@@ -330,7 +330,7 @@ static avs_time_duration_t adjust_receive_timeout(ssl_socket_t *sock) {
     return socket_timeout;
 }
 
-static bool socket_is_dtls(ssl_socket_t *sock) {
+static bool socket_is_datagram(ssl_socket_t *sock) {
     return sock->backend_type == AVS_NET_UDP_SOCKET
             || sock->backend_type == AVS_NET_DTLS_SOCKET;
 }
@@ -345,7 +345,7 @@ static int avs_bio_read(BIO *bio, char *buffer, int size) {
         return 0;
     }
     BIO_clear_retry_flags(bio);
-    if (socket_is_dtls(sock)) {
+    if (socket_is_datagram(sock)) {
         prev_timeout = adjust_receive_timeout(sock);
     }
     if (avs_net_socket_receive(sock->backend_socket,
@@ -355,7 +355,7 @@ static int avs_bio_read(BIO *bio, char *buffer, int size) {
     } else {
         result = (int) read_bytes;
     }
-    if (socket_is_dtls(sock)) {
+    if (socket_is_datagram(sock)) {
         set_socket_timeout(sock->backend_socket, prev_timeout);
     }
     return result;
@@ -512,11 +512,11 @@ static BIO *avs_bio_spawn(ssl_socket_t *socket) {
             avs_net_socket_get_system((avs_net_abstract_socket_t *) socket);
     if (fd_ptr) {
         int fd = *(const int *) fd_ptr;
-        if (!socket_is_dtls(socket)) {
+        if (!socket_is_datagram(socket)) {
             return BIO_new_socket(fd, 0);
         }
 #ifdef WITH_DTLS
-        if (socket_is_dtls(socket)) {
+        if (socket_is_datagram(socket)) {
             BIO *bio = BIO_new_dgram(fd, 0);
             BIO_ctrl(bio, BIO_CTRL_DGRAM_SET_CONNECTED, 0,
                      socket->backend_configuration.preferred_endpoint->data);
@@ -1486,7 +1486,7 @@ static int receive_ssl(avs_net_abstract_socket_t *socket_,
     LOG(TRACE, "receive_ssl(socket=%p, buffer=%p, buffer_length=%lu)",
         (void *) socket, buffer, (unsigned long) buffer_length);
 
-    if (buffer_length > 0 && socket_is_dtls(socket)) {
+    if (buffer_length > 0 && socket_is_datagram(socket)) {
         // flush leftover data, so that we receive a new datagram from the start
         while (result >= 0 && SSL_pending(socket->ssl) > 0) {
             result = SSL_read(socket->ssl, buffer, (int) buffer_length);
@@ -1503,7 +1503,7 @@ static int receive_ssl(avs_net_abstract_socket_t *socket_,
     } else {
         VALGRIND_MAKE_MEM_DEFINED_IF_ADDRESSABLE(buffer, result);
         *out_bytes_received = (size_t) result;
-        if (socket_is_dtls(socket) && SSL_pending(socket->ssl) > 0) {
+        if (socket_is_datagram(socket) && SSL_pending(socket->ssl) > 0) {
             LOG(WARNING, "receive_ssl: message truncated");
             socket->error_code = EMSGSIZE;
             return -1;
@@ -1727,7 +1727,7 @@ static int initialize_ssl_socket(ssl_socket_t *socket,
             &ssl_vtable;
     socket->backend_type = backend_type;
 
-    if (!(socket->ctx = make_ssl_context(socket_is_dtls(socket),
+    if (!(socket->ctx = make_ssl_context(socket_is_datagram(socket),
                                          configuration->version))) {
         return -1;
     }
