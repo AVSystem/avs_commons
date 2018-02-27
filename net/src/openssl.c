@@ -1478,27 +1478,39 @@ static int send_ssl(avs_net_abstract_socket_t *socket_,
 }
 
 static int receive_ssl(avs_net_abstract_socket_t *socket_,
-                       size_t *out,
+                       size_t *out_bytes_received,
                        void *buffer,
                        size_t buffer_length) {
     ssl_socket_t *socket = (ssl_socket_t *) socket_;
-    int result;
+    int result = 0;
     LOG(TRACE, "receive_ssl(socket=%p, buffer=%p, buffer_length=%lu)",
         (void *) socket, buffer, (unsigned long) buffer_length);
+
+    if (buffer_length > 0 && socket_is_dtls(socket)) {
+        // flush leftover data, so that we receive a new datagram from the start
+        while (result >= 0 && SSL_pending(socket->ssl) > 0) {
+            result = SSL_read(socket->ssl, buffer, (int) buffer_length);
+        }
+    }
 
     errno = 0;
     result = SSL_read(socket->ssl, buffer, (int) buffer_length);
     VALGRIND_MAKE_MEM_DEFINED_IF_ADDRESSABLE(&result, sizeof(result));
     if (result < 0) {
         update_send_or_recv_error_code(socket);
-        *out = 0;
+        *out_bytes_received = 0;
         return result;
     } else {
         VALGRIND_MAKE_MEM_DEFINED_IF_ADDRESSABLE(buffer, result);
-        *out = (size_t) result;
-        socket->error_code = 0;
-        return 0;
+        *out_bytes_received = (size_t) result;
+        if (socket_is_dtls(socket) && SSL_pending(socket->ssl) > 0) {
+            LOG(WARNING, "receive_ssl: message truncated");
+            socket->error_code = EMSGSIZE;
+            return -1;
+        }
     }
+    socket->error_code = 0;
+    return 0;
 }
 
 static int cleanup_ssl(avs_net_abstract_socket_t **socket_) {

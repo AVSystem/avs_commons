@@ -656,8 +656,9 @@ static int receive_ssl(avs_net_abstract_socket_t *socket_,
     LOG(TRACE, "receive_ssl(socket=%p, buffer=%p, buffer_length=%lu)",
         (void *) socket, buffer, (unsigned long) buffer_length);
 
-    if (transport_for_socket_type(socket->backend_type)
-                == MBEDTLS_SSL_TRANSPORT_DATAGRAM) {
+    if (buffer_length > 0
+            && transport_for_socket_type(socket->backend_type)
+                    == MBEDTLS_SSL_TRANSPORT_DATAGRAM) {
         // flush leftover data, so that we receive a new datagram from the start
         while (result >= 0
                 && mbedtls_ssl_get_bytes_avail(get_context(socket)) > 0) {
@@ -685,12 +686,11 @@ static int receive_ssl(avs_net_abstract_socket_t *socket_,
     } else {
         *out_bytes_received = (size_t) result;
         if (transport_for_socket_type(socket->backend_type)
-                == MBEDTLS_SSL_TRANSPORT_DATAGRAM) {
-            if (mbedtls_ssl_get_bytes_avail(get_context(socket)) > 0) {
-                LOG(WARNING, "receive_ssl: message truncated");
-                socket->error_code = EMSGSIZE;
-                return -1;
-            }
+                        == MBEDTLS_SSL_TRANSPORT_DATAGRAM
+                && mbedtls_ssl_get_bytes_avail(get_context(socket)) > 0) {
+            LOG(WARNING, "receive_ssl: message truncated");
+            socket->error_code = EMSGSIZE;
+            return -1;
         }
     }
     socket->error_code = 0;
