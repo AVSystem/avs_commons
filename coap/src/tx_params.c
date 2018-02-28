@@ -40,9 +40,9 @@ bool avs_coap_tx_params_valid(const avs_coap_tx_params_t *tx_params,
     // a value that is sufficiently different from 1.0 to provide some
     // protection from synchronization effects.
     // -- RFC 7252, 4.8.1
-    if (tx_params->ack_random_factor <= 1.0) {
+    if (tx_params->ack_random_factor < 1.0) {
         if (error_details) {
-            *error_details = "ACK_RANDOM_FACTOR less than or equal to 1.0";
+            *error_details = "ACK_RANDOM_FACTOR less than 1.0";
         }
         return false;
     }
@@ -107,14 +107,13 @@ void avs_coap_update_retry_state(avs_coap_retry_state_t *retry_state,
                                        tx_params->ack_random_factor - 1.0);
         int64_t delta_ns;
         int err = avs_time_duration_to_scalar(&delta_ns, AVS_TIME_NS, delta);
-        (void) err;
         assert(!err);
-        assert(delta_ns > 0);
-        retry_state->recv_timeout =
-                avs_time_duration_add(tx_params->ack_timeout,
-                                      avs_time_duration_from_scalar(
-                                              rand63(rand_seed) % delta_ns,
-                                              AVS_TIME_NS));
+        (void) err;
+        const int64_t random_factor =
+                delta_ns > 0 ? rand63(rand_seed) % delta_ns : 0;
+        retry_state->recv_timeout = avs_time_duration_add(
+                tx_params->ack_timeout,
+                avs_time_duration_from_scalar(random_factor, AVS_TIME_NS));
     } else {
         retry_state->recv_timeout =
                 avs_time_duration_mul(retry_state->recv_timeout, 2);
