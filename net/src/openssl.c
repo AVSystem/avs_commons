@@ -1487,9 +1487,17 @@ static int receive_ssl(avs_net_abstract_socket_t *socket_,
         (void *) socket, buffer, (unsigned long) buffer_length);
 
     if (buffer_length > 0 && socket_is_datagram(socket)) {
-        // flush leftover data, so that we receive a new datagram from the start
-        while (result >= 0 && SSL_pending(socket->ssl) > 0) {
-            result = SSL_read(socket->ssl, buffer, (int) buffer_length);
+        // OpenSSL treats datagram connections as if they are stream-based :(
+        int unread_bytes_from_previous_datagram = SSL_pending(socket->ssl);
+        while (unread_bytes_from_previous_datagram > 0) {
+            if ((result = SSL_read(
+                    socket->ssl, buffer,
+                    AVS_MIN((int) buffer_length,
+                            unread_bytes_from_previous_datagram))) < 0) {
+                break;
+            }
+            assert(result <= unread_bytes_from_previous_datagram);
+            unread_bytes_from_previous_datagram -= result;
         }
     }
 

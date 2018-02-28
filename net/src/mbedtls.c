@@ -659,11 +659,18 @@ static int receive_ssl(avs_net_abstract_socket_t *socket_,
     if (buffer_length > 0
             && transport_for_socket_type(socket->backend_type)
                     == MBEDTLS_SSL_TRANSPORT_DATAGRAM) {
-        // flush leftover data, so that we receive a new datagram from the start
-        while (result >= 0
-                && mbedtls_ssl_get_bytes_avail(get_context(socket)) > 0) {
-            result = mbedtls_ssl_read(get_context(socket),
-                                      (unsigned char *) buffer, buffer_length);
+        // mbed TLS treats datagram connections as if they are stream-based :(
+        size_t unread_bytes_from_previous_datagram =
+                mbedtls_ssl_get_bytes_avail(get_context(socket));
+        while (unread_bytes_from_previous_datagram > 0) {
+            if ((result = mbedtls_ssl_read(
+                    get_context(socket), (unsigned char *) buffer,
+                    AVS_MIN(buffer_length,
+                            unread_bytes_from_previous_datagram))) < 0) {
+                break;
+            }
+            assert((size_t) result <= unread_bytes_from_previous_datagram);
+            unread_bytes_from_previous_datagram -= (size_t) result;
         }
     }
 
