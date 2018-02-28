@@ -359,8 +359,9 @@ static int errno_ssl(avs_net_abstract_socket_t *net_socket) {
 
 static int get_socket_inner_mtu_or_zero(avs_net_abstract_socket_t *sock) {
     avs_net_socket_opt_value_t opt_value;
-    if (avs_net_socket_get_opt(sock, AVS_NET_SOCKET_OPT_INNER_MTU,
-                               &opt_value)) {
+    if (!sock
+            || avs_net_socket_get_opt(sock, AVS_NET_SOCKET_OPT_INNER_MTU,
+                                      &opt_value)) {
         return 0;
     } else {
         return opt_value.mtu;

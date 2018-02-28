@@ -42,6 +42,8 @@ VISIBILITY_SOURCE_BEGIN
 
 #define CERT_SUBJECT_NAME_SIZE 257
 
+#define TRUNCATION_BUFFER_SIZE 128
+
 #ifdef OPENSSL_VERSION_NUMBER
 #define MAKE_OPENSSL_VER(Major, Minor, Fix) \
         (((Major) << 28) | ((Minor) << 20) | ((Fix) << 12))
@@ -285,6 +287,10 @@ static int get_dtls_overhead(ssl_socket_t *socket,
 
 static int avs_bio_write(BIO *bio, const char *data, int size) {
     ssl_socket_t *sock = (ssl_socket_t *) BIO_get_data(bio);
+    if (!sock->backend_socket) {
+        // see receive_ssl() for explanation why this might happen
+        return -1;
+    }
     sock->error_code = 0;
     if (!data || size < 0) {
         return 0;
@@ -340,6 +346,10 @@ static int avs_bio_read(BIO *bio, char *buffer, int size) {
     avs_time_duration_t prev_timeout = AVS_TIME_DURATION_INVALID;
     size_t read_bytes;
     int result;
+    if (!sock->backend_socket) {
+        // see receive_ssl() for explanation why this might happen
+        return -1;
+    }
     sock->error_code = 0;
     if (!buffer || size < 0) {
         return 0;
@@ -1486,21 +1496,6 @@ static int receive_ssl(avs_net_abstract_socket_t *socket_,
     LOG(TRACE, "receive_ssl(socket=%p, buffer=%p, buffer_length=%lu)",
         (void *) socket, buffer, (unsigned long) buffer_length);
 
-    if (buffer_length > 0 && socket_is_datagram(socket)) {
-        // OpenSSL treats datagram connections as if they are stream-based :(
-        int unread_bytes_from_previous_datagram = SSL_pending(socket->ssl);
-        while (unread_bytes_from_previous_datagram > 0) {
-            if ((result = SSL_read(
-                    socket->ssl, buffer,
-                    AVS_MIN((int) buffer_length,
-                            unread_bytes_from_previous_datagram))) < 0) {
-                break;
-            }
-            assert(result <= unread_bytes_from_previous_datagram);
-            unread_bytes_from_previous_datagram -= result;
-        }
-    }
-
     errno = 0;
     result = SSL_read(socket->ssl, buffer, (int) buffer_length);
     VALGRIND_MAKE_MEM_DEFINED_IF_ADDRESSABLE(&result, sizeof(result));
@@ -1511,13 +1506,33 @@ static int receive_ssl(avs_net_abstract_socket_t *socket_,
     } else {
         VALGRIND_MAKE_MEM_DEFINED_IF_ADDRESSABLE(buffer, result);
         *out_bytes_received = (size_t) result;
-        if (socket_is_datagram(socket) && SSL_pending(socket->ssl) > 0) {
-            LOG(WARNING, "receive_ssl: message truncated");
-            socket->error_code = EMSGSIZE;
-            return -1;
+        socket->error_code = 0;
+        if (socket_is_datagram(socket)
+                && buffer_length > 0
+                && (size_t) result == buffer_length) {
+            // Check whether the message is truncated;
+            // Normally we could use SSL_pending(), but on some versions of
+            // OpenSSL, it is broken and always return 0 for DTLS; see
+            // https://github.com/openssl/openssl/issues/5478 for details.
+            // We resort to this hack of calling SSL_read() with actual network
+            // communication blocked.
+            avs_net_abstract_socket_t *backend_socket = socket->backend_socket;
+            socket->backend_socket = NULL;
+            do {
+                char truncation_buffer[TRUNCATION_BUFFER_SIZE];
+                if ((result = SSL_read(socket->ssl, truncation_buffer,
+                                       (int) sizeof(truncation_buffer))) > 0
+                        && !socket->error_code) {
+                    LOG(WARNING, "receive_ssl: message truncated");
+                    socket->error_code = EMSGSIZE;
+                }
+            } while (result > 0);
+            socket->backend_socket = backend_socket;
+            if (socket->error_code) {
+                return -1;
+            }
         }
     }
-    socket->error_code = 0;
     return 0;
 }
 
