@@ -337,10 +337,10 @@ int _avs_http_receive_headers(http_stream_t *stream) {
     do {
         header_parser_state_t parser_state = {
             .stream = stream,
-            .header_storage_end_ptr =
-                    stream->incoming_header_storage
+            .header_storage_end_ptr = (AVS_LIST(const avs_http_header_t) *)
+                    (stream->incoming_header_storage
                         ? AVS_LIST_APPEND_PTR(stream->incoming_header_storage)
-                        : NULL
+                        : NULL)
         };
         result = http_receive_headers_internal(&parser_state);
         avs_url_free(parser_state.redirect_url);
