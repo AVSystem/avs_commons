@@ -400,6 +400,23 @@ AVS_UNIT_TEST(coap_ctx, coap_dtls) {
             avs_coap_ctx_recv(ctx, backend, recv_msg, COAP_MSG_MAX_SIZE));
 
     AVS_UNIT_ASSERT_EQUAL_BYTES_SIZED(recv_msg, msg, msg->length);
+
+    // check message truncation
+    AVS_UNIT_ASSERT_SUCCESS(avs_coap_ctx_send(ctx, backend, msg));
+    AVS_UNIT_ASSERT_EQUAL(
+            avs_coap_ctx_recv(ctx, backend, recv_msg,
+                              msg->length + sizeof(msg->length) - 1),
+            AVS_COAP_CTX_ERR_MSG_TOO_LONG);
+    // check that we don't get any leftover data
+    AVS_UNIT_ASSERT_SUCCESS(avs_net_socket_set_opt(
+            backend, AVS_NET_SOCKET_OPT_RECV_TIMEOUT,
+            (const avs_net_socket_opt_value_t) {
+                .recv_timeout = avs_time_duration_from_scalar(100, AVS_TIME_MS)
+            }));
+    AVS_UNIT_ASSERT_EQUAL(
+            avs_coap_ctx_recv(ctx, backend, recv_msg, COAP_MSG_MAX_SIZE),
+            AVS_COAP_CTX_ERR_TIMEOUT);
+
     avs_net_socket_cleanup(&backend);
     avs_coap_ctx_cleanup(&ctx);
     free(storage);

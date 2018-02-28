@@ -651,17 +651,37 @@ static int receive_ssl(avs_net_abstract_socket_t *socket_,
                        void *buffer,
                        size_t buffer_length) {
     ssl_socket_t *socket = (ssl_socket_t *) socket_;
-    int result = -1;
+    int result = 0;
 
     LOG(TRACE, "receive_ssl(socket=%p, buffer=%p, buffer_length=%lu)",
         (void *) socket, buffer, (unsigned long) buffer_length);
 
-    do {
-        errno = 0;
-        result = mbedtls_ssl_read(get_context(socket),
-                                  (unsigned char *) buffer, buffer_length);
-    } while (result == MBEDTLS_ERR_SSL_WANT_READ
-                || result == MBEDTLS_ERR_SSL_WANT_WRITE);
+    if (buffer_length > 0
+            && transport_for_socket_type(socket->backend_type)
+                    == MBEDTLS_SSL_TRANSPORT_DATAGRAM) {
+        // mbed TLS treats datagram connections as if they are stream-based :(
+        size_t unread_bytes_from_previous_datagram =
+                mbedtls_ssl_get_bytes_avail(get_context(socket));
+        while (unread_bytes_from_previous_datagram > 0) {
+            if ((result = mbedtls_ssl_read(
+                    get_context(socket), (unsigned char *) buffer,
+                    AVS_MIN(buffer_length,
+                            unread_bytes_from_previous_datagram))) < 0) {
+                break;
+            }
+            assert((size_t) result <= unread_bytes_from_previous_datagram);
+            unread_bytes_from_previous_datagram -= (size_t) result;
+        }
+    }
+
+    if (result >= 0) {
+        do {
+            errno = 0;
+            result = mbedtls_ssl_read(get_context(socket),
+                                      (unsigned char *) buffer, buffer_length);
+        } while (result == MBEDTLS_ERR_SSL_WANT_READ
+                    || result == MBEDTLS_ERR_SSL_WANT_WRITE);
+    }
 
     if (result < 0) {
         *out_bytes_received = 0;
@@ -672,6 +692,13 @@ static int receive_ssl(avs_net_abstract_socket_t *socket_,
         }
     } else {
         *out_bytes_received = (size_t) result;
+        if (transport_for_socket_type(socket->backend_type)
+                        == MBEDTLS_SSL_TRANSPORT_DATAGRAM
+                && mbedtls_ssl_get_bytes_avail(get_context(socket)) > 0) {
+            LOG(WARNING, "receive_ssl: message truncated");
+            socket->error_code = EMSGSIZE;
+            return -1;
+        }
     }
     socket->error_code = 0;
     return 0;
