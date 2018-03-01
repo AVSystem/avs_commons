@@ -15,6 +15,7 @@
 set(SOURCES
     src/numbers.c
     src/strings.c
+    src/hexlify.c
     src/time.c
     src/token.c)
 
