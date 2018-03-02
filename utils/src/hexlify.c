@@ -23,25 +23,26 @@
 
 VISIBILITY_SOURCE_BEGIN
 
-ssize_t avs_hexlify_some(char *out_hex,
-                         size_t out_size,
-                         const void *input,
-                         size_t input_size) {
+ssize_t avs_hexlify(char *out_hex,
+                    size_t out_size,
+                    const void *input,
+                    size_t input_size) {
     static const char HEX[] = "0123456789abcdef";
     if (!out_hex || !out_size) {
         return -1;
     }
+    *out_hex = '\0';
     if (!input || !input_size) {
-        return -1;
+        return 0;
     }
     const size_t bytes_to_hexlify = AVS_MIN(input_size, (out_size - 1) / 2);
+    assert(bytes_to_hexlify < SIZE_MAX / 2u);
     for (size_t i = 0; i < bytes_to_hexlify; ++i) {
         out_hex[2*i + 0] = HEX[((const uint8_t *)input)[i] / 16];
         out_hex[2*i + 1] = HEX[((const uint8_t *)input)[i] % 16];
     }
     out_hex[2*bytes_to_hexlify] = '\0';
-    assert(2u * bytes_to_hexlify + 1u < SIZE_MAX / 2u);
-    return (ssize_t)(2 * bytes_to_hexlify + 1);
+    return (ssize_t)bytes_to_hexlify;
 }
 
 #ifdef AVS_UNIT_TESTING

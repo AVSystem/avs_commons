@@ -17,21 +17,34 @@
 #include <avsystem/commons/unit/test.h>
 #include <avsystem/commons/utils.h>
 
+#include <string.h>
+
 AVS_UNIT_TEST(hexlify, bad_input) {
-    AVS_UNIT_ASSERT_EQUAL(avs_hexlify_some(NULL, 123, "foo", 3), -1);
-    AVS_UNIT_ASSERT_EQUAL(avs_hexlify_some((char *) -1, 0, "foo", 3), -1);
-    AVS_UNIT_ASSERT_EQUAL(avs_hexlify_some((char *) -1, 32, "foo", 0), -1);
-    AVS_UNIT_ASSERT_EQUAL(avs_hexlify_some((char *) -1, 32, NULL, 3), -1);
+    AVS_UNIT_ASSERT_EQUAL(avs_hexlify(NULL, 123, "foo", 3), -1);
+    AVS_UNIT_ASSERT_EQUAL(avs_hexlify((char *) -1, 0, "foo", 3), -1);
+}
+
+AVS_UNIT_TEST(hexlify, zero_input) {
+    char out[1];
+    AVS_UNIT_ASSERT_EQUAL(avs_hexlify(out, sizeof(out), "foo", 0), 0);
+    AVS_UNIT_ASSERT_EQUAL(avs_hexlify(out, sizeof(out), NULL, 3), 0);
 }
 
 AVS_UNIT_TEST(hexlify, truncation) {
     char out1[1] = { 0x7f };
-    AVS_UNIT_ASSERT_EQUAL(avs_hexlify_some(out1, sizeof(out1), "foo", 3), 1);
+    AVS_UNIT_ASSERT_EQUAL(avs_hexlify(out1, sizeof(out1), "foo", 3), 0);
     AVS_UNIT_ASSERT_EQUAL(out1[0], '\0');
     char out2[2] = { 0x7f, 0x7f };
-    AVS_UNIT_ASSERT_EQUAL(avs_hexlify_some(out2, sizeof(out2), "foo", 3), 1);
+    AVS_UNIT_ASSERT_EQUAL(avs_hexlify(out2, sizeof(out2), "foo", 3), 0);
     AVS_UNIT_ASSERT_EQUAL(out2[0], '\0');
     char out3[3] = { 0x7f, 0x7f, 0x7f };
-    AVS_UNIT_ASSERT_EQUAL(avs_hexlify_some(out3, sizeof(out3), "foo", 3), 3);
+    AVS_UNIT_ASSERT_EQUAL(avs_hexlify(out3, sizeof(out3), "foo", 3), 1);
     AVS_UNIT_ASSERT_EQUAL_STRING(out3, "66");
+}
+
+AVS_UNIT_TEST(hexlify, full) {
+    char out7[7];
+    memset(out7, 0x7f, sizeof(out7));
+    AVS_UNIT_ASSERT_EQUAL(avs_hexlify(out7, sizeof(out7), "fgh", 3), 3);
+    AVS_UNIT_ASSERT_EQUAL_STRING(out7, "666768");
 }

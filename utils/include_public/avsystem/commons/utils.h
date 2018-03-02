@@ -184,25 +184,23 @@ void avs_consume_quotable_token(const char **src,
 /**
  * Converts bytes of @p input into hexadecimal representation.
  *
- * @param out_hex    Buffer where hexlified string shall be written. On success
- *                   this function always NULL-terminates the buffer.
+ * The hexlified buffer (if at least 1 byte long) is guaranteed to be
+ * NULL-terminated after the function returns.
+ *
+ * @param out_hex    Buffer where hexlified string shall be written.
  * @param out_size   Size of the @p out_hex buffer in bytes. To hexlify the
  *                   entire @p input, it should be at least 2*input_size + 1
  *                   bytes long.
  * @param input      Input to hexlify.
  * @param input_size Length of the input to hexlify.
  *
- * @return
- *      - A negative value if @p out_hex is NULL or @p out_size is 0,
- *      - A negative value if @p input is NULL or @p input_size is 0,
- *      - A positive value, indicating the number of bytes written into @p
- *        out_hex (including the NULL-terminator). Note that input truncation is
- *        not an error.
+ * @returns either a number of input bytes that were successfully hexlified, or
+ * a negative value if even the NULL-terminator could not be written.
  */
-ssize_t avs_hexlify_some(char *out_hex,
-                         size_t out_size,
-                         const void *input,
-                         size_t input_size);
+ssize_t avs_hexlify(char *out_hex,
+                    size_t out_size,
+                    const void *input,
+                    size_t input_size);
 
 #ifdef	__cplusplus
 }
