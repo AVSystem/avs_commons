@@ -49,7 +49,7 @@ static int http_auth_ha1(avs_stream_abstract_t *md5,
         return result;
     }
     if (avs_hexlify(*hexbuf, sizeof(*hexbuf), bytebuf, sizeof(bytebuf))
-            != sizeof(*hexbuf)) {
+            != sizeof(*bytebuf)) {
         return -1;
     }
 
@@ -62,7 +62,7 @@ static int http_auth_ha1(avs_stream_abstract_t *md5,
             return result;
         }
         if (avs_hexlify(*hexbuf, sizeof(*hexbuf), bytebuf, sizeof(bytebuf))
-                != sizeof(*hexbuf)) {
+                != sizeof(*bytebuf)) {
             return -1;
         }
     }
@@ -86,7 +86,7 @@ static int http_auth_ha2(avs_stream_abstract_t *md5,
         return result;
     }
     if (avs_hexlify(*hexbuf, sizeof(*hexbuf), bytebuf, sizeof(bytebuf))
-            != sizeof(*hexbuf)) {
+            != sizeof(*bytebuf)) {
         return -1;
     }
 
@@ -115,7 +115,7 @@ static int http_auth_response(avs_stream_abstract_t *md5,
         return result;
     }
     if (avs_hexlify(*hexbuf, sizeof(*hexbuf), bytebuf, sizeof(bytebuf))
-            != sizeof(*hexbuf)) {
+            != sizeof(*bytebuf)) {
         return -1;
     }
 
