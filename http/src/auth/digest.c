@@ -30,19 +30,6 @@ VISIBILITY_SOURCE_BEGIN
 
 typedef char md5_hexbuf_t[33];
 
-static void bytes_to_hex(char *out, const void *data, size_t data_length) {
-    static const char hex_digits[] = "0123456789abcdef";
-
-    const unsigned char *current_byte = (const unsigned char *)data;
-    while (data_length--) {
-        int m = *current_byte++;
-        *out++ = hex_digits[(m >> 4) & 0x0F];
-        *out++ = hex_digits[m & 0x0F];
-    }
-
-    *out = '\0';
-}
-
 static int http_auth_ha1(avs_stream_abstract_t *md5,
                          const http_auth_t *auth,
                          const char *cnonce,
@@ -61,7 +48,10 @@ static int http_auth_ha1(avs_stream_abstract_t *md5,
                                                   sizeof(bytebuf)))) {
         return result;
     }
-    bytes_to_hex(*hexbuf, bytebuf, sizeof(bytebuf));
+    if (avs_hexlify(*hexbuf, sizeof(*hexbuf), bytebuf, sizeof(bytebuf))
+            != sizeof(*bytebuf)) {
+        return -1;
+    }
 
     if (auth->state.flags.use_md5_sess) {
         if ((result = avs_stream_write_f(md5, "%s:%s:%s",
@@ -71,7 +61,10 @@ static int http_auth_ha1(avs_stream_abstract_t *md5,
                                                       sizeof(bytebuf)))) {
             return result;
         }
-        bytes_to_hex(*hexbuf, bytebuf, sizeof(bytebuf));
+        if (avs_hexlify(*hexbuf, sizeof(*hexbuf), bytebuf, sizeof(bytebuf))
+                != sizeof(*bytebuf)) {
+            return -1;
+        }
     }
 
     return 0;
@@ -92,7 +85,10 @@ static int http_auth_ha2(avs_stream_abstract_t *md5,
                                                   sizeof(bytebuf)))) {
         return result;
     }
-    bytes_to_hex(*hexbuf, bytebuf, sizeof(bytebuf));
+    if (avs_hexlify(*hexbuf, sizeof(*hexbuf), bytebuf, sizeof(bytebuf))
+            != sizeof(*bytebuf)) {
+        return -1;
+    }
 
     return 0;
 }
@@ -118,7 +114,10 @@ static int http_auth_response(avs_stream_abstract_t *md5,
                                                   sizeof(bytebuf)))) {
         return result;
     }
-    bytes_to_hex(*hexbuf, bytebuf, sizeof(bytebuf));
+    if (avs_hexlify(*hexbuf, sizeof(*hexbuf), bytebuf, sizeof(bytebuf))
+            != sizeof(*bytebuf)) {
+        return -1;
+    }
 
     return 0;
 }
