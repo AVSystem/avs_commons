@@ -192,7 +192,7 @@ bool avs_coap_opt_is_valid(const avs_coap_opt_t *opt, size_t max_opt_bytes) {
     }
 
     uint32_t length = (uint32_t)avs_coap_opt_sizeof(opt);
-    return opt->content + length >= opt->content
+    return (uintptr_t) opt->content + length >= (uintptr_t) opt->content
             && length <= max_opt_bytes;
 }
 
