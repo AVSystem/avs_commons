@@ -194,7 +194,7 @@ int avs_coap_msg_info_opt_uint(avs_coap_msg_info_t *info,
                                uint16_t opt_number,
                                const void *value,
                                size_t value_size) {
-#ifdef AVS_BIG_ENDIAN
+#ifdef AVS_COMMONS_BIG_ENDIAN
     const uint8_t *converted = (const uint8_t *) value;
 #else
     uint8_t converted[value_size];
