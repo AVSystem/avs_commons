@@ -173,13 +173,21 @@ void avs_log_internal_l__(avs_log_level_t level,
 /* enable compiling-in TRACE messages */
 #ifndef AVS_LOG_WITH_TRACE
 #undef AVS_LOG__TRACE
-#define AVS_LOG__TRACE(...) ((void) 0)
+#define AVS_LOG__TRACE(...) \
+        ((void) sizeof(AVS_LOG_IMPL__(AVS_LOG_TRACE, __VA_ARGS__), 0))
+#undef AVS_LOG__LAZY_TRACE
+#define AVS_LOG__LAZY_TRACE(...) \
+        ((void) sizeof(AVS_LOG_LAZY_IMPL__(AVS_LOG_TRACE, __VA_ARGS__), 0))
 #endif
 
 /* disable compiling-in DEBUG messages */
 #ifdef AVS_LOG_WITHOUT_DEBUG
 #undef AVS_LOG__DEBUG
-#define AVS_LOG__DEBUG(...) ((void) 0)
+#define AVS_LOG__DEBUG(...) \
+        ((void) sizeof(AVS_LOG_IMPL__(AVS_LOG_DEBUG, __VA_ARGS__), 0))
+#undef AVS_LOG__LAZY_DEBUG
+#define AVS_LOG__LAZY_DEBUG(...) \
+        ((void) sizeof(AVS_LOG_LAZY_IMPL__(AVS_LOG_DEBUG, __VA_ARGS__), 0))
 #endif
 
 int avs_log_set_level__(const char *module, avs_log_level_t level);
