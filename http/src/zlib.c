@@ -55,11 +55,9 @@ typedef struct {
 
 #define zlib_stream_flush(stream) FLUSH_FUNC(stream)(stream)
 
-#ifndef WITH_MICRO_LOG
 static const char *get_zlib_msg(const zlib_stream_t *stream) {
     return stream->zlib.msg ? stream->zlib.msg : "(no message)";
 }
-#endif
 
 static int compressor_flush(zlib_stream_t *stream) {
     stream->error = deflate(&stream->zlib, stream->flush);
