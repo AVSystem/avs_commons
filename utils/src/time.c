@@ -270,7 +270,11 @@ static int unit_conv_backward_int64_t_double(int64_t *output,
 #include "x_time_conv.h"
 
 static bool unit_valid(avs_time_unit_t unit) {
-    return unit >= 0 && unit < AVS_ARRAY_SIZE(CONVERSIONS);
+    /* Some compilers implement avs_time_unit_t as unsigned int, causing
+     * warning of pointless comparison. The solution is to make a temporary
+     * int32_t variable with value of unit. */
+    const int32_t s_unit = unit;
+    return s_unit >= 0 && unit < AVS_ARRAY_SIZE(CONVERSIONS);
 }
 
 int avs_time_duration_to_scalar(int64_t *out,

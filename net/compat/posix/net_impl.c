@@ -897,8 +897,8 @@ static int get_other_family(avs_net_af_t *out, avs_net_af_t in) {
     case AVS_NET_AF_INET6:
         *out = AVS_NET_AF_INET4;
         return 0;
-    default:
 #endif // defined(WITH_IPV4) && defined(WITH_IPV6)
+    default:
         return -1;
     }
 }
@@ -1840,6 +1840,7 @@ interface_name_end:
     close(null_socket);
     return retval;
 #else
+    (void) ifaddr_ip_equal;
     (void) addr;
     (void) if_name;
     return -1;
