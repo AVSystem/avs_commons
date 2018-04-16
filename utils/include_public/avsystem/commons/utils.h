@@ -71,6 +71,38 @@ uint32_t avs_convert_be32(uint32_t value);
 uint64_t avs_convert_be64(uint64_t value);
 
 /**
+ * Convert a 32-bit floating-point value into a big-endian order value
+ * type-punned as an integer.
+ *
+ * Inverse to @ref avs_ntohf
+ */
+uint32_t avs_htonf(float f);
+
+/**
+ * Convert a 64-bit floating-point value into a big-endian order value
+ * type-punned as an integer.
+ *
+ * Inverse to @ref avs_ntohd
+ */
+uint64_t avs_htond(double d);
+
+/**
+ * Convert a 32-bit floating-point value type-punned as an integer in big-endian
+ * order into a native value.
+ *
+ * Inverse to @ref avs_htonf
+ */
+float avs_ntohf(uint32_t v);
+
+/**
+ * Convert a 64-bit floating-point value type-punned as an integer in big-endian
+ * order into a native value.
+ *
+ * Inverse to @ref avs_htond
+ */
+double avs_ntohd(uint64_t v);
+
+/**
  * Wrapper around vsnprintf(), which always return a negative in case of
  * an error (which is the only thing differentiating it from vsnprintf()).
  *

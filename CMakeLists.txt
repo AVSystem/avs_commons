@@ -335,6 +335,7 @@ option(WITH_AVS_LOG "AVSystem logging framework" ${MODULES_ENABLED})
 option(WITH_AVS_RBTREE "AVSystem generic red-black tree implementation" ${MODULES_ENABLED})
 option(WITH_AVS_COAP "AVSystem CoAP abstraction layer" ${MODULES_ENABLED})
 option(WITH_AVS_HTTP "AVSystem HTTP client" ${MODULES_ENABLED})
+option(WITH_AVS_PERSISTENCE "AVSystem persistence framework" ${MODULES_ENABLED})
 
 cmake_dependent_option(WITH_INTERNAL_LOGS "Enable logging from inside AVSystem Commons libraries" ON WITH_AVS_LOG OFF)
 cmake_dependent_option(WITH_INTERNAL_TRACE "Enable TRACE-level logs inside AVSystem Commons libraries" OFF WITH_INTERNAL_LOGS OFF)
@@ -510,6 +511,10 @@ if(WITH_AVS_HTTP)
             include_directories(${ZLIB_INCLUDE_DIRS})
         endif()
     endif()
+endif()
+
+if(WITH_AVS_PERSISTENCE)
+    add_module_with_include_dirs(persistence MODULE_INCLUDE_DIRS)
 endif()
 
 

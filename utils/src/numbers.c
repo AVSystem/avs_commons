@@ -62,3 +62,42 @@ uint64_t avs_convert_be64(uint64_t value) {
             | (value << 56));
 }
 #endif // AVS_COMMONS_BIG_ENDIAN
+
+uint32_t avs_htonf(float f) {
+    AVS_STATIC_ASSERT(sizeof(float) == sizeof(uint32_t), float_sane);
+    union {
+        float f;
+        uint32_t ieee;
+    } conv;
+    conv.f = f;
+    return avs_convert_be32(conv.ieee);
+}
+
+uint64_t avs_htond(double d) {
+    AVS_STATIC_ASSERT(sizeof(double) == sizeof(uint64_t), float_sane);
+    union {
+        double d;
+        uint64_t ieee;
+    } conv;
+    conv.d = d;
+    return avs_convert_be64(conv.ieee);
+}
+
+float avs_ntohf(uint32_t v) {
+    union {
+        float f;
+        uint32_t ieee;
+    } conv;
+    conv.ieee = avs_convert_be32(v);
+    return conv.f;
+}
+
+double avs_ntohd(uint64_t v) {
+    union {
+        double d;
+        uint64_t ieee;
+        char bytes[8];
+    } conv;
+    conv.ieee = avs_convert_be64(v);
+    return conv.d;
+}
