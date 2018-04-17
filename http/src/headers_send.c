@@ -16,6 +16,7 @@
 
 #include <avs_commons_config.h>
 
+#include <assert.h>
 #include <string.h>
 
 #include <avsystem/commons/stream/stream_net.h>
@@ -32,7 +33,9 @@ static int send_common_headers(avs_stream_abstract_t *stream,
                                const char *host,
                                const char *port,
                                const char *path) {
-    int is_ipv6 = !!strchr(host, ':');
+    assert(host);
+    assert(path);
+    const int is_ipv6 = !!strchr(host, ':');
 
     return !avs_stream_net_getsock(stream)
             || avs_stream_write_f(stream, "%s %s HTTP/1.1\r\n",

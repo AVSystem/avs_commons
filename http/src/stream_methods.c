@@ -338,7 +338,8 @@ int avs_http_add_header(avs_stream_abstract_t *stream_,
                         const char *key, const char *value) {
     http_stream_t *stream = (http_stream_t *) stream_;
     assert(stream->vtable == &http_vtable);
-    LOG(TRACE, "http_add_header, %s: %s", key, value);
+    LOG(TRACE, "http_add_header, %s: %s", key ? key : "(null)",
+        value ? value : "(null)");
     AVS_LIST(http_header_t) new_header = (AVS_LIST(http_header_t))
             AVS_LIST_APPEND_NEW(http_header_t, &stream->user_headers);
     if (!new_header) {
@@ -379,15 +380,17 @@ int avs_http_open_stream(avs_stream_abstract_t **out,
                          const char *auth_username,
                          const char *auth_password) {
     assert(!*out);
+    assert(url);
     avs_net_abstract_socket_t *socket = NULL;
     http_stream_t *stream = NULL;
     int result = 0;
-    LOG(TRACE, "avs_http_open_stream, method == %d, encoding == %d, "
-               "protocol == %s, host == %s, port == %s, path == %s, "
-               "auth_username == %s, auth_password == %s",
-             (int) method, (int) encoding, avs_url_protocol(url),
-             avs_url_host(url), avs_url_port(url),
-             avs_url_path(url), auth_username, auth_password);
+    LOG(TRACE,
+        "avs_http_open_stream, method == %d, encoding == %d, "
+        "protocol == %s, host == %s, port == %s, path == %s, "
+        "auth_username == %s, auth_password == %s",
+        (int) method, (int) encoding, avs_url_protocol(url), avs_url_host(url),
+        avs_url_port(url), avs_url_path(url),
+        auth_username ? auth_username : "", auth_password ? auth_password : "");
 
     stream = (http_stream_t *) calloc(
             1,
