@@ -31,6 +31,12 @@ extern "C" {
 struct avs_persistence_context_struct;
 typedef struct avs_persistence_context_struct avs_persistence_context_t;
 
+typedef enum {
+    AVS_PERSISTENCE_UNKNOWN = -1,
+    AVS_PERSISTENCE_STORE = 0,
+    AVS_PERSISTENCE_RESTORE
+} avs_persistence_direction_t;
+
 typedef int
 avs_persistence_handler_collection_element_t(avs_persistence_context_t *ctx,
                                              void *element,
@@ -73,6 +79,16 @@ avs_persistence_ignore_context_new(avs_stream_abstract_t *stream);
  * @param ctx       pointer to the context to be deleted
  */
 void avs_persistence_context_delete(avs_persistence_context_t *ctx);
+
+/**
+ * Returns the direction of @p ctx operation.
+ * @param ctx persistence context to inspect
+ * @return AVS_PERSISTENCE_STORE if the context writes data to an external
+ *         stream, AVS_PERSISTENCE_RESTORE if it it reads data from an external
+ *         stream, or AVS_PERSISTENCE_UNKNOWN in case of error.
+ */
+avs_persistence_direction_t
+avs_persistence_direction(avs_persistence_context_t *ctx);
 
 /**
  * Performs operation (depending on the @p ctx) on bool.

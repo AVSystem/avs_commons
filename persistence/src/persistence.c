@@ -62,6 +62,7 @@ persistence_handler_tree_t(avs_persistence_context_t *ctx,
                            avs_persistence_cleanup_collection_element_t *cleanup);
 
 struct avs_persistence_context_struct {
+    avs_persistence_direction_t direction;
     persistence_handler_u16_t *handle_u16;
     persistence_handler_u32_t *handle_u32;
     persistence_handler_u64_t *handle_u64;
@@ -189,6 +190,7 @@ static int persist_tree(avs_persistence_context_t *ctx,
 }
 
 #define INIT_STORE_CONTEXT(Stream) { \
+            AVS_PERSISTENCE_STORE, \
             persist_u16, \
             persist_u32, \
             persist_u64, \
@@ -367,6 +369,7 @@ static int restore_tree(avs_persistence_context_t *ctx,
 }
 
 #define INIT_RESTORE_CONTEXT(Stream) { \
+            AVS_PERSISTENCE_RESTORE, \
             restore_u16, \
             restore_u32, \
             restore_u64, \
@@ -498,6 +501,7 @@ static int ignore_tree(avs_persistence_context_t *ctx,
 }
 
 #define INIT_IGNORE_CONTEXT(Stream) { \
+            AVS_PERSISTENCE_RESTORE, \
             ignore_u16, \
             ignore_u32, \
             ignore_u64, \
@@ -553,6 +557,14 @@ avs_persistence_ignore_context_new(avs_stream_abstract_t *stream) {
 
 void avs_persistence_context_delete(avs_persistence_context_t *ctx) {
     free(ctx);
+}
+
+avs_persistence_direction_t
+avs_persistence_direction(avs_persistence_context_t *ctx) {
+    if (!ctx) {
+        return AVS_PERSISTENCE_UNKNOWN;
+    }
+    return ctx->direction;
 }
 
 int avs_persistence_u8(avs_persistence_context_t *ctx,
