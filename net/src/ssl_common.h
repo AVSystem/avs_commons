@@ -462,7 +462,7 @@ static inline int _avs_net_psk_copy(avs_net_owned_psk_t *dst,
     avs_net_owned_psk_t out_psk;
     memset(&out_psk, 0, sizeof(out_psk));
     out_psk.psk_size = src->psk_size;
-    out_psk.psk = (char *) malloc(src->psk_size);
+    out_psk.psk = malloc(src->psk_size);
     if (!out_psk.psk) {
         LOG(ERROR, "out of memory");
         return -1;
@@ -470,8 +470,9 @@ static inline int _avs_net_psk_copy(avs_net_owned_psk_t *dst,
 
     out_psk.identity_size = src->identity_size;
     if (out_psk.identity_size) {
-        out_psk.identity = (char *) malloc(src->identity_size);
+        out_psk.identity = malloc(src->identity_size);
         if (!out_psk.identity) {
+            free(out_psk.psk);
             LOG(ERROR, "out of memory");
             return -1;
         }
