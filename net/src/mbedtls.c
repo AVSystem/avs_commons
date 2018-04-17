@@ -67,7 +67,6 @@ typedef struct {
     struct {
         bool context_valid : 1;
         bool session_restored : 1;
-        bool use_session_resumption : 1;
     } flags;
     struct {
         // used when the socket is ready for communication
@@ -405,19 +404,23 @@ static int get_dtls_overhead(ssl_socket_t *socket,
     return 0;
 }
 
+static int save_session_in_socket(void *socket_,
+                                  const mbedtls_ssl_session *session) {
+    ssl_socket_t *socket = (ssl_socket_t *) socket_;
+    if (socket->config.endpoint != MBEDTLS_SSL_IS_CLIENT) {
+        return 0;
+    }
+    return session_save((mbedtls_ssl_session *) (intptr_t) session,
+                        socket->state.stored_session,
+                        sizeof(socket->state.stored_session));
+}
+
 static void close_ssl_raw(ssl_socket_t *socket) {
     if (socket->backend_socket) {
         avs_net_socket_close(socket->backend_socket);
     }
 
     if (socket->flags.context_valid) {
-        if (socket->flags.use_session_resumption
-                && socket->config.endpoint == MBEDTLS_SSL_IS_CLIENT) {
-            session_save(get_context(socket)->session,
-                         socket->state.stored_session,
-                         sizeof(socket->state.stored_session));
-        }
-
         mbedtls_ssl_free(get_context(socket));
         socket->flags.context_valid = false;
     }
@@ -625,6 +628,11 @@ static int configure_ssl(ssl_socket_t *socket,
     mbedtls_ssl_conf_handshake_timeout(&socket->config,
                                        (uint32_t) min_ms, (uint32_t) max_ms);
 
+    if (configuration->use_session_resumption) {
+        mbedtls_ssl_conf_session_cache(&socket->config, socket, NULL,
+                                       save_session_in_socket);
+    }
+
     if (configuration->additional_configuration_clb
             && configuration->additional_configuration_clb(&socket->config)) {
         LOG(ERROR, "Error while setting additional SSL configuration");
@@ -689,7 +697,7 @@ static int start_ssl(ssl_socket_t *socket, const char *host) {
     mbedtls_ssl_session restored_session;
     mbedtls_ssl_session_init(&restored_session);
 
-    bool restore_session = socket->flags.use_session_resumption;
+    bool restore_session = false;
     mbedtls_ssl_init(&socket->state.context);
     socket->flags.context_valid = true;
 
@@ -713,20 +721,19 @@ static int start_ssl(ssl_socket_t *socket, const char *host) {
     }
 #endif // WITH_X509
 
-    if (restore_session
-            && session_restore(&restored_session, socket->state.stored_session,
-                               sizeof(socket->state.stored_session))) {
-        LOG(WARNING, "Could not restore session; performing full handshake");
-        restore_session = false;
-    }
-
-    if (restore_session
-            && socket->config.endpoint == MBEDTLS_SSL_IS_CLIENT
-            && (result = mbedtls_ssl_set_session(get_context(socket),
-                                                 &restored_session))) {
-        LOG(WARNING,
-            "mbedtls_ssl_set_session() failed: %d; performing full handshake",
-            result);
+    if (socket->config.endpoint == MBEDTLS_SSL_IS_CLIENT) {
+        if (session_restore(&restored_session, socket->state.stored_session,
+                            sizeof(socket->state.stored_session))) {
+            LOG(WARNING,
+                "Could not restore session; performing full handshake");
+        } else if ((result = mbedtls_ssl_set_session(get_context(socket),
+                                                     &restored_session))) {
+            LOG(WARNING,
+                "mbedtls_ssl_set_session() failed: %d; performing full handshake",
+                result);
+        } else {
+            restore_session = true;
+        }
     }
 
     do {
@@ -768,10 +775,6 @@ finish:
         }
         return -1;
     } else {
-        if (restore_session) {
-            memset(socket->state.stored_session, 0,
-                   sizeof(socket->state.stored_session));
-        }
         socket->error_code = 0;
         return 0;
     }
@@ -1241,8 +1244,6 @@ static int initialize_ssl_socket(ssl_socket_t *socket,
 
     socket->backend_type = backend_type;
     socket->backend_configuration = configuration->backend_configuration;
-    socket->flags.use_session_resumption =
-            configuration->use_session_resumption;
 
     socket->security_mode = configuration->security.mode;
     switch (configuration->security.mode) {
