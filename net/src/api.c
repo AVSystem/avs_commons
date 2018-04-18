@@ -80,19 +80,6 @@ avs_net_private_key_from_file(const char *path,
     return result;
 }
 
-avs_net_private_key_t avs_net_private_key_from_ec(const char *curve_name,
-                                                  const void *private_key,
-                                                  size_t private_key_size) {
-    avs_net_private_key_t result;
-    memset(&result, 0, sizeof(result));
-    result.impl.source = AVS_NET_DATA_SOURCE_BUFFER;
-    result.impl.format = AVS_NET_DATA_FORMAT_EC;
-    result.impl.data.ec.curve_name = curve_name;
-    result.impl.data.ec.private_key = private_key;
-    result.impl.data.ec.private_key_size = private_key_size;
-    return result;
-}
-
 avs_net_private_key_t avs_net_private_key_from_pkcs8(const void *data,
                                                      size_t size,
                                                      const char *password) {

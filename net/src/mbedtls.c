@@ -863,48 +863,6 @@ static int load_ca_certs_from_memory(mbedtls_x509_crt **out,
     return result;
 }
 
-static int load_client_key_from_ec(ssl_socket_certs_t *certs,
-                                   const avs_net_ssl_raw_ec_t *key) {
-    if (!key->private_key || !key->private_key_size) {
-        LOG(ERROR, "EC private key not provided");
-        return -1;
-    }
-    if (!key->curve_name) {
-        LOG(ERROR, "EC curve name not provided");
-        return -1;
-    }
-    mbedtls_ecp_keypair *private_ec, *cert_ec;
-    const mbedtls_ecp_curve_info *curve_info;
-
-    if (!certs->client_cert
-            || mbedtls_pk_get_type(&certs->client_cert->pk)
-                    != MBEDTLS_PK_ECKEY) {
-        LOG(ERROR, "invalid client certificate");
-        return -1;
-    }
-    cert_ec = mbedtls_pk_ec(certs->client_cert->pk);
-
-    if (mbedtls_pk_setup(certs->pk_key,
-                         mbedtls_pk_info_from_type(MBEDTLS_PK_ECKEY))) {
-        LOG(ERROR, "could not create pk_key");
-        return -1;
-    }
-    private_ec = mbedtls_pk_ec(*certs->pk_key);
-
-    if (!(curve_info = mbedtls_ecp_curve_info_from_name(key->curve_name))
-            || mbedtls_ecp_group_load(&private_ec->grp, curve_info->grp_id)
-            || mbedtls_mpi_read_binary(&private_ec->d,
-                                       (const unsigned char *) key->private_key,
-                                       key->private_key_size)
-            || mbedtls_ecp_copy(&private_ec->Q, &cert_ec->Q)) {
-        LOG(ERROR, "error while initializing private key; curve name: %s",
-            key->curve_name);
-        return -1;
-    }
-
-    return 0;
-}
-
 static int load_client_key_from_pkcs8(ssl_socket_certs_t *certs,
                                       const void *data,
                                       size_t size,
@@ -918,8 +876,6 @@ static int load_client_key_from_pkcs8(ssl_socket_certs_t *certs,
 static int load_client_key_from_data(ssl_socket_certs_t *certs,
                                      const avs_net_private_key_t *key) {
     switch (key->impl.format) {
-    case AVS_NET_DATA_FORMAT_EC:
-        return load_client_key_from_ec(certs, &key->impl.data.ec);
     case AVS_NET_DATA_FORMAT_PKCS8:
         return load_client_key_from_pkcs8(certs, key->impl.data.pkcs8.data,
                                           key->impl.data.pkcs8.size,

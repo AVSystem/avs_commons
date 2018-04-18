@@ -219,24 +219,6 @@ typedef enum {
 } avs_net_ssl_version_t;
 
 /**
- * Private key type. Needs to be specified in cases where the key is given as
- * raw data instead of being read from PEM file.
- */
-typedef enum {
-    AVS_NET_KEY_TYPE_DEFAULT = 0,
-    AVS_NET_KEY_TYPE_EC = AVS_NET_KEY_TYPE_DEFAULT /**< ECC (Elliptic Curve Cryptography) key */
-} avs_net_key_type_t;
-
-/**
- * Raw EC private key data.
- */
-typedef struct {
-    const char *curve_name; /**< elliptic curve name for EC keys */
-    const void *private_key; /**< A buffer containing private key data. */
-    size_t private_key_size; /**< Length (in bytes) of the @p private_key . */
-} avs_net_ssl_raw_ec_t;
-
-/**
  * Internal structure used to store password protected data.
  */
 typedef struct {
@@ -263,7 +245,6 @@ typedef struct {
 } avs_net_psk_t;
 
 typedef enum {
-    AVS_NET_DATA_FORMAT_EC,
     AVS_NET_DATA_FORMAT_DER,
     AVS_NET_DATA_FORMAT_PEM,
     AVS_NET_DATA_FORMAT_PKCS8,
@@ -287,7 +268,6 @@ typedef struct {
     avs_net_data_source_t source;
     union {
         avs_net_file_t file;
-        avs_net_ssl_raw_ec_t ec;
         avs_net_ssl_raw_data_t cert;
         avs_net_ssl_raw_data_t pkcs8;
         avs_net_ssl_raw_data_t pkcs12;
@@ -324,10 +304,6 @@ avs_net_private_key_t
 avs_net_private_key_from_file(const char *path,
                               const char *password,
                               avs_net_data_format_t format);
-
-avs_net_private_key_t avs_net_private_key_from_ec(const char *curve_name,
-                                                  const void *private_key,
-                                                  size_t private_key_size);
 
 avs_net_private_key_t avs_net_private_key_from_pkcs8(const void *data,
                                                      size_t size,
