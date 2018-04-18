@@ -96,7 +96,6 @@ double avs_ntohd(uint64_t v) {
     union {
         double d;
         uint64_t ieee;
-        char bytes[8];
     } conv;
     conv.ieee = avs_convert_be64(v);
     return conv.d;

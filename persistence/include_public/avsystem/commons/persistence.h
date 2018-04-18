@@ -42,7 +42,7 @@ avs_persistence_handler_collection_element_t(avs_persistence_context_t *ctx,
                                              void *element,
                                              void *user_data);
 
-typedef int avs_persistence_cleanup_collection_element_t(void *element);
+typedef void avs_persistence_cleanup_collection_element_t(void *element);
 
 /**
  * Creates context where each underlying operation writes passed value to the
@@ -104,7 +104,7 @@ int avs_persistence_bool(avs_persistence_context_t *ctx, bool *value);
  * On restore context behavior:
  *  - @p buffer is a pointer to the user-allocated buffer.
  *  - @p buffer_size is a size of the user-allocated buffer.
- *  - If the data cannot be fit into the @p buffer, then an error is returned.
+ *  - If the data cannot be read, then an error is returned.
  *
  * On persist context behavior:
  *  - @p buffer is a pointer to the user-allocated buffer.
@@ -260,11 +260,22 @@ int avs_persistence_string(avs_persistence_context_t *ctx,
  * Performs a operation (depending on the @p ctx) on a @p list_ptr, using
  * @p handler for each element.
  *
+ * Note that this function requires that all list elements have the same size;
+ * variable-length elements (e.g. containing flexible array members) are not
+ * supported.
+ *
+ * If @p cleanup is NULL, the resulting list is NOT cleared in case of restore
+ * error. Note that this may also mean that the last element is in a partially
+ * restored, inconsistent state. If you want the list automatically cleared
+ * without a cleanup routine, please use an empty function.
+ *
  * @param ctx              context that determines the actual operation
  * @param list_ptr         pointer to the list containing the data
  * @param element_size     size of single element in the list
  * @param handler          function called for each element of the list
  * @param handler_user_ptr opaque pointer passed to each call to @p handler
+ * @param cleanup          function called on all completely or partially
+ *                         restored elements in case of an error
  * @return 0 in case of success, negative value in case of failure
  */
 int avs_persistence_list(
@@ -272,19 +283,29 @@ int avs_persistence_list(
         AVS_LIST(void) *list_ptr,
         size_t element_size,
         avs_persistence_handler_collection_element_t *handler,
-        void *handler_user_ptr);
+        void *handler_user_ptr,
+        avs_persistence_cleanup_collection_element_t *cleanup);
 
 /**
  * Performs a operation (depending on the @p ctx) on a @p tree, using
  * @p handler for each element.
+ *
+ * Note that this function requires that all tree elements have the same size;
+ * variable-length elements (e.g. containing flexible array members) are not
+ * supported.
+ *
+ * Note that unlike @ref avs_persistence_list, @p cleanup MUST be non-NULL in
+ * case of a restore operation. This is because inserting a restored element
+ * onto a tree might fail, so it is not always possible to leave the cleanup to
+ * the user after the restore attempt.
  *
  * @param ctx              context that determines the actual operation
  * @param tree             tree containing the data
  * @param element_size     size of single element in the tree
  * @param handler          function called for each element of the tree
  * @param handler_user_ptr opaque pointer passed to each call to @p handler
- * @param cleanup          function called on an element if it could not be
- *                         restored in entirety
+ * @param cleanup          function called on all completely or partially
+ *                         restored elements in case of an error
  * @return 0 in case of success, negative value in case of failure
  */
 int avs_persistence_tree(

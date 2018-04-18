@@ -52,7 +52,8 @@ persistence_handler_list_t(avs_persistence_context_t *ctx,
                            AVS_LIST(void) *list_ptr,
                            size_t element_size,
                            avs_persistence_handler_collection_element_t *handler,
-                           void *handler_user_ptr);
+                           void *handler_user_ptr,
+                           avs_persistence_cleanup_collection_element_t *cleanup);
 typedef int
 persistence_handler_tree_t(avs_persistence_context_t *ctx,
                            AVS_RBTREE(void) tree,
@@ -146,8 +147,9 @@ static int persist_list(avs_persistence_context_t *ctx,
                         AVS_LIST(void) *list_ptr,
                         size_t element_size,
                         avs_persistence_handler_collection_element_t *handler,
-                        void *handler_user_ptr) {
-    (void) element_size;
+                        void *handler_user_ptr,
+                        avs_persistence_cleanup_collection_element_t *cleanup) {
+    (void) element_size; (void) cleanup;
     size_t count = AVS_LIST_SIZE(*list_ptr);
     uint32_t count32 = (uint32_t) count;
     if (count != count32) {
@@ -316,7 +318,9 @@ static int restore_list(avs_persistence_context_t *ctx,
                         AVS_LIST(void) *list_ptr,
                         size_t element_size,
                         avs_persistence_handler_collection_element_t *handler,
-                        void *handler_user_ptr) {
+                        void *handler_user_ptr,
+                        avs_persistence_cleanup_collection_element_t *cleanup) {
+    assert(list_ptr && !*list_ptr);
     uint32_t count;
     int retval = restore_u32(ctx, &count);
     if (!retval) {
@@ -325,13 +329,19 @@ static int restore_list(avs_persistence_context_t *ctx,
             AVS_LIST(void) element = AVS_LIST_NEW_BUFFER(element_size);
             if (!element) {
                 LOG(ERROR, "Out of memory");
-                return -1;
+                retval = -1;
+                break;
             }
             AVS_LIST_INSERT(insert_ptr, element);
             insert_ptr = AVS_LIST_NEXT_PTR(insert_ptr);
             if ((retval = handler(ctx, element, handler_user_ptr))) {
-                return retval;
+                break;
             }
+        }
+    }
+    if (retval && cleanup) {
+        AVS_LIST_CLEAR(list_ptr) {
+            cleanup(*list_ptr);
         }
     }
     return retval;
@@ -343,6 +353,8 @@ static int restore_tree(avs_persistence_context_t *ctx,
                         avs_persistence_handler_collection_element_t *handler,
                         void *handler_user_ptr,
                         avs_persistence_cleanup_collection_element_t *cleanup) {
+    assert(AVS_RBTREE_SIZE(tree) == 0);
+    assert(cleanup);
     uint32_t count;
     int retval = restore_u32(ctx, &count);
     if (!retval) {
@@ -351,7 +363,8 @@ static int restore_tree(avs_persistence_context_t *ctx,
                     AVS_RBTREE_ELEM_NEW_BUFFER(element_size);
             if (!element) {
                 LOG(ERROR, "Out of memory");
-                return -1;
+                retval = -1;
+                break;
             }
             if (!(retval = handler(ctx, element, handler_user_ptr))) {
                 if (AVS_RBTREE_INSERT(tree, element) != element) {
@@ -363,6 +376,11 @@ static int restore_tree(avs_persistence_context_t *ctx,
                 AVS_RBTREE_ELEM_DELETE_DETACHED(&element);
                 break;
             }
+        }
+    }
+    if (retval) {
+        AVS_RBTREE_CLEAR(tree) {
+            cleanup(*tree);
         }
     }
     return retval;
@@ -485,8 +503,9 @@ static int ignore_list(avs_persistence_context_t *ctx,
                        AVS_LIST(void) *list_ptr,
                        size_t element_size,
                        avs_persistence_handler_collection_element_t *handler,
-                       void *handler_user_ptr) {
-    (void) list_ptr; (void) element_size;
+                       void *handler_user_ptr,
+                       avs_persistence_cleanup_collection_element_t *cleanup) {
+    (void) list_ptr; (void) element_size; (void) cleanup;
     return ignore_collection(ctx, handler, handler_user_ptr);
 }
 
@@ -679,16 +698,18 @@ int avs_persistence_string(avs_persistence_context_t *ctx,
     return ctx->handle_string(ctx, string_ptr);
 }
 
-int avs_persistence_list(avs_persistence_context_t *ctx,
-                         AVS_LIST(void) *list_ptr,
-                         size_t element_size,
-                         avs_persistence_handler_collection_element_t *handler,
-                         void *handler_user_ptr) {
+int avs_persistence_list(
+        avs_persistence_context_t *ctx,
+        AVS_LIST(void) *list_ptr,
+        size_t element_size,
+        avs_persistence_handler_collection_element_t *handler,
+        void *handler_user_ptr,
+        avs_persistence_cleanup_collection_element_t *cleanup) {
     if (!ctx) {
         return -1;
     }
     return ctx->handle_list(ctx, list_ptr, element_size,
-                            handler, handler_user_ptr);
+                            handler, handler_user_ptr, cleanup);
 }
 
 int avs_persistence_tree(
