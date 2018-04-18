@@ -372,6 +372,10 @@ int avs_http_should_retry(avs_stream_abstract_t *stream_) {
     return (int) stream->flags.should_retry;
 }
 
+static inline const char *string_or_null(const char *str) {
+    return str ? str : "(null)";
+}
+
 int avs_http_open_stream(avs_stream_abstract_t **out,
                          avs_http_t *http,
                          avs_http_method_t method,
@@ -388,9 +392,10 @@ int avs_http_open_stream(avs_stream_abstract_t **out,
         "avs_http_open_stream, method == %d, encoding == %d, "
         "protocol == %s, host == %s, port == %s, path == %s, "
         "auth_username == %s, auth_password == %s",
-        (int) method, (int) encoding, avs_url_protocol(url), avs_url_host(url),
-        avs_url_port(url), avs_url_path(url),
-        auth_username ? auth_username : "", auth_password ? auth_password : "");
+        (int) method, (int) encoding, string_or_null(avs_url_protocol(url)),
+        string_or_null(avs_url_host(url)), string_or_null(avs_url_port(url)),
+        string_or_null(avs_url_path(url)), auth_username ? auth_username : "",
+        auth_password ? auth_password : "");
 
     stream = (http_stream_t *) calloc(
             1,
