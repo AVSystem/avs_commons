@@ -27,6 +27,7 @@
 #include "coap_log.h"
 #include "msg_cache.h"
 
+#include <assert.h>
 #include <inttypes.h>
 
 VISIBILITY_SOURCE_BEGIN
@@ -92,6 +93,9 @@ void _avs_coap_msg_cache_release(coap_msg_cache_t **cache_ptr) {
 static endpoint_t *cache_endpoint_add_ref(coap_msg_cache_t *cache,
                                           const char *remote_addr,
                                           const char *remote_port) {
+    assert(remote_addr);
+    assert(remote_port);
+
     AVS_LIST(endpoint_t) *ep_ptr;
     AVS_LIST_FOREACH_PTR(ep_ptr, &cache->endpoints) {
         if (!strcmp(remote_addr, (*ep_ptr)->addr)

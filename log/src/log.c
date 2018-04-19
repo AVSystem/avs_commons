@@ -31,7 +31,7 @@ static void default_log_handler(avs_log_level_t level,
                                 const char *message) {
     (void) level;
     (void) module;
-    fprintf(stderr, "%s\n", message);
+    fprintf(stderr, "%s\n", message ? message : "(null)");
 }
 
 static avs_log_handler_t * volatile HANDLER = default_log_handler;
