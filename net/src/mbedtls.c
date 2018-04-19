@@ -68,13 +68,10 @@ typedef struct {
         bool context_valid : 1;
         bool session_restored : 1;
     } flags;
-    struct {
-        // used when the socket is ready for communication
-        mbedtls_ssl_context context;
-        // may be used to store pre-existing session when the socket is closed
-        char stored_session[MBEDTLS_SSL_MAX_CONTENT_LEN];
-    } state;
+    mbedtls_ssl_context context;
     mbedtls_ssl_config config;
+    void *session_resumption_buffer;
+    size_t session_resumption_buffer_size;
     avs_net_security_mode_t security_mode;
     union {
 #ifdef WITH_X509
@@ -101,7 +98,7 @@ static bool is_session_resumed(ssl_socket_t *socket) {
 
 static mbedtls_ssl_context *get_context(ssl_socket_t *socket) {
     assert(socket->flags.context_valid);
-    return &socket->state.context;
+    return &socket->context;
 }
 
 /*
@@ -236,7 +233,7 @@ static int handle_session_persistence(avs_persistence_context_t *ctx,
 }
 
 static int session_save(mbedtls_ssl_session *session,
-                        char *out_buf, size_t out_buf_size) {
+                        void *out_buf, size_t out_buf_size) {
     avs_persistence_context_t *ctx = NULL;
     avs_stream_outbuf_t out_buf_stream = AVS_STREAM_OUTBUF_STATIC_INITIALIZER;
     avs_stream_outbuf_set_buffer(&out_buf_stream, out_buf, out_buf_size);
@@ -252,15 +249,15 @@ static int session_save(mbedtls_ssl_session *session,
     }
     retval = handle_session_persistence(ctx, session);
     avs_persistence_context_delete(ctx);
-finish:
-    if (retval) {
-        memset(out_buf, 0, out_buf_size);
-    }
+finish:;
+    size_t clear_start = retval ? 0 : avs_stream_outbuf_offset(&out_buf_stream);
+    assert(clear_start <= out_buf_size);
+    memset((char *) out_buf + clear_start, 0, out_buf_size - clear_start);
     return retval;
 }
 
 static int session_restore(mbedtls_ssl_session *out_session,
-                           const char *buf, size_t buf_size) {
+                           const void *buf, size_t buf_size) {
     avs_stream_inbuf_t in_buf_stream = AVS_STREAM_INBUF_STATIC_INITIALIZER;
     avs_stream_inbuf_set_buffer(&in_buf_stream, buf, buf_size);
     char magic_header[sizeof(PERSISTENCE_MAGIC)];
@@ -410,9 +407,12 @@ static int save_session_in_socket(void *socket_,
     if (socket->config.endpoint != MBEDTLS_SSL_IS_CLIENT) {
         return 0;
     }
+    // if session resumption buffer is NULL, this function is not called
+    assert(socket->session_resumption_buffer
+            && socket->session_resumption_buffer_size > 0);
     return session_save((mbedtls_ssl_session *) (intptr_t) session,
-                        socket->state.stored_session,
-                        sizeof(socket->state.stored_session));
+                        socket->session_resumption_buffer,
+                        socket->session_resumption_buffer_size);
 }
 
 static void close_ssl_raw(ssl_socket_t *socket) {
@@ -628,7 +628,12 @@ static int configure_ssl(ssl_socket_t *socket,
     mbedtls_ssl_conf_handshake_timeout(&socket->config,
                                        (uint32_t) min_ms, (uint32_t) max_ms);
 
-    if (configuration->use_session_resumption) {
+    if (configuration->session_resumption_buffer_size > 0) {
+        assert(configuration->session_resumption_buffer);
+        socket->session_resumption_buffer =
+                configuration->session_resumption_buffer;
+        socket->session_resumption_buffer_size =
+                configuration->session_resumption_buffer_size;
         mbedtls_ssl_conf_session_cache(&socket->config, socket, NULL,
                                        save_session_in_socket);
     }
@@ -698,7 +703,7 @@ static int start_ssl(ssl_socket_t *socket, const char *host) {
     mbedtls_ssl_session_init(&restored_session);
 
     bool restore_session = false;
-    mbedtls_ssl_init(&socket->state.context);
+    mbedtls_ssl_init(&socket->context);
     socket->flags.context_valid = true;
 
     mbedtls_ssl_set_bio(get_context(socket), socket,
@@ -721,9 +726,11 @@ static int start_ssl(ssl_socket_t *socket, const char *host) {
     }
 #endif // WITH_X509
 
-    if (socket->config.endpoint == MBEDTLS_SSL_IS_CLIENT) {
-        if (session_restore(&restored_session, socket->state.stored_session,
-                            sizeof(socket->state.stored_session))) {
+    if (socket->session_resumption_buffer
+            && socket->config.endpoint == MBEDTLS_SSL_IS_CLIENT) {
+        if (session_restore(&restored_session,
+                            socket->session_resumption_buffer,
+                            socket->session_resumption_buffer_size)) {
             LOG(WARNING,
                 "Could not restore session; performing full handshake");
         } else if ((result = mbedtls_ssl_set_session(get_context(socket),

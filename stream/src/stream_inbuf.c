@@ -58,7 +58,8 @@ static int inbuf_stream_peek(avs_stream_abstract_t *stream_,
     if (stream->buffer_offset + offset >= stream->buffer_size) {
         return EOF;
     }
-    return (unsigned char) stream->buffer[stream->buffer_offset + offset];
+    return ((const unsigned char *) stream->buffer)[
+            stream->buffer_offset + offset];
 }
 
 static int inbuf_stream_close(avs_stream_abstract_t *stream_) {
@@ -77,7 +78,7 @@ const avs_stream_inbuf_t AVS_STREAM_INBUF_STATIC_INITIALIZER
         = {&inbuf_stream_vtable, NULL, 0, 0};
 
 void avs_stream_inbuf_set_buffer(avs_stream_inbuf_t *stream,
-                                 const char *buffer,
+                                 const void *buffer,
                                  size_t buffer_size) {
     stream->buffer = buffer;
     stream->buffer_size = buffer_size;

@@ -37,7 +37,8 @@ static int outbuf_stream_write_some(avs_stream_abstract_t *stream_,
     if (stream->buffer_offset + *inout_data_length > stream->buffer_size) {
         *inout_data_length = stream->buffer_size - stream->buffer_offset;
     }
-    memcpy(stream->buffer + stream->buffer_offset, buffer, *inout_data_length);
+    memcpy((char *) stream->buffer + stream->buffer_offset, buffer,
+           *inout_data_length);
     stream->buffer_offset += *inout_data_length;
     return 0;
 }
@@ -83,7 +84,7 @@ int avs_stream_outbuf_set_offset(avs_stream_outbuf_t *stream, size_t offset) {
 }
 
 void avs_stream_outbuf_set_buffer(avs_stream_outbuf_t *stream,
-                                  char *buffer,
+                                  void *buffer,
                                   size_t buffer_size) {
     stream->buffer = buffer;
     stream->buffer_size = buffer_size;

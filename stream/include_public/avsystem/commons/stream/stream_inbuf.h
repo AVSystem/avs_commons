@@ -29,7 +29,7 @@ extern "C" {
 
 typedef struct {
     const void *const vtable;
-    const char *buffer;
+    const void *buffer;
     size_t buffer_size;
     size_t buffer_offset;
 } avs_stream_inbuf_t;
@@ -37,7 +37,7 @@ typedef struct {
 extern const avs_stream_inbuf_t AVS_STREAM_INBUF_STATIC_INITIALIZER;
 
 void avs_stream_inbuf_set_buffer(avs_stream_inbuf_t *stream,
-                                 const char *buffer,
+                                 const void *buffer,
                                  size_t buffer_size);
 
 #ifdef	__cplusplus

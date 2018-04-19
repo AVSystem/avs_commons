@@ -399,11 +399,69 @@ typedef struct {
 } avs_net_dtls_handshake_timeouts_t;
 
 typedef struct {
+    /**
+     * SSL/TLS version to use for communication.
+     */
     avs_net_ssl_version_t version;
+
+    /**
+     * Security configuration (either PSK key or certificate information) to use
+     * for communication.
+     */
     avs_net_security_info_t security;
+
+    /**
+     * If non-NULL, can be used to customize DTLS handhshake timeout limits.
+     */
     const avs_net_dtls_handshake_timeouts_t *dtls_handshake_timeouts;
-    bool use_session_resumption;
+
+    /**
+     * Buffer to use for (D)TLS session resumption (used if
+     * <c>session_resumption_buffer_size</c> is non-zero).
+     *
+     * During @ref avs_net_socket_connect, the library will attempt to load
+     * session information from this buffer, and in case of success, will offer
+     * that session to the server for resumption, allowing to maintain endpoint
+     * association between connections.
+     *
+     * After a successful establishment, resumption or renegotiation of a
+     * session, the buffer will be filled with the newly negotiated session
+     * information.
+     *
+     * The buffer will also be always filled with zeroes in case of error, and
+     * all the unused space will also be zeroed out after writing data, to allow
+     * for e.g. size optimization when saving data to persistent storage.
+     *
+     * Session resumption support is currently only available through the mbed
+     * TLS backend. Note that if support is added for other backends, the
+     * session data format might not be compatible between backends. There is
+     * rudimentary protection against attempting to read data in invalid format.
+     */
+    void *session_resumption_buffer;
+
+    /**
+     * Size of the buffer passed in <c>session_resumption_buffer</c>. Session
+     * resumption support is enabled if nonzero. Must be zero if
+     * <c>session_resumption_buffer</c> is NULL.
+     *
+     * Session data format used by the mbed TLS backend requires 112 bytes for
+     * common data, and additional variable number of bytes for DER-formatted
+     * X.509 peer certificate, if used.
+     *
+     * A buffer size of at least 1024 bytes is recommended to be able to store
+     * most certificates.
+     */
+    size_t session_resumption_buffer_size;
+
+    /**
+     * Callback that is executed when initializing communication, that can be
+     * used for additional configuration of the TLS backend.
+     */
     avs_ssl_additional_configuration_clb_t *additional_configuration_clb;
+
+    /**
+     * Configuration used for the underlying raw TCP/UDP socket.
+     */
     avs_net_socket_configuration_t backend_configuration;
 } avs_net_ssl_configuration_t;
 
@@ -446,8 +504,8 @@ typedef enum {
      * any other state than @ref AVS_NET_SOCKET_STATE_CONNECTED, the behaviour
      * is undefined.
      *
-     * If <c>use_session_resumption</c> field in
-     * @ref avs_net_ssl_configuration_t is set to <c>true</c>,
+     * If <c>session_resumption_buffer_size</c> field in
+     * @ref avs_net_ssl_configuration_t is nonzero,
      * @ref avs_net_socket_connect will attempt to resume the session that was
      * previously used before calling @ref avs_net_socket_close. However, if it
      * is not possible, a normal handshake will be used instead and the whole
