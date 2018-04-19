@@ -296,8 +296,9 @@ int avs_persistence_list(
  *
  * Note that unlike @ref avs_persistence_list, @p cleanup MUST be non-NULL in
  * case of a restore operation. This is because inserting a restored element
- * onto a tree might fail, so it is not always possible to leave the cleanup to
- * the user after the restore attempt.
+ * onto a tree might fail (e.g. if a newly restored element compares as equal to
+ * some previously restored element), so it is not always possible to leave the
+ * cleanup to the user after the restore attempt.
  *
  * @param ctx              context that determines the actual operation
  * @param tree             tree containing the data
