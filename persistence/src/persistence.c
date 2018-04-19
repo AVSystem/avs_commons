@@ -92,35 +92,30 @@ static int persist_bytes(avs_persistence_context_t *ctx,
 }
 
 static int persist_u16(avs_persistence_context_t *ctx, uint16_t *value) {
-    AVS_STATIC_ASSERT(sizeof(*value) == 2, u16_is_2bytes);
-    uint16_t tmp = avs_convert_be16(*value);
-    return avs_stream_write(ctx->stream, &tmp, 2);
+    const uint16_t tmp = avs_convert_be16(*value);
+    return avs_stream_write(ctx->stream, &tmp, sizeof(tmp));
 }
 
 static int persist_u32(avs_persistence_context_t *ctx, uint32_t *value) {
-    AVS_STATIC_ASSERT(sizeof(*value) == 4, u32_is_4bytes);
-    uint32_t tmp = avs_convert_be32(*value);
-    return avs_stream_write(ctx->stream, &tmp, 4);
+    const uint32_t tmp = avs_convert_be32(*value);
+    return avs_stream_write(ctx->stream, &tmp, sizeof(tmp));
 }
 
 static int persist_u64(avs_persistence_context_t *ctx, uint64_t *value) {
-    AVS_STATIC_ASSERT(sizeof(*value) == 8, u64_is_8bytes);
-    uint64_t tmp = avs_convert_be64(*value);
-    return avs_stream_write(ctx->stream, &tmp, 8);
+    const uint64_t tmp = avs_convert_be64(*value);
+    return avs_stream_write(ctx->stream, &tmp, sizeof(tmp));
 }
 
 static int persist_float(avs_persistence_context_t *ctx, float *value) {
-    uint32_t value_be = avs_htonf(*value);
+    const uint32_t value_be = avs_htonf(*value);
     AVS_STATIC_ASSERT(sizeof(*value) == sizeof(value_be), float_is_32);
-    AVS_STATIC_ASSERT(sizeof(value_be) == 4, u32_is_4bytes);
-    return avs_stream_write(ctx->stream, &value_be, 4);
+    return avs_stream_write(ctx->stream, &value_be, sizeof(value_be));
 }
 
 static int persist_double(avs_persistence_context_t *ctx, double *value) {
-    uint64_t value_be = avs_htond(*value);
+    const uint64_t value_be = avs_htond(*value);
     AVS_STATIC_ASSERT(sizeof(*value) == sizeof(value_be), double_is_64);
-    AVS_STATIC_ASSERT(sizeof(value_be) == 8, u64_is_8bytes);
-    return avs_stream_write(ctx->stream, &value_be, 8);
+    return avs_stream_write(ctx->stream, &value_be, sizeof(value_be));
 }
 
 static int persist_sized_buffer(avs_persistence_context_t *ctx,
@@ -128,7 +123,9 @@ static int persist_sized_buffer(avs_persistence_context_t *ctx,
                                 size_t *size_ptr) {
     uint32_t size32 = (uint32_t) *size_ptr;
     if (size32 != *size_ptr) {
-        LOG(ERROR, "Element too big to persist");
+        LOG(ERROR,
+            "Element too big to persist (%zu is larger than %" PRIu32 ")",
+            *size_ptr, UINT32_MAX);
     }
     int retval = persist_u32(ctx, &size32);
     if (!retval && size32 > 0) {
@@ -150,7 +147,7 @@ static int persist_list(avs_persistence_context_t *ctx,
                         void *handler_user_ptr,
                         avs_persistence_cleanup_collection_element_t *cleanup) {
     (void) element_size; (void) cleanup;
-    size_t count = AVS_LIST_SIZE(*list_ptr);
+    const size_t count = AVS_LIST_SIZE(*list_ptr);
     uint32_t count32 = (uint32_t) count;
     if (count != count32) {
         return -1;
@@ -174,7 +171,7 @@ static int persist_tree(avs_persistence_context_t *ctx,
                         void *handler_user_ptr,
                         avs_persistence_cleanup_collection_element_t *cleanup) {
     (void) element_size; (void) cleanup;
-    size_t count = AVS_RBTREE_SIZE(tree);
+    const size_t count = AVS_RBTREE_SIZE(tree);
     uint32_t count32 = (uint32_t) count;
     if (count != count32) {
         return -1;
@@ -221,9 +218,8 @@ static int restore_bytes(avs_persistence_context_t *ctx,
 }
 
 static int restore_u16(avs_persistence_context_t *ctx, uint16_t *out) {
-    AVS_STATIC_ASSERT(sizeof(*out) == 2, u16_is_2bytes);
     uint16_t tmp;
-    int retval = avs_stream_read_reliably(ctx->stream, &tmp, 2);
+    int retval = avs_stream_read_reliably(ctx->stream, &tmp, sizeof(tmp));
     if (!retval && out) {
         *out = avs_convert_be16(tmp);
     }
@@ -231,9 +227,8 @@ static int restore_u16(avs_persistence_context_t *ctx, uint16_t *out) {
 }
 
 static int restore_u32(avs_persistence_context_t *ctx, uint32_t *out) {
-    AVS_STATIC_ASSERT(sizeof(*out) == 4, u32_is_4bytes);
     uint32_t tmp;
-    int retval = avs_stream_read_reliably(ctx->stream, &tmp, 4);
+    int retval = avs_stream_read_reliably(ctx->stream, &tmp, sizeof(tmp));
     if (!retval) {
         *out = avs_convert_be32(tmp);
     }
@@ -241,9 +236,8 @@ static int restore_u32(avs_persistence_context_t *ctx, uint32_t *out) {
 }
 
 static int restore_u64(avs_persistence_context_t *ctx, uint64_t *out) {
-    AVS_STATIC_ASSERT(sizeof(*out) == 8, u64_is_8bytes);
     uint64_t tmp;
-    int retval = avs_stream_read_reliably(ctx->stream, &tmp, 8);
+    int retval = avs_stream_read_reliably(ctx->stream, &tmp, sizeof(tmp));
     if (!retval) {
         *out = avs_convert_be64(tmp);
     }
@@ -253,8 +247,7 @@ static int restore_u64(avs_persistence_context_t *ctx, uint64_t *out) {
 static int restore_float(avs_persistence_context_t *ctx, float *out) {
     uint32_t tmp;
     AVS_STATIC_ASSERT(sizeof(*out) == sizeof(tmp), float_is_32);
-    AVS_STATIC_ASSERT(sizeof(tmp) == 4, u32_is_4bytes);
-    int retval = avs_stream_read_reliably(ctx->stream, &tmp, 4);
+    int retval = avs_stream_read_reliably(ctx->stream, &tmp, sizeof(tmp));
     if (!retval) {
         *out = avs_ntohf(tmp);
     }
@@ -264,8 +257,7 @@ static int restore_float(avs_persistence_context_t *ctx, float *out) {
 static int restore_double(avs_persistence_context_t *ctx, double *out) {
     uint64_t tmp;
     AVS_STATIC_ASSERT(sizeof(*out) == sizeof(tmp), double_is_64);
-    AVS_STATIC_ASSERT(sizeof(tmp) == 8, u64_is_8bytes);
-    int retval = avs_stream_read_reliably(ctx->stream, &tmp, 8);
+    int retval = avs_stream_read_reliably(ctx->stream, &tmp, sizeof(tmp));
     if (!retval) {
         *out = avs_ntohd(tmp);
     }
@@ -434,38 +426,33 @@ static int ignore_bytes(avs_persistence_context_t *ctx,
 static int ignore_u16(avs_persistence_context_t *ctx, uint16_t *out) {
     (void) out;
     uint16_t tmp;
-    AVS_STATIC_ASSERT(sizeof(*out) == 2, u16_is_2bytes);
-    return avs_stream_read_reliably(ctx->stream, &tmp, 2);
+    return avs_stream_read_reliably(ctx->stream, &tmp, sizeof(tmp));
 }
 
 static int ignore_u32(avs_persistence_context_t *ctx, uint32_t *out) {
     (void) out;
     uint32_t tmp;
-    AVS_STATIC_ASSERT(sizeof(*out) == 4, u32_is_4bytes);
-    return avs_stream_read_reliably(ctx->stream, &tmp, 4);
+    return avs_stream_read_reliably(ctx->stream, &tmp, sizeof(tmp));
 }
 
 static int ignore_u64(avs_persistence_context_t *ctx, uint64_t *out) {
     (void) out;
     uint64_t tmp;
-    AVS_STATIC_ASSERT(sizeof(*out) == 8, u64_is_8bytes);
-    return avs_stream_read_reliably(ctx->stream, &tmp, 8);
+    return avs_stream_read_reliably(ctx->stream, &tmp, sizeof(tmp));
 }
 
 static int ignore_float(avs_persistence_context_t *ctx, float *out) {
     (void) out;
     uint32_t tmp;
     AVS_STATIC_ASSERT(sizeof(*out) == sizeof(tmp), float_is_32);
-    AVS_STATIC_ASSERT(sizeof(tmp) == 4, u32_is_4bytes);
-    return avs_stream_read_reliably(ctx->stream, &tmp, 4);
+    return avs_stream_read_reliably(ctx->stream, &tmp, sizeof(tmp));
 }
 
 static int ignore_double(avs_persistence_context_t *ctx, double *out) {
     (void) out;
     uint64_t tmp;
     AVS_STATIC_ASSERT(sizeof(*out) == sizeof(tmp), double_is_64);
-    AVS_STATIC_ASSERT(sizeof(tmp) == 8, u64_is_8bytes);
-    return avs_stream_read_reliably(ctx->stream, &tmp, 8);
+    return avs_stream_read_reliably(ctx->stream, &tmp, sizeof(tmp));
 }
 
 static int ignore_collection(
@@ -588,11 +575,10 @@ avs_persistence_direction(avs_persistence_context_t *ctx) {
 
 int avs_persistence_u8(avs_persistence_context_t *ctx,
                        uint8_t *value) {
-    AVS_STATIC_ASSERT(sizeof(*value) == 1, uint8_is_1_byte);
     if (!ctx) {
         return -1;
     }
-    return ctx->handle_bytes(ctx, value, 1);
+    return ctx->handle_bytes(ctx, value, sizeof(*value));
 }
 
 int avs_persistence_u16(avs_persistence_context_t *ctx,
@@ -621,31 +607,24 @@ int avs_persistence_u64(avs_persistence_context_t *ctx,
 
 int avs_persistence_i8(avs_persistence_context_t *ctx,
                        int8_t *value) {
-    AVS_STATIC_ASSERT(sizeof(*value) == 1, int8_is_1_byte);
     if (!ctx) {
         return -1;
     }
-    return ctx->handle_bytes(ctx, value, 1);
+    return ctx->handle_bytes(ctx, value, sizeof(*value));
 }
 
 int avs_persistence_i16(avs_persistence_context_t *ctx,
                         int16_t *value) {
-    AVS_STATIC_ASSERT(sizeof(*value) == sizeof(uint16_t),
-                      int16_uint16_equivalent);
     return avs_persistence_u16(ctx, (uint16_t *) value);
 }
 
 int avs_persistence_i32(avs_persistence_context_t *ctx,
                         int32_t *value) {
-    AVS_STATIC_ASSERT(sizeof(*value) == sizeof(uint32_t),
-                      int32_uint32_equivalent);
     return avs_persistence_u32(ctx, (uint32_t *) value);
 }
 
 int avs_persistence_i64(avs_persistence_context_t *ctx,
                         int64_t *value) {
-    AVS_STATIC_ASSERT(sizeof(*value) == sizeof(uint64_t),
-                      int64_uint64_equivalent);
     return avs_persistence_u64(ctx, (uint64_t *) value);
 }
 
