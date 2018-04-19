@@ -148,7 +148,16 @@ udp_echo(const char *in, size_t in_size, char *out, size_t out_size) {
 }
 
 static void udp_echo_serve(uint16_t port) {
+    char in_buffer[65535];
+    char out_buffer[65535];
+
     int sock = socket(AF_INET, SOCK_DGRAM, 0);
+    struct pollfd sock_pollfd = {
+        .fd = sock,
+        .events = POLLIN,
+        .revents = 0
+    };
+
     struct sockaddr_in addr;
     memset(&addr, 0, sizeof(addr));
     addr.sin_family = AF_INET;
@@ -163,14 +172,6 @@ static void udp_echo_serve(uint16_t port) {
 
     // notify parent
     kill(getppid(), SIGUSR1);
-
-    char in_buffer[65535];
-    char out_buffer[65535];
-    struct pollfd sock_pollfd = {
-        .fd = sock,
-        .events = POLLIN,
-        .revents = 0
-    };
 
     while (true) {
         if (poll(&sock_pollfd, 1, -1) < 0) {
