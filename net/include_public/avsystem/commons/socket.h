@@ -299,9 +299,9 @@ avs_net_trusted_cert_info_from_file(const char *filename,
  * loaded.
  *
  * NOTE: File loading and discovery is conducted by using: fopen(), fseek(),
- * fread(), ftell(), fclose(), opendir(), readdir() and closedir(), thus the
- * platform shall implement them. On embededd platforms it may be preferable to
- * use @ref avs_net_trusted_cert_info_from_buffer() instead.
+ * fread(), ftell(), fclose(), opendir(), readdir(), closedir() and stat(), thus
+ * the platform shall implement them. On embededd platforms it may be preferable
+ * to use @ref avs_net_trusted_cert_info_from_buffer() instead.
  *
  * @param path  Path from which the CA chain shall be loaded (may be NULL).
  * @param file  File from which the CA chain shall be loaded (may be NULL).
