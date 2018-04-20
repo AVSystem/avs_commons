@@ -804,10 +804,11 @@ static int configure_ssl_certs(ssl_socket_certs_t *certs,
                                const avs_net_certificate_info_t *cert_info) {
     LOG(TRACE, "configure_ssl_certs");
 
-    if (cert_info->server_cert_validation
-            && _avs_net_load_ca_certs(&certs->ca_cert, &cert_info->trusted_certs)) {
-        LOG(ERROR, "could not load CA chain");
-        return -1;
+    if (cert_info->server_cert_validation) {
+        if (_avs_net_load_ca_certs(&certs->ca_cert, &cert_info->trusted_certs)) {
+            LOG(ERROR, "could not load CA chain");
+            return -1;
+        }
     } else {
         LOG(DEBUG, "Server authentication disabled");
     }
