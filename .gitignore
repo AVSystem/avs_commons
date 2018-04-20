@@ -18,6 +18,7 @@
 /vector/avs_vector_test
 /vector/avs_vector_cxx_test
 /algorithm/avs_algorithm_test
+/persistence/avs_persistence_test
 
 /tools/dtls_echo_server
 /coap/certs
