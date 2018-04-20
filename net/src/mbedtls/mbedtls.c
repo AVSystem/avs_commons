@@ -813,13 +813,19 @@ static int configure_ssl_certs(ssl_socket_certs_t *certs,
         LOG(DEBUG, "Server authentication disabled");
     }
 
-    if (_avs_net_load_client_cert(&certs->client_cert, &cert_info->client_cert)) {
-        LOG(ERROR, "could not load client certificate");
-        return -1;
-    }
-    if (_avs_net_load_client_key(&certs->client_key, &cert_info->client_key)) {
-        LOG(ERROR, "could not load client private key");
-        return -1;
+    if (!is_client_cert_empty(&cert_info->client_cert)) {
+        if (_avs_net_load_client_cert(&certs->client_cert,
+                                      &cert_info->client_cert)) {
+            LOG(ERROR, "could not load client certificate");
+            return -1;
+        }
+        if (_avs_net_load_client_key(&certs->client_key,
+                                     &cert_info->client_key)) {
+            LOG(ERROR, "could not load client private key");
+            return -1;
+        }
+    } else {
+        LOG(TRACE, "client certificate not specified");
     }
 
     return 0;
