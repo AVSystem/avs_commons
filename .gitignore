@@ -22,6 +22,7 @@
 
 /tools/dtls_echo_server
 /coap/certs
+/net/certs
 
 # NetBeans Project
 nbproject

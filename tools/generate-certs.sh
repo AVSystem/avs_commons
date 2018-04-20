@@ -75,6 +75,8 @@ else
     yes | "$KEYTOOL" -importcert -alias root -file root.crt -keystore trustStore.jks -storetype PKCS12 -storepass "$TRUSTSTORE_PASSWORD" >/dev/null
     echo "* creating trustStore.jks - done"
 
+    "$OPENSSL" x509 -in root.crt -outform der > root.crt.der
+
     echo "* creating keyStore.jks"
     for NAME in client server; do
         "$OPENSSL" pkcs12 -export -in "${NAME}.crt" -inkey "${NAME}.key" -passin "pass:$KEYSTORE_PASSWORD" -out "${NAME}.p12" -name "${NAME}" -CAfile root.crt -caname root -password "pass:$KEYSTORE_PASSWORD"
