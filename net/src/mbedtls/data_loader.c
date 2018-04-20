@@ -29,6 +29,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 
 #include <avsystem/commons/utils.h>
 
@@ -45,7 +47,7 @@ VISIBILITY_SOURCE_BEGIN
  */
 static void *read_file(const char *name, size_t *out_size) {
     FILE *f = fopen(name, "rb");
-    void *buffer = NULL;
+    char *buffer = NULL;
     long len;
     if (!f) {
         LOG(ERROR, "could not open file <%s>: %s", name, strerror(errno));
@@ -58,9 +60,11 @@ static void *read_file(const char *name, size_t *out_size) {
         goto finish;
     }
 
-    buffer = malloc((size_t)len);
+    // Allocate buffer that is also able to store '\0' in case the contents are
+    // PEM encoded.
+    buffer = (char *)calloc(1, (size_t)len + 1);
     if (!buffer) {
-        LOG(ERROR, "could not allocate buffer of size <%ld>", len);
+        LOG(ERROR, "could not allocate buffer of size <%ld>", len + 1);
         goto finish;
     }
     if (fread(buffer, (size_t)len, 1, f) != 1) {
@@ -68,6 +72,10 @@ static void *read_file(const char *name, size_t *out_size) {
         buffer = NULL;
         LOG(ERROR, "could not read file <%s>: %s", name, strerror(errno));
         goto finish;
+    }
+    // Same as in mbedtls_pk_load_file()
+    if (strstr(buffer, "-----BEGIN ") != NULL) {
+        len++;
     }
     *out_size = (size_t)len;
 finish:
@@ -102,10 +110,20 @@ iterate_directory(const char *directory, entry_callback_t *clb, void *context) {
                 "could not generate file name (%s/%s) - filename or directory "
                 "too long (maximum total length supported is %" PRIu32 ")",
                 directory, entry->d_name, (uint32_t) MAX_PATH_LENGTH);
-            retval = -1;
             // continue anyway, hoping to load something
-        } else {
-            // TODO: Perhaps filter out directories?
+            retval = -1;
+            continue;
+        }
+
+        struct stat statbuf;
+        if (stat(name, &statbuf) < 0) {
+            LOG(ERROR, "could not stat %s: %s", name, strerror(errno));
+            // continue anyway, hoping to load something
+            retval = -1;
+            continue;
+        }
+
+        if (S_ISREG(statbuf.st_mode)) {
             clb(context, name);
         }
     }
@@ -129,7 +147,7 @@ append_cert_from_buffer(mbedtls_x509_crt *chain, const void *buffer, size_t len)
 }
 
 static int load_cert_from_file(mbedtls_x509_crt *chain, const char *name) {
-    LOG(DEBUG, "going to load CA from <%s>", name);
+    LOG(DEBUG, "certificate <%s>: going to load", name);
 
     size_t len;
     void *buf = read_file(name, &len);
@@ -138,6 +156,11 @@ static int load_cert_from_file(mbedtls_x509_crt *chain, const char *name) {
     }
     int retval = append_cert_from_buffer(chain, buf, len);
     free(buf);
+    if (retval) {
+        LOG(DEBUG, "certificate <%s>: failed", name);
+    } else {
+        LOG(DEBUG, "certificate <%s>: loaded", name);
+    }
     return retval;
 }
 
@@ -181,8 +204,8 @@ int _avs_net_load_ca_certs(mbedtls_x509_crt **out,
         }
         return load_cert_from_file(*out, info->desc.info.file.filename);
     case AVS_NET_DATA_SOURCE_PATHS: {
-        int retfile;
-        int retpath;
+        int retfile = -1;
+        int retpath = -1;
         if (info->desc.info.paths.filename) {
             retfile = load_cert_from_file(*out, info->desc.info.paths.filename);
         }
@@ -245,7 +268,7 @@ static int load_private_key_from_buffer(mbedtls_pk_context *client_key,
 static int load_private_key_from_file(mbedtls_pk_context *client_key,
                                       const char *filename,
                                       const char *password) {
-    LOG(DEBUG, "going to load private key from <%s>", filename);
+    LOG(DEBUG, "private key <%s>: going to load", filename);
     size_t len;
     void *buf = read_file(filename, &len);
     if (!buf) {
@@ -254,6 +277,11 @@ static int load_private_key_from_file(mbedtls_pk_context *client_key,
     const int retval =
             load_private_key_from_buffer(client_key, buf, len, password);
     free(buf);
+    if (retval) {
+        LOG(DEBUG, "private key <%s>: failed", filename);
+    } else {
+        LOG(DEBUG, "private key <%s>: loaded", filename);
+    }
     return retval;
 }
 
@@ -279,3 +307,7 @@ int _avs_net_load_client_key(mbedtls_pk_context **client_key,
     }
     return 0;
 }
+
+#ifdef AVS_UNIT_TESTING
+#include "test/data_loader.c"
+#endif

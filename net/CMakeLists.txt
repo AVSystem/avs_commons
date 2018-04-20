@@ -93,6 +93,16 @@ if(WITH_MBEDTLS AND WITH_TLS_SESSION_PERSISTENCE)
                         ../rbtree/include_public)
 endif()
 
+if(WITH_AVS_UNIT AND NOT EXISTS "${CMAKE_CURRENT_BINARY_DIR}/certs/client.crt.der")
+    execute_process(COMMAND
+                    "${CMAKE_CURRENT_SOURCE_DIR}/../tools/generate-certs.sh"
+                    "${CMAKE_CURRENT_BINARY_DIR}/certs"
+                    RESULT_VARIABLE RES)
+    if(NOT ${RES} EQUAL 0)
+        message(FATAL_ERROR "could not generate SSL certificates")
+    endif()
+endif()
+
 add_avs_test(avs_net ${ALL_SOURCES})
 avs_install_export(avs_net net)
 avs_propagate_exports()
