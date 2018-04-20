@@ -17,12 +17,23 @@
 #ifndef NET_UTIL_H
 #define NET_UTIL_H
 
-#define MODULE_NAME avs_net_util
-#include <x_log_config.h>
-
 VISIBILITY_PRIVATE_HEADER_BEGIN
 
-void *_avs_read_file(const char *name, size_t *out_size);
+/**
+ * Both mbedTLS and openSSL provide an API allowing to load certificates / keys
+ * / whatever from files and paths. However, this is something we do not have a
+ * direct control over - i.e. we don't control what C API is used to load files,
+ * nor how they are being loaded, we don't control their overhead, and so on.
+ *
+ * It thus made sense to develop a single and uniform method to deal with
+ * security related file loading and path traversal.
+ */
+char *_avs_read_file(const char *name, size_t *out_size);
+
+typedef void entry_callback_t(void *context, const char *filename);
+int _avs_iterate_directory(const char *directory,
+                           entry_callback_t *clb,
+                           void *context);
 
 VISIBILITY_PRIVATE_HEADER_END
 
