@@ -30,133 +30,96 @@ VISIBILITY_SOURCE_BEGIN
 
 const avs_time_duration_t AVS_NET_SOCKET_DEFAULT_RECV_TIMEOUT = { 30, 0 };
 
-avs_net_client_cert_t
-avs_net_client_cert_from_file(const char *file,
-                              const char *password,
-                              avs_net_data_format_t format) {
-    avs_net_client_cert_t result;
-    memset(&result, 0, sizeof(result));
-    result.impl.source = AVS_NET_DATA_SOURCE_FILE;
-    result.impl.format = format;
-    result.impl.data.file.path = file;
-    result.impl.data.file.password = password;
+avs_net_trusted_cert_info_t
+avs_net_trusted_cert_info_from_file(const char *filename,
+                                    const char *password) {
+    avs_net_trusted_cert_info_t result;
+     memset(&result, 0, sizeof(result));
+    result.desc.is_trusted_cert = true;
+    result.desc.source = AVS_NET_DATA_SOURCE_FILE;
+    result.desc.info.file.filename = filename;
+    result.desc.info.file.password = password;
     return result;
 }
 
-avs_net_client_cert_t avs_net_client_cert_from_x509(const void *data,
-                                                    size_t data_size) {
-    avs_net_client_cert_t result;
+avs_net_trusted_cert_info_t
+avs_net_trusted_cert_info_from_paths(const char *path, const char *filename) {
+    avs_net_trusted_cert_info_t result;
     memset(&result, 0, sizeof(result));
-    result.impl.source = AVS_NET_DATA_SOURCE_BUFFER;
-    result.impl.format = AVS_NET_DATA_FORMAT_DER;
-    result.impl.data.cert.data = data;
-    result.impl.data.cert.size = data_size;
+    result.desc.is_trusted_cert = true;
+    result.desc.source = AVS_NET_DATA_SOURCE_PATHS;
+    result.desc.info.paths.path = path;
+    result.desc.info.paths.filename = filename;
     return result;
 }
 
-avs_net_client_cert_t avs_net_client_cert_from_pkcs12(const void *data,
-                                                      size_t data_size,
-                                                      const char *password) {
-    avs_net_client_cert_t result;
+avs_net_trusted_cert_info_t
+avs_net_trusted_cert_info_from_buffer(const void *buffer,
+                                      size_t buffer_size,
+                                      const char *password) {
+    avs_net_trusted_cert_info_t result;
     memset(&result, 0, sizeof(result));
-    result.impl.source = AVS_NET_DATA_SOURCE_BUFFER;
-    result.impl.format = AVS_NET_DATA_FORMAT_PKCS12;
-    result.impl.data.cert.data = data;
-    result.impl.data.cert.size = data_size;
-    result.impl.data.cert.password = password;
+    result.desc.is_trusted_cert = true;
+    result.desc.source = AVS_NET_DATA_SOURCE_BUFFER;
+    result.desc.info.buffer.buffer = buffer;
+    result.desc.info.buffer.buffer_size = buffer_size;
+    result.desc.info.buffer.password = password;
     return result;
 }
 
-avs_net_private_key_t
-avs_net_private_key_from_file(const char *path,
-                              const char *password,
-                              avs_net_data_format_t format) {
-    avs_net_private_key_t result;
+avs_net_client_key_info_t
+avs_net_client_key_info_from_file(const char *filename,
+                                  const char *password) {
+    avs_net_client_key_info_t result;
     memset(&result, 0, sizeof(result));
-    result.impl.source = AVS_NET_DATA_SOURCE_FILE;
-    result.impl.format = format;
-    result.impl.data.file.path = path;
-    result.impl.data.file.password = password;
+    result.desc.is_client_key = true;
+    result.desc.source = AVS_NET_DATA_SOURCE_FILE;
+    result.desc.info.file.filename = filename;
+    result.desc.info.file.password = password;
     return result;
 }
 
-avs_net_private_key_t avs_net_private_key_from_pkcs8(const void *data,
-                                                     size_t size,
-                                                     const char *password) {
-    avs_net_private_key_t result;
+avs_net_client_key_info_t
+avs_net_client_key_info_from_buffer(const void *buffer,
+                                    size_t buffer_size,
+                                    const char *password) {
+    avs_net_client_key_info_t result;
     memset(&result, 0, sizeof(result));
-    result.impl.source = AVS_NET_DATA_SOURCE_BUFFER;
-    result.impl.format = AVS_NET_DATA_FORMAT_PKCS8;
-    result.impl.data.pkcs8.data = data;
-    result.impl.data.pkcs8.size = size;
-    result.impl.data.pkcs8.password = password;
+    result.desc.is_client_key = true;
+    result.desc.source = AVS_NET_DATA_SOURCE_BUFFER;
+    result.desc.info.buffer.buffer = buffer;
+    result.desc.info.buffer.buffer_size = buffer_size;
+    result.desc.info.buffer.password = password;
     return result;
 }
 
-avs_net_private_key_t avs_net_private_key_from_pkcs12(const void *data,
-                                                      size_t size,
-                                                      const char *password) {
-    avs_net_private_key_t result;
+avs_net_client_cert_info_t
+avs_net_client_cert_info_from_file(const char *filename,
+                                   const char *password) {
+    avs_net_client_cert_info_t result;
     memset(&result, 0, sizeof(result));
-    result.impl.source = AVS_NET_DATA_SOURCE_BUFFER;
-    result.impl.format = AVS_NET_DATA_FORMAT_PKCS12;
-    result.impl.data.pkcs12.data = data;
-    result.impl.data.pkcs12.size = size;
-    result.impl.data.pkcs12.password = password;
+    result.desc.is_client_cert = true;
+    result.desc.source = AVS_NET_DATA_SOURCE_FILE;
+    result.desc.info.file.filename = filename;
+    result.desc.info.file.password = password;
     return result;
 }
 
-avs_net_trusted_cert_source_t
-avs_net_trusted_cert_source_from_x509(const void *cert_der, size_t size) {
-    avs_net_trusted_cert_source_t result;
+avs_net_client_cert_info_t
+avs_net_client_cert_info_from_buffer(const void *buffer,
+                                     size_t buffer_size,
+                                     const char *password) {
+    avs_net_client_cert_info_t result;
     memset(&result, 0, sizeof(result));
-    result.impl.source = AVS_NET_DATA_SOURCE_BUFFER;
-    result.impl.format = AVS_NET_DATA_FORMAT_DER;
-    result.impl.data.cert.data = cert_der;
-    result.impl.data.cert.size = size;
+    result.desc.is_client_cert = true;
+    result.desc.source = AVS_NET_DATA_SOURCE_BUFFER;
+    result.desc.info.buffer.buffer = buffer;
+    result.desc.info.buffer.buffer_size = buffer_size;
+    result.desc.info.buffer.password = password;
     return result;
 }
 
-avs_net_trusted_cert_source_t
-avs_net_trusted_cert_source_from_pkcs12(const void *data,
-                                        size_t size,
-                                        const char *password) {
-    avs_net_trusted_cert_source_t result;
-    memset(&result, 0, sizeof(result));
-    result.impl.source = AVS_NET_DATA_SOURCE_BUFFER;
-    result.impl.format = AVS_NET_DATA_FORMAT_PKCS12;
-    result.impl.data.cert.data = data;
-    result.impl.data.cert.size = size;
-    result.impl.data.cert.password = password;
-    return result;
-}
-
-avs_net_trusted_cert_source_t
-avs_net_trusted_cert_source_from_paths(const char *trusted_ca_cert_path,
-                                       const char *trusted_ca_cert_file) {
-    avs_net_trusted_cert_source_t result;
-    memset(&result, 0, sizeof(result));
-    result.impl.source = AVS_NET_DATA_SOURCE_PATHS;
-    result.impl.format = AVS_NET_DATA_FORMAT_PEM;
-    result.impl.data.paths.cert_file = trusted_ca_cert_file;
-    result.impl.data.paths.cert_path = trusted_ca_cert_path;
-    return result;
-}
-
-avs_net_trusted_cert_source_t
-avs_net_trusted_cert_source_from_file(const char *file,
-                                      const char *password,
-                                      avs_net_data_format_t format) {
-    avs_net_trusted_cert_source_t result;
-    memset(&result, 0, sizeof(result));
-    result.impl.source = AVS_NET_DATA_SOURCE_FILE;
-    result.impl.format = format;
-    result.impl.data.file.path = file;
-    result.impl.data.file.password = password;
-    return result;
-}
-
-avs_net_security_info_t avs_net_security_info_from_psk(avs_net_psk_t psk) {
+avs_net_security_info_t avs_net_security_info_from_psk(avs_net_psk_info_t psk) {
     avs_net_security_info_t result;
     memset(&result, 0, sizeof(result));
     result.mode = AVS_NET_SECURITY_PSK;

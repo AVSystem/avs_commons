@@ -21,16 +21,18 @@ set(SOURCES
     src/url.c)
 
 if(WITH_OPENSSL)
-    set(SOURCES ${SOURCES} src/openssl.c)
+    set(SOURCES ${SOURCES} src/openssl/openssl.c)
 elseif(WITH_MBEDTLS)
-    set(SOURCES ${SOURCES} src/mbedtls.c)
+    set(SOURCES ${SOURCES}
+        src/mbedtls.c
+        src/mbedtls/data_loader.c)
     if(WITH_TLS_SESSION_PERSISTENCE)
         set(SOURCES ${SOURCES}
             src/mbedtls_persistence.c
             src/mbedtls_persistence.h)
     endif()
 elseif(WITH_TINYDTLS)
-    set(SOURCES ${SOURCES} src/tinydtls.c)
+    set(SOURCES ${SOURCES} src/tinydtls/tinydtls.c)
 endif()
 
 set(PRIVATE_HEADERS

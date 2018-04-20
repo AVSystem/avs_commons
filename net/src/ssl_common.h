@@ -424,12 +424,12 @@ static int get_opt_ssl(avs_net_abstract_socket_t *ssl_socket_,
     return retval;
 }
 
-static inline int is_client_cert_empty(const avs_net_client_cert_t *cert) {
-    switch (cert->impl.source) {
+static inline int is_client_cert_empty(const avs_net_client_cert_info_t *cert) {
+    switch (cert->desc.source) {
     case AVS_NET_DATA_SOURCE_FILE:
-        return !cert->impl.data.file.path;
+        return !cert->desc.info.file.filename;
     case AVS_NET_DATA_SOURCE_BUFFER:
-        return !cert->impl.data.cert.data;
+        return !cert->desc.info.buffer.buffer;
     default:
         assert(0 && "invalid enum value");
         return 1;
@@ -454,7 +454,7 @@ static inline void _avs_net_psk_cleanup(avs_net_owned_psk_t *psk) {
 }
 
 static inline int _avs_net_psk_copy(avs_net_owned_psk_t *dst,
-                                    const avs_net_psk_t *src) {
+                                    const avs_net_psk_info_t *src) {
     if (!src->psk_size) {
         LOG(ERROR, "PSK cannot be empty");
         return -1;
