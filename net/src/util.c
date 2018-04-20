@@ -27,9 +27,10 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
-#include "util.h"
-
 #include <avsystem/commons/log.h>
+#include <avsystem/commons/utils.h>
+
+#include "util.h"
 
 VISIBILITY_SOURCE_BEGIN
 

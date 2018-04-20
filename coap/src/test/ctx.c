@@ -277,14 +277,12 @@ static avs_net_abstract_socket_t *setup_socket(socket_type_t type,
             .mode = AVS_NET_SECURITY_CERTIFICATE,
             .data.cert = {
                 .server_cert_validation = true,
-                .trusted_certs = avs_net_trusted_cert_source_from_paths(
+                .trusted_certs = avs_net_trusted_cert_info_from_paths(
                                         NULL, ROOT_CRT_FILE),
-                .client_cert = avs_net_client_cert_from_file(
-                                        CLIENT_CRT_FILE, NULL,
-                                        AVS_NET_DATA_FORMAT_PEM),
-                .client_key = avs_net_private_key_from_file(
-                                        CLIENT_KEY_FILE, NULL,
-                                        AVS_NET_DATA_FORMAT_PEM)
+                .client_cert = avs_net_client_cert_info_from_file(
+                                        CLIENT_CRT_FILE, NULL),
+                .client_key = avs_net_client_key_info_from_file(
+                                        CLIENT_KEY_FILE, NULL),
             }
         },
         .backend_configuration = {

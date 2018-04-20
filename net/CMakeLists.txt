@@ -18,7 +18,8 @@ option(WITH_TLS_SESSION_PERSISTENCE "Enable support for TLS session persistence"
 set(SOURCES
     src/addrinfo.c
     src/api.c
-    src/url.c)
+    src/url.c
+    src/util.c)
 
 if(WITH_OPENSSL)
     set(SOURCES ${SOURCES} src/openssl/openssl.c)
