@@ -114,7 +114,8 @@ avs_net_client_cert_info_from_file(const char *filename,
 
 avs_net_client_cert_info_t
 avs_net_client_cert_info_from_buffer(const void *buffer,
-                                     size_t buffer_size) {
+                                     size_t buffer_size,
+                                     avs_net_data_format_t format) {
     avs_net_client_cert_info_t result;
     memset(&result, 0, sizeof(result));
     result.desc.format = format;
