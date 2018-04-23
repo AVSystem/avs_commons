@@ -250,10 +250,22 @@ typedef enum {
     AVS_NET_DATA_SOURCE_BUFFER
 } avs_net_data_source_t;
 
+typedef enum {
+    AVS_NET_SECURITY_INFO_TRUSTED_CERT,
+    AVS_NET_SECURITY_INFO_CLIENT_CERT,
+    AVS_NET_SECURITY_INFO_CLIENT_KEY
+} avs_net_security_info_tag_t;
+
+typedef enum {
+    AVS_NET_DATA_FORMAT_AUTO,
+    AVS_NET_DATA_FORMAT_DER,
+    AVS_NET_DATA_FORMAT_PEM,
+    AVS_NET_DATA_FORMAT_PKCS8,
+    AVS_NET_DATA_FORMAT_PKCS12
+} avs_net_data_format_t;
+
 typedef struct {
-    bool is_trusted_cert;
-    bool is_client_cert;
-    bool is_client_key;
+    avs_net_security_info_tag_t type;
     avs_net_data_source_t source;
     union {
         struct {
