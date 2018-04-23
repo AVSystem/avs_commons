@@ -21,8 +21,6 @@
 
 #include "data_loader.h"
 
-#include "../util.h"
-
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -50,45 +48,26 @@ append_cert_from_buffer(mbedtls_x509_crt *chain, const void *buffer, size_t len)
 static int load_cert_from_file(mbedtls_x509_crt *chain, const char *name) {
     LOG(DEBUG, "certificate <%s>: going to load", name);
 
-    size_t len;
-    void *buf = _avs_read_file(name, &len);
-    if (!buf) {
-        return -1;
-    }
-    int retval = append_cert_from_buffer(chain, buf, len);
-    free(buf);
+    int retval = mbedtls_x509_crt_parse_file(chain, name);
     if (retval) {
-        LOG(DEBUG, "certificate <%s>: failed", name);
+        LOG(ERROR, "certificate <%s>: failed to load, result %d", name, retval);
     } else {
         LOG(DEBUG, "certificate <%s>: loaded", name);
     }
     return retval;
 }
 
-typedef struct {
-    mbedtls_x509_crt *chain;
-    int num_loaded;
-} load_entry_state_t;
-
-static void try_load_cert(void *context, const char *filename) {
-    load_entry_state_t *state = (load_entry_state_t *) context;
-    if (!load_cert_from_file(state->chain, filename)) {
-        ++state->num_loaded;
-    }
-}
-
 static int load_ca_from_path(mbedtls_x509_crt *chain, const char *path) {
-    load_entry_state_t state = {
-        .chain = chain,
-        .num_loaded = 0
-    };
-    // NOTE: We call it a day, if at least one certificate could be loaded.
-    (void) _avs_iterate_directory(path, try_load_cert, &state);
-    if (!state.num_loaded) {
-        LOG(ERROR, "could not load any CA from path <%s>", path);
-        return -1;
+    LOG(DEBUG, "certificates from path <%s>: going to load", path);
+
+    int retval = mbedtls_x509_crt_parse_path(chain, path);
+    if (retval) {
+        LOG(ERROR, "certificates from path <%s>: failed to load, result %d",
+            path, retval);
+    } else {
+        LOG(DEBUG, "certificates from path <%s>: loaded", path);
     }
-    return 0;
+    return retval;
 }
 
 int _avs_net_load_ca_certs(mbedtls_x509_crt **out,
@@ -170,16 +149,10 @@ static int load_private_key_from_file(mbedtls_pk_context *client_key,
                                       const char *filename,
                                       const char *password) {
     LOG(DEBUG, "private key <%s>: going to load", filename);
-    size_t len;
-    void *buf = _avs_read_file(filename, &len);
-    if (!buf) {
-        return -1;
-    }
-    const int retval =
-            load_private_key_from_buffer(client_key, buf, len, password);
-    free(buf);
+
+    int retval = mbedtls_pk_parse_keyfile(client_key, filename, password);
     if (retval) {
-        LOG(DEBUG, "private key <%s>: failed", filename);
+        LOG(ERROR, "private key <%s>: failed, result %d", filename, retval);
     } else {
         LOG(DEBUG, "private key <%s>: loaded", filename);
     }
