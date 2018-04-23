@@ -77,8 +77,8 @@ static int load_ca_from_path(mbedtls_x509_crt *chain, const char *path) {
     return retval < 0 ? retval : 0;
 }
 
-int _avs_net_load_ca_certs(mbedtls_x509_crt **out,
-                           const avs_net_trusted_cert_info_t *info) {
+int _avs_net_mbedtls_load_ca_certs(mbedtls_x509_crt **out,
+                                   const avs_net_trusted_cert_info_t *info) {
     CREATE_OR_FAIL(mbedtls_x509_crt, out);
     mbedtls_x509_crt_init(*out);
 
@@ -109,8 +109,8 @@ int _avs_net_load_ca_certs(mbedtls_x509_crt **out,
     return 0;
 }
 
-int _avs_net_load_client_cert(mbedtls_x509_crt **out,
-                              const avs_net_client_cert_info_t *info) {
+int _avs_net_mbedtls_load_client_cert(mbedtls_x509_crt **out,
+                                      const avs_net_client_cert_info_t *info) {
     CREATE_OR_FAIL(mbedtls_x509_crt, out);
     mbedtls_x509_crt_init(*out);
 
@@ -159,8 +159,8 @@ static int load_private_key_from_file(mbedtls_pk_context *client_key,
     return retval;
 }
 
-int _avs_net_load_client_key(mbedtls_pk_context **client_key,
-                             const avs_net_client_key_info_t *info) {
+int _avs_net_mbedtls_load_client_key(mbedtls_pk_context **client_key,
+                                     const avs_net_client_key_info_t *info) {
     CREATE_OR_FAIL(mbedtls_pk_context, client_key);
     mbedtls_pk_init(*client_key);
 

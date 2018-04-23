@@ -805,7 +805,8 @@ static int configure_ssl_certs(ssl_socket_certs_t *certs,
     LOG(TRACE, "configure_ssl_certs");
 
     if (cert_info->server_cert_validation) {
-        if (_avs_net_load_ca_certs(&certs->ca_cert, &cert_info->trusted_certs)) {
+        if (_avs_net_mbedtls_load_ca_certs(&certs->ca_cert,
+                                           &cert_info->trusted_certs)) {
             LOG(ERROR, "could not load CA chain");
             return -1;
         }
@@ -819,8 +820,8 @@ static int configure_ssl_certs(ssl_socket_certs_t *certs,
             LOG(ERROR, "could not load client certificate");
             return -1;
         }
-        if (_avs_net_load_client_key(&certs->client_key,
-                                     &cert_info->client_key)) {
+        if (_avs_net_mbedtls_load_client_key(&certs->client_key,
+                                             &cert_info->client_key)) {
             LOG(ERROR, "could not load client private key");
             return -1;
         }
