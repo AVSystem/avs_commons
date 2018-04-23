@@ -287,12 +287,10 @@ typedef struct {
  * instead.
  *
  * @param filename  File from which the CA chain shall be loaded.
- * @param password  Password, if the file is password-protected, or NULL.
  * @param format    Format of the file.
  */
 avs_net_trusted_cert_info_t
 avs_net_trusted_cert_info_from_file(const char *filename,
-                                    const char *password,
                                     avs_net_data_format_t format);
 
 /**
@@ -333,7 +331,6 @@ avs_net_trusted_cert_info_from_paths(const char *path, const char *file);
 avs_net_trusted_cert_info_t
 avs_net_trusted_cert_info_from_buffer(const void *buffer,
                                       size_t buffer_size,
-                                      const char *password,
                                       avs_net_data_format_t format);
 
 typedef struct {
@@ -377,12 +374,10 @@ typedef struct {
  * certificate from file @p filename.
  *
  * @param filename  Name of the file to be loaded.
- * @param password  Optional password if present, or NULL.
  * @param format    Format of the file.
  */
 avs_net_client_cert_info_t
 avs_net_client_cert_info_from_file(const char *filename,
-                                   const char *password,
                                    avs_net_data_format_t format);
 
 /**
@@ -391,13 +386,11 @@ avs_net_client_cert_info_from_file(const char *filename,
  *
  * @param buffer      Buffer in which certificate is stored.
  * @param buffer_size Size of the buffer contents in bytes.
- * @param password    Optional password if present, or NULL.
  * @param format      Format of the data stored within the buffer.
  */
 avs_net_client_cert_info_t
 avs_net_client_cert_info_from_buffer(const void *buffer,
                                      size_t buffer_size,
-                                     const char *password,
                                      avs_net_data_format_t format);
 
 /**

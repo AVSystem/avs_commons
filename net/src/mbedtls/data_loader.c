@@ -101,10 +101,6 @@ int _avs_net_load_ca_certs(mbedtls_x509_crt **out,
 
     switch (info->desc.source) {
     case AVS_NET_DATA_SOURCE_FILE:
-        if (info->desc.info.file.password) {
-            LOG(WARNING, "password protected CA are not supported - the "
-                         "password will be ignored");
-        }
         return load_cert_from_file(*out, info->desc.info.file.filename,
                                    info->desc.format);
     case AVS_NET_DATA_SOURCE_PATHS: {
@@ -120,10 +116,6 @@ int _avs_net_load_ca_certs(mbedtls_x509_crt **out,
         return retpath < 0 && retfile < 0 ? -1 : 0;
     }
     case AVS_NET_DATA_SOURCE_BUFFER:
-        if (info->desc.info.buffer.password) {
-            LOG(WARNING, "password protected CA are not supported - the "
-                         "password will be ignored");
-        }
         return append_cert_from_buffer(*out, info->desc.info.buffer.buffer,
                                        info->desc.info.buffer.buffer_size,
                                        info->desc.format);
@@ -141,17 +133,9 @@ int _avs_net_load_client_cert(mbedtls_x509_crt **out,
 
     switch (info->desc.source) {
     case AVS_NET_DATA_SOURCE_FILE:
-        if (info->desc.info.file.password) {
-            LOG(WARNING, "password protected client certificates are not "
-                         "supported - the password will be ignored");
-        }
         return load_cert_from_file(*out, info->desc.info.file.filename,
                                    info->desc.format);
     case AVS_NET_DATA_SOURCE_BUFFER:
-        if (info->desc.info.buffer.password) {
-            LOG(WARNING, "password protected client certificates are not "
-                         "supported - the password will be ignored");
-        }
         return append_cert_from_buffer(*out, info->desc.info.buffer.buffer,
                                        info->desc.info.buffer.buffer_size,
                                        info->desc.format);
