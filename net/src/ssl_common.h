@@ -27,6 +27,8 @@
 #include <stdatomic.h>
 #endif // HAVE_C11_STDATOMIC
 
+#include "api.h"
+
 VISIBILITY_PRIVATE_HEADER_BEGIN
 
 #ifndef HAVE_C11_STDATOMIC

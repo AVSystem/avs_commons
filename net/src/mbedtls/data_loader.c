@@ -19,6 +19,7 @@
 #define MODULE_NAME avs_net_data_loader
 #include <x_log_config.h>
 
+#include "../api.h"
 #include "data_loader.h"
 
 #include <assert.h>
@@ -40,15 +41,38 @@ do { \
     } \
 } while (0)
 
-static int
-append_cert_from_buffer(mbedtls_x509_crt *chain, const void *buffer, size_t len) {
-    return mbedtls_x509_crt_parse(chain, (const unsigned char *) buffer, len);
+static int append_cert_from_buffer(mbedtls_x509_crt *chain,
+                                   const void *buffer,
+                                   size_t len,
+                                   avs_net_data_format_t format) {
+    switch (format) {
+    case AVS_NET_DATA_FORMAT_AUTO:
+    case AVS_NET_DATA_FORMAT_DER:
+    case AVS_NET_DATA_FORMAT_PEM:
+        return mbedtls_x509_crt_parse(chain, (const unsigned char *) buffer, len);
+    default:
+        LOG(ERROR, "unsupported certificate format");
+        return -1;
+    }
 }
 
-static int load_cert_from_file(mbedtls_x509_crt *chain, const char *name) {
+static int load_cert_from_file(mbedtls_x509_crt *chain,
+                               const char *name,
+                               avs_net_data_format_t format) {
     LOG(DEBUG, "certificate <%s>: going to load", name);
 
-    int retval = mbedtls_x509_crt_parse_file(chain, name);
+    int retval = -1;
+    switch (format) {
+    case AVS_NET_DATA_FORMAT_AUTO:
+    case AVS_NET_DATA_FORMAT_DER:
+    case AVS_NET_DATA_FORMAT_PEM:
+        retval = mbedtls_x509_crt_parse_file(chain, name);
+        break;
+    default:
+        LOG(ERROR, "unsupported certificate format");
+        break;
+    }
+
     if (retval) {
         LOG(ERROR, "certificate <%s>: failed to load, result %d", name, retval);
     } else {
@@ -72,7 +96,6 @@ static int load_ca_from_path(mbedtls_x509_crt *chain, const char *path) {
 
 int _avs_net_load_ca_certs(mbedtls_x509_crt **out,
                            const avs_net_trusted_cert_info_t *info) {
-    assert(info->desc.is_trusted_cert);
     CREATE_OR_FAIL(mbedtls_x509_crt, out);
     mbedtls_x509_crt_init(*out);
 
@@ -82,12 +105,14 @@ int _avs_net_load_ca_certs(mbedtls_x509_crt **out,
             LOG(WARNING, "password protected CA are not supported - the "
                          "password will be ignored");
         }
-        return load_cert_from_file(*out, info->desc.info.file.filename);
+        return load_cert_from_file(*out, info->desc.info.file.filename,
+                                   info->desc.format);
     case AVS_NET_DATA_SOURCE_PATHS: {
         int retfile = -1;
         int retpath = -1;
         if (info->desc.info.paths.filename) {
-            retfile = load_cert_from_file(*out, info->desc.info.paths.filename);
+            retfile = load_cert_from_file(*out, info->desc.info.paths.filename,
+                                          AVS_NET_DATA_FORMAT_AUTO);
         }
         if (info->desc.info.paths.path) {
             retpath = load_ca_from_path(*out, info->desc.info.paths.path);
@@ -100,7 +125,8 @@ int _avs_net_load_ca_certs(mbedtls_x509_crt **out,
                          "password will be ignored");
         }
         return append_cert_from_buffer(*out, info->desc.info.buffer.buffer,
-                                       info->desc.info.buffer.buffer_size);
+                                       info->desc.info.buffer.buffer_size,
+                                       info->desc.format);
     default:
         assert(0 && "invalid data source");
         return -1;
@@ -110,7 +136,6 @@ int _avs_net_load_ca_certs(mbedtls_x509_crt **out,
 
 int _avs_net_load_client_cert(mbedtls_x509_crt **out,
                               const avs_net_client_cert_info_t *info) {
-    assert(info->desc.is_client_cert);
     CREATE_OR_FAIL(mbedtls_x509_crt, out);
     mbedtls_x509_crt_init(*out);
 
@@ -120,14 +145,16 @@ int _avs_net_load_client_cert(mbedtls_x509_crt **out,
             LOG(WARNING, "password protected client certificates are not "
                          "supported - the password will be ignored");
         }
-        return load_cert_from_file(*out, info->desc.info.file.filename);
+        return load_cert_from_file(*out, info->desc.info.file.filename,
+                                   info->desc.format);
     case AVS_NET_DATA_SOURCE_BUFFER:
         if (info->desc.info.buffer.password) {
             LOG(WARNING, "password protected client certificates are not "
                          "supported - the password will be ignored");
         }
         return append_cert_from_buffer(*out, info->desc.info.buffer.buffer,
-                                       info->desc.info.buffer.buffer_size);
+                                       info->desc.info.buffer.buffer_size,
+                                       info->desc.format);
     default:
         assert(0 && "invalid data source");
         return -1;
@@ -138,19 +165,42 @@ int _avs_net_load_client_cert(mbedtls_x509_crt **out,
 static int load_private_key_from_buffer(mbedtls_pk_context *client_key,
                                         const void *buffer,
                                         size_t len,
-                                        const char *password) {
+                                        const char *password,
+                                        avs_net_data_format_t format) {
     const unsigned char *pwd = (const unsigned char *) password;
     const size_t pwd_len = password ? strlen(password) : 0;
-    return mbedtls_pk_parse_key(client_key, (const unsigned char *) buffer,
-                                len, pwd, pwd_len);
+
+    switch (format) {
+    case AVS_NET_DATA_FORMAT_AUTO:
+    case AVS_NET_DATA_FORMAT_DER:
+    case AVS_NET_DATA_FORMAT_PEM:
+    case AVS_NET_DATA_FORMAT_PKCS8:
+        return mbedtls_pk_parse_key(client_key, (const unsigned char *) buffer,
+                                    len, pwd, pwd_len);
+    default:
+        LOG(ERROR, "unsupported private key format");
+        return -1;
+    }
 }
 
 static int load_private_key_from_file(mbedtls_pk_context *client_key,
                                       const char *filename,
-                                      const char *password) {
+                                      const char *password,
+                                      avs_net_data_format_t format) {
     LOG(DEBUG, "private key <%s>: going to load", filename);
 
-    int retval = mbedtls_pk_parse_keyfile(client_key, filename, password);
+    int retval = -1;
+    switch (format) {
+    case AVS_NET_DATA_FORMAT_AUTO:
+    case AVS_NET_DATA_FORMAT_DER:
+    case AVS_NET_DATA_FORMAT_PEM:
+    case AVS_NET_DATA_FORMAT_PKCS8:
+        retval = mbedtls_pk_parse_keyfile(client_key, filename, password);
+        break;
+    default:
+        LOG(ERROR, "unsupported private key format");
+        break;
+    }
     if (retval) {
         LOG(ERROR, "private key <%s>: failed, result %d", filename, retval);
     } else {
@@ -161,7 +211,6 @@ static int load_private_key_from_file(mbedtls_pk_context *client_key,
 
 int _avs_net_load_client_key(mbedtls_pk_context **client_key,
                              const avs_net_client_key_info_t *info) {
-    assert(info->desc.is_client_key);
     CREATE_OR_FAIL(mbedtls_pk_context, client_key);
     mbedtls_pk_init(*client_key);
 
@@ -169,12 +218,14 @@ int _avs_net_load_client_key(mbedtls_pk_context **client_key,
     case AVS_NET_DATA_SOURCE_FILE:
         return load_private_key_from_file(*client_key,
                                           info->desc.info.file.filename,
-                                          info->desc.info.file.password);
+                                          info->desc.info.file.password,
+                                          info->desc.format);
     case AVS_NET_DATA_SOURCE_BUFFER:
         return load_private_key_from_buffer(*client_key,
                                             info->desc.info.buffer.buffer,
                                             info->desc.info.buffer.buffer_size,
-                                            info->desc.info.buffer.password);
+                                            info->desc.info.buffer.password,
+                                            info->desc.format);
     default:
         assert(0 && "invalid data source");
         return -1;
