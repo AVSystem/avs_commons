@@ -380,6 +380,16 @@ if(WITH_TEST)
         message(FATAL_ERROR "WITH_TEST requires WITH_AVS_UNIT to be enabled")
     endif()
 
+    if(NOT EXISTS "${CMAKE_CURRENT_BINARY_DIR}/certs/client.crt.der")
+        execute_process(COMMAND
+                        "${CMAKE_CURRENT_SOURCE_DIR}/tools/generate-certs.sh"
+                        "${CMAKE_CURRENT_BINARY_DIR}/certs"
+                        RESULT_VARIABLE RES)
+        if(NOT ${RES} EQUAL 0)
+            message(FATAL_ERROR "could not generate SSL certificates")
+        endif()
+    endif()
+
     add_custom_target(avs_commons_check)
     if(${CMAKE_PROJECT_NAME} STREQUAL ${PROJECT_NAME})
         add_custom_target(check)
@@ -401,6 +411,8 @@ if(WITH_TEST)
     add_custom_target(avs_commons_headers_check COMMAND ${CMAKE_CTEST_COMMAND} -R "'^test_.*_headers$$'")
     add_dependencies(avs_commons_check avs_commons_headers_check)
 
+    set(_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
+
     add_subdirectory(tools)
     macro(add_avs_test NAME)
         add_executable(${NAME}_test EXCLUDE_FROM_ALL ${ARGN})
@@ -408,7 +420,7 @@ if(WITH_TEST)
         target_link_libraries(${NAME}_test avs_unit)
         set_property(TARGET ${NAME}_test APPEND PROPERTY COMPILE_DEFINITIONS
                      AVS_UNIT_TESTING
-                     AVS_TEST_BIN_DIR="${CMAKE_CURRENT_BINARY_DIR}")
+                     AVS_TEST_BIN_DIR="${_BINARY_DIR}")
         set_property(TARGET ${NAME}_test APPEND PROPERTY COMPILE_FLAGS "-Wno-clobbered -Wno-overlength-strings -Wno-sign-conversion")
 
         if(VALGRIND)

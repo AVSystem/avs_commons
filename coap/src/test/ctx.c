@@ -98,7 +98,7 @@ static void spawn_dtls_echo_server(uint16_t port) {
             >= 0);
 
     char *cmdline[] = {
-        AVS_TEST_BIN_DIR "/../tools/dtls_echo_server",
+        AVS_TEST_BIN_DIR "/tools/dtls_echo_server",
         "-cafile", AVS_TEST_BIN_DIR "/certs/server-and-root.crt",
         "-pkeyfile", AVS_TEST_BIN_DIR "/certs/server.key",
         "-p", port_string,

@@ -21,8 +21,7 @@
 /persistence/avs_persistence_test
 
 /tools/dtls_echo_server
-/coap/certs
-/net/certs
+/certs
 
 # NetBeans Project
 nbproject

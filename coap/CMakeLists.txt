@@ -47,16 +47,6 @@ set(avs_coap_INCLUDE_DIRS ${INCLUDE_DIRS} PARENT_SCOPE)
 include_directories(${INCLUDE_DIRS})
 add_avs_test(avs_coap ${ALL_SOURCES})
 
-if(WITH_AVS_UNIT AND NOT EXISTS "${CMAKE_CURRENT_BINARY_DIR}/certs/client.crt.der")
-    execute_process(COMMAND
-                    "${CMAKE_CURRENT_SOURCE_DIR}/../tools/generate-certs.sh"
-                    "${CMAKE_CURRENT_BINARY_DIR}/certs"
-                    RESULT_VARIABLE RES)
-    if(NOT ${RES} EQUAL 0)
-        message(FATAL_ERROR "could not generate SSL certificates")
-    endif()
-endif()
-
 add_library(avs_coap STATIC ${ALL_SOURCES})
 
 avs_install_export(avs_coap coap)
