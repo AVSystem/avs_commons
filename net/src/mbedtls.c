@@ -40,11 +40,8 @@
 #endif // WITH_MBEDTLS_LOGS
 
 #include <avsystem/commons/errno.h>
-#include <avsystem/commons/persistence.h>
-#include <avsystem/commons/stream.h>
-#include <avsystem/commons/stream/stream_inbuf.h>
-#include <avsystem/commons/stream/stream_outbuf.h>
 
+#include "mbedtls_persistence.h"
 #include "net_impl.h"
 
 VISIBILITY_SOURCE_BEGIN
@@ -70,8 +67,10 @@ typedef struct {
     } flags;
     mbedtls_ssl_context context;
     mbedtls_ssl_config config;
+#ifdef WITH_TLS_SESSION_PERSISTENCE
     void *session_resumption_buffer;
     size_t session_resumption_buffer_size;
+#endif // WITH_TLS_SESSION_PERSISTENCE
     avs_net_security_mode_t security_mode;
     union {
 #ifdef WITH_X509
@@ -99,183 +98,6 @@ static bool is_session_resumed(ssl_socket_t *socket) {
 static mbedtls_ssl_context *get_context(ssl_socket_t *socket) {
     assert(socket->flags.context_valid);
     return &socket->context;
-}
-
-/*
- * Persistence format summary
- *
- * - 4 bytes: format magic ("MSP\0", last byte designed for version number)
- * - 8 bytes: session start timestamp (seconds)
- * - 4 bytes: ciphersuite ID
- * - 4 bytes: compression ID
- * - 1 byte: session ID length
- * - 32 bytes: session ID
- * - 48 bytes: master secret
- * - 4 bytes length + variable length data: DER-format peer certificate
- * - 4 bytes: verification result
- * - 1 byte: MaxFragmentLength negotiated by peer
- * - 1 byte: flag for truncated hmac activation
- * - 1 byte: flag for EtM activation
- * ----------------------------------------------------------------------------
- * 112 bytes + DER certificate
- */
-
-static const char PERSISTENCE_MAGIC[] = { 'M', 'S', 'P', '\0' };
-
-static int handle_cert_persistence(avs_persistence_context_t *ctx,
-                                   mbedtls_x509_crt **cert_ptr) {
-    void *data = (*cert_ptr ? (*cert_ptr)->raw.p : NULL);
-    size_t size = (*cert_ptr ? (*cert_ptr)->raw.len : 0);
-    int result = avs_persistence_sized_buffer(ctx, &data, &size);
-    if (result) {
-        return result;
-    }
-    if (data && avs_persistence_direction(ctx) == AVS_PERSISTENCE_RESTORE) {
-        assert(!*cert_ptr);
-        if (!(*cert_ptr = (mbedtls_x509_crt *)
-                mbedtls_calloc(1, sizeof(mbedtls_x509_crt)))) {
-            result = -1;
-            goto restore_finish;
-        }
-        mbedtls_x509_crt_init(*cert_ptr);
-        if ((result = mbedtls_x509_crt_parse_der(
-                *cert_ptr, (unsigned char *) data, size))) {
-            mbedtls_x509_crt_free(*cert_ptr);
-            mbedtls_free(*cert_ptr);
-            *cert_ptr = NULL;
-        }
-restore_finish:
-        free(data);
-    }
-    return result;
-}
-
-static int handle_session_persistence(avs_persistence_context_t *ctx,
-                                      mbedtls_ssl_session *session) {
-    avs_time_real_t session_start;
-    int32_t ciphersuite;
-    int32_t compression;
-    uint8_t id_len;
-    mbedtls_x509_crt **peer_cert_ptr =
-#ifdef MBEDTLS_X509_CRT_PARSE_C
-            &session->peer_cert;
-#else // MBEDTLS_X509_CRT_PARSE_C
-            &(mbedtls_x509_crt *[]) { NULL }[0];
-#endif // MBEDTLS_X509_CRT_PARSE_C
-    uint8_t *mfl_code_ptr =
-#ifdef MBEDTLS_SSL_MAX_FRAGMENT_LENGTH
-            &session->mfl_code;
-#else // MBEDTLS_SSL_MAX_FRAGMENT_LENGTH
-            &(uint8_t[]) { 0 }[0];
-#endif // MBEDTLS_SSL_MAX_FRAGMENT_LENGTH
-    bool trunc_hmac = false;
-    bool encrypt_then_mac = false;
-
-    if (avs_persistence_direction(ctx) == AVS_PERSISTENCE_STORE) {
-#ifdef MBEDTLS_HAVE_TIME
-        session_start = avs_time_real_from_scalar(session->start, AVS_TIME_S);
-#else // MBEDTLS_HAVE_TIME
-        session_start = avs_time_real_now();
-#endif //MBEDTLS_HAVE_TIME
-        ciphersuite = (int32_t) session->ciphersuite;
-        compression = (int32_t) session->compression;
-        id_len = (uint8_t) session->id_len;
-#ifdef MBEDTLS_SSL_TRUNCATED_HMAC
-        trunc_hmac = !!session->trunc_hmac;
-#endif // MBEDTLS_SSL_TRUNCATED_HMAC
-#ifdef MBEDTLS_SSL_ENCRYPT_THEN_MAC
-        encrypt_then_mac = !!session->encrypt_then_mac;
-#endif // MBEDTLS_SSL_ENCRYPT_THEN_MAC
-    }
-
-    AVS_STATIC_ASSERT(sizeof(session->id) == 32, session_id_is_32bytes);
-    AVS_STATIC_ASSERT(sizeof(session->master) == 48, session_master_is_48bytes);
-
-    int retval;
-    (void) ((retval = avs_persistence_i64(
-                    ctx, &session_start.since_real_epoch.seconds))
-            || (retval = avs_persistence_i32(ctx, &ciphersuite))
-            || (retval = avs_persistence_i32(ctx, &compression))
-            || (retval = avs_persistence_u8(ctx, &id_len))
-            || (retval = avs_persistence_bytes(ctx, session->id,
-                                               sizeof(session->id)))
-            || (retval = avs_persistence_bytes(ctx, session->master,
-                                               sizeof(session->master)))
-            || (retval = handle_cert_persistence(ctx, peer_cert_ptr))
-            || (retval = avs_persistence_u32(ctx, &session->verify_result))
-            || (retval = avs_persistence_u8(ctx, mfl_code_ptr))
-            || (retval = avs_persistence_bool(ctx, &trunc_hmac))
-            || (retval = avs_persistence_bool(ctx, &encrypt_then_mac)));
-
-    if (!retval && avs_persistence_direction(ctx) == AVS_PERSISTENCE_RESTORE) {
-#ifdef MBEDTLS_HAVE_TIME
-        session->start =
-                (mbedtls_time_t) session_start.since_real_epoch.seconds;
-#endif //MBEDTLS_HAVE_TIME
-        session->ciphersuite = (int) ciphersuite;
-        session->compression = (int) compression;
-        session->id_len = (size_t) id_len;
-#ifdef MBEDTLS_SSL_TRUNCATED_HMAC
-        session->trunc_hmac = trunc_hmac;
-#endif // MBEDTLS_SSL_TRUNCATED_HMAC
-#ifdef MBEDTLS_SSL_ENCRYPT_THEN_MAC
-        session->encrypt_then_mac = encrypt_then_mac;
-#endif // MBEDTLS_SSL_ENCRYPT_THEN_MAC
-    }
-
-#ifndef MBEDTLS_X509_CRT_PARSE_C
-    if (*peer_cert_ptr) {
-        mbedtls_x509_crt_free(*peer_cert_ptr);
-        mbedtls_free(*peer_cert_ptr);
-    }
-#endif // !MBEDTLS_X509_CRT_PARSE_C
-    return retval;
-}
-
-static int session_save(mbedtls_ssl_session *session,
-                        void *out_buf, size_t out_buf_size) {
-    avs_persistence_context_t *ctx = NULL;
-    avs_stream_outbuf_t out_buf_stream = AVS_STREAM_OUTBUF_STATIC_INITIALIZER;
-    avs_stream_outbuf_set_buffer(&out_buf_stream, out_buf, out_buf_size);
-    int retval = avs_stream_write((avs_stream_abstract_t *) &out_buf_stream,
-                                  PERSISTENCE_MAGIC, sizeof(PERSISTENCE_MAGIC));
-    if (retval) {
-        goto finish;
-    }
-    if (!(ctx = avs_persistence_store_context_new(
-            (avs_stream_abstract_t *) &out_buf_stream))) {
-        retval = -1;
-        goto finish;
-    }
-    retval = handle_session_persistence(ctx, session);
-    avs_persistence_context_delete(ctx);
-finish:;
-    size_t clear_start = retval ? 0 : avs_stream_outbuf_offset(&out_buf_stream);
-    assert(clear_start <= out_buf_size);
-    memset((char *) out_buf + clear_start, 0, out_buf_size - clear_start);
-    return retval;
-}
-
-static int session_restore(mbedtls_ssl_session *out_session,
-                           const void *buf, size_t buf_size) {
-    avs_stream_inbuf_t in_buf_stream = AVS_STREAM_INBUF_STATIC_INITIALIZER;
-    avs_stream_inbuf_set_buffer(&in_buf_stream, buf, buf_size);
-    char magic_header[sizeof(PERSISTENCE_MAGIC)];
-    int retval = avs_stream_read_reliably(
-            (avs_stream_abstract_t *) &in_buf_stream,
-            magic_header, sizeof(magic_header));
-    if (retval || memcmp(magic_header, PERSISTENCE_MAGIC,
-                         sizeof(PERSISTENCE_MAGIC))) {
-        return -1;
-    }
-    avs_persistence_context_t *ctx = avs_persistence_restore_context_new(
-            (avs_stream_abstract_t *) &in_buf_stream);
-    if (!ctx) {
-        return -1;
-    }
-    retval = handle_session_persistence(ctx, out_session);
-    avs_persistence_context_delete(ctx);
-    return retval;
 }
 
 #ifdef WITH_MBEDTLS_LOGS
@@ -401,6 +223,7 @@ static int get_dtls_overhead(ssl_socket_t *socket,
     return 0;
 }
 
+#ifdef WITH_TLS_SESSION_PERSISTENCE
 static int save_session_in_socket(void *socket_,
                                   const mbedtls_ssl_session *session) {
     ssl_socket_t *socket = (ssl_socket_t *) socket_;
@@ -410,10 +233,12 @@ static int save_session_in_socket(void *socket_,
     // if session resumption buffer is NULL, this function is not called
     assert(socket->session_resumption_buffer
             && socket->session_resumption_buffer_size > 0);
-    return session_save((mbedtls_ssl_session *) (intptr_t) session,
-                        socket->session_resumption_buffer,
-                        socket->session_resumption_buffer_size);
+    return _avs_net_mbedtls_session_save(
+            (mbedtls_ssl_session *) (intptr_t) session,
+            socket->session_resumption_buffer,
+            socket->session_resumption_buffer_size);
 }
+#endif // WITH_TLS_SESSION_PERSISTENCE
 
 static void close_ssl_raw(ssl_socket_t *socket) {
     if (socket->backend_socket) {
@@ -630,12 +455,18 @@ static int configure_ssl(ssl_socket_t *socket,
 
     if (configuration->session_resumption_buffer_size > 0) {
         assert(configuration->session_resumption_buffer);
+#ifdef WITH_TLS_SESSION_PERSISTENCE
         socket->session_resumption_buffer =
                 configuration->session_resumption_buffer;
         socket->session_resumption_buffer_size =
                 configuration->session_resumption_buffer_size;
+        // This is a hack. Session cache normally makes sense only for server
+        // sockets, but mbed TLS actually calls the f_set_cache() callback
+        // regardless of whether the socket is client- or server-side. This
+        // allows us to hook just in time whenever a new session is established.
         mbedtls_ssl_conf_session_cache(&socket->config, socket, NULL,
                                        save_session_in_socket);
+#endif // WITH_TLS_SESSION_PERSISTENCE
     }
 
     if (configuration->additional_configuration_clb
@@ -675,6 +506,7 @@ static int update_ssl_endpoint_config(ssl_socket_t *socket) {
     return 0;
 }
 
+#ifdef WITH_TLS_SESSION_PERSISTENCE
 static bool sessions_equal(const mbedtls_ssl_session *left,
                            const mbedtls_ssl_session *right) {
     if (!left && !right) {
@@ -689,6 +521,9 @@ static bool sessions_equal(const mbedtls_ssl_session *left,
             && left->id_len == right->id_len
             && memcmp(left->id, right->id, left->id_len) == 0;
 }
+#else // WITH_TLS_SESSION_PERSISTENCE
+#define sessions_equal(left, right) false
+#endif // WITH_TLS_SESSION_PERSISTENCE
 
 static int start_ssl(ssl_socket_t *socket, const char *host) {
     int result;
@@ -699,10 +534,12 @@ static int start_ssl(ssl_socket_t *socket, const char *host) {
 
     assert(!socket->flags.context_valid);
 
+    bool restore_session = false;
+#ifdef WITH_TLS_SESSION_PERSISTENCE
     mbedtls_ssl_session restored_session;
     mbedtls_ssl_session_init(&restored_session);
+#endif // WITH_TLS_SESSION_PERSISTENCE
 
-    bool restore_session = false;
     mbedtls_ssl_init(&socket->context);
     socket->flags.context_valid = true;
 
@@ -726,11 +563,13 @@ static int start_ssl(ssl_socket_t *socket, const char *host) {
     }
 #endif // WITH_X509
 
+#ifdef WITH_TLS_SESSION_PERSISTENCE
     if (socket->session_resumption_buffer
             && socket->config.endpoint == MBEDTLS_SSL_IS_CLIENT) {
-        if (session_restore(&restored_session,
-                            socket->session_resumption_buffer,
-                            socket->session_resumption_buffer_size)) {
+        if (_avs_net_mbedtls_session_restore(
+                &restored_session,
+                socket->session_resumption_buffer,
+                socket->session_resumption_buffer_size)) {
             LOG(WARNING,
                 "Could not restore session; performing full handshake");
         } else if ((result = mbedtls_ssl_set_session(get_context(socket),
@@ -742,6 +581,7 @@ static int start_ssl(ssl_socket_t *socket, const char *host) {
             restore_session = true;
         }
     }
+#endif // WITH_TLS_SESSION_PERSISTENCE
 
     do {
         result = mbedtls_ssl_handshake(get_context(socket));
@@ -773,7 +613,9 @@ static int start_ssl(ssl_socket_t *socket, const char *host) {
         }
     }
 finish:
+#ifdef WITH_TLS_SESSION_PERSISTENCE
     mbedtls_ssl_session_free(&restored_session);
+#endif // WITH_TLS_SESSION_PERSISTENCE
     if (result) {
         mbedtls_ssl_free(get_context(socket));
         socket->flags.context_valid = false;

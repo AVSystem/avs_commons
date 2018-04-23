@@ -12,6 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+option(WITH_POSIX_AVS_SOCKET "Enable avs_socket implementation based on POSIX socket API" "${UNIX}")
+option(WITH_TLS_SESSION_PERSISTENCE "Enable support for TLS session persistence" ON)
+
 set(SOURCES
     src/addrinfo.c
     src/api.c
@@ -21,6 +24,11 @@ if(WITH_OPENSSL)
     set(SOURCES ${SOURCES} src/openssl.c)
 elseif(WITH_MBEDTLS)
     set(SOURCES ${SOURCES} src/mbedtls.c)
+    if(WITH_TLS_SESSION_PERSISTENCE)
+        set(SOURCES ${SOURCES}
+            src/mbedtls_persistence.c
+            src/mbedtls_persistence.h)
+    endif()
 elseif(WITH_TINYDTLS)
     set(SOURCES ${SOURCES} src/tinydtls.c)
 endif()
@@ -28,7 +36,6 @@ endif()
 set(PRIVATE_HEADERS
     src/net_impl.h)
 
-option(WITH_POSIX_AVS_SOCKET "Enable avs_socket implementation based on POSIX socket API" "${UNIX}")
 if(WITH_POSIX_AVS_SOCKET)
     set(POSIX_COMPAT_HEADER "" CACHE STRING "POSIX compatibility header path, if required")
     configure_file("compat/posix/avs_net_posix_config.h.in"
@@ -74,11 +81,15 @@ elseif(WITH_TINYDTLS)
     avs_emit_deps(avs_net tinydtls)
 endif()
 
-avs_emit_deps(avs_net avs_persistence avs_stream avs_utils)
-include_directories(../persistence/include_public
-                    ../rbtree/include_public
-                    ../stream/include_public
+avs_emit_deps(avs_net avs_stream avs_utils)
+include_directories(../stream/include_public
                     ../utils/include_public)
+
+if(WITH_MBEDTLS AND WITH_TLS_SESSION_PERSISTENCE)
+    avs_emit_deps(avs_net avs_persistence)
+    include_directories(../persistence/include_public
+                        ../rbtree/include_public)
+endif()
 
 add_avs_test(avs_net ${ALL_SOURCES})
 avs_install_export(avs_net net)

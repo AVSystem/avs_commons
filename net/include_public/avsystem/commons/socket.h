@@ -411,7 +411,7 @@ typedef struct {
     avs_net_security_info_t security;
 
     /**
-     * If non-NULL, can be used to customize DTLS handhshake timeout limits.
+     * If non-NULL, can be used to customize DTLS handshake timeout limits.
      */
     const avs_net_dtls_handshake_timeouts_t *dtls_handshake_timeouts;
 

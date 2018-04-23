@@ -119,3 +119,5 @@ extern void *sbrk (intptr_t __delta);
 #cmakedefine WITH_AVS_COAP_NET_STATS
 
 #cmakedefine WITH_AVS_HTTP_ZLIB
+
+#cmakedefine WITH_TLS_SESSION_PERSISTENCE
