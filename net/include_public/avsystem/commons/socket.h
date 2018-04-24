@@ -244,14 +244,6 @@ typedef struct {
     size_t identity_size;
 } avs_net_psk_info_t;
 
-typedef enum {
-    AVS_NET_DATA_FORMAT_AUTO,
-    AVS_NET_DATA_FORMAT_DER,
-    AVS_NET_DATA_FORMAT_PEM,
-    AVS_NET_DATA_FORMAT_PKCS8,
-    AVS_NET_DATA_FORMAT_PKCS12
-} avs_net_data_format_t;
-
 typedef struct {
     int type;
     int source;
@@ -270,7 +262,6 @@ typedef struct {
             size_t buffer_size;
         } buffer;
     } info;
-    avs_net_data_format_t format;
 } avs_net_security_info_union_t;
 
 typedef struct {
@@ -287,11 +278,9 @@ typedef struct {
  * instead.
  *
  * @param filename  File from which the CA chain shall be loaded.
- * @param format    Format of the file.
  */
 avs_net_trusted_cert_info_t
-avs_net_trusted_cert_info_from_file(const char *filename,
-                                    avs_net_data_format_t format);
+avs_net_trusted_cert_info_from_file(const char *filename);
 
 /**
  * Creates CA chain descriptor used later on to load CA chain from specified @p
@@ -324,14 +313,10 @@ avs_net_trusted_cert_info_from_paths(const char *path, const char *file);
  *
  * @param buffer        Buffer where loaded CA chain is stored.
  * @param buffer_size   Size in bytes of the buffer.
- * @param passwrod      Password, if the contents are password-protected, or
- *                      NULL.
- * @param format        Format of the data stored within the buffer.
  */
 avs_net_trusted_cert_info_t
 avs_net_trusted_cert_info_from_buffer(const void *buffer,
-                                      size_t buffer_size,
-                                      avs_net_data_format_t format);
+                                      size_t buffer_size);
 
 typedef struct {
     avs_net_security_info_union_t desc;
@@ -343,12 +328,10 @@ typedef struct {
  *
  * @param filename  Name of the file to be loaded.
  * @param password  Optional password if present, or NULL.
- * @param format    Format of the file.
  */
 avs_net_client_key_info_t
 avs_net_client_key_info_from_file(const char *filename,
-                                  const char *password,
-                                  avs_net_data_format_t format);
+                                  const char *password);
 
 /**
  * Creates private key descriptor used later on to load private key from
@@ -357,13 +340,11 @@ avs_net_client_key_info_from_file(const char *filename,
  * @param buffer      Buffer in which private key is stored.
  * @param buffer_size Size of the buffer contents in bytes.
  * @param password    Optional password if present, or NULL.
- * @param format      Format of the data stored within the buffer.
  */
 avs_net_client_key_info_t
 avs_net_client_key_info_from_buffer(const void *buffer,
                                     size_t buffer_size,
-                                    const char *password,
-                                    avs_net_data_format_t format);
+                                    const char *password);
 
 typedef struct {
     avs_net_security_info_union_t desc;
@@ -374,11 +355,9 @@ typedef struct {
  * certificate from file @p filename.
  *
  * @param filename  Name of the file to be loaded.
- * @param format    Format of the file.
  */
 avs_net_client_cert_info_t
-avs_net_client_cert_info_from_file(const char *filename,
-                                   avs_net_data_format_t format);
+avs_net_client_cert_info_from_file(const char *filename);
 
 /**
  * Creates client certificate descriptor used later on to load client
@@ -386,12 +365,10 @@ avs_net_client_cert_info_from_file(const char *filename,
  *
  * @param buffer      Buffer in which certificate is stored.
  * @param buffer_size Size of the buffer contents in bytes.
- * @param format      Format of the data stored within the buffer.
  */
 avs_net_client_cert_info_t
 avs_net_client_cert_info_from_buffer(const void *buffer,
-                                     size_t buffer_size,
-                                     avs_net_data_format_t format);
+                                     size_t buffer_size);
 
 /**
  * Certificate and key information may be read from files or passed as raw data.

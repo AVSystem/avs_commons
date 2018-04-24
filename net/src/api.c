@@ -33,11 +33,9 @@ VISIBILITY_SOURCE_BEGIN
 const avs_time_duration_t AVS_NET_SOCKET_DEFAULT_RECV_TIMEOUT = { 30, 0 };
 
 avs_net_trusted_cert_info_t
-avs_net_trusted_cert_info_from_file(const char *filename,
-                                    avs_net_data_format_t format) {
+avs_net_trusted_cert_info_from_file(const char *filename) {
     avs_net_trusted_cert_info_t result;
     memset(&result, 0, sizeof(result));
-    result.desc.format = format;
     result.desc.type = AVS_NET_SECURITY_INFO_TRUSTED_CERT;
     result.desc.source = AVS_NET_DATA_SOURCE_FILE;
     result.desc.info.file.filename = filename;
@@ -48,7 +46,6 @@ avs_net_trusted_cert_info_t
 avs_net_trusted_cert_info_from_paths(const char *path, const char *filename) {
     avs_net_trusted_cert_info_t result;
     memset(&result, 0, sizeof(result));
-    result.desc.format = AVS_NET_DATA_FORMAT_AUTO;
     result.desc.type = AVS_NET_SECURITY_INFO_TRUSTED_CERT;
     result.desc.source = AVS_NET_DATA_SOURCE_PATHS;
     result.desc.info.paths.path = path;
@@ -58,11 +55,9 @@ avs_net_trusted_cert_info_from_paths(const char *path, const char *filename) {
 
 avs_net_trusted_cert_info_t
 avs_net_trusted_cert_info_from_buffer(const void *buffer,
-                                      size_t buffer_size,
-                                      avs_net_data_format_t format) {
+                                      size_t buffer_size) {
     avs_net_trusted_cert_info_t result;
     memset(&result, 0, sizeof(result));
-    result.desc.format = format;
     result.desc.type = AVS_NET_SECURITY_INFO_TRUSTED_CERT;
     result.desc.source = AVS_NET_DATA_SOURCE_BUFFER;
     result.desc.info.buffer.buffer = buffer;
@@ -72,11 +67,9 @@ avs_net_trusted_cert_info_from_buffer(const void *buffer,
 
 avs_net_client_key_info_t
 avs_net_client_key_info_from_file(const char *filename,
-                                  const char *password,
-                                  avs_net_data_format_t format) {
+                                  const char *password) {
     avs_net_client_key_info_t result;
     memset(&result, 0, sizeof(result));
-    result.desc.format = format;
     result.desc.type = AVS_NET_SECURITY_INFO_CLIENT_KEY;
     result.desc.source = AVS_NET_DATA_SOURCE_FILE;
     result.desc.info.file.filename = filename;
@@ -87,11 +80,9 @@ avs_net_client_key_info_from_file(const char *filename,
 avs_net_client_key_info_t
 avs_net_client_key_info_from_buffer(const void *buffer,
                                     size_t buffer_size,
-                                    const char *password,
-                                    avs_net_data_format_t format) {
+                                    const char *password) {
     avs_net_client_key_info_t result;
     memset(&result, 0, sizeof(result));
-    result.desc.format = format;
     result.desc.type = AVS_NET_SECURITY_INFO_CLIENT_KEY;
     result.desc.source = AVS_NET_DATA_SOURCE_BUFFER;
     result.desc.info.buffer.buffer = buffer;
@@ -101,11 +92,9 @@ avs_net_client_key_info_from_buffer(const void *buffer,
 }
 
 avs_net_client_cert_info_t
-avs_net_client_cert_info_from_file(const char *filename,
-                                   avs_net_data_format_t format) {
+avs_net_client_cert_info_from_file(const char *filename) {
     avs_net_client_cert_info_t result;
     memset(&result, 0, sizeof(result));
-    result.desc.format = format;
     result.desc.type = AVS_NET_SECURITY_INFO_CLIENT_CERT;
     result.desc.source = AVS_NET_DATA_SOURCE_FILE;
     result.desc.info.file.filename = filename;
@@ -114,11 +103,9 @@ avs_net_client_cert_info_from_file(const char *filename,
 
 avs_net_client_cert_info_t
 avs_net_client_cert_info_from_buffer(const void *buffer,
-                                     size_t buffer_size,
-                                     avs_net_data_format_t format) {
+                                     size_t buffer_size) {
     avs_net_client_cert_info_t result;
     memset(&result, 0, sizeof(result));
-    result.desc.format = format;
     result.desc.type = AVS_NET_SECURITY_INFO_CLIENT_CERT;
     result.desc.source = AVS_NET_DATA_SOURCE_BUFFER;
     result.desc.info.buffer.buffer = buffer;
