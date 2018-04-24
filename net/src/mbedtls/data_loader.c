@@ -31,6 +31,8 @@
 
 VISIBILITY_SOURCE_BEGIN
 
+#ifdef WITH_X509
+
 #define CREATE_OR_FAIL(type, ptr) \
 do { \
     free(*ptr); \
@@ -163,3 +165,5 @@ int _avs_net_load_client_key(mbedtls_pk_context **client_key,
 #ifdef AVS_UNIT_TESTING
 #include "test/data_loader.c"
 #endif
+
+#endif // WITH_X509
