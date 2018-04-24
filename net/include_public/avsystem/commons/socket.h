@@ -254,8 +254,7 @@ typedef struct {
         } file;
         struct {
             const char *path;
-            const char *filename;
-        } paths;
+        } path;
         struct {
             const void *buffer;
             const char *password;
@@ -284,25 +283,20 @@ avs_net_trusted_cert_info_from_file(const char *filename);
 
 /**
  * Creates CA chain descriptor used later on to load CA chain from specified @p
- * path and/or @p file. The loading procedure attempts to treat each file as CA
- * certificate, attempts to load, and fails only if no CA certificate could be
- * loaded.
+ * path. The loading procedure attempts to treat each file as CA certificate,
+ * attempts to load, and fails only if no CA certificate could be loaded.
  *
  * NOTE: File loading and discovery is conducted by using: fopen(), fseek(),
  * fread(), ftell(), fclose(), opendir(), readdir(), closedir() and stat(), thus
  * the platform shall implement them. On embededd platforms it may be preferable
  * to use @ref avs_net_trusted_cert_info_from_buffer() instead.
  *
- * @param path  Path from which the CA chain shall be loaded (may be NULL).
- * @param file  File from which the CA chain shall be loaded (may be NULL).
- *
- * NOTE: if both @path and @file are NULL, trusted certificate info is treated
- * as it has not been configured.
+ * @param path  Path from which the CA chain shall be loaded.
  *
  * WARNING: accepted file formats are backend-specific.
  */
 avs_net_trusted_cert_info_t
-avs_net_trusted_cert_info_from_paths(const char *path, const char *file);
+avs_net_trusted_cert_info_from_path(const char *path);
 
 /**
  * Creates CA chain descriptor used later on to load CA chain from memory

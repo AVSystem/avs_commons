@@ -277,8 +277,8 @@ static avs_net_abstract_socket_t *setup_socket(socket_type_t type,
             .mode = AVS_NET_SECURITY_CERTIFICATE,
             .data.cert = {
                 .server_cert_validation = true,
-                .trusted_certs = avs_net_trusted_cert_info_from_paths(
-                                        NULL, ROOT_CRT_FILE),
+                .trusted_certs = avs_net_trusted_cert_info_from_file(
+                                        ROOT_CRT_FILE),
                 .client_cert = avs_net_client_cert_info_from_file(
                                         CLIENT_CRT_FILE),
                 .client_key = avs_net_client_key_info_from_file(

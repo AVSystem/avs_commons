@@ -38,31 +38,24 @@ AVS_UNIT_TEST(backend_mbedtls, chain_loading_from_file) {
     free(chain);
 }
 
-AVS_UNIT_TEST(backend_mbedtls, chain_loading_from_paths) {
+AVS_UNIT_TEST(backend_mbedtls, chain_loading_from_path) {
     mbedtls_x509_crt *chain = NULL;
 
-    const avs_net_trusted_cert_info_t only_file =
-            avs_net_trusted_cert_info_from_paths(NULL, AVS_TEST_BIN_DIR
-                                                 "/certs/root.crt");
-    AVS_UNIT_ASSERT_SUCCESS(_avs_net_load_ca_certs(&chain, &only_file));
-    mbedtls_x509_crt_free(chain);
-
-    const avs_net_trusted_cert_info_t only_path =
-            avs_net_trusted_cert_info_from_paths(AVS_TEST_BIN_DIR "/certs",
-                                                 NULL);
-    AVS_UNIT_ASSERT_SUCCESS(_avs_net_load_ca_certs(&chain, &only_path));
+    const avs_net_trusted_cert_info_t path =
+            avs_net_trusted_cert_info_from_path(AVS_TEST_BIN_DIR "/certs");
+    AVS_UNIT_ASSERT_SUCCESS(_avs_net_load_ca_certs(&chain, &path));
     mbedtls_x509_crt_free(chain);
 
     // Empty directory case.
     char name[] = "/tmp/empty-XXXXXX";
     (void) mkdtemp(name);
     const avs_net_trusted_cert_info_t empty_dir =
-            avs_net_trusted_cert_info_from_paths(name, NULL);
+            avs_net_trusted_cert_info_from_path(name);
     AVS_UNIT_ASSERT_SUCCESS(_avs_net_load_ca_certs(&chain, &empty_dir));
 
     // Directory without permissions - hopefully nobody runs tests as root.
     const avs_net_trusted_cert_info_t no_permissions_dir =
-            avs_net_trusted_cert_info_from_paths("/root", NULL);
+            avs_net_trusted_cert_info_from_path("/root");
     AVS_UNIT_ASSERT_FAILED(_avs_net_load_ca_certs(&chain, &no_permissions_dir));
     free(chain);
 }

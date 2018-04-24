@@ -43,13 +43,12 @@ avs_net_trusted_cert_info_from_file(const char *filename) {
 }
 
 avs_net_trusted_cert_info_t
-avs_net_trusted_cert_info_from_paths(const char *path, const char *filename) {
+avs_net_trusted_cert_info_from_path(const char *path) {
     avs_net_trusted_cert_info_t result;
     memset(&result, 0, sizeof(result));
     result.desc.type = AVS_NET_SECURITY_INFO_TRUSTED_CERT;
-    result.desc.source = AVS_NET_DATA_SOURCE_PATHS;
-    result.desc.info.paths.path = path;
-    result.desc.info.paths.filename = filename;
+    result.desc.source = AVS_NET_DATA_SOURCE_PATH;
+    result.desc.info.path.path = path;
     return result;
 }
 

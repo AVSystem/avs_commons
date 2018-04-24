@@ -63,14 +63,17 @@ static int load_cert_from_file(mbedtls_x509_crt *chain,
 static int load_ca_from_path(mbedtls_x509_crt *chain, const char *path) {
     LOG(DEBUG, "certificates from path <%s>: going to load", path);
 
+    // Note: this function returns negative value if nothing was loaded or
+    // everything failed to load, and positive value indicating a number of
+    // files that failed to load otherwise.
     int retval = mbedtls_x509_crt_parse_path(chain, path);
-    if (retval) {
+    if (retval < 0) {
         LOG(ERROR, "certificates from path <%s>: failed to load, result %d",
             path, retval);
     } else {
         LOG(DEBUG, "certificates from path <%s>: loaded", path);
     }
-    return retval;
+    return retval < 0 ? retval : 0;
 }
 
 int _avs_net_load_ca_certs(mbedtls_x509_crt **out,
@@ -81,17 +84,8 @@ int _avs_net_load_ca_certs(mbedtls_x509_crt **out,
     switch (info->desc.source) {
     case AVS_NET_DATA_SOURCE_FILE:
         return load_cert_from_file(*out, info->desc.info.file.filename);
-    case AVS_NET_DATA_SOURCE_PATHS: {
-        int retfile = -1;
-        int retpath = -1;
-        if (info->desc.info.paths.filename) {
-            retfile = load_cert_from_file(*out, info->desc.info.paths.filename);
-        }
-        if (info->desc.info.paths.path) {
-            retpath = load_ca_from_path(*out, info->desc.info.paths.path);
-        }
-        return retpath < 0 && retfile < 0 ? -1 : 0;
-    }
+    case AVS_NET_DATA_SOURCE_PATH:
+        return load_ca_from_path(*out, info->desc.info.path.path);
     case AVS_NET_DATA_SOURCE_BUFFER:
         return append_cert_from_buffer(*out, info->desc.info.buffer.buffer,
                                        info->desc.info.buffer.buffer_size);
