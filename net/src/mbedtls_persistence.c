@@ -205,6 +205,15 @@ finish:;
     return retval;
 }
 
+static bool is_all_zeros(const void *buf, size_t buf_size) {
+    for (size_t i = 0; i < buf_size; ++i) {
+        if (((const char *) buf)[i]) {
+            return false;
+        }
+    }
+    return true;
+}
+
 int _avs_net_mbedtls_session_restore(mbedtls_ssl_session *out_session,
                                      const void *buf, size_t buf_size) {
     avs_stream_inbuf_t in_buf_stream = AVS_STREAM_INBUF_STATIC_INITIALIZER;
@@ -213,11 +222,15 @@ int _avs_net_mbedtls_session_restore(mbedtls_ssl_session *out_session,
     int retval = avs_stream_read_reliably(
             (avs_stream_abstract_t *) &in_buf_stream,
             magic_header, sizeof(magic_header));
+    if (is_all_zeros(PERSISTENCE_MAGIC, sizeof(PERSISTENCE_MAGIC))) {
+        LOG(TRACE, "Session data empty, not attempting restore");
+        return -1;
+    }
     if (retval || memcmp(magic_header, PERSISTENCE_MAGIC,
                          sizeof(PERSISTENCE_MAGIC))) {
         // this may happen in a perfectly valid case of empty persistence buffer
         // (no session stored), so it's not on the ERROR level
-        LOG(DEBUG, "Could not restore session: magic not present");
+        LOG(ERROR, "Could not restore session: invalid magic");
         return -1;
     }
     avs_persistence_context_t *ctx = avs_persistence_restore_context_new(
