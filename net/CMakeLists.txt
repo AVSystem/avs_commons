@@ -24,12 +24,14 @@ if(WITH_OPENSSL)
     set(SOURCES ${SOURCES} src/openssl/openssl.c)
 elseif(WITH_MBEDTLS)
     set(SOURCES ${SOURCES}
-        src/mbedtls.c
-        src/mbedtls/data_loader.c)
+        src/mbedtls/mbedtls.c)
     if(WITH_TLS_SESSION_PERSISTENCE)
         set(SOURCES ${SOURCES}
             src/mbedtls_persistence.c
             src/mbedtls_persistence.h)
+    if(WITH_X509)
+        set(SOURCES ${SOURCES}
+            src/mbedtls/data_loader.c)
     endif()
 elseif(WITH_TINYDTLS)
     set(SOURCES ${SOURCES} src/tinydtls/tinydtls.c)
