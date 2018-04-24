@@ -426,18 +426,6 @@ static int get_opt_ssl(avs_net_abstract_socket_t *ssl_socket_,
     return retval;
 }
 
-static inline int is_client_cert_empty(const avs_net_client_cert_info_t *cert) {
-    switch (cert->desc.source) {
-    case AVS_NET_DATA_SOURCE_FILE:
-        return !cert->desc.info.file.filename;
-    case AVS_NET_DATA_SOURCE_BUFFER:
-        return !cert->desc.info.buffer.buffer;
-    default:
-        assert(0 && "invalid enum value");
-        return 1;
-    }
-}
-
 int _avs_net_create_ssl_socket(avs_net_abstract_socket_t **socket,
                                const void *socket_configuration) {
     return create_ssl_socket(socket, AVS_NET_TCP_SOCKET, socket_configuration);

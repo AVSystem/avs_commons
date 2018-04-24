@@ -813,7 +813,7 @@ static int configure_ssl_certs(ssl_socket_certs_t *certs,
         LOG(DEBUG, "Server authentication disabled");
     }
 
-    if (!is_client_cert_empty(&cert_info->client_cert)) {
+    if (cert_info->client_cert.desc.source != AVS_NET_DATA_SOURCE_EMPTY) {
         if (_avs_net_load_client_cert(&certs->client_cert,
                                       &cert_info->client_cert)) {
             LOG(ERROR, "could not load client certificate");
