@@ -21,7 +21,6 @@
 
 #include "common.h"
 #include "data_loader.h"
-#include "pkcs12.h"
 
 #include "../api.h"
 
@@ -57,44 +56,27 @@ static int load_ca_certs_from_paths(SSL_CTX *ctx,
     LOG(DEBUG, "CA certificate <file=%s, path=%s>: going to load",
         file ? file : "(null)", path ? path : "(null)");
 
-    if (!SSL_CTX_load_verify_locations(ctx, file, path)) {
-        log_openssl_error();
+    if (file) {
+        // Try DER.
+        if (SSL_CTX_use_certificate_file(ctx, file, SSL_FILETYPE_ASN1) == 1) {
+            return 0;
+        }
+        // Try PEM.
+        if (SSL_CTX_use_certificate_file(ctx, file, SSL_FILETYPE_PEM) == 1) {
+            return 0;
+        }
         return -1;
-    }
-    if (!SSL_CTX_set_default_verify_paths(ctx)) {
-        log_openssl_error();
-        return -1;
+    } else {
+        if (!SSL_CTX_load_verify_locations(ctx, NULL, path)) {
+            log_openssl_error();
+            return -1;
+        }
+        if (!SSL_CTX_set_default_verify_paths(ctx)) {
+            log_openssl_error();
+            return -1;
+        }
     }
     return 0;
-}
-
-static int load_ca_cert_from_pkcs12_buffer(SSL_CTX *ctx,
-                                           const void *buffer,
-                                           const size_t len) {
-    pkcs12_unpacked_t *p12 =
-            _avs_net_openssl_unpack_pkcs12_from_buffer(buffer, len, NULL);
-    if (!p12) {
-        return -1;
-    }
-    int retval = -1;
-    if (p12->additional_ca_certs) {
-        X509_STORE *store = SSL_CTX_get_cert_store(ctx);
-        if (!store) {
-            goto finish;
-        }
-        for (int i = 0; i < sk_X509_num(p12->additional_ca_certs); ++i) {
-            if (!X509_STORE_add_cert(
-                        store, sk_X509_value(p12->additional_ca_certs, i))) {
-                log_openssl_error();
-                goto finish;
-            }
-        }
-    }
-    retval = 0;
-
-finish:
-    _avs_net_openssl_pkcs12_free(p12);
-    return retval;
 }
 
 typedef enum {
@@ -147,7 +129,7 @@ static int load_ca_cert_from_buffer(SSL_CTX *ctx,
                                     const size_t len) {
     X509 *cert = parse_cert(buffer, len);
     if (!cert) {
-        return load_ca_cert_from_pkcs12_buffer(ctx, buffer, len);
+        return -1;
     }
     X509_STORE *store = SSL_CTX_get_cert_store(ctx);
     if (!store || !X509_STORE_add_cert(store, cert)) {
@@ -178,31 +160,6 @@ int _avs_net_openssl_load_ca_certs(SSL_CTX *ctx,
     return 0;
 }
 
-static int load_client_cert_from_pkcs12_unpacked(SSL_CTX *ctx,
-                                                 pkcs12_unpacked_t *p12) {
-    int retval = 0;
-    /**
-     * There are two cases here apparently:
-     * 1. There was some private key and a certificate associated with it, in
-     *    which case we are interested in pkcs12->client_cert.
-     *
-     * 2. There were no private keys, therefore every certificate is considered
-     *    "additional", and lands at pkcs12->additional_ca_certs stack.
-     */
-    X509 *cert = NULL;
-    if (p12->private_key && p12->client_cert) {
-        cert = p12->client_cert;
-    } else if (!p12->private_key && p12->additional_ca_certs) {
-        cert = sk_X509_value(p12->additional_ca_certs, 0);
-    } else {
-        retval = -1;
-    }
-    if (!retval) {
-        retval = SSL_CTX_use_certificate(ctx, cert) == 1 ? 0 : -1;
-    }
-    return retval;
-}
-
 static int load_client_cert_from_file(SSL_CTX *ctx,
                                       const char *filename) {
     // Try DER.
@@ -213,30 +170,15 @@ static int load_client_cert_from_file(SSL_CTX *ctx,
     if (SSL_CTX_use_certificate_file(ctx, filename, SSL_FILETYPE_PEM) == 1) {
         return 0;
     }
-    // Try PKCS12.
-    pkcs12_unpacked_t *p12 =
-            _avs_net_openssl_unpack_pkcs12_from_file(filename, NULL);
-    if (!p12) {
-        return -1;
-    }
-    int retval = load_client_cert_from_pkcs12_unpacked(ctx, p12);
-    _avs_net_openssl_pkcs12_free(p12);
-    return retval;
+    log_openssl_error();
+    return -1;
 }
 
 static int
 load_client_cert_from_buffer(SSL_CTX *ctx, const void *buffer, size_t len) {
     X509 *cert = parse_cert(buffer, len);
     if (!cert) {
-        // Try PKCS12.
-        pkcs12_unpacked_t *p12 =
-                _avs_net_openssl_unpack_pkcs12_from_buffer(buffer, len, NULL);
-        if (!p12) {
-            return -1;
-        }
-        int retval = load_client_cert_from_pkcs12_unpacked(ctx, p12);
-        _avs_net_openssl_pkcs12_free(p12);
-        return retval;
+        return -1;
     }
     if (SSL_CTX_use_certificate(ctx, cert) != 1) {
         X509_free(cert);
@@ -276,18 +218,8 @@ static int load_client_key_from_file(SSL_CTX *ctx,
     if (SSL_CTX_use_PrivateKey_file(ctx, filename, SSL_FILETYPE_ASN1) == 1) {
         return 0;
     }
-    // Try pkcs12.
-    pkcs12_unpacked_t *p12 =
-            _avs_net_openssl_unpack_pkcs12_from_file(filename, password);
-    if (!p12 || !p12->private_key) {
-        return -1;
-    }
-    int retval = SSL_CTX_use_PrivateKey(ctx, p12->private_key) == 1 ? 0 : -1;
-    _avs_net_openssl_pkcs12_free(p12);
-    if (retval) {
-        log_openssl_error();
-    }
-    return retval;
+    log_openssl_error();
+    return 0;
 }
 
 static int load_client_key_from_buffer(SSL_CTX *ctx,
@@ -305,18 +237,8 @@ static int load_client_key_from_buffer(SSL_CTX *ctx,
                                     (long) len) == 1) {
         return 0;
     }
-    // Try pkcs12.
-    pkcs12_unpacked_t *p12 =
-            _avs_net_openssl_unpack_pkcs12_from_buffer(buffer, len, password);
-    if (!p12 || !p12->private_key) {
-        return -1;
-    }
-    int retval = SSL_CTX_use_PrivateKey(ctx, p12->private_key) == 1 ? 0 : -1;
-    _avs_net_openssl_pkcs12_free(p12);
-    if (retval) {
-        log_openssl_error();
-    }
-    return retval;
+    log_openssl_error();
+    return -1;
 }
 
 int _avs_net_openssl_load_client_key(SSL_CTX *ctx,
