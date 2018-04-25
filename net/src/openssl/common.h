@@ -18,10 +18,14 @@
 
 #include <openssl/err.h>
 
+VISIBILITY_PRIVATE_HEADER_BEGIN
+
 #define log_openssl_error() \
     do { \
         char error_buffer[256]; /* see 'man ERR_error_string' */ \
         LOG(ERROR, "%s", ERR_error_string(ERR_get_error(), error_buffer)); \
     } while (0)
+
+VISIBILITY_PRIVATE_HEADER_END
 
 #endif // NET_OPENSSL_COMMON_H
