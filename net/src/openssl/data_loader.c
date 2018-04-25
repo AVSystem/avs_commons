@@ -105,7 +105,7 @@ static X509 *parse_cert(const void *buffer, const size_t len) {
     switch (detect_cert_encoding((const char *) buffer, len)) {
     case ENCODING_PEM: {
         // Convert PEM to DER.
-        BIO *bio = BIO_new_mem_buf((void *) (intptr_t) buffer, len);
+        BIO *bio = BIO_new_mem_buf((void *) (intptr_t) buffer, (int) len);
         if (!bio) {
             return NULL;
         }
@@ -114,11 +114,11 @@ static X509 *parse_cert(const void *buffer, const size_t len) {
         break;
     }
     case ENCODING_DER: {
-        const unsigned char *data = (unsigned char *)buffer;
+        const unsigned char *data = (const unsigned char *)buffer;
         cert = d2i_X509(NULL, &data, (int) len);
         break;
     }
-    deault:
+    default:
         LOG(ERROR, "unknown in-memory certificate format");
         break;
     }
