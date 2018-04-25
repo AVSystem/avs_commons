@@ -65,6 +65,7 @@ static int load_ca_certs_from_paths(SSL_CTX *ctx,
         if (SSL_CTX_use_certificate_file(ctx, file, SSL_FILETYPE_PEM) == 1) {
             return 0;
         }
+        log_openssl_error();
         return -1;
     } else {
         if (!SSL_CTX_load_verify_locations(ctx, NULL, path)) {
@@ -219,7 +220,7 @@ static int load_client_key_from_file(SSL_CTX *ctx,
         return 0;
     }
     log_openssl_error();
-    return 0;
+    return -1;
 }
 
 static int load_client_key_from_buffer(SSL_CTX *ctx,
