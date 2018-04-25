@@ -73,14 +73,6 @@ VISIBILITY_SOURCE_BEGIN
 #undef WITH_DTLS
 #endif
 
-#ifndef HEADER_SSL_H
-/*
- * Try to support some OpenSSL-like compatibility layers, which tend to not have
- * everything implemented.
- */
-#define FAKE_OPENSSL
-#endif
-
 typedef struct {
     const avs_net_socket_v_table_t * const operations;
     SSL_CTX *ctx;
@@ -597,12 +589,7 @@ static int ssl_handshake(ssl_socket_t *socket) {
         return SSL_connect(socket->ssl);
     }
     if (state_opt.state == AVS_NET_SOCKET_STATE_ACCEPTED) {
-#ifndef FAKE_OPENSSL
         return SSL_accept(socket->ssl);
-#else
-        LOG(ERROR, "Server mode not supported for this library version");
-        return -1;
-#endif
     }
     LOG(ERROR, "ssl_handshake: invalid socket state");
     return -1;
@@ -685,7 +672,7 @@ static int configure_ssl_certs(ssl_socket_t *socket,
     if (cert_info->server_cert_validation) {
         socket->verification = 1;
         SSL_CTX_set_verify(socket->ctx, SSL_VERIFY_PEER, NULL);
-#if !defined(FAKE_OPENSSL) && OPENSSL_VERSION_NUMBER_LT(0,9,5)
+#if OPENSSL_VERSION_NUMBER_LT(0,9,5)
         SSL_CTX_set_verify_depth(socket->ctx, 1);
 #endif
         if (_avs_net_openssl_load_ca_certs(socket->ctx,
@@ -966,12 +953,7 @@ static int initialize_ssl_global(void) {
     return 0;
 }
 
-#ifndef FAKE_OPENSSL
 #define OPENSSL_METHOD(Proto) Proto##_method
-#else
-/* Allow the compatibility layer libraries to work at least for client mode */
-#define OPENSSL_METHOD(Proto) Proto##_client_method
-#endif
 
 #if OPENSSL_VERSION_NUMBER_LT(1,1,0)
 static const SSL_METHOD *stream_method(avs_net_ssl_version_t version) {
