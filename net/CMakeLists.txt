@@ -22,6 +22,11 @@ set(SOURCES
 
 if(WITH_OPENSSL)
     set(SOURCES ${SOURCES} src/openssl/openssl.c)
+    if(WITH_X509)
+        set(SOURCES ${SOURCES}
+            src/openssl/data_loader.c
+            src/openssl/pkcs12.c)
+    endif()
 elseif(WITH_MBEDTLS)
     set(SOURCES ${SOURCES}
         src/mbedtls/mbedtls.c)
