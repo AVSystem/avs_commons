@@ -677,6 +677,7 @@ static bool is_session_resumed(ssl_socket_t *socket) {
     return false;
 }
 
+#ifdef WITH_X509
 static int configure_ssl_certs(ssl_socket_t *socket,
                                const avs_net_certificate_info_t *cert_info) {
     LOG(TRACE, "configure_ssl_certs");
@@ -713,6 +714,10 @@ static int configure_ssl_certs(ssl_socket_t *socket,
 
     return 0;
 }
+#else
+# define configure_ssl_certs(...) \
+    (LOG(ERROR, "X.509 support disabled"), (-1))
+#endif // WITH_X509
 
 #ifdef WITH_PSK
 static unsigned int psk_client_cb(SSL *ssl,
