@@ -199,6 +199,9 @@ int _avs_net_mbedtls_session_save(mbedtls_ssl_session *session,
     }
     avs_persistence_context_delete(ctx);
 finish:;
+    // ensure that everything after the persisted data is zeroes, to make
+    // "compression" of persistent storage possible; see docs for
+    // avs_net_ssl_configuration_t::session_resumption_buffer for details
     size_t clear_start = retval ? 0 : avs_stream_outbuf_offset(&out_buf_stream);
     assert(clear_start <= out_buf_size);
     memset((char *) out_buf + clear_start, 0, out_buf_size - clear_start);
@@ -216,16 +219,16 @@ static bool is_all_zeros(const void *buf, size_t buf_size) {
 
 int _avs_net_mbedtls_session_restore(mbedtls_ssl_session *out_session,
                                      const void *buf, size_t buf_size) {
+    if (is_all_zeros(buf, buf_size)) {
+        LOG(TRACE, "Session data empty, not attempting restore");
+        return -1;
+    }
     avs_stream_inbuf_t in_buf_stream = AVS_STREAM_INBUF_STATIC_INITIALIZER;
     avs_stream_inbuf_set_buffer(&in_buf_stream, buf, buf_size);
     char magic_header[sizeof(PERSISTENCE_MAGIC)];
     int retval = avs_stream_read_reliably(
             (avs_stream_abstract_t *) &in_buf_stream,
             magic_header, sizeof(magic_header));
-    if (is_all_zeros(PERSISTENCE_MAGIC, sizeof(PERSISTENCE_MAGIC))) {
-        LOG(TRACE, "Session data empty, not attempting restore");
-        return -1;
-    }
     if (retval || memcmp(magic_header, PERSISTENCE_MAGIC,
                          sizeof(PERSISTENCE_MAGIC))) {
         // this may happen in a perfectly valid case of empty persistence buffer
