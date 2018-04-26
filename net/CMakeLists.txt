@@ -29,6 +29,7 @@ elseif(WITH_MBEDTLS)
         set(SOURCES ${SOURCES}
             src/mbedtls_persistence.c
             src/mbedtls_persistence.h)
+    endif()
     if(WITH_X509)
         set(SOURCES ${SOURCES}
             src/mbedtls/data_loader.c)
