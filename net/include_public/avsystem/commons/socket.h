@@ -244,6 +244,14 @@ typedef struct {
     size_t identity_size;
 } avs_net_psk_info_t;
 
+/**
+ * This struct is for internal use only and should not be filled manually. One
+ * should construct appropriate instances of:
+ * - @ref avs_net_trusted_cert_info_t,
+ * - @ref avs_net_client_cert_info_t,
+ * - @ref avs_net_client_key_info_t
+ * using methods declared below.
+ */
 typedef struct {
     int type;
     int source;
