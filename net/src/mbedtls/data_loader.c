@@ -71,7 +71,8 @@ static int load_ca_from_path(mbedtls_x509_crt *chain, const char *path) {
         LOG(ERROR, "certificates from path <%s>: failed to load, result %d",
             path, retval);
     } else {
-        LOG(DEBUG, "certificates from path <%s>: loaded", path);
+        LOG(DEBUG, "certificates from path <%s>: some loaded; not loaded: %d",
+            path, retval);
     }
     return retval < 0 ? retval : 0;
 }
