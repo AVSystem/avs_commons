@@ -51,7 +51,9 @@ AVS_UNIT_TEST(backend_mbedtls, chain_loading_from_path) {
     (void) mkdtemp(name);
     const avs_net_trusted_cert_info_t empty_dir =
             avs_net_trusted_cert_info_from_path(name);
-    AVS_UNIT_ASSERT_SUCCESS(_avs_net_load_ca_certs(&chain, &empty_dir));
+    int retval = _avs_net_load_ca_certs(&chain, &empty_dir);
+    (void) rmdir(name);
+    AVS_UNIT_ASSERT_SUCCESS(retval);
 
     // Directory without permissions - hopefully nobody runs tests as root.
     const avs_net_trusted_cert_info_t no_permissions_dir =
