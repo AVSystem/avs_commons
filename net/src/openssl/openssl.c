@@ -636,7 +636,7 @@ static int start_ssl(ssl_socket_t *socket, const char *host) {
         if (handshake_result <= 0) {
             LOG(ERROR, "SSL handshake failed.");
             log_openssl_error();
-            LOG(TRACE, "handshake_result = %d", handshake_result);
+            LOG(DEBUG, "handshake_result = %d", handshake_result);
             if (!socket->error_code) {
                 socket->error_code = EPROTO;
             }

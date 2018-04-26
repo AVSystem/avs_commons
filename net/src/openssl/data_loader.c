@@ -57,22 +57,26 @@ static int load_ca_certs_from_paths(SSL_CTX *ctx,
         file ? file : "(null)", path ? path : "(null)");
 
     if (file) {
-        // Try DER.
-        if (SSL_CTX_use_certificate_file(ctx, file, SSL_FILETYPE_ASN1) == 1) {
+        /**
+         * SSL_CTX_load_verify_locations() allows PEM certificates only to be
+         * loaded. Underneath it uses X509_LOOKUP_load_file with type hardcoded
+         * to X509_FILETYPE_PEM, but it is also possible to use
+         * X509_FILETYPE_ASN1.
+         */
+        X509_STORE *store = SSL_CTX_get_cert_store(ctx);
+        X509_LOOKUP *lookup = X509_STORE_add_lookup(store, X509_LOOKUP_file());
+        if (lookup == NULL)
+            return -1;
+        if (X509_LOOKUP_load_file(lookup, file, X509_FILETYPE_PEM) == 1) {
             return 0;
         }
-        // Try PEM.
-        if (SSL_CTX_use_certificate_file(ctx, file, SSL_FILETYPE_PEM) == 1) {
+        if (X509_LOOKUP_load_file(lookup, file, X509_FILETYPE_ASN1) == 1) {
             return 0;
         }
         log_openssl_error();
         return -1;
     } else {
         if (!SSL_CTX_load_verify_locations(ctx, NULL, path)) {
-            log_openssl_error();
-            return -1;
-        }
-        if (!SSL_CTX_set_default_verify_paths(ctx)) {
             log_openssl_error();
             return -1;
         }
@@ -144,6 +148,10 @@ static int load_ca_cert_from_buffer(SSL_CTX *ctx,
 int _avs_net_openssl_load_ca_certs(SSL_CTX *ctx,
                                    const avs_net_trusted_cert_info_t *info) {
     setup_password_callback(ctx, NULL);
+    if (!SSL_CTX_set_default_verify_paths(ctx)) {
+        LOG(WARNING, "could not set default CA verify paths");
+        log_openssl_error();
+    }
 
     switch (info->desc.source) {
     case AVS_NET_DATA_SOURCE_FILE:
@@ -163,6 +171,7 @@ int _avs_net_openssl_load_ca_certs(SSL_CTX *ctx,
 
 static int load_client_cert_from_file(SSL_CTX *ctx,
                                       const char *filename) {
+    LOG(DEBUG, "client certificate <%s>: going to load", filename);
     // Try DER.
     if (SSL_CTX_use_certificate_file(ctx, filename, SSL_FILETYPE_ASN1) == 1) {
         return 0;
@@ -209,6 +218,7 @@ int _avs_net_openssl_load_client_cert(SSL_CTX *ctx,
 static int load_client_key_from_file(SSL_CTX *ctx,
                                      const char *filename,
                                      const char *password) {
+    LOG(DEBUG, "client key <%s>: going to load", filename);
     setup_password_callback(ctx, password);
 
     // Try PEM.
