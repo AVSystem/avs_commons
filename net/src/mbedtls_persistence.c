@@ -30,6 +30,10 @@
 
 VISIBILITY_SOURCE_BEGIN
 
+#if MBEDTLS_VERSION_NUMBER < 0x02030000
+typedef time_t mbedtls_time_t; // mbed TLS < 2.3 does not have mbedtls_time_t
+#endif
+
 /**
  * Persistence format summary
  *
