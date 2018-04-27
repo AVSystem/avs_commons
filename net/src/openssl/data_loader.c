@@ -174,12 +174,12 @@ int _avs_net_openssl_load_ca_certs(SSL_CTX *ctx,
 static int load_client_cert_from_file(SSL_CTX *ctx,
                                       const char *filename) {
     LOG(DEBUG, "client certificate <%s>: going to load", filename);
-    // Try DER.
-    if (SSL_CTX_use_certificate_file(ctx, filename, SSL_FILETYPE_ASN1) == 1) {
-        return 0;
-    }
     // Try PEM.
     if (SSL_CTX_use_certificate_file(ctx, filename, SSL_FILETYPE_PEM) == 1) {
+        return 0;
+    }
+    // Try DER.
+    if (SSL_CTX_use_certificate_file(ctx, filename, SSL_FILETYPE_ASN1) == 1) {
         return 0;
     }
     log_openssl_error();
