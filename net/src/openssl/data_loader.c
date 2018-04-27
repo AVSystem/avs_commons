@@ -65,8 +65,9 @@ static int load_ca_certs_from_paths(SSL_CTX *ctx,
          */
         X509_STORE *store = SSL_CTX_get_cert_store(ctx);
         X509_LOOKUP *lookup = X509_STORE_add_lookup(store, X509_LOOKUP_file());
-        if (lookup == NULL)
+        if (lookup == NULL) {
             return -1;
+        }
         if (X509_LOOKUP_load_file(lookup, file, X509_FILETYPE_PEM) == 1) {
             return 0;
         }
