@@ -79,7 +79,7 @@ AVS_UNIT_TEST(backend_mbedtls, chain_loading_from_null) {
 
     const avs_net_trusted_cert_info_t path =
             avs_net_trusted_cert_info_from_path(NULL);
-    AVS_UNIT_ASSERT_FAILED(_avs_net_mbedtls_load_ca_certs(&chain, &buffer));
+    AVS_UNIT_ASSERT_FAILED(_avs_net_mbedtls_load_ca_certs(&chain, &path));
     mbedtls_x509_crt_free(chain);
     free(chain);
 }
