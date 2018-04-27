@@ -53,6 +53,7 @@ static inline void setup_password_callback(SSL_CTX *ctx, const char *password) {
 static int load_ca_certs_from_paths(SSL_CTX *ctx,
                                     const char *file,
                                     const char *path) {
+    assert(!!file != !!path && "cannot use path and file at the same time");
     LOG(DEBUG, "CA certificate <file=%s, path=%s>: going to load",
         file ? file : "(null)", path ? path : "(null)");
 
