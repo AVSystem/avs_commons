@@ -27,6 +27,8 @@
 #include <stdatomic.h>
 #endif // HAVE_C11_STDATOMIC
 
+#include "api.h"
+
 VISIBILITY_PRIVATE_HEADER_BEGIN
 
 #ifndef HAVE_C11_STDATOMIC
@@ -424,18 +426,6 @@ static int get_opt_ssl(avs_net_abstract_socket_t *ssl_socket_,
     return retval;
 }
 
-static inline int is_client_cert_empty(const avs_net_client_cert_t *cert) {
-    switch (cert->impl.source) {
-    case AVS_NET_DATA_SOURCE_FILE:
-        return !cert->impl.data.file.path;
-    case AVS_NET_DATA_SOURCE_BUFFER:
-        return !cert->impl.data.cert.data;
-    default:
-        assert(0 && "invalid enum value");
-        return 1;
-    }
-}
-
 int _avs_net_create_ssl_socket(avs_net_abstract_socket_t **socket,
                                const void *socket_configuration) {
     return create_ssl_socket(socket, AVS_NET_TCP_SOCKET, socket_configuration);
@@ -454,7 +444,7 @@ static inline void _avs_net_psk_cleanup(avs_net_owned_psk_t *psk) {
 }
 
 static inline int _avs_net_psk_copy(avs_net_owned_psk_t *dst,
-                                    const avs_net_psk_t *src) {
+                                    const avs_net_psk_info_t *src) {
     if (!src->psk_size) {
         LOG(ERROR, "PSK cannot be empty");
         return -1;

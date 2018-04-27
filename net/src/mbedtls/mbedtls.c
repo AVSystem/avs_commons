@@ -41,8 +41,9 @@
 
 #include <avsystem/commons/errno.h>
 
+#include "../net_impl.h"
+#include "data_loader.h"
 #include "mbedtls_persistence.h"
-#include "net_impl.h"
 
 VISIBILITY_SOURCE_BEGIN
 
@@ -50,7 +51,7 @@ VISIBILITY_SOURCE_BEGIN
 typedef struct {
     mbedtls_x509_crt *ca_cert;
     mbedtls_x509_crt *client_cert;
-    mbedtls_pk_context *pk_key;
+    mbedtls_pk_context *client_key;
 } ssl_socket_certs_t;
 #endif // WITH_X509
 
@@ -117,7 +118,7 @@ static void debug_mbedtls(void *ctx, int level, const char *file, int line, cons
 #endif // WITH_MBEDTLS_LOGS
 
 #define NET_SSL_COMMON_INTERNALS
-#include "ssl_common.h"
+#include "../ssl_common.h"
 
 static struct {
     // this weighs almost 40KB because of HAVEGE state
@@ -297,10 +298,10 @@ static void initialize_cert_security(ssl_socket_t *socket) {
         mbedtls_ssl_conf_authmode(&socket->config, MBEDTLS_SSL_VERIFY_NONE);
     }
 
-    if (socket->security.cert.client_cert && socket->security.cert.pk_key) {
+    if (socket->security.cert.client_cert && socket->security.cert.client_key) {
         mbedtls_ssl_conf_own_cert(&socket->config,
                                   socket->security.cert.client_cert,
-                                  socket->security.cert.pk_key);
+                                  socket->security.cert.client_key);
     }
 }
 #else // WITH_X509
@@ -749,9 +750,9 @@ static void cleanup_security_cert(ssl_socket_certs_t *certs) {
         mbedtls_x509_crt_free(certs->client_cert);
         free(certs->client_cert);
     }
-    if (certs->pk_key) {
-        mbedtls_pk_free(certs->pk_key);
-        free(certs->pk_key);
+    if (certs->client_key) {
+        mbedtls_pk_free(certs->client_key);
+        free(certs->client_key);
     }
 }
 #else // WITH_X509
@@ -798,277 +799,39 @@ static int cleanup_ssl(avs_net_abstract_socket_t **socket_) {
     return 0;
 }
 
-#define CREATE_OR_FAIL(type, ptr) \
-do { \
-    free(*ptr); \
-    *ptr = (type *) calloc(1, sizeof(**ptr)); \
-    if (!*ptr) {\
-        LOG(ERROR, "memory allocation error"); \
-        return -1; \
-    } \
-} while (0)
-
 #ifdef WITH_X509
-static int
-load_ca_certs_from_paths(mbedtls_x509_crt **out,
-                         const avs_net_certificate_info_t *cert_info) {
-    const char *ca_cert_path = cert_info->trusted_certs.impl.data.paths.cert_path;
-    const char *ca_cert_file = cert_info->trusted_certs.impl.data.paths.cert_file;
-    if (!ca_cert_path && !ca_cert_file) {
-        LOG(ERROR, "CA cert path and CA cert file not provided");
-        return -1;
-    }
-    if (cert_info->trusted_certs.impl.format != AVS_NET_DATA_FORMAT_DER
-        && cert_info->trusted_certs.impl.format != AVS_NET_DATA_FORMAT_PEM) {
-        LOG(ERROR, "unsupported CA certs format");
-        return -1;
-    }
-    CREATE_OR_FAIL(mbedtls_x509_crt, out);
-    mbedtls_x509_crt_init(*out);
-    int result;
-
-    if (ca_cert_path
-           && (result = mbedtls_x509_crt_parse_path(*out, ca_cert_path))) {
-        LOG(ERROR, "failed to parse %d certs in path <%s>", result,
-            ca_cert_path);
-        return result;
-    }
-    if (ca_cert_file
-           && (result = mbedtls_x509_crt_parse_file(*out, ca_cert_file))) {
-        LOG(ERROR, "failed to parse %d certs in file <%s>", result,
-            ca_cert_file);
-        return result;
-    }
-    return 0;
-}
-
-static int load_ca_certs_from_memory(mbedtls_x509_crt **out,
-                                     const avs_net_trusted_cert_source_t *cert_info) {
-    const avs_net_ssl_raw_data_t *ca_cert = &cert_info->impl.data.cert;
-    if (cert_info->impl.format != AVS_NET_DATA_FORMAT_DER) {
-        LOG(ERROR, "invalid CA certs format");
-        return -1;
-    }
-    if (!ca_cert->data || !ca_cert->size) {
-        LOG(ERROR, "invalid DER CA certificate provided");
-        return -1;
-    }
-    CREATE_OR_FAIL(mbedtls_x509_crt, out);
-    mbedtls_x509_crt_init(*out);
-    int result = mbedtls_x509_crt_parse_der(
-            *out, (const unsigned char *) ca_cert->data, ca_cert->size);
-    if (result) {
-        LOG(ERROR, "failed to parse DER certificate: %d", result);
-    }
-    return result;
-}
-
-static int load_client_key_from_ec(ssl_socket_certs_t *certs,
-                                   const avs_net_ssl_raw_ec_t *key) {
-    if (!key->private_key || !key->private_key_size) {
-        LOG(ERROR, "EC private key not provided");
-        return -1;
-    }
-    if (!key->curve_name) {
-        LOG(ERROR, "EC curve name not provided");
-        return -1;
-    }
-    mbedtls_ecp_keypair *private_ec, *cert_ec;
-    const mbedtls_ecp_curve_info *curve_info;
-
-    if (!certs->client_cert
-            || mbedtls_pk_get_type(&certs->client_cert->pk)
-                    != MBEDTLS_PK_ECKEY) {
-        LOG(ERROR, "invalid client certificate");
-        return -1;
-    }
-    cert_ec = mbedtls_pk_ec(certs->client_cert->pk);
-
-    if (mbedtls_pk_setup(certs->pk_key,
-                         mbedtls_pk_info_from_type(MBEDTLS_PK_ECKEY))) {
-        LOG(ERROR, "could not create pk_key");
-        return -1;
-    }
-    private_ec = mbedtls_pk_ec(*certs->pk_key);
-
-    if (!(curve_info = mbedtls_ecp_curve_info_from_name(key->curve_name))
-            || mbedtls_ecp_group_load(&private_ec->grp, curve_info->grp_id)
-            || mbedtls_mpi_read_binary(&private_ec->d,
-                                       (const unsigned char *) key->private_key,
-                                       key->private_key_size)
-            || mbedtls_ecp_copy(&private_ec->Q, &cert_ec->Q)) {
-        LOG(ERROR, "error while initializing private key; curve name: %s",
-            key->curve_name);
-        return -1;
-    }
-
-    return 0;
-}
-
-static int load_client_key_from_pkcs8(ssl_socket_certs_t *certs,
-                                      const void *data,
-                                      size_t size,
-                                      const char *password) {
-    size_t password_len = password ? strlen(password) : 0;
-    return mbedtls_pk_parse_key(certs->pk_key,
-                                (const unsigned char *) data, size,
-                                (const unsigned char *) password, password_len);
-}
-
-static int load_client_key_from_data(ssl_socket_certs_t *certs,
-                                     const avs_net_private_key_t *key) {
-    switch (key->impl.format) {
-    case AVS_NET_DATA_FORMAT_EC:
-        return load_client_key_from_ec(certs, &key->impl.data.ec);
-    case AVS_NET_DATA_FORMAT_PKCS8:
-        return load_client_key_from_pkcs8(certs, key->impl.data.pkcs8.data,
-                                          key->impl.data.pkcs8.size,
-                                          key->impl.data.pkcs8.password);
-    default:
-        LOG(ERROR, "unsupported in memory private key format");
-        return -1;
-    }
-}
-
-static int load_client_key_from_file(ssl_socket_certs_t *certs,
-                                     const avs_net_private_key_t *key) {
-    if (!key->impl.data.file.path) {
-        LOG(ERROR, "private key not specified");
-        return -1;
-    }
-
-    switch (key->impl.format) {
-    case AVS_NET_DATA_FORMAT_PEM:
-    case AVS_NET_DATA_FORMAT_DER:
-        return mbedtls_pk_parse_keyfile(certs->pk_key, key->impl.data.file.path,
-                                        key->impl.data.file.password);
-    default:
-        LOG(ERROR, "unsupported client key file format");
-        return -1;
-    }
-}
-
-static int load_client_private_key(ssl_socket_certs_t *certs,
-                                   const avs_net_private_key_t *key) {
-    CREATE_OR_FAIL(mbedtls_pk_context, &certs->pk_key);
-    mbedtls_pk_init(certs->pk_key);
-
-    switch (key->impl.source) {
-    case AVS_NET_DATA_SOURCE_FILE:
-        return load_client_key_from_file(certs, key);
-    case AVS_NET_DATA_SOURCE_BUFFER:
-        return load_client_key_from_data(certs, key);
-    default:
-        assert(0 && "invalid enum value");
-        return -1;
-    }
-}
-
-static int load_client_cert_from_file(ssl_socket_certs_t *certs,
-                                      const avs_net_client_cert_t *cert) {
-    switch (cert->impl.format) {
-    case AVS_NET_DATA_FORMAT_PEM:
-    case AVS_NET_DATA_FORMAT_DER:
-        return mbedtls_x509_crt_parse_file(certs->client_cert,
-                                           cert->impl.data.file.path);
-    default:
-        LOG(ERROR, "unsupported client cert file format");
-        return -1;
-    }
-}
-
-static int load_client_cert_from_data(ssl_socket_certs_t *certs,
-                                      const avs_net_client_cert_t *cert) {
-    switch (cert->impl.format) {
-    case AVS_NET_DATA_FORMAT_DER:
-        return mbedtls_x509_crt_parse_der(
-                certs->client_cert,
-                (const unsigned char *) cert->impl.data.cert.data,
-                cert->impl.data.cert.size);
-    default:
-        LOG(ERROR, "unsupported client cert data format");
-        return -1;
-    }
-}
-
-static int load_client_cert(ssl_socket_certs_t *certs,
-                            const avs_net_client_cert_t *cert,
-                            const avs_net_private_key_t *key) {
-    int failed = 0;
-
-    if (is_client_cert_empty(cert)) {
-        LOG(TRACE, "client certificate not specified");
-        return 0;
-    }
-
-    CREATE_OR_FAIL(mbedtls_x509_crt, &certs->client_cert);
-    mbedtls_x509_crt_init(certs->client_cert);
-
-    switch (cert->impl.source) {
-    case AVS_NET_DATA_SOURCE_FILE:
-        failed = load_client_cert_from_file(certs, cert);
-        if (failed) {
-            LOG(WARNING, "failed to parse %d certs in file <%s>",
-                failed, cert->impl.data.file.path);
-        }
-        break;
-    case AVS_NET_DATA_SOURCE_BUFFER:
-        failed = load_client_cert_from_data(certs, cert);
-        if (failed) {
-            LOG(WARNING, "failed to parse DER certificate: %d", failed);
-        }
-        break;
-    default:
-        assert(0 && "invalid enum value");
-        return -1;
-    }
-
-    if (failed) {
-        return failed;
-    }
-
-    if (load_client_private_key(certs, key)) {
-        LOG(ERROR, "Error loading client private key");
-        return -1;
-    }
-
-    return 0;
-}
-
 static int configure_ssl_certs(ssl_socket_certs_t *certs,
                                const avs_net_certificate_info_t *cert_info) {
     LOG(TRACE, "configure_ssl_certs");
 
     if (cert_info->server_cert_validation) {
-        switch (cert_info->trusted_certs.impl.source) {
-        case AVS_NET_DATA_SOURCE_PATHS:
-            if (load_ca_certs_from_paths(&certs->ca_cert, cert_info)) {
-                return -1;
-            }
-            break;
-        case AVS_NET_DATA_SOURCE_BUFFER:
-            if (load_ca_certs_from_memory(&certs->ca_cert,
-                                          &cert_info->trusted_certs)) {
-                return -1;
-            }
-            break;
-        default:
-            LOG(ERROR, "Unsupported CA source");
+        if (_avs_net_mbedtls_load_ca_certs(&certs->ca_cert,
+                                           &cert_info->trusted_certs)) {
+            LOG(ERROR, "could not load CA chain");
             return -1;
         }
     } else {
         LOG(DEBUG, "Server authentication disabled");
     }
 
-    if (load_client_cert(certs,
-                         &cert_info->client_cert,
-                         &cert_info->client_key)) {
-        LOG(ERROR, "error loading client certificate");
-        return -1;
+    if (cert_info->client_cert.desc.source != AVS_NET_DATA_SOURCE_EMPTY) {
+        if (_avs_net_mbedtls_load_client_cert(&certs->client_cert,
+                                              &cert_info->client_cert)) {
+            LOG(ERROR, "could not load client certificate");
+            return -1;
+        }
+        if (_avs_net_mbedtls_load_client_key(&certs->client_key,
+                                             &cert_info->client_key)) {
+            LOG(ERROR, "could not load client private key");
+            return -1;
+        }
+    } else {
+        LOG(TRACE, "client certificate not specified");
     }
 
     return 0;
 }
+
 #else // WITH_X509
 # define configure_ssl_certs(...) \
     (LOG(ERROR, "X.509 support disabled"), (-1))
@@ -1076,7 +839,7 @@ static int configure_ssl_certs(ssl_socket_certs_t *certs,
 
 #ifdef WITH_PSK
 static int configure_ssl_psk(ssl_socket_t *socket,
-                             const avs_net_psk_t *psk) {
+                             const avs_net_psk_info_t *psk) {
     LOG(TRACE, "configure_ssl_psk");
     return _avs_net_psk_copy(&socket->security.psk.value, psk);
 }

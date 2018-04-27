@@ -244,7 +244,7 @@ static int start_ssl(ssl_socket_t *socket, const char *host) {
 }
 
 static int configure_ssl_psk(ssl_socket_t *socket,
-                             const avs_net_psk_t *psk) {
+                             const avs_net_psk_info_t *psk) {
     LOG(TRACE, "configure_ssl_psk");
 
 #ifndef DTLS_PSK

@@ -26,7 +26,7 @@
 #include <avsystem/commons/stream/stream_outbuf.h>
 
 #include "mbedtls_persistence.h"
-#include "net_impl.h"
+#include "../net_impl.h"
 
 VISIBILITY_SOURCE_BEGIN
 
