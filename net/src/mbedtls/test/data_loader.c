@@ -17,6 +17,8 @@
 #include <avsystem/commons/unit/test.h>
 #include <avsystem/commons/socket.h>
 
+#include <unistd.h>
+
 AVS_UNIT_TEST(backend_mbedtls, chain_loading_from_file) {
     mbedtls_x509_crt *chain = NULL;
 
@@ -62,6 +64,39 @@ AVS_UNIT_TEST(backend_mbedtls, chain_loading_from_path) {
     free(chain);
 }
 
+AVS_UNIT_TEST(backend_mbedtls, chain_loading_from_null) {
+    mbedtls_x509_crt *chain = NULL;
+    const avs_net_trusted_cert_info_t pem =
+            avs_net_trusted_cert_info_from_file(NULL);
+    AVS_UNIT_ASSERT_FAILED(_avs_net_load_ca_certs(&chain, &pem));
+    mbedtls_x509_crt_free(chain);
+
+    const avs_net_trusted_cert_info_t buffer =
+            avs_net_trusted_cert_info_from_buffer(NULL, 0);
+    AVS_UNIT_ASSERT_FAILED(_avs_net_load_ca_certs(&chain, &buffer));
+    mbedtls_x509_crt_free(chain);
+
+    const avs_net_trusted_cert_info_t path =
+            avs_net_trusted_cert_info_from_path(NULL);
+    AVS_UNIT_ASSERT_FAILED(_avs_net_load_ca_certs(&chain, &buffer));
+    mbedtls_x509_crt_free(chain);
+    free(chain);
+}
+
+AVS_UNIT_TEST(backend_mbedtls, cert_loading_from_null) {
+    mbedtls_x509_crt *chain = NULL;
+    const avs_net_client_cert_info_t pem =
+            avs_net_client_cert_info_from_file(NULL);
+    AVS_UNIT_ASSERT_FAILED(_avs_net_load_client_cert(&chain, &pem));
+    mbedtls_x509_crt_free(chain);
+
+    const avs_net_client_cert_info_t buffer =
+            avs_net_client_cert_info_from_buffer(NULL, 0);
+    AVS_UNIT_ASSERT_FAILED(_avs_net_load_client_cert(&chain, &buffer));
+    mbedtls_x509_crt_free(chain);
+    free(chain);
+}
+
 AVS_UNIT_TEST(backend_mbedtls, cert_loading_from_file) {
     mbedtls_x509_crt *cert = NULL;
     const avs_net_client_cert_info_t pem = avs_net_client_cert_info_from_file(
@@ -92,6 +127,20 @@ AVS_UNIT_TEST(backend_mbedtls, key_loading) {
     const avs_net_client_key_info_t der = avs_net_client_key_info_from_file(
             AVS_TEST_BIN_DIR "/certs/client.key.der", NULL);
     AVS_UNIT_ASSERT_SUCCESS(_avs_net_load_client_key(&pk, &der));
+    mbedtls_pk_free(pk);
+    free(pk);
+}
+
+AVS_UNIT_TEST(backend_mbedtls, key_loading_from_null) {
+    mbedtls_pk_context *pk = NULL;
+    const avs_net_client_key_info_t pem =
+            avs_net_client_key_info_from_file(NULL, NULL);
+    AVS_UNIT_ASSERT_FAILED(_avs_net_load_client_key(&pk, &pem));
+    mbedtls_pk_free(pk);
+
+    const avs_net_client_key_info_t buffer =
+            avs_net_client_key_info_from_buffer(NULL, 0, NULL);
+    AVS_UNIT_ASSERT_FAILED(_avs_net_load_client_key(&pk, &buffer));
     mbedtls_pk_free(pk);
     free(pk);
 }
