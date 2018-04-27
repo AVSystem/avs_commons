@@ -27,8 +27,8 @@ elseif(WITH_MBEDTLS)
         src/mbedtls/mbedtls.c)
     if(WITH_TLS_SESSION_PERSISTENCE)
         set(SOURCES ${SOURCES}
-            src/mbedtls_persistence.c
-            src/mbedtls_persistence.h)
+            src/mbedtls/mbedtls_persistence.c
+            src/mbedtls/mbedtls_persistence.h)
     endif()
     if(WITH_X509)
         set(SOURCES ${SOURCES}
