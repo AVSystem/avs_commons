@@ -92,7 +92,7 @@ typedef enum {
     ENCODING_DER
 } encoding_t;
 
-static encoding_t detect_cert_encoding(const char *buffer, size_t len) {
+static encoding_t detect_encoding(const char *buffer, size_t len) {
     static const char *pem_prefix = "-----BEGIN ";
     if (len < strlen(pem_prefix)) {
         // clearly not PEM and too short to be DER
@@ -108,7 +108,7 @@ static encoding_t detect_cert_encoding(const char *buffer, size_t len) {
 // method of loading in-buffer PEM encoded certificates.
 static X509 *parse_cert(const void *buffer, const size_t len) {
     X509 *cert = NULL;
-    switch (detect_cert_encoding((const char *) buffer, len)) {
+    switch (detect_encoding((const char *) buffer, len)) {
     case ENCODING_PEM: {
         // Convert PEM to DER.
         BIO *bio = BIO_new_mem_buf((void *) (intptr_t) buffer, (int) len);
@@ -235,23 +235,48 @@ static int load_client_key_from_file(SSL_CTX *ctx,
     return -1;
 }
 
+// NOTE: This function exists only because OpenSSL does not seem to have a
+// method of loading in-buffer PEM encoded private keys.
+static EVP_PKEY *
+parse_key(const void *buffer, const size_t len, const char *password) {
+    EVP_PKEY *key = NULL;
+    BIO *bio = BIO_new_mem_buf((void *) (intptr_t) buffer, (int) len);
+    if (!bio) {
+        return NULL;
+    }
+    switch (detect_encoding((const char *) buffer, len)) {
+    case ENCODING_PEM: {
+        key = PEM_read_bio_PrivateKey(bio, NULL, password_cb,
+                                      (void *) (intptr_t) password);
+        break;
+    }
+    case ENCODING_DER: {
+        key = d2i_PrivateKey_bio(bio, NULL);
+        break;
+    }
+    default:
+        LOG(ERROR, "unknown in-memory certificate format");
+        break;
+    }
+    BIO_free(bio);
+    return key;
+}
+
 static int load_client_key_from_buffer(SSL_CTX *ctx,
                                        const void *buffer,
                                        size_t len,
                                        const char *password) {
     setup_password_callback(ctx, password);
 
-    /**
-     * We support EC keys only at the moment, as OpenSSL does not seem to have
-     * a method for auto-detection of key type.
-     */
-    if (SSL_CTX_use_PrivateKey_ASN1(EVP_PKEY_EC, ctx,
-                                    (unsigned char *) (intptr_t) buffer,
-                                    (long) len) == 1) {
-        return 0;
+    EVP_PKEY *key = parse_key(buffer, len, password);
+    if (!key) {
+        return -1;
     }
-    log_openssl_error();
-    return -1;
+    if (SSL_CTX_use_PrivateKey(ctx, key) != 1) {
+        log_openssl_error();
+        return -1;
+    }
+    return 0;
 }
 
 int _avs_net_openssl_load_client_key(SSL_CTX *ctx,
