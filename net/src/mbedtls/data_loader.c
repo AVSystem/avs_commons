@@ -84,10 +84,22 @@ int _avs_net_load_ca_certs(mbedtls_x509_crt **out,
 
     switch (info->desc.source) {
     case AVS_NET_DATA_SOURCE_FILE:
+        if (!info->desc.info.file.filename) {
+            LOG(ERROR, "attempt to load CA cert from file, but filename=NULL");
+            return -1;
+        }
         return load_cert_from_file(*out, info->desc.info.file.filename);
     case AVS_NET_DATA_SOURCE_PATH:
+        if (!info->desc.info.path.path) {
+            LOG(ERROR, "attempt to load CA cert from path, but path=NULL");
+            return -1;
+        }
         return load_ca_from_path(*out, info->desc.info.path.path);
     case AVS_NET_DATA_SOURCE_BUFFER:
+        if (!info->desc.info.buffer.buffer) {
+            LOG(ERROR, "attempt to load CA cert from buffer, but buffer=NULL");
+            return -1;
+        }
         return append_cert_from_buffer(*out, info->desc.info.buffer.buffer,
                                        info->desc.info.buffer.buffer_size);
     default:
@@ -104,8 +116,16 @@ int _avs_net_load_client_cert(mbedtls_x509_crt **out,
 
     switch (info->desc.source) {
     case AVS_NET_DATA_SOURCE_FILE:
+        if (!info->desc.info.file.filename) {
+            LOG(ERROR, "attempt to load client cert from file, but filename=NULL");
+            return -1;
+        }
         return load_cert_from_file(*out, info->desc.info.file.filename);
     case AVS_NET_DATA_SOURCE_BUFFER:
+        if (!info->desc.info.buffer.buffer) {
+            LOG(ERROR, "attempt to load client cert from buffer, but buffer=NULL");
+            return -1;
+        }
         return append_cert_from_buffer(*out, info->desc.info.buffer.buffer,
                                        info->desc.info.buffer.buffer_size);
     default:
@@ -146,10 +166,18 @@ int _avs_net_load_client_key(mbedtls_pk_context **client_key,
 
     switch (info->desc.source) {
     case AVS_NET_DATA_SOURCE_FILE:
+        if (!info->desc.info.file.filename) {
+            LOG(ERROR, "attempt to load client key from file, but filename=NULL");
+            return -1;
+        }
         return load_private_key_from_file(*client_key,
                                           info->desc.info.file.filename,
                                           info->desc.info.file.password);
     case AVS_NET_DATA_SOURCE_BUFFER:
+        if (!info->desc.info.buffer.buffer) {
+            LOG(ERROR, "attempt to load client key from buffer, but buffer=NULL");
+            return -1;
+        }
         return load_private_key_from_buffer(*client_key,
                                             info->desc.info.buffer.buffer,
                                             info->desc.info.buffer.buffer_size,
