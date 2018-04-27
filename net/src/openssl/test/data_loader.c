@@ -96,6 +96,33 @@ AVS_UNIT_TEST(backend_openssl, chain_loading_from_path) {
     }
 }
 
+AVS_UNIT_TEST(backend_openssl, chain_loading_from_null) {
+    SSL_CTX *ctx;
+    WITH_OPENSSL_CONTEXT(ctx) {
+        const avs_net_trusted_cert_info_t pem =
+                avs_net_trusted_cert_info_from_file(NULL);
+        AVS_UNIT_ASSERT_FAILED(_avs_net_openssl_load_ca_certs(ctx, &pem));
+        const avs_net_trusted_cert_info_t buffer =
+                avs_net_trusted_cert_info_from_buffer(NULL, 0);
+        AVS_UNIT_ASSERT_FAILED(_avs_net_openssl_load_ca_certs(ctx, &buffer));
+        const avs_net_trusted_cert_info_t path =
+                avs_net_trusted_cert_info_from_path(NULL);
+        AVS_UNIT_ASSERT_FAILED(_avs_net_openssl_load_ca_certs(ctx, &buffer));
+    }
+}
+
+AVS_UNIT_TEST(backend_openssl, cert_loading_from_null) {
+    SSL_CTX *ctx;
+    WITH_OPENSSL_CONTEXT(ctx) {
+        const avs_net_client_cert_info_t pem =
+                avs_net_client_cert_info_from_file(NULL);
+        AVS_UNIT_ASSERT_FAILED(_avs_net_openssl_load_client_cert(ctx, &pem));
+        const avs_net_client_cert_info_t buffer =
+                avs_net_client_cert_info_from_buffer(NULL, 0);
+        AVS_UNIT_ASSERT_FAILED(_avs_net_openssl_load_client_cert(ctx, &buffer));
+    }
+}
+
 AVS_UNIT_TEST(backend_openssl, key_loading) {
     SSL_CTX *ctx;
 
@@ -116,5 +143,18 @@ AVS_UNIT_TEST(backend_openssl, key_loading) {
         const avs_net_client_key_info_t p12 = avs_net_client_key_info_from_file(
                 AVS_TEST_BIN_DIR "/certs/client.p12", NULL);
         AVS_UNIT_ASSERT_FAILED(_avs_net_openssl_load_client_key(ctx, &p12));
+    }
+}
+
+AVS_UNIT_TEST(backend_openssl, key_loading_from_null) {
+    SSL_CTX *ctx;
+
+    WITH_OPENSSL_CONTEXT(ctx) {
+        const avs_net_client_key_info_t pem =
+                avs_net_client_key_info_from_file(NULL, NULL);
+        AVS_UNIT_ASSERT_FAILED(_avs_net_openssl_load_client_key(ctx, &pem));
+        const avs_net_client_key_info_t buffer =
+                avs_net_client_key_info_from_buffer(NULL, 0, NULL);
+        AVS_UNIT_ASSERT_FAILED(_avs_net_openssl_load_client_key(ctx, &buffer));
     }
 }
