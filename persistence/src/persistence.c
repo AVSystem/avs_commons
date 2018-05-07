@@ -50,13 +50,13 @@ typedef int persistence_handler_string_t(avs_persistence_context_t *ctx,
 typedef int
 persistence_handler_list_t(avs_persistence_context_t *ctx,
                            AVS_LIST(void) *list_ptr,
-                           avs_persistence_handler_list_element_ptr_t *handler,
+                           avs_persistence_handler_custom_allocated_list_element_t *handler,
                            void *handler_user_ptr,
                            avs_persistence_cleanup_collection_element_t *cleanup);
 typedef int
 persistence_handler_tree_t(avs_persistence_context_t *ctx,
                            AVS_RBTREE(void) tree,
-                           avs_persistence_handler_tree_element_ptr_t *handler,
+                           avs_persistence_handler_custom_allocated_tree_element_t *handler,
                            void *handler_user_ptr,
                            avs_persistence_cleanup_collection_element_t *cleanup);
 
@@ -140,7 +140,7 @@ static int persist_string(avs_persistence_context_t *ctx,
 
 static int persist_list(avs_persistence_context_t *ctx,
                         AVS_LIST(void) *list_ptr,
-                        avs_persistence_handler_list_element_ptr_t *handler,
+                        avs_persistence_handler_custom_allocated_list_element_t *handler,
                         void *handler_user_ptr,
                         avs_persistence_cleanup_collection_element_t *cleanup) {
     (void) cleanup;
@@ -163,7 +163,7 @@ static int persist_list(avs_persistence_context_t *ctx,
 
 static int persist_tree(avs_persistence_context_t *ctx,
                         AVS_RBTREE(void) tree,
-                        avs_persistence_handler_tree_element_ptr_t *handler,
+                        avs_persistence_handler_custom_allocated_tree_element_t *handler,
                         void *handler_user_ptr,
                         avs_persistence_cleanup_collection_element_t *cleanup) {
     (void) cleanup;
@@ -304,7 +304,7 @@ static int restore_string(avs_persistence_context_t *ctx,
 
 static int restore_list(avs_persistence_context_t *ctx,
                         AVS_LIST(void) *list_ptr,
-                        avs_persistence_handler_list_element_ptr_t *handler,
+                        avs_persistence_handler_custom_allocated_list_element_t *handler,
                         void *handler_user_ptr,
                         avs_persistence_cleanup_collection_element_t *cleanup) {
     assert(list_ptr && !*list_ptr);
@@ -329,7 +329,7 @@ static int restore_list(avs_persistence_context_t *ctx,
 
 static int restore_tree(avs_persistence_context_t *ctx,
                         AVS_RBTREE(void) tree,
-                        avs_persistence_handler_tree_element_ptr_t *handler,
+                        avs_persistence_handler_custom_allocated_tree_element_t *handler,
                         void *handler_user_ptr,
                         avs_persistence_cleanup_collection_element_t *cleanup) {
     assert(AVS_RBTREE_SIZE(tree) == 0);
@@ -454,7 +454,7 @@ static int ignore_string(avs_persistence_context_t *ctx,
 
 static int ignore_list(avs_persistence_context_t *ctx,
                        AVS_LIST(void) *list_ptr,
-                       avs_persistence_handler_tree_element_ptr_t *handler,
+                       avs_persistence_handler_custom_allocated_tree_element_t *handler,
                        void *handler_user_ptr,
                        avs_persistence_cleanup_collection_element_t *cleanup) {
     (void) list_ptr; (void) cleanup;
@@ -468,7 +468,7 @@ static int ignore_list(avs_persistence_context_t *ctx,
 
 static int ignore_tree(avs_persistence_context_t *ctx,
                        AVS_RBTREE(void) tree,
-                       avs_persistence_handler_tree_element_ptr_t *handler,
+                       avs_persistence_handler_custom_allocated_tree_element_t *handler,
                        void *handler_user_ptr,
                        avs_persistence_cleanup_collection_element_t *cleanup) {
     (void) tree; (void) cleanup;
@@ -651,10 +651,10 @@ int avs_persistence_string(avs_persistence_context_t *ctx,
     return ctx->handle_string(ctx, string_ptr);
 }
 
-int avs_persistence_list_ptr(
+int avs_persistence_custom_allocated_list(
         avs_persistence_context_t *ctx,
         AVS_LIST(void) *list_ptr,
-        avs_persistence_handler_list_element_ptr_t *handler,
+        avs_persistence_handler_custom_allocated_list_element_t *handler,
         void *handler_user_ptr,
         avs_persistence_cleanup_collection_element_t *cleanup) {
     if (!ctx) {
@@ -663,10 +663,10 @@ int avs_persistence_list_ptr(
     return ctx->handle_list(ctx, list_ptr, handler, handler_user_ptr, cleanup);
 }
 
-int avs_persistence_tree_ptr(
+int avs_persistence_custom_allocated_tree(
         avs_persistence_context_t *ctx,
         AVS_RBTREE(void) tree,
-        avs_persistence_handler_tree_element_ptr_t *handler,
+        avs_persistence_handler_custom_allocated_tree_element_t *handler,
         void *handler_user_ptr,
         avs_persistence_cleanup_collection_element_t *cleanup) {
     if (!ctx) {
@@ -712,8 +712,8 @@ int avs_persistence_list(
         .handler = handler,
         .handler_user_ptr = handler_user_ptr
     };
-    return avs_persistence_list_ptr(ctx, list_ptr,
-                                    persistence_list_handler, &state, cleanup);
+    return avs_persistence_custom_allocated_list(
+            ctx, list_ptr, persistence_list_handler, &state, cleanup);
 }
 
 DEFINE_PERSISTENCE_COLLECTION_HANDLER(persistence_tree_handler, AVS_RBTREE_ELEM)
@@ -730,8 +730,8 @@ int avs_persistence_tree(
         .handler = handler,
         .handler_user_ptr = handler_user_ptr
     };
-    return avs_persistence_tree_ptr(ctx, tree,
-                                    persistence_tree_handler, &state, cleanup);
+    return avs_persistence_custom_allocated_tree(
+            ctx, tree, persistence_tree_handler, &state, cleanup);
 }
 
 #ifdef AVS_UNIT_TESTING
