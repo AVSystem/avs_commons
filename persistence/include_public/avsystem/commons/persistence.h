@@ -42,6 +42,16 @@ avs_persistence_handler_collection_element_t(avs_persistence_context_t *ctx,
                                              void *element,
                                              void *user_data);
 
+typedef int avs_persistence_handler_custom_allocated_list_element_t(
+        avs_persistence_context_t *ctx,
+        AVS_LIST(void) *element,
+        void *user_data);
+
+typedef int avs_persistence_handler_custom_allocated_tree_element_t(
+        avs_persistence_context_t *ctx,
+        AVS_RBTREE_ELEM(void) *element,
+        void *user_data);
+
 typedef void avs_persistence_cleanup_collection_element_t(void *element);
 
 /**
@@ -258,11 +268,45 @@ int avs_persistence_string(avs_persistence_context_t *ctx,
 
 /**
  * Performs a operation (depending on the @p ctx) on a @p list_ptr, using
+ * @p handler for each element. In this variant, @p handler is responsible for
+ * allocating the elements during a restore operation.
+ *
+ * If @p cleanup is NULL, the resulting list is NOT cleared in case of restore
+ * error. Note that this may also mean that the last element is in a partially
+ * restored, inconsistent state. If you want the list automatically cleared
+ * without a cleanup routine, please use an empty function.
+ *
+ * NOTE: The intended usage for using NULL as @p cleanup is that the user will
+ * clean up the partially restored data, possibly included nested containers, in
+ * one routine, which may be simpler to implement than cleanup functions for
+ * each stage. Note that for this to be possible, the @p handler needs to ensure
+ * that in case of failure, the partially restored element MUST be in a state
+ * consistent enough for cleanup, e.g. not containing any uninitialized memory
+ * buffers.
+ *
+ * @param ctx              context that determines the actual operation
+ * @param list_ptr         pointer to the list containing the data
+ * @param element_size     size of single element in the list
+ * @param handler          function called for each element of the list
+ * @param handler_user_ptr opaque pointer passed to each call to @p handler
+ * @param cleanup          function called on all completely or partially
+ *                         restored elements in case of an error
+ * @return 0 in case of success, negative value in case of failure
+ */
+int avs_persistence_custom_allocated_list(
+        avs_persistence_context_t *ctx,
+        AVS_LIST(void) *list_ptr,
+        avs_persistence_handler_custom_allocated_list_element_t *handler,
+        void *handler_user_ptr,
+        avs_persistence_cleanup_collection_element_t *cleanup);
+
+/**
+ * Performs a operation (depending on the @p ctx) on a @p list_ptr, using
  * @p handler for each element.
  *
- * Note that this function requires that all list elements have the same size;
- * variable-length elements (e.g. containing flexible array members) are not
- * supported.
+ * In this variant, the elements are allocated automatically. Note that this
+ * function requires that all list elements have the same size; variable-length
+ * elements (e.g. containing flexible array members) are not supported.
  *
  * If @p cleanup is NULL, the resulting list is NOT cleared in case of restore
  * error. Note that this may also mean that the last element is in a partially
@@ -283,6 +327,37 @@ int avs_persistence_list(
         AVS_LIST(void) *list_ptr,
         size_t element_size,
         avs_persistence_handler_collection_element_t *handler,
+        void *handler_user_ptr,
+        avs_persistence_cleanup_collection_element_t *cleanup);
+
+/**
+ * Performs a operation (depending on the @p ctx) on a @p tree, using
+ * @p handler for each element. In this variant, @p handler is responsible for
+ * allocating the elements during a restore operation.
+ *
+ * In this variant, the elements are allocated automatically. Note that this
+ * function requires that all tree elements have the same size; variable-length
+ * elements (e.g. containing flexible array members) are not supported.
+ *
+ * Note that unlike @ref avs_persistence_list, @p cleanup MUST be non-NULL in
+ * case of a restore operation. This is because inserting a restored element
+ * onto a tree might fail (e.g. if a newly restored element compares as equal to
+ * some previously restored element), so it is not always possible to leave the
+ * cleanup to the user after the restore attempt.
+ *
+ * @param ctx              context that determines the actual operation
+ * @param tree             tree containing the data
+ * @param element_size     size of single element in the tree
+ * @param handler          function called for each element of the tree
+ * @param handler_user_ptr opaque pointer passed to each call to @p handler
+ * @param cleanup          function called on all completely or partially
+ *                         restored elements in case of an error
+ * @return 0 in case of success, negative value in case of failure
+ */
+int avs_persistence_custom_allocated_tree(
+        avs_persistence_context_t *ctx,
+        AVS_RBTREE(void) tree,
+        avs_persistence_handler_custom_allocated_tree_element_t *handler,
         void *handler_user_ptr,
         avs_persistence_cleanup_collection_element_t *cleanup);
 
