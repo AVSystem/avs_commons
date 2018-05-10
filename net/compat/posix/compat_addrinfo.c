@@ -163,7 +163,7 @@ avs_net_addrinfo_t *avs_net_addrinfo_resolve_ex(
     memset((void *) &hint, 0, sizeof (hint));
     hint.ai_family = _avs_net_get_af(family);
     if (family != AVS_NET_AF_UNSPEC && hint.ai_family == AF_UNSPEC) {
-        LOG(ERROR, "Unsupported address family");
+        LOG(DEBUG, "Unsupported avs_net_af_t: %d", (int) family);
         return NULL;
     }
     hint.ai_flags = AI_ADDRCONFIG;
@@ -211,9 +211,11 @@ avs_net_addrinfo_t *avs_net_addrinfo_resolve_ex(
     int error = getaddrinfo(host, NULL, &hint, &ctx->results);
     if (error) {
 #ifdef HAVE_GAI_STRERROR
-        LOG(ERROR, "%s", gai_strerror(error));
+        LOG(DEBUG, "getaddrinfo() error: %s; family == (avs_net_af_t) %d",
+            gai_strerror(error), (int) family);
 #else
-        LOG(ERROR, "getaddrinfo() error %d", error);
+        LOG(DEBUG, "getaddrinfo() error: %d; family == (avs_net_af_t) %d",
+            error, (int) family);
 #endif
         avs_net_addrinfo_delete(&ctx);
         return NULL;

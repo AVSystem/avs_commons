@@ -1146,6 +1146,7 @@ static int send_to_net(avs_net_abstract_socket_t *net_socket_,
     }
     if (!info || (result = (ssize_t) avs_net_addrinfo_next(info,
                                                            &address.api_ep))) {
+        LOG(ERROR, "cannot resolve address: [%s]:%s", host, port);
         net_socket->error_code = EADDRNOTAVAIL;
     } else {
         errno = 0;
