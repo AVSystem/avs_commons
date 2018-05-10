@@ -221,7 +221,7 @@ static int connect_ssl(avs_net_abstract_socket_t *socket_,
         return -1;
     }
     if (avs_net_socket_connect(socket->backend_socket, host, port)) {
-        LOG(ERROR, "cannot establish TCP connection");
+        LOG(ERROR, "avs_net_socket_connect() on backend socket failed");
         socket->error_code = avs_net_socket_errno(socket->backend_socket);
         return -1;
     }
