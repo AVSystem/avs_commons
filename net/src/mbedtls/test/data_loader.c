@@ -61,8 +61,16 @@ AVS_UNIT_TEST(backend_mbedtls, chain_loading_from_path) {
         AVS_UNIT_ASSERT_SUCCESS(retval);
     }
 
-    // Directory without permissions - hopefully nobody runs tests as root.
+    // Directory without permissions.
     {
+        uid_t original_uid = geteuid();
+        if (original_uid == 0) {
+            // we need to drop root privileges
+            // otherwise we have access to everything
+            // UID == 65534 is often assigned to the user "nobody"
+            AVS_UNIT_ASSERT_SUCCESS(seteuid(65534));
+        }
+
         char name[] = "/tmp/locked-XXXXXX";
         AVS_UNIT_ASSERT_NOT_NULL(mkdtemp(name));
         int retval = chmod(name, 0);
@@ -76,6 +84,13 @@ AVS_UNIT_TEST(backend_mbedtls, chain_loading_from_path) {
                                                 &no_permissions_dir);
         (void) rmdir(name);
         AVS_UNIT_ASSERT_FAILED(retval);
+
+        if (original_uid == 0) {
+            // restore root privileges if we had them
+            // we need _POSIX_SAVED_IDS feature for this to work
+            AVS_STATIC_ASSERT(_POSIX_SAVED_IDS, posix_saved_ids);
+            AVS_UNIT_ASSERT_SUCCESS(seteuid(0));
+        }
     }
 
     free(chain);
