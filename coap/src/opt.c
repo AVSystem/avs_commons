@@ -90,7 +90,7 @@ int avs_coap_opt_uint_value(const avs_coap_opt_t *opt,
     memcpy(((char *) out_value) + (out_value_size - length), value, length);
 #else
     for (size_t i = 0; i < length; ++i) {
-        ((uint8_t *) out_value)[length - 1 - i] = value[i];
+        memcpy((uint8_t *) out_value + length - 1 - i, value + i, 1);
     }
 #endif
     return 0;
