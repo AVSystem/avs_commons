@@ -65,6 +65,7 @@ done
 "$OPENSSL" pkcs8 -topk8 -in client.key -inform pem -outform der \
     -passin "pass:$KEYSTORE_PASSWORD" -nocrypt > client.key.der
 "$OPENSSL" x509 -in client.crt -outform der > client.crt.der
+"$OPENSSL" x509 -in root.crt -outform der > root.crt.der
 
 if ! KEYTOOL="$(which keytool)" || [ -z "$KEYTOOL" ] || ! "$KEYTOOL" -help >/dev/null 2>/dev/null; then
     echo ''
@@ -74,8 +75,6 @@ else
     echo "* creating trustStore.jks"
     yes | "$KEYTOOL" -importcert -alias root -file root.crt -keystore trustStore.jks -storetype PKCS12 -storepass "$TRUSTSTORE_PASSWORD" >/dev/null
     echo "* creating trustStore.jks - done"
-
-    "$OPENSSL" x509 -in root.crt -outform der > root.crt.der
 
     echo "* creating keyStore.jks"
     for NAME in client server; do
