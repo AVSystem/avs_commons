@@ -19,6 +19,7 @@
 #include <assert.h>
 
 #include <mbedtls/platform.h>
+#include <mbedtls/version.h>
 
 #include <avsystem/commons/persistence.h>
 #include <avsystem/commons/stream.h>
@@ -33,6 +34,10 @@ VISIBILITY_SOURCE_BEGIN
 #if MBEDTLS_VERSION_NUMBER < 0x02030000
 typedef time_t mbedtls_time_t; // mbed TLS < 2.3 does not have mbedtls_time_t
 #endif
+
+#ifndef WITH_X509
+typedef void mbedtls_x509_crt;
+#endif // WITH_X509
 
 /**
  * Persistence format summary
@@ -68,8 +73,13 @@ static const char PERSISTENCE_MAGIC[] = { 'M', 'S', 'P', '\0' };
  */
 static int handle_cert_persistence(avs_persistence_context_t *ctx,
                                    mbedtls_x509_crt **cert_ptr) {
+#ifdef WITH_X509
     void *data = (*cert_ptr ? (*cert_ptr)->raw.p : NULL);
     size_t size = (*cert_ptr ? (*cert_ptr)->raw.len : 0);
+#else
+    void *data = NULL;
+    size_t size = 0;
+#endif // WITH_X509
     // Note that avs_persistence_sized_buffer() malloc()ates the buffer
     // in the restore case
     int result = avs_persistence_sized_buffer(ctx, &data, &size);
@@ -78,6 +88,7 @@ static int handle_cert_persistence(avs_persistence_context_t *ctx,
     }
     if (data && avs_persistence_direction(ctx) == AVS_PERSISTENCE_RESTORE) {
         assert(!*cert_ptr);
+#ifdef WITH_X509
         if (!(*cert_ptr = (mbedtls_x509_crt *)
                 mbedtls_calloc(1, sizeof(mbedtls_x509_crt)))) {
             result = -1;
@@ -90,6 +101,7 @@ static int handle_cert_persistence(avs_persistence_context_t *ctx,
             mbedtls_free(*cert_ptr);
             *cert_ptr = NULL;
         }
+#endif // WITH_X509
 restore_finish:
         free(data);
     }
@@ -172,12 +184,12 @@ static int handle_session_persistence(avs_persistence_context_t *ctx,
 #endif // MBEDTLS_SSL_ENCRYPT_THEN_MAC
     }
 
-#ifndef MBEDTLS_X509_CRT_PARSE_C
+#if defined(WITH_X509) && !defined(MBEDTLS_X509_CRT_PARSE_C)
     if (*peer_cert_ptr) {
         mbedtls_x509_crt_free(*peer_cert_ptr);
         mbedtls_free(*peer_cert_ptr);
     }
-#endif // !MBEDTLS_X509_CRT_PARSE_C
+#endif // WITH_X509 && !MBEDTLS_X509_CRT_PARSE_C
     return retval;
 }
 
