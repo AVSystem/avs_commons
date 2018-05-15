@@ -13,7 +13,7 @@
 # limitations under the License.
 
 option(WITH_POSIX_AVS_SOCKET "Enable avs_socket implementation based on POSIX socket API" "${UNIX}")
-option(WITH_TLS_SESSION_PERSISTENCE "Enable support for TLS session persistence" ON)
+cmake_dependent_option(WITH_TLS_SESSION_PERSISTENCE "Enable support for TLS session persistence" ON WITH_AVS_PERSISTENCE OFF)
 
 set(SOURCES
     src/addrinfo.c
