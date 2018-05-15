@@ -101,8 +101,8 @@ static int handle_cert_persistence(avs_persistence_context_t *ctx,
             mbedtls_free(*cert_ptr);
             *cert_ptr = NULL;
         }
-#endif // WITH_X509
 restore_finish:
+#endif // WITH_X509
         free(data);
     }
     return result;
