@@ -71,15 +71,11 @@ static const char PERSISTENCE_MAGIC[] = { 'M', 'S', 'P', '\0' };
  * to serious problems if we try to restore it on another platform and/or
  * another mbed TLS version.
  */
+#ifdef WITH_X509
 static int handle_cert_persistence(avs_persistence_context_t *ctx,
                                    mbedtls_x509_crt **cert_ptr) {
-#ifdef WITH_X509
     void *data = (*cert_ptr ? (*cert_ptr)->raw.p : NULL);
     size_t size = (*cert_ptr ? (*cert_ptr)->raw.len : 0);
-#else
-    void *data = NULL;
-    size_t size = 0;
-#endif // WITH_X509
     // Note that avs_persistence_sized_buffer() malloc()ates the buffer
     // in the restore case
     int result = avs_persistence_sized_buffer(ctx, &data, &size);
@@ -88,7 +84,6 @@ static int handle_cert_persistence(avs_persistence_context_t *ctx,
     }
     if (data && avs_persistence_direction(ctx) == AVS_PERSISTENCE_RESTORE) {
         assert(!*cert_ptr);
-#ifdef WITH_X509
         if (!(*cert_ptr = (mbedtls_x509_crt *)
                 mbedtls_calloc(1, sizeof(mbedtls_x509_crt)))) {
             result = -1;
@@ -102,11 +97,28 @@ static int handle_cert_persistence(avs_persistence_context_t *ctx,
             *cert_ptr = NULL;
         }
 restore_finish:
-#endif // WITH_X509
         free(data);
     }
     return result;
 }
+#else
+static int handle_cert_persistence(avs_persistence_context_t *ctx,
+                                   mbedtls_x509_crt **cert_ptr) {
+    void *data = NULL;
+    size_t size = 0;
+    int retval = avs_persistence_sized_buffer(ctx, &data, &size);
+    if (retval) {
+        return retval;
+    }
+    if (data && avs_persistence_direction(ctx) == AVS_PERSISTENCE_RESTORE) {
+        // avs_persistence_sized_buffer() could allocate memory if it is restore case
+        LOG(WARNING, "x509 certificates support is not compiled in - ignoring "
+                "restored certificate");
+        free(data);
+    }
+    return 0;
+}
+#endif // WITH_X509
 
 static int handle_session_persistence(avs_persistence_context_t *ctx,
                                       mbedtls_ssl_session *session) {
