@@ -90,6 +90,13 @@ int avs_coap_opt_uint_value(const avs_coap_opt_t *opt,
     memcpy(((char *) out_value) + (out_value_size - length), value, length);
 #else
     for (size_t i = 0; i < length; ++i) {
+        // this is effectively
+        //
+        //     ((uint8_t *) out_value)[length - 1 - i] = value[i];
+        //
+        // but for whatever reason scan-build 6.0 then thinks that out_value has
+        // garbage value; work around this so that we don't have to deal with
+        // false positives in scan-build results
         memcpy((uint8_t *) out_value + length - 1 - i, value + i, 1);
     }
 #endif
