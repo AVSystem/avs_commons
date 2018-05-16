@@ -41,8 +41,6 @@ do { \
     } \
 } while (0)
 
-#ifdef WITH_X509
-
 static int append_cert_from_buffer(mbedtls_x509_crt *chain,
                                    const void *buffer,
                                    size_t len) {
@@ -136,8 +134,6 @@ int _avs_net_mbedtls_load_client_cert(mbedtls_x509_crt **out,
     }
     return 0;
 }
-
-#endif // WITH_X509
 
 static int load_private_key_from_buffer(mbedtls_pk_context *client_key,
                                         const void *buffer,

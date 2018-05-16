@@ -37,7 +37,9 @@
 #include "../net_impl.h"
 
 #include "common.h"
+#if WITH_X509
 #include "data_loader.h"
+#endif // WITH_X509
 
 VISIBILITY_SOURCE_BEGIN
 

@@ -22,12 +22,10 @@
 
 VISIBILITY_PRIVATE_HEADER_BEGIN
 
-#ifdef WITH_X509
 int _avs_net_mbedtls_load_ca_certs(mbedtls_x509_crt **out,
                                    const avs_net_trusted_cert_info_t *info);
 int _avs_net_mbedtls_load_client_cert(mbedtls_x509_crt **out,
                                       const avs_net_client_cert_info_t *info);
-#endif
 int _avs_net_mbedtls_load_client_key(mbedtls_pk_context **pk,
                                      const avs_net_client_key_info_t *info);
 

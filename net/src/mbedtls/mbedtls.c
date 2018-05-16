@@ -42,7 +42,9 @@
 #include <avsystem/commons/errno.h>
 
 #include "../net_impl.h"
+#if WITH_X509
 #include "data_loader.h"
+#endif // WITH_X509
 #include "mbedtls_persistence.h"
 
 VISIBILITY_SOURCE_BEGIN
