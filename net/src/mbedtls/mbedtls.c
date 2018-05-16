@@ -467,10 +467,6 @@ static int configure_ssl(ssl_socket_t *socket,
         // sockets, but mbed TLS actually calls the f_set_cache() callback
         // regardless of whether the socket is client- or server-side. This
         // allows us to hook just in time whenever a new session is established.
-#ifdef MBEDTLS_SSL_SRV_C
-        mbedtls_ssl_conf_session_cache(&socket->config, socket, NULL,
-                                       save_session_in_socket);
-#endif // MBEDTLS_SSL_SRV_C
 #endif // WITH_TLS_SESSION_PERSISTENCE
     }
 
@@ -595,11 +591,8 @@ static int start_ssl(ssl_socket_t *socket, const char *host) {
     } while (result == MBEDTLS_ERR_SSL_WANT_READ
                 || result == MBEDTLS_ERR_SSL_WANT_WRITE);
 
-#ifndef MBEDTLS_SSL_SRV_C
-    save_session_in_socket(socket, &restored_session);
-#endif // MBEDTLS_SSL_SRV_C
-
     if (result == 0) {
+        save_session_in_socket(socket, &restored_session);
         if ((socket->flags.session_restored =
                 (restore_session
                         && sessions_equal(get_context(socket)->session,
