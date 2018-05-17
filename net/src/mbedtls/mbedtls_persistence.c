@@ -113,7 +113,7 @@ static int handle_cert_persistence(avs_persistence_context_t *ctx,
     if (data && avs_persistence_direction(ctx) == AVS_PERSISTENCE_RESTORE) {
         // avs_persistence_sized_buffer() could allocate memory if it is restore case
         LOG(WARNING, "x509 certificates support is not compiled in - ignoring "
-                "restored certificate");
+                     "restored certificate");
         free(data);
     }
     return 0;

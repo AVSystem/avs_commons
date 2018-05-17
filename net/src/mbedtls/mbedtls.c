@@ -532,9 +532,6 @@ static int start_ssl(ssl_socket_t *socket, const char *host) {
         LOG(ERROR, "could not initialize ssl context");
         return -1;
     }
-#ifndef WITH_X509
-    (void) host;
-#endif
     assert(!socket->flags.context_valid);
 
     bool restore_session = false;
@@ -564,6 +561,8 @@ static int start_ssl(ssl_socket_t *socket, const char *host) {
                 (result == MBEDTLS_ERR_SSL_ALLOC_FAILED ? ENOMEM : EINVAL);
         goto finish;
     }
+#else
+    (void) host;
 #endif // WITH_X509
 
 #ifdef WITH_TLS_SESSION_PERSISTENCE
