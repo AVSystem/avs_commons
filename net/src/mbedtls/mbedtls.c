@@ -226,23 +226,6 @@ static int get_dtls_overhead(ssl_socket_t *socket,
     return 0;
 }
 
-#ifdef WITH_TLS_SESSION_PERSISTENCE
-static int save_session_in_socket(void *socket_,
-                                  const mbedtls_ssl_session *session) {
-    ssl_socket_t *socket = (ssl_socket_t *) socket_;
-    if (socket->config.endpoint != MBEDTLS_SSL_IS_CLIENT) {
-        return 0;
-    }
-    // if session resumption buffer is NULL, this function is not called
-    assert(socket->session_resumption_buffer
-            && socket->session_resumption_buffer_size > 0);
-    return _avs_net_mbedtls_session_save(
-            (mbedtls_ssl_session *) (intptr_t) session,
-            socket->session_resumption_buffer,
-            socket->session_resumption_buffer_size);
-}
-#endif // WITH_TLS_SESSION_PERSISTENCE
-
 static void close_ssl_raw(ssl_socket_t *socket) {
     if (socket->backend_socket) {
         avs_net_socket_close(socket->backend_socket);
@@ -587,8 +570,16 @@ static int start_ssl(ssl_socket_t *socket, const char *host) {
                 || result == MBEDTLS_ERR_SSL_WANT_WRITE);
 
     if (result == 0) {
-        /* We rely on session renegotation being disabled in configuration. */
-        save_session_in_socket(socket, &restored_session);
+#ifdef WITH_TLS_SESSION_PERSISTENCE
+        if (socket->session_resumption_buffer
+                && socket->config.endpoint == MBEDTLS_SSL_IS_CLIENT) {
+            // We rely on session renegotation being disabled in configuration.
+            _avs_net_mbedtls_session_save(
+                    get_context(socket)->session,
+                    socket->session_resumption_buffer,
+                    socket->session_resumption_buffer_size);
+        }
+#endif // WITH_TLS_SESSION_PERSISTENCE
         if ((socket->flags.session_restored =
                 (restore_session
                         && sessions_equal(get_context(socket)->session,
