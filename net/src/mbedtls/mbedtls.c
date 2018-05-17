@@ -42,7 +42,9 @@
 #include <avsystem/commons/errno.h>
 
 #include "../net_impl.h"
+#ifdef WITH_X509
 #include "data_loader.h"
+#endif // WITH_X509
 #include "mbedtls_persistence.h"
 
 VISIBILITY_SOURCE_BEGIN
@@ -461,12 +463,6 @@ static int configure_ssl(ssl_socket_t *socket,
                 configuration->session_resumption_buffer;
         socket->session_resumption_buffer_size =
                 configuration->session_resumption_buffer_size;
-        // This is a hack. Session cache normally makes sense only for server
-        // sockets, but mbed TLS actually calls the f_set_cache() callback
-        // regardless of whether the socket is client- or server-side. This
-        // allows us to hook just in time whenever a new session is established.
-        mbedtls_ssl_conf_session_cache(&socket->config, socket, NULL,
-                                       save_session_in_socket);
 #endif // WITH_TLS_SESSION_PERSISTENCE
     }
 
@@ -532,7 +528,6 @@ static int start_ssl(ssl_socket_t *socket, const char *host) {
         LOG(ERROR, "could not initialize ssl context");
         return -1;
     }
-
     assert(!socket->flags.context_valid);
 
     bool restore_session = false;
@@ -562,6 +557,8 @@ static int start_ssl(ssl_socket_t *socket, const char *host) {
                 (result == MBEDTLS_ERR_SSL_ALLOC_FAILED ? ENOMEM : EINVAL);
         goto finish;
     }
+#else
+    (void) host;
 #endif // WITH_X509
 
 #ifdef WITH_TLS_SESSION_PERSISTENCE
@@ -590,6 +587,8 @@ static int start_ssl(ssl_socket_t *socket, const char *host) {
                 || result == MBEDTLS_ERR_SSL_WANT_WRITE);
 
     if (result == 0) {
+        /* We rely on session renegotation being disabled in configuration. */
+        save_session_in_socket(socket, &restored_session);
         if ((socket->flags.session_restored =
                 (restore_session
                         && sessions_equal(get_context(socket)->session,

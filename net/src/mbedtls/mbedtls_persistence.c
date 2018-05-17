@@ -19,6 +19,7 @@
 #include <assert.h>
 
 #include <mbedtls/platform.h>
+#include <mbedtls/version.h>
 
 #include <avsystem/commons/persistence.h>
 #include <avsystem/commons/stream.h>
@@ -33,6 +34,10 @@ VISIBILITY_SOURCE_BEGIN
 #if MBEDTLS_VERSION_NUMBER < 0x02030000
 typedef time_t mbedtls_time_t; // mbed TLS < 2.3 does not have mbedtls_time_t
 #endif
+
+#ifndef WITH_X509
+typedef void mbedtls_x509_crt;
+#endif // WITH_X509
 
 /**
  * Persistence format summary
@@ -66,6 +71,7 @@ static const char PERSISTENCE_MAGIC[] = { 'M', 'S', 'P', '\0' };
  * to serious problems if we try to restore it on another platform and/or
  * another mbed TLS version.
  */
+#ifdef WITH_X509
 static int handle_cert_persistence(avs_persistence_context_t *ctx,
                                    mbedtls_x509_crt **cert_ptr) {
     void *data = (*cert_ptr ? (*cert_ptr)->raw.p : NULL);
@@ -95,6 +101,24 @@ restore_finish:
     }
     return result;
 }
+#else
+static int handle_cert_persistence(avs_persistence_context_t *ctx,
+                                   mbedtls_x509_crt **cert_ptr) {
+    void *data = NULL;
+    size_t size = 0;
+    int retval = avs_persistence_sized_buffer(ctx, &data, &size);
+    if (retval) {
+        return retval;
+    }
+    if (data && avs_persistence_direction(ctx) == AVS_PERSISTENCE_RESTORE) {
+        // avs_persistence_sized_buffer() could allocate memory if it is restore case
+        LOG(WARNING, "x509 certificates support is not compiled in - ignoring "
+                     "restored certificate");
+        free(data);
+    }
+    return 0;
+}
+#endif // WITH_X509
 
 static int handle_session_persistence(avs_persistence_context_t *ctx,
                                       mbedtls_ssl_session *session) {
@@ -172,12 +196,12 @@ static int handle_session_persistence(avs_persistence_context_t *ctx,
 #endif // MBEDTLS_SSL_ENCRYPT_THEN_MAC
     }
 
-#ifndef MBEDTLS_X509_CRT_PARSE_C
+#if defined(WITH_X509) && !defined(MBEDTLS_X509_CRT_PARSE_C)
     if (*peer_cert_ptr) {
         mbedtls_x509_crt_free(*peer_cert_ptr);
         mbedtls_free(*peer_cert_ptr);
     }
-#endif // !MBEDTLS_X509_CRT_PARSE_C
+#endif // WITH_X509 && !MBEDTLS_X509_CRT_PARSE_C
     return retval;
 }
 
