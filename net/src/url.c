@@ -41,6 +41,7 @@ static int url_parse_protocol(const char **url,
                               size_t *data_out_ptr,
                               size_t out_limit,
                               avs_url_t *parsed_url) {
+    (void) out_limit;
     const char *proto_end = strstr(*url, "://");
     size_t proto_len = 0;
     if (!proto_end) {
