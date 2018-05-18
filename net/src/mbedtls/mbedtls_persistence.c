@@ -104,6 +104,7 @@ restore_finish:
 #else
 static int handle_cert_persistence(avs_persistence_context_t *ctx,
                                    mbedtls_x509_crt **cert_ptr) {
+    (void) cert_ptr;
     void *data = NULL;
     size_t size = 0;
     int retval = avs_persistence_sized_buffer(ctx, &data, &size);
