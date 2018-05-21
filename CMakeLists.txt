@@ -201,7 +201,7 @@ cmake_dependent_option(WITH_EC_KEY "Enable OpenSSL EC_KEY support" ON WITH_SSL O
 cmake_dependent_option(WITH_PSK "Enable pre-shared key support" ON WITH_SSL OFF)
 cmake_dependent_option(WITH_X509 "Enable X.509 certificate support" ON WITH_SSL OFF)
 
-option(WITH_TEST "Enable unit tests of AVSystem Commons library itself" OFF)
+cmake_dependent_option(WITH_TEST "Enable unit tests of AVSystem Commons library itself" OFF WITH_AVS_UNIT OFF)
 if(MODULES_ENABLED OR WITH_TEST)
     set(WITH_AVS_UNIT_DEFAULT ON)
 else()
