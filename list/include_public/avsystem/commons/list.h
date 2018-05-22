@@ -282,6 +282,44 @@ static inline AVS_LIST(T) &avs_list_next__(AVS_LIST(T) element) {
 #define AVS_LIST_NEXT_PTR(element_ptr) (&AVS_LIST_NEXT(*(element_ptr)))
 
 /**
+ * Advances the @p element_ptr to point to the next element of the list.
+ *
+ * Using <c>AVS_LIST_ADVANCE(&list)</c> is semantically equvialent to
+ * <c>list = AVS_LIST_NEXT(list)</c>. The difference is that AVS_LIST_ADVANCE
+ * will always work on compilers without typeof() support, because it performs
+ * appropriate casts underneath.
+ *
+ * @param element_ptr   Pointer to the list element which should be modified to
+ *                      point to the next list element.
+ */
+#define AVS_LIST_ADVANCE(element_ptr)                           \
+    do {                                                        \
+        AVS_TYPEOF_PTR(*(element_ptr)) *curr_ptr =              \
+                (AVS_TYPEOF_PTR(*(element_ptr)) *) element_ptr; \
+        *curr_ptr = AVS_LIST_NEXT(*curr_ptr);                   \
+    } while (0)
+
+/**
+ * Advances the @p element_ptr_ptr to point to the next pointer to the element
+ * of the list.
+ *
+ * Using <c>AVS_LIST_ADVANCE_PTR(&list_ptr)</c> is semantically equivalent to
+ * <c>list_ptr = AVS_LIST_NEXT_PTR(list_ptr)</c>. The difference is that
+ * AVS_LIST_ADVANCE_PTR will always work on compilers without typeof() support,
+ * because it performs appropriate casts underneath.
+ *
+ * @param element_ptr_ptr   Pointer to the pointer to the list element which
+ *                          should be modified to point to the pointer to the
+ *                          next list element.
+ */
+#define AVS_LIST_ADVANCE_PTR(element_ptr_ptr)                         \
+    do {                                                              \
+        AVS_TYPEOF_PTR(**(element_ptr_ptr)) **curr_ptr =              \
+                (AVS_TYPEOF_PTR(**(element_ptr)) **) element_ptr_ptr; \
+        *curr_ptr = AVS_LIST_NEXT_PTR(*curr_ptr);                     \
+    } while (0)
+
+/**
  * A shorthand notation for a for-each loop.
  *
  * It is a wrapper around a standard <c>for</c> clause, so all standard features
