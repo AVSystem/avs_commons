@@ -270,10 +270,6 @@ static inline AVS_LIST(T) &avs_list_next__(AVS_LIST(T) element) {
 /**
  * Returns a pointer to the variable holding the pointer to the next element.
  *
- * It is semantically equivalent to <c>(&AVS_LIST_NEXT(*(element_ptr)))</c>
- * but yields a <c>void *</c> instead of <c>void **</c> if <c>typeof</c> is not
- * available.
- *
  * @param element_ptr Pointer to a variable holding a pointer to a list element.
  *
  * @return Pointer to a variable in the list element holding a pointer to the
