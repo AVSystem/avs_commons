@@ -47,7 +47,7 @@ typedef struct avs_stream_membuf_struct avs_stream_membuf_t;
  * @return NULL in case of an error, pointer to the newly allocated
  *         stream otherwise
  */
-avs_stream_abstract_t *avs_stream_membuf_create();
+avs_stream_abstract_t *avs_stream_membuf_create(void);
 
 #ifdef	__cplusplus
 }

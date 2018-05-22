@@ -82,7 +82,7 @@ static int get_dtls_overhead(ssl_socket_t *socket,
  * similar is not an easy task in an API that tries to abstract lower networking
  * layers as much as possible.
  */
-static const session_t *get_dtls_session() {
+static const session_t *get_dtls_session(void) {
     static session_t DTLS_SESSION;
     /**
      * Need to set it to something non-zero, or tinyDTLS won't be able to

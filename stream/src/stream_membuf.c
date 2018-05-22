@@ -170,7 +170,7 @@ static const avs_stream_v_table_t membuf_stream_vtable = {
 };
 
 avs_stream_abstract_t *
-avs_stream_membuf_create() {
+avs_stream_membuf_create(void) {
     avs_stream_membuf_t *membuf =
         (avs_stream_membuf_t *) calloc(1, sizeof(avs_stream_membuf_t));
     const void *vtable = &membuf_stream_vtable;

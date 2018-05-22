@@ -41,7 +41,7 @@ void avs_unit_mock_add__(avs_unit_mock_func_ptr *new_mock_ptr) {
     AVS_LIST_INSERT(&ALL_MOCKS, new_mock);
 }
 
-void avs_unit_mock_reset_all__() {
+void avs_unit_mock_reset_all__(void) {
     avs_unit_mock_t *mock_ptr;
     AVS_LIST_FOREACH(mock_ptr, ALL_MOCKS) {
         *mock_ptr->mock_ptr = NULL;
@@ -49,7 +49,7 @@ void avs_unit_mock_reset_all__() {
     }
 }
 
-void avs_unit_mock_cleanup__() {
+void avs_unit_mock_cleanup__(void) {
     AVS_LIST_CLEAR(&ALL_MOCKS);
 }
 

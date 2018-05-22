@@ -89,7 +89,7 @@ char Usage[] =
 "        -cafile     PEM file from which certificate chain shall be loaded\n"
 "        -pkeyfile   PEM file from which server private key shall be loaded\n";
 
-int handle_socket_error() {
+int handle_socket_error(void) {
     switch (errno) {
         case EINTR:
             /* Interrupted system call.
