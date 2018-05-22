@@ -296,7 +296,7 @@ static inline AVS_LIST(T) &avs_list_next__(AVS_LIST(T) element) {
     } while (0)
 
 /**
- * Advances the @p element_ptr_ptr to point to the next pointer to the element
+ * Advances the @p element_ptr_ptr to point to the pointer to the next element
  * of the list.
  *
  * Using <c>AVS_LIST_ADVANCE_PTR(&list_ptr)</c> is semantically equivalent to
