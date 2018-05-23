@@ -195,9 +195,6 @@ typedef int (*avs_list_comparator_func_t)(const void *a,
  * functions directly.
  */
 /**@{*/
-static inline void *avs_list_forward__(void *ptr) {
-    return ptr;
-}
 void *avs_list_adjust_allocated_ptr__(void *allocated);
 void *avs_list_nth__(void *list, size_t n);
 void **avs_list_nth_ptr__(void **list_ptr, size_t n);
@@ -208,7 +205,7 @@ void **avs_list_find_by_value_ptr__(void **list_ptr,
                                     size_t value_size);
 void *avs_list_tail__(void *list);
 void **avs_list_append_ptr__(void **list_ptr);
-void **avs_list_append__(void **list_ptr, void *element);
+void *avs_list_append__(void *element, void **list_ptr);
 void *avs_list_insert__(void *list_to_insert, void **insert_ptr);
 void *avs_list_detach__(void **to_detach_ptr);
 size_t avs_list_size__(const void *list);
@@ -618,10 +615,11 @@ AVS_LIST_INSERT(destination_element_ptr, AVS_LIST_NEW_ELEMENT(type))
  *                    is already a list), they will be preserved, actually
  *                    concatenating two lists.
  */
-#define AVS_LIST_APPEND(list_ptr, new_element)                               \
-    AVS_CALL_WITH_CAST(0, avs_list_forward__,                                \
-                       *AVS_CALL_WITH_CAST(1, avs_list_append__, (list_ptr), \
-                                           (new_element)))
+#define AVS_LIST_APPEND(list_ptr, new_element)                        \
+    ((((void) sizeof(*(list_ptr) = (new_element))),                   \
+      AVS_LIST_ASSERT_ACYCLIC__(                                      \
+              AVS_CALL_WITH_CAST(0, avs_list_append__, (new_element), \
+                                 (void **) (intptr_t)(list_ptr)))))
 
 /**
  * Allocates a new element and appends at the end of a list.
