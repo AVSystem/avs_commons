@@ -82,6 +82,10 @@ if(WITH_INTERNAL_LOGS)
     include_directories(../log/include_public)
 endif()
 
+if(WIN32)
+    avs_emit_deps(avs_net ws2_32)
+endif()
+
 if(WITH_OPENSSL)
     avs_emit_deps(avs_net ssl crypto)
 elseif(WITH_MBEDTLS)

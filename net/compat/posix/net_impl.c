@@ -796,7 +796,7 @@ static int connect_with_timeout(int sockfd,
             return -1;
         }
     }
-    if (fcntl(sockfd, F_SETFL, fcntl(sockfd, F_GETFL, 0) & ~O_NONBLOCK) == -1) {
+    if (fcntl(sockfd, F_SETFL, 0) == -1) {
         return -1;
     }
     return 0;
