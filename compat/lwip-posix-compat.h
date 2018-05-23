@@ -30,6 +30,9 @@
 /* Provides htons/ntohs/htonl/ntohl */
 #include "lwip/inet.h"
 
+/* Provides e.g. LWIP_VERSION_* macros used in net_impl.c */
+#include "lwip/init.h"
+
 /*
  * Provides:
  * - POSIX-compatible socket API, socklen_t,
