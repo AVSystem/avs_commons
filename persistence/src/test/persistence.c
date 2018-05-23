@@ -42,7 +42,7 @@ persistence_context_constructor_t(avs_stream_abstract_t *);
     __attribute__((__cleanup__(persistence_test_env_destroy))) \
             persistence_test_env_t *Name = persistence_test_env_create()
 
-static persistence_test_env_t *persistence_test_env_create() {
+static persistence_test_env_t *persistence_test_env_create(void) {
     persistence_test_env_t *env =
             (persistence_test_env_t *) calloc(1, sizeof(*env));
     AVS_UNIT_ASSERT_NOT_NULL(env);

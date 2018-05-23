@@ -347,7 +347,7 @@ typedef struct {
 
 static FILE *volatile communication_log = NULL;
 
-static void debug_init() {
+static void debug_init(void) {
     if (communication_log == NULL) {
         communication_log = fopen("DEBUG.log", "w");
     }

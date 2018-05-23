@@ -100,7 +100,7 @@ static int memstream_close(avs_stream_abstract_t *stream) {
     return 0;
 }
 
-static int memstream_fail() {
+static int memstream_fail(void) {
     AVS_UNIT_ASSERT_TRUE(0);
     return 0;
 }
