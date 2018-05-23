@@ -732,6 +732,7 @@ static short wait_until_ready(int sockfd, avs_time_duration_t timeout,
     FD_ZERO(&outfds);
     FD_ZERO(&errfds);
 
+#pragma GCC diagnostic ignored "-Wconversion"
 #if LWIP_VERSION_MAJOR < 2
 // LwIP < 2.0 lacks cast to unsigned inside FD_* macros
 # define AVS_FD_SET(fd, set) FD_SET((unsigned)(fd), (set))
@@ -757,6 +758,7 @@ static short wait_until_ready(int sockfd, avs_time_duration_t timeout,
             || (out && AVS_FD_ISSET(sockfd, &outfds));
 #undef AVS_FD_SET
 #undef AVS_FD_ISSET
+#pragma GCC diagnostic pop
 
 #endif
 }
