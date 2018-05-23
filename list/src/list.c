@@ -95,6 +95,10 @@ void **avs_list_append_ptr__(void **list_ptr) {
     return list_ptr;
 }
 
+void *avs_list_append__(void *element, void **list_ptr) {
+    return (*avs_list_append_ptr__(list_ptr) = element);
+}
+
 void *avs_list_insert__(void *list_to_insert, void **insert_ptr) {
     if (list_to_insert) {
         void *next = *insert_ptr;

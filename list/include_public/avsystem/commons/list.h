@@ -205,6 +205,7 @@ void **avs_list_find_by_value_ptr__(void **list_ptr,
                                     size_t value_size);
 void *avs_list_tail__(void *list);
 void **avs_list_append_ptr__(void **list_ptr);
+void *avs_list_append__(void *element, void **list_ptr);
 void *avs_list_insert__(void *list_to_insert, void **insert_ptr);
 void *avs_list_detach__(void **to_detach_ptr);
 size_t avs_list_size__(const void *list);
@@ -270,16 +271,50 @@ static inline AVS_LIST(T) &avs_list_next__(AVS_LIST(T) element) {
 /**
  * Returns a pointer to the variable holding the pointer to the next element.
  *
- * It is semantically equivalent to <c>(&AVS_LIST_NEXT(*(element_ptr)))</c>
- * but yields a <c>void *</c> instead of <c>void **</c> if <c>typeof</c> is not
- * available.
- *
  * @param element_ptr Pointer to a variable holding a pointer to a list element.
  *
  * @return Pointer to a variable in the list element holding a pointer to the
  *         next element.
  */
 #define AVS_LIST_NEXT_PTR(element_ptr) (&AVS_LIST_NEXT(*(element_ptr)))
+
+/**
+ * Advances the @p element_ptr to point to the next element of the list.
+ *
+ * Using <c>AVS_LIST_ADVANCE(&list)</c> is semantically equvialent to
+ * <c>list = AVS_LIST_NEXT(list)</c>. The difference is that AVS_LIST_ADVANCE
+ * will always work on compilers without typeof() support, because it performs
+ * appropriate casts underneath.
+ *
+ * @param element_ptr   Pointer to the list element which should be modified to
+ *                      point to the next list element.
+ */
+#define AVS_LIST_ADVANCE(element_ptr)                           \
+    do {                                                        \
+        AVS_TYPEOF_PTR(*(element_ptr)) *curr_ptr =              \
+                (AVS_TYPEOF_PTR(*(element_ptr)) *) element_ptr; \
+        *curr_ptr = AVS_LIST_NEXT(*curr_ptr);                   \
+    } while (0)
+
+/**
+ * Advances the @p element_ptr_ptr to point to the pointer to the next element
+ * of the list.
+ *
+ * Using <c>AVS_LIST_ADVANCE_PTR(&list_ptr)</c> is semantically equivalent to
+ * <c>list_ptr = AVS_LIST_NEXT_PTR(list_ptr)</c>. The difference is that
+ * AVS_LIST_ADVANCE_PTR will always work on compilers without typeof() support,
+ * because it performs appropriate casts underneath.
+ *
+ * @param element_ptr_ptr   Pointer to the pointer to the list element which
+ *                          should be modified to point to the pointer to the
+ *                          next list element.
+ */
+#define AVS_LIST_ADVANCE_PTR(element_ptr_ptr)                             \
+    do {                                                                  \
+        AVS_TYPEOF_PTR(**(element_ptr_ptr)) **curr_ptr_ptr =              \
+                (AVS_TYPEOF_PTR(**(element_ptr_ptr)) **) element_ptr_ptr; \
+        *curr_ptr_ptr = AVS_LIST_NEXT_PTR(*curr_ptr_ptr);                 \
+    } while (0)
 
 /**
  * A shorthand notation for a for-each loop.
@@ -580,9 +615,11 @@ AVS_LIST_INSERT(destination_element_ptr, AVS_LIST_NEW_ELEMENT(type))
  *                    is already a list), they will be preserved, actually
  *                    concatenating two lists.
  */
-#define AVS_LIST_APPEND(list_ptr, new_element) \
-AVS_LIST_ASSERT_ACYCLIC__( \
-        (*AVS_LIST_APPEND_PTR(list_ptr) = (new_element)))
+#define AVS_LIST_APPEND(list_ptr, new_element)                        \
+    ((((void) sizeof(*(list_ptr) = (new_element))),                   \
+      AVS_LIST_ASSERT_ACYCLIC__(                                      \
+              AVS_CALL_WITH_CAST(0, avs_list_append__, (new_element), \
+                                 (void **) (intptr_t)(list_ptr)))))
 
 /**
  * Allocates a new element and appends at the end of a list.
