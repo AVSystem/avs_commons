@@ -27,7 +27,7 @@ VISIBILITY_PRIVATE_HEADER_BEGIN
 
 typedef struct coap_msg_cache coap_msg_cache_t;
 
-#define AVS_COAP_MSG_CACHE_DUPLICATE -2
+#define AVS_COAP_MSG_CACHE_DUPLICATE (-2)
 
 #ifdef WITH_AVS_COAP_MESSAGE_CACHE
 
