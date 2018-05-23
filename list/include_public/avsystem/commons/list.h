@@ -310,9 +310,9 @@ static inline AVS_LIST(T) &avs_list_next__(AVS_LIST(T) element) {
  */
 #define AVS_LIST_ADVANCE_PTR(element_ptr_ptr)                             \
     do {                                                                  \
-        AVS_TYPEOF_PTR(**(element_ptr_ptr)) **curr_ptr =                  \
+        AVS_TYPEOF_PTR(**(element_ptr_ptr)) **curr_ptr_ptr =              \
                 (AVS_TYPEOF_PTR(**(element_ptr_ptr)) **) element_ptr_ptr; \
-        *curr_ptr = AVS_LIST_NEXT_PTR(*curr_ptr);                         \
+        *curr_ptr_ptr = AVS_LIST_NEXT_PTR(*curr_ptr_ptr);                 \
     } while (0)
 
 /**
