@@ -12,7 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-option(WITH_POSIX_AVS_SOCKET "Enable avs_socket implementation based on POSIX socket API" "${UNIX}")
+set(POSIX_AVS_SOCKET_DEFAULT ON)
+set(POSIX_COMPAT_HEADER_DEFAULT "")
+if(WIN32)
+    set(POSIX_COMPAT_HEADER_DEFAULT "${CMAKE_CURRENT_SOURCE_DIR}/../compat/winsock-posix-compat.h")
+elseif(NOT UNIX)
+    set(POSIX_AVS_SOCKET_DEFAULT OFF)
+endif()
+
+option(WITH_POSIX_AVS_SOCKET "Enable avs_socket implementation based on POSIX socket API" "${POSIX_AVS_SOCKET_DEFAULT}")
 cmake_dependent_option(WITH_TLS_SESSION_PERSISTENCE "Enable support for TLS session persistence" ON WITH_AVS_PERSISTENCE OFF)
 
 set(SOURCES
@@ -46,7 +54,7 @@ set(PRIVATE_HEADERS
     src/net_impl.h)
 
 if(WITH_POSIX_AVS_SOCKET)
-    set(POSIX_COMPAT_HEADER "" CACHE STRING "POSIX compatibility header path, if required")
+    set(POSIX_COMPAT_HEADER "${POSIX_COMPAT_HEADER_DEFAULT}" CACHE STRING "POSIX compatibility header path, if required")
     configure_file("compat/posix/avs_net_posix_config.h.in"
                    "compat/posix/avs_net_posix_config.h")
     include_directories("${CMAKE_CURRENT_BINARY_DIR}/compat/posix")
