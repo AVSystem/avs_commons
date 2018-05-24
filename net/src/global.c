@@ -49,11 +49,16 @@ static bool atomic_flag_test_and_set(volatile bool *ptr) {
 #endif // HAVE_C11_STDATOMIC
 
 static int initialize_global(void) {
-    return _avs_net_initialize_global_ssl_state();
+    int result = _avs_net_initialize_global_compat_state();
+    if (!result && (result = _avs_net_initialize_global_ssl_state())) {
+        _avs_net_cleanup_global_ssl_state();
+    }
+    return result;
 }
 
 static void cleanup_global(void) {
     _avs_net_cleanup_global_ssl_state();
+    _avs_net_cleanup_global_compat_state();
 }
 
 int _avs_net_ensure_global_state(void) {

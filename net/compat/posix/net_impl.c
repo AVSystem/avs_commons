@@ -1925,3 +1925,17 @@ int avs_net_resolved_endpoint_get_host_port(
                                host, (socklen_t) hostlen,
                                serv, (socklen_t) servlen);
 }
+
+int _avs_net_initialize_global_compat_state(void) {
+    int result = 0;
+#ifdef HAVE_GLOBAL_COMPAT_STATE
+    result = initialize_global_compat_state();
+#endif // HAVE_GLOBAL_COMPAT_STATE
+    return result;
+}
+
+void _avs_net_cleanup_global_compat_state(void) {
+#ifdef HAVE_GLOBAL_COMPAT_STATE
+    cleanup_global_compat_state();
+#endif // HAVE_GLOBAL_COMPAT_STATE
+}

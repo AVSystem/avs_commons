@@ -152,4 +152,14 @@ static inline int fcntl(int fd, int cmd, int value) {
     return _avs_wsa_set_errno(ioctlsocket(fd, FIONBIO, &ulong_value));
 }
 
+#define HAVE_GLOBAL_COMPAT_STATE
+
+static int initialize_global_compat_state(void) {
+    return WSAStartup(MAKEWORD(2, 2), &(WSADATA) { 0 });
+}
+
+static void cleanup_global_compat_state(void) {
+    WSACleanup();
+}
+
 #endif /* COMPAT_H */
