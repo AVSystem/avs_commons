@@ -47,11 +47,11 @@ INCLUDE_WHITELIST = {
 }
 
 CONDITIONAL_WHITELIST = {
+    (r'global', r'signal\.h'),
+    (r'global', r'stdatomic\.h'),
     (r'mbedtls', r'mbedtls/.*'),
     (r'openssl', r'openssl/.*'),
     (r'openssl', r'sys/time\.h'),
-    (r'ssl_common', r'signal\.h'),
-    (r'ssl_common', r'stdatomic\.h'),
     (r'tinydtls', r'tinydtls/.*'),
     (r'zlib', r'zlib\.h')
 }

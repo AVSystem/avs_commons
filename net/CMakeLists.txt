@@ -26,6 +26,7 @@ cmake_dependent_option(WITH_TLS_SESSION_PERSISTENCE "Enable support for TLS sess
 set(SOURCES
     src/addrinfo.c
     src/api.c
+    src/global.c
     src/url.c)
 
 if(WITH_OPENSSL)
@@ -51,6 +52,8 @@ elseif(WITH_TINYDTLS)
 endif()
 
 set(PRIVATE_HEADERS
+    src/api.h
+    src/global.h
     src/net_impl.h)
 
 if(WITH_POSIX_AVS_SOCKET)

@@ -26,6 +26,7 @@
 #include <avsystem/commons/utils.h>
 
 #include "compat.h"
+#include "../../src/global.h"
 #include "../../src/net_impl.h"
 
 VISIBILITY_SOURCE_BEGIN
@@ -159,6 +160,11 @@ avs_net_addrinfo_t *avs_net_addrinfo_resolve_ex(
         const char *port_str,
         int flags,
         const avs_net_resolved_endpoint_t *preferred_endpoint) {
+    if (_avs_net_ensure_global_state()) {
+        LOG(ERROR, "avs_net global state initialization error");
+        return NULL;
+    }
+
     struct addrinfo hint;
     memset((void *) &hint, 0, sizeof (hint));
     hint.ai_family = _avs_net_get_af(family);

@@ -24,6 +24,7 @@
 
 #include <avsystem/commons/errno.h>
 
+#include "global.h"
 #include "net_impl.h"
 
 VISIBILITY_SOURCE_BEGIN
@@ -51,12 +52,12 @@ typedef struct {
 #define NET_SSL_COMMON_INTERNALS
 #include "ssl_common.h"
 
-static int initialize_ssl_global(void) {
+int _avs_net_initialize_global_ssl_state(void) {
     // no global state - do nothing
     return 0;
 }
 
-static void cleanup_ssl_global(void) {
+void _avs_net_cleanup_global_ssl_state(void) {
     // do nothing
 }
 
