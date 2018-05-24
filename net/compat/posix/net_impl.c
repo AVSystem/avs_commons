@@ -651,6 +651,7 @@ static int configure_socket(avs_net_socket_t *net_socket) {
     }
     if (net_socket->configuration.transparent) {
         int value = 1;
+        int retval = 0;
         errno = EINVAL;
         switch (get_socket_family(net_socket->socket)) {
 #ifdef WITH_IPV4
@@ -661,7 +662,7 @@ static int configure_socket(avs_net_socket_t *net_socket) {
 #endif
             {
                 net_socket->error_code = errno;
-                return -1;
+                retval = -1;
             }
             break;
 #endif /* WITH_IPV4 */
@@ -674,7 +675,7 @@ static int configure_socket(avs_net_socket_t *net_socket) {
 #endif
             {
                 net_socket->error_code = errno;
-                return -1;
+                retval = -1;
             }
             break;
 #endif /* WITH_IPV6 */
@@ -682,9 +683,14 @@ static int configure_socket(avs_net_socket_t *net_socket) {
         default:
             (void) value;
             net_socket->error_code = EINVAL;
-            return -1;
+            retval = -1;
+        }
+
+        if (retval) {
+            return retval;
         }
     }
+
     net_socket->error_code = 0;
     return 0;
 }
