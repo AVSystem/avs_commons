@@ -722,7 +722,7 @@ static short wait_until_ready(int sockfd, avs_time_duration_t timeout,
     // When LWIP_TIMEVAL_PRIVATE is used, the timeval::tv_sec is long
     // even though it normally should be the time_t. Separate cast is
     // added to avoid any kind of implicit conversion warnings.
-#if LWIP_TIMEVAL_PRIVATE == 1
+#if LWIP_TIMEVAL_PRIVATE
     timeval_timeout.tv_sec = (long) timeout.seconds;
 #else
     timeval_timeout.tv_sec = (time_t) timeout.seconds;
