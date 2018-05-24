@@ -236,7 +236,18 @@ endif()
 # -fvisibility, #pragma GCC visibility
 if(NOT DEFINED HAVE_VISIBILITY)
     file(WRITE ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp/visibility.c "#pragma GCC visibility push(default)\nint f();\n#pragma GCC visibility push(hidden)\nint f() { return 0; }\n#pragma GCC visibility pop\nint main() { return f(); }\n\n")
-    try_compile(HAVE_VISIBILITY ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp/visibility.c COMPILE_DEFINITIONS -Wall -Wextra -Werror -fvisibility=default)
+    try_compile(HAVE_VISIBILITY
+                ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp
+                ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp/visibility.c
+                COMPILE_DEFINITIONS -Wall -Wextra -Werror -fvisibility=default)
+endif()
+
+if(NOT DEFINED HAVE_PRAGMA_DIAGNOSTIC)
+    file(WRITE ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp/diagnostic.c "#pragma GCC diagnostic ignored \"-Wformat\"\nint main(){}\n\n")
+    try_compile(HAVE_PRAGMA_DIAGNOSTIC
+                ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp
+                ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp/diagnostic.c
+                COMPILE_DEFINITIONS -Werror)
 endif()
 
 # Check for builtin GCC/Clang safe arithmetic functions
