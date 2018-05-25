@@ -393,7 +393,7 @@ if(WITH_TEST)
 
     if(NOT EXISTS "${CMAKE_CURRENT_BINARY_DIR}/certs/client.crt.der")
         execute_process(COMMAND
-                        bash
+                        env bash
                         "${CMAKE_CURRENT_SOURCE_DIR}/tools/generate-certs.sh"
                         "${CMAKE_CURRENT_BINARY_DIR}/certs"
                         RESULT_VARIABLE RES)
