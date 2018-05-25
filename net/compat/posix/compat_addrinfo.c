@@ -80,9 +80,9 @@ static struct addrinfo *detach_preferred(struct addrinfo **list_ptr,
                                          const void *preferred_addr,
                                          socklen_t preferred_addr_len) {
     for (; *list_ptr; list_ptr = &(*list_ptr)->ai_next) {
-        if ((*list_ptr)->ai_addrlen == preferred_addr_len
+        if ((socklen_t) (*list_ptr)->ai_addrlen == preferred_addr_len
                 && memcmp((*list_ptr)->ai_addr, preferred_addr,
-                          preferred_addr_len) == 0) {
+                          (size_t) preferred_addr_len) == 0) {
             struct addrinfo *retval = *list_ptr;
             *list_ptr = retval->ai_next;
             retval->ai_next = NULL;
@@ -272,7 +272,7 @@ static int return_resolved_endpoint(avs_net_resolved_endpoint_t *out,
         return -1;
     }
     out->size = (uint8_t) addrlen;
-    memcpy(out->data.buf, addr, addrlen);
+    memcpy(out->data.buf, addr, out->size);
     return 0;
 }
 
@@ -300,8 +300,9 @@ int avs_net_addrinfo_next(avs_net_addrinfo_t *ctx,
     } else
 #endif
     {
-        result = return_resolved_endpoint(out, ctx->to_send->ai_addr,
-                                          ctx->to_send->ai_addrlen);
+        result = return_resolved_endpoint(
+                out, ctx->to_send->ai_addr,
+                (socklen_t) ctx->to_send->ai_addrlen);
     }
     if (!result) {
         ctx->to_send = ctx->to_send->ai_next;

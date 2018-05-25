@@ -106,6 +106,11 @@ static inline int _avs_wsa_set_errno(int result) {
     return result;
 }
 
+static inline SOCKET _avs_wsa_set_errno_socket(SOCKET result) {
+    errno = _avs_map_wsaerror(WSAGetLastError());
+    return result;
+}
+
 static inline const char *_avs_wsa_set_errno_str(const char *result) {
     errno = _avs_map_wsaerror(WSAGetLastError());
     return result;
@@ -116,11 +121,14 @@ static inline const char *_avs_wsa_set_errno_str(const char *result) {
 #define HAVE_INET_PTON
 #define HAVE_POLL
 
-#define accept(...) _avs_wsa_set_errno(accept(__VA_ARGS__))
+#define accept(...) _avs_wsa_set_errno_socket(accept(__VA_ARGS__))
 #define bind(...) _avs_wsa_set_errno(bind(__VA_ARGS__))
 #define close(...) _avs_wsa_set_errno(closesocket(__VA_ARGS__))
 #define connect(...) _avs_wsa_set_errno(connect(__VA_ARGS__))
-#define getnameinfo(...) _avs_wsa_set_errno(getnameinfo(__VA_ARGS__))
+#define getnameinfo(Addr, Addrlen, Host, Hostlen, Serv, Servlen, Flags) \
+        _avs_wsa_set_errno(getnameinfo((Addr), (Addrlen), \
+                                       (Host), (DWORD) (Hostlen), \
+                                       (Serv), (DWORD) (Servlen), (Flags)))
 #define getpeername(...) _avs_wsa_set_errno(getpeername(__VA_ARGS__))
 #define getsockname(...) _avs_wsa_set_errno(getsockname(__VA_ARGS__))
 #define getsockopt(Sockfd, Level, Name, Val, Len) \
@@ -128,37 +136,42 @@ static inline const char *_avs_wsa_set_errno_str(const char *result) {
                                       (char *) (Val), (Len)))
 #define inet_ntop(Af, Src, Dst, Size) \
         _avs_wsa_set_errno_str(inet_ntop((Af), (void *) (intptr_t) (Src), \
-                                         (Dst), (Size)))
+                                         (Dst), (size_t) (Size)))
 #define inet_pton(...) _avs_wsa_set_errno(inet_pton(__VA_ARGS__))
 #define listen(...) _avs_wsa_set_errno(listen(__VA_ARGS__))
 #define poll(...) _avs_wsa_set_errno(WSAPoll(__VA_ARGS__))
-#define recvfrom(...) _avs_wsa_set_errno(recvfrom(__VA_ARGS__))
-#define send(...) _avs_wsa_set_errno(send(__VA_ARGS__))
-#define sendto(...) _avs_wsa_set_errno(sendto(__VA_ARGS__))
+#define recvfrom(Sockfd, Buf, Len, ...) \
+        _avs_wsa_set_errno(recvfrom((Sockfd), (char *) (Buf), (int) (Len), \
+                                    __VA_ARGS__))
+#define send(Sockfd, Buf, Len, Flags) \
+        _avs_wsa_set_errno(send((Sockfd), (Buf), (int) (Len), (Flags)))
+#define sendto(Sockfd, Buf, Len, ...) \
+        _avs_wsa_set_errno(sendto((Sockfd), (const char *) (Buf), (int) (Len), \
+                                  __VA_ARGS__))
 #define setsockopt(Sockfd, Level, Name, Val, Len) \
         _avs_wsa_set_errno(setsockopt((Sockfd), (Level), (Name), \
                                       (const char *) (Val), (Len)))
 #define shutdown(...) _avs_wsa_set_errno(shutdown(__VA_ARGS__))
-#define socket(...) _avs_wsa_set_errno(socket(__VA_ARGS__))
+#define socket(...) _avs_wsa_set_errno_socket(socket(__VA_ARGS__))
 
 // The following are only used for locally implemented functions
 // The values from Linux are used, but they can really be anything
 #define F_SETFL 4
 #define O_NONBLOCK 04000
 
-static inline int fcntl(int fd, int cmd, int value) {
+static inline int fcntl(SOCKET fd, int cmd, int value) {
     assert(cmd == F_SETFL);
     u_long ulong_value = ((value & O_NONBLOCK) ? 1 : 0);
-    return _avs_wsa_set_errno(ioctlsocket(fd, FIONBIO, &ulong_value));
+    return _avs_wsa_set_errno(ioctlsocket(fd, (int) FIONBIO, &ulong_value));
 }
 
 #define HAVE_GLOBAL_COMPAT_STATE
 
-static int initialize_global_compat_state(void) {
+static inline int initialize_global_compat_state(void) {
     return WSAStartup(MAKEWORD(2, 2), &(WSADATA) { 0 });
 }
 
-static void cleanup_global_compat_state(void) {
+static inline void cleanup_global_compat_state(void) {
     WSACleanup();
 }
 

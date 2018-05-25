@@ -181,7 +181,7 @@ static int inet_pton6(const char *src, void *dst) {
             pch = strchr((xdigits = xdigits_u), ch);
         if (pch != NULL) {
             val <<= 4;
-            val = (unsigned) (val | (pch - xdigits));
+            val = (unsigned) (val | (unsigned) (pch - xdigits));
             if (val > 0xffff)
                 return (0);
             saw_xdigit = 1;
