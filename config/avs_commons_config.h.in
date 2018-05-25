@@ -87,6 +87,8 @@ extern void *sbrk (intptr_t __delta);
 #define VALGRIND_MAKE_MEM_DEFINED_IF_ADDRESSABLE(addr, len) ((void) 0)
 #endif
 
+#cmakedefine HAVE_PRAGMA_DIAGNOSTIC
+
 #ifndef AVS_UNIT_TESTING
 #cmakedefine HAVE_VISIBILITY
 #endif
