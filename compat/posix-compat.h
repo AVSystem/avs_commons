@@ -287,4 +287,6 @@ int select(int nfds, fd_set *readfds, fd_set *writefds,
 # include <sys/socket.h>
 #endif
 
+typedef int sockfd_t;
+
 #endif /* COMPAT_H */

@@ -162,4 +162,6 @@ static void cleanup_global_compat_state(void) {
     WSACleanup();
 }
 
+typedef SOCKET sockfd_t;
+
 #endif /* COMPAT_H */

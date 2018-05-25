@@ -327,7 +327,7 @@ static const avs_net_socket_v_table_t net_vtable = {
 
 typedef struct {
     const avs_net_socket_v_table_t * const operations;
-    int socket;
+    sockfd_t socket;
     avs_net_socket_type_t type;
     avs_net_socket_state_t state;
     char remote_hostname[NET_MAX_HOSTNAME_SIZE];
@@ -482,7 +482,8 @@ static int remote_hostname_net(avs_net_abstract_socket_t *socket_,
                                char *out_buffer, size_t out_buffer_size) {
     avs_net_socket_t *socket = (avs_net_socket_t *) socket_;
     if (!socket->remote_hostname[0]) {
-        socket->error_code = (socket->socket < 0 ? EBADF : ENOBUFS);
+        socket->error_code =
+                (socket->socket == INVALID_SOCKET ? EBADF : ENOBUFS);
         return -1;
     }
     if (avs_simple_snprintf(out_buffer, out_buffer_size, "%s",
@@ -499,7 +500,8 @@ static int remote_port_net(avs_net_abstract_socket_t *socket_,
                            char *out_buffer, size_t out_buffer_size) {
     avs_net_socket_t *socket = (avs_net_socket_t *) socket_;
     if (!socket->remote_port[0]) {
-        socket->error_code = (socket->socket < 0 ? EBADF : ENOBUFS);
+        socket->error_code =
+                (socket->socket == INVALID_SOCKET ? EBADF : ENOBUFS);
         return -1;
     }
     if (avs_simple_snprintf(out_buffer, out_buffer_size, "%s",
@@ -515,7 +517,7 @@ static int remote_port_net(avs_net_abstract_socket_t *socket_,
 static int system_socket_net(avs_net_abstract_socket_t *net_socket_,
                              const void **out) {
     avs_net_socket_t *net_socket = (avs_net_socket_t *) net_socket_;
-    if (net_socket->socket >= 0) {
+    if (net_socket->socket != INVALID_SOCKET) {
         *out = &net_socket->socket;
         net_socket->error_code = 0;
         return 0;
@@ -526,9 +528,9 @@ static int system_socket_net(avs_net_abstract_socket_t *net_socket_,
 }
 
 static void close_net_raw(avs_net_socket_t *net_socket) {
-    if (net_socket->socket >= 0) {
+    if (net_socket->socket != INVALID_SOCKET) {
         close(net_socket->socket);
-        net_socket->socket = -1;
+        net_socket->socket = INVALID_SOCKET;
         net_socket->state = AVS_NET_SOCKET_STATE_CLOSED;
     }
 }
@@ -557,7 +559,7 @@ static int shutdown_net(avs_net_abstract_socket_t *net_socket_) {
     return retval;
 }
 
-static sa_family_t get_socket_family(int fd) {
+static sa_family_t get_socket_family(sockfd_t fd) {
     sockaddr_union_t addr;
     socklen_t addrlen = sizeof(addr);
 
@@ -574,7 +576,7 @@ static sa_family_t get_socket_family(int fd) {
  * at the kernel level, but is connected to an IPv4-mapped address, it returns
  * AF_INET.
  */
-static sa_family_t get_connection_family(int fd) {
+static sa_family_t get_connection_family(sockfd_t fd) {
     sockaddr_union_t addr;
     socklen_t addrlen = sizeof(addr);
 
@@ -694,7 +696,7 @@ static inline bool is_valid_timeout(avs_time_duration_t timeout) {
             && !avs_time_duration_less(timeout, AVS_TIME_DURATION_ZERO);
 }
 
-static short wait_until_ready(int sockfd, avs_time_duration_t timeout,
+static short wait_until_ready(sockfd_t sockfd, avs_time_duration_t timeout,
                               char in, char out, char err) {
 #ifdef HAVE_POLL
     struct pollfd p;
@@ -771,7 +773,7 @@ static short wait_until_ready(int sockfd, avs_time_duration_t timeout,
 #endif
 }
 
-static int connect_with_timeout(int sockfd,
+static int connect_with_timeout(sockfd_t sockfd,
                                 const sockaddr_endpoint_union_t *endpoint,
                                 char is_stream) {
     if (fcntl(sockfd, F_SETFL, O_NONBLOCK) == -1) {
@@ -972,7 +974,7 @@ resolve_addrinfo_for_socket(avs_net_socket_t *net_socket,
     }
 
     assert(family != AVS_NET_AF_UNSPEC);
-    if (net_socket->socket >= 0) {
+    if (net_socket->socket != INVALID_SOCKET) {
         avs_net_af_t socket_family =
                 get_avs_af(get_socket_family(net_socket->socket));
         if (socket_family == AVS_NET_AF_INET6) {
@@ -1019,12 +1021,13 @@ static int try_connect_open_socket(avs_net_socket_t *net_socket,
 
 static int try_connect(avs_net_socket_t *net_socket,
                        const sockaddr_endpoint_union_t *address) {
-    char socket_was_already_open = (net_socket->socket >= 0);
+    char socket_was_already_open = (net_socket->socket != INVALID_SOCKET);
     int retval = 0;
     if (!socket_was_already_open) {
         if ((net_socket->socket = socket(
-                address->sockaddr_ep.addr.sa_family,
-                _avs_net_get_socket_type(net_socket->type), 0)) < 0) {
+                        address->sockaddr_ep.addr.sa_family,
+                        _avs_net_get_socket_type(net_socket->type), 0))
+                == INVALID_SOCKET) {
             net_socket->error_code = errno;
             LOG(ERROR, "cannot create socket: %s", strerror(errno));
             retval = -1;
@@ -1036,9 +1039,11 @@ static int try_connect(avs_net_socket_t *net_socket,
     if (!retval) {
         retval = try_connect_open_socket(net_socket, address);
     }
-    if (retval && !socket_was_already_open && net_socket->socket >= 0) {
+    if (retval
+            && !socket_was_already_open
+            && net_socket->socket != INVALID_SOCKET) {
         close(net_socket->socket);
-        net_socket->socket = -1;
+        net_socket->socket = INVALID_SOCKET;
     }
     return retval;
 }
@@ -1050,7 +1055,7 @@ static int connect_net(avs_net_abstract_socket_t *net_socket_,
     avs_net_addrinfo_t *info = NULL;
     int result = 0;
 
-    if (net_socket->socket >= 0) {
+    if (net_socket->socket != INVALID_SOCKET) {
         if (net_socket->type != AVS_NET_UDP_SOCKET
                 || net_socket->state != AVS_NET_SOCKET_STATE_BOUND) {
             LOG(ERROR, "socket is already connected or bound");
@@ -1334,7 +1339,7 @@ static int create_listening_socket(avs_net_socket_t *net_socket,
     errno = 0;
     if ((net_socket->socket = socket(addr->sa_family,
                                      _avs_net_get_socket_type(net_socket->type),
-                                     0)) < 0) {
+                                     0)) == INVALID_SOCKET) {
         net_socket->error_code = errno;
         LOG(ERROR, "cannot create system socket: %s", strerror(errno));
         goto create_listening_socket_error;
@@ -1399,7 +1404,7 @@ static int bind_net(avs_net_abstract_socket_t *net_socket_,
                     const char *localaddr,
                     const char *port) {
     avs_net_socket_t *net_socket = (avs_net_socket_t *) net_socket_;
-    if (net_socket->socket >= 0) {
+    if (net_socket->socket != INVALID_SOCKET) {
         LOG(ERROR, "socket is already connected or bound");
         return -1;
     }
@@ -1434,7 +1439,7 @@ static int accept_net(avs_net_abstract_socket_t *server_net_socket_,
         return -1;
     }
 
-    if (new_net_socket->socket >= 0) {
+    if (new_net_socket->socket != INVALID_SOCKET) {
         LOG(ERROR, "socket is already connected or bound");
         server_net_socket->error_code = EISCONN;
         return -1;
@@ -1450,7 +1455,7 @@ static int accept_net(avs_net_abstract_socket_t *server_net_socket_,
     new_net_socket->socket = accept(server_net_socket->socket,
                                     &remote_address.addr,
                                     &remote_address_length);
-    if (new_net_socket->socket < 0) {
+    if (new_net_socket->socket == INVALID_SOCKET) {
         server_net_socket->error_code = errno;
         return -1;
     }
@@ -1511,7 +1516,7 @@ static int create_net_socket(avs_net_abstract_socket_t **socket,
 
     memcpy((void *) (intptr_t) &net_socket->operations,
            &VTABLE_PTR, sizeof(VTABLE_PTR));
-    net_socket->socket = -1;
+    net_socket->socket = INVALID_SOCKET;
     net_socket->type = socket_type;
     net_socket->recv_timeout = AVS_NET_SOCKET_DEFAULT_RECV_TIMEOUT;
 
@@ -1560,10 +1565,10 @@ int avs_net_local_address_for_target_host(const char *target_host,
         return -1;
     }
     while (!(result = avs_net_addrinfo_next(info, &address.api_ep))) {
-        int test_socket = socket(address.sockaddr_ep.addr.sa_family, SOCK_DGRAM,
-                                 0);
+        sockfd_t test_socket = socket(address.sockaddr_ep.addr.sa_family,
+                                      SOCK_DGRAM, 0);
 
-        if (test_socket >= 0) {
+        if (test_socket != INVALID_SOCKET) {
             if (!connect_with_timeout(test_socket, &address, 0)) {
                 sockaddr_union_t addr;
                 socklen_t addrlen = sizeof(addr);
@@ -1660,7 +1665,7 @@ static int get_mtu(avs_net_socket_t *net_socket, int *out_mtu) {
 }
 
 static int get_fallback_inner_mtu(avs_net_socket_t *socket) {
-    assert(socket->socket >= 0);
+    assert(socket->socket != INVALID_SOCKET);
 #ifdef WITH_IPV6
     if (get_connection_family(socket->socket) == AF_INET6) { /* IPv6 */
         return 1232; /* 1280 - 48 */
@@ -1826,12 +1831,12 @@ interface_name_end:
 #define _SIZEOF_ADDR_IFREQ sizeof
 #endif
     int retval = -1;
-    int null_socket;
+    sockfd_t null_socket;
     struct ifconf conf;
     size_t blen = 32 * sizeof(struct ifconf [1]);
     struct ifreq *reqs = NULL;
     struct ifreq *req;
-    if ((null_socket = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
+    if ((null_socket = socket(AF_INET, SOCK_DGRAM, 0)) == INVALID_SOCKET) {
         goto interface_name_end;
     }
 interface_name_retry:

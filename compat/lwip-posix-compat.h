@@ -135,5 +135,6 @@ char *strdup(const char *s);
 # include <sys/socket.h>
 #endif
 
+typedef int sockfd_t;
 
 #endif /* COMPAT_H */

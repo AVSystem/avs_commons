@@ -85,6 +85,7 @@
 # include <strings.h>
 # include <unistd.h>
 # include <time.h>
+typedef int sockfd_t;
 #else // POSIX_COMPAT_HEADER
 # include "@POSIX_COMPAT_HEADER@"
 // If POSIX socket APIs are implemented as macros (e.g. LwIP), redefining
@@ -128,5 +129,9 @@
 #  endif
 # endif // _AVS_NEED_POSIX_SOCKET
 #endif // POSIX_COMPAT_HEADER
+
+#ifndef INVALID_SOCKET
+# define INVALID_SOCKET (-1)
+#endif
 
 #endif /* CONFIG_POSIX_CONFIG_H */
