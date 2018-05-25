@@ -20,6 +20,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <avsystem/commons/defs.h>
 #include <avsystem/commons/buffer.h>
 
 #define MODULE_NAME avs_buffer

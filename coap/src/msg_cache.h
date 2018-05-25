@@ -27,6 +27,8 @@ VISIBILITY_PRIVATE_HEADER_BEGIN
 
 typedef struct coap_msg_cache coap_msg_cache_t;
 
+#define AVS_COAP_MSG_CACHE_DUPLICATE (-2)
+
 #ifdef WITH_AVS_COAP_MESSAGE_CACHE
 
 /**
@@ -51,7 +53,6 @@ coap_msg_cache_t *_avs_coap_msg_cache_create(size_t capacity);
  */
 void _avs_coap_msg_cache_release(coap_msg_cache_t **cache_ptr);
 
-#define AVS_COAP_MSG_CACHE_DUPLICATE -2
 /**
  * Adds a message to cache. Drops oldest cache entries if needed to fit
  * @p msg, even if they did not expire yet.

@@ -20,6 +20,7 @@
 
 #include <mbedtls/platform.h>
 #include <mbedtls/version.h>
+#include <mbedtls/x509_crt.h>
 
 #include <avsystem/commons/persistence.h>
 #include <avsystem/commons/stream.h>
@@ -34,10 +35,6 @@ VISIBILITY_SOURCE_BEGIN
 #if MBEDTLS_VERSION_NUMBER < 0x02030000
 typedef time_t mbedtls_time_t; // mbed TLS < 2.3 does not have mbedtls_time_t
 #endif
-
-#ifndef WITH_X509
-typedef void mbedtls_x509_crt;
-#endif // WITH_X509
 
 /**
  * Persistence format summary
