@@ -256,8 +256,8 @@ static void cache_free_bytes(coap_msg_cache_t *cache,
         assert(entry_valid(cache, entry));
 
         LOG(TRACE, "msg_cache: dropping msg (id = %u) to make room for"
-                   " a new one (size = %zu)",
-            entry_id(entry), bytes_required);
+                   " a new one (size = %lu)",
+            entry_id(entry), (unsigned long) bytes_required);
         cache_endpoint_del_ref(cache, entry->endpoint);
         bytes_free += entry_size(entry);
     }
@@ -378,9 +378,9 @@ void _avs_coap_msg_cache_debug_print(const coap_msg_cache_t *cache) {
         return;
     }
 
-    LOG(DEBUG, "msg_cache: %zu/%zu bytes used",
-        avs_buffer_data_size(cache->buffer),
-        avs_buffer_capacity(cache->buffer));
+    LOG(DEBUG, "msg_cache: %lu/%lu bytes used",
+        (unsigned long) avs_buffer_data_size(cache->buffer),
+        (unsigned long) avs_buffer_capacity(cache->buffer));
 
     AVS_LIST(endpoint_t) ep;
     AVS_LIST_FOREACH(ep, cache->endpoints) {
@@ -391,8 +391,8 @@ void _avs_coap_msg_cache_debug_print(const coap_msg_cache_t *cache) {
     for (const cache_entry_t *entry = entry_first(cache);
             entry_valid(cache, entry);
             entry = entry_next(entry)) {
-        LOG(DEBUG, "entry: %p, msg padding: %zu", (const void *) entry,
-            padding_bytes_after_msg(entry_msg(entry)));
+        LOG(DEBUG, "entry: %p, msg padding: %lu", (const void *) entry,
+            (unsigned long) padding_bytes_after_msg(entry_msg(entry)));
         LOG(DEBUG, "endpoint: %s:%s", entry->endpoint->addr,
             entry->endpoint->port);
         LOG(DEBUG, "expiration time: %" PRId64 ":%09" PRId32,

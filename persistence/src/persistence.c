@@ -122,8 +122,8 @@ static int persist_sized_buffer(avs_persistence_context_t *ctx,
     uint32_t size32 = (uint32_t) *size_ptr;
     if (size32 != *size_ptr) {
         LOG(ERROR,
-            "Element too big to persist (%zu is larger than %" PRIu32 ")",
-            *size_ptr, UINT32_MAX);
+            "Element too big to persist (%lu is larger than %" PRIu32 ")",
+            (unsigned long) *size_ptr, UINT32_MAX);
     }
     int retval = persist_u32(ctx, &size32);
     if (!retval && size32 > 0) {
