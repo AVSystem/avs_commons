@@ -33,8 +33,11 @@
 #include <avsystem/commons/errno.h>
 
 #ifdef ERROR
+// Windows headers are REALLY weird. winsock2.h includes windows.h, which
+// includes wingdi.h, even with WIN32_LEAN_AND_MEAN. And wingdi.h defines
+// a macro called ERROR, which conflicts with avs_log() usage.
 #undef ERROR
-#endif
+#endif // ERROR
 
 typedef u_short sa_family_t;
 
@@ -100,6 +103,16 @@ static inline int _avs_map_wsaerror(int wsaerror) {
         return wsaerror;
     }
 }
+
+// The following functions are intended to be called as:
+//
+//     _avs_wsa_set_errno(WSASomething(...));
+//
+// They forward the result of the WSA function and assign the translated value
+// of WSAGetLastError() to the standard errno variable.
+//
+// The three variants handle three possible return types of the WSA functions
+// we use.
 
 static inline int _avs_wsa_set_errno(int result) {
     errno = _avs_map_wsaerror(WSAGetLastError());

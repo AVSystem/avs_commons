@@ -16,6 +16,8 @@
 import re
 import sys
 
+# Verifies that the project is only using plain standard C99 headers.
+
 INCLUDE_WHITELIST = {
     r'assert\.h',
     # r'complex\.h',
