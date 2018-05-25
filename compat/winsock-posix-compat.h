@@ -17,12 +17,12 @@
 #ifndef COMPAT_H
 #define COMPAT_H
 
-# if defined(_WINDOWS_) || defined(_WIN32_WINNT)
-#  error "winsock-posix-compat.h needs to be included before windows.h or _mingw.h"
-# endif
+#if defined(_WINDOWS_) || defined(_WIN32_WINNT)
+#error "winsock-posix-compat.h needs to be included before windows.h or _mingw.h"
+#endif
 
-# define WIN32_LEAN_AND_MEAN
-# define _WIN32_WINNT 0x600 // minimum requirement: Windows NT 6.0 a.k.a. Vista
+#define WIN32_LEAN_AND_MEAN
+#define _WIN32_WINNT 0x600 // minimum requirement: Windows NT 6.0 a.k.a. Vista
 
 #include <winsock2.h>
 #include <ws2tcpip.h>
