@@ -19,6 +19,8 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include <stdbool.h>
+#include <assert.h>
 
 #ifdef	__cplusplus
 extern "C" {
@@ -308,5 +310,11 @@ struct AvsCallWithCast__ {
 #define AVS_MIN(a, b) ((a) < (b) ? (a) : (b))
 #define AVS_MAX(a, b) ((a) < (b) ? (b) : (a))
 #define AVS_ARRAY_SIZE(arr) (sizeof(arr) / sizeof(arr[0]))
+
+/*
+ * Definition of an assert with hard-coded string literal message that does not
+ * trigger compiler warnings.
+ */
+#define AVS_ASSERT(cond, msg) assert((cond) && (bool) "" msg)
 
 #endif	/* AVS_COMMONS_DEFS_H */

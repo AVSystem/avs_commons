@@ -89,8 +89,8 @@ typedef struct avs_coap_aligned_msg_buffer avs_coap_aligned_msg_buffer_t;
  */
 static inline avs_coap_aligned_msg_buffer_t *
 avs_coap_ensure_aligned_buffer(void *buffer) {
-    assert((uintptr_t)buffer % AVS_ALIGNOF(avs_coap_msg_t) == 0
-           && "the buffer MUST have the same alignment as avs_coap_msg_t");
+    AVS_ASSERT((uintptr_t)buffer % AVS_ALIGNOF(avs_coap_msg_t) == 0,
+               "the buffer MUST have the same alignment as avs_coap_msg_t");
 
     return (avs_coap_aligned_msg_buffer_t *)buffer;
 }
@@ -183,7 +183,7 @@ avs_coap_msg_build_without_payload(avs_coap_aligned_msg_buffer_t *buffer,
                                    const avs_coap_msg_info_t *info) {
     avs_coap_msg_builder_t builder;
     if (avs_coap_msg_builder_init(&builder, buffer, buffer_size, info)) {
-        assert(0 && "could not initialize msg builder");
+        AVS_ASSERT(0, "could not initialize msg builder");
         return NULL;
     }
 

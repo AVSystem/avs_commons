@@ -101,8 +101,8 @@ avs_coap_block_builder_build(avs_coap_block_builder_t *builder,
                              size_t buffer_size) {
     assert(buffer_size
            >= avs_coap_msg_info_get_packet_storage_size(info, block_size));
-    assert(block_size < builder->payload_capacity
-           && "payload buffer MUST be able to hold more than a single block");
+    AVS_ASSERT(block_size < builder->payload_capacity,
+               "payload buffer MUST be able to hold more than a single block");
 
 
     if (builder->read_offset == builder->write_offset) {
@@ -112,7 +112,7 @@ avs_coap_block_builder_build(avs_coap_block_builder_t *builder,
 
     avs_coap_msg_builder_t msg_builder;
     if (avs_coap_msg_builder_init(&msg_builder, buffer, buffer_size, info)) {
-        assert(0 && "Failed to init msg_builder");
+        AVS_ASSERT(0, "Failed to init msg_builder");
         return NULL;
     }
 
@@ -132,7 +132,7 @@ avs_coap_block_builder_build(avs_coap_block_builder_t *builder,
             &msg_builder, payload_read_ptr(builder), bytes_to_write);
 
     if (bytes_to_write != bytes_written) {
-        assert(0 && "Could not flush the payload");
+        AVS_ASSERT(0, "Could not flush the payload");
         return NULL;
     }
 
