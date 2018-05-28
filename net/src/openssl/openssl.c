@@ -34,6 +34,7 @@
 #include <avsystem/commons/errno.h>
 #include <avsystem/commons/time.h>
 
+#include "../global.h"
 #include "../net_impl.h"
 
 #include "common.h"
@@ -929,11 +930,11 @@ static int cleanup_ssl(avs_net_abstract_socket_t **socket_) {
     return 0;
 }
 
-static void cleanup_ssl_global(void) {
+void _avs_net_cleanup_global_ssl_state(void) {
     // do nothing
 }
 
-static int initialize_ssl_global(void) {
+int _avs_net_initialize_global_ssl_state(void) {
     LOG(TRACE, "OpenSSL initialization");
 
     SSL_library_init();

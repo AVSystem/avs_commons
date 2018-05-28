@@ -16,6 +16,8 @@
 import re
 import sys
 
+# Verifies that the project is only using plain standard C99 headers.
+
 INCLUDE_WHITELIST = {
     r'assert\.h',
     # r'complex\.h',
@@ -47,11 +49,11 @@ INCLUDE_WHITELIST = {
 }
 
 CONDITIONAL_WHITELIST = {
+    (r'global', r'signal\.h'),
+    (r'global', r'stdatomic\.h'),
     (r'mbedtls', r'mbedtls/.*'),
     (r'openssl', r'openssl/.*'),
     (r'openssl', r'sys/time\.h'),
-    (r'ssl_common', r'signal\.h'),
-    (r'ssl_common', r'stdatomic\.h'),
     (r'tinydtls', r'tinydtls/.*'),
     (r'zlib', r'zlib\.h')
 }

@@ -287,4 +287,8 @@ int select(int nfds, fd_set *readfds, fd_set *writefds,
 # include <sys/socket.h>
 #endif
 
+// Some socket implementations (e.g. Winsock) are mostly POSIX-like, but don't
+// use int as socket type. That's why we define this additional special type.
+typedef int sockfd_t;
+
 #endif /* COMPAT_H */

@@ -41,6 +41,7 @@
 
 #include <avsystem/commons/errno.h>
 
+#include "../global.h"
 #include "../net_impl.h"
 #ifdef WITH_X509
 #include "data_loader.h"
@@ -128,12 +129,12 @@ static struct {
     mbedtls_ctr_drbg_context rng;
 } AVS_SSL_GLOBAL;
 
-static void cleanup_ssl_global(void) {
+void _avs_net_cleanup_global_ssl_state(void) {
     mbedtls_ctr_drbg_free(&AVS_SSL_GLOBAL.rng);
     mbedtls_entropy_free(&AVS_SSL_GLOBAL.entropy);
 }
 
-static int initialize_ssl_global(void) {
+int _avs_net_initialize_global_ssl_state(void) {
     mbedtls_entropy_init(&AVS_SSL_GLOBAL.entropy);
     mbedtls_ctr_drbg_init(&AVS_SSL_GLOBAL.rng);
     int result = mbedtls_ctr_drbg_seed(&AVS_SSL_GLOBAL.rng,
@@ -141,7 +142,7 @@ static int initialize_ssl_global(void) {
                                        &AVS_SSL_GLOBAL.entropy, NULL, 0);
     if (result) {
         LOG(ERROR, "mbedtls_ctr_drbg_seed() failed: %d", result);
-        cleanup_ssl_global();
+        _avs_net_cleanup_global_ssl_state();
     }
     return result;
 }
@@ -663,8 +664,8 @@ static int send_ssl(avs_net_abstract_socket_t *socket_,
     }
 
     if (bytes_sent < buffer_length) {
-        LOG(ERROR, "send failed (%zu/%zu): %d",
-            bytes_sent, buffer_length, result);
+        LOG(ERROR, "send failed (%lu/%lu): %d",
+            (unsigned long) bytes_sent, (unsigned long) buffer_length, result);
         update_send_or_recv_error_code(socket, result);
         return -1;
     }

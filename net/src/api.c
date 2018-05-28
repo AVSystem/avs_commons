@@ -25,6 +25,7 @@
 #include <avsystem/commons/socket.h>
 #include <avsystem/commons/socket_v_table.h>
 
+#include "global.h"
 #include "net_impl.h"
 #include "api.h"
 
@@ -311,6 +312,11 @@ get_constructor_for_socket_type(avs_net_socket_type_t type) {
 static int create_bare_socket(avs_net_abstract_socket_t **socket,
                               avs_net_socket_type_t type,
                               const void *configuration) {
+    if (_avs_net_ensure_global_state()) {
+        LOG(ERROR, "avs_net global state initialization error");
+        return -1;
+    }
+
     socket_constructor_t constructor = get_constructor_for_socket_type(type);
 
     avs_net_socket_cleanup(socket);
