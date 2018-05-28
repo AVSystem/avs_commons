@@ -649,44 +649,39 @@ static int configure_socket(avs_net_socket_t *net_socket) {
 #else // IP_TOS
         net_socket->error_code = EINVAL;
         return -1;
-#endif// IP_TOS
+#endif // IP_TOS
     }
     if (net_socket->configuration.transparent) {
         int value = 1;
+        int retval = -1;
         errno = EINVAL;
         switch (get_socket_family(net_socket->socket)) {
-#ifdef WITH_IPV4
+#if defined(WITH_IPV4) && defined(IP_TRANSPARENT)
         case AF_INET:
-#ifdef IP_TRANSPARENT
-            if (setsockopt(net_socket->socket, SOL_IP, IP_TRANSPARENT,
-                           &value, sizeof(value)))
-#endif
-            {
-                net_socket->error_code = errno;
-                return -1;
-            }
+            retval = setsockopt(net_socket->socket, SOL_IP, IP_TRANSPARENT,
+                                &value, sizeof(value));
             break;
-#endif /* WITH_IPV4 */
+#endif /* defined(WITH_IPV4) && defined(IP_TRANSPARENT) */
 
-#ifdef WITH_IPV6
+#if defined(WITH_IPV6) && defined(IPV6_TRANSPARENT)
         case AF_INET6:
-#ifdef IPV6_TRANSPARENT
-            if (setsockopt(net_socket->socket, SOL_IPV6, IPV6_TRANSPARENT,
-                           &value, sizeof(value)))
-#endif
-            {
-                net_socket->error_code = errno;
-                return -1;
-            }
+            retval = setsockopt(net_socket->socket, SOL_IPV6, IPV6_TRANSPARENT,
+                                &value, sizeof(value));
             break;
-#endif /* WITH_IPV6 */
+#endif /* defined(WITH_IPV6) && defined(IPV6_TRANSPARENT) */
 
         default:
             (void) value;
-            net_socket->error_code = EINVAL;
+            errno = EINVAL;
+            break;
+        }
+
+        if (retval) {
+            net_socket->error_code = errno;
             return -1;
         }
     }
+
     net_socket->error_code = 0;
     return 0;
 }

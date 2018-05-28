@@ -842,6 +842,7 @@ static int configure_ssl_psk(ssl_socket_t *socket,
 static int initialize_ssl_socket(ssl_socket_t *socket,
                                  avs_net_socket_type_t backend_type,
                                  const avs_net_ssl_configuration_t *configuration) {
+    int retval = -1;
     *(const avs_net_socket_v_table_t **) (intptr_t) &socket->operations =
             &ssl_vtable;
 
@@ -851,24 +852,16 @@ static int initialize_ssl_socket(ssl_socket_t *socket,
     socket->security_mode = configuration->security.mode;
     switch (configuration->security.mode) {
     case AVS_NET_SECURITY_PSK:
-        if (configure_ssl_psk(socket, &configuration->security.data.psk)) {
-            return -1;
-        }
+        retval = configure_ssl_psk(socket, &configuration->security.data.psk);
         break;
     case AVS_NET_SECURITY_CERTIFICATE:
-        if (configure_ssl_certs(&socket->security.cert,
-                                &configuration->security.data.cert)) {
-            return -1;
-        }
+        retval = configure_ssl_certs(&socket->security.cert,
+                                     &configuration->security.data.cert);
         break;
     default:
         assert(0 && "invalid enum value");
-        return -1;
+        break;
     }
 
-    if (configure_ssl(socket, configuration)) {
-        return -1;
-    }
-
-    return 0;
+    return retval ? retval : configure_ssl(socket, configuration);
 }
