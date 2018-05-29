@@ -72,6 +72,14 @@
 
 #cmakedefine POSIX_COMPAT_HEADER
 #ifndef POSIX_COMPAT_HEADER
+
+// On macOS, Apple's headers enable "strict POSIX" mode whenever _POSIX_C_SOURCE
+// is defined, i.e. disables a lot of APIs; it doesn't even properly recognize
+// the 200809L value, so it disables a lot of APIs that actually are in POSIX...
+# if !defined(_POSIX_C_SOURCE) && !defined(__APPLE__)
+#  define _POSIX_C_SOURCE 200809L
+# endif
+
 # include <sys/select.h>
 # include <sys/socket.h>
 # include <sys/time.h>
