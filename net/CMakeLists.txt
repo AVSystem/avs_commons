@@ -14,9 +14,8 @@
 
 set(POSIX_AVS_SOCKET_DEFAULT ON)
 set(POSIX_COMPAT_HEADER_DEFAULT "")
-if(WIN32)
-    set(POSIX_COMPAT_HEADER_DEFAULT "${CMAKE_CURRENT_SOURCE_DIR}/../compat/winsock-posix-compat.h")
-elseif(NOT UNIX)
+
+if(NOT WIN32 AND NOT UNIX)
     set(POSIX_AVS_SOCKET_DEFAULT OFF)
 endif()
 
@@ -61,7 +60,6 @@ set(PRIVATE_HEADERS
     src/net_impl.h)
 
 if(WITH_POSIX_AVS_SOCKET)
-    set(POSIX_COMPAT_HEADER "${POSIX_COMPAT_HEADER_DEFAULT}" CACHE STRING "POSIX compatibility header path, if required")
     include_directories("${CMAKE_CURRENT_BINARY_DIR}/compat/posix")
     set(SOURCES ${SOURCES}
         compat/posix/compat_addrinfo.c

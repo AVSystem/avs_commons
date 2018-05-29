@@ -237,6 +237,13 @@ if(WITH_CXX_TESTS)
     enable_language(CXX)
 endif()
 
+set(POSIX_COMPAT_HEADER_DEFAULT "")
+if(WIN32)
+    set(POSIX_COMPAT_HEADER_DEFAULT "${CMAKE_CURRENT_SOURCE_DIR}/compat/winsock-posix-compat.h")
+endif()
+
+set(POSIX_COMPAT_HEADER ${POSIX_COMPAT_HEADER_DEFAULT} CACHE STRING "POSIX compatibility header path, if required")
+
 ################################################################################
 
 option(WITH_EXTRA_WARNINGS "Enable extra compilation warnings" OFF)
