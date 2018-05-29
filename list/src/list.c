@@ -191,9 +191,10 @@ void *avs_list_simple_clone__(void *list, size_t elem_size) {
     return retval;
 }
 
-static inline int is_list_sorted(void *list,
-                                 avs_list_comparator_func_t comparator,
-                                 size_t element_size) {
+#ifndef NDEBUG
+static int is_list_sorted(void *list,
+                          avs_list_comparator_func_t comparator,
+                          size_t element_size) {
     AVS_LIST(void) curr = list;
     AVS_LIST(void) next = list ? AVS_LIST_NEXT(list) : NULL;
     while (curr && next) {
@@ -205,6 +206,7 @@ static inline int is_list_sorted(void *list,
     }
     return 1;
 }
+#endif // NDEBUG
 
 void **avs_list_assert_sorted_ptr__(void **listptr,
                                     avs_list_comparator_func_t comparator,
