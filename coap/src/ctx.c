@@ -14,11 +14,7 @@
  * limitations under the License.
  */
 
-#ifdef AVS_UNIT_TESTING
-# include <avs_commons_posix_config.h>
-#else
-# include <avs_commons_config.h>
-#endif
+#include <avs_commons_config.h>
 
 #include <avsystem/commons/coap/ctx.h>
 #include <avsystem/commons/coap/msg_builder.h>
@@ -383,7 +379,3 @@ void avs_coap_ctx_send_service_unavailable(avs_coap_ctx_t *ctx,
     send_response(ctx, socket, request, AVS_COAP_CODE_SERVICE_UNAVAILABLE,
                   &s_to_retry_after);
 }
-
-#ifdef AVS_UNIT_TESTING
-#include "test/ctx.c"
-#endif // AVS_UNIT_TESTING

@@ -14,12 +14,16 @@
  * limitations under the License.
  */
 
+#include <avs_commons_posix_config.h>
+
 #include <avsystem/commons/unit/test.h>
 #include <avsystem/commons/socket.h>
 
 #include <openssl/rand.h>
 
 #include <unistd.h>
+
+#include "../data_loader.h"
 
 __attribute__((constructor)) static void global_ssl_init(void) {
     SSL_library_init();

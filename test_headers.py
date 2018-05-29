@@ -65,10 +65,7 @@ if __name__ == '__main__':
 
     filename = sys.argv[1]
 
-    # TODO: These files include avs_commons_posix_config.h conditionally, only for test
-    # purposes. We somehow need to detect it before processing the file.
-    TODO_IGNORED = ('coap/src/ctx.c', 'coap/src/msg_cache.c', 'net/src/openssl/data_loader.c', 'net/src/mbedtls/data_loader.c')
-    if any(w in filename for w in ('/test/', '/tests/', '/compat/', '/config/', '/unit/') + TODO_IGNORED):
+    if any(w in filename for w in ('/test/', '/tests/', '/compat/', '/config/', '/unit/')):
         sys.exit(0)
 
     with open(filename, 'r') as fp:

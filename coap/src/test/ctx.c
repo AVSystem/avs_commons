@@ -14,6 +14,11 @@
  * limitations under the License.
  */
 
+#include <avs_commons_posix_config.h>
+
+#include <avsystem/commons/coap/ctx.h>
+
+#include <errno.h>
 #include <signal.h>
 
 #include <poll.h>
@@ -36,6 +41,8 @@
 #include <avsystem/commons/coap/ctx.h>
 
 #include "utils.h"
+
+#include "../coap_log.h"
 
 #define TEST_PORT_DTLS 4321
 #define TEST_PORT_UDP 4322

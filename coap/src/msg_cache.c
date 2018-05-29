@@ -14,11 +14,7 @@
  * limitations under the License.
  */
 
-#ifdef AVS_UNIT_TESTING
-# include <avs_commons_posix_config.h>
-#else
-# include <avs_commons_config.h>
-#endif
+#include <avs_commons_config.h>
 
 #include <avsystem/commons/buffer.h>
 #include <avsystem/commons/defs.h>
@@ -161,7 +157,12 @@ static size_t padding_bytes_after_msg(const avs_coap_msg_t *msg) {
  *         <c>_avs_coap_msg_cache_overhead(msg)
  *         + msg->length + offsetof(avs_coap_msg_t, content)</c>
  */
-static inline size_t cache_msg_overhead(const avs_coap_msg_t *msg) {
+#ifdef AVS_UNIT_TESTING
+size_t cache_msg_overhead(const avs_coap_msg_t *msg);
+#else
+static inline
+#endif // AVS_UNIT_TESTING
+size_t cache_msg_overhead(const avs_coap_msg_t *msg) {
     return offsetof(cache_entry_t, data) + padding_bytes_after_msg(msg);
 }
 
@@ -405,7 +406,3 @@ void _avs_coap_msg_cache_debug_print(const coap_msg_cache_t *cache) {
         avs_coap_msg_debug_print(entry_msg(entry));
     }
 }
-
-#ifdef AVS_UNIT_TESTING
-#include "test/msg_cache.c"
-#endif // AVS_UNIT_TESTING

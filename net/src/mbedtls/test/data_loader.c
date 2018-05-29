@@ -14,12 +14,16 @@
  * limitations under the License.
  */
 
+#include <avs_commons_posix_config.h>
+
 #include <avsystem/commons/unit/test.h>
 #include <avsystem/commons/socket.h>
 
 #include <unistd.h>
 
 #include <sys/stat.h>
+
+#include "../data_loader.h"
 
 AVS_UNIT_TEST(backend_mbedtls, chain_loading_from_file) {
     mbedtls_x509_crt *chain = NULL;

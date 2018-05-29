@@ -29,11 +29,14 @@ set(SOURCES
     src/global.c
     src/url.c)
 
+set(TEST_SOURCES)
+
 if(WITH_OPENSSL)
     set(SOURCES ${SOURCES} src/openssl/openssl.c)
     if(WITH_X509)
         set(SOURCES ${SOURCES}
             src/openssl/data_loader.c)
+        list(APPEND TEST_SOURCES src/openssl/test/data_loader.c)
     endif()
 elseif(WITH_MBEDTLS)
     set(SOURCES ${SOURCES}
@@ -46,6 +49,7 @@ elseif(WITH_MBEDTLS)
     if(WITH_X509)
         set(SOURCES ${SOURCES}
             src/mbedtls/data_loader.c)
+        list(APPEND TEST_SOURCES src/mbedtls/test/data_loader.c)
     endif()
 elseif(WITH_TINYDTLS)
     set(SOURCES ${SOURCES} src/tinydtls/tinydtls.c)
@@ -113,7 +117,7 @@ if(WITH_MBEDTLS AND WITH_TLS_SESSION_PERSISTENCE)
                         ../rbtree/include_public)
 endif()
 
-add_avs_test(avs_net ${ALL_SOURCES})
+add_avs_test(avs_net ${ALL_SOURCES} ${TEST_SOURCES})
 avs_install_export(avs_net net)
 avs_propagate_exports()
 install(DIRECTORY include_public/

@@ -14,13 +14,18 @@
  * limitations under the License.
  */
 
+#include <avs_commons_posix_config.h>
+
 #include <time.h>
 
 #include <avsystem/commons/defs.h>
 #include <avsystem/commons/unit/test.h>
 
 #include "../msg_cache.h"
+#include "../coap_log.h"
 #include "utils.h"
+
+size_t cache_msg_overhead(const avs_coap_msg_t *msg);
 
 /* minimum size of a valid avs_coap_msg_t */
 #define MIN_MSG_OBJECT_SIZE \

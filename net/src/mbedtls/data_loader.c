@@ -14,11 +14,7 @@
  * limitations under the License.
  */
 
-#ifdef AVS_UNIT_TESTING
-# include <avs_commons_posix_config.h>
-#else
-# include <avs_commons_config.h>
-#endif
+#include <avs_commons_config.h>
 
 #define MODULE_NAME avs_net_data_loader
 #include <x_log_config.h>
@@ -192,7 +188,3 @@ int _avs_net_mbedtls_load_client_key(mbedtls_pk_context **client_key,
     }
     return 0;
 }
-
-#ifdef AVS_UNIT_TESTING
-#include "test/data_loader.c"
-#endif
