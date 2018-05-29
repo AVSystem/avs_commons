@@ -316,6 +316,11 @@ struct AvsCallWithCast__ {
  * trigger compiler warnings.
  */
 #define AVS_ASSERT(cond, msg) assert((cond) && (bool) "" msg)
-#define AVS_ASSERT_FAIL(msg) AVS_ASSERT(0, msg)
+
+/*
+ * Marks an execution path as breaking some invariants, which should never
+ * happen in correct code.
+ */
+#define AVS_UNREACHABLE(msg) AVS_ASSERT(0, msg)
 
 #endif	/* AVS_COMMONS_DEFS_H */

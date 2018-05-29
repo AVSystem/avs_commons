@@ -280,7 +280,7 @@ static int configure_ssl(ssl_socket_t *socket,
         }
         break;
     default:
-        AVS_ASSERT_FAIL("invalid enum value");
+        AVS_UNREACHABLE("invalid enum value");
         return -1;
     }
 

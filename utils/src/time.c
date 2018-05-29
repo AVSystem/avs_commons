@@ -244,7 +244,7 @@ static int unit_conv_backward_int64_t_double(int64_t *output,
         tmp = input / (double) conv->factor;
         break;
     default:
-        AVS_ASSERT_FAIL("Invalid unit_conv operation");
+        AVS_UNREACHABLE("Invalid unit_conv operation");
     }
     if (!double_is_int64(tmp)) {
         return -1;

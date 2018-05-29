@@ -183,7 +183,7 @@ avs_coap_msg_build_without_payload(avs_coap_aligned_msg_buffer_t *buffer,
                                    const avs_coap_msg_info_t *info) {
     avs_coap_msg_builder_t builder;
     if (avs_coap_msg_builder_init(&builder, buffer, buffer_size, info)) {
-        AVS_ASSERT_FAIL("could not initialize msg builder");
+        AVS_UNREACHABLE("could not initialize msg builder");
         return NULL;
     }
 

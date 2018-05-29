@@ -177,7 +177,7 @@ int _avs_net_openssl_load_ca_certs(SSL_CTX *ctx,
         return load_ca_cert_from_buffer(ctx, info->desc.info.buffer.buffer,
                                         info->desc.info.buffer.buffer_size);
     default:
-        AVS_ASSERT_FAIL("invalid data source");
+        AVS_UNREACHABLE("invalid data source");
         return -1;
     }
     return 0;
@@ -231,7 +231,7 @@ int _avs_net_openssl_load_client_cert(SSL_CTX *ctx,
         return load_client_cert_from_buffer(ctx, info->desc.info.buffer.buffer,
                                             info->desc.info.buffer.buffer_size);
     default:
-        AVS_ASSERT_FAIL("invalid data source");
+        AVS_UNREACHABLE("invalid data source");
         return -1;
     }
     return 0;
@@ -318,7 +318,7 @@ int _avs_net_openssl_load_client_key(SSL_CTX *ctx,
                                            info->desc.info.buffer.buffer_size,
                                            info->desc.info.buffer.password);
     default:
-        AVS_ASSERT_FAIL("invalid data source");
+        AVS_UNREACHABLE("invalid data source");
         return -1;
     }
     return 0;

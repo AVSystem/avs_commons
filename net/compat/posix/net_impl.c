@@ -952,7 +952,7 @@ static int get_requested_family(avs_net_socket_t *net_socket,
             return -1;
         }
     }
-    AVS_ASSERT_FAIL("Invalid value of preferred_family_mode");
+    AVS_UNREACHABLE("Invalid value of preferred_family_mode");
     return -1;
 }
 

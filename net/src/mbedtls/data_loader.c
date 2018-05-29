@@ -103,7 +103,7 @@ int _avs_net_mbedtls_load_ca_certs(mbedtls_x509_crt **out,
         return append_cert_from_buffer(*out, info->desc.info.buffer.buffer,
                                        info->desc.info.buffer.buffer_size);
     default:
-        AVS_ASSERT_FAIL("invalid data source");
+        AVS_UNREACHABLE("invalid data source");
         return -1;
     }
     return 0;
@@ -129,7 +129,7 @@ int _avs_net_mbedtls_load_client_cert(mbedtls_x509_crt **out,
         return append_cert_from_buffer(*out, info->desc.info.buffer.buffer,
                                        info->desc.info.buffer.buffer_size);
     default:
-        AVS_ASSERT_FAIL("invalid data source");
+        AVS_UNREACHABLE("invalid data source");
         return -1;
     }
     return 0;
@@ -183,7 +183,7 @@ int _avs_net_mbedtls_load_client_key(mbedtls_pk_context **client_key,
                                             info->desc.info.buffer.buffer_size,
                                             info->desc.info.buffer.password);
     default:
-        AVS_ASSERT_FAIL("invalid data source");
+        AVS_UNREACHABLE("invalid data source");
         return -1;
     }
     return 0;
