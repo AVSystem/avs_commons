@@ -111,7 +111,7 @@ AVS_UNIT_TEST(backend_openssl, chain_loading_from_null) {
         AVS_UNIT_ASSERT_FAILED(_avs_net_openssl_load_ca_certs(ctx, &buffer));
         const avs_net_trusted_cert_info_t path =
                 avs_net_trusted_cert_info_from_path(NULL);
-        AVS_UNIT_ASSERT_FAILED(_avs_net_openssl_load_ca_certs(ctx, &buffer));
+        AVS_UNIT_ASSERT_FAILED(_avs_net_openssl_load_ca_certs(ctx, &path));
     }
 }
 
