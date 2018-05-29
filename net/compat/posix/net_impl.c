@@ -684,10 +684,12 @@ static int configure_socket(avs_net_socket_t *net_socket) {
     return 0;
 }
 
+#ifndef HAVE_POLL
 static inline bool is_valid_timeout(avs_time_duration_t timeout) {
     return avs_time_duration_valid(timeout)
             && !avs_time_duration_less(timeout, AVS_TIME_DURATION_ZERO);
 }
+#endif // !HAVE_POLL
 
 static short wait_until_ready(sockfd_t sockfd, avs_time_duration_t timeout,
                               char in, char out, char err) {
