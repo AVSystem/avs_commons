@@ -50,8 +50,11 @@ static bool atomic_flag_test_and_set(volatile bool *ptr) {
 
 static int initialize_global(void) {
     int result = _avs_net_initialize_global_compat_state();
-    if (!result && (result = _avs_net_initialize_global_ssl_state())) {
-        _avs_net_cleanup_global_compat_state();
+    if (!result) {
+        result = _avs_net_initialize_global_ssl_state(); 
+        if (result) {
+            _avs_net_cleanup_global_compat_state();
+        }
     }
     return result;
 }
