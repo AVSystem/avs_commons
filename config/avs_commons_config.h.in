@@ -47,6 +47,7 @@
 // both ends, but it was only a matter of luck that toolchain's FD_SET
 // effectively did the same thing as LwIP's FD_SET. In any case -- we want to
 // avoid this madness in the future.
+#cmakedefine POSIX_COMPAT_HEADER
 #if (defined(__STRICT_ANSI__) || defined(_ISOC99_SOURCE)) \
         && !defined(_POSIX_C_SOURCE) && !defined(__APPLE__) \
         && !defined(POSIX_COMPAT_HEADER)
