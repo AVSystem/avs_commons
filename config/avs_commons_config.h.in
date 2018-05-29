@@ -14,47 +14,6 @@
  * limitations under the License.
  */
 
-#if !defined(_AVS_NEED_POSIX_API) && defined(AVS_UNIT_TESTING)
-#define _AVS_NEED_POSIX_API
-#endif
-
-#ifdef _AVS_NEED_POSIX_API
-// by default we try to compile in strict ISO C99 mode;
-// if it's enabled, then declare _POSIX_C_SOURCE to enable POSIX APIs;
-// unless on macOS - Apple's headers do not support strict ISO C99 mode in the
-// way glibc and BSD libc do, and _POSIX_C_SOURCE only enables "strict POSIX"
-// mode, i.e. disables a lot of APIs; it doesn't even properly recognize the
-// 200809L value, so it disables a lot of APIs that actually are in POSIX...
-//
-// Also, there's a need to check against POSIX_COMPAT_HEADER, but the rationale
-// behind it is a bit more convoluted. Let's start with the fact, that we use
-// posix compat header on non-POSIX platforms. Some of the toolchains (e.g.
-// SW4STM32) have half-baked POSIX support in their headers, which we don't
-// really need. Since generally "standard" headers are crazy and jagged with
-// ifdefs every two lines or so, it happened that whenever we included
-// <sys/time.h> we also automatically had <sys/select.h> included, because of
-// reasons and mainly because of _POSIX_C_SOURCE we are about to prevent from
-// being defined.
-//
-// The automatic inclusion of <sys/select.h> happened to be a problem, because
-// this header defines its own FD_SET (and similar), and we depend on FD_SET
-// (etc.) in net_impl.c (because we sometimes need select()). But the select()
-// we care about is not supposed to come from the toolchain, but from (e.g.)
-// LwIP.
-//
-// The fun part is that before adding this check, everything seemed to work just
-// fine. In fact, manual inspection shown deep similarities between FD_SET from
-// both ends, but it was only a matter of luck that toolchain's FD_SET
-// effectively did the same thing as LwIP's FD_SET. In any case -- we want to
-// avoid this madness in the future.
-#cmakedefine POSIX_COMPAT_HEADER
-#if (defined(__STRICT_ANSI__) || defined(_ISOC99_SOURCE)) \
-        && !defined(_POSIX_C_SOURCE) && !defined(__APPLE__) \
-        && !defined(POSIX_COMPAT_HEADER)
-#define _POSIX_C_SOURCE 200809L
-#endif
-#endif // _AVS_NEED_POSIX_API
-
 #cmakedefine AVS_COMMONS_BIG_ENDIAN
 
 #cmakedefine HAVE_GETIFADDRS

@@ -14,7 +14,11 @@
  * limitations under the License.
  */
 
-#include <avs_commons_config.h>
+#ifdef AVS_UNIT_TESTING
+# include <avs_commons_posix_config.h>
+#else
+# include <avs_commons_config.h>
+#endif
 
 #define MODULE_NAME avs_net_data_loader
 #include <x_log_config.h>

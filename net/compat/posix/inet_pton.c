@@ -34,9 +34,6 @@
  * WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#define _AVS_NEED_POSIX_API
-
-#include <avs_commons_config.h>
 #include <avs_commons_posix_config.h>
 
 #include <stdint.h>

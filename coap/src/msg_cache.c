@@ -14,7 +14,11 @@
  * limitations under the License.
  */
 
-#include <avs_commons_config.h>
+#ifdef AVS_UNIT_TESTING
+# include <avs_commons_posix_config.h>
+#else
+# include <avs_commons_config.h>
+#endif
 
 #include <avsystem/commons/buffer.h>
 #include <avsystem/commons/defs.h>

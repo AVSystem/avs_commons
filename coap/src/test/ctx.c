@@ -14,10 +14,6 @@
  * limitations under the License.
  */
 
-#define _AVS_NEED_POSIX_API
-
-#include <avs_commons_config.h>
-
 #include <signal.h>
 
 #include <poll.h>
