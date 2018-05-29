@@ -12,11 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set(POSIX_AVS_SOCKET_DEFAULT ON)
-set(POSIX_COMPAT_HEADER_DEFAULT "")
-
-if(NOT WIN32 AND NOT UNIX)
-    set(POSIX_AVS_SOCKET_DEFAULT OFF)
+set(POSIX_AVS_SOCKET_DEFAULT OFF)
+if(WIN32 OR UNIX OR POSIX_COMPAT_HEADER)
+    set(POSIX_AVS_SOCKET_DEFAULT ON)
 endif()
 
 option(WITH_POSIX_AVS_SOCKET "Enable avs_socket implementation based on POSIX socket API" "${POSIX_AVS_SOCKET_DEFAULT}")
