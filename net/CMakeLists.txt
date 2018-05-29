@@ -12,12 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set(POSIX_AVS_SOCKET_DEFAULT ON)
-set(POSIX_COMPAT_HEADER_DEFAULT "")
-if(WIN32)
-    set(POSIX_COMPAT_HEADER_DEFAULT "${CMAKE_CURRENT_SOURCE_DIR}/../compat/winsock-posix-compat.h")
-elseif(NOT UNIX)
-    set(POSIX_AVS_SOCKET_DEFAULT OFF)
+set(POSIX_AVS_SOCKET_DEFAULT OFF)
+if(WIN32 OR UNIX OR POSIX_COMPAT_HEADER)
+    set(POSIX_AVS_SOCKET_DEFAULT ON)
 endif()
 
 option(WITH_POSIX_AVS_SOCKET "Enable avs_socket implementation based on POSIX socket API" "${POSIX_AVS_SOCKET_DEFAULT}")
@@ -29,11 +26,14 @@ set(SOURCES
     src/global.c
     src/url.c)
 
+set(TEST_SOURCES)
+
 if(WITH_OPENSSL)
     set(SOURCES ${SOURCES} src/openssl/openssl.c)
     if(WITH_X509)
         set(SOURCES ${SOURCES}
             src/openssl/data_loader.c)
+        list(APPEND TEST_SOURCES src/openssl/test/data_loader.c)
     endif()
 elseif(WITH_MBEDTLS)
     set(SOURCES ${SOURCES}
@@ -46,6 +46,7 @@ elseif(WITH_MBEDTLS)
     if(WITH_X509)
         set(SOURCES ${SOURCES}
             src/mbedtls/data_loader.c)
+        list(APPEND TEST_SOURCES src/mbedtls/test/data_loader.c)
     endif()
 elseif(WITH_TINYDTLS)
     set(SOURCES ${SOURCES} src/tinydtls/tinydtls.c)
@@ -57,9 +58,6 @@ set(PRIVATE_HEADERS
     src/net_impl.h)
 
 if(WITH_POSIX_AVS_SOCKET)
-    set(POSIX_COMPAT_HEADER "${POSIX_COMPAT_HEADER_DEFAULT}" CACHE STRING "POSIX compatibility header path, if required")
-    configure_file("compat/posix/avs_net_posix_config.h.in"
-                   "compat/posix/avs_net_posix_config.h")
     include_directories("${CMAKE_CURRENT_BINARY_DIR}/compat/posix")
     set(SOURCES ${SOURCES}
         compat/posix/compat_addrinfo.c
@@ -115,7 +113,7 @@ if(WITH_MBEDTLS AND WITH_TLS_SESSION_PERSISTENCE)
                         ../rbtree/include_public)
 endif()
 
-add_avs_test(avs_net ${ALL_SOURCES})
+add_avs_test(avs_net ${ALL_SOURCES} ${TEST_SOURCES})
 avs_install_export(avs_net net)
 avs_propagate_exports()
 install(DIRECTORY include_public/

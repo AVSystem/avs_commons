@@ -14,11 +14,9 @@
  * limitations under the License.
  */
 
-#define _AVS_NEED_POSIX_API
 #define _AVS_NEED_POSIX_SOCKET
 
-#include <avs_commons_config.h>
-#include "avs_net_posix_config.h"
+#include <avs_commons_posix_config.h>
 
 #include <avsystem/commons/utils.h>
 

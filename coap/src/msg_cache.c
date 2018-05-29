@@ -151,16 +151,6 @@ static size_t padding_bytes_after_msg(const avs_coap_msg_t *msg) {
     }
 }
 
-/**
- * @return Extra overhead, in bytes, required to put @p msg in cache. Total
- *         number of bytes used by a message is:
- *         <c>_avs_coap_msg_cache_overhead(msg)
- *         + msg->length + offsetof(avs_coap_msg_t, content)</c>
- */
-static inline size_t cache_msg_overhead(const avs_coap_msg_t *msg) {
-    return offsetof(cache_entry_t, data) + padding_bytes_after_msg(msg);
-}
-
 static void cache_put_entry(coap_msg_cache_t *cache,
                             const avs_time_monotonic_t *expiration_time,
                             endpoint_t *endpoint,
@@ -315,7 +305,7 @@ int _avs_coap_msg_cache_add(coap_msg_cache_t *cache,
         return -1;
     }
 
-    size_t cap_req = cache_msg_overhead(msg)
+    size_t cap_req = _avs_coap_msg_cache_overhead(msg)
                    + offsetof(avs_coap_msg_t, content)
                    + msg->length;
     if (avs_buffer_capacity(cache->buffer) < cap_req) {
@@ -402,6 +392,6 @@ void _avs_coap_msg_cache_debug_print(const coap_msg_cache_t *cache) {
     }
 }
 
-#ifdef AVS_UNIT_TESTING
-#include "test/msg_cache.c"
-#endif // AVS_UNIT_TESTING
+size_t _avs_coap_msg_cache_overhead(const avs_coap_msg_t *msg) {
+    return offsetof(cache_entry_t, data) + padding_bytes_after_msg(msg);
+}

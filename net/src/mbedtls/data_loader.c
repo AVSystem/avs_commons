@@ -188,7 +188,3 @@ int _avs_net_mbedtls_load_client_key(mbedtls_pk_context **client_key,
     }
     return 0;
 }
-
-#ifdef AVS_UNIT_TESTING
-#include "test/data_loader.c"
-#endif

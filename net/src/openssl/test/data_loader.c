@@ -14,12 +14,16 @@
  * limitations under the License.
  */
 
+#include <avs_commons_posix_config.h>
+
 #include <avsystem/commons/unit/test.h>
 #include <avsystem/commons/socket.h>
 
 #include <openssl/rand.h>
 
 #include <unistd.h>
+
+#include "../data_loader.h"
 
 __attribute__((constructor)) static void global_ssl_init(void) {
     SSL_library_init();
@@ -107,7 +111,7 @@ AVS_UNIT_TEST(backend_openssl, chain_loading_from_null) {
         AVS_UNIT_ASSERT_FAILED(_avs_net_openssl_load_ca_certs(ctx, &buffer));
         const avs_net_trusted_cert_info_t path =
                 avs_net_trusted_cert_info_from_path(NULL);
-        AVS_UNIT_ASSERT_FAILED(_avs_net_openssl_load_ca_certs(ctx, &buffer));
+        AVS_UNIT_ASSERT_FAILED(_avs_net_openssl_load_ca_certs(ctx, &path));
     }
 }
 

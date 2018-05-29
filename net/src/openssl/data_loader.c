@@ -323,7 +323,3 @@ int _avs_net_openssl_load_client_key(SSL_CTX *ctx,
     }
     return 0;
 }
-
-#ifdef AVS_UNIT_TESTING
-#include "test/data_loader.c"
-#endif
