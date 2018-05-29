@@ -23,7 +23,7 @@
 #include <avsystem/commons/list.h>
 
 #ifdef NDEBUG
-# undef NDEBUG /* we want to call assert() in avs_list_assert_acyclic__() */
+# undef NDEBUG /* We want to call assert() in avs_list_assert_acyclic__() */
 #endif
 #include <assert.h>
 
