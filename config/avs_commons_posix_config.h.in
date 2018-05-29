@@ -79,7 +79,7 @@
 // way glibc and BSD libc do, and _POSIX_C_SOURCE only enables "strict POSIX"
 // mode, i.e. disables a lot of APIs; it doesn't even properly recognize the
 // 200809L value, so it disables a lot of APIs that actually are in POSIX...
-#if (defined(__STRICT_ANSI__) || defined(_ISOC99_SOURCE)) \
+# if (defined(__STRICT_ANSI__) || defined(_ISOC99_SOURCE)) \
         && !defined(_POSIX_C_SOURCE) && !defined(__APPLE__)
 #  define _POSIX_C_SOURCE 200809L
 # endif
