@@ -14,18 +14,18 @@
  * limitations under the License.
  */
 
-#ifdef NDEBUG
-#undef NDEBUG /* we want to call assert() in avs_list_assert_acyclic__() */
-#endif
-
 #include <avs_commons_config.h>
 
-#include <assert.h>
 #include <string.h>
 
-/* but we don't want avs_list_assert_acyclic__ called from our own internals */
+/* We don't want avs_list_assert_acyclic__ called from our own internals */
 #define NDEBUG
 #include <avsystem/commons/list.h>
+
+#ifdef NDEBUG
+# undef NDEBUG /* We want to call assert() in avs_list_assert_acyclic__() */
+#endif
+#include <assert.h>
 
 VISIBILITY_SOURCE_BEGIN
 
@@ -209,6 +209,8 @@ static int is_list_sorted(void *list,
 void **avs_list_assert_sorted_ptr__(void **listptr,
                                     avs_list_comparator_func_t comparator,
                                     size_t element_size) {
+    (void) comparator;
+    (void) element_size;
     assert(is_list_sorted(*listptr, comparator, element_size));
     return listptr;
 }

@@ -220,8 +220,8 @@ avs_coap_msg_builder_payload_remaining(const avs_coap_msg_builder_t *builder) {
 size_t avs_coap_msg_builder_payload(avs_coap_msg_builder_t *builder,
                                     const void *payload,
                                     size_t payload_size) {
-    assert(avs_coap_msg_builder_is_initialized(builder)
-           && "avs_coap_msg_builder_payload called on uninitialized builder");
+    AVS_ASSERT(avs_coap_msg_builder_is_initialized(builder),
+               "avs_coap_msg_builder_payload called on uninitialized builder");
 
     if (payload_size == 0) {
         return 0;
@@ -236,13 +236,13 @@ size_t avs_coap_msg_builder_payload(avs_coap_msg_builder_t *builder,
     }
     if (!builder->has_payload_marker && bytes_to_write) {
         result = append_byte(&builder->msg_buffer, AVS_COAP_PAYLOAD_MARKER);
-        assert(!result && "attempted to write an invalid amount of bytes");
+        AVS_ASSERT(!result, "attempted to write an invalid amount of bytes");
 
         builder->has_payload_marker = true;
     }
 
     result = append_data(&builder->msg_buffer, payload, bytes_to_write);
-    assert(!result && "attempted to write an invalid amount of bytes");
+    AVS_ASSERT(!result, "attempted to write an invalid amount of bytes");
     (void)result;
 
     return bytes_to_write;

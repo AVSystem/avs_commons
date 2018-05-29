@@ -41,9 +41,9 @@ static const uint64_t magic = 0xb5e4189902ba0aaULL;
 
 static avs_vector_desc_t *get_desc(void **ptr) {
     avs_vector_desc_t *desc;
-    assert(ptr && "NULL vector pointer");
+    AVS_ASSERT(ptr, "NULL vector pointer");
     desc = AVS_VECTOR_DESC__(ptr);
-    assert(desc->magic == magic && "invalid vector pointer");
+    AVS_ASSERT(desc->magic == magic, "invalid vector pointer");
     return desc;
 }
 

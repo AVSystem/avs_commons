@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 #ifndef NET_OPENSSL_COMMON_H
-#define NET_OPENSSL_COMMON_h
+#define NET_OPENSSL_COMMON_H
 
 #include <openssl/err.h>
 

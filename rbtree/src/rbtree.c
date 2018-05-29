@@ -221,8 +221,8 @@ AVS_RBTREE(void) avs_rbtree_simple_clone__(AVS_RBTREE_CONST(void) tree,
 }
 
 size_t avs_rbtree_size__(AVS_RBTREE_CONST(void) tree) {
-    assert(!rb_is_cleanup_in_progress(tree)
-           && "avs_rbtree_size__ called while tree deletion in progress");
+    AVS_ASSERT(!rb_is_cleanup_in_progress(tree),
+               "avs_rbtree_size__ called while tree deletion in progress");
     return _AVS_RB_TREE(tree)->size;
 }
 
@@ -273,8 +273,8 @@ AVS_RBTREE_ELEM(void) avs_rbtree_lower_bound__(AVS_RBTREE_CONST(void) tree,
     AVS_RBTREE_ELEM(void) curr;
     AVS_RBTREE_ELEM(void) result;
 
-    assert(!rb_is_cleanup_in_progress(tree)
-           && "avs_rbtree_lower_bound__ called while tree deletion in progress");
+    AVS_ASSERT(!rb_is_cleanup_in_progress(tree),
+               "avs_rbtree_lower_bound__ called while tree deletion in progress");
 
     assert(tree);
     assert(value);
@@ -298,8 +298,8 @@ AVS_RBTREE_ELEM(void) avs_rbtree_upper_bound__(AVS_RBTREE_CONST(void) tree,
     AVS_RBTREE_ELEM(void) curr;
     AVS_RBTREE_ELEM(void) result;
 
-    assert(!rb_is_cleanup_in_progress(tree)
-           && "avs_rbtree_upper_bound__ called while tree deletion in progress");
+    AVS_ASSERT(!rb_is_cleanup_in_progress(tree),
+               "avs_rbtree_upper_bound__ called while tree deletion in progress");
 
     assert(tree);
     assert(value);
@@ -322,8 +322,8 @@ AVS_RBTREE_ELEM(void) avs_rbtree_find__(AVS_RBTREE_CONST(void) tree,
                                         const void *val) {
     AVS_RBTREE_ELEM(void) *elem_ptr;
 
-    assert(!rb_is_cleanup_in_progress(tree)
-           && "avs_rbtree_find__ called while tree deletion in progress");
+    AVS_ASSERT(!rb_is_cleanup_in_progress(tree),
+               "avs_rbtree_find__ called while tree deletion in progress");
 
     elem_ptr = rb_find_ptr(_AVS_RB_TREE((AVS_RBTREE(void))(intptr_t)tree),
                            val, NULL);
@@ -503,8 +503,8 @@ AVS_RBTREE_ELEM(void) avs_rbtree_attach__(AVS_RBTREE(void) tree_,
     AVS_RBTREE_ELEM(void) *dst = NULL;
     AVS_RBTREE_ELEM(void) parent = NULL;
 
-    assert(!rb_is_cleanup_in_progress(rb_tree_const(tree_))
-           && "avs_rbtree_attach__ called while tree deletion in progress");
+    AVS_ASSERT(!rb_is_cleanup_in_progress(rb_tree_const(tree_)),
+               "avs_rbtree_attach__ called while tree deletion in progress");
     assert(tree_);
     assert(elem);
     assert(rb_is_node_detached(elem));
@@ -563,8 +563,8 @@ static AVS_RBTREE_ELEM(void) rb_max(AVS_RBTREE_ELEM(void) root) {
 }
 
 AVS_RBTREE_ELEM(void) avs_rbtree_last__(AVS_RBTREE(void) tree) {
-    assert(!rb_is_cleanup_in_progress(rb_tree_const(tree))
-           && "avs_rbtree_last__ called while tree deletion in progress");
+    AVS_ASSERT(!rb_is_cleanup_in_progress(rb_tree_const(tree)),
+               "avs_rbtree_last__ called while tree deletion in progress");
     return rb_max(_AVS_RB_TREE(tree)->root);
 }
 
@@ -771,14 +771,14 @@ AVS_RBTREE_ELEM(void) avs_rbtree_detach__(AVS_RBTREE(void) tree_,
         return NULL;
     }
 
-    assert(!rb_is_node_detached(elem)
-           && "cannot detach an node that's already detached");
-    assert(!rb_is_cleanup_in_progress(rb_tree_const(tree_))
-           && "avs_rbtree_detach__ called while tree deletion in progress");
+    AVS_ASSERT(!rb_is_node_detached(elem),
+               "cannot detach an node that's already detached");
+    AVS_ASSERT(!rb_is_cleanup_in_progress(rb_tree_const(tree_)),
+               "avs_rbtree_detach__ called while tree deletion in progress");
     assert(tree_);
     assert(elem);
-    assert(rb_is_node_owner(tree_, elem)
-           && "cannot detach node not owned by the tree");
+    AVS_ASSERT(rb_is_node_owner(tree_, elem),
+               "cannot detach node not owned by the tree");
 
     left = _AVS_RB_LEFT(elem);
     right = _AVS_RB_RIGHT(elem);

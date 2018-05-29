@@ -81,7 +81,7 @@ avs_coap_msg_code_to_string(uint8_t code, char *buf, size_t buf_size) {
                             avs_coap_msg_code_get_class(code),
                             avs_coap_msg_code_get_detail(code), name)
             < 0) {
-        assert(0 && "buffer too small for CoAP msg code string");
+        AVS_UNREACHABLE("buffer too small for CoAP msg code string");
         return "<error>";
     }
 
@@ -301,7 +301,7 @@ static void fill_block_summary(const avs_coap_msg_t *msg,
     if (avs_coap_msg_find_unique_opt(msg, block_opt_num, &opt)) {
         if (opt && avs_simple_snprintf(buf, buf_size,
                                        ", multiple BLOCK%d options", num) < 0) {
-           assert(0 && "should never happen");
+           AVS_UNREACHABLE("should never happen");
            *buf = '\0';
         }
         return;
@@ -315,7 +315,7 @@ static void fill_block_summary(const avs_coap_msg_t *msg,
             || avs_coap_opt_block_has_more(opt, &has_more)) {
         if (avs_simple_snprintf(buf, buf_size, ", BLOCK%d (bad content)", num)
                 < 0) {
-            assert(0 && "should never happen");
+            AVS_UNREACHABLE("should never happen");
             *buf = '\0';
         }
         return;
@@ -324,7 +324,7 @@ static void fill_block_summary(const avs_coap_msg_t *msg,
     if (avs_coap_opt_block_size(opt, &block_size)) {
         if (avs_simple_snprintf(buf, buf_size, ", BLOCK%d (bad size)", num)
                 < 0) {
-            assert(0 && "should never happen");
+            AVS_UNREACHABLE("should never happen");
             *buf = '\0';
         }
         return;
@@ -335,7 +335,7 @@ static void fill_block_summary(const avs_coap_msg_t *msg,
                             ", more %d)", num, seq_num, block_size,
                             (int) has_more)
             < 0) {
-        assert(0 && "should never happen");
+        AVS_UNREACHABLE("should never happen");
         *buf = '\0';
     }
 }
@@ -364,7 +364,7 @@ avs_coap_msg_summary(const avs_coap_msg_t *msg, char *buf, size_t buf_size) {
              avs_coap_msg_get_id(msg),
              token_string, (unsigned long)token.size,
              block1, block2) < 0) {
-        assert(0 && "should never happen");
+        AVS_UNREACHABLE("should never happen");
         return "(cannot create summary)";
     }
     return buf;
