@@ -17,7 +17,7 @@
 #define _AVS_NEED_POSIX_API
 
 #include <avs_commons_config.h>
-#include "avs_net_posix_config.h"
+#include <avs_commons_posix_config.h>
 
 #include <assert.h>
 #include <string.h>

@@ -567,6 +567,7 @@ if(NOT ${CMAKE_PROJECT_NAME} STREQUAL ${PROJECT_NAME})
 endif()
 
 configure_file("config/avs_commons_config.h.in" "config/avs_commons_config.h")
+configure_file("config/avs_commons_posix_config.h.in" "config/avs_commons_posix_config.h")
 configure_file("include_public/avsystem/commons/defs.h.in"
                "include_public/avsystem/commons/defs.h")
 

@@ -58,8 +58,6 @@ set(PRIVATE_HEADERS
 
 if(WITH_POSIX_AVS_SOCKET)
     set(POSIX_COMPAT_HEADER "${POSIX_COMPAT_HEADER_DEFAULT}" CACHE STRING "POSIX compatibility header path, if required")
-    configure_file("compat/posix/avs_net_posix_config.h.in"
-                   "compat/posix/avs_net_posix_config.h")
     include_directories("${CMAKE_CURRENT_BINARY_DIR}/compat/posix")
     set(SOURCES ${SOURCES}
         compat/posix/compat_addrinfo.c

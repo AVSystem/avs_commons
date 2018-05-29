@@ -47,8 +47,8 @@ install_manifest.txt
 _CPack_Packages/
 Testing/
 /config/avs_commons_config.h
+/config/avs_commons_posix_config.h
 /include_public/avsystem/commons/defs.h
-/net/compat/posix/avs_net_posix_config.h
 
 # documentation
 /doc/*
