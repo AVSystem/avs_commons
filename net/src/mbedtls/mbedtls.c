@@ -371,7 +371,7 @@ static int transport_for_socket_type(avs_net_socket_type_t backend_type) {
     case AVS_NET_DTLS_SOCKET:
         return MBEDTLS_SSL_TRANSPORT_DATAGRAM;
     default:
-        AVS_ASSERT(0, "invalid enum value");
+        AVS_ASSERT_FAIL("invalid enum value");
         return -1;
     }
 }
@@ -419,7 +419,7 @@ static int configure_ssl(ssl_socket_t *socket,
         initialize_cert_security(socket);
         break;
     default:
-        AVS_ASSERT(0, "invalid enum value");
+        AVS_ASSERT_FAIL("invalid enum value");
         return -1;
     }
 
@@ -859,7 +859,7 @@ static int initialize_ssl_socket(ssl_socket_t *socket,
                                      &configuration->security.data.cert);
         break;
     default:
-        AVS_ASSERT(0, "invalid enum value");
+        AVS_ASSERT_FAIL("invalid enum value");
         break;
     }
 

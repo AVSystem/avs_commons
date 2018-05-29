@@ -112,7 +112,7 @@ avs_coap_block_builder_build(avs_coap_block_builder_t *builder,
 
     avs_coap_msg_builder_t msg_builder;
     if (avs_coap_msg_builder_init(&msg_builder, buffer, buffer_size, info)) {
-        AVS_ASSERT(0, "Failed to init msg_builder");
+        AVS_ASSERT_FAIL("Failed to init msg_builder");
         return NULL;
     }
 
@@ -132,7 +132,7 @@ avs_coap_block_builder_build(avs_coap_block_builder_t *builder,
             &msg_builder, payload_read_ptr(builder), bytes_to_write);
 
     if (bytes_to_write != bytes_written) {
-        AVS_ASSERT(0, "Could not flush the payload");
+        AVS_ASSERT_FAIL("Could not flush the payload");
         return NULL;
     }
 

@@ -30,7 +30,7 @@ AVS_CONCAT(unit_conv_, SCALAR_TYPE, _int64_t)(SCALAR_TYPE *output,
         *output = (SCALAR_TYPE) input / (SCALAR_TYPE) factor;
         return 0;
     default:
-        AVS_ASSERT(0, "Invalid unit_conv operation");
+        AVS_ASSERT_FAIL("Invalid unit_conv operation");
         return -1;
     }
 }
