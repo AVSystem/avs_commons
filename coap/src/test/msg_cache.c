@@ -25,8 +25,6 @@
 #include "../coap_log.h"
 #include "utils.h"
 
-size_t cache_msg_overhead(const avs_coap_msg_t *msg);
-
 /* minimum size of a valid avs_coap_msg_t */
 #define MIN_MSG_OBJECT_SIZE \
     (offsetof(avs_coap_msg_t, content) + AVS_COAP_MSG_MIN_SIZE)
@@ -241,7 +239,7 @@ AVS_UNIT_TEST(coap_msg_cache, add_evict) {
     const avs_coap_msg_t *cached_msg;
 
     coap_msg_cache_t *cache = _avs_coap_msg_cache_create(
-            (cache_msg_overhead(msg[0]) + MIN_MSG_OBJECT_SIZE) * 2);
+            (_avs_coap_msg_cache_overhead(msg[0]) + MIN_MSG_OBJECT_SIZE) * 2);
 
     // message with another ID removes oldest existing entry if extra space
     // is required
@@ -281,7 +279,7 @@ AVS_UNIT_TEST(coap_msg_cache, add_evict_multiple) {
     };
 
     coap_msg_cache_t *cache = _avs_coap_msg_cache_create(
-            (cache_msg_overhead(msg[0]) + MIN_MSG_OBJECT_SIZE) * 2);
+            (_avs_coap_msg_cache_overhead(msg[0]) + MIN_MSG_OBJECT_SIZE) * 2);
 
     // message with another ID removes oldest existing entries if extra space
     // is required
@@ -319,9 +317,8 @@ AVS_UNIT_TEST(coap_msg_cache, add_too_big) {
                               (uint16_t)(id + 1),
                               "\xFF" "foobarbaz");
 
-    coap_msg_cache_t *cache =
-            _avs_coap_msg_cache_create(cache_msg_overhead(m1)
-                                         + MIN_MSG_OBJECT_SIZE);
+    coap_msg_cache_t *cache = _avs_coap_msg_cache_create(
+            _avs_coap_msg_cache_overhead(m1) + MIN_MSG_OBJECT_SIZE);
 
     // message too long to put into cache should be ignored
     AVS_UNIT_ASSERT_SUCCESS(

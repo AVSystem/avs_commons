@@ -108,6 +108,14 @@ const avs_coap_msg_t *_avs_coap_msg_cache_get(coap_msg_cache_t *cache,
  */
 void _avs_coap_msg_cache_debug_print(const coap_msg_cache_t *cache);
 
+/**
+ * @return Extra overhead, in bytes, required to put @p msg in cache. Total
+ *         number of bytes used by a message is:
+ *         <c>_avs_coap_msg_cache_overhead(msg)
+ *         + msg->length + offsetof(avs_coap_msg_t, content)</c>
+ */
+size_t _avs_coap_msg_cache_overhead(const avs_coap_msg_t *msg);
+
 #else // WITH_AVS_COAP_MESSAGE_CACHE
 
 #define _avs_coap_msg_cache_create(...) \
