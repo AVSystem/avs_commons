@@ -21,8 +21,9 @@
 #include <time.h>
 
 #include <avsystem/commons/errno.h>
-#include <avsystem/commons/stream/stream_net.h>
 #include <avsystem/commons/stream/netbuf.h>
+#include <avsystem/commons/stream/stream_net.h>
+#include <avsystem/commons/time.h>
 
 #include "client.h"
 #include "content_encoding.h"
@@ -438,7 +439,8 @@ int avs_http_open_stream(avs_stream_abstract_t **out,
         goto http_open_stream_error;
     }
     stream->flags.keep_connection = 1;
-    stream->random_seed = (unsigned) time(NULL);
+    stream->random_seed =
+            (unsigned) avs_time_real_now().since_real_epoch.seconds;
     if ((stream->auth.credentials.user || stream->auth.credentials.password)
             && strcmp(avs_url_protocol(url), "https") == 0) {
         stream->auth.state.flags.type = HTTP_AUTH_TYPE_BASIC;
