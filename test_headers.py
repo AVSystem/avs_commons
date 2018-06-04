@@ -40,7 +40,7 @@ INCLUDE_WHITELIST = {
     r'stdlib\.h',
     r'string\.h',
     # r'tgmath\.h',
-    r'time\.h',
+    # r'time\.h',
     # r'wchar\.h',
     # r'wctype\.h',
     r'avs_commons_config\.h',
