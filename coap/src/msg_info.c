@@ -197,7 +197,9 @@ int avs_coap_msg_info_opt_uint(avs_coap_msg_info_t *info,
 #ifdef AVS_COMMONS_BIG_ENDIAN
     const uint8_t *converted = (const uint8_t *) value;
 #else
-    uint8_t converted[value_size];
+    AVS_ASSERT(value_size <= 8,
+               "uint options larger than 64 bits are not supported");
+    uint8_t converted[8];
     for (size_t i = 0; i < value_size; ++i) {
         converted[value_size - 1 - i] = ((const uint8_t *) value)[i];
     }

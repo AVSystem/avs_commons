@@ -162,14 +162,21 @@ static const char *http_header_split(char *line) {
 }
 
 static int http_receive_headers_internal(header_parser_state_t *state) {
-    char header[state->stream->http->buffer_sizes.header_line];
+    char *header =
+            (char *) malloc(state->stream->http->buffer_sizes.header_line);
+    if (!header) {
+        LOG(ERROR, "Out of memory");
+        return -1;
+    }
+    int retval = -1;
     header[0] = '\0';
     state->stream->flags.keep_connection = 1;
     /* read parse headline */
     size_t bytes_read;
     char message_finished;
-    if (avs_stream_getline(state->stream->backend, &bytes_read,
-                           &message_finished, header, sizeof(header))) {
+    if (avs_stream_getline(
+            state->stream->backend, &bytes_read, &message_finished,
+            header, state->stream->http->buffer_sizes.header_line)) {
         LOG(ERROR, "Could not receive HTTP headline");
         if (bytes_read == 0 && message_finished
                 && state->stream->flags.close_handling_required) {
@@ -193,8 +200,9 @@ static int http_receive_headers_internal(header_parser_state_t *state) {
     /* handle headers */
     while (1) {
         const char *value = NULL;
-        if (get_http_header_line(state->stream->backend,
-                                 header, sizeof(header))) {
+        if (get_http_header_line(
+                state->stream->backend,
+                header, state->stream->http->buffer_sizes.header_line)) {
             LOG(ERROR, "Error receiving headers");
             goto http_receive_headers_error;
         }
@@ -261,7 +269,7 @@ static int http_receive_headers_internal(header_parser_state_t *state) {
                  * so this function returns failure - without clearing the
                  * keep connection flag, as we have already made the new
                  * connection */
-                return -1;
+                goto finish;
             }
             state->stream->status = result;
         }
@@ -288,16 +296,19 @@ static int http_receive_headers_internal(header_parser_state_t *state) {
         }
         LOG(TRACE, "http_receive_headers: clearing body receiver");
         avs_stream_cleanup(&state->stream->body_receiver);
-        return -1; /* without clearing the keep connection flag */
+        goto finish; /* without clearing the keep connection flag */
     }
 
     LOG(TRACE, "http_receive_headers: success");
-    return 0;
+    retval = 0;
+    goto finish;
 
 http_receive_headers_error:
     LOG(ERROR, "http_receive_headers: failure");
     state->stream->flags.keep_connection = 0;
-    return -1;
+finish:
+    free(header);
+    return retval;
 }
 
 static void update_flags_after_receiving_headers(http_stream_t *stream) {

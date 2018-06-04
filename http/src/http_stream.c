@@ -283,19 +283,30 @@ int _avs_http_send_via_buffer(http_stream_t *stream,
 }
 
 int _avs_http_encoder_flush(http_stream_t *stream) {
-    char buffer[stream->http->buffer_sizes.content_coding_min_input];
+    char *buffer = (char *) malloc(
+            stream->http->buffer_sizes.content_coding_min_input);
+    if (!buffer) {
+        LOG(ERROR, "Out of memory");
+        return -1;
+    }
     size_t bytes_read = 0;
     char message_finished = 0;
+    int result = -1;
     while (1) {
-        if (avs_stream_read(stream->encoder, &bytes_read, &message_finished,
-                            buffer, sizeof(buffer))) {
-            return -1;
+        if (avs_stream_read(
+                stream->encoder, &bytes_read, &message_finished,
+                buffer, stream->http->buffer_sizes.content_coding_min_input)) {
+            goto finish;
         }
         if (!bytes_read) {
-            return 0;
+            result = 0;
+            goto finish;
         }
         if (_avs_http_send_via_buffer(stream, buffer, bytes_read)) {
-            return -1;
+            goto finish;
         }
     }
+finish:
+    free(buffer);
+return result;
 }

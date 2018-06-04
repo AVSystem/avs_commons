@@ -35,26 +35,34 @@ int _avs_http_auth_send_header_basic(http_stream_t *stream) {
     if (stream->auth.credentials.password) {
         bufsize += strlen(stream->auth.credentials.password) + 1;
     }
-    char plaintext[bufsize];
-    size_t encoded_size = avs_base64_encoded_size(sizeof(plaintext) - 1);
-    char encoded[encoded_size];
+    size_t encoded_size = avs_base64_encoded_size(bufsize - 1);
+    char *plaintext = (char *) malloc(bufsize + encoded_size);
+    if (!plaintext) {
+        LOG(ERROR, "Out of memory");
+        return -1;
+    }
+    char *encoded = plaintext + bufsize;
 
-    if (avs_simple_snprintf(plaintext, sizeof(plaintext), "%s%s%s",
+    int result = 0;
+    if (avs_simple_snprintf(plaintext, bufsize, "%s%s%s",
                             stream->auth.credentials.user
                                     ? stream->auth.credentials.user : "",
                             stream->auth.credentials.password ? ":" : "",
                             stream->auth.credentials.password
                                     ? stream->auth.credentials.password
                                     : "") < 0) {
-        return -1;
-    }
-    if (avs_base64_encode(encoded, sizeof(encoded), (const uint8_t *) plaintext,
-                          strlen(plaintext))) {
+        result = -1;
+    } else if (avs_base64_encode(encoded, encoded_size,
+                                 (const uint8_t *) plaintext,
+                                 strlen(plaintext))) {
         LOG(ERROR, "Cannot encode authorization data");
-        return -1;
+        result = -1;
+    } else {
+        LOG(TRACE, "Basic encoded pass: %s", encoded);
+        result = avs_stream_write_f(stream->backend,
+                                    "Authorization: Basic %s\r\n", encoded);
     }
-    LOG(TRACE, "Basic encoded pass: %s", encoded);
 
-    return avs_stream_write_f(stream->backend,
-                              "Authorization: Basic %s\r\n", encoded);
+    free(plaintext);
+    return result;
 }
