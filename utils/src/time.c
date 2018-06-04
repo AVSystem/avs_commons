@@ -18,7 +18,6 @@
 
 #include <assert.h>
 #include <math.h>
-#include <time.h>
 
 #include <avsystem/commons/time.h>
 

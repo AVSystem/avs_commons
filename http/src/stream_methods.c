@@ -18,7 +18,6 @@
 
 #include <assert.h>
 #include <string.h>
-#include <time.h>
 
 #include <avsystem/commons/errno.h>
 #include <avsystem/commons/stream/netbuf.h>
