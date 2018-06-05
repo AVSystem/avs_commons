@@ -440,7 +440,7 @@ if(WITH_TEST)
         set_property(TARGET ${NAME}_test APPEND PROPERTY COMPILE_DEFINITIONS
                      AVS_UNIT_TESTING
                      AVS_TEST_BIN_DIR="${_BINARY_DIR}")
-        set_property(TARGET ${NAME}_test APPEND PROPERTY COMPILE_FLAGS "-Wno-clobbered -Wno-overlength-strings -Wno-sign-conversion")
+        set_property(TARGET ${NAME}_test APPEND PROPERTY COMPILE_FLAGS "-Wno-clobbered -Wno-overlength-strings -Wno-sign-conversion -Wno-vla")
 
         if(VALGRIND)
             set(VALGRIND_LOG ${VALGRIND} --log-file=VALGRIND.${NAME}.log)

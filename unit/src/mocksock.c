@@ -358,10 +358,11 @@ static void hexdump_data(const void *raw_data,
     const size_t segments_per_row = 2;
     const size_t bytes_per_row = bytes_per_segment * segments_per_row;
 
-    char *buffer = (char *) malloc(bytes_per_row * 4 + segments_per_row * 2);
+    size_t buffer_size = bytes_per_row * 4 + segments_per_row * 2;
+    char *buffer = (char *) malloc(buffer_size);
     if (buffer) {
         for (size_t offset = 0; offset < data_size; offset += bytes_per_row) {
-            hexdumpify(buffer, sizeof(buffer),
+            hexdumpify(buffer, buffer_size,
                        data + offset, data_size - offset,
                        bytes_per_segment, segments_per_row);
             LOG(TRACE, "%s", buffer);
