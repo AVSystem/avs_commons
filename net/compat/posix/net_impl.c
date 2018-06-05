@@ -692,8 +692,9 @@ static inline bool is_valid_timeout(avs_time_duration_t timeout) {
 }
 #endif // !HAVE_POLL
 
-static short wait_until_ready(sockfd_t sockfd, avs_time_duration_t timeout,
-                              char in, char out, char err) {
+static short wait_until_ready_internal(sockfd_t sockfd,
+                                       avs_time_duration_t timeout,
+                                       char in, char out, char err) {
 #ifdef HAVE_POLL
     struct pollfd p;
     short events = (short) ((in ? POLLIN : 0) | (out ? POLLOUT : 0));
@@ -702,8 +703,10 @@ static short wait_until_ready(sockfd_t sockfd, avs_time_duration_t timeout,
     p.revents = 0;
     int64_t timeout_ms;
     if (avs_time_duration_to_scalar(&timeout_ms, AVS_TIME_MS, timeout)
-            || timeout_ms < 0 || timeout_ms > INT_MAX) {
+            || timeout_ms > INT_MAX) {
         timeout_ms = -1;
+    } else if (timeout_ms < 0) {
+        timeout_ms = 0;
     }
     if (poll(&p, 1, (int) timeout_ms) != 1) {
         return 0;
@@ -725,7 +728,12 @@ static short wait_until_ready(sockfd_t sockfd, avs_time_duration_t timeout,
 #else
     timeval_timeout.tv_sec = (time_t) timeout.seconds;
 #endif // LWIP_TIMEVAL_PRIVATE
-    timeval_timeout.tv_usec = timeout.nanoseconds / 1000;
+    if (timeval_timeout.tv_sec < 0) {
+        timeval_timeout.tv_sec = 0;
+        timeval_timeout.tv_usec = 0;
+    } else {
+        timeval_timeout.tv_usec = timeout.nanoseconds / 1000;
+    }
     FD_ZERO(&infds);
     FD_ZERO(&outfds);
     FD_ZERO(&errfds);
@@ -769,6 +777,19 @@ static short wait_until_ready(sockfd_t sockfd, avs_time_duration_t timeout,
 #endif
 }
 
+static short wait_until_ready(sockfd_t sockfd,
+                              avs_time_monotonic_t deadline,
+                              char in, char out, char err) {
+    short result = 0;
+    do {
+        avs_time_duration_t timeout =
+                avs_time_monotonic_diff(deadline, avs_time_monotonic_now());
+        errno = 0;
+        result = wait_until_ready_internal(sockfd, timeout, in, out, err);
+    } while (!result && errno == EINTR);
+    return result;
+}
+
 static int connect_with_timeout(sockfd_t sockfd,
                                 const sockaddr_endpoint_union_t *endpoint,
                                 char is_stream) {
@@ -780,7 +801,9 @@ static int connect_with_timeout(sockfd_t sockfd,
             && errno != EINPROGRESS) { // see man connect for details
         return -1;
     }
-    if (!wait_until_ready(sockfd, NET_CONNECT_TIMEOUT, 1, 1, is_stream)) {
+    avs_time_monotonic_t deadline = avs_time_monotonic_add(
+            avs_time_monotonic_now(), NET_CONNECT_TIMEOUT);
+    if (!wait_until_ready(sockfd, deadline, 1, 1, is_stream)) {
         errno = ETIMEDOUT;
         return -1;
     } else {
@@ -1112,8 +1135,10 @@ static int send_net(avs_net_abstract_socket_t *net_socket_,
 
     /* send at least one datagram, even if zero-length - hence do..while */
     do {
+        avs_time_monotonic_t deadline = avs_time_monotonic_add(
+                avs_time_monotonic_now(), NET_SEND_TIMEOUT);
         ssize_t result;
-        if (!wait_until_ready(net_socket->socket, NET_SEND_TIMEOUT, 0, 1, 1)) {
+        if (!wait_until_ready(net_socket->socket, deadline, 0, 1, 1)) {
             LOG(ERROR, "timeout (send)");
             net_socket->error_code = ETIMEDOUT;
             return -1;
@@ -1259,8 +1284,9 @@ static int receive_net(avs_net_abstract_socket_t *net_socket_,
                        void *buffer,
                        size_t buffer_length) {
     avs_net_socket_t *net_socket = (avs_net_socket_t *) net_socket_;
-    if (!wait_until_ready(net_socket->socket, net_socket->recv_timeout,
-                          1, 0, 1)) {
+    avs_time_monotonic_t deadline = avs_time_monotonic_add(
+            avs_time_monotonic_now(), net_socket->recv_timeout);
+    if (!wait_until_ready(net_socket->socket, deadline, 1, 0, 1)) {
         net_socket->error_code = ETIMEDOUT;
         *out = 0;
         return -1;
@@ -1292,8 +1318,9 @@ static int receive_from_net(avs_net_abstract_socket_t *net_socket_,
     host[0] = '\0';
     port[0] = '\0';
 
-    if (!wait_until_ready(net_socket->socket, net_socket->recv_timeout,
-                          1, 0, 1)) {
+    avs_time_monotonic_t deadline = avs_time_monotonic_add(
+            avs_time_monotonic_now(), net_socket->recv_timeout);
+    if (!wait_until_ready(net_socket->socket, deadline, 1, 0, 1)) {
         net_socket->error_code = ETIMEDOUT;
         *out = 0;
         return -1;
@@ -1441,8 +1468,9 @@ static int accept_net(avs_net_abstract_socket_t *server_net_socket_,
         return -1;
     }
 
-    if (!wait_until_ready(server_net_socket->socket,
-                          NET_ACCEPT_TIMEOUT, 1, 0, 1)) {
+    avs_time_monotonic_t deadline = avs_time_monotonic_add(
+            avs_time_monotonic_now(), NET_ACCEPT_TIMEOUT);
+    if (!wait_until_ready(server_net_socket->socket, deadline, 1, 0, 1)) {
         server_net_socket->error_code = ETIMEDOUT;
         return -1;
     }
