@@ -164,6 +164,51 @@ static const char *http_header_split(char *line) {
 }
 
 static int http_receive_headers_internal(header_parser_state_t *state) {
+    while (1) {
+        const char *value = NULL;
+        if (get_http_header_line(state->stream->backend,
+                                 state->header_buf, state->header_buf_size)) {
+            LOG(ERROR, "Error receiving headers");
+            return -1;
+        }
+
+        if (state->header_buf[0] == '\0') { /* empty line */
+            return 0;
+        }
+        LOG(TRACE, "HTTP header: %s", state->header_buf);
+        bool header_handled;
+        if (!(value = http_header_split(state->header_buf))
+                || http_handle_header(state->header_buf, value, state,
+                                      &header_handled)) {
+            LOG(ERROR, "Error parsing or handling headers");
+            return -1;
+        }
+
+        if (state->header_storage_end_ptr) {
+            assert(!*state->header_storage_end_ptr);
+            size_t key_len = strlen(state->header_buf);
+            size_t value_len = strlen(value);
+            avs_http_header_t *element = (avs_http_header_t *)
+                    AVS_LIST_NEW_BUFFER(sizeof(avs_http_header_t)
+                            + key_len + value_len + 2);
+            if (!element) {
+                LOG(ERROR, "Could not store received header");
+                return -1;
+            }
+            element->key = (char *) element + sizeof(avs_http_header_t);
+            memcpy((char *) (intptr_t) element->key, state->header_buf,
+                   key_len + 1);
+            element->value = element->key + key_len + 1;
+            memcpy((char *) (intptr_t) element->value, value, value_len + 1);
+            element->handled = header_handled;
+            *state->header_storage_end_ptr = element;
+            state->header_storage_end_ptr =
+                    AVS_LIST_NEXT_PTR(state->header_storage_end_ptr);
+        }
+    }
+}
+
+static int http_receive_headline_and_headers(header_parser_state_t *state) {
     state->header_buf[0] = '\0';
     state->stream->flags.keep_connection = 1;
     /* read parse headline */
@@ -192,48 +237,8 @@ static int http_receive_headers_internal(header_parser_state_t *state) {
         goto http_receive_headers_error;
     }
     LOG(TRACE, "Received HTTP headline, status == %d", state->stream->status);
-    /* handle headers */
-    while (1) {
-        const char *value = NULL;
-        if (get_http_header_line(state->stream->backend,
-                                 state->header_buf, state->header_buf_size)) {
-            LOG(ERROR, "Error receiving headers");
-            goto http_receive_headers_error;
-        }
-
-        if (state->header_buf[0] == '\0') { /* empty line */
-            break;
-        }
-        LOG(TRACE, "HTTP header: %s", state->header_buf);
-        bool header_handled;
-        if (!(value = http_header_split(state->header_buf))
-                || http_handle_header(state->header_buf, value, state,
-                                      &header_handled)) {
-            LOG(ERROR, "Error parsing or handling headers");
-            goto http_receive_headers_error;
-        }
-
-        if (state->header_storage_end_ptr) {
-            assert(!*state->header_storage_end_ptr);
-            size_t key_len = strlen(state->header_buf);
-            size_t value_len = strlen(value);
-            avs_http_header_t *element = (avs_http_header_t *)
-                    AVS_LIST_NEW_BUFFER(sizeof(avs_http_header_t)
-                            + key_len + value_len + 2);
-            if (!element) {
-                LOG(ERROR, "Could not store received header");
-                goto http_receive_headers_error;
-            }
-            element->key = (char *) element + sizeof(avs_http_header_t);
-            memcpy((char *) (intptr_t) element->key, state->header_buf,
-                   key_len + 1);
-            element->value = element->key + key_len + 1;
-            memcpy((char *) (intptr_t) element->value, value, value_len + 1);
-            element->handled = header_handled;
-            *state->header_storage_end_ptr = element;
-            state->header_storage_end_ptr =
-                    AVS_LIST_NEXT_PTR(state->header_storage_end_ptr);
-        }
+    if (http_receive_headers_internal(state)) {
+        goto http_receive_headers_error;
     }
 
     switch (state->stream->status / 100) {
@@ -356,7 +361,7 @@ int _avs_http_receive_headers(http_stream_t *stream) {
                         ? AVS_LIST_APPEND_PTR(stream->incoming_header_storage)
                         : NULL);
         parser_state->header_buf_size = stream->http->buffer_sizes.header_line;
-        result = http_receive_headers_internal(parser_state);
+        result = http_receive_headline_and_headers(parser_state);
         avs_url_free(parser_state->redirect_url);
         if (!skip_100_continue || stream->status != 100) {
             break;
