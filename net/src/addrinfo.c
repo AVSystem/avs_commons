@@ -17,9 +17,7 @@
 #include <avs_commons_config.h>
 
 #include <assert.h>
-#include <stdbool.h>
 #include <string.h>
-#include <time.h>
 
 #include <avsystem/commons/net.h>
 #include <avsystem/commons/utils.h>

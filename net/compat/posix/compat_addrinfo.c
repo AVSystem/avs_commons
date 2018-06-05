@@ -20,6 +20,7 @@
 #include <string.h>
 
 #include <avsystem/commons/net.h>
+#include <avsystem/commons/time.h>
 #include <avsystem/commons/utils.h>
 
 #include "compat.h"
@@ -224,7 +225,7 @@ avs_net_addrinfo_t *avs_net_addrinfo_resolve_ex(
         return NULL;
     } else {
         update_ports(ctx->results, port);
-        unsigned seed = (unsigned) time(NULL);
+        unsigned seed = (unsigned) avs_time_real_now().since_real_epoch.seconds;
         struct addrinfo *preferred = NULL;
         if (preferred_endpoint) {
             preferred = detach_preferred(&ctx->results,
