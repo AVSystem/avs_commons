@@ -43,7 +43,7 @@ int _avs_http_auth_send_header_basic(http_stream_t *stream) {
     }
     char *encoded = plaintext + bufsize;
 
-    int result = 0;
+    int result = -1;
     if (avs_simple_snprintf(plaintext, bufsize, "%s%s%s",
                             stream->auth.credentials.user
                                     ? stream->auth.credentials.user : "",
@@ -51,12 +51,11 @@ int _avs_http_auth_send_header_basic(http_stream_t *stream) {
                             stream->auth.credentials.password
                                     ? stream->auth.credentials.password
                                     : "") < 0) {
-        result = -1;
+        LOG(ERROR, "Cannot prepare authorization data");
     } else if (avs_base64_encode(encoded, encoded_size,
                                  (const uint8_t *) plaintext,
                                  strlen(plaintext))) {
         LOG(ERROR, "Cannot encode authorization data");
-        result = -1;
     } else {
         LOG(TRACE, "Basic encoded pass: %s", encoded);
         result = avs_stream_write_f(stream->backend,

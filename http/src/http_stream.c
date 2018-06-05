@@ -308,5 +308,5 @@ int _avs_http_encoder_flush(http_stream_t *stream) {
     }
 finish:
     free(buffer);
-return result;
+    return result;
 }
