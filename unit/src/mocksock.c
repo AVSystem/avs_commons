@@ -360,16 +360,15 @@ static void hexdump_data(const void *raw_data,
 
     size_t buffer_size = bytes_per_row * 4 + segments_per_row * 2;
     char *buffer = (char *) malloc(buffer_size);
-    if (buffer) {
-        for (size_t offset = 0; offset < data_size; offset += bytes_per_row) {
-            hexdumpify(buffer, buffer_size,
-                       data + offset, data_size - offset,
-                       bytes_per_segment, segments_per_row);
-            LOG(TRACE, "%s", buffer);
-        }
-
-        free(buffer);
+    AVS_UNIT_ASSERT_NOT_NULL(buffer);
+    for (size_t offset = 0; offset < data_size; offset += bytes_per_row) {
+        hexdumpify(buffer, buffer_size,
+                   data + offset, data_size - offset,
+                   bytes_per_segment, segments_per_row);
+        LOG(TRACE, "%s", buffer);
     }
+
+    free(buffer);
 }
 
 static int mock_send_to(avs_net_abstract_socket_t *socket_,

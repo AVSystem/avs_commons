@@ -70,6 +70,9 @@ static int decode_more_data(decoding_stream_t *stream,
     } else {
         char *internal_buffer =
                 (char *) malloc(stream->buffer_sizes->content_coding_min_input);
+        if (!internal_buffer) {
+            return -1;
+        }
         int result = decode_more_data_with_buffer(
                 stream, internal_buffer,
                 stream->buffer_sizes->content_coding_min_input,

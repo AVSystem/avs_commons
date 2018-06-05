@@ -28,23 +28,24 @@
 VISIBILITY_SOURCE_BEGIN
 
 int _avs_http_auth_send_header_basic(http_stream_t *stream) {
-    size_t bufsize = 1; // terminating nullbyte
+    size_t plaintext_size = 1; // terminating nullbyte
     if (stream->auth.credentials.user) {
-        bufsize += strlen(stream->auth.credentials.user);
+        plaintext_size += strlen(stream->auth.credentials.user);
     }
     if (stream->auth.credentials.password) {
-        bufsize += strlen(stream->auth.credentials.password) + 1;
+        plaintext_size += strlen(stream->auth.credentials.password) + 1;
     }
-    size_t encoded_size = avs_base64_encoded_size(bufsize - 1);
-    char *plaintext = (char *) malloc(bufsize + encoded_size);
-    if (!plaintext) {
+    size_t encoded_size = avs_base64_encoded_size(plaintext_size - 1);
+    char *buffer = (char *) malloc(plaintext_size + encoded_size);
+    if (!buffer) {
         LOG(ERROR, "Out of memory");
         return -1;
     }
-    char *encoded = plaintext + bufsize;
+    char *plaintext = buffer;
+    char *encoded = buffer + plaintext_size;
 
     int result = -1;
-    if (avs_simple_snprintf(plaintext, bufsize, "%s%s%s",
+    if (avs_simple_snprintf(plaintext, plaintext_size, "%s%s%s",
                             stream->auth.credentials.user
                                     ? stream->auth.credentials.user : "",
                             stream->auth.credentials.password ? ":" : "",
@@ -62,6 +63,6 @@ int _avs_http_auth_send_header_basic(http_stream_t *stream) {
                                     "Authorization: Basic %s\r\n", encoded);
     }
 
-    free(plaintext);
+    free(buffer);
     return result;
 }
