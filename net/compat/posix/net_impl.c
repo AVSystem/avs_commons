@@ -1246,6 +1246,7 @@ static int send_to_net(avs_net_abstract_socket_t *net_socket_,
         net_socket->error_code = EADDRNOTAVAIL;
     } else {
         errno = 0;
+#warning "TODO: This most certainly needs to be converted to non-blocking"
         result = sendto(net_socket->socket, buffer, buffer_length, 0,
                         &address.sockaddr_ep.addr,
                         address.sockaddr_ep.header.size);
@@ -1426,6 +1427,7 @@ static int create_listening_socket(avs_net_socket_t *net_socket,
     if (configure_socket(net_socket)) {
         goto create_listening_socket_error;
     }
+#warning "TODO: Is this blocking?"
     if (bind(net_socket->socket, addr, addrlen) < 0) {
         net_socket->error_code = errno;
         LOG(ERROR, "bind error: %s", strerror(errno));
