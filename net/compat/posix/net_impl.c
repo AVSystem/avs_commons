@@ -1444,8 +1444,11 @@ static int create_listening_socket(avs_net_socket_t *net_socket,
     if (configure_socket(net_socket)) {
         goto create_listening_socket_error;
     }
-#warning "TODO: Is this blocking?"
-    if (bind(net_socket->socket, addr, addrlen) < 0) {
+    // http://pubs.opengroup.org/onlinepubs/9699919799/functions/bind.html
+    // says that asynchronous bind()s may happen...
+    errno = 0;
+    if (bind(net_socket->socket, addr, addrlen) < 0
+            && errno != EINPROGRESS) {
         net_socket->error_code = errno;
         LOG(ERROR, "bind error: %s", strerror(errno));
         retval = -2;
