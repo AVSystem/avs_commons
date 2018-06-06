@@ -606,6 +606,11 @@ static int configure_socket(avs_net_socket_t *net_socket) {
         net_socket->configuration.interface_name,
         net_socket->configuration.dscp,
         net_socket->configuration.priority);
+    if (fcntl(net_socket->socket, F_SETFL, O_NONBLOCK) == -1) {
+        net_socket->error_code = errno;
+        LOG(ERROR, "fcntl error: %s", strerror(errno));
+        return -1;
+    }
     if (net_socket->configuration.interface_name[0]) {
         if (setsockopt(net_socket->socket,
                        SOL_SOCKET,
@@ -777,48 +782,81 @@ static short wait_until_ready_internal(sockfd_t sockfd,
 #endif
 }
 
-static short wait_until_ready(sockfd_t sockfd,
+static short wait_until_ready(const volatile sockfd_t *sockfd_ptr,
                               avs_time_monotonic_t deadline,
                               char in, char out, char err) {
     short result = 0;
     do {
+        sockfd_t sockfd = *sockfd_ptr;
+        if (sockfd == INVALID_SOCKET) {
+            // socket might have been closed in signal handler
+            // or something like this
+            errno = EBADF;
+            return 0;
+        }
         avs_time_duration_t timeout =
                 avs_time_monotonic_diff(deadline, avs_time_monotonic_now());
         errno = 0;
         result = wait_until_ready_internal(sockfd, timeout, in, out, err);
     } while (!result && errno == EINTR);
+    if (!result && !errno) {
+        errno = ETIMEDOUT;
+    }
     return result;
 }
 
-static int connect_with_timeout(sockfd_t sockfd,
+typedef int call_when_ready_cb_t(sockfd_t sockfd, void *arg);
+
+static int call_when_ready(const volatile sockfd_t *sockfd_ptr,
+                           avs_time_monotonic_t deadline,
+                           char in, char out, char err,
+                           call_when_ready_cb_t *callback,
+                           void *callback_arg) {
+    int result = -1;
+    while (wait_until_ready(sockfd_ptr, deadline, in, out, err)) {
+        do {
+            sockfd_t sockfd = *sockfd_ptr;
+            if (sockfd == INVALID_SOCKET) {
+                // socket might have been closed in signal handler
+                // or something like this
+                errno = EBADF;
+            } else {
+                errno = 0;
+                result = callback(sockfd, callback_arg);
+            }
+        } while (result < 0 && errno == EINTR);
+        if (result >= 0 || (errno != EWOULDBLOCK && errno != EAGAIN)) {
+            // EWOULDBLOCK or EAGAIN might signify a false positive result from
+            // wait_until_ready(), try again; otherwise, return
+            break;
+        }
+    }
+    return result;
+}
+
+static int connect_with_timeout(const volatile sockfd_t *sockfd_ptr,
                                 const sockaddr_endpoint_union_t *endpoint,
                                 char is_stream) {
-    if (fcntl(sockfd, F_SETFL, O_NONBLOCK) == -1) {
-        return -1;
-    }
-    if (connect(sockfd, &endpoint->sockaddr_ep.addr,
+    if (connect(*sockfd_ptr, &endpoint->sockaddr_ep.addr,
                 endpoint->sockaddr_ep.header.size) == -1
             && errno != EINPROGRESS) { // see man connect for details
         return -1;
     }
     avs_time_monotonic_t deadline = avs_time_monotonic_add(
             avs_time_monotonic_now(), NET_CONNECT_TIMEOUT);
-    if (!wait_until_ready(sockfd, deadline, 1, 1, is_stream)) {
-        errno = ETIMEDOUT;
+    if (!wait_until_ready(sockfd_ptr, deadline, 1, 1, is_stream)) {
         return -1;
     } else {
         int error_code = 0;
         socklen_t length = sizeof(error_code);
-        if (getsockopt(sockfd, SOL_SOCKET, SO_ERROR, &error_code, &length)) {
+        if (getsockopt(*sockfd_ptr,
+                       SOL_SOCKET, SO_ERROR, &error_code, &length)) {
             return -1;
         }
         if (error_code) {
             errno = error_code;
             return -1;
         }
-    }
-    if (fcntl(sockfd, F_SETFL, 0) == -1) {
-        return -1;
     }
     return 0;
 }
@@ -1020,7 +1058,7 @@ resolve_addrinfo_for_socket(avs_net_socket_t *net_socket,
 static int try_connect_open_socket(avs_net_socket_t *net_socket,
                                    const sockaddr_endpoint_union_t *address) {
     char socket_is_stream = (net_socket->type == AVS_NET_TCP_SOCKET);
-    if (connect_with_timeout(net_socket->socket, address, socket_is_stream) < 0
+    if (connect_with_timeout(&net_socket->socket, address, socket_is_stream) < 0
             || (socket_is_stream
                     && send_net((avs_net_abstract_socket_t *) net_socket,
                                 NULL, 0) < 0)) {
@@ -1127,34 +1165,49 @@ success:
     return 0;
 }
 
+typedef struct {
+    size_t bytes_sent;
+    const char *data;
+    size_t data_length;
+} send_internal_arg_t;
+
+static int send_internal(sockfd_t sockfd, void *arg_) {
+    send_internal_arg_t *arg = (send_internal_arg_t *) arg_;
+    ssize_t result = send(sockfd, arg->data, arg->data_length, MSG_NOSIGNAL);
+    if (result < 0) {
+        return (int) result;
+    }
+    arg->bytes_sent = (size_t) result;
+    return 0;
+}
+
 static int send_net(avs_net_abstract_socket_t *net_socket_,
                     const void *buffer,
                     size_t buffer_length) {
     avs_net_socket_t *net_socket = (avs_net_socket_t *) net_socket_;
     size_t bytes_sent = 0;
+    send_internal_arg_t arg = {
+        .bytes_sent = 0,
+        .data = (const char *) buffer,
+        .data_length = buffer_length
+    };
 
     /* send at least one datagram, even if zero-length - hence do..while */
     do {
         avs_time_monotonic_t deadline = avs_time_monotonic_add(
                 avs_time_monotonic_now(), NET_SEND_TIMEOUT);
-        ssize_t result;
-        if (!wait_until_ready(net_socket->socket, deadline, 0, 1, 1)) {
-            LOG(ERROR, "timeout (send)");
-            net_socket->error_code = ETIMEDOUT;
-            return -1;
-        }
-        errno = 0;
-        result = send(net_socket->socket, ((const char *) buffer) + bytes_sent,
-                      buffer_length - bytes_sent, MSG_NOSIGNAL);
-        if (result < 0) {
+        if (call_when_ready(&net_socket->socket, deadline, 0, 1, 1,
+                            send_internal, &arg) < 0) {
             net_socket->error_code = errno;
-            LOG(ERROR, "%d:%s", (int) result, strerror(errno));
+            LOG(ERROR, "send failed: %s", strerror(errno));
             return -1;
-        } else if (buffer_length != 0 && result == 0) {
+        } else if (buffer_length != 0 && arg.bytes_sent == 0) {
             LOG(ERROR, "send returned 0");
             break;
         } else {
-            bytes_sent += (size_t) result;
+            bytes_sent += arg.bytes_sent;
+            arg.data += arg.bytes_sent;
+            arg.data_length -= arg.bytes_sent;
         }
         /* call send() multiple times only if the socket is stream-oriented */
     } while (net_socket->type == AVS_NET_TCP_SOCKET
@@ -1212,69 +1265,81 @@ static int send_to_net(avs_net_abstract_socket_t *net_socket_,
     }
 }
 
+typedef struct {
+    avs_net_socket_type_t socket_type;
+    size_t bytes_received;
+    void *buffer;
+    size_t buffer_length;
+    sockaddr_union_t src_addr;
+    socklen_t src_addr_length;
+} recvfrom_impl_arg_t;
+
 #ifndef HAVE_RECVMSG
 
 /* (2017-01-03) LwIP does not implement recvmsg call, try to simulate it using
  * plain recv(), with a little hack to try to detect truncated packets. */
-static ssize_t recvfrom_impl(avs_net_socket_t *net_socket,
-                             void *buffer,
-                             size_t buffer_length,
-                             struct sockaddr *src_addr,
-                             socklen_t *addrlen) {
-    ssize_t recv_out;
+static int recvfrom_impl(sockfd_t sockfd, void *arg_) {
+    recvfrom_impl_arg_t *arg = (recvfrom_impl_arg_t *) arg_;
+    arg->src_addr_length = (socklen_t) sizeof(arg->src_addr);
 
     errno = 0;
-    recv_out = recvfrom(net_socket->socket, buffer, buffer_length, MSG_NOSIGNAL,
-                        src_addr, addrlen);
+    ssize_t recv_out = recvfrom(
+            sockfd, arg->buffer, arg->buffer_length, MSG_NOSIGNAL,
+            &arg->src_addr.addr, &arg->src_addr_length);
 
-    if (net_socket->type == AVS_NET_UDP_SOCKET
+    if (arg->socket_type == AVS_NET_UDP_SOCKET
             && recv_out > 0
-            && (size_t)recv_out == buffer_length) {
+            && (size_t) recv_out == arg->buffer_length) {
         /* Buffer entirely filled - data possibly truncated. This will
          * incorrectly reject packets that have exactly buffer_length
          * bytes, but we have no means of distinguishing the edge case
          * without recvmsg.
          * This does only apply to datagram sockets (in our case: UDP). */
         errno = EMSGSIZE;
+        arg->bytes_received = arg->buffer_length;
+        return -1;
+    } else if (recv_out < 0) {
+        arg->bytes_received = 0;
+        return -1;
+    } else {
+        arg->bytes_received = (size_t) recv_out;
+        return 0;
     }
-
-    return recv_out;
 }
 
 #else /* HAVE_RECVMSG */
 
-static ssize_t recvfrom_impl(avs_net_socket_t *net_socket,
-                             void *buffer,
-                             size_t buffer_length,
-                             struct sockaddr *src_addr,
-                             socklen_t *addrlen) {
+static int recvfrom_impl(sockfd_t sockfd, void *arg_) {
+    recvfrom_impl_arg_t *arg = (recvfrom_impl_arg_t *) arg_;
     ssize_t recv_out;
     struct iovec iov = {
-        .iov_base = buffer,
-        .iov_len = buffer_length
+        .iov_base = arg->buffer,
+        .iov_len = arg->buffer_length
     };
     struct msghdr msg = {
         .msg_iov = &iov,
         .msg_iovlen = 1,
-        .msg_name = src_addr,
-        .msg_namelen = addrlen ? *addrlen : 0
+        .msg_name = &arg->src_addr.addr,
+        .msg_namelen = (socklen_t) sizeof(arg->src_addr)
     };
 
 
     errno = 0;
-    recv_out = recvmsg(net_socket->socket, &msg, 0);
+    recv_out = recvmsg(sockfd, &msg, 0);
 
+    arg->src_addr_length = msg.msg_namelen;
     if (msg.msg_flags & MSG_TRUNC) {
         /* message too long to fit in the buffer */
         errno = EMSGSIZE;
-        recv_out = ((size_t)recv_out <= buffer_length) ? recv_out
-                                                       : (ssize_t)buffer_length;
+        arg->bytes_received = AVS_MIN((size_t) recv_out, arg->buffer_length);
+        return -1;
+    } else if (recv_out < 0) {
+        arg->bytes_received = 0;
+        return -1;
+    } else {
+        arg->bytes_received = (size_t) recv_out;
+        return 0;
     }
-
-    if (addrlen) {
-        *addrlen = msg.msg_namelen;
-    }
-    return recv_out;
 }
 
 #endif /* HAVE_RECVMSG */
@@ -1286,22 +1351,16 @@ static int receive_net(avs_net_abstract_socket_t *net_socket_,
     avs_net_socket_t *net_socket = (avs_net_socket_t *) net_socket_;
     avs_time_monotonic_t deadline = avs_time_monotonic_add(
             avs_time_monotonic_now(), net_socket->recv_timeout);
-    if (!wait_until_ready(net_socket->socket, deadline, 1, 0, 1)) {
-        net_socket->error_code = ETIMEDOUT;
-        *out = 0;
-        return -1;
-    } else {
-        ssize_t recv_out = recvfrom_impl(net_socket, buffer, buffer_length,
-                                         NULL, NULL);
-        net_socket->error_code = errno;
-        if (recv_out < 0) {
-            *out = 0;
-            return (int) recv_out;
-        } else {
-            *out = (size_t) recv_out;
-            return errno ? -1 : 0;
-        }
-    }
+    recvfrom_impl_arg_t arg = {
+        .socket_type = net_socket->type,
+        .buffer = buffer,
+        .buffer_length = buffer_length
+    };
+    int result = call_when_ready(&net_socket->socket, deadline, 1, 0, 1,
+                                 recvfrom_impl, &arg);
+    *out = arg.bytes_received;
+    net_socket->error_code = errno;
+    return result;
 }
 
 static int receive_from_net(avs_net_abstract_socket_t *net_socket_,
@@ -1310,8 +1369,6 @@ static int receive_from_net(avs_net_abstract_socket_t *net_socket_,
                             char *host, size_t host_size,
                             char *port, size_t port_size) {
     avs_net_socket_t *net_socket = (avs_net_socket_t *) net_socket_;
-    sockaddr_union_t sender_addr;
-    socklen_t addrlen = sizeof(sender_addr);
 
     assert(host);
     assert(port);
@@ -1320,34 +1377,27 @@ static int receive_from_net(avs_net_abstract_socket_t *net_socket_,
 
     avs_time_monotonic_t deadline = avs_time_monotonic_add(
             avs_time_monotonic_now(), net_socket->recv_timeout);
-    if (!wait_until_ready(net_socket->socket, deadline, 1, 0, 1)) {
-        net_socket->error_code = ETIMEDOUT;
-        *out = 0;
-        return -1;
-    } else {
-        ssize_t recv_result = recvfrom_impl(net_socket,
-                                            message_buffer, buffer_size,
-                                            &sender_addr.addr, &addrlen);
-        net_socket->error_code = errno;
-        if (recv_result < 0) {
-            *out = 0;
-            return -1;
-        } else {
-            int retval = errno ? -1 : 0;
-            int sub_retval;
-
-            errno = 0;
-            sub_retval = host_port_to_string(&sender_addr.addr, addrlen,
-                                             host, (socklen_t) host_size,
-                                             port, (socklen_t) port_size);
-            if (!net_socket->error_code) {
-                net_socket->error_code = errno;
-            }
-
-            *out = (size_t) recv_result;
-            return retval ? retval : sub_retval;
+    recvfrom_impl_arg_t arg = {
+        .socket_type = net_socket->type,
+        .buffer = message_buffer,
+        .buffer_length = buffer_size
+    };
+    int result = call_when_ready(&net_socket->socket, deadline, 1, 0, 1,
+                                 recvfrom_impl, &arg);
+    *out = arg.bytes_received;
+    net_socket->error_code = errno;
+    if (!result || net_socket->error_code == EMSGSIZE) {
+        int sub_retval = host_port_to_string(
+                &arg.src_addr.addr, arg.src_addr_length,
+                host, (socklen_t) host_size, port, (socklen_t) port_size);
+        if (!net_socket->error_code) {
+            net_socket->error_code = errno;
+        }
+        if (!result) {
+            result = sub_retval;
         }
     }
+    return result;
 }
 
 static int create_listening_socket(avs_net_socket_t *net_socket,
@@ -1445,10 +1495,22 @@ static int bind_net(avs_net_abstract_socket_t *net_socket_,
     return retval;
 }
 
+typedef struct {
+    sockfd_t client_sockfd;
+    sockaddr_union_t remote_addr;
+    socklen_t remote_addr_length;
+} accept_internal_arg_t;
+
+static int accept_internal(sockfd_t sockfd, void *arg_) {
+    accept_internal_arg_t *arg = (accept_internal_arg_t *) arg_;
+    arg->remote_addr_length = (socklen_t) sizeof(arg->remote_addr);
+    arg->client_sockfd = accept(sockfd, &arg->remote_addr.addr,
+                                &arg->remote_addr_length);
+    return arg->client_sockfd == INVALID_SOCKET ? -1 : 0;
+}
+
 static int accept_net(avs_net_abstract_socket_t *server_net_socket_,
                       avs_net_abstract_socket_t *new_net_socket_) {
-    sockaddr_union_t remote_address;
-    socklen_t remote_address_length = sizeof(remote_address);
     avs_net_socket_t *server_net_socket =
             (avs_net_socket_t *) server_net_socket_;
     avs_net_socket_t *new_net_socket =
@@ -1470,22 +1532,17 @@ static int accept_net(avs_net_abstract_socket_t *server_net_socket_,
 
     avs_time_monotonic_t deadline = avs_time_monotonic_add(
             avs_time_monotonic_now(), NET_ACCEPT_TIMEOUT);
-    if (!wait_until_ready(server_net_socket->socket, deadline, 1, 0, 1)) {
-        server_net_socket->error_code = ETIMEDOUT;
+    accept_internal_arg_t arg = {
+        .client_sockfd = INVALID_SOCKET
+    };
+    if (call_when_ready(&server_net_socket->socket, deadline, 1, 0, 1,
+                        accept_internal, &arg)) {
         return -1;
     }
 
-    errno = 0;
-    new_net_socket->socket = accept(server_net_socket->socket,
-                                    &remote_address.addr,
-                                    &remote_address_length);
-    if (new_net_socket->socket == INVALID_SOCKET) {
-        server_net_socket->error_code = errno;
-        return -1;
-    }
-
-    if (host_port_to_string(&remote_address.addr,
-                            remote_address_length,
+    new_net_socket->socket = arg.client_sockfd;
+    if (host_port_to_string(&arg.remote_addr.addr,
+                            arg.remote_addr_length,
                             new_net_socket->remote_hostname,
                             sizeof(new_net_socket->remote_hostname),
                             new_net_socket->remote_port,
@@ -1495,9 +1552,12 @@ static int accept_net(avs_net_abstract_socket_t *server_net_socket_,
         return -1;
     }
     new_net_socket->state = AVS_NET_SOCKET_STATE_ACCEPTED;
-    server_net_socket->error_code = 0;
-    new_net_socket->error_code = 0;
-    return 0;
+    int result = configure_socket(new_net_socket);
+    if (result) {
+        close_net_raw(new_net_socket);
+    }
+    server_net_socket->error_code = new_net_socket->error_code;
+    return result;
 }
 
 static int check_configuration(const avs_net_socket_configuration_t *configuration) {
@@ -1593,7 +1653,9 @@ int avs_net_local_address_for_target_host(const char *target_host,
                                       SOCK_DGRAM, 0);
 
         if (test_socket != INVALID_SOCKET) {
-            if (!connect_with_timeout(test_socket, &address, 0)) {
+
+            if (fcntl(test_socket, F_SETFL, O_NONBLOCK) != -1
+                    && !connect_with_timeout(&test_socket, &address, 0)) {
                 sockaddr_union_t addr;
                 socklen_t addrlen = sizeof(addr);
 
