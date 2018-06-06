@@ -37,6 +37,8 @@ typedef struct {
     avs_http_content_encoding_t content_encoding;
     size_t content_length;
     avs_url_t *redirect_url;
+    size_t header_buf_size;
+    char header_buf[];
 } header_parser_state_t;
 
 static int parse_size(size_t *out, const char *in) {
@@ -162,14 +164,59 @@ static const char *http_header_split(char *line) {
 }
 
 static int http_receive_headers_internal(header_parser_state_t *state) {
-    char header[state->stream->http->buffer_sizes.header_line];
-    header[0] = '\0';
+    while (1) {
+        const char *value = NULL;
+        if (get_http_header_line(state->stream->backend,
+                                 state->header_buf, state->header_buf_size)) {
+            LOG(ERROR, "Error receiving headers");
+            return -1;
+        }
+
+        if (state->header_buf[0] == '\0') { /* empty line */
+            return 0;
+        }
+        LOG(TRACE, "HTTP header: %s", state->header_buf);
+        bool header_handled;
+        if (!(value = http_header_split(state->header_buf))
+                || http_handle_header(state->header_buf, value, state,
+                                      &header_handled)) {
+            LOG(ERROR, "Error parsing or handling headers");
+            return -1;
+        }
+
+        if (state->header_storage_end_ptr) {
+            assert(!*state->header_storage_end_ptr);
+            size_t key_len = strlen(state->header_buf);
+            size_t value_len = strlen(value);
+            avs_http_header_t *element = (avs_http_header_t *)
+                    AVS_LIST_NEW_BUFFER(sizeof(avs_http_header_t)
+                            + key_len + value_len + 2);
+            if (!element) {
+                LOG(ERROR, "Could not store received header");
+                return -1;
+            }
+            element->key = (char *) element + sizeof(avs_http_header_t);
+            memcpy((char *) (intptr_t) element->key, state->header_buf,
+                   key_len + 1);
+            element->value = element->key + key_len + 1;
+            memcpy((char *) (intptr_t) element->value, value, value_len + 1);
+            element->handled = header_handled;
+            *state->header_storage_end_ptr = element;
+            state->header_storage_end_ptr =
+                    AVS_LIST_NEXT_PTR(state->header_storage_end_ptr);
+        }
+    }
+}
+
+static int http_receive_headline_and_headers(header_parser_state_t *state) {
+    state->header_buf[0] = '\0';
     state->stream->flags.keep_connection = 1;
     /* read parse headline */
     size_t bytes_read;
     char message_finished;
-    if (avs_stream_getline(state->stream->backend, &bytes_read,
-                           &message_finished, header, sizeof(header))) {
+    if (avs_stream_getline(
+            state->stream->backend, &bytes_read, &message_finished,
+            state->header_buf, state->header_buf_size)) {
         LOG(ERROR, "Could not receive HTTP headline");
         if (bytes_read == 0 && message_finished
                 && state->stream->flags.close_handling_required) {
@@ -183,53 +230,15 @@ static int http_receive_headers_internal(header_parser_state_t *state) {
         goto http_receive_headers_error;
     }
     state->stream->flags.close_handling_required = 0;
-    if (sscanf(header, "HTTP/%*s %d", &state->stream->status) != 1) {
+    if (sscanf(state->header_buf, "HTTP/%*s %d", &state->stream->status) != 1) {
         /* discard HTTP version
          * some weird servers return HTTP/1.0 to HTTP/1.1 */
-        LOG(ERROR, "Bad HTTP headline: %s", header);
+        LOG(ERROR, "Bad HTTP headline: %s", state->header_buf);
         goto http_receive_headers_error;
     }
     LOG(TRACE, "Received HTTP headline, status == %d", state->stream->status);
-    /* handle headers */
-    while (1) {
-        const char *value = NULL;
-        if (get_http_header_line(state->stream->backend,
-                                 header, sizeof(header))) {
-            LOG(ERROR, "Error receiving headers");
-            goto http_receive_headers_error;
-        }
-
-        if (header[0] == '\0') { /* empty line */
-            break;
-        }
-        LOG(TRACE, "HTTP header: %s", header);
-        bool header_handled;
-        if (!(value = http_header_split(header))
-                || http_handle_header(header, value, state, &header_handled)) {
-            LOG(ERROR, "Error parsing or handling headers");
-            goto http_receive_headers_error;
-        }
-
-        if (state->header_storage_end_ptr) {
-            assert(!*state->header_storage_end_ptr);
-            size_t key_len = strlen(header);
-            size_t value_len = strlen(value);
-            avs_http_header_t *element = (avs_http_header_t *)
-                    AVS_LIST_NEW_BUFFER(sizeof(avs_http_header_t)
-                            + key_len + value_len + 2);
-            if (!element) {
-                LOG(ERROR, "Could not store received header");
-                goto http_receive_headers_error;
-            }
-            element->key = (char *) element + sizeof(avs_http_header_t);
-            memcpy((char *) (intptr_t) element->key, header, key_len + 1);
-            element->value = element->key + key_len + 1;
-            memcpy((char *) (intptr_t) element->value, value, value_len + 1);
-            element->handled = header_handled;
-            *state->header_storage_end_ptr = element;
-            state->header_storage_end_ptr =
-                    AVS_LIST_NEXT_PTR(state->header_storage_end_ptr);
-        }
+    if (http_receive_headers_internal(state)) {
+        goto http_receive_headers_error;
     }
 
     switch (state->stream->status / 100) {
@@ -320,7 +329,7 @@ static void update_flags_after_receiving_headers(http_stream_t *stream) {
 }
 
 int _avs_http_receive_headers(http_stream_t *stream) {
-    int result;
+    int result = 0;
 
     /* The only case where we don't want to ignore 100-Continue messages is
      * just after sending chunked message headers - in such case, we need to
@@ -334,19 +343,32 @@ int _avs_http_receive_headers(http_stream_t *stream) {
         AVS_LIST_CLEAR(stream->incoming_header_storage);
     }
 
-    do {
-        header_parser_state_t parser_state = {
-            .stream = stream,
-            .header_storage_end_ptr = (AVS_LIST(const avs_http_header_t) *)
+    header_parser_state_t *parser_state = (header_parser_state_t *)
+            malloc(offsetof(header_parser_state_t, header_buf)
+                    + stream->http->buffer_sizes.header_line);
+    if (!parser_state) {
+        LOG(ERROR, "Out of memory");
+        stream->flags.keep_connection = 0;
+        result = -1;
+    }
+
+    while (!result) {
+        memset(parser_state, 0, sizeof(header_parser_state_t));
+        parser_state->stream = stream;
+        parser_state->header_storage_end_ptr =
+                (AVS_LIST(const avs_http_header_t) *)
                     (stream->incoming_header_storage
                         ? AVS_LIST_APPEND_PTR(stream->incoming_header_storage)
-                        : NULL)
-        };
-        result = http_receive_headers_internal(&parser_state);
-        avs_url_free(parser_state.redirect_url);
-    } while (!result
-             && skip_100_continue && stream->status == 100);
+                        : NULL);
+        parser_state->header_buf_size = stream->http->buffer_sizes.header_line;
+        result = http_receive_headline_and_headers(parser_state);
+        avs_url_free(parser_state->redirect_url);
+        if (!skip_100_continue || stream->status != 100) {
+            break;
+        }
+    }
 
+    free(parser_state);
     if (result && stream->incoming_header_storage) {
         AVS_LIST_CLEAR(stream->incoming_header_storage);
     }

@@ -40,13 +40,18 @@ typedef int (*read_chunk_size_getline_func_t)(void *state,
 static int read_chunk_size(const avs_http_buffer_sizes_t *buffer_sizes,
                            read_chunk_size_getline_func_t getline_func,
                            void *getline_func_state, size_t *out_value) {
-    char line_buf[buffer_sizes->header_line];
+    char *line_buf = (char *) malloc(buffer_sizes->header_line);
+    if (!line_buf) {
+        LOG(ERROR, "Out of memory");
+        return -1;
+    }
     unsigned long value = 0;
     int result;
     LOG(TRACE, "read_chunk_size");
     while (1) {
         char *endptr = NULL;
-        result = getline_func(getline_func_state, line_buf, sizeof(line_buf));
+        result = getline_func(getline_func_state,
+                              line_buf, buffer_sizes->header_line);
         if (result) { /* this also handles buffer too small problem */
             LOG(ERROR, "error reading chunk headline");
             break;
@@ -71,7 +76,7 @@ static int read_chunk_size(const avs_http_buffer_sizes_t *buffer_sizes,
         /* zero length chunk got, ignore the possible trailers and empty line */
         while (1) {
             result = getline_func(getline_func_state,
-                                  line_buf, sizeof(line_buf));
+                                  line_buf, buffer_sizes->header_line);
             if (result || !line_buf[0]) {
                 break;
             }
@@ -79,6 +84,7 @@ static int read_chunk_size(const avs_http_buffer_sizes_t *buffer_sizes,
         }
     }
     LOG(TRACE, "result == %d", result);
+    free(line_buf);
     return result;
 }
 
