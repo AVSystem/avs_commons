@@ -1225,6 +1225,30 @@ static int send_net(avs_net_abstract_socket_t *net_socket_,
     }
 }
 
+typedef struct {
+    size_t bytes_sent;
+    const void *data;
+    size_t data_length;
+    sockaddr_endpoint_union_t dest_addr;
+} send_to_internal_arg_t;
+
+static int send_to_internal(sockfd_t sockfd, void *arg_) {
+    send_to_internal_arg_t *arg = (send_to_internal_arg_t *) arg_;
+    ssize_t result = sendto(sockfd, arg->data, arg->data_length, MSG_NOSIGNAL,
+                            &arg->dest_addr.sockaddr_ep.addr,
+                            arg->dest_addr.sockaddr_ep.header.size);
+    if (result < 0) {
+        return (int) result;
+    } else if ((size_t) result != arg->data_length) {
+        LOG(ERROR, "send_to fail (%lu/%lu)",
+            (unsigned long) result, (unsigned long) arg->data_length);
+        errno = EIO;
+        return -1;
+    } else {
+        return 0;
+    }
+}
+
 static int send_to_net(avs_net_abstract_socket_t *net_socket_,
                        const void *buffer,
                        size_t buffer_length,
@@ -1232,38 +1256,31 @@ static int send_to_net(avs_net_abstract_socket_t *net_socket_,
                        const char *port) {
     avs_net_socket_t *net_socket = (avs_net_socket_t *) net_socket_;
     avs_net_addrinfo_t *info = NULL;
-    sockaddr_endpoint_union_t address;
-    ssize_t result = -1;
+    int result = -1;
+    send_to_internal_arg_t arg = {
+        .bytes_sent = 0,
+        .data = buffer,
+        .data_length = buffer_length
+    };
 
     if (!(info = resolve_addrinfo_for_socket(net_socket, host, port,
                                              false, PREFERRED_FAMILY_ONLY))) {
         info = resolve_addrinfo_for_socket(net_socket, host, port,
                                            false, PREFERRED_FAMILY_BLOCKED);
     }
-    if (!info || (result = (ssize_t) avs_net_addrinfo_next(info,
-                                                           &address.api_ep))) {
+    if (!info || (result = avs_net_addrinfo_next(info,
+                                                 &arg.dest_addr.api_ep))) {
         LOG(ERROR, "cannot resolve address: [%s]:%s", host, port);
         net_socket->error_code = EADDRNOTAVAIL;
     } else {
-        errno = 0;
-#warning "TODO: This most certainly needs to be converted to non-blocking"
-        result = sendto(net_socket->socket, buffer, buffer_length, 0,
-                        &address.sockaddr_ep.addr,
-                        address.sockaddr_ep.header.size);
+        avs_time_monotonic_t deadline = avs_time_monotonic_add(
+                avs_time_monotonic_now(), NET_SEND_TIMEOUT);
+        result = call_when_ready(&net_socket->socket, deadline, 0, 1, 1,
+                                 send_to_internal, &arg);
         net_socket->error_code = errno;
     }
-
     avs_net_addrinfo_delete(&info);
-    if (result < 0) {
-        return (int) result;
-    } else if ((size_t) result != buffer_length) {
-        LOG(ERROR, "send_to fail (%lu/%lu)",
-            (unsigned long) result, (unsigned long) buffer_length);
-        net_socket->error_code = EIO;
-        return -1;
-    } else {
-        return 0;
-    }
+    return result;
 }
 
 typedef struct {
