@@ -808,11 +808,13 @@ static short wait_until_ready(const volatile sockfd_t *sockfd_ptr,
 typedef int call_when_ready_cb_t(sockfd_t sockfd, void *arg);
 
 static int call_when_ready(const volatile sockfd_t *sockfd_ptr,
-                           avs_time_monotonic_t deadline,
+                           avs_time_duration_t timeout,
                            char in, char out, char err,
                            call_when_ready_cb_t *callback,
                            void *callback_arg) {
     int result = -1;
+    avs_time_monotonic_t deadline = avs_time_monotonic_add(
+            avs_time_monotonic_now(), timeout);
     while (wait_until_ready(sockfd_ptr, deadline, in, out, err)) {
         do {
             sockfd_t sockfd = *sockfd_ptr;
@@ -1194,9 +1196,7 @@ static int send_net(avs_net_abstract_socket_t *net_socket_,
 
     /* send at least one datagram, even if zero-length - hence do..while */
     do {
-        avs_time_monotonic_t deadline = avs_time_monotonic_add(
-                avs_time_monotonic_now(), NET_SEND_TIMEOUT);
-        if (call_when_ready(&net_socket->socket, deadline, 0, 1, 1,
+        if (call_when_ready(&net_socket->socket, NET_SEND_TIMEOUT, 0, 1, 1,
                             send_internal, &arg) < 0) {
             net_socket->error_code = errno;
             LOG(ERROR, "send failed: %s", strerror(errno));
@@ -1273,9 +1273,7 @@ static int send_to_net(avs_net_abstract_socket_t *net_socket_,
         LOG(ERROR, "cannot resolve address: [%s]:%s", host, port);
         net_socket->error_code = EADDRNOTAVAIL;
     } else {
-        avs_time_monotonic_t deadline = avs_time_monotonic_add(
-                avs_time_monotonic_now(), NET_SEND_TIMEOUT);
-        result = call_when_ready(&net_socket->socket, deadline, 0, 1, 1,
+        result = call_when_ready(&net_socket->socket, NET_SEND_TIMEOUT, 0, 1, 1,
                                  send_to_internal, &arg);
         net_socket->error_code = errno;
     }
@@ -1367,15 +1365,13 @@ static int receive_net(avs_net_abstract_socket_t *net_socket_,
                        void *buffer,
                        size_t buffer_length) {
     avs_net_socket_t *net_socket = (avs_net_socket_t *) net_socket_;
-    avs_time_monotonic_t deadline = avs_time_monotonic_add(
-            avs_time_monotonic_now(), net_socket->recv_timeout);
     recvfrom_impl_arg_t arg = {
         .socket_type = net_socket->type,
         .buffer = buffer,
         .buffer_length = buffer_length
     };
-    int result = call_when_ready(&net_socket->socket, deadline, 1, 0, 1,
-                                 recvfrom_impl, &arg);
+    int result = call_when_ready(&net_socket->socket, net_socket->recv_timeout,
+                                 1, 0, 1, recvfrom_impl, &arg);
     *out = arg.bytes_received;
     net_socket->error_code = errno;
     return result;
@@ -1393,15 +1389,13 @@ static int receive_from_net(avs_net_abstract_socket_t *net_socket_,
     host[0] = '\0';
     port[0] = '\0';
 
-    avs_time_monotonic_t deadline = avs_time_monotonic_add(
-            avs_time_monotonic_now(), net_socket->recv_timeout);
     recvfrom_impl_arg_t arg = {
         .socket_type = net_socket->type,
         .buffer = message_buffer,
         .buffer_length = buffer_size
     };
-    int result = call_when_ready(&net_socket->socket, deadline, 1, 0, 1,
-                                 recvfrom_impl, &arg);
+    int result = call_when_ready(&net_socket->socket, net_socket->recv_timeout,
+                                 1, 0, 1, recvfrom_impl, &arg);
     *out = arg.bytes_received;
     net_socket->error_code = errno;
     if (!result || net_socket->error_code == EMSGSIZE) {
@@ -1552,12 +1546,10 @@ static int accept_net(avs_net_abstract_socket_t *server_net_socket_,
         return -1;
     }
 
-    avs_time_monotonic_t deadline = avs_time_monotonic_add(
-            avs_time_monotonic_now(), NET_ACCEPT_TIMEOUT);
     accept_internal_arg_t arg = {
         .client_sockfd = INVALID_SOCKET
     };
-    if (call_when_ready(&server_net_socket->socket, deadline, 1, 0, 1,
+    if (call_when_ready(&server_net_socket->socket, NET_ACCEPT_TIMEOUT, 1, 0, 1,
                         accept_internal, &arg)) {
         return -1;
     }
