@@ -608,7 +608,9 @@ static int configure_socket(avs_net_socket_t *net_socket) {
         net_socket->configuration.priority);
     if (fcntl(net_socket->socket, F_SETFL, O_NONBLOCK) == -1) {
         net_socket->error_code = errno;
-        LOG(ERROR, "fcntl error: %s", strerror(errno));
+        LOG(ERROR,
+            "Could not switch socket to non-blocking mode (fcntl error: %s)",
+            strerror(errno));
         return -1;
     }
     if (net_socket->configuration.interface_name[0]) {
@@ -725,18 +727,18 @@ static short wait_until_ready_internal(sockfd_t sockfd,
     fd_set outfds;
     fd_set errfds;
     struct timeval timeval_timeout;
-    // When LWIP_TIMEVAL_PRIVATE is used, the timeval::tv_sec is long
-    // even though it normally should be time_t. Separate cast is
-    // added to avoid any kind of implicit conversion warnings.
-#if LWIP_TIMEVAL_PRIVATE
-    timeval_timeout.tv_sec = (long) timeout.seconds;
-#else
-    timeval_timeout.tv_sec = (time_t) timeout.seconds;
-#endif // LWIP_TIMEVAL_PRIVATE
-    if (timeval_timeout.tv_sec < 0) {
+    if (timeout.seconds < 0) {
         timeval_timeout.tv_sec = 0;
         timeval_timeout.tv_usec = 0;
     } else {
+        // When LWIP_TIMEVAL_PRIVATE is used, the timeval::tv_sec is long
+        // even though it normally should be time_t. Separate cast is
+        // added to avoid any kind of implicit conversion warnings.
+#if LWIP_TIMEVAL_PRIVATE
+        timeval_timeout.tv_sec = (long) timeout.seconds;
+#else
+        timeval_timeout.tv_sec = (time_t) timeout.seconds;
+#endif // LWIP_TIMEVAL_PRIVATE
         timeval_timeout.tv_usec = timeout.nanoseconds / 1000;
     }
     FD_ZERO(&infds);
@@ -786,6 +788,7 @@ static short wait_until_ready(const volatile sockfd_t *sockfd_ptr,
                               avs_time_monotonic_t deadline,
                               char in, char out, char err) {
     short result = 0;
+    avs_time_duration_t timeout;
     do {
         sockfd_t sockfd = *sockfd_ptr;
         if (sockfd == INVALID_SOCKET) {
@@ -794,12 +797,15 @@ static short wait_until_ready(const volatile sockfd_t *sockfd_ptr,
             errno = EBADF;
             return 0;
         }
-        avs_time_duration_t timeout =
-                avs_time_monotonic_diff(deadline, avs_time_monotonic_now());
+        timeout = avs_time_monotonic_diff(deadline, avs_time_monotonic_now());
         errno = 0;
         result = wait_until_ready_internal(sockfd, timeout, in, out, err);
-    } while (!result && errno == EINTR);
-    if (!result && !errno) {
+    } while (!result
+            && (errno == EINTR || errno == EAGAIN)
+            && !avs_time_duration_less(timeout, AVS_TIME_DURATION_ZERO));
+    // the last clause above makes sure that we call wait_until_ready_internal()
+    // with negative timeout at most once
+    if (!result && (!errno || errno == EINTR || errno == EAGAIN)) {
         errno = ETIMEDOUT;
     }
     return result;
@@ -826,10 +832,17 @@ static int call_when_ready(const volatile sockfd_t *sockfd_ptr,
                 errno = 0;
                 result = callback(sockfd, callback_arg);
             }
-        } while (result < 0 && errno == EINTR);
+        } while (result < 0
+                && errno == EINTR
+                && !avs_time_monotonic_before(deadline,
+                                              avs_time_monotonic_now()));
         if (result >= 0 || (errno != EWOULDBLOCK && errno != EAGAIN)) {
             // EWOULDBLOCK or EAGAIN might signify a false positive result from
-            // wait_until_ready(), try again; otherwise, return
+            // wait_until_ready(); this might happen e.g. if poll() returned an
+            // event when the kernel saw incoming data, but the data turned out
+            // to have e.g. wrong checksum and were discarded later - this is
+            // basically a spurious wakeup; in such case, try again;
+            // otherwise, return
             break;
         }
     }
@@ -1226,7 +1239,6 @@ static int send_net(avs_net_abstract_socket_t *net_socket_,
 }
 
 typedef struct {
-    size_t bytes_sent;
     const void *data;
     size_t data_length;
     sockaddr_endpoint_union_t dest_addr;
@@ -1258,7 +1270,6 @@ static int send_to_net(avs_net_abstract_socket_t *net_socket_,
     avs_net_addrinfo_t *info = NULL;
     int result = -1;
     send_to_internal_arg_t arg = {
-        .bytes_sent = 0,
         .data = buffer,
         .data_length = buffer_length
     };
@@ -1288,14 +1299,14 @@ typedef struct {
     size_t buffer_length;
     sockaddr_union_t src_addr;
     socklen_t src_addr_length;
-} recvfrom_impl_arg_t;
+} recvfrom_internal_arg_t;
 
 #ifndef HAVE_RECVMSG
 
 /* (2017-01-03) LwIP does not implement recvmsg call, try to simulate it using
  * plain recv(), with a little hack to try to detect truncated packets. */
-static int recvfrom_impl(sockfd_t sockfd, void *arg_) {
-    recvfrom_impl_arg_t *arg = (recvfrom_impl_arg_t *) arg_;
+static int recvfrom_internal(sockfd_t sockfd, void *arg_) {
+    recvfrom_internal_arg_t *arg = (recvfrom_internal_arg_t *) arg_;
     arg->src_addr_length = (socklen_t) sizeof(arg->src_addr);
 
     errno = 0;
@@ -1325,8 +1336,8 @@ static int recvfrom_impl(sockfd_t sockfd, void *arg_) {
 
 #else /* HAVE_RECVMSG */
 
-static int recvfrom_impl(sockfd_t sockfd, void *arg_) {
-    recvfrom_impl_arg_t *arg = (recvfrom_impl_arg_t *) arg_;
+static int recvfrom_internal(sockfd_t sockfd, void *arg_) {
+    recvfrom_internal_arg_t *arg = (recvfrom_internal_arg_t *) arg_;
     ssize_t recv_out;
     struct iovec iov = {
         .iov_base = arg->buffer,
@@ -1365,13 +1376,13 @@ static int receive_net(avs_net_abstract_socket_t *net_socket_,
                        void *buffer,
                        size_t buffer_length) {
     avs_net_socket_t *net_socket = (avs_net_socket_t *) net_socket_;
-    recvfrom_impl_arg_t arg = {
+    recvfrom_internal_arg_t arg = {
         .socket_type = net_socket->type,
         .buffer = buffer,
         .buffer_length = buffer_length
     };
     int result = call_when_ready(&net_socket->socket, net_socket->recv_timeout,
-                                 1, 0, 1, recvfrom_impl, &arg);
+                                 1, 0, 1, recvfrom_internal, &arg);
     *out = arg.bytes_received;
     net_socket->error_code = errno;
     return result;
@@ -1389,13 +1400,13 @@ static int receive_from_net(avs_net_abstract_socket_t *net_socket_,
     host[0] = '\0';
     port[0] = '\0';
 
-    recvfrom_impl_arg_t arg = {
+    recvfrom_internal_arg_t arg = {
         .socket_type = net_socket->type,
         .buffer = message_buffer,
         .buffer_length = buffer_size
     };
     int result = call_when_ready(&net_socket->socket, net_socket->recv_timeout,
-                                 1, 0, 1, recvfrom_impl, &arg);
+                                 1, 0, 1, recvfrom_internal, &arg);
     *out = arg.bytes_received;
     net_socket->error_code = errno;
     if (!result || net_socket->error_code == EMSGSIZE) {
