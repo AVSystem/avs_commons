@@ -297,14 +297,17 @@ get_constructor_for_socket_type(avs_net_socket_type_t type) {
         return _avs_net_create_tcp_socket;
     case AVS_NET_UDP_SOCKET:
         return _avs_net_create_udp_socket;
-#ifdef WITH_SSL
     case AVS_NET_SSL_SOCKET:
-        return _avs_net_create_ssl_socket;
     case AVS_NET_DTLS_SOCKET:
-        return _avs_net_create_dtls_socket;
-#endif
+#ifdef WITH_SSL
+        return type == AVS_NET_SSL_SOCKET ? _avs_net_create_ssl_socket
+                                          : _avs_net_create_dtls_socket;
+#else
+        LOG(ERROR, "could not create secure socket: (D)TLS support is disabled");
+        return NULL;
+#endif // WITH_SSL
     default:
-        LOG(ERROR, "unknown socket type");
+        LOG(ERROR, "unknown socket type: %d", (int) type);
         return NULL;
     }
 }
@@ -323,7 +326,6 @@ static int create_bare_socket(avs_net_abstract_socket_t **socket,
     if (constructor) {
         return constructor(socket, configuration);
     } else {
-        LOG(ERROR, "cannot create socket");
         return -1;
     }
 }
