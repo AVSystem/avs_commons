@@ -356,6 +356,9 @@ static int get_opt_ssl(avs_net_abstract_socket_t *ssl_socket_,
     case AVS_NET_SOCKET_OPT_SESSION_RESUMED:
         out_option_value->flag = is_session_resumed(ssl_socket);
         return 0;
+    case AVS_NET_SOCKET_OPT_IS_SECURE:
+        out_option_value->flag = true;
+        return 0;
     default:
         retval = avs_net_socket_get_opt(ssl_socket->backend_socket, option_key,
                                         out_option_value);

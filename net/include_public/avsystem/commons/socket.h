@@ -527,7 +527,13 @@ typedef enum {
      * call will still be successful. This option makes it possible to check
      * whether the session has been resumed, or is a new unrelated one.
      */
-    AVS_NET_SOCKET_OPT_SESSION_RESUMED
+    AVS_NET_SOCKET_OPT_SESSION_RESUMED,
+    /**
+     * Used to check if the underlying socket is secure (i.e. whether it is a
+     * D(TLS) socket). The value is passed as <c>flag</c> field of the @ref
+     * avs_net_socket_opt_value_t union.
+     */
+    AVS_NET_SOCKET_OPT_IS_SECURE
 } avs_net_socket_opt_key_t;
 
 typedef enum {
