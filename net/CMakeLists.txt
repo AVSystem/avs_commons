@@ -52,8 +52,6 @@ elseif(WITH_TINYDTLS)
     set(SOURCES ${SOURCES} src/tinydtls/tinydtls.c)
 endif()
 
-list(APPEND TEST_SOURCES src/test/opt.c)
-
 set(PRIVATE_HEADERS
     src/api.h
     src/global.h

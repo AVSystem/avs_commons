@@ -1735,9 +1735,6 @@ static int get_opt_net(avs_net_abstract_socket_t *net_socket_,
         return get_mtu(net_socket, &out_option_value->mtu);
     case AVS_NET_SOCKET_OPT_INNER_MTU:
         return get_inner_mtu(net_socket, &out_option_value->mtu);
-    case AVS_NET_SOCKET_OPT_IS_SECURE:
-        out_option_value->flag = false;
-        return 0;
     default:
         LOG(ERROR, "get_opt_net: unknown or unsupported option key");
         net_socket->error_code = EINVAL;
