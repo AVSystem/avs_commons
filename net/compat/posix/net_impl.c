@@ -1736,7 +1736,10 @@ static int get_opt_net(avs_net_abstract_socket_t *net_socket_,
     case AVS_NET_SOCKET_OPT_INNER_MTU:
         return get_inner_mtu(net_socket, &out_option_value->mtu);
     default:
-        LOG(ERROR, "get_opt_net: unknown or unsupported option key");
+        LOG(DEBUG,
+            "get_opt_net: unknown or unsupported option key: "
+            "(avs_net_socket_opt_key_t) %d",
+            (int) option_key);
         net_socket->error_code = EINVAL;
         return -1;
     }
@@ -1752,7 +1755,10 @@ static int set_opt_net(avs_net_abstract_socket_t *net_socket_,
         net_socket->error_code = 0;
         return 0;
     default:
-        LOG(ERROR, "set_opt_net: unknown or unsupported option key");
+        LOG(DEBUG,
+            "set_opt_net: unknown or unsupported option key: "
+            "(avs_net_socket_opt_key_t) %d",
+            (int) option_key);
         net_socket->error_code = EINVAL;
         return -1;
     }
