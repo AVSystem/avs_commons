@@ -81,13 +81,18 @@ void *avs_calloc(size_t nmemb, size_t size);
  * - If the @p size is 0, the call is equivalent to avs_free(ptr).
  * - If the @p ptr is NULL, the call is equivalent to avs_malloc(size).
  *
+ * Also note that, if the block pointed to by @p ptr could not be extended
+ * in place, the function allocates a new block of memory, copies data from
+ * an old block to a new block, and finally it avs_free()s the old block.
+ *
  * NOTE: If in doubt, refer to standard C realloc() documentation.
  *
  * @param ptr   Pointer to operate on.
  * @param size  New size.
  * @returns either NULL or a unique pointer value (not necessairly equal in
  *          value to the @p ptr) that can later be successfully passed to @ref
- *          avs_free().
+ *          avs_free(). On failure NULL is returned, and the @p ptr remains
+ *          untouched.
  */
 void *avs_realloc(void *ptr, size_t size);
 
