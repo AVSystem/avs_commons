@@ -784,32 +784,39 @@ static int wait_until_ready_internal(sockfd_t sockfd,
 #endif
 }
 
+static int try_wait_until_ready(sockfd_t sockfd,
+                                avs_time_monotonic_t deadline,
+                                char in, char out, char err) {
+    avs_time_duration_t timeout =
+            avs_time_monotonic_diff(deadline, avs_time_monotonic_now());
+
+    errno = 0;
+    if (!wait_until_ready_internal(sockfd, timeout, in, out, err)) {
+        return 0;
+    }
+
+    if (!errno || avs_time_duration_less(timeout, AVS_TIME_DURATION_ZERO)) {
+        errno = ETIMEDOUT;
+    }
+    return -1;
+}
+
 static int wait_until_ready(const volatile sockfd_t *sockfd_ptr,
                             avs_time_monotonic_t deadline,
                             char in, char out, char err) {
     int result = -1;
-    avs_time_duration_t timeout;
     do {
         sockfd_t sockfd = *sockfd_ptr;
         if (sockfd == INVALID_SOCKET) {
             // socket might have been closed in signal handler
             // or something like this
             errno = EBADF;
-            result = -1;
-        } else {
-            timeout = avs_time_monotonic_diff(deadline,
-                                              avs_time_monotonic_now());
-            errno = 0;
-            result = wait_until_ready_internal(sockfd, timeout, in, out, err);
+            return -1;
         }
-    } while (result
-            && (errno == EINTR || errno == EAGAIN)
-            && !avs_time_duration_less(timeout, AVS_TIME_DURATION_ZERO));
-    // the last clause above makes sure that we call wait_until_ready_internal()
-    // with negative timeout at most once
-    if (result && (!errno || errno == EINTR || errno == EAGAIN)) {
-        errno = ETIMEDOUT;
-    }
+
+        result = try_wait_until_ready(sockfd, deadline, in, out, err);
+    } while (result && (errno == EINTR || errno == EAGAIN));
+
     return result;
 }
 
@@ -1412,6 +1419,7 @@ static int receive_from_net(avs_net_abstract_socket_t *net_socket_,
     *out = arg.bytes_received;
     net_socket->error_code = errno;
     if (!result || net_socket->error_code == EMSGSIZE) {
+        errno = 0;
         int sub_retval = host_port_to_string(
                 &arg.src_addr.addr, arg.src_addr_length,
                 host, (socklen_t) host_size, port, (socklen_t) port_size);
