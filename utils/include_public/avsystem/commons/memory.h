@@ -28,7 +28,8 @@ extern "C" {
  * for storage of any type. The returned memory is not initialized.
  *
  * If @p size is 0, the avs_malloc() returns a pointer hat can later be
- * successfully passed to @ref avs_free().
+ * successfully passed to @ref avs_free(), which, depending on the
+ * implementation, may be NULL or not.
  *
  * NOTE: If in doubt, refer to standard C malloc() documentation.
  *
