@@ -23,6 +23,8 @@
 
 #include "api.h"
 
+#include <avsystem/commons/memory.h>
+
 VISIBILITY_PRIVATE_HEADER_BEGIN
 
 /* Required non-common static method implementations */
@@ -110,7 +112,8 @@ static int create_ssl_socket(avs_net_abstract_socket_t **socket,
         return -1;
     }
 
-    ssl_socket_t *ssl_sock = (ssl_socket_t *) calloc(1, sizeof (ssl_socket_t));
+    ssl_socket_t *ssl_sock =
+            (ssl_socket_t *) avs_calloc(1, sizeof(ssl_socket_t));
     *socket = (avs_net_abstract_socket_t *) ssl_sock;
     if (*socket) {
         LOG(TRACE, "configure_ssl(socket=%p, configuration=%p)",
@@ -378,9 +381,9 @@ int _avs_net_create_dtls_socket(avs_net_abstract_socket_t **socket,
 }
 
 static inline void _avs_net_psk_cleanup(avs_net_owned_psk_t *psk) {
-    free(psk->psk);
+    avs_free(psk->psk);
     psk->psk = NULL;
-    free(psk->identity);
+    avs_free(psk->identity);
     psk->identity = NULL;
 }
 
@@ -393,7 +396,7 @@ static inline int _avs_net_psk_copy(avs_net_owned_psk_t *dst,
     avs_net_owned_psk_t out_psk;
     memset(&out_psk, 0, sizeof(out_psk));
     out_psk.psk_size = src->psk_size;
-    out_psk.psk = malloc(src->psk_size);
+    out_psk.psk = avs_malloc(src->psk_size);
     if (!out_psk.psk) {
         LOG(ERROR, "out of memory");
         return -1;
@@ -401,9 +404,9 @@ static inline int _avs_net_psk_copy(avs_net_owned_psk_t *dst,
 
     out_psk.identity_size = src->identity_size;
     if (out_psk.identity_size) {
-        out_psk.identity = malloc(src->identity_size);
+        out_psk.identity = avs_malloc(src->identity_size);
         if (!out_psk.identity) {
-            free(out_psk.psk);
+            avs_free(out_psk.psk);
             LOG(ERROR, "out of memory");
             return -1;
         }

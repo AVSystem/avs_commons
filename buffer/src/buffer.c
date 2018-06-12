@@ -20,8 +20,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <avsystem/commons/defs.h>
 #include <avsystem/commons/buffer.h>
+#include <avsystem/commons/defs.h>
+#include <avsystem/commons/memory.h>
 
 #define MODULE_NAME avs_buffer
 #include <x_log_config.h>
@@ -53,7 +54,7 @@ void avs_buffer_reset(avs_buffer_t *buffer) {
 
 int avs_buffer_create(avs_buffer_t **buffer_ptr, size_t capacity) {
     *buffer_ptr = (avs_buffer_t *)
-            malloc(offsetof(avs_buffer_t, data) + capacity);
+            avs_malloc(offsetof(avs_buffer_t, data) + capacity);
     if (*buffer_ptr) {
         (*buffer_ptr)->capacity = capacity;
         avs_buffer_reset(*buffer_ptr);
@@ -65,7 +66,7 @@ int avs_buffer_create(avs_buffer_t **buffer_ptr, size_t capacity) {
 }
 
 void avs_buffer_free(avs_buffer_t **buffer) {
-    free(*buffer);
+    avs_free(*buffer);
     *buffer = NULL;
 }
 

@@ -18,6 +18,7 @@
 #include <string.h>
 #include <unistd.h>
 
+#include <avsystem/commons/memory.h>
 #include <avsystem/commons/unit/test.h>
 
 int mkstemp(char *filename_template);
@@ -66,7 +67,7 @@ AVS_UNIT_TEST(stream_file, write_and_read) {
     size_t bytes_read;
     char end_of_msg;
     /* let the valgrind check for eventual overflows */
-    char *buf = (char *) malloc(sizeof(data));
+    char *buf = (char *) avs_malloc(sizeof(data));
 
     avs_stream_abstract_t *stream;
 
@@ -89,7 +90,7 @@ AVS_UNIT_TEST(stream_file, write_and_read) {
     AVS_UNIT_ASSERT_EQUAL(avs_stream_errno(stream), EBADF);
     avs_stream_cleanup(&stream);
     unlink(filename);
-    free(buf);
+    avs_free(buf);
 }
 
 AVS_UNIT_TEST(stream_file, seek_peek_and_read) {

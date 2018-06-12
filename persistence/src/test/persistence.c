@@ -15,6 +15,7 @@
  */
 
 #include <avsystem/commons/list.h>
+#include <avsystem/commons/memory.h>
 #include <avsystem/commons/persistence.h>
 #include <avsystem/commons/stream.h>
 #include <avsystem/commons/stream/stream_membuf.h>
@@ -44,7 +45,7 @@ persistence_context_constructor_t(avs_stream_abstract_t *);
 
 static persistence_test_env_t *persistence_test_env_create(void) {
     persistence_test_env_t *env =
-            (persistence_test_env_t *) calloc(1, sizeof(*env));
+            (persistence_test_env_t *) avs_calloc(1, sizeof(*env));
     AVS_UNIT_ASSERT_NOT_NULL(env);
     env->stream = avs_stream_membuf_create();
     AVS_UNIT_ASSERT_NOT_NULL(env->stream);
@@ -56,7 +57,7 @@ static void persistence_test_env_destroy(persistence_test_env_t **env) {
         avs_persistence_context_delete(*(*env)->contexts);
     }
     avs_stream_cleanup(&(*env)->stream);
-    free(*env);
+    avs_free(*env);
 }
 
 static avs_persistence_context_t *

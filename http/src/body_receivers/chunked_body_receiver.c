@@ -18,6 +18,7 @@
 
 #include <errno.h>
 
+#include <avsystem/commons/memory.h>
 #include <avsystem/commons/stream/stream_net.h>
 
 #include "../body_receivers.h"
@@ -40,7 +41,7 @@ typedef int (*read_chunk_size_getline_func_t)(void *state,
 static int read_chunk_size(const avs_http_buffer_sizes_t *buffer_sizes,
                            read_chunk_size_getline_func_t getline_func,
                            void *getline_func_state, size_t *out_value) {
-    char *line_buf = (char *) malloc(buffer_sizes->header_line);
+    char *line_buf = (char *) avs_malloc(buffer_sizes->header_line);
     if (!line_buf) {
         LOG(ERROR, "Out of memory");
         return -1;
@@ -84,7 +85,7 @@ static int read_chunk_size(const avs_http_buffer_sizes_t *buffer_sizes,
         }
     }
     LOG(TRACE, "result == %d", result);
-    free(line_buf);
+    avs_free(line_buf);
     return result;
 }
 
@@ -236,7 +237,7 @@ avs_stream_abstract_t *_avs_http_body_receiver_chunked_create(
         avs_stream_abstract_t *backend,
         const avs_http_buffer_sizes_t *buffer_sizes) {
     chunked_receiver_t *retval =
-            (chunked_receiver_t *) calloc(1, sizeof(*retval));
+            (chunked_receiver_t *) avs_calloc(1, sizeof(*retval));
     LOG(TRACE, "create_content_length_receiver");
     if (retval) {
         *(const avs_stream_v_table_t **) (intptr_t) &retval->vtable =

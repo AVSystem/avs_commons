@@ -21,6 +21,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <avsystem/commons/memory.h>
 #include <avsystem/commons/url.h>
 #include <avsystem/commons/utils.h>
 
@@ -411,7 +412,7 @@ avs_url_t *avs_url_parse(const char *raw_url) {
     // Thus, we know that we need out->data to be strlen(raw_url)+1 bytes long.
     size_t data_length = strlen(raw_url) + 1;
     avs_url_t *out =
-            (avs_url_t *) calloc(1, offsetof(avs_url_t, data) + data_length);
+            (avs_url_t *) avs_calloc(1, offsetof(avs_url_t, data) + data_length);
     if (!out) {
         LOG(ERROR, "out of memory");
         return NULL;
@@ -424,7 +425,7 @@ avs_url_t *avs_url_parse(const char *raw_url) {
             || url_parse_port(&raw_url, &data_out_ptr, data_length, out)
             || url_parse_path(&raw_url, &data_out_ptr, data_length, out)
             || url_parsed(raw_url)) {
-        free(out);
+        avs_free(out);
         return NULL;
     }
     return out;
@@ -435,7 +436,7 @@ avs_url_t *avs_url_copy(const avs_url_t *url) {
     const char *last_nullbyte = path + strlen(path);
     ptrdiff_t alloc_size = last_nullbyte + 1 - (const char *) url;
     assert(alloc_size > 0 && (size_t) alloc_size > offsetof(avs_url_t, data));
-    avs_url_t *out = (avs_url_t *) malloc((size_t) alloc_size);
+    avs_url_t *out = (avs_url_t *) avs_malloc((size_t) alloc_size);
     if (!out) {
         LOG(ERROR, "out of memory");
         return NULL;
@@ -469,7 +470,7 @@ const char *avs_url_path(const avs_url_t *url) {
 }
 
 void avs_url_free(avs_url_t *url) {
-    free(url);
+    avs_free(url);
 }
 
 #ifdef AVS_UNIT_TESTING

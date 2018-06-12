@@ -32,6 +32,7 @@
 #include <sys/prctl.h>
 #endif // __linux__
 
+#include <avsystem/commons/memory.h>
 #include <avsystem/commons/stream.h>
 #include <avsystem/commons/stream_v_table.h>
 #include <avsystem/commons/unit/test.h>
@@ -326,7 +327,7 @@ AVS_UNIT_TEST(coap_ctx, coap_udp) {
     info.identity.msg_id = 4;
 
     size_t storage_size = COAP_MSG_MAX_SIZE;
-    void *storage = malloc(storage_size);
+    void *storage = avs_malloc(storage_size);
 
     const avs_coap_msg_t *msg = avs_coap_msg_build_without_payload(
             avs_coap_ensure_aligned_buffer(storage),
@@ -344,14 +345,14 @@ AVS_UNIT_TEST(coap_ctx, coap_udp) {
     AVS_UNIT_ASSERT_SUCCESS(avs_coap_ctx_send(ctx, backend, msg));
 
     avs_coap_msg_t *recv_msg __attribute__((cleanup(free_msg))) =
-            (avs_coap_msg_t *) malloc(COAP_MSG_MAX_SIZE);
+            (avs_coap_msg_t *) avs_malloc(COAP_MSG_MAX_SIZE);
     memset(recv_msg, 0, COAP_MSG_MAX_SIZE);
     AVS_UNIT_ASSERT_SUCCESS(
             avs_coap_ctx_recv(ctx, backend, recv_msg, COAP_MSG_MAX_SIZE));
 
     AVS_UNIT_ASSERT_EQUAL_BYTES_SIZED(recv_msg, msg, msg->length);
     avs_net_socket_cleanup(&backend);
-    free(storage);
+    avs_free(storage);
     avs_coap_ctx_cleanup(&ctx);
 }
 
@@ -369,7 +370,7 @@ AVS_UNIT_TEST(coap_ctx, coap_dtls) {
     info.identity.msg_id = 4;
 
     size_t storage_size = COAP_MSG_MAX_SIZE;
-    void *storage = malloc(storage_size);
+    void *storage = avs_malloc(storage_size);
 
     const avs_coap_msg_t *msg = avs_coap_msg_build_without_payload(
             avs_coap_ensure_aligned_buffer(storage),
@@ -396,7 +397,7 @@ AVS_UNIT_TEST(coap_ctx, coap_dtls) {
     AVS_UNIT_ASSERT_SUCCESS(avs_coap_ctx_send(ctx, backend, msg));
 
     avs_coap_msg_t *recv_msg __attribute__((cleanup(free_msg))) =
-            (avs_coap_msg_t *) malloc(COAP_MSG_MAX_SIZE);
+            (avs_coap_msg_t *) avs_malloc(COAP_MSG_MAX_SIZE);
     memset(recv_msg, 0, COAP_MSG_MAX_SIZE);
     AVS_UNIT_ASSERT_SUCCESS(
             avs_coap_ctx_recv(ctx, backend, recv_msg, COAP_MSG_MAX_SIZE));
@@ -421,5 +422,5 @@ AVS_UNIT_TEST(coap_ctx, coap_dtls) {
 
     avs_net_socket_cleanup(&backend);
     avs_coap_ctx_cleanup(&ctx);
-    free(storage);
+    avs_free(storage);
 }

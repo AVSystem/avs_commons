@@ -23,6 +23,7 @@
 #include <limits.h>
 
 #include <avsystem/commons/errno.h>
+#include <avsystem/commons/memory.h>
 #include <avsystem/commons/stream/stream_membuf.h>
 #include <avsystem/commons/stream_v_table.h>
 
@@ -61,7 +62,7 @@ static int stream_membuf_write_some(avs_stream_abstract_t *stream_,
     }
     if (stream->buffer_size < stream->index_write + *inout_data_length) {
         size_t new_size = 2 * stream->buffer_size + *inout_data_length;
-        char *new_buffer = (char *) realloc(stream->buffer, new_size);
+        char *new_buffer = (char *) avs_realloc(stream->buffer, new_size);
         if (!new_buffer) {
             *inout_data_length = stream->buffer_size - stream->index_write;
         } else {
@@ -124,7 +125,7 @@ static int stream_membuf_reset(avs_stream_abstract_t *stream_) {
 
 static int stream_membuf_close(avs_stream_abstract_t *stream_) {
     avs_stream_membuf_t *stream = (avs_stream_membuf_t *) stream_;
-    free(stream->buffer);
+    avs_free(stream->buffer);
     stream->buffer = NULL;
     stream->buffer_size = 0;
     stream->index_read = 0;
@@ -136,7 +137,7 @@ static int stream_membuf_fit(avs_stream_abstract_t *stream_) {
     avs_stream_membuf_t *stream = (avs_stream_membuf_t *) stream_;
     size_t max_index = stream->index_write;
     if (stream->buffer_size > max_index) {
-        void *new_buffer = realloc(stream->buffer, max_index);
+        void *new_buffer = avs_realloc(stream->buffer, max_index);
         if (new_buffer || max_index == 0) {
             stream->buffer = (char *) new_buffer;
             stream->buffer_size = max_index;
@@ -172,7 +173,7 @@ static const avs_stream_v_table_t membuf_stream_vtable = {
 avs_stream_abstract_t *
 avs_stream_membuf_create(void) {
     avs_stream_membuf_t *membuf =
-        (avs_stream_membuf_t *) calloc(1, sizeof(avs_stream_membuf_t));
+            (avs_stream_membuf_t *) avs_calloc(1, sizeof(avs_stream_membuf_t));
     const void *vtable = &membuf_stream_vtable;
     if (!membuf) {
         return NULL;

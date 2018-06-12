@@ -17,6 +17,8 @@
 #include <avs_commons_posix_config.h>
 
 #include <avsystem/commons/defs.h>
+#include <avsystem/commons/memory.h>
+#include <avsystem/commons/utils.h>
 
 #include "stack_trace.h"
 
@@ -282,7 +284,7 @@ static char *addr2line(void* addr) {
     char *last = NULL;
 
     if (addr2line_safe_ask(&line, &size, "%p\n", addr)) {
-        return strdup("<addr2line failed>");
+        return avs_strdup("<addr2line failed>");
     }
 
     last = find_last_not_of(line, "\r\n");
@@ -311,7 +313,7 @@ static stack_frame_t *frame_from_symbol(void *address,
                                         const char *symbol) {
     size_t symbol_len = strlen(symbol);
     stack_frame_t *frame = (stack_frame_t*)
-        calloc(1, sizeof(stack_frame_t) + symbol_len + 1);
+        avs_calloc(1, sizeof(stack_frame_t) + symbol_len + 1);
 
     if (!frame) {
         return NULL;
@@ -332,7 +334,7 @@ static stack_frame_t *frame_from_address(void *address) {
 
     frame = frame_from_symbol(address, symbol);
 
-    free(symbol);
+    avs_free(symbol);
     return frame;
 }
 
@@ -349,10 +351,10 @@ static void stack_trace_release(stack_trace_t **trace) {
     if (trace && *trace) {
         size_t i;
         for (i = 0; i < (*trace)->num_frames; ++i) {
-            free((*trace)->frames[i]);
+            avs_free((*trace)->frames[i]);
         }
 
-        free(*trace);
+        avs_free(*trace);
         *trace = NULL;
     }
 }
@@ -389,7 +391,7 @@ static stack_trace_t *stack_trace_create(size_t skip_entries_count) {
     }
 
     trace = (stack_trace_t*)
-        calloc(1, sizeof(stack_trace_t)
+        avs_calloc(1, sizeof(stack_trace_t)
                   + (size_t)num_addrs * sizeof(stack_frame_t));
     if (!trace) {
         return NULL;
@@ -398,7 +400,7 @@ static stack_trace_t *stack_trace_create(size_t skip_entries_count) {
     symbols = backtrace_symbols(addrs, num_addrs);
     result = fill_stack_trace(trace, addrs + skip_entries_count,
                               (size_t)num_addrs - skip_entries_count, symbols);
-    free(symbols);
+    avs_free(symbols);
 
     if (result) {
         stack_trace_release(&trace);

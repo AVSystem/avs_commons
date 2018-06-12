@@ -38,11 +38,11 @@ static inline void setup_msg(avs_coap_msg_t *msg,
 }
 
 static void free_msg(avs_coap_msg_t **msg) {
-    free(*msg);
+    avs_free(*msg);
 }
 
 static inline void free_msg_array(avs_coap_msg_t *(*arr)[]) {
     for (size_t i = 0; (*arr)[i]; ++i) {
-        free((*arr)[i]);
+        avs_free((*arr)[i]);
     }
 }

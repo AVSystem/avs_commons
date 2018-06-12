@@ -16,6 +16,7 @@
 
 #include <avs_commons_config.h>
 
+#include <avsystem/commons/memory.h>
 #include <avsystem/commons/stream_v_table.h>
 
 #include "zlib.h"
@@ -68,8 +69,8 @@ static int decode_more_data(decoding_stream_t *stream,
         return decode_more_data_with_buffer(stream, temporary_buffer,
                                             buffer_length, out_no_more_data);
     } else {
-        char *internal_buffer =
-                (char *) malloc(stream->buffer_sizes->content_coding_min_input);
+        char *internal_buffer = (char *) avs_malloc(
+                stream->buffer_sizes->content_coding_min_input);
         if (!internal_buffer) {
             return -1;
         }
@@ -77,7 +78,7 @@ static int decode_more_data(decoding_stream_t *stream,
                 stream, internal_buffer,
                 stream->buffer_sizes->content_coding_min_input,
                 out_no_more_data);
-        free(internal_buffer);
+        avs_free(internal_buffer);
         return result;
     }
 }
@@ -188,7 +189,7 @@ _avs_http_decoding_stream_create(avs_stream_abstract_t *backend,
                                  avs_stream_abstract_t *decoder,
                                  const avs_http_buffer_sizes_t *buffer_sizes) {
     decoding_stream_t *retval =
-            (decoding_stream_t *) malloc(sizeof(*retval));
+            (decoding_stream_t *) avs_malloc(sizeof(*retval));
     LOG(TRACE, "create_decoding_stream");
     if (retval) {
         *(const avs_stream_v_table_t **) (intptr_t) &retval->vtable =

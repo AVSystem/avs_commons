@@ -146,7 +146,7 @@ int avs_strncasecmp(const char *s1, const char *s2, size_t n);
 char *avs_strtok(char *str, const char *delim, char **saveptr);
 
 /**
- * Creates a <c>malloc()</c>-allocated copy of a given string.
+ * Creates a <c>avs_malloc()</c>-allocated copy of a given string.
  */
 char *avs_strdup(const char *str);
 

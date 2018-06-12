@@ -32,6 +32,7 @@
 #include <openssl/bn.h>
 
 #include <avsystem/commons/errno.h>
+#include <avsystem/commons/memory.h>
 #include <avsystem/commons/time.h>
 
 #include "../global.h"
@@ -925,7 +926,7 @@ static int cleanup_ssl(avs_net_abstract_socket_t **socket_) {
         SSL_CTX_free((*socket)->ctx);
         (*socket)->ctx = NULL;
     }
-    free(*socket);
+    avs_free(*socket);
     *socket = NULL;
     return 0;
 }

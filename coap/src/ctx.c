@@ -25,6 +25,7 @@
 
 #include <avsystem/commons/errno.h>
 #include <avsystem/commons/list.h>
+#include <avsystem/commons/memory.h>
 
 #include "coap_log.h"
 #include "msg_cache.h"
@@ -50,7 +51,7 @@ static const avs_coap_tx_params_t DEFAULT_TX_PARAMS = {
 };
 
 int avs_coap_ctx_create(avs_coap_ctx_t **ctx, size_t msg_cache_size) {
-    *ctx = (avs_coap_ctx_t *) calloc(1, sizeof(avs_coap_ctx_t));
+    *ctx = (avs_coap_ctx_t *) avs_calloc(1, sizeof(avs_coap_ctx_t));
     if (!*ctx) {
         return -1;
     }
@@ -59,7 +60,7 @@ int avs_coap_ctx_create(avs_coap_ctx_t **ctx, size_t msg_cache_size) {
         (*ctx)->msg_cache = _avs_coap_msg_cache_create(msg_cache_size);
         if (!(*ctx)->msg_cache) {
             LOG(ERROR, "could not create message cache");
-            free(*ctx);
+            avs_free(*ctx);
             return -1;
         }
     }
@@ -112,7 +113,7 @@ void avs_coap_ctx_cleanup(avs_coap_ctx_t **ctx) {
     }
 
     _avs_coap_msg_cache_release(&(*ctx)->msg_cache);
-    free(*ctx);
+    avs_free(*ctx);
     *ctx = NULL;
 }
 

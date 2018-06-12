@@ -20,6 +20,7 @@
 #include <string.h>
 
 #include <avsystem/commons/errno.h>
+#include <avsystem/commons/memory.h>
 #include <avsystem/commons/stream/netbuf.h>
 #include <avsystem/commons/stream/stream_net.h>
 #include <avsystem/commons/time.h>
@@ -397,7 +398,7 @@ int avs_http_open_stream(avs_stream_abstract_t **out,
         string_or_null(avs_url_path(url)), auth_username ? auth_username : "",
         auth_password ? auth_password : "");
 
-    stream = (http_stream_t *) calloc(
+    stream = (http_stream_t *) avs_calloc(
             1,
             offsetof(http_stream_t, out_buffer) + http->buffer_sizes.body_send);
     if (!stream) {
@@ -462,7 +463,7 @@ http_open_stream_error:
     }
     if (stream) {
         _avs_http_auth_clear(&stream->auth);
-        free(stream);
+        avs_free(stream);
     }
     return result;
 }

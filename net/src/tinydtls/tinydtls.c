@@ -23,6 +23,7 @@
 #include <tinydtls/dtls.h>
 
 #include <avsystem/commons/errno.h>
+#include <avsystem/commons/memory.h>
 
 #include "../global.h"
 #include "../net_impl.h"
@@ -163,7 +164,7 @@ static int cleanup_ssl(avs_net_abstract_socket_t **socket_) {
     _avs_net_psk_cleanup(&socket->psk);
 #endif
     close_ssl(*socket_);
-    free(socket);
+    avs_free(socket);
     *socket_ = NULL;
     return 0;
 }

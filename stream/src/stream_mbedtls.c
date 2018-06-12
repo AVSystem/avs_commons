@@ -21,6 +21,7 @@
 #include <mbedtls/md5.h>
 #include <mbedtls/version.h>
 
+#include <avsystem/commons/memory.h>
 #include <avsystem/commons/stream/md5.h>
 
 #include "md5_common.h"
@@ -104,12 +105,12 @@ static const avs_stream_v_table_t md5_vtable = {
 
 avs_stream_abstract_t *avs_stream_md5_create(void) {
     mbedtls_md5_stream_t *retval =
-            (mbedtls_md5_stream_t *) malloc(sizeof (mbedtls_md5_stream_t));
+            (mbedtls_md5_stream_t *) avs_malloc(sizeof(mbedtls_md5_stream_t));
     if (retval) {
         _avs_stream_md5_common_init(&retval->common, &md5_vtable);
         mbedtls_md5_init(&retval->ctx);
         if (mbedtls_md5_starts_ret(&retval->ctx)) {
-            free(retval);
+            avs_free(retval);
             retval = NULL;
         }
     }

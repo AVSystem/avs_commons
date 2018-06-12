@@ -19,6 +19,7 @@
 #include <assert.h>
 #include <inttypes.h>
 
+#include <avsystem/commons/memory.h>
 #include <avsystem/commons/persistence.h>
 #include <avsystem/commons/utils.h>
 
@@ -273,12 +274,12 @@ static int restore_sized_buffer(avs_persistence_context_t *ctx,
     if (size32 == 0) {
         return 0;
     }
-    if (!(*data_ptr = malloc(size32))) {
+    if (!(*data_ptr = avs_malloc(size32))) {
         LOG(ERROR, "Cannot allocate %" PRIu32 " bytes", size32);
         return -1;
     }
     if ((retval = restore_bytes(ctx, *data_ptr, size32))) {
-        free(*data_ptr);
+        avs_free(*data_ptr);
         *data_ptr = NULL;
     } else {
         *size_ptr = size32;
@@ -295,7 +296,7 @@ static int restore_string(avs_persistence_context_t *ctx,
     }
     if (size > 0 && (*string_ptr)[size - 1] != '\0') {
         LOG(ERROR, "Invalid string");
-        free(*string_ptr);
+        avs_free(*string_ptr);
         *string_ptr = NULL;
         return -1;
     }
@@ -502,7 +503,7 @@ avs_persistence_store_context_new(avs_stream_abstract_t *stream) {
         return NULL;
     }
     avs_persistence_context_t *ctx = (avs_persistence_context_t *)
-            calloc(1, sizeof(avs_persistence_context_t));
+            avs_calloc(1, sizeof(avs_persistence_context_t));
     if (ctx) {
         *ctx = (avs_persistence_context_t) INIT_STORE_CONTEXT(stream);
     }
@@ -515,7 +516,7 @@ avs_persistence_restore_context_new(avs_stream_abstract_t *stream) {
         return NULL;
     }
     avs_persistence_context_t *ctx = (avs_persistence_context_t *)
-            calloc(1, sizeof(avs_persistence_context_t));
+            avs_calloc(1, sizeof(avs_persistence_context_t));
     if (ctx) {
         *ctx = (avs_persistence_context_t) INIT_RESTORE_CONTEXT(stream);
     }
@@ -528,7 +529,7 @@ avs_persistence_ignore_context_new(avs_stream_abstract_t *stream) {
         return NULL;
     }
     avs_persistence_context_t *ctx = (avs_persistence_context_t *)
-            calloc(1, sizeof(avs_persistence_context_t));
+            avs_calloc(1, sizeof(avs_persistence_context_t));
     if (ctx) {
         *ctx = (avs_persistence_context_t) INIT_IGNORE_CONTEXT(stream);
     }
@@ -536,7 +537,7 @@ avs_persistence_ignore_context_new(avs_stream_abstract_t *stream) {
 }
 
 void avs_persistence_context_delete(avs_persistence_context_t *ctx) {
-    free(ctx);
+    avs_free(ctx);
 }
 
 avs_persistence_direction_t

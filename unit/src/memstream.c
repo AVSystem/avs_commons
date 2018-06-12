@@ -21,6 +21,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <avsystem/commons/memory.h>
 #include <avsystem/commons/stream_v_table.h>
 #include <avsystem/commons/unit/memstream.h>
 #include <avsystem/commons/unit/test.h>
@@ -96,7 +97,7 @@ static int memstream_peek(avs_stream_abstract_t *_stream,
 }
 
 static int memstream_close(avs_stream_abstract_t *stream) {
-    free(((memstream_t*)stream)->buffer);
+    avs_free(((memstream_t*)stream)->buffer);
     return 0;
 }
 
@@ -118,19 +119,19 @@ int avs_unit_memstream_alloc(avs_stream_abstract_t** stream,
         AVS_STREAM_V_TABLE_NO_EXTENSIONS
     };
 
-    memstream_t *ret = (memstream_t*) calloc(1, sizeof(memstream_t));
+    memstream_t *ret = (memstream_t *) avs_calloc(1, sizeof(memstream_t));
     if (!ret) {
         return -1;
     }
 
     ret->v_table = &V_TABLE;
-    ret->buffer = (char*) malloc(buffer_size);
+    ret->buffer = (char *) avs_malloc(buffer_size);
     ret->buffer_size = buffer_size;
     ret->read_ptr = 0;
     ret->write_ptr = 0;
 
     if (!ret->buffer) {
-        free(ret);
+        avs_free(ret);
         return -1;
     }
 

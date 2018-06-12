@@ -21,9 +21,10 @@
 
 #include <avsystem/commons/buffer.h>
 #include <avsystem/commons/errno.h>
+#include <avsystem/commons/memory.h>
 #include <avsystem/commons/net.h>
-#include <avsystem/commons/stream_v_table.h>
 #include <avsystem/commons/stream/netbuf.h>
+#include <avsystem/commons/stream_v_table.h>
 
 #include <avsystem/commons/stream/stream_net.h>
 
@@ -278,7 +279,7 @@ static int buffered_netstream_close(avs_stream_abstract_t *stream_) {
         avs_net_socket_shutdown(stream->socket);
     }
     avs_net_socket_cleanup(&stream->socket);
-    free(stream->in_buffer);
+    avs_free(stream->in_buffer);
     avs_buffer_free(&stream->out_buffer);
     return 0;
 }
@@ -339,7 +340,7 @@ int avs_stream_netbuf_create(avs_stream_abstract_t **stream_,
                              size_t in_buffer_size,
                              size_t out_buffer_size) {
     buffered_netstream_t *stream = (buffered_netstream_t*)
-            calloc(1, sizeof(buffered_netstream_t));
+            avs_calloc(1, sizeof(buffered_netstream_t));
     *stream_ = (avs_stream_abstract_t*) stream;
 
     if (!*stream_) {
@@ -364,7 +365,7 @@ int avs_stream_netbuf_create(avs_stream_abstract_t **stream_,
 buffered_netstream_create_error:
     avs_buffer_free(&stream->in_buffer);
     avs_buffer_free(&stream->out_buffer);
-    free(*stream_);
+    avs_free(*stream_);
     *stream_ = NULL;
     return -1;
 }

@@ -17,6 +17,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <avsystem/commons/memory.h>
 #include <avsystem/commons/unit/test.h>
 
 typedef struct {
@@ -24,7 +25,7 @@ typedef struct {
 } sample_nonpod_t;
 
 static void make_sample_nonpod(size_t data_size, sample_nonpod_t *out) {
-    AVS_UNIT_ASSERT_NOT_NULL((out->data = (int *) malloc(data_size)));
+    AVS_UNIT_ASSERT_NOT_NULL((out->data = (int *) avs_malloc(data_size)));
 }
 
 AVS_UNIT_TEST(avs_vector, example_usage_nonpod) {
@@ -44,7 +45,7 @@ AVS_UNIT_TEST(avs_vector, example_usage_nonpod) {
      * that elegantly:
      */
     AVS_VECTOR_CLEAR(&u, elemptr) {
-        free(elemptr->data);
+        avs_free(elemptr->data);
     }
     /**
      * Vector now is empty, but it is not freed, i.e. its internal data storage

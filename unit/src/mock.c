@@ -17,6 +17,7 @@
 #include <avs_commons_config.h>
 
 #include <stdio.h>
+#include <stdlib.h>
 
 #include <avsystem/commons/list.h>
 

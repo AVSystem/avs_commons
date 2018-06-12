@@ -19,6 +19,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <avsystem/commons/memory.h>
 #include <avsystem/commons/stream/md5.h>
 
 #include "md5_common.h"
@@ -286,7 +287,7 @@ static const avs_stream_v_table_t md5_vtable = {
 };
 
 avs_stream_abstract_t *avs_stream_md5_create(void) {
-    md5_stream_t *retval = (md5_stream_t *) malloc(sizeof (md5_stream_t));
+    md5_stream_t *retval = (md5_stream_t *) avs_malloc(sizeof(md5_stream_t));
     if (retval) {
         _avs_stream_md5_common_init(&retval->common, &md5_vtable);
         avs_md5_reset((avs_stream_abstract_t *) retval);

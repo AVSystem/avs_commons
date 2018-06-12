@@ -40,6 +40,7 @@
 #endif // WITH_MBEDTLS_LOGS
 
 #include <avsystem/commons/errno.h>
+#include <avsystem/commons/memory.h>
 
 #include "../global.h"
 #include "../net_impl.h"
@@ -328,7 +329,8 @@ static int *init_psk_ciphersuites(const mbedtls_ssl_config *config) {
     all_suites = config->ciphersuite_list[0];
     foreach_psk_ciphersuite(all_suites, enumerate_psk_ciphersuites,
                             &ciphersuite_count);
-    if (!(psk_suites = (int *) calloc(ciphersuite_count + 1, sizeof(int)))) {
+    if (!(psk_suites =
+                  (int *) avs_calloc(ciphersuite_count + 1, sizeof(int)))) {
         LOG(ERROR, "out of memory");
         return NULL;
     }
@@ -735,15 +737,15 @@ static int receive_ssl(avs_net_abstract_socket_t *socket_,
 static void cleanup_security_cert(ssl_socket_certs_t *certs) {
     if (certs->ca_cert) {
         mbedtls_x509_crt_free(certs->ca_cert);
-        free(certs->ca_cert);
+        avs_free(certs->ca_cert);
     }
     if (certs->client_cert) {
         mbedtls_x509_crt_free(certs->client_cert);
-        free(certs->client_cert);
+        avs_free(certs->client_cert);
     }
     if (certs->client_key) {
         mbedtls_pk_free(certs->client_key);
-        free(certs->client_key);
+        avs_free(certs->client_key);
     }
 }
 #else // WITH_X509
@@ -752,7 +754,7 @@ static void cleanup_security_cert(ssl_socket_certs_t *certs) {
 
 #ifdef WITH_PSK
 static void cleanup_security_psk(ssl_socket_psk_t *psk) {
-    free(psk->ciphersuites);
+    avs_free(psk->ciphersuites);
     psk->ciphersuites = NULL;
     _avs_net_psk_cleanup(&psk->value);
 }
@@ -785,7 +787,7 @@ static int cleanup_ssl(avs_net_abstract_socket_t **socket_) {
 #endif // WITH_PSK
     mbedtls_ssl_config_free(&(*socket)->config);
 
-    free(*socket);
+    avs_free(*socket);
     *socket = NULL;
     return 0;
 }

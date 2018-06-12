@@ -23,6 +23,7 @@
 #include <limits.h>
 
 #include <avsystem/commons/errno.h>
+#include <avsystem/commons/memory.h>
 #include <avsystem/commons/stream/stream_file.h>
 #include <avsystem/commons/stream_v_table.h>
 
@@ -244,7 +245,7 @@ avs_stream_abstract_t *
 avs_stream_file_create(const char *path,
                        uint8_t mode) {
     avs_stream_file_t *file =
-        (avs_stream_file_t *) calloc(1, sizeof(avs_stream_file_t));
+            (avs_stream_file_t *) avs_calloc(1, sizeof(avs_stream_file_t));
     const void *vtable = &file_stream_vtable;
     if (!file) {
         goto error;
@@ -267,7 +268,7 @@ avs_stream_file_create(const char *path,
     file->mode = mode;
     return (avs_stream_abstract_t *) file;
 error:
-    free(file);
+    avs_free(file);
     return NULL;
 }
 

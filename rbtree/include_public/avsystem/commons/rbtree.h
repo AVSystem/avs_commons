@@ -99,7 +99,7 @@ AVS_RBTREE_ELEM(void) avs_rbtree_cleanup_next__(AVS_RBTREE(void) tree);
  * Create an RB-tree with elements of given @p type.
  *
  * Complexity: O(m), where:
- * - m - calloc() complexity.
+ * - m - avs_calloc() complexity.
  *
  * @param type Type of elements stored in the tree nodes.
  * @param cmp  Pointer to a function that compares two elements.
@@ -164,7 +164,7 @@ AVS_RBTREE_CALL_WITH_CONST_ELEM_CAST__(const Func &func,
  *
  * Complexity: O(n * f), where:
  * - n - number of nodes in @p tree,
- * - f - free() complexity.
+ * - f - avs_free() complexity.
  *
  * Example usage:
  *
@@ -176,7 +176,7 @@ AVS_RBTREE_CALL_WITH_CONST_ELEM_CAST__(const Func &func,
  * // cleanup with extra operation before releasing each element:
  * AVS_RBTREE(char *) strings = ...;
  * AVS_RBTREE_CLEAR(strings) {
- *     free(**strings);
+ *     avs_free(**strings);
  * }
  * @endcode
  *
@@ -203,7 +203,7 @@ AVS_RBTREE_CALL_WITH_CONST_ELEM_CAST__(const Func &func,
  *
  * Complexity: O(n * f), where:
  * - n - number of nodes in @p tree_ptr,
- * - f - free() complexity.
+ * - f - avs_free() complexity.
  *
  * Example usage:
  *
@@ -215,7 +215,7 @@ AVS_RBTREE_CALL_WITH_CONST_ELEM_CAST__(const Func &func,
  * // destruction with extra operation before releasing each element:
  * AVS_RBTREE(char *) strings = ...;
  * AVS_RBTREE_DELETE(&strings) {
- *     free(**strings);
+ *     avs_free(**strings);
  * }
  * @endcode
  *
@@ -246,7 +246,7 @@ AVS_RBTREE_CALL_WITH_CONST_ELEM_CAST__(const Func &func,
  *
  * Complexity: O(n * m), where:
  * - n - number of nodes in @p tree,
- * - m - calloc() complexity.
+ * - m - avs_calloc() complexity.
  *
  * WARNING: This function WILL NOT WORK as expected on trees that contain
  * variable length data. It is safe to use only if tree constists fixed-size
@@ -286,7 +286,7 @@ avs_rbtree_simple_clone_impl__(AVS_RBTREE_CONST(T) tree) {
  * Creates an arbitrarily-sized, detached RB-tree element.
  *
  * Complexity: O(m), where:
- * - m - calloc() complexity.
+ * - m - avs_calloc() complexity.
  *
  * Example:
  * @code
@@ -327,7 +327,7 @@ avs_rbtree_simple_clone_impl__(AVS_RBTREE_CONST(T) tree) {
  * given @p type.
  *
  * Complexity: O(m), where:
- * - m - calloc() complexity.
+ * - m - avs_calloc() complexity.
  *
  * @param type Desired element type.
  *
@@ -344,7 +344,7 @@ avs_rbtree_simple_clone_impl__(AVS_RBTREE_CONST(T) tree) {
  * is undefined.
  *
  * Complexity: O(f), where:
- * - f - free() complexity.
+ * - f - avs_free() complexity.
  *
  * @param elem_ptr Pointer to element to free. *elem is set to NULL after
  *                 cleanup.
@@ -403,7 +403,7 @@ avs_rbtree_simple_clone_impl__(AVS_RBTREE_CONST(T) tree) {
  * Complexity: O((log n) * c + f).
  * - n - number of nodes in @p tree,
  * - c - complexity of tree element comparator,
- * - f - free() complexity.
+ * - f - avs_free() complexity.
  *
  * Example usage:
  *

@@ -15,6 +15,7 @@
  */
 #include <avs_commons_config.h>
 
+#include <avsystem/commons/memory.h>
 #include <avsystem/commons/rbtree.h>
 
 #include <assert.h>
@@ -56,8 +57,8 @@ struct rb_tree {
 #define _AVS_RB_TREE(ptr) \
     AVS_CONTAINER_OF((ptr), struct rb_tree, root)
 
-#define _AVS_RB_ALLOC(size) calloc(1, size)
-#define _AVS_RB_DEALLOC(ptr) free(ptr)
+#define _AVS_RB_ALLOC(size) avs_calloc(1, size)
+#define _AVS_RB_DEALLOC(ptr) avs_free(ptr)
 
 #define _AVS_RB_LEFT_PTR(elem) \
     ((AVS_TYPEOF_PTR(elem)*)&(_AVS_RB_NODE(elem)->left))

@@ -23,6 +23,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <avsystem/commons/memory.h>
 #include <avsystem/commons/utils.h>
 
 VISIBILITY_SOURCE_BEGIN
@@ -88,7 +89,7 @@ char *avs_strtok(char *str, const char *delim, char **saveptr) {
 
 char *avs_strdup(const char *str) {
     size_t len = strlen(str);
-    char *retval = (char *) malloc(len + 1);
+    char *retval = (char *) avs_malloc(len + 1);
     if (!retval) {
         return NULL;
     }
