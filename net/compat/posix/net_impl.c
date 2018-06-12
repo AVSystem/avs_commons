@@ -699,9 +699,9 @@ static inline bool is_valid_timeout(avs_time_duration_t timeout) {
 }
 #endif // !HAVE_POLL
 
-static short wait_until_ready_internal(sockfd_t sockfd,
-                                       avs_time_duration_t timeout,
-                                       char in, char out, char err) {
+static int wait_until_ready_internal(sockfd_t sockfd,
+                                     avs_time_duration_t timeout,
+                                     char in, char out, char err) {
 #ifdef HAVE_POLL
     struct pollfd p;
     short events = (short) ((in ? POLLIN : 0) | (out ? POLLOUT : 0));
@@ -716,12 +716,12 @@ static short wait_until_ready_internal(sockfd_t sockfd,
         timeout_ms = 0;
     }
     if (poll(&p, 1, (int) timeout_ms) != 1) {
-        return 0;
+        return -1;
     }
     if (err) {
         events = (short) (events | POLLHUP | POLLERR);
     }
-    return p.revents & events;
+    return (p.revents & events) ? 0 : -1;
 #else
     fd_set infds;
     fd_set outfds;
@@ -769,11 +769,11 @@ static short wait_until_ready_internal(sockfd_t sockfd,
     AVS_FD_SET(sockfd, &errfds);
     if (select(sockfd + 1, &infds, &outfds, &errfds,
                is_valid_timeout(timeout) ? &timeval_timeout : NULL) <= 0) {
-        return 0;
+        return -1;
     }
-    return (err && AVS_FD_ISSET(sockfd, &errfds))
+    return ((err && AVS_FD_ISSET(sockfd, &errfds))
             || (in && AVS_FD_ISSET(sockfd, &infds))
-            || (out && AVS_FD_ISSET(sockfd, &outfds));
+            || (out && AVS_FD_ISSET(sockfd, &outfds))) ? 0 : -1;
 #undef AVS_FD_SET
 #undef AVS_FD_ISSET
 
@@ -784,10 +784,10 @@ static short wait_until_ready_internal(sockfd_t sockfd,
 #endif
 }
 
-static short wait_until_ready(const volatile sockfd_t *sockfd_ptr,
-                              avs_time_monotonic_t deadline,
-                              char in, char out, char err) {
-    short result = 0;
+static int wait_until_ready(const volatile sockfd_t *sockfd_ptr,
+                            avs_time_monotonic_t deadline,
+                            char in, char out, char err) {
+    int result = -1;
     avs_time_duration_t timeout;
     do {
         sockfd_t sockfd = *sockfd_ptr;
@@ -795,17 +795,19 @@ static short wait_until_ready(const volatile sockfd_t *sockfd_ptr,
             // socket might have been closed in signal handler
             // or something like this
             errno = EBADF;
-            return 0;
+            result = -1;
+        } else {
+            timeout = avs_time_monotonic_diff(deadline,
+                                              avs_time_monotonic_now());
+            errno = 0;
+            result = wait_until_ready_internal(sockfd, timeout, in, out, err);
         }
-        timeout = avs_time_monotonic_diff(deadline, avs_time_monotonic_now());
-        errno = 0;
-        result = wait_until_ready_internal(sockfd, timeout, in, out, err);
-    } while (!result
+    } while (result
             && (errno == EINTR || errno == EAGAIN)
             && !avs_time_duration_less(timeout, AVS_TIME_DURATION_ZERO));
     // the last clause above makes sure that we call wait_until_ready_internal()
     // with negative timeout at most once
-    if (!result && (!errno || errno == EINTR || errno == EAGAIN)) {
+    if (result && (!errno || errno == EINTR || errno == EAGAIN)) {
         errno = ETIMEDOUT;
     }
     return result;
@@ -821,7 +823,7 @@ static int call_when_ready(const volatile sockfd_t *sockfd_ptr,
     int result = -1;
     avs_time_monotonic_t deadline = avs_time_monotonic_add(
             avs_time_monotonic_now(), timeout);
-    while (wait_until_ready(sockfd_ptr, deadline, in, out, err)) {
+    while (!wait_until_ready(sockfd_ptr, deadline, in, out, err)) {
         do {
             sockfd_t sockfd = *sockfd_ptr;
             if (sockfd == INVALID_SOCKET) {
@@ -859,7 +861,7 @@ static int connect_with_timeout(const volatile sockfd_t *sockfd_ptr,
     }
     avs_time_monotonic_t deadline = avs_time_monotonic_add(
             avs_time_monotonic_now(), NET_CONNECT_TIMEOUT);
-    if (!wait_until_ready(sockfd_ptr, deadline, 1, 1, is_stream)) {
+    if (wait_until_ready(sockfd_ptr, deadline, 1, 1, is_stream)) {
         return -1;
     } else {
         int error_code = 0;
