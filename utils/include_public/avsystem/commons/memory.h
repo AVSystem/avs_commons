@@ -76,7 +76,7 @@ void *avs_calloc(size_t nmemb, size_t size);
  * - If the new size is larger than the old size, the added memory will not be
  *   initialized.
  * - If the new size is smaller than the old size, the memory area
- *   will be shrinked.
+ *   will be reduced.
  * - If the @p size is 0, the call is equivalent to avs_free(ptr).
  * - If the @p ptr is NULL, the call is equivalent to avs_malloc(size).
  *
