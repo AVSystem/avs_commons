@@ -20,6 +20,8 @@
 
 #include <stdlib.h>
 
+VISIBILITY_SOURCE_BEGIN
+
 void *avs_malloc(size_t size) {
     return malloc(size);
 }
