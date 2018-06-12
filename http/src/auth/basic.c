@@ -19,6 +19,7 @@
 #include <string.h>
 
 #include <avsystem/commons/base64.h>
+#include <avsystem/commons/memory.h>
 #include <avsystem/commons/utils.h>
 
 #include "../auth.h"
@@ -36,7 +37,7 @@ int _avs_http_auth_send_header_basic(http_stream_t *stream) {
         plaintext_size += strlen(stream->auth.credentials.password) + 1;
     }
     size_t encoded_size = avs_base64_encoded_size(plaintext_size - 1);
-    char *buffer = (char *) malloc(plaintext_size + encoded_size);
+    char *buffer = (char *) avs_malloc(plaintext_size + encoded_size);
     if (!buffer) {
         LOG(ERROR, "Out of memory");
         return -1;
@@ -63,6 +64,6 @@ int _avs_http_auth_send_header_basic(http_stream_t *stream) {
                                     "Authorization: Basic %s\r\n", encoded);
     }
 
-    free(buffer);
+    avs_free(buffer);
     return result;
 }

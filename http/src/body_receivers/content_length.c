@@ -16,6 +16,7 @@
 
 #include <avs_commons_config.h>
 
+#include <avsystem/commons/memory.h>
 #include <avsystem/commons/stream/stream_net.h>
 
 #include "../body_receivers.h"
@@ -126,7 +127,7 @@ static const avs_stream_v_table_t content_length_receiver_vtable = {
 avs_stream_abstract_t *_avs_http_body_receiver_content_length_create(
         avs_stream_abstract_t *backend, size_t content_length) {
     content_length_receiver_t *retval =
-            (content_length_receiver_t *) malloc(sizeof(*retval));
+            (content_length_receiver_t *) avs_malloc(sizeof(*retval));
     LOG(TRACE, "create_content_length_receiver");
     if (retval) {
         *(const avs_stream_v_table_t **) (intptr_t) &retval->vtable =

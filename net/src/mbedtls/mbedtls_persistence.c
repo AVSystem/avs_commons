@@ -73,7 +73,7 @@ static int handle_cert_persistence(avs_persistence_context_t *ctx,
                                    mbedtls_x509_crt **cert_ptr) {
     void *data = (*cert_ptr ? (*cert_ptr)->raw.p : NULL);
     size_t size = (*cert_ptr ? (*cert_ptr)->raw.len : 0);
-    // Note that avs_persistence_sized_buffer() malloc()ates the buffer
+    // Note that avs_persistence_sized_buffer() avs_malloc()ates the buffer
     // in the restore case
     int result = avs_persistence_sized_buffer(ctx, &data, &size);
     if (result) {

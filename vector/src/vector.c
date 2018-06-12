@@ -22,6 +22,7 @@
 #include <stddef.h>
 #include <string.h>
 
+#include <avsystem/commons/memory.h>
 #include <avsystem/commons/vector.h>
 
 VISIBILITY_SOURCE_BEGIN
@@ -103,7 +104,7 @@ vector_reverse_range_internal(avs_vector_desc_t *desc, size_t beg, size_t end) {
 /* API methods implementation */
 void **avs_vector_new__(size_t elem_size) {
     avs_vector_desc_t *desc =
-        (avs_vector_desc_t *) calloc(1, sizeof(avs_vector_desc_t));
+            (avs_vector_desc_t *) avs_calloc(1, sizeof(avs_vector_desc_t));
     if (!desc) {
         return NULL;
     }
@@ -118,8 +119,8 @@ void avs_vector_delete__(void ***ptr) {
         return;
     }
     desc = get_desc(*ptr);
-    free(desc->data);
-    free(desc);
+    avs_free(desc->data);
+    avs_free(desc);
     *ptr = NULL;
 }
 
@@ -147,13 +148,13 @@ void *avs_vector_remove__(void ***ptr, size_t index) {
     if (size == 0) {
         return NULL;
     }
-    tmp = malloc(desc->elem_size);
+    tmp = avs_malloc(desc->elem_size);
     if (tmp) {
         memcpy(tmp, vector_at_internal(desc, index), desc->elem_size);
         memmove(vector_at_internal(desc, index), vector_at_internal(desc, index+1),
                 desc->elem_size * (size - index - 1));
         memcpy(vector_at_internal(desc, size-1), tmp, desc->elem_size);
-        free(tmp);
+        avs_free(tmp);
     } else {
         for (i = index; i < size-1; i++) {
             vector_swap_internal(desc, i, i+1);
@@ -212,12 +213,12 @@ int avs_vector_fit__(void ***ptr) {
     if (desc->size == 0 || desc->size == desc->capacity) {
         return 0;
     }
-    new_data = malloc(desc->size * desc->elem_size);
+    new_data = avs_malloc(desc->size * desc->elem_size);
     if (!new_data) {
         return -1;
     }
     memcpy(new_data, desc->data, desc->size * desc->elem_size);
-    free(desc->data);
+    avs_free(desc->data);
     desc->data = new_data;
     desc->capacity = desc->size;
     return 0;
@@ -229,7 +230,7 @@ static int ensure_capacity(avs_vector_desc_t *desc, size_t num_elements) {
     if (new_capacity != (size_t) new_capacity) {
         return -1;
     }
-    new_data = realloc(desc->data, (size_t) new_capacity);
+    new_data = avs_realloc(desc->data, (size_t) new_capacity);
     if (!new_data) {
         return -1;
     }

@@ -25,6 +25,7 @@
 
 #include <limits.h>
 
+#include <avsystem/commons/memory.h>
 #include <avsystem/commons/stream.h>
 #include <avsystem/commons/stream_v_table.h>
 
@@ -95,7 +96,7 @@ int avs_stream_reset(avs_stream_abstract_t *stream) {
 void avs_stream_cleanup(avs_stream_abstract_t **stream) {
     if (*stream) {
         (*stream)->vtable->close(*stream);
-        free(*stream);
+        avs_free(*stream);
         *stream = NULL;
     }
 }
@@ -141,11 +142,11 @@ static int try_stack_write_fv(avs_stream_abstract_t *stream,
 
 static int try_heap_write_fv(avs_stream_abstract_t *stream,
                              const char *msg, va_list args, size_t size) {
-    char *buf = (char *) malloc(size);
+    char *buf = (char *) avs_malloc(size);
     int retval = -1;
     if (buf) {
         retval = try_write_fv(stream, msg, args, buf, size);
-        free(buf);
+        avs_free(buf);
     }
     return retval;
 }

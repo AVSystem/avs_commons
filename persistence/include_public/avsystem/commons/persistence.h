@@ -244,7 +244,7 @@ int avs_persistence_double(avs_persistence_context_t *ctx,
 /**
  * Performs an operation (depending on the @p ctx) on a pair of @p data_ptr and
  * @p size_ptr; in the restore case, a new buffer is allocated using
- * <c>malloc()</c>.
+ * <c>avs_malloc()</c>.
  *
  * @param ctx      context that determines the actual operation
  * @param data_ptr pointer to a pointer containing the data

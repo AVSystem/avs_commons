@@ -21,6 +21,7 @@
 #include <string.h>
 #include <inttypes.h>
 
+#include <avsystem/commons/memory.h>
 #include <avsystem/commons/net.h>
 #include <avsystem/commons/socket.h>
 #include <avsystem/commons/socket_v_table.h>
@@ -639,7 +640,7 @@ static int errno_debug(avs_net_abstract_socket_t *debug_socket) {
 
 static int cleanup_debug(avs_net_abstract_socket_t **debug_socket) {
     avs_net_socket_cleanup(&(*((avs_net_socket_debug_t **) debug_socket))->socket);
-    free(*debug_socket);
+    avs_free(*debug_socket);
     *debug_socket = NULL;
     return 0;
 }
@@ -673,7 +674,7 @@ static int create_socket_debug(avs_net_abstract_socket_t **debug_socket,
     avs_net_socket_cleanup(debug_socket);
 
     avs_net_socket_debug_t *sock = (avs_net_socket_debug_t *)
-            malloc(sizeof(avs_net_socket_debug_t));
+            avs_malloc(sizeof(avs_net_socket_debug_t));
     *debug_socket = (avs_net_abstract_socket_t *) sock;
     if (*debug_socket) {
         avs_net_socket_debug_t new_socket = { &debug_vtable, NULL };

@@ -21,6 +21,7 @@
 #include <string.h>
 
 #include <avsystem/commons/errno.h>
+#include <avsystem/commons/memory.h>
 #include <avsystem/commons/utils.h>
 
 #include "body_receivers.h"
@@ -344,7 +345,7 @@ int _avs_http_receive_headers(http_stream_t *stream) {
     }
 
     header_parser_state_t *parser_state = (header_parser_state_t *)
-            malloc(offsetof(header_parser_state_t, header_buf)
+            avs_malloc(offsetof(header_parser_state_t, header_buf)
                     + stream->http->buffer_sizes.header_line);
     if (!parser_state) {
         LOG(ERROR, "Out of memory");
@@ -368,7 +369,7 @@ int _avs_http_receive_headers(http_stream_t *stream) {
         }
     }
 
-    free(parser_state);
+    avs_free(parser_state);
     if (result && stream->incoming_header_storage) {
         AVS_LIST_CLEAR(stream->incoming_header_storage);
     }

@@ -19,6 +19,7 @@
 #include "../msg_internal.h"
 
 #include <avsystem/commons/coap/msg_info.h>
+#include <avsystem/commons/memory.h>
 #include <avsystem/commons/unit/test.h>
 
 #include "utils.h"
@@ -62,13 +63,13 @@ static avs_coap_msg_t *make_msg_template_with_data(void *buffer,
     const size_t SizeVarName = offsetof(avs_coap_msg_t, content) \
                                + AVS_COAP_MAX_HEADER_SIZE + (DataSize); \
     avs_coap_msg_t *VarName __attribute__((cleanup(free_msg))) = \
-            make_msg_template(malloc(SizeVarName), SizeVarName)
+            make_msg_template(avs_malloc(SizeVarName), SizeVarName)
 
 #define DECLARE_MSG_TEMPLATE_WITH_DATA(VarName, SizeVarName, Data) \
     const size_t SizeVarName = offsetof(avs_coap_msg_t, content) \
                                + AVS_COAP_MAX_HEADER_SIZE + sizeof(Data) - 1; \
     avs_coap_msg_t *VarName __attribute__((cleanup(free_msg))) = \
-            make_msg_template_with_data(malloc(SizeVarName), SizeVarName, \
+            make_msg_template_with_data(avs_malloc(SizeVarName), SizeVarName, \
                                         (Data), sizeof(Data) - 1)
 
 #define INFO_WITH_DUMMY_HEADER \
@@ -88,14 +89,14 @@ AVS_UNIT_TEST(coap_builder, header_only) {
     avs_coap_msg_info_t info = INFO_WITH_HEADER(msg_tpl);
 
     size_t storage_size = avs_coap_msg_info_get_storage_size(&info);
-    void *storage = malloc(storage_size);
+    void *storage = avs_malloc(storage_size);
 
     const avs_coap_msg_t *msg = avs_coap_msg_build_without_payload(
             avs_coap_ensure_aligned_buffer(storage), storage_size,
             &info);
 
     AVS_UNIT_ASSERT_EQUAL_BYTES_SIZED(msg, msg_tpl, msg_tpl_size);
-    free(storage);
+    avs_free(storage);
 }
 
 AVS_UNIT_TEST(coap_info, token) {
@@ -104,7 +105,7 @@ AVS_UNIT_TEST(coap_info, token) {
                                        + AVS_COAP_MAX_HEADER_SIZE
                                        + AVS_COAP_MAX_TOKEN_LENGTH;
     avs_coap_msg_t *msg_tpl __attribute__((cleanup(free_msg))) =
-            make_msg_template_with_data(malloc(msg_tpl_size), msg_tpl_size,
+            make_msg_template_with_data(avs_malloc(msg_tpl_size), msg_tpl_size,
                                         TOKEN.bytes, TOKEN.size);
     _avs_coap_header_set_token_length(msg_tpl, TOKEN.size);
 
@@ -112,14 +113,14 @@ AVS_UNIT_TEST(coap_info, token) {
     info.identity.token = TOKEN;
 
     size_t storage_size = avs_coap_msg_info_get_storage_size(&info);
-    void *storage = malloc(storage_size);
+    void *storage = avs_malloc(storage_size);
 
     const avs_coap_msg_t *msg = avs_coap_msg_build_without_payload(
             avs_coap_ensure_aligned_buffer(storage), storage_size,
             &info);
 
     AVS_UNIT_ASSERT_EQUAL_BYTES_SIZED(msg, msg_tpl, sizeof(msg_tpl->length) + msg_tpl->length);
-    free(storage);
+    avs_free(storage);
 }
 
 AVS_UNIT_TEST(coap_builder, option_empty) {
@@ -128,7 +129,7 @@ AVS_UNIT_TEST(coap_builder, option_empty) {
     AVS_UNIT_ASSERT_SUCCESS(avs_coap_msg_info_opt_empty(&info, 0));
 
     size_t storage_size = avs_coap_msg_info_get_storage_size(&info);
-    void *storage = malloc(storage_size);
+    void *storage = avs_malloc(storage_size);
 
     const avs_coap_msg_t *msg = avs_coap_msg_build_without_payload(
             avs_coap_ensure_aligned_buffer(storage), storage_size,
@@ -137,7 +138,7 @@ AVS_UNIT_TEST(coap_builder, option_empty) {
     AVS_UNIT_ASSERT_EQUAL_BYTES_SIZED(msg, msg_tpl, msg_tpl_size);
 
     avs_coap_msg_info_reset(&info);
-    free(storage);
+    avs_free(storage);
 }
 
 AVS_UNIT_TEST(coap_builder, option_opaque) {
@@ -149,7 +150,7 @@ AVS_UNIT_TEST(coap_builder, option_opaque) {
             avs_coap_msg_info_opt_opaque(&info, 0, "foo", sizeof("foo") - 1));
 
     size_t storage_size = avs_coap_msg_info_get_storage_size(&info);
-    void *storage = malloc(storage_size);
+    void *storage = avs_malloc(storage_size);
 
     const avs_coap_msg_t *msg = avs_coap_msg_build_without_payload(
             avs_coap_ensure_aligned_buffer(storage), storage_size,
@@ -158,7 +159,7 @@ AVS_UNIT_TEST(coap_builder, option_opaque) {
     AVS_UNIT_ASSERT_EQUAL_BYTES_SIZED(msg, msg_tpl, msg_tpl_size);
 
     avs_coap_msg_info_reset(&info);
-    free(storage);
+    avs_free(storage);
 }
 
 AVS_UNIT_TEST(coap_builder, option_multiple_ints) {
@@ -203,7 +204,7 @@ AVS_UNIT_TEST(coap_builder, option_multiple_ints) {
     AVS_UNIT_ASSERT_SUCCESS(avs_coap_msg_info_opt_uint(&info, 0, &(uint64_t) { 0 },                  8));
 
     size_t storage_size = avs_coap_msg_info_get_storage_size(&info);
-    void *storage = malloc(storage_size);
+    void *storage = avs_malloc(storage_size);
 
     const avs_coap_msg_t *msg = avs_coap_msg_build_without_payload(
             avs_coap_ensure_aligned_buffer(storage), storage_size,
@@ -212,7 +213,7 @@ AVS_UNIT_TEST(coap_builder, option_multiple_ints) {
     AVS_UNIT_ASSERT_EQUAL_BYTES_SIZED(msg, msg_tpl, msg_tpl_size);
 
     avs_coap_msg_info_reset(&info);
-    free(storage);
+    avs_free(storage);
 }
 
 AVS_UNIT_TEST(coap_builder, option_content_format) {
@@ -227,7 +228,7 @@ AVS_UNIT_TEST(coap_builder, option_content_format) {
     AVS_UNIT_ASSERT_SUCCESS(avs_coap_msg_info_opt_content_format(&info, 11542));
 
     size_t storage_size = avs_coap_msg_info_get_storage_size(&info);
-    void *storage = malloc(storage_size);
+    void *storage = avs_malloc(storage_size);
 
     const avs_coap_msg_t *msg = avs_coap_msg_build_without_payload(
             avs_coap_ensure_aligned_buffer(storage), storage_size,
@@ -236,7 +237,7 @@ AVS_UNIT_TEST(coap_builder, option_content_format) {
     AVS_UNIT_ASSERT_EQUAL_BYTES_SIZED(msg, msg_tpl, msg_tpl_size);
 
     avs_coap_msg_info_reset(&info);
-    free(storage);
+    avs_free(storage);
 }
 
 #define PAYLOAD "trololo"
@@ -248,7 +249,7 @@ AVS_UNIT_TEST(coap_builder, payload_only) {
     size_t storage_size = avs_coap_msg_info_get_storage_size(&info)
                           + sizeof(AVS_COAP_PAYLOAD_MARKER)
                           + sizeof(PAYLOAD) - 1;
-    void *storage = malloc(storage_size);
+    void *storage = avs_malloc(storage_size);
 
     avs_coap_msg_builder_t builder;
     AVS_UNIT_ASSERT_SUCCESS(avs_coap_msg_builder_init(
@@ -261,7 +262,7 @@ AVS_UNIT_TEST(coap_builder, payload_only) {
     const avs_coap_msg_t *msg = avs_coap_msg_builder_get_msg(&builder);
 
     AVS_UNIT_ASSERT_EQUAL_BYTES_SIZED(msg, msg_tpl, msg_tpl_size);
-    free(storage);
+    avs_free(storage);
 }
 
 #undef PAYLOAD
@@ -279,7 +280,7 @@ AVS_UNIT_TEST(coap_builder, incremental_payload) {
     size_t storage_size = avs_coap_msg_info_get_storage_size(&info)
                           + sizeof(AVS_COAP_PAYLOAD_MARKER)
                           + PAYLOAD_SIZE;
-    void *storage = malloc(storage_size);
+    void *storage = avs_malloc(storage_size);
 
     avs_coap_msg_builder_t builder;
     AVS_UNIT_ASSERT_SUCCESS(avs_coap_msg_builder_init(
@@ -293,7 +294,7 @@ AVS_UNIT_TEST(coap_builder, incremental_payload) {
     const avs_coap_msg_t *msg = avs_coap_msg_builder_get_msg(&builder);
 
     AVS_UNIT_ASSERT_EQUAL_BYTES_SIZED(msg, msg_tpl, msg_tpl_size);
-    free(storage);
+    avs_free(storage);
 }
 
 #undef PAYLOAD1
@@ -312,7 +313,7 @@ AVS_UNIT_TEST(coap_builder, option_ext_number) {
     AVS_UNIT_ASSERT_SUCCESS(avs_coap_msg_info_opt_empty(&info, 13 + 269));
 
     size_t storage_size = avs_coap_msg_info_get_storage_size(&info);
-    void *storage = malloc(storage_size);
+    void *storage = avs_malloc(storage_size);
 
     const avs_coap_msg_t *msg = avs_coap_msg_build_without_payload(
             avs_coap_ensure_aligned_buffer(storage), storage_size,
@@ -321,7 +322,7 @@ AVS_UNIT_TEST(coap_builder, option_ext_number) {
     AVS_UNIT_ASSERT_EQUAL_BYTES_SIZED(msg, msg_tpl, msg_tpl_size);
 
     avs_coap_msg_info_reset(&info);
-    free(storage);
+    avs_free(storage);
 }
 
 #undef OPT_EXT_DELTA1
@@ -346,7 +347,7 @@ AVS_UNIT_TEST(coap_builder, option_ext_length) {
     AVS_UNIT_ASSERT_SUCCESS(avs_coap_msg_info_opt_opaque(&info, 0, ZEROS_269, sizeof(ZEROS_269) - 1));
 
     size_t storage_size = avs_coap_msg_info_get_storage_size(&info);
-    void *storage = malloc(storage_size);
+    void *storage = avs_malloc(storage_size);
 
     const avs_coap_msg_t *msg = avs_coap_msg_build_without_payload(
             avs_coap_ensure_aligned_buffer(storage), storage_size,
@@ -355,7 +356,7 @@ AVS_UNIT_TEST(coap_builder, option_ext_length) {
     AVS_UNIT_ASSERT_EQUAL_BYTES_SIZED(msg, msg_tpl, msg_tpl_size);
 
     avs_coap_msg_info_reset(&info);
-    free(storage);
+    avs_free(storage);
 }
 
 #undef OPT_EXT_LENGTH1
@@ -370,7 +371,7 @@ AVS_UNIT_TEST(coap_builder, opt_string) {
     AVS_UNIT_ASSERT_SUCCESS(avs_coap_msg_info_opt_string(&info, 0, STRING));
 
     size_t storage_size = avs_coap_msg_info_get_storage_size(&info);
-    void *storage = malloc(storage_size);
+    void *storage = avs_malloc(storage_size);
 
     const avs_coap_msg_t *msg = avs_coap_msg_build_without_payload(
             avs_coap_ensure_aligned_buffer(storage), storage_size,
@@ -379,7 +380,7 @@ AVS_UNIT_TEST(coap_builder, opt_string) {
     AVS_UNIT_ASSERT_EQUAL_BYTES_SIZED(msg, msg_tpl, msg_tpl_size);
 
     avs_coap_msg_info_reset(&info);
-    free(storage);
+    avs_free(storage);
 }
 
 #undef STRING
@@ -407,7 +408,7 @@ AVS_UNIT_TEST(coap_builder, payload_call_with_zero_size) {
     avs_coap_msg_info_t info = INFO_WITH_HEADER(msg_tpl);
 
     size_t storage_size = avs_coap_msg_info_get_storage_size(&info);
-    void *storage = malloc(storage_size);
+    void *storage = avs_malloc(storage_size);
 
     avs_coap_msg_builder_t builder;
     AVS_UNIT_ASSERT_SUCCESS(avs_coap_msg_builder_init(
@@ -419,7 +420,7 @@ AVS_UNIT_TEST(coap_builder, payload_call_with_zero_size) {
     const avs_coap_msg_t *msg = avs_coap_msg_builder_get_msg(&builder);
 
     AVS_UNIT_ASSERT_EQUAL_BYTES_SIZED(msg, msg_tpl, msg_tpl_size);
-    free(storage);
+    avs_free(storage);
 }
 
 #define PAYLOAD "And IiiiiiiiiiiiiiiIIIiiiii will alllwayyyyyys crash youuuuUUUUuuu"
@@ -432,7 +433,7 @@ AVS_UNIT_TEST(coap_builder, payload_call_with_zero_size_then_nonzero) {
     size_t storage_size = avs_coap_msg_info_get_storage_size(&info)
                           + sizeof(AVS_COAP_PAYLOAD_MARKER)
                           + sizeof(PAYLOAD);
-    void *storage = malloc(storage_size);
+    void *storage = avs_malloc(storage_size);
 
     avs_coap_msg_builder_t builder;
     AVS_UNIT_ASSERT_SUCCESS(avs_coap_msg_builder_init(
@@ -446,7 +447,7 @@ AVS_UNIT_TEST(coap_builder, payload_call_with_zero_size_then_nonzero) {
     const avs_coap_msg_t *msg = avs_coap_msg_builder_get_msg(&builder);
 
     AVS_UNIT_ASSERT_EQUAL_BYTES_SIZED(msg, msg_tpl, msg_tpl_size);
-    free(storage);
+    avs_free(storage);
 }
 
 #undef PAYLOAD

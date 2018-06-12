@@ -19,6 +19,7 @@
 #include <ctype.h>
 #include <string.h>
 
+#include <avsystem/commons/memory.h>
 #include <avsystem/commons/utils.h>
 
 #include "auth.h"
@@ -31,14 +32,14 @@ static void http_auth_new_header(http_auth_t *auth) {
     auth->state.flags.type = HTTP_AUTH_TYPE_NONE;
     auth->state.flags.use_md5_sess = 0;
     auth->state.flags.use_qop_auth = 0;
-    free(auth->state.opaque);
+    avs_free(auth->state.opaque);
     auth->state.opaque = NULL;
 }
 
 void _avs_http_auth_reset(http_auth_t *auth) {
-    free(auth->state.nonce);
-    free(auth->state.realm);
-    free(auth->state.opaque);
+    avs_free(auth->state.nonce);
+    avs_free(auth->state.realm);
+    avs_free(auth->state.opaque);
     memset(&auth->state, 0, sizeof(auth->state));
 }
 
@@ -46,7 +47,7 @@ static char *consume_alloc_quotable_token(const char **src) {
     const char *src_copy = *src;
     avs_consume_quotable_token(&src_copy, NULL, 0, "," AVS_SPACES);
     size_t bufsize = (size_t) (src_copy - *src) + 1;
-    char *buf = (char *) malloc(bufsize);
+    char *buf = (char *) avs_malloc(bufsize);
     if (buf) {
         avs_consume_quotable_token(src, buf, bufsize, "," AVS_SPACES);
     }
@@ -69,7 +70,7 @@ int _avs_http_auth_setup(http_auth_t *auth, const char *challenge) {
 
     while (*challenge) {
         if (avs_match_token(&challenge, "realm", "=") == 0) {
-            free(auth->state.realm);
+            avs_free(auth->state.realm);
             if (!(auth->state.realm =
                     consume_alloc_quotable_token(&challenge))) {
                 LOG(ERROR, "Could not allocate memory for auth realm");
@@ -77,7 +78,7 @@ int _avs_http_auth_setup(http_auth_t *auth, const char *challenge) {
             }
             LOG(TRACE, "Auth realm: %s", auth->state.realm);
         } else if (avs_match_token(&challenge, "nonce", "=") == 0) {
-            free(auth->state.nonce);
+            avs_free(auth->state.nonce);
             if (!(auth->state.nonce =
                     consume_alloc_quotable_token(&challenge))) {
                 LOG(ERROR, "Could not allocate memory for auth nonce");
@@ -86,7 +87,7 @@ int _avs_http_auth_setup(http_auth_t *auth, const char *challenge) {
             auth->state.nc = 1;
             LOG(TRACE, "Auth nonce: %s", auth->state.nonce);
         } else if (avs_match_token(&challenge, "opaque", "=") == 0) {
-            free(auth->state.opaque);
+            avs_free(auth->state.opaque);
             if (!(auth->state.opaque =
                     consume_alloc_quotable_token(&challenge))) {
                 LOG(ERROR, "Could not allocate memory for auth opaque");
@@ -123,7 +124,7 @@ int _avs_http_auth_setup(http_auth_t *auth, const char *challenge) {
                     break;
                 }
             }
-            free(qop_options_buf);
+            avs_free(qop_options_buf);
             if (!auth->state.flags.use_qop_auth) {
                 LOG(ERROR,
                     "qop option present, but qop=\"auth\" not supported");
@@ -162,7 +163,7 @@ int _avs_http_auth_setup_stream(http_stream_t *stream,
                                 const avs_url_t *parsed_url,
                                 const char *auth_username,
                                 const char *auth_password) {
-    free(stream->auth.credentials.user);
+    avs_free(stream->auth.credentials.user);
     stream->auth.credentials.user = NULL;
     if (auth_username) {
         if (!(stream->auth.credentials.user = avs_strdup(auth_username))) {
@@ -175,7 +176,7 @@ int _avs_http_auth_setup_stream(http_stream_t *stream,
         }
     }
 
-    free(stream->auth.credentials.password);
+    avs_free(stream->auth.credentials.password);
     stream->auth.credentials.password = NULL;
     if (auth_password) {
         if (!(stream->auth.credentials.password = avs_strdup(auth_password))) {
@@ -198,8 +199,8 @@ error:
 
 void _avs_http_auth_clear(http_auth_t *auth) {
     _avs_http_auth_reset(auth);
-    free(auth->credentials.user);
+    avs_free(auth->credentials.user);
     auth->credentials.user = NULL;
-    free(auth->credentials.password);
+    avs_free(auth->credentials.password);
     auth->credentials.password = NULL;
 }

@@ -20,6 +20,7 @@
 #include <string.h>
 
 #include <avsystem/commons/errno.h>
+#include <avsystem/commons/memory.h>
 #include <avsystem/commons/stream/stream_net.h>
 
 #include "chunked.h"
@@ -283,7 +284,7 @@ int _avs_http_send_via_buffer(http_stream_t *stream,
 }
 
 int _avs_http_encoder_flush(http_stream_t *stream) {
-    char *buffer = (char *) malloc(
+    char *buffer = (char *) avs_malloc(
             stream->http->buffer_sizes.content_coding_min_input);
     if (!buffer) {
         LOG(ERROR, "Out of memory");
@@ -307,6 +308,6 @@ int _avs_http_encoder_flush(http_stream_t *stream) {
         }
     }
 finish:
-    free(buffer);
+    avs_free(buffer);
     return result;
 }

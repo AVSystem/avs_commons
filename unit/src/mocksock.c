@@ -24,8 +24,9 @@
 #include <ctype.h>
 #include <assert.h>
 
-#include <avsystem/commons/log.h>
 #include <avsystem/commons/list.h>
+#include <avsystem/commons/log.h>
+#include <avsystem/commons/memory.h>
 #include <avsystem/commons/net.h>
 #include <avsystem/commons/socket_v_table.h>
 #include <avsystem/commons/unit/mocksock.h>
@@ -359,7 +360,7 @@ static void hexdump_data(const void *raw_data,
     const size_t bytes_per_row = bytes_per_segment * segments_per_row;
 
     size_t buffer_size = bytes_per_row * 4 + segments_per_row * 2;
-    char *buffer = (char *) malloc(buffer_size);
+    char *buffer = (char *) avs_malloc(buffer_size);
     AVS_UNIT_ASSERT_NOT_NULL(buffer);
     for (size_t offset = 0; offset < data_size; offset += bytes_per_row) {
         hexdumpify(buffer, buffer_size,
@@ -368,7 +369,7 @@ static void hexdump_data(const void *raw_data,
         LOG(TRACE, "%s", buffer);
     }
 
-    free(buffer);
+    avs_free(buffer);
 }
 
 static int mock_send_to(avs_net_abstract_socket_t *socket_,
@@ -404,7 +405,7 @@ static int mock_send_to(avs_net_abstract_socket_t *socket_,
             socket->expected_data->args.valid.ptr += to_send;
             if (socket->expected_data->args.valid.ptr
                     == socket->expected_data->args.valid.size) {
-                free((void*)(intptr_t)socket->expected_data->args.valid.data);
+                avs_free((void*)(intptr_t)socket->expected_data->args.valid.data);
                 AVS_LIST_DELETE(&socket->expected_data);
             }
             buffer_length -= to_send;
@@ -471,7 +472,7 @@ static int mock_receive_from(avs_net_abstract_socket_t *socket_,
         if (socket->expected_data->args.valid.ptr
                 == socket->expected_data->args.valid.size) {
             socket->last_data_read = socket->expected_data->args.valid.ptr;
-            free((void*)(intptr_t)socket->expected_data->args.valid.data);
+            avs_free((void*)(intptr_t)socket->expected_data->args.valid.data);
             AVS_LIST_DELETE(&socket->expected_data);
         }
     } else if (socket->expected_data->type
@@ -565,7 +566,7 @@ static int mock_close(avs_net_abstract_socket_t *socket_) {
 
 static int mock_cleanup(avs_net_abstract_socket_t **socket) {
     int retval = mock_close(*socket);
-    free(*socket);
+    avs_free(*socket);
     *socket = NULL;
     return retval;
 }
@@ -706,7 +707,7 @@ void avs_unit_mocksock_create__(avs_net_abstract_socket_t **socket_,
                                 int line) {
     static const avs_net_socket_v_table_t *const vtable_ptr = &mock_vtable;
     mocksock_t **socket = (mocksock_t **) socket_;
-    *socket = (mocksock_t *) calloc(1, sizeof(**socket));
+    *socket = (mocksock_t *) avs_calloc(1, sizeof(**socket));
     _avs_unit_assert(!!*socket, file, line, "out of memory\n");
     memcpy(*socket, &vtable_ptr, sizeof(vtable_ptr));
 }
@@ -736,7 +737,7 @@ void avs_unit_mocksock_input_from__(avs_net_abstract_socket_t *socket_,
     new_data->type = MOCKSOCK_DATA_TYPE_INPUT;
     new_data->args.valid.remote_host = host;
     new_data->args.valid.remote_port = port;
-    new_data->args.valid.data = malloc(length);
+    new_data->args.valid.data = avs_malloc(length);
     AVS_UNIT_ASSERT_NOT_NULL(new_data->args.valid.data);
     memcpy((void*)(intptr_t)new_data->args.valid.data, data, length);
     new_data->args.valid.ptr = 0;
@@ -784,7 +785,7 @@ void avs_unit_mocksock_expect_output_to__(avs_net_abstract_socket_t *socket_,
     new_data->type = MOCKSOCK_DATA_TYPE_OUTPUT;
     new_data->args.valid.remote_host = host;
     new_data->args.valid.remote_port = port;
-    new_data->args.valid.data = malloc(length);
+    new_data->args.valid.data = avs_malloc(length);
     AVS_UNIT_ASSERT_NOT_NULL(new_data->args.valid.data);
     memcpy((void*)(intptr_t)new_data->args.valid.data, expect, length);
     new_data->args.valid.ptr = 0;
