@@ -18,6 +18,7 @@
 
 #include <avsystem/commons/defs.h>
 #include <avsystem/commons/memory.h>
+#include <avsystem/commons/utils.h>
 
 #include "stack_trace.h"
 
@@ -283,7 +284,7 @@ static char *addr2line(void* addr) {
     char *last = NULL;
 
     if (addr2line_safe_ask(&line, &size, "%p\n", addr)) {
-        return strdup("<addr2line failed>");
+        return avs_strdup("<addr2line failed>");
     }
 
     last = find_last_not_of(line, "\r\n");
