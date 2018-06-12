@@ -19,6 +19,7 @@
 #include <stdarg.h>
 
 #include <avsystem/commons/log.h>
+#include <avsystem/commons/memory.h>
 #include <avsystem/commons/unit/test.h>
 
 static size_t test_rb_alloc_null_countdown = 0;
@@ -30,11 +31,11 @@ static void *test_rb_alloc(size_t num_bytes) {
         }
     }
 
-    return calloc(1, num_bytes);
+    return avs_calloc(1, num_bytes);
 }
 
 static void test_rb_dealloc(void *ptr) {
-    free(ptr);
+    avs_free(ptr);
 }
 
 #ifdef __cplusplus

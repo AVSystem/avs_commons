@@ -27,14 +27,15 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <avsystem/commons/memory.h>
 #include <avsystem/commons/utils.h>
 
 VISIBILITY_SOURCE_BEGIN
 
 #define CREATE_OR_FAIL(type, ptr) \
 do { \
-    free(*ptr); \
-    *ptr = (type *) calloc(1, sizeof(**ptr)); \
+    avs_free(*ptr); \
+    *ptr = (type *) avs_calloc(1, sizeof(**ptr)); \
     if (!*ptr) {\
         LOG(ERROR, "memory allocation error"); \
         return -1; \

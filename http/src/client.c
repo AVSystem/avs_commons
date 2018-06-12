@@ -18,6 +18,7 @@
 
 #include <string.h>
 
+#include <avsystem/commons/memory.h>
 #include <avsystem/commons/utils.h>
 
 #include "client.h"
@@ -40,7 +41,7 @@ const avs_http_buffer_sizes_t AVS_HTTP_DEFAULT_BUFFER_SIZES = {
 const char *const _AVS_HTTP_METHOD_NAMES[] = { "GET", "POST", "PUT" };
 
 avs_http_t *avs_http_new(const avs_http_buffer_sizes_t *buffer_sizes) {
-    avs_http_t *result = (avs_http_t *) calloc(1, sizeof(avs_http_t));
+    avs_http_t *result = (avs_http_t *) avs_calloc(1, sizeof(avs_http_t));
     if (!result) {
         LOG(ERROR, "Out of memory");
         return NULL;
@@ -52,8 +53,8 @@ avs_http_t *avs_http_new(const avs_http_buffer_sizes_t *buffer_sizes) {
 void avs_http_free(avs_http_t *http) {
     if (http) {
         avs_http_clear_cookies(http);
-        free(http->user_agent);
-        free(http);
+        avs_free(http->user_agent);
+        avs_free(http);
     }
 }
 
@@ -77,7 +78,7 @@ int avs_http_set_user_agent(avs_http_t *http, const char *user_agent) {
             return -1;
         }
     }
-    free(http->user_agent);
+    avs_free(http->user_agent);
     http->user_agent = new_user_agent;
     return 0;
 }

@@ -19,6 +19,7 @@
 #include <avsystem/commons/buffer.h>
 #include <avsystem/commons/defs.h>
 #include <avsystem/commons/list.h>
+#include <avsystem/commons/memory.h>
 #include <avsystem/commons/time.h>
 #include <avsystem/commons/utils.h>
 
@@ -66,13 +67,13 @@ coap_msg_cache_t *_avs_coap_msg_cache_create(size_t capacity) {
     }
 
     coap_msg_cache_t *cache = (coap_msg_cache_t *)
-            calloc(1, sizeof(coap_msg_cache_t));
+            avs_calloc(1, sizeof(coap_msg_cache_t));
     if (!cache) {
         return NULL;
     }
 
     if (avs_buffer_create(&cache->buffer, capacity)) {
-        free(cache);
+        avs_free(cache);
         return NULL;
     }
 
@@ -85,7 +86,7 @@ void _avs_coap_msg_cache_release(coap_msg_cache_t **cache_ptr) {
     if (cache_ptr && *cache_ptr) {
         avs_buffer_free(&(*cache_ptr)->buffer);
         AVS_LIST_CLEAR(&(*cache_ptr)->endpoints);
-        free(*cache_ptr);
+        avs_free(*cache_ptr);
         *cache_ptr = NULL;
     }
 }

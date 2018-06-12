@@ -19,6 +19,7 @@
 #include <assert.h>
 #include <string.h>
 
+#include <avsystem/commons/memory.h>
 #include <avsystem/commons/net.h>
 #include <avsystem/commons/time.h>
 #include <avsystem/commons/utils.h>
@@ -146,7 +147,7 @@ void avs_net_addrinfo_delete(avs_net_addrinfo_t **ctx) {
         if ((*ctx)->results) {
             freeaddrinfo((*ctx)->results);
         }
-        free(*ctx);
+        avs_free(*ctx);
         *ctx = NULL;
     }
 }
@@ -184,7 +185,7 @@ avs_net_addrinfo_t *avs_net_addrinfo_resolve_ex(
     }
 
     avs_net_addrinfo_t *ctx =
-            (avs_net_addrinfo_t *) calloc(1, sizeof(avs_net_addrinfo_t));
+            (avs_net_addrinfo_t *) avs_calloc(1, sizeof(avs_net_addrinfo_t));
     if (!ctx) {
         LOG(ERROR, "Out of memory");
         return NULL;

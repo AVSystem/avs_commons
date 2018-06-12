@@ -18,6 +18,7 @@
 
 #include <avs_commons_posix_config.h>
 
+#include <avsystem/commons/memory.h>
 #include <avsystem/commons/utils.h>
 
 #include <assert.h>
@@ -542,7 +543,7 @@ static int close_net(avs_net_abstract_socket_t *net_socket_) {
 
 static int cleanup_net(avs_net_abstract_socket_t **net_socket) {
     close_net(*net_socket);
-    free(*net_socket);
+    avs_free(*net_socket);
     *net_socket = NULL;
     return 0;
 }
@@ -1504,7 +1505,7 @@ static int create_net_socket(avs_net_abstract_socket_t **socket,
     const avs_net_socket_configuration_t *configuration =
             (const avs_net_socket_configuration_t *) socket_configuration;
     avs_net_socket_t *net_socket =
-            (avs_net_socket_t *) calloc(1, sizeof (avs_net_socket_t));
+            (avs_net_socket_t *) avs_calloc(1, sizeof (avs_net_socket_t));
     if (!net_socket) {
         return -1;
     }
@@ -1524,7 +1525,7 @@ static int create_net_socket(avs_net_abstract_socket_t **socket,
 
     if (configuration) {
         if (check_configuration(configuration)) {
-            free(*socket);
+            avs_free(*socket);
             *socket = NULL;
             return -1;
         } else {
@@ -1841,7 +1842,7 @@ interface_name_end:
         goto interface_name_end;
     }
 interface_name_retry:
-    if (!(req = (struct ifreq *) realloc(reqs, blen))) {
+    if (!(req = (struct ifreq *) avs_realloc(reqs, blen))) {
         goto interface_name_end;
     } else {
         reqs = req;
@@ -1860,7 +1861,7 @@ interface_name_retry:
         TRY_ADDRESS(&req->ifr_addr, req->ifr_name);
     }
 interface_name_end:
-    free(reqs);
+    avs_free(reqs);
     close(null_socket);
     return retval;
 #else

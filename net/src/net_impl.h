@@ -31,7 +31,7 @@ VISIBILITY_PRIVATE_HEADER_BEGIN
 #endif
 
 /**
- * An owned PSK/identity pair. avs_commons will free()
+ * An owned PSK/identity pair. avs_commons will avs_free()
  * @ref avs_net_owned_psk_t#psk and @ref avs_net_owned_psk_t#identity pointers
  * when they are no longer needed.
  */

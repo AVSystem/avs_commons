@@ -94,7 +94,7 @@ static int handle_cert_persistence(avs_persistence_context_t *ctx,
             *cert_ptr = NULL;
         }
 restore_finish:
-        free(data);
+        avs_free(data);
     }
     return result;
 }
@@ -112,7 +112,7 @@ static int handle_cert_persistence(avs_persistence_context_t *ctx,
         // avs_persistence_sized_buffer() could allocate memory if it is restore case
         LOG(WARNING, "x509 certificates support is not compiled in - ignoring "
                      "restored certificate");
-        free(data);
+        avs_free(data);
     }
     return 0;
 }

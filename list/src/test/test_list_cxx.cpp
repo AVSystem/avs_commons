@@ -19,11 +19,12 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <avsystem/commons/unit/test.h>
+#include <avsystem/commons/memory.h>
 #include <avsystem/commons/unit/mock_helpers.h>
+#include <avsystem/commons/unit/test.h>
 
-AVS_UNIT_MOCK_CREATE(calloc)
-#define calloc(...) AVS_UNIT_MOCK_WRAPPER(calloc)(__VA_ARGS__)
+AVS_UNIT_MOCK_CREATE(avs_calloc)
+#define avs_calloc(...) AVS_UNIT_MOCK_WRAPPER(avs_calloc)(__VA_ARGS__)
 
 #include <avsystem/commons/list.h>
 
@@ -61,7 +62,7 @@ static void *failing_calloc(size_t nmemb, size_t size)
 AVS_UNIT_TEST(list, failing_alloc) {
     AVS_LIST(int) test_list = NULL;
 
-    AVS_UNIT_MOCK(calloc) = failing_calloc;
+    AVS_UNIT_MOCK(avs_calloc) = failing_calloc;
 
     AVS_UNIT_ASSERT_NULL(AVS_LIST_NEW_BUFFER(42));
     AVS_UNIT_ASSERT_NULL(AVS_LIST_NEW_ELEMENT(int));

@@ -21,6 +21,7 @@
 #include <stdint.h>
 
 #include <avsystem/commons/defs.h>
+#include <avsystem/commons/memory.h>
 
 /**
  * @file list.h
@@ -77,7 +78,7 @@
  *
  * Reference to the memory allocation function used by the generic linked list.
  *
- * By default, this is defined as <c>calloc(1, size)</c>. It may be defined
+ * By default, this is defined as <c>avs_calloc(1, size)</c>. It may be defined
  * prior to including <c>list.h</c> to use some custom memory allocation
  * function.
  *
@@ -91,7 +92,7 @@
  */
 #ifndef AVS_LIST_CONFIG_ALLOC
 #include <stdlib.h>
-#define AVS_LIST_CONFIG_ALLOC(size) calloc(1, size)
+#define AVS_LIST_CONFIG_ALLOC(size) avs_calloc(1, size)
 #endif
 
 /**
@@ -100,7 +101,7 @@
  * Reference to the memory deallocation function used by the generic linked
  * list.
  *
- * By default, this is defined as <c>free(ptr)</c>. It may be defined prior to
+ * By default, this is defined as <c>avs_free(ptr)</c>. It may be defined prior to
  * including <c>list.h</c> to use some custom memory deallocation function.
  *
  * The function used must be symmetric to the definition of
@@ -110,7 +111,7 @@
  */
 #ifndef AVS_LIST_CONFIG_FREE
 #include <stdlib.h>
-#define AVS_LIST_CONFIG_FREE free
+#define AVS_LIST_CONFIG_FREE avs_free
 #endif
 
 #ifdef	__cplusplus

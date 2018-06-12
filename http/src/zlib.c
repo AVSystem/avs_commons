@@ -24,6 +24,7 @@
 
 #include <zlib.h>
 
+#include <avsystem/commons/memory.h>
 #include <avsystem/commons/stream_v_table.h>
 
 #include "http_log.h"
@@ -239,12 +240,12 @@ static int zlib_stream_error(avs_stream_abstract_t *stream_) {
 
 static void *zlib_stream_alloc(void *opaque, unsigned n, unsigned size) {
     (void) opaque;
-    return calloc(n, size);
+    return avs_calloc(n, size);
 }
 
 static void zlib_stream_free(void *opaque, void *ptr) {
     (void) opaque;
-    free(ptr);
+    avs_free(ptr);
 }
 
 static zlib_stream_t *zlib_stream_init(const avs_stream_v_table_t *vtable,
@@ -255,7 +256,7 @@ static zlib_stream_t *zlib_stream_init(const avs_stream_v_table_t *vtable,
         return NULL;
     }
     zlib_stream_t *stream = (zlib_stream_t *)
-            calloc(1, sizeof(zlib_stream_t)
+            avs_calloc(1, sizeof(zlib_stream_t)
                          + input_buffer_size + output_buffer_size);
     if (!stream) {
         LOG(ERROR, "cannot allocate memory");
@@ -326,7 +327,7 @@ _avs_http_create_compressor(http_compression_format_t format,
     if (result != Z_OK) {
         LOG(ERROR, "could not initialize zlib (%d): %s",
             result, get_zlib_msg(stream));
-        free(stream);
+        avs_free(stream);
         return NULL;
     }
     reset_fields(stream);
@@ -374,7 +375,7 @@ _avs_http_create_decompressor(http_compression_format_t format,
     if (result != Z_OK) {
         LOG(ERROR, "could not initialize zlib (%d): %s",
             result, get_zlib_msg(stream));
-        free(stream);
+        avs_free(stream);
         return NULL;
     }
     reset_fields(stream);
