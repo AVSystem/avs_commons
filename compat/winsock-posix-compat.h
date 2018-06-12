@@ -119,6 +119,19 @@ static inline int _avs_wsa_set_errno(int result) {
     return result;
 }
 
+static inline int _avs_wsa_set_errno_connect(int result) {
+    int wsaerror = WSAGetLastError();
+    // https://msdn.microsoft.com/en-us/library/windows/desktop/ms737625(v=vs.85).aspx
+    // Of course Windows needs to use a completely different error code for
+    // non-blocking connect() than the rest of the world :/
+    if (wsaerror == WSAEWOULDBLOCK) {
+        errno = EINPROGRESS;
+    } else {
+        errno = _avs_map_wsaerror(WSAGetLastError());
+    }
+    return result;
+}
+
 static inline SOCKET _avs_wsa_set_errno_socket(SOCKET result) {
     errno = _avs_map_wsaerror(WSAGetLastError());
     return result;
@@ -137,7 +150,7 @@ static inline const char *_avs_wsa_set_errno_str(const char *result) {
 #define accept(...) _avs_wsa_set_errno_socket(accept(__VA_ARGS__))
 #define bind(...) _avs_wsa_set_errno(bind(__VA_ARGS__))
 #define close(...) _avs_wsa_set_errno(closesocket(__VA_ARGS__))
-#define connect(...) _avs_wsa_set_errno(connect(__VA_ARGS__))
+#define connect(...) _avs_wsa_set_errno_connect(connect(__VA_ARGS__))
 #define getnameinfo(Addr, Addrlen, Host, Hostlen, Serv, Servlen, Flags) \
         _avs_wsa_set_errno(getnameinfo((Addr), (Addrlen), \
                                        (Host), (DWORD) (Hostlen), \
