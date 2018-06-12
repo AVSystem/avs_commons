@@ -33,6 +33,11 @@ if(WITH_POSIX_AVS_TIME)
     set(SOURCES ${SOURCES} compat/posix/compat_time.c)
 endif()
 
+option(WITH_STANDARD_ALLOCATOR "Enable default implementation of avs_malloc/calloc/realloc/free" ON)
+if(WITH_STANDARD_ALLOCATOR)
+    set(SOURCES ${SOURCES} compat/stdlib/memory.c)
+endif()
+
 set(ALL_SOURCES ${SOURCES})
 
 set(INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/include_public")
