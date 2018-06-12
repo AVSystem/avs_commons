@@ -73,47 +73,6 @@
  * </example>
  */
 
-/**
- * @def AVS_LIST_CONFIG_ALLOC(size)
- *
- * Reference to the memory allocation function used by the generic linked list.
- *
- * By default, this is defined as <c>avs_calloc(1, size)</c>. It may be defined
- * prior to including <c>list.h</c> to use some custom memory allocation
- * function.
- *
- * The function used must be symmetric to the definition of
- * @ref AVS_LIST_CONFIG_FREE and must set at least the first
- * <c>sizeof(void *)</c> bytes of the allocated memory to zeroes.
- *
- * @param size Number of bytes to allocate
- *
- * @return Pointer to newly allocated memory, or <c>NULL</c> in case of error.
- */
-#ifndef AVS_LIST_CONFIG_ALLOC
-#include <stdlib.h>
-#define AVS_LIST_CONFIG_ALLOC(size) avs_calloc(1, size)
-#endif
-
-/**
- * @def AVS_LIST_CONFIG_FREE(ptr)
- *
- * Reference to the memory deallocation function used by the generic linked
- * list.
- *
- * By default, this is defined as <c>avs_free(ptr)</c>. It may be defined prior to
- * including <c>list.h</c> to use some custom memory deallocation function.
- *
- * The function used must be symmetric to the definition of
- * @ref AVS_LIST_CONFIG_ALLOC.
- *
- * @param ptr Pointer to previously allocated memory that shall be freed.
- */
-#ifndef AVS_LIST_CONFIG_FREE
-#include <stdlib.h>
-#define AVS_LIST_CONFIG_FREE avs_free
-#endif
-
 #ifdef	__cplusplus
 extern "C" {
 #endif
@@ -525,16 +484,16 @@ AVS_CALL_WITH_CAST(1, avs_list_append_ptr__, (list_ptr))
 /**
  * Allocates a new list element with an arbitrary size.
  *
- * Invokes @ref AVS_LIST_CONFIG_ALLOC with the desired size increased by the
+ * Invokes @ref avs_calloc() with the desired size increased by the
  * space necessary for the next pointer, and returns the pointer to user data.
  *
  * @param size Number of bytes to allocate for user data.
  *
  * @return Newly allocated list element, as <c>void *</c>.
  */
-#define AVS_LIST_NEW_BUFFER(size) \
-(avs_list_adjust_allocated_ptr__( \
-        AVS_LIST_CONFIG_ALLOC(AVS_LIST_SPACE_FOR_NEXT__ + (size))))
+#define AVS_LIST_NEW_BUFFER(size)     \
+    (avs_list_adjust_allocated_ptr__( \
+            avs_calloc(1, (AVS_LIST_SPACE_FOR_NEXT__ + (size)))))
 
 /**
  * Allocates a new list element of a given type.
@@ -671,10 +630,9 @@ avs_list_detach_impl__(AVS_LIST(T) *element_to_detach_ptr) {
  * @param element_to_delete_ptr Pointer to a variable on a list holding a
  *                              pointer to the element to destroy.
  */
-#define AVS_LIST_DELETE(element_to_delete_ptr) \
-AVS_LIST_CONFIG_FREE( \
-        ((char *) (intptr_t) (AVS_LIST_DETACH(element_to_delete_ptr))) \
-        - AVS_LIST_SPACE_FOR_NEXT__)
+#define AVS_LIST_DELETE(element_to_delete_ptr)                             \
+    avs_free(((char *) (intptr_t)(AVS_LIST_DETACH(element_to_delete_ptr))) \
+             - AVS_LIST_SPACE_FOR_NEXT__)
 
 /**
  * Checks whether the element has not been deleted during
