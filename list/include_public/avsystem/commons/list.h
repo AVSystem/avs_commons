@@ -73,6 +73,11 @@
  * </example>
  */
 
+#if defined(AVS_LIST_CONFIG_ALLOC) || defined(AVS_LIST_CONFIG_FREE)
+#warning "AVS_LIST_CONFIG_ALLOC and AVS_LIST_CONFIG_FREE are no longer " \
+         "supported, disable WITH_STANDARD_ALLOCATOR instead"
+#endif
+
 #ifdef	__cplusplus
 extern "C" {
 #endif
