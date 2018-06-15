@@ -750,7 +750,7 @@ static int configure_ssl_psk(ssl_socket_t *socket,
 }
 #else
 static int configure_ssl_psk(ssl_socket_t *socket,
-                             const avs_net_psk_t *psk) {
+                             const avs_net_psk_info_t *psk) {
     (void) socket;
     (void) psk;
     LOG(ERROR, "PSK not supported in this version of OpenSSL");
