@@ -28,6 +28,8 @@ include_directories(${INCLUDE_DIRS})
 
 add_library(avs_buffer STATIC ${ALL_SOURCES})
 
+include_directories(../utils/include_public)
+
 avs_install_export(avs_buffer buffer)
 install(DIRECTORY include_public/
         COMPONENT buffer
