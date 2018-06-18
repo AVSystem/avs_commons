@@ -130,6 +130,21 @@ void avs_unit_mocksock_expect_shutdown__(avs_net_abstract_socket_t *socket,
 #define avs_unit_mocksock_expect_shutdown(Socket) \
     avs_unit_mocksock_expect_shutdown__((Socket), __FILE__, __LINE__)
 
+void avs_unit_mocksock_expect_system_socket__(avs_net_abstract_socket_t *socket,
+                                              const void *to_return,
+                                              const char *file, int line);
+#define avs_unit_mocksock_expect_system_socket(Socket, ToReturn) \
+    avs_unit_mocksock_expect_system_socket__((Socket), (ToReturn), \
+                                             __FILE__, __LINE__)
+
+void avs_unit_mocksock_expect_interface_name__(
+        avs_net_abstract_socket_t *socket,
+        const avs_net_socket_interface_name_t *to_return,
+        const char *file, int line);
+#define avs_unit_mocksock_expect_interface_name(Socket, ToReturn) \
+    avs_unit_mocksock_expect_interface_name__((Socket), (ToReturn), \
+                                              __FILE__, __LINE__)
+
 void avs_unit_mocksock_expect_remote_host__(avs_net_abstract_socket_t *socket,
                                             const char *to_return,
                                             const char *file,
@@ -153,6 +168,22 @@ void avs_unit_mocksock_expect_remote_port__(avs_net_abstract_socket_t *socket,
 #define avs_unit_mocksock_expect_remote_port(Socket, ToReturn) \
     avs_unit_mocksock_expect_remote_port__((Socket), (ToReturn), \
                                            __FILE__, __LINE__)
+
+void avs_unit_mocksock_expect_local_host__(avs_net_abstract_socket_t *socket,
+                                           const char *to_return,
+                                           const char *file,
+                                           int line);
+#define avs_unit_mocksock_expect_local_host(Socket, ToReturn) \
+    avs_unit_mocksock_expect_local_host__((Socket), (ToReturn), \
+                                          __FILE__, __LINE__)
+
+void avs_unit_mocksock_expect_local_port__(avs_net_abstract_socket_t *socket,
+                                           const char *to_return,
+                                           const char *file,
+                                           int line);
+#define avs_unit_mocksock_expect_local_port(Socket, ToReturn) \
+    avs_unit_mocksock_expect_local_port__((Socket), (ToReturn), \
+                                          __FILE__, __LINE__)
 
 void avs_unit_mocksock_expect_get_opt__(avs_net_abstract_socket_t *socket,
                                         avs_net_socket_opt_key_t key,

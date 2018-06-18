@@ -60,9 +60,13 @@ typedef enum {
     MOCKSOCK_COMMAND_BIND,
     MOCKSOCK_COMMAND_ACCEPT,
     MOCKSOCK_COMMAND_SHUTDOWN,
+    MOCKSOCK_COMMAND_SYSTEM_SOCKET,
+    MOCKSOCK_COMMAND_INTERFACE_NAME,
     MOCKSOCK_COMMAND_REMOTE_HOST,
     MOCKSOCK_COMMAND_REMOTE_HOSTNAME,
     MOCKSOCK_COMMAND_REMOTE_PORT,
+    MOCKSOCK_COMMAND_LOCAL_HOST,
+    MOCKSOCK_COMMAND_LOCAL_PORT,
     MOCKSOCK_COMMAND_MID_CLOSE,
     MOCKSOCK_COMMAND_GET_OPT,
     MOCKSOCK_COMMAND_SET_OPT,
@@ -77,10 +81,12 @@ typedef struct mocksock_expected_command_struct {
     union {
         mocksock_expected_connect_t connect;
         mocksock_expected_bind_t bind;
-        const char *remote_host;
-        const char *remote_port;
+        const char *host;
+        const char *port;
         mocksock_expected_get_opt_t get_opt;
         mocksock_expected_set_opt_t set_opt;
+        const void *system_socket;
+        avs_net_socket_interface_name_t if_name;
     } data;
     int retval;
 } mocksock_expected_command_t;
@@ -114,12 +120,20 @@ static int mock_accept(avs_net_abstract_socket_t *server_socket,
 static int mock_close(avs_net_abstract_socket_t *socket);
 static int mock_shutdown(avs_net_abstract_socket_t *socket);
 static int mock_cleanup(avs_net_abstract_socket_t **socket);
+static int mock_system_socket(avs_net_abstract_socket_t *socket,
+                              const void **out);
+static int mock_interface_name(avs_net_abstract_socket_t *socket,
+                               avs_net_socket_interface_name_t *if_name);
 static int mock_remote_host(avs_net_abstract_socket_t *socket,
                             char *hostname, size_t hostname_size);
 static int mock_remote_hostname(avs_net_abstract_socket_t *socket,
                                 char *hostname, size_t hostname_size);
 static int mock_remote_port(avs_net_abstract_socket_t *socket,
                             char *port, size_t port_size);
+static int mock_local_host(avs_net_abstract_socket_t *socket,
+                           char *hostname, size_t hostname_size);
+static int mock_local_port(avs_net_abstract_socket_t *socket,
+                           char *port, size_t port_size);
 static int mock_get_opt(avs_net_abstract_socket_t *socket,
                         avs_net_socket_opt_key_t option_key,
                         avs_net_socket_opt_value_t *out_option_value);
@@ -144,13 +158,13 @@ static const avs_net_socket_v_table_t mock_vtable = {
     mock_close,
     mock_shutdown,
     mock_cleanup,
-    (avs_net_socket_get_system_t) unimplemented,
-    (avs_net_socket_get_interface_t) unimplemented,
+    mock_system_socket,
+    mock_interface_name,
     mock_remote_host,
     mock_remote_hostname,
     mock_remote_port,
-    (avs_net_socket_get_local_host_t) unimplemented,
-    (avs_net_socket_get_local_port_t) unimplemented,
+    mock_local_host,
+    mock_local_port,
     mock_get_opt,
     mock_set_opt,
     mock_errno
@@ -166,12 +180,20 @@ static const char *cmd_type_to_string(mocksock_expected_command_type_t type) {
         return "accept";
     case MOCKSOCK_COMMAND_SHUTDOWN:
         return "shutdown";
+    case MOCKSOCK_COMMAND_SYSTEM_SOCKET:
+        return "system_socket";
+    case MOCKSOCK_COMMAND_INTERFACE_NAME:
+        return "interface_name";
     case MOCKSOCK_COMMAND_REMOTE_HOST:
         return "remote_host";
     case MOCKSOCK_COMMAND_REMOTE_HOSTNAME:
         return "remote_hostname";
     case MOCKSOCK_COMMAND_REMOTE_PORT:
         return "remote_port";
+    case MOCKSOCK_COMMAND_LOCAL_HOST:
+        return "local_host";
+    case MOCKSOCK_COMMAND_LOCAL_PORT:
+        return "local_port";
     case MOCKSOCK_COMMAND_MID_CLOSE:
         return "mid_close";
     case MOCKSOCK_COMMAND_GET_OPT:
@@ -585,6 +607,35 @@ static int mock_shutdown(avs_net_abstract_socket_t *socket_) {
     return retval;
 }
 
+static int mock_system_socket(avs_net_abstract_socket_t *socket_,
+                              const void **out) {
+    int retval = 0;
+    mocksock_t *socket = (mocksock_t *) socket_;
+
+    assert_command_expected(socket->expected_commands,
+            MOCKSOCK_COMMAND_SYSTEM_SOCKET);
+
+    *out = socket->expected_commands->data.system_socket;
+    retval = socket->expected_commands->retval;
+    AVS_LIST_DELETE(&socket->expected_commands);
+    return retval;
+}
+
+static int mock_interface_name(avs_net_abstract_socket_t *socket_,
+                               avs_net_socket_interface_name_t *if_name) {
+    int retval = 0;
+    mocksock_t *socket = (mocksock_t *) socket_;
+
+    assert_command_expected(socket->expected_commands,
+            MOCKSOCK_COMMAND_INTERFACE_NAME);
+
+    memcpy(*if_name, socket->expected_commands->data.if_name,
+           sizeof(avs_net_socket_interface_name_t));
+    retval = socket->expected_commands->retval;
+    AVS_LIST_DELETE(&socket->expected_commands);
+    return retval;
+}
+
 static int mock_remote_host(avs_net_abstract_socket_t *socket_,
                             char *hostname, size_t hostname_size) {
     int retval = 0;
@@ -594,7 +645,7 @@ static int mock_remote_host(avs_net_abstract_socket_t *socket_,
             MOCKSOCK_COMMAND_REMOTE_HOST);
 
     strncpy(hostname,
-            socket->expected_commands->data.remote_host, hostname_size);
+            socket->expected_commands->data.host, hostname_size);
     retval = socket->expected_commands->retval;
     AVS_LIST_DELETE(&socket->expected_commands);
     return retval;
@@ -608,8 +659,7 @@ static int mock_remote_hostname(avs_net_abstract_socket_t *socket_,
     assert_command_expected(socket->expected_commands,
             MOCKSOCK_COMMAND_REMOTE_HOSTNAME);
 
-    strncpy(hostname,
-            socket->expected_commands->data.remote_host, hostname_size);
+    strncpy(hostname, socket->expected_commands->data.host, hostname_size);
     retval = socket->expected_commands->retval;
     AVS_LIST_DELETE(&socket->expected_commands);
     return retval;
@@ -623,7 +673,35 @@ static int mock_remote_port(avs_net_abstract_socket_t *socket_,
     assert_command_expected(socket->expected_commands,
             MOCKSOCK_COMMAND_REMOTE_PORT);
 
-    strncpy(port, socket->expected_commands->data.remote_port, port_size);
+    strncpy(port, socket->expected_commands->data.port, port_size);
+    retval = socket->expected_commands->retval;
+    AVS_LIST_DELETE(&socket->expected_commands);
+    return retval;
+}
+
+static int mock_local_host(avs_net_abstract_socket_t *socket_,
+                           char *hostname, size_t hostname_size) {
+    int retval = 0;
+    mocksock_t *socket = (mocksock_t *) socket_;
+
+    assert_command_expected(socket->expected_commands,
+            MOCKSOCK_COMMAND_LOCAL_HOST);
+
+    strncpy(hostname, socket->expected_commands->data.host, hostname_size);
+    retval = socket->expected_commands->retval;
+    AVS_LIST_DELETE(&socket->expected_commands);
+    return retval;
+}
+
+static int mock_local_port(avs_net_abstract_socket_t *socket_,
+                           char *port, size_t port_size) {
+    int retval = 0;
+    mocksock_t *socket = (mocksock_t *) socket_;
+
+    assert_command_expected(socket->expected_commands,
+            MOCKSOCK_COMMAND_LOCAL_PORT);
+
+    strncpy(port, socket->expected_commands->data.port, port_size);
     retval = socket->expected_commands->retval;
     AVS_LIST_DELETE(&socket->expected_commands);
     return retval;
@@ -895,13 +973,33 @@ void avs_unit_mocksock_expect_shutdown__(avs_net_abstract_socket_t *socket,
     command->command = MOCKSOCK_COMMAND_SHUTDOWN;
 }
 
+void avs_unit_mocksock_expect_system_socket__(avs_net_abstract_socket_t *socket,
+                                              const void *to_return,
+                                              const char *file, int line) {
+    mocksock_expected_command_t *command = new_expected_command(socket,
+                                                                file, line);
+    command->command = MOCKSOCK_COMMAND_SYSTEM_SOCKET;
+    command->data.system_socket = to_return;
+}
+
+void avs_unit_mocksock_expect_interface_name__(
+        avs_net_abstract_socket_t *socket,
+        const avs_net_socket_interface_name_t *to_return,
+        const char *file, int line) {
+    mocksock_expected_command_t *command = new_expected_command(socket,
+                                                                file, line);
+    command->command = MOCKSOCK_COMMAND_INTERFACE_NAME;
+    memcpy(command->data.if_name, *to_return,
+           sizeof(avs_net_socket_interface_name_t));
+}
+
 void avs_unit_mocksock_expect_remote_host__(avs_net_abstract_socket_t *socket,
                                             const char *to_return,
                                             const char *file, int line) {
     mocksock_expected_command_t *command = new_expected_command(socket,
                                                                 file, line);
     command->command = MOCKSOCK_COMMAND_REMOTE_HOST;
-    command->data.remote_host = to_return;
+    command->data.host = to_return;
 }
 
 void
@@ -911,7 +1009,7 @@ avs_unit_mocksock_expect_remote_hostname__(avs_net_abstract_socket_t *socket,
     mocksock_expected_command_t *command = new_expected_command(socket,
                                                                 file, line);
     command->command = MOCKSOCK_COMMAND_REMOTE_HOSTNAME;
-    command->data.remote_host = to_return;
+    command->data.host = to_return;
 }
 
 void avs_unit_mocksock_expect_remote_port__(avs_net_abstract_socket_t *socket,
@@ -920,7 +1018,25 @@ void avs_unit_mocksock_expect_remote_port__(avs_net_abstract_socket_t *socket,
     mocksock_expected_command_t *command = new_expected_command(socket,
                                                                 file, line);
     command->command = MOCKSOCK_COMMAND_REMOTE_PORT;
-    command->data.remote_port = to_return;
+    command->data.port = to_return;
+}
+
+void avs_unit_mocksock_expect_local_host__(avs_net_abstract_socket_t *socket,
+                                           const char *to_return,
+                                           const char *file, int line) {
+    mocksock_expected_command_t *command = new_expected_command(socket,
+                                                                file, line);
+    command->command = MOCKSOCK_COMMAND_LOCAL_HOST;
+    command->data.host = to_return;
+}
+
+void avs_unit_mocksock_expect_local_port__(avs_net_abstract_socket_t *socket,
+                                           const char *to_return,
+                                           const char *file, int line) {
+    mocksock_expected_command_t *command = new_expected_command(socket,
+                                                                file, line);
+    command->command = MOCKSOCK_COMMAND_LOCAL_PORT;
+    command->data.port = to_return;
 }
 
 void avs_unit_mocksock_expect_get_opt__(avs_net_abstract_socket_t *socket,
