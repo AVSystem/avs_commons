@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 AVSystem <avsystem@avsystem.com>
+ * Copyright 2017-2018 AVSystem <avsystem@avsystem.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1300,7 +1300,7 @@ typedef struct {
 
 #ifndef HAVE_RECVMSG
 
-/* (2017-01-03) LwIP does not implement recvmsg call, try to simulate it using
+/* (2017-2018-01-03) LwIP does not implement recvmsg call, try to simulate it using
  * plain recv(), with a little hack to try to detect truncated packets. */
 static int recvfrom_internal(sockfd_t sockfd, void *arg_) {
     recvfrom_internal_arg_t *arg = (recvfrom_internal_arg_t *) arg_;
