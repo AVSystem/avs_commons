@@ -371,15 +371,22 @@ set(MODULE_INCLUDE_DIRS)
 # Named arguments:
 # PATH - relative path to the module subdirectory. If not given, NAME is used instead.
 # NAME - module name, used as a substring of output library name and Makefile targets
-# INCLUDE_DIRS_VAR - name of the variable to append module include dirs to
+# INCLUDE_DIRS_VAR - name of the variable to append module include dirs to. If not set,
+#                    MODULE_INCLUDE_DIRS is assumed.
 function(add_module_with_include_dirs)
     set(options)
     set(one_value_args PATH NAME INCLUDE_DIRS_VAR)
     set(multi_value_args)
     cmake_parse_arguments(AMWID "${options}" "${one_value_args}" "${multi_value_args}" ${ARGN})
 
+    if(NOT DEFINED AMWID_NAME)
+        message(FATAL_ERROR "Required argument NAME not given")
+    endif()
     if(NOT DEFINED AMWID_PATH)
         set(AMWID_PATH "${AMWID_NAME}")
+    endif()
+    if(NOT DEFINED INCLUDE_DIRS_VAR)
+        set(AMWID_INCLUDE_DIRS_VAR MODULE_INCLUDE_DIRS)
     endif()
 
     add_subdirectory(${AMWID_PATH})
@@ -405,8 +412,7 @@ function(add_module_with_include_dirs)
 endfunction()
 
 if(WITH_AVS_UNIT)
-    add_module_with_include_dirs(NAME unit
-                                 INCLUDE_DIRS_VAR MODULE_INCLUDE_DIRS)
+    add_module_with_include_dirs(NAME unit)
 endif()
 
 if(WITH_TEST)
@@ -477,28 +483,23 @@ else(WITH_TEST)
 endif(WITH_TEST)
 
 if(WITH_AVS_ALGORITHM)
-    add_module_with_include_dirs(NAME algorithm
-                                 INCLUDE_DIRS_VAR MODULE_INCLUDE_DIRS)
+    add_module_with_include_dirs(NAME algorithm)
 endif()
 
 if(WITH_AVS_BUFFER)
-    add_module_with_include_dirs(NAME buffer
-                                 INCLUDE_DIRS_VAR MODULE_INCLUDE_DIRS)
+    add_module_with_include_dirs(NAME buffer)
 endif()
 
 if(WITH_AVS_LIST)
-    add_module_with_include_dirs(NAME list
-                                 INCLUDE_DIRS_VAR MODULE_INCLUDE_DIRS)
+    add_module_with_include_dirs(NAME list)
 endif()
 
 if(WITH_AVS_VECTOR)
-    add_module_with_include_dirs(NAME vector
-                                 INCLUDE_DIRS_VAR MODULE_INCLUDE_DIRS)
+    add_module_with_include_dirs(NAME vector)
 endif()
 
 if(WITH_AVS_UTILS)
-    add_module_with_include_dirs(NAME utils
-                                 INCLUDE_DIRS_VAR MODULE_INCLUDE_DIRS)
+    add_module_with_include_dirs(NAME utils)
 endif()
 
 if(WITH_AVS_NET)
@@ -523,23 +524,19 @@ if(WITH_AVS_NET)
         endif()
     endif()
 
-    add_module_with_include_dirs(NAME net
-                                 INCLUDE_DIRS_VAR MODULE_INCLUDE_DIRS)
+    add_module_with_include_dirs(NAME net)
 endif()
 
 if(WITH_AVS_STREAM)
-    add_module_with_include_dirs(NAME stream
-                                 INCLUDE_DIRS_VAR MODULE_INCLUDE_DIRS)
+    add_module_with_include_dirs(NAME stream)
 endif()
 
 if(WITH_AVS_LOG)
-    add_module_with_include_dirs(NAME log
-                                 INCLUDE_DIRS_VAR MODULE_INCLUDE_DIRS)
+    add_module_with_include_dirs(NAME log)
 endif()
 
 if (WITH_AVS_RBTREE)
-    add_module_with_include_dirs(NAME rbtree
-                                 INCLUDE_DIRS_VAR MODULE_INCLUDE_DIRS)
+    add_module_with_include_dirs(NAME rbtree)
 endif()
 
 cmake_dependent_option(WITH_AVS_COAP_MESSAGE_CACHE
@@ -550,16 +547,14 @@ cmake_dependent_option(WITH_AVS_COAP_NET_STATS
                        ON WITH_AVS_COAP OFF)
 
 if(WITH_AVS_COAP)
-    add_module_with_include_dirs(NAME coap
-                                 INCLUDE_DIRS_VAR MODULE_INCLUDE_DIRS)
+    add_module_with_include_dirs(NAME coap)
 endif()
 
 cmake_dependent_option(WITH_AVS_HTTP_ZLIB
                        "Enable support for HTTP compression using zlib"
                        ON WITH_AVS_HTTP OFF)
 if(WITH_AVS_HTTP)
-    add_module_with_include_dirs(NAME http
-                                 INCLUDE_DIRS_VAR MODULE_INCLUDE_DIRS)
+    add_module_with_include_dirs(NAME http)
     if(WITH_AVS_HTTP_ZLIB)
         if(NOT ZLIB_FOUND)
             message(FATAL_ERROR "zlib not found")
@@ -572,8 +567,7 @@ if(WITH_AVS_HTTP)
 endif()
 
 if(WITH_AVS_PERSISTENCE)
-    add_module_with_include_dirs(NAME persistence
-                                 INCLUDE_DIRS_VAR MODULE_INCLUDE_DIRS)
+    add_module_with_include_dirs(NAME persistence)
 endif()
 
 
