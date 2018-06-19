@@ -272,7 +272,7 @@ static bool unit_valid(avs_time_unit_t unit) {
     /* Some compilers implement avs_time_unit_t as unsigned int, causing
      * warning of pointless comparison. The solution is to make a temporary
      * int32_t variable with value of unit. */
-    const int32_t s_unit = unit;
+    const int32_t s_unit = (int32_t) unit;
     return s_unit >= 0 && unit < AVS_ARRAY_SIZE(CONVERSIONS);
 }
 

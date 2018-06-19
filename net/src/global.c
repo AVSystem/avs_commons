@@ -72,7 +72,7 @@ int _avs_net_ensure_global_state(void) {
     if (atomic_flag_test_and_set(&TOUCHED)) {
         // someone has already started initializing the state
         while (!result) {
-            result = RESULT;
+            result = (int) RESULT;
         }
         if (result > 0) {
             result = 0;
