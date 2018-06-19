@@ -107,7 +107,6 @@ int _avs_net_mbedtls_load_ca_certs(mbedtls_x509_crt **out,
         AVS_UNREACHABLE("invalid data source");
         return -1;
     }
-    return 0;
 }
 
 int _avs_net_mbedtls_load_client_cert(mbedtls_x509_crt **out,
@@ -133,7 +132,6 @@ int _avs_net_mbedtls_load_client_cert(mbedtls_x509_crt **out,
         AVS_UNREACHABLE("invalid data source");
         return -1;
     }
-    return 0;
 }
 
 static int load_private_key_from_buffer(mbedtls_pk_context *client_key,
@@ -187,5 +185,4 @@ int _avs_net_mbedtls_load_client_key(mbedtls_pk_context **client_key,
         AVS_UNREACHABLE("invalid data source");
         return -1;
     }
-    return 0;
 }

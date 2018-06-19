@@ -180,7 +180,6 @@ int _avs_net_openssl_load_ca_certs(SSL_CTX *ctx,
         AVS_UNREACHABLE("invalid data source");
         return -1;
     }
-    return 0;
 }
 
 static int load_client_cert_from_file(SSL_CTX *ctx,
@@ -234,7 +233,6 @@ int _avs_net_openssl_load_client_cert(SSL_CTX *ctx,
         AVS_UNREACHABLE("invalid data source");
         return -1;
     }
-    return 0;
 }
 
 static int load_client_key_from_file(SSL_CTX *ctx,
@@ -321,5 +319,4 @@ int _avs_net_openssl_load_client_key(SSL_CTX *ctx,
         AVS_UNREACHABLE("invalid data source");
         return -1;
     }
-    return 0;
 }
