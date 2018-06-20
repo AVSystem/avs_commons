@@ -35,10 +35,17 @@ int avs_mutex_create(avs_mutex_t **out_mutex) {
     AVS_ASSERT(!*out_mutex, "possible attempt to reinitialize a mutex");
 
     *out_mutex = (struct avs_mutex *) avs_calloc(1, sizeof(struct avs_mutex));
-    if (*out_mutex) {
-        return pthread_mutex_init(&(*out_mutex)->pthread_mutex, NULL);
+    if (!*out_mutex) {
+        return -1;
     }
-    return -1;
+
+    if (pthread_mutex_init(&(*out_mutex)->pthread_mutex, NULL)) {
+        avs_free(*out_mutex);
+        *out_mutex = NULL;
+        return -1;
+    }
+
+    return 0;
 }
 
 int avs_mutex_lock(avs_mutex_t *mutex) {
