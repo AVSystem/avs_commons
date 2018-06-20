@@ -41,165 +41,89 @@ VISIBILITY_SOURCE_BEGIN
 #define INET_ADDRSTRLEN 16
 #endif
 
-#ifdef EADDRINUSE
 extern const int AVS_NET_EADDRINUSE;
 const int AVS_NET_EADDRINUSE = EADDRINUSE;
-#endif // EADDRINUSE
 
-#ifdef EADDRNOTAVAIL
 extern const int AVS_NET_EADDRNOTAVAIL;
 const int AVS_NET_EADDRNOTAVAIL = EADDRNOTAVAIL;
-#endif // EADDRNOTAVAIL
 
-#ifdef EAFNOSUPPORT
 extern const int AVS_NET_EAFNOSUPPORT;
 const int AVS_NET_EAFNOSUPPORT = EAFNOSUPPORT;
-#endif // EAFNOSUPPORT
 
-#ifdef EALREADY
 extern const int AVS_NET_EALREADY;
 const int AVS_NET_EALREADY = EALREADY;
-#endif // EALREADY
 
-#ifdef EBADMSG
 extern const int AVS_NET_EBADMSG;
 const int AVS_NET_EBADMSG = EBADMSG;
-#endif // EBADMSG
 
-#ifdef ECONNABORTED
 extern const int AVS_NET_ECONNABORTED;
 const int AVS_NET_ECONNABORTED = ECONNABORTED;
-#endif // ECONNABORTED
 
-#ifdef ECONNREFUSED
 extern const int AVS_NET_ECONNREFUSED;
 const int AVS_NET_ECONNREFUSED = ECONNREFUSED;
-#endif // ECONNREFUSED
 
-#ifdef ECONNRESET
 extern const int AVS_NET_ECONNRESET;
 const int AVS_NET_ECONNRESET = ECONNRESET;
-#endif // ECONNRESET
 
-#ifdef EDESTADDRREQ
 extern const int AVS_NET_EDESTADDRREQ;
 const int AVS_NET_EDESTADDRREQ = EDESTADDRREQ;
-#endif // EDESTADDRREQ
 
-#ifdef EHOSTUNREACH
 extern const int AVS_NET_EHOSTUNREACH;
 const int AVS_NET_EHOSTUNREACH = EHOSTUNREACH;
-#endif // EHOSTUNREACH
 
-#ifdef EINPROGRESS
 extern const int AVS_NET_EINPROGRESS;
 const int AVS_NET_EINPROGRESS = EINPROGRESS;
-#endif // EINPROGRESS
 
-#ifdef EISCONN
 extern const int AVS_NET_EISCONN;
 const int AVS_NET_EISCONN = EISCONN;
-#endif // EISCONN
 
-#ifdef EMSGSIZE
 extern const int AVS_NET_EMSGSIZE;
 const int AVS_NET_EMSGSIZE = EMSGSIZE;
-#endif // EMSGSIZE
 
-#ifdef ENAMETOOLONG
 extern const int AVS_NET_ENAMETOOLONG;
 const int AVS_NET_ENAMETOOLONG = ENAMETOOLONG;
-#endif // ENAMETOOLONG
 
-#ifdef ENETDOWN
 extern const int AVS_NET_ENETDOWN;
 const int AVS_NET_ENETDOWN = ENETDOWN;
-#endif // ENETDOWN
 
-#ifdef ENETRESET
-extern const int AVS_NET_ENETRESET;
-const int AVS_NET_ENETRESET = ENETRESET;
-#endif // ENETRESET
-
-#ifdef ENETUNREACH
 extern const int AVS_NET_ENETUNREACH;
 const int AVS_NET_ENETUNREACH = ENETUNREACH;
-#endif // ENETUNREACH
 
-#ifdef ENOBUFS
 extern const int AVS_NET_ENOBUFS;
 const int AVS_NET_ENOBUFS = ENOBUFS;
-#endif // ENOBUFS
 
-#ifdef ENODATA
-extern const int AVS_NET_ENODATA;
-const int AVS_NET_ENODATA = ENODATA;
-#endif // ENODATA
-
-#ifdef ENOLINK
 extern const int AVS_NET_ENOLINK;
 const int AVS_NET_ENOLINK = ENOLINK;
-#endif // ENOLINK
 
-#ifdef ENOMSG
 extern const int AVS_NET_ENOMSG;
 const int AVS_NET_ENOMSG = ENOMSG;
-#endif // ENOMSG
 
-#ifdef ENOPROTOOPT
 extern const int AVS_NET_ENOPROTOOPT;
 const int AVS_NET_ENOPROTOOPT = ENOPROTOOPT;
-#endif // ENOPROTOOPT
 
-#ifdef ENOSR
-extern const int AVS_NET_ENOSR;
-const int AVS_NET_ENOSR = ENOSR;
-#endif // ENOSR
-
-#ifdef ENOSYS
 extern const int AVS_NET_ENOSYS;
 const int AVS_NET_ENOSYS = ENOSYS;
-#endif // ENOSYS
 
-#ifdef ENOTCONN
 extern const int AVS_NET_ENOTCONN;
 const int AVS_NET_ENOTCONN = ENOTCONN;
-#endif // ENOTCONN
 
-#ifdef ENOTSOCK
 extern const int AVS_NET_ENOTSOCK;
 const int AVS_NET_ENOTSOCK = ENOTSOCK;
-#endif // ENOTSOCK
 
-#ifdef EOVERFLOW
 extern const int AVS_NET_EOVERFLOW;
 const int AVS_NET_EOVERFLOW = EOVERFLOW;
-#endif // EOVERFLOW
 
-#ifdef EPROTO
 extern const int AVS_NET_EPROTO;
 const int AVS_NET_EPROTO = EPROTO;
-#endif // EPROTO
 
-#ifdef EPROTONOSUPPORT
 extern const int AVS_NET_EPROTONOSUPPORT;
 const int AVS_NET_EPROTONOSUPPORT = EPROTONOSUPPORT;
-#endif // EPROTONOSUPPORT
 
-#ifdef EPROTOTYPE
 extern const int AVS_NET_EPROTOTYPE;
 const int AVS_NET_EPROTOTYPE = EPROTOTYPE;
-#endif // EPROTOTYPE
 
-#ifdef ETIME
-extern const int AVS_NET_ETIME;
-const int AVS_NET_ETIME = ETIME;
-#endif // ETIME
-
-#ifdef ETIMEDOUT
 extern const int AVS_NET_ETIMEDOUT;
 const int AVS_NET_ETIMEDOUT = ETIMEDOUT;
-#endif // ETIMEDOUT
 
 // EAGAIN and EWOULDBLOCK are allowed to be identical
 #if defined(EAGAIN) && !defined(EWOULDBLOCK)
@@ -208,15 +132,11 @@ const int AVS_NET_ETIMEDOUT = ETIMEDOUT;
 #define EAGAIN EWOULDBLOCK
 #endif
 
-#ifdef EAGAIN
 extern const int AVS_NET_EAGAIN;
 const int AVS_NET_EAGAIN = EAGAIN;
-#endif // EAGAIN
 
-#ifdef EWOULDBLOCK
 extern const int AVS_NET_EWOULDBLOCK;
 const int AVS_NET_EWOULDBLOCK = EWOULDBLOCK;
-#endif // EWOULDBLOCK
 
 // ENOTSUP and EOPNOTSUPP are allowed to be identical
 #if defined(ENOTSUP) && !defined(EOPNOTSUPP)
@@ -225,15 +145,11 @@ const int AVS_NET_EWOULDBLOCK = EWOULDBLOCK;
 #define ENOTSUP EOPNOTSUPP
 #endif
 
-#ifdef ENOTSUP
 extern const int AVS_NET_ENOTSUP;
 const int AVS_NET_ENOTSUP = ENOTSUP;
-#endif // ENOTSUP
 
-#ifdef EOPNOTSUPP
 extern const int AVS_NET_EOPNOTSUPP;
 const int AVS_NET_EOPNOTSUPP = EOPNOTSUPP;
-#endif // EOPNOTSUPP
 
 static const avs_time_duration_t NET_SEND_TIMEOUT = { 30, 0 };
 static const avs_time_duration_t NET_CONNECT_TIMEOUT = { 10, 0 };
