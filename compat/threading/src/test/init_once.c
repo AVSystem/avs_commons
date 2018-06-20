@@ -24,9 +24,7 @@
 #include <avsystem/commons/unit/test.h>
 
 typedef struct {
-    volatile atomic_bool barrier;
-
-    const useconds_t sleep_time_us;
+    pthread_barrier_t barrier;
     const size_t num_calls_per_thread;
     int counter;
     const int succeed_on_call;
@@ -44,7 +42,7 @@ static void *thread_func(void *args_) {
     thread_func_args_t *args = (thread_func_args_t *) args_;
 
     // wait until all threads are started
-    while (atomic_load(&args->barrier) == true) {}
+    pthread_barrier_wait(&args->barrier);
 
     for (size_t i = 0; i < args->num_calls_per_thread; ++i) {
         avs_init_once(&args->init_once_handle, init, args);
@@ -63,13 +61,13 @@ AVS_UNIT_TEST(init_once, basic) {
         .init_once_handle = NULL
     };
 
-    atomic_store(&args.barrier, true);
+    AVS_UNIT_ASSERT_SUCCESS(pthread_barrier_init(&args.barrier, NULL,
+                                                 AVS_ARRAY_SIZE(threads)));
 
     for (size_t i = 0; i < AVS_ARRAY_SIZE(threads); ++i) {
-        AVS_UNIT_ASSERT_SUCCESS(pthread_create(&threads[i], NULL, thread_func, &args));
+        AVS_UNIT_ASSERT_SUCCESS(pthread_create(&threads[i], NULL,
+                                               thread_func, &args));
     }
-    // start all threads at once
-    atomic_store(&args.barrier, false);
 
     for (size_t i = 0; i < AVS_ARRAY_SIZE(threads); ++i) {
         void *status = NULL;
