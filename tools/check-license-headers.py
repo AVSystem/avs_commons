@@ -23,7 +23,7 @@ import time
 from argparse import ArgumentParser
 from io import StringIO
 
-EXPECTED_COPYRIGHT_FTIME = 'Copyright %Y AVSystem <avsystem@avsystem.com>'
+EXPECTED_COPYRIGHT_FTIME = 'Copyright 2017-%Y AVSystem <avsystem@avsystem.com>'
 EXPECTED_COPYRIGHT_RE = re.compile('[0-9]+'.join(map(re.escape, EXPECTED_COPYRIGHT_FTIME.split('%Y'))))
 
 EXPECTED_LICENSE_LINES = [
