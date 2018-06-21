@@ -232,6 +232,13 @@ cmake_dependent_option(WITH_INTERNAL_LOGS "Enable logging from inside AVSystem C
 cmake_dependent_option(WITH_INTERNAL_TRACE "Enable TRACE-level logs inside AVSystem Commons libraries" OFF WITH_INTERNAL_LOGS OFF)
 cmake_dependent_option(WITH_MBEDTLS_LOGS "Enable logging from mbedTLS backend library (if used)" OFF "WITH_INTERNAL_LOG;WITH_MBEDTLS" OFF)
 
+if(WITH_AVS_LOG)
+    set(AVS_LOG_MAX_LINE_LENGTH 512 CACHE INTEGER "Max length of a single log message. Longer ones will be truncated.")
+    cmake_dependent_option(AVS_LOG_USE_GLOBAL_BUFFER
+                           "Use global log message buffer instead of allocating one on stack. Reduces stack usage of threads that use avs_log() at the cost of synchronized access to the buffer."
+                           OFF WITH_AVS_MUTEX OFF)
+endif()
+
 cmake_dependent_option(WITH_TEST "Enable unit tests of AVSystem Commons library itself" OFF WITH_AVS_UNIT OFF)
 cmake_dependent_option(WITH_CXX_TESTS "Enable C++ unit tests" ON WITH_TEST OFF)
 if(WITH_CXX_TESTS)
