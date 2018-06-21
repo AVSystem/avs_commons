@@ -46,6 +46,10 @@ static struct {
     avs_log_handler_t *handler;
     avs_log_level_t default_level;
     AVS_LIST(module_level_t) module_levels;
+
+#ifdef AVS_LOG_USE_GLOBAL_BUFFER
+    char buffer[AVS_LOG_MAX_LINE_LENGTH];
+#endif // AVS_LOG_USE_GLOBAL_BUFFER
 } g_log = {
     .handler = default_log_handler,
     .default_level = AVS_LOG_INFO,
@@ -249,9 +253,18 @@ void avs_log_internal_forced_v__(avs_log_level_t level,
                                  unsigned line,
                                  const char *msg,
                                  va_list ap) {
+#ifdef AVS_LOG_USE_GLOBAL_BUFFER
+    if (LOG_LOCK()) {
+        return;
+    }
+    log_with_buffer_unlocked_v(g_log.buffer, sizeof(g_log.buffer),
+                               level, module, file, line, msg, ap);
+    LOG_UNLOCK();
+#else // AVS_LOG_USE_GLOBAL_BUFFER
     char log_buf[AVS_LOG_MAX_LINE_LENGTH];
     log_with_buffer_unlocked_v(log_buf, sizeof(log_buf),
                                level, module, file, line, msg, ap);
+#endif // AVS_LOG_USE_GLOBAL_BUFFER
 }
 
 void avs_log_internal_v__(avs_log_level_t level,
