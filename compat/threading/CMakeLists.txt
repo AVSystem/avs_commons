@@ -29,6 +29,7 @@ include_directories(${INCLUDE_DIRS})
 
 # NOTE: first available implementation defines default avs_compat_threading targets
 add_subdirectory(src/atomic_spinlock)
+add_subdirectory(src/pthread)
 
 install(DIRECTORY include_public/
         COMPONENT threading
