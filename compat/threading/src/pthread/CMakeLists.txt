@@ -19,7 +19,8 @@ if(NOT WITH_AVS_THREADING_PTHREAD)
 endif()
 
 set(SOURCES
-    mutex.c)
+    mutex.c
+    init_once.c)
 
 add_library(avs_compat_threading_pthread STATIC ${SOURCES})
 target_link_libraries(avs_compat_threading_pthread ${CMAKE_THREAD_LIBS_INIT})
