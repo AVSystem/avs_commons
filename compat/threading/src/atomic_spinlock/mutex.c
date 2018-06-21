@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 AVSystem <avsystem@avsystem.com>
+ * Copyright 2017-2018 AVSystem <avsystem@avsystem.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,7 +52,7 @@ int avs_mutex_lock(avs_mutex_t *mutex) {
     return 0;
 }
 
-int avs_mutex_trylock(avs_mutex_t *mutex) {
+int avs_mutex_try_lock(avs_mutex_t *mutex) {
     return atomic_flag_test_and_set(&mutex->locked) == 0 ? 0 : 1;
 }
 

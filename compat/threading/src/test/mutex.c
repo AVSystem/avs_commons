@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 AVSystem <avsystem@avsystem.com>
+ * Copyright 2017-2018 AVSystem <avsystem@avsystem.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,14 +19,12 @@
 #include <avsystem/commons/mutex.h>
 
 #include <pthread.h>
-#include <unistd.h>
 
 #include <avsystem/commons/unit/test.h>
 
 typedef struct {
-    avs_mutex_t mutex;
+    avs_mutex_t *mutex;
     const size_t num_increments;
-    const useconds_t sleep_time_us;
     int counter;
 } thread_func_args_t;
 
@@ -36,7 +34,6 @@ static void *thread_func(void *args_) {
     for (size_t i = 0; i < args->num_increments; ++i) {
         avs_mutex_lock(args->mutex);
         ++args->counter;
-        usleep(args->sleep_time_us);
         avs_mutex_unlock(args->mutex);
     }
 
@@ -46,13 +43,12 @@ static void *thread_func(void *args_) {
 AVS_UNIT_TEST(mutex, basic) {
     pthread_t threads[4];
 
-    avs_mutex_t mutex = NULL;
+    avs_mutex_t *mutex = NULL;
     AVS_UNIT_ASSERT_SUCCESS(avs_mutex_create(&mutex));
 
     thread_func_args_t args = {
         .mutex = mutex,
-        .num_increments = 10,
-        .sleep_time_us = 10,
+        .num_increments = 1000,
         .counter = 0
     };
 

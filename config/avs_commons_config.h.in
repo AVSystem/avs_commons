@@ -102,4 +102,4 @@ extern void *sbrk (intptr_t __delta);
 
 #cmakedefine WITH_AVS_HTTP_ZLIB
 
-#cmakedefine WITH_AVS_MUTEX
+#cmakedefine WITH_AVS_THREADING
