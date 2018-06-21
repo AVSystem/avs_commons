@@ -57,9 +57,9 @@ static void reset_everything(void) {
 
 AVS_UNIT_GLOBAL_INIT(verbose) {
     (void) verbose;
-    AVS_UNIT_ASSERT_TRUE(HANDLER == default_log_handler);
-    AVS_UNIT_ASSERT_EQUAL(DEFAULT_LEVEL, AVS_LOG_INFO);
-    AVS_UNIT_ASSERT_TRUE(MODULE_LEVELS == NULL);
+    AVS_UNIT_ASSERT_TRUE(g_log.handler == default_log_handler);
+    AVS_UNIT_ASSERT_EQUAL(g_log.default_level, AVS_LOG_INFO);
+    AVS_UNIT_ASSERT_TRUE(g_log.module_levels == NULL);
     reset_everything();
 }
 
