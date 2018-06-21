@@ -84,6 +84,7 @@ static int init_recursive(void *handles_) {
         return avs_init_once(handles[0], init_recursive,
                              (void *) &handles[1]);
     }
+    return 0;
 }
 
 AVS_UNIT_TEST(init_once, recursive_call_different_handle) {
