@@ -14,6 +14,9 @@
  * limitations under the License.
  */
 
+/* for PTHREAD_MUTEX_RECURSIVE & pthread_mutexattr_settype */
+#define _POSIX_C_SOURCE 200809L
+
 #include <avs_commons_config.h>
 
 #define MODULE_NAME init_once_pthread
