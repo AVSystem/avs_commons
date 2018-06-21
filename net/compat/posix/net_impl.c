@@ -86,17 +86,11 @@ const int AVS_NET_ENAMETOOLONG = ENAMETOOLONG;
 extern const int AVS_NET_ENETDOWN;
 const int AVS_NET_ENETDOWN = ENETDOWN;
 
-extern const int AVS_NET_ENETRESET;
-const int AVS_NET_ENETRESET = ENETRESET;
-
 extern const int AVS_NET_ENETUNREACH;
 const int AVS_NET_ENETUNREACH = ENETUNREACH;
 
 extern const int AVS_NET_ENOBUFS;
 const int AVS_NET_ENOBUFS = ENOBUFS;
-
-extern const int AVS_NET_ENODATA;
-const int AVS_NET_ENODATA = ENODATA;
 
 extern const int AVS_NET_ENOLINK;
 const int AVS_NET_ENOLINK = ENOLINK;
@@ -106,9 +100,6 @@ const int AVS_NET_ENOMSG = ENOMSG;
 
 extern const int AVS_NET_ENOPROTOOPT;
 const int AVS_NET_ENOPROTOOPT = ENOPROTOOPT;
-
-extern const int AVS_NET_ENOSR;
-const int AVS_NET_ENOSR = ENOSR;
 
 extern const int AVS_NET_ENOSYS;
 const int AVS_NET_ENOSYS = ENOSYS;
@@ -130,9 +121,6 @@ const int AVS_NET_EPROTONOSUPPORT = EPROTONOSUPPORT;
 
 extern const int AVS_NET_EPROTOTYPE;
 const int AVS_NET_EPROTOTYPE = EPROTOTYPE;
-
-extern const int AVS_NET_ETIME;
-const int AVS_NET_ETIME = ETIME;
 
 extern const int AVS_NET_ETIMEDOUT;
 const int AVS_NET_ETIMEDOUT = ETIMEDOUT;

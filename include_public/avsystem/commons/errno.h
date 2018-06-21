@@ -284,11 +284,6 @@ extern const int AVS_NET_ENETDOWN;
 #define ENETDOWN AVS_NET_ENETDOWN /**< Network is down */
 #endif
 
-#ifndef ENETRESET
-extern const int AVS_NET_ENETRESET;
-#define ENETRESET AVS_NET_ENETRESET /**< Connection aborted by network */
-#endif
-
 #ifndef ENETUNREACH
 extern const int AVS_NET_ENETUNREACH;
 #define ENETUNREACH AVS_NET_ENETUNREACH /**< Network unreachable */
@@ -297,12 +292,6 @@ extern const int AVS_NET_ENETUNREACH;
 #ifndef ENOBUFS
 extern const int AVS_NET_ENOBUFS;
 #define ENOBUFS AVS_NET_ENOBUFS /**< No buffer space available */
-#endif
-
-#ifndef ENODATA
-extern const int AVS_NET_ENODATA;
-/** No message is available on the STREAM head read queue */
-#define ENODATA AVS_NET_ENODATA
 #endif
 
 #ifndef ENOLINK
@@ -318,11 +307,6 @@ extern const int AVS_NET_ENOMSG;
 #ifndef ENOPROTOOPT
 extern const int AVS_NET_ENOPROTOOPT;
 #define ENOPROTOOPT AVS_NET_ENOPROTOOPT /**< Protocol not available */
-#endif
-
-#ifndef ENOSR
-extern const int AVS_NET_ENOSR;
-#define ENOSR AVS_NET_ENOSR /**< No STREAM resources */
 #endif
 
 #ifndef ENOSYS
@@ -369,11 +353,6 @@ extern const int AVS_NET_EPROTONOSUPPORT;
 #ifndef EPROTOTYPE
 extern const int AVS_NET_EPROTOTYPE;
 #define EPROTOTYPE AVS_NET_EPROTOTYPE /**< Protocol wrong type for socket */
-#endif
-
-#ifndef ETIME
-extern const int AVS_NET_ETIME;
-#define ETIME AVS_NET_ETIME /**< Stream ioctl() timeout */
 #endif
 
 #ifndef ETIMEDOUT
