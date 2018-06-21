@@ -38,6 +38,9 @@ typedef int avs_init_once_func_t(void *arg);
  * - two @ref avs_init_once calls with the same @p handle never call @p func
  *   in parallel.
  *
+ * WARNING: calling @ref avs_unit_once with the same @p handle from within
+ * @p func results in undefined behavior.
+ *
  * @param[inout] handle   Implementation-specific data required to keep track
  *                        of whether @p func was already called successfully
  *                        or not. MUST be initialized to NULL at program start.

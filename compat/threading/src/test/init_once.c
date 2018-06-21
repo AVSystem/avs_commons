@@ -76,3 +76,23 @@ AVS_UNIT_TEST(init_once, basic) {
 
     AVS_UNIT_ASSERT_EQUAL(args.counter, args.succeed_on_call);
 }
+
+static int init_recursive(void *handles_) {
+    volatile avs_init_once_handle_t **handles =
+            (volatile avs_init_once_handle_t **) handles_;
+    if (*handles) {
+        return avs_init_once(handles[0], init_recursive,
+                             (void *) &handles[1]);
+    }
+}
+
+AVS_UNIT_TEST(init_once, recursive_call_different_handle) {
+    volatile avs_init_once_handle_t *handles[] = {
+        &(volatile avs_init_once_handle_t){ NULL },
+        &(volatile avs_init_once_handle_t){ NULL },
+        &(volatile avs_init_once_handle_t){ NULL },
+        NULL
+    };
+    AVS_UNIT_ASSERT_SUCCESS(avs_init_once(handles[0], init_recursive,
+                                          (void *) &handles[1]));
+}
