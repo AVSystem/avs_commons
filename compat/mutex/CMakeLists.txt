@@ -24,6 +24,30 @@ set(avs_mutex_INCLUDE_DIRS ${INCLUDE_DIRS} PARENT_SCOPE)
 
 include_directories(${INCLUDE_DIRS})
 
+find_package(Threads)
+
+option(WITH_AVS_MUTEX_ATOMIC_SPINLOCK "Enable avs_mutex implementation based on spinlocks and C11 atomics" ${HAVE_C11_STDATOMIC})
+if(WITH_AVS_MUTEX_ATOMIC_SPINLOCK)
+    set(ATOMIC_SPINLOCK_SOURCES src/atomic_spinlock.c)
+
+    add_library(avs_compat_mutex_atomic_spinlock STATIC
+                ${ATOMIC_SPINLOCK_SOURCES})
+    avs_install_export(avs_compat_mutex_atomic_spinlock mutex)
+
+    if(WITH_TEST AND THREADS_FOUND)
+        add_avs_test(avs_compat_mutex_atomic_spinlock
+                     ${COMMON_SOURCES}
+                     ${COMMON_TEST_SOURCES}
+                     ${ATOMIC_SPINLOCK_SOURCES})
+        target_link_libraries(avs_compat_mutex_atomic_spinlock_test ${CMAKE_THREAD_LIBS_INIT})
+    endif()
+endif()
+
+# select default mutex implementation
+if(TARGET avs_compat_mutex_atomic_spinlock)
+    add_library(avs_compat_mutex ALIAS avs_compat_mutex_atomic_spinlock)
+endif()
+
 install(DIRECTORY include_public/
         COMPONENT mutex
         DESTINATION ${INCLUDE_INSTALL_DIR}
