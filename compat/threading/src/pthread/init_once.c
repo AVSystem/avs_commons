@@ -57,7 +57,7 @@ int avs_init_once(volatile avs_init_once_handle_t *handle,
     if (*handle == NULL) {
         result = func(func_arg);
         if (result == 0) {
-            *handle = (avs_init_once_handle_t) ~(intptr_t) *handle;
+            *handle = (avs_init_once_handle_t) ~(intptr_t) NULL;
         }
     }
 
