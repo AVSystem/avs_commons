@@ -23,9 +23,10 @@
 #include <avsystem/commons/list.h>
 #include <avsystem/commons/log.h>
 
-#ifdef WITH_AVS_MUTEX
+#ifdef WITH_AVS_THREADING
 # include <avsystem/commons/mutex.h>
-#endif // WITH_AVS_MUTEX
+# include <avsystem/commons/init_once.h>
+#endif // WITH_AVS_THREADING
 
 VISIBILITY_SOURCE_BEGIN
 
@@ -56,10 +57,9 @@ static struct {
     .module_levels = NULL
 };
 
-#ifdef WITH_AVS_MUTEX
+#ifdef WITH_AVS_THREADING
 static avs_mutex_t *g_log_mutex;
-static void *volatile g_log_init_handle;
-}
+static avs_init_once_handle_t g_log_init_handle;
 
 static void cleanup_global_state(void) {
     avs_log_reset();
@@ -67,7 +67,9 @@ static void cleanup_global_state(void) {
     g_log_init_handle = NULL;
 }
 
-static int initialize_global_state(void) {
+static int initialize_global_state(void *unused) {
+    (void) unused;
+
     int result = avs_mutex_create(&g_log_mutex);
     if (!result) {
         // TODO: error checking?
@@ -78,7 +80,7 @@ static int initialize_global_state(void) {
 
 static int _log_lock(const char *init_fail_msg,
                      const char *lock_fail_msg) {
-    if (avs_run_once(&g_log_init_handle, initialize_global_state)) {
+    if (avs_init_once(&g_log_init_handle, initialize_global_state, NULL)) {
         g_log.handler(AVS_LOG_ERROR, "avs_log", init_fail_msg);
         return -1;
     }
@@ -98,12 +100,12 @@ static int _log_lock(const char *init_fail_msg,
               "could not lock log mutex")
 # define LOG_UNLOCK() avs_mutex_unlock(g_log_mutex)
 
-#else // WITH_AVS_MUTEX
+#else // WITH_AVS_THREADING
 
 # define LOG_LOCK() 0
 # define LOG_UNLOCK()
 
-#endif // WITH_AVS_MUTEX
+#endif // WITH_AVS_THREADING
 
 static inline void set_log_handler_unlocked(avs_log_handler_t *log_handler) {
     g_log.handler = log_handler;

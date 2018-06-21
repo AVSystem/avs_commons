@@ -23,7 +23,7 @@ set(ALL_SOURCES ${SOURCES} ${PUBLIC_HEADERS})
 set(INCLUDE_DIRS
     include_public
     ../list/include_public
-    ../compat/mutex/include_public)
+    ../compat/threading/include_public)
 make_absolute_sources(ABSOLUTE_INCLUDE_DIRS ${INCLUDE_DIRS})
 set(AVS_TEST_INCLUDE_DIRS "${ABSOLUTE_INCLUDE_DIRS}" PARENT_SCOPE)
 
@@ -34,8 +34,8 @@ set(avs_log_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/include_public" PARENT_SCO
 add_library(avs_log STATIC ${ALL_SOURCES})
 target_link_libraries(avs_log avs_list)
 
-if(WITH_AVS_MUTEX)
-    target_link_libraries(avs_log avs_compat_mutex)
+if(WITH_AVS_THREADING)
+    target_link_libraries(avs_log avs_compat_threading)
 endif()
 
 avs_install_export(avs_log log)
