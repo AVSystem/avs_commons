@@ -34,7 +34,7 @@ struct avs_mutex {
 int avs_mutex_create(avs_mutex_t **out_mutex) {
     AVS_ASSERT(!*out_mutex, "possible attempt to reinitialize a mutex");
 
-    *out_mutex = (struct avs_mutex *) avs_calloc(1, sizeof(struct avs_mutex));
+    *out_mutex = (avs_mutex_t *) avs_calloc(1, sizeof(avs_mutex_t));
     if (!*out_mutex) {
         return -1;
     }
