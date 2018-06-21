@@ -40,6 +40,7 @@ static void init_global_mutex(void) {
             || pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE)
             || pthread_mutex_init(&g_mutex, &attr)) {
         AVS_UNREACHABLE("could not initialize avs_init_once mutex");
+        abort();
     }
 }
 
