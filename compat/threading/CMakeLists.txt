@@ -12,20 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set(PUBLIC_HEADERS
+set(COMPAT_THREADING_PUBLIC_HEADERS
     ${CMAKE_CURRENT_SOURCE_DIR}/include_public/avsystem/commons/mutex.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include_public/avsystem/commons/init_once.h)
 
-set(COMMON_SOURCES ${PUBLIC_HEADERS})
-set(COMMON_TEST_SOURCES
+set(COMPAT_THREADING_TEST_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/test/mutex.c
     ${CMAKE_CURRENT_SOURCE_DIR}/src/test/init_once.c)
-
-set(INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/include_public")
-
-set(avs_compat_threading_INCLUDE_DIRS ${INCLUDE_DIRS} PARENT_SCOPE)
-
-include_directories(${INCLUDE_DIRS})
 
 option(WITH_CUSTOM_AVS_THREADING "Do not provide any default implementations of avs_threading" OFF)
 if(NOT WITH_CUSTOM_AVS_THREADING)

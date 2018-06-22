@@ -17,24 +17,25 @@ if(NOT WITH_AVS_COMPAT_THREADING_ATOMIC_SPINLOCK)
     return()
 endif()
 
-set(SOURCES
-    mutex.c
-    init_once.c)
+add_library(avs_compat_threading_atomic_spinlock STATIC
+            ${COMPAT_THREADING_PUBLIC_HEADERS}
+            mutex.c
+            init_once.c)
 
-include_directories(../../../../utils/include_public)
-
-add_library(avs_compat_threading_atomic_spinlock STATIC ${SOURCES})
-avs_install_export(avs_compat_threading_atomic_spinlock threading)
+target_include_directories(avs_compat_threading_atomic_spinlock PUBLIC
+                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../../include_public>
+                           $<INSTALL_INTERFACE:include>)
+target_link_libraries(avs_compat_threading_atomic_spinlock PUBLIC avs_utils)
 
 if(NOT TARGET avs_compat_threading)
     add_library(avs_compat_threading ALIAS avs_compat_threading_atomic_spinlock)
 endif()
 
+avs_install_export3(avs_compat_threading_atomic_spinlock threading)
+
 find_package(Threads)
 if(WITH_TEST AND THREADS_FOUND)
-    add_avs_test(avs_compat_threading_atomic_spinlock
-                 ${COMMON_SOURCES}
-                 ${COMMON_TEST_SOURCES}
-                 ${SOURCES})
-    target_link_libraries(avs_compat_threading_atomic_spinlock_test ${CMAKE_THREAD_LIBS_INIT})
+    add_avs_test3(NAME avs_compat_threading_atomic_spinlock
+                  LIBS avs_compat_threading_atomic_spinlock ${CMAKE_THREAD_LIBS_INIT}
+                  SOURCES ${COMPAT_THREADING_TEST_SOURCES})
 endif()
