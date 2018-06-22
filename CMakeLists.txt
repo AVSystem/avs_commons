@@ -133,11 +133,6 @@ macro(avs_install_export3 TNAME CNAME)
     install(TARGETS ${TNAME} COMPONENT ${CNAME} EXPORT avs_commons-targets DESTINATION ${LIB_INSTALL_DIR})
 endmacro()
 
-macro(avs_propagate_exports)
-    set(LIBRARY_FIND_ROUTINES "${LIBRARY_FIND_ROUTINES}" PARENT_SCOPE)
-    set(LIBRARY_FIND_ROUTINE_EMITTED_LIBS "${LIBRARY_FIND_ROUTINE_EMITTED_LIBS}" PARENT_SCOPE)
-endmacro()
-
 # OpenSSL
 avs_find_library("find_package(OpenSSL)" OpenSSL::SSL OpenSSL::Crypto)
 
