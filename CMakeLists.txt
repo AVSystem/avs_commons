@@ -478,28 +478,37 @@ if(WITH_TEST)
         add_dependencies(avs_commons_check ${NAME}_check)
     endmacro()
 
-    macro(add_avs_test3 NAME)
-        add_executable(${NAME}_test EXCLUDE_FROM_ALL
-                       ${ARGN}
-                       $<TARGET_PROPERTY:${NAME},SOURCES>)
-        target_link_libraries(${NAME}_test PRIVATE avs_unit ${NAME})
-        add_dependencies(${NAME}_test dtls_echo_server)
-        set_property(TARGET ${NAME}_test APPEND PROPERTY COMPILE_DEFINITIONS
+    # NAME - test target name, without _test suffix
+    # LIBS - libs to link to
+    # SOURCES - test sources
+    function(add_avs_test3)
+        set(options)
+        set(one_value_args NAME)
+        set(multi_value_args LIBS SOURCES)
+        cmake_parse_arguments(AAT "${options}" "${one_value_args}" "${multi_value_args}" ${ARGN})
+
+        add_executable(${AAT_NAME}_test EXCLUDE_FROM_ALL
+                       ${AAT_SOURCES})
+        target_link_libraries(${AAT_NAME}_test PRIVATE avs_unit ${AAT_LIBS})
+        add_dependencies(${AAT_NAME}_test dtls_echo_server)
+
+        set_property(TARGET ${AAT_NAME}_test APPEND PROPERTY COMPILE_DEFINITIONS
                      AVS_UNIT_TESTING
                      AVS_TEST_BIN_DIR="${_BINARY_DIR}")
-        set_property(TARGET ${NAME}_test APPEND PROPERTY COMPILE_FLAGS
+        set_property(TARGET ${AAT_NAME}_test APPEND PROPERTY COMPILE_FLAGS
                      "-Wno-clobbered -Wno-overlength-strings -Wno-sign-conversion -Wno-vla")
+
         if(VALGRIND)
-            set(VALGRIND_LOG ${VALGRIND} --log-file=VALGRIND.${NAME}.log)
+            set(VALGRIND_LOG ${VALGRIND} --log-file=VALGRIND.${AAT_NAME}.log)
         else()
             set(VALGRIND_LOG)
         endif()
 
-        add_test(NAME ${NAME}_test COMMAND ${VALGRIND_LOG} $<TARGET_FILE:${NAME}_test>)
+        add_test(AAT_NAME ${AAT_NAME}_test COMMAND ${VALGRIND_LOG} $<TARGET_FILE:${AAT_NAME}_test>)
 
-        add_custom_target(${NAME}_check COMMAND ${CMAKE_CTEST_COMMAND} -V -R "^${NAME}_test$" DEPENDS ${NAME}_test)
-        add_dependencies(avs_commons_check ${NAME}_check)
-    endmacro()
+        add_custom_target(${AAT_NAME}_check COMMAND ${CMAKE_CTEST_COMMAND} -V -R "^${AAT_NAME}_test$" DEPENDS ${AAT_NAME}_test)
+        add_dependencies(avs_commons_check ${AAT_NAME}_check)
+    endfunction()
 
     add_subdirectory(tests)
 else(WITH_TEST)

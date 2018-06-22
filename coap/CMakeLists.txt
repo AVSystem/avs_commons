@@ -41,7 +41,10 @@ target_include_directories(avs_coap PUBLIC
                            $<INSTALL_INTERFACE:include>)
 target_link_libraries(avs_coap PUBLIC avs_log avs_buffer avs_utils)
 
-add_avs_test3(avs_coap
+add_avs_test3(NAME avs_coap
+              LIBS avs_coap
+              SOURCES 
+              $<TARGET_PROPERTY:avs_coap,SOURCES>
               src/test/ctx.c
               src/test/msg_cache.c)
 

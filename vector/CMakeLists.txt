@@ -28,9 +28,12 @@ install(DIRECTORY include_public/
         DESTINATION ${INCLUDE_INSTALL_DIR}
         FILES_MATCHING REGEX "[.]h$")
 
-add_avs_test3(avs_vector)
+add_avs_test3(NAME avs_vector
+              LIBS avs_vector
+              SOURCES $<TARGET_PROPERTY:avs_vector,SOURCES>)
 
-# TODO: fix this
-#if(WITH_CXX_TESTS)
-#    add_avs_test3(avs_vector_cxx src/test/test_vector_cxx.cpp)
-#endif()
+if(WITH_CXX_TESTS)
+    add_avs_test3(NAME avs_vector_cxx
+                  LIBS avs_vector
+                  SOURCES src/test/test_vector_cxx.cpp)
+endif()
