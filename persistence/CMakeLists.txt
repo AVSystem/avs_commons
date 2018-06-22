@@ -12,31 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set(SOURCES
-    src/persistence.c)
+add_library(avs_persistence STATIC
+            include_public/avsystem/commons/persistence.h
 
-set(PUBLIC_HEADERS
-    include_public/avsystem/commons/persistence.h)
+            src/persistence.c)
 
-set(ALL_SOURCES ${SOURCES} ${PUBLIC_HEADERS})
+target_include_directories(avs_persistence PUBLIC
+                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include_public>
+                           $<INSTALL_INTERFACE:include>)
+target_link_libraries(avs_persistence PUBLIC avs_rbtree avs_stream avs_utils)
 
-set(INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/include_public")
-
-set(avs_persistence_INCLUDE_DIRS ${INCLUDE_DIRS} PARENT_SCOPE)
-
-include_directories(${INCLUDE_DIRS})
-
-add_library(avs_persistence STATIC ${ALL_SOURCES})
-avs_emit_deps(avs_persistence avs_list avs_rbtree avs_stream avs_utils)
-
-add_avs_test(avs_persistence ${ALL_SOURCES})
-if(TARGET avs_persistence_test)
-    target_link_libraries(avs_persistence_test
-                          ${AVS_TARGET_DEPS_avs_persistence})
-endif()
-
-avs_install_export(avs_persistence persistence)
+avs_install_export3(avs_persistence persistence)
 install(DIRECTORY include_public/
         COMPONENT persistence
         DESTINATION ${INCLUDE_INSTALL_DIR}
         FILES_MATCHING REGEX "[.]h$")
+
+add_avs_test3(NAME avs_persistence
+              LIBS avs_persistence
+              SOURCES $<TARGET_PROPERTY:avs_persistence,SOURCES>)
