@@ -12,51 +12,34 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set(SOURCES
-    src/mock.c
-    src/test.c
-    src/stack_trace.c)
+add_library(avs_unit STATIC
+            include_public/avsystem/commons/unit/memstream.h
+            include_public/avsystem/commons/unit/mock_helpers.h
+            include_public/avsystem/commons/unit/mocksock.h
+            include_public/avsystem/commons/unit/test.h
 
-set(PUBLIC_HEADERS
-    include_public/avsystem/commons/unit/memstream.h
-    include_public/avsystem/commons/unit/mock_helpers.h
-    include_public/avsystem/commons/unit/mocksock.h
-    include_public/avsystem/commons/unit/test.h)
+            src/mock.c
+            src/test.c
+            src/stack_trace.c)
 
-set(INCLUDE_DIRS include_public
-    ../list/include_public
-    ../log/include_public
-    ../utils/include_public)
-set(DEPS_LIBRARIES avs_list avs_utils)
-
+target_include_directories(avs_unit PUBLIC
+                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include_public>
+                           $<INSTALL_INTERFACE:include>)
 if(WITH_AVS_LOG)
-    set(DEPS_LIBRARIES ${DEPS_LIBRARIES} avs_log)
+    target_link_libraries(avs_unit PUBLIC avs_log)
 endif()
 
 if(WITH_AVS_NET)
-    set(SOURCES ${SOURCES} src/mocksock.c)
-    set(DEPS_LIBRARIES ${DEPS_LIBRARIES} avs_net)
-    set(INCLUDE_DIRS ${INCLUDE_DIRS} ../net/include_public)
+    target_sources(avs_unit PRIVATE src/mocksock.c)
+    target_link_libraries(avs_unit PUBLIC avs_net)
 endif()
 
 if(WITH_AVS_STREAM)
-    set(SOURCES ${SOURCES} src/memstream.c)
-    set(DEPS_LIBRARIES ${DEPS_LIBRARIES} avs_stream)
-    set(INCLUDE_DIRS ${INCLUDE_DIRS} ../stream/include_public)
+    target_sources(avs_unit PRIVATE src/memstream.c)
+    target_link_libraries(avs_unit PUBLIC avs_stream)
 endif()
 
-make_absolute_sources(ABSOLUTE_INCLUDE_DIRS ${INCLUDE_DIRS})
-set(AVS_TEST_INCLUDE_DIRS "${ABSOLUTE_INCLUDE_DIRS}" PARENT_SCOPE)
-
-include_directories(${INCLUDE_DIRS})
-
-set(avs_unit_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/include_public" PARENT_SCOPE)
-
-add_library(avs_unit STATIC ${SOURCES} ${PUBLIC_HEADERS})
-target_link_libraries(avs_unit ${DEPS_LIBRARIES})
-
-avs_install_export(avs_unit unit)
-avs_propagate_exports()
+avs_install_export3(avs_unit unit)
 install(DIRECTORY include_public/
         COMPONENT unit
         DESTINATION ${INCLUDE_INSTALL_DIR}
