@@ -39,7 +39,7 @@ endif()
 target_include_directories(avs_coap PUBLIC
                            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include_public>
                            $<INSTALL_INTERFACE:include>)
-target_link_libraries(avs_coap PUBLIC avs_log avs_buffer avs_utils)
+target_link_libraries(avs_coap PUBLIC avs_log avs_buffer avs_utils avs_net)
 
 add_avs_test3(NAME avs_coap
               LIBS avs_coap
