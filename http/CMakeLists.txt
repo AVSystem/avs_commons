@@ -56,9 +56,9 @@ install(DIRECTORY include_public/
         DESTINATION ${INCLUDE_INSTALL_DIR}
         FILES_MATCHING REGEX "[.]h$")
 
-add_avs_test3(NAME avs_http
-              LIBS avs_http
-              SOURCES
-              $<TARGET_PROPERTY:avs_http,SOURCES>
-              src/test/test_close.c
-              src/test/test_http.c)
+add_avs_test(NAME avs_http
+             LIBS avs_http
+             SOURCES
+             $<TARGET_PROPERTY:avs_http,SOURCES>
+             src/test/test_close.c
+             src/test/test_http.c)

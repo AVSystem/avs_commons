@@ -28,12 +28,12 @@ install(DIRECTORY include_public/
         DESTINATION ${INCLUDE_INSTALL_DIR}
         FILES_MATCHING REGEX "[.]h$")
 
-add_avs_test3(NAME avs_rbtree
-              LIBS avs_rbtree
-              SOURCES $<TARGET_PROPERTY:avs_rbtree,SOURCES>)
+add_avs_test(NAME avs_rbtree
+             LIBS avs_rbtree
+             SOURCES $<TARGET_PROPERTY:avs_rbtree,SOURCES>)
 
 if(WITH_CXX_TESTS)
-    add_avs_test3(NAME avs_rbtree_cxx
-                  LIBS avs_rbtree
-                  SOURCES src/test/test_rbtree_cxx.cpp)
+    add_avs_test(NAME avs_rbtree_cxx
+                 LIBS avs_rbtree
+                 SOURCES src/test/test_rbtree_cxx.cpp)
 endif()

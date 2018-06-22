@@ -457,31 +457,11 @@ if(WITH_TEST)
     set(_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
 
     add_subdirectory(tools)
-    macro(add_avs_test NAME)
-        add_executable(${NAME}_test EXCLUDE_FROM_ALL ${ARGN})
-        add_dependencies(${NAME}_test dtls_echo_server)
-        target_link_libraries(${NAME}_test avs_unit)
-        set_property(TARGET ${NAME}_test APPEND PROPERTY COMPILE_DEFINITIONS
-                     AVS_UNIT_TESTING
-                     AVS_TEST_BIN_DIR="${_BINARY_DIR}")
-        set_property(TARGET ${NAME}_test APPEND PROPERTY COMPILE_FLAGS "-Wno-clobbered -Wno-overlength-strings -Wno-sign-conversion -Wno-vla")
-
-        if(VALGRIND)
-            set(VALGRIND_LOG ${VALGRIND} --log-file=VALGRIND.${NAME}.log)
-        else()
-            set(VALGRIND_LOG)
-        endif()
-
-        add_test(NAME ${NAME}_test COMMAND ${VALGRIND_LOG} $<TARGET_FILE:${NAME}_test>)
-
-        add_custom_target(${NAME}_check COMMAND ${CMAKE_CTEST_COMMAND} -V -R "^${NAME}_test$" DEPENDS ${NAME}_test)
-        add_dependencies(avs_commons_check ${NAME}_check)
-    endmacro()
 
     # NAME - test target name, without _test suffix
     # LIBS - libs to link to
     # SOURCES - test sources
-    function(add_avs_test3)
+    function(add_avs_test)
         set(options)
         set(one_value_args NAME)
         set(multi_value_args LIBS SOURCES)
@@ -512,8 +492,8 @@ if(WITH_TEST)
 
     add_subdirectory(tests)
 else(WITH_TEST)
-    macro(add_avs_test NAME)
-    endmacro()
+    function(add_avs_test)
+    endfunction()
 endif(WITH_TEST)
 
 if(WITH_AVS_ALGORITHM)

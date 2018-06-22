@@ -38,15 +38,17 @@ target_include_directories(avs_net PUBLIC
                            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include_public>
                            $<INSTALL_INTERFACE:include>)
 
-add_avs_test3(NAME avs_net
-              PATH avs_net
-              SOURCES $<TARGET_PROPERTY:avs_net,SOURCES>)
+add_avs_test(NAME avs_net
+             PATH avs_net
+             SOURCES $<TARGET_PROPERTY:avs_net,SOURCES>)
 
 if(WITH_OPENSSL)
     target_sources(avs_net PRIVATE src/openssl/openssl.c)
     if(WITH_X509)
         target_sources(avs_net PRIVATE src/openssl/data_loader.c)
-        target_sources(avs_net_test PRIVATE src/openssl/test/data_loader.c)
+        if(TARGET avs_net_test)
+            target_sources(avs_net_test PRIVATE src/openssl/test/data_loader.c)
+        endif()
     endif()
 elseif(WITH_MBEDTLS)
     target_sources(avs_net PRIVATE src/mbedtls/mbedtls.c)
@@ -57,7 +59,9 @@ elseif(WITH_MBEDTLS)
     endif()
     if(WITH_X509)
         target_sources(avs_net PRIVATE src/mbedtls/data_loader.c)
-        target_sources(avs_net_test PRIVATE src/mbedtls/test/data_loader.c)
+        if(TARGET avs_net_test)
+            target_sources(avs_net_test PRIVATE src/mbedtls/test/data_loader.c)
+        endif()
     endif()
 elseif(WITH_TINYDTLS)
     target_sources(avs_net PRIVATE src/tinydtls/tinydtls.c)

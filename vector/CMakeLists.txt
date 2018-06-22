@@ -28,12 +28,12 @@ install(DIRECTORY include_public/
         DESTINATION ${INCLUDE_INSTALL_DIR}
         FILES_MATCHING REGEX "[.]h$")
 
-add_avs_test3(NAME avs_vector
-              LIBS avs_vector
-              SOURCES $<TARGET_PROPERTY:avs_vector,SOURCES>)
+add_avs_test(NAME avs_vector
+             LIBS avs_vector
+             SOURCES $<TARGET_PROPERTY:avs_vector,SOURCES>)
 
 if(WITH_CXX_TESTS)
-    add_avs_test3(NAME avs_vector_cxx
-                  LIBS avs_vector
-                  SOURCES src/test/test_vector_cxx.cpp)
+    add_avs_test(NAME avs_vector_cxx
+                 LIBS avs_vector
+                 SOURCES src/test/test_vector_cxx.cpp)
 endif()

@@ -49,9 +49,9 @@ target_include_directories(avs_utils PUBLIC
                            $<INSTALL_INTERFACE:include>)
 target_link_libraries(avs_utils PUBLIC ${MATH_LIBRARY})
 
-add_avs_test3(NAME avs_utils
-              LIBS avs_utils
-              SOURCES $<TARGET_PROPERTY:avs_utils,SOURCES>)
+add_avs_test(NAME avs_utils
+             LIBS avs_utils
+             SOURCES $<TARGET_PROPERTY:avs_utils,SOURCES>)
 
 avs_install_export3(avs_utils utils)
 install(DIRECTORY include_public/

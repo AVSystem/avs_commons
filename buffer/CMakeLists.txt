@@ -27,11 +27,13 @@ install(DIRECTORY include_public/
         DESTINATION ${INCLUDE_INSTALL_DIR}
         FILES_MATCHING REGEX "[.]h$")
 
-add_avs_test3(NAME avs_buffer
-              LIBS avs_buffer
-              SOURCES $<TARGET_PROPERTY:avs_buffer,SOURCES>)
+add_avs_test(NAME avs_buffer
+             LIBS avs_buffer
+             SOURCES $<TARGET_PROPERTY:avs_buffer,SOURCES>)
 
 if(WITH_INTERNAL_LOGS)
     target_link_libraries(avs_buffer PUBLIC avs_log)
-    target_link_libraries(avs_buffer_test PUBLIC avs_log)
+    if(TARGET avs_buffer_test)
+        target_link_libraries(avs_buffer_test PUBLIC avs_log)
+    endif()
 endif()

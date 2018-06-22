@@ -32,6 +32,6 @@ install(DIRECTORY include_public/
         DESTINATION ${INCLUDE_INSTALL_DIR}
         FILES_MATCHING REGEX "[.]h$")
 
-add_avs_test3(NAME avs_log
-              LIBS avs_log
-              SOURCES $<TARGET_PROPERTY:avs_log,SOURCES>)
+add_avs_test(NAME avs_log
+             LIBS avs_log
+             SOURCES $<TARGET_PROPERTY:avs_log,SOURCES>)
