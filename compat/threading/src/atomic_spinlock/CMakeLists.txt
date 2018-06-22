@@ -21,6 +21,8 @@ set(SOURCES
     mutex.c
     init_once.c)
 
+include_directories(../../../../utils/include_public)
+
 add_library(avs_compat_threading_atomic_spinlock STATIC ${SOURCES})
 avs_install_export(avs_compat_threading_atomic_spinlock threading)
 

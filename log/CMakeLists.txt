@@ -23,7 +23,8 @@ set(ALL_SOURCES ${SOURCES} ${PUBLIC_HEADERS})
 set(INCLUDE_DIRS
     include_public
     ../list/include_public
-    ../compat/threading/include_public)
+    ../compat/threading/include_public
+    ../utils/include_public)
 make_absolute_sources(ABSOLUTE_INCLUDE_DIRS ${INCLUDE_DIRS})
 set(AVS_TEST_INCLUDE_DIRS "${ABSOLUTE_INCLUDE_DIRS}" PARENT_SCOPE)
 

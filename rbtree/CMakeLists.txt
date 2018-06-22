@@ -24,7 +24,8 @@ set(INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/include_public")
 
 set(avs_rbtree_INCLUDE_DIRS ${INCLUDE_DIRS} PARENT_SCOPE)
 
-include_directories(${INCLUDE_DIRS})
+include_directories(${INCLUDE_DIRS}
+                    ../utils/include_public)
 
 add_library(avs_rbtree STATIC ${ALL_SOURCES})
 

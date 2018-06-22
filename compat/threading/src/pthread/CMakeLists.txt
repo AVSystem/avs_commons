@@ -22,6 +22,8 @@ set(SOURCES
     mutex.c
     init_once.c)
 
+include_directories(../../../../utils/include_public)
+
 add_library(avs_compat_threading_pthread STATIC ${SOURCES})
 target_link_libraries(avs_compat_threading_pthread ${CMAKE_THREAD_LIBS_INIT})
 avs_install_export(avs_compat_threading_pthread threading)
