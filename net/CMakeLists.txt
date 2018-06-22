@@ -96,7 +96,7 @@ if(WIN32)
 endif()
 
 if(WITH_OPENSSL)
-    avs_emit_deps(avs_net ssl crypto)
+    avs_emit_deps(avs_net OpenSSL::SSL OpenSSL::Crypto)
 elseif(WITH_MBEDTLS)
     avs_emit_deps(avs_net ${MBEDTLS_TARGETS})
 elseif(WITH_TINYDTLS)

@@ -14,7 +14,7 @@
 
 ################# DEFINITION ###################################################
 
-cmake_minimum_required(VERSION 2.8.1)
+cmake_minimum_required(VERSION 3.4.0)
 project(avs_commons C)
 set(AVS_COMMONS_VERSION SNAPSHOT)
 
@@ -109,14 +109,15 @@ endmacro()
 
 set(LIBRARY_FIND_ROUTINES)
 macro(avs_emit_find_dependency LIB)
+    string(REPLACE ":" "_" LIB_SANITIZED "${LIB}")
     list(FIND LIBRARY_FIND_ROUTINE_EMITTED_LIBS "${LIB}" EMITTED_LIB_INDEX)
     if(EMITTED_LIB_INDEX LESS 0)
-        if(LIBRARY_FIND_ROUTINE_${LIB})
+        if(LIBRARY_FIND_ROUTINE_${LIB_SANITIZED})
             set(LIBRARY_FIND_ROUTINES "${LIBRARY_FIND_ROUTINES}
 
-${LIBRARY_FIND_ROUTINE_${LIB}}")
+${LIBRARY_FIND_ROUTINE_${LIB_SANITIZED}}")
             list(APPEND LIBRARY_FIND_ROUTINE_EMITTED_LIBS
-                 ${LIBRARY_FIND_ROUTINE_PROVIDES_${LIB}})
+                 ${LIBRARY_FIND_ROUTINE_PROVIDES_${LIB_SANITIZED}})
         endif()
     endif()
 endmacro()
@@ -134,16 +135,7 @@ macro(avs_propagate_exports)
 endmacro()
 
 # OpenSSL
-avs_find_library("
-    find_package(OpenSSL)
-    if(OPENSSL_FOUND)
-        include_directories(\\\${OPENSSL_INCLUDE_DIR})
-        add_library(ssl UNKNOWN IMPORTED)
-        add_library(crypto UNKNOWN IMPORTED)
-        set_property(TARGET ssl PROPERTY IMPORTED_LOCATION \\\${OPENSSL_SSL_LIBRARY})
-        set_property(TARGET crypto PROPERTY IMPORTED_LOCATION \\\${OPENSSL_CRYPTO_LIBRARY})
-    endif()
-" ssl crypto)
+avs_find_library("find_package(OpenSSL)" OpenSSL::SSL OpenSSL::Crypto)
 
 # mbed TLS
 set(MBEDTLS_TARGETS mbedtls mbedcrypto mbedx509)
@@ -163,13 +155,7 @@ avs_find_library("
 " tinydtls)
 
 # zlib
-avs_find_library("
-    find_package(ZLIB)
-    if(ZLIB_FOUND AND NOT TARGET z)
-        add_library(z STATIC IMPORTED)
-        set_property(TARGET z PROPERTY IMPORTED_LOCATION \\\${ZLIB_LIBRARIES})
-    endif()
-" z)
+avs_find_library("find_package(ZLIB)" ZLIB::ZLIB)
 
 # SSL
 option(WITH_OPENSSL "Enable OpenSSL" OFF)

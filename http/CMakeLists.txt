@@ -57,7 +57,7 @@ include_directories(${INCLUDE_DIRS})
 add_library(avs_http STATIC ${ALL_SOURCES})
 avs_emit_deps(avs_http avs_algorithm avs_net avs_stream avs_utils)
 if(WITH_AVS_HTTP_ZLIB)
-    avs_emit_deps(avs_http z)
+    avs_emit_deps(avs_http ZLIB::ZLIB)
 endif()
 
 add_avs_test(avs_http ${ALL_SOURCES}

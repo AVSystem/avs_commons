@@ -27,9 +27,12 @@ set(avs_compat_threading_INCLUDE_DIRS ${INCLUDE_DIRS} PARENT_SCOPE)
 
 include_directories(${INCLUDE_DIRS})
 
+option(WITH_CUSTOM_AVS_THREADING "Do not provide any default implementations of avs_threading" OFF)
+if(NOT WITH_CUSTOM_AVS_THREADING)
 # NOTE: first available implementation defines default avs_compat_threading targets
-add_subdirectory(src/atomic_spinlock)
-add_subdirectory(src/pthread)
+    add_subdirectory(src/atomic_spinlock)
+    add_subdirectory(src/pthread)
+endif()
 
 if(NOT TARGET avs_compat_threading)
     message(WARNING "No default implementation of threading compatibility layer! "
