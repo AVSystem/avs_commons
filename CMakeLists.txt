@@ -129,6 +129,10 @@ macro(avs_install_export TNAME CNAME)
     endforeach()
 endmacro()
 
+macro(avs_install_export3 TNAME CNAME)
+    install(TARGETS ${TNAME} COMPONENT ${CNAME} EXPORT avs_commons-targets DESTINATION ${LIB_INSTALL_DIR})
+endmacro()
+
 macro(avs_propagate_exports)
     set(LIBRARY_FIND_ROUTINES "${LIBRARY_FIND_ROUTINES}" PARENT_SCOPE)
     set(LIBRARY_FIND_ROUTINE_EMITTED_LIBS "${LIBRARY_FIND_ROUTINE_EMITTED_LIBS}" PARENT_SCOPE)
@@ -462,6 +466,27 @@ if(WITH_TEST)
                      AVS_TEST_BIN_DIR="${_BINARY_DIR}")
         set_property(TARGET ${NAME}_test APPEND PROPERTY COMPILE_FLAGS "-Wno-clobbered -Wno-overlength-strings -Wno-sign-conversion -Wno-vla")
 
+        if(VALGRIND)
+            set(VALGRIND_LOG ${VALGRIND} --log-file=VALGRIND.${NAME}.log)
+        else()
+            set(VALGRIND_LOG)
+        endif()
+
+        add_test(NAME ${NAME}_test COMMAND ${VALGRIND_LOG} $<TARGET_FILE:${NAME}_test>)
+
+        add_custom_target(${NAME}_check COMMAND ${CMAKE_CTEST_COMMAND} -V -R "^${NAME}_test$" DEPENDS ${NAME}_test)
+        add_dependencies(avs_commons_check ${NAME}_check)
+    endmacro()
+
+    macro(add_avs_test3 NAME)
+        add_executable(${NAME}_test EXCLUDE_FROM_ALL ${ARGN})
+        add_dependencies(${NAME}_test dtls_echo_server)
+        target_link_libraries(${NAME}_test PRIVATE avs_unit ${NAME})
+        set_property(TARGET ${NAME}_test APPEND PROPERTY COMPILE_DEFINITIONS
+                     AVS_UNIT_TESTING
+                     AVS_TEST_BIN_DIR="${_BINARY_DIR}")
+        set_property(TARGET ${NAME}_test APPEND PROPERTY COMPILE_FLAGS
+                     "-Wno-clobbered -Wno-overlength-strings -Wno-sign-conversion -Wno-vla")
         if(VALGRIND)
             set(VALGRIND_LOG ${VALGRIND} --log-file=VALGRIND.${NAME}.log)
         else()
