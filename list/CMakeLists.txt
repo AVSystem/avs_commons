@@ -28,9 +28,16 @@ install(DIRECTORY include_public/
         DESTINATION ${INCLUDE_INSTALL_DIR}
         FILES_MATCHING REGEX "[.]h$")
 
-add_avs_test(avs_list src/test/test_list.c)
+add_avs_test3(NAME avs_list
+              LIBS avs_list
+              SOURCES
+              $<TARGET_PROPERTY:avs_list,SOURCES>
+              src/test/test_list.c)
 
-# TODO: fix this
-#if(WITH_CXX_TESTS)
-#    add_avs_test(avs_list_cxx ${ALL_SOURCES} src/test/test_list_cxx.cpp)
-#endif()
+if(WITH_CXX_TESTS)
+    add_avs_test3(NAME avs_list_cxx
+                  LIBS avs_list
+                  SOURCES
+                  $<TARGET_PROPERTY:avs_list,SOURCES>
+                  src/test/test_list_cxx.cpp)
+endif()
