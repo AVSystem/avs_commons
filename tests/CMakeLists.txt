@@ -12,5 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-include_directories(${AVS_TEST_INCLUDE_DIRS})
-add_avs_test(avs_memory src/memory.c)
+add_avs_test3(NAME avs_memory
+              LIBS avs_utils
+              SOURCES src/memory.c)
