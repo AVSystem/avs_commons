@@ -504,7 +504,7 @@ if(WITH_TEST)
             set(VALGRIND_LOG)
         endif()
 
-        add_test(AAT_NAME ${AAT_NAME}_test COMMAND ${VALGRIND_LOG} $<TARGET_FILE:${AAT_NAME}_test>)
+        add_test(NAME ${AAT_NAME}_test COMMAND ${VALGRIND_LOG} $<TARGET_FILE:${AAT_NAME}_test>)
 
         add_custom_target(${AAT_NAME}_check COMMAND ${CMAKE_CTEST_COMMAND} -V -R "^${AAT_NAME}_test$" DEPENDS ${AAT_NAME}_test)
         add_dependencies(avs_commons_check ${AAT_NAME}_check)
