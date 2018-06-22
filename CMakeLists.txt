@@ -479,9 +479,11 @@ if(WITH_TEST)
     endmacro()
 
     macro(add_avs_test3 NAME)
-        add_executable(${NAME}_test EXCLUDE_FROM_ALL ${ARGN})
-        add_dependencies(${NAME}_test dtls_echo_server)
+        add_executable(${NAME}_test EXCLUDE_FROM_ALL
+                       ${ARGN}
+                       $<TARGET_PROPERTY:${NAME},SOURCES>)
         target_link_libraries(${NAME}_test PRIVATE avs_unit ${NAME})
+        add_dependencies(${NAME}_test dtls_echo_server)
         set_property(TARGET ${NAME}_test APPEND PROPERTY COMPILE_DEFINITIONS
                      AVS_UNIT_TESTING
                      AVS_TEST_BIN_DIR="${_BINARY_DIR}")
