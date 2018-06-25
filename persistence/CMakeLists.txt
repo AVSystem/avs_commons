@@ -20,7 +20,7 @@ add_library(avs_persistence STATIC
 target_include_directories(avs_persistence PUBLIC
                            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include_public>
                            $<INSTALL_INTERFACE:include>)
-target_link_libraries(avs_persistence PUBLIC avs_rbtree avs_stream avs_utils)
+target_link_libraries(avs_persistence PUBLIC avs_commons_config avs_rbtree avs_stream avs_utils)
 
 avs_install_export(avs_persistence persistence)
 install(DIRECTORY include_public/

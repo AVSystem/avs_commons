@@ -47,7 +47,7 @@ endif()
 target_include_directories(avs_utils PUBLIC
                            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include_public>
                            $<INSTALL_INTERFACE:include>)
-target_link_libraries(avs_utils PUBLIC ${MATH_LIBRARY})
+target_link_libraries(avs_utils PUBLIC avs_commons_config ${MATH_LIBRARY})
 
 avs_add_test(NAME avs_utils
              LIBS avs_utils
