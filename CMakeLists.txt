@@ -312,14 +312,11 @@ option(WITH_IPV6 "Enable IPv6 support" ON)
 
 option(WITH_SOCKET_LOG "Enable socket communication logging" OFF)
 
-set(INCLUDE_DIRS
-    "${CMAKE_CURRENT_SOURCE_DIR}/include_public"
-    "${CMAKE_CURRENT_BINARY_DIR}/include_public")
-
-include_directories("${CMAKE_CURRENT_SOURCE_DIR}/config"
-                    "${CMAKE_CURRENT_BINARY_DIR}/config"
-                    ${INCLUDE_DIRS})
-
+set_property(DIRECTORY APPEND PROPERTY INCLUDE_DIRECTORIES
+             "${CMAKE_CURRENT_SOURCE_DIR}/include_public"
+             "${CMAKE_CURRENT_BINARY_DIR}/include_public"
+             "${CMAKE_CURRENT_SOURCE_DIR}/config"
+             "${CMAKE_CURRENT_BINARY_DIR}/config")
 
 find_program(VALGRIND_EXECUTABLE valgrind)
 if(VALGRIND_EXECUTABLE)
@@ -381,7 +378,6 @@ function(add_module_with_include_dirs)
     endif()
 
     add_subdirectory(${AMWID_PATH})
-    include_directories(${avs_${AMWID_NAME}_INCLUDE_DIRS})
 
     # Append module includes to a specified variable name (i.e. MODULE_INCLUDE_DIRS_VAR).
     set(${AMWID_INCLUDE_DIRS_VAR}
@@ -518,14 +514,9 @@ if(WITH_AVS_NET)
         endif()
 
         set(WITH_OPENSSL_CUSTOM_CIPHERS OFF CACHE STRING "Customized OpenSSL cipher suite list")
-
     elseif(WITH_MBEDTLS)
         if(NOT MBEDTLS_FOUND)
             message(FATAL_ERROR "mbed TLS libraries not found")
-        endif()
-        separate_arguments(MBEDTLS_INCLUDE_DIRS)
-        if(MBEDTLS_INCLUDE_DIRS)
-            include_directories(${MBEDTLS_INCLUDE_DIRS})
         endif()
     elseif(WITH_TINYDTLS)
         if (NOT TINYDTLS_FOUND)
@@ -567,10 +558,6 @@ if(WITH_AVS_HTTP)
     if(WITH_AVS_HTTP_ZLIB)
         if(NOT ZLIB_FOUND)
             message(FATAL_ERROR "zlib not found")
-        endif()
-        if(ZLIB_INCLUDE_DIRS)
-            separate_arguments(ZLIB_INCLUDE_DIRS)
-            include_directories(${ZLIB_INCLUDE_DIRS})
         endif()
     endif()
 endif()
