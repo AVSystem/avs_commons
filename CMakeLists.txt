@@ -436,6 +436,10 @@ if(WITH_TEST)
     add_custom_target(avs_commons_headers_check COMMAND ${CMAKE_CTEST_COMMAND} -R "'^test_.*_headers$$'")
     add_dependencies(avs_commons_check avs_commons_headers_check)
 
+    add_custom_target(avs_install_test
+                      COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/tests/test-install.sh"
+                              "${CMAKE_CURRENT_SOURCE_DIR}/tests/install")
+
     set(_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
 
     add_subdirectory(tools)
