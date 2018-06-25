@@ -312,6 +312,15 @@ option(WITH_IPV6 "Enable IPv6 support" ON)
 
 option(WITH_SOCKET_LOG "Enable socket communication logging" OFF)
 
+set(INCLUDE_DIRS
+    "${CMAKE_CURRENT_SOURCE_DIR}/include_public"
+    "${CMAKE_CURRENT_BINARY_DIR}/include_public")
+
+include_directories("${CMAKE_CURRENT_SOURCE_DIR}/config"
+                    "${CMAKE_CURRENT_BINARY_DIR}/config"
+                    ${INCLUDE_DIRS})
+
+
 find_program(VALGRIND_EXECUTABLE valgrind)
 if(VALGRIND_EXECUTABLE)
     option(WITH_VALGRIND "Enable usage of valgrind during unit tests" OFF)
@@ -341,15 +350,12 @@ if(NOT INCLUDE_INSTALL_DIR)
     set(INCLUDE_INSTALL_DIR include)
 endif()
 
-add_library(avs_commons_config INTERFACE)
-target_include_directories(avs_commons_config INTERFACE
-                           $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/config>
-                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/config>
-                           $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include_public>
-                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include_public>
-                           $<INSTALL_INTERFACE:install>)
-
-avs_install_export(avs_commons_config config)
+macro(make_absolute_sources ABSVAR)
+    set(${ABSVAR})
+    foreach(SRC ${ARGN})
+        set(${ABSVAR} ${${ABSVAR}} ${CMAKE_CURRENT_SOURCE_DIR}/${SRC})
+    endforeach()
+endmacro()
 
 set(MODULE_INCLUDE_DIRS)
 
@@ -375,11 +381,12 @@ function(add_module_with_include_dirs)
     endif()
 
     add_subdirectory(${AMWID_PATH})
+    include_directories(${avs_${AMWID_NAME}_INCLUDE_DIRS})
 
     # Append module includes to a specified variable name (i.e. MODULE_INCLUDE_DIRS_VAR).
     set(${AMWID_INCLUDE_DIRS_VAR}
         ${${AMWID_INCLUDE_DIRS_VAR}}
-        $<TARGET_PROPERTY:${AMWID_NAME},INTERFACE_INCLUDE_DIRECTORIES>
+        ${avs_${AMWID_NAME}_INCLUDE_DIRS}
         PARENT_SCOPE)
 
     if(TARGET avs_${AMWID_NAME}_check)
@@ -393,6 +400,8 @@ function(add_module_with_include_dirs)
         add_test(NAME test_${F}_visibility COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/test_visibility.py ${F})
         add_test(NAME test_${F}_headers COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/test_headers.py ${F})
     endforeach()
+
+    avs_propagate_exports()
 endfunction()
 
 if(WITH_AVS_UNIT)
@@ -555,6 +564,15 @@ cmake_dependent_option(WITH_AVS_HTTP_ZLIB
                        ON WITH_AVS_HTTP OFF)
 if(WITH_AVS_HTTP)
     add_module_with_include_dirs(NAME http)
+    if(WITH_AVS_HTTP_ZLIB)
+        if(NOT ZLIB_FOUND)
+            message(FATAL_ERROR "zlib not found")
+        endif()
+        if(ZLIB_INCLUDE_DIRS)
+            separate_arguments(ZLIB_INCLUDE_DIRS)
+            include_directories(${ZLIB_INCLUDE_DIRS})
+        endif()
+    endif()
 endif()
 
 if(WITH_AVS_PERSISTENCE)

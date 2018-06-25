@@ -20,7 +20,6 @@ add_library(avs_algorithm STATIC
 target_include_directories(avs_algorithm PUBLIC
                            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include_public>
                            $<INSTALL_INTERFACE:include>)
-target_link_libraries(avs_algorithm PUBLIC avs_commons_config)
 
 avs_add_test(NAME avs_algorithm
              LIBS avs_algorithm
