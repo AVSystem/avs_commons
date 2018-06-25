@@ -21,7 +21,7 @@ target_include_directories(avs_algorithm PUBLIC
                            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include_public>
                            $<INSTALL_INTERFACE:include>)
 
-add_avs_test(NAME avs_algorithm
+avs_add_test(NAME avs_algorithm
              LIBS avs_algorithm
              SOURCES $<TARGET_PROPERTY:avs_algorithm,SOURCES>)
 

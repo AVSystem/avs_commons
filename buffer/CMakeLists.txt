@@ -27,7 +27,7 @@ install(DIRECTORY include_public/
         DESTINATION ${INCLUDE_INSTALL_DIR}
         FILES_MATCHING REGEX "[.]h$")
 
-add_avs_test(NAME avs_buffer
+avs_add_test(NAME avs_buffer
              LIBS avs_buffer
              SOURCES $<TARGET_PROPERTY:avs_buffer,SOURCES>)
 

@@ -34,7 +34,7 @@ endif()
 avs_install_export(avs_compat_threading_pthread threading)
 
 if(WITH_TEST AND THREADS_FOUND)
-    add_avs_test(NAME avs_compat_threading_pthread
+    avs_add_test(NAME avs_compat_threading_pthread
                  LIBS avs_compat_threading_pthread ${CMAKE_THREAD_LIBS_INIT}
                  SOURCES ${COMPAT_THREADING_TEST_SOURCES})
 endif()

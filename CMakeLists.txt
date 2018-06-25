@@ -452,7 +452,7 @@ if(WITH_TEST)
     # NAME - test target name, without _test suffix
     # LIBS - libs to link to
     # SOURCES - test sources
-    function(add_avs_test)
+    function(avs_add_test)
         set(options)
         set(one_value_args NAME)
         set(multi_value_args LIBS SOURCES)
@@ -483,7 +483,7 @@ if(WITH_TEST)
 
     add_subdirectory(tests)
 else(WITH_TEST)
-    function(add_avs_test)
+    function(avs_add_test)
     endfunction()
 endif(WITH_TEST)
 

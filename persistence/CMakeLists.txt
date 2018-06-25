@@ -28,6 +28,6 @@ install(DIRECTORY include_public/
         DESTINATION ${INCLUDE_INSTALL_DIR}
         FILES_MATCHING REGEX "[.]h$")
 
-add_avs_test(NAME avs_persistence
+avs_add_test(NAME avs_persistence
              LIBS avs_persistence
              SOURCES $<TARGET_PROPERTY:avs_persistence,SOURCES>)

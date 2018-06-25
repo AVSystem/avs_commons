@@ -38,7 +38,7 @@ target_include_directories(avs_net PUBLIC
                            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include_public>
                            $<INSTALL_INTERFACE:include>)
 
-add_avs_test(NAME avs_net
+avs_add_test(NAME avs_net
              PATH avs_net
              SOURCES $<TARGET_PROPERTY:avs_net,SOURCES>)
 

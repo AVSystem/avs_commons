@@ -35,7 +35,7 @@ avs_install_export(avs_compat_threading_atomic_spinlock threading)
 
 find_package(Threads)
 if(WITH_TEST AND THREADS_FOUND)
-    add_avs_test(NAME avs_compat_threading_atomic_spinlock
+    avs_add_test(NAME avs_compat_threading_atomic_spinlock
                  LIBS avs_compat_threading_atomic_spinlock ${CMAKE_THREAD_LIBS_INIT}
                  SOURCES ${COMPAT_THREADING_TEST_SOURCES})
 endif()
