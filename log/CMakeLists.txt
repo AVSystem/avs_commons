@@ -20,7 +20,7 @@ add_library(avs_log STATIC
 target_include_directories(avs_log PUBLIC
                            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include_public>
                            $<INSTALL_INTERFACE:include>)
-target_link_libraries(avs_log PUBLIC avs_utils avs_list)
+target_link_libraries(avs_log PUBLIC avs_commons_config avs_utils avs_list)
 
 if(WITH_AVS_COMPAT_THREADING)
     target_link_libraries(avs_log PUBLIC avs_compat_threading)

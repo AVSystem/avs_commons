@@ -20,7 +20,7 @@ add_library(avs_rbtree STATIC
 target_include_directories(avs_rbtree PUBLIC
                            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include_public>
                            $<INSTALL_INTERFACE:include>)
-target_link_libraries(avs_rbtree PUBLIC avs_utils)
+target_link_libraries(avs_rbtree PUBLIC avs_commons_config avs_utils)
 
 avs_install_export(avs_rbtree rbtree)
 install(DIRECTORY include_public/
