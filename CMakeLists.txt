@@ -396,8 +396,6 @@ function(add_module_with_include_dirs)
         add_test(NAME test_${F}_visibility COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/test_visibility.py ${F})
         add_test(NAME test_${F}_headers COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/test_headers.py ${F})
     endforeach()
-
-    avs_propagate_exports()
 endfunction()
 
 if(WITH_AVS_UNIT)
