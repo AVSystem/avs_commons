@@ -720,6 +720,6 @@ int avs_net_socket_create(avs_net_abstract_socket_t **socket,
 
 #endif /* WITH_SOCKET_LOG */
 
-#ifdef AVS_UNIT_TESTING
+#if defined(WITH_SSL) && defined(AVS_UNIT_TESTING)
 #include "test/starttls.c"
 #endif
