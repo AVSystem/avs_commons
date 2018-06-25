@@ -22,7 +22,7 @@ target_include_directories(avs_persistence PUBLIC
                            $<INSTALL_INTERFACE:include>)
 target_link_libraries(avs_persistence PUBLIC avs_rbtree avs_stream avs_utils)
 
-avs_install_export3(avs_persistence persistence)
+avs_install_export(avs_persistence persistence)
 install(DIRECTORY include_public/
         COMPONENT persistence
         DESTINATION ${INCLUDE_INSTALL_DIR}

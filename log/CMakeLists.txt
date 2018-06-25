@@ -26,7 +26,7 @@ if(WITH_AVS_COMPAT_THREADING)
     target_link_libraries(avs_log PUBLIC avs_compat_threading)
 endif()
 
-avs_install_export3(avs_log log)
+avs_install_export(avs_log log)
 install(DIRECTORY include_public/
         COMPONENT log
         DESTINATION ${INCLUDE_INSTALL_DIR}

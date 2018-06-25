@@ -104,7 +104,7 @@ if(WITH_MBEDTLS AND WITH_TLS_SESSION_PERSISTENCE)
     target_link_libraries(avs_net PUBLIC avs_persistence avs_rbtree)
 endif()
 
-avs_install_export3(avs_net net)
+avs_install_export(avs_net net)
 install(DIRECTORY include_public/
         COMPONENT net
         DESTINATION ${INCLUDE_INSTALL_DIR}

@@ -21,7 +21,7 @@ target_include_directories(avs_buffer PUBLIC
                            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include_public>
                            $<INSTALL_INTERFACE:include>)
 
-avs_install_export3(avs_buffer buffer)
+avs_install_export(avs_buffer buffer)
 install(DIRECTORY include_public/
         COMPONENT buffer
         DESTINATION ${INCLUDE_INSTALL_DIR}

@@ -22,7 +22,7 @@ target_include_directories(avs_rbtree PUBLIC
                            $<INSTALL_INTERFACE:include>)
 target_link_libraries(avs_rbtree PUBLIC avs_utils)
 
-avs_install_export3(avs_rbtree rbtree)
+avs_install_export(avs_rbtree rbtree)
 install(DIRECTORY include_public/
         COMPONENT rbtree
         DESTINATION ${INCLUDE_INSTALL_DIR}

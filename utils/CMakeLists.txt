@@ -53,7 +53,7 @@ add_avs_test(NAME avs_utils
              LIBS avs_utils
              SOURCES $<TARGET_PROPERTY:avs_utils,SOURCES>)
 
-avs_install_export3(avs_utils utils)
+avs_install_export(avs_utils utils)
 install(DIRECTORY include_public/
         COMPONENT utils
         DESTINATION ${INCLUDE_INSTALL_DIR}

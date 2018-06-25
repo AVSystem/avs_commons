@@ -31,7 +31,7 @@ if(NOT TARGET avs_compat_threading)
     add_library(avs_compat_threading ALIAS avs_compat_threading_atomic_spinlock)
 endif()
 
-avs_install_export3(avs_compat_threading_atomic_spinlock threading)
+avs_install_export(avs_compat_threading_atomic_spinlock threading)
 
 find_package(Threads)
 if(WITH_TEST AND THREADS_FOUND)

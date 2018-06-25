@@ -58,7 +58,7 @@ if(WITH_AVS_BUFFER AND WITH_AVS_NET)
     target_link_libraries(avs_stream PUBLIC avs_buffer avs_net)
 endif()
 
-avs_install_export3(avs_stream stream)
+avs_install_export(avs_stream stream)
 install(DIRECTORY include_public/
         COMPONENT stream
         DESTINATION ${INCLUDE_INSTALL_DIR}

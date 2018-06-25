@@ -48,7 +48,7 @@ add_avs_test(NAME avs_coap
              src/test/ctx.c
              src/test/msg_cache.c)
 
-avs_install_export3(avs_coap coap)
+avs_install_export(avs_coap coap)
 install(DIRECTORY include_public/
         COMPONENT coap
         DESTINATION ${INCLUDE_INSTALL_DIR}

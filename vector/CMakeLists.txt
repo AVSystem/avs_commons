@@ -22,7 +22,7 @@ target_include_directories(avs_vector PUBLIC
                            $<INSTALL_INTERFACE:include>)
 target_link_libraries(avs_vector PUBLIC avs_utils)
 
-avs_install_export3(avs_vector vector)
+avs_install_export(avs_vector vector)
 install(DIRECTORY include_public/
         COMPONENT vector
         DESTINATION ${INCLUDE_INSTALL_DIR}

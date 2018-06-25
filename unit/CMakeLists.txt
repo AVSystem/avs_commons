@@ -39,7 +39,7 @@ if(WITH_AVS_STREAM)
     target_link_libraries(avs_unit PUBLIC avs_stream)
 endif()
 
-avs_install_export3(avs_unit unit)
+avs_install_export(avs_unit unit)
 install(DIRECTORY include_public/
         COMPONENT unit
         DESTINATION ${INCLUDE_INSTALL_DIR}

@@ -50,7 +50,7 @@ if(WITH_AVS_HTTP_ZLIB)
     target_link_libraries(avs_http PUBLIC ZLIB::ZLIB)
 endif()
 
-avs_install_export3(avs_http http)
+avs_install_export(avs_http http)
 install(DIRECTORY include_public/
         COMPONENT http
         DESTINATION ${INCLUDE_INSTALL_DIR}

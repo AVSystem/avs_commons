@@ -25,7 +25,7 @@ add_avs_test(NAME avs_algorithm
              LIBS avs_algorithm
              SOURCES $<TARGET_PROPERTY:avs_algorithm,SOURCES>)
 
-avs_install_export3(avs_algorithm algorithm)
+avs_install_export(avs_algorithm algorithm)
 install(DIRECTORY include_public/
         COMPONENT algorithm
         DESTINATION ${INCLUDE_INSTALL_DIR}
