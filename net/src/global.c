@@ -59,32 +59,28 @@ static int initialize_global(void) {
     return result;
 }
 
-static void cleanup_global(void) {
+void _avs_net_cleanup_global_state(void) {
     _avs_net_cleanup_global_ssl_state();
     _avs_net_cleanup_global_compat_state();
 }
 
 int _avs_net_ensure_global_state(void) {
     static volatile atomic_flag TOUCHED = ATOMIC_FLAG_INIT;
-    static volatile sig_atomic_t RESULT = 0; // negative - error; positive - OK
+    static volatile sig_atomic_t INITIALIZATION_RESULT = 0; // negative - error; positive - OK
 
     int result = 0;
     if (atomic_flag_test_and_set(&TOUCHED)) {
         // someone has already started initializing the state
         while (!result) {
-            result = (int) RESULT;
+            result = (int) INITIALIZATION_RESULT;
         }
         if (result > 0) {
             result = 0;
         }
     } else {
         // we need to initialize the global state
-        int result = initialize_global();
-        if (!result && atexit(cleanup_global)) {
-            LOG(WARNING,
-                "atexit() failed - global avs_net context will not be freed");
-        }
-        RESULT = (result < 0 ? result : result == 0 ? 1 : -1);
+        result = initialize_global();
+        INITIALIZATION_RESULT = (result < 0 ? result : result == 0 ? 1 : -1);
     }
     return result;
 }
