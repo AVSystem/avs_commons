@@ -20,7 +20,7 @@ add_library(avs_buffer STATIC
 target_include_directories(avs_buffer PUBLIC
                            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include_public>
                            $<INSTALL_INTERFACE:include>)
-target_link_libraries(avs_buffer PUBLIC avs_commons_config)
+target_link_libraries(avs_buffer PUBLIC avs_commons_global_headers)
 
 avs_install_export(avs_buffer buffer)
 install(DIRECTORY include_public/

@@ -43,7 +43,7 @@ add_library(avs_http STATIC
 target_include_directories(avs_http PUBLIC
                            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include_public>
                            $<INSTALL_INTERFACE:include>)
-target_link_libraries(avs_http PUBLIC avs_commons_config avs_algorithm avs_net avs_stream avs_utils)
+target_link_libraries(avs_http PUBLIC avs_commons_global_headers avs_algorithm avs_net avs_stream avs_utils)
 
 if(WITH_AVS_HTTP_ZLIB)
     target_sources(avs_http PRIVATE src/zlib.c)

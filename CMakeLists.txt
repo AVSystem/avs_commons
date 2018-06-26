@@ -341,15 +341,16 @@ if(NOT INCLUDE_INSTALL_DIR)
     set(INCLUDE_INSTALL_DIR include)
 endif()
 
-add_library(avs_commons_config INTERFACE)
-target_include_directories(avs_commons_config INTERFACE
-                           $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/config>
-                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/config>
+include_directories($<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/config>
+                    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/config>)
+
+add_library(avs_commons_global_headers INTERFACE)
+target_include_directories(avs_commons_global_headers INTERFACE
                            $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include_public>
                            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include_public>
                            $<INSTALL_INTERFACE:install>)
 
-avs_install_export(avs_commons_config config)
+avs_install_export(avs_commons_global_headers global_headers)
 
 set(MODULE_INCLUDE_DIRS)
 
