@@ -40,6 +40,6 @@ if(NOT TARGET avs_compat_threading)
 endif()
 
 install(DIRECTORY include_public/
-        COMPONENT threading
+        COMPONENT compat_threading
         DESTINATION ${INCLUDE_INSTALL_DIR}
         FILES_MATCHING REGEX "[.]h$")
