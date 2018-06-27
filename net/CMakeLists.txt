@@ -103,7 +103,7 @@ elseif(WITH_TINYDTLS)
     avs_emit_deps(avs_net tinydtls)
 endif()
 
-avs_emit_deps(avs_net avs_stream avs_utils avs_threading)
+avs_emit_deps(avs_net avs_stream avs_utils avs_compat_threading)
 include_directories(../stream/include_public
                     ../utils/include_public
                     ../compat/threading/include_public)
