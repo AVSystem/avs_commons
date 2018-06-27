@@ -18,7 +18,6 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
-#include <stdlib.h> // TODO: only for atexit()
 
 #include <avsystem/commons/list.h>
 #include <avsystem/commons/log.h>
@@ -61,7 +60,8 @@ static struct {
 static avs_mutex_t *g_log_mutex;
 static avs_init_once_handle_t g_log_init_handle;
 
-static void cleanup_global_state(void) {
+void _avs_log_cleanup_global_state(void);
+void _avs_log_cleanup_global_state(void) {
     avs_log_reset();
     avs_mutex_cleanup(&g_log_mutex);
     g_log_init_handle = NULL;
@@ -69,13 +69,7 @@ static void cleanup_global_state(void) {
 
 static int initialize_global_state(void *unused) {
     (void) unused;
-
-    int result = avs_mutex_create(&g_log_mutex);
-    if (!result) {
-        // TODO: error checking?
-        atexit(cleanup_global_state);
-    }
-    return result;
+    return avs_mutex_create(&g_log_mutex);
 }
 
 static int _log_lock(const char *init_fail_msg,

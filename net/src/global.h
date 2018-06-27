@@ -33,6 +33,7 @@ void _avs_net_cleanup_global_ssl_state(void);
 #endif // WITH_SSL
 
 int _avs_net_ensure_global_state(void);
+void _avs_net_cleanup_global_state(void);
 
 VISIBILITY_PRIVATE_HEADER_END
 
