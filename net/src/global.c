@@ -16,42 +16,20 @@
 
 #include <avs_commons_config.h>
 
-#include <signal.h>
-
-#ifdef HAVE_C11_STDATOMIC
-#include <stdatomic.h>
-#endif // HAVE_C11_STDATOMIC
-
 #include "global.h"
 #include "net_impl.h"
 
+#include <avsystem/commons/init_once.h>
+
 VISIBILITY_SOURCE_BEGIN
 
-#ifndef HAVE_C11_STDATOMIC
+static avs_init_once_handle_t g_net_init_handle;
 
-#define atomic_flag bool
-#define ATOMIC_FLAG_INIT false
-
-#if defined(__GNUC__) && ((__GNUC__ > 4) || (__GNUC__ == 4 && __GNUC_MINOR__ >= 1))
-// also works on Clang
-#define atomic_flag_test_and_set(Ptr) (!__sync_bool_compare_and_swap((Ptr), false, true))
-#else // __GNUC__
-#warning "Atomic boolean operations not available. Initialization of SSL sockets will NOT be thread-safe!"
-static bool atomic_flag_test_and_set(volatile bool *ptr) {
-    if (!*ptr) {
-        *ptr = true;
-        return false;
-    }
-    return true;
-}
-#endif // __GNUC__
-
-#endif // HAVE_C11_STDATOMIC
-
-static int initialize_global(void) {
+static int initialize_global(void *unused) {
+    (void) unused;
     int result = _avs_net_initialize_global_compat_state();
     if (!result) {
-        result = _avs_net_initialize_global_ssl_state(); 
+        result = _avs_net_initialize_global_ssl_state();
         if (result) {
             _avs_net_cleanup_global_compat_state();
         }
@@ -62,25 +40,9 @@ static int initialize_global(void) {
 void _avs_net_cleanup_global_state(void) {
     _avs_net_cleanup_global_ssl_state();
     _avs_net_cleanup_global_compat_state();
+    g_net_init_handle = NULL;
 }
 
 int _avs_net_ensure_global_state(void) {
-    static volatile atomic_flag TOUCHED = ATOMIC_FLAG_INIT;
-    static volatile sig_atomic_t INITIALIZATION_RESULT = 0; // negative - error; positive - OK
-
-    int result = 0;
-    if (atomic_flag_test_and_set(&TOUCHED)) {
-        // someone has already started initializing the state
-        while (!result) {
-            result = (int) INITIALIZATION_RESULT;
-        }
-        if (result > 0) {
-            result = 0;
-        }
-    } else {
-        // we need to initialize the global state
-        result = initialize_global();
-        INITIALIZATION_RESULT = (result < 0 ? result : result == 0 ? 1 : -1);
-    }
-    return result;
+    return avs_init_once(&g_net_init_handle, initialize_global, NULL);
 }
