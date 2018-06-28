@@ -138,6 +138,8 @@ AVS_UNIT_TEST(init_once, basic) {
     }
 
     AVS_UNIT_ASSERT_EQUAL(args.counter, args.succeed_on_call);
+
+    pthread_barrier_destroy(&args.barrier);
 }
 
 static int init_recursive(void *handles_) {
