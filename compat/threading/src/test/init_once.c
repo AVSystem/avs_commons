@@ -19,7 +19,6 @@
 #include <avsystem/commons/init_once.h>
 
 #include <pthread.h>
-#include <stdatomic.h>
 
 #include <avsystem/commons/unit/test.h>
 
