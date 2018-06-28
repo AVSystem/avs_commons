@@ -13,8 +13,8 @@
 # limitations under the License.
 
 find_package(Threads)
-cmake_dependent_option(WITH_AVS_THREADING_PTHREAD "Enable threading primitives implementation based on pthreads" ON THREADS_FOUND OFF)
-if(NOT WITH_AVS_THREADING_PTHREAD)
+cmake_dependent_option(WITH_AVS_COMPAT_THREADING_PTHREAD "Enable threading primitives implementation based on pthreads" ON THREADS_FOUND OFF)
+if(NOT WITH_AVS_COMPAT_THREADING_PTHREAD)
     return()
 endif()
 

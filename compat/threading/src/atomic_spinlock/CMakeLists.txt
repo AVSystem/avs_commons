@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-option(WITH_AVS_THREADING_ATOMIC_SPINLOCK "Enable threading primitives implementation based on spinlocks and C11 atomics" ${HAVE_C11_STDATOMIC})
-if(NOT WITH_AVS_THREADING_ATOMIC_SPINLOCK)
+option(WITH_AVS_COMPAT_THREADING_ATOMIC_SPINLOCK "Enable threading primitives implementation based on spinlocks and C11 atomics" ${HAVE_C11_STDATOMIC})
+if(NOT WITH_AVS_COMPAT_THREADING_ATOMIC_SPINLOCK)
     return()
 endif()
 

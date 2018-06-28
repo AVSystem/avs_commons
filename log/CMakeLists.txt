@@ -34,7 +34,7 @@ set(avs_log_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/include_public" PARENT_SCO
 add_library(avs_log STATIC ${ALL_SOURCES})
 target_link_libraries(avs_log avs_list)
 
-if(WITH_AVS_THREADING)
+if(WITH_AVS_COMPAT_THREADING)
     target_link_libraries(avs_log avs_compat_threading)
 endif()
 

@@ -28,7 +28,8 @@ extern "C" {
  * performed by the user. Due to this, and care for backwards compatibility
  * there is no method for explicit initialization. The initialization itself is
  * thread-safe as long as threading layer is implemented correctly -- either by
- * means of WITH_AVS_THREADING CMake option, or by the platform integrator.
+ * means of WITH_AVS_COMPAT_THREADING CMake option, or by the platform
+ * integrator.
  *
  * NOTE: Cleaning up resources leaves AvsCommons in an operational state.
  */
