@@ -28,7 +28,7 @@
  *
  * Source: http://blog.albertarmea.com/post/47089939939/using-pthreadbarrier-on-mac-os-x
  */
-#ifdef _POSIX_BARRIERS
+#ifndef _POSIX_BARRIERS
 
 #include <errno.h>
 
