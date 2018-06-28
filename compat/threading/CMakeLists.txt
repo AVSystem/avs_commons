@@ -37,6 +37,7 @@ if(NOT TARGET avs_compat_threading)
     # Add fake avs_compat_threading "library" just so that other components
     # have something to link to
     add_library(avs_compat_threading INTERFACE)
+    avs_install_export(avs_compat_threading compat_threading)
 endif()
 
 install(DIRECTORY include_public/
