@@ -35,10 +35,8 @@ typedef struct {
 
 static int barrier_init(barrier_t *barrier,
                         unsigned int count) {
-    if (count == 0) {
-        return -1;
-    }
-    if (pthread_mutex_init(&barrier->mutex, 0) < 0) {
+    if (count == 0
+            || pthread_mutex_init(&barrier->mutex, 0) < 0) {
         return -1;
     }
     if (pthread_cond_init(&barrier->cond, 0) < 0) {
