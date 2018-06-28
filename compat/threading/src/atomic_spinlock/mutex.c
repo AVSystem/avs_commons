@@ -69,6 +69,6 @@ void avs_mutex_cleanup(avs_mutex_t **mutex) {
     AVS_ASSERT(atomic_flag_test_and_set(&(*mutex)->locked) == 0,
                "attempted to cleanup a locked mutex");
 
-    free(*mutex);
+    avs_free(*mutex);
     *mutex = NULL;
 }
