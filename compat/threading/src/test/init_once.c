@@ -29,13 +29,13 @@
 typedef struct {
     pthread_mutex_t mutex;
     pthread_cond_t cond;
-    int count;
-    int trip_count;
+    int threads_waiting;
+    int num_threads_to_block;
 } barrier_t;
 
 static int barrier_init(barrier_t *barrier,
-                        unsigned int count) {
-    if (count == 0
+                        unsigned int num_threads_to_block) {
+    if (num_threads_to_block == 0
             || pthread_mutex_init(&barrier->mutex, 0) < 0) {
         return -1;
     }
@@ -43,8 +43,8 @@ static int barrier_init(barrier_t *barrier,
         pthread_mutex_destroy(&barrier->mutex);
         return -1;
     }
-    barrier->trip_count = count;
-    barrier->count = 0;
+    barrier->num_threads_to_block = num_threads_to_block;
+    barrier->threads_waiting = 0;
 
     return 0;
 }
@@ -56,9 +56,9 @@ static void barrier_destroy(barrier_t *barrier) {
 
 static int barrier_wait(barrier_t *barrier) {
     pthread_mutex_lock(&barrier->mutex);
-    ++barrier->count;
-    if (barrier->count >= barrier->trip_count) {
-        barrier->count = 0;
+    ++barrier->threads_waiting;
+    if (barrier->threads_waiting >= barrier->num_threads_to_block) {
+        barrier->threads_waiting = 0;
         pthread_cond_broadcast(&barrier->cond);
         pthread_mutex_unlock(&barrier->mutex);
         return 1;
