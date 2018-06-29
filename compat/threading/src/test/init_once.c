@@ -23,7 +23,7 @@
 #include <avsystem/commons/unit/test.h>
 
 /*
- * Basically equivalent to pthread_barrier_t. We could the pthread one,
+ * Basically equivalent to pthread_barrier_t. We could use the pthread one,
  * but it is an optional feature not implemented e.g. on OSX.
  */
 typedef struct {
