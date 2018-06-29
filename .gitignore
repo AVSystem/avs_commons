@@ -7,6 +7,8 @@
 /list/avs_list_cxx_test
 /buffer/avs_buffer_test
 /coap/avs_coap_test
+/compat/threading/src/atomic_spinlock/avs_compat_threading_atomic_spinlock_test
+/compat/threading/src/pthread/avs_compat_threading_pthread_test
 /http/avs_http_test
 /log/avs_log_test
 /net/avs_net_test

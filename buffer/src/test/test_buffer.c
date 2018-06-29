@@ -27,7 +27,7 @@ AVS_UNIT_GLOBAL_INIT(verbose) {
     }
 }
 
-AVS_UNIT_TEST(byte_buffer, free) {
+AVS_UNIT_TEST(byte_buffer, buffer_free) {
     avs_buffer_t *buffer;
     AVS_UNIT_ASSERT_SUCCESS(avs_buffer_create(&buffer, 16));
     avs_buffer_free(&buffer);
