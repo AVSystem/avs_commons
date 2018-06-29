@@ -63,7 +63,7 @@ static int barrier_wait(barrier_t *barrier) {
         pthread_mutex_unlock(&barrier->mutex);
         return 1;
     } else {
-        pthread_cond_wait(&barrier->cond, &(barrier->mutex));
+        pthread_cond_wait(&barrier->cond, &barrier->mutex);
         pthread_mutex_unlock(&barrier->mutex);
         return 0;
     }
