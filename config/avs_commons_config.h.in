@@ -105,11 +105,6 @@ extern void *sbrk (intptr_t __delta);
 #define VISIBILITY_PRIVATE_HEADER_END
 #endif
 
-#if (defined(__GNUC__) && !defined(__CC_ARM)) \
-        && !defined(AVS_UTILS_COMPAT_STDLIB_MEMORY_C)
-#include <stdlib.h>
-#pragma GCC poison malloc
-#pragma GCC poison calloc
-#pragma GCC poison realloc
-#pragma GCC poison free
+#if defined(__GNUC__) && !defined(__CC_ARM) && !defined(AVS_UNIT_TESTING)
+#include "avs_commons_poison.h"
 #endif

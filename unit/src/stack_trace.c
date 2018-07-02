@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#define AVS_UNIT_SOURCE
 #include <avs_commons_posix_config.h>
 
 #include <avsystem/commons/defs.h>

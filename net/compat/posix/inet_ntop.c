@@ -38,7 +38,8 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
-#include <errno.h>
+
+#include <avsystem/commons/errno.h>
 
 VISIBILITY_SOURCE_BEGIN
 

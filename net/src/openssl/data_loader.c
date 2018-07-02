@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#define AVS_NET_OPENSSL_SOURCE
 #include <avs_commons_config.h>
 
 #define MODULE_NAME avs_net_data_loader

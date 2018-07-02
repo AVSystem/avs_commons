@@ -18,7 +18,6 @@
 
 #include <avsystem/commons/coap/ctx.h>
 
-#include <errno.h>
 #include <signal.h>
 
 #include <poll.h>
@@ -32,6 +31,7 @@
 #include <sys/prctl.h>
 #endif // __linux__
 
+#include <avsystem/commons/errno.h>
 #include <avsystem/commons/memory.h>
 #include <avsystem/commons/stream.h>
 #include <avsystem/commons/stream_v_table.h>

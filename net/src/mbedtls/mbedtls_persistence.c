@@ -14,6 +14,9 @@
  * limitations under the License.
  */
 
+// this uses some symbols such as "printf" - include it before poisoning them
+#include <mbedtls/platform.h>
+
 #include <avs_commons_config.h>
 
 #include <assert.h>

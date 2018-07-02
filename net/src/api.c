@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#define AVS_LOG_LOG_C
 #include <avs_commons_config.h>
 
 #include <stdint.h>

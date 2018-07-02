@@ -293,7 +293,7 @@ struct AvsCallWithCast__ {
 #if (__GNUC__ >= 4)
 #define AVS_F_SENTINEL __attribute__((sentinel(0)))
 #endif
-#if defined(__GNUC__) && ((__GNUC__ > 4) || (__GNUC__ == 4 && __GNUC_MINOR__ >= 2))
+#if !defined(AVS_F_PRINTF) && defined(__GNUC__) && ((__GNUC__ > 4) || (__GNUC__ == 4 && __GNUC_MINOR__ >= 2))
 #define AVS_F_PRINTF(fmt_idx, ellipsis_idx) __attribute__((format(printf, fmt_idx, ellipsis_idx)))
 #endif
 

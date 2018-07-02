@@ -17,7 +17,6 @@
 #include <avs_commons_config.h>
 
 #include <assert.h>
-#include <errno.h>
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdlib.h>
@@ -25,6 +24,7 @@
 
 #include <limits.h>
 
+#include <avsystem/commons/errno.h>
 #include <avsystem/commons/memory.h>
 #include <avsystem/commons/stream.h>
 #include <avsystem/commons/stream_v_table.h>

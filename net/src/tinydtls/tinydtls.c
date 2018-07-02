@@ -15,15 +15,18 @@
  */
 
 #include <avs_commons_config.h>
+
 #include <assert.h>
-#include <errno.h>
 #include <inttypes.h>
 #include <string.h>
 
-#include <tinydtls/dtls.h>
-
 #include <avsystem/commons/errno.h>
 #include <avsystem/commons/memory.h>
+
+#define uthash_malloc(Size) avs_malloc(Size)
+#define uthash_free(Ptr, Size) avs_free(Ptr)
+
+#include <tinydtls/dtls.h>
 
 #include "../global.h"
 #include "../net_impl.h"

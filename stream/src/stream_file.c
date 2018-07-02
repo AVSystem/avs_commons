@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#define AVS_STREAM_STREAM_FILE_C
 #include <avs_commons_config.h>
 
 #include <assert.h>
