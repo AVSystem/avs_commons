@@ -105,6 +105,7 @@ extern void *sbrk (intptr_t __delta);
 #define VISIBILITY_PRIVATE_HEADER_END
 #endif
 
-#if defined(__GNUC__) && !defined(__CC_ARM) && !defined(AVS_UNIT_TESTING)
+#cmakedefine WITH_POISONING
+#ifdef WITH_POISONING
 #include "avs_commons_poison.h"
 #endif

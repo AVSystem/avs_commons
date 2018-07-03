@@ -262,6 +262,8 @@ if(WITH_EXTRA_WARNINGS)
     endif()
 endif()
 
+option(WITH_POISONING "Poison libc symbols that shall not be used" OFF)
+
 if(CMAKE_C_COMPILE_OPTIONS_PIC)
     option(WITH_PIC "Generate position-independent code" ON)
     if(WITH_PIC)
