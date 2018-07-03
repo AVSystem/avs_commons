@@ -71,7 +71,7 @@
 # endif // AVS_NET_API_C
 
 # if !defined(AVS_LOG_LOG_C) && !defined(AVS_NET_API_C)
-// fflush is used in unit test framework, network debug log and logging
+// fprintf is used in unit test framework, network debug log and logging
 #  pragma GCC poison fprintf
 # endif // !defined(AVS_LOG_LOG_C) && !defined(AVS_NET_API_C)
 
