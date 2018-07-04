@@ -22,7 +22,7 @@ INCLUDE_WHITELIST = {
     r'assert\.h',
     # r'complex\.h',
     r'ctype\.h',
-    r'errno\.h',
+    # r'errno\.h',
     # r'fenv\.h',
     # r'float\.h',
     r'inttypes\.h',

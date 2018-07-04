@@ -65,6 +65,15 @@
 
 #cmakedefine WITH_OPENSSL_CUSTOM_CIPHERS "@WITH_OPENSSL_CUSTOM_CIPHERS@"
 
+#cmakedefine HAVE_BUILTIN_ADD_OVERFLOW
+#cmakedefine HAVE_BUILTIN_MUL_OVERFLOW
+
+#cmakedefine WITH_AVS_COAP_MESSAGE_CACHE
+#cmakedefine WITH_AVS_COAP_NET_STATS
+
+#cmakedefine WITH_AVS_HTTP_ZLIB
+
+#cmakedefine WITH_AVS_COMPAT_THREADING
 #cmakedefine WITH_VALGRIND
 #ifdef WITH_VALGRIND
 #include <valgrind/valgrind.h>
@@ -96,12 +105,7 @@ extern void *sbrk (intptr_t __delta);
 #define VISIBILITY_PRIVATE_HEADER_END
 #endif
 
-#cmakedefine HAVE_BUILTIN_ADD_OVERFLOW
-#cmakedefine HAVE_BUILTIN_MUL_OVERFLOW
-
-#cmakedefine WITH_AVS_COAP_MESSAGE_CACHE
-#cmakedefine WITH_AVS_COAP_NET_STATS
-
-#cmakedefine WITH_AVS_HTTP_ZLIB
-
-#cmakedefine WITH_AVS_COMPAT_THREADING
+#cmakedefine WITH_POISONING
+#ifdef WITH_POISONING
+#include "avs_commons_poison.h"
+#endif

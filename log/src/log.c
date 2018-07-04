@@ -13,6 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+#define AVS_LOG_LOG_C
 #include <avs_commons_config.h>
 
 #include <stdarg.h>

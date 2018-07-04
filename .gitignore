@@ -3,22 +3,7 @@
 *.a
 *.so
 *.so.*
-/list/avs_list_test
-/list/avs_list_cxx_test
-/buffer/avs_buffer_test
-/coap/avs_coap_test
-/http/avs_http_test
-/log/avs_log_test
-/net/avs_net_test
-/rbtree/avs_rbtree_test
-/rbtree/avs_rbtree_cxx_test
-/stream/avs_stream_test
-/tests/avs_memory_test
-/utils/avs_utils_test
-/vector/avs_vector_test
-/vector/avs_vector_cxx_test
-/algorithm/avs_algorithm_test
-/persistence/avs_persistence_test
+avs_*_test
 
 /tools/dtls_echo_server
 /certs

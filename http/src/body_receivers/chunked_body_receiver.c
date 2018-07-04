@@ -16,8 +16,7 @@
 
 #include <avs_commons_config.h>
 
-#include <errno.h>
-
+#include <avsystem/commons/errno.h>
 #include <avsystem/commons/memory.h>
 #include <avsystem/commons/stream/stream_net.h>
 

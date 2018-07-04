@@ -116,7 +116,7 @@ AVS_UNIT_TEST(avs_vector, capacity_and_size) {
     AVS_VECTOR_DELETE(&v);
 }
 
-AVS_UNIT_TEST(avs_vector, remove) {
+AVS_UNIT_TEST(avs_vector, vector_remove) {
     AVS_VECTOR(int) v = AVS_VECTOR_NEW(int);
     int i, *elem;
     AVS_UNIT_ASSERT_NOT_NULL(v);

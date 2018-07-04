@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#define AVS_UTILS_COMPAT_STDLIB_MEMORY_C
 #include <avs_commons_config.h>
 
 #include <avsystem/commons/memory.h>

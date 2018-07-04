@@ -16,7 +16,6 @@
 
 #include <avs_commons_config.h>
 
-#include <errno.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -24,6 +23,7 @@
 
 #include <zlib.h>
 
+#include <avsystem/commons/errno.h>
 #include <avsystem/commons/memory.h>
 #include <avsystem/commons/stream_v_table.h>
 
