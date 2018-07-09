@@ -17,6 +17,9 @@
 #ifndef AVS_COMMONS_POISON_H
 #define AVS_COMMONS_POISON_H
 
+// Disable poison in tests.
+#ifndef AVS_UNIT_TESTING
+
 // This file ensures that some functions we "don't like" from the standard
 // library (for reasons described below) are not used in any of the source
 // files. This file is included only when compiling using GCC
@@ -188,6 +191,8 @@
 #pragma GCC poison mbstowc
 #pragma GCC poison wcstombs
 #pragma GCC poison wctomb
+
+#endif // AVS_UNIT_TESTING
 
 #endif /* AVS_COMMONS_POISON_H */
 
