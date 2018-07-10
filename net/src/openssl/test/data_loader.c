@@ -19,6 +19,7 @@
 #include <avsystem/commons/unit/test.h>
 #include <avsystem/commons/socket.h>
 
+#include <openssl/ssl.h>
 #include <openssl/rand.h>
 
 #include <unistd.h>

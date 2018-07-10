@@ -14,7 +14,16 @@
  * limitations under the License.
  */
 
-#define AVS_NET_OPENSSL_SOURCE
+// NOTE: OpenSSL headers sometimes (depending on a version) contain some of the
+// symbols poisoned via inclusion of avs_commons_config.h. Therefore they must
+// be included first.
+#include <openssl/ssl.h>
+#include <openssl/rand.h>
+#include <openssl/md5.h>
+#include <openssl/hmac.h>
+#include <openssl/rsa.h>
+#include <openssl/bn.h>
+
 #include <avs_commons_config.h>
 
 #include <assert.h>
@@ -23,13 +32,6 @@
 #include <string.h>
 
 #include <sys/time.h> // for struct timeval
-
-#include <openssl/ssl.h>
-#include <openssl/rand.h>
-#include <openssl/md5.h>
-#include <openssl/hmac.h>
-#include <openssl/rsa.h>
-#include <openssl/bn.h>
 
 #include <avsystem/commons/errno.h>
 #include <avsystem/commons/memory.h>

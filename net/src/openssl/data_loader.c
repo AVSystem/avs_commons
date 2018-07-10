@@ -14,7 +14,11 @@
  * limitations under the License.
  */
 
-#define AVS_NET_OPENSSL_SOURCE
+// NOTE: OpenSSL headers sometimes (depending on a version) contain some of the
+// symbols poisoned via inclusion of avs_commons_config.h. Therefore they must
+// be included first.
+#include <openssl/ssl.h>
+
 #include <avs_commons_config.h>
 
 #define MODULE_NAME avs_net_data_loader
