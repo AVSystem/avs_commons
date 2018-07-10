@@ -85,12 +85,8 @@
 
 #endif // !defined(AVS_STREAM_STREAM_FILE_C) && !defined(AVS_NET_API_C)
 
-#ifndef AVS_NET_OPENSSL_SOURCE
-// OpenSSL uses "gets" and "puts" as function argument names, so we don't
-// blacklist them in net/src/openssl/*.c
-# pragma GCC poison gets
-# pragma GCC poison puts
-#endif // AVS_NET_OPENSSL_SOURCE
+#pragma GCC poison gets
+#pragma GCC poison puts
 
 // stdin is not used anywhere
 #undef stdin
