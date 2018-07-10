@@ -833,7 +833,11 @@ static int call_when_ready(const volatile sockfd_t *sockfd_ptr,
                 && errno == EINTR
                 && !avs_time_monotonic_before(deadline,
                                               avs_time_monotonic_now()));
-        if (result >= 0 || (errno != EWOULDBLOCK && errno != EAGAIN)) {
+        // Additional check if EWOULDBLOCK is equal to EGAIN prevents some
+        // compilers from rising warning about identical left and right operands.
+        if (result >= 0
+                || (errno != EWOULDBLOCK
+                        && (EWOULDBLOCK == EAGAIN || errno != EAGAIN))) {
             // EWOULDBLOCK or EAGAIN might signify a false positive result from
             // wait_until_ready(); this might happen e.g. if poll() returned an
             // event when the kernel saw incoming data, but the data turned out
