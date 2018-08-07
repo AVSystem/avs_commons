@@ -48,6 +48,14 @@ bool avs_time_duration_less(avs_time_duration_t a, avs_time_duration_t b) {
     }
 }
 
+bool avs_time_duration_equal(avs_time_duration_t a, avs_time_duration_t b) {
+    if (!avs_time_duration_valid(a) || !avs_time_duration_valid(b)) {
+        return false;
+    } else {
+        return a.seconds == b.seconds && a.nanoseconds == b.nanoseconds;
+    }
+}
+
 bool avs_time_duration_valid(avs_time_duration_t t) {
     return (t.nanoseconds >= 0 && t.nanoseconds < NS_IN_S);
 }

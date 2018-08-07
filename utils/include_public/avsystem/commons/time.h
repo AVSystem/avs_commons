@@ -157,6 +157,35 @@ static inline bool avs_time_monotonic_before(avs_time_monotonic_t a,
 }
 
 /**
+ * @return True if <c>a</c> is exactly the same duration as <c>b</c>, false
+ *         otherwise. Note that if for either of the arguments
+ *         @ref avs_time_duration_valid returns false, the result is always
+ *         false.
+ */
+bool avs_time_duration_equal(avs_time_duration_t a, avs_time_duration_t b);
+
+/**
+ * @return True if <c>a</c> is an exactly the same point in time as <c>b</c>,
+ *         false otherwise. Note that if for either of the arguments
+ *         @ref avs_time_real_valid returns false, the result is always false.
+ */
+static inline bool avs_time_real_equal(avs_time_real_t a, avs_time_real_t b) {
+    return avs_time_duration_equal(a.since_real_epoch, b.since_real_epoch);
+}
+
+/**
+ * @return True if <c>a</c> is an exactly the same point in time as <c>b</c>,
+ *         false otherwise. Note that if for either of the arguments
+ *         @ref avs_time_monotonic_valid returns false, the result is always
+ *         false.
+ */
+static inline bool avs_time_monotonic_equal(avs_time_monotonic_t a,
+                                            avs_time_monotonic_t b) {
+    return avs_time_duration_equal(a.since_monotonic_epoch,
+                                   b.since_monotonic_epoch);
+}
+
+/**
  * Checks whether the argument specifies a valid duration. Any value that has
  * out-of-range nanoseconds component is treated as invalid time, with semantics
  * similar to the handling of NaN in floating-point arithmetic.
