@@ -179,8 +179,6 @@ static int connect_ssl(avs_net_abstract_socket_t *socket_,
 
 static int decorate_ssl(avs_net_abstract_socket_t *socket_,
                         avs_net_abstract_socket_t *backend_socket) {
-    char host[NET_MAX_HOSTNAME_SIZE];
-    int result;
     ssl_socket_t *socket = (ssl_socket_t *) socket_;
     LOG(TRACE, "decorate_ssl(socket=%p, backend_socket=%p)",
         (void *) socket, (void *) backend_socket);
@@ -190,19 +188,29 @@ static int decorate_ssl(avs_net_abstract_socket_t *socket_,
         socket->error_code = EISCONN;
         return -1;
     }
+    avs_net_socket_opt_value_t backend_state;
+    if (avs_net_socket_get_opt(backend_socket, AVS_NET_SOCKET_OPT_STATE,
+                               &backend_state)) {
+        LOG(ERROR, "Could not get backend socket state");
+        return -1;
+    }
+
     if (socket->backend_socket) {
         avs_net_socket_cleanup(&socket->backend_socket);
     }
-
-    WRAP_ERRNO_IMPL(socket, backend_socket, result,
-                    avs_net_socket_get_remote_hostname(backend_socket,
-                                                   host, sizeof(host)));
-    if (result) {
-        return result;
-    }
-
     socket->backend_socket = backend_socket;
-    result = start_ssl(socket, host);
+
+    int result = 0;
+    if (backend_state.state == AVS_NET_SOCKET_STATE_ACCEPTED
+            || backend_state.state == AVS_NET_SOCKET_STATE_CONNECTED) {
+        char host[NET_MAX_HOSTNAME_SIZE];
+        WRAP_ERRNO_IMPL(socket, backend_socket, result,
+                        avs_net_socket_get_remote_hostname(backend_socket,
+                                                           host, sizeof(host)));
+        if (!result) {
+            result = start_ssl(socket, host);
+        }
+    }
     if (result) {
         socket->backend_socket = NULL;
         close_ssl_raw(socket);
