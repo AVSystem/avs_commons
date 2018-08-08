@@ -367,13 +367,27 @@ static int get_opt_ssl(avs_net_abstract_socket_t *ssl_socket_,
     case AVS_NET_SOCKET_OPT_SESSION_RESUMED:
         out_option_value->flag = is_session_resumed(ssl_socket);
         return 0;
+    case AVS_NET_SOCKET_OPT_STATE:
+        if (!ssl_socket->backend_socket) {
+            out_option_value->state = AVS_NET_SOCKET_STATE_CLOSED;
+            return 0;
+        }
+        // fall-through
     default:
-        retval = avs_net_socket_get_opt(ssl_socket->backend_socket, option_key,
-                                        out_option_value);
+        if (!ssl_socket->backend_socket) {
+            retval = -1;
+        } else {
+            retval = avs_net_socket_get_opt(ssl_socket->backend_socket,
+                                            option_key, out_option_value);
+        }
     }
-    if (retval && !(ssl_socket->error_code =
-                avs_net_socket_errno(ssl_socket->backend_socket))) {
-        ssl_socket->error_code = EPROTO;
+    if (retval) {
+        if (!ssl_socket->backend_socket) {
+            ssl_socket->error_code = EBADF;
+        } else if (!(ssl_socket->error_code = avs_net_socket_errno(
+                ssl_socket->backend_socket))) {
+            ssl_socket->error_code = EPROTO;
+        }
     }
     return retval;
 }
