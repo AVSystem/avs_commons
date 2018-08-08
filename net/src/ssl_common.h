@@ -201,6 +201,10 @@ static int decorate_ssl(avs_net_abstract_socket_t *socket_,
     socket->backend_socket = backend_socket;
 
     int result = 0;
+    // If the backend socket is already connected, perform handshake immediately
+    // (this is most likely the STARTTLS case). Otherwise, don't do anything,
+    // the handshake will be performed when the user calls connect() on the
+    // decorated socket (likely a non-TCP/UDP TLS socket).
     if (backend_state.state == AVS_NET_SOCKET_STATE_ACCEPTED
             || backend_state.state == AVS_NET_SOCKET_STATE_CONNECTED) {
         char host[NET_MAX_HOSTNAME_SIZE];

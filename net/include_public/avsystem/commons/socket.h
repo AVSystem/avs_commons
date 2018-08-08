@@ -643,6 +643,15 @@ int avs_net_socket_connect(avs_net_abstract_socket_t *socket,
  * Used e.g. for decorating a TCP socket with an SSL/TLS one, or for creating
  * a debug proxy.
  *
+ * Decoration may take place while the lower-layer socket is in a closed state
+ * (which allows to create e.g. a TLS socket with non-standard - possibly
+ * non-IP - backend), or when it is ready for communication (which allows to
+ * implement mechanisms such as STARTTLS). Note that not all types of sockets
+ * will support decoration at every stage, or decoration at all.
+ *
+ * The default SSL/TLS/DTLS socket implementation can decorate either a stream
+ * or a datagram socket, in both closed or ready state.
+ *
  * @param socket         Wrapper socket. It must be a newly-created socket
  *                       object (in @ref AVS_NET_SOCKET_STATE_CLOSED state).
  * @param backend_socket Lower-layer socket to wrap.
