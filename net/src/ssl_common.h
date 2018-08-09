@@ -179,8 +179,6 @@ static int connect_ssl(avs_net_abstract_socket_t *socket_,
 
 static int decorate_ssl(avs_net_abstract_socket_t *socket_,
                         avs_net_abstract_socket_t *backend_socket) {
-    char host[NET_MAX_HOSTNAME_SIZE];
-    int result;
     ssl_socket_t *socket = (ssl_socket_t *) socket_;
     LOG(TRACE, "decorate_ssl(socket=%p, backend_socket=%p)",
         (void *) socket, (void *) backend_socket);
@@ -190,19 +188,33 @@ static int decorate_ssl(avs_net_abstract_socket_t *socket_,
         socket->error_code = EISCONN;
         return -1;
     }
+    avs_net_socket_opt_value_t backend_state;
+    if (avs_net_socket_get_opt(backend_socket, AVS_NET_SOCKET_OPT_STATE,
+                               &backend_state)) {
+        LOG(ERROR, "Could not get backend socket state");
+        return -1;
+    }
+
     if (socket->backend_socket) {
         avs_net_socket_cleanup(&socket->backend_socket);
     }
-
-    WRAP_ERRNO_IMPL(socket, backend_socket, result,
-                    avs_net_socket_get_remote_hostname(backend_socket,
-                                                   host, sizeof(host)));
-    if (result) {
-        return result;
-    }
-
     socket->backend_socket = backend_socket;
-    result = start_ssl(socket, host);
+
+    int result = 0;
+    // If the backend socket is already connected, perform handshake immediately
+    // (this is most likely the STARTTLS case). Otherwise, don't do anything,
+    // the handshake will be performed when the user calls connect() on the
+    // decorated socket (likely a non-TCP/UDP TLS socket).
+    if (backend_state.state == AVS_NET_SOCKET_STATE_ACCEPTED
+            || backend_state.state == AVS_NET_SOCKET_STATE_CONNECTED) {
+        char host[NET_MAX_HOSTNAME_SIZE];
+        WRAP_ERRNO_IMPL(socket, backend_socket, result,
+                        avs_net_socket_get_remote_hostname(backend_socket,
+                                                           host, sizeof(host)));
+        if (!result) {
+            result = start_ssl(socket, host);
+        }
+    }
     if (result) {
         socket->backend_socket = NULL;
         close_ssl_raw(socket);
@@ -329,7 +341,6 @@ static int get_opt_ssl(avs_net_abstract_socket_t *ssl_socket_,
                        avs_net_socket_opt_key_t option_key,
                        avs_net_socket_opt_value_t *out_option_value) {
     ssl_socket_t *ssl_socket = (ssl_socket_t *) ssl_socket_;
-    int retval;
     ssl_socket->error_code = 0;
     switch (option_key) {
     case AVS_NET_SOCKET_OPT_INNER_MTU:
@@ -359,15 +370,27 @@ static int get_opt_ssl(avs_net_abstract_socket_t *ssl_socket_,
     case AVS_NET_SOCKET_OPT_SESSION_RESUMED:
         out_option_value->flag = is_session_resumed(ssl_socket);
         return 0;
+    case AVS_NET_SOCKET_OPT_STATE:
+        if (!ssl_socket->backend_socket) {
+            out_option_value->state = AVS_NET_SOCKET_STATE_CLOSED;
+            return 0;
+        }
+        // fall-through
     default:
-        retval = avs_net_socket_get_opt(ssl_socket->backend_socket, option_key,
-                                        out_option_value);
+        if (!ssl_socket->backend_socket) {
+            ssl_socket->error_code = EBADF;
+            return -1;
+        } else {
+            int retval = avs_net_socket_get_opt(ssl_socket->backend_socket,
+                                                option_key, out_option_value);
+            if (retval
+                    && !(ssl_socket->error_code =
+                            avs_net_socket_errno(ssl_socket->backend_socket))) {
+                ssl_socket->error_code = EPROTO;
+            }
+            return retval;
+        }
     }
-    if (retval && !(ssl_socket->error_code =
-                avs_net_socket_errno(ssl_socket->backend_socket))) {
-        ssl_socket->error_code = EPROTO;
-    }
-    return retval;
 }
 
 int _avs_net_create_ssl_socket(avs_net_abstract_socket_t **socket,
