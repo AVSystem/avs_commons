@@ -341,7 +341,6 @@ static int get_opt_ssl(avs_net_abstract_socket_t *ssl_socket_,
                        avs_net_socket_opt_key_t option_key,
                        avs_net_socket_opt_value_t *out_option_value) {
     ssl_socket_t *ssl_socket = (ssl_socket_t *) ssl_socket_;
-    int retval;
     ssl_socket->error_code = 0;
     switch (option_key) {
     case AVS_NET_SOCKET_OPT_INNER_MTU:
@@ -379,21 +378,19 @@ static int get_opt_ssl(avs_net_abstract_socket_t *ssl_socket_,
         // fall-through
     default:
         if (!ssl_socket->backend_socket) {
-            retval = -1;
-        } else {
-            retval = avs_net_socket_get_opt(ssl_socket->backend_socket,
-                                            option_key, out_option_value);
-        }
-    }
-    if (retval) {
-        if (!ssl_socket->backend_socket) {
             ssl_socket->error_code = EBADF;
-        } else if (!(ssl_socket->error_code = avs_net_socket_errno(
-                ssl_socket->backend_socket))) {
-            ssl_socket->error_code = EPROTO;
+            return -1;
+        } else {
+            int retval = avs_net_socket_get_opt(ssl_socket->backend_socket,
+                                                option_key, out_option_value);
+            if (retval
+                    && !(ssl_socket->error_code =
+                            avs_net_socket_errno(ssl_socket->backend_socket))) {
+                ssl_socket->error_code = EPROTO;
+            }
+            return retval;
         }
     }
-    return retval;
 }
 
 int _avs_net_create_ssl_socket(avs_net_abstract_socket_t **socket,
