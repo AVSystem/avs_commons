@@ -93,12 +93,16 @@ int avs_stream_reset(avs_stream_abstract_t *stream) {
     return stream->vtable->reset(stream);
 }
 
-void avs_stream_cleanup(avs_stream_abstract_t **stream) {
+int avs_stream_cleanup(avs_stream_abstract_t **stream) {
+    int retval = 0;
     if (*stream) {
-        (*stream)->vtable->close(*stream);
+        if ((*stream)->vtable->close) {
+            retval = (*stream)->vtable->close(*stream);
+        }
         avs_free(*stream);
         *stream = NULL;
     }
+    return retval;
 }
 
 int avs_stream_errno(avs_stream_abstract_t *stream) {

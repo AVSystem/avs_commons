@@ -11,6 +11,9 @@ avs_*_test
 # NetBeans Project
 nbproject
 
+# VSCode
+.vscode/
+
 # logs
 *.log
 
