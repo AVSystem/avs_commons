@@ -506,10 +506,13 @@ void start_server(int port,
     OpenSSL_add_ssl_algorithms();
     SSL_load_error_strings();
     ctx = SSL_CTX_new(DTLS_server_method());
-    /* We accept all ciphers, including NULL.
-     * Not recommended beyond testing and debugging
+    /* Two ciphersuites described as mandatory for OMA LwM2M 1.0.
+     * These are guaranteed to be well-defined and prevent using "exotic" modes
+     * such as CHACHAPOLY that sometimes are not fully implemented and prevent
+     * tests from passing.
      */
-    SSL_CTX_set_cipher_list(ctx, "ALL:NULL:eNULL:aNULL");
+    SSL_CTX_set_cipher_list(
+            ctx, "ECDHE-ECDSA-AES128-CCM8:ECDHE-ECDSA-AES128-SHA256");
     SSL_CTX_set_session_cache_mode(ctx, SSL_SESS_CACHE_OFF);
 
     if (!SSL_CTX_use_certificate_chain_file(ctx, ca_file))

@@ -388,11 +388,11 @@ AVS_UNIT_TEST(coap_ctx, coap_dtls) {
     //         20           20      bytes of IPv4 header
     //          8            8      bytes of UDP header
     //         13           13      bytes of DTLS header
-    //          0            8      bytes of explicit IV
-    //          0           16      bytes of AEAD tag or MD+padding
+    //          0           16      bytes of explicit IV
+    //          0           48      bytes of AEAD tag or MD+padding
     // --------------------------------------------------------------------
-    //         41           65      bytes of headers subtracted from 1500
-    AVS_UNIT_ASSERT_TRUE(mtu.mtu >= 1435 && mtu.mtu <= 1459);
+    //         41          105      bytes of headers subtracted from 1500
+    AVS_UNIT_ASSERT_TRUE(mtu.mtu >= 1395 && mtu.mtu <= 1459);
 
     AVS_UNIT_ASSERT_SUCCESS(avs_coap_ctx_send(ctx, backend, msg));
 
