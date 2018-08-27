@@ -102,8 +102,7 @@ typedef int (*avs_stream_read_t)(avs_stream_abstract_t *stream,
  * @returns 0 on success, EOF if a character cannot be read, negative value
  * (different than EOF) in case of error.
  */
-typedef int (*avs_stream_peek_t)(avs_stream_abstract_t *stream,
-                                 size_t offset);
+typedef int (*avs_stream_peek_t)(avs_stream_abstract_t *stream, size_t offset);
 
 /**
  * @ref avs_stream_reset implementation callback type.

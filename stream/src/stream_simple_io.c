@@ -98,9 +98,15 @@ static int stream_simple_io_read(avs_stream_abstract_t *stream_,
     return 0;
 }
 
+static int stream_simple_finish_message(avs_stream_abstract_t *stream) {
+    (void) stream;
+    return 0;
+}
+
 static const avs_stream_v_table_t simple_io_stream_vtable = {
     .write_some = stream_simple_io_write_some,
-    .read = stream_simple_io_read
+    .read = stream_simple_io_read,
+    .finish_message = stream_simple_finish_message
 };
 
 static avs_stream_abstract_t

@@ -107,7 +107,7 @@ int avs_stream_cleanup(avs_stream_abstract_t **stream) {
 
 int avs_stream_errno(avs_stream_abstract_t *stream) {
     if (!stream->vtable->get_errno) {
-        return -1;
+        return 0;
     }
     return stream->vtable->get_errno(stream);
 }

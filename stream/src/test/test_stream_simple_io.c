@@ -20,7 +20,7 @@
 #define STREAM_SIZE 128
 
 /* 256 bytes with null-byte */
-const char TEST_DATA[] =
+static const char TEST_DATA[] =
         "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vestibulum "
         "iaculis nec est a accumsan. Morbi eros augue, maximus id hendrerit ut,"
         " sodales a orci. Suspendisse cursus pulvinar arcu, et faucibus nulla "
@@ -309,7 +309,7 @@ AVS_UNIT_TEST(stream_simple_io, try_read_reliably_more_than_memory_size) {
 AVS_UNIT_TEST(stream_simple_io, finish_message) {
     avs_stream_abstract_t *stream = setup_input_stream(NULL);
 
-    AVS_UNIT_ASSERT_FAILED(avs_stream_finish_message(stream));
+    AVS_UNIT_ASSERT_SUCCESS(avs_stream_finish_message(stream));
 
     teardown_stream(&stream, NULL);
 }
@@ -325,7 +325,7 @@ AVS_UNIT_TEST(stream_simple_io, reset) {
 AVS_UNIT_TEST(stream_simple_io, get_errno) {
     avs_stream_abstract_t *stream = setup_input_stream(NULL);
 
-    AVS_UNIT_ASSERT_FAILED(avs_stream_errno(stream));
+    AVS_UNIT_ASSERT_SUCCESS(avs_stream_errno(stream));
 
     teardown_stream(&stream, NULL);
 }
