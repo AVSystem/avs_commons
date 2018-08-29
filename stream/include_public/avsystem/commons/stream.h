@@ -150,8 +150,9 @@ int avs_stream_write_fv(avs_stream_abstract_t *stream,
  * to set @p out_message_finished to 1 if the entire file has been read and 0
  * otherwise.
  *
- * Note: this function will never read 0 bytes and set @p out_message_finished to
- * 0 at the same time.
+ * Note: this function can read 0 bytes and set @p out_message_finished to 0 at
+ * the same time, if @p buffer_length is 0 and stream was not entirely read
+ * before.
  *
  * Note: even if the final outcome of the read operation is an error, it is still
  * possible that some data was written into the @p buffer.
@@ -332,8 +333,10 @@ int avs_stream_reset(avs_stream_abstract_t *stream);
  * Note: if @p *stream is NULL then no action is performed.
  *
  * @param stream    Pointer to the stream to cleanup.
+ * @returns 0 on success, negative value in case of stream_close() failure.
+ *          Memory is guaranteed to be freed.
  */
-void avs_stream_cleanup(avs_stream_abstract_t **stream);
+int avs_stream_cleanup(avs_stream_abstract_t **stream);
 
 /**
  * Obtains additional error code for last performed operation by calling

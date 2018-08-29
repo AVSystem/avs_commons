@@ -18,7 +18,8 @@ set(SOURCES
     src/stream_file.c
     src/stream_inbuf.c
     src/stream_membuf.c
-    src/stream_outbuf.c)
+    src/stream_outbuf.c
+    src/stream_simple_io.c)
 
 set(PRIVATE_HEADERS
     src/md5_common.h)
@@ -29,6 +30,7 @@ set(PUBLIC_HEADERS
     include_public/avsystem/commons/stream/stream_inbuf.h
     include_public/avsystem/commons/stream/stream_membuf.h
     include_public/avsystem/commons/stream/stream_outbuf.h
+    include_public/avsystem/commons/stream/stream_simple_io.h
     include_public/avsystem/commons/stream_v_table.h
     include_public/avsystem/commons/stream/md5.h)
 
