@@ -313,6 +313,10 @@ check_function_exists(getifaddrs HAVE_GETIFADDRS)
 check_function_exists(backtrace HAVE_BACKTRACE)
 check_function_exists(backtrace_symbols HAVE_BACKTRACE_SYMBOLS)
 
+set(CMAKE_REQUIRED_INCLUDES "openssl/ssl.h")
+check_function_exists(DTLSv1_2_listen WITH_OPENSSL_DTLS_V1_2)
+set(CMAKE_REQUIRED_INCLUDES)
+
 include(CheckSymbolExists)
 foreach(MATH_LIBRARY_IT "" "m")
     file(WRITE ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp/fmod.c "#include <math.h>\nint main() { volatile double a = 4.0, b = 3.2; return (int) fmod(a, b); }\n\n")

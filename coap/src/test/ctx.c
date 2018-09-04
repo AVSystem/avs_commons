@@ -356,6 +356,12 @@ AVS_UNIT_TEST(coap_ctx, coap_udp) {
     avs_coap_ctx_cleanup(&ctx);
 }
 
+/*
+ * OpenSSL 1.0.2 available in default Ubuntu 16.04 repositories only supports
+ * DTLSv1.0. Anjay demo client insists on using DTLSv1.2, causing the handshake
+ * to fail.
+ */
+#ifdef WITH_OPENSSL_DTLS_V1_2
 AVS_UNIT_TEST(coap_ctx, coap_dtls) {
     avs_net_socket_opt_value_t mtu;
     avs_coap_ctx_t *ctx = NULL;
@@ -424,3 +430,4 @@ AVS_UNIT_TEST(coap_ctx, coap_dtls) {
     avs_coap_ctx_cleanup(&ctx);
     avs_free(storage);
 }
+#endif // WITH_OPENSSL_DTLS_V1_2

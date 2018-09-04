@@ -64,6 +64,8 @@
 #cmakedefine WITH_MBEDTLS_LOGS
 
 #cmakedefine WITH_OPENSSL_CUSTOM_CIPHERS "@WITH_OPENSSL_CUSTOM_CIPHERS@"
+/* Does the installed OpenSSL version support DTLS v1.2? */
+#cmakedefine WITH_OPENSSL_DTLS_V1_2
 
 #cmakedefine HAVE_BUILTIN_ADD_OVERFLOW
 #cmakedefine HAVE_BUILTIN_MUL_OVERFLOW
