@@ -35,7 +35,8 @@ extern "C" {
  * @param *inout_stream   Pointer to an underlying stream which implements at
  *                        least write or read operation. After successful
  *                        return, it will points to an address of newly created
- *                        buffered stream.
+ *                        buffered stream. If NULL, this function returns
+ *                        negative value.
  * @param in_buffer_size  Size of input buffer. May be set to 0 if underlying
  *                        stream cannot perform reads or reads can be
  *                        non-buffered. The maximum allowed size is
