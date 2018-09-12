@@ -14,7 +14,7 @@
 
 ################# DEFINITION ###################################################
 
-cmake_minimum_required(VERSION 2.8.1)
+cmake_minimum_required(VERSION 3.4.0)
 project(avs_commons C)
 set(AVS_COMMONS_VERSION SNAPSHOT)
 
@@ -109,14 +109,15 @@ endmacro()
 
 set(LIBRARY_FIND_ROUTINES)
 macro(avs_emit_find_dependency LIB)
+    string(REPLACE ":" "_" LIB_SANITIZED "${LIB}")
     list(FIND LIBRARY_FIND_ROUTINE_EMITTED_LIBS "${LIB}" EMITTED_LIB_INDEX)
     if(EMITTED_LIB_INDEX LESS 0)
-        if(LIBRARY_FIND_ROUTINE_${LIB})
+        if(LIBRARY_FIND_ROUTINE_${LIB_SANITIZED})
             set(LIBRARY_FIND_ROUTINES "${LIBRARY_FIND_ROUTINES}
 
-${LIBRARY_FIND_ROUTINE_${LIB}}")
+${LIBRARY_FIND_ROUTINE_${LIB_SANITIZED}}")
             list(APPEND LIBRARY_FIND_ROUTINE_EMITTED_LIBS
-                 ${LIBRARY_FIND_ROUTINE_PROVIDES_${LIB}})
+                 ${LIBRARY_FIND_ROUTINE_PROVIDES_${LIB_SANITIZED}})
         endif()
     endif()
 endmacro()
@@ -128,22 +129,8 @@ macro(avs_install_export TNAME CNAME)
     endforeach()
 endmacro()
 
-macro(avs_propagate_exports)
-    set(LIBRARY_FIND_ROUTINES "${LIBRARY_FIND_ROUTINES}" PARENT_SCOPE)
-    set(LIBRARY_FIND_ROUTINE_EMITTED_LIBS "${LIBRARY_FIND_ROUTINE_EMITTED_LIBS}" PARENT_SCOPE)
-endmacro()
-
 # OpenSSL
-avs_find_library("
-    find_package(OpenSSL)
-    if(OPENSSL_FOUND)
-        include_directories(\\\${OPENSSL_INCLUDE_DIR})
-        add_library(ssl UNKNOWN IMPORTED)
-        add_library(crypto UNKNOWN IMPORTED)
-        set_property(TARGET ssl PROPERTY IMPORTED_LOCATION \\\${OPENSSL_SSL_LIBRARY})
-        set_property(TARGET crypto PROPERTY IMPORTED_LOCATION \\\${OPENSSL_CRYPTO_LIBRARY})
-    endif()
-" ssl crypto)
+avs_find_library("find_package(OpenSSL)" OpenSSL::SSL OpenSSL::Crypto)
 
 # mbed TLS
 set(MBEDTLS_TARGETS mbedtls mbedcrypto mbedx509)
@@ -163,13 +150,7 @@ avs_find_library("
 " tinydtls)
 
 # zlib
-avs_find_library("
-    find_package(ZLIB)
-    if(ZLIB_FOUND AND NOT TARGET z)
-        add_library(z STATIC IMPORTED)
-        set_property(TARGET z PROPERTY IMPORTED_LOCATION \\\${ZLIB_LIBRARIES})
-    endif()
-" z)
+avs_find_library("find_package(ZLIB)" ZLIB::ZLIB)
 
 # SSL
 option(WITH_OPENSSL "Enable OpenSSL" OFF)
@@ -331,15 +312,6 @@ option(WITH_IPV6 "Enable IPv6 support" ON)
 
 option(WITH_SOCKET_LOG "Enable socket communication logging" OFF)
 
-set(INCLUDE_DIRS
-    "${CMAKE_CURRENT_SOURCE_DIR}/include_public"
-    "${CMAKE_CURRENT_BINARY_DIR}/include_public")
-
-include_directories("${CMAKE_CURRENT_SOURCE_DIR}/config"
-                    "${CMAKE_CURRENT_BINARY_DIR}/config"
-                    ${INCLUDE_DIRS})
-
-
 find_program(VALGRIND_EXECUTABLE valgrind)
 if(VALGRIND_EXECUTABLE)
     option(WITH_VALGRIND "Enable usage of valgrind during unit tests" OFF)
@@ -369,12 +341,16 @@ if(NOT INCLUDE_INSTALL_DIR)
     set(INCLUDE_INSTALL_DIR include)
 endif()
 
-macro(make_absolute_sources ABSVAR)
-    set(${ABSVAR})
-    foreach(SRC ${ARGN})
-        set(${ABSVAR} ${${ABSVAR}} ${CMAKE_CURRENT_SOURCE_DIR}/${SRC})
-    endforeach()
-endmacro()
+include_directories($<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/config>
+                    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/config>)
+
+add_library(avs_commons_global_headers INTERFACE)
+target_include_directories(avs_commons_global_headers INTERFACE
+                           $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include_public>
+                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include_public>
+                           $<INSTALL_INTERFACE:include>)
+
+avs_install_export(avs_commons_global_headers global_headers)
 
 set(MODULE_INCLUDE_DIRS)
 
@@ -400,12 +376,11 @@ function(add_module_with_include_dirs)
     endif()
 
     add_subdirectory(${AMWID_PATH})
-    include_directories(${avs_${AMWID_NAME}_INCLUDE_DIRS})
 
     # Append module includes to a specified variable name (i.e. MODULE_INCLUDE_DIRS_VAR).
     set(${AMWID_INCLUDE_DIRS_VAR}
         ${${AMWID_INCLUDE_DIRS_VAR}}
-        ${avs_${AMWID_NAME}_INCLUDE_DIRS}
+        $<TARGET_PROPERTY:${AMWID_NAME},INTERFACE_INCLUDE_DIRECTORIES>
         PARENT_SCOPE)
 
     if(TARGET avs_${AMWID_NAME}_check)
@@ -419,8 +394,6 @@ function(add_module_with_include_dirs)
         add_test(NAME test_${F}_visibility COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/test_visibility.py ${F})
         add_test(NAME test_${F}_headers COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/test_headers.py ${F})
     endforeach()
-
-    avs_propagate_exports()
 endfunction()
 
 if(WITH_AVS_UNIT)
@@ -464,34 +437,50 @@ if(WITH_TEST)
     add_custom_target(avs_commons_headers_check COMMAND ${CMAKE_CTEST_COMMAND} -R "'^test_.*_headers$$'")
     add_dependencies(avs_commons_check avs_commons_headers_check)
 
+    add_custom_target(avs_install_test
+                      COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/tests/test-install.sh"
+                              "${CMAKE_CURRENT_SOURCE_DIR}/tests/install")
+
     set(_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
 
     add_subdirectory(tools)
-    macro(add_avs_test NAME)
-        add_executable(${NAME}_test EXCLUDE_FROM_ALL ${ARGN})
-        add_dependencies(${NAME}_test dtls_echo_server)
-        target_link_libraries(${NAME}_test avs_unit)
-        set_property(TARGET ${NAME}_test APPEND PROPERTY COMPILE_DEFINITIONS
+
+    # NAME - test target name, without _test suffix
+    # LIBS - libs to link to
+    # SOURCES - test sources
+    function(avs_add_test)
+        set(options)
+        set(one_value_args NAME)
+        set(multi_value_args LIBS SOURCES)
+        cmake_parse_arguments(AAT "${options}" "${one_value_args}" "${multi_value_args}" ${ARGN})
+
+        add_executable(${AAT_NAME}_test EXCLUDE_FROM_ALL
+                       ${AAT_SOURCES})
+        target_link_libraries(${AAT_NAME}_test PRIVATE avs_unit ${AAT_LIBS})
+        add_dependencies(${AAT_NAME}_test dtls_echo_server)
+
+        set_property(TARGET ${AAT_NAME}_test APPEND PROPERTY COMPILE_DEFINITIONS
                      AVS_UNIT_TESTING
                      AVS_TEST_BIN_DIR="${_BINARY_DIR}")
-        set_property(TARGET ${NAME}_test APPEND PROPERTY COMPILE_FLAGS "-Wno-clobbered -Wno-overlength-strings -Wno-sign-conversion -Wno-vla")
+        set_property(TARGET ${AAT_NAME}_test APPEND PROPERTY COMPILE_FLAGS
+                     "-Wno-clobbered -Wno-overlength-strings -Wno-sign-conversion -Wno-vla")
 
         if(VALGRIND)
-            set(VALGRIND_LOG ${VALGRIND} --log-file=VALGRIND.${NAME}.log)
+            set(VALGRIND_LOG ${VALGRIND} --log-file=VALGRIND.${AAT_NAME}.log)
         else()
             set(VALGRIND_LOG)
         endif()
 
-        add_test(NAME ${NAME}_test COMMAND ${VALGRIND_LOG} $<TARGET_FILE:${NAME}_test>)
+        add_test(NAME ${AAT_NAME}_test COMMAND ${VALGRIND_LOG} $<TARGET_FILE:${AAT_NAME}_test>)
 
-        add_custom_target(${NAME}_check COMMAND ${CMAKE_CTEST_COMMAND} -V -R "^${NAME}_test$" DEPENDS ${NAME}_test)
-        add_dependencies(avs_commons_check ${NAME}_check)
-    endmacro()
+        add_custom_target(${AAT_NAME}_check COMMAND ${CMAKE_CTEST_COMMAND} -V -R "^${AAT_NAME}_test$" DEPENDS ${AAT_NAME}_test)
+        add_dependencies(avs_commons_check ${AAT_NAME}_check)
+    endfunction()
 
     add_subdirectory(tests)
 else(WITH_TEST)
-    macro(add_avs_test NAME)
-    endmacro()
+    function(avs_add_test)
+    endfunction()
 endif(WITH_TEST)
 
 if(WITH_AVS_ALGORITHM)
@@ -521,14 +510,9 @@ if(WITH_AVS_NET)
         endif()
 
         set(WITH_OPENSSL_CUSTOM_CIPHERS OFF CACHE STRING "Customized OpenSSL cipher suite list")
-
     elseif(WITH_MBEDTLS)
         if(NOT MBEDTLS_FOUND)
             message(FATAL_ERROR "mbed TLS libraries not found")
-        endif()
-        separate_arguments(MBEDTLS_INCLUDE_DIRS)
-        if(MBEDTLS_INCLUDE_DIRS)
-            include_directories(${MBEDTLS_INCLUDE_DIRS})
         endif()
     elseif(WITH_TINYDTLS)
         if (NOT TINYDTLS_FOUND)
@@ -567,15 +551,6 @@ cmake_dependent_option(WITH_AVS_HTTP_ZLIB
                        ON WITH_AVS_HTTP OFF)
 if(WITH_AVS_HTTP)
     add_module_with_include_dirs(NAME http)
-    if(WITH_AVS_HTTP_ZLIB)
-        if(NOT ZLIB_FOUND)
-            message(FATAL_ERROR "zlib not found")
-        endif()
-        if(ZLIB_INCLUDE_DIRS)
-            separate_arguments(ZLIB_INCLUDE_DIRS)
-            include_directories(${ZLIB_INCLUDE_DIRS})
-        endif()
-    endif()
 endif()
 
 if(WITH_AVS_PERSISTENCE)

@@ -12,23 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set(SOURCES
-    src/buffer.c)
+add_library(avs_buffer STATIC
+            include_public/avsystem/commons/buffer.h
 
-set(PUBLIC_HEADERS
-    include_public/avsystem/commons/buffer.h)
+            src/buffer.c)
 
-set(ALL_SOURCES ${SOURCES} ${PUBLIC_HEADERS})
-
-set(INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/include_public")
-
-set(avs_buffer_INCLUDE_DIRS ${INCLUDE_DIRS} PARENT_SCOPE)
-
-include_directories(${INCLUDE_DIRS})
-
-add_library(avs_buffer STATIC ${ALL_SOURCES})
-
-include_directories(../utils/include_public)
+target_include_directories(avs_buffer PUBLIC
+                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include_public>
+                           $<INSTALL_INTERFACE:include>)
+target_link_libraries(avs_buffer PUBLIC avs_commons_global_headers)
 
 avs_install_export(avs_buffer buffer)
 install(DIRECTORY include_public/
@@ -36,12 +28,13 @@ install(DIRECTORY include_public/
         DESTINATION ${INCLUDE_INSTALL_DIR}
         FILES_MATCHING REGEX "[.]h$")
 
-include_directories(${AVS_TEST_INCLUDE_DIRS})
-add_avs_test(avs_buffer ${ALL_SOURCES})
+avs_add_test(NAME avs_buffer
+             LIBS avs_buffer
+             SOURCES $<TARGET_PROPERTY:avs_buffer,SOURCES>)
+
 if(WITH_INTERNAL_LOGS)
-    target_link_libraries(avs_buffer avs_log)
+    target_link_libraries(avs_buffer PUBLIC avs_log)
     if(TARGET avs_buffer_test)
-        target_link_libraries(avs_buffer_test avs_log)
+        target_link_libraries(avs_buffer_test PUBLIC avs_log)
     endif()
-    include_directories(../log/include_public)
 endif()

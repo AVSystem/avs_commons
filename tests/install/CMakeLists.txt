@@ -12,12 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-if(NOT TARGET OpenSSL::SSL OR NOT TARGET OpenSSL::Crypto)
-    message(FATAL_ERROR "OpenSSL libraries are required for unit tests")
-endif()
+cmake_minimum_required(VERSION 3.4.0)
+project(avs_commons C)
 
-add_executable(dtls_echo_server EXCLUDE_FROM_ALL dtls_echo_server.c)
-set_target_properties(dtls_echo_server PROPERTIES
-                      RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRRENT_BINARY_DIR}"
-                      COMPILE_FLAGS "-w")
-target_link_libraries(dtls_echo_server OpenSSL::SSL OpenSSL::Crypto)
+find_package(avs_commons REQUIRED)
+
+foreach(TGT ${TARGETS_TO_CHECK})
+    if(TARGET "${TGT}")
+        message(STATUS "Found target: ${TGT}")
+    else()
+        message(FATAL_ERROR "Target ${TGT} not created by find_package")
+    endif()
+endforeach()

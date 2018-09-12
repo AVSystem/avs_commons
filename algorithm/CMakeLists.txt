@@ -12,28 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set(SOURCES
-    src/base64.c)
+add_library(avs_algorithm STATIC
+            include_public/avsystem/commons/base64.h
 
-set(PUBLIC_HEADERS
-    include_public/avsystem/commons/base64.h)
+            src/base64.c)
 
-set(ALL_SOURCES ${SOURCES} ${PUBLIC_HEADERS})
+target_include_directories(avs_algorithm PUBLIC
+                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include_public>
+                           $<INSTALL_INTERFACE:include>)
+target_link_libraries(avs_algorithm PUBLIC avs_commons_global_headers)
 
-set(INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/include_public")
-
-set(avs_algorithm_INCLUDE_DIRS ${INCLUDE_DIRS} PARENT_SCOPE)
-
-include_directories(${INCLUDE_DIRS})
-
-add_library(avs_algorithm STATIC ${ALL_SOURCES})
+avs_add_test(NAME avs_algorithm
+             LIBS avs_algorithm
+             SOURCES $<TARGET_PROPERTY:avs_algorithm,SOURCES>)
 
 avs_install_export(avs_algorithm algorithm)
-avs_propagate_exports()
 install(DIRECTORY include_public/
         COMPONENT algorithm
         DESTINATION ${INCLUDE_INSTALL_DIR}
         FILES_MATCHING REGEX "[.]h$")
-
-include_directories(${AVS_TEST_INCLUDE_DIRS})
-add_avs_test(avs_algorithm ${ALL_SOURCES})

@@ -12,32 +12,28 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set(SOURCES
-    src/rbtree.c)
+add_library(avs_rbtree STATIC
+            include_public/avsystem/commons/rbtree.h
 
-set(PUBLIC_HEADERS
-    include_public/avsystem/commons/rbtree.h)
+            src/rbtree.c)
 
-set(ALL_SOURCES ${SOURCES} ${PUBLIC_HEADERS})
-
-set(INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/include_public")
-
-set(avs_rbtree_INCLUDE_DIRS ${INCLUDE_DIRS} PARENT_SCOPE)
-
-include_directories(${INCLUDE_DIRS})
-
-add_library(avs_rbtree STATIC ${ALL_SOURCES})
+target_include_directories(avs_rbtree PUBLIC
+                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include_public>
+                           $<INSTALL_INTERFACE:include>)
+target_link_libraries(avs_rbtree PUBLIC avs_commons_global_headers avs_utils)
 
 avs_install_export(avs_rbtree rbtree)
-avs_propagate_exports()
 install(DIRECTORY include_public/
         COMPONENT rbtree
         DESTINATION ${INCLUDE_INSTALL_DIR}
         FILES_MATCHING REGEX "[.]h$")
 
-include_directories(${AVS_TEST_INCLUDE_DIRS}
-                    "../unit/include_public")
-add_avs_test(avs_rbtree ${ALL_SOURCES})
+avs_add_test(NAME avs_rbtree
+             LIBS avs_rbtree
+             SOURCES $<TARGET_PROPERTY:avs_rbtree,SOURCES>)
+
 if(WITH_CXX_TESTS)
-    add_avs_test(avs_rbtree_cxx src/test/test_rbtree_cxx.cpp)
+    avs_add_test(NAME avs_rbtree_cxx
+                 LIBS avs_rbtree
+                 SOURCES src/test/test_rbtree_cxx.cpp)
 endif()
