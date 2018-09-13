@@ -188,7 +188,7 @@ int avs_coap_ctx_send(avs_coap_ctx_t *ctx,
         return -1;
     }
 
-    LOG(TRACE, "send: %s", AVS_COAP_MSG_SUMMARY(msg));
+    LOG(DEBUG, "send: %s", AVS_COAP_MSG_SUMMARY(msg));
     int result = avs_net_socket_send(socket, msg->content, msg->length);
     if (!result) {
         int cache_result = try_cache_response(ctx, socket, msg);
@@ -278,7 +278,7 @@ int avs_coap_ctx_recv(avs_coap_ctx_t *ctx,
         return AVS_COAP_CTX_ERR_MSG_MALFORMED;
     }
 
-    LOG(TRACE, "recv: %s", AVS_COAP_MSG_SUMMARY(out_msg));
+    LOG(DEBUG, "recv: %s", AVS_COAP_MSG_SUMMARY(out_msg));
 
     if (is_coap_ping(out_msg)) {
         avs_coap_ctx_send_empty(ctx, socket, AVS_COAP_MSG_RESET,
