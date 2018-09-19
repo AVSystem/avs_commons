@@ -932,7 +932,7 @@ static int host_port_to_string(const struct sockaddr *sa, socklen_t salen,
     }
 #endif /* HAVE_GETNAMEINFO */
     if (result) {
-        LOG(ERROR, "Could not stringify socket address");
+        LOG(DEBUG, "Could not stringify socket address");
         if (!errno) {
             errno = ERANGE;
         }
