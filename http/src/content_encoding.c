@@ -148,9 +148,16 @@ static int decoding_peek(avs_stream_abstract_t *stream_, size_t offset) {
 
 static int decoding_close(avs_stream_abstract_t *stream_) {
     decoding_stream_t *stream = (decoding_stream_t *) stream_;
-    avs_stream_cleanup(&stream->decoder);
-    avs_stream_cleanup(&stream->backend);
-    return 0;
+    int retval = 0;
+    if (avs_stream_cleanup(&stream->decoder)) {
+        LOG(ERROR, "failed to close decoder stream");
+        retval = -1;
+    }
+    if (avs_stream_cleanup(&stream->backend)) {
+        LOG(ERROR, "failed to close backend stream");
+        retval = -1;
+    }
+    return retval;
 }
 
 static int decoding_errno(avs_stream_abstract_t *stream) {

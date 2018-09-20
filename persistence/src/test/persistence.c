@@ -56,7 +56,7 @@ static void persistence_test_env_destroy(persistence_test_env_t **env) {
     AVS_LIST_CLEAR(&(*env)->contexts) {
         avs_persistence_context_delete(*(*env)->contexts);
     }
-    avs_stream_cleanup(&(*env)->stream);
+    AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&(*env)->stream));
     avs_free(*env);
 }
 

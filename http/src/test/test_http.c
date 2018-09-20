@@ -116,7 +116,7 @@ AVS_UNIT_TEST(http, full_request) {
     AVS_UNIT_ASSERT_EQUAL_STRING(buffer, tmp_data);
     avs_unit_mocksock_assert_io_clean(socket);
     avs_unit_mocksock_expect_shutdown(socket);
-    avs_stream_cleanup(&stream);
+    AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&stream));
     avs_http_free(client);
 }
 
@@ -158,7 +158,7 @@ AVS_UNIT_TEST(http, reconnect_fail) {
     AVS_UNIT_ASSERT_FAILED(avs_stream_finish_message(stream));
     avs_unit_mocksock_assert_io_clean(socket);
     avs_unit_mocksock_expect_shutdown(socket);
-    avs_stream_cleanup(&stream);
+    AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&stream));
     avs_http_free(client);
 }
 
@@ -217,7 +217,7 @@ AVS_UNIT_TEST(http, advanced_request) {
     AVS_UNIT_ASSERT_EQUAL(avs_stream_errno(stream), 401);
     avs_unit_mocksock_assert_io_clean(socket);
     avs_unit_mocksock_expect_shutdown(socket);
-    avs_stream_cleanup(&stream);
+    AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&stream));
     avs_http_free(client);
 }
 
@@ -255,7 +255,7 @@ AVS_UNIT_TEST(http, invalid_cookies) {
     AVS_UNIT_ASSERT_EQUAL(avs_stream_errno(stream), 0);
     avs_unit_mocksock_assert_io_clean(socket);
     avs_unit_mocksock_expect_shutdown(socket);
-    avs_stream_cleanup(&stream);
+    AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&stream));
     avs_http_free(client);
 }
 
@@ -311,7 +311,7 @@ AVS_UNIT_TEST(http, multiple_cookies) {
     AVS_UNIT_ASSERT_EQUAL(avs_stream_errno(stream), 401);
     avs_unit_mocksock_assert_io_clean(socket);
     avs_unit_mocksock_expect_shutdown(socket);
-    avs_stream_cleanup(&stream);
+    AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&stream));
     avs_http_free(client);
 }
 
@@ -548,7 +548,7 @@ AVS_UNIT_TEST(http, chunked_request) {
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_finish_message(stream));
     avs_unit_mocksock_assert_io_clean(socket);
     avs_unit_mocksock_expect_shutdown(socket);
-    avs_stream_cleanup(&stream);
+    AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&stream));
     avs_http_free(client);
 }
 
@@ -593,7 +593,7 @@ AVS_UNIT_TEST(http, no_100_continue) {
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_finish_message(stream));
     avs_unit_mocksock_assert_io_clean(socket);
     avs_unit_mocksock_expect_shutdown(socket);
-    avs_stream_cleanup(&stream);
+    AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&stream));
     avs_http_free(client);
 }
 
@@ -650,7 +650,7 @@ AVS_UNIT_TEST(http, error_417) {
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_finish_message(stream));
     avs_unit_mocksock_assert_io_clean(socket);
     avs_unit_mocksock_expect_shutdown(socket);
-    avs_stream_cleanup(&stream);
+    AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&stream));
     avs_http_free(client);
 }
 
@@ -794,7 +794,7 @@ AVS_UNIT_TEST(http, big_chunked_request) {
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_finish_message(stream));
     avs_unit_mocksock_assert_io_clean(socket);
     avs_unit_mocksock_expect_shutdown(socket);
-    avs_stream_cleanup(&stream);
+    AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&stream));
     avs_http_free(client);
 }
 
@@ -924,7 +924,7 @@ AVS_UNIT_TEST(http, redirect) {
                           AVS_HTTP_ERROR_TOO_MANY_REDIRECTS);
     avs_unit_mocksock_assert_io_clean(sockets[5]);
     avs_unit_mocksock_expect_shutdown(sockets[5]);
-    avs_stream_cleanup(&stream);
+    AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&stream));
     avs_http_free(client);
 }
 
@@ -1019,7 +1019,7 @@ AVS_UNIT_TEST(http, interleaving) {
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_finish_message(stream));
     avs_unit_mocksock_assert_io_clean(socket);
     avs_unit_mocksock_expect_shutdown(socket);
-    avs_stream_cleanup(&stream);
+    AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&stream));
     avs_http_free(client);
 }
 
@@ -1141,7 +1141,7 @@ AVS_UNIT_TEST(http, interleaving_error) {
                                                buffer, sizeof(buffer)));
     AVS_UNIT_ASSERT_FAILED(avs_stream_finish_message(stream));
     avs_unit_mocksock_expect_shutdown(socket);
-    avs_stream_cleanup(&stream);
+    AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&stream));
     avs_http_free(client);
 }
 
@@ -1170,7 +1170,7 @@ AVS_UNIT_TEST(http, send_headers_fail) {
     AVS_UNIT_ASSERT_FAILED(avs_stream_finish_message(stream));
     avs_unit_mocksock_assert_io_clean(socket);
     avs_unit_mocksock_expect_shutdown(socket);
-    avs_stream_cleanup(&stream);
+    AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&stream));
     avs_http_free(client);
 }
 
@@ -1200,7 +1200,7 @@ AVS_UNIT_TEST(http, ipv6_host_header_has_square_brackets) {
     AVS_UNIT_ASSERT_FAILED(avs_stream_finish_message(stream));
     avs_unit_mocksock_assert_io_clean(socket);
     avs_unit_mocksock_expect_shutdown(socket);
-    avs_stream_cleanup(&stream);
+    AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&stream));
     avs_http_free(client);
 }
 #endif // WITH_IPV6

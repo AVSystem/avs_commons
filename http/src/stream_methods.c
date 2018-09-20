@@ -266,17 +266,20 @@ static int http_reset(avs_stream_abstract_t *stream_) {
 
 static int http_close(avs_stream_abstract_t *stream_) {
     http_stream_t *stream = (http_stream_t *) stream_;
+    int retval = 0;
     http_reset(stream_);
     LOG(TRACE, "http_close");
     avs_stream_cleanup(&stream->backend);
-    avs_stream_cleanup(&stream->encoder);
+    if ((retval = avs_stream_cleanup(&stream->encoder))) {
+        LOG(ERROR, "failed to close encoder stream");
+    }
     _avs_http_auth_clear(&stream->auth);
     avs_url_free(stream->url);
-    return 0;
+    return retval;
 }
 
 static int http_errno(avs_stream_abstract_t *stream_) {
-    http_stream_t *stream = (http_stream_t *)stream_;
+    http_stream_t *stream = (http_stream_t *) stream_;
 
     if (stream->error_code) {
         return stream->error_code;
@@ -389,6 +392,7 @@ int avs_http_open_stream(avs_stream_abstract_t **out,
     avs_net_abstract_socket_t *socket = NULL;
     http_stream_t *stream = NULL;
     int result = 0;
+    int stream_cleanup_result = 0;
     LOG(TRACE,
         "avs_http_open_stream, method == %d, encoding == %d, "
         "protocol == %s, host == %s, port == %s, path == %s, "
@@ -456,7 +460,7 @@ http_open_stream_error:
         avs_net_socket_cleanup(&socket);
     }
     if (stream && stream->encoder) {
-        avs_stream_cleanup(&stream->encoder);
+        stream_cleanup_result = avs_stream_cleanup(&stream->encoder);
     }
     if (stream && stream->url) {
         avs_url_free(stream->url);
@@ -465,7 +469,7 @@ http_open_stream_error:
         _avs_http_auth_clear(&stream->auth);
         avs_free(stream);
     }
-    return result;
+    return result ? result : stream_cleanup_result;
 }
 
 int avs_http_status_code(avs_stream_abstract_t *stream_) {

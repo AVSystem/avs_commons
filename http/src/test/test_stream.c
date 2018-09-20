@@ -74,7 +74,8 @@ AVS_UNIT_TEST(http, init) {
     AVS_UNIT_ASSERT_EQUAL(stream->redirect_count, 0);
     AVS_UNIT_ASSERT_NULL(stream->user_headers);
     avs_unit_mocksock_expect_shutdown(socket);
-    avs_stream_cleanup((avs_stream_abstract_t **) &stream);
+    AVS_UNIT_ASSERT_SUCCESS(
+            avs_stream_cleanup((avs_stream_abstract_t **) &stream));
     avs_http_free(client);
 }
 
@@ -133,7 +134,8 @@ AVS_UNIT_TEST(http, init_https_auth1) {
     AVS_UNIT_ASSERT_EQUAL(stream->redirect_count, 0);
     AVS_UNIT_ASSERT_NULL(stream->user_headers);
     avs_unit_mocksock_expect_shutdown(socket);
-    avs_stream_cleanup((avs_stream_abstract_t **) &stream);
+    AVS_UNIT_ASSERT_SUCCESS(
+            avs_stream_cleanup((avs_stream_abstract_t **) &stream));
     avs_http_free(client);
 }
 
@@ -176,6 +178,7 @@ AVS_UNIT_TEST(http, init_https_auth2) {
     AVS_UNIT_ASSERT_EQUAL(stream->redirect_count, 0);
     AVS_UNIT_ASSERT_NULL(stream->user_headers);
     avs_unit_mocksock_expect_shutdown(socket);
-    avs_stream_cleanup((avs_stream_abstract_t **) &stream);
+    AVS_UNIT_ASSERT_SUCCESS(
+            avs_stream_cleanup((avs_stream_abstract_t **) &stream));
     avs_http_free(client);
 }

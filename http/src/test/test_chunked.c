@@ -44,7 +44,7 @@ AVS_UNIT_TEST(http, send_chunk) {
                                                    strlen(input_buffer)));
     avs_net_socket_close(socket);
     avs_unit_mocksock_expect_shutdown(socket);
-    avs_stream_cleanup(&stream.backend);
+    AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&stream.backend));
 
     avs_unit_mocksock_create(&socket);
     avs_unit_mocksock_expect_connect(socket, "CV", "zero-two");
@@ -55,7 +55,7 @@ AVS_UNIT_TEST(http, send_chunk) {
     AVS_UNIT_ASSERT_SUCCESS(http_send_single_chunk(&stream, NULL, 0));
     avs_net_socket_close(socket);
     avs_unit_mocksock_expect_shutdown(socket);
-    avs_stream_cleanup(&stream.backend);
+    AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&stream.backend));
 }
 
 #pragma GCC diagnostic pop

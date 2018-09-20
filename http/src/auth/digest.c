@@ -136,6 +136,7 @@ int _avs_http_auth_send_header_digest(http_stream_t *stream) {
     md5_hexbuf_t HA1hex, HA2hex, hash;
     char nc[9];
     int result = -1;
+    int stream_cleanup_result = -1;
     char client_nonce[17];
     avs_stream_abstract_t *md5 = avs_stream_md5_create();
 
@@ -182,6 +183,8 @@ auth_digest_error:
     if (result) {
         LOG(ERROR, "error calculating digest auth md5");
     }
-    avs_stream_cleanup(&md5);
-    return result;
+    if ((stream_cleanup_result = avs_stream_cleanup(&md5))) {
+        LOG(ERROR, "failed to close MD5 stream");
+    }
+    return result ? result : stream_cleanup_result;
 }
