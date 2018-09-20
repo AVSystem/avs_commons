@@ -62,13 +62,7 @@ static int inbuf_stream_peek(avs_stream_abstract_t *stream_,
             stream->buffer_offset + offset];
 }
 
-static int inbuf_stream_close(avs_stream_abstract_t *stream_) {
-    (void) stream_;
-    return 0;
-}
-
 static const avs_stream_v_table_t inbuf_stream_vtable = {
-    .close = inbuf_stream_close,
     .peek = inbuf_stream_peek,
     .read = inbuf_stream_read,
     .extension_list = AVS_STREAM_V_TABLE_NO_EXTENSIONS

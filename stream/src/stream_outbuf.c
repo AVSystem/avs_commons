@@ -54,13 +54,7 @@ static int outbuf_stream_reset(avs_stream_abstract_t *stream) {
     return 0;
 }
 
-static int outbuf_stream_close(avs_stream_abstract_t *stream) {
-    (void) stream;
-    return 0;
-}
-
 static const avs_stream_v_table_t outbuf_stream_vtable = {
-    .close = outbuf_stream_close,
     .reset = outbuf_stream_reset,
     .write_some = outbuf_stream_write_some,
     .finish_message = outbuf_stream_finish,

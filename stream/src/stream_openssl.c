@@ -35,10 +35,11 @@ typedef struct {
 static int avs_md5_finish(avs_stream_abstract_t *stream) {
     openssl_md5_stream_t * str = (openssl_md5_stream_t *) stream;
 
-    MD5_Final(str->common.result, &str->ctx);
+    // MD5_Final() returns 1 on success.
+    int retval = !MD5_Final(str->common.result, &str->ctx);
     _avs_stream_md5_common_finalize(&str->common);
 
-    return 0;
+    return retval;
 }
 
 static int avs_md5_reset(avs_stream_abstract_t *stream) {
