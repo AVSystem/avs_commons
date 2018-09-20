@@ -41,7 +41,7 @@ AVS_UNIT_TEST(stream_membuf, write_read) {
     AVS_UNIT_ASSERT_EQUAL(bytes_read, 0);
     AVS_UNIT_ASSERT_EQUAL(message_finished, 1);
     AVS_UNIT_ASSERT_EQUAL_STRING(str, buf);
-    avs_stream_cleanup(&stream);
+    AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&stream));
 }
 
 AVS_UNIT_TEST(stream_membuf, peek) {
@@ -53,7 +53,7 @@ AVS_UNIT_TEST(stream_membuf, peek) {
     AVS_UNIT_ASSERT_EQUAL('v', avs_stream_peek(stream, 0));
     AVS_UNIT_ASSERT_EQUAL('m', avs_stream_peek(stream, strlen(str)-1));
     AVS_UNIT_ASSERT_EQUAL('\0', avs_stream_peek(stream, strlen(str)));
-    avs_stream_cleanup(&stream);
+    AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&stream));
 }
 
 AVS_UNIT_TEST(stream_membuf, reset) {
@@ -74,7 +74,7 @@ AVS_UNIT_TEST(stream_membuf, reset) {
                                             &message_finished, buf, 4));
     AVS_UNIT_ASSERT_EQUAL(bytes_read, 0);
     AVS_UNIT_ASSERT_EQUAL(message_finished, 1);
-    avs_stream_cleanup(&stream);
+    AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&stream));
 }
 
 AVS_UNIT_TEST(stream_membuf, fit) {
@@ -87,7 +87,7 @@ AVS_UNIT_TEST(stream_membuf, fit) {
     AVS_UNIT_ASSERT_EQUAL(internal->buffer_size, 3 * (strlen(str) + 1));
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_membuf_fit(stream));
     AVS_UNIT_ASSERT_EQUAL(internal->buffer_size, 2 * (strlen(str) + 1));
-    avs_stream_cleanup(&stream);
+    AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&stream));
 }
 
 AVS_UNIT_TEST(stream_getline, simple) {
@@ -137,7 +137,7 @@ AVS_UNIT_TEST(stream_getline, simple) {
     AVS_UNIT_ASSERT_EQUAL(avs_stream_getline(stream, NULL, &message_finished, buf, sizeof(buf)), -1);
     AVS_UNIT_ASSERT_EQUAL_STRING(buf, "</HEAD><BODY></BODY></HTML>");
     AVS_UNIT_ASSERT_TRUE(message_finished);
-    avs_stream_cleanup(&stream);
+    AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&stream));
 }
 
 AVS_UNIT_TEST(stream_getline, errors) {
@@ -170,7 +170,7 @@ AVS_UNIT_TEST(stream_getline, errors) {
     AVS_UNIT_ASSERT_EQUAL(bytes_read, 0);
     AVS_UNIT_ASSERT_EQUAL(buf[0], '\0');
     AVS_UNIT_ASSERT_EQUAL(msg_finished, 0);
-    avs_stream_cleanup(&stream);
+    AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&stream));
 }
 
 AVS_UNIT_TEST(stream_getline, exact) {
@@ -200,7 +200,7 @@ AVS_UNIT_TEST(stream_getline, exact) {
     AVS_UNIT_ASSERT_EQUAL(bytes_read, 7);
     AVS_UNIT_ASSERT_EQUAL_STRING(buf, "1234567");
     AVS_UNIT_ASSERT_TRUE(msg_finished);
-    avs_stream_cleanup(&stream);
+    AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&stream));
 }
 
 AVS_UNIT_TEST(stream_getline, inline_cr) {
@@ -228,5 +228,5 @@ AVS_UNIT_TEST(stream_getline, inline_cr) {
     }
     AVS_UNIT_ASSERT_EQUAL(last_result, 0);
     AVS_UNIT_ASSERT_TRUE(msg_finished);
-    avs_stream_cleanup(&stream);
+    AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&stream));
 }
