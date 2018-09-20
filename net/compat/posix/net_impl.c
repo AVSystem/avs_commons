@@ -902,7 +902,7 @@ static int get_host_port_ptr(const struct sockaddr *sa,
             return 0;
         } else {
             LOG(ERROR,
-                "malformed IPv4 address (too short: got %u B, expected >= %u)",
+                "malformed IPv4 address (too short: got %uB, expected >= %uB)",
                 (unsigned) salen, (unsigned) sizeof(struct sockaddr_in));
             return -1;
         }
@@ -916,7 +916,7 @@ static int get_host_port_ptr(const struct sockaddr *sa,
             return 0;
         } else {
             LOG(ERROR,
-                "malformed IPv6 address (too short: got %u B, expected >= %u)",
+                "malformed IPv6 address (too short: got %uB, expected >= %uB)",
                 (unsigned) salen, (unsigned) sizeof(struct sockaddr_in6));
             return -1;
         }
@@ -929,10 +929,9 @@ static int get_host_port_ptr(const struct sockaddr *sa,
 }
 #endif /* HAVE_GETNAMEINFO */
 
-static int
-host_port_to_string_impl(const struct sockaddr *sa, socklen_t salen,
-                                char *host, socklen_t hostlen,
-                                char *serv, socklen_t servlen) {
+static int host_port_to_string_impl(const struct sockaddr *sa, socklen_t salen,
+                                    char *host, socklen_t hostlen,
+                                    char *serv, socklen_t servlen) {
 #ifdef HAVE_GETNAMEINFO
     int result = getnameinfo(sa, salen, host, hostlen, serv, servlen,
                              NI_NUMERICHOST | NI_NUMERICSERV);
@@ -959,10 +958,10 @@ host_port_to_string_impl(const struct sockaddr *sa, socklen_t salen,
                                     "%" PRIu16, ntohs(*port_ptr)) < 0) {
         LOG(ERROR, "could not stringify port: %u (buf size %u)",
             ntohs(*port_ptr), (unsigned) servlen);
+        errno = ERANGE;
         return -1;
     }
 
-    errno = 0;
     return result;
 #endif /* HAVE_GETNAMEINFO */
 }
