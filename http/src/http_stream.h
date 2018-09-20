@@ -208,8 +208,8 @@ void _avs_http_maybe_schedule_retry_after_send(http_stream_t *stream,
 int _avs_http_buffer_flush(http_stream_t *stream, char message_finished);
 
 int _avs_http_send_via_buffer(http_stream_t *stream,
-                                    const void *data,
-                                    size_t data_length);
+                              const void *data,
+                              size_t data_length);
 
 int _avs_http_encoder_flush(http_stream_t *stream);
 
