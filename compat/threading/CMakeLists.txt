@@ -33,6 +33,9 @@ if(NOT TARGET avs_compat_threading)
     # Add fake avs_compat_threading "library" just so that other components
     # have something to link to
     add_library(avs_compat_threading INTERFACE)
+    target_include_directories(avs_compat_threading INTERFACE
+                               $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include_public>
+                               $<INSTALL_INTERFACE:include>)
     avs_install_export(avs_compat_threading compat_threading)
 endif()
 
