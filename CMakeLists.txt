@@ -91,11 +91,9 @@ endmacro()
 macro(avs_find_library EXPR)
     avs_eval(${EXPR})
 
-    get_property(_LIBRARY_FIND_ROUTINES GLOBAL PROPERTY LIBRARY_FIND_ROUTINES)
-    set(_LIBRARY_FIND_ROUTINES "${_LIBRARY_FIND_ROUTINES}
+    set_property(GLOBAL APPEND PROPERTY AVS_LIBRARY_FIND_ROUTINES "
 
 ${EXPR}")
-    set_property(GLOBAL PROPERTY LIBRARY_FIND_ROUTINES "${_LIBRARY_FIND_ROUTINES}")
 endmacro()
 
 if(${CMAKE_PROJECT_NAME} STREQUAL ${PROJECT_NAME})
@@ -492,7 +490,7 @@ configure_file("config/avs_commons_posix_config.h.in" "config/avs_commons_posix_
 configure_file("include_public/avsystem/commons/defs.h.in"
                "include_public/avsystem/commons/defs.h")
 
-get_property(LIBRARY_FIND_ROUTINES GLOBAL PROPERTY LIBRARY_FIND_ROUTINES)
+get_property(LIBRARY_FIND_ROUTINES GLOBAL PROPERTY AVS_LIBRARY_FIND_ROUTINES)
 configure_file(avs_commons-config.cmake.in avs_commons-config.cmake @ONLY)
 configure_file(avs_commons-version.cmake.in avs_commons-version.cmake @ONLY)
 install(EXPORT avs_commons-targets DESTINATION ${LIB_INSTALL_DIR}/avs_commons)
