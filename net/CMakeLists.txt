@@ -43,7 +43,40 @@ avs_add_test(NAME avs_net
              PATH avs_net
              SOURCES $<TARGET_PROPERTY:avs_net,SOURCES>)
 
+# SSL
+option(WITH_OPENSSL "Enable OpenSSL" OFF)
+option(WITH_MBEDTLS "Enable mbed TLS" OFF)
+option(WITH_TINYDTLS "Enable tinyDTLS" OFF)
+
+set(_AVS_TLS_BACKENDS "")
 if(WITH_OPENSSL)
+    list(APPEND _AVS_TLS_BACKENDS "openssl")
+endif()
+if(WITH_MBEDTLS)
+    list(APPEND _AVS_TLS_BACKENDS "mbedtls")
+endif()
+if(WITH_TINYDTLS)
+    list(APPEND _AVS_TLS_BACKENDS "tinydtls")
+endif()
+
+list(LENGTH _AVS_TLS_BACKENDS _AVS_NUM_TLS_BACKENDS)
+if(_AVS_NUM_TLS_BACKENDS GREATER 1)
+    string(REPLACE ";" ", " _AVS_TLS_BACKENDS "${_AVS_TLS_BACKENDS}")
+    message(FATAL_ERROR "Selected ${_AVS_TLS_BACKENDS} as TLS backends but only one may be used.")
+elseif(_AVS_NUM_TLS_BACKENDS GREATER 0)
+    set(WITH_SSL ON CACHE STRING "SSL support is enabled.")
+    option(WITH_DTLS "Enable OpenSSL DTLS support" ON)
+    option(WITH_EC_KEY "Enable OpenSSL EC_KEY support" ON)
+    option(WITH_PSK "Enable pre-shared key support" ON)
+    option(WITH_X509 "Enable X.509 certificate support" ON)
+endif()
+
+if(WITH_OPENSSL)
+    set(OPENSSL_TARGETS OpenSSL::SSL OpenSSL::Crypto)
+    avs_find_library("find_package(OpenSSL REQUIRED ${OPENSSL_TARGETS})")
+
+    set(WITH_OPENSSL_CUSTOM_CIPHERS OFF CACHE STRING "Customized OpenSSL cipher suite list")
+
     target_sources(avs_net PRIVATE src/openssl/openssl.c)
     if(WITH_X509)
         target_sources(avs_net PRIVATE src/openssl/data_loader.c)
@@ -51,7 +84,14 @@ if(WITH_OPENSSL)
             target_sources(avs_net_test PRIVATE src/openssl/test/data_loader.c)
         endif()
     endif()
+    target_link_libraries(avs_net PUBLIC ${OPENSSL_TARGETS})
 elseif(WITH_MBEDTLS)
+    avs_find_library("
+        set(CMAKE_MODULE_PATH \\\${CMAKE_MODULE_PATH} \"\\\${CMAKE_CURRENT_LIST_DIR}/cmake\")
+        # Assume mbed TLS is installed to the same root as avs_commons
+        set(MBEDTLS_ROOT_DIR \"\\\${CMAKE_CURRENT_LIST_DIR}/../..\" CACHE STRING \"mbed TLS installation directory\")
+        set(MBEDTLS_USE_STATIC_LIBS ${MBEDTLS_USE_STATIC_LIBS})
+        find_package(MbedTLS REQUIRED)")
     target_sources(avs_net PRIVATE src/mbedtls/mbedtls.c)
     if(WITH_TLS_SESSION_PERSISTENCE)
         target_sources(avs_net PRIVATE
@@ -64,8 +104,14 @@ elseif(WITH_MBEDTLS)
             target_sources(avs_net_test PRIVATE src/mbedtls/test/data_loader.c)
         endif()
     endif()
+    target_link_libraries(avs_net PUBLIC mbedtls mbedcrypto mbedx509)
 elseif(WITH_TINYDTLS)
+    avs_find_library("
+        set(TINYDTLS_ROOT_DIR \"${TINYDTLS_ROOT_DIR}\")
+        find_package(TinyDTLS REQUIRED)
+    ")
     target_sources(avs_net PRIVATE src/tinydtls/tinydtls.c)
+    target_link_libraries(avs_net PUBLIC tinydtls)
 endif()
 
 if(WITH_POSIX_AVS_SOCKET)
@@ -89,14 +135,6 @@ endif()
 
 if(WIN32)
     target_link_libraries(avs_net PUBLIC ws2_32)
-endif()
-
-if(WITH_OPENSSL)
-    target_link_libraries(avs_net PUBLIC OpenSSL::SSL OpenSSL::Crypto)
-elseif(WITH_MBEDTLS)
-    target_link_libraries(avs_net PUBLIC ${MBEDTLS_TARGETS})
-elseif(WITH_TINYDTLS)
-    target_link_libraries(avs_net PUBLIC tinydtls)
 endif()
 
 target_link_libraries(avs_net PUBLIC avs_stream avs_utils avs_compat_threading)
