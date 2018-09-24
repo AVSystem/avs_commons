@@ -79,11 +79,17 @@ macro(avs_install_export TNAME CNAME)
     install(TARGETS ${TNAME} COMPONENT ${CNAME} EXPORT avs_commons-targets DESTINATION ${LIB_INSTALL_DIR})
 endmacro()
 
-macro(avs_find_library EXPR)
+macro(avs_eval EXPR)
+    # CMake does not have an "eval()" like functionality. However, with
+    # this macro we should be able to simulate it.
     avs_temp_name(_fname)
     file(WRITE ${_fname} "${EXPR}")
     include(${_fname})
     file(REMOVE ${_fname})
+endmacro()
+
+macro(avs_find_library EXPR)
+    avs_eval(${EXPR})
 
     get_property(_LIBRARY_FIND_ROUTINES GLOBAL PROPERTY LIBRARY_FIND_ROUTINES)
     set(_LIBRARY_FIND_ROUTINES "${_LIBRARY_FIND_ROUTINES}
