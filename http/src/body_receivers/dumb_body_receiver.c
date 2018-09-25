@@ -54,8 +54,7 @@ static int dumb_proxy_peek(avs_stream_abstract_t *stream, size_t offset) {
 static int dumb_close(avs_stream_abstract_t *stream_) {
     dumb_proxy_receiver_t *stream = (dumb_proxy_receiver_t *) stream_;
     avs_stream_net_setsock(stream->backend, NULL); /* don't close the socket */
-    avs_stream_cleanup(&stream->backend);
-    return 0;
+    return avs_stream_cleanup(&stream->backend);
 }
 
 static int dumb_errno(avs_stream_abstract_t *stream) {

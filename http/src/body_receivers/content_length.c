@@ -89,8 +89,7 @@ static int content_length_peek(avs_stream_abstract_t *stream_, size_t offset) {
 static int content_length_close(avs_stream_abstract_t *stream_) {
     content_length_receiver_t *stream = (content_length_receiver_t *) stream_;
     avs_stream_net_setsock(stream->backend, NULL); /* don't close the socket */
-    avs_stream_cleanup(&stream->backend);
-    return 0;
+    return avs_stream_cleanup(&stream->backend);
 }
 
 static int content_length_errno(avs_stream_abstract_t *stream) {
