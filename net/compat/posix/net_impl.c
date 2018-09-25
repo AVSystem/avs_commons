@@ -888,65 +888,96 @@ static void unwrap_4in6(char *host) {
     }
 }
 
-static int host_port_to_string(const struct sockaddr *sa, socklen_t salen,
-                               char *host, socklen_t hostlen,
-                               char *serv, socklen_t servlen) {
-    int result = -1;
-#ifdef HAVE_GETNAMEINFO
-    result = getnameinfo(sa, salen, host, hostlen, serv, servlen,
-                         NI_NUMERICHOST | NI_NUMERICSERV);
-#else /* HAVE_GETNAMEINFO */
-    const void *addr_ptr = NULL;
-    const uint16_t *port_ptr = NULL;
-
+#ifndef HAVE_GETNAMEINFO
+static int get_host_port_ptr(const struct sockaddr *sa,
+                             socklen_t salen,
+                             const void **out_addr_ptr,
+                             const uint16_t **out_port_ptr) {
+    switch (sa->sa_family) {
 # ifdef WITH_IPV4
-    if (sa->sa_family == AF_INET) {
+    case AF_INET:
         if (salen >= sizeof(struct sockaddr_in)) {
-            addr_ptr = &((const struct sockaddr_in *) sa)->sin_addr;
-            port_ptr = &((const struct sockaddr_in *) sa)->sin_port;
-            result = 0;
+            *out_addr_ptr = &((const struct sockaddr_in *) sa)->sin_addr;
+            *out_port_ptr = &((const struct sockaddr_in *) sa)->sin_port;
+            return 0;
+        } else {
+            LOG(ERROR,
+                "malformed IPv4 address (too short: got %uB, expected >= %uB)",
+                (unsigned) salen, (unsigned) sizeof(struct sockaddr_in));
+            return -1;
         }
-    }
 # endif /* WITH_IPV4 */
 
 # ifdef WITH_IPV6
-    if (sa->sa_family == AF_INET6) {
+    case AF_INET6:
         if (salen >= sizeof(struct sockaddr_in6)) {
-            addr_ptr = &((const struct sockaddr_in6 *) sa)->sin6_addr;
-            port_ptr = &((const struct sockaddr_in6 *) sa)->sin6_port;
-            result = 0;
+            *out_addr_ptr = &((const struct sockaddr_in6 *) sa)->sin6_addr;
+            *out_port_ptr = &((const struct sockaddr_in6 *) sa)->sin6_port;
+            return 0;
+        } else {
+            LOG(ERROR,
+                "malformed IPv6 address (too short: got %uB, expected >= %uB)",
+                (unsigned) salen, (unsigned) sizeof(struct sockaddr_in6));
+            return -1;
         }
-    }
 # endif /* WITH_IPV6 */
 
-    if (!result) {
-        if (host) {
-            result = (!_avs_inet_ntop(sa->sa_family, addr_ptr, host, hostlen)
-                    ? -1 : 0);
-        }
-        if (!result && serv) {
-            result = avs_simple_snprintf(serv, servlen,
-                                         "%" PRIu16, ntohs(*port_ptr)) < 0
-                             ? -1 : 0;
-        }
+    default:
+        LOG(ERROR, "unsupported socket family: %d", (int) sa->sa_family);
+        return -1;
     }
+}
 #endif /* HAVE_GETNAMEINFO */
+
+static int host_port_to_string_impl(const struct sockaddr *sa, socklen_t salen,
+                                    char *host, socklen_t hostlen,
+                                    char *serv, socklen_t servlen) {
+#ifdef HAVE_GETNAMEINFO
+    int result = getnameinfo(sa, salen, host, hostlen, serv, servlen,
+                             NI_NUMERICHOST | NI_NUMERICSERV);
     if (result) {
-        LOG(ERROR, "Could not stringify socket address");
-        if (!errno) {
-            errno = ERANGE;
-        }
+        LOG(ERROR, "getnameinfo() failed: %s (%d)", strerror(errno), errno);
+        return result;
+    } else {
+        return 0;
+    }
+#else /* HAVE_GETNAMEINFO */
+    const void *addr_ptr = NULL;
+    const uint16_t *port_ptr = NULL;
+    int result = get_host_port_ptr(sa, salen, &addr_ptr, &port_ptr);
+    if (result) {
+        return result;
+    }
+
+    if (host && _avs_inet_ntop(sa->sa_family, addr_ptr, host, hostlen)) {
+        LOG(ERROR, "could not stringify host (buf size %u)",
+            (unsigned) hostlen);
+        return -1;
+    }
+    if (serv && avs_simple_snprintf(serv, servlen,
+                                    "%" PRIu16, ntohs(*port_ptr)) < 0) {
+        LOG(ERROR, "could not stringify port: %u (buf size %u)",
+            ntohs(*port_ptr), (unsigned) servlen);
+        errno = ERANGE;
+        return -1;
+    }
+
+    return result;
+#endif /* HAVE_GETNAMEINFO */
+}
+
+static int host_port_to_string(const struct sockaddr *sa, socklen_t salen,
+                               char *host, socklen_t hostlen,
+                               char *serv, socklen_t servlen) {
+    int result = host_port_to_string_impl(sa, salen, host, hostlen, serv, servlen);
+    if (result) {
+        return result;
     } else {
         if (host) {
-            host[hostlen - 1] = '\0';
             unwrap_4in6(host);
         }
-        if (serv) {
-            serv[servlen - 1] = '\0';
-        }
-        errno = 0;
+        return 0;
     }
-    return result;
 }
 
 int _avs_net_get_socket_type(avs_net_socket_type_t socket_type) {
