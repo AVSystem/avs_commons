@@ -62,11 +62,6 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 ################# LIBRARIES ####################################################
 
-macro(avs_emit_deps TNAME)
-    target_link_libraries(${TNAME} ${ARGN})
-    list(APPEND AVS_TARGET_DEPS_${TNAME} ${ARGN})
-endmacro()
-
 macro(avs_temp_name fname)
     if(${ARGC} GREATER 1) # Have to escape ARGC to correctly compare
         set(_base ${ARGV1})
@@ -80,107 +75,26 @@ macro(avs_temp_name fname)
     set(${fname} "${CMAKE_BINARY_DIR}/${_base}${_counter}")
 endmacro()
 
-macro(avs_find_library_inner)
-    avs_temp_name(_fname)
-    file(WRITE ${_fname} "${avs_find_library_EXPR_NOW}")
-    include(${_fname})
-    file(REMOVE ${_fname})
-    foreach(PROVIDED_LIB ${ARGN})
-        set(LIBRARY_FIND_ROUTINE_${PROVIDED_LIB} "${avs_find_library_EXPR_STORE}")
-        set(LIBRARY_FIND_ROUTINE_PROVIDES_${PROVIDED_LIB} ${ARGN})
-    endforeach()
+macro(avs_install_export TNAME CNAME)
+    install(TARGETS ${TNAME} COMPONENT ${CNAME} EXPORT avs_commons-targets DESTINATION ${LIB_INSTALL_DIR})
 endmacro()
 
-macro(avs_find_library_ex EXPR_NOW EXPR_STORE)
-    set(avs_find_library_EXPR_NOW "${EXPR_NOW}")
-    set(avs_find_library_EXPR_STORE "${EXPR_STORE}")
-    avs_find_library_inner(${ARGN})
-    set(avs_find_library_EXPR_NOW)
-    set(avs_find_library_EXPR_STORE)
+macro(avs_eval EXPR)
+    # CMake does not have an "eval()" like functionality. However, with
+    # this macro we should be able to simulate it.
+    avs_temp_name(_fname)
+    file(WRITE ${_fname} "${EXPR}")
+    include(${_fname})
+    file(REMOVE ${_fname})
 endmacro()
 
 macro(avs_find_library EXPR)
-    set(avs_find_library_EXPR_NOW "${EXPR}")
-    set(avs_find_library_EXPR_STORE "${EXPR}")
-    avs_find_library_inner(${ARGN})
-    set(avs_find_library_EXPR_NOW)
-    set(avs_find_library_EXPR_STORE)
+    avs_eval(${EXPR})
+
+    set_property(GLOBAL APPEND PROPERTY AVS_LIBRARY_FIND_ROUTINES "
+
+${EXPR}")
 endmacro()
-
-set(LIBRARY_FIND_ROUTINES)
-macro(avs_emit_find_dependency LIB)
-    string(REPLACE ":" "_" LIB_SANITIZED "${LIB}")
-    list(FIND LIBRARY_FIND_ROUTINE_EMITTED_LIBS "${LIB}" EMITTED_LIB_INDEX)
-    if(EMITTED_LIB_INDEX LESS 0)
-        if(LIBRARY_FIND_ROUTINE_${LIB_SANITIZED})
-            set(LIBRARY_FIND_ROUTINES "${LIBRARY_FIND_ROUTINES}
-
-${LIBRARY_FIND_ROUTINE_${LIB_SANITIZED}}")
-            list(APPEND LIBRARY_FIND_ROUTINE_EMITTED_LIBS
-                 ${LIBRARY_FIND_ROUTINE_PROVIDES_${LIB_SANITIZED}})
-        endif()
-    endif()
-endmacro()
-
-macro(avs_install_export TNAME CNAME)
-    install(TARGETS ${TNAME} COMPONENT ${CNAME} EXPORT avs_commons-targets DESTINATION ${LIB_INSTALL_DIR})
-    foreach(DEP ${AVS_TARGET_DEPS_${TNAME}})
-        avs_emit_find_dependency(${DEP})
-    endforeach()
-endmacro()
-
-# OpenSSL
-avs_find_library("find_package(OpenSSL)" OpenSSL::SSL OpenSSL::Crypto)
-
-# mbed TLS
-set(MBEDTLS_TARGETS mbedtls mbedcrypto mbedx509)
-avs_find_library("
-    set(CMAKE_MODULE_PATH \\\${CMAKE_MODULE_PATH} \"\\\${CMAKE_CURRENT_LIST_DIR}/cmake\")
-    # Assume mbed TLS is installed to the same root as avs_commons
-    set(MBEDTLS_ROOT_DIR \"\\\${CMAKE_CURRENT_LIST_DIR}/../..\" CACHE STRING \"mbed TLS installation directory\")
-    set(MBEDTLS_USE_STATIC_LIBS ${MBEDTLS_USE_STATIC_LIBS})
-    find_package(MbedTLS)
-" ${MBEDTLS_TARGETS})
-set(MBEDTLS_INCLUDE_DIRS "" CACHE PATH "mbed TLS include directory")
-
-# tinyDTLS
-avs_find_library("
-    set(TINYDTLS_ROOT_DIR \"${TINYDTLS_ROOT_DIR}\")
-    find_package(TinyDTLS)
-" tinydtls)
-
-# zlib
-avs_find_library("find_package(ZLIB)" ZLIB::ZLIB)
-
-# SSL
-option(WITH_OPENSSL "Enable OpenSSL" OFF)
-option(WITH_MBEDTLS "Enable mbed TLS" OFF)
-option(WITH_TINYDTLS "Enable tinyDTLS" OFF)
-
-set(_AVS_TLS_BACKENDS "")
-if(WITH_OPENSSL)
-    list(APPEND _AVS_TLS_BACKENDS "openssl")
-endif()
-if(WITH_MBEDTLS)
-    list(APPEND _AVS_TLS_BACKENDS "mbedtls")
-endif()
-if(WITH_TINYDTLS)
-    list(APPEND _AVS_TLS_BACKENDS "tinydtls")
-endif()
-
-list(LENGTH _AVS_TLS_BACKENDS _AVS_NUM_TLS_BACKENDS)
-if(_AVS_NUM_TLS_BACKENDS GREATER 1)
-    string(REPLACE ";" ", " _AVS_TLS_BACKENDS "${_AVS_TLS_BACKENDS}")
-    message(FATAL_ERROR "Selected ${_AVS_TLS_BACKENDS} as TLS backends but only one may be used.")
-elseif(_AVS_NUM_TLS_BACKENDS GREATER 0)
-    set(WITH_SSL ON)
-endif()
-
-include(CMakeDependentOption)
-cmake_dependent_option(WITH_DTLS "Enable OpenSSL DTLS support" ON WITH_SSL OFF)
-cmake_dependent_option(WITH_EC_KEY "Enable OpenSSL EC_KEY support" ON WITH_SSL OFF)
-cmake_dependent_option(WITH_PSK "Enable pre-shared key support" ON WITH_SSL OFF)
-cmake_dependent_option(WITH_X509 "Enable X.509 certificate support" ON WITH_SSL OFF)
 
 if(${CMAKE_PROJECT_NAME} STREQUAL ${PROJECT_NAME})
     set(MODULES_ENABLED ON)
@@ -209,6 +123,7 @@ option(WITH_AVS_HTTP "AVSystem HTTP client" ${MODULES_ENABLED})
 option(WITH_AVS_PERSISTENCE "AVSystem persistence framework" ${MODULES_ENABLED})
 option(WITH_AVS_COMPAT_THREADING "Use multithreading utility compatibility layer" ${MODULES_ENABLED})
 
+include(CMakeDependentOption)
 cmake_dependent_option(WITH_INTERNAL_LOGS "Enable logging from inside AVSystem Commons libraries" ON WITH_AVS_LOG OFF)
 cmake_dependent_option(WITH_INTERNAL_TRACE "Enable TRACE-level logs inside AVSystem Commons libraries" OFF WITH_INTERNAL_LOGS OFF)
 cmake_dependent_option(WITH_MBEDTLS_LOGS "Enable logging from mbedTLS backend library (if used)" OFF "WITH_INTERNAL_LOG;WITH_MBEDTLS" OFF)
@@ -504,22 +419,6 @@ if(WITH_AVS_UTILS)
 endif()
 
 if(WITH_AVS_NET)
-    if(WITH_OPENSSL)
-        if(NOT OPENSSL_FOUND)
-            message(FATAL_ERROR "OpenSSL libraries not found")
-        endif()
-
-        set(WITH_OPENSSL_CUSTOM_CIPHERS OFF CACHE STRING "Customized OpenSSL cipher suite list")
-    elseif(WITH_MBEDTLS)
-        if(NOT MBEDTLS_FOUND)
-            message(FATAL_ERROR "mbed TLS libraries not found")
-        endif()
-    elseif(WITH_TINYDTLS)
-        if (NOT TINYDTLS_FOUND)
-            message(FATAL_ERROR "tinyDTLS libraries not found")
-        endif()
-    endif()
-
     add_module_with_include_dirs(NAME net)
 endif()
 
@@ -591,6 +490,7 @@ configure_file("config/avs_commons_posix_config.h.in" "config/avs_commons_posix_
 configure_file("include_public/avsystem/commons/defs.h.in"
                "include_public/avsystem/commons/defs.h")
 
+get_property(LIBRARY_FIND_ROUTINES GLOBAL PROPERTY AVS_LIBRARY_FIND_ROUTINES)
 configure_file(avs_commons-config.cmake.in avs_commons-config.cmake @ONLY)
 configure_file(avs_commons-version.cmake.in avs_commons-version.cmake @ONLY)
 install(EXPORT avs_commons-targets DESTINATION ${LIB_INSTALL_DIR}/avs_commons)

@@ -46,6 +46,7 @@ target_include_directories(avs_http PUBLIC
 target_link_libraries(avs_http PUBLIC avs_commons_global_headers avs_algorithm avs_net avs_stream avs_utils)
 
 if(WITH_AVS_HTTP_ZLIB)
+    avs_find_library("find_package(ZLIB REQUIRED)")
     target_sources(avs_http PRIVATE src/zlib.c)
     target_link_libraries(avs_http PUBLIC ZLIB::ZLIB)
 endif()
