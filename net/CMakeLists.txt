@@ -65,13 +65,14 @@ if(_AVS_NUM_TLS_BACKENDS GREATER 1)
     message(FATAL_ERROR "Selected ${_AVS_TLS_BACKENDS} as TLS backends but only one may be used.")
 elseif(_AVS_NUM_TLS_BACKENDS GREATER 0)
     set(WITH_SSL ON CACHE STRING "SSL support is enabled.")
-    option(WITH_DTLS "Enable OpenSSL DTLS support" ON)
-    option(WITH_EC_KEY "Enable OpenSSL EC_KEY support" ON)
     option(WITH_PSK "Enable pre-shared key support" ON)
     option(WITH_X509 "Enable X.509 certificate support" ON)
 endif()
 
 if(WITH_OPENSSL)
+    option(WITH_DTLS "Enable OpenSSL DTLS support" ON)
+    option(WITH_EC_KEY "Enable OpenSSL EC_KEY support" ON)
+
     set(OPENSSL_TARGETS OpenSSL::SSL OpenSSL::Crypto)
     avs_find_library("find_package(OpenSSL REQUIRED ${OPENSSL_TARGETS})")
 
