@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+find_package(OpenSSL)
 if(NOT TARGET OpenSSL::SSL OR NOT TARGET OpenSSL::Crypto)
     message(FATAL_ERROR "OpenSSL libraries are required for unit tests")
 endif()

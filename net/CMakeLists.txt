@@ -73,8 +73,7 @@ if(WITH_OPENSSL)
     option(WITH_DTLS "Enable OpenSSL DTLS support" ON)
     option(WITH_EC_KEY "Enable OpenSSL EC_KEY support" ON)
 
-    set(OPENSSL_TARGETS OpenSSL::SSL OpenSSL::Crypto)
-    avs_find_library("find_package(OpenSSL REQUIRED ${OPENSSL_TARGETS})")
+    avs_find_library("find_package(OpenSSL)")
 
     set(WITH_OPENSSL_CUSTOM_CIPHERS OFF CACHE STRING "Customized OpenSSL cipher suite list")
 
@@ -85,7 +84,7 @@ if(WITH_OPENSSL)
             target_sources(avs_net_test PRIVATE src/openssl/test/data_loader.c)
         endif()
     endif()
-    target_link_libraries(avs_net PUBLIC ${OPENSSL_TARGETS})
+    target_link_libraries(avs_net PUBLIC OpenSSL::SSL OpenSSL::Crypto)
 elseif(WITH_MBEDTLS)
     avs_find_library("
         set(CMAKE_MODULE_PATH \\\${CMAKE_MODULE_PATH} \"\\\${CMAKE_CURRENT_LIST_DIR}/cmake\")
