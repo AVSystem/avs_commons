@@ -12,10 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-if(NOT TARGET OpenSSL::SSL OR NOT TARGET OpenSSL::Crypto)
-    message(FATAL_ERROR "OpenSSL libraries are required for unit tests")
-endif()
-
+find_package(OpenSSL REQUIRED)
 add_executable(dtls_echo_server EXCLUDE_FROM_ALL dtls_echo_server.c)
 set_target_properties(dtls_echo_server PROPERTIES
                       RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRRENT_BINARY_DIR}"
