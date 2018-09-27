@@ -73,7 +73,7 @@ if(WITH_OPENSSL)
     option(WITH_DTLS "Enable OpenSSL DTLS support" ON)
     option(WITH_EC_KEY "Enable OpenSSL EC_KEY support" ON)
 
-    avs_find_library("find_package(OpenSSL)")
+    avs_find_library("find_package(OpenSSL REQUIRED)")
 
     set(WITH_OPENSSL_CUSTOM_CIPHERS OFF CACHE STRING "Customized OpenSSL cipher suite list")
 
