@@ -618,7 +618,7 @@ template <typename T>
 static inline AVS_LIST(T)
 avs_list_detach_impl__(AVS_LIST(T) *element_to_detach_ptr) {
     return (AVS_LIST(T)) (char *) avs_list_detach__( \
-            (void **) (intptr_t) (char *) element_to_detach_ptr);
+            (void **) (intptr_t) (const char *) element_to_detach_ptr);
 }
 
 #define AVS_LIST_DETACH(element_to_detach_ptr) \
@@ -626,7 +626,7 @@ avs_list_detach_impl__(AVS_LIST(T) *element_to_detach_ptr) {
 #else
 #define AVS_LIST_DETACH(element_to_detach_ptr) \
 ((AVS_TYPEOF_PTR(*(element_to_detach_ptr))) (char *) \
-        avs_list_detach__((void **) (intptr_t) (char *)(element_to_detach_ptr)))
+avs_list_detach__((void **) (intptr_t) (const char *) (element_to_detach_ptr)))
 #endif
 
 /**
