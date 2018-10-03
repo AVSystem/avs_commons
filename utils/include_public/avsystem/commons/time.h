@@ -233,7 +233,8 @@ avs_time_duration_t avs_time_duration_add(avs_time_duration_t a,
  */
 static inline avs_time_real_t avs_time_real_add(avs_time_real_t a,
                                                 avs_time_duration_t b) {
-    return (avs_time_real_t) { avs_time_duration_add(a.since_real_epoch, b) };
+    avs_time_real_t result = { avs_time_duration_add(a.since_real_epoch, b) };
+    return result;
 }
 
 /**
@@ -247,9 +248,10 @@ static inline avs_time_real_t avs_time_real_add(avs_time_real_t a,
  */
 static inline avs_time_monotonic_t
 avs_time_monotonic_add(avs_time_monotonic_t a, avs_time_duration_t b) {
-    return (avs_time_monotonic_t) {
+    avs_time_monotonic_t result = {
         avs_time_duration_add(a.since_monotonic_epoch, b)
     };
+    return result;
 }
 
 /**
@@ -406,7 +408,8 @@ avs_time_duration_t avs_time_duration_from_scalar(int64_t value,
  */
 static inline avs_time_real_t avs_time_real_from_scalar(int64_t value,
                                                         avs_time_unit_t unit) {
-    return (avs_time_real_t) { avs_time_duration_from_scalar(value, unit) };
+    avs_time_real_t result = { avs_time_duration_from_scalar(value, unit) };
+    return result;
 }
 
 /**
@@ -422,9 +425,10 @@ static inline avs_time_real_t avs_time_real_from_scalar(int64_t value,
  */
 static inline avs_time_monotonic_t
 avs_time_monotonic_from_scalar(int64_t value, avs_time_unit_t unit) {
-    return (avs_time_monotonic_t) {
+    avs_time_monotonic_t result = {
         avs_time_duration_from_scalar(value, unit)
     };
+    return result;
 }
 
 /**
@@ -450,7 +454,8 @@ avs_time_duration_t avs_time_duration_from_fscalar(double value,
  */
 static inline avs_time_real_t avs_time_real_from_fscalar(double value,
                                                          avs_time_unit_t unit) {
-    return (avs_time_real_t) { avs_time_duration_from_fscalar(value, unit) };
+    avs_time_real_t result = { avs_time_duration_from_fscalar(value, unit) };
+    return result;
 }
 
 /**
@@ -466,9 +471,10 @@ static inline avs_time_real_t avs_time_real_from_fscalar(double value,
  */
 static inline avs_time_monotonic_t
 avs_time_monotonic_from_fscalar(double value, avs_time_unit_t unit) {
-    return (avs_time_monotonic_t) {
+    avs_time_monotonic_t result = {
         avs_time_duration_from_fscalar(value, unit)
     };
+    return result;
 }
 
 /**
