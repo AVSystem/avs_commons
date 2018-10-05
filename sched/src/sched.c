@@ -332,6 +332,18 @@ void avs_sched_del(avs_sched_handle_t *handle_ptr) {
     *handle_ptr = NULL;
 }
 
+void avs_sched_release(avs_sched_handle_t *handle_ptr) {
+    if (!handle_ptr || !*handle_ptr) {
+        return;
+    }
+    assert((*handle_ptr)->sched);
+    AVS_ASSERT(handle_ptr == (*handle_ptr)->handle_ptr,
+               "trying to release non-original handle");
+
+    (*handle_ptr)->handle_ptr = NULL;
+    *handle_ptr = NULL;
+}
+
 static AVS_LIST(avs_sched_t *) *
 traverse_descendants(avs_sched_t *ancestor, avs_sched_t *maybe_descendant) {
     AVS_LIST(avs_sched_t *) *child_ptr;

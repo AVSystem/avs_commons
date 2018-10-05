@@ -88,6 +88,8 @@ avs_time_monotonic_t avs_sched_time(const avs_sched_handle_t handle);
 
 void avs_sched_del(avs_sched_handle_t *handle_ptr);
 
+void avs_sched_release(avs_sched_handle_t *handle_ptr);
+
 bool avs_sched_is_descendant(avs_sched_t *ancestor,
                              avs_sched_t *maybe_descendant);
 
