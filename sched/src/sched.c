@@ -1,0 +1,422 @@
+/*
+ * Copyright 2017-2018 AVSystem <avsystem@avsystem.com>
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#include <avs_commons_config.h>
+
+#include <assert.h>
+#include <inttypes.h>
+#include <string.h>
+
+#include <avsystem/commons/list.h>
+#include <avsystem/commons/sched.h>
+#include <avsystem/commons/utils.h>
+
+#define MODULE_NAME avs_sched
+#include <x_log_config.h>
+
+VISIBILITY_SOURCE_BEGIN
+
+struct avs_sched_job_struct {
+    avs_sched_t *sched;
+    avs_sched_handle_t *handle_ptr;
+    avs_time_monotonic_t instant;
+#ifdef WITH_INTERNAL_LOGS
+    struct {
+        const char *file;
+        unsigned line;
+        const char *name;
+    } log_info;
+#endif // WITH_INTERNAL_LOGS
+    avs_sched_clb_t *clb;
+    avs_max_align_t clb_data[];
+};
+
+struct avs_sched_struct {
+#ifdef WITH_INTERNAL_LOGS
+    const char *name;
+#endif // WITH_INTERNAL_LOGS
+    void *data;
+    AVS_LIST(avs_sched_job_t) jobs;
+    AVS_LIST(avs_sched_t *) children;
+    bool shut_down;
+};
+
+#define SCHED_LOG(Sched, Level, ...) \
+        LOG(Level, "Scheduler \"%s\": " AVS_VARARG0(__VA_ARGS__), \
+            (Sched)->name AVS_VARARG_REST(__VA_ARGS__))
+
+#ifdef WITH_INTERNAL_LOGS
+
+#   define JOB_LOG_ID_MAX_LENGTH (AVS_LOG_MAX_LINE_LENGTH / 2)
+
+static const char *
+job_log_id_impl(char buf[static JOB_LOG_ID_MAX_LENGTH],
+                avs_sched_job_t *job) {
+    char *ptr = buf;
+    char *limit = buf + JOB_LOG_ID_MAX_LENGTH;
+    if (job->log_info.name) {
+        int result = avs_simple_snprintf(ptr, (size_t) (limit - ptr),
+                                         " \"%s\"", job->log_info.name);
+        if (result < 0) {
+            goto finish;
+        } else {
+            ptr += result;
+        }
+    }
+    if (job->log_info.file && limit - ptr >= 4) {
+        *ptr++ = ' ';
+        *ptr++ = '(';
+        int result = avs_simple_snprintf(
+                ptr, (size_t) (limit - ptr - 1),
+                "%s:%u", job->log_info.file, job->log_info.line);
+        if (result < 0) {
+            ptr = limit - 2;
+        } else {
+            ptr += result;
+        }
+        *ptr++ = ')';
+        *ptr = '\0';
+    }
+finish:
+    return buf;
+}
+
+#   define JOB_LOG_ID(Job) \
+        job_log_id_impl(&(char[JOB_LOG_ID_MAX_LENGTH]) { "" }[0], (Job))
+
+#   define TIME_STR_MAX_LENGTH 32
+
+static const char *time_str_impl(char buf[static TIME_STR_MAX_LENGTH],
+                                 avs_time_duration_t time) {
+    if (avs_time_duration_valid(time)) {
+        if (time.seconds < 0 && time.nanoseconds > 0) {
+            ++time.seconds;
+            time.nanoseconds = 1000000000 - time.nanoseconds;
+        }
+        avs_simple_snprintf(buf, TIME_STR_MAX_LENGTH, "%" PRId64 ".%09" PRId32,
+                            time.seconds, time.nanoseconds);
+    } else {
+        avs_simple_snprintf(buf, TIME_STR_MAX_LENGTH, "TIME_INVALID");
+    }
+    return buf;
+}
+
+#   define TIME_STR(Time) \
+        time_str_impl(&(char[TIME_STR_MAX_LENGTH]) { "" }[0], (Time))
+
+#endif // WITH_INTERNAL_LOGS
+
+avs_sched_t *avs_sched_new(const char *name, void *data) {
+    avs_sched_t *sched = (avs_sched_t *) avs_calloc(1, sizeof(avs_sched_t));
+    if (sched) {
+        sched->data = data;
+        LOG(DEBUG, "Scheduler \"%s\" created, data == %p",
+            (sched->name = (name ? name : "(unknown)")), data);
+    }
+    return sched;
+}
+
+void avs_sched_cleanup(avs_sched_t **sched_ptr) {
+    if (!sched_ptr || !*sched_ptr) {
+        return;
+    }
+
+    SCHED_LOG(*sched_ptr, DEBUG, "shutting down");
+    (*sched_ptr)->shut_down = true;
+
+    AVS_LIST_CLEAR(&(*sched_ptr)->children);
+
+    // execute any tasks remaining for now
+    avs_sched_run(*sched_ptr);
+    AVS_LIST_CLEAR(&(*sched_ptr)->jobs) {
+        if ((*sched_ptr)->jobs->handle_ptr) {
+            *(*sched_ptr)->jobs->handle_ptr = NULL;
+        }
+    }
+
+    SCHED_LOG(*sched_ptr, DEBUG, "shut down");
+    avs_free(*sched_ptr);
+    *sched_ptr = NULL;
+}
+
+void *avs_sched_data(avs_sched_t *sched) {
+    assert(sched);
+    return sched->data;
+}
+
+avs_time_monotonic_t avs_sched_time_of_next(avs_sched_t *sched) {
+    assert(sched);
+    avs_time_monotonic_t result = AVS_TIME_MONOTONIC_INVALID;
+
+    if (sched->jobs) {
+        result = sched->jobs->instant;
+    }
+
+    AVS_LIST(avs_sched_t *) child;
+    AVS_LIST_FOREACH(child, sched->children) {
+        assert(*child);
+        avs_time_monotonic_t child_result = avs_sched_time_of_next(*child);
+        if (!avs_time_monotonic_valid(result)
+                || avs_time_monotonic_before(child_result, result)) {
+            result = child_result;
+        }
+    }
+
+    return result;
+}
+
+static void execute_job(AVS_LIST(avs_sched_job_t) job) {
+    // make sure that the task is detached
+    assert(!AVS_LIST_NEXT(job));
+
+    SCHED_LOG(job->sched, TRACE, "executing job%s", JOB_LOG_ID(job));
+
+    if (job->handle_ptr) {
+        assert(*job->handle_ptr == job);
+        *job->handle_ptr = NULL;
+    }
+
+    job->clb(job->sched, job->clb_data);
+    AVS_LIST_DELETE(&job);
+}
+
+void avs_sched_run(avs_sched_t *sched) {
+    assert(sched);
+    avs_time_monotonic_t now = avs_time_monotonic_now();
+
+    uint64_t tasks_executed = 0;
+    while (sched->jobs
+            && avs_time_monotonic_before(sched->jobs->instant, now)) {
+        avs_sched_job_t *job = AVS_LIST_DETACH(&sched->jobs);
+        assert(job->sched == sched);
+        execute_job(job);
+        ++tasks_executed;
+    }
+
+    if (tasks_executed) {
+        SCHED_LOG(sched, TRACE, "%" PRIu64 " jobs executed", tasks_executed);
+    } else if (sched->children) {
+        SCHED_LOG(sched, TRACE,
+                  "no local jobs to execute, processing child schedulers");
+        AVS_LIST(avs_sched_t *) child;
+        AVS_LIST_FOREACH(child, sched->children) {
+            avs_sched_run(*child);
+        }
+    } else {
+        SCHED_LOG(sched, TRACE, "no jobs to execute");
+    }
+
+#ifdef WITH_INTERNAL_TRACE
+    avs_time_monotonic_t next = avs_sched_time_of_next(sched);
+    avs_time_duration_t remaining = avs_time_monotonic_diff(next, now);
+    if (!avs_time_duration_valid(remaining)) {
+        SCHED_LOG(sched, TRACE, "no more jobs");
+    } else if (sched->jobs
+            && avs_time_monotonic_equal(next, sched->jobs->instant)) {
+        SCHED_LOG(sched, TRACE, "next job%s scheduled at %s (+%s)",
+                  JOB_LOG_ID(sched->jobs), TIME_STR(next.since_monotonic_epoch),
+                  TIME_STR(remaining));
+    }
+#endif // WITH_INTERNAL_TRACE
+}
+
+int avs_sched_at_impl__(avs_sched_t *sched,
+                        avs_sched_handle_t *out_handle,
+                        avs_time_monotonic_t instant,
+                        const char *log_file,
+                        unsigned log_line,
+                        const char *log_name,
+                        avs_sched_clb_t *clb,
+                        const void *clb_data,
+                        size_t clb_data_size) {
+    assert(sched);
+    AVS_ASSERT((!out_handle || !*out_handle),
+               "Dangerous non-initialized out_handle");
+    if (sched->shut_down) {
+        if (log_file) {
+            SCHED_LOG(sched, ERROR, "scheduler already shut down when "
+                                    "attempting to schedule%s%s%s%s:%u%s",
+                      log_name ? " \"" : "", log_name ? log_name : "",
+                      log_name ? "\" (" : " from ", log_file, log_line,
+                      log_name ? ")" : "");
+        } else {
+            SCHED_LOG(sched, ERROR, "scheduler already shut down%s%s%s",
+                      log_name ? " when attempting to schedule \"" : "",
+                      log_name ? log_name : "", log_name ? "\"" : "");
+        }
+        return -1;
+    }
+    if (!clb) {
+        if (log_file) {
+            SCHED_LOG(sched, ERROR, "attempted to schedule a null callback "
+                                    "pointer from %s:%u", log_file, log_line);
+        } else {
+            SCHED_LOG(sched, ERROR,
+                      "attempted to schedule a null callback pointer");
+        }
+        return -1;
+    }
+
+    AVS_LIST(avs_sched_job_t) job = (avs_sched_job_t *)
+            AVS_LIST_NEW_BUFFER(sizeof(avs_sched_job_t) + clb_data_size);
+    if (!job) {
+        SCHED_LOG(sched, ERROR, "could not allocate scheduler task");
+        return -1;
+    }
+
+    job->sched = sched;
+    if (out_handle) {
+        job->handle_ptr = out_handle;
+        *out_handle = job;
+    }
+    job->instant = instant;
+#ifdef WITH_INTERNAL_LOGS
+    job->log_info.file = log_file;
+    job->log_info.line = log_line;
+    job->log_info.name = log_name;
+#endif // WITH_INTERNAL_LOGS
+    job->clb = clb;
+    if (clb_data_size) {
+        memcpy(job->clb_data, clb_data, clb_data_size);
+    }
+
+    AVS_LIST(avs_sched_job_t) *insert_ptr = NULL;
+    AVS_LIST_FOREACH_PTR(insert_ptr, &sched->jobs) {
+        if (avs_time_monotonic_before(instant, (*insert_ptr)->instant)) {
+            break;
+        }
+    }
+    AVS_LIST_INSERT(insert_ptr, job);
+#ifdef WITH_INTERNAL_TRACE
+    avs_time_duration_t remaining =
+            avs_time_monotonic_diff(instant, avs_time_monotonic_now());
+    SCHED_LOG(sched, TRACE, "scheduled job%s at %s (+%s)", JOB_LOG_ID(job),
+              TIME_STR(instant.since_monotonic_epoch), TIME_STR(remaining));
+#endif // WITH_INTERNAL_TRACE
+    return 0;
+}
+
+avs_time_monotonic_t avs_sched_time(const avs_sched_handle_t handle) {
+    assert(handle);
+    return handle->instant;
+}
+
+void avs_sched_del(avs_sched_handle_t *handle_ptr) {
+    if (!handle_ptr || !*handle_ptr) {
+        return;
+    }
+    assert((*handle_ptr)->sched);
+    SCHED_LOG((*handle_ptr)->sched, TRACE,
+              "cancelling job%s", JOB_LOG_ID(*handle_ptr));
+
+    AVS_LIST(avs_sched_job_t) *job_ptr = (AVS_LIST(avs_sched_job_t) *)
+            AVS_LIST_FIND_PTR(&(*handle_ptr)->sched->jobs, *handle_ptr);
+    AVS_ASSERT(job_ptr, "dangling handle detected");
+    AVS_ASSERT(handle_ptr == (*handle_ptr)->handle_ptr,
+               "removing job via non-original handle");
+
+    AVS_LIST_DELETE(job_ptr);
+    *handle_ptr = NULL;
+}
+
+static AVS_LIST(avs_sched_t *) *
+traverse_descendants(avs_sched_t *ancestor, avs_sched_t *maybe_descendant) {
+    AVS_LIST(avs_sched_t *) *child_ptr;
+    AVS_LIST_FOREACH_PTR(child_ptr, &ancestor->children) {
+        if (**child_ptr == maybe_descendant
+                || avs_sched_is_descendant(**child_ptr, maybe_descendant)) {
+            break;
+        }
+    }
+    return child_ptr;
+}
+
+bool avs_sched_is_descendant(avs_sched_t *ancestor,
+                             avs_sched_t *maybe_descendant) {
+    assert(ancestor);
+    assert(maybe_descendant);
+    return *traverse_descendants(ancestor, maybe_descendant);
+}
+
+int avs_sched_register_child(avs_sched_t *parent, avs_sched_t *child) {
+    assert(parent);
+    assert(child);
+    AVS_LIST(avs_sched_t *) *append_ptr = traverse_descendants(parent, child);
+    if (*append_ptr) {
+        LOG(ERROR,
+            "Scheduler \"%s\" is already a descendant of scheduler \"%s\"",
+            child->name, parent->name);
+        return -1;
+    }
+
+    LOG(TRACE, "Registering scheduler \"%s\" as a child of scheduler \"%s\"",
+        child->name, parent->name);
+    AVS_ASSERT(!avs_sched_is_descendant(child, parent),
+               "Cycle found in the scheduler family tree");
+
+    AVS_LIST(avs_sched_t *) entry = AVS_LIST_NEW_ELEMENT(avs_sched_t *);
+    if (!entry) {
+        LOG(ERROR, "Out of memory while trying to add scheduler \"%s\" as a "
+                   "child of scheduler \"%s\"", child->name, parent->name);
+        return -1;
+    }
+
+    *entry = child;
+    AVS_LIST_INSERT(append_ptr, entry);
+    return 0;
+}
+
+int avs_sched_unregister_child(avs_sched_t *parent, avs_sched_t *child) {
+    assert(parent);
+    assert(child);
+    AVS_LIST(avs_sched_t *) *child_ptr = NULL;
+    AVS_LIST_FOREACH_PTR(child_ptr, &parent->children) {
+        if (**child_ptr == child) {
+            break;
+        }
+    }
+
+    if (!*child_ptr) {
+        LOG(ERROR,
+            "Scheduler \"%s\" is not a (direct) child of scheduler \"%s\"",
+            child->name, parent->name);
+        return -1;
+    }
+
+    LOG(TRACE, "Unregistering scheduler \"%s\" as a child of scheduler \"%s\"",
+        child->name, parent->name);
+    AVS_LIST_DELETE(child_ptr);
+    return 0;
+}
+
+void avs_sched_leap_time(avs_sched_t *sched, avs_time_duration_t diff) {
+    assert(sched);
+    SCHED_LOG(sched, INFO, "moving all jobs by %s s", TIME_STR(diff));
+
+    AVS_LIST(avs_sched_job_t) job;
+    AVS_LIST_FOREACH(job, sched->jobs) {
+        job->instant = avs_time_monotonic_add(job->instant, diff);
+    }
+
+    AVS_LIST(avs_sched_t *) child;
+    AVS_LIST_FOREACH(child, sched->children) {
+        avs_sched_leap_time(*child, diff);
+    }
+}
+
+#ifdef AVS_UNIT_TESTING
+#include "test/test_sched.c"
+#endif

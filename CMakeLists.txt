@@ -121,6 +121,7 @@ option(WITH_AVS_RBTREE "AVSystem generic red-black tree implementation" ${MODULE
 option(WITH_AVS_COAP "AVSystem CoAP abstraction layer" ${MODULES_ENABLED})
 option(WITH_AVS_HTTP "AVSystem HTTP client" ${MODULES_ENABLED})
 option(WITH_AVS_PERSISTENCE "AVSystem persistence framework" ${MODULES_ENABLED})
+option(WITH_AVS_SCHED "AVSystem job scheduler" ${MODULES_ENABLED})
 option(WITH_AVS_COMPAT_THREADING "Use multithreading utility compatibility layer" ${MODULES_ENABLED})
 
 include(CMakeDependentOption)
@@ -433,8 +434,12 @@ if(WITH_AVS_LOG)
     add_module_with_include_dirs(NAME log)
 endif()
 
-if (WITH_AVS_RBTREE)
+if(WITH_AVS_RBTREE)
     add_module_with_include_dirs(NAME rbtree)
+endif()
+
+if(WITH_AVS_SCHED)
+    add_module_with_include_dirs(NAME sched)
 endif()
 
 cmake_dependent_option(WITH_AVS_COAP_MESSAGE_CACHE

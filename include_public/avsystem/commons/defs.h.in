@@ -87,12 +87,32 @@ typedef long ssize_t;
     (type)((uintptr_t)(ptr) \
             + ((alignment) - 1 \
                     - ((uintptr_t)(ptr) + ((alignment) - 1)) % (alignment)))
+
+#define VARARG_REST_IMPL_1__(Arg)
+#define VARARG_REST_IMPL_2_OR_MORE__(Arg, ...) , __VA_ARGS__
+#define VARARG_REST_IMPL_2__ VARARG_REST_IMPL_2_OR_MORE__
+#define VARARG_REST_IMPL_3__ VARARG_REST_IMPL_2_OR_MORE__
+#define VARARG_REST_IMPL_4__ VARARG_REST_IMPL_2_OR_MORE__
+#define VARARG_REST_IMPL_5__ VARARG_REST_IMPL_2_OR_MORE__
+#define VARARG_REST_IMPL_6__ VARARG_REST_IMPL_2_OR_MORE__
+#define VARARG_REST_IMPL_7__ VARARG_REST_IMPL_2_OR_MORE__
+#define VARARG_REST_IMPL_8__ VARARG_REST_IMPL_2_OR_MORE__
+#define VARARG_REST_IMPL_9__ VARARG_REST_IMPL_2_OR_MORE__
+#define VARARG_REST_IMPL_10__ VARARG_REST_IMPL_2_OR_MORE__
 /**@}*/
 
 /**
  * Returns the first argument from a variable argument pack.
  */
 #define AVS_VARARG0(...) AVS_VARARG0_INTERNAL__(__VA_ARGS__, _)
+
+/**
+ * Returns the variable argument pack without the first argument (but including
+ * the comma after it, if present).
+ */
+#define AVS_VARARG_REST(...) \
+        AVS_CONCAT(VARARG_REST_IMPL_, AVS_VARARG_LENGTH(__VA_ARGS__), __)( \
+                __VA_ARGS__)
 
 /**
  * Calculates the number of arguments to the macro. Works with up to 10
