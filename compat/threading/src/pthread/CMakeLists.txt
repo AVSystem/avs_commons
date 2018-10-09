@@ -18,10 +18,16 @@ if(NOT WITH_AVS_COMPAT_THREADING_PTHREAD)
     return()
 endif()
 
+set(CMAKE_REQUIRED_LIBRARIES ${CMAKE_THREAD_LIBS_INIT})
+check_function_exists(pthread_condattr_setclock HAVE_PTHREAD_CONDATTR_SETCLOCK)
+set(CMAKE_REQUIRED_LIBRARIES)
+
 add_library(avs_compat_threading_pthread STATIC
             ${COMPAT_THREADING_PUBLIC_HEADERS}
+            condvar.c
             mutex.c
-            init_once.c)
+            init_once.c
+            structs.h)
 target_include_directories(avs_compat_threading_pthread PUBLIC
                            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../../include_public>
                            $<INSTALL_INTERFACE:include>)

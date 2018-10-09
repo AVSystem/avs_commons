@@ -25,11 +25,9 @@
 
 #include <pthread.h>
 
-VISIBILITY_SOURCE_BEGIN
+#include "structs.h"
 
-struct avs_mutex {
-    pthread_mutex_t pthread_mutex;
-};
+VISIBILITY_SOURCE_BEGIN
 
 int avs_mutex_create(avs_mutex_t **out_mutex) {
     AVS_ASSERT(!*out_mutex, "possible attempt to reinitialize a mutex");
