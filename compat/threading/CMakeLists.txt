@@ -13,6 +13,7 @@
 # limitations under the License.
 
 set(COMPAT_THREADING_PUBLIC_HEADERS
+    ${CMAKE_CURRENT_SOURCE_DIR}/include_public/avsystem/commons/condvar.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include_public/avsystem/commons/mutex.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include_public/avsystem/commons/init_once.h)
 
@@ -37,6 +38,7 @@ if(NOT TARGET avs_compat_threading)
                                $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include_public>
                                $<INSTALL_INTERFACE:include>)
     avs_install_export(avs_compat_threading compat_threading)
+    target_link_libraries(avs_compat_threading PUBLIC avs_utils)
 endif()
 
 install(DIRECTORY include_public/

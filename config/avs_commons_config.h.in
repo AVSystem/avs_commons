@@ -21,6 +21,7 @@
 #cmakedefine HAVE_BACKTRACE_SYMBOLS
 #cmakedefine HAVE_POLL
 #cmakedefine HAVE_C11_STDATOMIC
+#cmakedefine HAVE_PTHREAD_CONDATTR_SETCLOCK
 
 #cmakedefine WITH_IPV4
 #cmakedefine WITH_IPV6
