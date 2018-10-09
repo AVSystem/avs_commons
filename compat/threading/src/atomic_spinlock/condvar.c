@@ -27,6 +27,15 @@
 
 VISIBILITY_SOURCE_BEGIN
 
+// Code partially inspired by:
+// https://github.com/yaahallo/nachos/blob/master/threads/Condition.java
+// The Nachos projects are the code examples for the Operating Systems course on
+// the University of California, see:
+// https://eng.ucmerced.edu/crf/engineering/cse-150-operating-systems/
+// Copyright (c) 1992-2001 The Regents of the University of California.
+// All rights reserved. Used under BSD license
+// (https://github.com/yaahallo/nachos/blob/master/README)
+
 int avs_condvar_create(avs_condvar_t **out_condvar) {
     AVS_ASSERT(!*out_condvar,
                "possible attempt to reinitialize a condition variable");
@@ -45,7 +54,8 @@ int avs_condvar_notify(avs_condvar_t *condvar) {
         // Note that this is a race condition with avs_condvar_wait() if
         // avs_condvar_notify() is called without the corresponding mutex
         // locked. We might end up missing some waiters that are just
-        // registering.
+        // registering. But notifying without holding the mutex is a bad
+        // practice anyway, and the consequences are relatively minor.
         waiter = (condvar_waiter_node_t *) atomic_load(&waiter->next);
     }
     return 0;

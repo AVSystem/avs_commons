@@ -18,6 +18,7 @@ set(COMPAT_THREADING_PUBLIC_HEADERS
     ${CMAKE_CURRENT_SOURCE_DIR}/include_public/avsystem/commons/init_once.h)
 
 set(COMPAT_THREADING_TEST_SOURCES
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/test/condvar.c
     ${CMAKE_CURRENT_SOURCE_DIR}/src/test/mutex.c
     ${CMAKE_CURRENT_SOURCE_DIR}/src/test/init_once.c)
 
