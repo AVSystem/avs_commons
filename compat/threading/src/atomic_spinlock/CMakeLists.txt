@@ -19,8 +19,10 @@ endif()
 
 add_library(avs_compat_threading_atomic_spinlock STATIC
             ${COMPAT_THREADING_PUBLIC_HEADERS}
+            condvar.c
             mutex.c
-            init_once.c)
+            init_once.c
+            structs.h)
 
 target_include_directories(avs_compat_threading_atomic_spinlock PUBLIC
                            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../../include_public>
