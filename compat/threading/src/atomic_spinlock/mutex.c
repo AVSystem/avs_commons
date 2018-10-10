@@ -31,15 +31,19 @@
 
 VISIBILITY_SOURCE_BEGIN
 
+void _avs_mutex_init(avs_mutex_t *mutex) {
+    // While it would make sense that a zero-allocated flag is in "clear"
+    // state, the documentation of atomic_flag is not explicit about it.
+    // We clear it manually just to be sure.
+    avs_mutex_unlock(mutex);
+}
+
 int avs_mutex_create(avs_mutex_t **out_mutex) {
     AVS_ASSERT(!*out_mutex, "possible attempt to reinitialize a mutex");
 
     *out_mutex = (struct avs_mutex *) avs_calloc(1, sizeof(struct avs_mutex));
     if (*out_mutex) {
-        // While it would make sense that a zero-allocated flag is in "clear"
-        // state, the documentation of atomic_flag is not explicit about it.
-        // We clear it manually just to be sure.
-        avs_mutex_unlock(*out_mutex);
+        _avs_mutex_init(*out_mutex);
         return 0;
     }
     return -1;
@@ -59,14 +63,18 @@ int avs_mutex_unlock(avs_mutex_t *mutex) {
     return 0;
 }
 
+void _avs_mutex_destroy(avs_mutex_t *mutex) {
+    (void) mutex;
+    AVS_ASSERT(atomic_flag_test_and_set(&mutex->locked) == 0,
+               "attempted to cleanup a locked mutex");
+}
+
 void avs_mutex_cleanup(avs_mutex_t **mutex) {
     if (!*mutex) {
         return;
     }
 
-    AVS_ASSERT(atomic_flag_test_and_set(&(*mutex)->locked) == 0,
-               "attempted to cleanup a locked mutex");
-
+    _avs_mutex_destroy(*mutex);
     avs_free(*mutex);
     *mutex = NULL;
 }

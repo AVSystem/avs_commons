@@ -41,75 +41,62 @@ int avs_condvar_create(avs_condvar_t **out_condvar) {
                "possible attempt to reinitialize a condition variable");
 
     *out_condvar = (avs_condvar_t *) avs_calloc(1, sizeof(avs_condvar_t));
-    return *out_condvar ? 0 : -1;
+    if (*out_condvar) {
+        _avs_mutex_init(&(*out_condvar)->waiters_mutex);
+        return 0;
+    }
+    return -1;
 }
 
 int avs_condvar_notify(avs_condvar_t *condvar) {
-    condvar_waiter_node_t *waiter =
-            (condvar_waiter_node_t *) atomic_load(&condvar->first_waiter);
+    avs_mutex_lock(&condvar->waiters_mutex);
+    condvar_waiter_node_t *waiter = condvar->first_waiter;
     while (waiter) {
         // wake up the waiter
         atomic_flag_clear(&waiter->waiting);
 
-        // Note that this is a race condition with avs_condvar_wait() if
-        // avs_condvar_notify() is called without the corresponding mutex
-        // locked. We might end up missing some waiters that are just
-        // registering. But notifying without holding the mutex is a bad
-        // practice anyway, and the consequences are relatively minor.
-        waiter = (condvar_waiter_node_t *) atomic_load(&waiter->next);
+        waiter = waiter->next;
     }
+    avs_mutex_unlock(&condvar->waiters_mutex);
     return 0;
 }
 
 static void insert_new_waiter(avs_condvar_t *condvar,
                               condvar_waiter_node_t *waiter) {
+    avs_mutex_lock(&condvar->waiters_mutex);
+
     // Initialize the waiting flag to true
     atomic_flag_clear(&waiter->waiting);
     atomic_flag_test_and_set(&waiter->waiting);
 
-    // Insert the  as the first element on the list
-    intptr_t previous_first_waiter = atomic_load(&condvar->first_waiter);
-    atomic_init(&waiter->next, previous_first_waiter);
-    bool exchange_success =
-            atomic_compare_exchange_strong(&condvar->first_waiter,
-                                           &previous_first_waiter,
-                                           (intptr_t) waiter);
-    AVS_ASSERT(exchange_success,
-               "waiter list modified during initialization - probably "
-               "attempted to call avs_condvar_wait() without mutex locked");
-    (void) exchange_success;
+    // Insert waiter as the first element on the list
+    waiter->next = condvar->first_waiter;
+    condvar->first_waiter = waiter;
+
+    avs_mutex_unlock(&condvar->waiters_mutex);
 }
 
 static void remove_waiter(avs_condvar_t *condvar,
                           condvar_waiter_node_t *waiter) {
+    avs_mutex_lock(&condvar->waiters_mutex);
+
     // the condvar waiter list might have been modified by another thread while
     // the mutex was unlocked, so find it before deleting
-    atomic_intptr_t *waiter_node_ptr = &condvar->first_waiter;
-    intptr_t waiter_node;
-    while (true) {
-        waiter_node = atomic_load(waiter_node_ptr);
-        if (waiter_node == (intptr_t) waiter || !waiter_node) {
-            break;
-        }
-        waiter_node_ptr = &((condvar_waiter_node_t *) waiter_node)->next;
+    condvar_waiter_node_t **waiter_node_ptr = &condvar->first_waiter;
+    while (*waiter_node_ptr && *waiter_node_ptr != waiter) {
+        waiter_node_ptr = &(*waiter_node_ptr)->next;
     }
-    AVS_ASSERT(waiter_node == (intptr_t) waiter,
+    AVS_ASSERT(*waiter_node_ptr == waiter,
                "waiter node inexplicably disappeared from condition variable");
     // detach it
-    bool exchange_success = atomic_compare_exchange_strong(
-            waiter_node_ptr, &waiter_node, atomic_load(&waiter->next));
-    AVS_ASSERT(exchange_success,
-               "waiter list modified during cleanup - probably incorrect use "
-               "of the mutex");
-    (void) exchange_success;
+    *waiter_node_ptr = (*waiter_node_ptr)->next;
+
+    avs_mutex_unlock(&condvar->waiters_mutex);
 }
 
 int avs_condvar_wait(avs_condvar_t *condvar,
                      avs_mutex_t *mutex,
                      avs_time_monotonic_t deadline) {
-    // condvar->first_waiter and every condvar_waiter_node_t::next is only
-    // written to when mutex is locked
-
     // Precondition: mutex is locked by the current thread
     // although we can't check if it's the current thread that locked it :(
     AVS_ASSERT(atomic_flag_test_and_set(&mutex->locked),
@@ -145,6 +132,7 @@ void avs_condvar_cleanup(avs_condvar_t **condvar) {
                "attempted to cleanup a condition variable some thread is "
                "waiting on");
 
+    _avs_mutex_destroy(&(*condvar)->waiters_mutex);
     avs_free(*condvar);
     *condvar = NULL;
 }

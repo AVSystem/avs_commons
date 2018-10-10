@@ -36,7 +36,7 @@ typedef struct avs_condvar avs_condvar_t;
 int avs_condvar_create(avs_condvar_t **out_condvar);
 
 /**
- * Signals occurrence of an event to another threat that is waiting on the same
+ * Signals occurrence of an event to another thread that is waiting on the same
  * object in @ref avs_condvar_wait. If more than one thread is waiting on the
  * same variable, all of them are notified.
  *

@@ -24,19 +24,25 @@
 
 VISIBILITY_PRIVATE_HEADER_BEGIN
 
-// we are not using AVS_LIST because we want to use stack allocation
-typedef struct {
-    volatile atomic_flag waiting;
-    atomic_intptr_t next;
-} condvar_waiter_node_t;
-
-struct avs_condvar {
-    atomic_intptr_t first_waiter;
-};
-
 struct avs_mutex {
     volatile atomic_flag locked;
 };
+
+// we are not using AVS_LIST because we want to use stack allocation
+typedef struct condvar_waiter_node_struct {
+    volatile atomic_flag waiting;
+    struct condvar_waiter_node_struct *next;
+} condvar_waiter_node_t;
+
+struct avs_condvar {
+    // first_waiter and every condvar_waiter_node_t::next are only accessed when
+    // waiters_mutex is locked
+    avs_mutex_t waiters_mutex;
+    condvar_waiter_node_t *first_waiter;
+};
+
+void _avs_mutex_init(avs_mutex_t *mutex);
+void _avs_mutex_destroy(avs_mutex_t *mutex);
 
 VISIBILITY_PRIVATE_HEADER_END
 
