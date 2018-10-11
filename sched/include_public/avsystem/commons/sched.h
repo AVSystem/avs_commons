@@ -84,7 +84,7 @@ int avs_sched_at_impl__(avs_sched_t *sched,
 #define AVS_SCHED_NOW(Sched, OutHandle, ...) \
         AVS_SCHED_AT(Sched, OutHandle, avs_time_monotonic_now(), __VA_ARGS__)
 
-avs_time_monotonic_t avs_sched_time(const avs_sched_handle_t handle);
+avs_time_monotonic_t avs_sched_time(avs_sched_handle_t *handle_ptr);
 
 int avs_sched_del(avs_sched_handle_t *handle_ptr);
 

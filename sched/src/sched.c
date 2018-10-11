@@ -26,6 +26,7 @@
 
 #ifdef WITH_SCHEDULER_THREAD_SAFE
 #include <avsystem/commons/condvar.h>
+#include <avsystem/commons/init_once.h>
 #include <avsystem/commons/mutex.h>
 #endif // WITH_SCHEDULER_THREAD_SAFE
 
@@ -63,9 +64,41 @@ struct avs_sched_struct {
     bool shut_down;
 };
 
+#ifdef WITH_SCHEDULER_THREAD_SAFE
+volatile avs_init_once_handle_t g_init_handle;
+avs_mutex_t *g_handle_access_mutex;
+#endif // WITH_SCHEDULER_THREAD_SAFE
+
 #define SCHED_LOG(Sched, Level, ...) \
         LOG(Level, "Scheduler \"%s\": " AVS_VARARG0(__VA_ARGS__), \
             (Sched)->name AVS_VARARG_REST(__VA_ARGS__))
+
+static int handle_ptr_exchange_value(avs_sched_handle_t *handle_ptr,
+                                     avs_sched_job_t **out_previous_value,
+                                     avs_sched_job_t *new_value) {
+    if (avs_mutex_lock(g_handle_access_mutex)) {
+        LOG(ERROR, "could not lock handle access mutex");
+        return -1;
+    }
+    if (out_previous_value) {
+        *out_previous_value = *handle_ptr;
+    }
+    *handle_ptr = new_value;
+    avs_mutex_unlock(g_handle_access_mutex);
+    return 0;
+}
+
+static int handle_ptr_access(avs_sched_handle_t *handle_ptr,
+                             void (*access_clb)(avs_sched_job_t *, void *),
+                             void *access_clb_arg) {
+    if (avs_mutex_lock(g_handle_access_mutex)) {
+        LOG(ERROR, "could not lock handle access mutex");
+        return -1;
+    }
+    access_clb(*handle_ptr, access_clb_arg);
+    avs_mutex_unlock(g_handle_access_mutex);
+    return 0;
+}
 
 #ifdef WITH_INTERNAL_LOGS
 
@@ -128,7 +161,16 @@ static const char *time_str_impl(char buf[static TIME_STR_MAX_LENGTH],
 
 #endif // WITH_INTERNAL_LOGS
 
+static int init_globals(void *dummy) {
+    (void) dummy;
+    return avs_mutex_create(&g_handle_access_mutex);
+}
+
 avs_sched_t *avs_sched_new(const char *name, void *data) {
+    if (avs_init_once(&g_init_handle, init_globals, NULL)) {
+        LOG(ERROR, "Could not initialize globals");
+        return NULL;
+    }
     avs_sched_t *sched = (avs_sched_t *) avs_calloc(1, sizeof(avs_sched_t));
     if (!sched) {
         LOG(ERROR, "Out of memory");
@@ -159,11 +201,15 @@ void avs_sched_cleanup(avs_sched_t **sched_ptr) {
 
     // execute any tasks remaining for now
     avs_sched_run(*sched_ptr);
+
+    // checking success here is not really possible
+    avs_mutex_lock(g_handle_access_mutex);
     AVS_LIST_CLEAR(&(*sched_ptr)->jobs) {
         if ((*sched_ptr)->jobs->handle_ptr) {
             *(*sched_ptr)->jobs->handle_ptr = NULL;
         }
     }
+    avs_mutex_unlock(g_handle_access_mutex);
 
     avs_mutex_cleanup(&(*sched_ptr)->mutex);
 
@@ -220,8 +266,13 @@ fetch_job_locked(avs_sched_t *sched, avs_time_monotonic_t deadline) {
             && avs_time_monotonic_before(sched->jobs->instant,
                                          deadline)) {
         if (sched->jobs->handle_ptr) {
-            assert(*sched->jobs->handle_ptr == sched->jobs);
-            *sched->jobs->handle_ptr = NULL;
+            avs_sched_job_t *value;
+            if (handle_ptr_exchange_value(sched->jobs->handle_ptr,
+                                          &value, NULL)) {
+                return NULL;
+            }
+            assert(value == sched->jobs);
+            sched->jobs->handle_ptr = NULL;
         }
         return AVS_LIST_DETACH(&sched->jobs);
     }
@@ -240,13 +291,13 @@ fetch_job_locking(avs_sched_t *sched, avs_time_monotonic_t deadline) {
     return result;
 }
 
-static void execute_job(AVS_LIST(avs_sched_job_t) job) {
+static void execute_job(avs_sched_t *sched, AVS_LIST(avs_sched_job_t) job) {
     // make sure that the task is detached
     assert(!AVS_LIST_NEXT(job));
 
-    SCHED_LOG(job->sched, TRACE, "executing job%s", JOB_LOG_ID(job));
+    SCHED_LOG(sched, TRACE, "executing job%s", JOB_LOG_ID(job));
 
-    job->clb(job->sched, job->clb_data);
+    job->clb(sched, job->clb_data);
     AVS_LIST_DELETE(&job);
 }
 
@@ -270,7 +321,7 @@ static avs_sched_t *fetch_child_locking(avs_sched_t *sched) {
 }
 
 static void reorganize_children_locked(avs_sched_t *sched) {
-    // fetch_child_*() loop reverses the order when moving from children_unsafe2
+    // fetch_child_*() loop reverses the order when moving from children
     // to children_executed, so reverse the order once again
     while (sched->children_executed) {
         AVS_LIST_INSERT(&sched->children,
@@ -298,7 +349,7 @@ int avs_sched_run(avs_sched_t *sched) {
     AVS_LIST(avs_sched_job_t) job = NULL;
     while ((job = fetch_job_locking(sched, now))) {
         assert(job->sched == sched);
-        execute_job(job);
+        execute_job(sched, job);
         ++tasks_executed;
     }
 
@@ -346,8 +397,6 @@ static int sched_at_locked(avs_sched_t *sched,
                            size_t clb_data_size) {
     assert(sched);
     assert(clb);
-    AVS_ASSERT((!out_handle || !*out_handle),
-               "Dangerous non-initialized out_handle");
     if (sched->shut_down) {
         if (log_file) {
             SCHED_LOG(sched, ERROR, "scheduler already shut down when "
@@ -371,10 +420,6 @@ static int sched_at_locked(avs_sched_t *sched,
     }
 
     job->sched = sched;
-    if (out_handle) {
-        job->handle_ptr = out_handle;
-        *out_handle = job;
-    }
     job->instant = instant;
 #ifdef WITH_INTERNAL_LOGS
     job->log_info.file = log_file;
@@ -391,6 +436,16 @@ static int sched_at_locked(avs_sched_t *sched,
         if (avs_time_monotonic_before(instant, (*insert_ptr)->instant)) {
             break;
         }
+    }
+    if (out_handle) {
+        job->handle_ptr = out_handle;
+        avs_sched_job_t *previous_value;
+        if (handle_ptr_exchange_value(out_handle,
+                                      &previous_value, job)) {
+            AVS_LIST_DELETE(&job);
+            return -1;
+        }
+        AVS_ASSERT(!previous_value, "Dangerous non-initialized out_handle");
     }
     AVS_LIST_INSERT(insert_ptr, job);
 #ifdef WITH_INTERNAL_TRACE
@@ -436,64 +491,130 @@ int avs_sched_at_impl__(avs_sched_t *sched,
     return result;
 }
 
-avs_time_monotonic_t avs_sched_time(const avs_sched_handle_t handle) {
-    assert(handle);
-    return handle->instant;
+static void get_job_instant(avs_sched_job_t *job, void *out_time_ptr_) {
+    if (job) {
+        *(avs_time_monotonic_t *) out_time_ptr_ = job->instant;
+    }
 }
 
-static void sched_del_locked(avs_sched_handle_t *handle_ptr) {
-    assert(handle_ptr && *handle_ptr && (*handle_ptr)->sched);
-    SCHED_LOG((*handle_ptr)->sched, TRACE,
-              "cancelling job%s", JOB_LOG_ID(*handle_ptr));
+avs_time_monotonic_t avs_sched_time(avs_sched_handle_t *handle_ptr) {
+    avs_time_monotonic_t result = AVS_TIME_MONOTONIC_INVALID;
+    if (handle_ptr) {
+        handle_ptr_access(handle_ptr, get_job_instant, &result);
+    }
+    return result;
+}
+
+typedef struct {
+    avs_sched_handle_t *const handle_ptr;
+    avs_sched_job_t *job;
+    avs_sched_t *sched;
+} handle_ops_init_data_t;
+
+static void fill_handle_ops_init_data(avs_sched_job_t *job, void *out_ptr) {
+    if (job) {
+        handle_ops_init_data_t *out_data = (handle_ops_init_data_t *) out_ptr;
+        AVS_ASSERT(out_data->handle_ptr == job->handle_ptr,
+                   "accessing job via non-original handle");
+        out_data->job = job;
+        out_data->sched = job->sched;
+    }
+}
+
+static int sched_del_locked(avs_sched_t *sched, avs_sched_job_t *job) {
+    assert(job);
+    assert(job->handle_ptr);
+    SCHED_LOG(sched, TRACE, "cancelling job%s", JOB_LOG_ID(job));
 
     AVS_LIST(avs_sched_job_t) *job_ptr = (AVS_LIST(avs_sched_job_t) *)
-            AVS_LIST_FIND_PTR(&(*handle_ptr)->sched->jobs, *handle_ptr);
-    AVS_ASSERT(job_ptr, "dangling handle detected");
-    AVS_ASSERT(handle_ptr == (*job_ptr)->handle_ptr,
-               "removing job via non-original handle");
+            AVS_LIST_FIND_PTR(sched->jobs, job);
+    if (!job_ptr) {
+#ifndef WITH_SCHEDULER_THREAD_SAFE
+        AVS_ASSERT(job_ptr, "dangling handle detected");
+#endif // WITH_SCHEDULER_THREAD_SAFE
+        // Job might have been removed by another thread, don't do anything
+        return 0;
+    }
+
+    avs_sched_job_t *previous_value;
+    if (handle_ptr_exchange_value(job->handle_ptr,
+                                  &previous_value, NULL)) {
+        return -1;
+    }
+    assert(previous_value == job);
 
     AVS_LIST_DELETE(job_ptr);
-    *handle_ptr = NULL;
+    return 0;
 }
 
 int avs_sched_del(avs_sched_handle_t *handle_ptr) {
-    if (!handle_ptr || !*handle_ptr) {
+    if (!handle_ptr) {
         return 0;
     }
-    avs_sched_t *sched = (*handle_ptr)->sched;
-    assert(sched);
-    if (avs_mutex_lock(sched->mutex)) {
-        SCHED_LOG(sched, ERROR, "could not lock mutex");
+    handle_ops_init_data_t data = {
+        .handle_ptr = handle_ptr
+    };
+    if (handle_ptr_access(handle_ptr,
+                          fill_handle_ops_init_data, &data)) {
         return -1;
-    } else {
-        sched_del_locked(handle_ptr);
-        avs_mutex_unlock(sched->mutex);
+    }
+    if (!data.job) {
         return 0;
     }
+    assert(data.sched);
+    int result = -1;
+    if (avs_mutex_lock(data.sched->mutex)) {
+        SCHED_LOG(data.sched, ERROR, "could not lock mutex");
+    } else {
+        result = sched_del_locked(data.sched, data.job);
+        avs_mutex_unlock(data.sched->mutex);
+    }
+    return result;
 }
 
-static void sched_release_locked(avs_sched_handle_t *handle_ptr) {
-    assert(handle_ptr && *handle_ptr && (*handle_ptr)->sched);
-    AVS_ASSERT(handle_ptr == (*handle_ptr)->handle_ptr,
-               "trying to release non-original handle");
+static int sched_release_locked(avs_sched_t *sched, avs_sched_job_t *job) {
+    AVS_LIST(avs_sched_job_t) *job_ptr = (AVS_LIST(avs_sched_job_t) *)
+            AVS_LIST_FIND_PTR(sched->jobs, job);
+    if (!job_ptr) {
+#ifndef WITH_SCHEDULER_THREAD_SAFE
+        AVS_ASSERT(job_ptr, "dangling handle detected");
+#endif // WITH_SCHEDULER_THREAD_SAFE
+        // Job might have been removed by another thread, don't do anything
+        return 0;
+    }
 
-    (*handle_ptr)->handle_ptr = NULL;
+    avs_sched_job_t *value;
+    if (handle_ptr_exchange_value(job->handle_ptr, &value, NULL)) {
+        return -1;
+    }
+    assert(value == job);
+    job->handle_ptr = NULL;
+    return 0;
 }
 
 int avs_sched_release(avs_sched_handle_t *handle_ptr) {
-    if (!handle_ptr || !*handle_ptr) {
+    if (!handle_ptr) {
         return 0;
     }
-    avs_sched_t *sched = (*handle_ptr)->sched;
-    assert(sched);
-    if (avs_mutex_lock(sched->mutex)) {
-        SCHED_LOG(sched, ERROR, "could not lock mutex");
+    handle_ops_init_data_t data = {
+        .handle_ptr = handle_ptr
+    };
+    if (handle_ptr_access(handle_ptr,
+                          fill_handle_ops_init_data, &data)) {
         return -1;
-    } else {
-        sched_release_locked(handle_ptr);
-        avs_mutex_unlock(sched->mutex);
+    }
+    if (!data.job) {
         return 0;
     }
+    assert(data.sched);
+    int result = -1;
+    if (avs_mutex_lock(data.sched->mutex)) {
+        SCHED_LOG(data.sched, ERROR, "could not lock mutex");
+    } else {
+        result = sched_release_locked(data.sched, data.job);
+        avs_mutex_unlock(data.sched->mutex);
+    }
+    return result;
 }
 
 static AVS_LIST(avs_sched_t *) *
