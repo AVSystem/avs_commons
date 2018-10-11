@@ -22,6 +22,8 @@ target_include_directories(avs_sched PUBLIC
                            $<INSTALL_INTERFACE:include>)
 target_link_libraries(avs_sched PUBLIC avs_commons_global_headers)
 
+cmake_dependent_option(WITH_SCHEDULER_THREAD_SAFE "Enable thread-safe locking of scheduler structures" ON WITH_AVS_COMPAT_THREADING OFF)
+
 avs_install_export(avs_sched sched)
 install(DIRECTORY include_public/
         COMPONENT sched

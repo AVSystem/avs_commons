@@ -50,7 +50,7 @@ static inline avs_time_duration_t avs_sched_time_to_next(avs_sched_t *sched) {
             ? AVS_TIME_DURATION_ZERO : result;
 }
 
-void avs_sched_run(avs_sched_t *sched);
+int avs_sched_run(avs_sched_t *sched);
 
 int avs_sched_at_impl__(avs_sched_t *sched,
                         avs_sched_handle_t *out_handle,
@@ -86,18 +86,18 @@ int avs_sched_at_impl__(avs_sched_t *sched,
 
 avs_time_monotonic_t avs_sched_time(const avs_sched_handle_t handle);
 
-void avs_sched_del(avs_sched_handle_t *handle_ptr);
+int avs_sched_del(avs_sched_handle_t *handle_ptr);
 
-void avs_sched_release(avs_sched_handle_t *handle_ptr);
+int avs_sched_release(avs_sched_handle_t *handle_ptr);
 
-bool avs_sched_is_descendant(avs_sched_t *ancestor,
-                             avs_sched_t *maybe_descendant);
+int avs_sched_is_descendant(avs_sched_t *ancestor,
+                            avs_sched_t *maybe_descendant);
 
 int avs_sched_register_child(avs_sched_t *parent, avs_sched_t *child);
 
 int avs_sched_unregister_child(avs_sched_t *parent, avs_sched_t *child);
 
-void avs_sched_leap_time(avs_sched_t *sched, avs_time_duration_t diff);
+int avs_sched_leap_time(avs_sched_t *sched, avs_time_duration_t diff);
 
 #ifdef	__cplusplus
 }
