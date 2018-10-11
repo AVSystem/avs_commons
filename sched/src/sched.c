@@ -25,9 +25,14 @@
 #include <avsystem/commons/utils.h>
 
 #ifdef WITH_SCHEDULER_THREAD_SAFE
-#include <avsystem/commons/condvar.h>
-#include <avsystem/commons/init_once.h>
-#include <avsystem/commons/mutex.h>
+#   include <avsystem/commons/condvar.h>
+#   include <avsystem/commons/init_once.h>
+#   include <avsystem/commons/mutex.h>
+#else // WITH_SCHEDULER_THREAD_SAFE
+#   define avs_mutex_create(...) 0
+#   define avs_mutex_cleanup(...) ((void) 0)
+#   define avs_mutex_lock(...) 0
+#   define avs_mutex_unlock(...) ((void) 0)
 #endif // WITH_SCHEDULER_THREAD_SAFE
 
 #define MODULE_NAME avs_sched
@@ -162,16 +167,21 @@ static const char *time_str_impl(char buf[static TIME_STR_MAX_LENGTH],
 
 #endif // WITH_INTERNAL_LOGS
 
+#ifdef WITH_SCHEDULER_THREAD_SAFE
 static int init_globals(void *dummy) {
     (void) dummy;
     return avs_mutex_create(&g_handle_access_mutex);
 }
+#endif // WITH_SCHEDULER_THREAD_SAFE
 
 avs_sched_t *avs_sched_new(const char *name, void *data) {
+#ifdef WITH_SCHEDULER_THREAD_SAFE
     if (avs_init_once(&g_init_handle, init_globals, NULL)) {
         LOG(ERROR, "Could not initialize globals");
         return NULL;
     }
+#endif // WITH_SCHEDULER_THREAD_SAFE
+    (void) name;
     avs_sched_t *sched = (avs_sched_t *) avs_calloc(1, sizeof(avs_sched_t));
     if (!sched) {
         LOG(ERROR, "Out of memory");
@@ -206,14 +216,15 @@ void avs_sched_cleanup(avs_sched_t **sched_ptr) {
     // execute any tasks remaining for now
     avs_sched_run(*sched_ptr);
 
-    // checking success here is not really possible
-    avs_mutex_lock(g_handle_access_mutex);
+    int mutex_lock_result = avs_mutex_lock(g_handle_access_mutex);
     AVS_LIST_CLEAR(&(*sched_ptr)->jobs) {
         if ((*sched_ptr)->jobs->handle_ptr) {
             *(*sched_ptr)->jobs->handle_ptr = NULL;
         }
     }
-    avs_mutex_unlock(g_handle_access_mutex);
+    if (!mutex_lock_result) {
+        avs_mutex_unlock(g_handle_access_mutex);
+    }
 
     avs_mutex_cleanup(&(*sched_ptr)->mutex);
 
@@ -399,6 +410,9 @@ static int sched_at_locked(avs_sched_t *sched,
                            avs_sched_clb_t *clb,
                            const void *clb_data,
                            size_t clb_data_size) {
+    (void) log_file;
+    (void) log_line;
+    (void) log_name;
     assert(sched);
     assert(clb);
     if (sched->shut_down) {
