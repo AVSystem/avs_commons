@@ -29,6 +29,9 @@
 #   include <avsystem/commons/init_once.h>
 #   include <avsystem/commons/mutex.h>
 #else // WITH_SCHEDULER_THREAD_SAFE
+#   define avs_condvar_create(...) 0
+#   define avs_condvar_cleanup(...) ((void) 0)
+#   define avs_condvar_notify_all(...) ((void) 0)
 #   define avs_mutex_create(...) 0
 #   define avs_mutex_cleanup(...) ((void) 0)
 #   define avs_mutex_lock(...) 0
@@ -205,6 +208,7 @@ avs_sched_t *avs_sched_new(const char *name, void *data) {
     return sched;
 }
 
+#ifdef WITH_SCHEDULER_THREAD_SAFE
 static int remove_ancestor_condvar_locking(avs_sched_t *sched,
                                            avs_condvar_t *ancestor_condvar);
 
@@ -235,6 +239,10 @@ static int remove_ancestor_condvar_locking(avs_sched_t *sched,
         return 0;
     }
 }
+#else // WITH_SCHEDULER_THREAD_SAFE
+#define remove_ancestor_condvar_locked(...) ((void) 0)
+#define remove_ancestor_condvar_locking(...) ((void) 0)
+#endif // WITH_SCHEDULER_THREAD_SAFE
 
 void avs_sched_cleanup(avs_sched_t **sched_ptr) {
     if (!sched_ptr || !*sched_ptr) {
@@ -316,20 +324,26 @@ avs_time_monotonic_t avs_sched_time_of_next(avs_sched_t *sched) {
 
 int avs_sched_wait_until_next(avs_sched_t *sched,
                               avs_time_monotonic_t deadline) {
+    int result = -1;
+    (void) deadline;
+#ifdef WITH_SCHEDULER_THREAD_SAFE
     if (avs_mutex_lock(sched->mutex)) {
         SCHED_LOG(sched, ERROR, "could not lock mutex");
         return -1;
     }
-    int result = 0;
-    while (!result) {
+    do {
         avs_time_monotonic_t time_of_next = sched_time_of_next_locked(sched);
         if (avs_time_monotonic_valid(time_of_next)
                 && !avs_time_monotonic_before(time_of_next, deadline)) {
             break;
         }
         result = avs_condvar_wait(sched->task_condvar, sched->mutex, deadline);
-    }
+    } while (!result);
     avs_mutex_unlock(sched->mutex);
+#endif // WITH_SCHEDULER_THREAD_SAFE
+    if (result < 0) {
+        SCHED_LOG(sched, ERROR, "could not wait on condition variable");
+    }
     return result;
 }
 
@@ -533,6 +547,7 @@ static int sched_at_locked(avs_sched_t *sched,
     return 0;
 }
 
+#ifdef WITH_SCHEDULER_THREAD_SAFE
 static void notify_task_changes_locked(avs_sched_t *sched) {
     avs_condvar_notify_all(sched->task_condvar);
     AVS_LIST(avs_condvar_t *) ancestor_task_condvar;
@@ -540,6 +555,9 @@ static void notify_task_changes_locked(avs_sched_t *sched) {
         avs_condvar_notify_all(*ancestor_task_condvar);
     }
 }
+#else // WITH_SCHEDULER_THREAD_SAFE
+#   define notify_task_changes_locked(...) ((void) 0)
+#endif // WITH_SCHEDULER_THREAD_SAFE
 
 int avs_sched_at_impl__(avs_sched_t *sched,
                         avs_sched_handle_t *out_handle,
@@ -747,7 +765,6 @@ int avs_sched_is_descendant(avs_sched_t *ancestor,
 int avs_sched_register_child(avs_sched_t *parent, avs_sched_t *child) {
     assert(parent);
     assert(child);
-    int result = -1;
     AVS_ASSERT(!avs_sched_is_descendant(child, parent),
                "Cycle found in the scheduler family tree");
 
@@ -755,23 +772,29 @@ int avs_sched_register_child(avs_sched_t *parent, avs_sched_t *child) {
         SCHED_LOG(parent, ERROR, "could not lock mutex");
         return -1;
     }
-    if (avs_mutex_lock(child->mutex)) {
-        SCHED_LOG(child, ERROR, "could not lock mutex");
-        goto unlock_parent;
-    }
 
-    if (child->ancestor_task_condvars) {
-        SCHED_LOG(child, ERROR, "already a descendant of some scheduler");
+    int result = -1;
+    AVS_LIST(avs_sched_t *) *append_ptr =
+            traverse_descendants_locked(parent, child);
+    if (*append_ptr) {
+        LOG(ERROR,
+            "Scheduler \"%s\" is already a descendant of scheduler \"%s\"",
+            child->name, parent->name);
     } else {
-        AVS_LIST(avs_sched_t *) *append_ptr =
-                traverse_descendants_locked(parent, child);
-        AVS_ASSERT(!*append_ptr, "Inconsistent scheduler family tree");
+        if (avs_mutex_lock(child->mutex)) {
+            SCHED_LOG(child, ERROR, "could not lock mutex");
+            goto unlock_parent;
+        }
         LOG(TRACE,
             "Registering scheduler \"%s\" as a child of scheduler \"%s\"",
             child->name, parent->name);
         AVS_LIST(avs_sched_t *) entry = AVS_LIST_NEW_ELEMENT(avs_sched_t *);
+#ifdef WITH_SCHEDULER_THREAD_SAFE
         AVS_LIST(avs_condvar_t *) ancestor_condvar_entry =
                 AVS_LIST_NEW_ELEMENT(avs_condvar_t *);
+#else // WITH_SCHEDULER_THREAD_SAFE
+        static const bool ancestor_condvar_entry = true;
+#endif // WITH_SCHEDULER_THREAD_SAFE
         if (!entry || !ancestor_condvar_entry) {
             LOG(ERROR, "Out of memory while trying to add scheduler \"%s\" as "
                        "a child of scheduler \"%s\"",
@@ -780,10 +803,12 @@ int avs_sched_register_child(avs_sched_t *parent, avs_sched_t *child) {
             AVS_LIST_DELETE(&ancestor_condvar_entry);
         } else {
             *entry = child;
-            *ancestor_condvar_entry = parent->task_condvar;
             AVS_LIST_INSERT(append_ptr, entry);
+#ifdef WITH_SCHEDULER_THREAD_SAFE
+            *ancestor_condvar_entry = parent->task_condvar;
             AVS_LIST_INSERT(&child->ancestor_task_condvars,
                             ancestor_condvar_entry);
+#endif // WITH_SCHEDULER_THREAD_SAFE
             result = 0;
         }
     }
