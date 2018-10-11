@@ -59,6 +59,7 @@ struct avs_sched_struct {
     avs_mutex_t *mutex;
 #endif // WITH_SCHEDULER_THREAD_SAFE
     AVS_LIST(avs_sched_job_t) jobs;
+    avs_sched_t *parent;
     AVS_LIST(avs_sched_t *) children;
     AVS_LIST(avs_sched_t *) children_executed;
     bool shut_down;
@@ -195,9 +196,12 @@ void avs_sched_cleanup(avs_sched_t **sched_ptr) {
     SCHED_LOG(*sched_ptr, DEBUG, "shutting down");
     (*sched_ptr)->shut_down = true;
 
-    AVS_LIST_CLEAR(&(*sched_ptr)->children);
     AVS_ASSERT(!(*sched_ptr)->children_executed,
                "Attempting to clean up scheduler that is being run");
+    AVS_LIST_CLEAR(&(*sched_ptr)->children);
+    if ((*sched_ptr)->parent) {
+        avs_sched_unregister_child((*sched_ptr)->parent, *sched_ptr);
+    }
 
     // execute any tasks remaining for now
     avs_sched_run(*sched_ptr);
@@ -660,6 +664,7 @@ int avs_sched_is_descendant(avs_sched_t *ancestor,
 int avs_sched_register_child(avs_sched_t *parent, avs_sched_t *child) {
     assert(parent);
     assert(child);
+    int result = -1;
     AVS_ASSERT(!avs_sched_is_descendant(child, parent),
                "Cycle found in the scheduler family tree");
 
@@ -667,15 +672,19 @@ int avs_sched_register_child(avs_sched_t *parent, avs_sched_t *child) {
         SCHED_LOG(parent, ERROR, "could not lock mutex");
         return -1;
     }
+    if (avs_mutex_lock(child->mutex)) {
+        SCHED_LOG(child, ERROR, "could not lock mutex");
+        goto unlock_parent;
+    }
 
-    int result = -1;
-    AVS_LIST(avs_sched_t *) *append_ptr =
-            traverse_descendants_locked(parent, child);
-    if (*append_ptr) {
+    if (child->parent) {
         LOG(ERROR,
             "Scheduler \"%s\" is already a descendant of scheduler \"%s\"",
-            child->name, parent->name);
+            child->name, child->parent->name);
     } else {
+        AVS_LIST(avs_sched_t *) *append_ptr =
+                traverse_descendants_locked(parent, child);
+        AVS_ASSERT(!*append_ptr, "Inconsistent scheduler family tree");
         LOG(TRACE,
             "Registering scheduler \"%s\" as a child of scheduler \"%s\"",
             child->name, parent->name);
@@ -686,18 +695,27 @@ int avs_sched_register_child(avs_sched_t *parent, avs_sched_t *child) {
                 child->name, parent->name);
         } else {
             *entry = child;
+            child->parent = parent;
             AVS_LIST_INSERT(append_ptr, entry);
             result = 0;
         }
     }
 
+    avs_mutex_unlock(child->mutex);
+unlock_parent:
     avs_mutex_unlock(parent->mutex);
     return result;
 }
 
-static int unregister_child_locked(avs_sched_t *parent, avs_sched_t *child) {
+int avs_sched_unregister_child(avs_sched_t *parent, avs_sched_t *child) {
     assert(parent);
     assert(child);
+    if (avs_mutex_lock(parent->mutex)) {
+        SCHED_LOG(parent, ERROR, "could not lock mutex");
+        return -1;
+    }
+
+    int result = -1;
     AVS_LIST(avs_sched_t *) *child_ptr = NULL;
     AVS_LIST_FOREACH_PTR(child_ptr, &parent->children) {
         if (**child_ptr == child) {
@@ -717,25 +735,22 @@ static int unregister_child_locked(avs_sched_t *parent, avs_sched_t *child) {
         LOG(ERROR,
             "Scheduler \"%s\" is not a (direct) child of scheduler \"%s\"",
             child->name, parent->name);
-        return -1;
-    }
-
-    LOG(TRACE, "Unregistering scheduler \"%s\" as a child of scheduler \"%s\"",
-        child->name, parent->name);
-    AVS_LIST_DELETE(child_ptr);
-    return 0;
-}
-
-int avs_sched_unregister_child(avs_sched_t *parent, avs_sched_t *child) {
-    assert(parent);
-    assert(child);
-    int result = -1;
-    if (avs_mutex_lock(parent->mutex)) {
-        SCHED_LOG(parent, ERROR, "could not lock mutex");
     } else {
-        result = unregister_child_locked(parent, child);
-        avs_mutex_unlock(parent->mutex);
+        LOG(TRACE,
+            "Unregistering scheduler \"%s\" as a child of scheduler \"%s\"",
+            child->name, parent->name);
+        if (avs_mutex_lock(child->mutex)) {
+            SCHED_LOG(child, ERROR, "could not lock mutex");
+        } else {
+            AVS_ASSERT(child->parent == parent,
+                       "Inconsistent scheduler family tree");
+            child->parent = NULL;
+            AVS_LIST_DELETE(child_ptr);
+            avs_mutex_unlock(child->mutex);
+            result = 0;
+        }
     }
+    avs_mutex_unlock(parent->mutex);
     return result;
 }
 
