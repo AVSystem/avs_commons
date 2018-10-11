@@ -62,9 +62,10 @@ struct avs_sched_struct {
     void *data;
 #ifdef WITH_SCHEDULER_THREAD_SAFE
     avs_mutex_t *mutex;
+    avs_condvar_t *task_condvar;
+    AVS_LIST(avs_condvar_t *) ancestor_task_condvars;
 #endif // WITH_SCHEDULER_THREAD_SAFE
     AVS_LIST(avs_sched_job_t) jobs;
-    avs_sched_t *parent;
     AVS_LIST(avs_sched_t *) children;
     AVS_LIST(avs_sched_t *) children_executed;
     bool shut_down;
@@ -198,6 +199,37 @@ avs_sched_t *avs_sched_new(const char *name, void *data) {
     return sched;
 }
 
+static int remove_ancestor_condvar_locking(avs_sched_t *sched,
+                                           avs_condvar_t *ancestor_condvar);
+
+static void remove_ancestor_condvar_locked(avs_sched_t *sched,
+                                           avs_condvar_t *ancestor_condvar) {
+    assert(sched);
+    AVS_LIST(avs_condvar_t *) *element_ptr;
+    AVS_LIST_FOREACH_PTR(element_ptr, &sched->ancestor_task_condvars) {
+        if (**element_ptr == ancestor_condvar) {
+            AVS_LIST_DELETE(element_ptr);
+            AVS_LIST(avs_sched_t *) child;
+            AVS_LIST_FOREACH(child, sched->children) {
+                remove_ancestor_condvar_locking(*child, ancestor_condvar);
+            }
+            break;
+        }
+    }
+}
+
+static int remove_ancestor_condvar_locking(avs_sched_t *sched,
+                                           avs_condvar_t *ancestor_condvar) {
+    if (avs_mutex_lock(sched->mutex)) {
+        SCHED_LOG(sched, ERROR, "could not lock mutex");
+        return -1;
+    } else {
+        remove_ancestor_condvar_locked(sched, ancestor_condvar);
+        avs_mutex_unlock(sched->mutex);
+        return 0;
+    }
+}
+
 void avs_sched_cleanup(avs_sched_t **sched_ptr) {
     if (!sched_ptr || !*sched_ptr) {
         return;
@@ -208,9 +240,9 @@ void avs_sched_cleanup(avs_sched_t **sched_ptr) {
 
     AVS_ASSERT(!(*sched_ptr)->children_executed,
                "Attempting to clean up scheduler that is being run");
-    AVS_LIST_CLEAR(&(*sched_ptr)->children);
-    if ((*sched_ptr)->parent) {
-        avs_sched_unregister_child((*sched_ptr)->parent, *sched_ptr);
+    AVS_LIST_CLEAR(&(*sched_ptr)->children) {
+        remove_ancestor_condvar_locking(*(*sched_ptr)->children,
+                                        (*sched_ptr)->task_condvar);
     }
 
     // execute any tasks remaining for now
@@ -691,10 +723,8 @@ int avs_sched_register_child(avs_sched_t *parent, avs_sched_t *child) {
         goto unlock_parent;
     }
 
-    if (child->parent) {
-        LOG(ERROR,
-            "Scheduler \"%s\" is already a descendant of scheduler \"%s\"",
-            child->name, child->parent->name);
+    if (child->ancestor_task_condvars) {
+        SCHED_LOG(child, ERROR, "already a descendant of some scheduler");
     } else {
         AVS_LIST(avs_sched_t *) *append_ptr =
                 traverse_descendants_locked(parent, child);
@@ -703,14 +733,20 @@ int avs_sched_register_child(avs_sched_t *parent, avs_sched_t *child) {
             "Registering scheduler \"%s\" as a child of scheduler \"%s\"",
             child->name, parent->name);
         AVS_LIST(avs_sched_t *) entry = AVS_LIST_NEW_ELEMENT(avs_sched_t *);
-        if (!entry) {
+        AVS_LIST(avs_condvar_t *) ancestor_condvar_entry =
+                AVS_LIST_NEW_ELEMENT(avs_condvar_t *);
+        if (!entry || !ancestor_condvar_entry) {
             LOG(ERROR, "Out of memory while trying to add scheduler \"%s\" as "
                        "a child of scheduler \"%s\"",
                 child->name, parent->name);
+            AVS_LIST_DELETE(&entry);
+            AVS_LIST_DELETE(&ancestor_condvar_entry);
         } else {
             *entry = child;
-            child->parent = parent;
+            *ancestor_condvar_entry = parent->task_condvar;
             AVS_LIST_INSERT(append_ptr, entry);
+            AVS_LIST_INSERT(&child->ancestor_task_condvars,
+                            ancestor_condvar_entry);
             result = 0;
         }
     }
@@ -756,9 +792,7 @@ int avs_sched_unregister_child(avs_sched_t *parent, avs_sched_t *child) {
         if (avs_mutex_lock(child->mutex)) {
             SCHED_LOG(child, ERROR, "could not lock mutex");
         } else {
-            AVS_ASSERT(child->parent == parent,
-                       "Inconsistent scheduler family tree");
-            child->parent = NULL;
+            remove_ancestor_condvar_locked(child, parent->task_condvar);
             AVS_LIST_DELETE(child_ptr);
             avs_mutex_unlock(child->mutex);
             result = 0;
