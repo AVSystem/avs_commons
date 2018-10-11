@@ -75,8 +75,8 @@ struct avs_sched_struct {
 };
 
 #ifdef WITH_SCHEDULER_THREAD_SAFE
-volatile avs_init_once_handle_t g_init_handle;
-avs_mutex_t *g_handle_access_mutex;
+static volatile avs_init_once_handle_t g_init_handle;
+static avs_mutex_t *g_handle_access_mutex;
 #endif // WITH_SCHEDULER_THREAD_SAFE
 
 #define SCHED_LOG(Sched, Level, ...) \
@@ -331,14 +331,24 @@ int avs_sched_wait_until_next(avs_sched_t *sched,
         SCHED_LOG(sched, ERROR, "could not lock mutex");
         return -1;
     }
+    avs_time_monotonic_t time_of_next;
     do {
-        avs_time_monotonic_t time_of_next = sched_time_of_next_locked(sched);
+        time_of_next = sched_time_of_next_locked(sched);
+        avs_time_monotonic_t local_deadline = deadline;
         if (avs_time_monotonic_valid(time_of_next)
-                && !avs_time_monotonic_before(time_of_next, deadline)) {
-            break;
+                && !avs_time_monotonic_before(deadline, time_of_next)) {
+            local_deadline = time_of_next;
         }
-        result = avs_condvar_wait(sched->task_condvar, sched->mutex, deadline);
+        result = avs_condvar_wait(sched->task_condvar, sched->mutex,
+                                  local_deadline);
     } while (!result);
+    if (result >= 0) {
+        time_of_next = sched_time_of_next_locked(sched);
+        result = ((avs_time_monotonic_valid(time_of_next)
+                        && !avs_time_monotonic_before(avs_time_monotonic_now(),
+                                                      time_of_next))
+                ? 0 : AVS_CONDVAR_TIMEOUT);
+    }
     avs_mutex_unlock(sched->mutex);
 #endif // WITH_SCHEDULER_THREAD_SAFE
     if (result < 0) {
@@ -632,7 +642,7 @@ static int sched_del_locked(avs_sched_t *sched, avs_sched_job_t *job) {
     SCHED_LOG(sched, TRACE, "cancelling job%s", JOB_LOG_ID(job));
 
     AVS_LIST(avs_sched_job_t) *job_ptr = (AVS_LIST(avs_sched_job_t) *)
-            AVS_LIST_FIND_PTR(sched->jobs, job);
+            AVS_LIST_FIND_PTR(&sched->jobs, job);
     if (!job_ptr) {
 #ifndef WITH_SCHEDULER_THREAD_SAFE
         AVS_ASSERT(job_ptr, "dangling handle detected");
@@ -679,7 +689,7 @@ int avs_sched_del(avs_sched_handle_t *handle_ptr) {
 
 static int sched_release_locked(avs_sched_t *sched, avs_sched_job_t *job) {
     AVS_LIST(avs_sched_job_t) *job_ptr = (AVS_LIST(avs_sched_job_t) *)
-            AVS_LIST_FIND_PTR(sched->jobs, job);
+            AVS_LIST_FIND_PTR(&sched->jobs, job);
     if (!job_ptr) {
 #ifndef WITH_SCHEDULER_THREAD_SAFE
         AVS_ASSERT(job_ptr, "dangling handle detected");
@@ -867,9 +877,9 @@ int avs_sched_unregister_child(avs_sched_t *parent, avs_sched_t *child) {
     return result;
 }
 
-int sched_leap_time_locking(avs_sched_t *sched,
-                            avs_time_duration_t diff,
-                            bool notify_ancestors);
+static int sched_leap_time_locking(avs_sched_t *sched,
+                                   avs_time_duration_t diff,
+                                   bool notify_ancestors);
 
 static int leap_time_locked(avs_sched_t *sched, avs_time_duration_t diff) {
     assert(sched);
@@ -894,9 +904,9 @@ static int leap_time_locked(avs_sched_t *sched, avs_time_duration_t diff) {
     return 0;
 }
 
-int sched_leap_time_locking(avs_sched_t *sched,
-                            avs_time_duration_t diff,
-                            bool notify_ancestors) {
+static int sched_leap_time_locking(avs_sched_t *sched,
+                                   avs_time_duration_t diff,
+                                   bool notify_ancestors) {
     assert(sched);
     int result = -1;
     if (avs_mutex_lock(sched->mutex)) {
