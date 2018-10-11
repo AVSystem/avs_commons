@@ -50,6 +50,16 @@ static inline avs_time_duration_t avs_sched_time_to_next(avs_sched_t *sched) {
             ? AVS_TIME_DURATION_ZERO : result;
 }
 
+int avs_sched_wait_until_next(avs_sched_t *sched,
+                              avs_time_monotonic_t deadline);
+
+static inline int avs_sched_wait_for_next(avs_sched_t *sched,
+                                          avs_time_duration_t timeout) {
+    return avs_sched_wait_until_next(
+            sched,
+            avs_time_monotonic_add(avs_time_monotonic_now(), timeout));
+}
+
 int avs_sched_run(avs_sched_t *sched);
 
 int avs_sched_at_impl__(avs_sched_t *sched,

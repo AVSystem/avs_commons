@@ -193,6 +193,12 @@ avs_sched_t *avs_sched_new(const char *name, void *data) {
         avs_free(sched);
         return NULL;
     }
+    if (avs_condvar_create(&sched->task_condvar)) {
+        LOG(ERROR, "Could not create condition variable for task notification");
+        avs_mutex_cleanup(&sched->mutex);
+        avs_free(sched);
+        return NULL;
+    }
     sched->data = data;
     LOG(DEBUG, "Scheduler \"%s\" created, data == %p",
         (sched->name = (name ? name : "(unknown)")), data);
@@ -258,6 +264,7 @@ void avs_sched_cleanup(avs_sched_t **sched_ptr) {
         avs_mutex_unlock(g_handle_access_mutex);
     }
 
+    avs_condvar_cleanup(&(*sched_ptr)->task_condvar);
     avs_mutex_cleanup(&(*sched_ptr)->mutex);
 
     SCHED_LOG(*sched_ptr, DEBUG, "shut down");
@@ -304,6 +311,25 @@ avs_time_monotonic_t avs_sched_time_of_next(avs_sched_t *sched) {
         result = sched_time_of_next_locked(sched);
         avs_mutex_unlock(sched->mutex);
     }
+    return result;
+}
+
+int avs_sched_wait_until_next(avs_sched_t *sched,
+                              avs_time_monotonic_t deadline) {
+    if (avs_mutex_lock(sched->mutex)) {
+        SCHED_LOG(sched, ERROR, "could not lock mutex");
+        return -1;
+    }
+    int result = 0;
+    while (!result) {
+        avs_time_monotonic_t time_of_next = sched_time_of_next_locked(sched);
+        if (avs_time_monotonic_valid(time_of_next)
+                && !avs_time_monotonic_before(time_of_next, deadline)) {
+            break;
+        }
+        result = avs_condvar_wait(sched->task_condvar, sched->mutex, deadline);
+    }
+    avs_mutex_unlock(sched->mutex);
     return result;
 }
 
@@ -507,6 +533,14 @@ static int sched_at_locked(avs_sched_t *sched,
     return 0;
 }
 
+static void notify_task_changes_locked(avs_sched_t *sched) {
+    avs_condvar_notify_all(sched->task_condvar);
+    AVS_LIST(avs_condvar_t *) ancestor_task_condvar;
+    AVS_LIST_FOREACH(ancestor_task_condvar, sched->ancestor_task_condvars) {
+        avs_condvar_notify_all(*ancestor_task_condvar);
+    }
+}
+
 int avs_sched_at_impl__(avs_sched_t *sched,
                         avs_sched_handle_t *out_handle,
                         avs_time_monotonic_t instant,
@@ -534,8 +568,11 @@ int avs_sched_at_impl__(avs_sched_t *sched,
     if (avs_mutex_lock(sched->mutex)) {
         SCHED_LOG(sched, ERROR, "could not lock mutex");
     } else {
-        result = sched_at_locked(sched, out_handle, instant, log_file, log_line,
-                                 log_name, clb, clb_data, clb_data_size);
+        if (!(result = sched_at_locked(sched, out_handle, instant,
+                                       log_file, log_line, log_name,
+                                       clb, clb_data, clb_data_size))) {
+            notify_task_changes_locked(sched);
+        }
         avs_mutex_unlock(sched->mutex);
     }
     return result;
@@ -753,6 +790,9 @@ int avs_sched_register_child(avs_sched_t *parent, avs_sched_t *child) {
 
     avs_mutex_unlock(child->mutex);
 unlock_parent:
+    if (!result) {
+        notify_task_changes_locked(parent);
+    }
     avs_mutex_unlock(parent->mutex);
     return result;
 }
@@ -802,6 +842,10 @@ int avs_sched_unregister_child(avs_sched_t *parent, avs_sched_t *child) {
     return result;
 }
 
+int sched_leap_time_locking(avs_sched_t *sched,
+                            avs_time_duration_t diff,
+                            bool notify_ancestors);
+
 static int leap_time_locked(avs_sched_t *sched, avs_time_duration_t diff) {
     assert(sched);
     AVS_ASSERT(!sched->children_executed,
@@ -817,7 +861,7 @@ static int leap_time_locked(avs_sched_t *sched, avs_time_duration_t diff) {
 
     AVS_LIST(avs_sched_t *) child;
     AVS_LIST_FOREACH(child, sched->children) {
-        int result = avs_sched_leap_time(*child, diff);
+        int result = sched_leap_time_locking(*child, diff, false);
         if (result) {
             return result;
         }
@@ -825,16 +869,27 @@ static int leap_time_locked(avs_sched_t *sched, avs_time_duration_t diff) {
     return 0;
 }
 
-int avs_sched_leap_time(avs_sched_t *sched, avs_time_duration_t diff) {
+int sched_leap_time_locking(avs_sched_t *sched,
+                            avs_time_duration_t diff,
+                            bool notify_ancestors) {
     assert(sched);
     int result = -1;
     if (avs_mutex_lock(sched->mutex)) {
         SCHED_LOG(sched, ERROR, "could not lock mutex");
     } else {
         result = leap_time_locked(sched, diff);
+        if (notify_ancestors) {
+            notify_task_changes_locked(sched);
+        } else {
+            avs_condvar_notify_all(sched->task_condvar);
+        }
         avs_mutex_unlock(sched->mutex);
     }
     return result;
+}
+
+int avs_sched_leap_time(avs_sched_t *sched, avs_time_duration_t diff) {
+    return sched_leap_time_locking(sched, diff, true);
 }
 
 #ifdef AVS_UNIT_TESTING
