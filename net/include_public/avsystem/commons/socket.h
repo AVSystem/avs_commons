@@ -65,6 +65,7 @@ struct avs_net_abstract_socket_struct;
  * Type for socket abstraction object.
  */
 typedef struct avs_net_abstract_socket_struct avs_net_abstract_socket_t;
+typedef avs_net_abstract_socket_t avs_socket_t;
 
 /**
  * This is a type of data used for binding socket to a specific network

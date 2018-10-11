@@ -53,6 +53,7 @@ extern "C" {
  */
 struct avs_stream_abstract_struct;
 typedef struct avs_stream_abstract_struct avs_stream_abstract_t;
+typedef avs_stream_abstract_t avs_stream_t;
 
 /**
  * Writes data to the stream by calling @ref avs_stream_vtable_t#write_some
