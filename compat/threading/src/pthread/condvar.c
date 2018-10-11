@@ -59,7 +59,7 @@ int avs_condvar_create(avs_condvar_t **out_condvar) {
     if (attr_ptr) {
         pthread_condattr_destroy(attr_ptr);
     }
-    if (*out_condvar && result) {
+    if (result) {
         avs_free(*out_condvar);
         *out_condvar = NULL;
     }

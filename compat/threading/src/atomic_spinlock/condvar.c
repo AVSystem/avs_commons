@@ -29,7 +29,7 @@ VISIBILITY_SOURCE_BEGIN
 
 // Code partially inspired by:
 // https://github.com/yaahallo/nachos/blob/master/threads/Condition.java
-// The Nachos projects are the code examples for the Operating Systems course on
+// The Nachos project is the code examples for the Operating Systems course on
 // the University of California, see:
 // https://eng.ucmerced.edu/crf/engineering/cse-150-operating-systems/
 // Copyright (c) 1992-2001 The Regents of the University of California.
@@ -80,8 +80,6 @@ static void remove_waiter(avs_condvar_t *condvar,
                           condvar_waiter_node_t *waiter) {
     avs_mutex_lock(&condvar->waiters_mutex);
 
-    // the condvar waiter list might have been modified by another thread while
-    // the mutex was unlocked, so find it before deleting
     condvar_waiter_node_t **waiter_node_ptr = &condvar->first_waiter;
     while (*waiter_node_ptr && *waiter_node_ptr != waiter) {
         waiter_node_ptr = &(*waiter_node_ptr)->next;
@@ -120,7 +118,7 @@ int avs_condvar_wait(avs_condvar_t *condvar,
 
     // flag_value == 0 -> it means it was cleared, so we've been woken up
     // flag_value == 1 -> it mean we haven't, so timeout occurred
-    return flag_value;
+    return flag_value ? AVS_CONDVAR_TIMEOUT : 0;
 }
 
 void avs_condvar_cleanup(avs_condvar_t **condvar) {

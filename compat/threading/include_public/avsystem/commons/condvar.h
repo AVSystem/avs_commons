@@ -23,6 +23,9 @@
 /** A condition variable object. */
 typedef struct avs_condvar avs_condvar_t;
 
+/** Value returned from @ref avs_condvar_wait when it times out. */
+#define AVS_CONDVAR_TIMEOUT 1
+
 /**
  * Creates a condition variable object.
  *
@@ -68,7 +71,7 @@ int avs_condvar_notify(avs_condvar_t *condvar);
  *                 indefinite.
  *
  * @returns @li 0 if event occurred
- *          @li 1 if timeout elapsed
+ *          @li @ref AVS_CONDVAR_TIMEOUT (1) if timeout elapsed
  *          @li Negative value in case of error
  */
 int avs_condvar_wait(avs_condvar_t *condvar,
