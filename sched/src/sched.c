@@ -116,24 +116,23 @@ static int handle_ptr_access(avs_sched_handle_t *handle_ptr,
 
 static const char *
 job_log_id_impl(char buf[static JOB_LOG_ID_MAX_LENGTH],
-                avs_sched_job_t *job) {
+                const char *file,
+                unsigned line,
+                const char *name) {
     char *ptr = buf;
     char *limit = buf + JOB_LOG_ID_MAX_LENGTH;
-    if (job->log_info.name) {
+    if (name) {
         int result = avs_simple_snprintf(ptr, (size_t) (limit - ptr),
-                                         " \"%s\"", job->log_info.name);
+                                         " \"%s\"", name);
         if (result < 0) {
             goto finish;
         } else {
             ptr += result;
         }
     }
-    if (job->log_info.file && limit - ptr >= 4) {
-        *ptr++ = ' ';
-        *ptr++ = '(';
-        int result = avs_simple_snprintf(
-                ptr, (size_t) (limit - ptr - 1),
-                "%s:%u", job->log_info.file, job->log_info.line);
+    if (file && limit - ptr >= 4) {
+        int result = avs_simple_snprintf(ptr, (size_t) (limit - ptr - 1),
+                                         " (%s:%u", file, line);
         if (result < 0) {
             ptr = limit - 2;
         } else {
@@ -146,8 +145,13 @@ finish:
     return buf;
 }
 
+#   define JOB_LOG_ID_EXPLICIT(File, Line, Name) \
+        job_log_id_impl(&(char[JOB_LOG_ID_MAX_LENGTH]) { "" }[0], \
+                        (File), (Line), (Name))
+
 #   define JOB_LOG_ID(Job) \
-        job_log_id_impl(&(char[JOB_LOG_ID_MAX_LENGTH]) { "" }[0], (Job))
+        JOB_LOG_ID_EXPLICIT((Job)->log_info.file, (Job)->log_info.line, \
+                            (Job)->log_info.name)
 
 #   define TIME_STR_MAX_LENGTH 32
 
@@ -497,18 +501,11 @@ static int sched_at_locked(avs_sched_t *sched,
     (void) log_name;
     assert(sched);
     assert(clb);
+    assert(avs_time_monotonic_valid(instant));
     if (sched->shut_down) {
-        if (log_file) {
-            SCHED_LOG(sched, ERROR, "scheduler already shut down when "
-                                    "attempting to schedule%s%s%s%s:%u%s",
-                      log_name ? " \"" : "", log_name ? log_name : "",
-                      log_name ? "\" (" : " from ", log_file, log_line,
-                      log_name ? ")" : "");
-        } else {
-            SCHED_LOG(sched, ERROR, "scheduler already shut down%s%s%s",
-                      log_name ? " when attempting to schedule \"" : "",
-                      log_name ? log_name : "", log_name ? "\"" : "");
-        }
+        SCHED_LOG(sched, ERROR, "scheduler already shut down when attempting "
+                                "to schedule%s",
+                  JOB_LOG_ID_EXPLICIT(log_file, log_line, log_name));
         return -1;
     }
 
@@ -582,13 +579,15 @@ int avs_sched_at_impl__(avs_sched_t *sched,
     AVS_ASSERT((!out_handle || !*out_handle),
                "Dangerous non-initialized out_handle");
     if (!clb) {
-        if (log_file) {
-            SCHED_LOG(sched, ERROR, "attempted to schedule a null callback "
-                                    "pointer from %s:%u", log_file, log_line);
-        } else {
-            SCHED_LOG(sched, ERROR,
-                      "attempted to schedule a null callback pointer");
-        }
+        SCHED_LOG(sched, ERROR,
+                  "attempted to schedule a null callback pointer%s",
+                  JOB_LOG_ID_EXPLICIT(log_file, log_line, log_name));
+        return -1;
+    }
+    if (!avs_time_monotonic_valid(instant)) {
+        SCHED_LOG(sched, ERROR,
+                  "attempted to schedule job%s at an invalid time point",
+                  JOB_LOG_ID_EXPLICIT(log_file, log_line, log_name));
         return -1;
     }
 
