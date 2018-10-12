@@ -91,7 +91,7 @@ endmacro()
 macro(avs_find_library EXPR)
     avs_eval(${EXPR})
 
-    set_property(GLOBAL APPEND PROPERTY AVS_LIBRARY_FIND_ROUTINES "
+    set_property(GLOBAL APPEND_STRING PROPERTY AVS_LIBRARY_FIND_ROUTINES "
 
 ${EXPR}")
 endmacro()
