@@ -182,6 +182,14 @@ static int init_globals(void *dummy) {
 }
 #endif // WITH_SCHEDULER_THREAD_SAFE
 
+void _avs_sched_cleanup_global_state(void);
+void _avs_sched_cleanup_global_state(void) {
+#ifdef WITH_SCHEDULER_THREAD_SAFE
+    avs_mutex_cleanup(&g_handle_access_mutex);
+    g_init_handle = NULL;
+#endif // WITH_SCHEDULER_THREAD_SAFE
+}
+
 avs_sched_t *avs_sched_new(const char *name, void *data) {
 #ifdef WITH_SCHEDULER_THREAD_SAFE
     if (avs_init_once(&g_init_handle, init_globals, NULL)) {
@@ -923,6 +931,10 @@ static int sched_leap_time_locking(avs_sched_t *sched,
 }
 
 int avs_sched_leap_time(avs_sched_t *sched, avs_time_duration_t diff) {
+    if (avs_time_duration_valid(diff)) {
+        SCHED_LOG(sched, ERROR, "attempted to leap an invalid amount of time");
+        return -1;
+    }
     return sched_leap_time_locking(sched, diff, true);
 }
 

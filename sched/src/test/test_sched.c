@@ -13,3 +13,5 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#warning "TODO: Port tests from libCWMP and/or Anjay"
+#warning "TODO: Scheduler descendance tests"

@@ -30,4 +30,9 @@ void avs_cleanup_global_state(void) {
     void _avs_log_cleanup_global_state(void);
     _avs_log_cleanup_global_state();
 #endif // WITH_AVS_LOG
+
+#ifdef WITH_AVS_SCHED
+    void _avs_sched_cleanup_global_state(void);
+    _avs_sched_cleanup_global_state();
+#endif
 }
