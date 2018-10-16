@@ -89,23 +89,6 @@ static void nonfailing_mutex_lock(avs_mutex_t *mutex) {
     }
 }
 
-static void handle_ptr_exchange_value(avs_sched_handle_t *handle_ptr,
-                                      avs_sched_job_t **out_previous_value,
-                                      avs_sched_job_t *new_value) {
-    nonfailing_mutex_lock(g_handle_access_mutex);
-    *out_previous_value = *handle_ptr;
-    *handle_ptr = new_value;
-    avs_mutex_unlock(g_handle_access_mutex);
-}
-
-static void handle_ptr_access(avs_sched_handle_t *handle_ptr,
-                              void (*access_clb)(avs_sched_job_t *, void *),
-                              void *access_clb_arg) {
-    nonfailing_mutex_lock(g_handle_access_mutex);
-    access_clb(*handle_ptr, access_clb_arg);
-    avs_mutex_unlock(g_handle_access_mutex);
-}
-
 #ifdef WITH_INTERNAL_LOGS
 
 #   define JOB_LOG_ID_MAX_LENGTH (AVS_LOG_MAX_LINE_LENGTH / 2)
@@ -359,9 +342,10 @@ static AVS_LIST(avs_sched_job_t) fetch_job(avs_sched_t *sched,
             && avs_time_monotonic_before(sched->jobs->instant,
                                          deadline)) {
         if (sched->jobs->handle_ptr) {
-            avs_sched_job_t *value;
-            handle_ptr_exchange_value(sched->jobs->handle_ptr, &value, NULL);
-            assert(value == sched->jobs);
+            nonfailing_mutex_lock(g_handle_access_mutex);
+            assert(*sched->jobs->handle_ptr == sched->jobs);
+            *sched->jobs->handle_ptr = NULL;
+            avs_mutex_unlock(g_handle_access_mutex);
             sched->jobs->handle_ptr = NULL;
         }
         result = AVS_LIST_DETACH(&sched->jobs);
@@ -495,9 +479,10 @@ static int sched_at_locked(avs_sched_t *sched,
     }
     if (out_handle) {
         job->handle_ptr = out_handle;
-        avs_sched_job_t *previous_value;
-        handle_ptr_exchange_value(out_handle, &previous_value, job);
-        AVS_ASSERT(!previous_value, "Dangerous non-initialized out_handle");
+        nonfailing_mutex_lock(g_handle_access_mutex);
+        AVS_ASSERT(!*out_handle, "Dangerous non-initialized out_handle");
+        *out_handle = job;
+        avs_mutex_unlock(g_handle_access_mutex);
     }
     AVS_LIST_INSERT(insert_ptr, job);
 #ifdef WITH_INTERNAL_TRACE
@@ -557,17 +542,13 @@ int avs_sched_at_impl__(avs_sched_t *sched,
     return result;
 }
 
-static void get_job_instant(avs_sched_job_t *job, void *out_time_ptr_) {
-    if (job) {
-        *(avs_time_monotonic_t *) out_time_ptr_ = job->instant;
-    }
-}
-
 avs_time_monotonic_t avs_sched_time(avs_sched_handle_t *handle_ptr) {
     avs_time_monotonic_t result = AVS_TIME_MONOTONIC_INVALID;
-    if (handle_ptr) {
-        handle_ptr_access(handle_ptr, get_job_instant, &result);
+    nonfailing_mutex_lock(g_handle_access_mutex);
+    if (handle_ptr && *handle_ptr) {
+        result = (*handle_ptr)->instant;
     }
+    avs_mutex_unlock(g_handle_access_mutex);
     return result;
 }
 
@@ -577,76 +558,81 @@ typedef struct {
     avs_sched_t *sched;
 } handle_ops_init_data_t;
 
-static void fill_handle_ops_init_data(avs_sched_job_t *job, void *out_ptr) {
-    if (job) {
-        handle_ops_init_data_t *out_data = (handle_ops_init_data_t *) out_ptr;
-        AVS_ASSERT(out_data->handle_ptr == job->handle_ptr,
-                   "accessing job via non-original handle");
-        out_data->job = job;
-        out_data->sched = job->sched;
-    }
-}
-
 void avs_sched_del(avs_sched_handle_t *handle_ptr) {
     if (!handle_ptr) {
         return;
     }
-    handle_ops_init_data_t data = {
-        .handle_ptr = handle_ptr
-    };
-    handle_ptr_access(handle_ptr, fill_handle_ops_init_data, &data);
-    if (!data.job) {
+    avs_sched_t *sched = NULL;
+    avs_sched_job_t *job = NULL;
+    nonfailing_mutex_lock(g_handle_access_mutex);
+    if (*handle_ptr) {
+        AVS_ASSERT(handle_ptr == (*handle_ptr)->handle_ptr,
+                   "accessing job via non-original handle");
+        job = *handle_ptr;
+        sched = (*handle_ptr)->sched;
+    }
+    avs_mutex_unlock(g_handle_access_mutex);
+    if (!job) {
         return;
     }
-    assert(data.sched);
-    nonfailing_mutex_lock(data.sched->mutex);
-    SCHED_LOG(data.sched, TRACE, "cancelling job%s", JOB_LOG_ID(data.job));
 
-    AVS_LIST(avs_sched_job_t) *job_ptr = (AVS_LIST(avs_sched_job_t) *)
-            AVS_LIST_FIND_PTR(&data.sched->jobs, data.job);
+    assert(sched);
+    nonfailing_mutex_lock(sched->mutex);
+    AVS_LIST(avs_sched_job_t) *job_ptr =
+            (AVS_LIST(avs_sched_job_t) *) AVS_LIST_FIND_PTR(&sched->jobs, job);
     if (!job_ptr) {
 #ifndef WITH_SCHEDULER_THREAD_SAFE
         AVS_ASSERT(job_ptr, "dangling handle detected");
 #endif // WITH_SCHEDULER_THREAD_SAFE
         // Job might have been removed by another thread, don't do anything
     } else {
-        assert((*job_ptr)->handle_ptr);
-        avs_sched_job_t *previous_value;
-        handle_ptr_exchange_value(data.job->handle_ptr, &previous_value, NULL);
-        assert(previous_value == data.job);
+        SCHED_LOG(sched, TRACE, "cancelling job%s", JOB_LOG_ID(job));
+        nonfailing_mutex_lock(g_handle_access_mutex);
+        assert(*job->handle_ptr == job);
+        *job->handle_ptr = NULL;
+        avs_mutex_unlock(g_handle_access_mutex);
 
         AVS_LIST_DELETE(job_ptr);
     }
-    avs_mutex_unlock(data.sched->mutex);
+    avs_mutex_unlock(sched->mutex);
 }
 
 void avs_sched_release(avs_sched_handle_t *handle_ptr) {
     if (!handle_ptr) {
         return;
     }
-    handle_ops_init_data_t data = {
-        .handle_ptr = handle_ptr
-    };
-    handle_ptr_access(handle_ptr, fill_handle_ops_init_data, &data);
-    if (!data.job) {
+    avs_sched_t *sched = NULL;
+    avs_sched_job_t *job = NULL;
+    nonfailing_mutex_lock(g_handle_access_mutex);
+    if (*handle_ptr) {
+        AVS_ASSERT(handle_ptr == (*handle_ptr)->handle_ptr,
+                   "accessing job via non-original handle");
+        job = *handle_ptr;
+        sched = (*handle_ptr)->sched;
+    }
+    avs_mutex_unlock(g_handle_access_mutex);
+    if (!job) {
         return;
     }
-    assert(data.sched);
-    nonfailing_mutex_lock(data.sched->mutex);
-    AVS_LIST(avs_sched_job_t) *job_ptr = (AVS_LIST(avs_sched_job_t) *)
-            AVS_LIST_FIND_PTR(&data.sched->jobs, data.job);
+
+    assert(sched);
+    nonfailing_mutex_lock(sched->mutex);
+    AVS_LIST(avs_sched_job_t) *job_ptr =
+            (AVS_LIST(avs_sched_job_t) *) AVS_LIST_FIND_PTR(&sched->jobs, job);
     if (!job_ptr) {
 #ifndef WITH_SCHEDULER_THREAD_SAFE
         AVS_ASSERT(job_ptr, "dangling handle detected");
 #endif // WITH_SCHEDULER_THREAD_SAFE
         // Job might have been removed by another thread, don't do anything
     } else {
-        avs_sched_job_t *value;
-        handle_ptr_exchange_value(data.job->handle_ptr, &value, NULL);
-        assert(value == data.job);
-        data.job->handle_ptr = NULL;
+        nonfailing_mutex_lock(g_handle_access_mutex);
+        assert(*job->handle_ptr == job);
+        *job->handle_ptr = NULL;
+        avs_mutex_unlock(g_handle_access_mutex);
+
+        job->handle_ptr = NULL;
     }
-    avs_mutex_unlock(data.sched->mutex);
+    avs_mutex_unlock(sched->mutex);
 }
 
 static AVS_LIST(avs_sched_t *) *
