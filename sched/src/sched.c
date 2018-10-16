@@ -104,15 +104,17 @@ job_log_id_impl(char buf[static JOB_LOG_ID_MAX_LENGTH],
         int result = avs_simple_snprintf(ptr, (size_t) (limit - ptr),
                                          " \"%s\"", name);
         if (result < 0) {
-            goto finish;
+            return buf;
         } else {
             ptr += result;
         }
     }
-    if (file && limit - ptr >= 4) {
-        int result = avs_simple_snprintf(ptr, (size_t) (limit - ptr - 1),
-                                         " (%s:%u", file, line);
+    if (file && limit - ptr >= (ptrdiff_t) sizeof(" ()")) {
+        size_t snprintf_size = (size_t) (limit - ptr - 1);
+        int result = snprintf(ptr, snprintf_size, " (%s:%u", file, line);
         if (result < 0) {
+            return buf;
+        } else if ((size_t) result >= snprintf_size) {
             ptr = limit - 2;
         } else {
             ptr += result;
@@ -120,7 +122,6 @@ job_log_id_impl(char buf[static JOB_LOG_ID_MAX_LENGTH],
         *ptr++ = ')';
         *ptr = '\0';
     }
-finish:
     return buf;
 }
 
@@ -131,26 +132,6 @@ finish:
 #   define JOB_LOG_ID(Job) \
         JOB_LOG_ID_EXPLICIT((Job)->log_info.file, (Job)->log_info.line, \
                             (Job)->log_info.name)
-
-#   define TIME_STR_MAX_LENGTH 32
-
-static const char *time_str_impl(char buf[static TIME_STR_MAX_LENGTH],
-                                 avs_time_duration_t time) {
-    if (avs_time_duration_valid(time)) {
-        if (time.seconds < 0 && time.nanoseconds > 0) {
-            ++time.seconds;
-            time.nanoseconds = 1000000000 - time.nanoseconds;
-        }
-        avs_simple_snprintf(buf, TIME_STR_MAX_LENGTH, "%" PRId64 ".%09" PRId32,
-                            time.seconds, time.nanoseconds);
-    } else {
-        avs_simple_snprintf(buf, TIME_STR_MAX_LENGTH, "TIME_INVALID");
-    }
-    return buf;
-}
-
-#   define TIME_STR(Time) \
-        time_str_impl(&(char[TIME_STR_MAX_LENGTH]) { "" }[0], (Time))
 
 #endif // WITH_INTERNAL_LOGS
 
@@ -425,7 +406,8 @@ void avs_sched_run(avs_sched_t *sched) {
         SCHED_LOG(sched, TRACE, "no more jobs");
     } else {
         SCHED_LOG(sched, TRACE, "next job scheduled at %s (+%s)",
-                  TIME_STR(next.since_monotonic_epoch), TIME_STR(remaining));
+                  AVS_TIME_DURATION_AS_STRING(next.since_monotonic_epoch),
+                  AVS_TIME_DURATION_AS_STRING(remaining));
     }
 #endif // WITH_INTERNAL_TRACE
 }
@@ -489,7 +471,8 @@ static int sched_at_locked(avs_sched_t *sched,
     avs_time_duration_t remaining =
             avs_time_monotonic_diff(instant, avs_time_monotonic_now());
     SCHED_LOG(sched, TRACE, "scheduled job%s at %s (+%s)", JOB_LOG_ID(job),
-              TIME_STR(instant.since_monotonic_epoch), TIME_STR(remaining));
+              AVS_TIME_DURATION_AS_STRING(instant.since_monotonic_epoch),
+              AVS_TIME_DURATION_AS_STRING(remaining));
 #endif // WITH_INTERNAL_TRACE
     return 0;
 }
@@ -597,7 +580,7 @@ void avs_sched_del(avs_sched_handle_t *handle_ptr) {
     avs_mutex_unlock(sched->mutex);
 }
 
-void avs_sched_release(avs_sched_handle_t *handle_ptr) {
+void avs_sched_detach(avs_sched_handle_t *handle_ptr) {
     if (!handle_ptr) {
         return;
     }
@@ -664,6 +647,7 @@ bool avs_sched_is_descendant(avs_sched_t *ancestor,
     return result;
 }
 
+#warning "TODO: ancestor_task_condvars might get fucked up there is diamond descendance"
 int avs_sched_register_child(avs_sched_t *parent, avs_sched_t *child) {
     assert(parent);
     assert(child);
@@ -765,7 +749,8 @@ static void leap_time_impl(avs_sched_t *sched,
                "Called avs_sched_time_of_next() "
                "while children schedulers are executed");
 
-    SCHED_LOG(sched, INFO, "moving all jobs by %s s", TIME_STR(diff));
+    SCHED_LOG(sched, INFO, "moving all jobs by %s s",
+              AVS_TIME_DURATION_AS_STRING(diff));
 
     AVS_LIST(avs_sched_job_t) job;
     AVS_LIST_FOREACH(job, sched->jobs) {

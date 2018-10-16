@@ -82,6 +82,9 @@ avs_sched_t *avs_sched_new(const char *name, void *data);
  * NOTE: Attempting to clean up a scheduler that is concurrently manipulated in
  * any way from another thread is undefined behaviour.
  *
+ * NOTE: Attempting to clean up a scheduler that is registered as a child in any
+ * other scheduler is undefined behaviour.
+ *
  * @param sched_ptr Pointer to a variable that holds the scheduler to destroy.
  *                  It will be reset to <c>NULL</c> afterwards.
  */
@@ -114,11 +117,7 @@ void *avs_sched_data(avs_sched_t *sched);
  *          scheduled jobs, @ref AVS_TIME_MONOTONIC_INVALID is returned.
  *
  * NOTE: The returned time may be in the past, if the application did not run
- * @ref avs_sched_run in time.
- *
- * NOTE: If the scheduler module has been compiled with thread safety enabled,
- * this function may also return @ref AVS_TIME_MONOTONIC_INVALID if it is unable
- * to lock the scheduler mutex.
+ * @ref avs_sched_run on time.
  */
 avs_time_monotonic_t avs_sched_time_of_next(avs_sched_t *sched);
 
@@ -137,10 +136,6 @@ avs_time_monotonic_t avs_sched_time_of_next(avs_sched_t *sched);
  *
  * NOTE: The returned time will never be negative. If any scheduled jobs has
  * been missed, @ref AVS_TIME_DURATION_ZERO is returned instead.
- *
- * NOTE: If the scheduler module has been compiled with thread safety enabled,
- * this function may also return @ref AVS_TIME_DURATION_INVALID if it is unable
- * to lock the scheduler mutex.
  */
 static inline avs_time_duration_t avs_sched_time_to_next(avs_sched_t *sched) {
     avs_time_duration_t result = avs_time_monotonic_diff(
@@ -157,8 +152,8 @@ static inline avs_time_duration_t avs_sched_time_to_next(avs_sched_t *sched) {
  * @ref avs_sched_time_to_next . The difference is that in multi-threaded
  * applications, this call will take into account any manipulations on the
  * scheduler (adding and removing of jobs and descendant schedulers) done from
- * other threads. For example, if the function is called at8:00 AM, the next job
- * is scheduled at 8:05 AM, but at 8:01 AM another thread schedules a job to
+ * other threads. For example, if the function is called at 8:00 AM, the next
+ * job is scheduled at 8:05 AM, but at 8:01 AM another thread schedules a job to
  * execute "now", this function will wake up and return at 8:01 AM.
  *
  * NOTE: The function currently only works if the scheduler module has been
@@ -177,7 +172,7 @@ static inline avs_time_duration_t avs_sched_time_to_next(avs_sched_t *sched) {
  *
  * @returns
  * - 0 when there is a scheduled job to execute.
- * - @ref AVS_CONDVAR_TIMEOUT if @p deadline passes without any jobs to execute.
+ * - A positive value if @p deadline passes without any jobs to execute.
  * - A negative value in case of error when using synchronization primitives.
  */
 int avs_sched_wait_until_next(avs_sched_t *sched,
@@ -310,7 +305,6 @@ int avs_sched_at_impl__(avs_sched_t *sched,
  * - negative value on one of the following failure conditions:
  *   - @p Clb is <c>NULL</c>
  *   - @p Instant is an invalid time value
- *   - there is an error when using synchronization primitives
  *   - not enough memory available
  */
 #define AVS_SCHED_AT(Sched, OutHandle, Instant, Clb, ClbData, ClbDataSize) \
@@ -381,7 +375,7 @@ void avs_sched_del(avs_sched_handle_t *handle_ptr);
  * NOTE: On return from this function, <c>*handle_ptr</c> will be set to
  * <c>NULL</c>.
  */
-void avs_sched_release(avs_sched_handle_t *handle_ptr);
+void avs_sched_detach(avs_sched_handle_t *handle_ptr);
 
 /**
  * Checks whether there is an ancestor-descendant relationship between two given
@@ -409,6 +403,9 @@ bool avs_sched_is_descendant(avs_sched_t *ancestor,
  *
  * @param child  Scheduler object to register as a child of @p parent .
  *
+ * NOTE: Parent-child relationship only affects the way @ref avs_sched_run
+ * works. It has no effect on the lifetime of any of the scheduler objects.
+ *
  * NOTE: Attempting to register a scheduler as a child of any of its descendants
  * (thus creating a cycle in the family tree) results in undefined behaviour.
  *
@@ -424,7 +421,6 @@ bool avs_sched_is_descendant(avs_sched_t *ancestor,
  * - negative value on one of the following failure conditions:
  *   - @p child is already either a direct child or indirect descendant of
  *     @p parent
- *   - there is an error when using synchronization primitives
  *   - not enough memory available
  */
 int avs_sched_register_child(avs_sched_t *parent, avs_sched_t *child);
@@ -442,7 +438,6 @@ int avs_sched_register_child(avs_sched_t *parent, avs_sched_t *child);
  * - 0 on success
  * - negative value on one of the following failure conditions:
  *   - @p child is not a direct child of @p parent
- *   - there is an error when using synchronization primitives
  *   - not enough memory available
  */
 int avs_sched_unregister_child(avs_sched_t *parent, avs_sched_t *child);
@@ -469,9 +464,7 @@ int avs_sched_unregister_child(avs_sched_t *parent, avs_sched_t *child);
  *
  * @returns
  * - 0 on success
- * - negatie value on one of the following failure conditions:
- *   - @p diff is not a valid time value
- *   - there is an error when using synchronization primitives
+ * - negative value if @p diff is not a valid time value
  */
 int avs_sched_leap_time(avs_sched_t *sched, avs_time_duration_t diff);
 

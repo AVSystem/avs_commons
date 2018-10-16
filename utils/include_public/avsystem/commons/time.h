@@ -524,6 +524,38 @@ avs_time_real_t avs_time_real_now(void);
  */
 avs_time_monotonic_t avs_time_monotonic_now(void);
 
+/**
+ * Length of the internal buffer used by @ref AVS_TIME_DURATION_AS_STRING .
+ *
+ * Note that the lowest representable time value is
+ * -9223372036854775808.000000000, and that as a string is 30 characters long.
+ * Including the final null byte, that's 31. We use 32 because it's a nice,
+ * round number.
+ */
+#define AVS_TIME_DURATION_AS_STRING_MAX_LENGTH 32
+
+/**
+ * Internal implementation for @ref AVS_TIME_DURATION_AS_STRING.
+ */
+const char *avs_time_duration_as_string_impl__(
+        char buf[static AVS_TIME_DURATION_AS_STRING_MAX_LENGTH],
+        avs_time_duration_t time);
+
+/**
+ * Converts an @ref avs_time_duration_t value to string. The time is rendered as
+ * a decimal number of seconds with fixed 9 digits after the decimal point, or
+ * <c>"TIME_INVALID"</c> for an invalid time value.
+ *
+ * @param Time The @ref avs_time_duration_t value to stringify
+ *
+ * @returns Pointer to a temporary (stack-allocated, valid until the end of the
+ *          enclosing code block) string representation of @p Time .
+ */
+#define AVS_TIME_DURATION_AS_STRING(Time) \
+        avs_time_duration_as_string_impl__( \
+                &(char[AVS_TIME_DURATION_AS_STRING_MAX_LENGTH]) { "" }[0], \
+                (Time))
+
 #ifdef	__cplusplus
 }
 #endif

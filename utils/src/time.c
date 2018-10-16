@@ -17,9 +17,11 @@
 #include <avs_commons_config.h>
 
 #include <assert.h>
+#include <inttypes.h>
 #include <math.h>
 
 #include <avsystem/commons/time.h>
+#include <avsystem/commons/utils.h>
 
 VISIBILITY_SOURCE_BEGIN
 
@@ -421,6 +423,23 @@ avs_time_duration_t avs_time_duration_div(avs_time_duration_t dividend,
         return result;
     }
 }
+
+const char *avs_time_duration_as_string_impl__(
+        char buf[static AVS_TIME_DURATION_AS_STRING_MAX_LENGTH],
+        avs_time_duration_t time) {
+    if (avs_time_duration_valid(time)) {
+        if (time.seconds < 0 && time.nanoseconds > 0) {
+            ++time.seconds;
+            time.nanoseconds = 1000000000 - time.nanoseconds;
+        }
+        avs_simple_snprintf(buf, AVS_TIME_DURATION_AS_STRING_MAX_LENGTH,
+                            "%" PRId64 ".%09" PRId32,
+                            time.seconds, time.nanoseconds);
+    } else {
+        avs_simple_snprintf(buf, AVS_TIME_DURATION_AS_STRING_MAX_LENGTH,
+                            "TIME_INVALID");
+    }
+    return buf;}
 
 #ifdef AVS_UNIT_TESTING
 #include "test/time.c"
