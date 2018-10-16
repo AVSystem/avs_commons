@@ -82,9 +82,6 @@ avs_sched_t *avs_sched_new(const char *name, void *data);
  * NOTE: Attempting to clean up a scheduler that is concurrently manipulated in
  * any way from another thread is undefined behaviour.
  *
- * NOTE: Attempting to clean up a scheduler that is registered as a child in any
- * other scheduler is undefined behaviour.
- *
  * @param sched_ptr Pointer to a variable that holds the scheduler to destroy.
  *                  It will be reset to <c>NULL</c> afterwards.
  */
@@ -409,18 +406,11 @@ bool avs_sched_is_descendant(avs_sched_t *ancestor,
  * NOTE: Attempting to register a scheduler as a child of any of its descendants
  * (thus creating a cycle in the family tree) results in undefined behaviour.
  *
- * NOTE: It is allowed for any given scheduler to have multiple parents. In such
- * configuration, that scheduler's jobs will be executed when @ref avs_sched_run
- * is called on any of the ancestor schedulers. As the scheduler manages its own
- * jobs internally, there is no risk of executing the same job multiple times.
- * However, please read the notes to @ref avs_sched_leap_time if you intend to
- * use that feature.
- *
  * @returns
  * - 0 on success
  * - negative value on one of the following failure conditions:
- *   - @p child is already either a direct child or indirect descendant of
- *     @p parent
+ *   - @p child already is a child of some scheduler (either @p parent or any
+ *     other)
  *   - not enough memory available
  */
 int avs_sched_register_child(avs_sched_t *parent, avs_sched_t *child);
@@ -436,9 +426,7 @@ int avs_sched_register_child(avs_sched_t *parent, avs_sched_t *child);
  *
  * @returns
  * - 0 on success
- * - negative value on one of the following failure conditions:
- *   - @p child is not a direct child of @p parent
- *   - not enough memory available
+ * - negative value if @p child is not a direct child of @p parent
  */
 int avs_sched_unregister_child(avs_sched_t *parent, avs_sched_t *child);
 
@@ -455,12 +443,6 @@ int avs_sched_unregister_child(avs_sched_t *parent, avs_sched_t *child);
  * @param sched Scheduler object to access (<c>avs_sched_t *</c>).
  *
  * @param diff  Amount of time to move the jobs by.
- *
- * NOTE: This function will not work properly if the scheduler descendance graph
- * is not strictly a tree. Specifically, in the presence of schedulers with
- * multiple parents and a "diamond-shape" descendance pattern among descendants
- * of @p sched, those schedulers (and their children) will have their jobs moved
- * by a multiple of @p diff.
  *
  * @returns
  * - 0 on success
