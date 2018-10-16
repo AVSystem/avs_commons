@@ -76,9 +76,8 @@ avs_sched_t *avs_sched_new(const char *name, void *data);
  * Destroys the scheduler and releases all resources related to it.
  *
  * Before the scheduler is destroyed, all jobs scheduled before or at current
- * time are executed. This may include jobs scheduled for children schedulers.
- * During execution of these jobs, any attempts to schedule new jobs on this
- * scheduler will fail.
+ * time are executed. During execution of these jobs, any attempts to schedule
+ * new jobs on this scheduler will fail.
  *
  * All remaining jobs will be aborted, and their handle variables reset to
  * <c>NULL</c>.
@@ -105,8 +104,8 @@ void *avs_sched_data(avs_sched_t *sched);
 
 /**
  * Retrieves the time at which the earliest currently scheduled job for the
- * specified scheduler or any of its children is scheduled at. In other words,
- * the time at which the next call to @ref avs_sched_run is necessary.
+ * specified scheduler is scheduled at. In other words, the time at which the
+ * next call to @ref avs_sched_run is necessary.
  *
  * NOTE: Calling this function when any other thread is currently executing
  * @ref avs_sched_run results in undefined behaviour.
@@ -124,8 +123,8 @@ avs_time_monotonic_t avs_sched_time_of_next(avs_sched_t *sched);
 
 /**
  * Retrieves the time remaining to the earliest currently scheduled job for the
- * specified scheduler or any of its children. In other words, the time
- * remaining until the next necessary call to @ref avs_sched_run .
+ * specified scheduler. In other words, the time remaining until the next
+ * necessary call to @ref avs_sched_run .
  *
  * NOTE: Calling this function when any other thread is currently executing
  * @ref avs_sched_run results in undefined behaviour.
@@ -147,7 +146,7 @@ static inline avs_time_duration_t avs_sched_time_to_next(avs_sched_t *sched) {
 
 /**
  * Waits until it is time to run a job (call @ref avs_sched_run) on the
- * specified scheduler or any of its children.
+ * specified scheduler.
  *
  * This is very similar to sleeping for the time returned by
  * @ref avs_sched_time_to_next . The difference is that in multi-threaded
@@ -207,16 +206,9 @@ static inline int avs_sched_wait_for_next(avs_sched_t *sched,
 /**
  * Executes jobs scheduled for execution before or at the current point in time.
  *
- * Specifically, this function will:
- * - Execute any jobs scheduled for before or at the time of entry to this
- *   function. Specifically, if any of the executed jobs schedule more jobs for
- *   "now", they will <em>not</em> be executed.
- * - If no such jobs exist, @ref avs_sched_run is called recursively on all
- *   children schedulers.
- *
- * Note that the described logic implies that jobs scheduled on children
- * schedulers inherently have lower priority than jobs scheduled on their
- * parent.
+ * Specifically, this function will execute any jobs scheduled for before or at
+ * the time of entry to this function. If any of the executed jobs schedule more
+ * jobs for "now", they will <em>not</em> be executed.
  *
  * @param sched Scheduler object to access.
  */
@@ -379,64 +371,8 @@ void avs_sched_del(avs_sched_handle_t *handle_ptr);
 void avs_sched_detach(avs_sched_handle_t *handle_ptr);
 
 /**
- * Checks whether there is an ancestor-descendant relationship between two given
- * scheduler objects.
- *
- * @param ancestor         The scheduler object to check for being the ancestor
- *                         of @p maybe_descendant .
- *
- * @param maybe_descendant The scheduler object to check for being a descendant
- *                         of @p ancestor .
- *
- * @returns True, if @p maybe_descendant is registered as either a direct child
- *          or an indirect descendant of @p ancestor, false otherwise.
- */
-bool avs_sched_is_descendant(avs_sched_t *ancestor,
-                             avs_sched_t *maybe_descendant);
-
-/**
- * Registers a scheduler as a child of another scheduler.
- *
- * See @ref avs_sched_run for more information about the behaviour of child
- * schedulers.
- *
- * @param parent Scheduler object for which to register @p child as a child.
- *
- * @param child  Scheduler object to register as a child of @p parent .
- *
- * NOTE: Parent-child relationship only affects the way @ref avs_sched_run
- * works. It has no effect on the lifetime of any of the scheduler objects.
- *
- * NOTE: Attempting to register a scheduler as a child of any of its descendants
- * (thus creating a cycle in the family tree) results in undefined behaviour.
- *
- * @returns
- * - 0 on success
- * - negative value on one of the following failure conditions:
- *   - @p child already is a child of some scheduler (either @p parent or any
- *     other)
- *   - not enough memory available
- */
-int avs_sched_register_child(avs_sched_t *parent, avs_sched_t *child);
-
-/**
- * Unregisters a scheduler, causing it to stop being a child of another
- * scheduler.
- *
- * @param parent Scheduler object for which to unregister @p child from being
- *               a child.
- *
- * @param child  Scheduler object to unregister from being a child of @p parent.
- *
- * @returns
- * - 0 on success
- * - negative value if @p child is not a direct child of @p parent
- */
-int avs_sched_unregister_child(avs_sched_t *parent, avs_sched_t *child);
-
-/**
- * Moves all the jobs scheduled on a given scheduler and all its children by a
- * specified amount of time.
+ * Moves all the jobs scheduled on a given scheduler by a specified amount of
+ * time.
  *
  * The intended use case for this function is to compensate for a drift between
  * wall time and the system monotonic clock when there is a need to take that
