@@ -743,13 +743,13 @@ static AVS_LIST(avs_sched_t *) *
 traverse_descendants_locked(avs_sched_t *ancestor,
                             avs_sched_t *maybe_descendant) {
     AVS_LIST(avs_sched_t *) *child_ptr;
-    AVS_LIST_FOREACH_PTR(child_ptr, &ancestor->children) {
+    AVS_LIST_FOREACH_PTR(child_ptr, &ancestor->children_executed) {
         if (**child_ptr == maybe_descendant
                 || avs_sched_is_descendant(**child_ptr, maybe_descendant)) {
             break;
         }
     }
-    AVS_LIST_FOREACH_PTR(child_ptr, &ancestor->children_executed) {
+    AVS_LIST_FOREACH_PTR(child_ptr, &ancestor->children) {
         if (**child_ptr == maybe_descendant
                 || avs_sched_is_descendant(**child_ptr, maybe_descendant)) {
             break;
