@@ -44,40 +44,110 @@
 VISIBILITY_SOURCE_BEGIN
 
 struct avs_sched_job_struct {
+    /** The scheduler for which the job is scheduled. */
     avs_sched_t *sched;
+
+    /** Pointer to a handle which may be used to manage the job. */
     avs_sched_handle_t *handle_ptr;
+
+    /** Instant in time at which the job is scheduled. */
     avs_time_monotonic_t instant;
+
 #ifdef WITH_INTERNAL_LOGS
     struct {
+        /** File from which AVS_SCHED*() was called. */
         const char *file;
+        /** Line from which AVS_SCHED*() was called. */
         unsigned line;
+        /** Stringified value of what was passed as the callback function. */
         const char *name;
     } log_info;
 #endif // WITH_INTERNAL_LOGS
+
+    /** Callback function to execute. */
     avs_sched_clb_t *clb;
+
+    /** Data to pass to the callback function. Note that the size of this data
+     * is not stored anywhere in the structure. */
     avs_max_align_t clb_data[];
 };
 
 struct avs_sched_struct {
 #ifdef WITH_INTERNAL_LOGS
+    /** Name of the scheduler. */
     const char *name;
 #endif // WITH_INTERNAL_LOGS
+    /** Opaque data, retrievable using @ref avs_sched_data . */
     void *data;
+
 #ifdef WITH_SCHEDULER_THREAD_SAFE
+    /**
+     * Mutex that guards access to jobs, parent, children, children_executed
+     * and ancestor_task_condvars fields.
+     *
+     * If there is a need to lock mutexes of multiple schedulers within a family
+     * tree, they MUST be always locked in the ancestor-first order.
+     */
     avs_mutex_t *mutex;
+
+    /**
+     * Condition variable that can be used to wake up the
+     * @ref avs_sched_wait_until_next call.
+     */
     avs_condvar_t *task_condvar;
+
+    /**
+     * We also need to wake up @ref avs_sched_wait_until_next calls that have
+     * been called on ancestor schedulers. As the contract mentioned above
+     * states that mutexes MUST be locked in ancestor-first order, we are not
+     * able to retrieve the condition variables through the parent. Thus, we
+     * maintain a list of condition variables of all our ancestors.
+     */
     AVS_LIST(avs_condvar_t *) ancestor_task_condvars;
 #endif // WITH_SCHEDULER_THREAD_SAFE
+
+    /** Scheduled jobs. */
     AVS_LIST(avs_sched_job_t) jobs;
+    /** Parent scheduler, if any. */
     avs_sched_t *parent;
+    /** Pointers to child schedulers. */
     AVS_LIST(avs_sched_t *) children;
+    /**
+     * Temporary list used when executing children scheduler jobs. To allow
+     * thread-safe access to the children schedulers without locking the mutex
+     * for the entire time, the following logic is applied:
+     *
+     * - When executing children scheduler, @ref avs_sched_run attempts to
+     *   detach a child from the beginning of the <c>children</c> list, and
+     *   put it at the beginning of <c>children_executed</c>.
+     * - That fetched scheduler is executed, and the previous step is repeated.
+     * - When there is no child scheduler to fetch (i.e., <c>children</c> is now
+     *   empty), the values from <c>children_executed</c> are moved back (again,
+     *   in reverse order) to <c>children</c>.
+     *
+     * That way, when a child is registered while another child is being
+     * executed, it will be fetched during the next mutex lock. Children can
+     * also be unregistered at any point (they will be removed from either the
+     * <c>children</c>, or <c>children_executed</c> lists.
+     */
     AVS_LIST(avs_sched_t *) children_executed;
+    /**
+     * A flag that prevents scheduling new jobs while the scheduler is shutting
+     * down.
+     */
     bool shut_down;
 };
 
 #ifdef WITH_SCHEDULER_THREAD_SAFE
-static volatile avs_init_once_handle_t g_init_handle;
+/**
+ * The global mutex that guards accesses to all @ref avs_sched_handle_t
+ * variables.
+ *
+ * That could be guarded by the normal per-scheduler mutexes, but that would
+ * require passing the scheduler to functions such as @ref avs_sched_del .
+ */
 static avs_mutex_t *g_handle_access_mutex;
+static volatile avs_init_once_handle_t g_init_handle;
 #endif // WITH_SCHEDULER_THREAD_SAFE
 
 #define SCHED_LOG(Sched, Level, ...) \

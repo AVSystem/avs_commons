@@ -35,6 +35,10 @@ typedef struct avs_sched_job_struct avs_sched_job_t;
 /**
  * Handle to a scheduled job. Please see documentation of @ref AVS_SCHED_AT,
  * @ref avs_sched_del and @ref avs_sched_release for more information.
+ *
+ * NOTE: Attempting to modify the value of an <c>avs_sched_handle_t</c> variable
+ * in any other way than by calling functions from this module, or moving any
+ * data containing such, may result in undefined behaviour.
  */
 typedef avs_sched_job_t *avs_sched_handle_t;
 
