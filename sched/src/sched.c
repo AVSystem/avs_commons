@@ -83,31 +83,27 @@ static avs_mutex_t *g_handle_access_mutex;
         LOG(Level, "Scheduler \"%s\": " AVS_VARARG0(__VA_ARGS__), \
             (Sched)->name AVS_VARARG_REST(__VA_ARGS__))
 
-static int handle_ptr_exchange_value(avs_sched_handle_t *handle_ptr,
-                                     avs_sched_job_t **out_previous_value,
-                                     avs_sched_job_t *new_value) {
-    if (avs_mutex_lock(g_handle_access_mutex)) {
-        LOG(ERROR, "could not lock handle access mutex");
-        return -1;
+static void nonfailing_mutex_lock(avs_mutex_t *mutex) {
+    if (avs_mutex_lock(mutex)) {
+        AVS_UNREACHABLE("could not lock mutex");
     }
-    if (out_previous_value) {
-        *out_previous_value = *handle_ptr;
-    }
-    *handle_ptr = new_value;
-    avs_mutex_unlock(g_handle_access_mutex);
-    return 0;
 }
 
-static int handle_ptr_access(avs_sched_handle_t *handle_ptr,
-                             void (*access_clb)(avs_sched_job_t *, void *),
-                             void *access_clb_arg) {
-    if (avs_mutex_lock(g_handle_access_mutex)) {
-        LOG(ERROR, "could not lock handle access mutex");
-        return -1;
-    }
+static void handle_ptr_exchange_value(avs_sched_handle_t *handle_ptr,
+                                      avs_sched_job_t **out_previous_value,
+                                      avs_sched_job_t *new_value) {
+    nonfailing_mutex_lock(g_handle_access_mutex);
+    *out_previous_value = *handle_ptr;
+    *handle_ptr = new_value;
+    avs_mutex_unlock(g_handle_access_mutex);
+}
+
+static void handle_ptr_access(avs_sched_handle_t *handle_ptr,
+                              void (*access_clb)(avs_sched_job_t *, void *),
+                              void *access_clb_arg) {
+    nonfailing_mutex_lock(g_handle_access_mutex);
     access_clb(*handle_ptr, access_clb_arg);
     avs_mutex_unlock(g_handle_access_mutex);
-    return 0;
 }
 
 #ifdef WITH_INTERNAL_LOGS
@@ -221,8 +217,8 @@ avs_sched_t *avs_sched_new(const char *name, void *data) {
 }
 
 #ifdef WITH_SCHEDULER_THREAD_SAFE
-static int remove_ancestor_condvar_locking(avs_sched_t *sched,
-                                           avs_condvar_t *ancestor_condvar);
+static void remove_ancestor_condvar_locking(avs_sched_t *sched,
+                                            avs_condvar_t *ancestor_condvar);
 
 static void remove_ancestor_condvar_locked(avs_sched_t *sched,
                                            avs_condvar_t *ancestor_condvar) {
@@ -240,16 +236,11 @@ static void remove_ancestor_condvar_locked(avs_sched_t *sched,
     }
 }
 
-static int remove_ancestor_condvar_locking(avs_sched_t *sched,
-                                           avs_condvar_t *ancestor_condvar) {
-    if (avs_mutex_lock(sched->mutex)) {
-        SCHED_LOG(sched, ERROR, "could not lock mutex");
-        return -1;
-    } else {
-        remove_ancestor_condvar_locked(sched, ancestor_condvar);
-        avs_mutex_unlock(sched->mutex);
-        return 0;
-    }
+static void remove_ancestor_condvar_locking(avs_sched_t *sched,
+                                            avs_condvar_t *ancestor_condvar) {
+    nonfailing_mutex_lock(sched->mutex);
+    remove_ancestor_condvar_locked(sched, ancestor_condvar);
+    avs_mutex_unlock(sched->mutex);
 }
 #else // WITH_SCHEDULER_THREAD_SAFE
 #define remove_ancestor_condvar_locked(...) ((void) 0)
@@ -274,15 +265,13 @@ void avs_sched_cleanup(avs_sched_t **sched_ptr) {
     // execute any tasks remaining for now
     avs_sched_run(*sched_ptr);
 
-    int mutex_lock_result = avs_mutex_lock(g_handle_access_mutex);
+    nonfailing_mutex_lock(g_handle_access_mutex);
     AVS_LIST_CLEAR(&(*sched_ptr)->jobs) {
         if ((*sched_ptr)->jobs->handle_ptr) {
             *(*sched_ptr)->jobs->handle_ptr = NULL;
         }
     }
-    if (!mutex_lock_result) {
-        avs_mutex_unlock(g_handle_access_mutex);
-    }
+    avs_mutex_unlock(g_handle_access_mutex);
 
     avs_condvar_cleanup(&(*sched_ptr)->task_condvar);
     avs_mutex_cleanup(&(*sched_ptr)->mutex);
@@ -324,13 +313,9 @@ static avs_time_monotonic_t sched_time_of_next_locked(avs_sched_t *sched) {
 
 avs_time_monotonic_t avs_sched_time_of_next(avs_sched_t *sched) {
     assert(sched);
-    avs_time_monotonic_t result = AVS_TIME_MONOTONIC_INVALID;
-    if (avs_mutex_lock(sched->mutex)) {
-        SCHED_LOG(sched, ERROR, "could not lock mutex");
-    } else {
-        result = sched_time_of_next_locked(sched);
-        avs_mutex_unlock(sched->mutex);
-    }
+    nonfailing_mutex_lock(sched->mutex);
+    avs_time_monotonic_t result = sched_time_of_next_locked(sched);
+    avs_mutex_unlock(sched->mutex);
     return result;
 }
 
@@ -339,10 +324,7 @@ int avs_sched_wait_until_next(avs_sched_t *sched,
     int result = -1;
     (void) deadline;
 #ifdef WITH_SCHEDULER_THREAD_SAFE
-    if (avs_mutex_lock(sched->mutex)) {
-        SCHED_LOG(sched, ERROR, "could not lock mutex");
-        return -1;
-    }
+    nonfailing_mutex_lock(sched->mutex);
     avs_time_monotonic_t time_of_next;
     do {
         time_of_next = sched_time_of_next_locked(sched);
@@ -369,34 +351,22 @@ int avs_sched_wait_until_next(avs_sched_t *sched,
     return result;
 }
 
-static AVS_LIST(avs_sched_job_t)
-fetch_job_locked(avs_sched_t *sched, avs_time_monotonic_t deadline) {
+static AVS_LIST(avs_sched_job_t) fetch_job(avs_sched_t *sched,
+                                           avs_time_monotonic_t deadline) {
+    AVS_LIST(avs_sched_job_t) result = NULL;
+    nonfailing_mutex_lock(sched->mutex);
     if (sched->jobs
             && avs_time_monotonic_before(sched->jobs->instant,
                                          deadline)) {
         if (sched->jobs->handle_ptr) {
             avs_sched_job_t *value;
-            if (handle_ptr_exchange_value(sched->jobs->handle_ptr,
-                                          &value, NULL)) {
-                return NULL;
-            }
+            handle_ptr_exchange_value(sched->jobs->handle_ptr, &value, NULL);
             assert(value == sched->jobs);
             sched->jobs->handle_ptr = NULL;
         }
-        return AVS_LIST_DETACH(&sched->jobs);
+        result = AVS_LIST_DETACH(&sched->jobs);
     }
-    return NULL;
-}
-
-static AVS_LIST(avs_sched_job_t)
-fetch_job_locking(avs_sched_t *sched, avs_time_monotonic_t deadline) {
-    AVS_LIST(avs_sched_job_t) result = NULL;
-    if (avs_mutex_lock(sched->mutex)) {
-        SCHED_LOG(sched, ERROR, "could not lock mutex");
-    } else {
-        result = fetch_job_locked(sched, deadline);
-        avs_mutex_unlock(sched->mutex);
-    }
+    avs_mutex_unlock(sched->mutex);
     return result;
 }
 
@@ -410,53 +380,35 @@ static void execute_job(avs_sched_t *sched, AVS_LIST(avs_sched_job_t) job) {
     AVS_LIST_DELETE(&job);
 }
 
-static avs_sched_t *fetch_child_locked(avs_sched_t *sched) {
-    if (sched->children) {
-        return *AVS_LIST_INSERT(&sched->children_executed,
-                                AVS_LIST_DETACH(&sched->children));
-    }
-    return NULL;
-}
-
-static avs_sched_t *fetch_child_locking(avs_sched_t *sched) {
+static avs_sched_t *fetch_child(avs_sched_t *sched) {
     avs_sched_t *result = NULL;
-    if (avs_mutex_lock(sched->mutex)) {
-        SCHED_LOG(sched, ERROR, "could not lock mutex");
-    } else {
-        result = fetch_child_locked(sched);
-        avs_mutex_unlock(sched->mutex);
+    nonfailing_mutex_lock(sched->mutex);
+    if (sched->children) {
+        result = *AVS_LIST_INSERT(&sched->children_executed,
+                                  AVS_LIST_DETACH(&sched->children));
     }
+    avs_mutex_unlock(sched->mutex);
     return result;
 }
 
-static void reorganize_children_locked(avs_sched_t *sched) {
+static void reorganize_children(avs_sched_t *sched) {
+    nonfailing_mutex_lock(sched->mutex);
     // fetch_child_*() loop reverses the order when moving from children
     // to children_executed, so reverse the order once again
     while (sched->children_executed) {
         AVS_LIST_INSERT(&sched->children,
                         AVS_LIST_DETACH(&sched->children_executed));
     }
+    avs_mutex_unlock(sched->mutex);
 }
 
-static int reorganize_children_locking(avs_sched_t *sched) {
-    if (avs_mutex_lock(sched->mutex)) {
-        SCHED_LOG(sched, ERROR, "could not lock mutex");
-        return -1;
-    } else {
-        reorganize_children_locked(sched);
-        avs_mutex_unlock(sched->mutex);
-        return 0;
-    }
-}
-
-int avs_sched_run(avs_sched_t *sched) {
-    int result = 0;
+void avs_sched_run(avs_sched_t *sched) {
     assert(sched);
     avs_time_monotonic_t now = avs_time_monotonic_now();
 
     uint64_t tasks_executed = 0;
     AVS_LIST(avs_sched_job_t) job = NULL;
-    while ((job = fetch_job_locking(sched, now))) {
+    while ((job = fetch_job(sched, now))) {
         assert(job->sched == sched);
         execute_job(sched, job);
         ++tasks_executed;
@@ -467,7 +419,7 @@ int avs_sched_run(avs_sched_t *sched) {
     } else {
         bool we_have_children = false;
         avs_sched_t *child = NULL;
-        while ((child = fetch_child_locking(sched))) {
+        while ((child = fetch_child(sched))) {
             if (!we_have_children) {
                 we_have_children = true;
                 SCHED_LOG(sched, TRACE, "no local jobs to execute, "
@@ -476,7 +428,7 @@ int avs_sched_run(avs_sched_t *sched) {
             avs_sched_run(child);
         }
         if (we_have_children) {
-            result = reorganize_children_locking(sched);
+            reorganize_children(sched);
         } else {
             SCHED_LOG(sched, TRACE, "no jobs to execute");
         }
@@ -492,7 +444,6 @@ int avs_sched_run(avs_sched_t *sched) {
                   TIME_STR(next.since_monotonic_epoch), TIME_STR(remaining));
     }
 #endif // WITH_INTERNAL_TRACE
-    return result;
 }
 
 static int sched_at_locked(avs_sched_t *sched,
@@ -545,11 +496,7 @@ static int sched_at_locked(avs_sched_t *sched,
     if (out_handle) {
         job->handle_ptr = out_handle;
         avs_sched_job_t *previous_value;
-        if (handle_ptr_exchange_value(out_handle,
-                                      &previous_value, job)) {
-            AVS_LIST_DELETE(&job);
-            return -1;
-        }
+        handle_ptr_exchange_value(out_handle, &previous_value, job);
         AVS_ASSERT(!previous_value, "Dangerous non-initialized out_handle");
     }
     AVS_LIST_INSERT(insert_ptr, job);
@@ -600,16 +547,13 @@ int avs_sched_at_impl__(avs_sched_t *sched,
     }
 
     int result = -1;
-    if (avs_mutex_lock(sched->mutex)) {
-        SCHED_LOG(sched, ERROR, "could not lock mutex");
-    } else {
-        if (!(result = sched_at_locked(sched, out_handle, instant,
-                                       log_file, log_line, log_name,
-                                       clb, clb_data, clb_data_size))) {
-            notify_task_changes_locked(sched);
-        }
-        avs_mutex_unlock(sched->mutex);
+    nonfailing_mutex_lock(sched->mutex);
+    if (!(result = sched_at_locked(sched, out_handle, instant,
+                                   log_file, log_line, log_name,
+                                   clb, clb_data, clb_data_size))) {
+        notify_task_changes_locked(sched);
     }
+    avs_mutex_unlock(sched->mutex);
     return result;
 }
 
@@ -643,100 +587,66 @@ static void fill_handle_ops_init_data(avs_sched_job_t *job, void *out_ptr) {
     }
 }
 
-static int sched_del_locked(avs_sched_t *sched, avs_sched_job_t *job) {
-    assert(job);
-    assert(job->handle_ptr);
-    SCHED_LOG(sched, TRACE, "cancelling job%s", JOB_LOG_ID(job));
+void avs_sched_del(avs_sched_handle_t *handle_ptr) {
+    if (!handle_ptr) {
+        return;
+    }
+    handle_ops_init_data_t data = {
+        .handle_ptr = handle_ptr
+    };
+    handle_ptr_access(handle_ptr, fill_handle_ops_init_data, &data);
+    if (!data.job) {
+        return;
+    }
+    assert(data.sched);
+    nonfailing_mutex_lock(data.sched->mutex);
+    SCHED_LOG(data.sched, TRACE, "cancelling job%s", JOB_LOG_ID(data.job));
 
     AVS_LIST(avs_sched_job_t) *job_ptr = (AVS_LIST(avs_sched_job_t) *)
-            AVS_LIST_FIND_PTR(&sched->jobs, job);
+            AVS_LIST_FIND_PTR(&data.sched->jobs, data.job);
     if (!job_ptr) {
 #ifndef WITH_SCHEDULER_THREAD_SAFE
         AVS_ASSERT(job_ptr, "dangling handle detected");
 #endif // WITH_SCHEDULER_THREAD_SAFE
         // Job might have been removed by another thread, don't do anything
-        return 0;
-    }
+    } else {
+        assert((*job_ptr)->handle_ptr);
+        avs_sched_job_t *previous_value;
+        handle_ptr_exchange_value(data.job->handle_ptr, &previous_value, NULL);
+        assert(previous_value == data.job);
 
-    avs_sched_job_t *previous_value;
-    if (handle_ptr_exchange_value(job->handle_ptr,
-                                  &previous_value, NULL)) {
-        return -1;
+        AVS_LIST_DELETE(job_ptr);
     }
-    assert(previous_value == job);
-
-    AVS_LIST_DELETE(job_ptr);
-    return 0;
+    avs_mutex_unlock(data.sched->mutex);
 }
 
-int avs_sched_del(avs_sched_handle_t *handle_ptr) {
+void avs_sched_release(avs_sched_handle_t *handle_ptr) {
     if (!handle_ptr) {
-        return 0;
+        return;
     }
     handle_ops_init_data_t data = {
         .handle_ptr = handle_ptr
     };
-    if (handle_ptr_access(handle_ptr,
-                          fill_handle_ops_init_data, &data)) {
-        return -1;
-    }
+    handle_ptr_access(handle_ptr, fill_handle_ops_init_data, &data);
     if (!data.job) {
-        return 0;
+        return;
     }
     assert(data.sched);
-    int result = -1;
-    if (avs_mutex_lock(data.sched->mutex)) {
-        SCHED_LOG(data.sched, ERROR, "could not lock mutex");
-    } else {
-        result = sched_del_locked(data.sched, data.job);
-        avs_mutex_unlock(data.sched->mutex);
-    }
-    return result;
-}
-
-static int sched_release_locked(avs_sched_t *sched, avs_sched_job_t *job) {
+    nonfailing_mutex_lock(data.sched->mutex);
     AVS_LIST(avs_sched_job_t) *job_ptr = (AVS_LIST(avs_sched_job_t) *)
-            AVS_LIST_FIND_PTR(&sched->jobs, job);
+            AVS_LIST_FIND_PTR(&data.sched->jobs, data.job);
     if (!job_ptr) {
 #ifndef WITH_SCHEDULER_THREAD_SAFE
         AVS_ASSERT(job_ptr, "dangling handle detected");
 #endif // WITH_SCHEDULER_THREAD_SAFE
         // Job might have been removed by another thread, don't do anything
-        return 0;
-    }
-
-    avs_sched_job_t *value;
-    if (handle_ptr_exchange_value(job->handle_ptr, &value, NULL)) {
-        return -1;
-    }
-    assert(value == job);
-    job->handle_ptr = NULL;
-    return 0;
-}
-
-int avs_sched_release(avs_sched_handle_t *handle_ptr) {
-    if (!handle_ptr) {
-        return 0;
-    }
-    handle_ops_init_data_t data = {
-        .handle_ptr = handle_ptr
-    };
-    if (handle_ptr_access(handle_ptr,
-                          fill_handle_ops_init_data, &data)) {
-        return -1;
-    }
-    if (!data.job) {
-        return 0;
-    }
-    assert(data.sched);
-    int result = -1;
-    if (avs_mutex_lock(data.sched->mutex)) {
-        SCHED_LOG(data.sched, ERROR, "could not lock mutex");
     } else {
-        result = sched_release_locked(data.sched, data.job);
-        avs_mutex_unlock(data.sched->mutex);
+        avs_sched_job_t *value;
+        handle_ptr_exchange_value(data.job->handle_ptr, &value, NULL);
+        assert(value == data.job);
+        data.job->handle_ptr = NULL;
     }
-    return result;
+    avs_mutex_unlock(data.sched->mutex);
 }
 
 static AVS_LIST(avs_sched_t *) *
@@ -758,24 +668,13 @@ traverse_descendants_locked(avs_sched_t *ancestor,
     return child_ptr;
 }
 
-static bool is_descendant_locked(avs_sched_t *ancestor,
-                                 avs_sched_t *maybe_descendant) {
+bool avs_sched_is_descendant(avs_sched_t *ancestor,
+                             avs_sched_t *maybe_descendant) {
     assert(ancestor);
     assert(maybe_descendant);
-    return *traverse_descendants_locked(ancestor, maybe_descendant);
-}
-
-int avs_sched_is_descendant(avs_sched_t *ancestor,
-                            avs_sched_t *maybe_descendant) {
-    assert(ancestor);
-    assert(maybe_descendant);
-    int result = -1;
-    if (avs_mutex_lock(ancestor->mutex)) {
-        SCHED_LOG(ancestor, ERROR, "could not lock mutex");
-    } else {
-        result = (is_descendant_locked(ancestor, maybe_descendant) ? 1 : 0);
-        avs_mutex_unlock(ancestor->mutex);
-    }
+    nonfailing_mutex_lock(ancestor->mutex);
+    bool result = !!*traverse_descendants_locked(ancestor, maybe_descendant);
+    avs_mutex_unlock(ancestor->mutex);
     return result;
 }
 
@@ -785,10 +684,7 @@ int avs_sched_register_child(avs_sched_t *parent, avs_sched_t *child) {
     AVS_ASSERT(!avs_sched_is_descendant(child, parent),
                "Cycle found in the scheduler family tree");
 
-    if (avs_mutex_lock(parent->mutex)) {
-        SCHED_LOG(parent, ERROR, "could not lock mutex");
-        return -1;
-    }
+    nonfailing_mutex_lock(parent->mutex);
 
     int result = -1;
     AVS_LIST(avs_sched_t *) *append_ptr =
@@ -798,10 +694,7 @@ int avs_sched_register_child(avs_sched_t *parent, avs_sched_t *child) {
             "Scheduler \"%s\" is already a descendant of scheduler \"%s\"",
             child->name, parent->name);
     } else {
-        if (avs_mutex_lock(child->mutex)) {
-            SCHED_LOG(child, ERROR, "could not lock mutex");
-            goto unlock_parent;
-        }
+        nonfailing_mutex_lock(child->mutex);
         LOG(TRACE,
             "Registering scheduler \"%s\" as a child of scheduler \"%s\"",
             child->name, parent->name);
@@ -831,7 +724,6 @@ int avs_sched_register_child(avs_sched_t *parent, avs_sched_t *child) {
     }
 
     avs_mutex_unlock(child->mutex);
-unlock_parent:
     if (!result) {
         notify_task_changes_locked(parent);
     }
@@ -842,10 +734,7 @@ unlock_parent:
 int avs_sched_unregister_child(avs_sched_t *parent, avs_sched_t *child) {
     assert(parent);
     assert(child);
-    if (avs_mutex_lock(parent->mutex)) {
-        SCHED_LOG(parent, ERROR, "could not lock mutex");
-        return -1;
-    }
+    nonfailing_mutex_lock(parent->mutex);
 
     int result = -1;
     AVS_LIST(avs_sched_t *) *child_ptr = NULL;
@@ -871,25 +760,21 @@ int avs_sched_unregister_child(avs_sched_t *parent, avs_sched_t *child) {
         LOG(TRACE,
             "Unregistering scheduler \"%s\" as a child of scheduler \"%s\"",
             child->name, parent->name);
-        if (avs_mutex_lock(child->mutex)) {
-            SCHED_LOG(child, ERROR, "could not lock mutex");
-        } else {
-            remove_ancestor_condvar_locked(child, parent->task_condvar);
-            AVS_LIST_DELETE(child_ptr);
-            avs_mutex_unlock(child->mutex);
-            result = 0;
-        }
+        nonfailing_mutex_lock(child->mutex);
+        remove_ancestor_condvar_locked(child, parent->task_condvar);
+        AVS_LIST_DELETE(child_ptr);
+        avs_mutex_unlock(child->mutex);
+        result = 0;
     }
     avs_mutex_unlock(parent->mutex);
     return result;
 }
 
-static int sched_leap_time_locking(avs_sched_t *sched,
-                                   avs_time_duration_t diff,
-                                   bool notify_ancestors);
-
-static int leap_time_locked(avs_sched_t *sched, avs_time_duration_t diff) {
+static void leap_time_impl(avs_sched_t *sched,
+                           avs_time_duration_t diff,
+                           bool notify_ancestors) {
     assert(sched);
+    nonfailing_mutex_lock(sched->mutex);
     AVS_ASSERT(!sched->children_executed,
                "Called avs_sched_time_of_next() "
                "while children schedulers are executed");
@@ -903,31 +788,14 @@ static int leap_time_locked(avs_sched_t *sched, avs_time_duration_t diff) {
 
     AVS_LIST(avs_sched_t *) child;
     AVS_LIST_FOREACH(child, sched->children) {
-        int result = sched_leap_time_locking(*child, diff, false);
-        if (result) {
-            return result;
-        }
+        leap_time_impl(*child, diff, false);
     }
-    return 0;
-}
-
-static int sched_leap_time_locking(avs_sched_t *sched,
-                                   avs_time_duration_t diff,
-                                   bool notify_ancestors) {
-    assert(sched);
-    int result = -1;
-    if (avs_mutex_lock(sched->mutex)) {
-        SCHED_LOG(sched, ERROR, "could not lock mutex");
+    if (notify_ancestors) {
+        notify_task_changes_locked(sched);
     } else {
-        result = leap_time_locked(sched, diff);
-        if (notify_ancestors) {
-            notify_task_changes_locked(sched);
-        } else {
-            avs_condvar_notify_all(sched->task_condvar);
-        }
-        avs_mutex_unlock(sched->mutex);
+        avs_condvar_notify_all(sched->task_condvar);
     }
-    return result;
+    avs_mutex_unlock(sched->mutex);
 }
 
 int avs_sched_leap_time(avs_sched_t *sched, avs_time_duration_t diff) {
@@ -935,7 +803,8 @@ int avs_sched_leap_time(avs_sched_t *sched, avs_time_duration_t diff) {
         SCHED_LOG(sched, ERROR, "attempted to leap an invalid amount of time");
         return -1;
     }
-    return sched_leap_time_locking(sched, diff, true);
+    leap_time_impl(sched, diff, true);
+    return 0;
 }
 
 #ifdef AVS_UNIT_TESTING

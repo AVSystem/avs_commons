@@ -224,7 +224,7 @@ static inline int avs_sched_wait_for_next(avs_sched_t *sched,
  *
  * @param sched Scheduler object to access.
  */
-int avs_sched_run(avs_sched_t *sched);
+void avs_sched_run(avs_sched_t *sched);
 
 /**
  * @name Internal functions
@@ -362,14 +362,10 @@ avs_time_monotonic_t avs_sched_time(avs_sched_handle_t *handle_ptr);
  *                   @ref AVS_SCHED_DELAYED or @ref AVS_SCHED_NOW) to check the
  *                   scheduled time of.
  *
- * @returns
- * - 0 on success
- * - negative value if there is an error when using synchronization primitives
- *
- * NOTE: On successful return from this function, <c>*handle_ptr</c> will be
- * set to <c>NULL</c>.
+ * NOTE: On return from this function, <c>*handle_ptr</c> will be set to
+ * <c>NULL</c>.
  */
-int avs_sched_del(avs_sched_handle_t *handle_ptr);
+void avs_sched_del(avs_sched_handle_t *handle_ptr);
 
 /**
  * Detaches a handle variable from a scheduled job.
@@ -382,14 +378,10 @@ int avs_sched_del(avs_sched_handle_t *handle_ptr);
  *                   @ref AVS_SCHED_DELAYED or @ref AVS_SCHED_NOW) to check the
  *                   scheduled time of.
  *
- * @returns
- * - 0 on success
- * - negative value if there is an error when using synchronization primitives
- *
- * NOTE: On successful return from this function, <c>*handle_ptr</c> will be
- * set to <c>NULL</c>.
+ * NOTE: On return from this function, <c>*handle_ptr</c> will be set to
+ * <c>NULL</c>.
  */
-int avs_sched_release(avs_sched_handle_t *handle_ptr);
+void avs_sched_release(avs_sched_handle_t *handle_ptr);
 
 /**
  * Checks whether there is an ancestor-descendant relationship between two given
@@ -401,14 +393,11 @@ int avs_sched_release(avs_sched_handle_t *handle_ptr);
  * @param maybe_descendant The scheduler object to check for being a descendant
  *                         of @p ancestor .
  *
- * @returns
- * - 1 if @p maybe_descendant is registered as either a direct child or an
- *   indirect descendant of @p ancestor
- * - 0 if it is not
- * - negative value if there is an error when using synchronization primitives
+ * @returns True, if @p maybe_descendant is registered as either a direct child
+ *          or an indirect descendant of @p ancestor, false otherwise.
  */
-int avs_sched_is_descendant(avs_sched_t *ancestor,
-                            avs_sched_t *maybe_descendant);
+bool avs_sched_is_descendant(avs_sched_t *ancestor,
+                             avs_sched_t *maybe_descendant);
 
 /**
  * Registers a scheduler as a child of another scheduler.
