@@ -538,7 +538,7 @@ avs_time_monotonic_t avs_time_monotonic_now(void);
  * Internal implementation for @ref AVS_TIME_DURATION_AS_STRING.
  */
 const char *avs_time_duration_as_string_impl__(
-        char buf[static AVS_TIME_DURATION_AS_STRING_MAX_LENGTH],
+        char (*buf)[AVS_TIME_DURATION_AS_STRING_MAX_LENGTH],
         avs_time_duration_t time);
 
 /**
@@ -553,7 +553,7 @@ const char *avs_time_duration_as_string_impl__(
  */
 #define AVS_TIME_DURATION_AS_STRING(Time) \
         avs_time_duration_as_string_impl__( \
-                &(char[AVS_TIME_DURATION_AS_STRING_MAX_LENGTH]) { "" }[0], \
+                &(char[AVS_TIME_DURATION_AS_STRING_MAX_LENGTH]) { "" }, \
                 (Time))
 
 #ifdef	__cplusplus

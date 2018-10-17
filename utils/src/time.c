@@ -425,21 +425,22 @@ avs_time_duration_t avs_time_duration_div(avs_time_duration_t dividend,
 }
 
 const char *avs_time_duration_as_string_impl__(
-        char buf[static AVS_TIME_DURATION_AS_STRING_MAX_LENGTH],
+        char (*buf)[AVS_TIME_DURATION_AS_STRING_MAX_LENGTH],
         avs_time_duration_t time) {
     if (avs_time_duration_valid(time)) {
         if (time.seconds < 0 && time.nanoseconds > 0) {
             ++time.seconds;
             time.nanoseconds = 1000000000 - time.nanoseconds;
         }
-        avs_simple_snprintf(buf, AVS_TIME_DURATION_AS_STRING_MAX_LENGTH,
+        avs_simple_snprintf(*buf, AVS_TIME_DURATION_AS_STRING_MAX_LENGTH,
                             "%" PRId64 ".%09" PRId32,
                             time.seconds, time.nanoseconds);
     } else {
-        avs_simple_snprintf(buf, AVS_TIME_DURATION_AS_STRING_MAX_LENGTH,
+        avs_simple_snprintf(*buf, AVS_TIME_DURATION_AS_STRING_MAX_LENGTH,
                             "TIME_INVALID");
     }
-    return buf;}
+    return *buf;
+}
 
 #ifdef AVS_UNIT_TESTING
 #include "test/time.c"
