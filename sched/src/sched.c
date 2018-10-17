@@ -35,7 +35,6 @@
 #   define avs_condvar_notify_all(...) ((void) 0)
 #   define avs_mutex_create(...) 0
 #   define avs_mutex_cleanup(...) ((void) 0)
-#   define avs_mutex_lock(...) 0
 #   define avs_mutex_unlock(...) ((void) 0)
 #endif // WITH_SCHEDULER_THREAD_SAFE
 
@@ -119,17 +118,32 @@ struct avs_sched_struct {
  */
 static avs_mutex_t *g_handle_access_mutex;
 static volatile avs_init_once_handle_t g_init_handle;
-#endif // WITH_SCHEDULER_THREAD_SAFE
 
-#define SCHED_LOG(Sched, Level, ...) \
-        LOG(Level, "Scheduler \"%s\": " AVS_VARARG0(__VA_ARGS__), \
-            (Sched)->name AVS_VARARG_REST(__VA_ARGS__))
+static int init_globals(void *dummy) {
+    (void) dummy;
+    return avs_mutex_create(&g_handle_access_mutex);
+}
 
 static void nonfailing_mutex_lock(avs_mutex_t *mutex) {
     if (avs_mutex_lock(mutex)) {
         AVS_UNREACHABLE("could not lock mutex");
     }
 }
+#else // WITH_SCHEDULER_THREAD_SAFE
+#define nonfailing_mutex_lock(...) ((void) 0)
+#endif // WITH_SCHEDULER_THREAD_SAFE
+
+void _avs_sched_cleanup_global_state(void);
+void _avs_sched_cleanup_global_state(void) {
+#ifdef WITH_SCHEDULER_THREAD_SAFE
+    avs_mutex_cleanup(&g_handle_access_mutex);
+    g_init_handle = NULL;
+#endif // WITH_SCHEDULER_THREAD_SAFE
+}
+
+#define SCHED_LOG(Sched, Level, ...) \
+        LOG(Level, "Scheduler \"%s\": " AVS_VARARG0(__VA_ARGS__), \
+            (Sched)->name AVS_VARARG_REST(__VA_ARGS__))
 
 #ifdef WITH_INTERNAL_LOGS
 
@@ -176,21 +190,6 @@ job_log_id_impl(char buf[static JOB_LOG_ID_MAX_LENGTH],
                             (Job)->log_info.name)
 
 #endif // WITH_INTERNAL_LOGS
-
-#ifdef WITH_SCHEDULER_THREAD_SAFE
-static int init_globals(void *dummy) {
-    (void) dummy;
-    return avs_mutex_create(&g_handle_access_mutex);
-}
-#endif // WITH_SCHEDULER_THREAD_SAFE
-
-void _avs_sched_cleanup_global_state(void);
-void _avs_sched_cleanup_global_state(void) {
-#ifdef WITH_SCHEDULER_THREAD_SAFE
-    avs_mutex_cleanup(&g_handle_access_mutex);
-    g_init_handle = NULL;
-#endif // WITH_SCHEDULER_THREAD_SAFE
-}
 
 avs_sched_t *avs_sched_new(const char *name, void *data) {
 #ifdef WITH_SCHEDULER_THREAD_SAFE
