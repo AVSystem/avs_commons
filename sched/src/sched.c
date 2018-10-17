@@ -18,6 +18,7 @@
 
 #include <assert.h>
 #include <inttypes.h>
+#include <stdio.h>
 #include <string.h>
 
 #include <avsystem/commons/list.h>
@@ -572,7 +573,3 @@ int avs_sched_leap_time(avs_sched_t *sched, avs_time_duration_t diff) {
     avs_mutex_unlock(sched->mutex);
     return 0;
 }
-
-#ifdef AVS_UNIT_TESTING
-#include "test/test_sched.c"
-#endif
