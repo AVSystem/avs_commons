@@ -78,7 +78,7 @@ static void *thread_with_mutex_and_condition_variable_func(void *self_) {
 }
 
 AVS_UNIT_TEST(condvar, multiple_threads_with_separate_condition_variables) {
-    thread_with_mutex_and_condition_variable_t threads[32];
+    thread_with_mutex_and_condition_variable_t threads[16];
     memset(threads, 0, sizeof(threads));
 
     for (size_t i = 0; i < AVS_ARRAY_SIZE(threads); ++i) {
@@ -143,7 +143,7 @@ AVS_UNIT_TEST(condvar, multiple_threads_with_separate_condition_variables) {
 
 AVS_UNIT_TEST(condvar,
               multiple_threads_with_shared_separate_condition_variables) {
-    thread_with_mutex_and_condition_variable_t threads[32];
+    thread_with_mutex_and_condition_variable_t threads[16];
     memset(threads, 0, sizeof(threads));
 
     avs_condvar_t *cv = NULL;
@@ -308,6 +308,3 @@ AVS_UNIT_TEST(condvar, loop_increment) {
     avs_condvar_cleanup(&cv);
     avs_mutex_cleanup(&mutex);
 }
-
-#warning "Do something about the fact that even with 4 threads, the spinlock " \
-         "variant takes over half a minute when ran under Valgrind"

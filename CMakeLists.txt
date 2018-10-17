@@ -369,7 +369,7 @@ if(WITH_TEST)
     function(avs_add_test)
         set(options)
         set(one_value_args NAME)
-        set(multi_value_args LIBS SOURCES)
+        set(multi_value_args LIBS SOURCES VALGRIND_ARGS)
         cmake_parse_arguments(AAT "${options}" "${one_value_args}" "${multi_value_args}" ${ARGN})
 
         add_executable(${AAT_NAME}_test EXCLUDE_FROM_ALL
@@ -384,12 +384,12 @@ if(WITH_TEST)
                      "-Wno-clobbered -Wno-overlength-strings -Wno-sign-conversion -Wno-vla")
 
         if(VALGRIND)
-            set(VALGRIND_LOG ${VALGRIND} --log-file=VALGRIND.${AAT_NAME}.log)
+            set(VALGRIND_CMD ${VALGRIND} --log-file=VALGRIND.${AAT_NAME}.log ${AAT_VALGRIND_ARGS})
         else()
-            set(VALGRIND_LOG)
+            set(VALGRIND_CMD)
         endif()
 
-        add_test(NAME ${AAT_NAME}_test COMMAND ${VALGRIND_LOG} $<TARGET_FILE:${AAT_NAME}_test>)
+        add_test(NAME ${AAT_NAME}_test COMMAND ${VALGRIND_CMD} $<TARGET_FILE:${AAT_NAME}_test>)
 
         add_custom_target(${AAT_NAME}_check COMMAND ${CMAKE_CTEST_COMMAND} -V -R "^${AAT_NAME}_test$" DEPENDS ${AAT_NAME}_test)
         add_dependencies(avs_commons_check ${AAT_NAME}_check)

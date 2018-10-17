@@ -39,5 +39,6 @@ find_package(Threads)
 if(WITH_TEST AND THREADS_FOUND)
     avs_add_test(NAME avs_compat_threading_atomic_spinlock
                  LIBS avs_compat_threading_atomic_spinlock ${CMAKE_THREAD_LIBS_INIT}
-                 SOURCES ${COMPAT_THREADING_TEST_SOURCES})
+                 SOURCES ${COMPAT_THREADING_TEST_SOURCES}
+                 VALGRIND_ARGS "--fair-sched=yes")
 endif()
