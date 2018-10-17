@@ -48,7 +48,7 @@ int avs_condvar_create(avs_condvar_t **out_condvar) {
     return -1;
 }
 
-int avs_condvar_notify(avs_condvar_t *condvar) {
+int avs_condvar_notify_all(avs_condvar_t *condvar) {
     avs_mutex_lock(&condvar->waiters_mutex);
     condvar_waiter_node_t *waiter = condvar->first_waiter;
     while (waiter) {

@@ -51,12 +51,12 @@ int avs_condvar_create(avs_condvar_t **out_condvar);
  * @returns @li 0 on success,
  *          @li a negative value in case of error.
  */
-int avs_condvar_notify(avs_condvar_t *condvar);
+int avs_condvar_notify_all(avs_condvar_t *condvar);
 
 /**
  * Waits for an event to occur in another thread. This call shall block until
- * another thread calls @ref avs_condvar_notify on the same condition variable
- * or timeout elapses.
+ * another thread calls @ref avs_condvar_notify_all on the same condition
+ * variable or timeout elapses.
  *
  * Spurious wakeups with return value of 0 may occur, so a condition predicate
  * needs to be manually checked regardless of the return value.

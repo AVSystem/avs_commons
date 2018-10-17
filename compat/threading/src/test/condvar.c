@@ -38,7 +38,7 @@ AVS_UNIT_TEST(condvar, wait_after_notify_on_same_thread) {
 
         AVS_UNIT_ASSERT_SUCCESS(avs_mutex_lock(mutex));
 
-        AVS_UNIT_ASSERT_SUCCESS(avs_condvar_notify(cv));
+        AVS_UNIT_ASSERT_SUCCESS(avs_condvar_notify_all(cv));
         AVS_UNIT_ASSERT_EQUAL(avs_condvar_wait(
                 cv, mutex,
                 avs_time_monotonic_add(
@@ -67,12 +67,12 @@ static void *thread_with_mutex_and_condition_variable_func(void *self_) {
 
     avs_mutex_lock(self->mutex);
     self->running = true;
-    avs_condvar_notify(self->cv);
+    avs_condvar_notify_all(self->cv);
     while (self->running) {
         avs_condvar_wait(self->cv, self->mutex, AVS_TIME_MONOTONIC_INVALID);
     }
     self->finished = true;
-    avs_condvar_notify(self->cv);
+    avs_condvar_notify_all(self->cv);
     avs_mutex_unlock(self->mutex);
     return NULL;
 }
@@ -114,7 +114,7 @@ AVS_UNIT_TEST(condvar, multiple_threads_with_separate_condition_variables) {
         AVS_UNIT_ASSERT_FALSE(threads[i].finished);
         // tell the thread to quit
         threads[i].running = false;
-        AVS_UNIT_ASSERT_SUCCESS(avs_condvar_notify(threads[i].cv));
+        AVS_UNIT_ASSERT_SUCCESS(avs_condvar_notify_all(threads[i].cv));
         AVS_UNIT_ASSERT_SUCCESS(avs_mutex_unlock(threads[i].mutex));
     }
 
@@ -194,7 +194,7 @@ AVS_UNIT_TEST(condvar,
         AVS_UNIT_ASSERT_FALSE(threads[i].finished);
         threads[i].running = false;
     }
-    AVS_UNIT_ASSERT_SUCCESS(avs_condvar_notify(cv));
+    AVS_UNIT_ASSERT_SUCCESS(avs_condvar_notify_all(cv));
     AVS_UNIT_ASSERT_SUCCESS(avs_mutex_unlock(mutex));
 
     // wait for all threads to quit
@@ -261,7 +261,7 @@ static void *loop_increment_thread_func(void *self_) {
         ++count;
         *self->counter = count;
         last_count = count;
-        avs_condvar_notify(self->cv);
+        avs_condvar_notify_all(self->cv);
     }
     avs_mutex_unlock(self->mutex);
     return NULL;

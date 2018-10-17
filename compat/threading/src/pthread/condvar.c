@@ -66,7 +66,7 @@ int avs_condvar_create(avs_condvar_t **out_condvar) {
     return result;
 }
 
-int avs_condvar_notify(avs_condvar_t *condvar) {
+int avs_condvar_notify_all(avs_condvar_t *condvar) {
     return pthread_cond_broadcast(&condvar->pthread_cond);
 }
 
