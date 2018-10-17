@@ -78,7 +78,7 @@ static void *thread_with_mutex_and_condition_variable_func(void *self_) {
 }
 
 AVS_UNIT_TEST(condvar, multiple_threads_with_separate_condition_variables) {
-    thread_with_mutex_and_condition_variable_t threads[4];
+    thread_with_mutex_and_condition_variable_t threads[32];
     memset(threads, 0, sizeof(threads));
 
     for (size_t i = 0; i < AVS_ARRAY_SIZE(threads); ++i) {
@@ -141,6 +141,173 @@ AVS_UNIT_TEST(condvar, multiple_threads_with_separate_condition_variables) {
     }
 }
 
-#warning "TODO: Port rest of the tests, and do something about the fact that " \
-         "even with 4 threads, the spinlock variant takes over half a minute " \
-         "when ran under Valgrind"
+AVS_UNIT_TEST(condvar,
+              multiple_threads_with_shared_separate_condition_variables) {
+    thread_with_mutex_and_condition_variable_t threads[32];
+    memset(threads, 0, sizeof(threads));
+
+    avs_condvar_t *cv = NULL;
+    avs_mutex_t *mutex = NULL;
+    AVS_UNIT_ASSERT_SUCCESS(avs_condvar_create(&cv));
+    AVS_UNIT_ASSERT_SUCCESS(avs_mutex_create(&mutex));
+
+    for (size_t i = 0; i < AVS_ARRAY_SIZE(threads); ++i) {
+        threads[i].mutex = mutex;
+        threads[i].cv = cv;
+    }
+
+    // start all threads
+    AVS_UNIT_ASSERT_SUCCESS(avs_mutex_lock(mutex));
+    for (size_t i = 0; i < AVS_ARRAY_SIZE(threads); ++i) {
+        AVS_UNIT_ASSERT_FALSE(threads[i].running);
+        AVS_UNIT_ASSERT_FALSE(threads[i].finished);
+        AVS_UNIT_ASSERT_SUCCESS(pthread_create(
+                &threads[i].thread,
+                NULL,
+                thread_with_mutex_and_condition_variable_func,
+                &threads[i]));
+    }
+    AVS_UNIT_ASSERT_SUCCESS(avs_mutex_unlock(mutex));
+
+    // wait for all threads to start
+    AVS_UNIT_ASSERT_SUCCESS(avs_mutex_lock(mutex));
+    for (ssize_t i = AVS_ARRAY_SIZE(threads) - 1; i >= 0; --i) {
+        while (!threads[i].running) {
+            AVS_UNIT_ASSERT_SUCCESS(avs_condvar_wait(
+                    cv, mutex, AVS_TIME_MONOTONIC_INVALID));
+        }
+    }
+    AVS_UNIT_ASSERT_SUCCESS(avs_mutex_unlock(mutex));
+
+    // make sure that all threads are running
+    AVS_UNIT_ASSERT_SUCCESS(avs_mutex_lock(mutex));
+    for (size_t i = 0; i < AVS_ARRAY_SIZE(threads); ++i) {
+        AVS_UNIT_ASSERT_TRUE(threads[i].running);
+        AVS_UNIT_ASSERT_FALSE(threads[i].finished);
+    }
+    AVS_UNIT_ASSERT_SUCCESS(avs_mutex_unlock(mutex));
+
+    // tell all threads to quit
+    AVS_UNIT_ASSERT_SUCCESS(avs_mutex_lock(mutex));
+    for (ssize_t i = AVS_ARRAY_SIZE(threads) - 1; i >= 0; --i) {
+        AVS_UNIT_ASSERT_TRUE(threads[i].running);
+        AVS_UNIT_ASSERT_FALSE(threads[i].finished);
+        threads[i].running = false;
+    }
+    AVS_UNIT_ASSERT_SUCCESS(avs_condvar_notify(cv));
+    AVS_UNIT_ASSERT_SUCCESS(avs_mutex_unlock(mutex));
+
+    // wait for all threads to quit
+    AVS_UNIT_ASSERT_SUCCESS(avs_mutex_lock(mutex));
+    for (size_t i = 0; i < AVS_ARRAY_SIZE(threads); ++i) {
+        while (!threads[i].finished) {
+            AVS_UNIT_ASSERT_SUCCESS(avs_condvar_wait(
+                    cv, mutex, AVS_TIME_MONOTONIC_INVALID));
+        }
+    }
+    AVS_UNIT_ASSERT_SUCCESS(avs_mutex_unlock(mutex));
+
+    // make sure all threads are finished
+    AVS_UNIT_ASSERT_SUCCESS(avs_mutex_lock(mutex));
+    for (ssize_t i = AVS_ARRAY_SIZE(threads) - 1; i >= 0; --i) {
+        AVS_UNIT_ASSERT_FALSE(threads[i].running);
+        AVS_UNIT_ASSERT_TRUE(threads[i].finished);
+    }
+    AVS_UNIT_ASSERT_SUCCESS(avs_mutex_unlock(mutex));
+
+    // join all threads
+    for (size_t i = 0; i < AVS_ARRAY_SIZE(threads); ++i) {
+        void *status = NULL;
+        AVS_UNIT_ASSERT_SUCCESS(pthread_join(threads[i].thread, &status));
+    }
+
+    avs_mutex_cleanup(&mutex);
+    avs_condvar_cleanup(&cv);
+}
+
+typedef struct {
+    pthread_t thread;
+    int rem;
+    int *counter;
+    int limit;
+    int thread_count;
+    avs_condvar_t *cv;
+    avs_mutex_t *mutex;
+} loop_increment_thread_t;
+
+static void *loop_increment_thread_func(void *self_) {
+    loop_increment_thread_t *self = (loop_increment_thread_t *) self_;
+    // we are using plain assert()s in this function instead of AVS_UNIT calls
+    // because AVS_UNIT_ASSERT_* calls longjmp() to somewhere that does not
+    // exist in the context of this thread
+    assert(self->rem < self->thread_count);
+    assert(self->limit % self->thread_count == 0);
+
+    int last_count = -1;
+    avs_mutex_lock(self->mutex);
+    while (true) {
+        int count = *self->counter;
+        while (count % self->thread_count != self->rem && count < self->limit) {
+            avs_condvar_wait(self->cv, self->mutex, AVS_TIME_MONOTONIC_INVALID);
+            count = *self->counter;
+        }
+        if (count >= self->limit) {
+            break;
+        }
+        assert(*self->counter == count);
+        if (last_count != -1) {
+            assert(last_count + (self->thread_count - 1) == count);
+        }
+        ++count;
+        *self->counter = count;
+        last_count = count;
+        avs_condvar_notify(self->cv);
+    }
+    avs_mutex_unlock(self->mutex);
+    return NULL;
+}
+
+AVS_UNIT_TEST(condvar, loop_increment) {
+    avs_mutex_t *mutex = NULL;
+    avs_condvar_t *cv = NULL;
+    AVS_UNIT_ASSERT_SUCCESS(avs_mutex_create(&mutex));
+    AVS_UNIT_ASSERT_SUCCESS(avs_condvar_create(&cv));
+
+    for (int thread_count = 1; thread_count < 8; ++thread_count) {
+        const int limit = thread_count * 10;
+        int counter = 0;
+
+        // setup the threads
+        loop_increment_thread_t threads[thread_count];
+        for (int i = 0; i < thread_count; ++i) {
+            threads[i].rem = i;
+            threads[i].counter = &counter;
+            threads[i].limit = limit;
+            threads[i].thread_count = thread_count;
+            threads[i].cv = cv;
+            threads[i].mutex = mutex;
+        }
+
+        // start all threads
+        for (int i = thread_count - 1; i >= 0; --i) {
+            AVS_UNIT_ASSERT_SUCCESS(pthread_create(&threads[i].thread,
+                                                   NULL,
+                                                   loop_increment_thread_func,
+                                                   &threads[i]));
+        }
+
+        // join and cleanup all threads
+        for (int i = 0; i < thread_count; ++i) {
+            void *status = NULL;
+            AVS_UNIT_ASSERT_SUCCESS(pthread_join(threads[i].thread, &status));
+        }
+
+        AVS_UNIT_ASSERT_EQUAL(counter, limit);
+    }
+
+    avs_condvar_cleanup(&cv);
+    avs_mutex_cleanup(&mutex);
+}
+
+#warning "Do something about the fact that even with 4 threads, the spinlock " \
+         "variant takes over half a minute when ran under Valgrind"
