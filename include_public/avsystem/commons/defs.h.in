@@ -323,4 +323,8 @@ struct AvsCallWithCast__ {
  */
 #define AVS_UNREACHABLE(msg) AVS_ASSERT(0, msg)
 
+#define AVS_PRAGMA(x) _Pragma(#x)
+
+#define AVS_POISON(identifier) @AVS_POISON_IMPL@
+
 #endif	/* AVS_COMMONS_DEFS_H */

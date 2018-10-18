@@ -159,6 +159,9 @@ if(WITH_EXTRA_WARNINGS)
 endif()
 
 option(WITH_POISONING "Poison libc symbols that shall not be used" ${WITH_TEST})
+if(WITH_POISONING)
+    set(AVS_POISON_IMPL "AVS_PRAGMA(GCC poison identifier)")
+endif()
 
 if(CMAKE_C_COMPILE_OPTIONS_PIC)
     option(WITH_PIC "Generate position-independent code" ON)

@@ -15,6 +15,7 @@
 add_library(avs_utils STATIC
             include_public/avsystem/commons/time.h
             include_public/avsystem/commons/memory.h
+            include_public/avsystem/commons/shared_buffer.h
             include_public/avsystem/commons/utils.h
 
             src/x_time_conv.h
@@ -51,7 +52,8 @@ target_link_libraries(avs_utils PUBLIC avs_commons_global_headers ${MATH_LIBRARY
 
 avs_add_test(NAME avs_utils
              LIBS avs_utils
-             SOURCES $<TARGET_PROPERTY:avs_utils,SOURCES>)
+             SOURCES $<TARGET_PROPERTY:avs_utils,SOURCES>
+             src/test/shared_buffer.c)
 
 avs_install_export(avs_utils utils)
 install(DIRECTORY include_public/
