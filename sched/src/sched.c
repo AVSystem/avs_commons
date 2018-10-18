@@ -83,8 +83,7 @@ struct avs_sched_struct {
 
 #ifdef WITH_SCHEDULER_THREAD_SAFE
     /**
-     * Mutex that guards access to jobs, parent, children, children_executed
-     * and ancestor_task_condvars fields.
+     * Mutex that guards access to the jobs list.
      *
      * If there is a need to lock mutexes of multiple schedulers within a family
      * tree, they MUST be always locked in the ancestor-first order.
@@ -271,11 +270,10 @@ avs_time_monotonic_t avs_sched_time_of_next(avs_sched_t *sched) {
 
 int avs_sched_wait_until_next(avs_sched_t *sched,
                               avs_time_monotonic_t deadline) {
-    int result = -1;
-    (void) deadline;
 #ifdef WITH_SCHEDULER_THREAD_SAFE
     nonfailing_mutex_lock(sched->mutex);
     avs_time_monotonic_t time_of_next;
+    int result = -1;
     do {
         time_of_next = sched_time_of_next_locked(sched);
         avs_time_monotonic_t local_deadline = deadline;
@@ -286,7 +284,9 @@ int avs_sched_wait_until_next(avs_sched_t *sched,
         result = avs_condvar_wait(sched->task_condvar, sched->mutex,
                                   local_deadline);
     } while (!result);
-    if (result >= 0) {
+    if (result < 0) {
+        SCHED_LOG(sched, ERROR, "could not wait on condition variable");
+    } else {
         time_of_next = sched_time_of_next_locked(sched);
         result = ((avs_time_monotonic_valid(time_of_next)
                         && !avs_time_monotonic_before(avs_time_monotonic_now(),
@@ -294,11 +294,15 @@ int avs_sched_wait_until_next(avs_sched_t *sched,
                 ? 0 : AVS_CONDVAR_TIMEOUT);
     }
     avs_mutex_unlock(sched->mutex);
-#endif // WITH_SCHEDULER_THREAD_SAFE
-    if (result < 0) {
-        SCHED_LOG(sched, ERROR, "could not wait on condition variable");
-    }
     return result;
+#else // WITH_SCHEDULER_THREAD_SAFE
+    (void) deadline;
+    (void) sched;
+    SCHED_LOG(sched, ERROR,
+              "avs_sched_wait_until_next() is not supported because avs_sched "
+              "was compiled with thread safety disabled");
+    return -1;
+#endif // WITH_SCHEDULER_THREAD_SAFE
 }
 
 static AVS_LIST(avs_sched_job_t) fetch_job(avs_sched_t *sched,
@@ -468,12 +472,6 @@ avs_time_monotonic_t avs_sched_time(avs_sched_handle_t *handle_ptr) {
     avs_mutex_unlock(g_handle_access_mutex);
     return result;
 }
-
-typedef struct {
-    avs_sched_handle_t *const handle_ptr;
-    avs_sched_job_t *job;
-    avs_sched_t *sched;
-} handle_ops_init_data_t;
 
 void avs_sched_del(avs_sched_handle_t *handle_ptr) {
     if (!handle_ptr) {
