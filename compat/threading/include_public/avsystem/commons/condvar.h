@@ -67,8 +67,8 @@ int avs_condvar_notify_all(avs_condvar_t *condvar);
  * @param condvar  Condition variable to wait on.
  * @param mutex    Mutex to temporarily unlock while waiting on the variable.
  * @param deadline Point in time until which to wait for. Might be
- *                 @ref AVS_TIME_MONOTONIC_INVALID, in which case the wait is
- *                 indefinite.
+ *                 @ref AVS_TIME_MONOTONIC_INVALID, in which case the timeout is
+ *                 infinite.
  *
  * @returns @li 0 if event occurred
  *          @li @ref AVS_CONDVAR_TIMEOUT (1) if timeout elapsed
