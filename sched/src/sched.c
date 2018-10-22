@@ -84,9 +84,6 @@ struct avs_sched_struct {
 #ifdef WITH_SCHEDULER_THREAD_SAFE
     /**
      * Mutex that guards access to the jobs list.
-     *
-     * If there is a need to lock mutexes of multiple schedulers within a family
-     * tree, they MUST be always locked in the ancestor-first order.
      */
     avs_mutex_t *mutex;
 
@@ -104,7 +101,7 @@ struct avs_sched_struct {
      * A flag that prevents scheduling new jobs while the scheduler is shutting
      * down.
      */
-    bool shut_down;
+    bool shutting_down;
 };
 
 #ifdef WITH_SCHEDULER_THREAD_SAFE
@@ -226,7 +223,7 @@ void avs_sched_cleanup(avs_sched_t **sched_ptr) {
     }
 
     SCHED_LOG(*sched_ptr, DEBUG, "shutting down");
-    (*sched_ptr)->shut_down = true;
+    (*sched_ptr)->shutting_down = true;
 
     // execute any tasks remaining for now
     avs_sched_run(*sched_ptr);
@@ -377,7 +374,7 @@ static int sched_at_locked(avs_sched_t *sched,
     assert(sched);
     assert(clb);
     assert(avs_time_monotonic_valid(instant));
-    if (sched->shut_down) {
+    if (sched->shutting_down) {
         SCHED_LOG(sched, ERROR, "scheduler already shut down when attempting "
                                 "to schedule%s",
                   JOB_LOG_ID_EXPLICIT(log_file, log_line, log_name));

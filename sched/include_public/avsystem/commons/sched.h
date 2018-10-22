@@ -38,7 +38,7 @@ typedef struct avs_sched_job_struct avs_sched_job_t;
  *
  * NOTE: Attempting to modify the value of an <c>avs_sched_handle_t</c> variable
  * in any other way than by calling functions from this module, or moving any
- * data containing such, may result in undefined behaviour.
+ * data containing <c>avs_sched_handle_t</c>, may result in undefined behaviour.
  */
 typedef avs_sched_job_t *avs_sched_handle_t;
 
@@ -61,6 +61,7 @@ typedef void avs_sched_clb_t(avs_sched_t *sched, const void *data);
  * Creates a new scheduler object.
  *
  * @param name The name of the scheduler that will be used in log messages.
+ *             If NULL, <c>"(unknown)"</c> will be used instead.
  *
  * @param data An opaque pointer that will be possible to retrieve from the
  *             scheduler using @ref avs_sched_data . The scheduler will not
@@ -193,7 +194,7 @@ int avs_sched_wait_until_next(avs_sched_t *sched,
  *
  * @returns
  * - 0 when there is a scheduled job to execute.
- * - @ref AVS_CONDVAR_TIMEOUT if @p deadline passes without any jobs to execute.
+ * - A positive value if @p deadline passes without any jobs to execute.
  * - A negative value in case of error when using synchronization primitives.
  */
 static inline int avs_sched_wait_for_next(avs_sched_t *sched,
@@ -259,7 +260,8 @@ int avs_sched_at_impl__(avs_sched_t *sched,
  *                         (<c>avs_sched_clb_t *</c>).
  *
  * @param[in]  ClbData     Pointer to data that will be passed to @p Clb
- *                         (<c>const void *</c>).
+ *                         (<c>const void *</c>). The data will be copied and
+ *                         stored inside the job structure.
  *
  * @param[in]  ClbDataSize Number of bytes at @p ClbData that will be stored in
  *                         the job structure (<c>size_t</c>).
