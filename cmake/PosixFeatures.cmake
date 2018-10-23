@@ -81,7 +81,7 @@ check_symbol_exists("close" "unistd.h" HAVE_CLOSE)
 # That makes simple check_symbol_exists() succeed despite it being unusable.
 message(STATUS "Checking if IN6_IS_ADDR_V4MAPPED is usable")
 file(WRITE ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp/in6_is_addr_v4mapped.c
-     "#include <netinet/in.h>\nint main() { struct in6_addr addr; IN6_IS_ADDR_V4MAPPED(&addr); return 0; }\n")
+     "#include <netinet/in.h>\nint main() { struct in6_addr addr = {0}; IN6_IS_ADDR_V4MAPPED(&addr); return 0; }\n")
 try_compile(HAVE_IN6_IS_ADDR_V4MAPPED
             ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp
             ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp/in6_is_addr_v4mapped.c

@@ -104,30 +104,37 @@ typedef struct avs_coap_opt {
 const uint8_t *avs_coap_opt_value(const avs_coap_opt_t *opt);
 
 /**
- * Low-level API for accessing an integer option value.
+ * Retrieves a 8-bit integer option value.
  *
  * @param[in]  opt            CoAP option to retrieve value from.
- * @param[out] out_value      Buffer to store the option value in. Retrieved
- *                            value is always in host byte order.
- * @param[in]  out_value_size Number of bytes available in @p out_value .
+ * @param[out] out_value      Pointer to variable to store the option value in.
  *
- * @returns 0 on success, a negative value if @p out_value is too small
- *          to hold the integer value of @p opt .
+ * @returns 0 on success, a negative value if the integer value of @p opt is
+ *          too large to be stored in a 8-bit variable.
  */
-int avs_coap_opt_uint_value(const avs_coap_opt_t *opt,
-                            void *out_value,
-                            size_t out_value_size);
+int avs_coap_opt_u8_value(const avs_coap_opt_t *opt, uint8_t *out_value);
 
 /**
- * Convenience function for retrieving the value of an option as a 32-bit
- * unsigned integer.
+ * Retrieves a 16-bit integer option value.
  *
- * @returns See @ref avs_coap_opt_uint_value .
+ * @param[in]  opt            CoAP option to retrieve value from.
+ * @param[out] out_value      Pointer to variable to store the option value in.
+ *
+ * @returns 0 on success, a negative value if the integer value of @p opt is
+ *          too large to be stored in a 16-bit variable.
  */
-static inline int avs_coap_opt_u32_value(const avs_coap_opt_t *opt,
-                                         uint32_t *out_value) {
-    return avs_coap_opt_uint_value(opt, out_value, sizeof(*out_value));
-}
+int avs_coap_opt_u16_value(const avs_coap_opt_t *opt, uint16_t *out_value);
+
+/**
+ * Retrieves a 32-bit integer option value.
+ *
+ * @param[in]  opt            CoAP option to retrieve value from.
+ * @param[out] out_value      Pointer to variable to store the option value in.
+ *
+ * @returns 0 on success, a negative value if the integer value of @p opt is
+ *          too large to be stored in a 32-bit variable.
+ */
+int avs_coap_opt_u32_value(const avs_coap_opt_t *opt, uint32_t *out_value);
 
 /**
  * Retrieves an CoAP option value as a zero-terminated string.
