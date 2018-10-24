@@ -51,25 +51,6 @@ int avs_coap_msg_find_unique_opt(const avs_coap_msg_t *msg,
                                  const avs_coap_opt_t **out_opt);
 
 /**
- * Finds a unique CoAP option with a 8-bit unsigned integer value.
- *
- * @param[in]  msg           CoAP message to look for the option in.
- * @param[in]  option_number CoAP option number to find.
- * @param[out] out_value     Pointer to variable to store the option value in.
- *
- * @returns @li 0 if exactly one option with given @p option_number was found,
- *              and its integer value was successfully put into @p out_value,
- *          @li AVS_COAP_OPTION_MISSING if @p msg does not contain any option
- *              with given @p option_number ,
- *          @li a negative value if multiple options with given @p option_number
- *              were found or the option value is too large to be stored in a
- *              8-bit variable
- */
-int avs_coap_msg_get_option_u8(const avs_coap_msg_t *msg,
-                               uint16_t option_number,
-                               uint8_t *out_value);
-
-/**
  * Finds a unique CoAP option with a 16-bit unsigned integer value.
  *
  * @param[in]  msg           CoAP message to look for the option in.

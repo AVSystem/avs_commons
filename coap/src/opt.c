@@ -77,25 +77,33 @@ const uint8_t *avs_coap_opt_value(const avs_coap_opt_t *opt) {
            + get_ext_field_size(_avs_coap_opt_get_short_length(opt));
 }
 
-#define IMPLEMENT_AVS_COAP_OPT_UINT_VALUE(Bitness) \
-int avs_coap_opt_u##Bitness##_value(const avs_coap_opt_t *opt, \
-                                    uint##Bitness##_t *out_value) { \
-    const uint8_t *value_data = avs_coap_opt_value(opt); \
-    uint32_t length = avs_coap_opt_content_length(opt); \
-    if (length > sizeof(*out_value)) { \
-        return -1; \
-    } \
-    *out_value = 0; \
-    for (size_t i = 0; i < length; ++i) { \
-        *out_value = (uint##Bitness##_t) (*out_value << 8); \
-        *out_value = (uint##Bitness##_t) (*out_value | value_data[i]); \
-    } \
-    return 0; \
+int avs_coap_opt_u16_value(const avs_coap_opt_t *opt, uint16_t *out_value) {
+    const uint8_t *value_data = avs_coap_opt_value(opt);
+    uint32_t length = avs_coap_opt_content_length(opt);
+    if (length > sizeof(*out_value)) {
+        return -1;
+    }
+    *out_value = 0;
+    for (size_t i = 0; i < length; ++i) {
+        *out_value = (uint16_t) (*out_value << 8);
+        *out_value = (uint16_t) (*out_value | value_data[i]);
+    }
+    return 0;
 }
 
-IMPLEMENT_AVS_COAP_OPT_UINT_VALUE(8)
-IMPLEMENT_AVS_COAP_OPT_UINT_VALUE(16)
-IMPLEMENT_AVS_COAP_OPT_UINT_VALUE(32)
+int avs_coap_opt_u32_value(const avs_coap_opt_t *opt, uint32_t *out_value) {
+    const uint8_t *value_data = avs_coap_opt_value(opt);
+    uint32_t length = avs_coap_opt_content_length(opt);
+    if (length > sizeof(*out_value)) {
+        return -1;
+    }
+    *out_value = 0;
+    for (size_t i = 0; i < length; ++i) {
+        *out_value = (uint32_t) (*out_value << 8);
+        *out_value = (uint32_t) (*out_value | value_data[i]);
+    }
+    return 0;
+}
 
 int avs_coap_opt_string_value(const avs_coap_opt_t *opt,
                               size_t *out_bytes_read,

@@ -104,17 +104,6 @@ typedef struct avs_coap_opt {
 const uint8_t *avs_coap_opt_value(const avs_coap_opt_t *opt);
 
 /**
- * Retrieves a 8-bit integer option value.
- *
- * @param[in]  opt            CoAP option to retrieve value from.
- * @param[out] out_value      Pointer to variable to store the option value in.
- *
- * @returns 0 on success, a negative value if the integer value of @p opt is
- *          too large to be stored in a 8-bit variable.
- */
-int avs_coap_opt_u8_value(const avs_coap_opt_t *opt, uint8_t *out_value);
-
-/**
  * Retrieves a 16-bit integer option value.
  *
  * @param[in]  opt            CoAP option to retrieve value from.

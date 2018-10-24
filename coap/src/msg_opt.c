@@ -51,28 +51,39 @@ int avs_coap_msg_find_unique_opt(const avs_coap_msg_t *msg,
     return *out_opt ? 0 : -1;
 }
 
-#define IMPLEMENT_AVS_COAP_MAG_GET_OPTION_UINT(Bitness) \
-int avs_coap_msg_get_option_u##Bitness(const avs_coap_msg_t *msg, \
-                                       uint16_t option_number, \
-                                       uint##Bitness##_t *out_value) { \
-    const avs_coap_opt_t *opt; \
-    if (avs_coap_msg_find_unique_opt(msg, option_number, &opt)) { \
-        if (opt) { \
-            LOG(DEBUG, "multiple instances of option %d found", \
-                     option_number); \
-            return -1; \
-        } else { \
-            LOG(TRACE, "option %d not found", option_number); \
-            return AVS_COAP_OPTION_MISSING; \
-        } \
-    } \
-    \
-    return avs_coap_opt_u##Bitness##_value(opt, out_value); \
+int avs_coap_msg_get_option_u16(const avs_coap_msg_t *msg,
+                                uint16_t option_number,
+                                uint16_t *out_value) {
+    const avs_coap_opt_t *opt;
+    if (avs_coap_msg_find_unique_opt(msg, option_number, &opt)) {
+        if (opt) {
+            LOG(DEBUG, "multiple instances of option %d found",
+                     option_number);
+            return -1;
+        } else {
+            LOG(TRACE, "option %d not found", option_number);
+            return AVS_COAP_OPTION_MISSING;
+        }
+    }
+    return avs_coap_opt_u16_value(opt, out_value);
 }
 
-IMPLEMENT_AVS_COAP_MAG_GET_OPTION_UINT(8)
-IMPLEMENT_AVS_COAP_MAG_GET_OPTION_UINT(16)
-IMPLEMENT_AVS_COAP_MAG_GET_OPTION_UINT(32)
+int avs_coap_msg_get_option_u32(const avs_coap_msg_t *msg,
+                                uint16_t option_number,
+                                uint32_t *out_value) {
+    const avs_coap_opt_t *opt;
+    if (avs_coap_msg_find_unique_opt(msg, option_number, &opt)) {
+        if (opt) {
+            LOG(DEBUG, "multiple instances of option %d found",
+                     option_number);
+            return -1;
+        } else {
+            LOG(TRACE, "option %d not found", option_number);
+            return AVS_COAP_OPTION_MISSING;
+        }
+    }
+    return avs_coap_opt_u32_value(opt, out_value);
+}
 
 int avs_coap_msg_get_option_string_it(const avs_coap_msg_t *msg,
                                       uint16_t option_number,
