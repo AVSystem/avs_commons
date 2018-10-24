@@ -77,29 +77,31 @@ const uint8_t *avs_coap_opt_value(const avs_coap_opt_t *opt) {
            + get_ext_field_size(_avs_coap_opt_get_short_length(opt));
 }
 
-int avs_coap_opt_uint_value(const avs_coap_opt_t *opt,
-                            void *out_value,
-                            size_t out_value_size) {
-    const uint8_t *value = avs_coap_opt_value(opt);
+int avs_coap_opt_u16_value(const avs_coap_opt_t *opt, uint16_t *out_value) {
+    const uint8_t *value_data = avs_coap_opt_value(opt);
     uint32_t length = avs_coap_opt_content_length(opt);
-    if (length > out_value_size) {
+    if (length > sizeof(*out_value)) {
         return -1;
     }
-    memset(out_value, 0, out_value_size);
-#ifdef AVS_COMMONS_BIG_ENDIAN
-    memcpy(((char *) out_value) + (out_value_size - length), value, length);
-#else
+    *out_value = 0;
     for (size_t i = 0; i < length; ++i) {
-        // this is effectively
-        //
-        //     ((uint8_t *) out_value)[length - 1 - i] = value[i];
-        //
-        // but for whatever reason scan-build 6.0 then thinks that out_value has
-        // garbage value; work around this so that we don't have to deal with
-        // false positives in scan-build results
-        memcpy((uint8_t *) out_value + length - 1 - i, value + i, 1);
+        *out_value = (uint16_t) (*out_value << 8);
+        *out_value = (uint16_t) (*out_value | value_data[i]);
     }
-#endif
+    return 0;
+}
+
+int avs_coap_opt_u32_value(const avs_coap_opt_t *opt, uint32_t *out_value) {
+    const uint8_t *value_data = avs_coap_opt_value(opt);
+    uint32_t length = avs_coap_opt_content_length(opt);
+    if (length > sizeof(*out_value)) {
+        return -1;
+    }
+    *out_value = 0;
+    for (size_t i = 0; i < length; ++i) {
+        *out_value = (uint32_t) (*out_value << 8);
+        *out_value = (uint32_t) (*out_value | value_data[i]);
+    }
     return 0;
 }
 
@@ -139,7 +141,7 @@ int avs_coap_opt_block_has_more(const avs_coap_opt_t *opt, bool *out_has_more) {
 }
 
 int avs_coap_opt_block_size(const avs_coap_opt_t *opt, uint16_t *out_size) {
-    uint32_t value;
+    uint32_t value = 0;
     if (avs_coap_opt_u32_value(opt, &value) || value >= (1 << 24)) {
         return -1;
     }
