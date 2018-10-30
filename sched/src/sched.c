@@ -466,35 +466,34 @@ int avs_sched_impl__(avs_sched_t *sched,
                      avs_sched_clb_t *clb,
                      const void *clb_data,
                      size_t clb_data_size,
-                     const avs_sched_impl_additional_args_t *args) {
+                     const avs_sched_impl_additional_args_t args) {
     assert(sched);
-    assert(args);
     if (!clb) {
         SCHED_LOG(sched, ERROR,
                   "attempted to schedule a null callback pointer%s",
                   JOB_LOG_ID_EXPLICIT(
-                          args->log_file, args->log_line, args->log_name));
+                          args.log_file, args.log_line, args.log_name));
         return -1;
     }
     avs_time_monotonic_t instant;
-    if (args->use_absolute_monotonic_time) {
-        instant.since_monotonic_epoch = args->delay;
+    if (args.use_absolute_monotonic_time) {
+        instant.since_monotonic_epoch = args.delay;
     } else {
-        instant = avs_time_monotonic_add(avs_time_monotonic_now(), args->delay);
+        instant = avs_time_monotonic_add(avs_time_monotonic_now(), args.delay);
     }
     if (!avs_time_monotonic_valid(instant)) {
         SCHED_LOG(sched, ERROR,
                   "attempted to schedule job%s at an invalid time point",
                   JOB_LOG_ID_EXPLICIT(
-                          args->log_file, args->log_line, args->log_name));
+                          args.log_file, args.log_line, args.log_name));
         return -1;
     }
 
     int result = -1;
     nonfailing_mutex_lock(sched->mutex);
     if (!(result = sched_at_locked(sched, out_handle, instant,
-                                   args->reschedule_policy, args->log_file,
-                                   args->log_line, args->log_name,
+                                   args.reschedule_policy, args.log_file,
+                                   args.log_line, args.log_name,
                                    clb, clb_data, clb_data_size))) {
         avs_condvar_notify_all(sched->task_condvar);
     }

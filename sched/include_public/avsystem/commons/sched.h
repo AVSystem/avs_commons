@@ -243,31 +243,46 @@ int avs_sched_impl__(avs_sched_t *sched,
                      avs_sched_clb_t *clb,
                      const void *clb_data,
                      size_t clb_data_size,
-                     const avs_sched_impl_additional_args_t *args);
+                     avs_sched_impl_additional_args_t args);
+
+#ifdef __cplusplus
+#   define AVS_SCHED_INIT_FIELD__(Field) avs_sched_impl_result__.Field
+#else // __cplusplus
+#   define AVS_SCHED_INIT_FIELD__(Field) .Field
+#endif // __cplusplus
 
 #ifndef AVS_LOG_WITH_TRACE
-#   define AVS_SCHED_LOG_ARGS__(...) (NULL), 0, (NULL)
+#   define AVS_SCHED_LOG_ARGS__(...) \
+        AVS_SCHED_INIT_FIELD__(log_file) = (NULL), \
+        AVS_SCHED_INIT_FIELD__(log_line) = 0, \
+        AVS_SCHED_INIT_FIELD__(log_name) = (NULL)
 #elif !defined(AVS_SCHED_WITH_ARGS_LOG)
-#   define AVS_SCHED_LOG_ARGS__(Clb, ClbArgs) __FILE__, __LINE__, AVS_QUOTE(Clb)
+#   define AVS_SCHED_LOG_ARGS__(Clb, ClbArgs) \
+        AVS_SCHED_INIT_FIELD__(log_file) = __FILE__, \
+        AVS_SCHED_INIT_FIELD__(log_line) = __LINE__, \
+        AVS_SCHED_INIT_FIELD__(log_name) = AVS_QUOTE(Clb)
 #else // !defined(AVS_SCHED_WITH_ARGS_LOG)
 #   define AVS_SCHED_LOG_ARGS__(Clb, ClbArgs) \
-        __FILE__, __LINE__, AVS_QUOTE(Clb) AVS_QUOTE(ClbArgs)
+        AVS_SCHED_INIT_FIELD__(log_file) = __FILE__, \
+        AVS_SCHED_INIT_FIELD__(log_line) = __LINE__, \
+        AVS_SCHED_INIT_FIELD__(log_name) = AVS_QUOTE(Clb) AVS_QUOTE(ClbArgs)
 #endif // AVS_LOG_WITH_TRACE // !defined(AVS_SCHED_WITH_ARGS_LOG)
 
 #define AVS_SCHED_IMPL_ARG_NOW \
-        /* .use_absolute_monotonic_time = */ false, \
-        .delay = AVS_TIME_DURATION_ZERO
+        /* AVS_SCHED_INIT_FIELD__(use_absolute_monotonic_time) = */ false, \
+        AVS_SCHED_INIT_FIELD__(delay) = AVS_TIME_DURATION_ZERO
 
 #define AVS_SCHED_IMPL_ARG_DELAYED(Delay) \
-        /* .use_absolute_monotonic_time = */ false, \
-        .delay = (Delay)
+        /* AVS_SCHED_INIT_FIELD__(use_absolute_monotonic_time) = */ false, \
+        AVS_SCHED_INIT_FIELD__(delay) = (Delay)
 
 #define AVS_SCHED_IMPL_ARG_AT(Instant) \
-        /* .use_absolute_monotonic_time = */ true, \
-        .delay = (Instant).since_monotonic_epoch
+        /* AVS_SCHED_INIT_FIELD__(use_absolute_monotonic_time) = */ true, \
+        AVS_SCHED_INIT_FIELD__(delay) = (Instant).since_monotonic_epoch
 
 #define AVS_SCHED_IMPL_ARG_RESCHEDULE_POLICY(Policy) \
-        .reschedule_policy = AVS_SCHED_IMPL_RESCHEDULE_POLICY_ ## Policy
+        AVS_SCHED_INIT_FIELD__(reschedule_policy) = \
+                AVS_SCHED_IMPL_RESCHEDULE_POLICY_ ## Policy
 
 #define AVS_SCHED_IMPL_PREPROCESS_ARGS_1__(Arg) AVS_SCHED_IMPL_ARG_ ## Arg
 
@@ -280,6 +295,24 @@ int avs_sched_impl__(avs_sched_t *sched,
 #define AVS_SCHED_IMPL_PREPROCESS_ARGS__(...) \
         AVS_CONCAT(AVS_SCHED_IMPL_PREPROCESS_ARGS_, \
                    AVS_VARARG_LENGTH(__VA_ARGS__), __)(__VA_ARGS__)
+
+#ifdef __cplusplus
+#   define AVS_SCHED_IMPL_ADDITIONAL_ARGS__(Clb, ClbArgs, ...) \
+        [&]() { \
+            avs_sched_impl_additional_args_t avs_sched_impl_result__{}; \
+            AVS_SCHED_LOG_ARGS__(Clb, ClbArgs); \
+            avs_sched_impl_result__.use_absolute_monotonic_time = \
+                    AVS_SCHED_IMPL_PREPROCESS_ARGS__(__VA_ARGS__); \
+            return avs_sched_impl_result__; \
+        }()
+#else // __cplusplus
+#   define AVS_SCHED_IMPL_ADDITIONAL_ARGS__(Clb, ClbArgs, ...) \
+        (const avs_sched_impl_additional_args_t) { \
+            AVS_SCHED_LOG_ARGS__(Clb, ClbArgs), \
+            .use_absolute_monotonic_time = \
+                    AVS_SCHED_IMPL_PREPROCESS_ARGS__(__VA_ARGS__) \
+        }
+#endif // __cplusplus
 /*@}*/
 
 /**
@@ -365,11 +398,8 @@ int avs_sched_impl__(avs_sched_t *sched,
 #define AVS_SCHED(Sched, OutHandle, Clb, ClbData, ClbDataSize, ...) \
         avs_sched_impl__( \
                 (Sched), (OutHandle), (Clb), (ClbData), (ClbDataSize), \
-                &(const avs_sched_impl_additional_args_t) { \
-                    AVS_SCHED_LOG_ARGS__(Clb, (ClbData, ClbDataSize)), \
-                    .use_absolute_monotonic_time = \
-                            AVS_SCHED_IMPL_PREPROCESS_ARGS__(__VA_ARGS__) \
-                })
+                AVS_SCHED_IMPL_ADDITIONAL_ARGS__(Clb, (ClbData, ClbDataSize), \
+                                                 __VA_ARGS__))
 
 #define AVS_SCHED_AT(Sched, OutHandle, Instant, Clb, ClbData, ClbDataSize) \
         AVS_SCHED(Sched, OutHandle, Clb, ClbData, ClbDataSize, AT(Instant))
