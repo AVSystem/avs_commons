@@ -420,14 +420,15 @@ static int sched_at_locked(avs_sched_t *sched,
         if (!*out_handle) {
             job = (avs_sched_job_t *) AVS_LIST_NEW_BUFFER(
                     sizeof(avs_sched_job_t) + clb_data_size);
-            if (!job) {
-                SCHED_LOG(sched, ERROR, "could not allocate scheduler task");
-            } else {
+            if (job) {
                 result = 0;
                 *out_handle = job;
             }
         }
         avs_mutex_unlock(g_handle_access_mutex);
+    } else if ((job = (avs_sched_job_t *) AVS_LIST_NEW_BUFFER(
+                    sizeof(avs_sched_job_t) + clb_data_size))) {
+        result = 0;
     }
 
     if (job) {
@@ -457,6 +458,8 @@ static int sched_at_locked(avs_sched_t *sched,
                   AVS_TIME_DURATION_AS_STRING(instant.since_monotonic_epoch),
                   AVS_TIME_DURATION_AS_STRING(remaining));
 #endif // WITH_INTERNAL_TRACE
+    } else if (result) {
+        SCHED_LOG(sched, ERROR, "could not allocate scheduler task");
     }
     return result;
 }
