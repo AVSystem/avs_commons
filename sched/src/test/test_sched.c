@@ -177,4 +177,66 @@ AVS_UNIT_TEST(sched, oneshot_job_handle_nullification) {
     teardown_test(&env);
 }
 
+static int GLOBAL_VALUE = 0;
+
+static void global_value_setter(avs_sched_t *sched, const void *value_) {
+    (void) sched;
+    AVS_UNIT_ASSERT_EQUAL(GLOBAL_VALUE, 0);
+    GLOBAL_VALUE = *(const int *) value_;
+}
+
+AVS_UNIT_TEST(sched, reschedule_policy_error) {
+    sched_test_env_t env = setup_test();
+    GLOBAL_VALUE = 0;
+
+    avs_sched_handle_t task = NULL;
+    AVS_UNIT_ASSERT_SUCCESS(AVS_SCHED(env.sched, &task, global_value_setter,
+                                      &(int[]) { 42 }[0], sizeof(int),
+                                      NOW, RESCHEDULE_POLICY(ERROR)));
+    AVS_UNIT_ASSERT_FAILED(AVS_SCHED(env.sched, &task, global_value_setter,
+                                     &(int[]) { 514 }[0], sizeof(int),
+                                     NOW, RESCHEDULE_POLICY(ERROR)));
+    AVS_UNIT_ASSERT_NOT_NULL(task);
+    avs_sched_run(env.sched);
+    AVS_UNIT_ASSERT_NULL(task);
+    AVS_UNIT_ASSERT_EQUAL(GLOBAL_VALUE, 42);
+    teardown_test(&env);
+}
+
+AVS_UNIT_TEST(sched, reschedule_policy_replace) {
+    sched_test_env_t env = setup_test();
+    GLOBAL_VALUE = 0;
+
+    avs_sched_handle_t task = NULL;
+    AVS_UNIT_ASSERT_SUCCESS(AVS_SCHED(env.sched, &task, global_value_setter,
+                                      &(int[]) { 42 }[0], sizeof(int),
+                                      NOW, RESCHEDULE_POLICY(REPLACE)));
+    AVS_UNIT_ASSERT_SUCCESS(AVS_SCHED(env.sched, &task, global_value_setter,
+                                      &(int[]) { 514 }[0], sizeof(int),
+                                      NOW, RESCHEDULE_POLICY(REPLACE)));
+    AVS_UNIT_ASSERT_NOT_NULL(task);
+    avs_sched_run(env.sched);
+    AVS_UNIT_ASSERT_NULL(task);
+    AVS_UNIT_ASSERT_EQUAL(GLOBAL_VALUE, 514);
+    teardown_test(&env);
+}
+
+AVS_UNIT_TEST(sched, reschedule_policy_ignore) {
+    sched_test_env_t env = setup_test();
+    GLOBAL_VALUE = 0;
+
+    avs_sched_handle_t task = NULL;
+    AVS_UNIT_ASSERT_SUCCESS(AVS_SCHED(env.sched, &task, global_value_setter,
+                                      &(int[]) { 42 }[0], sizeof(int),
+                                      NOW, RESCHEDULE_POLICY(IGNORE)));
+    AVS_UNIT_ASSERT_SUCCESS(AVS_SCHED(env.sched, &task, global_value_setter,
+                                      &(int[]) { 514 }[0], sizeof(int),
+                                      NOW, RESCHEDULE_POLICY(IGNORE)));
+    AVS_UNIT_ASSERT_NOT_NULL(task);
+    avs_sched_run(env.sched);
+    AVS_UNIT_ASSERT_NULL(task);
+    AVS_UNIT_ASSERT_EQUAL(GLOBAL_VALUE, 42);
+    teardown_test(&env);
+}
+
 #warning "TODO: More tests"

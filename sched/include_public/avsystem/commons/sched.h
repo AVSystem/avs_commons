@@ -17,6 +17,7 @@
 #ifndef AVS_COMMONS_SCHED_H
 #define AVS_COMMONS_SCHED_H
 
+#include <avsystem/commons/defs.h>
 #include <avsystem/commons/time.h>
 
 #ifdef	__cplusplus
@@ -221,15 +222,28 @@ void avs_sched_run(avs_sched_t *sched);
  * These functions are not meant to be called directly.
  */
 /**@{*/
-int avs_sched_at_impl__(avs_sched_t *sched,
-                        avs_sched_handle_t *out_handle,
-                        avs_time_monotonic_t instant,
-                        const char *log_file,
-                        unsigned log_line,
-                        const char *log_name,
-                        avs_sched_clb_t *clb,
-                        const void *clb_data,
-                        size_t clb_data_size);
+typedef enum {
+    AVS_SCHED_IMPL_RESCHEDULE_POLICY_ABORT,
+    AVS_SCHED_IMPL_RESCHEDULE_POLICY_ERROR,
+    AVS_SCHED_IMPL_RESCHEDULE_POLICY_REPLACE,
+    AVS_SCHED_IMPL_RESCHEDULE_POLICY_IGNORE
+} avs_sched_impl_reschedule_policy_t;
+
+typedef struct {
+    const char *log_file;
+    unsigned log_line;
+    const char *log_name;
+    bool use_absolute_monotonic_time;
+    avs_time_duration_t delay;
+    avs_sched_impl_reschedule_policy_t reschedule_policy;
+} avs_sched_impl_additional_args_t;
+
+int avs_sched_impl__(avs_sched_t *sched,
+                     avs_sched_handle_t *out_handle,
+                     avs_sched_clb_t *clb,
+                     const void *clb_data,
+                     size_t clb_data_size,
+                     const avs_sched_impl_additional_args_t *args);
 
 #ifndef AVS_LOG_WITH_TRACE
 #   define AVS_SCHED_LOG_ARGS__(...) (NULL), 0, (NULL)
@@ -239,11 +253,37 @@ int avs_sched_at_impl__(avs_sched_t *sched,
 #   define AVS_SCHED_LOG_ARGS__(Clb, ClbArgs) \
         __FILE__, __LINE__, AVS_QUOTE(Clb) AVS_QUOTE(ClbArgs)
 #endif // AVS_LOG_WITH_TRACE // !defined(AVS_SCHED_WITH_ARGS_LOG)
+
+#define AVS_SCHED_IMPL_ARG_NOW \
+        /* .use_absolute_monotonic_time = */ false, \
+        .delay = AVS_TIME_DURATION_ZERO
+
+#define AVS_SCHED_IMPL_ARG_DELAYED(Delay) \
+        /* .use_absolute_monotonic_time = */ false, \
+        .delay = (Delay)
+
+#define AVS_SCHED_IMPL_ARG_AT(Instant) \
+        /* .use_absolute_monotonic_time = */ true, \
+        .delay = (Instant).since_monotonic_epoch
+
+#define AVS_SCHED_IMPL_ARG_RESCHEDULE_POLICY(Policy) \
+        .reschedule_policy = AVS_SCHED_IMPL_RESCHEDULE_POLICY_ ## Policy
+
+#define AVS_SCHED_IMPL_PREPROCESS_ARGS_1__(Arg) AVS_SCHED_IMPL_ARG_ ## Arg
+
+#define AVS_SCHED_IMPL_PREPROCESS_ARGS_2__(Arg1, Arg2) \
+        AVS_SCHED_IMPL_PREPROCESS_ARGS_1__(Arg1), \
+        AVS_SCHED_IMPL_PREPROCESS_ARGS_1__(Arg2)
+
+// no more than 2 arguments are supported or necessary for now
+
+#define AVS_SCHED_IMPL_PREPROCESS_ARGS__(...) \
+        AVS_CONCAT(AVS_SCHED_IMPL_PREPROCESS_ARGS_, \
+                   AVS_VARARG_LENGTH(__VA_ARGS__), __)(__VA_ARGS__)
 /*@}*/
 
 /**
- * Schedules a job at a specific point in time in the system monotonic clock's
- * domain.
+ * Schedules a job.
  *
  * @param[in]  Sched       Scheduler object to access (<c>avs_sched_t *</c>).
  *
@@ -251,10 +291,6 @@ int avs_sched_at_impl__(avs_sched_t *sched,
  *                         be set to a handle to the scheduled job
  *                         (<c>avs_sched_handle_t *</c>). See the note below for
  *                         more information.
- *
- * @param[in]  Instant     Point in time in the system monotonic clock's domain
- *                         at which to schedule the job
- *                         (<c>avs_time_monotonic_t</c>).
  *
  * @param[in]  Clb         Function to call when executing the job
  *                         (<c>avs_sched_clb_t *</c>).
@@ -265,6 +301,32 @@ int avs_sched_at_impl__(avs_sched_t *sched,
  *
  * @param[in]  ClbDataSize Number of bytes at @p ClbData that will be stored in
  *                         the job structure (<c>size_t</c>).
+ *
+ * @param[in]  ...         One or more attributes. Currently supported are:
+ *                         - (mandatory, MUST be the first attribute) Scheduled
+ *                           job time. One of:
+ *                           - <c>NOW</c> - execute "now" (at earliest possible
+ *                             time)
+ *                           - <c>DELAYED(&lt;avs_time_duration_t delay&gt;)</c> -
+ *                             execute after a specified duration of time
+ *                             relative to "now"
+ *                           - <c>AT(&lt;avs_time_monotonic_t instant&gt;)</c> -
+ *                             execute at a specific point in time in the system
+ *                             monotonic clock's domain
+ *
+ *                         - Reschedule policy. Decides how to proceed when
+ *                           <c>*OutHandle</c> is not <c>NULL</c>. One of:
+ *                           - <c>RESCHEDULE_POLICY(ABORT)</c> (default) - if
+ *                             <c>avs_commons</c> have been compiled in debug
+ *                             mode, abort execution. Otherwise, identical to
+ *                             the <c>ERROR</c> policy.
+ *                           - <c>RESCHEDULE_POLICY(ERROR)</c> - do not schedule
+ *                             any new jobs and return an error.
+ *                           - <c>RESCHEDULE_POLICY(REPLACE)</c> - unschedule
+ *                             the previously scheduled job and schedule new
+ *                             one.
+ *                           - <c>RESCHEDULE_POLICY(IGNORE)</c> - do not
+ *                             schedule any new jobs and return success.
  *
  * If <c>AVS_LOG_WITH_TRACE</c> is defined at time of inclusion of this header,
  * this macro also implicitly passes the filename and line number of the source
@@ -288,9 +350,7 @@ int avs_sched_at_impl__(avs_sched_t *sched,
  * </code>
  *
  * NOTE: @p OutHandle is an optional parameter where job handle will be stored
- * during the time it remains a scheduled job. <c>*OutHandle</c>
- * <strong>MUST</strong> be <c>NULL</c> at the time of this call. Failing to
- * ensure so will result in undefined behaviour. When the job is fetched for
+ * during the time it remains a scheduled job. When the job is fetched for
  * execution, the scheduler sets <c>*OutHandle</c> to <c>NULL</c>, indicating
  * that it is no longer a valid job handle. Therefore, one has to carefully
  * manage @p OutHandle lifetime or otherwise the behaviour will be undefined.
@@ -299,32 +359,26 @@ int avs_sched_at_impl__(avs_sched_t *sched,
  * - 0 on success
  * - negative value on one of the following failure conditions:
  *   - @p Clb is <c>NULL</c>
- *   - @p Instant is an invalid time value
+ *   - specified time for job execution is an invalid time value
  *   - not enough memory available
  */
+#define AVS_SCHED(Sched, OutHandle, Clb, ClbData, ClbDataSize, ...) \
+        avs_sched_impl__( \
+                (Sched), (OutHandle), (Clb), (ClbData), (ClbDataSize), \
+                &(const avs_sched_impl_additional_args_t) { \
+                    AVS_SCHED_LOG_ARGS__(Clb, (ClbData, ClbDataSize)), \
+                    .use_absolute_monotonic_time = \
+                            AVS_SCHED_IMPL_PREPROCESS_ARGS__(__VA_ARGS__) \
+                })
+
 #define AVS_SCHED_AT(Sched, OutHandle, Instant, Clb, ClbData, ClbDataSize) \
-        avs_sched_at_impl__((Sched), (OutHandle), (Instant), \
-                            AVS_SCHED_LOG_ARGS__(Clb, (ClbData, ClbDataSize)), \
-                            (Clb), (ClbData), (ClbDataSize))
+        AVS_SCHED(Sched, OutHandle, Clb, ClbData, ClbDataSize, AT(Instant))
 
-/**
- * A variant of @ref AVS_SCHED_AT that uses a delay relative to "now", instead
- * of an absolute instant at which to schedule the job. See that macro's
- * documentation for details.
- */
 #define AVS_SCHED_DELAYED(Sched, OutHandle, Delay, Clb, ClbData, ClbDataSize) \
-        AVS_SCHED_AT(Sched, OutHandle, \
-                     avs_time_monotonic_add(avs_time_monotonic_now(), Delay), \
-                     Clb, ClbData, ClbDataSize)
+        AVS_SCHED(Sched, OutHandle, Clb, ClbData, ClbDataSize, DELAYED(Delay))
 
-/**
- * A variant of @ref AVS_SCHED_AT and @ref AVS_SCHED_DELAYED that does not take
- * any time argument, scheduling the job to execute "now" (at earliest possible
- * time) instead. See those macros' documentation for details.
- */
 #define AVS_SCHED_NOW(Sched, OutHandle, Clb, ClbData, ClbDataSize) \
-        AVS_SCHED_AT(Sched, OutHandle, avs_time_monotonic_now(), \
-                     Clb, ClbData, ClbDataSize)
+        AVS_SCHED(Sched, OutHandle, Clb, ClbData, ClbDataSize, NOW)
 
 /**
  * Returns a point in time at which execution of a specified job is scheduled.
