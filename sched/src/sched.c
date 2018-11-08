@@ -362,7 +362,6 @@ void avs_sched_run(avs_sched_t *sched) {
 static int sched_at_locked(avs_sched_t *sched,
                            avs_sched_handle_t *out_handle,
                            avs_time_monotonic_t instant,
-                           avs_sched_impl_reschedule_policy_t reschedule_policy,
                            const char *log_file,
                            unsigned log_line,
                            const char *log_name,
@@ -382,121 +381,88 @@ static int sched_at_locked(avs_sched_t *sched,
         return -1;
     }
 
-    AVS_LIST(avs_sched_job_t) job = NULL;
-    int result = -1;
+    AVS_LIST(avs_sched_job_t) job = (avs_sched_job_t *)
+            AVS_LIST_NEW_BUFFER(sizeof(avs_sched_job_t) + clb_data_size);
+    if (!job) {
+        SCHED_LOG(sched, ERROR, "could not allocate scheduler task");
+        return -1;
+    }
+
+    job->sched = sched;
+    job->instant = instant;
+#ifdef WITH_INTERNAL_LOGS
+    job->log_info.file = log_file;
+    job->log_info.line = log_line;
+    job->log_info.name = log_name;
+#endif // WITH_INTERNAL_LOGS
+    job->clb = clb;
+    if (clb_data_size) {
+        memcpy(job->clb_data, clb_data, clb_data_size);
+    }
+
     if (out_handle) {
+        job->handle_ptr = out_handle;
         nonfailing_mutex_lock(g_handle_access_mutex);
         if (*out_handle) {
-            switch (reschedule_policy) {
-            case AVS_SCHED_IMPL_RESCHEDULE_POLICY_ABORT:
-            default:
-                AVS_UNREACHABLE("Dangerous non-initialized out_handle");
-            case AVS_SCHED_IMPL_RESCHEDULE_POLICY_ERROR:
-                SCHED_LOG(sched, ERROR, "not scheduling job%s because of "
-                                        "ERROR reschedule policy",
-                          JOB_LOG_ID_EXPLICIT(log_file, log_line, log_name));
-                break;
-            case AVS_SCHED_IMPL_RESCHEDULE_POLICY_REPLACE: {
-                AVS_LIST(avs_sched_job_t) *job_ptr =
-                        (AVS_LIST(avs_sched_job_t) *) AVS_LIST_FIND_PTR(
-                                &sched->jobs, *out_handle);
-                AVS_ASSERT(job_ptr, "dangling handle detected");
-                SCHED_LOG(sched, TRACE, "cancelling job%s due to REPLACE "
-                                        "reschedule policy for job%s",
-                          JOB_LOG_ID(*job_ptr),
-                          JOB_LOG_ID_EXPLICIT(log_file, log_line, log_name));
-                AVS_LIST_DELETE(job_ptr);
-                *out_handle = NULL;
-                break;
-            }
-            case AVS_SCHED_IMPL_RESCHEDULE_POLICY_IGNORE:
-                SCHED_LOG(sched, TRACE, "not scheduling job%s because of "
-                                        "IGNORE reschedule policy",
-                          JOB_LOG_ID_EXPLICIT(log_file, log_line, log_name));
-                result = 0;
-                break;
-            }
+            AVS_ASSERT((*out_handle)->sched == sched,
+                       "Replacing handles used by a different scheduler is "
+                       "not supported");
+            AVS_LIST(avs_sched_job_t) *job_ptr = (AVS_LIST(avs_sched_job_t) *)
+                    AVS_LIST_FIND_PTR(&sched->jobs, *out_handle);
+            AVS_ASSERT(job_ptr, "dangling handle detected");
+            SCHED_LOG(sched, TRACE,
+                      "cancelling job%s due to reschedule policy for job%s",
+                      JOB_LOG_ID(*job_ptr),
+                      JOB_LOG_ID_EXPLICIT(log_file, log_line, log_name));
+            AVS_LIST_DELETE(job_ptr);
         }
-        if (!*out_handle) {
-            job = (avs_sched_job_t *) AVS_LIST_NEW_BUFFER(
-                    sizeof(avs_sched_job_t) + clb_data_size);
-            if (job) {
-                result = 0;
-                *out_handle = job;
-            }
-        }
+        *out_handle = job;
         avs_mutex_unlock(g_handle_access_mutex);
-    } else if ((job = (avs_sched_job_t *) AVS_LIST_NEW_BUFFER(
-                    sizeof(avs_sched_job_t) + clb_data_size))) {
-        result = 0;
     }
 
-    if (job) {
-        job->sched = sched;
-        job->instant = instant;
-#ifdef WITH_INTERNAL_LOGS
-        job->log_info.file = log_file;
-        job->log_info.line = log_line;
-        job->log_info.name = log_name;
-#endif // WITH_INTERNAL_LOGS
-        job->clb = clb;
-        if (clb_data_size) {
-            memcpy(job->clb_data, clb_data, clb_data_size);
-        }
-        job->handle_ptr = out_handle;
-        AVS_LIST(avs_sched_job_t) *insert_ptr = NULL;
-        AVS_LIST_FOREACH_PTR(insert_ptr, &sched->jobs) {
-            if (avs_time_monotonic_before(instant, (*insert_ptr)->instant)) {
-                break;
-            }
-        }
-        AVS_LIST_INSERT(insert_ptr, job);
-#ifdef WITH_INTERNAL_TRACE
-        avs_time_duration_t remaining =
-                avs_time_monotonic_diff(instant, avs_time_monotonic_now());
-        SCHED_LOG(sched, TRACE, "scheduled job%s at %s (+%s)", JOB_LOG_ID(job),
-                  AVS_TIME_DURATION_AS_STRING(instant.since_monotonic_epoch),
-                  AVS_TIME_DURATION_AS_STRING(remaining));
-#endif // WITH_INTERNAL_TRACE
-    } else if (result) {
-        SCHED_LOG(sched, ERROR, "could not allocate scheduler task");
+    AVS_LIST(avs_sched_job_t) *insert_ptr = &sched->jobs;
+    while (*insert_ptr
+            && !avs_time_monotonic_before(instant, (*insert_ptr)->instant)) {
+        AVS_LIST_ADVANCE_PTR(&insert_ptr);
     }
-    return result;
+    AVS_LIST_INSERT(insert_ptr, job);
+#ifdef WITH_INTERNAL_TRACE
+    avs_time_duration_t remaining =
+            avs_time_monotonic_diff(instant, avs_time_monotonic_now());
+    SCHED_LOG(sched, TRACE, "scheduled job%s at %s (+%s)", JOB_LOG_ID(job),
+              AVS_TIME_DURATION_AS_STRING(instant.since_monotonic_epoch),
+              AVS_TIME_DURATION_AS_STRING(remaining));
+#endif // WITH_INTERNAL_TRACE
+    return 0;
 }
 
-int avs_sched_impl__(avs_sched_t *sched,
-                     avs_sched_handle_t *out_handle,
-                     avs_sched_clb_t *clb,
-                     const void *clb_data,
-                     size_t clb_data_size,
-                     const avs_sched_impl_additional_args_t args) {
+int avs_sched_at_impl__(avs_sched_t *sched,
+                        avs_sched_handle_t *out_handle,
+                        avs_time_monotonic_t instant,
+                        const char *log_file,
+                        unsigned log_line,
+                        const char *log_name,
+                        avs_sched_clb_t *clb,
+                        const void *clb_data,
+                        size_t clb_data_size) {
     assert(sched);
     if (!clb) {
         SCHED_LOG(sched, ERROR,
                   "attempted to schedule a null callback pointer%s",
-                  JOB_LOG_ID_EXPLICIT(
-                          args.log_file, args.log_line, args.log_name));
+                  JOB_LOG_ID_EXPLICIT(log_file, log_line, log_name));
         return -1;
-    }
-    avs_time_monotonic_t instant;
-    if (args.use_absolute_monotonic_time) {
-        instant.since_monotonic_epoch = args.delay;
-    } else {
-        instant = avs_time_monotonic_add(avs_time_monotonic_now(), args.delay);
     }
     if (!avs_time_monotonic_valid(instant)) {
         SCHED_LOG(sched, ERROR,
                   "attempted to schedule job%s at an invalid time point",
-                  JOB_LOG_ID_EXPLICIT(
-                          args.log_file, args.log_line, args.log_name));
+                  JOB_LOG_ID_EXPLICIT(log_file, log_line, log_name));
         return -1;
     }
 
     int result = -1;
     nonfailing_mutex_lock(sched->mutex);
     if (!(result = sched_at_locked(sched, out_handle, instant,
-                                   args.reschedule_policy, args.log_file,
-                                   args.log_line, args.log_name,
+                                   log_file, log_line, log_name,
                                    clb, clb_data, clb_data_size))) {
         avs_condvar_notify_all(sched->task_condvar);
     }
