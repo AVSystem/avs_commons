@@ -32,36 +32,6 @@ int _avs_http_send_headers(http_stream_t *stream, size_t content_length);
 
 int _avs_http_receive_headers(http_stream_t *stream);
 
-/**
- * Calculates a number of bytes needed for a decimal string representation of a
- * given unsigned integer type.
- *
- * The number of decimal digits necessary can be calculated as:
- *
- * <pre>
- * D = floor(log10(max(type))) + 1
- * </pre>
- *
- * Also, we know that (for unsigned types):
- *
- * <pre>
- * max(type) == 2^(8*sizeof(type)) - 1
- * </pre>
- *
- * So:
- *
- * <pre>
- * D = floor(log10(2^(8*sizeof(type)) - 1)) + 1
- *   > floor(log10(2^(8*sizeof(type)))) + 1
- *   = floor(log10(2)*8*sizeof(type)) + 1
- *   ~= floor(0.3*8*sizeof(type)) + 1
- *   = floor((12/5)*sizeof(type)) + 1
- * </pre>
- *
- * We add an extra character for terminating null byte.
- */
-#define UINT_STR_BUF_SIZE(type) ((12*sizeof(type))/5 + 2)
-
 VISIBILITY_PRIVATE_HEADER_END
 
 #endif /* AVS_COMMONS_HTTP_HEADERS_H */

@@ -33,6 +33,36 @@ extern "C" {
 #define AVS_RAND_MAX 0x7fff
 
 /**
+ * Calculates a number of bytes needed for a decimal string representation of a
+ * given unsigned integer type.
+ *
+ * The number of decimal digits necessary can be calculated as:
+ *
+ * <pre>
+ * D = floor(log10(max(type))) + 1
+ * </pre>
+ *
+ * Also, we know that (for unsigned types):
+ *
+ * <pre>
+ * max(type) == 2^(8*sizeof(type)) - 1
+ * </pre>
+ *
+ * So:
+ *
+ * <pre>
+ * D = floor(log10(2^(8*sizeof(type)) - 1)) + 1
+ *   > floor(log10(2^(8*sizeof(type)))) + 1
+ *   = floor(log10(2)*8*sizeof(type)) + 1
+ *   ~= floor(0.3*8*sizeof(type)) + 1
+ *   = floor((12/5)*sizeof(type)) + 1
+ * </pre>
+ *
+ * We add an extra character for terminating null byte.
+ */
+#define UINT_STR_BUF_SIZE(type) ((12 * sizeof(type)) / 5 + 2)
+
+/**
  * Returns a pseudo-random integer from range [0, AVS_RAND_MAX]. It is
  * thread-safe.
  */
