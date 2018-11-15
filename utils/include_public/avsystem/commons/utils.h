@@ -63,7 +63,7 @@ extern "C" {
 #define AVS_UINT_STR_BUF_SIZE(type) ((12 * sizeof(type)) / 5 + 2)
 
 // Additional space required for '-' sign in some cases.
-#define AVS_INT_STR_BUF_SIZE(type) (AVS_UINT_STR_BUF_SIZE(type) + 1)
+#define AVS_INT_STR_BUF_SIZE(type) ((24 * sizeof(type) - 3) / 10 + 3)
 
 /**
  * Returns a pseudo-random integer from range [0, AVS_RAND_MAX]. It is
