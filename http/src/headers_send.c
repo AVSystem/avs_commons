@@ -100,7 +100,7 @@ int _avs_http_send_headers(http_stream_t *stream, size_t content_length) {
         }
     } else if (content_length > 0 || stream->method != AVS_HTTP_GET) {
         char buf[sizeof("Content-Length: \r\n")
-                         + UINT_STR_BUF_SIZE(unsigned long)];
+                         + AVS_UINT_STR_BUF_SIZE(unsigned long)];
         if (avs_simple_snprintf(buf, sizeof(buf), "Content-Length: %lu\r\n",
                                 (unsigned long) content_length) < 0
                 || avs_stream_write(stream->backend, buf, strlen(buf))) {

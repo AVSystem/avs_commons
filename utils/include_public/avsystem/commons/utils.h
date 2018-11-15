@@ -60,7 +60,10 @@ extern "C" {
  *
  * We add an extra character for terminating null byte.
  */
-#define UINT_STR_BUF_SIZE(type) ((12 * sizeof(type)) / 5 + 2)
+#define AVS_UINT_STR_BUF_SIZE(type) ((12 * sizeof(type)) / 5 + 2)
+
+// Additional space required for '-' sign in some cases.
+#define AVS_INT_STR_BUF_SIZE(type) (AVS_UINT_STR_BUF_SIZE(type) + 1)
 
 /**
  * Returns a pseudo-random integer from range [0, AVS_RAND_MAX]. It is
