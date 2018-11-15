@@ -62,7 +62,7 @@ extern "C" {
  */
 #define AVS_UINT_STR_BUF_SIZE(type) ((12 * sizeof(type)) / 5 + 2)
 
-// Additional space required for '-' sign in some cases.
+// floor(log10(2^(8*sizeof(type) - 1))) + 3
 #define AVS_INT_STR_BUF_SIZE(type) ((24 * sizeof(type) - 3) / 10 + 3)
 
 /**
