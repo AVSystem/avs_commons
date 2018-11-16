@@ -62,7 +62,14 @@ extern "C" {
  */
 #define AVS_UINT_STR_BUF_SIZE(type) ((12 * sizeof(type)) / 5 + 2)
 
-// floor(log10(2^(8*sizeof(type) - 1))) + 3
+/**
+ * Similarly to <c>AVS_UINT_STR_BUF_SIZE</c>, but:
+ * - there is one bit less for representing value,
+ * - we add an extra character for sign.
+ * <pre>
+ * floor(log10(2^(8*sizeof(type) - 1))) + 3
+ * </pre>
+ */
 #define AVS_INT_STR_BUF_SIZE(type) ((24 * sizeof(type) - 3) / 10 + 3)
 
 /**
