@@ -18,6 +18,7 @@
 
 #include <avsystem/commons/utils.h>
 
+#include <math.h>
 #include <stdlib.h>
 
 VISIBILITY_SOURCE_BEGIN
@@ -118,4 +119,17 @@ double avs_ntohd(uint64_t v) {
     } conv;
     conv.ieee = avs_convert_be64(v);
     return conv.d;
+}
+
+static bool is_double_within_int64_range(double value) {
+    AVS_STATIC_ASSERT(INT64_MIN != -INT64_MAX, standard_enforces_u2_for_intN_t);
+    static const double DOUBLE_2_63 = (double) (((uint64_t) 1) << 63);
+    // max == 2^63 - 1; min == -2^63
+    return value >= -DOUBLE_2_63 && value < DOUBLE_2_63;
+    // note that the largest value representable as IEEE 754 double that is
+    // smaller than 2^63 is actually 2^63 - 1024
+}
+
+bool avs_double_convertible_to_int64(double value) {
+    return nearbyint(value) == value && is_double_within_int64_range(value);
 }

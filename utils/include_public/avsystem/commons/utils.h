@@ -311,6 +311,12 @@ ssize_t avs_hexlify(char *out_hex,
 #define avs_unaligned_put(dst, val) memcpy(dst, &val, sizeof(val));
 /** @} */
 
+/**
+ * Returns @c true if @p value is losslessly convertible to int64_t and
+ * @c false otherwise.
+ */
+bool avs_double_convertible_to_int64(double value);
+
 #ifdef	__cplusplus
 }
 #endif
