@@ -22,6 +22,9 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /**
  * @file base64.h
@@ -111,5 +114,9 @@ avs_base64_decode_strict(uint8_t *out, size_t out_length, const char *input);
  * @returns length of decoded data in bytes, negative value in case of error.
  */
 ssize_t avs_base64_decode(uint8_t *out, size_t out_length, const char *input);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* AVS_COMMONS_ALGORITHM_BASE64_H */
