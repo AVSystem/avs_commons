@@ -227,6 +227,15 @@ static const time_conv_t CONVERSIONS[] = {
     [AVS_TIME_NS]   = {{ UCO_MUL, 1000000000 }, { UCO_MUL,              1LL }}
 };
 
+static bool double_is_int64(double value) {
+    AVS_STATIC_ASSERT(INT64_MIN != -INT64_MAX, standard_enforces_u2_for_intN_t);
+    static const double DOUBLE_2_63 = (double) (((uint64_t) 1) << 63);
+    // max == 2^63 - 1; min == -2^63
+    return value >= -DOUBLE_2_63 && value < DOUBLE_2_63;
+    // note that the largest value representable as IEEE 754 double that is
+    // smaller than 2^63 is actually 2^63 - 1024
+}
+
 static int unit_conv_backward_int64_t_double(int64_t *output,
                                              double input,
                                              const unit_conv_t *conv) {
@@ -242,7 +251,7 @@ static int unit_conv_backward_int64_t_double(int64_t *output,
     default:
         AVS_UNREACHABLE("Invalid unit_conv operation");
     }
-    if (!avs_double_convertible_to_int64(tmp)) {
+    if (!double_is_int64(tmp)) {
         return -1;
     }
     *output = (int64_t) tmp;
@@ -360,7 +369,7 @@ avs_time_duration_t avs_time_duration_fmul(avs_time_duration_t input,
         nsmul = fmod(nsmul, NS_IN_S);
 
         double seconds = smul + nsmul_s;
-        if (!avs_double_convertible_to_int64(seconds)) {
+        if (!isfinite(seconds) || !double_is_int64(seconds)) {
             return AVS_TIME_DURATION_INVALID;
         }
         avs_time_duration_t result = {
