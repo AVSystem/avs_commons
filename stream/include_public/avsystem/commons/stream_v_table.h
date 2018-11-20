@@ -17,13 +17,13 @@
 #ifndef AVS_COMMONS_STREAM_V_TABLE_H
 #define	AVS_COMMONS_STREAM_V_TABLE_H
 
-#ifdef	__cplusplus
-extern "C" {
-#endif
-
 #include <stdint.h>
 
 #include <avsystem/commons/stream.h>
+
+#ifdef	__cplusplus
+extern "C" {
+#endif
 
 /**
  * @ref avs_stream_write_some implementation callback type.
