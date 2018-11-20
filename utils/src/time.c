@@ -230,6 +230,10 @@ static const time_conv_t CONVERSIONS[] = {
  * Implementation the same as of is_double_within_int64_range() from numbers.c.
  * We don't have internal headers and this function shouldn't be in public API,
  * so it's duplicated instead.
+ *
+ * We don't want to use avs_double_convertible_to_int64() because it's preferred
+ * to lose some precision during conversion from scalar to avs_time instead of
+ * failing.
  */
 static bool double_is_int64(double value) {
     AVS_STATIC_ASSERT(INT64_MIN != -INT64_MAX, standard_enforces_u2_for_intN_t);
