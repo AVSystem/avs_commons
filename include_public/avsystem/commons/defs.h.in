@@ -181,10 +181,22 @@ typedef union {
 /**
  * Returns @p type alignment requirements.
  */
-#if __STDC_VERSION__ >= 201112L /* C11 */
-#define AVS_ALIGNOF(type) _Alignof(type)
+#ifdef __cplusplus
+} // } extern "C"
+// Source: http://wambold.com/Martin/writings/alignof.html
+namespace detail {
+template <typename T>
+struct alignment_trick {
+    char c;
+    T member;
+};
+} // namespace detail
+#   define AVS_ALIGNOF(type) offsetof(detail::alignment_trick<type>, member)
+extern "C" {
+#elif __STDC_VERSION__ >= 201112L /* C11 */
+#   define AVS_ALIGNOF(type) _Alignof(type)
 #else
-#define AVS_ALIGNOF(type) offsetof(struct { char pad; type value; }, value)
+#   define AVS_ALIGNOF(type) offsetof(struct { char pad; type value; }, value)
 #endif
 
 /**
