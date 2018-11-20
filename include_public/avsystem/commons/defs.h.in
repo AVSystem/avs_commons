@@ -181,14 +181,10 @@ typedef union {
 /**
  * Returns @p type alignment requirements.
  */
-#ifdef __cplusplus
-#define AVS_ALIGNOF(type) alignof(type)
-#else
 #if __STDC_VERSION__ >= 201112L /* C11 */
 #define AVS_ALIGNOF(type) _Alignof(type)
 #else
 #define AVS_ALIGNOF(type) offsetof(struct { char pad; type value; }, value)
-#endif
 #endif
 
 /**
