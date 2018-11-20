@@ -46,7 +46,8 @@ IGNORE_PATTERNS = list(map(re.compile, [
     '^LICENSE$',
     '^NOTICE$',
     'README',
-    '^avs_commons_test\.supp$'
+    '^avs_commons_test\.supp$',
+    '/fuzz/input/',
 ]))
 
 
