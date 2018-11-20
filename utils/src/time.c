@@ -227,6 +227,11 @@ static const time_conv_t CONVERSIONS[] = {
     [AVS_TIME_NS]   = {{ UCO_MUL, 1000000000 }, { UCO_MUL,              1LL }}
 };
 
+/**
+ * Implementation the same as of is_double_within_int64_range() from numbers.c.
+ * We don't have internal headers and this function shouldn't be in public API,
+ * so it's duplicated instead.
+ */
 static bool double_is_int64(double value) {
     AVS_STATIC_ASSERT(INT64_MIN != -INT64_MAX, standard_enforces_u2_for_intN_t);
     static const double DOUBLE_2_63 = (double) (((uint64_t) 1) << 63);
