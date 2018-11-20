@@ -21,7 +21,6 @@
 #include <math.h>
 
 #include <avsystem/commons/time.h>
-#include <avsystem/commons/utils.h>
 
 VISIBILITY_SOURCE_BEGIN
 
@@ -227,7 +226,7 @@ static const time_conv_t CONVERSIONS[] = {
     [AVS_TIME_NS]   = {{ UCO_MUL, 1000000000 }, { UCO_MUL,              1LL }}
 };
 
-/**
+/** 
  * Implementation the same as of is_double_within_int64_range() from numbers.c.
  * We don't have internal headers and this function shouldn't be in public API,
  * so it's duplicated instead.
