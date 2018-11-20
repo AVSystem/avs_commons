@@ -184,14 +184,15 @@ typedef union {
 #ifdef __cplusplus
 } // } extern "C"
 // Source: http://wambold.com/Martin/writings/alignof.html
-namespace detail {
+namespace {
 template <typename T>
-struct alignment_trick {
+struct avs_commons_alignment_trick__ {
     char c;
     T member;
 };
-} // namespace detail
-#   define AVS_ALIGNOF(type) offsetof(detail::alignment_trick<type>, member)
+} // namespace
+#   define AVS_ALIGNOF(type) \
+        offsetof(::avs_commons_alignment_trick__<type>, member)
 extern "C" {
 #elif __STDC_VERSION__ >= 201112L /* C11 */
 #   define AVS_ALIGNOF(type) _Alignof(type)
