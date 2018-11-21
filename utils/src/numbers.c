@@ -133,3 +133,15 @@ static bool is_double_within_int64_range(double value) {
 bool avs_double_convertible_to_int64(double value) {
     return nearbyint(value) == value && is_double_within_int64_range(value);
 }
+
+static bool is_double_within_uint64_range(double value) {
+    static const double DOUBLE_2_64 = 2.0 * (double) (((uint64_t) 1) << 63);
+    // max == 2^64 - 1; min == 0
+    return value >= 0 && value < DOUBLE_2_64;
+    // note that the largest value representable as IEEE 754 double that is
+    // smaller than 2^64 is actually 2^64 - 2048
+}
+
+bool avs_double_convertible_to_uint64(double value) {
+    return nearbyint(value) == value && is_double_within_uint64_range(value);
+}

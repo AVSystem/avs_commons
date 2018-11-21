@@ -317,6 +317,12 @@ ssize_t avs_hexlify(char *out_hex,
  */
 bool avs_double_convertible_to_int64(double value);
 
+/**
+ * Returns @c true if @p value is losslessly convertible to uint64_t and
+ * @c false otherwise.
+ */
+bool avs_double_convertible_to_uint64(double value);
+
 #ifdef	__cplusplus
 }
 #endif
