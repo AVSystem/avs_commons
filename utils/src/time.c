@@ -21,6 +21,7 @@
 #include <math.h>
 
 #include <avsystem/commons/time.h>
+#include <avsystem/commons/utils.h>
 
 VISIBILITY_SOURCE_BEGIN
 
