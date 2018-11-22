@@ -427,8 +427,13 @@ static int mock_send_to(avs_net_abstract_socket_t *socket_,
             socket->expected_data->args.valid.ptr += to_send;
             if (socket->expected_data->args.valid.ptr
                     == socket->expected_data->args.valid.size) {
+                LOG(TRACE, "mock_send_to: item fully sent");
                 avs_free((void*)(intptr_t)socket->expected_data->args.valid.data);
                 AVS_LIST_DELETE(&socket->expected_data);
+            } else {
+                LOG(TRACE, "mock_send_to: partial send, %u/%u",
+                    (unsigned) to_send,
+                    (unsigned) socket->expected_data->args.valid.size);
             }
             buffer_length -= to_send;
             buffer = ((const char *) buffer) + to_send;
@@ -493,9 +498,14 @@ static int mock_receive_from(avs_net_abstract_socket_t *socket_,
                          socket->expected_data->args.valid.remote_port);
         if (socket->expected_data->args.valid.ptr
                 == socket->expected_data->args.valid.size) {
+            LOG(TRACE, "mock_receive_from: item fully received");
             socket->last_data_read = socket->expected_data->args.valid.ptr;
             avs_free((void*)(intptr_t)socket->expected_data->args.valid.data);
             AVS_LIST_DELETE(&socket->expected_data);
+        } else {
+            LOG(TRACE, "mock_receive_from: partial receive, %u/%u",
+                (unsigned) *out,
+                (unsigned) socket->expected_data->args.valid.size);
         }
     } else if (socket->expected_data->type
                == MOCKSOCK_DATA_TYPE_INPUT_FAIL) {
