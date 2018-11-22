@@ -444,6 +444,8 @@ static int mock_send_to(avs_net_abstract_socket_t *socket_,
 
             LOG(TRACE, "mock_send_to: failure, result == %d", retval);
             return retval;
+        } else {
+            AVS_UNIT_ASSERT_TRUE(!"mock_send_to: unexpected send");
         }
     }
 
