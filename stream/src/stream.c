@@ -202,7 +202,7 @@ int avs_stream_ignore_to_end(avs_stream_abstract_t *stream) {
 }
 
 int avs_stream_getch(avs_stream_abstract_t *stream, char *message_finished) {
-    char buf;
+    unsigned char buf;
     size_t bytes_read;
     if (avs_stream_read(stream, &bytes_read, message_finished, &buf, 1) < 0
             || bytes_read < 1) {
