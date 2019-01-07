@@ -41,6 +41,7 @@ avs_coap_msg_code_to_string(uint8_t code, char *buf, size_t buf_size) {
         { AVS_COAP_CODE_POST,                       "Post"                       },
         { AVS_COAP_CODE_PUT,                        "Put"                        },
         { AVS_COAP_CODE_DELETE,                     "Delete"                     },
+        { AVS_COAP_CODE_FETCH,                      "Fetch"                      },
 
         { AVS_COAP_CODE_CREATED,                    "Created"                    },
         { AVS_COAP_CODE_DELETED,                    "Deleted"                    },
@@ -234,6 +235,12 @@ static bool are_options_valid(const avs_coap_msg_t *msg) {
     return true;
 }
 
+static bool has_content_format(const avs_coap_msg_t *msg) {
+    uint16_t content_format;
+    return !avs_coap_msg_get_content_format(msg, &content_format)
+           && content_format != AVS_COAP_FORMAT_NONE;
+}
+
 bool avs_coap_msg_is_valid(const avs_coap_msg_t *msg) {
     if (msg->length < AVS_COAP_MSG_MIN_SIZE) {
         LOG(DEBUG, "message too short (%" PRIu32 "B, expected >= %" PRIu32 ")",
@@ -247,7 +254,13 @@ bool avs_coap_msg_is_valid(const avs_coap_msg_t *msg) {
         // Empty Message: A message with a Code of 0.00; neither a request nor
         // a response. An Empty message only contains the 4-byte header.
         && (avs_coap_msg_get_code(msg) != AVS_COAP_CODE_EMPTY
-                || msg->length == _avs_coap_header_size(msg));
+                || msg->length == _avs_coap_header_size(msg))
+        // [RFC 8132, 2.3.1]
+        // A FETCH request MUST include a Content-Format option (see
+        // Section 5.10.3 of [RFC7252]) to specify the media type and content
+        // coding of the request body.
+        && (avs_coap_msg_get_code(msg) != AVS_COAP_CODE_FETCH
+                || has_content_format(msg));
 }
 
 static const char *msg_type_string(avs_coap_msg_type_t type) {
