@@ -21,6 +21,7 @@
 
 #include <avsystem/commons/coap/msg.h>
 #include <avsystem/commons/coap/msg_opt.h>
+#include <avsystem/commons/coap/msg_info.h>
 
 #include <avsystem/commons/utils.h>
 
