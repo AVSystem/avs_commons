@@ -267,6 +267,7 @@ static int http_reset(avs_stream_abstract_t *stream_) {
 static int http_close(avs_stream_abstract_t *stream_) {
     http_stream_t *stream = (http_stream_t *) stream_;
     int retval = 0;
+    stream->flags.keep_connection = false;
     http_reset(stream_);
     LOG(TRACE, "http_close");
     avs_stream_cleanup(&stream->backend);
