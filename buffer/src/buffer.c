@@ -39,12 +39,12 @@ struct avs_buffer_struct {
     } data;
 };
 
-size_t avs_buffer_space_left(avs_buffer_t *buffer) {
+size_t avs_buffer_space_left(const avs_buffer_t *buffer) {
     return buffer->capacity - avs_buffer_data_size(buffer);
 }
 
-static size_t space_left_without_moving(avs_buffer_t *buffer) {
-    return buffer->capacity - (size_t)(buffer->end - buffer->data.data);
+static size_t space_left_without_moving(const avs_buffer_t *buffer) {
+    return buffer->capacity - (size_t) (buffer->end - buffer->data.data);
 }
 
 void avs_buffer_reset(avs_buffer_t *buffer) {
@@ -70,15 +70,15 @@ void avs_buffer_free(avs_buffer_t **buffer) {
     *buffer = NULL;
 }
 
-size_t avs_buffer_data_size(avs_buffer_t *buffer) {
-    return (size_t)(buffer->end - buffer->begin);
+size_t avs_buffer_data_size(const avs_buffer_t *buffer) {
+    return (size_t) (buffer->end - buffer->begin);
 }
 
-size_t avs_buffer_capacity(avs_buffer_t *buffer) {
+size_t avs_buffer_capacity(const avs_buffer_t *buffer) {
     return buffer->capacity;
 }
 
-char *avs_buffer_data(avs_buffer_t *buffer) {
+char *avs_buffer_data(const avs_buffer_t *buffer) {
     return buffer->begin;
 }
 

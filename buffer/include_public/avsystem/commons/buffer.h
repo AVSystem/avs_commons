@@ -103,7 +103,7 @@ void avs_buffer_reset(avs_buffer_t *buffer);
  *
  * @return Number of bytes ready to consume in the buffer.
  */
-size_t avs_buffer_data_size(avs_buffer_t *buffer);
+size_t avs_buffer_data_size(const avs_buffer_t *buffer);
 
 /**
  * Returns the capacity of the buffer.
@@ -112,7 +112,7 @@ size_t avs_buffer_data_size(avs_buffer_t *buffer);
  *
  * @return Total number of all bytes usable by the buffer.
  */
-size_t avs_buffer_capacity(avs_buffer_t *buffer);
+size_t avs_buffer_capacity(const avs_buffer_t *buffer);
 
 /**
  * Returns the size of free space in the buffer.
@@ -121,7 +121,7 @@ size_t avs_buffer_capacity(avs_buffer_t *buffer);
  *
  * @return Number of bytes that can currently be appended to the buffer.
  */
-size_t avs_buffer_space_left(avs_buffer_t *buffer);
+size_t avs_buffer_space_left(const avs_buffer_t *buffer);
 
 /**
  * Returns a raw pointer to consumable data in the buffer.
@@ -142,7 +142,7 @@ size_t avs_buffer_space_left(avs_buffer_t *buffer);
  * @return Pointer to a contiguous array of @ref avs_buffer_data_size bytes of
  *         data that has been appended but not yet consumed.
  */
-char *avs_buffer_data(avs_buffer_t *buffer);
+char *avs_buffer_data(const avs_buffer_t *buffer);
 
 /**
  * Return a raw pointer to free space in the buffer.
