@@ -276,6 +276,12 @@ typedef struct {
 
     bool state_enabled;
     avs_net_socket_state_t state;
+
+    bool remote_host_enabled;
+    const char *remote_host;
+
+    bool remote_port_enabled;
+    const char *remote_port;
 } mocksock_t;
 
 static void assert_command_expected(const mocksock_expected_command_t *expected,
@@ -653,6 +659,11 @@ static int mock_remote_host(avs_net_abstract_socket_t *socket_,
     int retval = 0;
     mocksock_t *socket = (mocksock_t *) socket_;
 
+    if (socket->remote_host_enabled) {
+        strncpy(hostname, socket->remote_host, hostname_size);
+        return 0;
+    }
+
     assert_command_expected(socket->expected_commands,
             MOCKSOCK_COMMAND_REMOTE_HOST);
 
@@ -681,6 +692,11 @@ static int mock_remote_port(avs_net_abstract_socket_t *socket_,
                             char *port, size_t port_size) {
     int retval = 0;
     mocksock_t *socket = (mocksock_t *) socket_;
+
+    if (socket->remote_port_enabled) {
+        strncpy(port, socket->remote_port, port_size);
+        return 0;
+    }
 
     assert_command_expected(socket->expected_commands,
             MOCKSOCK_COMMAND_REMOTE_PORT);
@@ -1136,4 +1152,18 @@ void avs_unit_mocksock_enable_mtu_getopt(
 
 void avs_unit_mocksock_enable_state_getopt(avs_net_abstract_socket_t *socket) {
     ((mocksock_t *) socket)->state_enabled = true;
+}
+
+void avs_unit_mocksock_enable_remote_host(avs_net_abstract_socket_t *socket_,
+                                          const char *remote_host) {
+    mocksock_t *socket = (mocksock_t *) socket_;
+    socket->remote_host_enabled = true;
+    socket->remote_host = remote_host;
+}
+
+void avs_unit_mocksock_enable_remote_port(avs_net_abstract_socket_t *socket_,
+                                          const char *remote_port) {
+    mocksock_t *socket = (mocksock_t *) socket_;
+    socket->remote_port_enabled = true;
+    socket->remote_port = remote_port;
 }

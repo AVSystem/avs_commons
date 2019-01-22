@@ -227,6 +227,12 @@ void avs_unit_mocksock_enable_mtu_getopt(
 
 void avs_unit_mocksock_enable_state_getopt(avs_net_abstract_socket_t *socket);
 
+void avs_unit_mocksock_enable_remote_host(avs_net_abstract_socket_t *socket_,
+                                          const char *remote_host);
+
+void avs_unit_mocksock_enable_remote_port(avs_net_abstract_socket_t *socket_,
+                                          const char *remote_port);
+
 #ifdef  __cplusplus
 }
 #endif
