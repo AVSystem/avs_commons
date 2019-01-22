@@ -78,7 +78,7 @@ size_t avs_buffer_capacity(const avs_buffer_t *buffer) {
     return buffer->capacity;
 }
 
-char *avs_buffer_data(const avs_buffer_t *buffer) {
+const char *avs_buffer_data(const avs_buffer_t *buffer) {
     return buffer->begin;
 }
 

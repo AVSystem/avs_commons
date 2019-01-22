@@ -142,7 +142,7 @@ size_t avs_buffer_space_left(const avs_buffer_t *buffer);
  * @return Pointer to a contiguous array of @ref avs_buffer_data_size bytes of
  *         data that has been appended but not yet consumed.
  */
-char *avs_buffer_data(const avs_buffer_t *buffer);
+const char *avs_buffer_data(const avs_buffer_t *buffer);
 
 /**
  * Return a raw pointer to free space in the buffer.
