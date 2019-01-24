@@ -21,11 +21,7 @@ add_library(avs_stream STATIC
             include_public/avsystem/commons/stream/stream_outbuf.h
             include_public/avsystem/commons/stream/stream_simple_io.h
             include_public/avsystem/commons/stream_v_table.h
-            include_public/avsystem/commons/stream/md5.h
 
-            src/md5_common.h
-
-            src/md5_common.c
             src/stream.c
             src/stream_buffered.c
             src/stream_file.c
@@ -33,14 +29,6 @@ add_library(avs_stream STATIC
             src/stream_membuf.c
             src/stream_outbuf.c
             src/stream_simple_io.c)
-
-if(WITH_OPENSSL)
-    target_sources(avs_stream PRIVATE src/stream_openssl.c)
-elseif(WITH_MBEDTLS)
-    target_sources(avs_stream PRIVATE src/stream_mbedtls.c)
-else()
-    target_sources(avs_stream PRIVATE src/md5_impl.c)
-endif()
 
 target_include_directories(avs_stream PUBLIC
                            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include_public>
@@ -67,3 +55,5 @@ install(DIRECTORY include_public/
 avs_add_test(NAME avs_stream
              LIBS avs_stream
              SOURCES $<TARGET_PROPERTY:avs_stream,SOURCES>)
+
+add_subdirectory(md5)
