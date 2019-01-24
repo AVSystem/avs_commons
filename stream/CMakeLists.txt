@@ -35,17 +35,6 @@ target_include_directories(avs_stream PUBLIC
                            $<INSTALL_INTERFACE:include>)
 target_link_libraries(avs_stream PUBLIC avs_commons_global_headers avs_log)
 
-if(WITH_AVS_BUFFER AND WITH_AVS_NET)
-    target_sources(avs_stream PRIVATE
-                   include_public/avsystem/commons/stream/stream_net.h
-                   include_public/avsystem/commons/stream/netbuf.h
-
-                   src/stream_net.c
-                   src/netbuf.c)
-
-    target_link_libraries(avs_stream PUBLIC avs_buffer avs_net)
-endif()
-
 avs_install_export(avs_stream stream)
 install(DIRECTORY include_public/
         COMPONENT stream
@@ -57,3 +46,4 @@ avs_add_test(NAME avs_stream
              SOURCES $<TARGET_PROPERTY:avs_stream,SOURCES>)
 
 add_subdirectory(md5)
+add_subdirectory(net)
