@@ -17,7 +17,6 @@
 #ifndef AVS_COMMONS_STREAM_FILE_H
 #define	AVS_COMMONS_STREAM_FILE_H
 
-#include <avsystem/commons/net.h>
 #include <avsystem/commons/stream.h>
 
 #ifdef	__cplusplus
