@@ -43,6 +43,7 @@ avs_coap_msg_code_to_string(uint8_t code, char *buf, size_t buf_size) {
         { AVS_COAP_CODE_PUT,                        "Put"                        },
         { AVS_COAP_CODE_DELETE,                     "Delete"                     },
         { AVS_COAP_CODE_FETCH,                      "Fetch"                      },
+        { AVS_COAP_CODE_IPATCH,                     "iPatch"                     },
 
         { AVS_COAP_CODE_CREATED,                    "Created"                    },
         { AVS_COAP_CODE_DELETED,                    "Deleted"                    },
@@ -260,8 +261,18 @@ bool avs_coap_msg_is_valid(const avs_coap_msg_t *msg) {
         // A FETCH request MUST include a Content-Format option (see
         // Section 5.10.3 of [RFC7252]) to specify the media type and content
         // coding of the request body.
-        && (avs_coap_msg_get_code(msg) != AVS_COAP_CODE_FETCH
-                || has_content_format(msg));
+        //
+        // There is no similar statement for iPATCH, however it's implied in
+        // the [RFC 8132, 3.4] Error Handling:
+        // Unsupported PATCH or iPATCH payload:  In case a client sends a
+        // payload that is inappropriate for the resource identified by the
+        // Request-URI, the server can return a 4.15 (Unsupported Content-
+        // Format) CoAP error.  The server can determine if the payload is
+        // supported by checking the CoAP Content-Format specified with the
+        // request.
+        && ((avs_coap_msg_get_code(msg) != AVS_COAP_CODE_FETCH
+                && avs_coap_msg_get_code(msg) != AVS_COAP_CODE_IPATCH)
+                    || has_content_format(msg));
 }
 
 static const char *msg_type_string(avs_coap_msg_type_t type) {

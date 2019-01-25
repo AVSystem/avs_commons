@@ -82,6 +82,7 @@ typedef enum avs_coap_msg_type {
 #define AVS_COAP_CODE_DELETE AVS_COAP_CODE(0, 4)
 /** https://tools.ietf.org/html/rfc8132#section-4 */
 #define AVS_COAP_CODE_FETCH  AVS_COAP_CODE(0, 5)
+#define AVS_COAP_CODE_IPATCH AVS_COAP_CODE(0, 7)
 
 #define AVS_COAP_CODE_CREATED  AVS_COAP_CODE(2, 1)
 #define AVS_COAP_CODE_DELETED  AVS_COAP_CODE(2, 2)

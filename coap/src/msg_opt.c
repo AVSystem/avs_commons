@@ -132,12 +132,14 @@ static bool is_critical_opt_valid(uint8_t msg_code, uint32_t opt_number,
     case AVS_COAP_OPT_BLOCK1:
         return msg_code == AVS_COAP_CODE_PUT
             || msg_code == AVS_COAP_CODE_POST
-            || msg_code == AVS_COAP_CODE_FETCH;
+            || msg_code == AVS_COAP_CODE_FETCH
+            || msg_code == AVS_COAP_CODE_IPATCH;
     case AVS_COAP_OPT_BLOCK2:
         return msg_code == AVS_COAP_CODE_GET
             || msg_code == AVS_COAP_CODE_PUT
             || msg_code == AVS_COAP_CODE_POST
-            || msg_code == AVS_COAP_CODE_FETCH;
+            || msg_code == AVS_COAP_CODE_FETCH
+            || msg_code == AVS_COAP_CODE_IPATCH;
     default:
         return fallback_validator(msg_code, opt_number);
     }
