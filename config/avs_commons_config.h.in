@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+#include <avsystem/commons/defs.h>
+
 #cmakedefine AVS_COMMONS_BIG_ENDIAN
 
 #cmakedefine HAVE_GETIFADDRS
@@ -22,9 +24,6 @@
 #cmakedefine HAVE_POLL
 #cmakedefine HAVE_C11_STDATOMIC
 #cmakedefine HAVE_PTHREAD_CONDATTR_SETCLOCK
-
-#cmakedefine WITH_IPV4
-#cmakedefine WITH_IPV6
 
 #if !defined(WITH_IPV4) && !defined(WITH_IPV6)
 #error "At least one IP protocol version must be enabled"
@@ -40,12 +39,6 @@
 # define IPV6_AVAILABLE 1
 #else
 # define IPV6_AVAILABLE 0
-#endif
-
-#ifdef WITH_IPV6
-# define AVS_ADDRSTRLEN sizeof("ffff:ffff:ffff:ffff:ffff:ffff:255.255.255.255")
-#elif defined(WITH_IPV4)
-# define AVS_ADDRSTRLEN sizeof("255.255.255.255")
 #endif
 
 #cmakedefine WITH_SSL

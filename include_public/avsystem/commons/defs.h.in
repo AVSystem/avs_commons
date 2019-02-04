@@ -32,6 +32,17 @@ extern "C" {
  * Global common definitions.
 */
 
+/** Is the library compiled with IPv4 support? */
+#cmakedefine WITH_IPV4
+/** Is the library compiled with IPv6 support? */
+#cmakedefine WITH_IPV6
+
+#ifdef WITH_IPV6
+# define AVS_ADDRSTRLEN sizeof("ffff:ffff:ffff:ffff:ffff:ffff:255.255.255.255")
+#elif defined(WITH_IPV4)
+# define AVS_ADDRSTRLEN sizeof("255.255.255.255")
+#endif
+
 #ifndef IF_NAMESIZE
 #cmakedefine HAVE_NET_IF_H
 # ifdef HAVE_NET_IF_H
