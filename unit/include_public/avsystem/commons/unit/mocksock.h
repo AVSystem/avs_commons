@@ -24,13 +24,24 @@
 extern "C" {
 #endif
 
+typedef enum {
+    AVS_UNIT_MOCKSOCK_TYPE_STREAMING,
+    AVS_UNIT_MOCKSOCK_TYPE_DATAGRAM
+} mocksock_type_t;
+
 size_t avs_unit_mocksock_data_read(avs_net_abstract_socket_t *socket);
 
 void avs_unit_mocksock_create__(avs_net_abstract_socket_t **socket,
+                                mocksock_type_t type,
                                 const char *file,
                                 int line);
 #define avs_unit_mocksock_create(Socket) \
-    avs_unit_mocksock_create__((Socket), __FILE__, __LINE__)
+    avs_unit_mocksock_create__((Socket), AVS_UNIT_MOCKSOCK_TYPE_STREAMING, \
+                               __FILE__, __LINE__)
+
+#define avs_unit_mocksock_create_datagram(Socket) \
+    avs_unit_mocksock_create__((Socket), AVS_UNIT_MOCKSOCK_TYPE_DATAGRAM, \
+                               __FILE__, __LINE__)
 
 void avs_unit_mocksock_input__(avs_net_abstract_socket_t *socket,
                                const void *data,

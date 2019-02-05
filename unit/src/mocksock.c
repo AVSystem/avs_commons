@@ -261,6 +261,8 @@ static const char *data_type_to_string(mocksock_expected_data_type_t type) {
 
 typedef struct {
     const avs_net_socket_v_table_t *const vtable;
+    mocksock_type_t type;
+
     AVS_LIST(mocksock_expected_command_t) expected_commands;
     AVS_LIST(mocksock_expected_data_t) expected_data;
     size_t last_data_read;
@@ -484,6 +486,7 @@ static int mock_receive_from(avs_net_abstract_socket_t *socket_,
     LOG(TRACE, "mock_receive_from: buffer_length %zu", buffer_length);
 
     mocksock_t *socket = (mocksock_t *) socket_;
+    int retval = 0;
     AVS_UNIT_ASSERT_TRUE(socket->state == AVS_NET_SOCKET_STATE_BOUND
             || socket->state == AVS_NET_SOCKET_STATE_ACCEPTED
             || socket->state == AVS_NET_SOCKET_STATE_CONNECTED);
@@ -514,10 +517,16 @@ static int mock_receive_from(avs_net_abstract_socket_t *socket_,
             LOG(TRACE, "mock_receive_from: partial receive, %u/%u",
                 (unsigned) *out,
                 (unsigned) socket->expected_data->args.valid.size);
+
+            if (socket->type == AVS_UNIT_MOCKSOCK_TYPE_DATAGRAM) {
+                avs_free((void*)(intptr_t)socket->expected_data->args.valid.data);
+                AVS_LIST_DELETE(&socket->expected_data);
+                retval = -1;
+            }
         }
     } else if (socket->expected_data->type
                == MOCKSOCK_DATA_TYPE_INPUT_FAIL) {
-        int retval = socket->expected_data->args.retval;
+        retval = socket->expected_data->args.retval;
         AVS_LIST_DELETE(&socket->expected_data);
 
         LOG(TRACE, "mock_receive_from: failure, result = %d", retval);
@@ -527,7 +536,7 @@ static int mock_receive_from(avs_net_abstract_socket_t *socket_,
     LOG(TRACE, "mock_receive_from: recv %zu/%zu B, host <%s>, port <%s>",
         *out, buffer_length, out_host, out_port);
     hexdump_data(buffer, *out);
-    return 0;
+    return retval;
 }
 
 static int mock_receive(avs_net_abstract_socket_t *socket,
@@ -809,6 +818,7 @@ static int mock_errno(avs_net_abstract_socket_t *socket_) {
 }
 
 void avs_unit_mocksock_create__(avs_net_abstract_socket_t **socket_,
+                                mocksock_type_t type,
                                 const char *file,
                                 int line) {
     static const avs_net_socket_v_table_t *const vtable_ptr = &mock_vtable;
@@ -816,6 +826,7 @@ void avs_unit_mocksock_create__(avs_net_abstract_socket_t **socket_,
     *socket = (mocksock_t *) avs_calloc(1, sizeof(**socket));
     _avs_unit_assert(!!*socket, file, line, "out of memory\n");
     memcpy(*socket, &vtable_ptr, sizeof(vtable_ptr));
+    (*socket)->type = type;
 }
 
 static mocksock_expected_data_t *new_expected_data(mocksock_t *socket,
