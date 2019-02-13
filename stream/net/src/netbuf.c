@@ -229,11 +229,59 @@ static int buffered_netstream_read(avs_stream_abstract_t *stream_,
     }
 }
 
+static int try_recv_nonblock(buffered_netstream_t *stream) {
+    avs_net_socket_opt_value_t old_recv_timeout;
+    const avs_net_socket_opt_value_t zero_timeout = {
+        .recv_timeout = AVS_TIME_DURATION_ZERO
+    };
+
+    if (avs_net_socket_get_opt(stream->socket, AVS_NET_SOCKET_OPT_RECV_TIMEOUT,
+                               &old_recv_timeout)
+            || avs_net_socket_set_opt(stream->socket,
+                                      AVS_NET_SOCKET_OPT_RECV_TIMEOUT,
+                                      zero_timeout)) {
+        LOG(ERROR, "cannot set socket timeout");
+        return -1;
+    }
+
+    size_t bytes_read;
+    int result = in_buffer_read_some(stream, &bytes_read);
+    if (result) {
+        int socket_errno = avs_net_socket_errno(stream->socket);
+        if (socket_errno == ETIMEDOUT) {
+            // nothing to read - this is expected, ignore
+            result = 0;
+        }
+    }
+
+    if (avs_net_socket_set_opt(stream->socket, AVS_NET_SOCKET_OPT_RECV_TIMEOUT,
+                               old_recv_timeout)) {
+        LOG(ERROR, "cannot restore socket timeout");
+    }
+
+    return result;
+}
+
 static int
 buffered_netstream_nonblock_read_ready(avs_stream_abstract_t *stream_) {
     buffered_netstream_t *stream = (buffered_netstream_t *) stream_;
     stream->errno_ = 0;
-    return avs_buffer_data_size(stream->in_buffer) > 0;
+
+    if (avs_buffer_data_size(stream->in_buffer) > 0) {
+        return true;
+    }
+
+    /*
+     * NOTE: if the underlying socket is a TLS socket, there may be some
+     * data in TLS backend internal buffers that will never be reported by
+     * select/poll on these sockets.
+     *
+     * To make sure we don't keep ignoring that data, attempt to read
+     * something from the socket with timeout set to 0 before telling the
+     * caller nonblock read is not possible.
+     */
+    return try_recv_nonblock(stream) == 0
+        && avs_buffer_data_size(stream->in_buffer) > 0;
 }
 
 static int buffered_netstream_peek(avs_stream_abstract_t *stream_,
