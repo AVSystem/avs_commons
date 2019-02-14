@@ -87,6 +87,15 @@ int avs_rand_r(avs_rand_seed_t *seed);
  */
 uint32_t avs_rand32_r(avs_rand_seed_t *seed);
 
+/**
+ * Returns a pseudo-random integer from range [0, UINT64_MAX]. It is
+ * thread-safe.
+ */
+static inline uint64_t avs_rand64_r(avs_rand_seed_t *seed) {
+    return (((uint64_t) avs_rand32_r(seed)) << 32)
+        | ((uint64_t) avs_rand32_r(seed));
+}
+
 /** Tests whether @p value is a power of two */
 static inline bool avs_is_power_of_2(size_t value) {
     return value > 0 && !(value & (value - 1));
