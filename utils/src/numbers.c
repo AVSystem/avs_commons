@@ -22,9 +22,28 @@
 
 VISIBILITY_SOURCE_BEGIN
 
-int avs_rand_r(unsigned int *seed) {
+int avs_rand_r(avs_rand_seed_t *seed) {
     return (*seed = *seed * 1103515245u + 12345u)
-           % (unsigned int) (AVS_RAND_MAX + 1);
+           % (avs_rand_seed_t) (AVS_RAND_MAX + 1);
+}
+
+#if AVS_RAND_MAX >= UINT32_MAX
+#    define RAND32_ITERATIONS 1
+#elif AVS_RAND_MAX >= UINT16_MAX
+#    define RAND32_ITERATIONS 2
+#else
+/* standard guarantees RAND_MAX to be at least 32767 */
+#    define RAND32_ITERATIONS 3
+#endif
+
+uint32_t avs_rand32_r(avs_rand_seed_t *seed) {
+    uint32_t result = 0;
+    int i;
+    for (i = 0; i < RAND32_ITERATIONS; ++i) {
+        result *= (uint32_t) AVS_RAND_MAX + 1;
+        result += (uint32_t) avs_rand_r(seed);
+    }
+    return result;
 }
 
 #ifdef AVS_COMMONS_BIG_ENDIAN

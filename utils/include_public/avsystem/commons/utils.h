@@ -32,6 +32,9 @@ extern "C" {
  */
 #define AVS_RAND_MAX 0x7fff
 
+/** Integral type used as a PRNG seed. */
+typedef unsigned int avs_rand_seed_t;
+
 /**
  * Calculates a number of bytes needed for a decimal string representation of a
  * given unsigned integer type.
@@ -76,7 +79,13 @@ extern "C" {
  * Returns a pseudo-random integer from range [0, AVS_RAND_MAX]. It is
  * thread-safe.
  */
-int avs_rand_r(unsigned int *seed);
+int avs_rand_r(avs_rand_seed_t *seed);
+
+/**
+ * Returns a pseudo-random integer from range [0, UINT32_MAX]. It is
+ * thread-safe.
+ */
+uint32_t avs_rand32_r(avs_rand_seed_t *seed);
 
 /** Tests whether @p value is a power of two */
 static inline bool avs_is_power_of_2(size_t value) {
