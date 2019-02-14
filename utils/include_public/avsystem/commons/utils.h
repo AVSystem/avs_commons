@@ -92,6 +92,16 @@ static inline bool avs_is_power_of_2(size_t value) {
     return value > 0 && !(value & (value - 1));
 }
 
+/** @returns The largest power of 2 not exceeding @p bound . */
+static inline size_t avs_max_power_of_2_not_greater_than(size_t bound) {
+    int exponent = -1;
+    while (bound) {
+        bound >>= 1;
+        ++exponent;
+    }
+    return (exponent >= 0) ? ((size_t) 1 << exponent) : 0;
+}
+
 /**
  * Convert a 16-bit integer between native byte order and big-endian byte order.
  *
