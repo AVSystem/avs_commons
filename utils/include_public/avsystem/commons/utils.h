@@ -21,6 +21,7 @@
 
 #include <stdarg.h>
 #include <stdbool.h>
+#include <string.h>
 
 #ifdef	__cplusplus
 extern "C" {
@@ -301,6 +302,14 @@ ssize_t avs_hexlify(char *out_hex,
                     size_t out_size,
                     const void *input,
                     size_t input_size);
+
+/**
+ * Utility macros for accessing unaligned data.
+ * @{
+ */
+#define avs_unaligned_get(dst, src) memcpy(dst, src, sizeof(*dst))
+#define avs_unaligned_put(dst, val) memcpy(dst, &val, sizeof(val));
+/** @} */
 
 #ifdef	__cplusplus
 }
