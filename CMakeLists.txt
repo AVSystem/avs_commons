@@ -153,7 +153,7 @@ set(POSIX_COMPAT_HEADER ${POSIX_COMPAT_HEADER_DEFAULT} CACHE STRING "POSIX compa
 
 option(WITH_EXTRA_WARNINGS "Enable extra compilation warnings" OFF)
 if(WITH_EXTRA_WARNINGS)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c99 -pedantic -Wall -Wextra -Winit-self -Wmissing-declarations -Wc++-compat -Wsign-conversion -Wconversion -Wcast-qual -Wno-variadic-macros -Wno-long-long -Wvla")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c99 -pedantic -Wall -Wextra -Winit-self -Wmissing-declarations -Wc++-compat -Wsign-conversion -Wconversion -Wcast-qual -Wno-variadic-macros -Wno-long-long -Wvla -Wshadow")
     if(WITH_CXX_TESTS)
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++98 -pedantic -Wall -Wextra -Winit-self -Wmissing-declarations -Wsign-conversion -Wconversion -Wcast-qual -Wno-variadic-macros -Wno-long-long")
     endif()
