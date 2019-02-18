@@ -359,6 +359,16 @@ void avs_sched_run(avs_sched_t *sched) {
 #endif // WITH_INTERNAL_TRACE
 }
 
+static void schedule_job(avs_sched_t *sched, avs_sched_job_t *job) {
+    AVS_LIST(avs_sched_job_t) *insert_ptr = &sched->jobs;
+    while (*insert_ptr
+           && !avs_time_monotonic_before(job->instant,
+                                         (*insert_ptr)->instant)) {
+        AVS_LIST_ADVANCE_PTR(&insert_ptr);
+    }
+    AVS_LIST_INSERT(insert_ptr, job);
+}
+
 static int sched_at_locked(avs_sched_t *sched,
                            avs_sched_handle_t *out_handle,
                            avs_time_monotonic_t instant,
@@ -420,12 +430,7 @@ static int sched_at_locked(avs_sched_t *sched,
         avs_mutex_unlock(g_handle_access_mutex);
     }
 
-    AVS_LIST(avs_sched_job_t) *insert_ptr = &sched->jobs;
-    while (*insert_ptr
-            && !avs_time_monotonic_before(instant, (*insert_ptr)->instant)) {
-        AVS_LIST_ADVANCE_PTR(&insert_ptr);
-    }
-    AVS_LIST_INSERT(insert_ptr, job);
+    schedule_job(sched, job);
 #ifdef WITH_INTERNAL_TRACE
     avs_time_duration_t remaining =
             avs_time_monotonic_diff(instant, avs_time_monotonic_now());
@@ -576,4 +581,53 @@ int avs_sched_leap_time(avs_sched_t *sched, avs_time_duration_t diff) {
 
     avs_mutex_unlock(sched->mutex);
     return 0;
+}
+
+int avs_resched_at_impl__(avs_sched_handle_t *handle_ptr,
+                          avs_time_monotonic_t instant) {
+    if (!handle_ptr) {
+        return -1;
+    }
+    if (!avs_time_monotonic_valid(instant)) {
+        avs_log(sched, ERROR,
+                "attempted to reschedule job at an invalid time point");
+        return -1;
+    }
+
+    avs_sched_t *sched = NULL;
+    avs_sched_job_t *job = NULL;
+    nonfailing_mutex_lock(g_handle_access_mutex);
+    if (*handle_ptr) {
+        AVS_ASSERT(handle_ptr == (*handle_ptr)->handle_ptr,
+                   "accessing job via non-original handle");
+        sched = (*handle_ptr)->sched;
+        job = *handle_ptr;
+    }
+    avs_mutex_unlock(g_handle_access_mutex);
+    if (!job) {
+        return -1;
+    }
+
+    int retval = 0;
+    assert(sched);
+    nonfailing_mutex_lock(sched->mutex);
+    AVS_LIST(avs_sched_job_t) *job_ptr =
+            (AVS_LIST(avs_sched_job_t) *) AVS_LIST_FIND_PTR(&sched->jobs, job);
+    if (job_ptr) {
+        SCHED_LOG(sched, TRACE, "rescheduling job%s", JOB_LOG_ID(*job_ptr));
+
+        avs_sched_job_t *detached_job = AVS_LIST_DETACH(job_ptr);
+        detached_job->instant = instant;
+
+        schedule_job(sched, detached_job);
+        avs_condvar_notify_all(sched->task_condvar);
+    } else {
+#ifndef WITH_SCHEDULER_THREAD_SAFE
+        AVS_ASSERT(job_ptr, "dangling handle detected");
+#endif // WITH_SCHEDULER_THREAD_SAFE
+        retval = -1;
+    }
+
+    avs_mutex_unlock(sched->mutex);
+    return retval;
 }

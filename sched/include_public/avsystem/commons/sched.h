@@ -231,6 +231,9 @@ int avs_sched_at_impl__(avs_sched_t *sched,
                         const void *clb_data,
                         size_t clb_data_size);
 
+int avs_resched_at_impl__(avs_sched_handle_t *handle_ptr,
+                          avs_time_monotonic_t instant);
+
 #ifndef AVS_LOG_WITH_TRACE
 #   define AVS_SCHED_LOG_ARGS__(...) (NULL), 0, (NULL)
 #elif !defined(AVS_SCHED_WITH_ARGS_LOG)
@@ -328,6 +331,40 @@ int avs_sched_at_impl__(avs_sched_t *sched,
 #define AVS_SCHED_NOW(Sched, OutHandle, Clb, ClbData, ClbDataSize) \
         AVS_SCHED_AT(Sched, OutHandle, avs_time_monotonic_now(), \
                      Clb, ClbData, ClbDataSize)
+
+/**
+ * Reschedules a job to the specific point in time in the system monotonic
+ * clock's domain.
+ *
+ * @param Handle  Handle to the scheduled job (as passed earlier as
+ *                <c>OutHandle</c> to @ref AVS_SCHED_AT, @ref AVS_SCHED_DELAYED
+ *                or @ref AVS_SCHED_NOW)
+ *
+ * @param Instant Point in time in the system monotonic clock's domain at which
+ *                to reschedule the job (<c>avs_time_monotonic_t</c>).
+ *
+ * @returns
+ * - 0 on success
+ * - negative value on one of the following failure conditions:
+ *   - @p Handle is <c>NULL</c>
+ *   - @p Instant is an invalid time value
+ *   - Job was not found in related scheduler
+ */
+#define AVS_RESCHED_AT(Handle, Instant) \
+    avs_resched_at_impl__((Handle), (Instant))
+
+/**
+ * A variant of @ref AVS_RESCHED_AT that uses a delay relative to "now".
+ */
+#define AVS_RESCHED_DELAYED(Handle, Delay) \
+    AVS_RESCHED_AT(Handle,                 \
+                   avs_time_monotonic_add(avs_time_monotonic_now(), Delay))
+
+/**
+ * A variant of @ref AVS_RESCHED_AT that reschedules the job to be executed
+ * "now" (at earliest possible time).
+ */
+#define AVS_RESCHED_NOW(Handle) AVS_RESCHED_AT(Handle, avs_time_monotonic_now())
 
 /**
  * Returns a point in time at which execution of a specified job is scheduled.

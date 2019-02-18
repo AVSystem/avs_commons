@@ -110,10 +110,9 @@ AVS_UNIT_TEST(sched, sched_delayed) {
             avs_time_duration_from_scalar(1, AVS_TIME_S);
     int counter = 0;
     avs_sched_handle_t task = NULL;
-    AVS_UNIT_ASSERT_SUCCESS(AVS_SCHED_DELAYED(env.sched, &task, delay,
-                                              increment_task,
-                                              &(int *) { &counter },
-                                              sizeof(int *)));
+    AVS_UNIT_ASSERT_SUCCESS(
+            AVS_SCHED_DELAYED(env.sched, &task, delay, increment_task,
+                              &(int *) { &counter }, sizeof(int *)));
     AVS_UNIT_ASSERT_NOT_NULL(task);
     avs_sched_run(env.sched);
     AVS_UNIT_ASSERT_EQUAL(0, counter);
@@ -134,10 +133,9 @@ AVS_UNIT_TEST(sched, sched_del) {
             avs_time_duration_from_scalar(1, AVS_TIME_S);
     int counter = 0;
     avs_sched_handle_t task = NULL;
-    AVS_UNIT_ASSERT_SUCCESS(AVS_SCHED_DELAYED(env.sched, &task, delay,
-                                              increment_task,
-                                              &(int *) { &counter },
-                                              sizeof(int *)));
+    AVS_UNIT_ASSERT_SUCCESS(
+            AVS_SCHED_DELAYED(env.sched, &task, delay, increment_task,
+                              &(int *) { &counter }, sizeof(int *)));
     AVS_UNIT_ASSERT_NOT_NULL(task);
     avs_sched_run(env.sched);
     AVS_UNIT_ASSERT_EQUAL(0, counter);
@@ -168,9 +166,9 @@ AVS_UNIT_TEST(sched, oneshot_job_handle_nullification) {
     sched_test_env_t env = setup_test();
 
     global_t global = { NULL, 0 };
-    AVS_UNIT_ASSERT_SUCCESS(AVS_SCHED_NOW(
-            env.sched, &global.task, assert_task_null_oneshot_job,
-            &(global_t *) { &global }, sizeof(global_t *)));
+    AVS_UNIT_ASSERT_SUCCESS(
+            AVS_SCHED_NOW(env.sched, &global.task, assert_task_null_oneshot_job,
+                          &(global_t *) { &global }, sizeof(global_t *)));
     AVS_UNIT_ASSERT_NOT_NULL(global.task);
     avs_sched_run(env.sched);
     AVS_UNIT_ASSERT_NULL(global.task);
@@ -178,26 +176,110 @@ AVS_UNIT_TEST(sched, oneshot_job_handle_nullification) {
 }
 
 static int GLOBAL_VALUE = 0;
+static int SETTER_CALLS = 0;
 
 static void global_value_setter(avs_sched_t *sched, const void *value_) {
     (void) sched;
-    AVS_UNIT_ASSERT_EQUAL(GLOBAL_VALUE, 0);
     GLOBAL_VALUE = *(const int *) value_;
+    SETTER_CALLS++;
 }
 
 AVS_UNIT_TEST(sched, reschedule_policy) {
     sched_test_env_t env = setup_test();
     GLOBAL_VALUE = 0;
+    SETTER_CALLS = 0;
 
     avs_sched_handle_t task = NULL;
     AVS_UNIT_ASSERT_SUCCESS(AVS_SCHED_NOW(env.sched, &task, global_value_setter,
-                                          &(int[]) { 42 }[0], sizeof(int)));
+                                          &(int) { 42 }, sizeof(int)));
     AVS_UNIT_ASSERT_SUCCESS(AVS_SCHED_NOW(env.sched, &task, global_value_setter,
-                                          &(int[]) { 514 }[0], sizeof(int)));
+                                          &(int) { 514 }, sizeof(int)));
     AVS_UNIT_ASSERT_NOT_NULL(task);
     avs_sched_run(env.sched);
     AVS_UNIT_ASSERT_NULL(task);
     AVS_UNIT_ASSERT_EQUAL(GLOBAL_VALUE, 514);
+    AVS_UNIT_ASSERT_EQUAL(SETTER_CALLS, 1);
+    teardown_test(&env);
+}
+
+AVS_UNIT_TEST(sched, reschedule_job) {
+    sched_test_env_t env = setup_test();
+    GLOBAL_VALUE = 0;
+    SETTER_CALLS = 0;
+
+    avs_sched_handle_t task = NULL;
+    AVS_UNIT_ASSERT_SUCCESS(AVS_SCHED_NOW(env.sched, &task, global_value_setter,
+                                          &(int) { 7 }, sizeof(int)));
+    AVS_UNIT_ASSERT_NOT_NULL(task);
+
+    AVS_RESCHED_DELAYED(&task, avs_time_duration_from_scalar(1, AVS_TIME_S));
+    avs_sched_run(env.sched);
+    AVS_UNIT_ASSERT_NOT_NULL(task);
+
+    mock_clock_advance(avs_time_duration_from_scalar(1, AVS_TIME_S));
+    avs_sched_run(env.sched);
+
+    AVS_UNIT_ASSERT_NULL(task);
+    AVS_UNIT_ASSERT_EQUAL(GLOBAL_VALUE, 7);
+    AVS_UNIT_ASSERT_EQUAL(SETTER_CALLS, 1);
+
+    teardown_test(&env);
+}
+
+AVS_UNIT_TEST(sched, reschedule_job_reordering) {
+    sched_test_env_t env = setup_test();
+    GLOBAL_VALUE = 0;
+    SETTER_CALLS = 0;
+
+    avs_sched_handle_t task1 = NULL;
+    avs_sched_handle_t task2 = NULL;
+    AVS_UNIT_ASSERT_SUCCESS(AVS_SCHED_NOW(
+            env.sched, &task1, global_value_setter, &(int) { 7 }, sizeof(int)));
+    AVS_UNIT_ASSERT_NOT_NULL(task1);
+
+    AVS_UNIT_ASSERT_SUCCESS(AVS_SCHED_DELAYED(
+            env.sched, &task2, avs_time_duration_from_scalar(1, AVS_TIME_S),
+            global_value_setter, &(int) { 12 }, sizeof(int)));
+    AVS_UNIT_ASSERT_NOT_NULL(task2);
+
+    AVS_RESCHED_DELAYED(&task1, avs_time_duration_from_scalar(2, AVS_TIME_S));
+
+    mock_clock_advance(avs_time_duration_from_scalar(1, AVS_TIME_S));
+    avs_sched_run(env.sched);
+    AVS_UNIT_ASSERT_NULL(task2);
+    AVS_UNIT_ASSERT_NOT_NULL(task1);
+    AVS_UNIT_ASSERT_EQUAL(GLOBAL_VALUE, 12);
+
+    mock_clock_advance(avs_time_duration_from_scalar(1, AVS_TIME_S));
+    avs_sched_run(env.sched);
+    AVS_UNIT_ASSERT_NULL(task1);
+    AVS_UNIT_ASSERT_EQUAL(GLOBAL_VALUE, 7);
+
+    AVS_UNIT_ASSERT_EQUAL(SETTER_CALLS, 2);
+
+    teardown_test(&env);
+}
+
+static void rescheduler(avs_sched_t *sched, const void *ptr) {
+    (void) sched;
+    AVS_UNIT_ASSERT_NOT_NULL(ptr);
+
+    // It's impossible to get handle to the job here, so user will not be able
+    // to reschedule job in callback.
+    AVS_UNIT_ASSERT_NULL(*((const avs_sched_handle_t *) ptr));
+}
+
+AVS_UNIT_TEST(sched, rescheduling_in_callback) {
+    sched_test_env_t env = setup_test();
+
+    avs_sched_handle_t task = NULL;
+    AVS_UNIT_ASSERT_SUCCESS(
+            AVS_SCHED_NOW(env.sched, &task, rescheduler, &task, sizeof(&task)));
+    AVS_UNIT_ASSERT_NOT_NULL(task);
+
+    avs_sched_run(env.sched);
+    AVS_UNIT_ASSERT_NULL(task);
+
     teardown_test(&env);
 }
 
