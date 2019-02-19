@@ -260,7 +260,6 @@ AVS_UNIT_TEST(http, chunked_receiver_good) {
                                     TRANSFER_CHUNKED, 0);
     AVS_UNIT_ASSERT_NOT_NULL(receiver);
     while (!message_finished) {
-        size_t bytes_read;
         AVS_UNIT_ASSERT_SUCCESS(avs_stream_read(receiver, &bytes_read,
                                                 &message_finished,
                                                 buffer_ptr, sizeof(buffer)
