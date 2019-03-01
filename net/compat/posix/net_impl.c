@@ -680,13 +680,6 @@ static int configure_socket(avs_net_socket_t *net_socket) {
     return 0;
 }
 
-#ifndef HAVE_POLL
-static inline bool is_valid_timeout(avs_time_duration_t timeout) {
-    return avs_time_duration_valid(timeout)
-            && !avs_time_duration_less(timeout, AVS_TIME_DURATION_ZERO);
-}
-#endif // !HAVE_POLL
-
 static int wait_until_ready_internal(sockfd_t sockfd,
                                      avs_time_duration_t timeout,
                                      char in, char out, char err) {
@@ -756,7 +749,8 @@ static int wait_until_ready_internal(sockfd_t sockfd,
     }
     AVS_FD_SET(sockfd, &errfds);
     if (select(sockfd + 1, &infds, &outfds, &errfds,
-               is_valid_timeout(timeout) ? &timeval_timeout : NULL) <= 0) {
+               avs_time_duration_valid(timeout) ? &timeval_timeout : NULL)
+            <= 0) {
         return -1;
     }
     return ((err && AVS_FD_ISSET(sockfd, &errfds))
