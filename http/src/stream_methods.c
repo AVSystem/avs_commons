@@ -393,7 +393,6 @@ int avs_http_open_stream(avs_stream_abstract_t **out,
     avs_net_abstract_socket_t *socket = NULL;
     http_stream_t *stream = NULL;
     int result = 0;
-    int stream_cleanup_result = 0;
     LOG(TRACE,
         "avs_http_open_stream, method == %d, encoding == %d, "
         "protocol == %s, host == %s, port == %s, path == %s, "
@@ -455,13 +454,15 @@ int avs_http_open_stream(avs_stream_abstract_t **out,
     return 0;
 
 http_open_stream_error:
+    assert(result);
+
     if (stream && stream->backend) {
         avs_stream_cleanup(&stream->backend);
     } else if (socket) {
         avs_net_socket_cleanup(&socket);
     }
     if (stream && stream->encoder) {
-        stream_cleanup_result = avs_stream_cleanup(&stream->encoder);
+        avs_stream_cleanup(&stream->encoder);
     }
     if (stream && stream->url) {
         avs_url_free(stream->url);
@@ -470,7 +471,8 @@ http_open_stream_error:
         _avs_http_auth_clear(&stream->auth);
         avs_free(stream);
     }
-    return result ? result : stream_cleanup_result;
+
+    return result;
 }
 
 int avs_http_status_code(avs_stream_abstract_t *stream_) {
