@@ -718,7 +718,11 @@ static int receive_ssl(avs_net_abstract_socket_t *socket_,
     if (result < 0) {
         *out_bytes_received = 0;
         if (result != MBEDTLS_ERR_SSL_PEER_CLOSE_NOTIFY) {
-            LOG(ERROR, "receive failed: %d", result);
+            if (result == MBEDTLS_ERR_SSL_TIMEOUT) {
+                LOG(TRACE, "receive_ssl: timed out");
+            } else {
+                LOG(ERROR, "receive failed: %d", result);
+            }
             update_send_or_recv_error_code(socket, result);
             return -1;
         }
