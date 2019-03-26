@@ -67,7 +67,9 @@ static void insert_new_waiter(avs_condvar_t *condvar,
 
     // Initialize the waiting flag to true
     atomic_flag_clear(&waiter->waiting);
-    atomic_flag_test_and_set(&waiter->waiting);
+    bool value = atomic_flag_test_and_set(&waiter->waiting);
+    assert(!value);
+    (void) value;
 
     // Insert waiter as the first element on the list
     waiter->next = condvar->first_waiter;
