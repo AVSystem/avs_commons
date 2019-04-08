@@ -528,7 +528,18 @@ typedef enum {
      * call will still be successful. This option makes it possible to check
      * whether the session has been resumed, or is a new unrelated one.
      */
-    AVS_NET_SOCKET_OPT_SESSION_RESUMED
+    AVS_NET_SOCKET_OPT_SESSION_RESUMED,
+
+    /**
+     * Used to get the number of bytes sent. Does not include protocol overhead.
+     */
+    AVS_NET_SOCKET_OPT_BYTES_SENT,
+
+    /**
+     * Used to get the number of bytes received. Does not include protocol
+     * overhead.
+     */
+    AVS_NET_SOCKET_OPT_BYTES_RECEIVED
 } avs_net_socket_opt_key_t;
 
 typedef enum {
@@ -578,6 +589,8 @@ typedef union {
     avs_net_af_t addr_family;
     int mtu;
     bool flag;
+    uint64_t bytes_sent;
+    uint64_t bytes_received;
 } avs_net_socket_opt_value_t;
 
 int avs_net_socket_debug(int value);

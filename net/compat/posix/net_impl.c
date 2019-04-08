@@ -321,6 +321,9 @@ typedef struct {
     char remote_port[NET_PORT_SIZE];
     avs_net_socket_configuration_t configuration;
 
+    uint64_t bytes_received;
+    uint64_t bytes_sent;
+
     avs_time_duration_t recv_timeout;
     volatile int error_code;
 } avs_net_socket_t;
@@ -1245,6 +1248,7 @@ static int send_net(avs_net_abstract_socket_t *net_socket_,
             break;
         } else {
             bytes_sent += arg.bytes_sent;
+            net_socket->bytes_sent += bytes_sent;
             arg.data += arg.bytes_sent;
             arg.data_length -= arg.bytes_sent;
         }
@@ -1268,6 +1272,7 @@ typedef struct {
     const void *data;
     size_t data_length;
     sockaddr_endpoint_union_t dest_addr;
+    size_t bytes_sent;
 } send_to_internal_arg_t;
 
 static int send_to_internal(sockfd_t sockfd, void *arg_) {
@@ -1277,7 +1282,11 @@ static int send_to_internal(sockfd_t sockfd, void *arg_) {
                             arg->dest_addr.sockaddr_ep.header.size);
     if (result < 0) {
         return (int) result;
-    } else if ((size_t) result != arg->data_length) {
+    }
+
+    arg->bytes_sent = (size_t) result;
+
+    if ((size_t) result != arg->data_length) {
         LOG(ERROR, "send_to fail (%lu/%lu)",
             (unsigned long) result, (unsigned long) arg->data_length);
         errno = EIO;
@@ -1315,6 +1324,7 @@ static int send_to_net(avs_net_abstract_socket_t *net_socket_,
         net_socket->error_code = errno;
     }
     avs_net_addrinfo_delete(&info);
+    net_socket->bytes_sent += arg.bytes_sent;
     return result;
 }
 
@@ -1410,6 +1420,7 @@ static int receive_net(avs_net_abstract_socket_t *net_socket_,
     int result = call_when_ready(&net_socket->socket, net_socket->recv_timeout,
                                  1, 0, 1, recvfrom_internal, &arg);
     *out = arg.bytes_received;
+    net_socket->bytes_received += arg.bytes_received;
     net_socket->error_code = errno;
     return result;
 }
@@ -1433,6 +1444,7 @@ static int receive_from_net(avs_net_abstract_socket_t *net_socket_,
     };
     int result = call_when_ready(&net_socket->socket, net_socket->recv_timeout,
                                  1, 0, 1, recvfrom_internal, &arg);
+    net_socket->bytes_received += arg.bytes_received;
     *out = arg.bytes_received;
     net_socket->error_code = errno;
     if (!result || net_socket->error_code == EMSGSIZE) {
@@ -1878,6 +1890,12 @@ static int get_opt_net(avs_net_abstract_socket_t *net_socket_,
         return get_mtu(net_socket, &out_option_value->mtu);
     case AVS_NET_SOCKET_OPT_INNER_MTU:
         return get_inner_mtu(net_socket, &out_option_value->mtu);
+    case AVS_NET_SOCKET_OPT_BYTES_RECEIVED:
+        out_option_value->bytes_received = net_socket->bytes_received;
+        return 0;
+    case AVS_NET_SOCKET_OPT_BYTES_SENT:
+        out_option_value->bytes_sent = net_socket->bytes_sent;
+        return 0;
     default:
         LOG(DEBUG,
             "get_opt_net: unknown or unsupported option key: "

@@ -35,9 +35,10 @@ static void close_ssl_raw(ssl_socket_t *socket);
 static int get_dtls_overhead(ssl_socket_t *socket,
                              int *out_header,
                              int *out_padding_size);
-static int initialize_ssl_socket(ssl_socket_t *socket,
-                                 avs_net_socket_type_t backend_type,
-                                 const avs_net_ssl_configuration_t *configuration);
+static int
+initialize_ssl_socket(ssl_socket_t *socket,
+                      avs_net_socket_type_t backend_type,
+                      const avs_net_ssl_configuration_t *configuration);
 
 /* avs_net_socket_v_table_t ssl handlers implemented differently per backend */
 static int send_ssl(avs_net_abstract_socket_t *ssl_socket,
