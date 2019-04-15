@@ -44,10 +44,10 @@ typedef struct {
 
 static int parse_size(size_t *out, const char *in) {
     char *endptr = NULL;
-    while (*in && isspace(*in)) {
+    while (*in && isspace((unsigned char) *in)) {
         ++in;
     }
-    if (!(isdigit(*in) || *in == '+')) {
+    if (!(isdigit((unsigned char) *in) || *in == '+')) {
         return -1;
     }
     errno = 0;
