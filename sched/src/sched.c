@@ -589,8 +589,7 @@ int avs_resched_at_impl__(avs_sched_handle_t *handle_ptr,
         return -1;
     }
     if (!avs_time_monotonic_valid(instant)) {
-        avs_log(sched, ERROR,
-                "attempted to reschedule job at an invalid time point");
+        LOG(ERROR, "attempted to reschedule job at an invalid time point");
         return -1;
     }
 
