@@ -330,15 +330,14 @@ static void hexdumpify(char *out_buf,
                        size_t data_size,
                        size_t bytes_per_segment,
                        size_t segments_per_row) {
-    const size_t bytes_per_row = bytes_per_segment * segments_per_row;
-
+    // bytes_per_row = bytes_per_segment * segments_per_row
     // bytes_per_row * 3 chars for hex segments (00 00)
     // + (segments_per_row - 1) extra spaces between hex segments (00 00  00 00)
     // + 1 extra space between hex segments and char segments
     // + bytes_per_row chars for char segments (xx)
     // + (segments_per_row - 1) extra spaces between char segments (xx xx)
     // + nullbyte at the end
-    assert(buf_size >= bytes_per_row * 4 + segments_per_row * 2);
+    assert(buf_size >= bytes_per_segment * segments_per_row * 4 + segments_per_row * 2);
 
     char *at = out_buf;
 

@@ -19,7 +19,9 @@
 #include <string.h>
 
 /* We don't want avs_list_assert_acyclic__ called from our own internals */
-#define NDEBUG
+#ifndef NDEBUG
+# define NDEBUG
+#endif
 #include <avsystem/commons/list.h>
 
 #ifdef NDEBUG
