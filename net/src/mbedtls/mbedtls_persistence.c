@@ -216,8 +216,8 @@ int _avs_net_mbedtls_session_save(mbedtls_ssl_session *session,
     if (retval) {
         LOG(ERROR, "Could not write session magic");
     } else {
-        avs_persistence_store_context_init(
-                &ctx, (avs_stream_abstract_t *) &out_buf_stream);
+        ctx = avs_persistence_store_context_create(
+                (avs_stream_abstract_t *) &out_buf_stream);
         if ((retval = handle_session_persistence(&ctx, session))) {
             LOG(ERROR, "Could not persist session data");
         }
@@ -259,9 +259,8 @@ int _avs_net_mbedtls_session_restore(mbedtls_ssl_session *out_session,
         LOG(ERROR, "Could not restore session: invalid magic");
         return -1;
     }
-    avs_persistence_context_t ctx;
-    avs_persistence_restore_context_init(
-            &ctx, (avs_stream_abstract_t *) &in_buf_stream);
+    avs_persistence_context_t ctx = avs_persistence_restore_context_create(
+            (avs_stream_abstract_t *) &in_buf_stream);
     if ((retval = handle_session_persistence(&ctx, out_session))) {
         LOG(ERROR, "Could not restore session data");
     }

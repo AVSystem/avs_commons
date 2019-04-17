@@ -493,26 +493,25 @@ static const struct avs_persistence_context_vtable_struct IGNORE_VTABLE = {
     ignore_tree
 };
 
-void avs_persistence_store_context_init(avs_persistence_context_t *out_context,
-                                        avs_stream_abstract_t *stream) {
-    *out_context = (avs_persistence_context_t) {
+avs_persistence_context_t
+avs_persistence_store_context_create(avs_stream_abstract_t *stream) {
+    return (avs_persistence_context_t) {
         .vtable = &STORE_VTABLE,
         .stream = stream
     };
 }
 
-void avs_persistence_restore_context_init(
-        avs_persistence_context_t *out_context,
-        avs_stream_abstract_t *stream) {
-    *out_context = (avs_persistence_context_t) {
+avs_persistence_context_t
+avs_persistence_restore_context_create(avs_stream_abstract_t *stream) {
+    return (avs_persistence_context_t) {
         .vtable = &RESTORE_VTABLE,
         .stream = stream
     };
 }
 
-void avs_persistence_ignore_context_init(avs_persistence_context_t *out_context,
-                                         avs_stream_abstract_t *stream) {
-    *out_context = (avs_persistence_context_t) {
+avs_persistence_context_t
+avs_persistence_ignore_context_create(avs_stream_abstract_t *stream) {
+    return (avs_persistence_context_t) {
         .vtable = &IGNORE_VTABLE,
         .stream = stream
     };
