@@ -259,15 +259,11 @@ int _avs_net_mbedtls_session_restore(mbedtls_ssl_session *out_session,
         LOG(ERROR, "Could not restore session: invalid magic");
         return -1;
     }
-    avs_persistence_context_t *ctx = avs_persistence_restore_context_new(
-            (avs_stream_abstract_t *) &in_buf_stream);
-    if (!ctx) {
-        LOG(ERROR, "Could not create session_restore() context");
-        return -1;
-    }
-    if ((retval = handle_session_persistence(ctx, out_session))) {
+    avs_persistence_context_t ctx;
+    avs_persistence_restore_context_init(
+            &ctx, (avs_stream_abstract_t *) &in_buf_stream);
+    if ((retval = handle_session_persistence(&ctx, out_session))) {
         LOG(ERROR, "Could not restore session data");
     }
-    avs_persistence_context_delete(ctx);
     return retval;
 }
