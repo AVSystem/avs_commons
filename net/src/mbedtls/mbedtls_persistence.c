@@ -208,26 +208,20 @@ static int handle_session_persistence(avs_persistence_context_t *ctx,
 
 int _avs_net_mbedtls_session_save(mbedtls_ssl_session *session,
                                   void *out_buf, size_t out_buf_size) {
-    avs_persistence_context_t *ctx = NULL;
+    avs_persistence_context_t ctx;
     avs_stream_outbuf_t out_buf_stream = AVS_STREAM_OUTBUF_STATIC_INITIALIZER;
     avs_stream_outbuf_set_buffer(&out_buf_stream, out_buf, out_buf_size);
     int retval = avs_stream_write((avs_stream_abstract_t *) &out_buf_stream,
                                   PERSISTENCE_MAGIC, sizeof(PERSISTENCE_MAGIC));
     if (retval) {
         LOG(ERROR, "Could not write session magic");
-        goto finish;
+    } else {
+        avs_persistence_store_context_init(
+                &ctx, (avs_stream_abstract_t *) &out_buf_stream);
+        if ((retval = handle_session_persistence(&ctx, session))) {
+            LOG(ERROR, "Could not persist session data");
+        }
     }
-    if (!(ctx = avs_persistence_store_context_new(
-            (avs_stream_abstract_t *) &out_buf_stream))) {
-        LOG(ERROR, "Could not create session_save() context");
-        retval = -1;
-        goto finish;
-    }
-    if ((retval = handle_session_persistence(ctx, session))) {
-        LOG(ERROR, "Could not persist session data");
-    }
-    avs_persistence_context_delete(ctx);
-finish:;
     // ensure that everything after the persisted data is zeroes, to make
     // "compression" of persistent storage possible; see docs for
     // avs_net_ssl_configuration_t::session_resumption_buffer for details
