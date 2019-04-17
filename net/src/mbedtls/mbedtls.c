@@ -646,7 +646,7 @@ static int send_ssl(avs_net_abstract_socket_t *socket_,
                     size_t buffer_length) {
     ssl_socket_t *socket = (ssl_socket_t *) socket_;
     size_t bytes_sent = 0;
-    int result;
+    int result = 0;
     LOG(TRACE, "send_ssl(socket=%p, buffer=%p, buffer_length=%lu)",
         (void *) socket, buffer, (unsigned long) buffer_length);
 
