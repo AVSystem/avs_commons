@@ -493,39 +493,29 @@ static const struct avs_persistence_context_vtable_struct IGNORE_VTABLE = {
     ignore_tree
 };
 
-static avs_persistence_context_t *persistence_context_new(
-        const struct avs_persistence_context_vtable_struct *vtable,
+void avs_persistence_store_context_init(avs_persistence_context_t *out_context,
+                                        avs_stream_abstract_t *stream) {
+    *out_context = (avs_persistence_context_t) {
+        .vtable = &STORE_VTABLE,
+        .stream = stream
+    };
+}
+
+void avs_persistence_restore_context_init(
+        avs_persistence_context_t *out_context,
         avs_stream_abstract_t *stream) {
-    assert(vtable);
-    if (!stream) {
-        return NULL;
-    }
-    avs_persistence_context_t *ctx = (avs_persistence_context_t *)
-            avs_calloc(1, sizeof(avs_persistence_context_t));
-    if (ctx) {
-        ctx->vtable = vtable;
-        ctx->stream = stream;
-    }
-    return ctx;
+    *out_context = (avs_persistence_context_t) {
+        .vtable = &RESTORE_VTABLE,
+        .stream = stream
+    };
 }
 
-avs_persistence_context_t *
-avs_persistence_store_context_new(avs_stream_abstract_t *stream) {
-    return persistence_context_new(&STORE_VTABLE, stream);
-}
-
-avs_persistence_context_t *
-avs_persistence_restore_context_new(avs_stream_abstract_t *stream) {
-    return persistence_context_new(&RESTORE_VTABLE, stream);
-}
-
-avs_persistence_context_t *
-avs_persistence_ignore_context_new(avs_stream_abstract_t *stream) {
-    return persistence_context_new(&IGNORE_VTABLE, stream);
-}
-
-void avs_persistence_context_delete(avs_persistence_context_t *ctx) {
-    avs_free(ctx);
+void avs_persistence_ignore_context_init(avs_persistence_context_t *out_context,
+                                         avs_stream_abstract_t *stream) {
+    *out_context = (avs_persistence_context_t) {
+        .vtable = &IGNORE_VTABLE,
+        .stream = stream
+    };
 }
 
 avs_persistence_direction_t

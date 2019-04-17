@@ -59,40 +59,107 @@ typedef int avs_persistence_handler_custom_allocated_tree_element_t(
 typedef void avs_persistence_cleanup_collection_element_t(void *element);
 
 /**
- * Creates context where each underlying operation writes passed value to the
- * stream.
+ * Initializes a preallocated persiste context so that each underlying operation
+ * writes passed value to the stream.
+ *
+ * @param out_context Pointer to a persistence context variable to initialize.
+ * @param stream      Stream to operate on.
+ */
+void avs_persistence_store_context_init(avs_persistence_context_t *out_context,
+                                        avs_stream_abstract_t *stream);
+
+/**
+ * Initializes a preallocated persiste context so that each underlying operation
+ * reads value from the stream and writes it under an address passed by the
+ * user.
+ *
+ * @param out_context Pointer to a persistence context variable to initialize.
+ * @param stream      Stream to operate on.
+ */
+void avs_persistence_restore_context_init(
+        avs_persistence_context_t *out_context,
+        avs_stream_abstract_t *stream);
+
+/**
+ * Initializes a preallocated persiste context so that each underlying operation
+ * skips value.
+ *
+ * @param out_context Pointer to a persistence context variable to initialize.
+ * @param stream      Stream to operate on.
+ */
+void avs_persistence_ignore_context_init(avs_persistence_context_t *out_context,
+                                         avs_stream_abstract_t *stream);
+
+/**
+ * Creates a heap-allocated context where each underlying operation writes
+ * passed value to the stream.
  * @param stream    stream to operate on
  * @return          NULL on error during context construction, valid pointer
  *                  otherwise
  */
-avs_persistence_context_t *
-avs_persistence_store_context_new(avs_stream_abstract_t *stream);
+static inline avs_persistence_context_t *
+avs_persistence_store_context_new(avs_stream_abstract_t *stream) {
+    if (!stream) {
+        return NULL;
+    }
+    avs_persistence_context_t *ctx = (avs_persistence_context_t *)
+            avs_malloc(sizeof(avs_persistence_context_t));
+    if (ctx) {
+        avs_persistence_store_context_init(ctx, stream);
+    }
+    return ctx;
+}
 
 /**
- * Creates context where each underlying operation reads value from the stream
- * and writes it under an address passed by the user.
+ * Creates a heap-allocated context where each underlying operation reads value
+ * from the stream and writes it under an address passed by the user.
  * @param stream    stream to operate on
  * @return          NULL on error during context construction, valid pointer
  *                  otherwise
  */
-avs_persistence_context_t *
-avs_persistence_restore_context_new(avs_stream_abstract_t *stream);
+static inline avs_persistence_context_t *
+avs_persistence_restore_context_new(avs_stream_abstract_t *stream) {
+    if (!stream) {
+        return NULL;
+    }
+    avs_persistence_context_t *ctx = (avs_persistence_context_t *)
+            avs_malloc(sizeof(avs_persistence_context_t));
+    if (ctx) {
+        avs_persistence_restore_context_init(ctx, stream);
+    }
+    return ctx;
+}
 
 /**
- * Creates context where each underlying operation skips value.
+ * Creates a heap-allocated context where each underlying operation skips value.
  * @param stream    stream to operate on
  * @return          NULL on error during context construction, valid pointer
  *                  otherwise
  */
-avs_persistence_context_t *
-avs_persistence_ignore_context_new(avs_stream_abstract_t *stream);
+static inline avs_persistence_context_t *
+avs_persistence_ignore_context_new(avs_stream_abstract_t *stream) {
+    if (!stream) {
+        return NULL;
+    }
+    avs_persistence_context_t *ctx = (avs_persistence_context_t *)
+            avs_malloc(sizeof(avs_persistence_context_t));
+    if (ctx) {
+        avs_persistence_ignore_context_init(ctx, stream);
+    }
+    return ctx;
+}
 
 /**
- * Deletes @p ctx and frees memory associated with it.
+ * Deletes @p ctx allocated using @ref avs_persistence_store_context_new,
+ * @ref avs_persistence_restore_context_new or
+ * @ref avs_persistence_ignore_context_new and frees memory associated with it.
  * Note: stream used to initialize context is not closed.
  * @param ctx       pointer to the context to be deleted
  */
-void avs_persistence_context_delete(avs_persistence_context_t *ctx);
+static inline void
+avs_persistence_context_delete(avs_persistence_context_t *ctx) {
+    avs_free(ctx);
+}
 
 /**
  * Returns the direction of @p ctx operation.
