@@ -61,7 +61,7 @@ persistence_handler_tree_t(avs_persistence_context_t *ctx,
                            void *handler_user_ptr,
                            avs_persistence_cleanup_collection_element_t *cleanup);
 
-struct avs_persistence_context_struct {
+typedef struct {
     avs_persistence_direction_t direction;
     persistence_handler_u16_t *handle_u16;
     persistence_handler_u32_t *handle_u32;
@@ -74,6 +74,10 @@ struct avs_persistence_context_struct {
     persistence_handler_string_t *handle_string;
     persistence_handler_list_t *handle_list;
     persistence_handler_tree_t *handle_tree;
+} persistence_vtable_t;
+
+struct avs_persistence_context_struct {
+    const persistence_vtable_t *vtable;
     avs_stream_abstract_t *stream;
 };
 
@@ -185,21 +189,20 @@ static int persist_tree(avs_persistence_context_t *ctx,
     return retval;
 }
 
-#define INIT_STORE_CONTEXT(Stream) { \
-            AVS_PERSISTENCE_STORE, \
-            persist_u16, \
-            persist_u32, \
-            persist_u64, \
-            persist_bool, \
-            persist_bytes, \
-            persist_float, \
-            persist_double, \
-            persist_sized_buffer, \
-            persist_string, \
-            persist_list, \
-            persist_tree, \
-            Stream \
-        }
+static const persistence_vtable_t STORE_VTABLE = {
+    AVS_PERSISTENCE_STORE,
+    persist_u16,
+    persist_u32,
+    persist_u64,
+    persist_bool,
+    persist_bytes,
+    persist_float,
+    persist_double,
+    persist_sized_buffer,
+    persist_string,
+    persist_list,
+    persist_tree
+};
 
 //// RESTORE ///////////////////////////////////////////////////////////////////
 
@@ -357,21 +360,20 @@ static int restore_tree(avs_persistence_context_t *ctx,
     return retval;
 }
 
-#define INIT_RESTORE_CONTEXT(Stream) { \
-            AVS_PERSISTENCE_RESTORE, \
-            restore_u16, \
-            restore_u32, \
-            restore_u64, \
-            restore_bool, \
-            restore_bytes, \
-            restore_float, \
-            restore_double, \
-            restore_sized_buffer, \
-            restore_string, \
-            restore_list, \
-            restore_tree, \
-            .stream = Stream \
-        }
+static const persistence_vtable_t RESTORE_VTABLE = {
+    AVS_PERSISTENCE_RESTORE,
+    restore_u16,
+    restore_u32,
+    restore_u64,
+    restore_bool,
+    restore_bytes,
+    restore_float,
+    restore_double,
+    restore_sized_buffer,
+    restore_string,
+    restore_list,
+    restore_tree
+};
 
 //// IGNORE ////////////////////////////////////////////////////////////////////
 
@@ -481,21 +483,20 @@ static int ignore_tree(avs_persistence_context_t *ctx,
     return retval;
 }
 
-#define INIT_IGNORE_CONTEXT(Stream) { \
-            AVS_PERSISTENCE_RESTORE, \
-            ignore_u16, \
-            ignore_u32, \
-            ignore_u64, \
-            ignore_bool, \
-            ignore_bytes, \
-            ignore_float, \
-            ignore_double, \
-            ignore_sized_buffer, \
-            ignore_string, \
-            ignore_list, \
-            ignore_tree, \
-            Stream \
-        }
+static const persistence_vtable_t IGNORE_VTABLE = {
+    AVS_PERSISTENCE_RESTORE,
+    ignore_u16,
+    ignore_u32,
+    ignore_u64,
+    ignore_bool,
+    ignore_bytes,
+    ignore_float,
+    ignore_double,
+    ignore_sized_buffer,
+    ignore_string,
+    ignore_list,
+    ignore_tree
+};
 
 avs_persistence_context_t *
 avs_persistence_store_context_new(avs_stream_abstract_t *stream) {
@@ -505,7 +506,8 @@ avs_persistence_store_context_new(avs_stream_abstract_t *stream) {
     avs_persistence_context_t *ctx = (avs_persistence_context_t *)
             avs_calloc(1, sizeof(avs_persistence_context_t));
     if (ctx) {
-        *ctx = (avs_persistence_context_t) INIT_STORE_CONTEXT(stream);
+        ctx->vtable = &STORE_VTABLE;
+        ctx->stream = stream;
     }
     return ctx;
 }
@@ -518,7 +520,8 @@ avs_persistence_restore_context_new(avs_stream_abstract_t *stream) {
     avs_persistence_context_t *ctx = (avs_persistence_context_t *)
             avs_calloc(1, sizeof(avs_persistence_context_t));
     if (ctx) {
-        *ctx = (avs_persistence_context_t) INIT_RESTORE_CONTEXT(stream);
+        ctx->vtable = &RESTORE_VTABLE;
+        ctx->stream = stream;
     }
     return ctx;
 }
@@ -531,7 +534,8 @@ avs_persistence_ignore_context_new(avs_stream_abstract_t *stream) {
     avs_persistence_context_t *ctx = (avs_persistence_context_t *)
             avs_calloc(1, sizeof(avs_persistence_context_t));
     if (ctx) {
-        *ctx = (avs_persistence_context_t) INIT_IGNORE_CONTEXT(stream);
+        ctx->vtable = &IGNORE_VTABLE;
+        ctx->stream = stream;
     }
     return ctx;
 }
@@ -545,7 +549,7 @@ avs_persistence_direction(avs_persistence_context_t *ctx) {
     if (!ctx) {
         return AVS_PERSISTENCE_UNKNOWN;
     }
-    return ctx->direction;
+    return ctx->vtable->direction;
 }
 
 int avs_persistence_u8(avs_persistence_context_t *ctx,
@@ -553,7 +557,7 @@ int avs_persistence_u8(avs_persistence_context_t *ctx,
     if (!ctx) {
         return -1;
     }
-    return ctx->handle_bytes(ctx, value, sizeof(*value));
+    return ctx->vtable->handle_bytes(ctx, value, sizeof(*value));
 }
 
 int avs_persistence_u16(avs_persistence_context_t *ctx,
@@ -561,7 +565,7 @@ int avs_persistence_u16(avs_persistence_context_t *ctx,
     if (!ctx) {
         return -1;
     }
-    return ctx->handle_u16(ctx, value);
+    return ctx->vtable->handle_u16(ctx, value);
 }
 
 int avs_persistence_u32(avs_persistence_context_t *ctx,
@@ -569,7 +573,7 @@ int avs_persistence_u32(avs_persistence_context_t *ctx,
     if (!ctx) {
         return -1;
     }
-    return ctx->handle_u32(ctx, value);
+    return ctx->vtable->handle_u32(ctx, value);
 }
 
 int avs_persistence_u64(avs_persistence_context_t *ctx,
@@ -577,7 +581,7 @@ int avs_persistence_u64(avs_persistence_context_t *ctx,
     if (!ctx) {
         return -1;
     }
-    return ctx->handle_u64(ctx, value);
+    return ctx->vtable->handle_u64(ctx, value);
 }
 
 int avs_persistence_i8(avs_persistence_context_t *ctx,
@@ -585,7 +589,7 @@ int avs_persistence_i8(avs_persistence_context_t *ctx,
     if (!ctx) {
         return -1;
     }
-    return ctx->handle_bytes(ctx, value, sizeof(*value));
+    return ctx->vtable->handle_bytes(ctx, value, sizeof(*value));
 }
 
 int avs_persistence_i16(avs_persistence_context_t *ctx,
@@ -607,7 +611,7 @@ int avs_persistence_bool(avs_persistence_context_t *ctx, bool *value) {
     if (!ctx) {
         return -1;
     }
-    return ctx->handle_bool(ctx, value);
+    return ctx->vtable->handle_bool(ctx, value);
 }
 
 int avs_persistence_bytes(avs_persistence_context_t *ctx,
@@ -616,7 +620,7 @@ int avs_persistence_bytes(avs_persistence_context_t *ctx,
     if (!ctx) {
         return -1;
     }
-    return ctx->handle_bytes(ctx, buffer, buffer_size);
+    return ctx->vtable->handle_bytes(ctx, buffer, buffer_size);
 }
 
 int avs_persistence_float(avs_persistence_context_t *ctx,
@@ -624,7 +628,7 @@ int avs_persistence_float(avs_persistence_context_t *ctx,
     if (!ctx) {
         return -1;
     }
-    return ctx->handle_float(ctx, value);
+    return ctx->vtable->handle_float(ctx, value);
 }
 
 int avs_persistence_double(avs_persistence_context_t *ctx,
@@ -632,7 +636,7 @@ int avs_persistence_double(avs_persistence_context_t *ctx,
     if (!ctx) {
         return -1;
     }
-    return ctx->handle_double(ctx, value);
+    return ctx->vtable->handle_double(ctx, value);
 }
 
 int avs_persistence_sized_buffer(avs_persistence_context_t *ctx,
@@ -641,7 +645,7 @@ int avs_persistence_sized_buffer(avs_persistence_context_t *ctx,
     if (!ctx) {
         return -1;
     }
-    return ctx->handle_sized_buffer(ctx, data_ptr, size_ptr);
+    return ctx->vtable->handle_sized_buffer(ctx, data_ptr, size_ptr);
 }
 
 int avs_persistence_string(avs_persistence_context_t *ctx,
@@ -649,7 +653,7 @@ int avs_persistence_string(avs_persistence_context_t *ctx,
     if (!ctx) {
         return -1;
     }
-    return ctx->handle_string(ctx, string_ptr);
+    return ctx->vtable->handle_string(ctx, string_ptr);
 }
 
 int avs_persistence_custom_allocated_list(
@@ -661,7 +665,8 @@ int avs_persistence_custom_allocated_list(
     if (!ctx) {
         return -1;
     }
-    return ctx->handle_list(ctx, list_ptr, handler, handler_user_ptr, cleanup);
+    return ctx->vtable->handle_list(ctx, list_ptr, handler, handler_user_ptr,
+                                    cleanup);
 }
 
 int avs_persistence_custom_allocated_tree(
@@ -673,7 +678,8 @@ int avs_persistence_custom_allocated_tree(
     if (!ctx) {
         return -1;
     }
-    return ctx->handle_tree(ctx, tree, handler, handler_user_ptr, cleanup);
+    return ctx->vtable->handle_tree(ctx, tree, handler, handler_user_ptr,
+                                    cleanup);
 }
 
 typedef struct {
