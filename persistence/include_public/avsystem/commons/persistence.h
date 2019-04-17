@@ -28,8 +28,12 @@
 extern "C" {
 #endif
 
-struct avs_persistence_context_struct;
-typedef struct avs_persistence_context_struct avs_persistence_context_t;
+struct avs_persistence_context_vtable_struct;
+
+typedef struct avs_persistence_context_struct {
+    const struct avs_persistence_context_vtable_struct *vtable;
+    avs_stream_abstract_t *stream;
+} avs_persistence_context_t;
 
 typedef enum {
     AVS_PERSISTENCE_UNKNOWN = -1,

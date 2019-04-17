@@ -61,7 +61,7 @@ persistence_handler_tree_t(avs_persistence_context_t *ctx,
                            void *handler_user_ptr,
                            avs_persistence_cleanup_collection_element_t *cleanup);
 
-typedef struct {
+struct avs_persistence_context_vtable_struct {
     avs_persistence_direction_t direction;
     persistence_handler_u16_t *handle_u16;
     persistence_handler_u32_t *handle_u32;
@@ -74,11 +74,6 @@ typedef struct {
     persistence_handler_string_t *handle_string;
     persistence_handler_list_t *handle_list;
     persistence_handler_tree_t *handle_tree;
-} persistence_vtable_t;
-
-struct avs_persistence_context_struct {
-    const persistence_vtable_t *vtable;
-    avs_stream_abstract_t *stream;
 };
 
 //// PERSIST ///////////////////////////////////////////////////////////////////
@@ -189,7 +184,7 @@ static int persist_tree(avs_persistence_context_t *ctx,
     return retval;
 }
 
-static const persistence_vtable_t STORE_VTABLE = {
+static const struct avs_persistence_context_vtable_struct STORE_VTABLE = {
     AVS_PERSISTENCE_STORE,
     persist_u16,
     persist_u32,
@@ -360,7 +355,7 @@ static int restore_tree(avs_persistence_context_t *ctx,
     return retval;
 }
 
-static const persistence_vtable_t RESTORE_VTABLE = {
+static const struct avs_persistence_context_vtable_struct RESTORE_VTABLE = {
     AVS_PERSISTENCE_RESTORE,
     restore_u16,
     restore_u32,
@@ -483,7 +478,7 @@ static int ignore_tree(avs_persistence_context_t *ctx,
     return retval;
 }
 
-static const persistence_vtable_t IGNORE_VTABLE = {
+static const struct avs_persistence_context_vtable_struct IGNORE_VTABLE = {
     AVS_PERSISTENCE_RESTORE,
     ignore_u16,
     ignore_u32,
@@ -498,9 +493,9 @@ static const persistence_vtable_t IGNORE_VTABLE = {
     ignore_tree
 };
 
-static avs_persistence_context_t *
-persistence_context_new(const persistence_vtable_t *vtable,
-                        avs_stream_abstract_t *stream) {
+static avs_persistence_context_t *persistence_context_new(
+        const struct avs_persistence_context_vtable_struct *vtable,
+        avs_stream_abstract_t *stream) {
     assert(vtable);
     if (!stream) {
         return NULL;
