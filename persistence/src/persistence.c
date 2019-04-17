@@ -498,46 +498,35 @@ static const persistence_vtable_t IGNORE_VTABLE = {
     ignore_tree
 };
 
-avs_persistence_context_t *
-avs_persistence_store_context_new(avs_stream_abstract_t *stream) {
+static avs_persistence_context_t *
+persistence_context_new(const persistence_vtable_t *vtable,
+                        avs_stream_abstract_t *stream) {
+    assert(vtable);
     if (!stream) {
         return NULL;
     }
     avs_persistence_context_t *ctx = (avs_persistence_context_t *)
             avs_calloc(1, sizeof(avs_persistence_context_t));
     if (ctx) {
-        ctx->vtable = &STORE_VTABLE;
+        ctx->vtable = vtable;
         ctx->stream = stream;
     }
     return ctx;
+}
+
+avs_persistence_context_t *
+avs_persistence_store_context_new(avs_stream_abstract_t *stream) {
+    return persistence_context_new(&STORE_VTABLE, stream);
 }
 
 avs_persistence_context_t *
 avs_persistence_restore_context_new(avs_stream_abstract_t *stream) {
-    if (!stream) {
-        return NULL;
-    }
-    avs_persistence_context_t *ctx = (avs_persistence_context_t *)
-            avs_calloc(1, sizeof(avs_persistence_context_t));
-    if (ctx) {
-        ctx->vtable = &RESTORE_VTABLE;
-        ctx->stream = stream;
-    }
-    return ctx;
+    return persistence_context_new(&RESTORE_VTABLE, stream);
 }
 
 avs_persistence_context_t *
 avs_persistence_ignore_context_new(avs_stream_abstract_t *stream) {
-    if (!stream) {
-        return NULL;
-    }
-    avs_persistence_context_t *ctx = (avs_persistence_context_t *)
-            avs_calloc(1, sizeof(avs_persistence_context_t));
-    if (ctx) {
-        ctx->vtable = &IGNORE_VTABLE;
-        ctx->stream = stream;
-    }
-    return ctx;
+    return persistence_context_new(&IGNORE_VTABLE, stream);
 }
 
 void avs_persistence_context_delete(avs_persistence_context_t *ctx) {
