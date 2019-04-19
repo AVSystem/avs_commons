@@ -61,14 +61,13 @@ avs_coap_max_transmit_wait(const avs_coap_tx_params_t *tx_params) {
 
 // See https://tools.ietf.org/html/rfc7252#section-4.8.2
 static const avs_time_duration_t MAX_LATENCY = { 100, 0 };
-static const avs_time_duration_t PROCESSING_DELAY = { 2, 0 };
 
 avs_time_duration_t
 avs_coap_exchange_lifetime(const avs_coap_tx_params_t *tx_params) {
     return avs_time_duration_add(
             avs_time_duration_add(avs_coap_max_transmit_span(tx_params),
                                   avs_time_duration_mul(MAX_LATENCY, 2)),
-            PROCESSING_DELAY);
+            tx_params->ack_timeout);
 }
 
 avs_time_duration_t
