@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef AVS_COMMONS_STREAM_FILE_H
-#define AVS_COMMONS_STREAM_FILE_H
+#ifndef AVS_COMMONS_STREAM_MEMBUF_H
+#define AVS_COMMONS_STREAM_MEMBUF_H
 
 #include <avsystem/commons/stream.h>
 
@@ -52,4 +52,4 @@ avs_stream_abstract_t *avs_stream_membuf_create(void);
 }
 #endif
 
-#endif	/* AVS_COMMONS_STREAM_FILE_H */
+#endif	/* AVS_COMMONS_STREAM_MEMBUF_H */
