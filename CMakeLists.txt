@@ -123,6 +123,7 @@ option(WITH_AVS_HTTP "AVSystem HTTP client" ${MODULES_ENABLED})
 option(WITH_AVS_PERSISTENCE "AVSystem persistence framework" ${MODULES_ENABLED})
 option(WITH_AVS_SCHED "AVSystem job scheduler" ${MODULES_ENABLED})
 option(WITH_AVS_COMPAT_THREADING "Use multithreading utility compatibility layer" ${MODULES_ENABLED})
+option(WITH_AVS_CRYPTO "Cryptogaphic functions abstraction layer" ${MODULES_ENABLED})
 
 include(CMakeDependentOption)
 cmake_dependent_option(WITH_INTERNAL_LOGS "Enable logging from inside AVSystem Commons libraries" ON WITH_AVS_LOG OFF)
@@ -469,6 +470,10 @@ endif()
 if(WITH_AVS_COMPAT_THREADING)
     add_module_with_include_dirs(NAME compat_threading
                                  PATH compat/threading)
+endif()
+
+if(WITH_AVS_CRYPTO)
+    add_module_with_include_dirs(NAME crypto)
 endif()
 
 # API documentation
