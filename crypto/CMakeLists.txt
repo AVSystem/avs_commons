@@ -28,45 +28,15 @@ if(TARGET avs_crypto_test)
     target_sources(avs_crypto_test PRIVATE src/test/hkdf.c)
 endif()
 
-# SSL
-option(WITH_OPENSSL "Enable OpenSSL" OFF)
-option(WITH_MBEDTLS "Enable mbed TLS" OFF)
-option(WITH_TINYDTLS "Enable tinyDTLS" OFF)
-
-set(_AVS_CRYPTO_BACKENDS "")
 if(WITH_OPENSSL)
-    list(APPEND _AVS_CRYPTO_BACKENDS "openssl")
-endif()
-if(WITH_MBEDTLS)
-    list(APPEND _AVS_CRYPTO_BACKENDS "mbedtls")
-endif()
-if(WITH_TINYDTLS)
-    list(APPEND _AVS_CRYPTO_BACKENDS "tinydtls")
-endif()
-
-list(LENGTH _AVS_CRYPTO_BACKENDS _AVS_NUM_CRYPTO_BACKENDS)
-if(_AVS_NUM_CRYPTO_BACKENDS GREATER 1)
-    string(REPLACE ";" ", " _AVS_CRYPTO_BACKENDS "${_AVS_CRYPTO_BACKENDS}")
-    message(FATAL_ERROR "Selected ${_AVS_CRYPTO_BACKENDS} as crypto backends but only one may be used.")
-endif()
-
-if(WITH_OPENSSL)
-    avs_find_library("find_package(OpenSSL REQUIRED)")
     target_sources(avs_crypto PRIVATE src/openssl/hkdf.c)
     target_link_libraries(avs_crypto PUBLIC OpenSSL::Crypto)
 elseif(WITH_MBEDTLS)
-    avs_find_library("
-        set(CMAKE_MODULE_PATH \\\${CMAKE_MODULE_PATH} \"\\\${CMAKE_CURRENT_LIST_DIR}/cmake\")
-        # Assume mbed TLS is installed to the same root as avs_commons
-        set(MBEDTLS_ROOT_DIR \"\\\${CMAKE_CURRENT_LIST_DIR}/../..\" CACHE STRING \"mbed TLS installation directory\")
-        set(MBEDTLS_USE_STATIC_LIBS ${MBEDTLS_USE_STATIC_LIBS})
-        find_package(MbedTLS REQUIRED)")
     target_sources(avs_crypto PRIVATE src/mbedtls/hkdf.c)
     target_link_libraries(avs_crypto PUBLIC mbedcrypto)
-endif()
-
-if(WIN32)
-    target_link_libraries(avs_crypto PUBLIC ws2_32)
+elseif(WITH_TINYDTLS)
+    target_sources(avs_crypto PRIVATE src/tinydtls/hkdf.c)
+    target_link_libraries(avs_crypto PUBLIC tinydtls)
 endif()
 
 if(WITH_INTERNAL_LOGS)

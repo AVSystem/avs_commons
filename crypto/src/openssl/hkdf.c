@@ -64,6 +64,7 @@ int avs_crypto_hkdf_sha_256(const unsigned char *salt, size_t salt_len,
         return -1;
     }
 
+    EVP_PKEY_CTX_free(pctx);
     return 0;
 }
 
