@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 
-#ifndef AVS_COMMONS_HKDF_H
-#define AVS_COMMONS_HKDF_H
+#ifndef AVS_COMMONS_CRYPTO_HKDF_H
+#define AVS_COMMONS_CRYPTO_HKDF_H
 
 /**
  * Derives a new key from input data using HKDF SHA-256 key derivation function.
+ * See https://tools.ietf.org/html/rfc5869 for details.
  *
  * @param salt          Optional salt value. Must not be NULL if
  *                      @p salt_len != 0.
@@ -40,4 +41,4 @@ int avs_crypto_hkdf_sha_256(const unsigned char *salt, size_t salt_len,
                             const unsigned char *info, size_t info_len,
                             char unsigned *out_okm, size_t *inout_okm_len);
 
-#endif // AVS_COMMONS_HKDF_H
+#endif // AVS_COMMONS_CRYPTO_HKDF_H
