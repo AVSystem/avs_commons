@@ -21,12 +21,9 @@
 
 #include <avsystem/commons/hkdf.h>
 
-#include <mbedtls/version.h>
+#include <mbedtls/hkdf.h>
 
 VISIBILITY_SOURCE_BEGIN
-
-#if MBEDTLS_VERSION_NUMBER >= 0x020E0000
-#include <mbedtls/hkdf.h>
 
 int avs_crypto_hkdf_sha_256(const unsigned char *salt, size_t salt_len,
                             const unsigned char *ikm, size_t ikm_len,
@@ -46,9 +43,3 @@ int avs_crypto_hkdf_sha_256(const unsigned char *salt, size_t salt_len,
     return mbedtls_hkdf(md, salt, salt_len, ikm, ikm_len, info, info_len,
                         out_okm, *inout_okm_len) ? -1 : 0;
 }
-
-#else // MBEDTLS_VERSION_NUMBER >= 0x020E0000
-
-#error "HKDF is not supported if mbed TLS version < 2.14.0"
-
-#endif // MBEDTLS_VERSION_NUMBER >= 0x020E0000
