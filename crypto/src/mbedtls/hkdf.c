@@ -35,6 +35,9 @@ int avs_crypto_hkdf_sha_256(const unsigned char *salt, size_t salt_len,
     assert(out_okm && inout_okm_len);
 
     const mbedtls_md_info_t *md = mbedtls_md_info_from_type(MBEDTLS_MD_SHA256);
+    if (!md) {
+        return -1;
+    }
     // As defined in docs for mbedtls_hkdf.
     size_t max_size = 255U * mbedtls_md_get_size(md);
     if (*inout_okm_len > max_size) {

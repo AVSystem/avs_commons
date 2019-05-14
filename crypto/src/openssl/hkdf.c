@@ -40,27 +40,34 @@ int avs_crypto_hkdf_sha_256(const unsigned char *salt, size_t salt_len,
     assert(out_okm && inout_okm_len);
 
     EVP_PKEY_CTX *pctx = EVP_PKEY_CTX_new_id(EVP_PKEY_HKDF, NULL);
+    if (!pctx) {
+        return -1;
+    }
 
+    int result = -1;
     if (EVP_PKEY_derive_init(pctx) <= 0
             || EVP_PKEY_CTX_set_hkdf_md(pctx, EVP_sha256()) <= 0
             || EVP_PKEY_CTX_set1_hkdf_key(pctx, ikm, (int) ikm_len) <= 0) {
-        return -1;
+        goto fail;
     }
 
     if (salt_len
             && EVP_PKEY_CTX_set1_hkdf_salt(pctx, salt, (int) salt_len) <= 0) {
-        return -1;
+        goto fail;
     }
 
     if (info_len
             && EVP_PKEY_CTX_add1_hkdf_info(pctx, info, (int) info_len) <= 0) {
-        return -1;
+        goto fail;
     }
 
     if (EVP_PKEY_derive(pctx, out_okm, inout_okm_len) <= 0) {
-        return -1;
+        goto fail;
     }
 
+    result = 0;
+
+fail:
     EVP_PKEY_CTX_free(pctx);
-    return 0;
+    return result;
 }
