@@ -19,6 +19,7 @@
 // be included first.
 #include <openssl/evp.h>
 #include <openssl/kdf.h>
+#include <openssl/opensslv.h>
 
 #include <avs_commons_config.h>
 
@@ -28,12 +29,14 @@
 
 VISIBILITY_SOURCE_BEGIN
 
+#if OPENSSL_VERSION_NUMBER >= 0x1000000f
+
 // Adapted from:
 // https://www.openssl.org/docs/man1.1.1/man3/EVP_PKEY_CTX_set1_hkdf_key.html
 int avs_crypto_hkdf_sha_256(const unsigned char *salt, size_t salt_len,
                             const unsigned char *ikm, size_t ikm_len,
                             const unsigned char *info, size_t info_len,
-                            char unsigned *out_okm, size_t *inout_okm_len) {
+                            unsigned char *out_okm, size_t *inout_okm_len) {
     assert(!salt_len || salt);
     assert(ikm && ikm_len);
     assert(!info_len || info);
@@ -63,3 +66,9 @@ int avs_crypto_hkdf_sha_256(const unsigned char *salt, size_t salt_len,
 
     return 0;
 }
+
+#else
+
+#error "HKDF is not supported if OpenSSL version < 1.1.0"
+
+#endif

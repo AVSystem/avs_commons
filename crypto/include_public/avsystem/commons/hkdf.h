@@ -39,6 +39,6 @@
 int avs_crypto_hkdf_sha_256(const unsigned char *salt, size_t salt_len,
                             const unsigned char *ikm, size_t ikm_len,
                             const unsigned char *info, size_t info_len,
-                            char unsigned *out_okm, size_t *inout_okm_len);
+                            unsigned char *out_okm, size_t *inout_okm_len);
 
 #endif // AVS_COMMONS_CRYPTO_HKDF_H

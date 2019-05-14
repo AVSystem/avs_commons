@@ -23,18 +23,4 @@
 
 VISIBILITY_SOURCE_BEGIN
 
-int avs_crypto_hkdf_sha_256(const unsigned char *salt, size_t salt_len,
-                            const unsigned char *ikm, size_t ikm_len,
-                            const unsigned char *info, size_t info_len,
-                            char unsigned *out_okm, size_t *inout_okm_len) {
-    (void) salt;
-    (void) salt_len;
-    (void) ikm;
-    (void) ikm_len;
-    (void) info;
-    (void) info_len;
-    (void) out_okm;
-    (void) inout_okm_len;
-    LOG(ERROR, "HKDF not supported in tinydtls");
-    return -1;
-}
+#error "HKDF is not supported if tinydtls is used"
