@@ -30,7 +30,7 @@
  *                   For other values behavior of this function is undefined.
  * @param aad        Additional authenticated data.
  * @param aad_len    Length of @p aad .
- * @param input      Data to encrypt.
+ * @param input      Data to encrypt. May be NULL if @p input_len is 0.
  * @param input_len  Length of @p input .
  * @param tag_len    Length of tag to generate. MUST be 4, 6, 8, 10, 12, 14
  *                   or 16 bytes. For other values behavior of this function is

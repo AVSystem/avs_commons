@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-// #include <avs_commons_config.h>
+#include <avs_commons_config.h>
 
 #define MODULE_NAME avs_crypto_aead
 #include <x_log_config.h>
@@ -22,11 +22,10 @@
 #include <avsystem/commons/aead.h>
 
 #include <mbedtls/ccm.h>
-#include <mbedtls/error.h>
 
 #include <assert.h>
 
-// VISIBILITY_SOURCE_BEGIN
+VISIBILITY_SOURCE_BEGIN
 
 int
 avs_crypto_aead_aes_ccm_encrypt(const unsigned char *key, size_t key_len,
@@ -36,6 +35,14 @@ avs_crypto_aead_aes_ccm_encrypt(const unsigned char *key, size_t key_len,
                                 unsigned char *tag, size_t tag_len,
                                 unsigned char *output) {
     assert(key && key_len);
+    assert(iv_len >= 7 && iv_len <= 13);
+    assert(iv);
+    assert(!aad_len || aad);
+    assert(!input_len || input);
+    assert(tag_len >= 4 && tag_len <= 16 && tag_len % 2 == 0);
+    assert(tag);
+    assert(!input_len || output);
+
     mbedtls_ccm_context ccm_ctx;
     mbedtls_ccm_init(&ccm_ctx);
     int result;
@@ -60,6 +67,15 @@ avs_crypto_aead_aes_ccm_decrypt(const unsigned char *key, size_t key_len,
                                 const unsigned char *input, size_t input_len,
                                 const unsigned char *tag, size_t tag_len,
                                 unsigned char *output) {
+    assert(key && key_len);
+    assert(iv_len >= 7 && iv_len <= 13);
+    assert(iv);
+    assert(!aad_len || aad);
+    assert(!input_len || input);
+    assert(tag_len >= 4 && tag_len <= 16 && tag_len % 2 == 0);
+    assert(tag);
+    assert(!input_len || output);
+
     mbedtls_ccm_context ccm_ctx;
     mbedtls_ccm_init(&ccm_ctx);
 

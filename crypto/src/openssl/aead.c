@@ -37,6 +37,15 @@ avs_crypto_aead_aes_ccm_encrypt(const unsigned char *key, size_t key_len,
                                 const unsigned char *input, size_t input_len,
                                 unsigned char *tag, size_t tag_len,
                                 unsigned char *output) {
+    assert(key && key_len);
+    assert(iv_len >= 7 && iv_len <= 13);
+    assert(iv);
+    assert(!aad_len || aad);
+    assert(!input_len || input);
+    assert(tag_len >= 4 && tag_len <= 16 && tag_len % 2 == 0);
+    assert(tag);
+    assert(!input_len || output);
+
     const EVP_CIPHER *cipher;
     if (key_len == AES128_KEY_LENGTH_IN_BYTES) {
         cipher = EVP_aes_128_ccm();
@@ -79,6 +88,15 @@ avs_crypto_aead_aes_ccm_decrypt(const unsigned char *key, size_t key_len,
                                 const unsigned char *input, size_t input_len,
                                 const unsigned char *tag, size_t tag_len,
                                 unsigned char *output) {
+    assert(key && key_len);
+    assert(iv_len >= 7 && iv_len <= 13);
+    assert(iv);
+    assert(!aad_len || aad);
+    assert(!input_len || input);
+    assert(tag_len >= 4 && tag_len <= 16 && tag_len % 2 == 0);
+    assert(tag);
+    assert(!input_len || output);
+
     const EVP_CIPHER *cipher;
     if (key_len == AES128_KEY_LENGTH_IN_BYTES) {
         cipher = EVP_aes_128_ccm();
