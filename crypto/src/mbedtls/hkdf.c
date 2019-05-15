@@ -43,6 +43,10 @@ int avs_crypto_hkdf_sha_256(const unsigned char *salt, size_t salt_len,
     if (*inout_okm_len > max_size) {
         *inout_okm_len = max_size;
     }
-    return mbedtls_hkdf(md, salt, salt_len, ikm, ikm_len, info, info_len,
-                        out_okm, *inout_okm_len) ? -1 : 0;
+    int result = mbedtls_hkdf(md, salt, salt_len, ikm, ikm_len, info, info_len,
+                              out_okm, *inout_okm_len);
+    if (result) {
+        LOG(ERROR, "mbed TLS error %d", result);
+    }
+    return 0;
 }
