@@ -33,7 +33,7 @@ endif()
 
 if(WITH_OPENSSL)
     if (OPENSSL_VERSION VERSION_LESS 1.1.0)
-        message(FATAL_ERROR "avs_crypto supports OpenSSL 1.1.0 or newer")
+        message(FATAL_ERROR "avs_crypto requires OpenSSL 1.1.0 or newer")
     endif()
     target_sources(avs_crypto PRIVATE
                    src/openssl/hkdf.c
@@ -41,7 +41,7 @@ if(WITH_OPENSSL)
     target_link_libraries(avs_crypto PUBLIC OpenSSL::Crypto)
 elseif(WITH_MBEDTLS)
     if (MBEDTLS_VERSION VERSION_LESS 2.14.0)
-        message(FATAL_ERROR "avs_crypto supports mbed TLS 2.14.0 or newer")
+        message(FATAL_ERROR "avs_crypto requires mbed TLS 2.14.0 or newer")
     endif()
     target_sources(avs_crypto PRIVATE
                    src/mbedtls/hkdf.c
