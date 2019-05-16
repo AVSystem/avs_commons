@@ -23,8 +23,6 @@
 
 #include <mbedtls/ccm.h>
 
-#include <assert.h>
-
 VISIBILITY_SOURCE_BEGIN
 
 int

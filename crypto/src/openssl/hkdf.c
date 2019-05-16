@@ -24,8 +24,6 @@
 
 #include <avsystem/commons/hkdf.h>
 
-#include <assert.h>
-
 VISIBILITY_SOURCE_BEGIN
 
 // Adapted from:

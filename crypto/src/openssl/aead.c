@@ -29,7 +29,6 @@ VISIBILITY_SOURCE_BEGIN
 
 // Both functions adapted from
 // https://wiki.openssl.org/index.php/EVP_Authenticated_Encryption_and_Decryption
-
 int
 avs_crypto_aead_aes_ccm_encrypt(const unsigned char *key, size_t key_len,
                                 const unsigned char *iv, size_t iv_len,
@@ -55,25 +54,30 @@ avs_crypto_aead_aes_ccm_encrypt(const unsigned char *key, size_t key_len,
         return -1;
     }
 
-    int len = 0;
     EVP_CIPHER_CTX *ctx = EVP_CIPHER_CTX_new();
     if (!ctx) {
         return -1;
     }
 
     int result = 0;
+    int len = 0;
     if (EVP_EncryptInit_ex(ctx, cipher, NULL, NULL, NULL) <= 0
-             || EVP_CIPHER_CTX_ctrl(
-                    ctx, EVP_CTRL_CCM_SET_IVLEN, (int) iv_len, NULL) <= 0
-             || EVP_CIPHER_CTX_ctrl(
-                    ctx, EVP_CTRL_CCM_SET_TAG, (int) tag_len, NULL) <= 0
-             || EVP_EncryptInit_ex(ctx, NULL, NULL, key, iv) <= 0
-             || EVP_EncryptUpdate(ctx, NULL, &len, NULL, (int) input_len) <= 0
-             || EVP_EncryptUpdate(ctx, NULL, &len, aad, (int) aad_len) <= 0
-             || EVP_EncryptUpdate(
-                    ctx, output, &len, input, (int) input_len) <= 0
-             || EVP_CIPHER_CTX_ctrl(
-                    ctx, EVP_CTRL_CCM_GET_TAG, (int) tag_len, tag) <= 0) {
+            || EVP_CIPHER_CTX_ctrl(
+                   ctx, EVP_CTRL_CCM_SET_IVLEN, (int) iv_len, NULL) <= 0
+            || EVP_CIPHER_CTX_ctrl(
+                   ctx, EVP_CTRL_CCM_SET_TAG, (int) tag_len, NULL) <= 0
+            || EVP_EncryptInit_ex(ctx, NULL, NULL, key, iv) <= 0
+            || EVP_EncryptUpdate(
+                   ctx, NULL, &len, NULL, (int) input_len) <= 0
+            || EVP_EncryptUpdate(ctx, NULL, &len,
+                                 aad ? aad : (const unsigned char *) "",
+                                 (int) aad_len) <= 0
+            || EVP_EncryptUpdate(
+                   ctx, output ? output : (unsigned char *) "", &len,
+                   input ? input : (const unsigned char *) "",
+                   (int) input_len) <= 0
+            || EVP_CIPHER_CTX_ctrl(
+                   ctx, EVP_CTRL_CCM_GET_TAG, (int) tag_len, tag) <= 0) {
         result = -1;
     }
 
@@ -106,23 +110,25 @@ avs_crypto_aead_aes_ccm_decrypt(const unsigned char *key, size_t key_len,
         return -1;
     }
 
-    int len = 0;
     EVP_CIPHER_CTX *ctx = EVP_CIPHER_CTX_new();
     if (!ctx) {
         return -1;
     }
 
     int result = 0;
+    int len = 0;
     if (EVP_DecryptInit_ex(ctx, cipher, NULL, NULL, NULL) <= 0
-             || EVP_CIPHER_CTX_ctrl(
-                    ctx, EVP_CTRL_CCM_SET_IVLEN, (int) iv_len, NULL) <= 0
-             || EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_CCM_SET_TAG, (int) tag_len,
-                                    (void *) (intptr_t) tag) <= 0
-             || EVP_DecryptInit_ex(ctx, NULL, NULL, key, iv) <= 0
-             || EVP_DecryptUpdate(ctx, NULL, &len, NULL, (int) input_len) <= 0
-             || EVP_DecryptUpdate(ctx, NULL, &len, aad, (int) aad_len) <= 0
-             || EVP_DecryptUpdate(
-                    ctx, output, &len, input, (int) input_len) <= 0) {
+            || EVP_CIPHER_CTX_ctrl(
+                   ctx, EVP_CTRL_CCM_SET_IVLEN, (int) iv_len, NULL) <= 0
+            || EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_CCM_SET_TAG, (int) tag_len,
+                                   (void *) (intptr_t) tag) <= 0
+            || EVP_DecryptInit_ex(ctx, NULL, NULL, key, iv) <= 0
+            || EVP_DecryptUpdate(ctx, NULL, &len, NULL, (int) input_len) <= 0
+            || EVP_DecryptUpdate(ctx, NULL, &len,
+                                 aad ? aad : (const unsigned char *) "",
+                                 (int) aad_len) <= 0
+            || EVP_DecryptUpdate(
+                   ctx, output, &len, input, (int) input_len) <= 0) {
         result = -1;
     }
 
