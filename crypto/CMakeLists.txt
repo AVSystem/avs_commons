@@ -33,7 +33,7 @@ endif()
 
 if(WITH_OPENSSL)
     if (OPENSSL_VERSION VERSION_LESS 1.1.0)
-        message(FATAL_ERROR "OpenSSL version must be at least 1.1.0 for HKDF support")
+        message(FATAL_ERROR "avs_crypto supports OpenSSL 1.1.0 or newer")
     endif()
     target_sources(avs_crypto PRIVATE
                    src/openssl/hkdf.c
@@ -41,14 +41,14 @@ if(WITH_OPENSSL)
     target_link_libraries(avs_crypto PUBLIC OpenSSL::Crypto)
 elseif(WITH_MBEDTLS)
     if (MBEDTLS_VERSION VERSION_LESS 2.14.0)
-        message(FATAL_ERROR "mbed TLS version must be at least 2.14.0 for HKDF support")
+        message(FATAL_ERROR "avs_crypto supports mbed TLS 2.14.0 or newer")
     endif()
     target_sources(avs_crypto PRIVATE
                    src/mbedtls/hkdf.c
                    src/mbedtls/aead.c)
     target_link_libraries(avs_crypto PUBLIC mbedcrypto)
 elseif(WITH_TINYDTLS)
-    message(FATAL_ERROR "HKDF is not supported if tinydtls is used")
+    message(FATAL_ERROR "avs_crypto does not support tinydtls")
 else()
     message(FATAL_ERROR "No crypto backend specified")
 endif()
