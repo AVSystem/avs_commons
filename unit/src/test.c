@@ -256,6 +256,7 @@ void avs_unit_assert_false__(int result,
                      isnan(actual) ? isnan(expected) : actual == expected)
 
 AVS_UNIT_CHECK_EQUAL_FUNCTION_DECLARE__(char, c) CHECK_EQUAL_BODY_INT("%c")
+AVS_UNIT_CHECK_EQUAL_FUNCTION_DECLARE__(signed char, sc) CHECK_EQUAL_BODY_INT("%d")
 AVS_UNIT_CHECK_EQUAL_FUNCTION_DECLARE__(short, s) CHECK_EQUAL_BODY_INT("%d")
 AVS_UNIT_CHECK_EQUAL_FUNCTION_DECLARE__(int, i) CHECK_EQUAL_BODY_INT("%d")
 AVS_UNIT_CHECK_EQUAL_FUNCTION_DECLARE__(long, l) CHECK_EQUAL_BODY_INT("%ld")

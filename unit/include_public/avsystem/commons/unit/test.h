@@ -225,6 +225,8 @@ __builtin_choose_expr(__builtin_types_compatible_p(__typeof__(actual), bool),\
 AVS_UNIT_CHECK_BOOL__(actual, expected, strings,\
 __builtin_choose_expr(__builtin_types_compatible_p(__typeof__(actual), char),\
     avs_unit_check_equal_c__((char) (actual), (char) (expected), (strings)),\
+__builtin_choose_expr(__builtin_types_compatible_p(__typeof__(actual), signed char),\
+    avs_unit_check_equal_sc__((signed char) (actual), (signed char) (expected), (strings)),\
 __builtin_choose_expr(__builtin_types_compatible_p(__typeof__(actual), short),\
     avs_unit_check_equal_s__((short) (actual), (short) (expected), (strings)),\
 __builtin_choose_expr(__builtin_types_compatible_p(__typeof__(actual), int),\
@@ -250,11 +252,12 @@ __builtin_choose_expr(__builtin_types_compatible_p(__typeof__(actual), double),\
 __builtin_choose_expr(__builtin_types_compatible_p(__typeof__(actual), long double),\
     avs_unit_check_equal_ld__((long double) (actual), (long double) (expected), (strings)),\
     avs_unit_abort__("AVS_UNIT_ASSERT_EQUAL called for unsupported data type\n", __FILE__, __LINE__)\
-))))))))))))))
+)))))))))))))))
 
 #endif /* __cplusplus */
 
 AVS_UNIT_CHECK_EQUAL_FUNCTION__(char, c)
+AVS_UNIT_CHECK_EQUAL_FUNCTION__(signed char, sc)
 AVS_UNIT_CHECK_EQUAL_FUNCTION__(short, s)
 AVS_UNIT_CHECK_EQUAL_FUNCTION__(int, i)
 AVS_UNIT_CHECK_EQUAL_FUNCTION__(long, l)
