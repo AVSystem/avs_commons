@@ -28,11 +28,9 @@
  * generated.
  *
  * @param key        Encryption key to use. MUST NOT be NULL.
- * @param key_len    Length of @p key in bytes. For lengths other than 16 or 32
- *                   bytes behavior of this function is undefined.
+ * @param key_len    Length of @p key in bytes. MUST be 16 or 32.
  * @param iv         Initialization vector (nonce). MUST NOT be NULL.
  * @param iv_len     Length of @p iv . MUST be 7, 8, 9, 10, 11, 12 or 13 bytes.
- *                   For other values behavior of this function is undefined.
  * @param aad        Additional authenticated data. May be NULL if @p aad_len is
  *                   0.
  * @param aad_len    Length of @p aad .
@@ -41,8 +39,7 @@
  * @param tag        Buffer to store authentication tag. Must be at least of
  *                   length @p tag_len .
  * @param tag_len    Length of tag to generate. MUST be 4, 6, 8, 10, 12, 14
- *                   or 16 bytes. For other values behavior of this function is
- *                   undefined.
+ *                   or 16 bytes.
  * @param output     Buffer to store encrypted @p input . Must be of the same
  *                   length as @p input .
  *
@@ -62,11 +59,9 @@ avs_crypto_aead_aes_ccm_encrypt(const unsigned char *key, size_t key_len,
  * Decrypted data is written to @p output if message is authentic.
  *
  * @param key       Decryption key to use. MUST NOT be NULL.
- * @param key_len   Length of @p key in bytes. For lengths other than 16 or 32
- *                  bytes behavior of this function is undefined.
+ * @param key_len   Length of @p key in bytes. MUST be 16 or 32.
  * @param iv        Initialization vector (nonce). MUST NOT be NULL.
  * @param iv_len    Length of @p iv . MUST be 7, 8, 9, 10, 11, 12 or 13 bytes.
- *                  For other values behavior of this function is undefined.
  * @param aad       Additional authenticated data. May be NULL if @p aad_len is
  *                  0.
  * @param aad_len   Length of @p aad .
@@ -74,8 +69,7 @@ avs_crypto_aead_aes_ccm_encrypt(const unsigned char *key, size_t key_len,
  * @param input_len Length of @p input .
  * @param tag       Authentication tag to validate.
  * @param tag_len   Length of authentication tag. MUST be 4, 6, 8, 10, 12, 14
- *                  or 16 bytes. For other values behavior of this function is
- *                  undefined.
+ *                  or 16 bytes.
  * @param output    Buffer to store decrypted @p input . Must be of the same
  *                  length as @p input .
  *

@@ -23,6 +23,8 @@
 
 #include <mbedtls/ccm.h>
 
+#include "../crypto_utils.h"
+
 VISIBILITY_SOURCE_BEGIN
 
 int
@@ -32,14 +34,16 @@ avs_crypto_aead_aes_ccm_encrypt(const unsigned char *key, size_t key_len,
                                 const unsigned char *input, size_t input_len,
                                 unsigned char *tag, size_t tag_len,
                                 unsigned char *output) {
-    assert(key && key_len);
-    assert(iv_len >= 7 && iv_len <= 13);
+    assert(key);
     assert(iv);
     assert(!aad_len || aad);
     assert(!input_len || input);
-    assert(tag_len >= 4 && tag_len <= 16 && tag_len % 2 == 0);
     assert(tag);
     assert(!input_len || output);
+
+    if (!_avs_crypto_aead_parameters_valid(key_len, iv_len, tag_len)) {
+        return -1;
+    }
 
     mbedtls_ccm_context ccm_ctx;
     mbedtls_ccm_init(&ccm_ctx);
@@ -65,14 +69,16 @@ avs_crypto_aead_aes_ccm_decrypt(const unsigned char *key, size_t key_len,
                                 const unsigned char *input, size_t input_len,
                                 const unsigned char *tag, size_t tag_len,
                                 unsigned char *output) {
-    assert(key && key_len);
-    assert(iv_len >= 7 && iv_len <= 13);
+    assert(key);
     assert(iv);
     assert(!aad_len || aad);
     assert(!input_len || input);
-    assert(tag_len >= 4 && tag_len <= 16 && tag_len % 2 == 0);
     assert(tag);
     assert(!input_len || output);
+
+    if (!_avs_crypto_aead_parameters_valid(key_len, iv_len, tag_len)) {
+        return -1;
+    }
 
     mbedtls_ccm_context ccm_ctx;
     mbedtls_ccm_init(&ccm_ctx);

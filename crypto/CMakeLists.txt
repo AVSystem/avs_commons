@@ -14,7 +14,10 @@
 
 add_library(avs_crypto STATIC
             include_public/avsystem/commons/hkdf.h
-            include_public/avsystem/commons/aead.h)
+            include_public/avsystem/commons/aead.h
+
+            src/crypto_utils.c
+            src/crypto_utils.h)
 
 target_include_directories(avs_crypto PUBLIC
                            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include_public>
