@@ -43,7 +43,7 @@ int avs_crypto_hkdf_sha_256(const unsigned char *salt, size_t salt_len,
     }
 
     int result = -1;
-    if (EVP_PKEY_derive_init(pctx)!= 1
+    if (EVP_PKEY_derive_init(pctx) != 1
             || EVP_PKEY_CTX_set_hkdf_md(pctx, EVP_sha256()) != 1
             || EVP_PKEY_CTX_set1_hkdf_key(pctx, ikm, (int) ikm_len) != 1) {
         goto finish;
