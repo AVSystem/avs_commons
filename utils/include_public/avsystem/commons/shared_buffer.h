@@ -21,7 +21,6 @@
 
 #include <avsystem/commons/defs.h>
 #include <avsystem/commons/memory.h>
-#include <avsystem/commons/log.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -85,27 +84,10 @@ static inline void avs_shared_buffer_release(avs_shared_buffer_t *buf) {
 /**
  * Internal function. Use @ref avs_shared_buffer_acqiure instead.
  */
-static inline uint8_t *
-_avs_shared_buffer_acquire(avs_shared_buffer_t *buf,
-                           const char *func,
-                           const char *file,
-                           unsigned line) {
-    if (buf->avs_shared_buffer_private_data.file) {
-        avs_log(shared_buffer, ERROR,
-                "double use of a shared buffer in %s (%s:%u); last acquired "
-                "in %s (%s:%u) and not released yet", func, file, line,
-                buf->avs_shared_buffer_private_data.func,
-                buf->avs_shared_buffer_private_data.file,
-                buf->avs_shared_buffer_private_data.line);
-        AVS_UNREACHABLE("double use of a shared buffer");
-    }
-
-    buf->avs_shared_buffer_private_data.func = func;
-    buf->avs_shared_buffer_private_data.file = file;
-    buf->avs_shared_buffer_private_data.line = line;
-    return (uint8_t *) (uintptr_t) buf->data;
-}
-
+uint8_t * _avs_shared_buffer_acquire(avs_shared_buffer_t *buf,
+                                     const char *func,
+                                     const char *file,
+                                     unsigned line);
 /**
  * Marks the shared buffer as used, and returns a mutable pointer to buffer
  * data. Implemented as a macro for extra debug information.
@@ -123,7 +105,7 @@ static inline void avs_shared_buffer_release(avs_shared_buffer_t *buf) {
 }
 #endif // NDEBUG
 
-#ifndef AVS_UNIT_TESTING
+#if !defined(AVS_UNIT_TESTING) && !defined(AVS_SHARED_BUFFER_IMPL)
 AVS_POISON(avs_shared_buffer_private_data)
 #endif
 

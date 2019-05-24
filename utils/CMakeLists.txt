@@ -23,6 +23,7 @@ add_library(avs_utils STATIC
             src/cleanup.c
             src/hexlify.c
             src/numbers.c
+            src/shared_buffer.c
             src/strings.c
             src/time.c
             src/token.c)
