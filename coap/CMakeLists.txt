@@ -41,7 +41,7 @@ target_include_directories(avs_coap PUBLIC
                            $<INSTALL_INTERFACE:include>)
 target_link_libraries(avs_coap PUBLIC avs_commons_global_headers avs_buffer avs_utils avs_net avs_list)
 
-if(WITH_AVS_LOG)
+if(WITH_INTERNAL_LOGS)
     target_link_libraries(avs_coap PUBLIC avs_log)
 endif()
 

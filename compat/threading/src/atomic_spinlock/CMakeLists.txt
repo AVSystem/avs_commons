@@ -27,7 +27,10 @@ add_library(avs_compat_threading_atomic_spinlock STATIC
 target_include_directories(avs_compat_threading_atomic_spinlock PUBLIC
                            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../../include_public>
                            $<INSTALL_INTERFACE:include>)
-target_link_libraries(avs_compat_threading_atomic_spinlock PUBLIC avs_utils avs_log)
+target_link_libraries(avs_compat_threading_atomic_spinlock PUBLIC avs_utils)
+if(WITH_INTERNAL_LOGS)
+    target_link_libraries(avs_compat_threading_atomic_spinlock PUBLIC avs_log)
+endif()
 
 if(NOT TARGET avs_compat_threading)
     add_library(avs_compat_threading ALIAS avs_compat_threading_atomic_spinlock)
