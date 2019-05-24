@@ -17,6 +17,9 @@
 #define AVS_UNIT_SOURCE
 #include <avs_commons_posix_config.h>
 
+#define MODULE_NAME test
+#include <x_log_config.h>
+
 #include <ctype.h>
 #include <inttypes.h>
 #include <math.h>
@@ -30,7 +33,6 @@
 
 #include <avsystem/commons/defs.h>
 #include <avsystem/commons/list.h>
-#include <avsystem/commons/log.h>
 #include <avsystem/commons/unit/mock_helpers.h>
 #include <avsystem/commons/unit/test.h>
 #include <avsystem/commons/utils.h>
