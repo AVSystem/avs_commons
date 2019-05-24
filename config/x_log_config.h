@@ -30,5 +30,6 @@
 #else
 
 #define LOG(...) ((void) 0)
+#define avs_log_set_default_level(...) ((void) 0)
 
 #endif

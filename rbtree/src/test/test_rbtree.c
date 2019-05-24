@@ -18,7 +18,6 @@
 #include <string.h>
 #include <stdarg.h>
 
-#include <avsystem/commons/log.h>
 #include <avsystem/commons/memory.h>
 #include <avsystem/commons/unit/test.h>
 
