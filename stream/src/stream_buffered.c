@@ -23,7 +23,6 @@
 
 #include <avsystem/commons/buffer.h>
 #include <avsystem/commons/errno.h>
-#include <avsystem/commons/log.h>
 #include <avsystem/commons/memory.h>
 #include <avsystem/commons/stream_v_table.h>
 

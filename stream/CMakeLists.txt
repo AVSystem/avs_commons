@@ -33,7 +33,10 @@ add_library(avs_stream STATIC
 target_include_directories(avs_stream PUBLIC
                            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include_public>
                            $<INSTALL_INTERFACE:include>)
-target_link_libraries(avs_stream PUBLIC avs_commons_global_headers avs_log avs_buffer)
+target_link_libraries(avs_stream PUBLIC avs_commons_global_headers avs_buffer)
+if(WITH_INTERNAL_LOGS)
+    target_link_libraries(avs_stream PUBLIC avs_log)
+endif()
 
 avs_install_export(avs_stream stream)
 install(DIRECTORY include_public/

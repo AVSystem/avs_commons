@@ -16,12 +16,14 @@
 
 #include <avs_commons_config.h>
 
+#define MODULE_NAME http_test
+#include <x_log_config.h>
+
 #include <ctype.h>
 #include <string.h>
 
 #include <avsystem/commons/errno.h>
 #include <avsystem/commons/list.h>
-#include <avsystem/commons/log.h>
 #include <avsystem/commons/stream/netbuf.h>
 #include <avsystem/commons/unit/mocksock.h>
 #include <avsystem/commons/unit/test.h>

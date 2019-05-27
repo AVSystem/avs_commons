@@ -17,11 +17,13 @@
 #define _GNU_SOURCE // for RTLD_NEXT
 #include <avs_commons_posix_config.h>
 
+#define MODULE_NAME sched_test
+#include <x_log_config.h>
+
 #include <time.h>
 
 #include <dlfcn.h>
 
-#include <avsystem/commons/log.h>
 #include <avsystem/commons/sched.h>
 #include <avsystem/commons/time.h>
 #include <avsystem/commons/unit/test.h>

@@ -30,10 +30,13 @@
 
 #include <avsystem/commons/defs.h>
 #include <avsystem/commons/list.h>
-#include <avsystem/commons/log.h>
 #include <avsystem/commons/unit/mock_helpers.h>
 #include <avsystem/commons/unit/test.h>
 #include <avsystem/commons/utils.h>
+
+#ifdef WITH_AVS_LOG
+#include <avsystem/commons/log.h>
+#endif
 
 #include "test.h"
 #include "stack_trace.h"

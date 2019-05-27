@@ -18,7 +18,6 @@
 
 #include <avsystem/commons/unit/test.h>
 #include <avsystem/commons/buffer.h>
-#include <avsystem/commons/log.h>
 
 
 AVS_UNIT_GLOBAL_INIT(verbose) {

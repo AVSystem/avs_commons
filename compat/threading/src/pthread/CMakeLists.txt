@@ -31,7 +31,10 @@ add_library(avs_compat_threading_pthread STATIC
 target_include_directories(avs_compat_threading_pthread PUBLIC
                            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../../include_public>
                            $<INSTALL_INTERFACE:include>)
-target_link_libraries(avs_compat_threading_pthread PUBLIC avs_utils avs_log ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(avs_compat_threading_pthread PUBLIC avs_utils ${CMAKE_THREAD_LIBS_INIT})
+if(WITH_INTERNAL_LOGS)
+    target_link_libraries(avs_compat_threading_pthread PUBLIC avs_log)
+endif()
 
 if(NOT TARGET avs_compat_threading)
     add_library(avs_compat_threading ALIAS avs_compat_threading_pthread)

@@ -25,7 +25,6 @@
 #include <assert.h>
 
 #include <avsystem/commons/list.h>
-#include <avsystem/commons/log.h>
 #include <avsystem/commons/memory.h>
 #include <avsystem/commons/net.h>
 #include <avsystem/commons/socket_v_table.h>
