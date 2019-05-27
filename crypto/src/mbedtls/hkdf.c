@@ -47,6 +47,7 @@ int avs_crypto_hkdf_sha_256(const unsigned char *salt, size_t salt_len,
                               out_okm, *inout_okm_len);
     if (result) {
         LOG(ERROR, "mbed TLS error %d", result);
+        return -1;
     }
     return 0;
 }
