@@ -35,7 +35,7 @@ static void test_impl(const unsigned char *salt, size_t salt_len,
                                       info, info_len,
                                       output, &output_size));
     ASSERT_EQ(output_size, expected_output_size);
-    ASSERT_EQ_BYTES_SIZED(output, expected_output, sizeof(output_size));
+    ASSERT_EQ_BYTES_SIZED(output, expected_output, output_size);
 }
 
 // Test vectors from draft-ietf-core-object-security-16

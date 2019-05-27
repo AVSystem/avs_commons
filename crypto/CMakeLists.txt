@@ -42,6 +42,8 @@ elseif(WITH_MBEDTLS)
     target_link_libraries(avs_crypto PUBLIC mbedcrypto)
 elseif(WITH_TINYDTLS)
     message(FATAL_ERROR "HKDF is not supported if tinydtls is used")
+else()
+    message(FATAL_ERROR "No crypto backend specified")
 endif()
 
 if(WITH_INTERNAL_LOGS)
