@@ -30,6 +30,10 @@
 #else
 
 #define LOG(...) ((void) 0)
+
+#ifdef AVS_UNIT_TESTING
+// this should never be called by the library outside test suites
 #define avs_log_set_default_level(...) ((void) 0)
+#endif
 
 #endif
