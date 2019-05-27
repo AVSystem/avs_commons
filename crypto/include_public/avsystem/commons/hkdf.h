@@ -29,7 +29,7 @@
  * @param info          Optional context and application specific information
  *                      string. Must not be NULL if @p info_len != 0.
  * @param info_len      Length of @p info in bytes.
- * @param okm           Output keing material. Must not be NULL.
+ * @param out_okm       Output keing material. Must not be NULL.
  * @param inout_okm_len At the beginning, it must contain size of @p out_okm
  *                      buffer. After successfull call, it will contain number
  *                      of bytes written to @p out_okm .
