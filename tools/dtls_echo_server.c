@@ -72,12 +72,12 @@
 #define BUFFER_SIZE          (1<<16)
 #define COOKIE_SECRET_LENGTH 16
 
-int verbose = 0;
-int veryverbose = 0;
-unsigned char cookie_secret[COOKIE_SECRET_LENGTH];
-int cookie_initialized=0;
+static int verbose = 0;
+static int veryverbose = 0;
+static unsigned char cookie_secret[COOKIE_SECRET_LENGTH];
+static int cookie_initialized=0;
 
-char Usage[] =
+static char Usage[] =
 "Usage: dtls_udp_echo [options]\n"
 "Options:\n"
 "        -l          message length (Default: 100 Bytes)\n"
@@ -89,7 +89,7 @@ char Usage[] =
 "        -cafile     PEM file from which certificate chain shall be loaded\n"
 "        -pkeyfile   PEM file from which server private key shall be loaded\n";
 
-int handle_socket_error(void) {
+static int handle_socket_error(void) {
     switch (errno) {
         case EINTR:
             /* Interrupted system call.
@@ -147,7 +147,7 @@ int handle_socket_error(void) {
     return 0;
 }
 
-int generate_cookie(SSL *ssl, unsigned char *cookie, unsigned int *cookie_len)
+static int generate_cookie(SSL *ssl, unsigned char *cookie, unsigned int *cookie_len)
 {
     unsigned char *buffer, result[EVP_MAX_MD_SIZE];
     unsigned int length = 0, resultlength;
@@ -226,7 +226,7 @@ int generate_cookie(SSL *ssl, unsigned char *cookie, unsigned int *cookie_len)
     return 1;
 }
 
-int verify_cookie(SSL *ssl, unsigned char *cookie, unsigned int cookie_len)
+static int verify_cookie(SSL *ssl, unsigned char *cookie, unsigned int cookie_len)
 {
     unsigned char *buffer, result[EVP_MAX_MD_SIZE];
     unsigned int length = 0, resultlength;
@@ -308,7 +308,7 @@ struct pass_info {
     int fd;
 };
 
-int dtls_verify_callback (int ok, X509_STORE_CTX *ctx) {
+static int dtls_verify_callback (int ok, X509_STORE_CTX *ctx) {
     /* This function should ask the user
      * if he trusts the received certificate.
      * Here we always trust.
@@ -316,7 +316,7 @@ int dtls_verify_callback (int ok, X509_STORE_CTX *ctx) {
     return 1;
 }
 
-void connection_handle(const struct pass_info *pinfo) {
+static void connection_handle(const struct pass_info *pinfo) {
     ssize_t len;
     char buf[BUFFER_SIZE];
     char addrbuf[INET6_ADDRSTRLEN];
@@ -460,7 +460,7 @@ cleanup:
         printf("done, connection closed.\n");
 }
 
-void start_server(int port,
+static void start_server(int port,
                   char *local_address,
                   const char *ca_file,
                   const char *pkey_file) {
