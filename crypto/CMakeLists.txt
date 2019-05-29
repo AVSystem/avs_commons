@@ -13,7 +13,11 @@
 # limitations under the License.
 
 add_library(avs_crypto STATIC
-            include_public/avsystem/commons/hkdf.h)
+            include_public/avsystem/commons/hkdf.h
+            include_public/avsystem/commons/aead.h
+
+            src/crypto_utils.c
+            src/crypto_utils.h)
 
 target_include_directories(avs_crypto PUBLIC
                            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include_public>
@@ -25,23 +29,29 @@ avs_add_test(NAME avs_crypto
              SOURCES $<TARGET_PROPERTY:avs_crypto,SOURCES>)
 
 if(TARGET avs_crypto_test)
-    target_sources(avs_crypto_test PRIVATE src/test/hkdf.c)
+    target_sources(avs_crypto_test PRIVATE
+                   src/test/hkdf.c
+                   src/test/aead.c)
 endif()
 
 if(WITH_OPENSSL)
     if (OPENSSL_VERSION VERSION_LESS 1.1.0)
-        message(FATAL_ERROR "OpenSSL version must be at least 1.1.0 for HKDF support")
+        message(FATAL_ERROR "avs_crypto requires OpenSSL 1.1.0 or newer")
     endif()
-    target_sources(avs_crypto PRIVATE src/openssl/hkdf.c)
+    target_sources(avs_crypto PRIVATE
+                   src/openssl/hkdf.c
+                   src/openssl/aead.c)
     target_link_libraries(avs_crypto PUBLIC OpenSSL::Crypto)
 elseif(WITH_MBEDTLS)
     if (MBEDTLS_VERSION VERSION_LESS 2.14.0)
-        message(FATAL_ERROR "mbed TLS version must be at least 2.14.0 for HKDF support")
+        message(FATAL_ERROR "avs_crypto requires mbed TLS 2.14.0 or newer")
     endif()
-    target_sources(avs_crypto PRIVATE src/mbedtls/hkdf.c)
+    target_sources(avs_crypto PRIVATE
+                   src/mbedtls/hkdf.c
+                   src/mbedtls/aead.c)
     target_link_libraries(avs_crypto PUBLIC mbedcrypto)
 elseif(WITH_TINYDTLS)
-    message(FATAL_ERROR "HKDF is not supported if tinydtls is used")
+    message(FATAL_ERROR "avs_crypto does not support tinydtls")
 else()
     message(FATAL_ERROR "No crypto backend specified")
 endif()
