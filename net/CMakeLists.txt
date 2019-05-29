@@ -43,37 +43,9 @@ avs_add_test(NAME avs_net
              PATH avs_net
              SOURCES $<TARGET_PROPERTY:avs_net,SOURCES>)
 
-# SSL
-option(WITH_OPENSSL "Enable OpenSSL" OFF)
-option(WITH_MBEDTLS "Enable mbed TLS" OFF)
-option(WITH_TINYDTLS "Enable tinyDTLS" OFF)
-
-set(_AVS_TLS_BACKENDS "")
-if(WITH_OPENSSL)
-    list(APPEND _AVS_TLS_BACKENDS "openssl")
-endif()
-if(WITH_MBEDTLS)
-    list(APPEND _AVS_TLS_BACKENDS "mbedtls")
-endif()
-if(WITH_TINYDTLS)
-    list(APPEND _AVS_TLS_BACKENDS "tinydtls")
-endif()
-
-list(LENGTH _AVS_TLS_BACKENDS _AVS_NUM_TLS_BACKENDS)
-if(_AVS_NUM_TLS_BACKENDS GREATER 1)
-    string(REPLACE ";" ", " _AVS_TLS_BACKENDS "${_AVS_TLS_BACKENDS}")
-    message(FATAL_ERROR "Selected ${_AVS_TLS_BACKENDS} as TLS backends but only one may be used.")
-elseif(_AVS_NUM_TLS_BACKENDS GREATER 0)
-    set(WITH_SSL ON CACHE STRING "SSL support is enabled.")
-    option(WITH_PSK "Enable pre-shared key support" ON)
-    option(WITH_X509 "Enable X.509 certificate support" ON)
-endif()
-
 if(WITH_OPENSSL)
     option(WITH_DTLS "Enable OpenSSL DTLS support" ON)
     option(WITH_EC_KEY "Enable OpenSSL EC_KEY support" ON)
-
-    avs_find_library("find_package(OpenSSL REQUIRED)")
 
     set(WITH_OPENSSL_CUSTOM_CIPHERS OFF CACHE STRING "Customized OpenSSL cipher suite list")
 
@@ -86,12 +58,6 @@ if(WITH_OPENSSL)
     endif()
     target_link_libraries(avs_net PUBLIC OpenSSL::SSL OpenSSL::Crypto)
 elseif(WITH_MBEDTLS)
-    avs_find_library("
-        set(CMAKE_MODULE_PATH \\\${CMAKE_MODULE_PATH} \"\\\${CMAKE_CURRENT_LIST_DIR}/cmake\")
-        # Assume mbed TLS is installed to the same root as avs_commons
-        set(MBEDTLS_ROOT_DIR \"\\\${CMAKE_CURRENT_LIST_DIR}/../..\" CACHE STRING \"mbed TLS installation directory\")
-        set(MBEDTLS_USE_STATIC_LIBS ${MBEDTLS_USE_STATIC_LIBS})
-        find_package(MbedTLS REQUIRED)")
     target_sources(avs_net PRIVATE src/mbedtls/mbedtls.c)
     if(WITH_TLS_SESSION_PERSISTENCE)
         target_sources(avs_net PRIVATE
@@ -106,10 +72,6 @@ elseif(WITH_MBEDTLS)
     endif()
     target_link_libraries(avs_net PUBLIC mbedtls mbedcrypto mbedx509)
 elseif(WITH_TINYDTLS)
-    avs_find_library("
-        set(TINYDTLS_ROOT_DIR \"${TINYDTLS_ROOT_DIR}\")
-        find_package(TinyDTLS REQUIRED)
-    ")
     target_sources(avs_net PRIVATE src/tinydtls/tinydtls.c)
     target_link_libraries(avs_net PUBLIC tinydtls)
 endif()

@@ -123,6 +123,7 @@ option(WITH_AVS_HTTP "AVSystem HTTP client" ${MODULES_ENABLED})
 option(WITH_AVS_PERSISTENCE "AVSystem persistence framework" ${MODULES_ENABLED})
 option(WITH_AVS_SCHED "AVSystem job scheduler" ${MODULES_ENABLED})
 option(WITH_AVS_COMPAT_THREADING "Use multithreading utility compatibility layer" ${MODULES_ENABLED})
+option(WITH_AVS_CRYPTO "Cryptogaphic functions abstraction layer" ${MODULES_ENABLED})
 
 include(CMakeDependentOption)
 cmake_dependent_option(WITH_INTERNAL_LOGS "Enable logging from inside AVSystem Commons libraries" ON WITH_AVS_LOG OFF)
@@ -404,6 +405,48 @@ else(WITH_TEST)
     endfunction()
 endif(WITH_TEST)
 
+# SSL
+option(WITH_OPENSSL "Enable OpenSSL" OFF)
+option(WITH_MBEDTLS "Enable mbed TLS" OFF)
+option(WITH_TINYDTLS "Enable tinyDTLS" OFF)
+
+set(_AVS_TLS_BACKENDS "")
+if(WITH_OPENSSL)
+    list(APPEND _AVS_TLS_BACKENDS "openssl")
+endif()
+if(WITH_MBEDTLS)
+    list(APPEND _AVS_TLS_BACKENDS "mbedtls")
+endif()
+if(WITH_TINYDTLS)
+    list(APPEND _AVS_TLS_BACKENDS "tinydtls")
+endif()
+
+list(LENGTH _AVS_TLS_BACKENDS _AVS_NUM_TLS_BACKENDS)
+if(_AVS_NUM_TLS_BACKENDS GREATER 1)
+    string(REPLACE ";" ", " _AVS_TLS_BACKENDS "${_AVS_TLS_BACKENDS}")
+    message(FATAL_ERROR "Selected ${_AVS_TLS_BACKENDS} as TLS backends but only one may be used.")
+elseif(_AVS_NUM_TLS_BACKENDS GREATER 0)
+    set(WITH_SSL ON CACHE STRING "SSL support is enabled.")
+    option(WITH_PSK "Enable pre-shared key support" ON)
+    option(WITH_X509 "Enable X.509 certificate support" ON)
+endif()
+
+if(WITH_OPENSSL)
+    avs_find_library("find_package(OpenSSL REQUIRED)")
+elseif(WITH_MBEDTLS)
+    avs_find_library("
+        set(CMAKE_MODULE_PATH \\\${CMAKE_MODULE_PATH} \"\\\${CMAKE_CURRENT_LIST_DIR}/cmake\")
+        # Assume mbed TLS is installed to the same root as avs_commons
+        set(MBEDTLS_ROOT_DIR \"\\\${CMAKE_CURRENT_LIST_DIR}/../..\" CACHE STRING \"mbed TLS installation directory\")
+        set(MBEDTLS_USE_STATIC_LIBS ${MBEDTLS_USE_STATIC_LIBS})
+        find_package(MbedTLS REQUIRED)")
+elseif(WITH_TINYDTLS)
+    avs_find_library("
+        set(TINYDTLS_ROOT_DIR \"${TINYDTLS_ROOT_DIR}\")
+        find_package(TinyDTLS REQUIRED)
+    ")
+endif()
+
 if(WITH_AVS_ALGORITHM)
     add_module_with_include_dirs(NAME algorithm)
 endif()
@@ -469,6 +512,10 @@ endif()
 if(WITH_AVS_COMPAT_THREADING)
     add_module_with_include_dirs(NAME compat_threading
                                  PATH compat/threading)
+endif()
+
+if(WITH_AVS_CRYPTO)
+    add_module_with_include_dirs(NAME crypto)
 endif()
 
 # API documentation
