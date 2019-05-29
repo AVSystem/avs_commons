@@ -150,7 +150,8 @@ static int handle_socket_error(void) {
 static int generate_cookie(SSL *ssl, unsigned char *cookie, unsigned int *cookie_len)
 {
     unsigned char *buffer, result[EVP_MAX_MD_SIZE];
-    unsigned int length = 0, resultlength;
+    size_t length = 0;
+    unsigned resultlength;
     union {
         struct sockaddr_storage ss;
         struct sockaddr_in6 s6;
@@ -229,7 +230,8 @@ static int generate_cookie(SSL *ssl, unsigned char *cookie, unsigned int *cookie
 static int verify_cookie(SSL *ssl, unsigned char *cookie, unsigned int cookie_len)
 {
     unsigned char *buffer, result[EVP_MAX_MD_SIZE];
-    unsigned int length = 0, resultlength;
+    size_t length = 0;
+    unsigned resultlength;
     union {
         struct sockaddr_storage ss;
         struct sockaddr_in6 s6;
@@ -309,6 +311,8 @@ struct pass_info {
 };
 
 static int dtls_verify_callback (int ok, X509_STORE_CTX *ctx) {
+    (void) ok;
+    (void) ctx;
     /* This function should ask the user
      * if he trusts the received certificate.
      * Here we always trust.
@@ -316,14 +320,12 @@ static int dtls_verify_callback (int ok, X509_STORE_CTX *ctx) {
     return 1;
 }
 
-static void connection_handle(const struct pass_info *pinfo) {
-    ssize_t len;
+static void connection_handle(struct pass_info *pinfo) {
+    int len;
     char buf[BUFFER_SIZE];
     char addrbuf[INET6_ADDRSTRLEN];
     SSL *ssl = pinfo->ssl;
     int reading = 0, ret;
-    const int on = 1, off = 0;
-    struct timeval timeout;
     int num_timeouts = 0, max_timeouts = 5;
 
     OPENSSL_assert(pinfo->client_addr.ss.ss_family == pinfo->server_addr.ss.ss_family);
@@ -460,7 +462,7 @@ cleanup:
         printf("done, connection closed.\n");
 }
 
-static void start_server(int port,
+static void start_server(uint16_t port,
                   char *local_address,
                   const char *ca_file,
                   const char *pkey_file) {
@@ -554,7 +556,7 @@ static void start_server(int port,
     if (server_addr.ss.ss_family == AF_INET) {
         bind(fd, (const struct sockaddr *) &server_addr, sizeof(struct sockaddr_in));
     } else {
-        setsockopt(fd, IPPROTO_IPV6, IPV6_V6ONLY, (char *)&off, sizeof(off));
+        setsockopt(fd, IPPROTO_IPV6, IPV6_V6ONLY, (const char *) &off, sizeof(off));
         bind(fd, (const struct sockaddr *) &server_addr, sizeof(struct sockaddr_in6));
     }
 
@@ -592,9 +594,8 @@ static void start_server(int port,
 
 int main(int argc, char **argv)
 {
-    int port = 23232;
+    uint16_t port = 23232;
     int length = 100;
-    int messagenumber = 5;
     char local_addr[INET6_ADDRSTRLEN+1];
 
     memset(local_addr, 0, INET6_ADDRSTRLEN+1);
@@ -615,13 +616,14 @@ int main(int argc, char **argv)
             if (--argc < 1) goto cmd_err;
             strncpy(local_addr, *++argv, INET6_ADDRSTRLEN);
         }
-        else if (strcmp(*argv, "-n") == 0) {
-            if (--argc < 1) goto cmd_err;
-            messagenumber = atoi(*++argv);
-        }
         else if (strcmp(*argv, "-p") == 0) {
             if (--argc < 1) goto cmd_err;
-            port = atoi(*++argv);
+            int port_int = atoi(*++argv);
+            if (0 <= port_int && port_int < UINT16_MAX) {
+                port = (uint16_t) port_int;
+            } else {
+                goto cmd_err;
+            }
         }
         else if (strcmp(*argv, "-v") == 0) {
             verbose = 1;
