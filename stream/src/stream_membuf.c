@@ -87,7 +87,7 @@ static int stream_membuf_read(avs_stream_abstract_t *stream_,
                             : buffer_length;
     stream->error_code = 0;
     assert(stream->index_read <= stream->index_write);
-    if (!buffer) {
+    if (!buffer && buffer_length) {
         stream->error_code = EINVAL;
         return -1;
     }
