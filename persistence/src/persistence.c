@@ -714,6 +714,50 @@ int avs_persistence_tree(
             ctx, tree, persistence_tree_handler, &state, cleanup);
 }
 
+int avs_persistence_magic(avs_persistence_context_t *ctx,
+                          const void *magic,
+                          size_t magic_size) {
+    if (magic_size == 0) {
+        return 0;
+    } else if (avs_persistence_direction(ctx) == AVS_PERSISTENCE_STORE
+            || ctx->vtable == &IGNORE_VTABLE) {
+        return avs_persistence_bytes(
+                ctx, (void *) (intptr_t) magic, magic_size);
+    } else {
+        void *bytes = avs_malloc(magic_size);
+        if (!bytes) {
+            LOG(ERROR, "Out of memory");
+            return -1;
+        }
+        int result = avs_persistence_bytes(ctx, bytes, magic_size);
+        if (!result && memcmp(bytes, magic, magic_size) != 0) {
+            LOG(ERROR, "Magic markers do not match");
+            result = -1;
+        }
+        avs_free(bytes);
+        return result;
+    }
+}
+
+int avs_persistence_version(avs_persistence_context_t *ctx,
+                            uint8_t *version_number,
+                            const uint8_t *supported_versions,
+                            size_t supported_versions_count) {
+    int result = avs_persistence_u8(ctx, version_number);
+    if (result || ctx->vtable != &RESTORE_VTABLE) {
+        return result;
+    }
+
+    for (size_t i = 0; i < supported_versions_count; ++i) {
+        if (*version_number == supported_versions[i]) {
+            return 0;
+        }
+    }
+
+    LOG(ERROR, "Unsupported version number: %u", (unsigned) *version_number);
+    return -1;
+}
+
 #ifdef AVS_UNIT_TESTING
 #include "test/persistence.c"
 #endif
