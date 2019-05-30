@@ -26,7 +26,7 @@
 static const char BUFFER[] = "No alarms and no surprises";
 
 typedef struct {
-    AVS_LIST(avs_persistence_context_t *) contexts;
+    AVS_LIST(avs_persistence_context_t) contexts;
     avs_stream_abstract_t *stream;
 } persistence_test_env_t;
 
@@ -36,10 +36,10 @@ typedef enum {
     CONTEXT_IGNORE
 } persistence_context_type_t;
 
-typedef avs_persistence_context_t *
+typedef avs_persistence_context_t
 persistence_context_constructor_t(avs_stream_abstract_t *);
 
-#define SCOPED_PERSISTENCE_TEST_ENV(Name) \
+#define SCOPED_PERSISTENCE_TEST_ENV(Name)                      \
     __attribute__((__cleanup__(persistence_test_env_destroy))) \
             persistence_test_env_t *Name = persistence_test_env_create()
 
@@ -53,9 +53,7 @@ static persistence_test_env_t *persistence_test_env_create(void) {
 }
 
 static void persistence_test_env_destroy(persistence_test_env_t **env) {
-    AVS_LIST_CLEAR(&(*env)->contexts) {
-        avs_persistence_context_delete(*(*env)->contexts);
-    }
+    AVS_LIST_CLEAR(&(*env)->contexts);
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&(*env)->stream));
     avs_free(*env);
 }
@@ -64,12 +62,15 @@ static avs_persistence_context_t *
 persistence_create_context(persistence_test_env_t *env,
                            persistence_context_type_t type) {
     static persistence_context_constructor_t *constructors[] = {
-        [CONTEXT_STORE] = avs_persistence_store_context_new,
-        [CONTEXT_RESTORE] = avs_persistence_restore_context_new,
-        [CONTEXT_IGNORE] = avs_persistence_ignore_context_new
+        [CONTEXT_STORE] = avs_persistence_store_context_create,
+        [CONTEXT_RESTORE] = avs_persistence_restore_context_create,
+        [CONTEXT_IGNORE] = avs_persistence_ignore_context_create
     };
-    return *AVS_LIST_INSERT_NEW(avs_persistence_context_t *, &env->contexts) =
-                   constructors[type](env->stream);
+
+    avs_persistence_context_t *ctx =
+            AVS_LIST_INSERT_NEW(avs_persistence_context_t, &env->contexts);
+    *ctx = constructors[type](env->stream);
+    return ctx;
 }
 
 AVS_UNIT_TEST(persistence, bytes_store_restore) {
@@ -90,7 +91,8 @@ AVS_UNIT_TEST(persistence, bytes_store_restore) {
     AVS_UNIT_ASSERT_SUCCESS(avs_persistence_u32(restore_ctx, &result_size));
     AVS_UNIT_ASSERT_EQUAL(result_size, buffer_size);
 
-    AVS_UNIT_ASSERT_SUCCESS(avs_persistence_bytes(restore_ctx, result, result_size));
+    AVS_UNIT_ASSERT_SUCCESS(
+            avs_persistence_bytes(restore_ctx, result, result_size));
     AVS_UNIT_ASSERT_EQUAL_BYTES_SIZED(result, BUFFER, buffer_size);
 }
 
@@ -159,8 +161,7 @@ AVS_UNIT_TEST(persistence, bytes_ignore_multiphase) {
     AVS_UNIT_ASSERT_SUCCESS(
             avs_persistence_bytes(ignore_ctx, NULL, buffer_size));
     uint32_t retrieved_value;
-    AVS_UNIT_ASSERT_SUCCESS(
-            avs_persistence_u32(restore_ctx, &retrieved_value));
+    AVS_UNIT_ASSERT_SUCCESS(avs_persistence_u32(restore_ctx, &retrieved_value));
     AVS_UNIT_ASSERT_EQUAL(magic, retrieved_value);
 }
 
