@@ -664,7 +664,6 @@ static bool is_ssl_started(ssl_socket_t *socket) {
     return socket->ssl != NULL;
 }
 
-#warning "TODO: Session resumption support"
 static bool is_session_resumed(ssl_socket_t *socket) {
     (void) socket;
     return false;
