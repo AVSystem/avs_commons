@@ -195,7 +195,6 @@ static bool is_ssl_started(ssl_socket_t *socket) {
     return peer && dtls_peer_is_connected(peer);
 }
 
-#warning "TODO: Session resumption support"
 static bool is_session_resumed(ssl_socket_t *socket) {
     return false;
 }
