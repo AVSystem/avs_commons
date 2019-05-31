@@ -19,6 +19,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <string.h>
 
 #include <avsystem/commons/list.h>
 #include <avsystem/commons/rbtree.h>
@@ -468,6 +469,71 @@ int avs_persistence_tree(
         avs_persistence_handler_collection_element_t *handler,
         void *handler_user_ptr,
         avs_persistence_cleanup_collection_element_t *cleanup);
+
+/**
+ * Persists or restores (depending on the @p ctx) a magic marker.
+ *
+ * The persist operation is effectively equivalent to calling
+ * @ref avs_persistence_bytes with the same arguments.
+ *
+ * On restore operation, the function attempts to read @p magic_size bytes and
+ * compares it with @p magic. The operation is successful if, and only if, the
+ * data read is byte-for-byte identical.
+ *
+ * @param ctx        Context that determines the actual operation.
+ * @param magic      Pointer to the magic marker constant.
+ * @param magic_size Size of the magic marker, in bytes.
+ *
+ * @return 0 in case of success, negative value in case of failure
+ */
+int avs_persistence_magic(avs_persistence_context_t *ctx,
+                          const void *magic,
+                          size_t magic_size);
+
+/**
+ * Persists or restores (depending on the @p ctx) a null-terminated magic
+ * marker.
+ *
+ * This is a shorthand for @ref avs_persistence_magic when the magic marker is
+ * a null-terminated string.
+ *
+ * @param ctx   Context that determines the actual operation.
+ * @param magic Pointer to the null-terminated magic marker string constant.
+ *
+ * @return 0 in case of success, negative value in case of failure
+ */
+static inline int avs_persistence_magic_string(avs_persistence_context_t *ctx,
+                                               const char *magic) {
+    return avs_persistence_magic(ctx, magic, strlen(magic));
+}
+
+/**
+ * Persists or restores a format version number.
+ *
+ * This is mostly equivalent to:
+ *
+ * <code>
+ * avs_persistence_u8(ctx, version_number);
+ * </code>
+ *
+ * except on restore operation, the restored value is compared to the values
+ * in the <c>supported_versions</c> array, and if it doesn't match any, an error
+ * is returned.
+ *
+ * @param ctx                      Context that determines the actual operation.
+ * @param version_number           Pointer to the value to be stored or
+ *                                 restored.
+ * @param supported_versions       Pointer to an array that contains all
+ *                                 supported version numbers.
+ * @param supported_versions_count Number of elements in the
+ *                                 <c>supported_versions</c> array.
+ *
+ * @return 0 in case of success, negative value in case of failure
+ */
+int avs_persistence_version(avs_persistence_context_t *ctx,
+                            uint8_t *version_number,
+                            const uint8_t *supported_versions,
+                            size_t supported_versions_count);
 
 #ifdef __cplusplus
 }
