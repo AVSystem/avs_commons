@@ -20,6 +20,10 @@
 #include <avsystem/commons/mutex.h>
 #include <avsystem/commons/time.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /** A condition variable object. */
 typedef struct avs_condvar avs_condvar_t;
 
@@ -91,5 +95,9 @@ int avs_condvar_wait(avs_condvar_t *condvar,
  *                       <c>*condvar</c> is set to NULL.
  */
 void avs_condvar_cleanup(avs_condvar_t **condvar);
+
+#ifdef	__cplusplus
+} /* extern "C" */
+#endif
 
 #endif /* AVS_COMMONS_CONDVAR_H */
