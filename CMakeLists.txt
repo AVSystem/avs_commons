@@ -350,6 +350,9 @@ if(WITH_TEST)
         add_dependencies(avs_commons_check license_check)
     endif()
 
+    add_custom_target(avs_commons_extern_c_check COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/tools/check-extern-c.sh")
+    add_dependencies(avs_commons_check avs_commons_extern_c_check)
+
     add_custom_target(avs_commons_symbols_check COMMAND ${CMAKE_CTEST_COMMAND} -R "'^test_.*_symbols$$'" --output-on-failure)
     add_dependencies(avs_commons_check avs_commons_symbols_check)
 
