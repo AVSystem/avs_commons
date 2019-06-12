@@ -17,15 +17,15 @@
 SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
 ROOT_DIR="$(dirname "$SCRIPT_DIR")"
 
-PATHS_WITH_MISSING_EXTERN_C=$(
+FILES_WITH_MISSING_EXTERN_C=$(
     find "$ROOT_DIR" \
         -regex ".*include_public.*\.h" \
-        -exec bash -c "grep \"extern \\\"C\\\"\" {} > /dev/null || echo {}" \;
+        -exec bash -c 'grep "extern \"C\"" {} > /dev/null || echo {}' \;
 )
 
-if [ -n "$PATHS_WITH_MISSING_EXTERN_C" ]; then
-    for PATH in $PATHS_WITH_MISSING_EXTERN_C; do
-        echo Missing extern \"C\" conditional in $PATH
+if [ -n "$FILES_WITH_MISSING_EXTERN_C" ]; then
+    for FILE in $FILES_WITH_MISSING_EXTERN_C; do
+        echo Missing extern \"C\" conditional in $FILE
     done
     exit 1
 fi
