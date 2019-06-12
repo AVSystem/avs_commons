@@ -17,6 +17,10 @@
 #ifndef AVS_COMMONS_INIT_ONCE_H
 #define AVS_COMMONS_INIT_ONCE_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct avs_init_once_handle *avs_init_once_handle_t;
 
 /**
@@ -54,5 +58,9 @@ typedef int avs_init_once_func_t(void *arg);
 int avs_init_once(volatile avs_init_once_handle_t *handle,
                   avs_init_once_func_t *func,
                   void *func_arg);
+
+#ifdef	__cplusplus
+} /* extern "C" */
+#endif
 
 #endif /* AVS_COMMONS_INIT_ONCE_H */

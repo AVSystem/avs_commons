@@ -17,6 +17,10 @@
 #ifndef AVS_COMMONS_MUTEX_H
 #define AVS_COMMONS_MUTEX_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /** A non-recursive mutex object. */
 typedef struct avs_mutex avs_mutex_t;
 
@@ -88,5 +92,9 @@ int avs_mutex_unlock(avs_mutex_t *mutex);
  *                     is set to NULL.
  */
 void avs_mutex_cleanup(avs_mutex_t **mutex);
+
+#ifdef	__cplusplus
+} /* extern "C" */
+#endif
 
 #endif /* AVS_COMMONS_MUTEX_H */
