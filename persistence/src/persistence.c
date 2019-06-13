@@ -370,129 +370,6 @@ static const struct avs_persistence_context_vtable_struct RESTORE_VTABLE = {
     restore_tree
 };
 
-//// IGNORE ////////////////////////////////////////////////////////////////////
-
-static int ignore_bool(avs_persistence_context_t *ctx, bool *out) {
-    (void) out;
-    bool tmp;
-    AVS_STATIC_ASSERT(sizeof(*out) == 1, bool_is_1byte);
-    return avs_stream_read_reliably(ctx->stream, &tmp, 1);
-}
-
-#define PERSISTENCE_IGNORE_BYTES_BUFSIZE 512
-
-static int ignore_bytes(avs_persistence_context_t *ctx,
-                        void *buffer,
-                        size_t buffer_size) {
-    (void) buffer;
-    uint8_t buf[PERSISTENCE_IGNORE_BYTES_BUFSIZE];
-    while (buffer_size > 0) {
-        size_t chunk_to_ignore =
-                buffer_size < sizeof(buf) ? buffer_size : sizeof(buf);
-        int retval =
-                avs_stream_read_reliably(ctx->stream, buf, chunk_to_ignore);
-        if (retval) {
-            return retval;
-        }
-        buffer_size -= chunk_to_ignore;
-    }
-    return 0;
-}
-
-static int ignore_u16(avs_persistence_context_t *ctx, uint16_t *out) {
-    (void) out;
-    uint16_t tmp;
-    return avs_stream_read_reliably(ctx->stream, &tmp, sizeof(tmp));
-}
-
-static int ignore_u32(avs_persistence_context_t *ctx, uint32_t *out) {
-    (void) out;
-    uint32_t tmp;
-    return avs_stream_read_reliably(ctx->stream, &tmp, sizeof(tmp));
-}
-
-static int ignore_u64(avs_persistence_context_t *ctx, uint64_t *out) {
-    (void) out;
-    uint64_t tmp;
-    return avs_stream_read_reliably(ctx->stream, &tmp, sizeof(tmp));
-}
-
-static int ignore_float(avs_persistence_context_t *ctx, float *out) {
-    (void) out;
-    uint32_t tmp;
-    AVS_STATIC_ASSERT(sizeof(*out) == sizeof(tmp), float_is_32);
-    return avs_stream_read_reliably(ctx->stream, &tmp, sizeof(tmp));
-}
-
-static int ignore_double(avs_persistence_context_t *ctx, double *out) {
-    (void) out;
-    uint64_t tmp;
-    AVS_STATIC_ASSERT(sizeof(*out) == sizeof(tmp), double_is_64);
-    return avs_stream_read_reliably(ctx->stream, &tmp, sizeof(tmp));
-}
-
-static int ignore_sized_buffer(avs_persistence_context_t *ctx,
-                               void **data_ptr,
-                               size_t *size_ptr) {
-    (void) data_ptr;
-    (void) size_ptr;
-    uint32_t size32;
-    int retval = restore_u32(ctx, &size32);
-    if (!retval) {
-        retval = ignore_bytes(ctx, NULL, size32);
-    }
-    return retval;
-}
-
-static int ignore_string(avs_persistence_context_t *ctx,
-                         char **string_ptr) {
-    (void) string_ptr;
-    return ignore_sized_buffer(ctx, NULL, NULL);
-}
-
-static int ignore_list(avs_persistence_context_t *ctx,
-                       AVS_LIST(void) *list_ptr,
-                       avs_persistence_handler_custom_allocated_tree_element_t *handler,
-                       void *handler_user_ptr,
-                       avs_persistence_cleanup_collection_element_t *cleanup) {
-    (void) list_ptr; (void) cleanup;
-    uint32_t count;
-    int retval = restore_u32(ctx, &count);
-    while (!retval && count--) {
-        retval = handler(ctx, NULL, handler_user_ptr);
-    }
-    return retval;
-}
-
-static int ignore_tree(avs_persistence_context_t *ctx,
-                       AVS_RBTREE(void) tree,
-                       avs_persistence_handler_custom_allocated_tree_element_t *handler,
-                       void *handler_user_ptr,
-                       avs_persistence_cleanup_collection_element_t *cleanup) {
-    (void) tree; (void) cleanup;
-    uint32_t count;
-    int retval = restore_u32(ctx, &count);
-    while (!retval && count--) {
-        retval = handler(ctx, NULL, handler_user_ptr);
-    }
-    return retval;
-}
-
-static const struct avs_persistence_context_vtable_struct IGNORE_VTABLE = {
-    AVS_PERSISTENCE_RESTORE,
-    ignore_u16,
-    ignore_u32,
-    ignore_u64,
-    ignore_bool,
-    ignore_bytes,
-    ignore_float,
-    ignore_double,
-    ignore_sized_buffer,
-    ignore_string,
-    ignore_list,
-    ignore_tree
-};
-
 avs_persistence_context_t
 avs_persistence_store_context_create(avs_stream_abstract_t *stream) {
     return (avs_persistence_context_t) {
@@ -505,14 +382,6 @@ avs_persistence_context_t
 avs_persistence_restore_context_create(avs_stream_abstract_t *stream) {
     return (avs_persistence_context_t) {
         .vtable = &RESTORE_VTABLE,
-        .stream = stream
-    };
-}
-
-avs_persistence_context_t
-avs_persistence_ignore_context_create(avs_stream_abstract_t *stream) {
-    return (avs_persistence_context_t) {
-        .vtable = &IGNORE_VTABLE,
         .stream = stream
     };
 }
@@ -719,8 +588,7 @@ int avs_persistence_magic(avs_persistence_context_t *ctx,
                           size_t magic_size) {
     if (magic_size == 0) {
         return 0;
-    } else if (avs_persistence_direction(ctx) == AVS_PERSISTENCE_STORE
-            || ctx->vtable == &IGNORE_VTABLE) {
+    } else if (avs_persistence_direction(ctx) == AVS_PERSISTENCE_STORE) {
         return avs_persistence_bytes(
                 ctx, (void *) (intptr_t) magic, magic_size);
     } else {

@@ -32,8 +32,7 @@ typedef struct {
 
 typedef enum {
     CONTEXT_STORE = 0,
-    CONTEXT_RESTORE,
-    CONTEXT_IGNORE
+    CONTEXT_RESTORE
 } persistence_context_type_t;
 
 typedef avs_persistence_context_t
@@ -68,8 +67,7 @@ persistence_create_context(persistence_test_env_t *env,
                            persistence_context_type_t type) {
     static persistence_context_constructor_t *constructors[] = {
         [CONTEXT_STORE] = avs_persistence_store_context_create,
-        [CONTEXT_RESTORE] = avs_persistence_restore_context_create,
-        [CONTEXT_IGNORE] = avs_persistence_ignore_context_create
+        [CONTEXT_RESTORE] = avs_persistence_restore_context_create
     };
 
     avs_persistence_context_t *ctx =
@@ -121,71 +119,6 @@ AVS_UNIT_TEST(persistence, bytes_restore_too_much) {
 
     AVS_UNIT_ASSERT_FAILED(
             avs_persistence_bytes(restore_ctx, result, result_size + 1));
-}
-
-AVS_UNIT_TEST(persistence, bytes_ignore) {
-    SCOPED_PERSISTENCE_TEST_ENV(env);
-
-    avs_persistence_context_t *store_ctx =
-            persistence_create_context(env, CONTEXT_STORE);
-    avs_persistence_context_t *ignore_ctx =
-            persistence_create_context(env, CONTEXT_IGNORE);
-
-    uint32_t buffer_size = sizeof(BUFFER);
-    AVS_UNIT_ASSERT_SUCCESS(avs_persistence_u32(store_ctx, &buffer_size));
-    AVS_UNIT_ASSERT_SUCCESS(avs_persistence_bytes(
-            store_ctx, (uint8_t *) (intptr_t) BUFFER, buffer_size));
-
-    AVS_UNIT_ASSERT_SUCCESS(avs_persistence_u32(ignore_ctx, NULL));
-    AVS_UNIT_ASSERT_SUCCESS(
-            avs_persistence_bytes(ignore_ctx, NULL, buffer_size));
-}
-
-AVS_UNIT_TEST(persistence, bytes_ignore_multiphase) {
-    SCOPED_PERSISTENCE_TEST_ENV(env);
-
-    avs_persistence_context_t *store_ctx =
-            persistence_create_context(env, CONTEXT_STORE);
-    avs_persistence_context_t *restore_ctx =
-            persistence_create_context(env, CONTEXT_RESTORE);
-    avs_persistence_context_t *ignore_ctx =
-            persistence_create_context(env, CONTEXT_IGNORE);
-
-    // Test that ignoring in chunks of 512 bytes actually works.
-    uint8_t buffer[2 * PERSISTENCE_IGNORE_BYTES_BUFSIZE + 1];
-    uint32_t buffer_size = sizeof(buffer);
-    uint32_t magic = 0xF00BAA;
-    memset(buffer, 0, buffer_size);
-
-    AVS_UNIT_ASSERT_SUCCESS(avs_persistence_u32(store_ctx, &buffer_size));
-    AVS_UNIT_ASSERT_SUCCESS(avs_persistence_bytes(
-            store_ctx, (uint8_t *) (intptr_t) buffer, buffer_size));
-    AVS_UNIT_ASSERT_SUCCESS(avs_persistence_u32(store_ctx, &magic));
-
-    AVS_UNIT_ASSERT_SUCCESS(avs_persistence_u32(ignore_ctx, NULL));
-    AVS_UNIT_ASSERT_SUCCESS(
-            avs_persistence_bytes(ignore_ctx, NULL, buffer_size));
-    uint32_t retrieved_value;
-    AVS_UNIT_ASSERT_SUCCESS(avs_persistence_u32(restore_ctx, &retrieved_value));
-    AVS_UNIT_ASSERT_EQUAL(magic, retrieved_value);
-}
-
-AVS_UNIT_TEST(persistence, bytes_ignore_too_much) {
-    SCOPED_PERSISTENCE_TEST_ENV(env);
-
-    avs_persistence_context_t *store_ctx =
-            persistence_create_context(env, CONTEXT_STORE);
-    avs_persistence_context_t *ignore_ctx =
-            persistence_create_context(env, CONTEXT_IGNORE);
-
-    uint32_t buffer_size = sizeof(BUFFER);
-    AVS_UNIT_ASSERT_SUCCESS(avs_persistence_u32(store_ctx, &buffer_size));
-    AVS_UNIT_ASSERT_SUCCESS(avs_persistence_bytes(
-            store_ctx, (uint8_t *) (intptr_t) BUFFER, buffer_size));
-
-    AVS_UNIT_ASSERT_SUCCESS(avs_persistence_u32(ignore_ctx, NULL));
-    AVS_UNIT_ASSERT_FAILED(
-            avs_persistence_bytes(ignore_ctx, NULL, buffer_size + 1));
 }
 
 AVS_UNIT_TEST(persistence, magic) {

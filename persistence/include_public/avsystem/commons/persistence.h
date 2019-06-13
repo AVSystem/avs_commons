@@ -81,16 +81,6 @@ avs_persistence_context_t
 avs_persistence_restore_context_create(avs_stream_abstract_t *stream);
 
 /**
- * Creates an initialized persistence context so that each underlying operation
- * skips value.
- *
- * @param out_context Pointer to a persistence context variable to initialize.
- * @param stream      Stream to operate on.
- */
-avs_persistence_context_t
-avs_persistence_ignore_context_create(avs_stream_abstract_t *stream);
-
-/**
  * Creates a heap-allocated context where each underlying operation writes
  * passed value to the stream.
  * @param stream    stream to operate on
@@ -135,30 +125,8 @@ avs_persistence_restore_context_new(avs_stream_abstract_t *stream) {
 }
 
 /**
- * Creates a heap-allocated context where each underlying operation skips value.
- * @param stream    stream to operate on
- * @return          NULL on error during context construction, valid pointer
- *                  otherwise
- */
-AVS_DEPRECATED("Please stop using heap allocation and use "
-               "avs_persistence_ignore_context_create() instead")
-static inline avs_persistence_context_t *
-avs_persistence_ignore_context_new(avs_stream_abstract_t *stream) {
-    if (!stream) {
-        return NULL;
-    }
-    avs_persistence_context_t *ctx = (avs_persistence_context_t *)
-            avs_malloc(sizeof(avs_persistence_context_t));
-    if (ctx) {
-        *ctx = avs_persistence_ignore_context_create(stream);
-    }
-    return ctx;
-}
-
-/**
- * Deletes @p ctx allocated using @ref avs_persistence_store_context_new,
- * @ref avs_persistence_restore_context_new or
- * @ref avs_persistence_ignore_context_new and frees memory associated with it.
+ * Deletes @p ctx allocated using @ref avs_persistence_store_context_new or
+ * @ref avs_persistence_restore_context_new and frees memory associated with it.
  * Note: stream used to initialize context is not closed.
  * @param ctx       pointer to the context to be deleted
  */
@@ -198,10 +166,6 @@ int avs_persistence_bool(avs_persistence_context_t *ctx, bool *value);
  *  - @p buffer is a pointer to the user-allocated buffer.
  *  - @p buffer_size is the amount of bytes to store.
  *  - If the data cannot be stored, then an error is returned.
- *
- * On ignore context behavior:
- *  - @p buffer is optional, might be NULL.
- *  - @p buffer_size is the amount of bytes to be ignored.
  *
  * Example usage:
  * @code
