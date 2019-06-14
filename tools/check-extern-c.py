@@ -23,12 +23,31 @@ import sys
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 
 
-def has_proper_extern_c_clause(filename):
+def read_full_file(filename):
+    CHUNK_SIZE = 2048
+
+    result = ''
     with open(filename) as f:
-        for line in f:
-            if 'extern "C"' in line:
-                return True
-    return False
+        while True:
+            chunk = f.read(CHUNK_SIZE)
+            result += chunk
+            if len(chunk) == 0:
+                return result
+
+
+def is_purely_preprocessor_header(content):
+    content = re.sub(r'/\*.*?\*/', '', content, flags=re.MULTILINE | re.DOTALL)
+    content = re.sub(r'//.*$', '', content, flags=re.MULTILINE)
+    for line in content.split('\n'):
+        trimmed = line.strip()
+        if trimmed != '' and not trimmed.startswith('#'):
+            return False
+    return True
+
+
+def has_proper_extern_c_clause(filename):
+    content = read_full_file(filename)
+    return ('extern "C"' in content) or is_purely_preprocessor_header(content)
 
 
 def _main():
