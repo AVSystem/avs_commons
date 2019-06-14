@@ -19,6 +19,10 @@
 
 #include <stddef.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * Encrypts data using AEAD encryption with AES-CCM mode.
  *
@@ -83,5 +87,9 @@ avs_crypto_aead_aes_ccm_decrypt(const unsigned char *key, size_t key_len,
                                 const unsigned char *input, size_t input_len,
                                 const unsigned char *tag, size_t tag_len,
                                 unsigned char *output);
+
+#ifdef	__cplusplus
+} /* extern "C" */
+#endif
 
 #endif // AVS_COMMONS_CRYPTO_AEAD_H

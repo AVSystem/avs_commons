@@ -17,6 +17,10 @@
 #ifndef AVS_COMMONS_CRYPTO_HKDF_H
 #define AVS_COMMONS_CRYPTO_HKDF_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * Derives a new key from input data using HKDF SHA-256 key derivation function.
  * See https://tools.ietf.org/html/rfc5869 for details.
@@ -40,5 +44,9 @@ int avs_crypto_hkdf_sha_256(const unsigned char *salt, size_t salt_len,
                             const unsigned char *ikm, size_t ikm_len,
                             const unsigned char *info, size_t info_len,
                             unsigned char *out_okm, size_t *inout_okm_len);
+
+#ifdef	__cplusplus
+} /* extern "C" */
+#endif
 
 #endif // AVS_COMMONS_CRYPTO_HKDF_H
