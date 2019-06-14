@@ -24,15 +24,8 @@ PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 
 
 def read_full_file(filename):
-    CHUNK_SIZE = 2048
-
-    result = ''
     with open(filename) as f:
-        while True:
-            chunk = f.read(CHUNK_SIZE)
-            result += chunk
-            if len(chunk) == 0:
-                return result
+        return f.read()
 
 
 def is_purely_preprocessor_header(content):
