@@ -49,8 +49,10 @@ static int inbuf_stream_read(avs_stream_abstract_t *stream_,
     if (out_message_finished) {
         *out_message_finished = stream->buffer_offset >= stream->buffer_size;
     }
+    if (out_bytes_read) {
+        *out_bytes_read = bytes_read;
+    }
 
-    *out_bytes_read = bytes_read;
     return 0;
 }
 
