@@ -144,7 +144,7 @@ int _avs_http_auth_send_header_digest(http_stream_t *stream) {
         goto auth_digest_error;
     }
 
-    sprintf(nc, "%08" SCNx32, stream->auth.state.nc++);
+    sprintf(nc, "%08" PRIx32, stream->auth.state.nc++);
     generate_random_nonce(client_nonce, &stream->random_seed);
 
     if (http_auth_ha1(md5, &stream->auth, client_nonce, &HA1hex)
