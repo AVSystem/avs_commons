@@ -41,7 +41,9 @@ target_include_directories(avs_net PUBLIC
 
 avs_add_test(NAME avs_net
              PATH avs_net
-             SOURCES $<TARGET_PROPERTY:avs_net,SOURCES>)
+             SOURCES
+             $<TARGET_PROPERTY:avs_net,SOURCES>
+             src/test/socket.c)
 
 if(WITH_OPENSSL)
     option(WITH_DTLS "Enable OpenSSL DTLS support" ON)

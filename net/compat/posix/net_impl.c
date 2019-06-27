@@ -1864,6 +1864,10 @@ static int get_inner_mtu(avs_net_socket_t *net_socket, int *out_mtu) {
             *out_mtu = 0;
         }
     } else {
+        if (net_socket->socket == INVALID_SOCKET) {
+            LOG(ERROR, "cannot get inner MTU for closed socket");
+            return -1;
+        }
         net_socket->error_code = 0;
         *out_mtu = get_fallback_inner_mtu(net_socket);
     }
