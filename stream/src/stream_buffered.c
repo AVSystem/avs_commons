@@ -20,6 +20,7 @@
 
 #include <assert.h>
 #include <string.h>
+#include <stdint.h>
 
 #include <avsystem/commons/buffer.h>
 #include <avsystem/commons/errno.h>
