@@ -21,6 +21,11 @@
 #include <assert.h>
 #include <string.h>
 #include <stdint.h>
+/*
+ * Added for SIZE_MAX definition on Android ARM NDK, which for some reason does
+ * not define it in stdint.h like POSIX says it should
+ */
+#include <limits.h>
 
 #include <avsystem/commons/buffer.h>
 #include <avsystem/commons/errno.h>
