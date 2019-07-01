@@ -103,8 +103,9 @@ static int stream_file_read(avs_stream_abstract_t *stream_,
         file->error_code = EBADF;
         return -1;
     }
+    size_t bytes_read = fread(buffer, 1, buffer_length, file->fp);
     if (out_bytes_read) {
-        *out_bytes_read = fread(buffer, 1, buffer_length, file->fp);
+        *out_bytes_read = bytes_read;
     }
     if (ferror(file->fp)) {
         file->error_code = EIO;
