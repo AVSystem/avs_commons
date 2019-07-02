@@ -629,6 +629,12 @@ static int start_ssl(ssl_socket_t *socket, const char *host) {
     SSL_set_mode(socket->ssl, SSL_MODE_AUTO_RETRY);
 #endif
 
+    if (SSL_set_tlsext_host_name(socket->ssl, host) == 0) {
+        LOG(ERROR, "cannot setup SNI extension");
+        socket->error_code = ENOMEM;
+        return -1;
+    }
+
     bio = avs_bio_spawn(socket);
     if (!bio) {
         LOG(ERROR, "cannot create BIO object");
