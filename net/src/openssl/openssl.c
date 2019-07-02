@@ -64,11 +64,6 @@ VISIBILITY_SOURCE_BEGIN
 #define OPENSSL_VERSION_NUMBER_LT(Major, Minor, Fix) \
         (!OPENSSL_VERSION_NUMBER_GE(Major, Minor, Fix))
 
-#if (!defined(EVP_PKEY_EC) || defined(OPENSSL_NO_EC)) && defined(WITH_EC_KEY)
-#warning "Detected OpenSSL version does not support EC keys - disabling"
-#undef WITH_EC_KEY
-#endif
-
 #if (OPENSSL_VERSION_NUMBER_LT(1,0,0) || defined(OPENSSL_NO_PSK)) && defined(WITH_PSK)
 #warning "Detected OpenSSL version does not support PSK - disabling"
 #undef WITH_PSK

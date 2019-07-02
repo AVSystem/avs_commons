@@ -43,7 +43,6 @@
 
 #cmakedefine WITH_SSL
 #cmakedefine WITH_DTLS
-#cmakedefine WITH_EC_KEY
 #cmakedefine WITH_PSK
 #cmakedefine WITH_X509
 #cmakedefine WITH_TLS_SESSION_PERSISTENCE

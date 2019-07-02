@@ -45,7 +45,6 @@ avs_add_test(NAME avs_net
 
 if(WITH_OPENSSL)
     option(WITH_DTLS "Enable OpenSSL DTLS support" ON)
-    option(WITH_EC_KEY "Enable OpenSSL EC_KEY support" ON)
 
     set(WITH_OPENSSL_CUSTOM_CIPHERS OFF CACHE STRING "Customized OpenSSL cipher suite list")
 
