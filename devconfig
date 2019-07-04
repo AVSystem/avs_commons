@@ -19,7 +19,6 @@ rm -rf CMakeFiles
 cmake -D WITH_EXTRA_WARNINGS=ON \
       -D WITH_SOCKET_LOG=ON \
       -D WITH_INTERNAL_TRACE=ON \
-      -D WITH_VALGRIND=ON \
       -D WITH_OPENSSL=ON \
       -D WITH_TEST=ON \
       -D CMAKE_C_FLAGS=-g \
