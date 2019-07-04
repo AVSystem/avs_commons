@@ -236,7 +236,7 @@ option(WITH_SOCKET_LOG "Enable socket communication logging" OFF)
 
 find_program(VALGRIND_EXECUTABLE valgrind)
 if(VALGRIND_EXECUTABLE)
-    option(WITH_VALGRIND "Enable usage of valgrind during unit tests" OFF)
+    option(WITH_VALGRIND "Enable usage of valgrind during unit tests" ON)
 endif()
 if(WITH_VALGRIND)
     execute_process(COMMAND ${VALGRIND_EXECUTABLE} --tool=helgrind --version
