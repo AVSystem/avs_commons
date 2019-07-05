@@ -47,7 +47,7 @@ typedef struct {
     } avs_shared_buffer_private_data;
 #endif // NDEBUG
     const size_t capacity;
-    const avs_max_align_t data[];
+    const avs_max_align_t data[1]; // actually FAM
 } avs_shared_buffer_t;
 
 /**
@@ -59,7 +59,7 @@ typedef struct {
  */
 static inline avs_shared_buffer_t *avs_shared_buffer_new(size_t capacity) {
     avs_shared_buffer_t *buf = (avs_shared_buffer_t *)
-            avs_calloc(1, sizeof(avs_shared_buffer_t) + capacity);
+            avs_calloc(1, offsetof(avs_shared_buffer_t, data) + capacity);
 
     if (buf) {
         memcpy((void *) (intptr_t) &buf->capacity, &capacity, sizeof(capacity));
