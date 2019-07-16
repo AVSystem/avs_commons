@@ -68,7 +68,9 @@ void _avs_net_cleanup_global_ssl_state(void) {
 static int get_dtls_overhead(ssl_socket_t *socket,
                              int *out_header,
                              int *out_padding_size) {
-    (void) socket;
+    if (!is_ssl_started(socket)) {
+        return -1;
+    }
     /* tinyDTLS supports AES-128-CCM-8 ciphersuite only */
     *out_header = 13 /* header */
                 + 8 /* nonce */

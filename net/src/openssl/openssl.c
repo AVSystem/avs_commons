@@ -213,11 +213,11 @@ static int aead_cipher_tag_len(SSL *ssl) {
 static int get_dtls_overhead(ssl_socket_t *socket,
                              int *out_header,
                              int *out_padding_size) {
+    if (!is_ssl_started(socket)) {
+        return -1;
+    }
     *out_header = DTLS1_RT_HEADER_LENGTH;
     *out_padding_size = 0;
-    if (!socket || !socket->ssl) {
-        return 0;
-    }
 
     /* actual logic is inspired by OpenSSL's ssl_cipher_get_overhead */
     const EVP_CIPHER *cipher = get_evp_cipher(socket->ssl);
