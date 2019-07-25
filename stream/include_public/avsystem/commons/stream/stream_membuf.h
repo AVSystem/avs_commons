@@ -19,7 +19,7 @@
 
 #include <avsystem/commons/stream.h>
 
-#ifdef	__cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
@@ -27,8 +27,13 @@ extern "C" {
 
 typedef int (*avs_stream_membuf_fit_t)(avs_stream_abstract_t *stream);
 
+typedef int (*avs_stream_membuf_take_ownership_t)(avs_stream_abstract_t *stream,
+                                                  void **out_ptr,
+                                                  size_t *out_size);
+
 typedef struct {
     avs_stream_membuf_fit_t fit;
+    avs_stream_membuf_take_ownership_t take_ownership;
 } avs_stream_v_table_extension_membuf_t;
 
 /**
@@ -37,6 +42,23 @@ typedef struct {
  * @param stream    membuf stream pointer
  */
 int avs_stream_membuf_fit(avs_stream_abstract_t *stream);
+
+/**
+ * Returns the stream's internal buffer, and resets the original stream's state
+ * so that it contains no data.
+ *
+ * @ref avs_stream_membuf_fit is implicitly performed before this operation.
+ *
+ * @param out_ptr  Pointer to a variable which will be set to the address of the
+ *                 stream's buffer.
+ * @param out_size If not NULL, shall point to a variable that will be set to
+ *                 the number of valid bytes in the buffer.
+ *
+ * @returns 0 for success, or a negative value in case of error.
+ */
+int avs_stream_membuf_take_ownership(avs_stream_abstract_t *stream,
+                                     void **out_ptr,
+                                     size_t *out_size);
 
 typedef struct avs_stream_membuf_struct avs_stream_membuf_t;
 
@@ -48,8 +70,8 @@ typedef struct avs_stream_membuf_struct avs_stream_membuf_t;
  */
 avs_stream_abstract_t *avs_stream_membuf_create(void);
 
-#ifdef	__cplusplus
+#ifdef __cplusplus
 }
 #endif
 
-#endif	/* AVS_COMMONS_STREAM_MEMBUF_H */
+#endif /* AVS_COMMONS_STREAM_MEMBUF_H */

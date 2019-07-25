@@ -43,11 +43,24 @@ struct avs_stream_membuf_struct {
 
 int avs_stream_membuf_fit(avs_stream_abstract_t *stream) {
     const avs_stream_v_table_extension_membuf_t *ext =
-        (const avs_stream_v_table_extension_membuf_t *)
-        avs_stream_v_table_find_extension(stream,
-                                          AVS_STREAM_V_TABLE_EXTENSION_MEMBUF);
+            (const avs_stream_v_table_extension_membuf_t *)
+                    avs_stream_v_table_find_extension(
+                            stream, AVS_STREAM_V_TABLE_EXTENSION_MEMBUF);
     if (ext) {
         return ext->fit(stream);
+    }
+    return -1;
+}
+
+int avs_stream_membuf_take_ownership(avs_stream_abstract_t *stream,
+                                     void **out_ptr,
+                                     size_t *out_size) {
+    const avs_stream_v_table_extension_membuf_t *ext =
+            (const avs_stream_v_table_extension_membuf_t *)
+                    avs_stream_v_table_find_extension(
+                            stream, AVS_STREAM_V_TABLE_EXTENSION_MEMBUF);
+    if (ext) {
+        return ext->take_ownership(stream, out_ptr, out_size);
     }
     return -1;
 }
@@ -82,9 +95,7 @@ static int stream_membuf_read(avs_stream_abstract_t *stream_,
                               size_t buffer_length) {
     avs_stream_membuf_t *stream = (avs_stream_membuf_t *) stream_;
     size_t bytes_left = stream->index_write - stream->index_read;
-    size_t bytes_read = bytes_left < buffer_length
-                            ? bytes_left
-                            : buffer_length;
+    size_t bytes_read = bytes_left < buffer_length ? bytes_left : buffer_length;
     stream->error_code = 0;
     assert(stream->index_read <= stream->index_write);
     if (!buffer && buffer_length) {
@@ -105,8 +116,7 @@ static int stream_membuf_read(avs_stream_abstract_t *stream_,
     return 0;
 }
 
-static int stream_membuf_peek(avs_stream_abstract_t *stream_,
-                              size_t offset) {
+static int stream_membuf_peek(avs_stream_abstract_t *stream_, size_t offset) {
     avs_stream_membuf_t *stream = (avs_stream_membuf_t *) stream_;
     stream->error_code = 0;
     if (stream->index_read + offset >= stream->index_write) {
@@ -151,12 +161,27 @@ static int stream_membuf_fit(avs_stream_abstract_t *stream_) {
     return 0;
 }
 
+static int stream_membuf_take_ownership(avs_stream_abstract_t *stream_,
+                                        void **out_ptr,
+                                        size_t *out_size) {
+    avs_stream_membuf_t *stream = (avs_stream_membuf_t *) stream_;
+    stream_membuf_fit(stream_);
+    *out_ptr = (void *) stream->buffer;
+    if (out_size) {
+        *out_size = stream->buffer_size;
+    }
+    stream->buffer = NULL;
+    stream->buffer_size = 0;
+    stream_membuf_reset(stream_);
+    return 0;
+}
+
 static int unimplemented() {
     return -1;
 }
 
 static const avs_stream_v_table_extension_membuf_t stream_membuf_ext_vtable = {
-    stream_membuf_fit
+    stream_membuf_fit, stream_membuf_take_ownership
 };
 
 static const avs_stream_v_table_extension_t stream_membuf_extensions[] = {
@@ -165,18 +190,13 @@ static const avs_stream_v_table_extension_t stream_membuf_extensions[] = {
 };
 
 static const avs_stream_v_table_t membuf_stream_vtable = {
-    stream_membuf_write_some,
-    (avs_stream_finish_message_t) unimplemented,
-    stream_membuf_read,
-    stream_membuf_peek,
-    stream_membuf_reset,
-    stream_membuf_close,
-    stream_membuf_errno,
-    stream_membuf_extensions
+    stream_membuf_write_some, (avs_stream_finish_message_t) unimplemented,
+    stream_membuf_read,       stream_membuf_peek,
+    stream_membuf_reset,      stream_membuf_close,
+    stream_membuf_errno,      stream_membuf_extensions
 };
 
-avs_stream_abstract_t *
-avs_stream_membuf_create(void) {
+avs_stream_abstract_t *avs_stream_membuf_create(void) {
     avs_stream_membuf_t *membuf =
             (avs_stream_membuf_t *) avs_calloc(1, sizeof(avs_stream_membuf_t));
     const void *vtable = &membuf_stream_vtable;
@@ -188,5 +208,5 @@ avs_stream_membuf_create(void) {
 }
 
 #ifdef AVS_UNIT_TESTING
-#include "test/test_stream_membuf.c"
+#    include "test/test_stream_membuf.c"
 #endif
