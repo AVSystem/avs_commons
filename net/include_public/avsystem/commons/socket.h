@@ -539,7 +539,12 @@ typedef enum {
      * Used to get the number of bytes received. Does not include protocol
      * overhead.
      */
-    AVS_NET_SOCKET_OPT_BYTES_RECEIVED
+    AVS_NET_SOCKET_OPT_BYTES_RECEIVED,
+
+    /**
+     * Used to get/set ciphersuites used during (D)TLS handshake.
+     */
+    AVS_NET_SOCKET_OPT_TLS_CIPHERSUITES
 } avs_net_socket_opt_key_t;
 
 typedef enum {
@@ -583,6 +588,37 @@ typedef enum {
     AVS_NET_SOCKET_STATE_CONNECTED
 } avs_net_socket_state_t;
 
+/**
+ * An array of num_ids ciphersuite IDs, in big endian. For example,
+ * TLS_PSK_WITH_AES_128_CCM_8 is represented as 0xC0A8.
+ *
+ * For a complete list of ciphersuites, see
+ * https://www.iana.org/assignments/tls-parameters/tls-parameters.xhtml
+ *
+ * Note: cipher entries that are unsupported by the (D)TLS backend will be
+ * silently ignored. @ref AVS_NET_SOCKET_TLS_CIPHERSUITES_ALL can be used to
+ * enable all supported ciphersuites.
+ *
+ * When returned by @ref avs_net_socket_get_opt call, it has to be deleted with
+ * @ref avs_net_socket_tls_ciphersuites_cleanup after use.
+ */
+typedef struct {
+    uint16_t *ids;
+    size_t num_ids;
+} avs_net_socket_tls_ciphersuites_t;
+
+static inline void avs_net_socket_tls_ciphersuites_cleanup(
+        avs_net_socket_tls_ciphersuites_t *ciphers) {
+    avs_free(&ciphers->ids);
+    ciphers->ids = NULL;
+}
+
+/**
+ * A value representing the set of all supported ciphersuites.
+ */
+static const avs_net_socket_tls_ciphersuites_t
+AVS_NET_SOCKET_TLS_CIPHERSUITES_ALL = { NULL, 0 };
+
 typedef union {
     avs_time_duration_t recv_timeout;
     avs_net_socket_state_t state;
@@ -591,6 +627,7 @@ typedef union {
     bool flag;
     uint64_t bytes_sent;
     uint64_t bytes_received;
+    avs_net_socket_tls_ciphersuites_t tls_ciphersuites;
 } avs_net_socket_opt_value_t;
 
 int avs_net_socket_debug(int value);
