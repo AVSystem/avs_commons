@@ -236,7 +236,9 @@ option(WITH_SOCKET_LOG "Enable socket communication logging" OFF)
 
 find_program(VALGRIND_EXECUTABLE valgrind)
 if(VALGRIND_EXECUTABLE)
-    option(WITH_VALGRIND "Enable usage of valgrind during unit tests" ON)
+    # This is enabled in devconfig only, and should be disabled in CMakeLists.txt,
+    # to avoid cross-compilation errors on stations with valgrind installed.
+    option(WITH_VALGRIND "Enable usage of valgrind during unit tests" OFF)
 endif()
 if(WITH_VALGRIND)
     execute_process(COMMAND ${VALGRIND_EXECUTABLE} --tool=helgrind --version

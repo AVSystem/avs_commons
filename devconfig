@@ -21,6 +21,7 @@ cmake -D WITH_EXTRA_WARNINGS=ON \
       -D WITH_INTERNAL_TRACE=ON \
       -D WITH_OPENSSL=ON \
       -D WITH_TEST=ON \
+      -D WITH_VALGRIND=ON \
       -D CMAKE_C_FLAGS=-g \
       -D CMAKE_INSTALL_PREFIX:PATH=/tmp \
       "$@" "$(dirname "$0")" &&
