@@ -327,15 +327,63 @@ static int get_socket_inner_mtu_or_zero(avs_net_abstract_socket_t *sock) {
     }
 }
 
+static int copy_ciphersuites(avs_net_socket_tls_ciphersuites_t *dst,
+                             const avs_net_socket_tls_ciphersuites_t *src) {
+    void *p = NULL;
+
+    if (src->num_ids > 0) {
+        size_t ids_size = src->num_ids * sizeof(src->ids[0]);
+        p = avs_malloc(ids_size);
+        if (!p) {
+            return -1;
+        }
+        memcpy(p, src->ids, ids_size);
+    }
+
+    avs_net_socket_tls_ciphersuites_cleanup(dst);
+    dst->ids = p;
+    dst->num_ids = src->num_ids;
+}
+
+static avs_net_socket_state_t socket_state(avs_net_abstract_socket_t *socket) {
+    avs_net_socket_option_value_t value;
+    int result = avs_net_socket_get_opt(socket, AVS_NET_OPT_STATE, &value);
+    if (result) {
+        return AVS_NET_SOCKET_STATE_CLOSED;
+    } else {
+        return value.state;
+    }
+}
+
 static int set_opt_ssl(avs_net_abstract_socket_t *ssl_socket_,
                        avs_net_socket_opt_key_t option_key,
                        avs_net_socket_opt_value_t option_value) {
     ssl_socket_t *ssl_socket = (ssl_socket_t *) ssl_socket_;
     int retval;
-    WRAP_ERRNO(ssl_socket, retval,
-               avs_net_socket_set_opt(ssl_socket->backend_socket, option_key,
-                                      option_value));
-    return retval;
+
+    switch (option_key) {
+    case AVS_NET_SOCKET_OPT_TLS_CIPHERSUITES:
+        switch (socket_state(ssl_socket_)) {
+            case AVS_NET_SOCKET_STATE_CLOSED:
+            case AVS_NET_SOCKET_STATE_SHUTDOWN:
+            case AVS_NET_SOCKET_STATE_BOUND:
+                // TODO: errno
+                return copy_ciphersuites(&ssl_socket->tls_ciphersuites,
+                                         &option_value->tls_ciphersuites);
+            case AVS_NET_SOCKET_STATE_ACCEPTED:
+            case AVS_NET_SOCKET_STATE_CONNECTED:
+                // disallow changing ciphersuites after handshake
+                // TODO: errno
+                break;
+        }
+        return -1;
+
+    default:
+        WRAP_ERRNO(ssl_socket, retval,
+                   avs_net_socket_set_opt(ssl_socket->backend_socket,
+                                          option_key, option_value));
+        return retval;
+    }
 }
 
 static int get_opt_ssl(avs_net_abstract_socket_t *ssl_socket_,
@@ -371,6 +419,9 @@ static int get_opt_ssl(avs_net_abstract_socket_t *ssl_socket_,
     case AVS_NET_SOCKET_OPT_SESSION_RESUMED:
         out_option_value->flag = is_session_resumed(ssl_socket);
         return 0;
+    case AVS_NET_SOCKET_OPT_TLS_CIPHERSUITES:
+        return copy_ciphersuites(&option_value->tls_ciphersuites,
+                                 &ssl_socket->tls_ciphersuites);
     case AVS_NET_SOCKET_OPT_STATE:
         if (!ssl_socket->backend_socket) {
             out_option_value->state = AVS_NET_SOCKET_STATE_CLOSED;
