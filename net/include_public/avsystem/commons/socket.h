@@ -610,7 +610,7 @@ typedef struct {
 
 static inline void avs_net_socket_tls_ciphersuites_cleanup(
         avs_net_socket_tls_ciphersuites_t *ciphers) {
-    avs_free(&ciphers->ids);
+    avs_free(ciphers->ids);
     ciphers->ids = NULL;
 }
 
