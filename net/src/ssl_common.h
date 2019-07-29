@@ -343,6 +343,7 @@ static int copy_ciphersuites(avs_net_socket_tls_ciphersuites_t *dst,
     avs_net_socket_tls_ciphersuites_cleanup(dst);
     dst->ids = p;
     dst->num_ids = src->num_ids;
+    return 0;
 }
 
 static avs_net_socket_state_t socket_state(avs_net_abstract_socket_t *socket) {
