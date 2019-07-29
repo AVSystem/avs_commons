@@ -346,8 +346,8 @@ static int copy_ciphersuites(avs_net_socket_tls_ciphersuites_t *dst,
 }
 
 static avs_net_socket_state_t socket_state(avs_net_abstract_socket_t *socket) {
-    avs_net_socket_option_value_t value;
-    int result = avs_net_socket_get_opt(socket, AVS_NET_OPT_STATE, &value);
+    avs_net_socket_opt_value_t value;
+    int result = avs_net_socket_get_opt(socket, AVS_NET_SOCKET_OPT_STATE, &value);
     if (result) {
         return AVS_NET_SOCKET_STATE_CLOSED;
     } else {
@@ -368,8 +368,8 @@ static int set_opt_ssl(avs_net_abstract_socket_t *ssl_socket_,
             case AVS_NET_SOCKET_STATE_SHUTDOWN:
             case AVS_NET_SOCKET_STATE_BOUND:
                 // TODO: errno
-                return copy_ciphersuites(&ssl_socket->tls_ciphersuites,
-                                         &option_value->tls_ciphersuites);
+                return copy_ciphersuites(&ssl_socket->enabled_ciphersuites,
+                                         &option_value.tls_ciphersuites);
             case AVS_NET_SOCKET_STATE_ACCEPTED:
             case AVS_NET_SOCKET_STATE_CONNECTED:
                 // disallow changing ciphersuites after handshake
@@ -420,8 +420,8 @@ static int get_opt_ssl(avs_net_abstract_socket_t *ssl_socket_,
         out_option_value->flag = is_session_resumed(ssl_socket);
         return 0;
     case AVS_NET_SOCKET_OPT_TLS_CIPHERSUITES:
-        return copy_ciphersuites(&option_value->tls_ciphersuites,
-                                 &ssl_socket->tls_ciphersuites);
+        return copy_ciphersuites(&out_option_value->tls_ciphersuites,
+                                 &ssl_socket->enabled_ciphersuites);
     case AVS_NET_SOCKET_OPT_STATE:
         if (!ssl_socket->backend_socket) {
             out_option_value->state = AVS_NET_SOCKET_STATE_CLOSED;

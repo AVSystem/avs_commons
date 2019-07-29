@@ -24,6 +24,7 @@
 
 #include <avsystem/commons/defs.h>
 #include <avsystem/commons/time.h>
+#include <avsystem/commons/memory.h>
 
 #ifdef	__cplusplus
 extern "C" {
