@@ -327,22 +327,23 @@ static int get_socket_inner_mtu_or_zero(avs_net_abstract_socket_t *sock) {
     }
 }
 
-static int copy_ciphersuites(avs_net_socket_tls_ciphersuites_t *dst,
-                             const avs_net_socket_tls_ciphersuites_t *src) {
-    void *p = NULL;
+static int copy_ciphersuites(int **dst, const int *src) {
+    size_t num_ids = 0;
+    while (src[num_ids] > 0) {
+        ++num_ids;
+    }
 
-    if (src->num_ids > 0) {
-        size_t ids_size = src->num_ids * sizeof(src->ids[0]);
-        p = avs_malloc(ids_size);
+    int *p = NULL;
+    if (num_ids > 0) {
+        p = (int *) avs_calloc(num_ids + 1, sizeof(src[0]));
         if (!p) {
             return -1;
         }
-        memcpy(p, src->ids, ids_size);
+        memcpy(p, src, num_ids * sizeof(src[0]));
     }
 
-    avs_net_socket_tls_ciphersuites_cleanup(dst);
-    dst->ids = p;
-    dst->num_ids = src->num_ids;
+    avs_free(*dst);
+    *dst = p;
     return 0;
 }
 
@@ -370,7 +371,7 @@ static int set_opt_ssl(avs_net_abstract_socket_t *ssl_socket_,
             case AVS_NET_SOCKET_STATE_BOUND:
                 // TODO: errno
                 return copy_ciphersuites(&ssl_socket->enabled_ciphersuites,
-                                         &option_value.tls_ciphersuites);
+                                         option_value.tls_ciphersuites);
             case AVS_NET_SOCKET_STATE_ACCEPTED:
             case AVS_NET_SOCKET_STATE_CONNECTED:
                 // disallow changing ciphersuites after handshake
@@ -422,7 +423,7 @@ static int get_opt_ssl(avs_net_abstract_socket_t *ssl_socket_,
         return 0;
     case AVS_NET_SOCKET_OPT_TLS_CIPHERSUITES:
         return copy_ciphersuites(&out_option_value->tls_ciphersuites,
-                                 &ssl_socket->enabled_ciphersuites);
+                                 ssl_socket->enabled_ciphersuites);
     case AVS_NET_SOCKET_OPT_STATE:
         if (!ssl_socket->backend_socket) {
             out_option_value->state = AVS_NET_SOCKET_STATE_CLOSED;

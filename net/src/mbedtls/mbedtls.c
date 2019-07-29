@@ -88,10 +88,11 @@ typedef struct {
     avs_net_abstract_socket_t *backend_socket;
     int error_code;
     avs_net_socket_configuration_t backend_configuration;
-    /// Set of ciphersuites configured by user
-    avs_net_socket_tls_ciphersuites_t enabled_ciphersuites;
+    /// Set of ciphersuites configured by user, 0-terminated array or
+    /// AVS_NET_SOCKET_TLS_CIPHERSUITES_ALL
+    int *enabled_ciphersuites;
     /// Subset of @ref ssl_socket_t#enabled_ciphersuites appropriate for
-    /// security mode
+    /// security mode, 0-terminated array
     int *effective_ciphersuites;
 } ssl_socket_t;
 
@@ -275,13 +276,13 @@ static int set_min_ssl_version(mbedtls_ssl_config *config,
 
 #if defined(WITH_X509) || defined(WITH_PSK)
 static bool
-contains_cipher(const avs_net_socket_tls_ciphersuites_t *enabled_ciphers,
+contains_cipher(const int *enabled_ciphers,
                 int cipher) {
-    if (enabled_ciphers->num_ids == 0) {
+    if (enabled_ciphers == AVS_NET_SOCKET_TLS_CIPHERSUITES_ALL) {
         return true;
     } else {
-        for (uint16_t *it = enabled_ciphers->ids; *it; ++it) {
-            if (*it == cipher) {
+        for (; *enabled_ciphers != 0; ++enabled_ciphers) {
+            if (*enabled_ciphers == cipher) {
                 return true;
             }
         }
@@ -290,7 +291,7 @@ contains_cipher(const avs_net_socket_tls_ciphersuites_t *enabled_ciphers,
 }
 
 static void enumerate_ciphersuites(
-        const avs_net_socket_tls_ciphersuites_t *enabled_ciphers,
+        const int *enabled_ciphers,
         int suite,
         void *count) {
     if (contains_cipher(enabled_ciphers, suite)) {
@@ -299,7 +300,7 @@ static void enumerate_ciphersuites(
 }
 
 static void fill_ciphersuites(
-        const avs_net_socket_tls_ciphersuites_t *enabled_ciphers,
+        const int *enabled_ciphers,
         int suite,
         void *out_it) {
     if (contains_cipher(enabled_ciphers, suite)) {
@@ -308,7 +309,7 @@ static void fill_ciphersuites(
 }
 
 typedef void foreach_ciphersuite_cb_t(
-        const avs_net_socket_tls_ciphersuites_t *enabled_ciphers,
+        const int *enabled_ciphers,
         int suite,
         void *arg);
 #endif // defined(WITH_X509) || defined(WITH_PSK)
@@ -316,7 +317,7 @@ typedef void foreach_ciphersuite_cb_t(
 #ifdef WITH_X509
 static void foreach_ciphersuite(
         const int *suites,
-        const avs_net_socket_tls_ciphersuites_t *enabled_ciphers,
+        const int *enabled_ciphers,
         foreach_ciphersuite_cb_t callback,
         void *arg) {
     for (; suites && *suites; ++suites) {
@@ -326,7 +327,7 @@ static void foreach_ciphersuite(
 
 static int *init_cert_ciphersuites(
         const mbedtls_ssl_config *config,
-        const avs_net_socket_tls_ciphersuites_t *enabled_ciphers) {
+        const int *enabled_ciphers) {
     size_t ciphersuite_count = 0;
     const int *all_suites;
     int *suites;
@@ -353,7 +354,7 @@ static uint8_t is_verification_enabled(ssl_socket_t *socket) {
 
 static int initialize_cert_security(ssl_socket_t *socket) {
     if (!(socket->effective_ciphersuites =
-            init_cert_ciphersuites(&socket->config, &socket->enabled_ciphersuites))) {
+            init_cert_ciphersuites(&socket->config, socket->enabled_ciphersuites))) {
         socket->error_code = ENOMEM;
         return -1;
     }
@@ -384,7 +385,7 @@ static int initialize_cert_security(ssl_socket_t *socket) {
 #ifdef WITH_PSK
 static void foreach_psk_ciphersuite(
         const int *suites,
-        const avs_net_socket_tls_ciphersuites_t *enabled_ciphers,
+        const int *enabled_ciphers,
         foreach_ciphersuite_cb_t callback,
         void *arg) {
     for (; suites && *suites; ++suites) {
@@ -398,7 +399,7 @@ static void foreach_psk_ciphersuite(
 
 static int *init_psk_ciphersuites(
         const mbedtls_ssl_config *config,
-        const avs_net_socket_tls_ciphersuites_t *enabled_ciphers) {
+        const int *enabled_ciphers) {
     size_t ciphersuite_count = 0;
     const int *all_suites;
     int *psk_suites;
@@ -421,7 +422,7 @@ static int *init_psk_ciphersuites(
 
 static int initialize_psk_security(ssl_socket_t *socket) {
     if (!(socket->effective_ciphersuites =
-            init_psk_ciphersuites(&socket->config, &socket->enabled_ciphersuites))) {
+            init_psk_ciphersuites(&socket->config, socket->enabled_ciphersuites))) {
         socket->error_code = ENOMEM;
         return -1;
     }

@@ -590,35 +590,9 @@ typedef enum {
 } avs_net_socket_state_t;
 
 /**
- * An array of num_ids ciphersuite IDs, in big endian. For example,
- * TLS_PSK_WITH_AES_128_CCM_8 is represented as 0xC0A8.
- *
- * For a complete list of ciphersuites, see
- * https://www.iana.org/assignments/tls-parameters/tls-parameters.xhtml
- *
- * Note: cipher entries that are unsupported by the (D)TLS backend will be
- * silently ignored. @ref AVS_NET_SOCKET_TLS_CIPHERSUITES_ALL can be used to
- * enable all supported ciphersuites.
- *
- * When returned by @ref avs_net_socket_get_opt call, it has to be deleted with
- * @ref avs_net_socket_tls_ciphersuites_cleanup after use.
- */
-typedef struct {
-    uint16_t *ids;
-    size_t num_ids;
-} avs_net_socket_tls_ciphersuites_t;
-
-static inline void avs_net_socket_tls_ciphersuites_cleanup(
-        avs_net_socket_tls_ciphersuites_t *ciphers) {
-    avs_free(ciphers->ids);
-    ciphers->ids = NULL;
-}
-
-/**
  * A value representing the set of all supported ciphersuites.
  */
-static const avs_net_socket_tls_ciphersuites_t
-AVS_NET_SOCKET_TLS_CIPHERSUITES_ALL = { NULL, 0 };
+static const int *const AVS_NET_SOCKET_TLS_CIPHERSUITES_ALL = NULL;
 
 typedef union {
     avs_time_duration_t recv_timeout;
@@ -628,7 +602,22 @@ typedef union {
     bool flag;
     uint64_t bytes_sent;
     uint64_t bytes_received;
-    avs_net_socket_tls_ciphersuites_t tls_ciphersuites;
+
+    /**
+     * An array of ciphersuite IDs, in big endian, terminated with 0.
+     * For example, TLS_PSK_WITH_AES_128_CCM_8 is represented as 0xC0A8.
+     *
+     * For a complete list of ciphersuites, see
+     * https://www.iana.org/assignments/tls-parameters/tls-parameters.xhtml
+     *
+     * Note: cipher entries that are unsupported by the (D)TLS backend will be
+     * silently ignored. @ref AVS_NET_SOCKET_TLS_CIPHERSUITES_ALL can be used
+     * to enable all supported ciphersuites.
+     *
+     * When returned by @ref avs_net_socket_get_opt call, it has to be deleted
+     * with @ref avs_free after use.
+     */
+    int *tls_ciphersuites;
 } avs_net_socket_opt_value_t;
 
 int avs_net_socket_debug(int value);
