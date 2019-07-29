@@ -422,8 +422,8 @@ static int get_opt_ssl(avs_net_abstract_socket_t *ssl_socket_,
         out_option_value->flag = is_session_resumed(ssl_socket);
         return 0;
     case AVS_NET_SOCKET_OPT_TLS_CIPHERSUITES:
-        return copy_ciphersuites(&out_option_value->tls_ciphersuites,
-                                 ssl_socket->enabled_ciphersuites);
+        out_option_value->tls_ciphersuites = ssl_socket->enabled_ciphersuites;
+        return 0;
     case AVS_NET_SOCKET_OPT_STATE:
         if (!ssl_socket->backend_socket) {
             out_option_value->state = AVS_NET_SOCKET_STATE_CLOSED;

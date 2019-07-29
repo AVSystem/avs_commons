@@ -614,8 +614,12 @@ typedef union {
      * silently ignored. @ref AVS_NET_SOCKET_TLS_CIPHERSUITES_ALL can be used
      * to enable all supported ciphersuites.
      *
-     * When returned by @ref avs_net_socket_get_opt call, it has to be deleted
-     * with @ref avs_free after use.
+     * When returned by @ref avs_net_socket_get_opt call, returns a pointer
+     * with lifetime equal to the socket object.
+     *
+     * When passed to @ref avs_net_socket_set_opt , a copy owned by the socket
+     * object is made, so it is not required for this pointer to be valid after
+     * the call completes.
      */
     int *tls_ciphersuites;
 } avs_net_socket_opt_value_t;
