@@ -829,6 +829,7 @@ static int cleanup_ssl(avs_net_abstract_socket_t **socket_) {
         cleanup_security_cert(&(*socket)->security.cert);
         break;
     }
+    avs_free((*socket)->enabled_ciphersuites);
     avs_free((*socket)->effective_ciphersuites);
 
 #ifdef WITH_PSK
