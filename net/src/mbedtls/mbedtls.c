@@ -289,59 +289,33 @@ contains_cipher(const int *enabled_ciphers,
         return false;
     }
 }
-
-static void enumerate_ciphersuites(
-        const int *enabled_ciphers,
-        int suite,
-        void *count) {
-    if (contains_cipher(enabled_ciphers, suite)) {
-        ++*((size_t *) count);
-    }
-}
-
-static void fill_ciphersuites(
-        const int *enabled_ciphers,
-        int suite,
-        void *out_it) {
-    if (contains_cipher(enabled_ciphers, suite)) {
-        *(*(int **) out_it)++ = suite;
-    }
-}
-
-typedef void foreach_ciphersuite_cb_t(
-        const int *enabled_ciphers,
-        int suite,
-        void *arg);
 #endif // defined(WITH_X509) || defined(WITH_PSK)
 
 #ifdef WITH_X509
-static void foreach_ciphersuite(
-        const int *suites,
-        const int *enabled_ciphers,
-        foreach_ciphersuite_cb_t callback,
-        void *arg) {
-    for (; suites && *suites; ++suites) {
-        callback(enabled_ciphers, *suites, arg);
-    }
-}
-
 static int *init_cert_ciphersuites(
         const mbedtls_ssl_config *config,
         const int *enabled_ciphers) {
-    size_t ciphers_count = 0;
     const int *all_ciphers = config->ciphersuite_list[0];
-    int *ciphers;
-    int *cipher_it;
 
-    foreach_ciphersuite(all_ciphers, enabled_ciphers,
-                        enumerate_ciphersuites, &ciphers_count);
-    if (!(ciphers = (int *) avs_calloc(ciphers_count + 1, sizeof(int)))) {
+    size_t ciphers_count = 0;
+    for (const int *cipher = all_ciphers; cipher && *cipher; ++cipher) {
+        if (contains_cipher(enabled_ciphers, *cipher)) {
+            ++ciphers_count;
+        }
+    }
+
+    int *ciphers = (int *) avs_calloc(ciphers_count + 1, sizeof(int));
+    if (!ciphers) {
         LOG(ERROR, "out of memory");
         return NULL;
     }
-    cipher_it = ciphers;
-    foreach_ciphersuite(all_ciphers, enabled_ciphers,
-                        fill_ciphersuites, &cipher_it);
+
+    int *cipher_it = ciphers;
+    for (const int *cipher = all_ciphers; cipher && *cipher; ++cipher) {
+        if (contains_cipher(enabled_ciphers, *cipher)) {
+            *cipher_it++ = *cipher;
+        }
+    }
 
     return ciphers;
 }
@@ -382,39 +356,36 @@ static int initialize_cert_security(ssl_socket_t *socket) {
 #endif // WITH_X509
 
 #ifdef WITH_PSK
-static void foreach_psk_ciphersuite(
-        const int *all_ciphers,
-        const int *enabled_ciphers,
-        foreach_ciphersuite_cb_t callback,
-        void *arg) {
-    for (const int *cipher = all_ciphers; cipher && *cipher; ++cipher) {
-        const mbedtls_ssl_ciphersuite_t *info =
-                mbedtls_ssl_ciphersuite_from_id(*cipher);
-        if (mbedtls_ssl_ciphersuite_uses_psk(info)) {
-            callback(enabled_ciphers, *cipher, arg);
-        }
-    }
-}
-
 static int *init_psk_ciphersuites(
         const mbedtls_ssl_config *config,
         const int *enabled_ciphers) {
-    size_t ciphers_count = 0;
-    const int *all_ciphers;
-    int *psk_ciphers;
-    int *psk_cipher_it;
+    const int *all_ciphers = config->ciphersuite_list[0];
 
-    all_ciphers = config->ciphersuite_list[0];
-    foreach_psk_ciphersuite(all_ciphers, enabled_ciphers,
-                            enumerate_ciphersuites, &ciphers_count);
-    if (!(psk_ciphers =
-                  (int *) avs_calloc(ciphers_count + 1, sizeof(int)))) {
+    size_t ciphers_count = 0;
+    for (const int *cipher = all_ciphers; cipher && *cipher; ++cipher) {
+        const mbedtls_ssl_ciphersuite_t *info =
+                mbedtls_ssl_ciphersuite_from_id(*cipher);
+        if (mbedtls_ssl_ciphersuite_uses_psk(info)
+                && contains_cipher(enabled_ciphers, *cipher)) {
+            ++ciphers_count;
+        }
+    }
+
+    int *psk_ciphers = (int *) avs_calloc(ciphers_count + 1, sizeof(int));
+    if (!psk_ciphers) {
         LOG(ERROR, "out of memory");
         return NULL;
     }
-    psk_cipher_it = psk_ciphers;
-    foreach_psk_ciphersuite(all_ciphers, enabled_ciphers,
-                            fill_ciphersuites, &psk_cipher_it);
+
+    int *psk_cipher_it = psk_ciphers;
+    for (const int *cipher = all_ciphers; cipher && *cipher; ++cipher) {
+        const mbedtls_ssl_ciphersuite_t *info =
+                mbedtls_ssl_ciphersuite_from_id(*cipher);
+        if (mbedtls_ssl_ciphersuite_uses_psk(info)
+                && contains_cipher(enabled_ciphers, *cipher)) {
+            *psk_cipher_it++ = *cipher;
+        }
+    }
 
     return psk_ciphers;
 }
