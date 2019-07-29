@@ -328,13 +328,13 @@ static int get_socket_inner_mtu_or_zero(avs_net_abstract_socket_t *sock) {
 }
 
 static int copy_ciphersuites(int **dst, const int *src) {
-    size_t num_ids = 0;
-    while (src[num_ids] > 0) {
-        ++num_ids;
-    }
-
     int *p = NULL;
-    if (num_ids > 0) {
+    if (src) {
+        size_t num_ids = 0;
+        while (src[num_ids] > 0) {
+            ++num_ids;
+        }
+
         p = (int *) avs_calloc(num_ids + 1, sizeof(src[0]));
         if (!p) {
             return -1;
