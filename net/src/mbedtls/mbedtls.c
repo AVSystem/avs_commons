@@ -490,20 +490,6 @@ static int configure_ssl(ssl_socket_t *socket,
     mbedtls_ssl_conf_rng(&socket->config,
                          mbedtls_ctr_drbg_random, &AVS_SSL_GLOBAL.rng);
 
-    switch (socket->security_mode) {
-    case AVS_NET_SECURITY_PSK:
-        if (initialize_psk_security(socket)) {
-            return -1;
-        }
-        break;
-    case AVS_NET_SECURITY_CERTIFICATE:
-        initialize_cert_security(socket);
-        break;
-    default:
-        AVS_UNREACHABLE("invalid enum value");
-        return -1;
-    }
-
     const avs_net_dtls_handshake_timeouts_t *dtls_handshake_timeouts =
             configuration->dtls_handshake_timeouts
                     ? configuration->dtls_handshake_timeouts
@@ -594,6 +580,22 @@ static int start_ssl(ssl_socket_t *socket, const char *host) {
         return -1;
     }
     assert(!socket->flags.context_valid);
+
+    switch (socket->security_mode) {
+    case AVS_NET_SECURITY_PSK:
+        if (initialize_psk_security(socket)) {
+            return -1;
+        }
+        break;
+    case AVS_NET_SECURITY_CERTIFICATE:
+        if (initialize_cert_security(socket)) {
+            return -1;
+        }
+        break;
+    default:
+        AVS_UNREACHABLE("invalid enum value");
+        return -1;
+    }
 
     bool restore_session = false;
 #ifdef WITH_TLS_SESSION_PERSISTENCE
