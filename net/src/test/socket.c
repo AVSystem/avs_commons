@@ -92,6 +92,9 @@ run_socket_set_opt_test_cases(avs_socket_t *socket,
         case AVS_NET_SOCKET_OPT_BYTES_RECEIVED:
             opt_val.bytes_received = 321;
             break;
+        case AVS_NET_SOCKET_OPT_TLS_CIPHERSUITES:
+            opt_val.tls_ciphersuites = NULL;
+            break;
         }
 
         if (test_cases[i].expected_result == SUCCESS) {
@@ -322,7 +325,8 @@ AVS_UNIT_TEST(socket, udp_set_opt) {
         {FAIL,    AVS_NET_SOCKET_OPT_INNER_MTU},
         {FAIL,    AVS_NET_SOCKET_OPT_SESSION_RESUMED},
         {FAIL,    AVS_NET_SOCKET_OPT_BYTES_SENT},
-        {FAIL,    AVS_NET_SOCKET_OPT_BYTES_RECEIVED}
+        {FAIL,    AVS_NET_SOCKET_OPT_BYTES_RECEIVED},
+        {FAIL,    AVS_NET_SOCKET_OPT_TLS_CIPHERSUITES}
     };
     run_socket_set_opt_test_cases(socket, test_cases,
                                   AVS_ARRAY_SIZE(test_cases));
@@ -346,7 +350,9 @@ AVS_UNIT_TEST(socket, tcp_set_opt) {
         {FAIL,    AVS_NET_SOCKET_OPT_INNER_MTU},
         {FAIL,    AVS_NET_SOCKET_OPT_SESSION_RESUMED},
         {FAIL,    AVS_NET_SOCKET_OPT_BYTES_SENT},
-        {FAIL,    AVS_NET_SOCKET_OPT_BYTES_RECEIVED}
+        {FAIL,    AVS_NET_SOCKET_OPT_BYTES_RECEIVED},
+        {FAIL,    AVS_NET_SOCKET_OPT_TLS_CIPHERSUITES}
+
     };
     run_socket_set_opt_test_cases(socket, test_cases,
                                   AVS_ARRAY_SIZE(test_cases));
@@ -370,7 +376,9 @@ AVS_UNIT_TEST(socket, ssl_set_opt) {
         {FAIL,    AVS_NET_SOCKET_OPT_INNER_MTU},
         {FAIL,    AVS_NET_SOCKET_OPT_SESSION_RESUMED},
         {FAIL,    AVS_NET_SOCKET_OPT_BYTES_SENT},
-        {FAIL,    AVS_NET_SOCKET_OPT_BYTES_RECEIVED}
+        {FAIL,    AVS_NET_SOCKET_OPT_BYTES_RECEIVED},
+        {SUCCESS, AVS_NET_SOCKET_OPT_TLS_CIPHERSUITES}
+
     };
     run_socket_set_opt_test_cases(socket, test_cases,
                                   AVS_ARRAY_SIZE(test_cases));
@@ -394,7 +402,9 @@ AVS_UNIT_TEST(socket, dtls_set_opt) {
         {FAIL,    AVS_NET_SOCKET_OPT_INNER_MTU},
         {FAIL,    AVS_NET_SOCKET_OPT_SESSION_RESUMED},
         {FAIL,    AVS_NET_SOCKET_OPT_BYTES_SENT},
-        {FAIL,    AVS_NET_SOCKET_OPT_BYTES_RECEIVED}
+        {FAIL,    AVS_NET_SOCKET_OPT_BYTES_RECEIVED},
+        {SUCCESS, AVS_NET_SOCKET_OPT_TLS_CIPHERSUITES}
+
     };
     run_socket_set_opt_test_cases(socket, test_cases,
                                   AVS_ARRAY_SIZE(test_cases));
@@ -421,7 +431,9 @@ AVS_UNIT_TEST(socket, udp_set_opt_after_close) {
         {FAIL,    AVS_NET_SOCKET_OPT_INNER_MTU},
         {FAIL,    AVS_NET_SOCKET_OPT_SESSION_RESUMED},
         {FAIL,    AVS_NET_SOCKET_OPT_BYTES_SENT},
-        {FAIL,    AVS_NET_SOCKET_OPT_BYTES_RECEIVED}
+        {FAIL,    AVS_NET_SOCKET_OPT_BYTES_RECEIVED},
+        {FAIL,    AVS_NET_SOCKET_OPT_TLS_CIPHERSUITES}
+
     };
     run_socket_set_opt_test_cases(socket, test_cases,
                                   AVS_ARRAY_SIZE(test_cases));
@@ -446,7 +458,8 @@ AVS_UNIT_TEST(socket, tcp_set_opt_after_close) {
         {FAIL,    AVS_NET_SOCKET_OPT_INNER_MTU},
         {FAIL,    AVS_NET_SOCKET_OPT_SESSION_RESUMED},
         {FAIL,    AVS_NET_SOCKET_OPT_BYTES_SENT},
-        {FAIL,    AVS_NET_SOCKET_OPT_BYTES_RECEIVED}
+        {FAIL,    AVS_NET_SOCKET_OPT_BYTES_RECEIVED},
+        {FAIL,    AVS_NET_SOCKET_OPT_TLS_CIPHERSUITES}
     };
     run_socket_set_opt_test_cases(socket, test_cases,
                                   AVS_ARRAY_SIZE(test_cases));
@@ -471,7 +484,9 @@ AVS_UNIT_TEST(socket, ssl_set_opt_after_close) {
         {FAIL,    AVS_NET_SOCKET_OPT_INNER_MTU},
         {FAIL,    AVS_NET_SOCKET_OPT_SESSION_RESUMED},
         {FAIL,    AVS_NET_SOCKET_OPT_BYTES_SENT},
-        {FAIL,    AVS_NET_SOCKET_OPT_BYTES_RECEIVED}
+        {FAIL,    AVS_NET_SOCKET_OPT_BYTES_RECEIVED},
+        {SUCCESS, AVS_NET_SOCKET_OPT_TLS_CIPHERSUITES}
+
     };
     run_socket_set_opt_test_cases(socket, test_cases,
                                   AVS_ARRAY_SIZE(test_cases));
@@ -496,7 +511,9 @@ AVS_UNIT_TEST(socket, dtls_set_opt_after_close) {
         {FAIL,    AVS_NET_SOCKET_OPT_INNER_MTU},
         {FAIL,    AVS_NET_SOCKET_OPT_SESSION_RESUMED},
         {FAIL,    AVS_NET_SOCKET_OPT_BYTES_SENT},
-        {FAIL,    AVS_NET_SOCKET_OPT_BYTES_RECEIVED}
+        {FAIL,    AVS_NET_SOCKET_OPT_BYTES_RECEIVED},
+        {SUCCESS, AVS_NET_SOCKET_OPT_TLS_CIPHERSUITES}
+
     };
     run_socket_set_opt_test_cases(socket, test_cases,
                                   AVS_ARRAY_SIZE(test_cases));
