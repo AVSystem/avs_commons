@@ -328,23 +328,22 @@ static void foreach_ciphersuite(
 static int *init_cert_ciphersuites(
         const mbedtls_ssl_config *config,
         const int *enabled_ciphers) {
-    size_t ciphersuite_count = 0;
-    const int *all_suites;
-    int *suites;
-    int *suite_it;
+    size_t ciphers_count = 0;
+    const int *all_ciphers = config->ciphersuite_list[0];
+    int *ciphers;
+    int *cipher_it;
 
-    all_suites = config->ciphersuite_list[0];
-    foreach_ciphersuite(all_suites, enabled_ciphers,
-                        enumerate_ciphersuites, &ciphersuite_count);
-    if (!(suites = (int *) avs_calloc(ciphersuite_count + 1, sizeof(int)))) {
+    foreach_ciphersuite(all_ciphers, enabled_ciphers,
+                        enumerate_ciphersuites, &ciphers_count);
+    if (!(ciphers = (int *) avs_calloc(ciphers_count + 1, sizeof(int)))) {
         LOG(ERROR, "out of memory");
         return NULL;
     }
-    suite_it = suites;
-    foreach_ciphersuite(all_suites, enabled_ciphers,
-                        fill_ciphersuites, &suite_it);
+    cipher_it = ciphers;
+    foreach_ciphersuite(all_ciphers, enabled_ciphers,
+                        fill_ciphersuites, &cipher_it);
 
-    return suites;
+    return ciphers;
 }
 
 static uint8_t is_verification_enabled(ssl_socket_t *socket) {
@@ -384,15 +383,15 @@ static int initialize_cert_security(ssl_socket_t *socket) {
 
 #ifdef WITH_PSK
 static void foreach_psk_ciphersuite(
-        const int *suites,
+        const int *all_ciphers,
         const int *enabled_ciphers,
         foreach_ciphersuite_cb_t callback,
         void *arg) {
-    for (; suites && *suites; ++suites) {
+    for (const int *cipher = all_ciphers; cipher && *cipher; ++cipher) {
         const mbedtls_ssl_ciphersuite_t *info =
-                mbedtls_ssl_ciphersuite_from_id(*suites);
+                mbedtls_ssl_ciphersuite_from_id(*cipher);
         if (mbedtls_ssl_ciphersuite_uses_psk(info)) {
-            callback(enabled_ciphers, *suites, arg);
+            callback(enabled_ciphers, *cipher, arg);
         }
     }
 }
@@ -400,24 +399,24 @@ static void foreach_psk_ciphersuite(
 static int *init_psk_ciphersuites(
         const mbedtls_ssl_config *config,
         const int *enabled_ciphers) {
-    size_t ciphersuite_count = 0;
-    const int *all_suites;
-    int *psk_suites;
-    int *psk_suite_it;
+    size_t ciphers_count = 0;
+    const int *all_ciphers;
+    int *psk_ciphers;
+    int *psk_cipher_it;
 
-    all_suites = config->ciphersuite_list[0];
-    foreach_psk_ciphersuite(all_suites, enabled_ciphers,
-                            enumerate_ciphersuites, &ciphersuite_count);
-    if (!(psk_suites =
-                  (int *) avs_calloc(ciphersuite_count + 1, sizeof(int)))) {
+    all_ciphers = config->ciphersuite_list[0];
+    foreach_psk_ciphersuite(all_ciphers, enabled_ciphers,
+                            enumerate_ciphersuites, &ciphers_count);
+    if (!(psk_ciphers =
+                  (int *) avs_calloc(ciphers_count + 1, sizeof(int)))) {
         LOG(ERROR, "out of memory");
         return NULL;
     }
-    psk_suite_it = psk_suites;
-    foreach_psk_ciphersuite(all_suites, enabled_ciphers,
-                            fill_ciphersuites, &psk_suite_it);
+    psk_cipher_it = psk_ciphers;
+    foreach_psk_ciphersuite(all_ciphers, enabled_ciphers,
+                            fill_ciphersuites, &psk_cipher_it);
 
-    return psk_suites;
+    return psk_ciphers;
 }
 
 static int initialize_psk_security(ssl_socket_t *socket) {
