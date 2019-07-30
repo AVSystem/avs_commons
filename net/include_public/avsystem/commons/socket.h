@@ -621,7 +621,7 @@ typedef union {
      * object is made, so it is not required for this pointer to be valid after
      * the call completes.
      */
-    int *tls_ciphersuites;
+    const int *tls_ciphersuites;
 } avs_net_socket_opt_value_t;
 
 int avs_net_socket_debug(int value);
