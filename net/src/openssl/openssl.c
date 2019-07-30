@@ -36,6 +36,7 @@
 #include <avsystem/commons/errno.h>
 #include <avsystem/commons/memory.h>
 #include <avsystem/commons/time.h>
+#include <avsystem/commons/stream/stream_membuf.h>
 
 #include "../global.h"
 #include "../net_impl.h"
@@ -90,6 +91,10 @@ typedef struct {
 #ifdef WITH_PSK
     avs_net_owned_psk_t psk;
 #endif
+
+    /// Set of ciphersuites configured by user, 0-terminated array or
+    /// AVS_NET_SOCKET_TLS_CIPHERSUITES_ALL
+    int *enabled_ciphersuites;
 } ssl_socket_t;
 
 #define NET_SSL_COMMON_INTERNALS
@@ -609,9 +614,87 @@ static int ssl_handshake(ssl_socket_t *socket) {
 #define SSL_get_app_data @@@@@
 #endif
 
+static int configure_cipher_list(ssl_socket_t *socket,
+                                 const char *cipher_list) {
+    static const char *DEFAULT_OPENSSL_CIPHER_LIST = "DEFAULT";
+
+    if (SSL_CTX_set_cipher_list(socket->ctx, cipher_list)) {
+        return 0;
+    }
+
+    LOG(WARNING, "could not set cipher list to %s, using %s",
+        cipher_list, DEFAULT_OPENSSL_CIPHER_LIST);
+    log_openssl_error();
+
+    if (SSL_CTX_set_cipher_list(socket->ctx, DEFAULT_OPENSSL_CIPHER_LIST)) {
+        return 0;
+    }
+
+    LOG(ERROR, "could not set cipher list to %s", DEFAULT_OPENSSL_CIPHER_LIST);
+    log_openssl_error();
+    return -1;
+}
+
+static char *ids_to_cipher_list(const int *ids) {
+    if (!ids) {
+        return NULL;
+    }
+
+    avs_stream_t *stream = avs_stream_membuf_create();
+    if (!stream) {
+        return NULL;
+    }
+
+    bool first = true;
+    int result = 0;
+
+    for (; !result && *ids; ++ids) {
+        const EVP_CIPHER *cipher = EVP_get_cipherbynid(*ids);
+        if (!cipher) {
+            LOG(DEBUG, "ignoring unsupported cipher ID: 0x%04x", *ids);
+            continue;
+        }
+
+        if (first) {
+            first = false;
+        } else {
+            result = avs_stream_write(stream, ":", 1);
+        }
+
+        if (!result) {
+            const char *name = EVP_CIPHER_name(cipher);
+            result = avs_stream_write(stream, name, strlen(name));
+        }
+    }
+
+    void *cipher_list = NULL;
+    if (result
+            || (result = avs_stream_write(stream, "", 1))
+            || (result = avs_stream_membuf_take_ownership(stream, &cipher_list, NULL))) {
+        avs_stream_cleanup(&stream);
+        return NULL;
+    }
+
+    return (char *) cipher_list;
+}
+
 static int start_ssl(ssl_socket_t *socket, const char *host) {
     BIO *bio = NULL;
     LOG(TRACE, "start_ssl(socket=%p)", (void *) socket);
+
+    if (socket->enabled_ciphersuites) {
+        char *ciphersuites_string = ids_to_cipher_list(socket->enabled_ciphersuites);
+        if (!ciphersuites_string) {
+            socket->error_code = ENOMEM;
+            return -1;
+        }
+
+        int result = configure_cipher_list(socket, ciphersuites_string);
+        avs_free(ciphersuites_string);
+        if (result) {
+            return result;
+        }
+    }
 
     socket->ssl = SSL_new(socket->ctx);
     if (!socket->ssl) {
@@ -759,29 +842,6 @@ static int configure_ssl_psk(ssl_socket_t *socket,
     return -1;
 }
 #endif
-
-#ifdef WITH_OPENSSL_CUSTOM_CIPHERS
-static int configure_cipher_list(ssl_socket_t *socket,
-                                 const char *cipher_list) {
-    static const char *DEFAULT_OPENSSL_CIPHER_LIST = "DEFAULT";
-
-    if (SSL_CTX_set_cipher_list(socket->ctx, cipher_list)) {
-        return 0;
-    }
-
-    LOG(WARNING, "could not set cipher list to %s, using %s",
-        cipher_list, DEFAULT_OPENSSL_CIPHER_LIST);
-    log_openssl_error();
-
-    if (SSL_CTX_set_cipher_list(socket->ctx, DEFAULT_OPENSSL_CIPHER_LIST)) {
-        return 0;
-    }
-
-    LOG(ERROR, "could not set cipher list to %s", DEFAULT_OPENSSL_CIPHER_LIST);
-    log_openssl_error();
-    return -1;
-}
-#endif /* WITH_OPENSSL_CUSTOM_CIPHERS */
 
 static int configure_ssl(ssl_socket_t *socket,
                          const avs_net_ssl_configuration_t *configuration) {
