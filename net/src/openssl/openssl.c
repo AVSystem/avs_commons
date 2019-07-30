@@ -618,6 +618,7 @@ static int configure_cipher_list(ssl_socket_t *socket,
                                  const char *cipher_list) {
     static const char *DEFAULT_OPENSSL_CIPHER_LIST = "DEFAULT";
 
+    LOG(DEBUG, "cipher list: %s", cipher_list);
     if (SSL_CTX_set_cipher_list(socket->ctx, cipher_list)) {
         return 0;
     }
@@ -635,7 +636,8 @@ static int configure_cipher_list(ssl_socket_t *socket,
     return -1;
 }
 
-static char *ids_to_cipher_list(const int *ids) {
+static char *ids_to_cipher_list(ssl_socket_t *socket,
+                                const int *ids) {
     if (!ids) {
         return NULL;
     }
@@ -649,7 +651,16 @@ static char *ids_to_cipher_list(const int *ids) {
     int result = 0;
 
     for (; !result && *ids; ++ids) {
-        const EVP_CIPHER *cipher = EVP_get_cipherbynid(*ids);
+        if (*ids > UINT16_MAX) {
+            LOG(DEBUG, "ignoring unexpectedly large cipher ID: 0x%x", *ids);
+            continue;
+        }
+
+        unsigned char id_as_chars[] = {
+            (unsigned char) (((*ids) >> 8) & 0xFF),
+            (unsigned char) ((*ids) & 0xFF)
+        };
+        const SSL_CIPHER *cipher = SSL_CIPHER_find(socket->ssl, id_as_chars);
         if (!cipher) {
             LOG(DEBUG, "ignoring unsupported cipher ID: 0x%04x", *ids);
             continue;
@@ -662,7 +673,7 @@ static char *ids_to_cipher_list(const int *ids) {
         }
 
         if (!result) {
-            const char *name = EVP_CIPHER_name(cipher);
+            const char *name = SSL_CIPHER_get_name(cipher);
             result = avs_stream_write(stream, name, strlen(name));
         }
     }
@@ -682,8 +693,15 @@ static int start_ssl(ssl_socket_t *socket, const char *host) {
     BIO *bio = NULL;
     LOG(TRACE, "start_ssl(socket=%p)", (void *) socket);
 
+    socket->ssl = SSL_new(socket->ctx);
+    if (!socket->ssl) {
+        socket->error_code = ENOMEM;
+        return -1;
+    }
+    SSL_set_app_data(socket->ssl, socket);
+
     if (socket->enabled_ciphersuites) {
-        char *ciphersuites_string = ids_to_cipher_list(socket->enabled_ciphersuites);
+        char *ciphersuites_string = ids_to_cipher_list(socket, socket->enabled_ciphersuites);
         if (!ciphersuites_string) {
             socket->error_code = ENOMEM;
             return -1;
@@ -695,13 +713,6 @@ static int start_ssl(ssl_socket_t *socket, const char *host) {
             return result;
         }
     }
-
-    socket->ssl = SSL_new(socket->ctx);
-    if (!socket->ssl) {
-        socket->error_code = ENOMEM;
-        return -1;
-    }
-    SSL_set_app_data(socket->ssl, socket);
 
 #ifdef SSL_MODE_AUTO_RETRY
     SSL_set_mode(socket->ssl, SSL_MODE_AUTO_RETRY);
