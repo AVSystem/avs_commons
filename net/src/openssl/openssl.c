@@ -657,7 +657,7 @@ static char *ids_to_cipher_list(ssl_socket_t *socket,
         }
 
         unsigned char id_as_chars[] = {
-            (unsigned char) (((*ids) >> 8) & 0xFF),
+            (unsigned char) ((*ids) >> 8),
             (unsigned char) ((*ids) & 0xFF)
         };
         const SSL_CIPHER *cipher = SSL_CIPHER_find(socket->ssl, id_as_chars);
