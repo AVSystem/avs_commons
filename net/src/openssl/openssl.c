@@ -876,12 +876,6 @@ static int configure_ssl(ssl_socket_t *socket,
     SSL_CTX_set_options(socket->ctx, SSL_OP_ALL | SSL_OP_NO_SSLv2);
     SSL_CTX_set_verify(socket->ctx, SSL_VERIFY_NONE, NULL);
 
-#ifdef WITH_OPENSSL_CUSTOM_CIPHERS
-    if (configure_cipher_list(socket, WITH_OPENSSL_CUSTOM_CIPHERS)) {
-        return -1;
-    }
-#endif /* WITH_OPENSSL_CUSTOM_CIPHERS */
-
     switch (configuration->security.mode) {
     case AVS_NET_SECURITY_PSK:
         if (configure_ssl_psk(socket, &configuration->security.data.psk)) {
