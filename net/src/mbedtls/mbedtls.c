@@ -292,10 +292,8 @@ contains_cipher(const int *enabled_ciphers,
 #endif // defined(WITH_X509) || defined(WITH_PSK)
 
 #ifdef WITH_X509
-static int *init_cert_ciphersuites(
-        const mbedtls_ssl_config *config,
-        const int *enabled_ciphers) {
-    const int *all_ciphers = config->ciphersuite_list[0];
+static int *init_cert_ciphersuites(const int *enabled_ciphers) {
+    const int *all_ciphers = mbedtls_ssl_list_ciphersuites();
 
     size_t ciphers_count = 0;
     for (const int *cipher = all_ciphers; cipher && *cipher; ++cipher) {
@@ -326,8 +324,9 @@ static uint8_t is_verification_enabled(ssl_socket_t *socket) {
 }
 
 static int initialize_cert_security(ssl_socket_t *socket) {
+    avs_free(socket->effective_ciphersuites);
     if (!(socket->effective_ciphersuites =
-            init_cert_ciphersuites(&socket->config, socket->enabled_ciphersuites))) {
+            init_cert_ciphersuites(socket->enabled_ciphersuites))) {
         socket->error_code = ENOMEM;
         return -1;
     }
@@ -356,10 +355,8 @@ static int initialize_cert_security(ssl_socket_t *socket) {
 #endif // WITH_X509
 
 #ifdef WITH_PSK
-static int *init_psk_ciphersuites(
-        const mbedtls_ssl_config *config,
-        const int *enabled_ciphers) {
-    const int *all_ciphers = config->ciphersuite_list[0];
+static int *init_psk_ciphersuites(const int *enabled_ciphers) {
+    const int *all_ciphers = mbedtls_ssl_list_ciphersuites();
 
     size_t ciphers_count = 0;
     for (const int *cipher = all_ciphers; cipher && *cipher; ++cipher) {
@@ -391,8 +388,9 @@ static int *init_psk_ciphersuites(
 }
 
 static int initialize_psk_security(ssl_socket_t *socket) {
+    avs_free(socket->effective_ciphersuites);
     if (!(socket->effective_ciphersuites =
-            init_psk_ciphersuites(&socket->config, socket->enabled_ciphersuites))) {
+            init_psk_ciphersuites(socket->enabled_ciphersuites))) {
         socket->error_code = ENOMEM;
         return -1;
     }
