@@ -681,7 +681,8 @@ static char *ids_to_cipher_list(ssl_socket_t *socket,
     void *cipher_list = NULL;
     if (result
             || (result = avs_stream_write(stream, "", 1))
-            || (result = avs_stream_membuf_take_ownership(stream, &cipher_list, NULL))) {
+            || (result = avs_stream_membuf_take_ownership(stream, &cipher_list,
+                                                          NULL))) {
         avs_stream_cleanup(&stream);
         return NULL;
     }
@@ -701,7 +702,8 @@ static int start_ssl(ssl_socket_t *socket, const char *host) {
     SSL_set_app_data(socket->ssl, socket);
 
     if (socket->enabled_ciphersuites) {
-        char *ciphersuites_string = ids_to_cipher_list(socket, socket->enabled_ciphersuites);
+        char *ciphersuites_string =
+                ids_to_cipher_list(socket, socket->enabled_ciphersuites);
         if (!ciphersuites_string) {
             socket->error_code = ENOMEM;
             return -1;
