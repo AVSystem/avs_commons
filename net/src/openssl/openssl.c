@@ -616,22 +616,12 @@ static int ssl_handshake(ssl_socket_t *socket) {
 
 static int configure_cipher_list(ssl_socket_t *socket,
                                  const char *cipher_list) {
-    static const char *DEFAULT_OPENSSL_CIPHER_LIST = "DEFAULT";
-
     LOG(DEBUG, "cipher list: %s", cipher_list);
     if (SSL_CTX_set_cipher_list(socket->ctx, cipher_list)) {
         return 0;
     }
 
-    LOG(WARNING, "could not set cipher list to %s, using %s",
-        cipher_list, DEFAULT_OPENSSL_CIPHER_LIST);
-    log_openssl_error();
-
-    if (SSL_CTX_set_cipher_list(socket->ctx, DEFAULT_OPENSSL_CIPHER_LIST)) {
-        return 0;
-    }
-
-    LOG(ERROR, "could not set cipher list to %s", DEFAULT_OPENSSL_CIPHER_LIST);
+    LOG(WARNING, "could not set cipher list to %s", cipher_list);
     log_openssl_error();
     return -1;
 }
