@@ -92,9 +92,8 @@ typedef struct {
     avs_net_owned_psk_t psk;
 #endif
 
-    /// Set of ciphersuites configured by user, 0-terminated array or
-    /// AVS_NET_SOCKET_TLS_CIPHERSUITES_ALL
-    int *enabled_ciphersuites;
+    /// Set of ciphersuites configured by user
+    avs_net_socket_tls_ciphersuites_t enabled_ciphersuites;
 } ssl_socket_t;
 
 #define NET_SSL_COMMON_INTERNALS
@@ -626,9 +625,10 @@ static int configure_cipher_list(ssl_socket_t *socket,
     return -1;
 }
 
-static char *ids_to_cipher_list(ssl_socket_t *socket,
-                                const int *ids) {
-    if (!ids) {
+static char *ids_to_cipher_list(
+        ssl_socket_t *socket,
+        const avs_net_socket_tls_ciphersuites_t *suites) {
+    if (!suites) {
         return NULL;
     }
 
@@ -640,19 +640,21 @@ static char *ids_to_cipher_list(ssl_socket_t *socket,
     bool first = true;
     int result = 0;
 
-    for (; !result && *ids; ++ids) {
-        if (*ids > UINT16_MAX) {
-            LOG(DEBUG, "ignoring unexpectedly large cipher ID: 0x%x", *ids);
+    for (size_t i = 0; i < suites->num_ids; ++i) {
+        if (suites->ids[i] > UINT16_MAX) {
+            LOG(DEBUG, "ignoring unexpectedly large cipher ID: 0x%x",
+                suites->ids[i]);
             continue;
         }
 
         unsigned char id_as_chars[] = {
-            (unsigned char) ((*ids) >> 8),
-            (unsigned char) ((*ids) & 0xFF)
+            (unsigned char) ((suites->ids[i]) >> 8),
+            (unsigned char) ((suites->ids[i]) & 0xFF)
         };
         const SSL_CIPHER *cipher = SSL_CIPHER_find(socket->ssl, id_as_chars);
         if (!cipher) {
-            LOG(DEBUG, "ignoring unsupported cipher ID: 0x%04x", *ids);
+            LOG(DEBUG, "ignoring unsupported cipher ID: 0x%04x",
+                suites->ids[i]);
             continue;
         }
 
@@ -688,9 +690,9 @@ static int start_ssl(ssl_socket_t *socket, const char *host) {
     }
     SSL_set_app_data(socket->ssl, socket);
 
-    if (socket->enabled_ciphersuites) {
+    if (socket->enabled_ciphersuites.ids != NULL) {
         char *ciphersuites_string =
-                ids_to_cipher_list(socket, socket->enabled_ciphersuites);
+                ids_to_cipher_list(socket, &socket->enabled_ciphersuites);
         if (!ciphersuites_string) {
             socket->error_code = ENOMEM;
             return -1;

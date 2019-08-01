@@ -589,10 +589,21 @@ typedef enum {
     AVS_NET_SOCKET_STATE_CONNECTED
 } avs_net_socket_state_t;
 
+typedef struct {
+    /** Array of ciphersuite IDs, or NULL to enable all ciphers */
+    uint32_t *ids;
+    /** Number of elements in @ref avs_net_socket_tls_ciphersuites_t#ids */
+    size_t num_ids;
+} avs_net_socket_tls_ciphersuites_t;
+
 /**
  * A value representing the set of all supported ciphersuites.
  */
-static const int *const AVS_NET_SOCKET_TLS_CIPHERSUITES_ALL = NULL;
+static const avs_net_socket_tls_ciphersuites_t
+AVS_NET_SOCKET_TLS_CIPHERSUITES_ALL = {
+    .ids = NULL,
+    .num_ids = 0
+};
 
 typedef union {
     avs_time_duration_t recv_timeout;
@@ -621,7 +632,7 @@ typedef union {
      * object is made, so it is not required for this pointer to be valid after
      * the call completes.
      */
-    const int *tls_ciphersuites;
+    const avs_net_socket_tls_ciphersuites_t *tls_ciphersuites;
 } avs_net_socket_opt_value_t;
 
 int avs_net_socket_debug(int value);
