@@ -669,14 +669,10 @@ static char *ids_to_cipher_list(ssl_socket_t *socket,
     }
 
     void *cipher_list = NULL;
-    if (!result) {
-        (void) ((result = avs_stream_write(stream, "", 1))
-                || (result = avs_stream_membuf_take_ownership(stream,
-                                                              &cipher_list,
-                                                              NULL)));
-        cipher_list = NULL;
-    }
-
+    (void) (result
+            || (result = avs_stream_write(stream, "", 1))
+            || (result = avs_stream_membuf_take_ownership(stream, &cipher_list,
+                                                          NULL)));
     avs_stream_cleanup(&stream);
     return (char *) cipher_list;
 }
