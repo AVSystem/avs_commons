@@ -277,7 +277,7 @@ static int set_min_ssl_version(mbedtls_ssl_config *config,
 static bool
 contains_cipher(const avs_net_socket_tls_ciphersuites_t *enabled_ciphers,
                 int cipher) {
-    if (enabled_ciphers->ids) {
+    if (!enabled_ciphers->ids) {
         return true;
     } else {
         for (size_t i = 0; i < enabled_ciphers->num_ids; ++i) {
