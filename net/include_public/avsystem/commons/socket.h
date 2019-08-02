@@ -599,11 +599,7 @@ typedef struct {
 /**
  * A value representing the set of all supported ciphersuites.
  */
-static const avs_net_socket_tls_ciphersuites_t
-AVS_NET_SOCKET_TLS_CIPHERSUITES_ALL = {
-    .ids = NULL,
-    .num_ids = 0
-};
+#define AVS_NET_SOCKET_TLS_CIPHERSUITES_ALL NULL
 
 typedef union {
     avs_time_duration_t recv_timeout;

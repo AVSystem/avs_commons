@@ -329,8 +329,9 @@ static int get_socket_inner_mtu_or_zero(avs_net_abstract_socket_t *sock) {
 
 static int replace_ciphersuites(avs_net_socket_tls_ciphersuites_t *dst,
                                 const avs_net_socket_tls_ciphersuites_t *src) {
+    // note: NULL src here means "all ciphers enabled"
     uint32_t *p = NULL;
-    if (src->ids) {
+    if (src && src->ids) {
         p = (uint32_t *) avs_malloc(src->num_ids * sizeof(*p));
         if (!p) {
             return -1;
@@ -341,7 +342,7 @@ static int replace_ciphersuites(avs_net_socket_tls_ciphersuites_t *dst,
     avs_free(dst->ids);
     *dst = (avs_net_socket_tls_ciphersuites_t) {
         .ids = p,
-        .num_ids = src->num_ids
+        .num_ids = src ? src->num_ids : 0
     };
     return 0;
 }
