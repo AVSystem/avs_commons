@@ -615,8 +615,8 @@ typedef union {
     uint64_t bytes_received;
 
     /**
-     * An array of ciphersuite IDs, in big endian, terminated with 0.
-     * For example, TLS_PSK_WITH_AES_128_CCM_8 is represented as 0xC0A8.
+     * An array of ciphersuite IDs, in big endian. For example,
+     * TLS_PSK_WITH_AES_128_CCM_8 is represented as 0xC0A8.
      *
      * For a complete list of ciphersuites, see
      * https://www.iana.org/assignments/tls-parameters/tls-parameters.xhtml
