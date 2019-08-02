@@ -618,8 +618,8 @@ typedef union {
      * https://www.iana.org/assignments/tls-parameters/tls-parameters.xhtml
      *
      * Note: cipher entries that are unsupported by the (D)TLS backend will be
-     * silently ignored. @ref AVS_NET_SOCKET_TLS_CIPHERSUITES_ALL can be used
-     * to enable all supported ciphersuites.
+     * silently ignored. @ref AVS_NET_SOCKET_TLS_CIPHERSUITES_ALL or an empty
+     * ciphersuite list can be used to enable all supported ciphersuites.
      *
      * When returned by @ref avs_net_socket_get_opt call, returns a pointer
      * with lifetime equal to the socket object.
