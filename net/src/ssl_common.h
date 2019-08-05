@@ -327,23 +327,23 @@ static int get_socket_inner_mtu_or_zero(avs_net_abstract_socket_t *sock) {
     }
 }
 
-static int replace_ciphersuites(int **dst, const int *src) {
-    int *p = NULL;
-    if (src) {
-        size_t num_ids = 0;
-        while (src[num_ids] > 0) {
-            ++num_ids;
-        }
-
-        p = (int *) avs_calloc(num_ids + 1, sizeof(src[0]));
+static int replace_ciphersuites(avs_net_socket_tls_ciphersuites_t *dst,
+                                const avs_net_socket_tls_ciphersuites_t *src) {
+    // note: NULL src here means "all ciphers enabled"
+    uint32_t *p = NULL;
+    if (src && src->ids) {
+        p = (uint32_t *) avs_malloc(src->num_ids * sizeof(*p));
         if (!p) {
             return -1;
         }
-        memcpy(p, src, num_ids * sizeof(src[0]));
+        memcpy(p, src->ids, src->num_ids * sizeof(*p));
     }
 
-    avs_free(*dst);
-    *dst = p;
+    avs_free(dst->ids);
+    *dst = (avs_net_socket_tls_ciphersuites_t) {
+        .ids = p,
+        .num_ids = src ? src->num_ids : 0
+    };
     return 0;
 }
 
@@ -426,7 +426,7 @@ static int get_opt_ssl(avs_net_abstract_socket_t *ssl_socket_,
         out_option_value->flag = is_session_resumed(ssl_socket);
         return 0;
     case AVS_NET_SOCKET_OPT_TLS_CIPHERSUITES:
-        out_option_value->tls_ciphersuites = ssl_socket->enabled_ciphersuites;
+        out_option_value->tls_ciphersuites = &ssl_socket->enabled_ciphersuites;
         return 0;
     case AVS_NET_SOCKET_OPT_STATE:
         if (!ssl_socket->backend_socket) {

@@ -88,9 +88,8 @@ typedef struct {
     avs_net_abstract_socket_t *backend_socket;
     int error_code;
     avs_net_socket_configuration_t backend_configuration;
-    /// Set of ciphersuites configured by user, 0-terminated array or
-    /// AVS_NET_SOCKET_TLS_CIPHERSUITES_ALL
-    int *enabled_ciphersuites;
+    /// Set of ciphersuites configured by user
+    avs_net_socket_tls_ciphersuites_t enabled_ciphersuites;
     /// Subset of @ref ssl_socket_t#enabled_ciphersuites appropriate for
     /// security mode, 0-terminated array
     int *effective_ciphersuites;
@@ -276,13 +275,13 @@ static int set_min_ssl_version(mbedtls_ssl_config *config,
 
 #if defined(WITH_X509) || defined(WITH_PSK)
 static bool
-contains_cipher(const int *enabled_ciphers,
+contains_cipher(const avs_net_socket_tls_ciphersuites_t *enabled_ciphers,
                 int cipher) {
-    if (enabled_ciphers == AVS_NET_SOCKET_TLS_CIPHERSUITES_ALL) {
+    if (!enabled_ciphers->ids) {
         return true;
     } else {
-        for (; *enabled_ciphers != 0; ++enabled_ciphers) {
-            if (*enabled_ciphers == cipher) {
+        for (size_t i = 0; i < enabled_ciphers->num_ids; ++i) {
+            if (enabled_ciphers->ids[i] == (uint32_t) cipher) {
                 return true;
             }
         }
@@ -292,7 +291,8 @@ contains_cipher(const int *enabled_ciphers,
 #endif // defined(WITH_X509) || defined(WITH_PSK)
 
 #ifdef WITH_X509
-static int *init_cert_ciphersuites(const int *enabled_ciphers) {
+static int *init_cert_ciphersuites(
+        const avs_net_socket_tls_ciphersuites_t *enabled_ciphers) {
     const int *all_ciphers = mbedtls_ssl_list_ciphersuites();
 
     size_t ciphers_count = 0;
@@ -326,7 +326,7 @@ static uint8_t is_verification_enabled(ssl_socket_t *socket) {
 static int initialize_cert_security(ssl_socket_t *socket) {
     avs_free(socket->effective_ciphersuites);
     if (!(socket->effective_ciphersuites =
-            init_cert_ciphersuites(socket->enabled_ciphersuites))) {
+            init_cert_ciphersuites(&socket->enabled_ciphersuites))) {
         socket->error_code = ENOMEM;
         return -1;
     }
@@ -355,7 +355,8 @@ static int initialize_cert_security(ssl_socket_t *socket) {
 #endif // WITH_X509
 
 #ifdef WITH_PSK
-static int *init_psk_ciphersuites(const int *enabled_ciphers) {
+static int *init_psk_ciphersuites(
+        const avs_net_socket_tls_ciphersuites_t *enabled_ciphers) {
     const int *all_ciphers = mbedtls_ssl_list_ciphersuites();
 
     size_t ciphers_count = 0;
@@ -390,7 +391,7 @@ static int *init_psk_ciphersuites(const int *enabled_ciphers) {
 static int initialize_psk_security(ssl_socket_t *socket) {
     avs_free(socket->effective_ciphersuites);
     if (!(socket->effective_ciphersuites =
-            init_psk_ciphersuites(socket->enabled_ciphersuites))) {
+            init_psk_ciphersuites(&socket->enabled_ciphersuites))) {
         socket->error_code = ENOMEM;
         return -1;
     }
@@ -827,7 +828,7 @@ static int cleanup_ssl(avs_net_abstract_socket_t **socket_) {
         cleanup_security_cert(&(*socket)->security.cert);
         break;
     }
-    avs_free((*socket)->enabled_ciphersuites);
+    avs_free((*socket)->enabled_ciphersuites.ids);
     avs_free((*socket)->effective_ciphersuites);
 
 #ifdef WITH_PSK

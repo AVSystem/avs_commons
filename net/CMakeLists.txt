@@ -48,8 +48,6 @@ avs_add_test(NAME avs_net
 if(WITH_OPENSSL)
     option(WITH_DTLS "Enable OpenSSL DTLS support" ON)
 
-    set(WITH_OPENSSL_CUSTOM_CIPHERS OFF CACHE STRING "Customized OpenSSL cipher suite list")
-
     target_sources(avs_net PRIVATE src/openssl/openssl.c)
     if(WITH_X509)
         target_sources(avs_net PRIVATE src/openssl/data_loader.c)

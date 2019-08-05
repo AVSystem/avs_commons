@@ -589,10 +589,17 @@ typedef enum {
     AVS_NET_SOCKET_STATE_CONNECTED
 } avs_net_socket_state_t;
 
+typedef struct {
+    /** Array of ciphersuite IDs, or NULL to enable all ciphers */
+    uint32_t *ids;
+    /** Number of elements in @ref avs_net_socket_tls_ciphersuites_t#ids */
+    size_t num_ids;
+} avs_net_socket_tls_ciphersuites_t;
+
 /**
  * A value representing the set of all supported ciphersuites.
  */
-static const int *const AVS_NET_SOCKET_TLS_CIPHERSUITES_ALL = NULL;
+#define AVS_NET_SOCKET_TLS_CIPHERSUITES_ALL NULL
 
 typedef union {
     avs_time_duration_t recv_timeout;
@@ -604,15 +611,15 @@ typedef union {
     uint64_t bytes_received;
 
     /**
-     * An array of ciphersuite IDs, in big endian, terminated with 0.
-     * For example, TLS_PSK_WITH_AES_128_CCM_8 is represented as 0xC0A8.
+     * An array of ciphersuite IDs, in big endian. For example,
+     * TLS_PSK_WITH_AES_128_CCM_8 is represented as 0xC0A8.
      *
      * For a complete list of ciphersuites, see
      * https://www.iana.org/assignments/tls-parameters/tls-parameters.xhtml
      *
      * Note: cipher entries that are unsupported by the (D)TLS backend will be
-     * silently ignored. @ref AVS_NET_SOCKET_TLS_CIPHERSUITES_ALL can be used
-     * to enable all supported ciphersuites.
+     * silently ignored. @ref AVS_NET_SOCKET_TLS_CIPHERSUITES_ALL or an empty
+     * ciphersuite list can be used to enable all supported ciphersuites.
      *
      * When returned by @ref avs_net_socket_get_opt call, returns a pointer
      * with lifetime equal to the socket object.
@@ -621,7 +628,7 @@ typedef union {
      * object is made, so it is not required for this pointer to be valid after
      * the call completes.
      */
-    const int *tls_ciphersuites;
+    const avs_net_socket_tls_ciphersuites_t *tls_ciphersuites;
 } avs_net_socket_opt_value_t;
 
 int avs_net_socket_debug(int value);

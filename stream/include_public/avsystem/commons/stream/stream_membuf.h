@@ -54,7 +54,8 @@ int avs_stream_membuf_fit(avs_stream_abstract_t *stream);
  * @param out_size If not NULL, shall point to a variable that will be set to
  *                 the number of valid bytes in the buffer.
  *
- * @returns 0 for success, or a negative value in case of error.
+ * @returns 0 for success, or a negative value in case of error. On error, @p
+ *          out_ptr is guaranteed to not be changed.
  */
 int avs_stream_membuf_take_ownership(avs_stream_abstract_t *stream,
                                      void **out_ptr,
