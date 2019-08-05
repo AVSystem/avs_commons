@@ -63,11 +63,6 @@ typedef struct {
 #endif // WITH_X509
 
 typedef struct {
-    avs_net_owned_psk_t value;
-    int *ciphersuites;
-} ssl_socket_psk_t;
-
-typedef struct {
     const avs_net_socket_v_table_t * const operations;
     struct {
         bool context_valid : 1;
@@ -85,7 +80,7 @@ typedef struct {
         ssl_socket_certs_t cert;
 #endif // WITH_X509
 #ifdef WITH_PSK
-        ssl_socket_psk_t psk;
+        avs_net_owned_psk_t psk;
 #endif // WITH_PSK
     } security;
     mbedtls_timing_delay_context timer;
@@ -93,6 +88,12 @@ typedef struct {
     avs_net_abstract_socket_t *backend_socket;
     int error_code;
     avs_net_socket_configuration_t backend_configuration;
+    /// Set of ciphersuites configured by user, 0-terminated array or
+    /// AVS_NET_SOCKET_TLS_CIPHERSUITES_ALL
+    int *enabled_ciphersuites;
+    /// Subset of @ref ssl_socket_t#enabled_ciphersuites appropriate for
+    /// security mode, 0-terminated array
+    int *effective_ciphersuites;
 } ssl_socket_t;
 
 static bool is_ssl_started(ssl_socket_t *socket) {
@@ -273,13 +274,63 @@ static int set_min_ssl_version(mbedtls_ssl_config *config,
     }
 }
 
+#if defined(WITH_X509) || defined(WITH_PSK)
+static bool
+contains_cipher(const int *enabled_ciphers,
+                int cipher) {
+    if (enabled_ciphers == AVS_NET_SOCKET_TLS_CIPHERSUITES_ALL) {
+        return true;
+    } else {
+        for (; *enabled_ciphers != 0; ++enabled_ciphers) {
+            if (*enabled_ciphers == cipher) {
+                return true;
+            }
+        }
+        return false;
+    }
+}
+#endif // defined(WITH_X509) || defined(WITH_PSK)
+
 #ifdef WITH_X509
+static int *init_cert_ciphersuites(const int *enabled_ciphers) {
+    const int *all_ciphers = mbedtls_ssl_list_ciphersuites();
+
+    size_t ciphers_count = 0;
+    for (const int *cipher = all_ciphers; cipher && *cipher; ++cipher) {
+        if (contains_cipher(enabled_ciphers, *cipher)) {
+            ++ciphers_count;
+        }
+    }
+
+    int *ciphers = (int *) avs_calloc(ciphers_count + 1, sizeof(int));
+    if (!ciphers) {
+        LOG(ERROR, "out of memory");
+        return NULL;
+    }
+
+    int *cipher_it = ciphers;
+    for (const int *cipher = all_ciphers; cipher && *cipher; ++cipher) {
+        if (contains_cipher(enabled_ciphers, *cipher)) {
+            *cipher_it++ = *cipher;
+        }
+    }
+
+    return ciphers;
+}
+
 static uint8_t is_verification_enabled(ssl_socket_t *socket) {
     return socket->security_mode == AVS_NET_SECURITY_CERTIFICATE
             && socket->security.cert.ca_cert != NULL;
 }
 
-static void initialize_cert_security(ssl_socket_t *socket) {
+static int initialize_cert_security(ssl_socket_t *socket) {
+    avs_free(socket->effective_ciphersuites);
+    if (!(socket->effective_ciphersuites =
+            init_cert_ciphersuites(socket->enabled_ciphersuites))) {
+        socket->error_code = ENOMEM;
+        return -1;
+    }
+
     if (socket->security.cert.ca_cert) {
         mbedtls_ssl_conf_authmode(&socket->config, MBEDTLS_SSL_VERIFY_REQUIRED);
         mbedtls_ssl_conf_ca_chain(&socket->config,
@@ -293,6 +344,10 @@ static void initialize_cert_security(ssl_socket_t *socket) {
                                   socket->security.cert.client_cert,
                                   socket->security.cert.client_key);
     }
+
+    mbedtls_ssl_conf_ciphersuites(&socket->config,
+                                  socket->effective_ciphersuites);
+    return 0;
 }
 #else // WITH_X509
 #define is_verification_enabled(...) 0
@@ -300,66 +355,56 @@ static void initialize_cert_security(ssl_socket_t *socket) {
 #endif // WITH_X509
 
 #ifdef WITH_PSK
-typedef void foreach_psk_ciphersuite_cb_t(int suite, void *arg);
+static int *init_psk_ciphersuites(const int *enabled_ciphers) {
+    const int *all_ciphers = mbedtls_ssl_list_ciphersuites();
 
-static void foreach_psk_ciphersuite(const int *suites,
-                                    foreach_psk_ciphersuite_cb_t callback,
-                                    void *arg) {
-    for (; suites && *suites; ++suites) {
+    size_t ciphers_count = 0;
+    for (const int *cipher = all_ciphers; cipher && *cipher; ++cipher) {
         const mbedtls_ssl_ciphersuite_t *info =
-                mbedtls_ssl_ciphersuite_from_id(*suites);
-        if (mbedtls_ssl_ciphersuite_uses_psk(info)) {
-            callback(*suites, arg);
+                mbedtls_ssl_ciphersuite_from_id(*cipher);
+        if (mbedtls_ssl_ciphersuite_uses_psk(info)
+                && contains_cipher(enabled_ciphers, *cipher)) {
+            ++ciphers_count;
         }
     }
-}
 
-static void enumerate_psk_ciphersuites(int suite, void *count) {
-    (void) suite;
-    ++*((size_t *) count);
-}
-
-static void fill_psk_ciphersuites(int suite, void *out_it) {
-    *(*(int **) out_it)++ = suite;
-}
-
-static int *init_psk_ciphersuites(const mbedtls_ssl_config *config) {
-    size_t ciphersuite_count = 0;
-    const int *all_suites;
-    int *psk_suites;
-    int *psk_suite_it;
-
-    all_suites = config->ciphersuite_list[0];
-    foreach_psk_ciphersuite(all_suites, enumerate_psk_ciphersuites,
-                            &ciphersuite_count);
-    if (!(psk_suites =
-                  (int *) avs_calloc(ciphersuite_count + 1, sizeof(int)))) {
+    int *psk_ciphers = (int *) avs_calloc(ciphers_count + 1, sizeof(int));
+    if (!psk_ciphers) {
         LOG(ERROR, "out of memory");
         return NULL;
     }
-    psk_suite_it = psk_suites;
-    foreach_psk_ciphersuite(all_suites, fill_psk_ciphersuites, &psk_suite_it);
 
-    return psk_suites;
+    int *psk_cipher_it = psk_ciphers;
+    for (const int *cipher = all_ciphers; cipher && *cipher; ++cipher) {
+        const mbedtls_ssl_ciphersuite_t *info =
+                mbedtls_ssl_ciphersuite_from_id(*cipher);
+        if (mbedtls_ssl_ciphersuite_uses_psk(info)
+                && contains_cipher(enabled_ciphers, *cipher)) {
+            *psk_cipher_it++ = *cipher;
+        }
+    }
+
+    return psk_ciphers;
 }
 
 static int initialize_psk_security(ssl_socket_t *socket) {
-    if (!(socket->security.psk.ciphersuites =
-            init_psk_ciphersuites(&socket->config))) {
+    avs_free(socket->effective_ciphersuites);
+    if (!(socket->effective_ciphersuites =
+            init_psk_ciphersuites(socket->enabled_ciphersuites))) {
         socket->error_code = ENOMEM;
         return -1;
     }
 
     /* mbedtls_ssl_conf_psk() makes copies of the buffers */
     /* We set the values directly instead, to avoid that. */
-    socket->config.psk = (unsigned char *) socket->security.psk.value.psk;
-    socket->config.psk_len = socket->security.psk.value.psk_size;
+    socket->config.psk = (unsigned char *) socket->security.psk.psk;
+    socket->config.psk_len = socket->security.psk.psk_size;
     socket->config.psk_identity =
-            (unsigned char *) socket->security.psk.value.identity;
-    socket->config.psk_identity_len = socket->security.psk.value.identity_size;
+            (unsigned char *) socket->security.psk.identity;
+    socket->config.psk_identity_len = socket->security.psk.identity_size;
 
     mbedtls_ssl_conf_ciphersuites(&socket->config,
-                                  socket->security.psk.ciphersuites);
+                                  socket->effective_ciphersuites);
     return 0;
 }
 #else // WITH_PSK
@@ -413,20 +458,6 @@ static int configure_ssl(ssl_socket_t *socket,
 
     mbedtls_ssl_conf_rng(&socket->config,
                          mbedtls_ctr_drbg_random, &AVS_SSL_GLOBAL.rng);
-
-    switch (socket->security_mode) {
-    case AVS_NET_SECURITY_PSK:
-        if (initialize_psk_security(socket)) {
-            return -1;
-        }
-        break;
-    case AVS_NET_SECURITY_CERTIFICATE:
-        initialize_cert_security(socket);
-        break;
-    default:
-        AVS_UNREACHABLE("invalid enum value");
-        return -1;
-    }
 
     const avs_net_dtls_handshake_timeouts_t *dtls_handshake_timeouts =
             configuration->dtls_handshake_timeouts
@@ -518,6 +549,22 @@ static int start_ssl(ssl_socket_t *socket, const char *host) {
         return -1;
     }
     assert(!socket->flags.context_valid);
+
+    switch (socket->security_mode) {
+    case AVS_NET_SECURITY_PSK:
+        if (initialize_psk_security(socket)) {
+            return -1;
+        }
+        break;
+    case AVS_NET_SECURITY_CERTIFICATE:
+        if (initialize_cert_security(socket)) {
+            return -1;
+        }
+        break;
+    default:
+        AVS_UNREACHABLE("invalid enum value");
+        return -1;
+    }
 
     bool restore_session = false;
 #ifdef WITH_TLS_SESSION_PERSISTENCE
@@ -760,11 +807,7 @@ static void cleanup_security_cert(ssl_socket_certs_t *certs) {
 #endif // WITH_X509
 
 #ifdef WITH_PSK
-static void cleanup_security_psk(ssl_socket_psk_t *psk) {
-    avs_free(psk->ciphersuites);
-    psk->ciphersuites = NULL;
-    _avs_net_psk_cleanup(&psk->value);
-}
+# define cleanup_security_psk _avs_net_psk_cleanup
 #else // WITH_PSK
 # define cleanup_security_psk(...) (void)0
 #endif // WITH_PSK
@@ -784,6 +827,8 @@ static int cleanup_ssl(avs_net_abstract_socket_t **socket_) {
         cleanup_security_cert(&(*socket)->security.cert);
         break;
     }
+    avs_free((*socket)->enabled_ciphersuites);
+    avs_free((*socket)->effective_ciphersuites);
 
 #ifdef WITH_PSK
     /* Detach the uncopied PSK values */
@@ -841,7 +886,7 @@ static int configure_ssl_certs(ssl_socket_certs_t *certs,
 static int configure_ssl_psk(ssl_socket_t *socket,
                              const avs_net_psk_info_t *psk) {
     LOG(TRACE, "configure_ssl_psk");
-    return _avs_net_psk_copy(&socket->security.psk.value, psk);
+    return _avs_net_psk_copy(&socket->security.psk, psk);
 }
 #else // WITH_PSK
 # define configure_ssl_psk(...) \
