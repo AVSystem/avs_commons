@@ -202,6 +202,7 @@ static bool is_ssl_started(ssl_socket_t *socket) {
 }
 
 static bool is_session_resumed(ssl_socket_t *socket) {
+    (void) socket;
     return false;
 }
 
