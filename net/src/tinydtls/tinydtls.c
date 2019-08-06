@@ -51,6 +51,10 @@ typedef struct {
     ssl_read_context_t *read_ctx;
 
     avs_net_owned_psk_t psk;
+
+    /// Set of ciphersuites configured by user
+    /// TODO: actually use it
+    avs_net_socket_tls_ciphersuites_t enabled_ciphersuites;
 } ssl_socket_t;
 
 #define NET_SSL_COMMON_INTERNALS
