@@ -84,7 +84,7 @@ target_link_libraries(avs_net_nosec PUBLIC avs_net_core)
 if(WITH_OPENSSL)
     option(WITH_DTLS "Enable OpenSSL DTLS support" ON)
 
-    add_library(avs_net_openssl STATIC
+    add_library(avs_net_openssl
                 ${AVS_NET_SOURCES}
                 src/openssl/openssl.c)
     target_compile_definitions(avs_net_openssl PRIVATE WITH_SSL)
@@ -104,10 +104,10 @@ if(WITH_OPENSSL)
 endif()
 
 if(WITH_MBEDTLS)
-    add_library(avs_net_mbedtls STATIC
+    add_library(avs_net_mbedtls
                 ${AVS_NET_SOURCES}
                 src/mbedtls/mbedtls.c)
-    target_compile_definitions(avs_net_openssl PRIVATE WITH_SSL)
+    target_compile_definitions(avs_net_mbedtls PRIVATE WITH_SSL)
     target_link_libraries(avs_net_mbedtls PUBLIC avs_net_core mbedtls mbedcrypto mbedx509)
 
     if(WITH_TLS_SESSION_PERSISTENCE)
@@ -131,10 +131,10 @@ if(WITH_MBEDTLS)
 endif()
 
 if(WITH_TINYDTLS)
-    add_library(avs_net_tinydtls PRIVATE
+    add_library(avs_net_tinydtls
                 ${AVS_NET_SOURCES}
                 src/tinydtls/tinydtls.c)
-    target_compile_definitions(avs_net_openssl PRIVATE WITH_SSL)
+    target_compile_definitions(avs_net_tinydtls PRIVATE WITH_SSL)
     target_link_libraries(avs_net_tinydtls PUBLIC avs_net_core tinydtls)
 
     avs_add_test(NAME avs_net_tinydtls
