@@ -20,55 +20,74 @@ endif()
 option(WITH_POSIX_AVS_SOCKET "Enable avs_socket implementation based on POSIX socket API" "${POSIX_AVS_SOCKET_DEFAULT}")
 cmake_dependent_option(WITH_TLS_SESSION_PERSISTENCE "Enable support for TLS session persistence" ON WITH_AVS_PERSISTENCE OFF)
 
-add_library(avs_net_core STATIC
-            include_public/avsystem/commons/net.h
-            include_public/avsystem/commons/socket_v_table.h
-            include_public/avsystem/commons/url.h
+# Because of complex internal dependencies of avs_net source files, all of them
+# have to be recompiled for every single (D)TLS backend.
+#
+# TODO: it should be possible to decouple them enough to be able to reuse a
+# single build of "core" sources for all cases.
+set(AVS_NET_SOURCES
+    include_public/avsystem/commons/net.h
+    include_public/avsystem/commons/socket_v_table.h
+    include_public/avsystem/commons/url.h
 
-            src/api.h
-            src/global.h
-            src/net_impl.h
+    src/api.h
+    src/global.h
+    src/net_impl.h
 
-            src/addrinfo.c
-            src/api.c
-            src/global.c
-            src/url.c)
-target_link_libraries(avs_net_core PUBLIC avs_commons_global_headers)
+    src/addrinfo.c
+    src/api.c
+    src/global.c
+    src/url.c)
 
-target_include_directories(avs_net_core PUBLIC
+add_library(avs_net_core INTERFACE)
+target_link_libraries(avs_net_core INTERFACE avs_commons_global_headers)
+target_include_directories(avs_net_core INTERFACE
                            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include_public>
                            $<INSTALL_INTERFACE:include>)
 
 if(WITH_POSIX_AVS_SOCKET)
-    target_include_directories(avs_net_core PRIVATE compat/posix)
-    target_sources(avs_net_core PRIVATE
-                   compat/posix/compat.h
+    target_include_directories(avs_net_core INTERFACE
+                               $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/compat/posix>)
+    list(APPEND AVS_NET_SOURCES
+         compat/posix/compat.h
 
-                   compat/posix/compat_addrinfo.c
-                   compat/posix/net_impl.c)
+         compat/posix/compat_addrinfo.c
+         compat/posix/net_impl.c)
     if(NOT HAVE_INET_NTOP)
-        target_sources(avs_net_core PRIVATE compat/posix/inet_ntop.c)
+        list(APPEND AVS_NET_SOURCES compat/posix/inet_ntop.c)
     endif()
     if(NOT HAVE_INET_PTON)
-        target_sources(avs_net_core PRIVATE compat/posix/inet_pton.c)
+        list(APPEND AVS_NET_SOURCES compat/posix/inet_pton.c)
     endif()
 endif()
 
 if(WITH_INTERNAL_LOGS)
-    target_link_libraries(avs_net_core PUBLIC avs_log)
+    target_link_libraries(avs_net_core INTERFACE avs_log)
 endif()
 
 if(WIN32)
-    target_link_libraries(avs_net_core PUBLIC ws2_32)
+    target_link_libraries(avs_net_core INTERFACE ws2_32)
 endif()
 
-target_link_libraries(avs_net_core PUBLIC avs_stream avs_utils avs_compat_threading)
+target_link_libraries(avs_net_core INTERFACE avs_stream avs_utils avs_compat_threading)
+
+avs_install_export(avs_net_core net)
+install(DIRECTORY include_public/
+        COMPONENT net
+        DESTINATION ${INCLUDE_INSTALL_DIR}
+        FILES_MATCHING REGEX "[.]h$")
+
+add_library(avs_net_nosec ${AVS_NET_SOURCES})
+target_link_libraries(avs_net_nosec PUBLIC avs_net_core)
 
 
 if(WITH_OPENSSL)
     option(WITH_DTLS "Enable OpenSSL DTLS support" ON)
 
-    add_library(avs_net_openssl STATIC src/openssl/openssl.c)
+    add_library(avs_net_openssl STATIC
+                ${AVS_NET_SOURCES}
+                src/openssl/openssl.c)
+    target_compile_definitions(avs_net_openssl PRIVATE WITH_SSL)
     target_link_libraries(avs_net_openssl PUBLIC avs_net_core OpenSSL::SSL OpenSSL::Crypto)
 
     if(WITH_X509)
@@ -85,7 +104,10 @@ if(WITH_OPENSSL)
 endif()
 
 if(WITH_MBEDTLS)
-    add_library(avs_net_mbedtls STATIC src/mbedtls/mbedtls.c)
+    add_library(avs_net_mbedtls STATIC
+                ${AVS_NET_SOURCES}
+                src/mbedtls/mbedtls.c)
+    target_compile_definitions(avs_net_openssl PRIVATE WITH_SSL)
     target_link_libraries(avs_net_mbedtls PUBLIC avs_net_core mbedtls mbedcrypto mbedx509)
 
     if(WITH_TLS_SESSION_PERSISTENCE)
@@ -102,26 +124,29 @@ if(WITH_MBEDTLS)
         endif()
     endif()
 
-    add_avs_test(NAME avs_net_mbedtls
+    avs_add_test(NAME avs_net_mbedtls
                  PATH avs_net_mbedtls
                  SOURCES src/test/socket.c)
     avs_install_export(avs_net_mbedtls net)
 endif()
 
 if(WITH_TINYDTLS)
-    target_sources(avs_net_tinydtls PRIVATE src/tinydtls/tinydtls.c)
-    target_link_libraries(avs_net_tinydtls PUBLIC tinydtls)
+    add_library(avs_net_tinydtls PRIVATE
+                ${AVS_NET_SOURCES}
+                src/tinydtls/tinydtls.c)
+    target_compile_definitions(avs_net_openssl PRIVATE WITH_SSL)
+    target_link_libraries(avs_net_tinydtls PUBLIC avs_net_core tinydtls)
+
+    avs_add_test(NAME avs_net_tinydtls
+                 PATH avs_net_tinydtls
+                 SOURCES src/test/socket.c)
     avs_install_export(avs_net_tinydtls net)
 endif()
 
+# alias avs_net to first available implementation
 foreach(target IN ITEMS avs_net_openssl avs_net_mbedtls avs_net_tinydtls avs_net_core)
     if(TARGET "${target}")
         add_library(avs_net ALIAS "${target}")
+        break()
     endif()
 endforeach()
-
-avs_install_export(avs_net net)
-install(DIRECTORY include_public/
-        COMPONENT net
-        DESTINATION ${INCLUDE_INSTALL_DIR}
-        FILES_MATCHING REGEX "[.]h$")
