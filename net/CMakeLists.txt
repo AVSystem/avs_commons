@@ -80,6 +80,10 @@ install(DIRECTORY include_public/
 add_library(avs_net_nosec ${AVS_NET_SOURCES})
 target_link_libraries(avs_net_nosec PUBLIC avs_net_core)
 
+avs_add_test(NAME avs_net_nosec
+             PATH avs_net_nosec
+             SOURCES src/test/socket.c)
+avs_install_export(avs_net_nosec net)
 
 if(WITH_OPENSSL)
     option(WITH_DTLS "Enable OpenSSL DTLS support" ON)
