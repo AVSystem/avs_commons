@@ -431,6 +431,7 @@ if(WITH_MBEDTLS)
         find_package(MbedTLS REQUIRED)")
 endif()
 if(WITH_TINYDTLS)
+    set(TINYDTLS_ROOT_DIR "/usr" CACHE STRING "TinyDTLS installation root directory")
     avs_find_library("
         set(TINYDTLS_ROOT_DIR \"${TINYDTLS_ROOT_DIR}\")
         find_package(TinyDTLS REQUIRED)
