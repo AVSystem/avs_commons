@@ -41,7 +41,6 @@
 # define IPV6_AVAILABLE 0
 #endif
 
-#cmakedefine WITH_SSL
 #cmakedefine WITH_DTLS
 #cmakedefine WITH_PSK
 #cmakedefine WITH_X509
