@@ -44,8 +44,8 @@ typedef struct {
 int avs_stream_membuf_fit(avs_stream_abstract_t *stream);
 
 /**
- * Returns the stream's internal buffer, and resets the original stream's state
- * so that it contains no data.
+ * Returns the stream's internal buffer (containing all the unread data), and
+ * resets the original stream's state so that it contains no data.
  *
  * @ref avs_stream_membuf_fit is implicitly performed before this operation.
  *
