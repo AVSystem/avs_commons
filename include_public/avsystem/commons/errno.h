@@ -34,8 +34,8 @@ extern "C" {
  * the values that are common across architectures. Unfortunately it often
  * resulted in problems with errno mapping between translation units (i.e.
  * depending on the actual errno.h included in a given translation unit the
- * errno values could have different meaning and it caused lots of issues between
- * different abstraction layers and even across different projects).
+ * errno values could have different meaning and it caused lots of issues
+ * between different abstraction layers and even across different projects).
  *
  * As a final (hopefully) solution, we introduce an enum over all used errno
  * values. Values of that enum WILL BE consistent across translation units,
@@ -48,6 +48,7 @@ extern "C" {
  * values to and consistent set of <c>avs_errno_t</c> values.
  */
 typedef enum avs_errno {
+    AVS_UNKNOWN_ERROR = -0xFFFF,
     AVS_NO_ERROR = 0,
     AVS_E2BIG,
     AVS_EACCES,
