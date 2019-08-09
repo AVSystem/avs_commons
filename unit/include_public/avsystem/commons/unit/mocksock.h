@@ -29,9 +29,14 @@ typedef enum {
     AVS_UNIT_MOCKSOCK_TYPE_DATAGRAM
 } mocksock_type_t;
 
+typedef void mocksock_and_then_callback_t(avs_net_abstract_socket_t *socket,
+                                          void *arg);
+
 typedef struct {
     const char *file;
     int line;
+    mocksock_and_then_callback_t *and_then;
+    void *and_then_arg;
 } mocksock_additional_args_t;
 
 size_t avs_unit_mocksock_data_read(avs_net_abstract_socket_t *socket);
