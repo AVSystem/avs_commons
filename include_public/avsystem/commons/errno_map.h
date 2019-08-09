@@ -244,7 +244,11 @@ static inline avs_errno_t avs_map_errno(int errno_value) {
     case ENXIO:
         return AVS_ENXIO;
 #endif
-#ifdef EOPNOTSUPP
+/**
+ * NOTE: ENOTSUP and EOPNOTSUPP are allowed to have same value (thanks POSIX),
+ * and we need to be prepared for that.
+ */
+#if defined(EOPNOTSUPP) && (EOPNOTSUPP != ENOTSUP)
     case EOPNOTSUPP:
         return AVS_EOPNOTSUPP;
 #endif
@@ -300,7 +304,11 @@ static inline avs_errno_t avs_map_errno(int errno_value) {
     case ETXTBSY:
         return AVS_ETXTBSY;
 #endif
-#ifdef EWOULDBLOCK
+/**
+ * NOTE: EAGAIN and EWOULDBLOCK are allowed to have same value (thanks POSIX),
+ * and we need to be prepared for that.
+ */
+#if defined(EWOULDBLOCK) && (EWOULDBLOCK != EAGAIN)
     case EWOULDBLOCK:
         return AVS_EWOULDBLOCK;
 #endif
