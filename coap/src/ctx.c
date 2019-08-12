@@ -121,12 +121,12 @@ static int map_io_error(avs_net_abstract_socket_t *socket,
                         int result,
                         const char *operation) {
     if (result) {
-        int error = avs_net_socket_errno(socket);
+        avs_errno_t error = avs_net_socket_errno(socket);
         LOG(ERROR, "%s failed: errno = %d", operation, error);
 
-        if (error == ETIMEDOUT) {
+        if (error == AVS_ETIMEDOUT) {
             result = AVS_COAP_CTX_ERR_TIMEOUT;
-        } else if (error == EMSGSIZE) {
+        } else if (error == AVS_EMSGSIZE) {
             result = AVS_COAP_CTX_ERR_MSG_TOO_LONG;
         } else {
             result = AVS_COAP_CTX_ERR_NETWORK;

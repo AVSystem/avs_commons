@@ -18,6 +18,7 @@
 #define AVS_COMMONS_SOCKET_V_TABLE_H
 
 #include <avsystem/commons/net.h>
+#include <avsystem/commons/errno.h>
 
 #ifdef	__cplusplus
 extern "C" {
@@ -91,7 +92,7 @@ typedef int (*avs_net_socket_set_opt_t)(avs_net_abstract_socket_t *socket,
                                         avs_net_socket_opt_key_t option_key,
                                         avs_net_socket_opt_value_t option_value);
 
-typedef int (*avs_net_socket_errno_t)(avs_net_abstract_socket_t *socket);
+typedef avs_errno_t (*avs_net_socket_errno_t)(avs_net_abstract_socket_t *socket);
 
 typedef struct {
     avs_net_socket_connect_t connect;

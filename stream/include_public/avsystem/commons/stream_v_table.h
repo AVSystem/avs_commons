@@ -20,6 +20,7 @@
 #include <stdint.h>
 
 #include <avsystem/commons/stream.h>
+#include <avsystem/commons/errno.h>
 
 #ifdef	__cplusplus
 extern "C" {
@@ -132,7 +133,7 @@ typedef int (*avs_stream_close_t)(avs_stream_abstract_t *stream);
  * @param stream    Stream to operate on.
  * @returns last error code or 0 if no error occurred.
  */
-typedef int (*avs_stream_errno_t)(avs_stream_abstract_t *stream);
+typedef avs_errno_t (*avs_stream_errno_t)(avs_stream_abstract_t *stream);
 
 typedef struct {
     uint32_t id;

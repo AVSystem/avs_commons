@@ -43,11 +43,11 @@ typedef struct {
     avs_buffer_t *in_buffer;
     avs_buffer_t *out_buffer;
     char message_finished;
-    int errno_;
+    avs_errno_t errno_;
 } buffered_stream_t;
 
 static ssize_t flush_data(buffered_stream_t *stream) {
-    stream->errno_ = 0;
+    stream->errno_ = AVS_NO_ERROR;
 
     size_t bytes_to_write = avs_buffer_data_size(stream->out_buffer);
     if (!bytes_to_write) {
@@ -66,7 +66,7 @@ static ssize_t flush_data(buffered_stream_t *stream) {
 }
 
 static ssize_t fetch_data(buffered_stream_t *stream) {
-    stream->errno_ = 0;
+    stream->errno_ = AVS_NO_ERROR;
 
     char *insert_ptr = avs_buffer_raw_insert_ptr(stream->in_buffer);
     size_t bytes_to_read = avs_buffer_space_left(stream->in_buffer);
@@ -88,17 +88,17 @@ static int stream_buffered_write_some(avs_stream_abstract_t *stream_,
                                       const void *buffer,
                                       size_t *inout_data_length) {
     buffered_stream_t *stream = (buffered_stream_t *) stream_;
-    stream->errno_ = 0;
+    stream->errno_ = AVS_NO_ERROR;
 
     if (!inout_data_length) {
-        stream->errno_ = EINVAL;
+        stream->errno_ = AVS_EINVAL;
         return -1;
     }
     if (*inout_data_length == 0) {
         return 0;
     }
     if (!buffer) {
-        stream->errno_ = EINVAL;
+        stream->errno_ = AVS_EINVAL;
         return -1;
     }
     if (!stream->out_buffer) {
@@ -135,7 +135,7 @@ static int stream_buffered_read(avs_stream_abstract_t *stream_,
                                 void *buffer,
                                 size_t buffer_length) {
     buffered_stream_t *stream = (buffered_stream_t *) stream_;
-    stream->errno_ = 0;
+    stream->errno_ = AVS_NO_ERROR;
 
     size_t bytes_read = 0;
     int retval = 0;
@@ -144,7 +144,7 @@ static int stream_buffered_read(avs_stream_abstract_t *stream_,
         goto finish;
     }
     if (!buffer) {
-        stream->errno_ = EINVAL;
+        stream->errno_ = AVS_EINVAL;
         return -1;
     }
 
@@ -189,7 +189,7 @@ static int finish_message(buffered_stream_t *stream) {
 
 static int stream_buffered_finish_message(avs_stream_abstract_t *stream_) {
     buffered_stream_t *stream = (buffered_stream_t *) stream_;
-    stream->errno_ = 0;
+    stream->errno_ = AVS_NO_ERROR;
     int retval = 0;
     if (stream->out_buffer) {
         retval = finish_message(stream);
@@ -202,7 +202,7 @@ static int stream_buffered_finish_message(avs_stream_abstract_t *stream_) {
 
 static int stream_buffered_peek(avs_stream_abstract_t *stream_, size_t offset) {
     buffered_stream_t *stream = (buffered_stream_t *) stream_;
-    stream->errno_ = 0;
+    stream->errno_ = AVS_NO_ERROR;
     if (!stream->in_buffer) {
         return avs_stream_peek(stream->underlying_stream, offset);
     }
@@ -228,7 +228,7 @@ static int stream_buffered_peek(avs_stream_abstract_t *stream_, size_t offset) {
         LOG(ERROR, "cannot peek - buffer is too small and underlying stream's "
                    "peek failed");
         if (!avs_stream_errno(stream->underlying_stream)) {
-            stream->errno_ = EINVAL;
+            stream->errno_ = AVS_EINVAL;
         }
     }
     return retval;
@@ -252,7 +252,7 @@ static int stream_buffered_close(avs_stream_abstract_t *stream_) {
 
 static int stream_buffered_reset(avs_stream_abstract_t *stream_) {
     buffered_stream_t *stream = (buffered_stream_t *) stream_;
-    stream->errno_ = 0;
+    stream->errno_ = AVS_NO_ERROR;
     if (stream->in_buffer) {
         avs_buffer_reset(stream->in_buffer);
     }
@@ -262,7 +262,7 @@ static int stream_buffered_reset(avs_stream_abstract_t *stream_) {
     return avs_stream_reset(stream->underlying_stream);
 }
 
-static int stream_buffered_errno(avs_stream_abstract_t *stream_) {
+static avs_errno_t stream_buffered_errno(avs_stream_abstract_t *stream_) {
     buffered_stream_t *stream = (buffered_stream_t *) stream_;
     if (stream->errno_) {
         return stream->errno_;

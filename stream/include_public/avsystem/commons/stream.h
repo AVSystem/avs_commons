@@ -22,6 +22,7 @@
 #include <stdio.h>
 
 #include <avsystem/commons/defs.h>
+#include <avsystem/commons/errno.h>
 
 #ifdef	__cplusplus
 extern "C" {
@@ -346,7 +347,7 @@ int avs_stream_cleanup(avs_stream_abstract_t **stream);
  * @param stream    Stream to operate on.
  * @returns last error code or 0 if no error occurred.
  */
-int avs_stream_errno(avs_stream_abstract_t *stream);
+avs_errno_t avs_stream_errno(avs_stream_abstract_t *stream);
 
 /**
  * Optional method on streams that support the NONBLOCK extension. Checks

@@ -40,7 +40,7 @@ typedef struct buffered_netstream_struct {
     avs_buffer_t *out_buffer;
     avs_buffer_t *in_buffer;
 
-    int errno_;
+    avs_errno_t errno_;
 } buffered_netstream_t;
 
 #define WRAP_ERRNO(Stream, Retval, ...) do { \
@@ -70,7 +70,7 @@ static int buffered_netstream_write_some(avs_stream_abstract_t *stream_,
                                          const void *data,
                                          size_t *inout_data_length) {
     buffered_netstream_t *stream = (buffered_netstream_t *) stream_;
-    stream->errno_ = 0;
+    stream->errno_ = AVS_NO_ERROR;
     int result;
     if (*inout_data_length < avs_buffer_space_left(stream->out_buffer)) {
         return avs_buffer_append_bytes(stream->out_buffer, data,
@@ -88,14 +88,14 @@ static int
 buffered_netstream_nonblock_write_ready(avs_stream_abstract_t *stream_,
                                         size_t *out_ready_capacity_bytes) {
     buffered_netstream_t *stream = (buffered_netstream_t *) stream_;
-    stream->errno_ = 0;
+    stream->errno_ = AVS_NO_ERROR;
     *out_ready_capacity_bytes = avs_buffer_space_left(stream->out_buffer);
     return 0;
 }
 
 static int buffered_netstream_finish_message(avs_stream_abstract_t *stream_) {
     buffered_netstream_t *stream = (buffered_netstream_t *) stream_;
-    stream->errno_ = 0;
+    stream->errno_ = AVS_NO_ERROR;
     return out_buffer_flush(stream);
 }
 
@@ -205,7 +205,7 @@ static int buffered_netstream_read(avs_stream_abstract_t *stream_,
     size_t bytes_read;
     char message_finished;
     buffered_netstream_t *stream = (buffered_netstream_t *) stream_;
-    stream->errno_ = 0;
+    stream->errno_ = AVS_NO_ERROR;
     if (!out_bytes_read) {
         out_bytes_read = &bytes_read;
     }
@@ -247,8 +247,8 @@ static int try_recv_nonblock(buffered_netstream_t *stream) {
     size_t bytes_read;
     int result = in_buffer_read_some(stream, &bytes_read);
     if (result) {
-        int socket_errno = avs_net_socket_errno(stream->socket);
-        if (socket_errno == ETIMEDOUT) {
+        avs_errno_t socket_errno = avs_net_socket_errno(stream->socket);
+        if (socket_errno == AVS_ETIMEDOUT) {
             // nothing to read - this is expected, ignore
             result = 0;
         }
@@ -265,7 +265,7 @@ static int try_recv_nonblock(buffered_netstream_t *stream) {
 static int
 buffered_netstream_nonblock_read_ready(avs_stream_abstract_t *stream_) {
     buffered_netstream_t *stream = (buffered_netstream_t *) stream_;
-    stream->errno_ = 0;
+    stream->errno_ = AVS_NO_ERROR;
 
     if (avs_buffer_data_size(stream->in_buffer) > 0) {
         return true;
@@ -287,7 +287,7 @@ buffered_netstream_nonblock_read_ready(avs_stream_abstract_t *stream_) {
 static int buffered_netstream_peek(avs_stream_abstract_t *stream_,
                                    size_t offset) {
     buffered_netstream_t *stream = (buffered_netstream_t *) stream_;
-    stream->errno_ = 0;
+    stream->errno_ = AVS_NO_ERROR;
 
     if (offset < avs_buffer_capacity(stream->in_buffer)) {
         while (offset >= avs_buffer_data_size(stream->in_buffer)) {
@@ -306,7 +306,7 @@ static int buffered_netstream_peek(avs_stream_abstract_t *stream_,
         if (stream->errno_) {
             LOG(TRACE, "error already set");
         } else {
-            stream->errno_ = EINVAL;
+            stream->errno_ = AVS_EINVAL;
         }
         return EOF;
     }
@@ -314,7 +314,7 @@ static int buffered_netstream_peek(avs_stream_abstract_t *stream_,
 
 static int buffered_netstream_reset(avs_stream_abstract_t *stream_) {
     buffered_netstream_t *stream = (buffered_netstream_t *) stream_;
-    stream->errno_ = 0;
+    stream->errno_ = AVS_NO_ERROR;
     avs_buffer_reset(stream->in_buffer);
     avs_buffer_reset(stream->out_buffer);
     return 0;
@@ -322,7 +322,7 @@ static int buffered_netstream_reset(avs_stream_abstract_t *stream_) {
 
 static int buffered_netstream_close(avs_stream_abstract_t *stream_) {
     buffered_netstream_t *stream = (buffered_netstream_t *) stream_;
-    stream->errno_ = 0;
+    stream->errno_ = AVS_NO_ERROR;
     if (stream->socket) {
         avs_net_socket_shutdown(stream->socket);
     }
@@ -335,7 +335,7 @@ static int buffered_netstream_close(avs_stream_abstract_t *stream_) {
 static int buffered_netstream_getsock(avs_stream_abstract_t *stream_,
                                       avs_net_abstract_socket_t **out_socket) {
     buffered_netstream_t *stream = (buffered_netstream_t *) stream_;
-    stream->errno_ = 0;
+    stream->errno_ = AVS_NO_ERROR;
     *out_socket = stream->socket;
     return 0;
 }
@@ -343,12 +343,12 @@ static int buffered_netstream_getsock(avs_stream_abstract_t *stream_,
 static int buffered_netstream_setsock(avs_stream_abstract_t *stream_,
                                       avs_net_abstract_socket_t *socket) {
     buffered_netstream_t *stream = (buffered_netstream_t *) stream_;
-    stream->errno_ = 0;
+    stream->errno_ = AVS_NO_ERROR;
     stream->socket = socket;
     return 0;
 }
 
-static int buffered_netstream_errno(avs_stream_abstract_t *stream) {
+static avs_errno_t buffered_netstream_errno(avs_stream_abstract_t *stream) {
     return ((buffered_netstream_t *) stream)->errno_;
 }
 
@@ -469,5 +469,5 @@ void avs_stream_netbuf_set_recv_timeout(avs_stream_abstract_t *str,
     avs_net_socket_set_opt(stream->socket,
                            AVS_NET_SOCKET_OPT_RECV_TIMEOUT,
                            timeout_opt);
-    stream->errno_ = 0;
+    stream->errno_ = AVS_NO_ERROR;
 }

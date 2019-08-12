@@ -18,10 +18,10 @@
 #include <avs_commons_config.h>
 
 #include <assert.h>
+#include <errno.h>
+#include <limits.h>
 #include <stdarg.h>
 #include <string.h>
-
-#include <limits.h>
 
 #include <avsystem/commons/errno.h>
 #include <avsystem/commons/memory.h>
@@ -36,7 +36,7 @@ VISIBILITY_SOURCE_BEGIN
 struct avs_file_stream_struct {
     const void *const vtable;
     uint8_t mode;
-    int error_code;
+    avs_errno_t error_code;
     FILE *fp;
 };
 
@@ -81,15 +81,15 @@ static int stream_file_write_some(avs_stream_abstract_t *stream_,
                                   size_t *inout_data_length) {
     avs_stream_file_t *file = (avs_stream_file_t *) stream_;
     if ((file->mode & AVS_STREAM_FILE_WRITE) == 0) {
-        file->error_code = EBADF;
+        file->error_code = AVS_EBADF;
         return -1;
     }
     *inout_data_length = fwrite(buffer, 1, *inout_data_length, file->fp);
     if (ferror(file->fp)) {
-        file->error_code = EIO;
+        file->error_code = AVS_EIO;
         return -1;
     }
-    file->error_code = 0;
+    file->error_code = AVS_NO_ERROR;
     return 0;
 }
 
@@ -100,7 +100,7 @@ static int stream_file_read(avs_stream_abstract_t *stream_,
                             size_t buffer_length) {
     avs_stream_file_t *file = (avs_stream_file_t *) stream_;
     if ((file->mode & AVS_STREAM_FILE_READ) == 0) {
-        file->error_code = EBADF;
+        file->error_code = AVS_EBADF;
         return -1;
     }
     size_t bytes_read = fread(buffer, 1, buffer_length, file->fp);
@@ -108,13 +108,13 @@ static int stream_file_read(avs_stream_abstract_t *stream_,
         *out_bytes_read = bytes_read;
     }
     if (ferror(file->fp)) {
-        file->error_code = EIO;
+        file->error_code = AVS_EIO;
         return -1;
     }
     if (out_message_finished) {
         *out_message_finished = !!feof(file->fp);
     }
-    file->error_code = 0;
+    file->error_code = AVS_NO_ERROR;
     return 0;
 }
 
@@ -127,18 +127,30 @@ static int stream_file_peek(avs_stream_abstract_t *stream_,
     avs_off_t current;
 
     if (offset > LONG_MAX) {
-        file->error_code = ERANGE;
+        file->error_code = AVS_ERANGE;
         return -1;
     }
 
     current = ftell(file->fp);
     if (current < 0) {
-        file->error_code = errno;
+        // ftell() documentation says it can return only EINVAL and ESPIPE.
+        switch (errno) {
+        case EINVAL:
+            file->error_code = AVS_EINVAL;
+            break;
+        case ESPIPE:
+            file->error_code = AVS_ESPIPE;
+            break;
+        default:
+            // Not much else we can do.
+            file->error_code = AVS_EIO;
+            break;
+        }
         return -1;
     }
 
     if (fseek(file->fp, (long) offset, SEEK_CUR)) {
-        file->error_code = EIO;
+        file->error_code = AVS_EIO;
         return -1;
     }
 
@@ -148,10 +160,10 @@ static int stream_file_peek(avs_stream_abstract_t *stream_,
     }
 
     if (fseek(file->fp, current, SEEK_SET)) {
-        file->error_code = EIO;
+        file->error_code = AVS_EIO;
         return -1;
     }
-    file->error_code = 0;
+    file->error_code = AVS_NO_ERROR;
     return (int) byte;
 }
 
@@ -159,14 +171,14 @@ static int stream_file_reset(avs_stream_abstract_t *stream_) {
     avs_stream_file_t *file = (avs_stream_file_t *) stream_;
     clearerr(file->fp);
     if (fseek(file->fp, 0, SEEK_SET)) {
-        file->error_code = EIO;
+        file->error_code = AVS_EIO;
         return -1;
     }
-    file->error_code = 0;
+    file->error_code = AVS_NO_ERROR;
     return 0;
 }
 
-static int stream_file_errno(avs_stream_abstract_t *stream_) {
+static avs_errno_t stream_file_errno(avs_stream_abstract_t *stream_) {
     avs_stream_file_t *file = (avs_stream_file_t *) stream_;
     return file->error_code;
 }
@@ -185,10 +197,10 @@ static int stream_file_offset(avs_stream_abstract_t *stream,
     avs_stream_file_t *file = (avs_stream_file_t *) stream;
     avs_off_t offset = ftell(file->fp);
     if (offset == -1) {
-        file->error_code = EIO;
+        file->error_code = AVS_EIO;
         return -1;
     }
-    file->error_code = 0;
+    file->error_code = AVS_NO_ERROR;
     *out_offset = offset;
     return 0;
 }
@@ -197,14 +209,14 @@ static int stream_file_seek(avs_stream_abstract_t *stream,
                             avs_off_t offset_from_start) {
     avs_stream_file_t *file = (avs_stream_file_t *) stream;
     if (offset_from_start < 0) {
-        file->error_code = ERANGE;
+        file->error_code = AVS_ERANGE;
         return -1;
     }
     if (fseek(file->fp, offset_from_start, SEEK_SET)) {
-        file->error_code = EIO;
+        file->error_code = AVS_EIO;
         return -1;
     }
-    file->error_code = 0;
+    file->error_code = AVS_NO_ERROR;
     return 0;
 }
 
@@ -217,7 +229,7 @@ static int stream_file_length(avs_stream_abstract_t *stream,
     }
     if (fseek(file->fp, 0, SEEK_END) || stream_file_offset(stream, out_length)) {
         stream_file_seek(stream, offset);
-        file->error_code = EIO;
+        file->error_code = AVS_EIO;
         return -1;
     }
     return stream_file_seek(stream, offset);

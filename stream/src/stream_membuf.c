@@ -38,7 +38,7 @@ struct avs_stream_membuf_struct {
     size_t buffer_size;
     size_t index_write;
     size_t index_read;
-    int error_code;
+    avs_errno_t error_code;
 };
 
 int avs_stream_membuf_ensure_free_bytes(avs_stream_abstract_t *stream,
@@ -102,7 +102,7 @@ static int stream_membuf_write_some(avs_stream_abstract_t *stream_,
                                     const void *buffer,
                                     size_t *inout_data_length) {
     avs_stream_membuf_t *stream = (avs_stream_membuf_t *) stream_;
-    stream->error_code = 0;
+    stream->error_code = AVS_NO_ERROR;
     if (*inout_data_length == 0) {
         return 0;
     }
@@ -131,10 +131,10 @@ static int stream_membuf_read(avs_stream_abstract_t *stream_,
     avs_stream_membuf_t *stream = (avs_stream_membuf_t *) stream_;
     size_t bytes_left = stream->index_write - stream->index_read;
     size_t bytes_read = bytes_left < buffer_length ? bytes_left : buffer_length;
-    stream->error_code = 0;
+    stream->error_code = AVS_NO_ERROR;
     assert(stream->index_read <= stream->index_write);
     if (!buffer && buffer_length) {
-        stream->error_code = EINVAL;
+        stream->error_code = AVS_EINVAL;
         return -1;
     }
     if (out_bytes_read) {
@@ -157,21 +157,21 @@ static int stream_membuf_read(avs_stream_abstract_t *stream_,
 
 static int stream_membuf_peek(avs_stream_abstract_t *stream_, size_t offset) {
     avs_stream_membuf_t *stream = (avs_stream_membuf_t *) stream_;
-    stream->error_code = 0;
+    stream->error_code = AVS_NO_ERROR;
     if (stream->index_read + offset >= stream->index_write) {
         return EOF;
     }
     return (unsigned char) stream->buffer[stream->index_read + offset];
 }
 
-static int stream_membuf_errno(avs_stream_abstract_t *stream_) {
+static avs_errno_t stream_membuf_errno(avs_stream_abstract_t *stream_) {
     avs_stream_membuf_t *stream = (avs_stream_membuf_t *) stream_;
     return stream->error_code;
 }
 
 static int stream_membuf_reset(avs_stream_abstract_t *stream_) {
     avs_stream_membuf_t *stream = (avs_stream_membuf_t *) stream_;
-    stream->error_code = 0;
+    stream->error_code = AVS_NO_ERROR;
     stream->index_read = 0;
     stream->index_write = 0;
     return 0;
@@ -258,5 +258,5 @@ avs_stream_abstract_t *avs_stream_membuf_create(void) {
 }
 
 #ifdef AVS_UNIT_TESTING
-#    include "test/test_stream_membuf.c"
+#include "test/test_stream_membuf.c"
 #endif

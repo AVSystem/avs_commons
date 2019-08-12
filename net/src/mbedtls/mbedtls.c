@@ -22,6 +22,7 @@
 #include <assert.h>
 #include <inttypes.h>
 #include <string.h>
+#include <errno.h>
 
 #if !defined(__STDC_VERSION__) || (__STDC_VERSION__ < 199901L)
 #define inline
@@ -86,7 +87,7 @@ typedef struct {
     mbedtls_timing_delay_context timer;
     avs_net_socket_type_t backend_type;
     avs_net_abstract_socket_t *backend_socket;
-    int error_code;
+    avs_errno_t error_code;
     avs_net_socket_configuration_t backend_configuration;
     /// Set of ciphersuites configured by user
     avs_net_socket_tls_ciphersuites_t enabled_ciphersuites;
@@ -175,7 +176,7 @@ static int avs_bio_recv(void *ctx, unsigned char *buf, size_t len,
                            AVS_NET_SOCKET_OPT_RECV_TIMEOUT, new_timeout);
     if (avs_net_socket_receive(socket->backend_socket, &read_bytes, buf, len)) {
         socket->error_code = avs_net_socket_errno(socket->backend_socket);
-        if (socket->error_code == ETIMEDOUT) {
+        if (socket->error_code == AVS_ETIMEDOUT) {
             result = MBEDTLS_ERR_SSL_TIMEOUT;
         } else {
             result = MBEDTLS_ERR_NET_RECV_FAILED;
@@ -329,7 +330,7 @@ static int initialize_cert_security(ssl_socket_t *socket) {
     avs_free(socket->effective_ciphersuites);
     if (!(socket->effective_ciphersuites =
             init_cert_ciphersuites(&socket->enabled_ciphersuites))) {
-        socket->error_code = ENOMEM;
+        socket->error_code = AVS_ENOMEM;
         return -1;
     }
 
@@ -394,7 +395,7 @@ static int initialize_psk_security(ssl_socket_t *socket) {
     avs_free(socket->effective_ciphersuites);
     if (!(socket->effective_ciphersuites =
             init_psk_ciphersuites(&socket->enabled_ciphersuites))) {
-        socket->error_code = ENOMEM;
+        socket->error_code = AVS_ENOMEM;
         return -1;
     }
 
@@ -529,7 +530,7 @@ static int update_ssl_endpoint_config(ssl_socket_t *socket) {
                                          MBEDTLS_SSL_SESSION_TICKETS_DISABLED);
 #endif // MBEDTLS_SSL_SESSION_TICKETS
     } else {
-        socket->error_code = EINVAL;
+        socket->error_code = AVS_EINVAL;
         LOG(ERROR, "initialize_ssl_config: invalid socket state");
         return -1;
     }
@@ -596,7 +597,7 @@ static int start_ssl(ssl_socket_t *socket, const char *host) {
                              mbedtls_timing_get_delay);
     if ((result = mbedtls_ssl_setup(get_context(socket), &socket->config))) {
         LOG(ERROR, "mbedtls_ssl_setup() failed: %d", result);
-        socket->error_code = ENOMEM;
+        socket->error_code = AVS_ENOMEM;
         goto finish;
     }
 
@@ -681,7 +682,7 @@ finish:
         mbedtls_ssl_free(get_context(socket));
         socket->flags.context_valid = false;
         if (!socket->error_code) {
-            socket->error_code = EPROTO;
+            socket->error_code = AVS_EPROTO;
         }
         return -1;
     } else {
@@ -698,10 +699,10 @@ static void update_send_or_recv_error_code(ssl_socket_t *socket,
         socket->error_code = avs_net_socket_errno(socket->backend_socket);
     }
     if (!socket->error_code) {
-        socket->error_code = errno;
+        socket->error_code = AVS_Errno;
     }
     if (!socket->error_code) {
-        socket->error_code = EPROTO;
+        socket->error_code = AVS_EPROTO;
     }
 }
 
@@ -796,7 +797,7 @@ static int receive_ssl(avs_net_abstract_socket_t *socket_,
                         == MBEDTLS_SSL_TRANSPORT_DATAGRAM
                 && mbedtls_ssl_get_bytes_avail(get_context(socket)) > 0) {
             LOG(WARNING, "receive_ssl: message truncated");
-            socket->error_code = EMSGSIZE;
+            socket->error_code = AVS_EMSGSIZE;
             return -1;
         }
     }

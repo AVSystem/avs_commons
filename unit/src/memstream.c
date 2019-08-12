@@ -115,7 +115,7 @@ int avs_unit_memstream_alloc(avs_stream_abstract_t** stream,
         memstream_peek,
         (avs_stream_reset_t) memstream_fail,
         memstream_close,
-        (avs_stream_reset_t) memstream_fail,
+        (avs_stream_errno_t) memstream_fail,
         AVS_STREAM_V_TABLE_NO_EXTENSIONS
     };
 

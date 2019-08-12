@@ -285,7 +285,7 @@ int avs_net_socket_set_opt(avs_net_abstract_socket_t *socket,
     return socket->operations->set_opt(socket, option_key, option_value);
 }
 
-int avs_net_socket_errno(avs_net_abstract_socket_t *socket) {
+avs_errno_t avs_net_socket_errno(avs_net_abstract_socket_t *socket) {
     return socket->operations->get_errno(socket);
 }
 
@@ -634,7 +634,7 @@ static int system_socket_debug(avs_net_abstract_socket_t *debug_socket,
     return *out ? 0 : -1;
 }
 
-static int errno_debug(avs_net_abstract_socket_t *debug_socket) {
+static avs_errno_t errno_debug(avs_net_abstract_socket_t *debug_socket) {
     return avs_net_socket_errno(
             ((avs_net_socket_debug_t *) debug_socket)->socket);
 }

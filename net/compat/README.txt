@@ -35,14 +35,3 @@ int avs_net_local_address_for_target_host(const char *target_host,
                                           size_t buffer_size);
 
 int avs_net_validate_ip_address(avs_net_af_t family, const char *ip_address);
-
-
-Additionally, AVS_NET_E**** values that may not defined in system-wide errno.h
-need to be exported as follows:
-
-
-extern const int AVS_NET_EPROTO;
-const int AVS_NET_EPROTO = EPROTO;
-
-
-See the public avsystem/commons/errno.h header for list of expected values.

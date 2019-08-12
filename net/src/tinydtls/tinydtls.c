@@ -45,7 +45,7 @@ typedef struct {
 
     avs_net_socket_type_t backend_type;
     avs_net_abstract_socket_t *backend_socket;
-    int error_code;
+    avs_errno_t error_code;
     avs_net_socket_configuration_t backend_configuration;
 
     ssl_read_context_t *read_ctx;

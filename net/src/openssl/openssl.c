@@ -30,10 +30,11 @@
 #include <ctype.h>
 #include <stdio.h>
 #include <string.h>
+#include <errno.h>
 
 #include <sys/time.h> // for struct timeval
 
-#include <avsystem/commons/errno.h>
+#include <avsystem/commons/errno_map.h>
 #include <avsystem/commons/memory.h>
 #include <avsystem/commons/time.h>
 #include <avsystem/commons/stream/stream_membuf.h>
@@ -80,7 +81,7 @@ typedef struct {
     SSL_CTX *ctx;
     SSL *ssl;
     int verification;
-    int error_code;
+    avs_errno_t error_code;
     avs_time_real_t next_deadline;
     avs_net_socket_type_t backend_type;
     avs_net_abstract_socket_t *backend_socket;
@@ -285,7 +286,7 @@ static int avs_bio_write(BIO *bio, const char *data, int size) {
         // see receive_ssl() for explanation why this might happen
         return -1;
     }
-    sock->error_code = 0;
+    sock->error_code = AVS_NO_ERROR;
     if (!data || size < 0) {
         return 0;
     }
@@ -344,7 +345,7 @@ static int avs_bio_read(BIO *bio, char *buffer, int size) {
         // see receive_ssl() for explanation why this might happen
         return -1;
     }
-    sock->error_code = 0;
+    sock->error_code = AVS_NO_ERROR;
     if (!buffer || size < 0) {
         return 0;
     }
@@ -427,8 +428,8 @@ static long avs_bio_ctrl(BIO *bio, int command, long intarg, void *ptrarg) {
     }
     case BIO_CTRL_DGRAM_GET_SEND_TIMER_EXP:
     case BIO_CTRL_DGRAM_GET_RECV_TIMER_EXP:
-        if (sock->error_code == ETIMEDOUT) {
-            sock->error_code = 0;
+        if (sock->error_code == AVS_ETIMEDOUT) {
+            sock->error_code = AVS_NO_ERROR;
             return 1;
         } else {
             return 0;
@@ -687,7 +688,7 @@ static int start_ssl(ssl_socket_t *socket, const char *host) {
 
     socket->ssl = SSL_new(socket->ctx);
     if (!socket->ssl) {
-        socket->error_code = ENOMEM;
+        socket->error_code = AVS_ENOMEM;
         return -1;
     }
     SSL_set_app_data(socket->ssl, socket);
@@ -720,14 +721,14 @@ static int start_ssl(ssl_socket_t *socket, const char *host) {
                                              : host))
             == 0) {
         LOG(ERROR, "cannot setup SNI extension");
-        socket->error_code = ENOMEM;
+        socket->error_code = AVS_ENOMEM;
         return -1;
     }
 
     bio = avs_bio_spawn(socket);
     if (!bio) {
         LOG(ERROR, "cannot create BIO object");
-        socket->error_code = ENOMEM;
+        socket->error_code = AVS_ENOMEM;
         return -1;
     }
     SSL_set_bio(socket->ssl, bio, bio);
@@ -739,7 +740,7 @@ static int start_ssl(ssl_socket_t *socket, const char *host) {
             log_openssl_error();
             LOG(DEBUG, "handshake_result = %d", handshake_result);
             if (!socket->error_code) {
-                socket->error_code = EPROTO;
+                socket->error_code = AVS_EPROTO;
             }
             return -1;
         }
@@ -747,11 +748,11 @@ static int start_ssl(ssl_socket_t *socket, const char *host) {
 
     if (socket->verification && verify_peer_subject_cn(socket, host) != 0) {
         LOG(ERROR, "server certificate verification failure");
-        socket->error_code = EPROTO;
+        socket->error_code = AVS_EPROTO;
         return -1;
     }
 
-    socket->error_code = 0;
+    socket->error_code = AVS_NO_ERROR;
     return 0;
 }
 
@@ -917,8 +918,8 @@ static void update_send_or_recv_error_code(ssl_socket_t *socket) {
     (void) (socket->error_code
             || (socket->error_code =
                     avs_net_socket_errno(socket->backend_socket))
-            || (socket->error_code = errno)
-            || (socket->error_code = EPROTO));
+            || (socket->error_code = avs_map_errno(errno))
+            || (socket->error_code = AVS_EPROTO));
 }
 
 static int send_ssl(avs_net_abstract_socket_t *socket_,
@@ -937,7 +938,7 @@ static int send_ssl(avs_net_abstract_socket_t *socket_,
         LOG(ERROR, "write failed");
         return -1;
     } else {
-        socket->error_code = 0;
+        socket->error_code = AVS_NO_ERROR;
         return 0;
     }
 }
@@ -961,7 +962,7 @@ static int receive_ssl(avs_net_abstract_socket_t *socket_,
     } else {
         VALGRIND_MAKE_MEM_DEFINED_IF_ADDRESSABLE(buffer, result);
         *out_bytes_received = (size_t) result;
-        socket->error_code = 0;
+        socket->error_code = AVS_NO_ERROR;
         if (socket_is_datagram(socket)
                 && buffer_length > 0
                 && (size_t) result == buffer_length) {
@@ -979,7 +980,7 @@ static int receive_ssl(avs_net_abstract_socket_t *socket_,
                                        (int) sizeof(truncation_buffer))) > 0
                         && !socket->error_code) {
                     LOG(WARNING, "receive_ssl: message truncated");
-                    socket->error_code = EMSGSIZE;
+                    socket->error_code = AVS_EMSGSIZE;
                 }
             } while (result > 0);
             socket->backend_socket = backend_socket;

@@ -25,6 +25,7 @@
 #include <avsystem/commons/defs.h>
 #include <avsystem/commons/time.h>
 #include <avsystem/commons/memory.h>
+#include <avsystem/commons/errno.h>
 
 #ifdef	__cplusplus
 extern "C" {
@@ -1075,7 +1076,7 @@ int avs_net_socket_set_opt(avs_net_abstract_socket_t *socket,
  *
  * NOTE: socket errno is NOT the same as the standard C global <c>errno</c>.
  */
-int avs_net_socket_errno(avs_net_abstract_socket_t *socket);
+avs_errno_t avs_net_socket_errno(avs_net_abstract_socket_t *socket);
 
 /**
  * Returns a pointer to bare system socket (e.g. to invoke <c>select</c> or

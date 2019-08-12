@@ -105,9 +105,9 @@ int avs_stream_cleanup(avs_stream_abstract_t **stream) {
     return retval;
 }
 
-int avs_stream_errno(avs_stream_abstract_t *stream) {
+avs_errno_t avs_stream_errno(avs_stream_abstract_t *stream) {
     if (!stream->vtable->get_errno) {
-        return 0;
+        return AVS_NO_ERROR;
     }
     return stream->vtable->get_errno(stream);
 }
