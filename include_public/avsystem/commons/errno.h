@@ -17,6 +17,8 @@
 #ifndef AVS_COMMONS_ERRNO_H
 #define AVS_COMMONS_ERRNO_H
 
+#include <limits.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -48,7 +50,7 @@ extern "C" {
  * values to and consistent set of <c>avs_errno_t</c> values.
  */
 typedef enum avs_errno {
-    AVS_UNKNOWN_ERROR = -0xFFFF,
+    AVS_UNKNOWN_ERROR = INT_MIN,
     AVS_NO_ERROR = 0,
     AVS_E2BIG,
     AVS_EACCES,
