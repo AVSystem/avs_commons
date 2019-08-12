@@ -698,7 +698,10 @@ static void update_send_or_recv_error_code(ssl_socket_t *socket,
                     || mbedtls_result == MBEDTLS_ERR_NET_SEND_FAILED)) {
         socket->error_code = avs_net_socket_errno(socket->backend_socket);
     }
-    if (!socket->error_code) {
+    if (socket->error_code == AVS_NO_ERROR) {
+        socket->error_code = avs_map_errno(errno);
+    }
+    if (socket->error_code == AVS_NO_ERROR) {
         socket->error_code = AVS_EPROTO;
     }
 }

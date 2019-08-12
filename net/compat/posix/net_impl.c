@@ -744,7 +744,7 @@ static int call_when_ready(const volatile sockfd_t *sockfd_ptr,
         } while (result < 0 && errno == EINTR
                  && !avs_time_monotonic_before(deadline,
                                                avs_time_monotonic_now()));
-        // Additional check if EWOULDBLOCK is equal to EGAIN prevents some
+        // Additional check if EWOULDBLOCK is equal to EAGAIN prevents some
         // compilers from rising warning about identical left and right
         // operands.
         if (result >= 0
@@ -1390,10 +1390,9 @@ static int create_listening_socket(avs_net_socket_t *net_socket,
         return -1;
     }
     errno = 0;
-    if ((net_socket->socket =
-                 socket(addr->sa_family,
-                        _avs_net_get_socket_type(net_socket->type), 0))
-        == INVALID_SOCKET) {
+    net_socket->socket = socket(addr->sa_family,
+                                _avs_net_get_socket_type(net_socket->type), 0);
+    if (net_socket->socket == INVALID_SOCKET) {
         net_socket->error_code = avs_map_errno(errno);
         LOG(ERROR, "cannot create system socket: %s", strerror(errno));
         goto create_listening_socket_error;
@@ -1526,8 +1525,7 @@ static int accept_net(avs_net_abstract_socket_t *server_net_socket_,
                             new_net_socket->remote_hostname,
                             sizeof(new_net_socket->remote_hostname),
                             new_net_socket->remote_port,
-                            sizeof(new_net_socket->remote_port))
-        < 0) {
+                            sizeof(new_net_socket->remote_port)) < 0) {
         server_net_socket->error_code = avs_map_errno(errno);
         close_net_raw(new_net_socket);
         return -1;
@@ -1654,7 +1652,6 @@ int avs_net_local_address_for_target_host(const char *target_host,
     }
     avs_net_addrinfo_delete(&info);
     return result <= 0 ? result : -1;
-    ;
 }
 
 static int local_host_net(avs_net_abstract_socket_t *socket,
