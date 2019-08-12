@@ -87,7 +87,7 @@ AVS_UNIT_TEST(stream_file, write_and_read) {
 
     AVS_UNIT_ASSERT_NOT_NULL((stream = avs_stream_file_create(filename, AVS_STREAM_FILE_READ)));
     AVS_UNIT_ASSERT_FAILED(avs_stream_write(stream, data, sizeof(data)));
-    AVS_UNIT_ASSERT_EQUAL(avs_stream_errno(stream), EBADF);
+    AVS_UNIT_ASSERT_EQUAL(avs_stream_errno(stream), AVS_EBADF);
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&stream));
     unlink(filename);
     avs_free(buf);

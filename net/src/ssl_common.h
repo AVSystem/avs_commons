@@ -378,7 +378,7 @@ static int set_opt_ssl(avs_net_abstract_socket_t *ssl_socket_,
         case AVS_NET_SOCKET_STATE_BOUND:
             if (replace_ciphersuites(&ssl_socket->enabled_ciphersuites,
                                      option_value.tls_ciphersuites)) {
-                ssl_socket->error_code = ENOMEM;
+                ssl_socket->error_code = AVS_ENOMEM;
                 return -1;
             }
             return 0;
@@ -386,7 +386,7 @@ static int set_opt_ssl(avs_net_abstract_socket_t *ssl_socket_,
         case AVS_NET_SOCKET_STATE_ACCEPTED:
         case AVS_NET_SOCKET_STATE_CONNECTED:
             // disallow changing ciphersuites after handshake
-            ssl_socket->error_code = EISCONN;
+            ssl_socket->error_code = AVS_EISCONN;
             return -1;
         }
         return -1;

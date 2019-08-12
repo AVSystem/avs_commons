@@ -205,7 +205,7 @@ AVS_UNIT_TEST(stream_buffered, try_write_some_more_than_stream_size) {
     stream_ctx_t ctx;
     avs_stream_abstract_t *stream = setup_output_stream(&ctx);
     size_t bytes_to_write = STREAM_SIZE + 1;
-    
+
     AVS_UNIT_ASSERT_SUCCESS(
             avs_stream_write_some(stream, TEST_DATA, &bytes_to_write));
 
@@ -389,7 +389,7 @@ AVS_UNIT_TEST(stream_buffered, peek) {
                                           TEST_DATA[STREAM_BUFFER_SIZE - 1]);
 
     AVS_UNIT_ASSERT_FAILED(avs_stream_peek(stream, STREAM_BUFFER_SIZE));
-    AVS_UNIT_ASSERT_EQUAL(avs_stream_errno(stream), EINVAL);
+    AVS_UNIT_ASSERT_EQUAL(avs_stream_errno(stream), AVS_EINVAL);
 
     teardown_stream(&stream, &ctx);
 }

@@ -161,7 +161,7 @@ static int avs_bio_recv(void *ctx, unsigned char *buf, size_t len,
     avs_net_socket_opt_value_t new_timeout;
     size_t read_bytes;
     int result;
-    socket->error_code = 0;
+    socket->error_code = AVS_NO_ERROR;
     if (avs_net_socket_get_opt(socket->backend_socket,
                                AVS_NET_SOCKET_OPT_RECV_TIMEOUT,
                                &orig_timeout)) {
@@ -191,7 +191,7 @@ static int avs_bio_recv(void *ctx, unsigned char *buf, size_t len,
 
 static int avs_bio_send(void *ctx, const unsigned char *buf, size_t len) {
     ssl_socket_t *socket = (ssl_socket_t *) ctx;
-    socket->error_code = 0;
+    socket->error_code = AVS_NO_ERROR;
     if (avs_net_socket_send(socket->backend_socket, buf, len)) {
         socket->error_code = avs_net_socket_errno(socket->backend_socket);
         return MBEDTLS_ERR_NET_SEND_FAILED;
@@ -608,7 +608,7 @@ static int start_ssl(ssl_socket_t *socket, const char *host) {
                                               : host))) {
         LOG(ERROR, "mbedtls_ssl_set_hostname() failed: %d", result);
         socket->error_code =
-                (result == MBEDTLS_ERR_SSL_ALLOC_FAILED ? ENOMEM : EINVAL);
+                (result == MBEDTLS_ERR_SSL_ALLOC_FAILED ? AVS_ENOMEM : AVS_EINVAL);
         goto finish;
     }
 #else
@@ -686,7 +686,7 @@ finish:
         }
         return -1;
     } else {
-        socket->error_code = 0;
+        socket->error_code = AVS_NO_ERROR;
         return 0;
     }
 }
@@ -697,9 +697,6 @@ static void update_send_or_recv_error_code(ssl_socket_t *socket,
             && (mbedtls_result == MBEDTLS_ERR_NET_RECV_FAILED
                     || mbedtls_result == MBEDTLS_ERR_NET_SEND_FAILED)) {
         socket->error_code = avs_net_socket_errno(socket->backend_socket);
-    }
-    if (!socket->error_code) {
-        socket->error_code = AVS_Errno;
     }
     if (!socket->error_code) {
         socket->error_code = AVS_EPROTO;
@@ -739,7 +736,7 @@ static int send_ssl(avs_net_abstract_socket_t *socket_,
         update_send_or_recv_error_code(socket, result);
         return -1;
     }
-    socket->error_code = 0;
+    socket->error_code = AVS_NO_ERROR;
     return 0;
 }
 
@@ -801,7 +798,7 @@ static int receive_ssl(avs_net_abstract_socket_t *socket_,
             return -1;
         }
     }
-    socket->error_code = 0;
+    socket->error_code = AVS_NO_ERROR;
     return 0;
 }
 
