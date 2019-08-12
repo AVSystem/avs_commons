@@ -697,7 +697,7 @@ static int start_ssl(ssl_socket_t *socket, const char *host) {
         char *ciphersuites_string =
                 ids_to_cipher_list(socket, &socket->enabled_ciphersuites);
         if (!ciphersuites_string) {
-            socket->error_code = ENOMEM;
+            socket->error_code = AVS_ENOMEM;
             return -1;
         }
 
