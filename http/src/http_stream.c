@@ -173,7 +173,7 @@ int _avs_http_prepare_for_sending(http_stream_t *stream) {
             stream->flags.close_handling_required = 1;
         } else {
             LOG(ERROR, "trying to send while still receiving");
-            stream->error_code = EBUSY;
+            stream->error_code = AVS_EBUSY;
             return -1;
         }
     }
