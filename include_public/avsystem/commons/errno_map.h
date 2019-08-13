@@ -324,9 +324,9 @@ static inline avs_errno_t avs_map_errno(int errno_value) {
     case ELOOP:
         return AVS_ELOOP;
 #endif
-#ifdef ENOTEMPT
-    case ENOTEMPT:
-        return AVS_ENOTEMPT;
+#ifdef ENOTEMPTY
+    case ENOTEMPTY:
+        return AVS_ENOTEMPTY;
 #endif
     default:
         return AVS_UNKNOWN_ERROR;

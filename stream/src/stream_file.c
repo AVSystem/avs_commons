@@ -23,7 +23,7 @@
 #include <stdarg.h>
 #include <string.h>
 
-#include <avsystem/commons/errno.h>
+#include <avsystem/commons/errno_map.h>
 #include <avsystem/commons/memory.h>
 #include <avsystem/commons/stream/stream_file.h>
 #include <avsystem/commons/stream_v_table.h>
@@ -44,8 +44,8 @@ int avs_stream_file_length(avs_stream_abstract_t *stream,
                            avs_off_t *out_length) {
     const avs_stream_v_table_extension_file_t *ext =
             (const avs_stream_v_table_extension_file_t *)
-            avs_stream_v_table_find_extension(stream,
-                                              AVS_STREAM_V_TABLE_EXTENSION_FILE);
+                    avs_stream_v_table_find_extension(
+                            stream, AVS_STREAM_V_TABLE_EXTENSION_FILE);
     if (ext) {
         return ext->length(stream, out_length);
     }
@@ -56,8 +56,8 @@ int avs_stream_file_offset(avs_stream_abstract_t *stream,
                            avs_off_t *out_offset) {
     const avs_stream_v_table_extension_file_t *ext =
             (const avs_stream_v_table_extension_file_t *)
-            avs_stream_v_table_find_extension(stream,
-                                              AVS_STREAM_V_TABLE_EXTENSION_FILE);
+                    avs_stream_v_table_find_extension(
+                            stream, AVS_STREAM_V_TABLE_EXTENSION_FILE);
     if (ext) {
         return ext->offset(stream, out_offset);
     }
@@ -68,8 +68,8 @@ int avs_stream_file_seek(avs_stream_abstract_t *stream,
                          avs_off_t offset_from_start) {
     const avs_stream_v_table_extension_file_t *ext =
             (const avs_stream_v_table_extension_file_t *)
-            avs_stream_v_table_find_extension(stream,
-                                              AVS_STREAM_V_TABLE_EXTENSION_FILE);
+                    avs_stream_v_table_find_extension(
+                            stream, AVS_STREAM_V_TABLE_EXTENSION_FILE);
     if (ext) {
         return ext->seek(stream, offset_from_start);
     }
@@ -118,8 +118,7 @@ static int stream_file_read(avs_stream_abstract_t *stream_,
     return 0;
 }
 
-static int stream_file_peek(avs_stream_abstract_t *stream_,
-                            size_t offset) {
+static int stream_file_peek(avs_stream_abstract_t *stream_, size_t offset) {
     avs_stream_file_t *file = (avs_stream_file_t *) stream_;
     int8_t byte = EOF;
     size_t bytes_read;
@@ -133,19 +132,7 @@ static int stream_file_peek(avs_stream_abstract_t *stream_,
 
     current = ftell(file->fp);
     if (current < 0) {
-        // ftell() documentation says it can return only EINVAL and ESPIPE.
-        switch (errno) {
-        case EINVAL:
-            file->error_code = AVS_EINVAL;
-            break;
-        case ESPIPE:
-            file->error_code = AVS_ESPIPE;
-            break;
-        default:
-            // Not much else we can do.
-            file->error_code = AVS_EIO;
-            break;
-        }
+        file->error_code = avs_map_errno(errno);
         return -1;
     }
 
@@ -227,7 +214,8 @@ static int stream_file_length(avs_stream_abstract_t *stream,
     if (stream_file_offset(stream, &offset)) {
         return -1;
     }
-    if (fseek(file->fp, 0, SEEK_END) || stream_file_offset(stream, out_length)) {
+    if (fseek(file->fp, 0, SEEK_END)
+        || stream_file_offset(stream, out_length)) {
         stream_file_seek(stream, offset);
         file->error_code = AVS_EIO;
         return -1;
@@ -236,9 +224,7 @@ static int stream_file_length(avs_stream_abstract_t *stream,
 }
 
 static const avs_stream_v_table_extension_file_t stream_file_ext_vtable = {
-    stream_file_length,
-    stream_file_offset,
-    stream_file_seek
+    stream_file_length, stream_file_offset, stream_file_seek
 };
 
 static const avs_stream_v_table_extension_t stream_file_extensions[] = {
@@ -247,19 +233,13 @@ static const avs_stream_v_table_extension_t stream_file_extensions[] = {
 };
 
 static const avs_stream_v_table_t file_stream_vtable = {
-    stream_file_write_some,
-    (avs_stream_finish_message_t) unimplemented,
-    stream_file_read,
-    stream_file_peek,
-    stream_file_reset,
-    stream_file_close,
-    stream_file_errno,
-    stream_file_extensions
+    stream_file_write_some, (avs_stream_finish_message_t) unimplemented,
+    stream_file_read,       stream_file_peek,
+    stream_file_reset,      stream_file_close,
+    stream_file_errno,      stream_file_extensions
 };
 
-avs_stream_abstract_t *
-avs_stream_file_create(const char *path,
-                       uint8_t mode) {
+avs_stream_abstract_t *avs_stream_file_create(const char *path, uint8_t mode) {
     avs_stream_file_t *file =
             (avs_stream_file_t *) avs_calloc(1, sizeof(avs_stream_file_t));
     const void *vtable = &file_stream_vtable;

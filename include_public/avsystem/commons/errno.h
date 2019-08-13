@@ -79,11 +79,13 @@ typedef enum avs_errno {
     AVS_EIO,
     AVS_EISCONN,
     AVS_EISDIR,
+    AVS_ELOOP,
     AVS_EMFILE,
     AVS_EMLINK,
     AVS_EMSGSIZE,
     AVS_ENAMETOOLONG,
     AVS_ENETDOWN,
+    AVS_ENETRESET,
     AVS_ENETUNREACH,
     AVS_ENFILE,
     AVS_ENOBUFS,
@@ -99,6 +101,7 @@ typedef enum avs_errno {
     AVS_ENOTBLK,
     AVS_ENOTCONN,
     AVS_ENOTDIR,
+    AVS_ENOTEMPTY,
     AVS_ENOTSOCK,
     AVS_ENOTSUP,
     AVS_ENOTTY,
@@ -112,16 +115,12 @@ typedef enum avs_errno {
     AVS_EPROTOTYPE,
     AVS_ERANGE,
     AVS_EROFS,
-    AVS_ERRNO,
     AVS_ESPIPE,
     AVS_ESRCH,
     AVS_ETIMEDOUT,
     AVS_ETXTBSY,
     AVS_EWOULDBLOCK,
-    AVS_EXDEV,
-    AVS_ENETRESET,
-    AVS_ELOOP,
-    AVS_ENOTEMPTY
+    AVS_EXDEV
 } avs_errno_t;
 
 #ifdef __cplusplus
