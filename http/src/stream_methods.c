@@ -250,7 +250,7 @@ static int http_reset(avs_stream_abstract_t *stream_) {
     avs_stream_cleanup(&stream->body_receiver);
     stream->out_buffer_pos = 0;
     stream->status = 0;
-    stream->error_code = 0;
+    stream->error_code = AVS_NO_ERROR;
     AVS_LIST_CLEAR(&stream->user_headers);
     stream->encoder_touched = false;
     result = avs_stream_reset(stream->backend);
@@ -275,7 +275,7 @@ static int http_close(avs_stream_abstract_t *stream_) {
     return retval;
 }
 
-static int http_errno(avs_stream_abstract_t *stream_) {
+static avs_errno_t http_errno(avs_stream_abstract_t *stream_) {
     http_stream_t *stream = (http_stream_t *) stream_;
 
     if (stream->error_code) {
@@ -391,7 +391,7 @@ int avs_http_open_stream(avs_stream_abstract_t **out,
             offsetof(http_stream_t, out_buffer) + http->buffer_sizes.body_send);
     if (!stream) {
         LOG(ERROR, "Could not allocate HTTP stream object");
-        result = ENOMEM;
+        result = AVS_ENOMEM;
         goto http_open_stream_error;
     }
 
@@ -399,18 +399,18 @@ int avs_http_open_stream(avs_stream_abstract_t **out,
     *(avs_http_t **) (intptr_t) &stream->http = http;
     *(avs_http_method_t *) (intptr_t) &stream->method = method;
     if (!(stream->url = avs_url_copy(url))) {
-        result = ENOMEM;
+        result = AVS_ENOMEM;
         goto http_open_stream_error;
     }
 
     if (_avs_http_auth_setup_stream(stream, url, auth_username,
                                     auth_password)) {
-        result = ENOMEM;
+        result = AVS_ENOMEM;
         goto http_open_stream_error;
     }
     stream->encoding = encoding;
     if (_avs_http_encoding_init(stream)) {
-        result = ENOMEM;
+        result = AVS_ENOMEM;
         goto http_open_stream_error;
     }
 
@@ -423,7 +423,7 @@ int avs_http_open_stream(avs_stream_abstract_t **out,
                              http->buffer_sizes.send_shaper);
     if (!stream->backend) {
         LOG(ERROR, "error creating buffered netstream");
-        result = ENOMEM;
+        result = AVS_ENOMEM;
         goto http_open_stream_error;
     }
     stream->flags.keep_connection = 1;

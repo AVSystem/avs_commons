@@ -18,6 +18,7 @@
 
 #include <assert.h>
 #include <ctype.h>
+#include <errno.h>
 #include <string.h>
 
 #include <avsystem/commons/errno.h>
@@ -33,7 +34,7 @@ VISIBILITY_SOURCE_BEGIN
 
 typedef struct {
     http_stream_t *stream;
-    AVS_LIST(const avs_http_header_t) *header_storage_end_ptr;
+    AVS_LIST(const avs_http_header_t) * header_storage_end_ptr;
     http_transfer_encoding_t transfer_encoding;
     avs_http_content_encoding_t content_encoding;
     size_t content_length;
@@ -59,7 +60,8 @@ static int parse_size(size_t *out, const char *in) {
     return 0;
 }
 
-static int http_handle_header(const char *key, const char *value,
+static int http_handle_header(const char *key,
+                              const char *value,
                               header_parser_state_t *state,
                               bool *out_header_handled) {
     *out_header_handled = true;
@@ -75,12 +77,13 @@ static int http_handle_header(const char *key, const char *value,
         }
     } else if (avs_strcasecmp(key, "Content-Length") == 0) {
         if (state->transfer_encoding != TRANSFER_IDENTITY
-                || parse_size(&state->content_length, value)) {
+            || parse_size(&state->content_length, value)) {
             return -1;
         }
         state->transfer_encoding = TRANSFER_LENGTH;
     } else if (avs_strcasecmp(key, "Transfer-Encoding") == 0) {
-        if (avs_strcasecmp(value, "identity") != 0) { /* see RFC 2616, sec. 4.4 */
+        if (avs_strcasecmp(value, "identity")
+            != 0) { /* see RFC 2616, sec. 4.4 */
             if (state->transfer_encoding != TRANSFER_IDENTITY) {
                 return -1;
             }
@@ -92,7 +95,7 @@ static int http_handle_header(const char *key, const char *value,
                 return -1;
             }
             if (avs_strcasecmp(value, "gzip") == 0
-                    || avs_strcasecmp(value, "x-gzip") == 0) {
+                || avs_strcasecmp(value, "x-gzip") == 0) {
                 state->content_encoding = AVS_HTTP_CONTENT_GZIP;
             } else if (avs_strcasecmp(value, "deflate") == 0) {
                 state->content_encoding = AVS_HTTP_CONTENT_DEFLATE;
@@ -103,7 +106,7 @@ static int http_handle_header(const char *key, const char *value,
             state->stream->flags.keep_connection = 0;
         }
     } else if (state->stream->status / 100 == 3
-            && avs_strcasecmp(key, "Location") == 0) {
+               && avs_strcasecmp(key, "Location") == 0) {
         avs_url_free(state->redirect_url);
         state->redirect_url = avs_url_parse(value);
     } else {
@@ -133,8 +136,8 @@ static int get_http_header_line(avs_stream_abstract_t *stream,
     int result;
 
     do {
-        result = avs_stream_getline(stream, NULL, NULL,
-                                    line_buf, line_buf_size);
+        result =
+                avs_stream_getline(stream, NULL, NULL, line_buf, line_buf_size);
 
         if (result < 0) {
             LOG(ERROR, "Could not read header line");
@@ -167,8 +170,8 @@ static const char *http_header_split(char *line) {
 static int http_receive_headers_internal(header_parser_state_t *state) {
     while (1) {
         const char *value = NULL;
-        if (get_http_header_line(state->stream->backend,
-                                 state->header_buf, state->header_buf_size)) {
+        if (get_http_header_line(state->stream->backend, state->header_buf,
+                                 state->header_buf_size)) {
             LOG(ERROR, "Error receiving headers");
             return -1;
         }
@@ -179,8 +182,8 @@ static int http_receive_headers_internal(header_parser_state_t *state) {
         LOG(TRACE, "HTTP header: %s", state->header_buf);
         bool header_handled;
         if (!(value = http_header_split(state->header_buf))
-                || http_handle_header(state->header_buf, value, state,
-                                      &header_handled)) {
+            || http_handle_header(state->header_buf, value, state,
+                                  &header_handled)) {
             LOG(ERROR, "Error parsing or handling headers");
             return -1;
         }
@@ -189,9 +192,10 @@ static int http_receive_headers_internal(header_parser_state_t *state) {
             assert(!*state->header_storage_end_ptr);
             size_t key_len = strlen(state->header_buf);
             size_t value_len = strlen(value);
-            avs_http_header_t *element = (avs_http_header_t *)
-                    AVS_LIST_NEW_BUFFER(sizeof(avs_http_header_t)
-                            + key_len + value_len + 2);
+            avs_http_header_t *element =
+                    (avs_http_header_t *) AVS_LIST_NEW_BUFFER(
+                            sizeof(avs_http_header_t) + key_len + value_len
+                            + 2);
             if (!element) {
                 LOG(ERROR, "Could not store received header");
                 return -1;
@@ -214,12 +218,12 @@ static int http_receive_headline_and_headers(header_parser_state_t *state) {
     /* read parse headline */
     size_t bytes_read;
     char message_finished;
-    if (avs_stream_getline(
-            state->stream->backend, &bytes_read, &message_finished,
-            state->header_buf, state->header_buf_size)) {
+    if (avs_stream_getline(state->stream->backend, &bytes_read,
+                           &message_finished, state->header_buf,
+                           state->header_buf_size)) {
         LOG(ERROR, "Could not receive HTTP headline");
         if (bytes_read == 0 && message_finished
-                && state->stream->flags.close_handling_required) {
+            && state->stream->flags.close_handling_required) {
             // end-of-stream: likely a Reset from previous connection
             // issue a fake redirect so that the stream reconnects
             state->stream->status = 399;
@@ -247,10 +251,9 @@ static int http_receive_headline_and_headers(header_parser_state_t *state) {
 
     case 2: // 2xx - success
         state->stream->auth.state.flags.retried = 0;
-        if (_avs_http_body_receiver_init(state->stream,
-                                         state->transfer_encoding,
-                                         state->content_encoding,
-                                         state->content_length)) {
+        if (_avs_http_body_receiver_init(
+                    state->stream, state->transfer_encoding,
+                    state->content_encoding, state->content_length)) {
             goto http_receive_headers_error;
         }
         state->stream->redirect_count = 0;
@@ -261,8 +264,8 @@ static int http_receive_headline_and_headers(header_parser_state_t *state) {
         if (!state->redirect_url) {
             state->stream->status = EINVAL;
         } else {
-            int result = _avs_http_redirect(state->stream,
-                                            &state->redirect_url);
+            int result =
+                    _avs_http_redirect(state->stream, &state->redirect_url);
             if (!result) {
                 /* redirect was a success;
                  * still, receiving headers for _this particular_ response
@@ -280,10 +283,9 @@ static int http_receive_headline_and_headers(header_parser_state_t *state) {
         state->stream->auth.state.flags.retried = 0;
         // fall-through
     case 4: // 4xx - client error
-        if (_avs_http_body_receiver_init(state->stream,
-                                         state->transfer_encoding,
-                                         state->content_encoding,
-                                         state->content_length)) {
+        if (_avs_http_body_receiver_init(
+                    state->stream, state->transfer_encoding,
+                    state->content_encoding, state->content_length)) {
             goto http_receive_headers_error;
         }
         /* we MUST NOT close connection, as required by TR-069,
@@ -314,10 +316,10 @@ static void update_flags_after_receiving_headers(http_stream_t *stream) {
         /* redirect happened */
         stream->flags.should_retry = 1;
     } else if (stream->status == 401
-            && (stream->auth.credentials.user
-                    || stream->auth.credentials.password)
-            && stream->auth.state.flags.type != HTTP_AUTH_TYPE_NONE
-            && !stream->auth.state.flags.retried) {
+               && (stream->auth.credentials.user
+                   || stream->auth.credentials.password)
+               && stream->auth.state.flags.type != HTTP_AUTH_TYPE_NONE
+               && !stream->auth.state.flags.retried) {
         /* retry authentication */
         stream->auth.state.flags.retried = 1;
         stream->flags.should_retry = 1;
@@ -343,9 +345,9 @@ int _avs_http_receive_headers(http_stream_t *stream) {
         AVS_LIST_CLEAR(stream->incoming_header_storage);
     }
 
-    header_parser_state_t *parser_state = (header_parser_state_t *)
-            avs_malloc(offsetof(header_parser_state_t, header_buf)
-                    + stream->http->buffer_sizes.header_line);
+    header_parser_state_t *parser_state = (header_parser_state_t *) avs_malloc(
+            offsetof(header_parser_state_t, header_buf)
+            + stream->http->buffer_sizes.header_line);
     if (!parser_state) {
         LOG(ERROR, "Out of memory");
         stream->flags.keep_connection = 0;
@@ -356,10 +358,11 @@ int _avs_http_receive_headers(http_stream_t *stream) {
         memset(parser_state, 0, sizeof(header_parser_state_t));
         parser_state->stream = stream;
         parser_state->header_storage_end_ptr =
-                (AVS_LIST(const avs_http_header_t) *)
-                    (stream->incoming_header_storage
-                        ? AVS_LIST_APPEND_PTR(stream->incoming_header_storage)
-                        : NULL);
+                (AVS_LIST(const avs_http_header_t)
+                         *) (stream->incoming_header_storage
+                                     ? AVS_LIST_APPEND_PTR(
+                                               stream->incoming_header_storage)
+                                     : NULL);
         parser_state->header_buf_size = stream->http->buffer_sizes.header_line;
         result = http_receive_headline_and_headers(parser_state);
         avs_url_free(parser_state->redirect_url);

@@ -159,7 +159,7 @@ static int decoding_close(avs_stream_abstract_t *stream_) {
     return retval;
 }
 
-static int decoding_errno(avs_stream_abstract_t *stream) {
+static avs_errno_t decoding_errno(avs_stream_abstract_t *stream) {
     return ((decoding_stream_t *) stream)->error;
 }
 

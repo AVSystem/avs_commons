@@ -25,7 +25,7 @@
 VISIBILITY_SOURCE_BEGIN
 
 typedef struct {
-    const avs_stream_v_table_t * const vtable;
+    const avs_stream_v_table_t *const vtable;
     avs_stream_abstract_t *backend;
 } dumb_proxy_receiver_t;
 
@@ -35,9 +35,7 @@ static int dumb_proxy_read(avs_stream_abstract_t *stream,
                            void *buffer,
                            size_t buffer_length) {
     return avs_stream_read(((dumb_proxy_receiver_t *) stream)->backend,
-                           out_bytes_read,
-                           out_message_finished,
-                           buffer,
+                           out_bytes_read, out_message_finished, buffer,
                            buffer_length);
 }
 
@@ -47,8 +45,7 @@ static int dumb_proxy_nonblock_read_ready(avs_stream_abstract_t *stream) {
 }
 
 static int dumb_proxy_peek(avs_stream_abstract_t *stream, size_t offset) {
-    return avs_stream_peek(((dumb_proxy_receiver_t *) stream)->backend,
-                           offset);
+    return avs_stream_peek(((dumb_proxy_receiver_t *) stream)->backend, offset);
 }
 
 static int dumb_close(avs_stream_abstract_t *stream_) {
@@ -57,7 +54,7 @@ static int dumb_close(avs_stream_abstract_t *stream_) {
     return avs_stream_cleanup(&stream->backend);
 }
 
-static int dumb_errno(avs_stream_abstract_t *stream) {
+static avs_errno_t dumb_errno(avs_stream_abstract_t *stream) {
     return avs_stream_errno(((dumb_proxy_receiver_t *) stream)->backend);
 }
 
@@ -74,18 +71,13 @@ static const avs_stream_v_table_t dumb_body_receiver_vtable = {
     (avs_stream_reset_t) unimplemented,
     dumb_close,
     dumb_errno,
-    &(avs_stream_v_table_extension_t[]) {
-        {
-            AVS_STREAM_V_TABLE_EXTENSION_NONBLOCK,
-            &(avs_stream_v_table_extension_nonblock_t[]) {
-                {
-                    dumb_proxy_nonblock_read_ready,
-                    (avs_stream_nonblock_write_ready_t) unimplemented
-                }
-            }[0]
-        },
-        AVS_STREAM_V_TABLE_EXTENSION_NULL
-    }[0]
+    &(avs_stream_v_table_extension_t[]){
+            { AVS_STREAM_V_TABLE_EXTENSION_NONBLOCK,
+              &(avs_stream_v_table_extension_nonblock_t[]){
+                      { dumb_proxy_nonblock_read_ready,
+                        (avs_stream_nonblock_write_ready_t)
+                                unimplemented } }[0] },
+            AVS_STREAM_V_TABLE_EXTENSION_NULL }[0]
 };
 
 avs_stream_abstract_t *
