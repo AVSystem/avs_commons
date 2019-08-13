@@ -262,7 +262,7 @@ static int http_receive_headline_and_headers(header_parser_state_t *state) {
     case 3: // 3xx - redirect
         state->stream->auth.state.flags.retried = 0;
         if (!state->redirect_url) {
-            state->stream->status = EINVAL;
+            state->stream->status = AVS_EINVAL;
         } else {
             int result =
                     _avs_http_redirect(state->stream, &state->redirect_url);

@@ -37,25 +37,23 @@ static void successful_request(avs_http_t *client,
     avs_unit_mocksock_create(socket_ptr);
     avs_http_test_expect_create_socket(*socket_ptr, AVS_NET_TCP_SOCKET);
     avs_unit_mocksock_expect_connect(*socket_ptr, "example.com", "80");
-    AVS_UNIT_ASSERT_SUCCESS(avs_http_open_stream(
-            stream_ptr, client, AVS_HTTP_POST, AVS_HTTP_CONTENT_IDENTITY,
-            url, NULL, NULL));
+    AVS_UNIT_ASSERT_SUCCESS(
+            avs_http_open_stream(stream_ptr, client, AVS_HTTP_POST,
+                                 AVS_HTTP_CONTENT_IDENTITY, url, NULL, NULL));
     avs_url_free(url);
     AVS_UNIT_ASSERT_NOT_NULL(*stream_ptr);
     avs_unit_mocksock_assert_io_clean(*socket_ptr);
-    tmp_data =
-            "POST / HTTP/1.1\r\n"
-            "Host: example.com\r\n"
+    tmp_data = "POST / HTTP/1.1\r\n"
+               "Host: example.com\r\n"
 #ifdef WITH_AVS_HTTP_ZLIB
-            "Accept-Encoding: gzip, deflate\r\n"
+               "Accept-Encoding: gzip, deflate\r\n"
 #endif
-            "Content-Length: 0\r\n"
-            "\r\n";
+               "Content-Length: 0\r\n"
+               "\r\n";
     avs_unit_mocksock_expect_output(*socket_ptr, tmp_data, strlen(tmp_data));
-    tmp_data =
-            "HTTP/1.1 200 OK\r\n"
-            "Content-Length: 5\r\n"
-            "\r\n";
+    tmp_data = "HTTP/1.1 200 OK\r\n"
+               "Content-Length: 5\r\n"
+               "\r\n";
     avs_unit_mocksock_input(*socket_ptr, tmp_data, strlen(tmp_data));
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_finish_message(*stream_ptr));
     avs_unit_mocksock_assert_io_clean(*socket_ptr);
@@ -63,10 +61,9 @@ static void successful_request(avs_http_t *client,
     avs_unit_mocksock_input(*socket_ptr, tmp_data, strlen(tmp_data));
     while (!message_finished) {
         size_t bytes_read;
-        AVS_UNIT_ASSERT_SUCCESS(avs_stream_read(*stream_ptr, &bytes_read,
-                                                &message_finished,
-                                                buffer_ptr, sizeof(buffer)
-                                                - (buffer_ptr - buffer)));
+        AVS_UNIT_ASSERT_SUCCESS(avs_stream_read(
+                *stream_ptr, &bytes_read, &message_finished, buffer_ptr,
+                sizeof(buffer) - (buffer_ptr - buffer)));
         buffer_ptr += bytes_read;
     }
     AVS_UNIT_ASSERT_EQUAL(buffer_ptr - buffer, strlen(tmp_data));
@@ -84,32 +81,29 @@ AVS_UNIT_TEST(http_close, chunked_request) {
 
     // second request
     avs_unit_mocksock_output_fail(socket, -1);
-    avs_unit_mocksock_expect_errno(socket, EPIPE);
+    avs_unit_mocksock_expect_errno(socket, AVS_EPIPE);
     avs_unit_mocksock_expect_mid_close(socket);
     avs_unit_mocksock_expect_connect(socket, "example.com", "80");
     // second request retry
-    const char *tmp_data =
-            "POST / HTTP/1.1\r\n"
-            "Host: example.com\r\n"
+    const char *tmp_data = "POST / HTTP/1.1\r\n"
+                           "Host: example.com\r\n"
 #ifdef WITH_AVS_HTTP_ZLIB
-            "Accept-Encoding: gzip, deflate\r\n"
+                           "Accept-Encoding: gzip, deflate\r\n"
 #endif
-            "Expect: 100-continue\r\n"
-            "Transfer-Encoding: chunked\r\n"
-            "\r\n";
+                           "Expect: 100-continue\r\n"
+                           "Transfer-Encoding: chunked\r\n"
+                           "\r\n";
     avs_unit_mocksock_expect_output(socket, tmp_data, strlen(tmp_data));
-    tmp_data =
-            "HTTP/1.1 100 Continue\r\n"
-            "\r\n";
+    tmp_data = "HTTP/1.1 100 Continue\r\n"
+               "\r\n";
     avs_unit_mocksock_input(socket, tmp_data, strlen(tmp_data));
     /* The text used in this test is 5119 bytes long.
      * This is to test writing more than buffer size, which is 4096. */
     tmp_data = MONTY_PYTHON_PER_LINE_REQUEST;
     avs_unit_mocksock_expect_output(socket, tmp_data, strlen(tmp_data));
-    tmp_data =
-            "HTTP/1.1 200 OK\r\n"
-            "Transfer-Encoding: identity\r\n"
-            "\r\n";
+    tmp_data = "HTTP/1.1 200 OK\r\n"
+               "Transfer-Encoding: identity\r\n"
+               "\r\n";
     avs_unit_mocksock_input(socket, tmp_data, strlen(tmp_data));
     tmp_data = MONTY_PYTHON_RAW;
     while (*tmp_data) {
@@ -131,12 +125,12 @@ AVS_UNIT_TEST(http_close, chunked_request_twice) {
 
     // second request
     avs_unit_mocksock_output_fail(socket, -1);
-    avs_unit_mocksock_expect_errno(socket, EPIPE);
+    avs_unit_mocksock_expect_errno(socket, AVS_EPIPE);
     avs_unit_mocksock_expect_mid_close(socket);
     avs_unit_mocksock_expect_connect(socket, "example.com", "80");
     // second request retry
     avs_unit_mocksock_output_fail(socket, -1);
-    avs_unit_mocksock_expect_errno(socket, EPIPE);
+    avs_unit_mocksock_expect_errno(socket, AVS_EPIPE);
     const char *tmp_data = MONTY_PYTHON_RAW;
     int result = 0;
     while (!result && *tmp_data) {
@@ -157,36 +151,33 @@ AVS_UNIT_TEST(http_close, chunked_request_error_in_first_chunk) {
     successful_request(client, &socket, &stream);
 
     // second request
-    const char *tmp_data =
-            "POST / HTTP/1.1\r\n"
-            "Host: example.com\r\n"
+    const char *tmp_data = "POST / HTTP/1.1\r\n"
+                           "Host: example.com\r\n"
 #ifdef WITH_AVS_HTTP_ZLIB
-            "Accept-Encoding: gzip, deflate\r\n"
+                           "Accept-Encoding: gzip, deflate\r\n"
 #endif
-            "Expect: 100-continue\r\n"
-            "Transfer-Encoding: chunked\r\n"
-            "\r\n";
+                           "Expect: 100-continue\r\n"
+                           "Transfer-Encoding: chunked\r\n"
+                           "\r\n";
     avs_unit_mocksock_expect_output(socket, tmp_data, strlen(tmp_data));
     avs_unit_mocksock_input_fail(socket, -1);
-    avs_unit_mocksock_expect_errno(socket, ETIMEDOUT);
+    avs_unit_mocksock_expect_errno(socket, AVS_ETIMEDOUT);
     avs_unit_mocksock_output_fail(socket, -1);
-    avs_unit_mocksock_expect_errno(socket, EPIPE);
+    avs_unit_mocksock_expect_errno(socket, AVS_EPIPE);
     avs_unit_mocksock_expect_mid_close(socket);
     avs_unit_mocksock_expect_connect(socket, "example.com", "80");
     // second request retry
     avs_unit_mocksock_expect_output(socket, tmp_data, strlen(tmp_data));
-    tmp_data =
-            "HTTP/1.1 100 Continue\r\n"
-            "\r\n";
+    tmp_data = "HTTP/1.1 100 Continue\r\n"
+               "\r\n";
     avs_unit_mocksock_input(socket, tmp_data, strlen(tmp_data));
     /* The text used in this test is 5119 bytes long.
      * This is to test writing more than buffer size, which is 4096. */
     tmp_data = MONTY_PYTHON_PER_LINE_REQUEST;
     avs_unit_mocksock_expect_output(socket, tmp_data, strlen(tmp_data));
-    tmp_data =
-            "HTTP/1.1 200 OK\r\n"
-            "Transfer-Encoding: identity\r\n"
-            "\r\n";
+    tmp_data = "HTTP/1.1 200 OK\r\n"
+               "Transfer-Encoding: identity\r\n"
+               "\r\n";
     avs_unit_mocksock_input(socket, tmp_data, strlen(tmp_data));
     tmp_data = MONTY_PYTHON_RAW;
     while (*tmp_data) {
@@ -207,33 +198,30 @@ AVS_UNIT_TEST(http_close, chunked_request_close_when_receiving) {
     successful_request(client, &socket, &stream);
 
     // second request
-    const char *tmp_data =
-            "POST / HTTP/1.1\r\n"
-            "Host: example.com\r\n"
+    const char *tmp_data = "POST / HTTP/1.1\r\n"
+                           "Host: example.com\r\n"
 #ifdef WITH_AVS_HTTP_ZLIB
-            "Accept-Encoding: gzip, deflate\r\n"
+                           "Accept-Encoding: gzip, deflate\r\n"
 #endif
-            "Expect: 100-continue\r\n"
-            "Transfer-Encoding: chunked\r\n"
-            "\r\n";
+                           "Expect: 100-continue\r\n"
+                           "Transfer-Encoding: chunked\r\n"
+                           "\r\n";
     avs_unit_mocksock_expect_output(socket, tmp_data, strlen(tmp_data));
     avs_unit_mocksock_input(socket, NULL, 0); // EOF
     avs_unit_mocksock_expect_mid_close(socket);
     avs_unit_mocksock_expect_connect(socket, "example.com", "80");
     // second request retry
     avs_unit_mocksock_expect_output(socket, tmp_data, strlen(tmp_data));
-    tmp_data =
-            "HTTP/1.1 100 Continue\r\n"
-            "\r\n";
+    tmp_data = "HTTP/1.1 100 Continue\r\n"
+               "\r\n";
     avs_unit_mocksock_input(socket, tmp_data, strlen(tmp_data));
     /* The text used in this test is 5119 bytes long.
      * This is to test writing more than buffer size, which is 4096. */
     tmp_data = MONTY_PYTHON_PER_LINE_REQUEST;
     avs_unit_mocksock_expect_output(socket, tmp_data, strlen(tmp_data));
-    tmp_data =
-            "HTTP/1.1 200 OK\r\n"
-            "Transfer-Encoding: identity\r\n"
-            "\r\n";
+    tmp_data = "HTTP/1.1 200 OK\r\n"
+               "Transfer-Encoding: identity\r\n"
+               "\r\n";
     avs_unit_mocksock_input(socket, tmp_data, strlen(tmp_data));
     tmp_data = MONTY_PYTHON_RAW;
     while (*tmp_data) {
@@ -254,18 +242,17 @@ AVS_UNIT_TEST(http_close, chunked_request_error_in_second_chunk) {
     successful_request(client, &socket, &stream);
 
     // second request
-    const char *tmp_data =
-            "POST / HTTP/1.1\r\n"
-            "Host: example.com\r\n"
+    const char *tmp_data = "POST / HTTP/1.1\r\n"
+                           "Host: example.com\r\n"
 #ifdef WITH_AVS_HTTP_ZLIB
-            "Accept-Encoding: gzip, deflate\r\n"
+                           "Accept-Encoding: gzip, deflate\r\n"
 #endif
-            "Expect: 100-continue\r\n"
-            "Transfer-Encoding: chunked\r\n"
-            "\r\n";
+                           "Expect: 100-continue\r\n"
+                           "Transfer-Encoding: chunked\r\n"
+                           "\r\n";
     avs_unit_mocksock_expect_output(socket, tmp_data, strlen(tmp_data));
     avs_unit_mocksock_input_fail(socket, -1);
-    avs_unit_mocksock_expect_errno(socket, ETIMEDOUT);
+    avs_unit_mocksock_expect_errno(socket, AVS_ETIMEDOUT);
     /* The text used in this test is 5119 bytes long.
      * This is to test writing more than buffer size, which is 4096. */
     tmp_data = MONTY_PYTHON_PER_LINE_REQUEST;
@@ -273,7 +260,7 @@ AVS_UNIT_TEST(http_close, chunked_request_error_in_second_chunk) {
     avs_unit_mocksock_expect_output(socket, tmp_data,
                                     strstr(tmp_data, "\n\r\n") + 3 - tmp_data);
     avs_unit_mocksock_output_fail(socket, -1);
-    avs_unit_mocksock_expect_errno(socket, EPIPE);
+    avs_unit_mocksock_expect_errno(socket, AVS_EPIPE);
     tmp_data = MONTY_PYTHON_RAW;
     while (*tmp_data) {
         send_line(stream, &tmp_data);
