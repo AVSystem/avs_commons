@@ -29,15 +29,15 @@ VISIBILITY_SOURCE_BEGIN
 
 #define HTTP_CONTENT_CODING_OUT_BUF_FACTOR 1.2
 #define HTTP_CONTENT_CODING_OUT_BUF_SIZE(BufferSizes) \
-        ((size_t) (HTTP_CONTENT_CODING_OUT_BUF_FACTOR \
-                * (double) (BufferSizes)->content_coding_input))
+    ((size_t) (HTTP_CONTENT_CODING_OUT_BUF_FACTOR     \
+               * (double) (BufferSizes)->content_coding_input))
 
 typedef struct {
-    const avs_stream_v_table_t * const vtable;
+    const avs_stream_v_table_t *const vtable;
     avs_stream_abstract_t *backend;
     avs_stream_abstract_t *decoder;
     const avs_http_buffer_sizes_t *buffer_sizes;
-    int error;
+    avs_errno_t error;
 } decoding_stream_t;
 
 static int decode_more_data_with_buffer(decoding_stream_t *stream,
@@ -45,17 +45,16 @@ static int decode_more_data_with_buffer(decoding_stream_t *stream,
                                         size_t buffer_length,
                                         char *out_no_more_data) {
     size_t bytes_read;
-    stream->error = 0;
-    if (avs_stream_read(stream->backend, &bytes_read, out_no_more_data,
-                        buffer, buffer_length)) {
-        stream->error = AVS_HTTP_ERRNO_BACKEND;
+    stream->error = AVS_NO_ERROR;
+    if (avs_stream_read(stream->backend, &bytes_read, out_no_more_data, buffer,
+                        buffer_length)) {
+        stream->error = AVS_EIO;
         return -1;
     }
     if ((bytes_read > 0
-            && avs_stream_write(stream->decoder, buffer, bytes_read))
-            || (*out_no_more_data
-            && avs_stream_finish_message(stream->decoder))) {
-        stream->error = AVS_HTTP_ERRNO_DECODER;
+         && avs_stream_write(stream->decoder, buffer, bytes_read))
+        || (*out_no_more_data && avs_stream_finish_message(stream->decoder))) {
+        stream->error = AVS_EIO;
         return -1;
     }
     return 0;
@@ -91,22 +90,22 @@ static int decoding_read(avs_stream_abstract_t *stream_,
     decoding_stream_t *stream = (decoding_stream_t *) stream_;
     char no_more_data = 0;
     while (1) {
-        stream->error = 0;
+        stream->error = AVS_NO_ERROR;
         /* try reading remaining data from decoder */
-        int result = avs_stream_read(stream->decoder,
-                                     out_bytes_read, out_message_finished,
-                                     buffer, buffer_length);
+        int result =
+                avs_stream_read(stream->decoder, out_bytes_read,
+                                out_message_finished, buffer, buffer_length);
         if (result || *out_bytes_read > 0 || *out_message_finished) {
             if (result) {
-                stream->error = AVS_HTTP_ERRNO_DECODER;
+                stream->error = AVS_EIO;
             }
             return result;
         }
         /* read and decode */
         /* buffer is used here only as temporary storage;
          * stored data is not used after return from decode_more_data() */
-        if (no_more_data || decode_more_data(stream, buffer, buffer_length,
-                                             &no_more_data)) {
+        if (no_more_data
+            || decode_more_data(stream, buffer, buffer_length, &no_more_data)) {
             return -1;
         }
     }
@@ -142,7 +141,7 @@ static int decoding_peek(avs_stream_abstract_t *stream_, size_t offset) {
         }
         result = avs_stream_peek(stream->decoder, offset);
     }
-    stream->error = 0;
+    stream->error = AVS_NO_ERROR;
     return result;
 }
 
@@ -177,18 +176,13 @@ static const avs_stream_v_table_t decoding_vtable = {
     (avs_stream_reset_t) unimplemented,
     decoding_close,
     decoding_errno,
-    &(avs_stream_v_table_extension_t[]) {
-        {
-            AVS_STREAM_V_TABLE_EXTENSION_NONBLOCK,
-            &(avs_stream_v_table_extension_nonblock_t[]) {
-                {
-                    decoding_nonblock_read_ready,
-                    (avs_stream_nonblock_write_ready_t) unimplemented
-                }
-            }[0]
-        },
-        AVS_STREAM_V_TABLE_EXTENSION_NULL
-    }[0]
+    &(avs_stream_v_table_extension_t[]){
+            { AVS_STREAM_V_TABLE_EXTENSION_NONBLOCK,
+              &(avs_stream_v_table_extension_nonblock_t[]){
+                      { decoding_nonblock_read_ready,
+                        (avs_stream_nonblock_write_ready_t)
+                                unimplemented } }[0] },
+            AVS_STREAM_V_TABLE_EXTENSION_NULL }[0]
 };
 
 avs_stream_abstract_t *
@@ -220,8 +214,7 @@ int _avs_http_content_decoder_create(
 
     case AVS_HTTP_CONTENT_GZIP:
         *out_decoder = _avs_http_create_decompressor(
-                HTTP_COMPRESSION_GZIP,
-                HTTP_DECOMPRESSOR_WINDOW_BITS_DEFAULT,
+                HTTP_COMPRESSION_GZIP, HTTP_DECOMPRESSOR_WINDOW_BITS_DEFAULT,
                 buffer_sizes->content_coding_input,
                 HTTP_CONTENT_CODING_OUT_BUF_SIZE(buffer_sizes));
         return *out_decoder ? 0 : -1;
@@ -232,8 +225,7 @@ int _avs_http_content_decoder_create(
 
     case AVS_HTTP_CONTENT_DEFLATE:
         *out_decoder = _avs_http_create_decompressor(
-                HTTP_COMPRESSION_ZLIB,
-                HTTP_DECOMPRESSOR_WINDOW_BITS_DEFAULT,
+                HTTP_COMPRESSION_ZLIB, HTTP_DECOMPRESSOR_WINDOW_BITS_DEFAULT,
                 buffer_sizes->content_coding_input,
                 HTTP_CONTENT_CODING_OUT_BUF_SIZE(buffer_sizes));
         return *out_decoder ? 0 : -1;
@@ -250,11 +242,9 @@ int _avs_http_encoding_init(http_stream_t *stream) {
         return 0;
     }
     stream->encoder = _avs_http_create_compressor(
-            stream->encoding == AVS_HTTP_CONTENT_GZIP
-                    ? HTTP_COMPRESSION_GZIP
-                    : HTTP_COMPRESSION_ZLIB,
-            HTTP_COMPRESSOR_LEVEL_DEFAULT,
-            HTTP_COMPRESSOR_WINDOW_BITS_DEFAULT,
+            stream->encoding == AVS_HTTP_CONTENT_GZIP ? HTTP_COMPRESSION_GZIP
+                                                      : HTTP_COMPRESSION_ZLIB,
+            HTTP_COMPRESSOR_LEVEL_DEFAULT, HTTP_COMPRESSOR_WINDOW_BITS_DEFAULT,
             HTTP_COMPRESSOR_MEM_LEVEL_DEFAULT,
             stream->http->buffer_sizes.content_coding_input,
             HTTP_CONTENT_CODING_OUT_BUF_SIZE(&stream->http->buffer_sizes));

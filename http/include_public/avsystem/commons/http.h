@@ -314,15 +314,8 @@ int avs_http_set_user_agent(avs_http_t *http, const char *user_agent);
  *   Authorization header will be sent even after resetting the stream.
  *
  * - <c>avs_stream_errno</c> - returns the current error code. It may be one of:
- *   - an <c>errno</c>-compatible positive value, e.g. <c>EBUSY</c>
- *   - a positive value in the range 400-498 or 500-599 signifying an HTTP
- *     status code
- *   - a special value @ref HTTP_ERRNO_DECODER (499) if there was an error while
- *     trying to interpret the response's content encoding (i.e. error while
- *     decompressing a compressed response)
- *   - a special value @ref HTTP_ERRNO_BACKEND if there was an error receiving
- *     data when the server was using non-trivial response content encoding
- *   - zero, if there was no error
+ *   - an <c>avs_errno_t</c>-compatible positive value, e.g. <c>AVS_EBUSY</c>,
+ *   - <c>AVS_NO_ERROR</c>, if there was no error
  *
  * The stream also supports the "net" extension (<c>avs_stream_net_getsock()</c>
  * and <c>avs_stream_net_setsock()</c>).
@@ -474,20 +467,6 @@ void avs_http_set_header_storage(
  *         1 if it is appropriate to retry the last request
  */
 int avs_http_should_retry(avs_stream_abstract_t *stream);
-
-/**
- * Value that may be returned from <c>avs_stream_errno</c> if there was an error
- * receiving raw data when the server was using non-trivial response content
- * encoding.
- */
-#define AVS_HTTP_ERRNO_BACKEND (-0xEE0)
-
-/**
- * "Pseudo status code" that may be returned from <c>avs_stream_errno</c> if
- * there was an error while trying to interpret the response's content encoding
- * (i.e. error while decompressing a compressed response).
- */
-#define AVS_HTTP_ERRNO_DECODER 499
 
 /**
  * Retrieves the last response code received on a given stream.
