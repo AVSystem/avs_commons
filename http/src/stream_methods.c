@@ -152,13 +152,7 @@ static int http_finish(avs_stream_abstract_t *stream_) {
         }
         stream->encoder_touched = false;
     }
-    // Ignore errors on a HTTP layer. The user is expected to query
-    // avs_http_status_code() to figure out if the response received
-    // from the peer is the expected one.
-    if (_avs_http_buffer_flush(stream, 1) && http_errno(stream_)) {
-        return -1;
-    }
-    return 0;
+    return _avs_http_buffer_flush(stream, 1);
 }
 
 /**

@@ -184,6 +184,7 @@ static int http_receive_headers_internal(header_parser_state_t *state) {
         if (!(value = http_header_split(state->header_buf))
             || http_handle_header(state->header_buf, value, state,
                                   &header_handled)) {
+            state->stream->error_code = AVS_EBADMSG;
             LOG(ERROR, "Error parsing or handling headers");
             return -1;
         }
@@ -197,6 +198,7 @@ static int http_receive_headers_internal(header_parser_state_t *state) {
                             sizeof(avs_http_header_t) + key_len + value_len
                             + 2);
             if (!element) {
+                state->stream->error_code = AVS_ENOMEM;
                 LOG(ERROR, "Could not store received header");
                 return -1;
             }

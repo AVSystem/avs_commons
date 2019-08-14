@@ -207,7 +207,7 @@ AVS_UNIT_TEST(http, advanced_request) {
                "Content-Length: 0\r\n"
                "\r\n";
     avs_unit_mocksock_input(socket, tmp_data, strlen(tmp_data));
-    AVS_UNIT_ASSERT_SUCCESS(avs_stream_finish_message(stream));
+    AVS_UNIT_ASSERT_FAILED(avs_stream_finish_message(stream));
     AVS_UNIT_ASSERT_EQUAL(avs_stream_errno(stream), 0);
     AVS_UNIT_ASSERT_EQUAL(avs_http_status_code(stream), 401);
     avs_unit_mocksock_assert_io_clean(socket);
@@ -245,7 +245,7 @@ AVS_UNIT_TEST(http, invalid_cookies) {
                "\r\n";
     avs_unit_mocksock_input(socket, tmp_data, strlen(tmp_data));
     AVS_UNIT_ASSERT_FAILED(avs_stream_finish_message(stream));
-    AVS_UNIT_ASSERT_EQUAL(avs_stream_errno(stream), 0);
+    AVS_UNIT_ASSERT_EQUAL(avs_stream_errno(stream), AVS_EBADMSG);
     avs_unit_mocksock_assert_io_clean(socket);
     avs_unit_mocksock_expect_shutdown(socket);
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&stream));

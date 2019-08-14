@@ -22,7 +22,7 @@
 #include <avsystem/commons/stream.h>
 #include <avsystem/commons/url.h>
 
-#ifdef	__cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
@@ -123,9 +123,7 @@ extern const avs_http_buffer_sizes_t AVS_HTTP_DEFAULT_BUFFER_SIZES;
 /**
  * HTTP request method.
  */
-typedef enum {
-    AVS_HTTP_GET, AVS_HTTP_POST, AVS_HTTP_PUT
-} avs_http_method_t;
+typedef enum { AVS_HTTP_GET, AVS_HTTP_POST, AVS_HTTP_PUT } avs_http_method_t;
 
 /**
  * HTTP Content-Encoding type.
@@ -252,7 +250,7 @@ void avs_http_ssl_configuration(
  *                          configuration.
  */
 void avs_http_tcp_configuration(
-        avs_http_t* http,
+        avs_http_t *http,
         const volatile avs_net_socket_configuration_t *tcp_configuration);
 
 /**
@@ -313,9 +311,19 @@ int avs_http_set_user_agent(avs_http_t *http, const char *user_agent);
  *   authentication during the lifetime of this stream, appropriate
  *   Authorization header will be sent even after resetting the stream.
  *
- * - <c>avs_stream_errno</c> - returns the current error code. It may be one of:
- *   - an <c>avs_errno_t</c>-compatible positive value, e.g. <c>AVS_EBUSY</c>,
- *   - <c>AVS_NO_ERROR</c>, if there was no error
+ * - <c>avs_stream_errno</c> - returns the error code that corresponds to a
+ *   situation in which some user requested operation could not be performed,
+ *   e.g. due to out of memory condition, network connectivity issues, server
+ *   sending malformed responses, etc. Essentially, if the error from this
+ *   function is returned, something very bad happened, and it makes sense to
+ *   assume that HTTP exchange failed critically.
+ *
+ *   IMPORTANT: If this function is called after
+ *   <c>avs_stream_finish_message</c>, and it returns <c>AVS_NO_ERROR</c> then
+ *   it only means that HTTP request was sent and HTTP response was received
+ *   (even if the response code is an error in the HTTP sense). Users are
+ *   expected to also check HTTP status code with <c>avs_http_status_code</c>
+ *   function.
  *
  * The stream also supports the "net" extension (<c>avs_stream_net_getsock()</c>
  * and <c>avs_stream_net_setsock()</c>).
@@ -373,8 +381,8 @@ int avs_http_set_user_agent(avs_http_t *http, const char *user_agent);
  *                      or not necessary.
  *
  * @return 0 for success, or a non-zero value in case of error.
- *         If applicable, positive values compatible with <c>avs_errno_t</c> are used.
- *         -1 may also be used for generic/unknown error.
+ *         If applicable, positive values compatible with <c>avs_errno_t</c> are
+ *         used. -1 may also be used for generic/unknown error.
  */
 int avs_http_open_stream(avs_stream_abstract_t **out,
                          avs_http_t *http,
@@ -417,7 +425,8 @@ void avs_http_clear_cookies(avs_http_t *http);
  * @return 0 for success, or a negative value in case of an out-of-memory error.
  */
 int avs_http_add_header(avs_stream_abstract_t *stream,
-                        const char *key, const char *value);
+                        const char *key,
+                        const char *value);
 
 /**
  * Enables storage of received HTTP headers and sets the storage location to the
@@ -434,9 +443,9 @@ int avs_http_add_header(avs_stream_abstract_t *stream,
  *                           also be cleaned upon deleting the stream or
  *                           resetting this setting to <c>NULL</c>.
  */
-void avs_http_set_header_storage(
-        avs_stream_abstract_t *stream,
-        AVS_LIST(const avs_http_header_t) *header_storage_ptr);
+void avs_http_set_header_storage(avs_stream_abstract_t *stream,
+                                 AVS_LIST(const avs_http_header_t)
+                                         * header_storage_ptr);
 
 /**
  * Determines whether an unsuccessful request should be repeated by user code.
@@ -478,7 +487,7 @@ int avs_http_should_retry(avs_stream_abstract_t *stream);
  */
 int avs_http_status_code(avs_stream_abstract_t *stream);
 
-#ifdef	__cplusplus
+#ifdef __cplusplus
 }
 #endif
 
