@@ -128,6 +128,20 @@ static int http_nonblock_write_ready(avs_stream_abstract_t *stream_,
     }
 }
 
+static avs_errno_t http_errno(avs_stream_abstract_t *stream_) {
+    http_stream_t *stream = (http_stream_t *) stream_;
+
+    if (stream->error_code) {
+        return stream->error_code;
+    }
+
+    if (stream->body_receiver) {
+        return avs_stream_errno(stream->body_receiver);
+    } else {
+        return avs_stream_errno(stream->backend);
+    }
+}
+
 static int http_finish(avs_stream_abstract_t *stream_) {
     http_stream_t *stream = (http_stream_t *) stream_;
     if (stream->encoder && stream->encoder_touched) {
@@ -138,7 +152,13 @@ static int http_finish(avs_stream_abstract_t *stream_) {
         }
         stream->encoder_touched = false;
     }
-    return _avs_http_buffer_flush(stream, 1);
+    // Ignore errors on a HTTP layer. The user is expected to query
+    // avs_http_status_code() to figure out if the response received
+    // from the peer is the expected one.
+    if (_avs_http_buffer_flush(stream, 1) && http_errno(stream_)) {
+        return -1;
+    }
+    return 0;
 }
 
 /**
@@ -273,20 +293,6 @@ static int http_close(avs_stream_abstract_t *stream_) {
     _avs_http_auth_clear(&stream->auth);
     avs_url_free(stream->url);
     return retval;
-}
-
-static avs_errno_t http_errno(avs_stream_abstract_t *stream_) {
-    http_stream_t *stream = (http_stream_t *) stream_;
-
-    if (stream->error_code) {
-        return stream->error_code;
-    }
-
-    if (stream->body_receiver) {
-        return avs_stream_errno(stream->body_receiver);
-    } else {
-        return avs_stream_errno(stream->backend);
-    }
 }
 
 static int http_getsock(avs_stream_abstract_t *stream,

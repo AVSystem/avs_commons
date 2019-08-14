@@ -107,12 +107,15 @@ int _avs_http_socket_new(avs_net_abstract_socket_t **out,
 }
 
 static int reconnect_tcp_socket(avs_net_abstract_socket_t *socket,
-                                const avs_url_t *url) {
+                                const avs_url_t *url,
+                                avs_errno_t *out_error_code) {
     LOG(TRACE, "reconnect_tcp_socket");
+    *out_error_code = AVS_NO_ERROR;
     if (!socket || avs_net_socket_close(socket)
         || avs_net_socket_connect(socket, avs_url_host(url),
                                   resolve_port(url))) {
         LOG(ERROR, "reconnect failed");
+        *out_error_code = avs_net_socket_errno(socket);
         return -1;
     }
     return 0;
@@ -184,7 +187,7 @@ int _avs_http_prepare_for_sending(http_stream_t *stream) {
         stream->flags.close_handling_required = 0;
         if (avs_stream_reset(stream->backend)
             || reconnect_tcp_socket(avs_stream_net_getsock(stream->backend),
-                                    stream->url)) {
+                                    stream->url, &stream->error_code)) {
             return -1;
         } else {
             stream->flags.keep_connection = 1;
