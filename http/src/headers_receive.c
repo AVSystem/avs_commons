@@ -237,6 +237,7 @@ static int http_receive_headline_and_headers(header_parser_state_t *state) {
     }
     state->stream->flags.close_handling_required = 0;
     if (sscanf(state->header_buf, "HTTP/%*s %d", &state->stream->status) != 1) {
+        state->stream->error_code = AVS_EBADMSG;
         /* discard HTTP version
          * some weird servers return HTTP/1.0 to HTTP/1.1 */
         LOG(ERROR, "Bad HTTP headline: %s", state->header_buf);
