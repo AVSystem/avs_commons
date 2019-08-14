@@ -106,7 +106,6 @@ typedef enum avs_errno {
     AVS_ENOTSUP,
     AVS_ENOTTY,
     AVS_ENXIO,
-    AVS_EOPNOTSUPP,
     AVS_EOVERFLOW,
     AVS_EPERM,
     AVS_EPIPE,
@@ -119,7 +118,6 @@ typedef enum avs_errno {
     AVS_ESRCH,
     AVS_ETIMEDOUT,
     AVS_ETXTBSY,
-    AVS_EWOULDBLOCK,
     AVS_EXDEV
 } avs_errno_t;
 

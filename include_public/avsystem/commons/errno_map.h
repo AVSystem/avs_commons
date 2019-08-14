@@ -32,6 +32,10 @@ extern "C" {
  * depending on the library / system / network layer used) to a set of portable
  * avs_errno_t constants.
  *
+ * NOTE: due to POSIX allowance to have some errno codes with the same value:
+ *  - EAGAIN and EWOULDBLOCK are coerced into single AVS_EAGAIN,
+ *  - ENOTSUP and EOPNOTSUPP are coerced into single AVS_ENOTSUP.
+ *
  * @param errno_value   Errno code to be translated.
  * @returns an appropriate @ref avs_errno_t code, or @ref AVS_UNKNOWN_ERROR if
  *          the @p errno_value could not be mapped to any code.
@@ -60,8 +64,16 @@ static inline avs_errno_t avs_map_errno(int errno_value) {
     case EAFNOSUPPORT:
         return AVS_EAFNOSUPPORT;
 #endif
+/**
+ * NOTE: EAGAIN and EWOULDBLOCK are allowed to have same value (thanks POSIX),
+ * and we need to be prepared for that.
+ */
 #ifdef EAGAIN
     case EAGAIN:
+        return AVS_EAGAIN;
+#endif
+#if defined(EWOULDBLOCK) && (EWOULDBLOCK != EAGAIN)
+    case EWOULDBLOCK:
         return AVS_EAGAIN;
 #endif
 #ifdef EALREADY
@@ -232,8 +244,16 @@ static inline avs_errno_t avs_map_errno(int errno_value) {
     case ENOTSOCK:
         return AVS_ENOTSOCK;
 #endif
+/**
+ * NOTE: ENOTSUP and EOPNOTSUPP are allowed to have same value (thanks POSIX),
+ * and we need to be prepared for that.
+ */
 #ifdef ENOTSUP
     case ENOTSUP:
+        return AVS_ENOTSUP;
+#endif
+#if defined(EOPNOTSUPP) && (EOPNOTSUPP != ENOTSUP)
+    case EOPNOTSUPP:
         return AVS_ENOTSUP;
 #endif
 #ifdef ENOTTY
@@ -243,14 +263,6 @@ static inline avs_errno_t avs_map_errno(int errno_value) {
 #ifdef ENXIO
     case ENXIO:
         return AVS_ENXIO;
-#endif
-/**
- * NOTE: ENOTSUP and EOPNOTSUPP are allowed to have same value (thanks POSIX),
- * and we need to be prepared for that.
- */
-#if defined(EOPNOTSUPP) && (EOPNOTSUPP != ENOTSUP)
-    case EOPNOTSUPP:
-        return AVS_EOPNOTSUPP;
 #endif
 #ifdef EOVERFLOW
     case EOVERFLOW:
@@ -284,10 +296,6 @@ static inline avs_errno_t avs_map_errno(int errno_value) {
     case EROFS:
         return AVS_EROFS;
 #endif
-#ifdef ERRNO
-    case ERRNO:
-        return AVS_ERRNO;
-#endif
 #ifdef ESPIPE
     case ESPIPE:
         return AVS_ESPIPE;
@@ -303,14 +311,6 @@ static inline avs_errno_t avs_map_errno(int errno_value) {
 #ifdef ETXTBSY
     case ETXTBSY:
         return AVS_ETXTBSY;
-#endif
-/**
- * NOTE: EAGAIN and EWOULDBLOCK are allowed to have same value (thanks POSIX),
- * and we need to be prepared for that.
- */
-#if defined(EWOULDBLOCK) && (EWOULDBLOCK != EAGAIN)
-    case EWOULDBLOCK:
-        return AVS_EWOULDBLOCK;
 #endif
 #ifdef EXDEV
     case EXDEV:
