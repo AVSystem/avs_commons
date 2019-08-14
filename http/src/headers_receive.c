@@ -257,6 +257,7 @@ static int http_receive_headline_and_headers(header_parser_state_t *state) {
         if (_avs_http_body_receiver_init(
                     state->stream, state->transfer_encoding,
                     state->content_encoding, state->content_length)) {
+            state->stream->error_code = AVS_EIO;
             goto http_receive_headers_error;
         }
         state->stream->redirect_count = 0;
