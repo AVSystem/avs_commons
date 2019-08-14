@@ -60,10 +60,10 @@ static const char *resolve_port(const avs_url_t *parsed_url) {
     }
 }
 
-int _avs_http_socket_new(avs_net_abstract_socket_t **out,
-                         avs_http_t *client,
-                         const avs_url_t *url) {
-    int result = 0;
+avs_errno_t _avs_http_socket_new(avs_net_abstract_socket_t **out,
+                                 avs_http_t *client,
+                                 const avs_url_t *url) {
+    avs_errno_t result = AVS_NO_ERROR;
     avs_net_ssl_configuration_t ssl_config_full;
     LOG(TRACE, "http_new_socket");
     assert(out != NULL);
@@ -79,12 +79,15 @@ int _avs_http_socket_new(avs_net_abstract_socket_t **out,
     const char *protocol = avs_url_protocol(url);
     if (strcmp(protocol, "http") == 0) {
         LOG(TRACE, "creating TCP socket");
-        result = avs_net_socket_create(out, AVS_NET_TCP_SOCKET,
-                                       &ssl_config_full.backend_configuration);
+        if (avs_net_socket_create(out, AVS_NET_TCP_SOCKET,
+                                  &ssl_config_full.backend_configuration)) {
+            result = AVS_EIO;
+        }
     } else if (strcmp(protocol, "https") == 0) {
         LOG(TRACE, "creating SSL socket");
-        result = avs_net_socket_create(out, AVS_NET_SSL_SOCKET,
-                                       &ssl_config_full);
+        if (avs_net_socket_create(out, AVS_NET_SSL_SOCKET, &ssl_config_full)) {
+            result = AVS_EIO;
+        }
     }
     if (!result) {
         assert(*out);
@@ -93,13 +96,13 @@ int _avs_http_socket_new(avs_net_abstract_socket_t **out,
                                    resolve_port(url))) {
             result = avs_net_socket_errno(*out);
             if (!result) {
-                result = -1;
+                result = AVS_EIO;
             }
         }
     }
     if (result) {
-        LOG(ERROR, "http_new_socket: failure: %d", result);
         avs_net_socket_cleanup(out);
+        LOG(ERROR, "http_new_socket: failure: %d", (int) result);
     } else {
         LOG(TRACE, "http_new_socket: success");
     }
@@ -140,7 +143,8 @@ int _avs_http_redirect(http_stream_t *stream, avs_url_t **url_move) {
     _avs_http_auth_reset(&stream->auth);
     avs_net_socket_close(old_socket);
 
-    if ((result = _avs_http_socket_new(&new_socket, stream->http, *url_move))) {
+    if ((result = (int) _avs_http_socket_new(&new_socket, stream->http,
+                                             *url_move))) {
         return result;
     }
     if (avs_stream_net_setsock(stream->backend, new_socket)) {
