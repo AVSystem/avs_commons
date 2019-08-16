@@ -41,6 +41,17 @@ struct avs_stream_membuf_struct {
     int error_code;
 };
 
+int avs_stream_membuf_reserve(avs_stream_abstract_t *stream, size_t size) {
+    const avs_stream_v_table_extension_membuf_t *ext =
+            (const avs_stream_v_table_extension_membuf_t *)
+                    avs_stream_v_table_find_extension(
+                            stream, AVS_STREAM_V_TABLE_EXTENSION_MEMBUF);
+    if (ext) {
+        return ext->reserve(stream, size);
+    }
+    return -1;
+}
+
 int avs_stream_membuf_fit(avs_stream_abstract_t *stream) {
     const avs_stream_v_table_extension_membuf_t *ext =
             (const avs_stream_v_table_extension_membuf_t *)
@@ -74,6 +85,18 @@ static void defragment_membuf(avs_stream_membuf_t *stream) {
     }
 }
 
+static int realloc_membuf(avs_stream_membuf_t *stream, size_t new_size) {
+    assert(stream->index_read == 0);         // stream is defragmented
+    assert(stream->index_write <= new_size); // we're not losing data
+    char *new_buffer = (char *) avs_realloc(stream->buffer, new_size);
+    if (!new_buffer && new_size) {
+        return -1;
+    }
+    stream->buffer = new_buffer;
+    stream->buffer_size = new_size;
+    return 0;
+}
+
 static int stream_membuf_write_some(avs_stream_abstract_t *stream_,
                                     const void *buffer,
                                     size_t *inout_data_length) {
@@ -86,13 +109,12 @@ static int stream_membuf_write_some(avs_stream_abstract_t *stream_,
         defragment_membuf(stream);
     }
     if (stream->buffer_size < stream->index_write + *inout_data_length) {
-        size_t new_size = 2 * stream->buffer_size + *inout_data_length;
-        char *new_buffer = (char *) avs_realloc(stream->buffer, new_size);
-        if (!new_buffer) {
+        if (realloc_membuf(stream,
+                           2 * stream->buffer_size + *inout_data_length)) {
             *inout_data_length = stream->buffer_size - stream->index_write;
-        } else {
-            stream->buffer = new_buffer;
-            stream->buffer_size = new_size;
+            if (*inout_data_length == 0) {
+                return -1;
+            }
         }
     }
     memcpy(stream->buffer + stream->index_write, buffer, *inout_data_length);
@@ -164,16 +186,24 @@ static int stream_membuf_close(avs_stream_abstract_t *stream_) {
     return 0;
 }
 
+static int stream_membuf_reserve(avs_stream_abstract_t *stream_, size_t size) {
+    avs_stream_membuf_t *stream = (avs_stream_membuf_t *) stream_;
+    defragment_membuf(stream);
+    if (size > SIZE_MAX - stream->index_write) {
+        return -1;
+    }
+    if (stream->buffer_size < stream->index_write + size) {
+        return realloc_membuf(stream, stream->index_write + size);
+    }
+    return 0;
+}
+
 static int stream_membuf_fit(avs_stream_abstract_t *stream_) {
     avs_stream_membuf_t *stream = (avs_stream_membuf_t *) stream_;
     defragment_membuf(stream);
     size_t max_index = stream->index_write;
     if (stream->buffer_size > max_index) {
-        void *new_buffer = avs_realloc(stream->buffer, max_index);
-        if (new_buffer || max_index == 0) {
-            stream->buffer = (char *) new_buffer;
-            stream->buffer_size = max_index;
-        }
+        return realloc_membuf(stream, max_index);
     }
     return 0;
 }
@@ -198,7 +228,7 @@ static int unimplemented() {
 }
 
 static const avs_stream_v_table_extension_membuf_t stream_membuf_ext_vtable = {
-    stream_membuf_fit, stream_membuf_take_ownership
+    stream_membuf_reserve, stream_membuf_fit, stream_membuf_take_ownership
 };
 
 static const avs_stream_v_table_extension_t stream_membuf_extensions[] = {
