@@ -40,6 +40,12 @@ extern "C" {
 extern const char AVS_BASE64_CHARS[];
 
 /**
+ * Array of characters for alternate base64 alphabet, as defined by RFC 4648
+ * Section 5.
+ */
+extern const char AVS_BASE64_URL_SAFE_CHARS[];
+
+/**
  * Returns amount of bytes required to store input encoded in base64.
  *
  * @param input_length Length of input in bytes.
