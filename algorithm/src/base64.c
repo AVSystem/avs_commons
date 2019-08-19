@@ -126,7 +126,7 @@ ssize_t avs_base64_decode_custom(uint8_t *out,
             // padding in the middle of input
             return -1;
         }
-        const char *ptr = strchr(alphabet, ch);
+        const char *ptr = (const char *) memchr(alphabet, ch, 64);
         if (!ptr) {
             return -1;
         }
