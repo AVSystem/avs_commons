@@ -26,7 +26,7 @@ extern "C" {
 #define AVS_STREAM_V_TABLE_EXTENSION_MEMBUF 0x4d454d42UL /* MEMB */
 
 typedef int (*avs_stream_membuf_reserve_t)(avs_stream_abstract_t *stream,
-                                           size_t size);
+                                           size_t additional_size);
 
 typedef int (*avs_stream_membuf_fit_t)(avs_stream_abstract_t *stream);
 
@@ -44,13 +44,14 @@ typedef struct {
  * Resizes stream internal buffer so that writing the next @p size bytes can be
  * performed without reallocations.
  *
- * @param stream membuf stream pointer
+ * @param stream          membuf stream pointer
  *
- * @param size   number of bytes to reserve
+ * @param additional_size number of bytes to reserve
  *
  * @returns 0 for success, or a negative value in case of error
  */
-int avs_stream_membuf_reserve(avs_stream_abstract_t *stream, size_t size);
+int avs_stream_membuf_reserve(avs_stream_abstract_t *stream,
+                              size_t additional_size);
 
 /**
  * Resizes stream internal buffers to optimize memory usage.
