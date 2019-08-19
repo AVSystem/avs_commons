@@ -33,6 +33,13 @@ extern "C" {
  */
 
 /**
+ * Array of characters for standard base64 encoder, i.e. AVS_BASE64_CHARS[0]
+ * through AVS_BASE64_CHARS[63] are the characters that encode corresponding
+ * numbers.
+ */
+extern const char AVS_BASE64_CHARS[];
+
+/**
  * Returns amount of bytes required to store input encoded in base64.
  *
  * @param input_length Length of input in bytes.
@@ -106,8 +113,8 @@ avs_base64_decode_strict(uint8_t *out, size_t out_length, const char *input);
  * Note that this function fails if @p out_length is too small. To predict
  * buffer requirements use @ref avs_base64_estimate_decoded_size .
  *
- * @param out           Pointer to user-allocated array where decoded data will be
- *                      stored.
+ * @param out           Pointer to user-allocated array where decoded data will
+ *                      be stored.
  * @param out_length    Length of user-allocated array.
  * @param input         Null terminated input to decode.
  *

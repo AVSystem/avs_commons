@@ -24,11 +24,11 @@
 
 VISIBILITY_SOURCE_BEGIN
 
-static const char base64_chars[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-                                   "abcdefghijklmnopqrstuvwxyz"
-                                   "0123456789+/";
+const char AVS_BASE64_CHARS[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+                                "abcdefghijklmnopqrstuvwxyz"
+                                "0123456789+/";
 
-AVS_STATIC_ASSERT(sizeof(base64_chars) == 65, /* 64 chars + NULL terminator */
+AVS_STATIC_ASSERT(sizeof(AVS_BASE64_CHARS) == 65, // 64 chars + NULL terminator
                   missing_base64_chars);
 
 static int check_base64_out_buffer_size(size_t buffer_size,
@@ -63,25 +63,25 @@ int avs_base64_encode(char *out,
     for (i = 0; i < input_length; ++i) {
         num = input[i];
         if (i % 3 == 0) {
-            *out++ = base64_chars[num >> 2];
+            *out++ = AVS_BASE64_CHARS[num >> 2];
             sh = num & 0x03;
         } else if (i % 3 == 1) {
-            *out++ = base64_chars[(sh << 4) + (num >> 4)];
+            *out++ = AVS_BASE64_CHARS[(sh << 4) + (num >> 4)];
             sh = num & 0x0F;
         } else {
-            *out++ = base64_chars[(sh << 2) + (num >> 6)];
-            *out++ = base64_chars[num & 0x3F];
+            *out++ = AVS_BASE64_CHARS[(sh << 2) + (num >> 6)];
+            *out++ = AVS_BASE64_CHARS[num & 0x3F];
         }
     }
 
     if (i % 3 == 1) {
-        *out++ = base64_chars[sh << 4];
+        *out++ = AVS_BASE64_CHARS[sh << 4];
     } else if (i % 3 == 2) {
-        *out++ = base64_chars[sh << 2];
+        *out++ = AVS_BASE64_CHARS[sh << 2];
     }
 
     /* '=' padding */
-    for (i = (size_t) (out - out_begin); i % 4 ; ++i) {
+    for (i = (size_t) (out - out_begin); i % 4; ++i) {
         *out++ = '=';
     }
 
@@ -90,14 +90,15 @@ int avs_base64_encode(char *out,
 }
 
 static const uint8_t base64_chars_reversed[128] = {
-   64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
-   64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
-   64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 62, 64, 64, 64, 63,
-   52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 64, 64, 64, 64, 64, 64,
-   64,  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14,
-   15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 64, 64, 64, 64, 64,
-   64, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40,
-   41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 64, 64, 64, 64, 64
+    //  _1  _2  _3  _4  _5  _6  _7  _8  _9  _A  _B  _C  _D  _E  _F
+    64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, // 0x0_
+    64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, // 0x1_
+    64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 62, 63, 62, 62, 63, // 0x2_
+    52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 63, 64, 64, 64, 64, 64, // 0x3_
+    64, 0,  1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11, 12, 13, 14, // 0x4_
+    15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 64, 64, 64, 64, 63, // 0x5_
+    64, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, // 0x6_
+    41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 64, 64, 64, 62, 64  // 0x7_
 };
 
 typedef int base64_validator_t(const char *current, void *args);
@@ -128,7 +129,7 @@ static ssize_t base64_decode_impl(uint8_t *out,
     while (*current) {
         int idx = (uint8_t) *current++;
 
-        if ((size_t)out_length >= out_size) {
+        if ((size_t) out_length >= out_size) {
             return -1;
         }
         if (validator(current - 1, validator_args)) {
@@ -163,7 +164,7 @@ static int base64_decode_strict_validator(const char *current, void *args) {
     base64_strict_validator_ctx_t *ctx = (base64_strict_validator_ctx_t *) args;
     ctx->last = current;
     if (base64_decode_validator(current, NULL)
-            || isspace((unsigned char)*current)) {
+            || isspace((unsigned char) *current)) {
         return -1;
     }
     if (*current == '=') {
@@ -177,9 +178,8 @@ static int base64_decode_strict_validator(const char *current, void *args) {
     return 0;
 }
 
-ssize_t avs_base64_decode_strict(uint8_t *out,
-                                 size_t out_size,
-                                 const char *b64_data) {
+ssize_t
+avs_base64_decode_strict(uint8_t *out, size_t out_size, const char *b64_data) {
     base64_strict_validator_ctx_t ctx;
     ssize_t retval;
     ctx.padding = 0;
@@ -204,5 +204,5 @@ ssize_t avs_base64_decode_strict(uint8_t *out,
 }
 
 #ifdef AVS_UNIT_TESTING
-#include "test/base64.c"
+#    include "test/base64.c"
 #endif
