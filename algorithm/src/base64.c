@@ -47,6 +47,16 @@ size_t avs_base64_encoded_size(size_t input_length) {
     return needed_size;
 }
 
+size_t avs_base64_encoded_size_without_padding(size_t input_length) {
+    size_t needed_size = (input_length / 3) * 4;
+    size_t rest = input_length % 3;
+    if (rest) {
+        needed_size += rest + 1;
+    }
+    needed_size += 1; /* NULL terminator */
+    return needed_size;
+}
+
 size_t avs_base64_estimate_decoded_size(size_t input_length) {
     return 3 * ((input_length + 3) / 4);
 }

@@ -46,13 +46,24 @@ extern const char AVS_BASE64_CHARS[];
 extern const char AVS_BASE64_URL_SAFE_CHARS[];
 
 /**
- * Returns amount of bytes required to store input encoded in base64.
+ * Returns amount of bytes required to store input encoded in base64 if padding
+ * is used.
  *
  * @param input_length Length of input in bytes.
  *
  * @returns length of base64 encoded input of length @p input_length.
  */
 size_t avs_base64_encoded_size(size_t input_length);
+
+/**
+ * Returns amount of bytes required to store input encoded in base64 if padding
+ * is NOT used.
+ *
+ * @param input_length Length of input in bytes.
+ *
+ * @returns length of base64 encoded input of length @p input_length.
+ */
+size_t avs_base64_encoded_size_without_padding(size_t input_length);
 
 /**
  * Returns amount of bytes that would be sufficient to store input encoded from
