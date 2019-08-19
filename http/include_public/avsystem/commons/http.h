@@ -382,7 +382,7 @@ int avs_http_set_user_agent(avs_http_t *http, const char *user_agent);
  *
  * @return 0 for success, or a non-zero value in case of error.
  *         If applicable, positive values compatible with <c>avs_errno_t</c> are
- *         used. -1 may also be used for generic/unknown error.
+ *         used. Negative values may also be used for generic/unknown error.
  */
 int avs_http_open_stream(avs_stream_abstract_t **out,
                          avs_http_t *http,
