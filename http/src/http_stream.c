@@ -143,10 +143,11 @@ int _avs_http_redirect(http_stream_t *stream, avs_url_t **url_move) {
     _avs_http_auth_reset(&stream->auth);
     avs_net_socket_close(old_socket);
 
-    if ((result = (int) _avs_http_socket_new(&new_socket, stream->http,
-                                             *url_move))) {
-        return result;
+    if (_avs_http_socket_new(&new_socket, stream->http, *url_move)
+        != AVS_NO_ERROR) {
+        return -1;
     }
+
     if (avs_stream_net_setsock(stream->backend, new_socket)) {
         /* error, clean new socket */
         avs_net_socket_cleanup(&new_socket);
