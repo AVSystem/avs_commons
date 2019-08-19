@@ -47,10 +47,12 @@ size_t avs_base64_estimate_decoded_size(size_t input_length) {
     return 3 * ((input_length + 3) / 4);
 }
 
-int avs_base64_encode(char *out,
-                      size_t out_length,
-                      const uint8_t *input,
-                      size_t input_length) {
+int avs_base64_encode_custom(char *out,
+                             size_t out_length,
+                             const uint8_t *input,
+                             size_t input_length,
+                             const char *alphabet,
+                             char padding_char) {
     char *const out_begin = (char *) out;
     uint8_t num;
     size_t i;
@@ -63,26 +65,27 @@ int avs_base64_encode(char *out,
     for (i = 0; i < input_length; ++i) {
         num = input[i];
         if (i % 3 == 0) {
-            *out++ = AVS_BASE64_CHARS[num >> 2];
+            *out++ = alphabet[num >> 2];
             sh = num & 0x03;
         } else if (i % 3 == 1) {
-            *out++ = AVS_BASE64_CHARS[(sh << 4) + (num >> 4)];
+            *out++ = alphabet[(sh << 4) + (num >> 4)];
             sh = num & 0x0F;
         } else {
-            *out++ = AVS_BASE64_CHARS[(sh << 2) + (num >> 6)];
-            *out++ = AVS_BASE64_CHARS[num & 0x3F];
+            *out++ = alphabet[(sh << 2) + (num >> 6)];
+            *out++ = alphabet[num & 0x3F];
         }
     }
 
     if (i % 3 == 1) {
-        *out++ = AVS_BASE64_CHARS[sh << 4];
+        *out++ = alphabet[sh << 4];
     } else if (i % 3 == 2) {
-        *out++ = AVS_BASE64_CHARS[sh << 2];
+        *out++ = alphabet[sh << 2];
     }
 
-    /* '=' padding */
-    for (i = (size_t) (out - out_begin); i % 4; ++i) {
-        *out++ = '=';
+    if (padding_char) {
+        for (i = (size_t) (out - out_begin); i % 4; ++i) {
+            *out++ = padding_char;
+        }
     }
 
     *out = '\0';

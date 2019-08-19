@@ -63,6 +63,32 @@ size_t avs_base64_encoded_size(size_t input_length);
 size_t avs_base64_estimate_decoded_size(size_t input_length);
 
 /**
+ * Encodes specified input into a custom variant of base64.
+ *
+ * Note: this function fails if @p out_length is too small to encode @p input,
+ * to predict buffer requirements use @ref avs_base64_encoded_size .
+ *
+ * @param out           Pointer to user-allocated array where encoded data will
+ *                      be written.
+ * @param out_length    Length of user-allocated array.
+ * @param input         Input to encode.
+ * @param input_length  Length of the input.
+ * @param alphabet      Array of characters to use for encoding; values from
+ *                      alphabet[0] through alphabet[63], inclusive, MUST be
+ *                      accessible and unique.
+ * @param padding_char  Character to use for final padding. If '\0' is passed,
+ *                      no padding is used.
+ *
+ * @returns 0 on success, negative value in case of error.
+ */
+int avs_base64_encode_custom(char *out,
+                             size_t out_length,
+                             const uint8_t *input,
+                             size_t input_length,
+                             const char *alphabet,
+                             char padding_char);
+
+/**
  * Encodes specified input into base64.
  *
  * Note: this function fails if @p out_length is too small to encode @p input,
@@ -76,10 +102,13 @@ size_t avs_base64_estimate_decoded_size(size_t input_length);
  *
  * @returns 0 on success, negative value in case of error.
  */
-int avs_base64_encode(char *out,
-                      size_t out_length,
-                      const uint8_t *input,
-                      size_t input_length);
+static inline int avs_base64_encode(char *out,
+                                    size_t out_length,
+                                    const uint8_t *input,
+                                    size_t input_length) {
+    return avs_base64_encode_custom(
+            out, out_length, input, input_length, AVS_BASE64_CHARS, '=');
+}
 
 /**
  * Decodes specified base64 input.
