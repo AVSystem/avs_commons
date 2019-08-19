@@ -25,8 +25,8 @@ extern "C" {
 
 #define AVS_STREAM_V_TABLE_EXTENSION_MEMBUF 0x4d454d42UL /* MEMB */
 
-typedef int (*avs_stream_membuf_reserve_t)(avs_stream_abstract_t *stream,
-                                           size_t additional_size);
+typedef int (*avs_stream_membuf_ensure_free_bytes_t)(
+        avs_stream_abstract_t *stream, size_t additional_size);
 
 typedef int (*avs_stream_membuf_fit_t)(avs_stream_abstract_t *stream);
 
@@ -35,7 +35,7 @@ typedef int (*avs_stream_membuf_take_ownership_t)(avs_stream_abstract_t *stream,
                                                   size_t *out_size);
 
 typedef struct {
-    avs_stream_membuf_reserve_t reserve;
+    avs_stream_membuf_ensure_free_bytes_t ensure_free_bytes;
     avs_stream_membuf_fit_t fit;
     avs_stream_membuf_take_ownership_t take_ownership;
 } avs_stream_v_table_extension_membuf_t;
@@ -50,8 +50,8 @@ typedef struct {
  *
  * @returns 0 for success, or a negative value in case of error
  */
-int avs_stream_membuf_reserve(avs_stream_abstract_t *stream,
-                              size_t additional_size);
+int avs_stream_membuf_ensure_free_bytes(avs_stream_abstract_t *stream,
+                                        size_t additional_size);
 
 /**
  * Resizes stream internal buffers to optimize memory usage.
