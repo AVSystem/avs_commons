@@ -97,6 +97,8 @@ typedef int base64_validator_t(const char *current, void *args);
 static ssize_t base64_decode_impl(uint8_t *out,
                                   size_t out_size,
                                   const char *b64_data,
+                                  const char *alphabet,
+                                  char padding_char,
                                   base64_validator_t *validator,
                                   void *validator_args) {
     uint32_t accumulator = 0;
@@ -113,18 +115,18 @@ static ssize_t base64_decode_impl(uint8_t *out,
         if (validator && validator(current - 1, validator_args)) {
             return -1;
         }
-        if (isspace(ch) || ch == '=') {
+        if (isspace(ch) || ch == padding_char) {
             continue;
         }
-        const char *ptr = strchr(AVS_BASE64_CHARS, ch);
+        const char *ptr = strchr(alphabet, ch);
         if (!ptr) {
             return -1;
         }
-        assert(ptr >= AVS_BASE64_CHARS);
-        assert(ptr - AVS_BASE64_CHARS < 64);
+        assert(ptr >= alphabet);
+        assert(ptr - alphabet < 64);
         accumulator <<= 6;
         bits = (uint8_t) (bits + 6);
-        accumulator |= (uint8_t) (ptr - AVS_BASE64_CHARS);
+        accumulator |= (uint8_t) (ptr - alphabet);
         if (bits >= 8) {
             bits = (uint8_t) (bits - 8u);
             out[out_length++] = (uint8_t) ((accumulator >> bits) & 0xffu);
@@ -135,10 +137,12 @@ static ssize_t base64_decode_impl(uint8_t *out,
 }
 
 ssize_t avs_base64_decode(uint8_t *out, size_t out_size, const char *b64_data) {
-    return base64_decode_impl(out, out_size, b64_data, NULL, NULL);
+    return base64_decode_impl(out, out_size, b64_data, AVS_BASE64_CHARS, '=',
+                              NULL, NULL);
 }
 
 typedef struct {
+    char padding_char;
     size_t padding;
     const char *last;
 } base64_strict_validator_ctx_t;
@@ -162,14 +166,16 @@ static int base64_decode_strict_validator(const char *current, void *args) {
 
 ssize_t
 avs_base64_decode_strict(uint8_t *out, size_t out_size, const char *b64_data) {
-    base64_strict_validator_ctx_t ctx;
     ssize_t retval;
-    ctx.padding = 0;
-    ctx.last = b64_data;
+    base64_strict_validator_ctx_t ctx = {
+        .padding_char = '=',
+        .padding = 0,
+        .last = b64_data
+    };
     if (*b64_data == '\0') {
         return 0;
     }
-    retval = base64_decode_impl(out, out_size, b64_data,
+    retval = base64_decode_impl(out, out_size, b64_data, AVS_BASE64_CHARS, '=',
                                 base64_decode_strict_validator, &ctx);
     if (retval >= 0) {
         assert(*ctx.last != '\0');
