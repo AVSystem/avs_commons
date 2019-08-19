@@ -142,24 +142,6 @@ typedef enum {
 } avs_http_content_encoding_t;
 
 /**
- * Definitions for error values that might be returned <c>avs_stream_*</c>
- * functions when operating on an HTTP stream.
- */
-typedef enum {
-    /**
-     * Generic unspecified error.
-     */
-    AVS_HTTP_ERROR_GENERAL = -1,
-
-    /**
-     * Returned from @ref avs_stream_write_some, @ref avs_stream_finish_message
-     * or any function that wraps them if attempting to send an HTTP request
-     * results in more than 5 chained HTTP 3xx redirections.
-     */
-    AVS_HTTP_ERROR_TOO_MANY_REDIRECTS = -2
-} avs_http_error_t;
-
-/**
  * Information about a header line received in a HTTP response.
  *
  * Instances accessible to the user using @ref avs_http_set_header_storage will
@@ -479,6 +461,10 @@ int avs_http_should_retry(avs_stream_abstract_t *stream);
  * Retrieves the last response code received on a given stream.
  *
  * May be used to distinguish zero-length 200 response from 204.
+ *
+ * NOTE: If the returned code is 301 (Moved Permanently) it indicates that the
+ * number of redirects exceeded the maximum allowed number (5 chained HTTP 3xx
+ * redirections).
  *
  * @return HTTP status code (nominally in the range 200-599), or 0 if it cannot
  *         be determined.

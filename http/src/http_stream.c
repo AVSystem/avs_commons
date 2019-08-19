@@ -128,12 +128,11 @@ int _avs_http_redirect(http_stream_t *stream, avs_url_t **url_move) {
     avs_net_abstract_socket_t *old_socket =
             avs_stream_net_getsock(stream->backend);
     avs_net_abstract_socket_t *new_socket = NULL;
-    int result = 0;
     LOG(TRACE, "http_redirect");
     ++stream->redirect_count;
     if (stream->redirect_count > HTTP_MOVE_LIMIT) {
         LOG(ERROR, "redirect count exceeded");
-        return AVS_HTTP_ERROR_TOO_MANY_REDIRECTS;
+        return HTTP_TOO_MANY_REDIRECTS;
     }
     if (avs_stream_reset(stream->backend)) {
         LOG(ERROR, "stream reset failed");

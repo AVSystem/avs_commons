@@ -107,7 +107,7 @@ typedef struct {
 } http_header_t;
 
 struct http_stream_struct {
-    const avs_stream_v_table_t * const vtable;
+    const avs_stream_v_table_t *const vtable;
     avs_http_t *const http;
     const avs_http_method_t method;
     avs_url_t *url;
@@ -167,7 +167,7 @@ struct http_stream_struct {
     avs_errno_t error_code;
 
     AVS_LIST(http_header_t) user_headers;
-    AVS_LIST(const avs_http_header_t) *incoming_header_storage;
+    AVS_LIST(const avs_http_header_t) * incoming_header_storage;
 
     unsigned random_seed;
 
@@ -197,6 +197,8 @@ typedef struct http_stream_struct http_stream_t;
 avs_errno_t _avs_http_socket_new(avs_net_abstract_socket_t **out,
                                  avs_http_t *client,
                                  const avs_url_t *url);
+
+#define HTTP_TOO_MANY_REDIRECTS (-301)
 
 int _avs_http_redirect(http_stream_t *stream, avs_url_t **url_move);
 

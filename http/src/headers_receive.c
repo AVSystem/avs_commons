@@ -184,7 +184,6 @@ static int http_receive_headers_internal(header_parser_state_t *state) {
         if (!(value = http_header_split(state->header_buf))
             || http_handle_header(state->header_buf, value, state,
                                   &header_handled)) {
-            state->stream->error_code = AVS_EBADMSG;
             LOG(ERROR, "Error parsing or handling headers");
             return -1;
         }
@@ -237,7 +236,6 @@ static int http_receive_headline_and_headers(header_parser_state_t *state) {
     }
     state->stream->flags.close_handling_required = 0;
     if (sscanf(state->header_buf, "HTTP/%*s %d", &state->stream->status) != 1) {
-        state->stream->error_code = AVS_EBADMSG;
         /* discard HTTP version
          * some weird servers return HTTP/1.0 to HTTP/1.1 */
         LOG(ERROR, "Bad HTTP headline: %s", state->header_buf);
@@ -266,7 +264,7 @@ static int http_receive_headline_and_headers(header_parser_state_t *state) {
     case 3: // 3xx - redirect
         state->stream->auth.state.flags.retried = 0;
         if (!state->redirect_url) {
-            state->stream->status = AVS_EINVAL;
+            state->stream->error_code = AVS_EINVAL;
         } else {
             int result =
                     _avs_http_redirect(state->stream, &state->redirect_url);
@@ -295,6 +293,9 @@ static int http_receive_headline_and_headers(header_parser_state_t *state) {
         /* we MUST NOT close connection, as required by TR-069,
          * so we actually receive and discard the response */
         LOG(WARNING, "http_receive_headers: error response");
+        if (!state->stream->error_code) {
+            state->stream->error_code = AVS_EPROTO;
+        }
         if (avs_stream_ignore_to_end(state->stream->body_receiver) < 0) {
             LOG(WARNING, "http_receive_headers: response read error");
             state->stream->flags.keep_connection = 0;
@@ -311,6 +312,9 @@ static int http_receive_headline_and_headers(header_parser_state_t *state) {
 
 http_receive_headers_error:
     LOG(ERROR, "http_receive_headers: failure");
+    if (!state->stream->error_code) {
+        state->stream->error_code = AVS_EPROTO;
+    }
     state->stream->flags.keep_connection = 0;
     return -1;
 }
@@ -355,6 +359,7 @@ int _avs_http_receive_headers(http_stream_t *stream) {
     if (!parser_state) {
         LOG(ERROR, "Out of memory");
         stream->flags.keep_connection = 0;
+        stream->error_code = AVS_ENOMEM;
         result = -1;
     }
 
@@ -381,5 +386,8 @@ int _avs_http_receive_headers(http_stream_t *stream) {
     }
 
     update_flags_after_receiving_headers(stream);
+    if (stream->status == HTTP_TOO_MANY_REDIRECTS) {
+        stream->status = 301;
+    }
     return result;
 }

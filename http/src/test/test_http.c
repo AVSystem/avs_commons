@@ -208,7 +208,7 @@ AVS_UNIT_TEST(http, advanced_request) {
                "\r\n";
     avs_unit_mocksock_input(socket, tmp_data, strlen(tmp_data));
     AVS_UNIT_ASSERT_FAILED(avs_stream_finish_message(stream));
-    AVS_UNIT_ASSERT_EQUAL(avs_stream_errno(stream), 0);
+    AVS_UNIT_ASSERT_EQUAL(avs_stream_errno(stream), AVS_EPROTO);
     AVS_UNIT_ASSERT_EQUAL(avs_http_status_code(stream), 401);
     avs_unit_mocksock_assert_io_clean(socket);
     avs_unit_mocksock_expect_shutdown(socket);
@@ -245,7 +245,7 @@ AVS_UNIT_TEST(http, invalid_cookies) {
                "\r\n";
     avs_unit_mocksock_input(socket, tmp_data, strlen(tmp_data));
     AVS_UNIT_ASSERT_FAILED(avs_stream_finish_message(stream));
-    AVS_UNIT_ASSERT_EQUAL(avs_stream_errno(stream), AVS_EBADMSG);
+    AVS_UNIT_ASSERT_EQUAL(avs_stream_errno(stream), AVS_EPROTO);
     avs_unit_mocksock_assert_io_clean(socket);
     avs_unit_mocksock_expect_shutdown(socket);
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&stream));
@@ -297,7 +297,7 @@ AVS_UNIT_TEST(http, multiple_cookies) {
                "\r\n";
     avs_unit_mocksock_input(socket, tmp_data, strlen(tmp_data));
     AVS_UNIT_ASSERT_FAILED(avs_stream_finish_message(stream));
-    AVS_UNIT_ASSERT_EQUAL(avs_stream_errno(stream), 0);
+    AVS_UNIT_ASSERT_EQUAL(avs_stream_errno(stream), AVS_EPROTO);
     AVS_UNIT_ASSERT_EQUAL(avs_http_status_code(stream), 401);
     avs_unit_mocksock_assert_io_clean(socket);
     avs_unit_mocksock_expect_shutdown(socket);
@@ -983,9 +983,8 @@ AVS_UNIT_TEST(http, redirect) {
     avs_unit_mocksock_input(sockets[5], tmp_data, strlen(tmp_data));
 
     AVS_UNIT_ASSERT_FAILED(avs_stream_finish_message(stream));
-    AVS_UNIT_ASSERT_EQUAL(avs_stream_errno(stream), 0);
-    AVS_UNIT_ASSERT_EQUAL(avs_http_status_code(stream),
-                          AVS_HTTP_ERROR_TOO_MANY_REDIRECTS);
+    AVS_UNIT_ASSERT_EQUAL(avs_stream_errno(stream), AVS_EPROTO);
+    AVS_UNIT_ASSERT_EQUAL(avs_http_status_code(stream), 301);
     avs_unit_mocksock_assert_io_clean(sockets[5]);
     avs_unit_mocksock_expect_shutdown(sockets[5]);
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&stream));
