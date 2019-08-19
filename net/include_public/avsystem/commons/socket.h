@@ -23,11 +23,11 @@
 #include <stdlib.h>
 
 #include <avsystem/commons/defs.h>
-#include <avsystem/commons/time.h>
-#include <avsystem/commons/memory.h>
 #include <avsystem/commons/errno.h>
+#include <avsystem/commons/memory.h>
+#include <avsystem/commons/time.h>
 
-#ifdef	__cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
@@ -233,7 +233,8 @@ typedef struct {
 typedef enum {
     AVS_NET_SECURITY_DEFAULT = 0,
     AVS_NET_SECURITY_PSK, /**< Pre-Shared Key */
-    AVS_NET_SECURITY_CERTIFICATE = AVS_NET_SECURITY_DEFAULT /**< X509 Certificate + private key */
+    AVS_NET_SECURITY_CERTIFICATE =
+            AVS_NET_SECURITY_DEFAULT /**< X509 Certificate + private key */
 } avs_net_security_mode_t;
 
 /**
@@ -320,8 +321,7 @@ avs_net_trusted_cert_info_from_path(const char *path);
  * @param buffer_size   Size in bytes of the buffer.
  */
 avs_net_trusted_cert_info_t
-avs_net_trusted_cert_info_from_buffer(const void *buffer,
-                                      size_t buffer_size);
+avs_net_trusted_cert_info_from_buffer(const void *buffer, size_t buffer_size);
 
 typedef struct {
     avs_net_security_info_union_t desc;
@@ -335,8 +335,7 @@ typedef struct {
  * @param password  Optional password if present, or NULL.
  */
 avs_net_client_key_info_t
-avs_net_client_key_info_from_file(const char *filename,
-                                  const char *password);
+avs_net_client_key_info_from_file(const char *filename, const char *password);
 
 /**
  * Creates private key descriptor used later on to load private key from
@@ -346,10 +345,8 @@ avs_net_client_key_info_from_file(const char *filename,
  * @param buffer_size Size of the buffer contents in bytes.
  * @param password    Optional password if present, or NULL.
  */
-avs_net_client_key_info_t
-avs_net_client_key_info_from_buffer(const void *buffer,
-                                    size_t buffer_size,
-                                    const char *password);
+avs_net_client_key_info_t avs_net_client_key_info_from_buffer(
+        const void *buffer, size_t buffer_size, const char *password);
 
 typedef struct {
     avs_net_security_info_union_t desc;
@@ -372,8 +369,7 @@ avs_net_client_cert_info_from_file(const char *filename);
  * @param buffer_size Size of the buffer contents in bytes.
  */
 avs_net_client_cert_info_t
-avs_net_client_cert_info_from_buffer(const void *buffer,
-                                     size_t buffer_size);
+avs_net_client_cert_info_from_buffer(const void *buffer, size_t buffer_size);
 
 /**
  * Certificate and key information may be read from files or passed as raw data.
@@ -405,8 +401,7 @@ typedef struct {
     } data;
 } avs_net_security_info_t;
 
-avs_net_security_info_t
-avs_net_security_info_from_psk(avs_net_psk_info_t psk);
+avs_net_security_info_t avs_net_security_info_from_psk(avs_net_psk_info_t psk);
 
 avs_net_security_info_t
 avs_net_security_info_from_certificates(avs_net_certificate_info_t info);
@@ -692,7 +687,7 @@ int avs_net_socket_cleanup(avs_net_abstract_socket_t **socket);
  * @returns 0 on success, or a negative value in case of error, in which case
  *          @p socket errno (see @ref avs_net_socket_errno) is set to an
  *          appropriate value; in particular, if DNS resolution fails, it is set
- *          to <c>EADDRNOTAVAIL</c>
+ *          to <c>AVS_EADDRNOTAVAIL</c>
  */
 int avs_net_socket_connect(avs_net_abstract_socket_t *socket,
                            const char *host,
@@ -781,7 +776,7 @@ int avs_net_socket_send(avs_net_abstract_socket_t *socket,
  *          @li a negative value in case of error, in which case @p socket
  *              errno (see @ref avs_net_socket_errno) is set to an appropriate
  *              value; in particular, if DNS resolution fails, it is set to
- *              <c>EADDRNOTAVAIL</c>
+ *              <c>AVS_EADDRNOTAVAIL</c>
  */
 int avs_net_socket_send_to(avs_net_abstract_socket_t *socket,
                            const void *buffer,
@@ -795,7 +790,7 @@ int avs_net_socket_send_to(avs_net_abstract_socket_t *socket,
  * - @p buffer is filled with @p buffer_length initial bytes of data,
  * - @p buffer_length is returned via @p out_bytes_received ,
  * - the function returns a negative value,
- * - @p socket errno is set to EMSGSIZE. See @ref avs_net_socket_errno .
+ * - @p socket errno is set to AVS_EMSGSIZE. See @ref avs_net_socket_errno .
  * That means, one can still access the truncated message if required. Note
  * that the actual length of received datagram is lost.
  *
@@ -827,7 +822,7 @@ int avs_net_socket_receive(avs_net_abstract_socket_t *socket,
  * - @p buffer is filled with @p buffer_length initial bytes of data,
  * - @p buffer_length is returned via @p out_bytes_received ,
  * - the function returns a negative value,
- * - @p socket errno is set to EMSGSIZE. See @ref avs_net_socket_errno .
+ * - @p socket errno is set to AVS_EMSGSIZE. See @ref avs_net_socket_errno .
  * That means, one can still access the truncated message if required. Note
  * that the actual length of received datagram is lost.
  *
@@ -857,8 +852,10 @@ int avs_net_socket_receive_from(avs_net_abstract_socket_t *socket,
                                 size_t *out_bytes_received,
                                 void *buffer,
                                 size_t buffer_length,
-                                char *host, size_t host_size,
-                                char *port, size_t port_size);
+                                char *host,
+                                size_t host_size,
+                                char *port,
+                                size_t port_size);
 
 /**
  * Binds @p socket to specified local @p address and @p port .
@@ -964,7 +961,8 @@ int avs_net_socket_interface_name(avs_net_abstract_socket_t *socket,
  *              value.
  */
 int avs_net_socket_get_remote_host(avs_net_abstract_socket_t *socket,
-                                   char *out_buffer, size_t out_buffer_size);
+                                   char *out_buffer,
+                                   size_t out_buffer_size);
 
 /**
  * Returns the hostname of the remote endpoint that was used when connecting
@@ -1000,7 +998,8 @@ int avs_net_socket_get_remote_hostname(avs_net_abstract_socket_t *socket,
  *              value.
  */
 int avs_net_socket_get_remote_port(avs_net_abstract_socket_t *socket,
-                                   char *out_buffer, size_t out_buffer_size);
+                                   char *out_buffer,
+                                   size_t out_buffer_size);
 
 /**
  * Returns the IP address @p socket is bound to.
@@ -1016,7 +1015,8 @@ int avs_net_socket_get_remote_port(avs_net_abstract_socket_t *socket,
  *              value.
  */
 int avs_net_socket_get_local_host(avs_net_abstract_socket_t *socket,
-                                  char *out_buffer, size_t out_buffer_size);
+                                  char *out_buffer,
+                                  size_t out_buffer_size);
 
 /**
  * Returns the local port @p socket is bound to.
@@ -1033,7 +1033,8 @@ int avs_net_socket_get_local_host(avs_net_abstract_socket_t *socket,
  *              value.
  */
 int avs_net_socket_get_local_port(avs_net_abstract_socket_t *socket,
-                                  char *out_buffer, size_t out_buffer_size);
+                                  char *out_buffer,
+                                  size_t out_buffer_size);
 
 /**
  * Returns a socket option value. See @ref avs_net_socket_opt_key_t for
@@ -1095,7 +1096,7 @@ avs_errno_t avs_net_socket_errno(avs_net_abstract_socket_t *socket);
  */
 const void *avs_net_socket_get_system(avs_net_abstract_socket_t *socket);
 
-#ifdef	__cplusplus
+#ifdef __cplusplus
 }
 #endif
 
