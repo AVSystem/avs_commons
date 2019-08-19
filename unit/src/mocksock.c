@@ -1116,11 +1116,11 @@ void avs_unit_mocksock_expect_set_opt__(
 }
 
 void avs_unit_mocksock_expect_errno__(avs_net_abstract_socket_t *socket,
-                                      int to_return,
+                                      avs_errno_t to_return,
                                       const mocksock_additional_args_t *args) {
     mocksock_expected_command_t *command = new_expected_command(socket, args);
     command->command = MOCKSOCK_COMMAND_ERRNO;
-    command->retval = to_return;
+    command->retval = (int) to_return;
 }
 
 void avs_unit_mocksock_fail_command__(avs_net_abstract_socket_t *socket,
