@@ -111,6 +111,43 @@ static inline int avs_base64_encode(char *out,
 }
 
 /**
+ * Decodes specified input in a custom base64 format.
+ *
+ * Note that this function fails if @p out_length is too small. To predict
+ * buffer requirements use @ref avs_base64_estimate_decoded_size .
+ *
+ * @param out              Pointer to user-allocated array where decoded data
+ *                         will be stored.
+ * @param out_length       Length of user-allocated array.
+ * @param input            Null terminated input to decode.
+ * @param alphabet         Array of characters to use for encoding; values from
+ *                         alphabet[0] through alphabet[63], inclusive, MUST be
+ *                         accessible and unique.
+ * @param padding_char     Character to expect as final padding. If '\0' is
+ *                         passed, no padding is expected.
+ * @param allow_whitespace If true, whitespace characters in the middle of input
+ *                         are allowed and ignored. If false, any whitespace
+ *                         character will cause an error.
+ * @param require_padding  If @p padding_char is not '\0' and this flag is true,
+ *                         the input (stripped of any whitespace characters if
+ *                         @p allow_whitespace is true) is required to have a
+ *                         length that is a multiple of four, and end with
+ *                         appropriate number of padding characters. Otherwise,
+ *                         the padding character is ignored. Note that the value
+ *                         of this flag has no effect if @p padding_char is
+ *                         '\0'.
+ *
+ * @returns length of decoded data in bytes, negative value in case of error.
+ */
+ssize_t avs_base64_decode_custom(uint8_t *out,
+                                 size_t out_length,
+                                 const char *input,
+                                 const char *alphabet,
+                                 char padding_char,
+                                 bool allow_whitespace,
+                                 bool require_padding);
+
+/**
  * Decodes specified base64 input.
  *
  * Note:
@@ -132,8 +169,11 @@ static inline int avs_base64_encode(char *out,
  *
  * @returns length of decoded data in bytes, negative value in case of error.
  */
-ssize_t
-avs_base64_decode_strict(uint8_t *out, size_t out_length, const char *input);
+static inline ssize_t
+avs_base64_decode_strict(uint8_t *out, size_t out_length, const char *input) {
+    return avs_base64_decode_custom(
+            out, out_length, input, AVS_BASE64_CHARS, '=', false, true);
+}
 
 /**
  * Does the same as @ref avs_base64_decode_strict except that it ignores
@@ -149,7 +189,11 @@ avs_base64_decode_strict(uint8_t *out, size_t out_length, const char *input);
  *
  * @returns length of decoded data in bytes, negative value in case of error.
  */
-ssize_t avs_base64_decode(uint8_t *out, size_t out_length, const char *input);
+static inline ssize_t
+avs_base64_decode(uint8_t *out, size_t out_length, const char *input) {
+    return avs_base64_decode_custom(
+            out, out_length, input, AVS_BASE64_CHARS, '=', true, false);
+}
 
 #ifdef __cplusplus
 }

@@ -92,19 +92,18 @@ int avs_base64_encode_custom(char *out,
     return 0;
 }
 
-typedef int base64_validator_t(const char *current, void *args);
-
-static ssize_t base64_decode_impl(uint8_t *out,
-                                  size_t out_size,
-                                  const char *b64_data,
-                                  const char *alphabet,
-                                  char padding_char,
-                                  base64_validator_t *validator,
-                                  void *validator_args) {
+ssize_t avs_base64_decode_custom(uint8_t *out,
+                                 size_t out_size,
+                                 const char *b64_data,
+                                 const char *alphabet,
+                                 char padding_char,
+                                 bool allow_whitespace,
+                                 bool require_padding) {
     uint32_t accumulator = 0;
     uint8_t bits = 0;
     const char *current = b64_data;
     ssize_t out_length = 0;
+    ssize_t padding = 0;
 
     while (*current) {
         int ch = (uint8_t) *current++;
@@ -112,11 +111,20 @@ static ssize_t base64_decode_impl(uint8_t *out,
         if ((size_t) out_length >= out_size) {
             return -1;
         }
-        if (validator && validator(current - 1, validator_args)) {
-            return -1;
-        }
-        if (isspace(ch) || ch == padding_char) {
+        if (isspace(ch)) {
+            if (allow_whitespace) {
+                continue;
+            } else {
+                return -1;
+            }
+        } else if (ch == padding_char) {
+            if (require_padding && ++padding > 2) {
+                return -1;
+            }
             continue;
+        } else if (padding) {
+            // padding in the middle of input
+            return -1;
         }
         const char *ptr = strchr(alphabet, ch);
         if (!ptr) {
@@ -133,62 +141,12 @@ static ssize_t base64_decode_impl(uint8_t *out,
         }
     }
 
+    if (padding_char && require_padding
+            && padding != (3 - (out_length % 3)) % 3) {
+        return -1;
+    }
+
     return out_length;
-}
-
-ssize_t avs_base64_decode(uint8_t *out, size_t out_size, const char *b64_data) {
-    return base64_decode_impl(out, out_size, b64_data, AVS_BASE64_CHARS, '=',
-                              NULL, NULL);
-}
-
-typedef struct {
-    char padding_char;
-    size_t padding;
-    const char *last;
-} base64_strict_validator_ctx_t;
-
-static int base64_decode_strict_validator(const char *current, void *args) {
-    base64_strict_validator_ctx_t *ctx = (base64_strict_validator_ctx_t *) args;
-    ctx->last = current;
-    if (isspace((unsigned char) *current)) {
-        return -1;
-    }
-    if (*current == '=') {
-        if (++ctx->padding > 2) {
-            return -1;
-        }
-    } else if (ctx->padding) {
-        /* padding in the middle of input */
-        return -1;
-    }
-    return 0;
-}
-
-ssize_t
-avs_base64_decode_strict(uint8_t *out, size_t out_size, const char *b64_data) {
-    ssize_t retval;
-    base64_strict_validator_ctx_t ctx = {
-        .padding_char = '=',
-        .padding = 0,
-        .last = b64_data
-    };
-    if (*b64_data == '\0') {
-        return 0;
-    }
-    retval = base64_decode_impl(out, out_size, b64_data, AVS_BASE64_CHARS, '=',
-                                base64_decode_strict_validator, &ctx);
-    if (retval >= 0) {
-        assert(*ctx.last != '\0');
-        /* Point at NULL terminator. */
-        ++ctx.last;
-
-        assert(*ctx.last == '\0');
-        assert(ctx.last > b64_data);
-        if ((ctx.last - b64_data) % 4 != 0) {
-            return -1;
-        }
-    }
-    return retval;
 }
 
 #ifdef AVS_UNIT_TESTING
