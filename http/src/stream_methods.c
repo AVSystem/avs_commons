@@ -365,18 +365,18 @@ static inline const char *string_or_null(const char *str) {
     return str ? str : "(null)";
 }
 
-int avs_http_open_stream(avs_stream_abstract_t **out,
-                         avs_http_t *http,
-                         avs_http_method_t method,
-                         avs_http_content_encoding_t encoding,
-                         const avs_url_t *url,
-                         const char *auth_username,
-                         const char *auth_password) {
+avs_errno_t avs_http_open_stream(avs_stream_abstract_t **out,
+                                 avs_http_t *http,
+                                 avs_http_method_t method,
+                                 avs_http_content_encoding_t encoding,
+                                 const avs_url_t *url,
+                                 const char *auth_username,
+                                 const char *auth_password) {
     assert(!*out);
     assert(url);
     avs_net_abstract_socket_t *socket = NULL;
     http_stream_t *stream = NULL;
-    int result = 0;
+    avs_errno_t result = 0;
     LOG(TRACE,
         "avs_http_open_stream, method == %d, encoding == %d, "
         "protocol == %s, host == %s, port == %s, path == %s, "
@@ -435,7 +435,7 @@ int avs_http_open_stream(avs_stream_abstract_t **out,
     }
 
     *out = (avs_stream_abstract_t *) stream;
-    return 0;
+    return AVS_NO_ERROR;
 
 http_open_stream_error:
     assert(result);

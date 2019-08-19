@@ -380,17 +380,15 @@ int avs_http_set_user_agent(avs_http_t *http, const char *user_agent);
  *                      <c>parsed_url</c> if any. May be <c>NULL</c> if unknown
  *                      or not necessary.
  *
- * @return 0 for success, or a non-zero value in case of error.
- *         If applicable, positive values compatible with <c>avs_errno_t</c> are
- *         used. Negative values may also be used for generic/unknown error.
+ * @return One of <c>avs_errno_t</c> constants.
  */
-int avs_http_open_stream(avs_stream_abstract_t **out,
-                         avs_http_t *http,
-                         avs_http_method_t method,
-                         avs_http_content_encoding_t encoding,
-                         const avs_url_t *parsed_url,
-                         const char *auth_username,
-                         const char *auth_password);
+avs_errno_t avs_http_open_stream(avs_stream_abstract_t **out,
+                                 avs_http_t *http,
+                                 avs_http_method_t method,
+                                 avs_http_content_encoding_t encoding,
+                                 const avs_url_t *parsed_url,
+                                 const char *auth_username,
+                                 const char *auth_password);
 
 /**
  * Clears the cookie storage used by the specified HTTP client and all
