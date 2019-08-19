@@ -110,7 +110,7 @@ AVS_UNIT_TEST(base64, decode_fail) {
     char ch;
     AVS_UNIT_ASSERT_FAILED(
             (int) avs_base64_decode((uint8_t *) result, 1, "AA=="));
-    AVS_UNIT_ASSERT_FAILED((int) avs_base64_decode((uint8_t *) result, 5, ";"));
+    AVS_UNIT_ASSERT_FAILED((int) avs_base64_decode((uint8_t *) result, 5, ","));
 
     for (ch = 1; ch < CHAR_MAX; ++ch) {
         buf[1] = ch;

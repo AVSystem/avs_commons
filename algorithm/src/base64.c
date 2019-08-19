@@ -89,32 +89,7 @@ int avs_base64_encode(char *out,
     return 0;
 }
 
-static const uint8_t base64_chars_reversed[128] = {
-    //  _1  _2  _3  _4  _5  _6  _7  _8  _9  _A  _B  _C  _D  _E  _F
-    64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, // 0x0_
-    64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, // 0x1_
-    64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 62, 63, 62, 62, 63, // 0x2_
-    52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 63, 64, 64, 64, 64, 64, // 0x3_
-    64, 0,  1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11, 12, 13, 14, // 0x4_
-    15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 64, 64, 64, 64, 63, // 0x5_
-    64, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, // 0x6_
-    41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 64, 64, 64, 62, 64  // 0x7_
-};
-
 typedef int base64_validator_t(const char *current, void *args);
-
-static int base64_decode_validator(const char *current, void *args) {
-    int index = (uint8_t) *current;
-    (void) args;
-    if (isspace(index) || index == '=') {
-        return 0;
-    }
-    if (((size_t) index >= sizeof(base64_chars_reversed))
-            || (base64_chars_reversed[index] > 63)) {
-        return -1;
-    }
-    return 0;
-}
 
 static ssize_t base64_decode_impl(uint8_t *out,
                                   size_t out_size,
@@ -127,20 +102,26 @@ static ssize_t base64_decode_impl(uint8_t *out,
     ssize_t out_length = 0;
 
     while (*current) {
-        int idx = (uint8_t) *current++;
+        int ch = (uint8_t) *current++;
 
         if ((size_t) out_length >= out_size) {
             return -1;
         }
-        if (validator(current - 1, validator_args)) {
+        if (validator && validator(current - 1, validator_args)) {
             return -1;
         }
-        if (isspace(idx) || idx == '=') {
+        if (isspace(ch) || ch == '=') {
             continue;
         }
+        const char *ptr = strchr(AVS_BASE64_CHARS, ch);
+        if (!ptr) {
+            return -1;
+        }
+        assert(ptr >= AVS_BASE64_CHARS);
+        assert(ptr - AVS_BASE64_CHARS < 64);
         accumulator <<= 6;
         bits = (uint8_t) (bits + 6);
-        accumulator |= base64_chars_reversed[idx];
+        accumulator |= (uint8_t) (ptr - AVS_BASE64_CHARS);
         if (bits >= 8) {
             bits = (uint8_t) (bits - 8u);
             out[out_length++] = (uint8_t) ((accumulator >> bits) & 0xffu);
@@ -151,8 +132,7 @@ static ssize_t base64_decode_impl(uint8_t *out,
 }
 
 ssize_t avs_base64_decode(uint8_t *out, size_t out_size, const char *b64_data) {
-    return base64_decode_impl(out, out_size, b64_data, base64_decode_validator,
-                              NULL);
+    return base64_decode_impl(out, out_size, b64_data, NULL, NULL);
 }
 
 typedef struct {
@@ -163,8 +143,7 @@ typedef struct {
 static int base64_decode_strict_validator(const char *current, void *args) {
     base64_strict_validator_ctx_t *ctx = (base64_strict_validator_ctx_t *) args;
     ctx->last = current;
-    if (base64_decode_validator(current, NULL)
-            || isspace((unsigned char) *current)) {
+    if (isspace((unsigned char) *current)) {
         return -1;
     }
     if (*current == '=') {
