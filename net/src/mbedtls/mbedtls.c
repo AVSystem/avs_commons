@@ -93,6 +93,8 @@ typedef struct {
     /// Subset of @ref ssl_socket_t#enabled_ciphersuites appropriate for
     /// security mode, 0-terminated array
     int *effective_ciphersuites;
+    /// Non empty, when custom server hostname shall be used.
+    char server_name_indication[256];
 } ssl_socket_t;
 
 static bool is_ssl_started(ssl_socket_t *socket) {
@@ -487,6 +489,17 @@ static int configure_ssl(ssl_socket_t *socket,
 #endif // WITH_TLS_SESSION_PERSISTENCE
     }
 
+    if (configuration->server_name_indication) {
+        size_t len = strlen(configuration->server_name_indication);
+        if (len >= sizeof(socket->server_name_indication)) {
+            LOG(ERROR, "SNI is too long (maximum allowed size is %u)",
+                (unsigned) sizeof(socket->server_name_indication) - 1);
+            return -1;
+        }
+        memcpy(socket->server_name_indication,
+               configuration->server_name_indication, len + 1);
+    }
+
     if (configuration->additional_configuration_clb
             && configuration->additional_configuration_clb(&socket->config)) {
         LOG(ERROR, "Error while setting additional SSL configuration");
@@ -588,7 +601,10 @@ static int start_ssl(ssl_socket_t *socket, const char *host) {
     }
 
 #ifdef WITH_X509
-    if ((result = mbedtls_ssl_set_hostname(get_context(socket), host))) {
+    if ((result = mbedtls_ssl_set_hostname(
+                 get_context(socket), socket->server_name_indication[0]
+                                              ? socket->server_name_indication
+                                              : host))) {
         LOG(ERROR, "mbedtls_ssl_set_hostname() failed: %d", result);
         socket->error_code =
                 (result == MBEDTLS_ERR_SSL_ALLOC_FAILED ? ENOMEM : EINVAL);
