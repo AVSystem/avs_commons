@@ -334,7 +334,7 @@ void avs_unit_mocksock_expect_set_opt__(avs_net_abstract_socket_t *socket,
             })
 
 void avs_unit_mocksock_expect_errno__(avs_net_abstract_socket_t *socket,
-                                      int to_return,
+                                      avs_errno_t to_return,
                                       const mocksock_additional_args_t *args);
 #define avs_unit_mocksock_expect_errno(Socket, /* ToReturn, */...) \
     avs_unit_mocksock_expect_errno__(                              \
