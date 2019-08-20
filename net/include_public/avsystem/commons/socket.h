@@ -480,6 +480,13 @@ typedef struct {
      * Configuration used for the underlying raw TCP/UDP socket.
      */
     avs_net_socket_configuration_t backend_configuration;
+
+    /**
+     * Server Name Indication value to be used for certificate validation during
+     * TLS handshake, or NULL if a default value shall be used (i.e. hostname to
+     * which the connection is performed).
+     */
+    const char *server_name_indication;
 } avs_net_ssl_configuration_t;
 
 typedef enum {

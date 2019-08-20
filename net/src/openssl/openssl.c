@@ -94,6 +94,8 @@ typedef struct {
 
     /// Set of ciphersuites configured by user
     avs_net_socket_tls_ciphersuites_t enabled_ciphersuites;
+    /// Non empty, when custom server hostname shall be used.
+    char server_name_indication[256];
 } ssl_socket_t;
 
 #define NET_SSL_COMMON_INTERNALS
@@ -709,7 +711,14 @@ static int start_ssl(ssl_socket_t *socket, const char *host) {
     SSL_set_mode(socket->ssl, SSL_MODE_AUTO_RETRY);
 #endif
 
-    if (SSL_set_tlsext_host_name(socket->ssl, host) == 0) {
+    if (SSL_set_tlsext_host_name(
+                socket->ssl,
+                // NOTE: this ugly cast is required because openssl does
+                // drop const qualifiers...
+                (void *) (intptr_t) (socket->server_name_indication[0]
+                                             ? socket->server_name_indication
+                                             : host))
+            == 0) {
         LOG(ERROR, "cannot setup SNI extension");
         socket->error_code = ENOMEM;
         return -1;
@@ -884,6 +893,18 @@ static int configure_ssl(ssl_socket_t *socket,
     socket->dtls_handshake_timeouts = (configuration->dtls_handshake_timeouts
             ? *configuration->dtls_handshake_timeouts
             : DEFAULT_DTLS_HANDSHAKE_TIMEOUTS);
+
+    if (configuration->server_name_indication) {
+        size_t len = strlen(configuration->server_name_indication);
+        if (len >= sizeof(socket->server_name_indication)) {
+            LOG(ERROR, "SNI is too long (maximum allowed size is %u)",
+                (unsigned) sizeof(socket->server_name_indication) - 1);
+            return -1;
+        }
+        memcpy(socket->server_name_indication,
+               configuration->server_name_indication, len + 1);
+    }
+
     if (configuration->additional_configuration_clb
             && configuration->additional_configuration_clb(socket->ctx)) {
         LOG(ERROR, "Error while setting additional SSL configuration");
