@@ -18,8 +18,8 @@
 
 #include <avs_commons_posix_config.h>
 
-#include <errno.h>
 #include <avsystem/commons/errno_map.h>
+#include <errno.h>
 
 #include <avsystem/commons/memory.h>
 #include <avsystem/commons/utils.h>
@@ -508,7 +508,7 @@ static int configure_socket(avs_net_socket_t *net_socket) {
         net_socket->error_code = avs_map_errno(errno);
         LOG(ERROR,
             "Could not switch socket to non-blocking mode (fcntl error: %s)",
-            strerror(errno));
+            avs_strerror(net_socket->error_code));
         return -1;
     }
     if (net_socket->configuration.interface_name[0]) {
@@ -517,7 +517,8 @@ static int configure_socket(avs_net_socket_t *net_socket) {
                        (socklen_t) strlen(
                                net_socket->configuration.interface_name))) {
             net_socket->error_code = avs_map_errno(errno);
-            LOG(ERROR, "setsockopt error: %s", strerror(errno));
+            LOG(ERROR, "setsockopt error: %s",
+                avs_strerror(net_socket->error_code));
             return -1;
         }
     }
@@ -528,7 +529,8 @@ static int configure_socket(avs_net_socket_t *net_socket) {
         if (setsockopt(net_socket->socket, SOL_SOCKET, SO_PRIORITY, &priority,
                        length)) {
             net_socket->error_code = avs_map_errno(errno);
-            LOG(ERROR, "setsockopt error: %s", strerror(errno));
+            LOG(ERROR, "setsockopt error: %s",
+                avs_strerror(net_socket->error_code));
             return -1;
         }
     }
@@ -538,14 +540,16 @@ static int configure_socket(avs_net_socket_t *net_socket) {
         socklen_t length = sizeof(tos);
         if (getsockopt(net_socket->socket, IPPROTO_IP, IP_TOS, &tos, &length)) {
             net_socket->error_code = avs_map_errno(errno);
-            LOG(ERROR, "getsockopt error: %s", strerror(errno));
+            LOG(ERROR, "getsockopt error: %s",
+                avs_strerror(net_socket->error_code));
             return -1;
         }
         tos &= 0x03; /* clear first 6 bits */
         tos |= (uint8_t) (net_socket->configuration.dscp << 2);
         if (setsockopt(net_socket->socket, IPPROTO_IP, IP_TOS, &tos, length)) {
             net_socket->error_code = avs_map_errno(errno);
-            LOG(ERROR, "setsockopt error: %s", strerror(errno));
+            LOG(ERROR, "setsockopt error: %s",
+                avs_strerror(net_socket->error_code));
             return -1;
         }
 #else  // IP_TOS
@@ -853,7 +857,8 @@ static int host_port_to_string_impl(const struct sockaddr *sa,
     int result = getnameinfo(sa, salen, host, hostlen, serv, servlen,
                              NI_NUMERICHOST | NI_NUMERICSERV);
     if (result) {
-        LOG(ERROR, "getnameinfo() failed: %s (%d)", strerror(errno), errno);
+        LOG(ERROR, "getnameinfo() failed: %s (%d)",
+            avs_strerror(avs_map_errno(errno)), avs_map_errno(errno));
         return result;
     } else {
         return 0;
@@ -1057,7 +1062,8 @@ static int try_connect(avs_net_socket_t *net_socket,
                             _avs_net_get_socket_type(net_socket->type), 0))
             == INVALID_SOCKET) {
             net_socket->error_code = avs_map_errno(errno);
-            LOG(ERROR, "cannot create socket: %s", strerror(errno));
+            LOG(ERROR, "cannot create socket: %s",
+                avs_strerror(net_socket->error_code));
             retval = -1;
         } else if (configure_socket(net_socket)) {
             LOG(WARNING, "socket configuration problem");
@@ -1116,7 +1122,7 @@ static int connect_net(avs_net_abstract_socket_t *net_socket_,
     }
     avs_net_addrinfo_delete(&info);
     LOG(ERROR, "cannot establish connection to [%s]:%s: %s", host, port,
-        strerror(net_socket->error_code));
+        avs_strerror(net_socket->error_code));
     return result < 0 ? result : -1;
 success:
     avs_net_addrinfo_delete(&info);
@@ -1167,7 +1173,7 @@ static int send_net(avs_net_abstract_socket_t *net_socket_,
                             send_internal, &arg)
             < 0) {
             net_socket->error_code = avs_map_errno(errno);
-            LOG(ERROR, "send failed: %s", strerror(errno));
+            LOG(ERROR, "send failed: %s", avs_strerror(net_socket->error_code));
             return -1;
         } else if (buffer_length != 0 && arg.bytes_sent == 0) {
             LOG(ERROR, "send returned 0");
@@ -1394,7 +1400,8 @@ static int create_listening_socket(avs_net_socket_t *net_socket,
                                 _avs_net_get_socket_type(net_socket->type), 0);
     if (net_socket->socket == INVALID_SOCKET) {
         net_socket->error_code = avs_map_errno(errno);
-        LOG(ERROR, "cannot create system socket: %s", strerror(errno));
+        LOG(ERROR, "cannot create system socket: %s",
+            avs_strerror(net_socket->error_code));
         goto create_listening_socket_error;
     }
     if (setsockopt(net_socket->socket, SOL_SOCKET, SO_REUSEADDR, &reuse_addr,
@@ -1411,14 +1418,14 @@ static int create_listening_socket(avs_net_socket_t *net_socket,
     errno = 0;
     if (bind(net_socket->socket, addr, addrlen) < 0 && errno != EINPROGRESS) {
         net_socket->error_code = avs_map_errno(errno);
-        LOG(ERROR, "bind error: %s", strerror(errno));
+        LOG(ERROR, "bind error: %s", avs_strerror(net_socket->error_code));
         retval = -2;
         goto create_listening_socket_error;
     }
     if (net_socket->type == AVS_NET_TCP_SOCKET
         && listen(net_socket->socket, NET_LISTEN_BACKLOG) < 0) {
         net_socket->error_code = avs_map_errno(errno);
-        LOG(ERROR, "listen error: %s", strerror(errno));
+        LOG(ERROR, "listen error: %s", avs_strerror(net_socket->error_code));
         retval = -3;
         goto create_listening_socket_error;
     }
@@ -1525,7 +1532,8 @@ static int accept_net(avs_net_abstract_socket_t *server_net_socket_,
                             new_net_socket->remote_hostname,
                             sizeof(new_net_socket->remote_hostname),
                             new_net_socket->remote_port,
-                            sizeof(new_net_socket->remote_port)) < 0) {
+                            sizeof(new_net_socket->remote_port))
+        < 0) {
         server_net_socket->error_code = avs_map_errno(errno);
         close_net_raw(new_net_socket);
         return -1;

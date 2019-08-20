@@ -25,6 +25,7 @@ add_library(avs_utils STATIC
             src/numbers.c
             src/shared_buffer.c
             src/strings.c
+            src/strerror.c
             src/time.c
             src/token.c)
 
