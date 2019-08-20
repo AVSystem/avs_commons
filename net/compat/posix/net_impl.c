@@ -18,8 +18,9 @@
 
 #include <avs_commons_posix_config.h>
 
-#include <avsystem/commons/errno_map.h>
 #include <errno.h>
+
+#include <avsystem/commons/errno_map.h>
 
 #include <avsystem/commons/memory.h>
 #include <avsystem/commons/utils.h>

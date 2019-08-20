@@ -24,8 +24,6 @@ const char *avs_strerror(avs_errno_t error) {
     switch (error) {
     case AVS_NO_ERROR:
         return "Success";
-    case AVS_UNKNOWN_ERROR:
-        return "Unknown error";
     case AVS_E2BIG:
         return "Argument list too long";
     case AVS_EACCES:
@@ -160,5 +158,8 @@ const char *avs_strerror(avs_errno_t error) {
         return "Text file busy";
     case AVS_EXDEV:
         return "Invalid cross-device link";
+    case AVS_UNKNOWN_ERROR:
+        return "Unknown error";
     }
+    return "<unsupported error code>";
 }
