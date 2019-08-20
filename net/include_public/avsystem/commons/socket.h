@@ -685,7 +685,7 @@ int avs_net_socket_cleanup(avs_net_abstract_socket_t **socket);
  * @param port   Remote port to connect to.
  *
  * @returns 0 on success, or a negative value in case of error, in which case
- *          @p socket errno (see @ref avs_net_socket_errno) is set to an
+ *          @p socket errno (see @ref avs_net_socket_error) is set to an
  *          appropriate value; in particular, if DNS resolution fails, it is set
  *          to <c>AVS_EADDRNOTAVAIL</c>
  */
@@ -749,7 +749,7 @@ int avs_net_socket_decorate_in_place(avs_net_abstract_socket_t **socket,
  *
  * @returns @li 0 if exactly @p buffer_length bytes were written,
  *          @li a negative value in case of error, in which case @p socket
- *              errno (see @ref avs_net_socket_errno) is set to an appropriate
+ *              errno (see @ref avs_net_socket_error) is set to an appropriate
  *              value.
  */
 int avs_net_socket_send(avs_net_abstract_socket_t *socket,
@@ -774,7 +774,7 @@ int avs_net_socket_send(avs_net_abstract_socket_t *socket,
  *
  * @returns @li 0 if exactly @p buffer_length bytes were written.
  *          @li a negative value in case of error, in which case @p socket
- *              errno (see @ref avs_net_socket_errno) is set to an appropriate
+ *              errno (see @ref avs_net_socket_error) is set to an appropriate
  *              value; in particular, if DNS resolution fails, it is set to
  *              <c>AVS_EADDRNOTAVAIL</c>
  */
@@ -790,7 +790,7 @@ int avs_net_socket_send_to(avs_net_abstract_socket_t *socket,
  * - @p buffer is filled with @p buffer_length initial bytes of data,
  * - @p buffer_length is returned via @p out_bytes_received ,
  * - the function returns a negative value,
- * - @p socket errno is set to AVS_EMSGSIZE. See @ref avs_net_socket_errno .
+ * - @p socket errno is set to AVS_EMSGSIZE. See @ref avs_net_socket_error .
  * That means, one can still access the truncated message if required. Note
  * that the actual length of received datagram is lost.
  *
@@ -806,7 +806,7 @@ int avs_net_socket_send_to(avs_net_abstract_socket_t *socket,
  *
  * @returns @li 0 on success,
  *          @li a negative value in case of error, in which case @p socket
- *              errno (see @ref avs_net_socket_errno) is set to an appropriate
+ *              errno (see @ref avs_net_socket_error) is set to an appropriate
  *              value.
  */
 int avs_net_socket_receive(avs_net_abstract_socket_t *socket,
@@ -822,7 +822,7 @@ int avs_net_socket_receive(avs_net_abstract_socket_t *socket,
  * - @p buffer is filled with @p buffer_length initial bytes of data,
  * - @p buffer_length is returned via @p out_bytes_received ,
  * - the function returns a negative value,
- * - @p socket errno is set to AVS_EMSGSIZE. See @ref avs_net_socket_errno .
+ * - @p socket errno is set to AVS_EMSGSIZE. See @ref avs_net_socket_error .
  * That means, one can still access the truncated message if required. Note
  * that the actual length of received datagram is lost.
  *
@@ -845,7 +845,7 @@ int avs_net_socket_receive(avs_net_abstract_socket_t *socket,
  *
  * @returns @li 0 on success,
  *          @li a negative value in case of error, in which case @p socket
- *              errno (see @ref avs_net_socket_errno) is set to an appropriate
+ *              errno (see @ref avs_net_socket_error) is set to an appropriate
  *              value.
  */
 int avs_net_socket_receive_from(avs_net_abstract_socket_t *socket,
@@ -883,7 +883,7 @@ int avs_net_socket_bind(avs_net_abstract_socket_t *socket,
  *
  * @returns @li 0 on success,
  *          @li a negative value in case of error, in which case
- *              @p server_socket errno (see @ref avs_net_socket_errno) is set to
+ *              @p server_socket errno (see @ref avs_net_socket_error) is set to
  *              an appropriate value.
  *
  * NOTE: this function fails for connectionless sockets (e.g. UDP).
@@ -902,7 +902,7 @@ int avs_net_socket_accept(avs_net_abstract_socket_t *server_socket,
  *
  * @returns @li 0 on success,
  *          @li a negative value in case of error, in which case @p socket
- *              errno (see @ref avs_net_socket_errno) is set to an appropriate
+ *              errno (see @ref avs_net_socket_error) is set to an appropriate
  *              value.
  *
  *          Regardless of the return value, the socket is left in
@@ -924,7 +924,7 @@ int avs_net_socket_close(avs_net_abstract_socket_t *socket);
  *
  * @returns @li 0 on success,
  *          @li a negative value in case of error, in which case @p socket
- *              errno (see @ref avs_net_socket_errno) is set to an appropriate
+ *              errno (see @ref avs_net_socket_error) is set to an appropriate
  *              value.
  *
  *          Regardless of the return value, the socket is left in
@@ -941,7 +941,7 @@ int avs_net_socket_shutdown(avs_net_abstract_socket_t *socket);
  *
  * @returns @li 0 on success,
  *          @li a negative value in case of error, in which case @p socket
- *              errno (see @ref avs_net_socket_errno) is set to an appropriate
+ *              errno (see @ref avs_net_socket_error) is set to an appropriate
  *              value.
  */
 int avs_net_socket_interface_name(avs_net_abstract_socket_t *socket,
@@ -957,7 +957,7 @@ int avs_net_socket_interface_name(avs_net_abstract_socket_t *socket,
  * @returns @li 0 on success, in which case @p out_buffer is guaranteed to be
  *              null-terminated,
  *          @li a negative value in case of error, in which case @p socket
- *              errno (see @ref avs_net_socket_errno) is set to an appropriate
+ *              errno (see @ref avs_net_socket_error) is set to an appropriate
  *              value.
  */
 int avs_net_socket_get_remote_host(avs_net_abstract_socket_t *socket,
@@ -976,7 +976,7 @@ int avs_net_socket_get_remote_host(avs_net_abstract_socket_t *socket,
  * @returns @li 0 on success, in which case @p out_buffer is guaranteed to be
  *              null-terminated,
  *          @li a negative value in case of error, in which case @p socket
- *              errno (see @ref avs_net_socket_errno) is set to an appropriate
+ *              errno (see @ref avs_net_socket_error) is set to an appropriate
  *              value.
  */
 int avs_net_socket_get_remote_hostname(avs_net_abstract_socket_t *socket,
@@ -994,7 +994,7 @@ int avs_net_socket_get_remote_hostname(avs_net_abstract_socket_t *socket,
  * @returns @li 0 on success, in which case @p out_buffer is guaranteed to be
  *              null-terminated,
  *          @li a negative value in case of error, in which case @p socket
- *              errno (see @ref avs_net_socket_errno) is set to an appropriate
+ *              errno (see @ref avs_net_socket_error) is set to an appropriate
  *              value.
  */
 int avs_net_socket_get_remote_port(avs_net_abstract_socket_t *socket,
@@ -1011,7 +1011,7 @@ int avs_net_socket_get_remote_port(avs_net_abstract_socket_t *socket,
  * @returns @li 0 on success, in which case @p out_buffer is guaranteed to be
  *              null-terminated,
  *          @li a negative value in case of error, in which case @p socket
- *              errno (see @ref avs_net_socket_errno) is set to an appropriate
+ *              errno (see @ref avs_net_socket_error) is set to an appropriate
  *              value.
  */
 int avs_net_socket_get_local_host(avs_net_abstract_socket_t *socket,
@@ -1029,7 +1029,7 @@ int avs_net_socket_get_local_host(avs_net_abstract_socket_t *socket,
  * @returns @li 0 on success, in which case @p out_buffer is guaranteed to be
  *              null-terminated,
  *          @li a negative value in case of error, in which case @p socket
- *              errno (see @ref avs_net_socket_errno) is set to an appropriate
+ *              errno (see @ref avs_net_socket_error) is set to an appropriate
  *              value.
  */
 int avs_net_socket_get_local_port(avs_net_abstract_socket_t *socket,
@@ -1046,7 +1046,7 @@ int avs_net_socket_get_local_port(avs_net_abstract_socket_t *socket,
  *
  * @returns @li 0 on success,
  *          @li a negative value in case of error, in which case @p socket
- *              errno (see @ref avs_net_socket_errno) is set to an appropriate
+ *              errno (see @ref avs_net_socket_error) is set to an appropriate
  *              value.
  */
 int avs_net_socket_get_opt(avs_net_abstract_socket_t *socket,
@@ -1063,7 +1063,7 @@ int avs_net_socket_get_opt(avs_net_abstract_socket_t *socket,
  *
  * @returns @li 0 on success,
  *          @li a negative value in case of error, in which case @p socket
- *              errno (see @ref avs_net_socket_errno) is set to an appropriate
+ *              errno (see @ref avs_net_socket_error) is set to an appropriate
  *              value.
  */
 int avs_net_socket_set_opt(avs_net_abstract_socket_t *socket,
@@ -1077,7 +1077,7 @@ int avs_net_socket_set_opt(avs_net_abstract_socket_t *socket,
  *
  * NOTE: socket errno is NOT the same as the standard C global <c>errno</c>.
  */
-avs_errno_t avs_net_socket_errno(avs_net_abstract_socket_t *socket);
+avs_errno_t avs_net_socket_error(avs_net_abstract_socket_t *socket);
 
 /**
  * Returns a pointer to bare system socket (e.g. to invoke <c>select</c> or

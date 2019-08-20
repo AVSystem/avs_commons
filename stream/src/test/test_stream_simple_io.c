@@ -57,8 +57,7 @@ static int writer(void *context_, const void *buffer, size_t *inout_size) {
     stream_ctx_t *context = (stream_ctx_t *) context_;
     size_t curr_offset = context->curr_offset;
 
-    size_t bytes_to_write =
-            AVS_MIN(*inout_size, STREAM_SIZE - curr_offset);
+    size_t bytes_to_write = AVS_MIN(*inout_size, STREAM_SIZE - curr_offset);
     memcpy(context->data + curr_offset, buffer, bytes_to_write);
     context->curr_offset += bytes_to_write;
     *inout_size = bytes_to_write;
@@ -78,8 +77,7 @@ static avs_stream_abstract_t *setup_output_stream(stream_ctx_t *ctx) {
 }
 
 static avs_stream_abstract_t *setup_input_stream(stream_ctx_t *ctx) {
-    avs_stream_abstract_t *stream =
-            avs_stream_simple_input_create(reader, ctx);
+    avs_stream_abstract_t *stream = avs_stream_simple_input_create(reader, ctx);
     AVS_UNIT_ASSERT_NOT_NULL(stream);
     if (ctx) {
         ctx->data = (char *) avs_malloc(STREAM_SIZE);
@@ -114,7 +112,7 @@ AVS_UNIT_TEST(stream_simple_io, write_some_equal_to_memory_size) {
     stream_ctx_t ctx;
     avs_stream_abstract_t *stream = setup_output_stream(&ctx);
     size_t bytes_to_write = STREAM_SIZE;
-    
+
     AVS_UNIT_ASSERT_SUCCESS(
             avs_stream_write_some(stream, TEST_DATA, &bytes_to_write));
     AVS_UNIT_ASSERT_EQUAL(bytes_to_write, STREAM_SIZE);
@@ -144,8 +142,8 @@ AVS_UNIT_TEST(stream_simple_io, try_write_some_more_than_memory_size) {
 
     // This behavior depends on user-implemented writer(). In this case writer()
     // writes as much data as possible and returns 0.
-    AVS_UNIT_ASSERT_SUCCESS(avs_stream_write_some(
-            stream, TEST_DATA, &bytes_to_write));
+    AVS_UNIT_ASSERT_SUCCESS(
+            avs_stream_write_some(stream, TEST_DATA, &bytes_to_write));
     AVS_UNIT_ASSERT_EQUAL(bytes_to_write, STREAM_SIZE);
     AVS_UNIT_ASSERT_EQUAL_BYTES_SIZED(ctx.data, TEST_DATA, STREAM_SIZE);
 
@@ -169,8 +167,8 @@ AVS_UNIT_TEST(stream_simple_io, try_write_more_than_memory_size) {
     stream_ctx_t ctx;
     avs_stream_abstract_t *stream = setup_output_stream(&ctx);
 
-    AVS_UNIT_ASSERT_FAILED(avs_stream_write(
-            stream, TEST_DATA, STREAM_SIZE + 1));
+    AVS_UNIT_ASSERT_FAILED(
+            avs_stream_write(stream, TEST_DATA, STREAM_SIZE + 1));
 
     teardown_stream(&stream, &ctx);
 }
@@ -183,9 +181,8 @@ AVS_UNIT_TEST(stream_simple_io, read_zero_bytes) {
     size_t bytes_read = 0;
     char message_finished = true;
 
-    AVS_UNIT_ASSERT_SUCCESS(
-            avs_stream_read(stream, &bytes_read, &message_finished, buffer,
-                            bytes_to_read));
+    AVS_UNIT_ASSERT_SUCCESS(avs_stream_read(
+            stream, &bytes_read, &message_finished, buffer, bytes_to_read));
     AVS_UNIT_ASSERT_EQUAL(bytes_read, bytes_to_read);
     AVS_UNIT_ASSERT_FALSE(message_finished);
 
@@ -201,9 +198,8 @@ AVS_UNIT_TEST(stream_simple_io, read_equal_to_memory_size) {
     size_t bytes_read = 0;
     char message_finished = true;
 
-    AVS_UNIT_ASSERT_SUCCESS(
-            avs_stream_read(stream, &bytes_read, &message_finished, buffer,
-                            bytes_to_read));
+    AVS_UNIT_ASSERT_SUCCESS(avs_stream_read(
+            stream, &bytes_read, &message_finished, buffer, bytes_to_read));
     AVS_UNIT_ASSERT_EQUAL(bytes_read, bytes_to_read);
     AVS_UNIT_ASSERT_FALSE(message_finished);
     AVS_UNIT_ASSERT_EQUAL_BYTES_SIZED(buffer, TEST_DATA, bytes_to_read);
@@ -221,9 +217,8 @@ AVS_UNIT_TEST(stream_simple_io, read_less_than_memory_size) {
     size_t bytes_read = 0;
     char message_finished = true;
 
-    AVS_UNIT_ASSERT_SUCCESS(
-            avs_stream_read(stream, &bytes_read, &message_finished, buffer,
-                            bytes_to_read));
+    AVS_UNIT_ASSERT_SUCCESS(avs_stream_read(
+            stream, &bytes_read, &message_finished, buffer, bytes_to_read));
     AVS_UNIT_ASSERT_EQUAL(bytes_read, bytes_to_read);
     AVS_UNIT_ASSERT_FALSE(message_finished);
     AVS_UNIT_ASSERT_EQUAL_BYTES_SIZED(buffer, ctx.data, bytes_read);
@@ -241,9 +236,8 @@ AVS_UNIT_TEST(stream_simple_io, try_read_more_than_memory_size) {
     size_t bytes_read = 0;
     char message_finished = false;
 
-    AVS_UNIT_ASSERT_SUCCESS(
-            avs_stream_read(stream, &bytes_read, &message_finished, buffer,
-                            bytes_to_read));
+    AVS_UNIT_ASSERT_SUCCESS(avs_stream_read(
+            stream, &bytes_read, &message_finished, buffer, bytes_to_read));
     AVS_UNIT_ASSERT_EQUAL(bytes_read, STREAM_SIZE);
     AVS_UNIT_ASSERT_TRUE(message_finished);
     AVS_UNIT_ASSERT_EQUAL_BYTES_SIZED(buffer, ctx.data, bytes_read);
@@ -325,7 +319,7 @@ AVS_UNIT_TEST(stream_simple_io, reset) {
 AVS_UNIT_TEST(stream_simple_io, get_errno) {
     avs_stream_abstract_t *stream = setup_input_stream(NULL);
 
-    AVS_UNIT_ASSERT_SUCCESS(avs_stream_errno(stream));
+    AVS_UNIT_ASSERT_SUCCESS(avs_stream_error(stream));
 
     teardown_stream(&stream, NULL);
 }

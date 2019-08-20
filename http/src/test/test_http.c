@@ -151,9 +151,9 @@ AVS_UNIT_TEST(http, reconnect_fail) {
     avs_unit_mocksock_expect_mid_close(socket);
     avs_unit_mocksock_expect_connect(socket, "www.avsystem.com", "80");
     avs_unit_mocksock_fail_command(socket);
-    avs_unit_mocksock_expect_errno(socket, AVS_ECONNREFUSED);
+    avs_unit_mocksock_expect_error(socket, AVS_ECONNREFUSED);
     AVS_UNIT_ASSERT_FAILED(avs_stream_finish_message(stream));
-    AVS_UNIT_ASSERT_EQUAL(avs_stream_errno(stream), AVS_ECONNREFUSED);
+    AVS_UNIT_ASSERT_EQUAL(avs_stream_error(stream), AVS_ECONNREFUSED);
     avs_unit_mocksock_assert_io_clean(socket);
     avs_unit_mocksock_expect_shutdown(socket);
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&stream));
@@ -208,7 +208,7 @@ AVS_UNIT_TEST(http, advanced_request) {
                "\r\n";
     avs_unit_mocksock_input(socket, tmp_data, strlen(tmp_data));
     AVS_UNIT_ASSERT_FAILED(avs_stream_finish_message(stream));
-    AVS_UNIT_ASSERT_EQUAL(avs_stream_errno(stream), AVS_EPROTO);
+    AVS_UNIT_ASSERT_EQUAL(avs_stream_error(stream), AVS_EPROTO);
     AVS_UNIT_ASSERT_EQUAL(avs_http_status_code(stream), 401);
     avs_unit_mocksock_assert_io_clean(socket);
     avs_unit_mocksock_expect_shutdown(socket);
@@ -245,7 +245,7 @@ AVS_UNIT_TEST(http, invalid_cookies) {
                "\r\n";
     avs_unit_mocksock_input(socket, tmp_data, strlen(tmp_data));
     AVS_UNIT_ASSERT_FAILED(avs_stream_finish_message(stream));
-    AVS_UNIT_ASSERT_EQUAL(avs_stream_errno(stream), AVS_EPROTO);
+    AVS_UNIT_ASSERT_EQUAL(avs_stream_error(stream), AVS_EPROTO);
     avs_unit_mocksock_assert_io_clean(socket);
     avs_unit_mocksock_expect_shutdown(socket);
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&stream));
@@ -297,7 +297,7 @@ AVS_UNIT_TEST(http, multiple_cookies) {
                "\r\n";
     avs_unit_mocksock_input(socket, tmp_data, strlen(tmp_data));
     AVS_UNIT_ASSERT_FAILED(avs_stream_finish_message(stream));
-    AVS_UNIT_ASSERT_EQUAL(avs_stream_errno(stream), AVS_EPROTO);
+    AVS_UNIT_ASSERT_EQUAL(avs_stream_error(stream), AVS_EPROTO);
     AVS_UNIT_ASSERT_EQUAL(avs_http_status_code(stream), 401);
     avs_unit_mocksock_assert_io_clean(socket);
     avs_unit_mocksock_expect_shutdown(socket);
@@ -983,7 +983,7 @@ AVS_UNIT_TEST(http, redirect) {
     avs_unit_mocksock_input(sockets[5], tmp_data, strlen(tmp_data));
 
     AVS_UNIT_ASSERT_FAILED(avs_stream_finish_message(stream));
-    AVS_UNIT_ASSERT_EQUAL(avs_stream_errno(stream), AVS_EPROTO);
+    AVS_UNIT_ASSERT_EQUAL(avs_stream_error(stream), AVS_EPROTO);
     AVS_UNIT_ASSERT_EQUAL(avs_http_status_code(stream), 301);
     avs_unit_mocksock_assert_io_clean(sockets[5]);
     avs_unit_mocksock_expect_shutdown(sockets[5]);
@@ -1143,7 +1143,7 @@ AVS_UNIT_TEST(http, send_headers_fail) {
                "Host: www.avsystem.com\r\n";
     avs_unit_mocksock_expect_output(socket, tmp_data, strlen(tmp_data));
     avs_unit_mocksock_output_fail(socket, -1);
-    avs_unit_mocksock_expect_errno(socket, AVS_EIO);
+    avs_unit_mocksock_expect_error(socket, AVS_EIO);
     AVS_UNIT_ASSERT_FAILED(avs_stream_finish_message(stream));
     avs_unit_mocksock_assert_io_clean(socket);
     avs_unit_mocksock_expect_shutdown(socket);
@@ -1172,7 +1172,7 @@ AVS_UNIT_TEST(http, ipv6_host_header_has_square_brackets) {
                "Host: [::1:2:3:4]:1234\r\n";
     avs_unit_mocksock_expect_output(socket, tmp_data, strlen(tmp_data));
     avs_unit_mocksock_output_fail(socket, -1);
-    avs_unit_mocksock_expect_errno(socket, AVS_EIO);
+    avs_unit_mocksock_expect_error(socket, AVS_EIO);
     AVS_UNIT_ASSERT_FAILED(avs_stream_finish_message(stream));
     avs_unit_mocksock_assert_io_clean(socket);
     avs_unit_mocksock_expect_shutdown(socket);

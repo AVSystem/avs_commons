@@ -94,7 +94,7 @@ avs_errno_t _avs_http_socket_new(avs_net_abstract_socket_t **out,
         LOG(TRACE, "socket OK, connecting");
         if (avs_net_socket_connect(*out, avs_url_host(url),
                                    resolve_port(url))) {
-            result = avs_net_socket_errno(*out);
+            result = avs_net_socket_error(*out);
             if (!result) {
                 result = AVS_EIO;
             }
@@ -118,7 +118,7 @@ static int reconnect_tcp_socket(avs_net_abstract_socket_t *socket,
         || avs_net_socket_connect(socket, avs_url_host(url),
                                   resolve_port(url))) {
         LOG(ERROR, "reconnect failed");
-        *out_error_code = avs_net_socket_errno(socket);
+        *out_error_code = avs_net_socket_error(socket);
         return -1;
     }
     return 0;
@@ -204,7 +204,7 @@ int _avs_http_prepare_for_sending(http_stream_t *stream) {
 
 void _avs_http_maybe_schedule_retry_after_send(http_stream_t *stream,
                                                int result) {
-    if (result && avs_stream_errno(stream->backend) == AVS_EPIPE
+    if (result && avs_stream_error(stream->backend) == AVS_EPIPE
         && stream->flags.close_handling_required) {
         stream->flags.keep_connection = 0;
         stream->flags.should_retry = 1;

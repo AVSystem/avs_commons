@@ -26,7 +26,7 @@ extern "C" {
 /**
  * Errno constants are sometimes used in the Commons library, most notably in
  * the <c>avs_net</c> and <c>avs_stream</c> modules as error codes that may be
- * reported through @ref avs_net_socket_errno and @ref avs_stream_errno.
+ * reported through @ref avs_net_socket_error and @ref avs_stream_error.
  *
  * The problem with errno, however, is that it is very poorly defined. In fact,
  * the C standard only specifies <c>EDOM</c>, <c>EILSEQ</c> and <c>ERANGE</c>

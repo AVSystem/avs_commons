@@ -18,7 +18,7 @@
 #define NET_SSL_COMMON_H
 
 #ifndef NET_SSL_COMMON_INTERNALS
-#error "This header is not meant to be included from outside"
+#    error "This header is not meant to be included from outside"
 #endif
 
 #include "api.h"
@@ -81,7 +81,7 @@ static int errno_ssl(avs_net_abstract_socket_t *net_socket);
     do {                                                                     \
         if (BackendSocket) {                                                 \
             Retval = (__VA_ARGS__);                                          \
-            (SslSocket)->error_code = avs_net_socket_errno((BackendSocket)); \
+            (SslSocket)->error_code = avs_net_socket_error((BackendSocket)); \
         } else {                                                             \
             Retval = -1;                                                     \
             (SslSocket)->error_code = AVS_EBADF;                             \
@@ -97,8 +97,9 @@ static int unimplemented() {
 
 static int ensure_have_backend_socket(ssl_socket_t *socket) {
     if (!socket->backend_socket
-        && avs_net_socket_create(&socket->backend_socket, socket->backend_type,
-                                 &socket->backend_configuration)) {
+            && avs_net_socket_create(&socket->backend_socket,
+                                     socket->backend_type,
+                                     &socket->backend_configuration)) {
         socket->error_code = AVS_EBADF;
         return -1;
     }
@@ -169,7 +170,7 @@ static int connect_ssl(avs_net_abstract_socket_t *socket_,
     }
     if (avs_net_socket_connect(socket->backend_socket, host, port)) {
         LOG(ERROR, "avs_net_socket_connect() on backend socket failed");
-        socket->error_code = avs_net_socket_errno(socket->backend_socket);
+        socket->error_code = avs_net_socket_error(socket->backend_socket);
         return -1;
     }
 
@@ -209,7 +210,7 @@ static int decorate_ssl(avs_net_abstract_socket_t *socket_,
     // the handshake will be performed when the user calls connect() on the
     // decorated socket (likely a non-TCP/UDP TLS socket).
     if (backend_state.state == AVS_NET_SOCKET_STATE_ACCEPTED
-        || backend_state.state == AVS_NET_SOCKET_STATE_CONNECTED) {
+            || backend_state.state == AVS_NET_SOCKET_STATE_CONNECTED) {
         char host[NET_MAX_HOSTNAME_SIZE];
         WRAP_ERRNO_IMPL(socket, backend_socket, result,
                         avs_net_socket_get_remote_hostname(backend_socket, host,
@@ -230,7 +231,7 @@ static int system_socket_ssl(avs_net_abstract_socket_t *socket_,
     ssl_socket_t *socket = (ssl_socket_t *) socket_;
     if (socket->backend_socket) {
         *out = avs_net_socket_get_system(socket->backend_socket);
-        socket->error_code = avs_net_socket_errno(socket->backend_socket);
+        socket->error_code = avs_net_socket_error(socket->backend_socket);
     } else {
         *out = NULL;
         socket->error_code = AVS_EBADF;
@@ -326,8 +327,8 @@ static avs_errno_t errno_ssl(avs_net_abstract_socket_t *net_socket) {
 static int get_socket_inner_mtu_or_zero(avs_net_abstract_socket_t *sock) {
     avs_net_socket_opt_value_t opt_value;
     if (!sock
-        || avs_net_socket_get_opt(sock, AVS_NET_SOCKET_OPT_INNER_MTU,
-                                  &opt_value)) {
+            || avs_net_socket_get_opt(sock, AVS_NET_SOCKET_OPT_INNER_MTU,
+                                      &opt_value)) {
         return 0;
     } else {
         return opt_value.mtu;
@@ -356,7 +357,8 @@ static int replace_ciphersuites(avs_net_socket_tls_ciphersuites_t *dst,
 
 static avs_net_socket_state_t socket_state(avs_net_abstract_socket_t *socket) {
     avs_net_socket_opt_value_t value;
-    int result = avs_net_socket_get_opt(socket, AVS_NET_SOCKET_OPT_STATE, &value);
+    int result =
+            avs_net_socket_get_opt(socket, AVS_NET_SOCKET_OPT_STATE, &value);
     if (result) {
         return AVS_NET_SOCKET_STATE_CLOSED;
     } else {
@@ -448,8 +450,8 @@ static int get_opt_ssl(avs_net_abstract_socket_t *ssl_socket_,
             int retval = avs_net_socket_get_opt(ssl_socket->backend_socket,
                                                 option_key, out_option_value);
             if (retval
-                && !(ssl_socket->error_code = avs_net_socket_errno(
-                             ssl_socket->backend_socket))) {
+                    && !(ssl_socket->error_code = avs_net_socket_error(
+                                 ssl_socket->backend_socket))) {
                 ssl_socket->error_code = AVS_EPROTO;
             }
             return retval;
@@ -530,7 +532,10 @@ static const avs_net_socket_v_table_t ssl_vtable = {
 };
 
 static const avs_net_dtls_handshake_timeouts_t
-        DEFAULT_DTLS_HANDSHAKE_TIMEOUTS = { .min = { 1, 0 }, .max = { 60, 0 } };
+        DEFAULT_DTLS_HANDSHAKE_TIMEOUTS = {
+            .min = { 1, 0 },
+            .max = { 60, 0 }
+        };
 
 VISIBILITY_PRIVATE_HEADER_END
 

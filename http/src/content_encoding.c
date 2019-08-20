@@ -53,7 +53,8 @@ static int decode_more_data_with_buffer(decoding_stream_t *stream,
     }
     if ((bytes_read > 0
          && avs_stream_write(stream->decoder, buffer, bytes_read))
-        || (*out_no_more_data && avs_stream_finish_message(stream->decoder))) {
+            || (*out_no_more_data
+                && avs_stream_finish_message(stream->decoder))) {
         stream->error = AVS_EIO;
         return -1;
     }
@@ -105,7 +106,8 @@ static int decoding_read(avs_stream_abstract_t *stream_,
         /* buffer is used here only as temporary storage;
          * stored data is not used after return from decode_more_data() */
         if (no_more_data
-            || decode_more_data(stream, buffer, buffer_length, &no_more_data)) {
+                || decode_more_data(stream, buffer, buffer_length,
+                                    &no_more_data)) {
             return -1;
         }
     }
@@ -159,7 +161,7 @@ static int decoding_close(avs_stream_abstract_t *stream_) {
     return retval;
 }
 
-static avs_errno_t decoding_errno(avs_stream_abstract_t *stream) {
+static avs_errno_t decoding_error(avs_stream_abstract_t *stream) {
     return ((decoding_stream_t *) stream)->error;
 }
 
@@ -175,7 +177,7 @@ static const avs_stream_v_table_t decoding_vtable = {
     decoding_peek,
     (avs_stream_reset_t) unimplemented,
     decoding_close,
-    decoding_errno,
+    decoding_error,
     &(avs_stream_v_table_extension_t[]){
             { AVS_STREAM_V_TABLE_EXTENSION_NONBLOCK,
               &(avs_stream_v_table_extension_nonblock_t[]){

@@ -81,7 +81,7 @@ AVS_UNIT_TEST(http_close, chunked_request) {
 
     // second request
     avs_unit_mocksock_output_fail(socket, -1);
-    avs_unit_mocksock_expect_errno(socket, AVS_EPIPE);
+    avs_unit_mocksock_expect_error(socket, AVS_EPIPE);
     avs_unit_mocksock_expect_mid_close(socket);
     avs_unit_mocksock_expect_connect(socket, "example.com", "80");
     // second request retry
@@ -125,12 +125,12 @@ AVS_UNIT_TEST(http_close, chunked_request_twice) {
 
     // second request
     avs_unit_mocksock_output_fail(socket, -1);
-    avs_unit_mocksock_expect_errno(socket, AVS_EPIPE);
+    avs_unit_mocksock_expect_error(socket, AVS_EPIPE);
     avs_unit_mocksock_expect_mid_close(socket);
     avs_unit_mocksock_expect_connect(socket, "example.com", "80");
     // second request retry
     avs_unit_mocksock_output_fail(socket, -1);
-    avs_unit_mocksock_expect_errno(socket, AVS_EPIPE);
+    avs_unit_mocksock_expect_error(socket, AVS_EPIPE);
     const char *tmp_data = MONTY_PYTHON_RAW;
     int result = 0;
     while (!result && *tmp_data) {
@@ -161,9 +161,9 @@ AVS_UNIT_TEST(http_close, chunked_request_error_in_first_chunk) {
                            "\r\n";
     avs_unit_mocksock_expect_output(socket, tmp_data, strlen(tmp_data));
     avs_unit_mocksock_input_fail(socket, -1);
-    avs_unit_mocksock_expect_errno(socket, AVS_ETIMEDOUT);
+    avs_unit_mocksock_expect_error(socket, AVS_ETIMEDOUT);
     avs_unit_mocksock_output_fail(socket, -1);
-    avs_unit_mocksock_expect_errno(socket, AVS_EPIPE);
+    avs_unit_mocksock_expect_error(socket, AVS_EPIPE);
     avs_unit_mocksock_expect_mid_close(socket);
     avs_unit_mocksock_expect_connect(socket, "example.com", "80");
     // second request retry
@@ -252,7 +252,7 @@ AVS_UNIT_TEST(http_close, chunked_request_error_in_second_chunk) {
                            "\r\n";
     avs_unit_mocksock_expect_output(socket, tmp_data, strlen(tmp_data));
     avs_unit_mocksock_input_fail(socket, -1);
-    avs_unit_mocksock_expect_errno(socket, AVS_ETIMEDOUT);
+    avs_unit_mocksock_expect_error(socket, AVS_ETIMEDOUT);
     /* The text used in this test is 5119 bytes long.
      * This is to test writing more than buffer size, which is 4096. */
     tmp_data = MONTY_PYTHON_PER_LINE_REQUEST;
@@ -260,7 +260,7 @@ AVS_UNIT_TEST(http_close, chunked_request_error_in_second_chunk) {
     avs_unit_mocksock_expect_output(socket, tmp_data,
                                     strstr(tmp_data, "\n\r\n") + 3 - tmp_data);
     avs_unit_mocksock_output_fail(socket, -1);
-    avs_unit_mocksock_expect_errno(socket, AVS_EPIPE);
+    avs_unit_mocksock_expect_error(socket, AVS_EPIPE);
     tmp_data = MONTY_PYTHON_RAW;
     while (*tmp_data) {
         send_line(stream, &tmp_data);

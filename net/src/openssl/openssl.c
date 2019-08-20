@@ -17,34 +17,34 @@
 // NOTE: OpenSSL headers sometimes (depending on a version) contain some of the
 // symbols poisoned via inclusion of avs_commons_config.h. Therefore they must
 // be included first.
-#include <openssl/ssl.h>
-#include <openssl/rand.h>
-#include <openssl/md5.h>
-#include <openssl/hmac.h>
-#include <openssl/rsa.h>
 #include <openssl/bn.h>
+#include <openssl/hmac.h>
+#include <openssl/md5.h>
+#include <openssl/rand.h>
+#include <openssl/rsa.h>
+#include <openssl/ssl.h>
 
 #include <avs_commons_config.h>
 
 #include <assert.h>
 #include <ctype.h>
+#include <errno.h>
 #include <stdio.h>
 #include <string.h>
-#include <errno.h>
 
 #include <sys/time.h> // for struct timeval
 
 #include <avsystem/commons/errno_map.h>
 #include <avsystem/commons/memory.h>
-#include <avsystem/commons/time.h>
 #include <avsystem/commons/stream/stream_membuf.h>
+#include <avsystem/commons/time.h>
 
 #include "../global.h"
 #include "../net_impl.h"
 
 #include "common.h"
 #ifdef WITH_X509
-#include "data_loader.h"
+#    include "data_loader.h"
 #endif // WITH_X509
 
 VISIBILITY_SOURCE_BEGIN
@@ -54,30 +54,31 @@ VISIBILITY_SOURCE_BEGIN
 #define TRUNCATION_BUFFER_SIZE 128
 
 #ifdef OPENSSL_VERSION_NUMBER
-#define MAKE_OPENSSL_VER(Major, Minor, Fix) \
+#    define MAKE_OPENSSL_VER(Major, Minor, Fix) \
         (((Major) << 28) | ((Minor) << 20) | ((Fix) << 12))
 
-#define OPENSSL_VERSION_NUMBER_GE(Major, Minor, Fix) \
+#    define OPENSSL_VERSION_NUMBER_GE(Major, Minor, Fix) \
         (OPENSSL_VERSION_NUMBER >= MAKE_OPENSSL_VER(Major, Minor, Fix))
 #else
-#define OPENSSL_VERSION_NUMBER_GE(Major, Minor, Fix) 0
+#    define OPENSSL_VERSION_NUMBER_GE(Major, Minor, Fix) 0
 #endif
 
 #define OPENSSL_VERSION_NUMBER_LT(Major, Minor, Fix) \
-        (!OPENSSL_VERSION_NUMBER_GE(Major, Minor, Fix))
+    (!OPENSSL_VERSION_NUMBER_GE(Major, Minor, Fix))
 
-#if (OPENSSL_VERSION_NUMBER_LT(1,0,0) || defined(OPENSSL_NO_PSK)) && defined(WITH_PSK)
-#warning "Detected OpenSSL version does not support PSK - disabling"
-#undef WITH_PSK
+#if (OPENSSL_VERSION_NUMBER_LT(1, 0, 0) || defined(OPENSSL_NO_PSK)) \
+        && defined(WITH_PSK)
+#    warning "Detected OpenSSL version does not support PSK - disabling"
+#    undef WITH_PSK
 #endif
 
-#if OPENSSL_VERSION_NUMBER_LT(1,0,1) && defined(WITH_DTLS)
-#warning "Detected OpenSSL version does not support DTLS - disabling"
-#undef WITH_DTLS
+#if OPENSSL_VERSION_NUMBER_LT(1, 0, 1) && defined(WITH_DTLS)
+#    warning "Detected OpenSSL version does not support DTLS - disabling"
+#    undef WITH_DTLS
 #endif
 
 typedef struct {
-    const avs_net_socket_v_table_t * const operations;
+    const avs_net_socket_v_table_t *const operations;
     SSL_CTX *ctx;
     SSL *ssl;
     int verification;
@@ -103,7 +104,7 @@ typedef struct {
 #include "../ssl_common.h"
 
 #ifdef WITH_DTLS
-#if OPENSSL_VERSION_NUMBER_LT(1,1,0)
+#    if OPENSSL_VERSION_NUMBER_LT(1, 1, 0)
 static const EVP_CIPHER *get_evp_cipher(SSL *ssl) {
     EVP_CIPHER_CTX *ctx = ssl->enc_write_ctx;
     return ctx ? ctx->cipher : NULL;
@@ -113,30 +114,32 @@ static const EVP_MD *get_evp_md(SSL *ssl) {
     EVP_MD_CTX *ctx = ssl->write_hash;
     return ctx ? ctx->digest : NULL;
 }
-#else /* OpenSSL >= 1.1.0 */
+#    else /* OpenSSL >= 1.1.0 */
 static const EVP_CIPHER *get_evp_cipher(SSL *ssl) {
     const SSL_CIPHER *ssl_cipher = SSL_get_current_cipher(ssl);
     return ssl_cipher
-            ? EVP_get_cipherbynid(SSL_CIPHER_get_cipher_nid(ssl_cipher)) : NULL;
+                   ? EVP_get_cipherbynid(SSL_CIPHER_get_cipher_nid(ssl_cipher))
+                   : NULL;
 }
 
 static const EVP_MD *get_evp_md(SSL *ssl) {
     const SSL_CIPHER *ssl_cipher = SSL_get_current_cipher(ssl);
     return ssl_cipher
-            ? EVP_get_digestbynid(SSL_CIPHER_get_digest_nid(ssl_cipher)) : NULL;
+                   ? EVP_get_digestbynid(SSL_CIPHER_get_digest_nid(ssl_cipher))
+                   : NULL;
 }
-#endif
+#    endif
 
 /* values from OpenSSL 1.x */
-#ifndef EVP_GCM_TLS_EXPLICIT_IV_LEN
-#define EVP_GCM_TLS_EXPLICIT_IV_LEN 8
-#endif
-#ifndef EVP_CCM_TLS_EXPLICIT_IV_LEN
-#define EVP_CCM_TLS_EXPLICIT_IV_LEN 8
-#endif
-#ifndef SSL3_RT_MAX_COMPRESSED_OVERHEAD
-#define SSL3_RT_MAX_COMPRESSED_OVERHEAD 1024
-#endif
+#    ifndef EVP_GCM_TLS_EXPLICIT_IV_LEN
+#        define EVP_GCM_TLS_EXPLICIT_IV_LEN 8
+#    endif
+#    ifndef EVP_CCM_TLS_EXPLICIT_IV_LEN
+#        define EVP_CCM_TLS_EXPLICIT_IV_LEN 8
+#    endif
+#    ifndef SSL3_RT_MAX_COMPRESSED_OVERHEAD
+#        define SSL3_RT_MAX_COMPRESSED_OVERHEAD 1024
+#    endif
 
 static int get_explicit_iv_length(const EVP_CIPHER *cipher) {
     /* adapted from do_dtls1_write() in OpenSSL */
@@ -147,25 +150,25 @@ static int get_explicit_iv_length(const EVP_CIPHER *cipher) {
             return eivlen;
         }
     }
-#ifdef EVP_CIPH_GCM_MODE
+#    ifdef EVP_CIPH_GCM_MODE
     else if (mode == EVP_CIPH_GCM_MODE) {
         return EVP_GCM_TLS_EXPLICIT_IV_LEN;
     }
-#endif
-#ifdef EVP_CIPH_CCM_MODE
+#    endif
+#    ifdef EVP_CIPH_CCM_MODE
     else if (mode == EVP_CIPH_CCM_MODE) {
         return EVP_CCM_TLS_EXPLICIT_IV_LEN;
     }
-#endif
+#    endif
     return 0;
 }
 
 static int cipher_is_aead(const EVP_CIPHER *cipher) {
-#ifdef EVP_CIPH_FLAG_AEAD_CIPHER
+#    ifdef EVP_CIPH_FLAG_AEAD_CIPHER
     if (cipher) {
         return !!(EVP_CIPHER_flags(cipher) & EVP_CIPH_FLAG_AEAD_CIPHER);
     }
-#endif
+#    endif
     (void) cipher;
     return 0;
 }
@@ -188,15 +191,15 @@ static bool cipher_is_chachapoly(const char *cipher_desc) {
 }
 
 /* values from OpenSSL-git */
-#ifndef EVP_CCM_TLS_TAG_LEN
-#define EVP_CCM_TLS_TAG_LEN 16
-#endif
-#ifndef EVP_CCM8_TLS_TAG_LEN
-#define EVP_CCM8_TLS_TAG_LEN 8
-#endif
-#ifndef EVP_CHACHAPOLY_TLS_TAG_LEN
-#define EVP_CHACHAPOLY_TLS_TAG_LEN 16
-#endif
+#    ifndef EVP_CCM_TLS_TAG_LEN
+#        define EVP_CCM_TLS_TAG_LEN 16
+#    endif
+#    ifndef EVP_CCM8_TLS_TAG_LEN
+#        define EVP_CCM8_TLS_TAG_LEN 8
+#    endif
+#    ifndef EVP_CHACHAPOLY_TLS_TAG_LEN
+#        define EVP_CHACHAPOLY_TLS_TAG_LEN 16
+#    endif
 
 static int aead_cipher_tag_len(SSL *ssl) {
     const EVP_CIPHER *cipher = get_evp_cipher(ssl);
@@ -261,7 +264,7 @@ static int get_dtls_overhead(ssl_socket_t *socket,
     }
     return 0;
 }
-#else /* WITH_DTLS */
+#else  /* WITH_DTLS */
 static int get_dtls_overhead(ssl_socket_t *socket,
                              int *out_header,
                              int *out_padding_size) {
@@ -274,11 +277,11 @@ static int get_dtls_overhead(ssl_socket_t *socket,
 
 #ifdef BIO_TYPE_SOURCE_SINK
 
-#if OPENSSL_VERSION_NUMBER_LT(1,1,0)
-#define BIO_set_init(bio, value) ((bio)->init = (value))
-#define BIO_get_data(bio) ((bio)->ptr)
-#define BIO_set_data(bio, data) ((bio)->ptr = (data))
-#endif
+#    if OPENSSL_VERSION_NUMBER_LT(1, 1, 0)
+#        define BIO_set_init(bio, value) ((bio)->init = (value))
+#        define BIO_get_data(bio) ((bio)->ptr)
+#        define BIO_set_data(bio, data) ((bio)->ptr = (data))
+#    endif
 
 static int avs_bio_write(BIO *bio, const char *data, int size) {
     ssl_socket_t *sock = (ssl_socket_t *) BIO_get_data(bio);
@@ -292,7 +295,7 @@ static int avs_bio_write(BIO *bio, const char *data, int size) {
     }
     BIO_clear_retry_flags(bio);
     if (avs_net_socket_send(sock->backend_socket, data, (size_t) size)) {
-        sock->error_code = avs_net_socket_errno(sock->backend_socket);
+        sock->error_code = avs_net_socket_error(sock->backend_socket);
         return -1;
     } else {
         return size;
@@ -301,7 +304,8 @@ static int avs_bio_write(BIO *bio, const char *data, int size) {
 
 static avs_time_duration_t get_socket_timeout(avs_net_abstract_socket_t *sock) {
     avs_net_socket_opt_value_t opt_value;
-    if (avs_net_socket_get_opt(sock, AVS_NET_SOCKET_OPT_RECV_TIMEOUT, &opt_value)) {
+    if (avs_net_socket_get_opt(sock, AVS_NET_SOCKET_OPT_RECV_TIMEOUT,
+                               &opt_value)) {
         return AVS_TIME_DURATION_INVALID;
     }
     return opt_value.recv_timeout;
@@ -333,7 +337,7 @@ static avs_time_duration_t adjust_receive_timeout(ssl_socket_t *sock) {
 
 static bool socket_is_datagram(ssl_socket_t *sock) {
     return sock->backend_type == AVS_NET_UDP_SOCKET
-            || sock->backend_type == AVS_NET_DTLS_SOCKET;
+           || sock->backend_type == AVS_NET_DTLS_SOCKET;
 }
 
 static int avs_bio_read(BIO *bio, char *buffer, int size) {
@@ -353,10 +357,10 @@ static int avs_bio_read(BIO *bio, char *buffer, int size) {
     if (socket_is_datagram(sock)) {
         prev_timeout = adjust_receive_timeout(sock);
     }
-    if (avs_net_socket_receive(sock->backend_socket,
-                               &read_bytes, buffer, (size_t) size)) {
+    if (avs_net_socket_receive(sock->backend_socket, &read_bytes, buffer,
+                               (size_t) size)) {
         result = -1;
-        sock->error_code = avs_net_socket_errno(sock->backend_socket);
+        sock->error_code = avs_net_socket_error(sock->backend_socket);
     } else {
         result = (int) read_bytes;
     }
@@ -377,7 +381,7 @@ static int avs_bio_gets(BIO *bio, char *buffer, int size) {
     return -1;
 }
 
-#ifdef WITH_DTLS
+#    ifdef WITH_DTLS
 static int compare_durations(const avs_time_duration_t *left,
                              const avs_time_duration_t *right) {
     assert(avs_time_duration_valid(*left));
@@ -390,7 +394,7 @@ static int compare_durations(const avs_time_duration_t *left,
         return 0;
     }
 }
-#endif // WITH_DTLS
+#    endif // WITH_DTLS
 
 static long avs_bio_ctrl(BIO *bio, int command, long intarg, void *ptrarg) {
     ssl_socket_t *sock = (ssl_socket_t *) BIO_get_data(bio);
@@ -400,7 +404,7 @@ static long avs_bio_ctrl(BIO *bio, int command, long intarg, void *ptrarg) {
     switch (command) {
     case BIO_CTRL_FLUSH:
         return 1;
-#ifdef WITH_DTLS
+#    ifdef WITH_DTLS
     case BIO_CTRL_DGRAM_QUERY_MTU:
     case BIO_CTRL_DGRAM_GET_FALLBACK_MTU:
         return get_socket_inner_mtu_or_zero(sock->backend_socket);
@@ -410,17 +414,18 @@ static long avs_bio_ctrl(BIO *bio, int command, long intarg, void *ptrarg) {
         avs_time_duration_t next_timeout = {
             .seconds = next_deadline.tv_sec - now.since_real_epoch.seconds,
             .nanoseconds = (int32_t) (next_deadline.tv_usec * 1000)
-                    - now.since_real_epoch.nanoseconds
+                           - now.since_real_epoch.nanoseconds
         };
         if (next_timeout.nanoseconds < 0) {
             next_timeout.seconds--;
             next_timeout.nanoseconds += 1000000000;
         }
-        if (compare_durations(
-                &next_timeout, &sock->dtls_handshake_timeouts.min) < 0) {
+        if (compare_durations(&next_timeout, &sock->dtls_handshake_timeouts.min)
+                < 0) {
             next_timeout = sock->dtls_handshake_timeouts.min;
-        } else if (compare_durations(
-                &next_timeout, &sock->dtls_handshake_timeouts.max) > 0) {
+        } else if (compare_durations(&next_timeout,
+                                     &sock->dtls_handshake_timeouts.max)
+                   > 0) {
             next_timeout = sock->dtls_handshake_timeouts.max;
         }
         sock->next_deadline = avs_time_real_add(now, next_timeout);
@@ -438,7 +443,7 @@ static long avs_bio_ctrl(BIO *bio, int command, long intarg, void *ptrarg) {
         memcpy(ptrarg, sock->backend_configuration.preferred_endpoint->data.buf,
                sock->backend_configuration.preferred_endpoint->size);
         return sock->backend_configuration.preferred_endpoint->size;
-#endif // WITH_DTLS
+#    endif // WITH_DTLS
     default:
         return 0;
     }
@@ -463,35 +468,33 @@ static int avs_bio_destroy(BIO *bio) {
 
 static BIO_METHOD *AVS_BIO = NULL;
 
-#if OPENSSL_VERSION_NUMBER_LT(1,1,0)
+#    if OPENSSL_VERSION_NUMBER_LT(1, 1, 0)
 static int avs_bio_init(void) {
-    static BIO_METHOD AVS_BIO_IMPL = {
-        (100 | BIO_TYPE_SOURCE_SINK),
-        "avs_net",
-        avs_bio_write,
-        avs_bio_read,
-        avs_bio_puts,
-        avs_bio_gets,
-        avs_bio_ctrl,
-        avs_bio_create,
-        avs_bio_destroy,
-        NULL
-    };
+    static BIO_METHOD AVS_BIO_IMPL = { (100 | BIO_TYPE_SOURCE_SINK),
+                                       "avs_net",
+                                       avs_bio_write,
+                                       avs_bio_read,
+                                       avs_bio_puts,
+                                       avs_bio_gets,
+                                       avs_bio_ctrl,
+                                       avs_bio_create,
+                                       avs_bio_destroy,
+                                       NULL };
     AVS_BIO = &AVS_BIO_IMPL;
     return 0;
 }
-#else
+#    else
 static int avs_bio_init(void) {
     assert(!AVS_BIO);
     /* BIO_meth_set_* return 1 on success */
     if (!((AVS_BIO = BIO_meth_new(100 | BIO_TYPE_SOURCE_SINK, "avs_net"))
-            && BIO_meth_set_write(AVS_BIO, avs_bio_write)
-            && BIO_meth_set_read(AVS_BIO, avs_bio_read)
-            && BIO_meth_set_puts(AVS_BIO, avs_bio_puts)
-            && BIO_meth_set_gets(AVS_BIO, avs_bio_gets)
-            && BIO_meth_set_ctrl(AVS_BIO, avs_bio_ctrl)
-            && BIO_meth_set_create(AVS_BIO, avs_bio_create)
-            && BIO_meth_set_destroy(AVS_BIO, avs_bio_destroy))) {
+          && BIO_meth_set_write(AVS_BIO, avs_bio_write)
+          && BIO_meth_set_read(AVS_BIO, avs_bio_read)
+          && BIO_meth_set_puts(AVS_BIO, avs_bio_puts)
+          && BIO_meth_set_gets(AVS_BIO, avs_bio_gets)
+          && BIO_meth_set_ctrl(AVS_BIO, avs_bio_ctrl)
+          && BIO_meth_set_create(AVS_BIO, avs_bio_create)
+          && BIO_meth_set_destroy(AVS_BIO, avs_bio_destroy))) {
         if (AVS_BIO) {
             BIO_meth_free(AVS_BIO);
             AVS_BIO = NULL;
@@ -500,7 +503,7 @@ static int avs_bio_init(void) {
     }
     return 0;
 }
-#endif
+#    endif
 
 static BIO *avs_bio_spawn(ssl_socket_t *socket) {
     BIO *bio = BIO_new(AVS_BIO);
@@ -510,7 +513,7 @@ static BIO *avs_bio_spawn(ssl_socket_t *socket) {
     return bio;
 }
 #else /* BIO_TYPE_SOURCE_SINK */
-#define avs_bio_init() 0
+#    define avs_bio_init() 0
 
 static BIO *avs_bio_spawn(ssl_socket_t *socket) {
     const void *fd_ptr =
@@ -520,14 +523,14 @@ static BIO *avs_bio_spawn(ssl_socket_t *socket) {
         if (!socket_is_datagram(socket)) {
             return BIO_new_socket(fd, 0);
         }
-#ifdef WITH_DTLS
+#    ifdef WITH_DTLS
         if (socket_is_datagram(socket)) {
             BIO *bio = BIO_new_dgram(fd, 0);
             BIO_ctrl(bio, BIO_CTRL_DGRAM_SET_CONNECTED, 0,
                      socket->backend_configuration.preferred_endpoint->data);
             return bio;
         }
-#endif
+#    endif
     }
     return NULL;
 }
@@ -536,9 +539,9 @@ static BIO *avs_bio_spawn(ssl_socket_t *socket) {
 static bool socket_can_communicate(avs_net_abstract_socket_t *socket) {
     avs_net_socket_opt_value_t opt;
     return socket
-            && !avs_net_socket_get_opt(socket, AVS_NET_SOCKET_OPT_STATE, &opt)
-            && (opt.state == AVS_NET_SOCKET_STATE_ACCEPTED
-                    || opt.state == AVS_NET_SOCKET_STATE_CONNECTED);
+           && !avs_net_socket_get_opt(socket, AVS_NET_SOCKET_OPT_STATE, &opt)
+           && (opt.state == AVS_NET_SOCKET_STATE_ACCEPTED
+               || opt.state == AVS_NET_SOCKET_STATE_CONNECTED);
 }
 
 static void close_ssl_raw(ssl_socket_t *socket) {
@@ -556,11 +559,10 @@ static void close_ssl_raw(ssl_socket_t *socket) {
     }
 }
 
-static int verify_peer_subject_cn(ssl_socket_t *ssl_socket,
-                                  const char *host) {
+static int verify_peer_subject_cn(ssl_socket_t *ssl_socket, const char *host) {
     char buffer[CERT_SUBJECT_NAME_SIZE];
     char *cn = NULL;
-    X509* peer_certificate = NULL;
+    X509 *peer_certificate = NULL;
 
     /* check whether CN matches host portion of the URL */
     peer_certificate = SSL_get_peer_certificate(ssl_socket->ssl);
@@ -568,14 +570,15 @@ static int verify_peer_subject_cn(ssl_socket_t *ssl_socket,
         LOG(ERROR, "Cannot load peer certificate");
         return -1;
     }
-    X509_NAME_oneline(X509_get_subject_name(peer_certificate),
-                      buffer, sizeof (buffer));
+    X509_NAME_oneline(X509_get_subject_name(peer_certificate), buffer,
+                      sizeof(buffer));
     X509_free(peer_certificate);
 
     cn = strstr(buffer, "CN=");
     if (cn != NULL) {
-        char* cne = strchr(cn, '/');
-        if (cne) *cne = '\0';
+        char *cne = strchr(cn, '/');
+        if (cne)
+            *cne = '\0';
         cn += 3;
     }
     if (cn == NULL || strcmp(cn, host)) {
@@ -588,8 +591,8 @@ static int verify_peer_subject_cn(ssl_socket_t *ssl_socket,
 
 static int ssl_handshake(ssl_socket_t *socket) {
     avs_net_socket_opt_value_t state_opt;
-    if (avs_net_socket_get_opt(socket->backend_socket,
-                               AVS_NET_SOCKET_OPT_STATE, &state_opt)) {
+    if (avs_net_socket_get_opt(socket->backend_socket, AVS_NET_SOCKET_OPT_STATE,
+                               &state_opt)) {
         LOG(ERROR, "ssl_handshake: could not get socket state");
         return -1;
     }
@@ -608,12 +611,12 @@ static int ssl_handshake(ssl_socket_t *socket) {
  * SSL_set_app_data is not available in some versions, but also not used
  * anywhere if PSK is not used.
  */
-#define SSL_set_app_data(S, Arg) ((void) 0)
+#    define SSL_set_app_data(S, Arg) ((void) 0)
 /*
  * To be extra safe, make attempt to use SSL_get_app_data() deliberately
  * a compilation error in such case.
  */
-#define SSL_get_app_data @@@@@
+#    define SSL_get_app_data @ @ @ @ @
 #endif
 
 static int configure_cipher_list(ssl_socket_t *socket,
@@ -628,9 +631,9 @@ static int configure_cipher_list(ssl_socket_t *socket,
     return -1;
 }
 
-static char *ids_to_cipher_list(
-        ssl_socket_t *socket,
-        const avs_net_socket_tls_ciphersuites_t *suites) {
+static char *
+ids_to_cipher_list(ssl_socket_t *socket,
+                   const avs_net_socket_tls_ciphersuites_t *suites) {
     if (!suites) {
         return NULL;
     }
@@ -650,10 +653,9 @@ static char *ids_to_cipher_list(
             continue;
         }
 
-        unsigned char id_as_chars[] = {
-            (unsigned char) ((suites->ids[i]) >> 8),
-            (unsigned char) ((suites->ids[i]) & 0xFF)
-        };
+        unsigned char id_as_chars[] = { (unsigned char) ((suites->ids[i]) >> 8),
+                                        (unsigned char) ((suites->ids[i])
+                                                         & 0xFF) };
         const SSL_CIPHER *cipher = SSL_CIPHER_find(socket->ssl, id_as_chars);
         if (!cipher) {
             LOG(DEBUG, "ignoring unsupported cipher ID: 0x%04x",
@@ -674,8 +676,7 @@ static char *ids_to_cipher_list(
     }
 
     void *cipher_list = NULL;
-    (void) (result
-            || (result = avs_stream_write(stream, "", 1))
+    (void) (result || (result = avs_stream_write(stream, "", 1))
             || (result = avs_stream_membuf_take_ownership(stream, &cipher_list,
                                                           NULL)));
     avs_stream_cleanup(&stream);
@@ -773,9 +774,9 @@ static int configure_ssl_certs(ssl_socket_t *socket,
     if (cert_info->server_cert_validation) {
         socket->verification = 1;
         SSL_CTX_set_verify(socket->ctx, SSL_VERIFY_PEER, NULL);
-#if OPENSSL_VERSION_NUMBER_LT(0,9,5)
+#    if OPENSSL_VERSION_NUMBER_LT(0, 9, 5)
         SSL_CTX_set_verify_depth(socket->ctx, 1);
-#endif
+#    endif
         if (_avs_net_openssl_load_ca_certs(socket->ctx,
                                            &cert_info->trusted_certs)) {
             LOG(ERROR, "could not load CA chain");
@@ -803,8 +804,8 @@ static int configure_ssl_certs(ssl_socket_t *socket,
     return 0;
 }
 #else
-# define configure_ssl_certs(...) \
-    (LOG(ERROR, "X.509 support disabled"), (-1))
+#    define configure_ssl_certs(...) \
+        (LOG(ERROR, "X.509 support disabled"), (-1))
 #endif // WITH_X509
 
 #ifdef WITH_PSK
@@ -814,13 +815,11 @@ static unsigned int psk_client_cb(SSL *ssl,
                                   unsigned int max_identity_len,
                                   unsigned char *psk,
                                   unsigned int max_psk_len) {
-    ssl_socket_t *socket = (ssl_socket_t*)SSL_get_app_data(ssl);
+    ssl_socket_t *socket = (ssl_socket_t *) SSL_get_app_data(ssl);
 
-    (void)hint;
+    (void) hint;
 
-    if (!socket
-            || !socket->psk.psk
-            || max_psk_len < socket->psk.psk_size
+    if (!socket || !socket->psk.psk || max_psk_len < socket->psk.psk_size
             || !socket->psk.identity
             || max_identity_len < socket->psk.identity_size + 1) {
         return 0;
@@ -857,8 +856,8 @@ static int configure_ssl_psk(ssl_socket_t *socket,
 
 static int configure_ssl(ssl_socket_t *socket,
                          const avs_net_ssl_configuration_t *configuration) {
-    LOG(TRACE, "configure_ssl(socket=%p, configuration=%p)",
-        (void *) socket, (const void *) configuration);
+    LOG(TRACE, "configure_ssl(socket=%p, configuration=%p)", (void *) socket,
+        (const void *) configuration);
 
     if (!configuration) {
         LOG(WARNING, "configuration not provided");
@@ -891,9 +890,10 @@ static int configure_ssl(ssl_socket_t *socket,
         return -1;
     }
 
-    socket->dtls_handshake_timeouts = (configuration->dtls_handshake_timeouts
-            ? *configuration->dtls_handshake_timeouts
-            : DEFAULT_DTLS_HANDSHAKE_TIMEOUTS);
+    socket->dtls_handshake_timeouts =
+            (configuration->dtls_handshake_timeouts
+                     ? *configuration->dtls_handshake_timeouts
+                     : DEFAULT_DTLS_HANDSHAKE_TIMEOUTS);
 
     if (configuration->server_name_indication) {
         size_t len = strlen(configuration->server_name_indication);
@@ -917,7 +917,7 @@ static int configure_ssl(ssl_socket_t *socket,
 static void update_send_or_recv_error_code(ssl_socket_t *socket) {
     (void) (socket->error_code
             || (socket->error_code =
-                    avs_net_socket_errno(socket->backend_socket))
+                        avs_net_socket_error(socket->backend_socket))
             || (socket->error_code = avs_map_errno(errno))
             || (socket->error_code = AVS_EPROTO));
 }
@@ -963,8 +963,7 @@ static int receive_ssl(avs_net_abstract_socket_t *socket_,
         VALGRIND_MAKE_MEM_DEFINED_IF_ADDRESSABLE(buffer, result);
         *out_bytes_received = (size_t) result;
         socket->error_code = AVS_NO_ERROR;
-        if (socket_is_datagram(socket)
-                && buffer_length > 0
+        if (socket_is_datagram(socket) && buffer_length > 0
                 && (size_t) result == buffer_length) {
             // Check whether the message is truncated;
             // Normally we could use SSL_pending(), but on some versions of
@@ -977,7 +976,8 @@ static int receive_ssl(avs_net_abstract_socket_t *socket_,
             do {
                 char truncation_buffer[TRUNCATION_BUFFER_SIZE];
                 if ((result = SSL_read(socket->ssl, truncation_buffer,
-                                       (int) sizeof(truncation_buffer))) > 0
+                                       (int) sizeof(truncation_buffer)))
+                                > 0
                         && !socket->error_code) {
                     LOG(WARNING, "receive_ssl: message truncated");
                     socket->error_code = AVS_EMSGSIZE;
@@ -1039,67 +1039,67 @@ int _avs_net_initialize_global_ssl_state(void) {
 
 #define OPENSSL_METHOD(Proto) Proto##_method
 
-#if OPENSSL_VERSION_NUMBER_LT(1,1,0)
+#if OPENSSL_VERSION_NUMBER_LT(1, 1, 0)
 static const SSL_METHOD *stream_method(avs_net_ssl_version_t version) {
     switch (version) {
     case AVS_NET_SSL_VERSION_DEFAULT:
     case AVS_NET_SSL_VERSION_SSLv2_OR_3:
         return OPENSSL_METHOD(SSLv23)();
 
-#ifndef OPENSSL_NO_SSL2
+#    ifndef OPENSSL_NO_SSL2
     case AVS_NET_SSL_VERSION_SSLv2:
         return OPENSSL_METHOD(SSLv2)();
-#endif
+#    endif
 
-#ifndef OPENSSL_NO_SSL3
+#    ifndef OPENSSL_NO_SSL3
     case AVS_NET_SSL_VERSION_SSLv3:
         return OPENSSL_METHOD(SSLv3)();
-#endif
+#    endif
 
-#ifndef OPENSSL_NO_TLS1
+#    ifndef OPENSSL_NO_TLS1
     case AVS_NET_SSL_VERSION_TLSv1:
         return OPENSSL_METHOD(TLSv1)();
 
-#if OPENSSL_VERSION_NUMBER_GE(1,0,1)
+#        if OPENSSL_VERSION_NUMBER_GE(1, 0, 1)
     case AVS_NET_SSL_VERSION_TLSv1_1:
         return OPENSSL_METHOD(TLSv1_1)();
 
     case AVS_NET_SSL_VERSION_TLSv1_2:
         return OPENSSL_METHOD(TLSv1_2)();
-#endif
-#endif /* OPENSSL_NO_TLS1 */
+#        endif
+#    endif /* OPENSSL_NO_TLS1 */
 
     default:
         return NULL;
     }
 }
 
-#ifndef WITH_DTLS
-#define dgram_method(x) ((void)(x), (const SSL_METHOD*)NULL)
-#else /* WITH_DTLS */
+#    ifndef WITH_DTLS
+#        define dgram_method(x) ((void) (x), (const SSL_METHOD *) NULL)
+#    else /* WITH_DTLS */
 
 static const SSL_METHOD *dgram_method(avs_net_ssl_version_t version) {
     switch (version) {
     case AVS_NET_SSL_VERSION_DEFAULT:
-#if OPENSSL_VERSION_NUMBER_GE(1,0,2)
+#        if OPENSSL_VERSION_NUMBER_GE(1, 0, 2)
         return OPENSSL_METHOD(DTLS)();
 
     case AVS_NET_SSL_VERSION_TLSv1_2:
         return OPENSSL_METHOD(DTLSv1_2)();
-#endif
+#        endif
 
-#if OPENSSL_VERSION_NUMBER_GE(1,0,1)
+#        if OPENSSL_VERSION_NUMBER_GE(1, 0, 1)
     case AVS_NET_SSL_VERSION_TLSv1:
     case AVS_NET_SSL_VERSION_TLSv1_1:
         return OPENSSL_METHOD(DTLSv1)();
-#endif
+#        endif
 
     default:
         return NULL;
     }
 }
 
-#endif /* WITH_DTLS */
+#    endif /* WITH_DTLS */
 
 static SSL_CTX *make_ssl_context(bool dtls, avs_net_ssl_version_t version) {
     const SSL_METHOD *method = NULL;
@@ -1138,9 +1138,9 @@ static int stream_proto_version(avs_net_ssl_version_t version) {
     }
 }
 
-#ifndef WITH_DTLS
-#define dgram_proto_version(x) ((void)(x), -1)
-#else /* WITH_DTLS */
+#    ifndef WITH_DTLS
+#        define dgram_proto_version(x) ((void) (x), -1)
+#    else /* WITH_DTLS */
 
 static int dgram_proto_version(avs_net_ssl_version_t version) {
     switch (version) {
@@ -1156,10 +1156,9 @@ static int dgram_proto_version(avs_net_ssl_version_t version) {
     }
 }
 
-#endif /* WITH_DTLS */
+#    endif /* WITH_DTLS */
 
-static SSL_CTX *make_ssl_context(bool dtls,
-                                 avs_net_ssl_version_t version) {
+static SSL_CTX *make_ssl_context(bool dtls, avs_net_ssl_version_t version) {
     const SSL_METHOD *method = NULL;
     int ossl_proto_version = 0;
     SSL_CTX *ctx = NULL;
@@ -1167,12 +1166,12 @@ static SSL_CTX *make_ssl_context(bool dtls,
         method = OPENSSL_METHOD(TLS)();
         ossl_proto_version = stream_proto_version(version);
     }
-#ifdef WITH_DTLS
+#    ifdef WITH_DTLS
     else {
         method = OPENSSL_METHOD(DTLS)();
         ossl_proto_version = dgram_proto_version(version);
     }
-#endif
+#    endif
     if (ossl_proto_version < 0) {
         LOG(ERROR, "Unsupported SSL version");
         return NULL;
@@ -1194,9 +1193,10 @@ static SSL_CTX *make_ssl_context(bool dtls,
 }
 #endif
 
-static int initialize_ssl_socket(ssl_socket_t *socket,
-                                 avs_net_socket_type_t backend_type,
-                                 const avs_net_ssl_configuration_t *configuration) {
+static int
+initialize_ssl_socket(ssl_socket_t *socket,
+                      avs_net_socket_type_t backend_type,
+                      const avs_net_ssl_configuration_t *configuration) {
     *(const avs_net_socket_v_table_t **) (intptr_t) &socket->operations =
             &ssl_vtable;
     socket->backend_type = backend_type;

@@ -20,7 +20,7 @@
 #include <avsystem/commons/stream/stream_simple_io.h>
 
 #define STREAM_BUFFER_SIZE 64
-#define STREAM_SIZE        128
+#define STREAM_SIZE 128
 
 // Used for disabling writing in writer()
 bool WRITER_WRITE_ZERO;
@@ -99,8 +99,7 @@ static avs_stream_abstract_t *setup_output_stream(stream_ctx_t *ctx) {
 }
 
 static avs_stream_abstract_t *setup_input_stream(stream_ctx_t *ctx) {
-    avs_stream_abstract_t *stream =
-            avs_stream_simple_input_create(reader, ctx);
+    avs_stream_abstract_t *stream = avs_stream_simple_input_create(reader, ctx);
     AVS_UNIT_ASSERT_NOT_NULL(stream);
     if (ctx) {
         ctx->data = (char *) avs_malloc(STREAM_SIZE);
@@ -149,9 +148,8 @@ AVS_UNIT_TEST(stream_buffered, writer_fail_then_success) {
 
     WRITER_WRITE_ZERO = false;
     bytes_to_write = STREAM_BUFFER_SIZE;
-    AVS_UNIT_ASSERT_SUCCESS(
-            avs_stream_write_some(stream, TEST_DATA + total_written,
-                                  &bytes_to_write));
+    AVS_UNIT_ASSERT_SUCCESS(avs_stream_write_some(
+            stream, TEST_DATA + total_written, &bytes_to_write));
     AVS_UNIT_ASSERT_EQUAL(bytes_to_write, STREAM_BUFFER_SIZE);
     total_written += bytes_to_write;
     AVS_UNIT_ASSERT_EQUAL(ctx.curr_offset, total_written);
@@ -210,9 +208,9 @@ AVS_UNIT_TEST(stream_buffered, try_write_some_more_than_stream_size) {
             avs_stream_write_some(stream, TEST_DATA, &bytes_to_write));
 
     // Multiply of STREAM_BUFFER_SIZE bytes should be written
-    AVS_UNIT_ASSERT_EQUAL_BYTES_SIZED(
-            ctx.data, TEST_DATA,
-            (bytes_to_write / STREAM_BUFFER_SIZE) * STREAM_BUFFER_SIZE);
+    AVS_UNIT_ASSERT_EQUAL_BYTES_SIZED(ctx.data, TEST_DATA,
+                                      (bytes_to_write / STREAM_BUFFER_SIZE)
+                                              * STREAM_BUFFER_SIZE);
 
     // Not enough space in stream
     AVS_UNIT_ASSERT_FAILED(avs_stream_cleanup(&stream));
@@ -234,8 +232,8 @@ AVS_UNIT_TEST(stream_buffered, try_write_more_than_stream_size) {
     stream_ctx_t ctx;
     avs_stream_abstract_t *stream = setup_output_stream(&ctx);
 
-    AVS_UNIT_ASSERT_SUCCESS(avs_stream_write(
-            stream, TEST_DATA, STREAM_SIZE + 1));
+    AVS_UNIT_ASSERT_SUCCESS(
+            avs_stream_write(stream, TEST_DATA, STREAM_SIZE + 1));
 
     AVS_UNIT_ASSERT_FAILED(avs_stream_cleanup(&stream));
     avs_free(ctx.data);
@@ -252,12 +250,9 @@ AVS_UNIT_TEST(stream_buffered, try_read_more_than_stream_size) {
     char message_finished = false;
 
     while (!message_finished) {
-        AVS_UNIT_ASSERT_SUCCESS(
-                avs_stream_read(stream,
-                                &bytes_read,
-                                &message_finished,
-                                buffer + total_read,
-                                bytes_to_read - total_read));
+        AVS_UNIT_ASSERT_SUCCESS(avs_stream_read(
+                stream, &bytes_read, &message_finished, buffer + total_read,
+                bytes_to_read - total_read));
         total_read += bytes_read;
     }
 
@@ -278,9 +273,8 @@ AVS_UNIT_TEST(stream_buffered, read_less_than_buffer_size) {
     size_t bytes_read = 0;
     char message_finished = true;
 
-    AVS_UNIT_ASSERT_SUCCESS(
-            avs_stream_read(stream, &bytes_read, &message_finished, buffer,
-                            bytes_to_read));
+    AVS_UNIT_ASSERT_SUCCESS(avs_stream_read(
+            stream, &bytes_read, &message_finished, buffer, bytes_to_read));
 
     AVS_UNIT_ASSERT_EQUAL(bytes_read, bytes_to_read);
     AVS_UNIT_ASSERT_FALSE(message_finished);
@@ -302,12 +296,9 @@ AVS_UNIT_TEST(stream_buffered, read_less_than_stream_size) {
     char message_finished = true;
 
     while (total_read < bytes_to_read) {
-        AVS_UNIT_ASSERT_SUCCESS(
-                avs_stream_read(stream,
-                                &bytes_read,
-                                &message_finished,
-                                buffer + total_read,
-                                bytes_to_read - total_read));
+        AVS_UNIT_ASSERT_SUCCESS(avs_stream_read(
+                stream, &bytes_read, &message_finished, buffer + total_read,
+                bytes_to_read - total_read));
         total_read += bytes_read;
     }
 
@@ -386,10 +377,10 @@ AVS_UNIT_TEST(stream_buffered, peek) {
 
     AVS_UNIT_ASSERT_EQUAL(avs_stream_peek(stream, 0), TEST_DATA[0]);
     AVS_UNIT_ASSERT_EQUAL(avs_stream_peek(stream, STREAM_BUFFER_SIZE - 1),
-                                          TEST_DATA[STREAM_BUFFER_SIZE - 1]);
+                          TEST_DATA[STREAM_BUFFER_SIZE - 1]);
 
     AVS_UNIT_ASSERT_FAILED(avs_stream_peek(stream, STREAM_BUFFER_SIZE));
-    AVS_UNIT_ASSERT_EQUAL(avs_stream_errno(stream), AVS_EINVAL);
+    AVS_UNIT_ASSERT_EQUAL(avs_stream_error(stream), AVS_EINVAL);
 
     teardown_stream(&stream, &ctx);
 }

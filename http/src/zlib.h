@@ -40,7 +40,8 @@ typedef enum {
 
 #define HTTP_DECOMPRESSOR_WINDOW_BITS_MIN HTTP_COMPRESSOR_WINDOW_BITS_MIN
 #define HTTP_DECOMPRESSOR_WINDOW_BITS_MAX HTTP_COMPRESSOR_WINDOW_BITS_MAX
-#define HTTP_DECOMPRESSOR_WINDOW_BITS_DEFAULT HTTP_COMPRESSOR_WINDOW_BITS_DEFAULT
+#define HTTP_DECOMPRESSOR_WINDOW_BITS_DEFAULT \
+    HTTP_COMPRESSOR_WINDOW_BITS_DEFAULT
 
 #ifdef WITH_AVS_HTTP_ZLIB
 
@@ -84,7 +85,7 @@ typedef enum {
  * - <c>avs_stream_reset</c> - clears the buffers and the state of the
  *   compression algorithm, allowing to compress a new stream.
  *
- * - <c>avs_stream_errno</c> - returns the error code returned by the last zlib
+ * - <c>avs_stream_error</c> - returns the error code returned by the last zlib
  *   call if it's anything else than <c>Z_OK</c>, <c>Z_STREAM_END</c> or
  *   <c>Z_ERRNO</c>. In case of <c>Z_ERRNO</c>, <c>errno</c> is returned.
  */
@@ -104,8 +105,8 @@ _avs_http_create_compressor(http_compression_format_t format,
  * equivalent uncompressed data available to read.
  *
  * <c>avs_stream_abstract_t</c> methods are implemented in the same way as for
- * @ref _avs_http_create_compressor, but with the "compressed" and "uncompressed"
- * kinds of data reversed.
+ * @ref _avs_http_create_compressor, but with the "compressed" and
+ * "uncompressed" kinds of data reversed.
  */
 avs_stream_abstract_t *
 _avs_http_create_decompressor(http_compression_format_t format,
@@ -117,10 +118,11 @@ _avs_http_create_decompressor(http_compression_format_t format,
 
 #define _avs_http_create_compressor(format, level, window_bits, mem_level, \
                                     input_buffer_size, output_buffer_size) \
-        (NULL)
+    (NULL)
 
 #define _avs_http_create_decompressor(format, window_bits, input_buffer_size, \
-                                      output_buffer_size) (NULL)
+                                      output_buffer_size)                     \
+    (NULL)
 
 #endif
 

@@ -1115,7 +1115,7 @@ void avs_unit_mocksock_expect_set_opt__(
     command->data.set_opt.key = key;
 }
 
-void avs_unit_mocksock_expect_errno__(avs_net_abstract_socket_t *socket,
+void avs_unit_mocksock_expect_error__(avs_net_abstract_socket_t *socket,
                                       avs_errno_t to_return,
                                       const mocksock_additional_args_t *args) {
     mocksock_expected_command_t *command = new_expected_command(socket, args);

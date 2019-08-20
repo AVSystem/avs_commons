@@ -54,8 +54,8 @@ static int dumb_close(avs_stream_abstract_t *stream_) {
     return avs_stream_cleanup(&stream->backend);
 }
 
-static avs_errno_t dumb_errno(avs_stream_abstract_t *stream) {
-    return avs_stream_errno(((dumb_proxy_receiver_t *) stream)->backend);
+static avs_errno_t dumb_error(avs_stream_abstract_t *stream) {
+    return avs_stream_error(((dumb_proxy_receiver_t *) stream)->backend);
 }
 
 static int unimplemented() {
@@ -70,7 +70,7 @@ static const avs_stream_v_table_t dumb_body_receiver_vtable = {
     dumb_proxy_peek,
     (avs_stream_reset_t) unimplemented,
     dumb_close,
-    dumb_errno,
+    dumb_error,
     &(avs_stream_v_table_extension_t[]){
             { AVS_STREAM_V_TABLE_EXTENSION_NONBLOCK,
               &(avs_stream_v_table_extension_nonblock_t[]){

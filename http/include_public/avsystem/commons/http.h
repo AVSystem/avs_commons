@@ -293,7 +293,7 @@ int avs_http_set_user_agent(avs_http_t *http, const char *user_agent);
  *   authentication during the lifetime of this stream, appropriate
  *   Authorization header will be sent even after resetting the stream.
  *
- * - <c>avs_stream_errno</c> - returns the error code that corresponds to a
+ * - <c>avs_stream_error</c> - returns the error code that corresponds to a
  *   situation in which some user requested operation could not be performed,
  *   e.g. due to out of memory condition, network connectivity issues, server
  *   sending malformed responses, etc. Essentially, if the error from this

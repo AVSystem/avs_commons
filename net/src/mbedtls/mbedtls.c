@@ -25,7 +25,7 @@
 #include <string.h>
 
 #if !defined(__STDC_VERSION__) || (__STDC_VERSION__ < 199901L)
-#define inline
+#    define inline
 #endif
 
 #include <mbedtls/ctr_drbg.h>
@@ -33,14 +33,14 @@
 #include <mbedtls/platform.h>
 #include <mbedtls/version.h>
 #if MBEDTLS_VERSION_NUMBER >= 0x02040000 // mbed TLS 2.4 deprecated net.h
-#include <mbedtls/net_sockets.h>
+#    include <mbedtls/net_sockets.h>
 #else // support mbed TLS <=2.3
-#include <mbedtls/net.h>
+#    include <mbedtls/net.h>
 #endif
 #include <mbedtls/ssl.h>
 #include <mbedtls/timing.h>
 #ifdef WITH_MBEDTLS_LOGS
-#include <mbedtls/debug.h>
+#    include <mbedtls/debug.h>
 #endif // WITH_MBEDTLS_LOGS
 
 #include <avsystem/commons/errno_map.h>
@@ -49,7 +49,7 @@
 #include "../global.h"
 #include "../net_impl.h"
 #ifdef WITH_X509
-#include "data_loader.h"
+#    include "data_loader.h"
 #endif // WITH_X509
 #include "mbedtls_persistence.h"
 
@@ -177,7 +177,7 @@ avs_bio_recv(void *ctx, unsigned char *buf, size_t len, uint32_t timeout_ms) {
     avs_net_socket_set_opt(socket->backend_socket,
                            AVS_NET_SOCKET_OPT_RECV_TIMEOUT, new_timeout);
     if (avs_net_socket_receive(socket->backend_socket, &read_bytes, buf, len)) {
-        socket->error_code = avs_net_socket_errno(socket->backend_socket);
+        socket->error_code = avs_net_socket_error(socket->backend_socket);
         if (socket->error_code == AVS_ETIMEDOUT) {
             result = MBEDTLS_ERR_SSL_TIMEOUT;
         } else {
@@ -195,7 +195,7 @@ static int avs_bio_send(void *ctx, const unsigned char *buf, size_t len) {
     ssl_socket_t *socket = (ssl_socket_t *) ctx;
     socket->error_code = AVS_NO_ERROR;
     if (avs_net_socket_send(socket->backend_socket, buf, len)) {
-        socket->error_code = avs_net_socket_errno(socket->backend_socket);
+        socket->error_code = avs_net_socket_error(socket->backend_socket);
         return MBEDTLS_ERR_NET_SEND_FAILED;
     } else {
         return (int) len;
@@ -215,7 +215,7 @@ static int get_dtls_overhead(ssl_socket_t *socket,
 
     int result = mbedtls_ssl_get_record_expansion(get_context(socket));
     if (result == MBEDTLS_ERR_SSL_FEATURE_UNAVAILABLE
-        || result == MBEDTLS_ERR_SSL_INTERNAL_ERROR) {
+            || result == MBEDTLS_ERR_SSL_INTERNAL_ERROR) {
         /* This is either a result of compression mode or some internal error,
          * and in both cases we can't predict the size. */
         return -1;
@@ -351,8 +351,8 @@ static int initialize_cert_security(ssl_socket_t *socket) {
     return 0;
 }
 #else // WITH_X509
-#define is_verification_enabled(...) 0
-#define initialize_cert_security(...) (void) 0
+#    define is_verification_enabled(...) 0
+#    define initialize_cert_security(...) (void) 0
 #endif // WITH_X509
 
 #ifdef WITH_PSK
@@ -365,7 +365,7 @@ static int *init_psk_ciphersuites(
         const mbedtls_ssl_ciphersuite_t *info =
                 mbedtls_ssl_ciphersuite_from_id(*cipher);
         if (mbedtls_ssl_ciphersuite_uses_psk(info)
-            && contains_cipher(enabled_ciphers, *cipher)) {
+                && contains_cipher(enabled_ciphers, *cipher)) {
             ++ciphers_count;
         }
     }
@@ -381,7 +381,7 @@ static int *init_psk_ciphersuites(
         const mbedtls_ssl_ciphersuite_t *info =
                 mbedtls_ssl_ciphersuite_from_id(*cipher);
         if (mbedtls_ssl_ciphersuite_uses_psk(info)
-            && contains_cipher(enabled_ciphers, *cipher)) {
+                && contains_cipher(enabled_ciphers, *cipher)) {
             *psk_cipher_it++ = *cipher;
         }
     }
@@ -410,7 +410,8 @@ static int initialize_psk_security(ssl_socket_t *socket) {
     return 0;
 }
 #else // WITH_PSK
-#define initialize_psk_security(...) (LOG(ERROR, "PSK support disabled"), (-1))
+#    define initialize_psk_security(...) \
+        (LOG(ERROR, "PSK support disabled"), (-1))
 #endif // WITH_PSK
 
 static int transport_for_socket_type(avs_net_socket_type_t backend_type) {
@@ -468,10 +469,10 @@ static int configure_ssl(ssl_socket_t *socket,
     int64_t min_ms, max_ms;
     if (avs_time_duration_to_scalar(&min_ms, AVS_TIME_MS,
                                     dtls_handshake_timeouts->min)
-        || avs_time_duration_to_scalar(&max_ms, AVS_TIME_MS,
-                                       dtls_handshake_timeouts->max)
-        || min_ms < 0 || min_ms > UINT32_MAX || max_ms < 0
-        || max_ms > UINT32_MAX) {
+            || avs_time_duration_to_scalar(&max_ms, AVS_TIME_MS,
+                                           dtls_handshake_timeouts->max)
+            || min_ms < 0 || min_ms > UINT32_MAX || max_ms < 0
+            || max_ms > UINT32_MAX) {
         LOG(ERROR, "Invalid DTLS handshake timeouts");
         return -1;
     }
@@ -500,7 +501,7 @@ static int configure_ssl(ssl_socket_t *socket,
     }
 
     if (configuration->additional_configuration_clb
-        && configuration->additional_configuration_clb(&socket->config)) {
+            && configuration->additional_configuration_clb(&socket->config)) {
         LOG(ERROR, "Error while setting additional SSL configuration");
         return -1;
     }
@@ -544,14 +545,14 @@ static bool sessions_equal(const mbedtls_ssl_session *left,
     }
     return left && right && left->ciphersuite == right->ciphersuite
            && left->compression == right->compression
-#ifdef MBEDTLS_HAVE_TIME
+#    ifdef MBEDTLS_HAVE_TIME
            && left->start == right->start
-#endif // MBEDTLS_HAVE_TIME
+#    endif // MBEDTLS_HAVE_TIME
            && left->id_len == right->id_len
            && memcmp(left->id, right->id, left->id_len) == 0;
 }
 #else // WITH_TLS_SESSION_PERSISTENCE
-#define sessions_equal(left, right) false
+#    define sessions_equal(left, right) false
 #endif // WITH_TLS_SESSION_PERSISTENCE
 
 static int start_ssl(ssl_socket_t *socket, const char *host) {
@@ -615,7 +616,7 @@ static int start_ssl(ssl_socket_t *socket, const char *host) {
 
 #ifdef WITH_TLS_SESSION_PERSISTENCE
     if (socket->session_resumption_buffer
-        && socket->config.endpoint == MBEDTLS_SSL_IS_CLIENT) {
+            && socket->config.endpoint == MBEDTLS_SSL_IS_CLIENT) {
         if (_avs_net_mbedtls_session_restore(
                     &restored_session, socket->session_resumption_buffer,
                     socket->session_resumption_buffer_size)) {
@@ -641,7 +642,7 @@ static int start_ssl(ssl_socket_t *socket, const char *host) {
     if (result == 0) {
 #ifdef WITH_TLS_SESSION_PERSISTENCE
         if (socket->session_resumption_buffer
-            && socket->config.endpoint == MBEDTLS_SSL_IS_CLIENT) {
+                && socket->config.endpoint == MBEDTLS_SSL_IS_CLIENT) {
             // We rely on session renegotation being disabled in configuration.
             _avs_net_mbedtls_session_save(
                     get_context(socket)->session,
@@ -662,7 +663,7 @@ static int start_ssl(ssl_socket_t *socket, const char *host) {
     }
 
     if (!result && !socket->flags.session_restored
-        && is_verification_enabled(socket)) {
+            && is_verification_enabled(socket)) {
         uint32_t verify_result =
                 mbedtls_ssl_get_verify_result(get_context(socket));
         if (verify_result) {
@@ -691,9 +692,9 @@ finish:
 static void update_send_or_recv_error_code(ssl_socket_t *socket,
                                            int mbedtls_result) {
     if (!socket->error_code
-        && (mbedtls_result == MBEDTLS_ERR_NET_RECV_FAILED
-            || mbedtls_result == MBEDTLS_ERR_NET_SEND_FAILED)) {
-        socket->error_code = avs_net_socket_errno(socket->backend_socket);
+            && (mbedtls_result == MBEDTLS_ERR_NET_RECV_FAILED
+                || mbedtls_result == MBEDTLS_ERR_NET_SEND_FAILED)) {
+        socket->error_code = avs_net_socket_error(socket->backend_socket);
     }
     if (socket->error_code == AVS_NO_ERROR) {
         socket->error_code = avs_map_errno(errno);
@@ -751,8 +752,8 @@ static int receive_ssl(avs_net_abstract_socket_t *socket_,
         (void *) socket, buffer, (unsigned long) buffer_length);
 
     if (buffer_length > 0
-        && transport_for_socket_type(socket->backend_type)
-                   == MBEDTLS_SSL_TRANSPORT_DATAGRAM) {
+            && transport_for_socket_type(socket->backend_type)
+                           == MBEDTLS_SSL_TRANSPORT_DATAGRAM) {
         // mbed TLS treats datagram connections as if they are stream-based :(
         size_t unread_bytes_from_previous_datagram =
                 mbedtls_ssl_get_bytes_avail(get_context(socket));
@@ -761,7 +762,7 @@ static int receive_ssl(avs_net_abstract_socket_t *socket_,
                          get_context(socket), (unsigned char *) buffer,
                          AVS_MIN(buffer_length,
                                  unread_bytes_from_previous_datagram)))
-                < 0) {
+                    < 0) {
                 break;
             }
             assert((size_t) result <= unread_bytes_from_previous_datagram);
@@ -792,8 +793,8 @@ static int receive_ssl(avs_net_abstract_socket_t *socket_,
     } else {
         *out_bytes_received = (size_t) result;
         if (transport_for_socket_type(socket->backend_type)
-                    == MBEDTLS_SSL_TRANSPORT_DATAGRAM
-            && mbedtls_ssl_get_bytes_avail(get_context(socket)) > 0) {
+                        == MBEDTLS_SSL_TRANSPORT_DATAGRAM
+                && mbedtls_ssl_get_bytes_avail(get_context(socket)) > 0) {
             LOG(WARNING, "receive_ssl: message truncated");
             socket->error_code = AVS_EMSGSIZE;
             return -1;
@@ -819,13 +820,13 @@ static void cleanup_security_cert(ssl_socket_certs_t *certs) {
     }
 }
 #else // WITH_X509
-#define cleanup_security_cert(...) (void) 0
+#    define cleanup_security_cert(...) (void) 0
 #endif // WITH_X509
 
 #ifdef WITH_PSK
-#define cleanup_security_psk _avs_net_psk_cleanup
+#    define cleanup_security_psk _avs_net_psk_cleanup
 #else // WITH_PSK
-#define cleanup_security_psk(...) (void) 0
+#    define cleanup_security_psk(...) (void) 0
 #endif // WITH_PSK
 
 static int cleanup_ssl(avs_net_abstract_socket_t **socket_) {
@@ -894,7 +895,8 @@ static int configure_ssl_certs(ssl_socket_certs_t *certs,
 }
 
 #else // WITH_X509
-#define configure_ssl_certs(...) (LOG(ERROR, "X.509 support disabled"), (-1))
+#    define configure_ssl_certs(...) \
+        (LOG(ERROR, "X.509 support disabled"), (-1))
 #endif // WITH_X509
 
 #ifdef WITH_PSK
@@ -904,7 +906,7 @@ static int configure_ssl_psk(ssl_socket_t *socket,
     return _avs_net_psk_copy(&socket->security.psk, psk);
 }
 #else // WITH_PSK
-#define configure_ssl_psk(...) (LOG(ERROR, "PSK support disabled"), (-1))
+#    define configure_ssl_psk(...) (LOG(ERROR, "PSK support disabled"), (-1))
 #endif // WITH_PSK
 
 static int

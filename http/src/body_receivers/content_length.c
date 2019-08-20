@@ -89,8 +89,8 @@ static int content_length_close(avs_stream_abstract_t *stream_) {
     return avs_stream_cleanup(&stream->backend);
 }
 
-static avs_errno_t content_length_errno(avs_stream_abstract_t *stream) {
-    return avs_stream_errno(((content_length_receiver_t *) stream)->backend);
+static avs_errno_t content_length_error(avs_stream_abstract_t *stream) {
+    return avs_stream_error(((content_length_receiver_t *) stream)->backend);
 }
 
 static int unimplemented() {
@@ -105,7 +105,7 @@ static const avs_stream_v_table_t content_length_receiver_vtable = {
     content_length_peek,
     (avs_stream_reset_t) unimplemented,
     content_length_close,
-    content_length_errno,
+    content_length_error,
     &(avs_stream_v_table_extension_t[]){
             { AVS_STREAM_V_TABLE_EXTENSION_NONBLOCK,
               &(avs_stream_v_table_extension_nonblock_t[]){

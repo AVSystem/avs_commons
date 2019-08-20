@@ -115,13 +115,13 @@ static int zlib_stream_write_some(avs_stream_abstract_t *stream_,
         return -1;
     }
     if (*inout_data_length
-        > stream->input_buffer_size - stream->zlib.avail_in) {
+            > stream->input_buffer_size - stream->zlib.avail_in) {
         if (zlib_stream_flush(stream)) {
             return -1;
         }
     }
     if (*inout_data_length
-        > stream->input_buffer_size - stream->zlib.avail_in) {
+            > stream->input_buffer_size - stream->zlib.avail_in) {
         *inout_data_length = stream->input_buffer_size - stream->zlib.avail_in;
     }
     memcpy(stream->zlib.next_in + stream->zlib.avail_in, data,

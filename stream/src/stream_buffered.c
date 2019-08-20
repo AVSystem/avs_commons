@@ -19,8 +19,8 @@
 #include <avsystem/commons/stream/stream_buffered.h>
 
 #include <assert.h>
-#include <string.h>
 #include <stdint.h>
+#include <string.h>
 /*
  * Added for SIZE_MAX definition on Android ARM NDK, which for some reason does
  * not define it in stdint.h like POSIX says it should
@@ -164,8 +164,8 @@ static int stream_buffered_read(avs_stream_abstract_t *stream_,
         }
     }
 
-    bytes_read = AVS_MIN(avs_buffer_data_size(stream->in_buffer),
-                         buffer_length);
+    bytes_read =
+            AVS_MIN(avs_buffer_data_size(stream->in_buffer), buffer_length);
     if (bytes_read) {
         memcpy(buffer, avs_buffer_data(stream->in_buffer), bytes_read);
         avs_buffer_consume_bytes(stream->in_buffer, bytes_read);
@@ -227,7 +227,7 @@ static int stream_buffered_peek(avs_stream_abstract_t *stream_, size_t offset) {
     if (retval < 0) {
         LOG(ERROR, "cannot peek - buffer is too small and underlying stream's "
                    "peek failed");
-        if (!avs_stream_errno(stream->underlying_stream)) {
+        if (!avs_stream_error(stream->underlying_stream)) {
             stream->errno_ = AVS_EINVAL;
         }
     }
@@ -262,12 +262,12 @@ static int stream_buffered_reset(avs_stream_abstract_t *stream_) {
     return avs_stream_reset(stream->underlying_stream);
 }
 
-static avs_errno_t stream_buffered_errno(avs_stream_abstract_t *stream_) {
+static avs_errno_t stream_buffered_error(avs_stream_abstract_t *stream_) {
     buffered_stream_t *stream = (buffered_stream_t *) stream_;
     if (stream->errno_) {
         return stream->errno_;
     }
-    return avs_stream_errno(stream->underlying_stream);
+    return avs_stream_error(stream->underlying_stream);
 }
 
 static const avs_stream_v_table_t buffered_stream_vtable = {
@@ -277,7 +277,7 @@ static const avs_stream_v_table_t buffered_stream_vtable = {
     .peek = stream_buffered_peek,
     .reset = stream_buffered_reset,
     .close = stream_buffered_close,
-    .get_errno = stream_buffered_errno
+    .get_error = stream_buffered_error
 };
 
 int avs_stream_buffered_create(avs_stream_abstract_t **inout_stream,
@@ -303,10 +303,9 @@ int avs_stream_buffered_create(avs_stream_abstract_t **inout_stream,
     }
 
     if ((in_buffer_size > 0
-                    && avs_buffer_create(&stream->in_buffer, in_buffer_size))
+         && avs_buffer_create(&stream->in_buffer, in_buffer_size))
             || (out_buffer_size > 0
-                    && avs_buffer_create(&stream->out_buffer,
-                                         out_buffer_size))) {
+                && avs_buffer_create(&stream->out_buffer, out_buffer_size))) {
         avs_buffer_free(&stream->in_buffer);
         avs_buffer_free(&stream->out_buffer);
         avs_stream_cleanup((avs_stream_abstract_t **) &stream);
@@ -322,5 +321,5 @@ int avs_stream_buffered_create(avs_stream_abstract_t **inout_stream,
 }
 
 #ifdef AVS_UNIT_TESTING
-#include "test/test_stream_buffered.c"
+#    include "test/test_stream_buffered.c"
 #endif

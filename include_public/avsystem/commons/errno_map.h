@@ -24,7 +24,7 @@ extern "C" {
 #endif
 
 #ifndef errno
-#error "For this header to be useful, you have to include your system / library / whatever errno.h first."
+#    error "For this header to be useful, you have to include your system / library / whatever errno.h first."
 #endif // errno
 
 /**

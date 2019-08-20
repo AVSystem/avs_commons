@@ -17,19 +17,19 @@
 #define AVS_NET_API_C
 #include <avs_commons_config.h>
 
+#include <inttypes.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
-#include <inttypes.h>
 
 #include <avsystem/commons/memory.h>
 #include <avsystem/commons/net.h>
 #include <avsystem/commons/socket.h>
 #include <avsystem/commons/socket_v_table.h>
 
+#include "api.h"
 #include "global.h"
 #include "net_impl.h"
-#include "api.h"
 
 VISIBILITY_SOURCE_BEGIN
 
@@ -56,8 +56,7 @@ avs_net_trusted_cert_info_from_path(const char *path) {
 }
 
 avs_net_trusted_cert_info_t
-avs_net_trusted_cert_info_from_buffer(const void *buffer,
-                                      size_t buffer_size) {
+avs_net_trusted_cert_info_from_buffer(const void *buffer, size_t buffer_size) {
     avs_net_trusted_cert_info_t result;
     memset(&result, 0, sizeof(result));
     result.desc.type = AVS_NET_SECURITY_INFO_TRUSTED_CERT;
@@ -68,8 +67,7 @@ avs_net_trusted_cert_info_from_buffer(const void *buffer,
 }
 
 avs_net_client_key_info_t
-avs_net_client_key_info_from_file(const char *filename,
-                                  const char *password) {
+avs_net_client_key_info_from_file(const char *filename, const char *password) {
     avs_net_client_key_info_t result;
     memset(&result, 0, sizeof(result));
     result.desc.type = AVS_NET_SECURITY_INFO_CLIENT_KEY;
@@ -79,10 +77,8 @@ avs_net_client_key_info_from_file(const char *filename,
     return result;
 }
 
-avs_net_client_key_info_t
-avs_net_client_key_info_from_buffer(const void *buffer,
-                                    size_t buffer_size,
-                                    const char *password) {
+avs_net_client_key_info_t avs_net_client_key_info_from_buffer(
+        const void *buffer, size_t buffer_size, const char *password) {
     avs_net_client_key_info_t result;
     memset(&result, 0, sizeof(result));
     result.desc.type = AVS_NET_SECURITY_INFO_CLIENT_KEY;
@@ -104,8 +100,7 @@ avs_net_client_cert_info_from_file(const char *filename) {
 }
 
 avs_net_client_cert_info_t
-avs_net_client_cert_info_from_buffer(const void *buffer,
-                                     size_t buffer_size) {
+avs_net_client_cert_info_from_buffer(const void *buffer, size_t buffer_size) {
     avs_net_client_cert_info_t result;
     memset(&result, 0, sizeof(result));
     result.desc.type = AVS_NET_SECURITY_INFO_CLIENT_CERT;
@@ -152,7 +147,7 @@ int avs_net_socket_debug(int value) {
 #endif
 
 struct avs_net_abstract_socket_struct {
-    const avs_net_socket_v_table_t * const operations;
+    const avs_net_socket_v_table_t *const operations;
 };
 
 int avs_net_socket_connect(avs_net_abstract_socket_t *socket,
@@ -177,27 +172,28 @@ int avs_net_socket_send_to(avs_net_abstract_socket_t *socket,
                            size_t buffer_length,
                            const char *host,
                            const char *port) {
-    return socket->operations->send_to(socket, buffer, buffer_length,
-                                       host, port);
+    return socket->operations->send_to(socket, buffer, buffer_length, host,
+                                       port);
 }
 
 int avs_net_socket_receive(avs_net_abstract_socket_t *socket,
                            size_t *out_bytes_received,
                            void *buffer,
                            size_t buffer_length) {
-    return socket->operations->receive(socket, out_bytes_received,
-                                       buffer, buffer_length);
+    return socket->operations->receive(socket, out_bytes_received, buffer,
+                                       buffer_length);
 }
 
 int avs_net_socket_receive_from(avs_net_abstract_socket_t *socket,
                                 size_t *out_bytes_received,
                                 void *buffer,
                                 size_t buffer_length,
-                                char *host, size_t host_size,
-                                char *port, size_t port_size) {
-    return socket->operations->receive_from(socket, out_bytes_received,
-                                            buffer, buffer_length,
-                                            host, host_size,
+                                char *host,
+                                size_t host_size,
+                                char *port,
+                                size_t port_size) {
+    return socket->operations->receive_from(socket, out_bytes_received, buffer,
+                                            buffer_length, host, host_size,
                                             port, port_size);
 }
 
@@ -243,34 +239,38 @@ int avs_net_socket_interface_name(avs_net_abstract_socket_t *socket,
 }
 
 int avs_net_socket_get_remote_host(avs_net_abstract_socket_t *socket,
-                                   char *out_buffer, size_t out_buffer_size) {
-    return socket->operations->get_remote_host(socket,
-                                               out_buffer, out_buffer_size);
+                                   char *out_buffer,
+                                   size_t out_buffer_size) {
+    return socket->operations->get_remote_host(socket, out_buffer,
+                                               out_buffer_size);
 }
 
 int avs_net_socket_get_remote_hostname(avs_net_abstract_socket_t *socket,
                                        char *out_buffer,
                                        size_t out_buffer_size) {
-    return socket->operations->get_remote_hostname(socket,
-                                                   out_buffer, out_buffer_size);
+    return socket->operations->get_remote_hostname(socket, out_buffer,
+                                                   out_buffer_size);
 }
 
 int avs_net_socket_get_remote_port(avs_net_abstract_socket_t *socket,
-                                   char *out_buffer, size_t out_buffer_size) {
-    return socket->operations->get_remote_port(socket,
-                                               out_buffer, out_buffer_size);
+                                   char *out_buffer,
+                                   size_t out_buffer_size) {
+    return socket->operations->get_remote_port(socket, out_buffer,
+                                               out_buffer_size);
 }
 
 int avs_net_socket_get_local_host(avs_net_abstract_socket_t *socket,
-                                  char *out_buffer, size_t out_buffer_size) {
-    return socket->operations->get_local_host(socket,
-                                              out_buffer, out_buffer_size);
+                                  char *out_buffer,
+                                  size_t out_buffer_size) {
+    return socket->operations->get_local_host(socket, out_buffer,
+                                              out_buffer_size);
 }
 
 int avs_net_socket_get_local_port(avs_net_abstract_socket_t *socket,
-                                  char *out_buffer, size_t out_buffer_size) {
-    return socket->operations->get_local_port(socket,
-                                              out_buffer, out_buffer_size);
+                                  char *out_buffer,
+                                  size_t out_buffer_size) {
+    return socket->operations->get_local_port(socket, out_buffer,
+                                              out_buffer_size);
 }
 
 int avs_net_socket_get_opt(avs_net_abstract_socket_t *socket,
@@ -285,8 +285,8 @@ int avs_net_socket_set_opt(avs_net_abstract_socket_t *socket,
     return socket->operations->set_opt(socket, option_key, option_value);
 }
 
-avs_errno_t avs_net_socket_errno(avs_net_abstract_socket_t *socket) {
-    return socket->operations->get_errno(socket);
+avs_errno_t avs_net_socket_error(avs_net_abstract_socket_t *socket) {
+    return socket->operations->get_error(socket);
 }
 
 typedef int (*socket_constructor_t)(avs_net_abstract_socket_t **socket,
@@ -305,7 +305,8 @@ get_constructor_for_socket_type(avs_net_socket_type_t type) {
         return type == AVS_NET_SSL_SOCKET ? _avs_net_create_ssl_socket
                                           : _avs_net_create_dtls_socket;
 #else
-        LOG(ERROR, "could not create secure socket: (D)TLS support is disabled");
+        LOG(ERROR,
+            "could not create secure socket: (D)TLS support is disabled");
         return NULL;
 #endif // WITH_SSL
     default:
@@ -351,7 +352,7 @@ int avs_net_socket_decorate_in_place(avs_net_abstract_socket_t **socket,
 #ifdef WITH_SOCKET_LOG
 
 typedef struct {
-    const avs_net_socket_v_table_t * const operations;
+    const avs_net_socket_v_table_t *const operations;
     avs_net_abstract_socket_t *socket;
 } avs_net_socket_debug_t;
 
@@ -369,11 +370,9 @@ static int connect_debug(avs_net_abstract_socket_t *debug_socket,
     int result = avs_net_socket_connect(
             ((avs_net_socket_debug_t *) debug_socket)->socket, host, port);
     if (result) {
-        fprintf(communication_log,
-                "Cannot connect to %s:%s\n", host, port);
+        fprintf(communication_log, "Cannot connect to %s:%s\n", host, port);
     } else {
-        fprintf(communication_log,
-                "Connected to %s:%s\n", host, port);
+        fprintf(communication_log, "Connected to %s:%s\n", host, port);
     }
     return result;
 }
@@ -394,8 +393,8 @@ static int send_debug(avs_net_abstract_socket_t *debug_socket,
                       const void *buffer,
                       size_t buffer_length) {
     int result = avs_net_socket_send(
-            ((avs_net_socket_debug_t *) debug_socket)->socket,
-            buffer, buffer_length);
+            ((avs_net_socket_debug_t *) debug_socket)->socket, buffer,
+            buffer_length);
     if (result) {
         fprintf(communication_log, "\n------SEND-FAILURE------\n");
     } else {
@@ -413,8 +412,8 @@ static int send_to_debug(avs_net_abstract_socket_t *debug_socket,
                          const char *host,
                          const char *port) {
     int result = avs_net_socket_send_to(
-            ((avs_net_socket_debug_t *) debug_socket)->socket,
-            buffer, buffer_length, host, port);
+            ((avs_net_socket_debug_t *) debug_socket)->socket, buffer,
+            buffer_length, host, port);
     if (result) {
         fprintf(communication_log, "\n----SEND-TO-FAILURE-----\n");
     } else {
@@ -450,12 +449,14 @@ static int receive_from_debug(avs_net_abstract_socket_t *debug_socket,
                               size_t *out_bytes_received,
                               void *buffer,
                               size_t buffer_length,
-                              char *host, size_t host_size,
-                              char *port, size_t port_size) {
+                              char *host,
+                              size_t host_size,
+                              char *port,
+                              size_t port_size) {
     int result = avs_net_socket_receive_from(
             ((avs_net_socket_debug_t *) debug_socket)->socket,
-            out_bytes_received,
-            buffer, buffer_length, host, host_size, port, port_size);
+            out_bytes_received, buffer, buffer_length, host, host_size, port,
+            port_size);
     if (result < 0) {
         fprintf(communication_log, "\n----RECV-FROM-FAILURE----\n");
     } else {
@@ -475,11 +476,9 @@ static int bind_debug(avs_net_abstract_socket_t *debug_socket,
     int result = avs_net_socket_bind(
             ((avs_net_socket_debug_t *) debug_socket)->socket, localaddr, port);
     if (result) {
-        fprintf(communication_log,
-                "Cannot bind to %s:%s\n", localaddr, port);
+        fprintf(communication_log, "Cannot bind to %s:%s\n", localaddr, port);
     } else {
-        fprintf(communication_log,
-                "Socket bound to %s:%s\n", localaddr, port);
+        fprintf(communication_log, "Socket bound to %s:%s\n", localaddr, port);
     }
     return result;
 }
@@ -532,10 +531,11 @@ static int interface_name_debug(avs_net_abstract_socket_t *debug_socket,
 }
 
 static int remote_host_debug(avs_net_abstract_socket_t *debug_socket,
-                             char *out_buffer, size_t out_buffer_size) {
+                             char *out_buffer,
+                             size_t out_buffer_size) {
     int result = avs_net_socket_get_remote_host(
-            ((avs_net_socket_debug_t *) debug_socket)->socket,
-            out_buffer, out_buffer_size);
+            ((avs_net_socket_debug_t *) debug_socket)->socket, out_buffer,
+            out_buffer_size);
     if (result) {
         fprintf(communication_log, "cannot get remote host\n");
     } else {
@@ -545,10 +545,11 @@ static int remote_host_debug(avs_net_abstract_socket_t *debug_socket,
 }
 
 static int remote_hostname_debug(avs_net_abstract_socket_t *debug_socket,
-                                 char *out_buffer, size_t out_buffer_size) {
+                                 char *out_buffer,
+                                 size_t out_buffer_size) {
     int result = avs_net_socket_get_remote_hostname(
-            ((avs_net_socket_debug_t *) debug_socket)->socket,
-            out_buffer, out_buffer_size);
+            ((avs_net_socket_debug_t *) debug_socket)->socket, out_buffer,
+            out_buffer_size);
     if (result) {
         fprintf(communication_log, "cannot get remote hostname\n");
     } else {
@@ -558,10 +559,11 @@ static int remote_hostname_debug(avs_net_abstract_socket_t *debug_socket,
 }
 
 static int remote_port_debug(avs_net_abstract_socket_t *debug_socket,
-                             char *out_buffer, size_t out_buffer_size) {
+                             char *out_buffer,
+                             size_t out_buffer_size) {
     int result = avs_net_socket_get_remote_port(
-            ((avs_net_socket_debug_t *) debug_socket)->socket,
-            out_buffer, out_buffer_size);
+            ((avs_net_socket_debug_t *) debug_socket)->socket, out_buffer,
+            out_buffer_size);
     if (result) {
         fprintf(communication_log, "cannot get remote port\n");
     } else {
@@ -571,10 +573,11 @@ static int remote_port_debug(avs_net_abstract_socket_t *debug_socket,
 }
 
 static int local_host_debug(avs_net_abstract_socket_t *debug_socket,
-                            char *out_buffer, size_t out_buffer_size) {
+                            char *out_buffer,
+                            size_t out_buffer_size) {
     int result = avs_net_socket_get_local_host(
-            ((avs_net_socket_debug_t *) debug_socket)->socket,
-            out_buffer, out_buffer_size);
+            ((avs_net_socket_debug_t *) debug_socket)->socket, out_buffer,
+            out_buffer_size);
     if (result) {
         fprintf(communication_log, "cannot get local host\n");
     } else {
@@ -584,10 +587,11 @@ static int local_host_debug(avs_net_abstract_socket_t *debug_socket,
 }
 
 static int local_port_debug(avs_net_abstract_socket_t *debug_socket,
-                            char *out_buffer, size_t out_buffer_size) {
+                            char *out_buffer,
+                            size_t out_buffer_size) {
     int result = avs_net_socket_get_local_port(
-            ((avs_net_socket_debug_t *) debug_socket)->socket,
-            out_buffer, out_buffer_size);
+            ((avs_net_socket_debug_t *) debug_socket)->socket, out_buffer,
+            out_buffer_size);
     if (result) {
         fprintf(communication_log, "cannot get local port\n");
     } else {
@@ -600,13 +604,14 @@ static int get_opt_debug(avs_net_abstract_socket_t *debug_socket,
                          avs_net_socket_opt_key_t option_key,
                          avs_net_socket_opt_value_t *out_option_value) {
     int result = avs_net_socket_get_opt(
-            ((avs_net_socket_debug_t *) debug_socket)->socket,
-                                      option_key, out_option_value);
+            ((avs_net_socket_debug_t *) debug_socket)->socket, option_key,
+            out_option_value);
     if (result) {
         fprintf(communication_log, "cannot get opt %d\n", option_key);
     } else {
-        fprintf(communication_log, "get opt: %d, value: "
-                                   "%" PRId64 ".%09" PRId32 "\n",
+        fprintf(communication_log,
+                "get opt: %d, value: "
+                "%" PRId64 ".%09" PRId32 "\n",
                 option_key, out_option_value->recv_timeout.seconds,
                 out_option_value->recv_timeout.nanoseconds);
     }
@@ -617,8 +622,8 @@ static int set_opt_debug(avs_net_abstract_socket_t *debug_socket,
                          avs_net_socket_opt_key_t option_key,
                          avs_net_socket_opt_value_t option_value) {
     int result = avs_net_socket_set_opt(
-            ((avs_net_socket_debug_t *) debug_socket)->socket,
-                                      option_key, option_value);
+            ((avs_net_socket_debug_t *) debug_socket)->socket, option_key,
+            option_value);
     if (result) {
         fprintf(communication_log, "cannot set opt %d\n", option_key);
     } else {
@@ -635,47 +640,34 @@ static int system_socket_debug(avs_net_abstract_socket_t *debug_socket,
 }
 
 static avs_errno_t errno_debug(avs_net_abstract_socket_t *debug_socket) {
-    return avs_net_socket_errno(
+    return avs_net_socket_error(
             ((avs_net_socket_debug_t *) debug_socket)->socket);
 }
 
 static int cleanup_debug(avs_net_abstract_socket_t **debug_socket) {
-    avs_net_socket_cleanup(&(*((avs_net_socket_debug_t **) debug_socket))->socket);
+    avs_net_socket_cleanup(
+            &(*((avs_net_socket_debug_t **) debug_socket))->socket);
     avs_free(*debug_socket);
     *debug_socket = NULL;
     return 0;
 }
 
 static const avs_net_socket_v_table_t debug_vtable = {
-    connect_debug,
-    decorate_debug,
-    send_debug,
-    send_to_debug,
-    receive_debug,
-    receive_from_debug,
-    bind_debug,
-    accept_debug,
-    close_debug,
-    shutdown_debug,
-    cleanup_debug,
-    system_socket_debug,
-    interface_name_debug,
-    remote_host_debug,
-    remote_hostname_debug,
-    remote_port_debug,
-    local_host_debug,
-    local_port_debug,
-    get_opt_debug,
-    set_opt_debug,
-    errno_debug
+    connect_debug,        decorate_debug,    send_debug,
+    send_to_debug,        receive_debug,     receive_from_debug,
+    bind_debug,           accept_debug,      close_debug,
+    shutdown_debug,       cleanup_debug,     system_socket_debug,
+    interface_name_debug, remote_host_debug, remote_hostname_debug,
+    remote_port_debug,    local_host_debug,  local_port_debug,
+    get_opt_debug,        set_opt_debug,     errno_debug
 };
 
 static int create_socket_debug(avs_net_abstract_socket_t **debug_socket,
                                avs_net_abstract_socket_t *backend_socket) {
     avs_net_socket_cleanup(debug_socket);
 
-    avs_net_socket_debug_t *sock = (avs_net_socket_debug_t *)
-            avs_malloc(sizeof(avs_net_socket_debug_t));
+    avs_net_socket_debug_t *sock = (avs_net_socket_debug_t *) avs_malloc(
+            sizeof(avs_net_socket_debug_t));
     *debug_socket = (avs_net_abstract_socket_t *) sock;
     if (*debug_socket) {
         avs_net_socket_debug_t new_socket = { &debug_vtable, NULL };
@@ -721,5 +713,5 @@ int avs_net_socket_create(avs_net_abstract_socket_t **socket,
 #endif /* WITH_SOCKET_LOG */
 
 #if defined(WITH_SSL) && defined(AVS_UNIT_TESTING)
-#include "test/starttls.c"
+#    include "test/starttls.c"
 #endif

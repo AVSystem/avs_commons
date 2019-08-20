@@ -76,9 +76,9 @@ static int get_dtls_overhead(ssl_socket_t *socket,
         return -1;
     }
     /* tinyDTLS supports AES-128-CCM-8 ciphersuite only */
-    *out_header = 13 /* header */
-                + 8 /* nonce */
-                + 8 /* integrity verification code */;
+    *out_header = 13  /* header */
+                  + 8 /* nonce */
+                  + 8 /* integrity verification code */;
     *out_padding_size = 0;
     return 0;
 }
@@ -87,11 +87,11 @@ static int get_dtls_overhead(ssl_socket_t *socket,
  * tinyDTLS stores struct sockaddr inside the session_t. It is internally used
  * by tinyDTLS to distinguish between different peers using the same socket.
  *
- * Yet, in avs_commons, we use single SSL socket to handle single SSL connection,
- * therefore we could just use this fake handle to uniquely identify the peer,
- * and at the same time to simplify code a lot, as extracting sockaddrs and
- * similar is not an easy task in an API that tries to abstract lower networking
- * layers as much as possible.
+ * Yet, in avs_commons, we use single SSL socket to handle single SSL
+ * connection, therefore we could just use this fake handle to uniquely identify
+ * the peer, and at the same time to simplify code a lot, as extracting
+ * sockaddrs and similar is not an easy task in an API that tries to abstract
+ * lower networking layers as much as possible.
  */
 static const session_t *get_dtls_session(void) {
     static session_t DTLS_SESSION;
@@ -186,7 +186,8 @@ static void close_ssl_raw(ssl_socket_t *socket) {
     }
     if (socket->backend_socket) {
         int retval;
-        WRAP_ERRNO(socket, retval, avs_net_socket_close(socket->backend_socket));
+        WRAP_ERRNO(socket, retval,
+                   avs_net_socket_close(socket->backend_socket));
         (void) retval;
         avs_net_socket_cleanup(&socket->backend_socket);
     }
@@ -426,9 +427,10 @@ static int dtls_event_handler(dtls_context_t *ctx,
     return 0;
 }
 
-static int initialize_ssl_socket(ssl_socket_t *socket,
-                                 avs_net_socket_type_t backend_type,
-                                 const avs_net_ssl_configuration_t *configuration) {
+static int
+initialize_ssl_socket(ssl_socket_t *socket,
+                      avs_net_socket_type_t backend_type,
+                      const avs_net_ssl_configuration_t *configuration) {
     if (backend_type != AVS_NET_UDP_SOCKET) {
         LOG(ERROR, "tinyDTLS backend supports UDP sockets only");
         return -1;

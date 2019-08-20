@@ -35,7 +35,7 @@
 VISIBILITY_SOURCE_BEGIN
 
 struct avs_stream_abstract_struct {
-    const avs_stream_v_table_t * const vtable;
+    const avs_stream_v_table_t *const vtable;
 };
 
 int avs_stream_write_some(avs_stream_abstract_t *stream,
@@ -73,13 +73,11 @@ int avs_stream_read(avs_stream_abstract_t *stream,
     if (!stream->vtable->read) {
         return -1;
     }
-    return stream->vtable->read(stream, out_bytes_read,
-                                out_message_finished,
+    return stream->vtable->read(stream, out_bytes_read, out_message_finished,
                                 buffer, buffer_length);
 }
 
-int avs_stream_peek(avs_stream_abstract_t *stream,
-                    size_t offset) {
+int avs_stream_peek(avs_stream_abstract_t *stream, size_t offset) {
     if (!stream->vtable->peek) {
         return -1;
     }
@@ -105,14 +103,14 @@ int avs_stream_cleanup(avs_stream_abstract_t **stream) {
     return retval;
 }
 
-avs_errno_t avs_stream_errno(avs_stream_abstract_t *stream) {
-    if (!stream->vtable->get_errno) {
+avs_errno_t avs_stream_error(avs_stream_abstract_t *stream) {
+    if (!stream->vtable->get_error) {
         return AVS_NO_ERROR;
     }
-    return stream->vtable->get_errno(stream);
+    return stream->vtable->get_error(stream);
 }
 
-int avs_stream_write_f(avs_stream_abstract_t *stream, const char* msg, ...) {
+int avs_stream_write_f(avs_stream_abstract_t *stream, const char *msg, ...) {
     int result = 0;
     va_list args;
     va_start(args, msg);
@@ -122,8 +120,10 @@ int avs_stream_write_f(avs_stream_abstract_t *stream, const char* msg, ...) {
 }
 
 static int try_write_fv(avs_stream_abstract_t *stream,
-                        const char *msg, va_list args,
-                        char *buf, size_t buf_size) {
+                        const char *msg,
+                        va_list args,
+                        char *buf,
+                        size_t buf_size) {
     int retval = vsnprintf(buf, buf_size, msg, args);
     if (retval < 0) {
         size_t new_size = buf_size * 2;
@@ -139,13 +139,16 @@ static int try_write_fv(avs_stream_abstract_t *stream,
 }
 
 static int try_stack_write_fv(avs_stream_abstract_t *stream,
-                              const char *msg, va_list args) {
+                              const char *msg,
+                              va_list args) {
     char buf[512];
     return try_write_fv(stream, msg, args, buf, sizeof(buf));
 }
 
 static int try_heap_write_fv(avs_stream_abstract_t *stream,
-                             const char *msg, va_list args, size_t size) {
+                             const char *msg,
+                             va_list args,
+                             size_t size) {
     char *buf = (char *) avs_malloc(size);
     int retval = -1;
     if (buf) {
@@ -156,11 +159,12 @@ static int try_heap_write_fv(avs_stream_abstract_t *stream,
 }
 
 #ifndef va_copy
-#define va_copy(dest, src) ((dest) = (src))
+#    define va_copy(dest, src) ((dest) = (src))
 #endif
 
 int avs_stream_write_fv(avs_stream_abstract_t *stream,
-                        const char* msg, va_list args) {
+                        const char *msg,
+                        va_list args) {
     int retval;
     va_list copy;
     va_copy(copy, args);
@@ -183,8 +187,8 @@ int avs_stream_read_reliably(avs_stream_abstract_t *stream,
         size_t current_read = 0;
         message_finished = 0;
         if (avs_stream_read(stream, &current_read, &message_finished,
-                              ((char *) buffer) + bytes_read,
-                              buffer_length - bytes_read)) {
+                            ((char *) buffer) + bytes_read,
+                            buffer_length - bytes_read)) {
             return -1;
         }
         bytes_read += current_read;
@@ -216,8 +220,7 @@ typedef struct getline_provider_struct {
     int (*peek)(struct getline_provider_struct *self, size_t offset);
 } getline_provider_t;
 
-static bool line_finished(getline_provider_t *provider,
-                          int last_read_char) {
+static bool line_finished(getline_provider_t *provider, int last_read_char) {
     if (last_read_char == '\n') {
         return true;
     }
@@ -283,8 +286,7 @@ static int getline_reader_getch_func(getline_provider_t *self_) {
     return avs_stream_getch(self->stream, self->out_message_finished);
 }
 
-static int getline_reader_peek_func(getline_provider_t *self_,
-                                    size_t offset) {
+static int getline_reader_peek_func(getline_provider_t *self_, size_t offset) {
     getline_reader_provider_t *self =
             AVS_CONTAINER_OF(self_, getline_reader_provider_t, vtable);
     if (*self->out_message_finished) {
@@ -314,8 +316,8 @@ int avs_stream_getline(avs_stream_abstract_t *stream,
     };
     *provider.out_message_finished = 0;
     return getline_helper(&provider.vtable,
-                          out_bytes_read ? out_bytes_read : &bytes_read,
-                          buffer, buffer_length);
+                          out_bytes_read ? out_bytes_read : &bytes_read, buffer,
+                          buffer_length);
 }
 
 typedef struct {
@@ -334,8 +336,7 @@ static int getline_peeker_getch_func(getline_provider_t *self_) {
     return retval;
 }
 
-static int getline_peeker_peek_func(getline_provider_t *self_,
-                                    size_t offset) {
+static int getline_peeker_peek_func(getline_provider_t *self_, size_t offset) {
     getline_peeker_provider_t *self =
             AVS_CONTAINER_OF(self_, getline_peeker_provider_t, vtable);
     return avs_stream_peek(self->stream, self->offset + offset);
@@ -386,8 +387,8 @@ const void *avs_stream_v_table_find_extension(avs_stream_abstract_t *stream,
 int avs_stream_nonblock_read_ready(avs_stream_abstract_t *stream) {
     const avs_stream_v_table_extension_nonblock_t *nonblock =
             (const avs_stream_v_table_extension_nonblock_t *)
-            avs_stream_v_table_find_extension(
-                    stream, AVS_STREAM_V_TABLE_EXTENSION_NONBLOCK);
+                    avs_stream_v_table_find_extension(
+                            stream, AVS_STREAM_V_TABLE_EXTENSION_NONBLOCK);
     if (nonblock) {
         return nonblock->read_ready(stream);
     } else {
@@ -399,8 +400,8 @@ int avs_stream_nonblock_write_ready(avs_stream_abstract_t *stream,
                                     size_t *out_ready_capacity_bytes) {
     const avs_stream_v_table_extension_nonblock_t *nonblock =
             (const avs_stream_v_table_extension_nonblock_t *)
-            avs_stream_v_table_find_extension(
-                    stream, AVS_STREAM_V_TABLE_EXTENSION_NONBLOCK);
+                    avs_stream_v_table_find_extension(
+                            stream, AVS_STREAM_V_TABLE_EXTENSION_NONBLOCK);
     if (nonblock) {
         return nonblock->write_ready(stream, out_ready_capacity_bytes);
     } else {

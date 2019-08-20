@@ -101,7 +101,7 @@ static int http_send_some(avs_stream_abstract_t *stream_,
         stream->encoder_touched = true;
         if (avs_stream_write_some(stream->encoder,
                                   (const char *) data + data_sent, &chunk_size)
-            || _avs_http_encoder_flush(stream)) {
+                || _avs_http_encoder_flush(stream)) {
             return -1;
         }
         data_sent += chunk_size;
@@ -128,7 +128,7 @@ static int http_nonblock_write_ready(avs_stream_abstract_t *stream_,
     }
 }
 
-static avs_errno_t http_errno(avs_stream_abstract_t *stream_) {
+static avs_errno_t http_error(avs_stream_abstract_t *stream_) {
     http_stream_t *stream = (http_stream_t *) stream_;
 
     if (stream->error_code) {
@@ -136,9 +136,9 @@ static avs_errno_t http_errno(avs_stream_abstract_t *stream_) {
     }
 
     if (stream->body_receiver) {
-        return avs_stream_errno(stream->body_receiver);
+        return avs_stream_error(stream->body_receiver);
     } else {
-        return avs_stream_errno(stream->backend);
+        return avs_stream_error(stream->backend);
     }
 }
 
@@ -146,8 +146,8 @@ static int http_finish(avs_stream_abstract_t *stream_) {
     http_stream_t *stream = (http_stream_t *) stream_;
     if (stream->encoder && stream->encoder_touched) {
         if (avs_stream_finish_message(stream->encoder)
-            || _avs_http_encoder_flush(stream)
-            || avs_stream_reset(stream->encoder)) {
+                || _avs_http_encoder_flush(stream)
+                || avs_stream_reset(stream->encoder)) {
             return -1;
         }
         stream->encoder_touched = false;
@@ -309,7 +309,7 @@ static const avs_stream_v_table_t http_vtable = {
     http_peek,
     http_reset,
     http_close,
-    http_errno,
+    http_error,
     &(avs_stream_v_table_extension_t[]){
             { AVS_STREAM_V_TABLE_EXTENSION_NET,
               &(avs_stream_v_table_extension_net_t[]){
@@ -328,9 +328,9 @@ int avs_http_add_header(avs_stream_abstract_t *stream_,
     assert(stream->vtable == &http_vtable);
     LOG(TRACE, "http_add_header, %s: %s", key ? key : "(null)",
         value ? value : "(null)");
-    AVS_LIST(http_header_t)
-    new_header = (AVS_LIST(http_header_t)) AVS_LIST_APPEND_NEW(
-            http_header_t, &stream->user_headers);
+    AVS_LIST(http_header_t) new_header =
+            (AVS_LIST(http_header_t)) AVS_LIST_APPEND_NEW(
+                    http_header_t, &stream->user_headers);
     if (!new_header) {
         return -1;
     }
@@ -339,9 +339,9 @@ int avs_http_add_header(avs_stream_abstract_t *stream_,
     return 0;
 }
 
-void avs_http_set_header_storage(avs_stream_abstract_t *stream_,
-                                 AVS_LIST(const avs_http_header_t)
-                                         * header_storage_ptr) {
+void avs_http_set_header_storage(
+        avs_stream_abstract_t *stream_,
+        AVS_LIST(const avs_http_header_t) *header_storage_ptr) {
     http_stream_t *stream = (http_stream_t *) stream_;
     assert(stream->vtable == &http_vtable);
     LOG(TRACE, "http_set_header_storage: %p", (void *) header_storage_ptr);
@@ -430,7 +430,7 @@ avs_errno_t avs_http_open_stream(avs_stream_abstract_t **out,
     stream->random_seed =
             (unsigned) avs_time_real_now().since_real_epoch.seconds;
     if ((stream->auth.credentials.user || stream->auth.credentials.password)
-        && strcmp(avs_url_protocol(url), "https") == 0) {
+            && strcmp(avs_url_protocol(url), "https") == 0) {
         stream->auth.state.flags.type = HTTP_AUTH_TYPE_BASIC;
     }
 
@@ -470,5 +470,5 @@ int avs_http_status_code(avs_stream_abstract_t *stream_) {
 }
 
 #ifdef AVS_UNIT_TESTING
-#include "test/test_stream.c"
+#    include "test/test_stream.c"
 #endif

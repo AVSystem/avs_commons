@@ -15,11 +15,11 @@
  */
 
 #ifndef AVS_COMMONS_STREAM_FILE_H
-#define	AVS_COMMONS_STREAM_FILE_H
+#define AVS_COMMONS_STREAM_FILE_H
 
 #include <avsystem/commons/stream.h>
 
-#ifdef	__cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
@@ -41,7 +41,7 @@ typedef struct {
 /**
  * Computes length of the file the stream operates on and writes it to
  * @p out_length. On error @p out_length remains unchanged, and more information
- * can be obtained by calling @ref avs_stream_errno.
+ * can be obtained by calling @ref avs_stream_error.
  *
  * @param stream        file stream pointer
  * @param out_length    length of the file, must not be NULL
@@ -53,7 +53,7 @@ int avs_stream_file_length(avs_stream_abstract_t *stream,
 /**
  * Writes stream cursor absolute position to @p out_offset. On error
  * @p out_offset remains unchanged, and more information can be obtained by
- * calling @ref avs_stream_errno.
+ * calling @ref avs_stream_error.
  *
  * @param stream        file stream pointer
  * @param out_offset    stream cursor position, must not be NULL
@@ -64,7 +64,7 @@ int avs_stream_file_offset(avs_stream_abstract_t *stream,
 
 /**
  * Moves stream cursor to absolute position @p offset_from_start, on error
- * more information can be obtained by calling @ref avs_stream_errno.
+ * more information can be obtained by calling @ref avs_stream_error.
  *
  * @param stream            file stream pointer
  * @param offset_from_start absolute offset, must nonnegative
@@ -82,8 +82,8 @@ typedef struct avs_file_stream_struct avs_stream_file_t;
  * a file is made.
  *
  * Function fails if any of the following is true:
- * 1. file referred in @p path does not exist and @ref AVS_STREAM_FILE_WRITE flag
- *    is set, but the file cannot be created
+ * 1. file referred in @p path does not exist and @ref AVS_STREAM_FILE_WRITE
+ * flag is set, but the file cannot be created
  * 2. file referred in @p path does not exist and @ref AVS_STREAM_FILE_WRITE is
  *    not set
  * 3. there are no sufficient permissions to open file with given flag
@@ -102,11 +102,10 @@ typedef struct avs_file_stream_struct avs_stream_file_t;
  *                                     @ref AVS_STREAM_FILE_WRITE
  * @return pointer to the new file stream, NULL on error
  */
-avs_stream_abstract_t *avs_stream_file_create(const char *path,
-                                              uint8_t mode);
+avs_stream_abstract_t *avs_stream_file_create(const char *path, uint8_t mode);
 
-#ifdef	__cplusplus
+#ifdef __cplusplus
 }
 #endif
 
-#endif	/* AVS_COMMONS_STREAM_FILE_H */
+#endif /* AVS_COMMONS_STREAM_FILE_H */

@@ -164,7 +164,7 @@ static int stream_membuf_peek(avs_stream_abstract_t *stream_, size_t offset) {
     return (unsigned char) stream->buffer[stream->index_read + offset];
 }
 
-static avs_errno_t stream_membuf_errno(avs_stream_abstract_t *stream_) {
+static avs_errno_t stream_membuf_error(avs_stream_abstract_t *stream_) {
     avs_stream_membuf_t *stream = (avs_stream_membuf_t *) stream_;
     return stream->error_code;
 }
@@ -243,7 +243,7 @@ static const avs_stream_v_table_t membuf_stream_vtable = {
     stream_membuf_write_some, (avs_stream_finish_message_t) unimplemented,
     stream_membuf_read,       stream_membuf_peek,
     stream_membuf_reset,      stream_membuf_close,
-    stream_membuf_errno,      stream_membuf_extensions
+    stream_membuf_error,      stream_membuf_extensions
 };
 
 avs_stream_abstract_t *avs_stream_membuf_create(void) {
@@ -258,5 +258,5 @@ avs_stream_abstract_t *avs_stream_membuf_create(void) {
 }
 
 #ifdef AVS_UNIT_TESTING
-#include "test/test_stream_membuf.c"
+#    include "test/test_stream_membuf.c"
 #endif

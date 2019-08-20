@@ -16,8 +16,8 @@
 
 #include <avs_commons_config.h>
 
-#include <stdio.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -39,23 +39,23 @@ typedef struct {
 static int memstream_write_some(avs_stream_abstract_t *_stream,
                                 const void *buffer,
                                 size_t *inout_data_length) {
-    memstream_t *stream = (memstream_t*)_stream;
+    memstream_t *stream = (memstream_t *) _stream;
 
     if (stream->write_ptr + *inout_data_length > stream->buffer_size) {
         if (stream->write_ptr + *inout_data_length - stream->read_ptr
-                > stream->buffer_size) {
+            > stream->buffer_size) {
             *inout_data_length =
                     stream->buffer_size - stream->write_ptr + stream->read_ptr;
         }
-        memmove(stream->buffer, (char*)stream->buffer + stream->read_ptr,
+        memmove(stream->buffer, (char *) stream->buffer + stream->read_ptr,
                 stream->write_ptr - stream->read_ptr);
 
         stream->write_ptr -= stream->read_ptr;
         stream->read_ptr = 0;
     }
 
-    memcpy((char*)stream->buffer + stream->write_ptr,
-           buffer, *inout_data_length);
+    memcpy((char *) stream->buffer + stream->write_ptr, buffer,
+           *inout_data_length);
     stream->write_ptr += *inout_data_length;
     return 0;
 }
@@ -65,7 +65,7 @@ static int memstream_read(avs_stream_abstract_t *_stream,
                           char *out_message_finished,
                           void *buffer,
                           size_t buffer_length) {
-    memstream_t *stream = (memstream_t*)_stream;
+    memstream_t *stream = (memstream_t *) _stream;
     char message_finished_placeholder;
 
     if (!out_message_finished) {
@@ -80,24 +80,23 @@ static int memstream_read(avs_stream_abstract_t *_stream,
         *out_message_finished = 0;
     }
 
-    memcpy(buffer, (char*)stream->buffer + stream->read_ptr, *out_bytes_read);
+    memcpy(buffer, (char *) stream->buffer + stream->read_ptr, *out_bytes_read);
     stream->read_ptr += *out_bytes_read;
     return 0;
 }
 
-static int memstream_peek(avs_stream_abstract_t *_stream,
-                          size_t offset) {
-    memstream_t *stream = (memstream_t*)_stream;
+static int memstream_peek(avs_stream_abstract_t *_stream, size_t offset) {
+    memstream_t *stream = (memstream_t *) _stream;
 
     if (offset < stream->write_ptr - stream->read_ptr) {
-        return ((char*)stream->buffer)[stream->read_ptr + offset];
+        return ((char *) stream->buffer)[stream->read_ptr + offset];
     } else {
         return EOF;
     }
 }
 
 static int memstream_close(avs_stream_abstract_t *stream) {
-    avs_free(((memstream_t*)stream)->buffer);
+    avs_free(((memstream_t *) stream)->buffer);
     return 0;
 }
 
@@ -106,7 +105,7 @@ static int memstream_fail() {
     return 0;
 }
 
-int avs_unit_memstream_alloc(avs_stream_abstract_t** stream,
+int avs_unit_memstream_alloc(avs_stream_abstract_t **stream,
                              size_t buffer_size) {
     static const avs_stream_v_table_t V_TABLE = {
         memstream_write_some,
@@ -115,7 +114,7 @@ int avs_unit_memstream_alloc(avs_stream_abstract_t** stream,
         memstream_peek,
         (avs_stream_reset_t) memstream_fail,
         memstream_close,
-        (avs_stream_errno_t) memstream_fail,
+        (avs_stream_error_t) memstream_fail,
         AVS_STREAM_V_TABLE_NO_EXTENSIONS
     };
 
@@ -135,6 +134,6 @@ int avs_unit_memstream_alloc(avs_stream_abstract_t** stream,
         return -1;
     }
 
-    *stream = (avs_stream_abstract_t*)ret;
+    *stream = (avs_stream_abstract_t *) ret;
     return 0;
 }

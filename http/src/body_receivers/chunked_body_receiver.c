@@ -113,17 +113,18 @@ static int chunked_read(avs_stream_abstract_t *stream_,
     if (stream->chunk_left == 0) {
         *out_bytes_read = 0;
         if (!stream->finished
-            && !(result = read_chunk_size(stream->buffer_sizes,
-                                          read_chunk_size_getline_reader,
-                                          stream->backend, &stream->chunk_left))
-            && stream->chunk_left == 0) {
+                && !(result = read_chunk_size(stream->buffer_sizes,
+                                              read_chunk_size_getline_reader,
+                                              stream->backend,
+                                              &stream->chunk_left))
+                && stream->chunk_left == 0) {
             stream->finished = true;
         }
         if (out_message_finished) {
             *out_message_finished = stream->finished;
         }
         if (result || stream->finished
-            || avs_stream_nonblock_read_ready(stream->backend) <= 0) {
+                || avs_stream_nonblock_read_ready(stream->backend) <= 0) {
             goto finish;
         }
     }
@@ -203,8 +204,8 @@ static int chunked_close(avs_stream_abstract_t *stream_) {
     return avs_stream_cleanup(&stream->backend);
 }
 
-static avs_errno_t chunked_errno(avs_stream_abstract_t *stream) {
-    return avs_stream_errno(((chunked_receiver_t *) stream)->backend);
+static avs_errno_t chunked_error(avs_stream_abstract_t *stream) {
+    return avs_stream_error(((chunked_receiver_t *) stream)->backend);
 }
 
 static int unimplemented() {
@@ -219,7 +220,7 @@ static const avs_stream_v_table_t chunked_receiver_vtable = {
     chunked_peek,
     (avs_stream_reset_t) unimplemented,
     chunked_close,
-    chunked_errno,
+    chunked_error,
     &(avs_stream_v_table_extension_t[]){
             { AVS_STREAM_V_TABLE_EXTENSION_NONBLOCK,
               &(avs_stream_v_table_extension_nonblock_t[]){

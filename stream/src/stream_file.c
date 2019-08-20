@@ -165,7 +165,7 @@ static int stream_file_reset(avs_stream_abstract_t *stream_) {
     return 0;
 }
 
-static avs_errno_t stream_file_errno(avs_stream_abstract_t *stream_) {
+static avs_errno_t stream_file_error(avs_stream_abstract_t *stream_) {
     avs_stream_file_t *file = (avs_stream_file_t *) stream_;
     return file->error_code;
 }
@@ -215,7 +215,7 @@ static int stream_file_length(avs_stream_abstract_t *stream,
         return -1;
     }
     if (fseek(file->fp, 0, SEEK_END)
-        || stream_file_offset(stream, out_length)) {
+            || stream_file_offset(stream, out_length)) {
         stream_file_seek(stream, offset);
         file->error_code = AVS_EIO;
         return -1;
@@ -236,7 +236,7 @@ static const avs_stream_v_table_t file_stream_vtable = {
     stream_file_write_some, (avs_stream_finish_message_t) unimplemented,
     stream_file_read,       stream_file_peek,
     stream_file_reset,      stream_file_close,
-    stream_file_errno,      stream_file_extensions
+    stream_file_error,      stream_file_extensions
 };
 
 avs_stream_abstract_t *avs_stream_file_create(const char *path, uint8_t mode) {
@@ -269,5 +269,5 @@ error:
 }
 
 #ifdef AVS_UNIT_TESTING
-#include "test/test_stream_file.c"
+#    include "test/test_stream_file.c"
 #endif
