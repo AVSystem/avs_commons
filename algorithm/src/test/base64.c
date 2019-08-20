@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
+#include <limits.h>
 #include <stdlib.h>
 #include <string.h>
-#include <limits.h>
 
 #include <avsystem/commons/unit/test.h>
 
@@ -62,7 +62,7 @@ AVS_UNIT_TEST(base64, decode) {
     char result[5];
     char buf[5] = "AX==";
     const char *ch;
-    for (ch = base64_chars; *ch; ++ch) {
+    for (ch = AVS_BASE64_CHARS; *ch; ++ch) {
         buf[1] = *ch;
         AVS_UNIT_ASSERT_EQUAL(
                 (int) avs_base64_decode((uint8_t *) result, 5, buf), 1);
@@ -114,11 +114,11 @@ AVS_UNIT_TEST(base64, decode_fail) {
 
     for (ch = 1; ch < CHAR_MAX; ++ch) {
         buf[1] = ch;
-        if (!strchr(base64_chars, ch) && !isspace(ch) && ch != '=') {
+        if (!strchr(AVS_BASE64_CHARS, ch) && !isspace(ch) && ch != '=') {
             AVS_UNIT_ASSERT_FAILED(
                     (int) avs_base64_decode((uint8_t *) result, 5, buf));
         }
-        if (!strchr(base64_chars, ch)) {
+        if (!strchr(AVS_BASE64_CHARS, ch)) {
             AVS_UNIT_ASSERT_FAILED(
                     (int) avs_base64_decode_strict((uint8_t *) result, 5, buf));
         }
@@ -135,8 +135,8 @@ AVS_UNIT_TEST(base64, decode_strict) {
     /* not a multiple of 4 */
     AVS_UNIT_ASSERT_FAILED((int) avs_base64_decode_strict(
             (uint8_t *) result, sizeof(result), "=="));
-    AVS_UNIT_ASSERT_FAILED((int) avs_base64_decode_strict(
-            (uint8_t *) result, sizeof(result), "="));
+    AVS_UNIT_ASSERT_FAILED((int) avs_base64_decode_strict((uint8_t *) result,
+                                                          sizeof(result), "="));
 
     /* invalid characters in the middle */
     AVS_UNIT_ASSERT_FAILED((int) avs_base64_decode_strict(
@@ -201,7 +201,8 @@ AVS_UNIT_TEST(base64, encoded_and_decoded_size) {
         bytes[i] = (uint8_t) (rand() % 256);
     }
     for (i = 0; i < sizeof(bytes); ++i) {
-        AVS_UNIT_ASSERT_SUCCESS(avs_base64_encode(result, sizeof(result), bytes, i));
+        AVS_UNIT_ASSERT_SUCCESS(
+                avs_base64_encode(result, sizeof(result), bytes, i));
         length = strlen(result);
         AVS_UNIT_ASSERT_EQUAL(length + 1, avs_base64_encoded_size(i));
         /* avs_base64_estimate_decoded_size should be an upper bound */
