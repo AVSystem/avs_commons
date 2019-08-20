@@ -121,6 +121,16 @@ typedef enum avs_errno {
     AVS_EXDEV
 } avs_errno_t;
 
+/**
+ * Behaves like POSIX strerror(), but operates on @ref avs_errno_t values
+ * instead.
+ *
+ * @param error Error whose string representation shall be returned.
+ *
+ * @returns pointer to a string literal describing the error.
+ */
+const char *avs_strerror(avs_errno_t error);
+
 #ifdef __cplusplus
 }
 #endif
