@@ -132,7 +132,7 @@ int _avs_http_redirect(http_stream_t *stream, avs_url_t **url_move) {
     ++stream->redirect_count;
     if (stream->redirect_count > HTTP_MOVE_LIMIT) {
         LOG(ERROR, "redirect count exceeded");
-        return HTTP_TOO_MANY_REDIRECTS;
+        return -stream->status;
     }
     if (avs_stream_reset(stream->backend)) {
         LOG(ERROR, "stream reset failed");

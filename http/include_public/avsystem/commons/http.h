@@ -462,8 +462,8 @@ int avs_http_should_retry(avs_stream_abstract_t *stream);
  *
  * May be used to distinguish zero-length 200 response from 204.
  *
- * NOTE: If the returned code is 301 (Moved Permanently) it indicates that the
- * number of redirects exceeded the maximum allowed number (5 chained HTTP 3xx
+ * NOTE: If the returned code is in 3xx class, it indicates that the number of
+ * redirects exceeded the maximum allowed number (5 chained HTTP 3xx
  * redirections).
  *
  * @return HTTP status code (nominally in the range 200-599), or 0 if it cannot

@@ -198,7 +198,7 @@ avs_errno_t _avs_http_socket_new(avs_net_abstract_socket_t **out,
                                  avs_http_t *client,
                                  const avs_url_t *url);
 
-#define HTTP_TOO_MANY_REDIRECTS (-301)
+#define HTTP_TOO_MANY_REDIRECTS_CLASS (-3)
 
 int _avs_http_redirect(http_stream_t *stream, avs_url_t **url_move);
 

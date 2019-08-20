@@ -216,6 +216,7 @@ static int http_receive_headers_internal(header_parser_state_t *state) {
 static int http_receive_headline_and_headers(header_parser_state_t *state) {
     state->header_buf[0] = '\0';
     state->stream->flags.keep_connection = 1;
+    state->stream->status = 0;
     /* read parse headline */
     size_t bytes_read;
     char message_finished;
@@ -386,8 +387,8 @@ int _avs_http_receive_headers(http_stream_t *stream) {
     }
 
     update_flags_after_receiving_headers(stream);
-    if (stream->status == HTTP_TOO_MANY_REDIRECTS) {
-        stream->status = 301;
+    if (stream->status / 100 == HTTP_TOO_MANY_REDIRECTS_CLASS) {
+        stream->status = -stream->status;
     }
     return result;
 }
