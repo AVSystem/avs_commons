@@ -133,16 +133,12 @@ size_t avs_base64_estimate_decoded_size(size_t input_length);
  * Note: this function fails if @p out_length is too small to encode @p input,
  * to predict buffer requirements use @ref avs_base64_encoded_size .
  *
- * @param out           Pointer to user-allocated array where encoded data will
- *                      be written.
- * @param out_length    Length of user-allocated array.
- * @param input         Input to encode.
- * @param input_length  Length of the input.
- * @param alphabet      Array of characters to use for encoding; values from
- *                      alphabet[0] through alphabet[63], inclusive, MUST be
- *                      accessible and unique.
- * @param padding_char  Character to use for final padding. If '\0' is passed,
- *                      no padding is used.
+ * @param out          Pointer to user-allocated array where encoded data will
+ *                     be written.
+ * @param out_length   Length of user-allocated array.
+ * @param input        Input to encode.
+ * @param input_length Length of the input.
+ * @param config       Configuration of the base64 variant to use.
  *
  * @returns 0 on success, negative value in case of error.
  */
@@ -150,7 +146,7 @@ int avs_base64_encode_custom(char *out,
                              size_t out_length,
                              const uint8_t *input,
                              size_t input_length,
-                             const avs_base64_config_t *config);
+                             avs_base64_config_t config);
 
 /**
  * Encodes specified input into base64.
@@ -171,7 +167,7 @@ static inline int avs_base64_encode(char *out,
                                     const uint8_t *input,
                                     size_t input_length) {
     return avs_base64_encode_custom(out, out_length, input, input_length,
-                                    &AVS_BASE64_DEFAULT_STRICT_CONFIG);
+                                    AVS_BASE64_DEFAULT_STRICT_CONFIG);
 }
 
 /**
@@ -180,33 +176,18 @@ static inline int avs_base64_encode(char *out,
  * Note that this function fails if @p out_length is too small. To predict
  * buffer requirements use @ref avs_base64_estimate_decoded_size .
  *
- * @param out              Pointer to user-allocated array where decoded data
- *                         will be stored.
- * @param out_length       Length of user-allocated array.
- * @param input            Null terminated input to decode.
- * @param alphabet         Array of characters to use for encoding; values from
- *                         alphabet[0] through alphabet[63], inclusive, MUST be
- *                         accessible and unique.
- * @param padding_char     Character to expect as final padding. If '\0' is
- *                         passed, no padding is expected.
- * @param allow_whitespace If true, whitespace characters in the middle of input
- *                         are allowed and ignored. If false, any whitespace
- *                         character will cause an error.
- * @param require_padding  If @p padding_char is not '\0' and this flag is true,
- *                         the input (stripped of any whitespace characters if
- *                         @p allow_whitespace is true) is required to have a
- *                         length that is a multiple of four, and end with
- *                         appropriate number of padding characters. Otherwise,
- *                         the padding character is ignored. Note that the value
- *                         of this flag has no effect if @p padding_char is
- *                         '\0'.
+ * @param out        Pointer to user-allocated array where decoded data will be
+ *                   stored.
+ * @param out_length Length of user-allocated array.
+ * @param input      Null terminated input to decode.
+ * @param config     Configuration of the base64 variant to use.
  *
  * @returns length of decoded data in bytes, negative value in case of error.
  */
 ssize_t avs_base64_decode_custom(uint8_t *out,
                                  size_t out_length,
                                  const char *input,
-                                 const avs_base64_config_t *config);
+                                 avs_base64_config_t config);
 
 /**
  * Decodes specified base64 input.
@@ -233,7 +214,7 @@ ssize_t avs_base64_decode_custom(uint8_t *out,
 static inline ssize_t
 avs_base64_decode_strict(uint8_t *out, size_t out_length, const char *input) {
     return avs_base64_decode_custom(out, out_length, input,
-                                    &AVS_BASE64_DEFAULT_STRICT_CONFIG);
+                                    AVS_BASE64_DEFAULT_STRICT_CONFIG);
 }
 
 /**
@@ -253,7 +234,7 @@ avs_base64_decode_strict(uint8_t *out, size_t out_length, const char *input) {
 static inline ssize_t
 avs_base64_decode(uint8_t *out, size_t out_length, const char *input) {
     return avs_base64_decode_custom(out, out_length, input,
-                                    &AVS_BASE64_DEFAULT_LOOSE_CONFIG);
+                                    AVS_BASE64_DEFAULT_LOOSE_CONFIG);
 }
 
 #ifdef __cplusplus
