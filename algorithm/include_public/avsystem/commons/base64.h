@@ -19,6 +19,7 @@
 
 #include <avsystem/commons/defs.h>
 
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 
@@ -44,6 +45,53 @@ extern const char AVS_BASE64_CHARS[];
  * Section 5.
  */
 extern const char AVS_BASE64_URL_SAFE_CHARS[];
+
+/**
+ * Base64-style encoding configuration structure.
+ */
+typedef struct {
+    /**
+     * Pointer to an array of 64 characters, specifying the characters to use as
+     * base64 digits.
+     */
+    const char *alphabet;
+
+    /**
+     * Character to use as final padding, or '\0' if no padding is used.
+     */
+    char padding_char;
+
+    /**
+     * True if whitespace characters are to be allowed between digits when
+     * decoding. If false, any whitespace character will cause a decoding error.
+     */
+    bool allow_whitespace;
+
+    /**
+     * On decoding, if <c>padding_char</c> is not '\0' and this flag is true,
+     * the input (stripped of any whitespace characters if
+     * <c>allow_whitespace</c> is true) is required to have a length that is a
+     * multiple of four, and end with appropriate number of padding characters.
+     *
+     * Otherwise, the padding character is ignored. Note that the value of this
+     * flag has no effect if @p padding_char is '\0'.
+     */
+    bool require_padding;
+} avs_base64_config_t;
+
+/**
+ * Base64 configuration with the default alphabet (@ref AVS_BASE64_CHARS),
+ * default padding character (<c>=</c>), <c>allow_whitespace</c> set to true and
+ * <c>require_padding</c> set to false.
+ */
+extern const avs_base64_config_t AVS_BASE64_DEFAULT_LOOSE_CONFIG;
+
+/**
+ * Base64 configuration with the default alphabet (@ref AVS_BASE64_CHARS),
+ * default padding character (<c>=</c>), <c>allow_whitespace</c> set to false
+ * and <c>require_padding</c> set to true.
+ */
+extern const avs_base64_config_t AVS_BASE64_DEFAULT_STRICT_CONFIG;
 
 /**
  * Returns amount of bytes required to store input encoded in base64 if padding
@@ -102,8 +150,7 @@ int avs_base64_encode_custom(char *out,
                              size_t out_length,
                              const uint8_t *input,
                              size_t input_length,
-                             const char *alphabet,
-                             char padding_char);
+                             const avs_base64_config_t *config);
 
 /**
  * Encodes specified input into base64.
@@ -123,8 +170,8 @@ static inline int avs_base64_encode(char *out,
                                     size_t out_length,
                                     const uint8_t *input,
                                     size_t input_length) {
-    return avs_base64_encode_custom(
-            out, out_length, input, input_length, AVS_BASE64_CHARS, '=');
+    return avs_base64_encode_custom(out, out_length, input, input_length,
+                                    &AVS_BASE64_DEFAULT_STRICT_CONFIG);
 }
 
 /**
@@ -159,10 +206,7 @@ static inline int avs_base64_encode(char *out,
 ssize_t avs_base64_decode_custom(uint8_t *out,
                                  size_t out_length,
                                  const char *input,
-                                 const char *alphabet,
-                                 char padding_char,
-                                 bool allow_whitespace,
-                                 bool require_padding);
+                                 const avs_base64_config_t *config);
 
 /**
  * Decodes specified base64 input.
@@ -188,8 +232,8 @@ ssize_t avs_base64_decode_custom(uint8_t *out,
  */
 static inline ssize_t
 avs_base64_decode_strict(uint8_t *out, size_t out_length, const char *input) {
-    return avs_base64_decode_custom(
-            out, out_length, input, AVS_BASE64_CHARS, '=', false, true);
+    return avs_base64_decode_custom(out, out_length, input,
+                                    &AVS_BASE64_DEFAULT_STRICT_CONFIG);
 }
 
 /**
@@ -208,8 +252,8 @@ avs_base64_decode_strict(uint8_t *out, size_t out_length, const char *input) {
  */
 static inline ssize_t
 avs_base64_decode(uint8_t *out, size_t out_length, const char *input) {
-    return avs_base64_decode_custom(
-            out, out_length, input, AVS_BASE64_CHARS, '=', true, false);
+    return avs_base64_decode_custom(out, out_length, input,
+                                    &AVS_BASE64_DEFAULT_LOOSE_CONFIG);
 }
 
 #ifdef __cplusplus

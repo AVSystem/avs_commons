@@ -32,6 +32,20 @@ const char AVS_BASE64_URL_SAFE_CHARS[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
                                          "abcdefghijklmnopqrstuvwxyz"
                                          "0123456789-_";
 
+const avs_base64_config_t AVS_BASE64_DEFAULT_LOOSE_CONFIG = {
+    .alphabet = AVS_BASE64_CHARS,
+    .padding_char = '=',
+    .allow_whitespace = true,
+    .require_padding = false
+};
+
+const avs_base64_config_t AVS_BASE64_DEFAULT_STRICT_CONFIG = {
+    .alphabet = AVS_BASE64_CHARS,
+    .padding_char = '=',
+    .allow_whitespace = false,
+    .require_padding = true
+};
+
 AVS_STATIC_ASSERT(sizeof(AVS_BASE64_CHARS) == 65, // 64 chars + NULL terminator
                   missing_base64_chars);
 
@@ -72,41 +86,40 @@ int avs_base64_encode_custom(char *out,
                              size_t out_length,
                              const uint8_t *input,
                              size_t input_length,
-                             const char *alphabet,
-                             char padding_char) {
+                             const avs_base64_config_t *config) {
     char *const out_begin = (char *) out;
     uint8_t num;
     size_t i;
     unsigned long sh = 0;
 
     if (check_base64_out_buffer_size(out_length, input_length,
-                                     !!padding_char)) {
+                                     !!config->padding_char)) {
         return -1;
     }
 
     for (i = 0; i < input_length; ++i) {
         num = input[i];
         if (i % 3 == 0) {
-            *out++ = alphabet[num >> 2];
+            *out++ = config->alphabet[num >> 2];
             sh = num & 0x03;
         } else if (i % 3 == 1) {
-            *out++ = alphabet[(sh << 4) + (num >> 4)];
+            *out++ = config->alphabet[(sh << 4) + (num >> 4)];
             sh = num & 0x0F;
         } else {
-            *out++ = alphabet[(sh << 2) + (num >> 6)];
-            *out++ = alphabet[num & 0x3F];
+            *out++ = config->alphabet[(sh << 2) + (num >> 6)];
+            *out++ = config->alphabet[num & 0x3F];
         }
     }
 
     if (i % 3 == 1) {
-        *out++ = alphabet[sh << 4];
+        *out++ = config->alphabet[sh << 4];
     } else if (i % 3 == 2) {
-        *out++ = alphabet[sh << 2];
+        *out++ = config->alphabet[sh << 2];
     }
 
-    if (padding_char) {
+    if (config->padding_char) {
         for (i = (size_t) (out - out_begin); i % 4; ++i) {
-            *out++ = padding_char;
+            *out++ = config->padding_char;
         }
     }
 
@@ -117,30 +130,27 @@ int avs_base64_encode_custom(char *out,
 ssize_t avs_base64_decode_custom(uint8_t *out,
                                  size_t out_size,
                                  const char *b64_data,
-                                 const char *alphabet,
-                                 char padding_char,
-                                 bool allow_whitespace,
-                                 bool require_padding) {
+                                 const avs_base64_config_t *config) {
     uint32_t accumulator = 0;
     uint8_t bits = 0;
-    const char *current = b64_data;
+    const uint8_t *current = (const uint8_t *) b64_data;
     ssize_t out_length = 0;
     ssize_t padding = 0;
 
     while (*current) {
-        int ch = (uint8_t) *current++;
+        int ch = *current++;
 
         if ((size_t) out_length >= out_size) {
             return -1;
         }
         if (isspace(ch)) {
-            if (allow_whitespace) {
+            if (config->allow_whitespace) {
                 continue;
             } else {
                 return -1;
             }
-        } else if (ch == padding_char) {
-            if (require_padding && ++padding > 2) {
+        } else if (ch == *(const char *) &config->padding_char) {
+            if (config->require_padding && ++padding > 2) {
                 return -1;
             }
             continue;
@@ -148,22 +158,22 @@ ssize_t avs_base64_decode_custom(uint8_t *out,
             // padding in the middle of input
             return -1;
         }
-        const char *ptr = (const char *) memchr(alphabet, ch, 64);
+        const char *ptr = (const char *) memchr(config->alphabet, ch, 64);
         if (!ptr) {
             return -1;
         }
-        assert(ptr >= alphabet);
-        assert(ptr - alphabet < 64);
+        assert(ptr >= config->alphabet);
+        assert(ptr - config->alphabet < 64);
         accumulator <<= 6;
         bits = (uint8_t) (bits + 6);
-        accumulator |= (uint8_t) (ptr - alphabet);
+        accumulator |= (uint8_t) (ptr - config->alphabet);
         if (bits >= 8) {
             bits = (uint8_t) (bits - 8u);
             out[out_length++] = (uint8_t) ((accumulator >> bits) & 0xffu);
         }
     }
 
-    if (padding_char && require_padding
+    if (config->padding_char && config->require_padding
             && padding != (3 - (out_length % 3)) % 3) {
         return -1;
     }
