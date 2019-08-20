@@ -23,16 +23,12 @@ static void assert_equal_url(const avs_url_t *actual,
                              const avs_url_t *expected) {
     AVS_UNIT_ASSERT_EQUAL_STRING(avs_url_protocol(actual),
                                  avs_url_protocol(expected));
-    AVS_UNIT_ASSERT_EQUAL_STRING(avs_url_user(actual),
-                                 avs_url_user(expected));
+    AVS_UNIT_ASSERT_EQUAL_STRING(avs_url_user(actual), avs_url_user(expected));
     AVS_UNIT_ASSERT_EQUAL_STRING(avs_url_password(actual),
                                  avs_url_password(expected));
-    AVS_UNIT_ASSERT_EQUAL_STRING(avs_url_host(actual),
-                                 avs_url_host(expected));
-    AVS_UNIT_ASSERT_EQUAL_STRING(avs_url_port(actual),
-                                 avs_url_port(expected));
-    AVS_UNIT_ASSERT_EQUAL_STRING(avs_url_path(actual),
-                                 avs_url_path(expected));
+    AVS_UNIT_ASSERT_EQUAL_STRING(avs_url_host(actual), avs_url_host(expected));
+    AVS_UNIT_ASSERT_EQUAL_STRING(avs_url_port(actual), avs_url_port(expected));
+    AVS_UNIT_ASSERT_EQUAL_STRING(avs_url_path(actual), avs_url_path(expected));
 }
 
 AVS_UNIT_TEST(http, init) {
@@ -45,10 +41,9 @@ AVS_UNIT_TEST(http, init) {
     avs_unit_mocksock_create(&socket);
     avs_http_test_expect_create_socket(socket, AVS_NET_TCP_SOCKET);
     avs_unit_mocksock_expect_connect(socket, "www.nooooooooooooooo.com", "80");
-    AVS_UNIT_ASSERT_SUCCESS(
-            avs_http_open_stream((avs_stream_abstract_t **) &stream,
-                                 client, AVS_HTTP_GET,
-                                 AVS_HTTP_CONTENT_IDENTITY, url, NULL, NULL));
+    AVS_UNIT_ASSERT_SUCCESS(avs_http_open_stream(
+            (avs_stream_abstract_t **) &stream, client, AVS_HTTP_GET,
+            AVS_HTTP_CONTENT_IDENTITY, url, NULL, NULL));
     AVS_UNIT_ASSERT_NOT_NULL(stream);
     AVS_UNIT_ASSERT_TRUE(stream->vtable == &http_vtable);
     AVS_UNIT_ASSERT_TRUE(stream->http == client);
@@ -105,10 +100,9 @@ AVS_UNIT_TEST(http, init_https_auth1) {
     avs_unit_mocksock_create(&socket);
     avs_http_test_expect_create_socket(socket, AVS_NET_SSL_SOCKET);
     avs_unit_mocksock_expect_connect(socket, "boards.4chan.org", "443");
-    AVS_UNIT_ASSERT_SUCCESS(
-            avs_http_open_stream((avs_stream_abstract_t **) &stream, client,
-                                 AVS_HTTP_POST, AVS_HTTP_CONTENT_IDENTITY, url,
-                                 "haruhi", NULL));
+    AVS_UNIT_ASSERT_SUCCESS(avs_http_open_stream(
+            (avs_stream_abstract_t **) &stream, client, AVS_HTTP_POST,
+            AVS_HTTP_CONTENT_IDENTITY, url, "haruhi", NULL));
     AVS_UNIT_ASSERT_NOT_NULL(stream);
     AVS_UNIT_ASSERT_TRUE(stream->vtable == &http_vtable);
     AVS_UNIT_ASSERT_TRUE(stream->http == client);
@@ -149,10 +143,9 @@ AVS_UNIT_TEST(http, init_https_auth2) {
     avs_unit_mocksock_create(&socket);
     avs_http_test_expect_create_socket(socket, AVS_NET_SSL_SOCKET);
     avs_unit_mocksock_expect_connect(socket, "boards.4chan.org", "443");
-    AVS_UNIT_ASSERT_SUCCESS(
-            avs_http_open_stream((avs_stream_abstract_t **) &stream,
-                                 client, AVS_HTTP_PUT,
-                                 AVS_HTTP_CONTENT_IDENTITY, url, NULL, ""));
+    AVS_UNIT_ASSERT_SUCCESS(avs_http_open_stream(
+            (avs_stream_abstract_t **) &stream, client, AVS_HTTP_PUT,
+            AVS_HTTP_CONTENT_IDENTITY, url, NULL, ""));
     AVS_UNIT_ASSERT_NOT_NULL(stream);
     AVS_UNIT_ASSERT_TRUE(stream->vtable == &http_vtable);
     AVS_UNIT_ASSERT_TRUE(stream->http == client);

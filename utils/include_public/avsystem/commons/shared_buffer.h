@@ -58,8 +58,8 @@ typedef struct {
  * @param capacity Desired buffer capacity in bytes.
  */
 static inline avs_shared_buffer_t *avs_shared_buffer_new(size_t capacity) {
-    avs_shared_buffer_t *buf = (avs_shared_buffer_t *)
-            avs_calloc(1, offsetof(avs_shared_buffer_t, data) + capacity);
+    avs_shared_buffer_t *buf = (avs_shared_buffer_t *) avs_calloc(
+            1, offsetof(avs_shared_buffer_t, data) + capacity);
 
     if (buf) {
         memcpy((void *) (intptr_t) &buf->capacity, &capacity, sizeof(capacity));
@@ -84,16 +84,16 @@ static inline void avs_shared_buffer_release(avs_shared_buffer_t *buf) {
 /**
  * Internal function. Use @ref avs_shared_buffer_acqiure instead.
  */
-uint8_t * _avs_shared_buffer_acquire(avs_shared_buffer_t *buf,
-                                     const char *func,
-                                     const char *file,
-                                     unsigned line);
+uint8_t *_avs_shared_buffer_acquire(avs_shared_buffer_t *buf,
+                                    const char *func,
+                                    const char *file,
+                                    unsigned line);
 /**
  * Marks the shared buffer as used, and returns a mutable pointer to buffer
  * data. Implemented as a macro for extra debug information.
  */
-#define avs_shared_buffer_acquire(Buf) \
-    _avs_shared_buffer_acquire((Buf), __func__, __FILE__, __LINE__)
+#    define avs_shared_buffer_acquire(Buf) \
+        _avs_shared_buffer_acquire((Buf), __func__, __FILE__, __LINE__)
 
 /**
  * Marks the shared buffer as free for reuse.

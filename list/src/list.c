@@ -20,12 +20,13 @@
 
 /* We don't want avs_list_assert_acyclic__ called from our own internals */
 #ifndef NDEBUG
-# define NDEBUG
+#    define NDEBUG
 #endif
 #include <avsystem/commons/list.h>
 
 #ifdef NDEBUG
-# undef NDEBUG /* We want to call assert() in avs_list_assert_acyclic__() */
+#    undef NDEBUG /* We want to call assert() in avs_list_assert_acyclic__() \
+                   */
 #endif
 #include <assert.h>
 
@@ -119,7 +120,6 @@ void *avs_list_detach__(void **to_detach_ptr) {
     return retval;
 }
 
-
 size_t avs_list_size__(const void *list) {
     size_t retval = 0;
     AVS_LIST_ITERATE(list) {
@@ -159,9 +159,8 @@ int avs_list_is_cyclic__(const void *list) {
     const void *slow = list;
     const void *fast1 = list;
     const void *fast2 = list;
-    while (slow
-            && (fast1 = AVS_LIST_NEXT(fast2))
-            && (fast2 = AVS_LIST_NEXT(fast1))) {
+    while (slow && (fast1 = AVS_LIST_NEXT(fast2))
+           && (fast2 = AVS_LIST_NEXT(fast1))) {
         if (fast1 == slow || fast2 == slow) {
             return 1;
         }

@@ -30,8 +30,8 @@
 #include <avsystem/commons/stream/stream_inbuf.h>
 #include <avsystem/commons/stream/stream_outbuf.h>
 
-#include "mbedtls_persistence.h"
 #include "../net_impl.h"
+#include "mbedtls_persistence.h"
 
 VISIBILITY_SOURCE_BEGIN
 
@@ -84,19 +84,19 @@ static int handle_cert_persistence(avs_persistence_context_t *ctx,
     }
     if (data && avs_persistence_direction(ctx) == AVS_PERSISTENCE_RESTORE) {
         assert(!*cert_ptr);
-        if (!(*cert_ptr = (mbedtls_x509_crt *)
-                mbedtls_calloc(1, sizeof(mbedtls_x509_crt)))) {
+        if (!(*cert_ptr = (mbedtls_x509_crt *) mbedtls_calloc(
+                      1, sizeof(mbedtls_x509_crt)))) {
             result = -1;
             goto restore_finish;
         }
         mbedtls_x509_crt_init(*cert_ptr);
         if ((result = mbedtls_x509_crt_parse_der(
-                *cert_ptr, (unsigned char *) data, size))) {
+                     *cert_ptr, (unsigned char *) data, size))) {
             mbedtls_x509_crt_free(*cert_ptr);
             mbedtls_free(*cert_ptr);
             *cert_ptr = NULL;
         }
-restore_finish:
+    restore_finish:
         avs_free(data);
     }
     return result;
@@ -112,7 +112,8 @@ static int handle_cert_persistence(avs_persistence_context_t *ctx,
         return retval;
     }
     if (data && avs_persistence_direction(ctx) == AVS_PERSISTENCE_RESTORE) {
-        // avs_persistence_sized_buffer() could allocate memory if it is restore case
+        // avs_persistence_sized_buffer() could allocate memory if it is restore
+        // case
         LOG(WARNING, "x509 certificates support is not compiled in - ignoring "
                      "restored certificate");
         avs_free(data);
@@ -133,14 +134,14 @@ static int handle_session_persistence(avs_persistence_context_t *ctx,
     mbedtls_x509_crt **peer_cert_ptr =
 #ifdef MBEDTLS_X509_CRT_PARSE_C
             &session->peer_cert;
-#else // MBEDTLS_X509_CRT_PARSE_C
-            &(mbedtls_x509_crt *[]) { NULL }[0];
+#else  // MBEDTLS_X509_CRT_PARSE_C
+            &(mbedtls_x509_crt *[]){ NULL }[0];
 #endif // MBEDTLS_X509_CRT_PARSE_C
     uint8_t *mfl_code_ptr =
 #ifdef MBEDTLS_SSL_MAX_FRAGMENT_LENGTH
             &session->mfl_code;
-#else // MBEDTLS_SSL_MAX_FRAGMENT_LENGTH
-            &(uint8_t[]) { 0 }[0];
+#else  // MBEDTLS_SSL_MAX_FRAGMENT_LENGTH
+            &(uint8_t[]){ 0 }[0];
 #endif // MBEDTLS_SSL_MAX_FRAGMENT_LENGTH
     bool trunc_hmac = false;
     bool encrypt_then_mac = false;
@@ -148,9 +149,9 @@ static int handle_session_persistence(avs_persistence_context_t *ctx,
     if (avs_persistence_direction(ctx) == AVS_PERSISTENCE_STORE) {
 #ifdef MBEDTLS_HAVE_TIME
         session_start = avs_time_real_from_scalar(session->start, AVS_TIME_S);
-#else // MBEDTLS_HAVE_TIME
+#else  // MBEDTLS_HAVE_TIME
         session_start = avs_time_real_now();
-#endif //MBEDTLS_HAVE_TIME
+#endif // MBEDTLS_HAVE_TIME
         ciphersuite = (int32_t) session->ciphersuite;
         compression = (int32_t) session->compression;
         id_len = (uint8_t) session->id_len;
@@ -167,7 +168,7 @@ static int handle_session_persistence(avs_persistence_context_t *ctx,
 
     int retval;
     (void) ((retval = avs_persistence_i64(
-                    ctx, &session_start.since_real_epoch.seconds))
+                     ctx, &session_start.since_real_epoch.seconds))
             || (retval = avs_persistence_i32(ctx, &ciphersuite))
             || (retval = avs_persistence_i32(ctx, &compression))
             || (retval = avs_persistence_u8(ctx, &id_len))
@@ -185,7 +186,7 @@ static int handle_session_persistence(avs_persistence_context_t *ctx,
 #ifdef MBEDTLS_HAVE_TIME
         session->start =
                 (mbedtls_time_t) session_start.since_real_epoch.seconds;
-#endif //MBEDTLS_HAVE_TIME
+#endif // MBEDTLS_HAVE_TIME
         session->ciphersuite = (int) ciphersuite;
         session->compression = (int) compression;
         session->id_len = (size_t) id_len;
@@ -207,7 +208,8 @@ static int handle_session_persistence(avs_persistence_context_t *ctx,
 }
 
 int _avs_net_mbedtls_session_save(mbedtls_ssl_session *session,
-                                  void *out_buf, size_t out_buf_size) {
+                                  void *out_buf,
+                                  size_t out_buf_size) {
     avs_persistence_context_t ctx;
     avs_stream_outbuf_t out_buf_stream = AVS_STREAM_OUTBUF_STATIC_INITIALIZER;
     avs_stream_outbuf_set_buffer(&out_buf_stream, out_buf, out_buf_size);
@@ -241,7 +243,8 @@ static bool is_all_zeros(const void *buf, size_t buf_size) {
 }
 
 int _avs_net_mbedtls_session_restore(mbedtls_ssl_session *out_session,
-                                     const void *buf, size_t buf_size) {
+                                     const void *buf,
+                                     size_t buf_size) {
     if (is_all_zeros(buf, buf_size)) {
         LOG(TRACE, "Session data empty, not attempting restore");
         return -1;
@@ -249,11 +252,12 @@ int _avs_net_mbedtls_session_restore(mbedtls_ssl_session *out_session,
     avs_stream_inbuf_t in_buf_stream = AVS_STREAM_INBUF_STATIC_INITIALIZER;
     avs_stream_inbuf_set_buffer(&in_buf_stream, buf, buf_size);
     char magic_header[sizeof(PERSISTENCE_MAGIC)];
-    int retval = avs_stream_read_reliably(
-            (avs_stream_abstract_t *) &in_buf_stream,
-            magic_header, sizeof(magic_header));
-    if (retval || memcmp(magic_header, PERSISTENCE_MAGIC,
-                         sizeof(PERSISTENCE_MAGIC))) {
+    int retval =
+            avs_stream_read_reliably((avs_stream_abstract_t *) &in_buf_stream,
+                                     magic_header, sizeof(magic_header));
+    if (retval
+            || memcmp(magic_header, PERSISTENCE_MAGIC,
+                      sizeof(PERSISTENCE_MAGIC))) {
         // this may happen in a perfectly valid case of empty persistence buffer
         // (no session stored), so it's not on the ERROR level
         LOG(ERROR, "Could not restore session: invalid magic");

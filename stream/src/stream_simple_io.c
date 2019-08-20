@@ -109,10 +109,10 @@ static const avs_stream_v_table_t simple_io_stream_vtable = {
     .finish_message = stream_simple_finish_message
 };
 
-static avs_stream_abstract_t
-*avs_stream_simple_io_create(avs_simple_io_stream_writer_t *writer,
-                             avs_simple_io_stream_reader_t *reader,
-                             void *context) {
+static avs_stream_abstract_t *
+avs_stream_simple_io_create(avs_simple_io_stream_writer_t *writer,
+                            avs_simple_io_stream_reader_t *reader,
+                            void *context) {
     simple_io_stream_t *stream =
             (simple_io_stream_t *) avs_calloc(1, sizeof(simple_io_stream_t));
     if (!stream) {
@@ -128,20 +128,20 @@ static avs_stream_abstract_t
     return (avs_stream_abstract_t *) stream;
 }
 
-avs_stream_abstract_t *avs_stream_simple_output_create(
-        avs_simple_io_stream_writer_t *writer,
-        void *context) {
+avs_stream_abstract_t *
+avs_stream_simple_output_create(avs_simple_io_stream_writer_t *writer,
+                                void *context) {
     assert(writer);
     return avs_stream_simple_io_create(writer, NULL, context);
 }
 
-avs_stream_abstract_t *avs_stream_simple_input_create(
-        avs_simple_io_stream_reader_t *reader,
-        void *context) {
+avs_stream_abstract_t *
+avs_stream_simple_input_create(avs_simple_io_stream_reader_t *reader,
+                               void *context) {
     assert(reader);
     return avs_stream_simple_io_create(NULL, reader, context);
 }
 
 #ifdef AVS_UNIT_TESTING
-#include "test/test_stream_simple_io.c"
+#    include "test/test_stream_simple_io.c"
 #endif

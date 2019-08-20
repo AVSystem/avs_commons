@@ -20,7 +20,7 @@
 #include <avsystem/commons/unit/test.h>
 
 typedef struct {
-    const avs_stream_v_table_t * const vtable;
+    const avs_stream_v_table_t *const vtable;
     avs_stream_abstract_t *backend;
 } fake_receiver_t;
 
@@ -39,18 +39,18 @@ AVS_UNIT_TEST(http, dumb_receiver_read) {
     avs_stream_netbuf_create(&helper_stream, socket, 0, 0);
     AVS_UNIT_ASSERT_NOT_NULL(helper_stream);
     avs_unit_mocksock_input(socket, DUMB_INPUT_DATA, strlen(DUMB_INPUT_DATA));
-    receiver = create_body_receiver(helper_stream,
-                                    &AVS_HTTP_DEFAULT_BUFFER_SIZES,
-                                    TRANSFER_IDENTITY, 0);
+    receiver =
+            create_body_receiver(helper_stream, &AVS_HTTP_DEFAULT_BUFFER_SIZES,
+                                 TRANSFER_IDENTITY, 0);
     AVS_UNIT_ASSERT_NOT_NULL(receiver);
     while (!message_finished) {
         size_t bytes_read;
-        AVS_UNIT_ASSERT_SUCCESS(avs_stream_read(receiver,
-                                                &bytes_read,
-                                                &message_finished,
-                                                buffer_ptr,
-                                                sizeof(buffer)
-                                                - (buffer_ptr - buffer)));
+        AVS_UNIT_ASSERT_SUCCESS(
+                avs_stream_read(receiver,
+                                &bytes_read,
+                                &message_finished,
+                                buffer_ptr,
+                                sizeof(buffer) - (buffer_ptr - buffer)));
         buffer_ptr += bytes_read;
     }
     AVS_UNIT_ASSERT_EQUAL(buffer_ptr - buffer, strlen(DUMB_INPUT_DATA));
@@ -72,29 +72,29 @@ AVS_UNIT_TEST(http, dumb_receiver_peek) {
     size_t content_length = strlen(DUMB_INPUT_DATA);
     avs_unit_mocksock_create(&socket);
     avs_unit_mocksock_expect_connect(socket, "t_s_o_h", "t_r_o_p");
-    AVS_UNIT_ASSERT_SUCCESS(avs_net_socket_connect(socket, "t_s_o_h", "t_r_o_p"));
+    AVS_UNIT_ASSERT_SUCCESS(
+            avs_net_socket_connect(socket, "t_s_o_h", "t_r_o_p"));
     avs_stream_netbuf_create(&helper_stream, socket, 0, 0);
     AVS_UNIT_ASSERT_NOT_NULL(helper_stream);
     avs_unit_mocksock_input(socket, DUMB_INPUT_DATA, strlen(DUMB_INPUT_DATA));
-    receiver = create_body_receiver(helper_stream,
-                                    &AVS_HTTP_DEFAULT_BUFFER_SIZES,
-                                    TRANSFER_IDENTITY, 0);
+    receiver =
+            create_body_receiver(helper_stream, &AVS_HTTP_DEFAULT_BUFFER_SIZES,
+                                 TRANSFER_IDENTITY, 0);
     AVS_UNIT_ASSERT_NOT_NULL(receiver);
     for (i = 0; i < content_length; ++i) {
-        AVS_UNIT_ASSERT_EQUAL(avs_stream_peek(receiver, i),
-                              DUMB_INPUT_DATA[i]);
+        AVS_UNIT_ASSERT_EQUAL(avs_stream_peek(receiver, i), DUMB_INPUT_DATA[i]);
     }
     for (i = content_length; i < 2 * content_length; ++i) {
         AVS_UNIT_ASSERT_EQUAL(avs_stream_peek(receiver, i), EOF);
     }
     while (!message_finished) {
         size_t bytes_read;
-        AVS_UNIT_ASSERT_SUCCESS(avs_stream_read(receiver,
-                                                &bytes_read,
-                                                &message_finished,
-                                                buffer_ptr,
-                                                sizeof(buffer)
-                                                - (buffer_ptr - buffer)));
+        AVS_UNIT_ASSERT_SUCCESS(
+                avs_stream_read(receiver,
+                                &bytes_read,
+                                &message_finished,
+                                buffer_ptr,
+                                sizeof(buffer) - (buffer_ptr - buffer)));
         buffer_ptr += bytes_read;
     }
     AVS_UNIT_ASSERT_EQUAL(buffer_ptr - buffer, strlen(DUMB_INPUT_DATA));
@@ -105,9 +105,8 @@ AVS_UNIT_TEST(http, dumb_receiver_peek) {
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&helper_stream));
 }
 
-const char *LENGTH_INPUT_DATA =
-        "Aa, Kami-sama, onegai, futari dake no\n"
-        "DREAM TIME kudasai";
+const char *LENGTH_INPUT_DATA = "Aa, Kami-sama, onegai, futari dake no\n"
+                                "DREAM TIME kudasai";
 
 AVS_UNIT_TEST(http, content_length_receiver_good) {
     size_t content_length = strchr(LENGTH_INPUT_DATA, '\n') - LENGTH_INPUT_DATA;
@@ -122,20 +121,20 @@ AVS_UNIT_TEST(http, content_length_receiver_good) {
     AVS_UNIT_ASSERT_SUCCESS(avs_net_socket_connect(socket, "H057", "P0R7"));
     avs_stream_netbuf_create(&helper_stream, socket, 0, 0);
     AVS_UNIT_ASSERT_NOT_NULL(helper_stream);
-    avs_unit_mocksock_input(socket,
-                            LENGTH_INPUT_DATA, strlen(LENGTH_INPUT_DATA));
-    receiver = create_body_receiver(helper_stream,
-                                    &AVS_HTTP_DEFAULT_BUFFER_SIZES,
-                                    TRANSFER_LENGTH, content_length);
+    avs_unit_mocksock_input(socket, LENGTH_INPUT_DATA,
+                            strlen(LENGTH_INPUT_DATA));
+    receiver =
+            create_body_receiver(helper_stream, &AVS_HTTP_DEFAULT_BUFFER_SIZES,
+                                 TRANSFER_LENGTH, content_length);
     AVS_UNIT_ASSERT_NOT_NULL(receiver);
     while (!message_finished) {
         size_t bytes_read;
-        AVS_UNIT_ASSERT_SUCCESS(avs_stream_read(receiver,
-                                                &bytes_read,
-                                                &message_finished,
-                                                buffer_ptr,
-                                                sizeof(buffer)
-                                                - (buffer_ptr - buffer)));
+        AVS_UNIT_ASSERT_SUCCESS(
+                avs_stream_read(receiver,
+                                &bytes_read,
+                                &message_finished,
+                                buffer_ptr,
+                                sizeof(buffer) - (buffer_ptr - buffer)));
         buffer_ptr += bytes_read;
     }
     AVS_UNIT_ASSERT_EQUAL(buffer_ptr - buffer, content_length);
@@ -144,10 +143,10 @@ AVS_UNIT_TEST(http, content_length_receiver_good) {
     message_finished = 0;
     while (!message_finished) {
         size_t bytes_read;
-        AVS_UNIT_ASSERT_SUCCESS(avs_stream_read(
-                ((fake_receiver_t *) receiver)->backend,
-                &bytes_read, &message_finished, buffer_ptr,
-                sizeof(buffer) - (buffer_ptr - buffer)));
+        AVS_UNIT_ASSERT_SUCCESS(
+                avs_stream_read(((fake_receiver_t *) receiver)->backend,
+                                &bytes_read, &message_finished, buffer_ptr,
+                                sizeof(buffer) - (buffer_ptr - buffer)));
         buffer_ptr += bytes_read;
     }
     AVS_UNIT_ASSERT_EQUAL(buffer_ptr - buffer,
@@ -175,9 +174,9 @@ AVS_UNIT_TEST(http, content_length_receiver_not_enough) {
     AVS_UNIT_ASSERT_NOT_NULL(helper_stream);
     AVS_UNIT_ASSERT_SUCCESS(avs_net_socket_connect(socket, "tosh", "trop"));
     avs_unit_mocksock_input(socket, input_data, strlen(input_data));
-    receiver = create_body_receiver(helper_stream,
-                                    &AVS_HTTP_DEFAULT_BUFFER_SIZES,
-                                    TRANSFER_LENGTH, content_length);
+    receiver =
+            create_body_receiver(helper_stream, &AVS_HTTP_DEFAULT_BUFFER_SIZES,
+                                 TRANSFER_LENGTH, content_length);
     AVS_UNIT_ASSERT_NOT_NULL(receiver);
     while (!message_finished && result == 0) {
         size_t bytes_read;
@@ -200,14 +199,15 @@ AVS_UNIT_TEST(http, content_length_receiver_peek) {
     avs_stream_abstract_t *receiver = NULL;
     avs_unit_mocksock_create(&socket);
     avs_unit_mocksock_expect_connect(socket, "h_o_s_t", "p_o_r_t");
-    AVS_UNIT_ASSERT_SUCCESS(avs_net_socket_connect(socket, "h_o_s_t", "p_o_r_t"));
+    AVS_UNIT_ASSERT_SUCCESS(
+            avs_net_socket_connect(socket, "h_o_s_t", "p_o_r_t"));
     avs_stream_netbuf_create(&helper_stream, socket, 0, 0);
     AVS_UNIT_ASSERT_NOT_NULL(helper_stream);
-    avs_unit_mocksock_input(socket,
-                            LENGTH_INPUT_DATA, strlen(LENGTH_INPUT_DATA));
-    receiver = create_body_receiver(helper_stream,
-                                    &AVS_HTTP_DEFAULT_BUFFER_SIZES,
-                                    TRANSFER_LENGTH, content_length);
+    avs_unit_mocksock_input(socket, LENGTH_INPUT_DATA,
+                            strlen(LENGTH_INPUT_DATA));
+    receiver =
+            create_body_receiver(helper_stream, &AVS_HTTP_DEFAULT_BUFFER_SIZES,
+                                 TRANSFER_LENGTH, content_length);
     AVS_UNIT_ASSERT_NOT_NULL(receiver);
     for (i = 0; i < content_length; ++i) {
         AVS_UNIT_ASSERT_EQUAL(avs_stream_peek(receiver, i),
@@ -221,23 +221,21 @@ AVS_UNIT_TEST(http, content_length_receiver_peek) {
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&helper_stream));
 }
 
-const char *CHUNKED_DATA =
-        "3\r\n"
-        "0\r\n\r\n"
-        "3\r\n"
-        "to \r\n"
-        "1\r\n"
-        "1\r\n"
-        "11\r\n"
-        "\nshika wakaranai\n\r\n"
-        "0\r\n"
-        "-- Trailer\r\n"
-        "-- headers\r\n"
-        "\r\n"
-        "watashi ni \"I\" o oshiete kureta";
-const char *UNCHUNKED_DATA =
-        "0\r\nto 1\n"
-        "shika wakaranai\n";
+const char *CHUNKED_DATA = "3\r\n"
+                           "0\r\n\r\n"
+                           "3\r\n"
+                           "to \r\n"
+                           "1\r\n"
+                           "1\r\n"
+                           "11\r\n"
+                           "\nshika wakaranai\n\r\n"
+                           "0\r\n"
+                           "-- Trailer\r\n"
+                           "-- headers\r\n"
+                           "\r\n"
+                           "watashi ni \"I\" o oshiete kureta";
+const char *UNCHUNKED_DATA = "0\r\nto 1\n"
+                             "shika wakaranai\n";
 const char *POST_CHUNKED_DATA = "watashi ni \"I\" o oshiete kureta";
 
 AVS_UNIT_TEST(http, chunked_receiver_good) {
@@ -250,38 +248,36 @@ AVS_UNIT_TEST(http, chunked_receiver_good) {
     avs_stream_abstract_t *receiver = NULL;
     avs_unit_mocksock_create(&socket);
     avs_unit_mocksock_expect_connect(socket, "h.o.s.t", "p.o.r.t");
-    AVS_UNIT_ASSERT_SUCCESS(avs_net_socket_connect(socket, "h.o.s.t", "p.o.r.t"));
+    AVS_UNIT_ASSERT_SUCCESS(
+            avs_net_socket_connect(socket, "h.o.s.t", "p.o.r.t"));
     avs_stream_netbuf_create(&helper_stream, socket, 0, 0);
     AVS_UNIT_ASSERT_NOT_NULL(helper_stream);
-    avs_unit_mocksock_input(socket,
-                            CHUNKED_DATA, strlen(CHUNKED_DATA));
-    receiver = create_body_receiver(helper_stream,
-                                    &AVS_HTTP_DEFAULT_BUFFER_SIZES,
-                                    TRANSFER_CHUNKED, 0);
+    avs_unit_mocksock_input(socket, CHUNKED_DATA, strlen(CHUNKED_DATA));
+    receiver =
+            create_body_receiver(helper_stream, &AVS_HTTP_DEFAULT_BUFFER_SIZES,
+                                 TRANSFER_CHUNKED, 0);
     AVS_UNIT_ASSERT_NOT_NULL(receiver);
     while (!message_finished) {
-        AVS_UNIT_ASSERT_SUCCESS(avs_stream_read(receiver, &bytes_read,
-                                                &message_finished,
-                                                buffer_ptr, sizeof(buffer)
-                                                - (buffer_ptr - buffer)));
+        AVS_UNIT_ASSERT_SUCCESS(avs_stream_read(
+                receiver, &bytes_read, &message_finished, buffer_ptr,
+                sizeof(buffer) - (buffer_ptr - buffer)));
         buffer_ptr += bytes_read;
     }
     AVS_UNIT_ASSERT_EQUAL(buffer_ptr - buffer, strlen(UNCHUNKED_DATA));
     *buffer_ptr = '\0';
     AVS_UNIT_ASSERT_EQUAL_STRING(buffer, UNCHUNKED_DATA);
     message_finished = 0;
-    AVS_UNIT_ASSERT_SUCCESS(avs_stream_read(receiver, &bytes_read,
-                                            &message_finished,
-                                            buffer, sizeof(buffer)));
+    AVS_UNIT_ASSERT_SUCCESS(avs_stream_read(
+            receiver, &bytes_read, &message_finished, buffer, sizeof(buffer)));
     AVS_UNIT_ASSERT_EQUAL(bytes_read, 0);
     AVS_UNIT_ASSERT_TRUE(message_finished);
     buffer_ptr = buffer;
     message_finished = 0;
     while (!message_finished) {
-        AVS_UNIT_ASSERT_SUCCESS(avs_stream_read(
-                ((fake_receiver_t *) receiver)->backend,
-                &bytes_read, &message_finished, buffer_ptr,
-                sizeof(buffer) - (buffer_ptr - buffer)));
+        AVS_UNIT_ASSERT_SUCCESS(
+                avs_stream_read(((fake_receiver_t *) receiver)->backend,
+                                &bytes_read, &message_finished, buffer_ptr,
+                                sizeof(buffer) - (buffer_ptr - buffer)));
         buffer_ptr += bytes_read;
     }
     AVS_UNIT_ASSERT_EQUAL(buffer_ptr - buffer, strlen(POST_CHUNKED_DATA));
@@ -293,11 +289,10 @@ AVS_UNIT_TEST(http, chunked_receiver_good) {
 }
 
 AVS_UNIT_TEST(http, chunked_receiver_not_enough) {
-    const char *not_enough_chunked_data =
-            "8\r\n"
-            "Sekai de\r\n"
-            "1a\r\n"
-            "Ichiban Ohime-sama";
+    const char *not_enough_chunked_data = "8\r\n"
+                                          "Sekai de\r\n"
+                                          "1a\r\n"
+                                          "Ichiban Ohime-sama";
     char buffer[64];
     char *buffer_ptr = buffer;
     char message_finished = 0;
@@ -307,20 +302,21 @@ AVS_UNIT_TEST(http, chunked_receiver_not_enough) {
     avs_stream_abstract_t *receiver = NULL;
     avs_unit_mocksock_create(&socket);
     avs_unit_mocksock_expect_connect(socket, "H.O.S.T", "P.O.R.T");
-    AVS_UNIT_ASSERT_SUCCESS(avs_net_socket_connect(socket, "H.O.S.T", "P.O.R.T"));
+    AVS_UNIT_ASSERT_SUCCESS(
+            avs_net_socket_connect(socket, "H.O.S.T", "P.O.R.T"));
     avs_stream_netbuf_create(&helper_stream, socket, 0, 0);
     AVS_UNIT_ASSERT_NOT_NULL(helper_stream);
     avs_unit_mocksock_input(socket, not_enough_chunked_data,
                             strlen(not_enough_chunked_data));
-    receiver = create_body_receiver(helper_stream,
-                                    &AVS_HTTP_DEFAULT_BUFFER_SIZES,
-                                    TRANSFER_CHUNKED, 0);
+    receiver =
+            create_body_receiver(helper_stream, &AVS_HTTP_DEFAULT_BUFFER_SIZES,
+                                 TRANSFER_CHUNKED, 0);
     AVS_UNIT_ASSERT_NOT_NULL(receiver);
     while (!message_finished && result == 0) {
         size_t bytes_read;
         result = avs_stream_read(receiver, &bytes_read, &message_finished,
-                                   buffer_ptr,
-                                   sizeof(buffer) - (buffer_ptr - buffer));
+                                 buffer_ptr,
+                                 sizeof(buffer) - (buffer_ptr - buffer));
         buffer_ptr += bytes_read;
     }
     AVS_UNIT_ASSERT_FAILED(result);
@@ -334,32 +330,31 @@ AVS_UNIT_TEST(http, chunked_receiver_error) {
     avs_stream_abstract_t *helper_stream = NULL;
     avs_unit_mocksock_create(&socket);
     avs_unit_mocksock_expect_connect(socket, "T.S.O.H", "T.R.O.P");
-    AVS_UNIT_ASSERT_SUCCESS(avs_net_socket_connect(socket, "T.S.O.H", "T.R.O.P"));
+    AVS_UNIT_ASSERT_SUCCESS(
+            avs_net_socket_connect(socket, "T.S.O.H", "T.R.O.P"));
     avs_stream_netbuf_create(&helper_stream, socket, 0, 0);
     AVS_UNIT_ASSERT_NOT_NULL(helper_stream);
     avs_unit_mocksock_input(socket, NULL, 0);
     avs_stream_abstract_t *receiver =
-            create_body_receiver(helper_stream,
-                                 &AVS_HTTP_DEFAULT_BUFFER_SIZES,
+            create_body_receiver(helper_stream, &AVS_HTTP_DEFAULT_BUFFER_SIZES,
                                  TRANSFER_CHUNKED, 0);
     AVS_UNIT_ASSERT_NOT_NULL(receiver);
     size_t bytes_received;
     char message_finished;
     char buffer[256];
     AVS_UNIT_ASSERT_FAILED(avs_stream_read(receiver, &bytes_received,
-                                           &message_finished,
-                                           buffer, sizeof(buffer)));
+                                           &message_finished, buffer,
+                                           sizeof(buffer)));
     avs_unit_mocksock_expect_shutdown(socket);
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&receiver));
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&helper_stream));
 }
 
 AVS_UNIT_TEST(http, chunked_receiver_no_zero) {
-    const char *no_zero_enough_chunked_data =
-            "8\r\n"
-            "Sekai de\r\n"
-            "12\r\n"
-            "Ichiban Ohime-sama\r\n";
+    const char *no_zero_enough_chunked_data = "8\r\n"
+                                              "Sekai de\r\n"
+                                              "12\r\n"
+                                              "Ichiban Ohime-sama\r\n";
     char buffer[64];
     char *buffer_ptr = buffer;
     char message_finished = 0;
@@ -369,14 +364,15 @@ AVS_UNIT_TEST(http, chunked_receiver_no_zero) {
     avs_stream_abstract_t *receiver = NULL;
     avs_unit_mocksock_create(&socket);
     avs_unit_mocksock_expect_connect(socket, "H.o.s.t", "P.o.r.t");
-    AVS_UNIT_ASSERT_SUCCESS(avs_net_socket_connect(socket, "H.o.s.t", "P.o.r.t"));
+    AVS_UNIT_ASSERT_SUCCESS(
+            avs_net_socket_connect(socket, "H.o.s.t", "P.o.r.t"));
     avs_stream_netbuf_create(&helper_stream, socket, 0, 0);
     AVS_UNIT_ASSERT_NOT_NULL(helper_stream);
     avs_unit_mocksock_input(socket, no_zero_enough_chunked_data,
                             strlen(no_zero_enough_chunked_data));
-    receiver = create_body_receiver(helper_stream,
-                                    &AVS_HTTP_DEFAULT_BUFFER_SIZES,
-                                    TRANSFER_CHUNKED, 0);
+    receiver =
+            create_body_receiver(helper_stream, &AVS_HTTP_DEFAULT_BUFFER_SIZES,
+                                 TRANSFER_CHUNKED, 0);
     AVS_UNIT_ASSERT_NOT_NULL(receiver);
     while (result == 0 && !message_finished) {
         size_t bytes_read;
@@ -398,17 +394,17 @@ AVS_UNIT_TEST(http, chunked_receiver_peek) {
     avs_stream_abstract_t *receiver = NULL;
     avs_unit_mocksock_create(&socket);
     avs_unit_mocksock_expect_connect(socket, "www.www.www", "80");
-    AVS_UNIT_ASSERT_SUCCESS(avs_net_socket_connect(socket, "www.www.www", "80"));
+    AVS_UNIT_ASSERT_SUCCESS(
+            avs_net_socket_connect(socket, "www.www.www", "80"));
     avs_stream_netbuf_create(&helper_stream, socket, 0, 0);
     AVS_UNIT_ASSERT_NOT_NULL(helper_stream);
     avs_unit_mocksock_input(socket, CHUNKED_DATA, strlen(CHUNKED_DATA));
-    receiver = create_body_receiver(helper_stream,
-                                    &AVS_HTTP_DEFAULT_BUFFER_SIZES,
-                                    TRANSFER_CHUNKED, 0);
+    receiver =
+            create_body_receiver(helper_stream, &AVS_HTTP_DEFAULT_BUFFER_SIZES,
+                                 TRANSFER_CHUNKED, 0);
     AVS_UNIT_ASSERT_NOT_NULL(receiver);
     for (i = 0; UNCHUNKED_DATA[i]; ++i) {
-        AVS_UNIT_ASSERT_EQUAL(avs_stream_peek(receiver, i),
-                              UNCHUNKED_DATA[i]);
+        AVS_UNIT_ASSERT_EQUAL(avs_stream_peek(receiver, i), UNCHUNKED_DATA[i]);
     }
     for (; i < 128; ++i) {
         AVS_UNIT_ASSERT_EQUAL(avs_stream_peek(receiver, i), EOF);

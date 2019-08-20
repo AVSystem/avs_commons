@@ -72,7 +72,7 @@ int _avs_http_auth_setup(http_auth_t *auth, const char *challenge) {
         if (avs_match_token(&challenge, "realm", "=") == 0) {
             avs_free(auth->state.realm);
             if (!(auth->state.realm =
-                    consume_alloc_quotable_token(&challenge))) {
+                          consume_alloc_quotable_token(&challenge))) {
                 LOG(ERROR, "Could not allocate memory for auth realm");
                 return -1;
             }
@@ -80,7 +80,7 @@ int _avs_http_auth_setup(http_auth_t *auth, const char *challenge) {
         } else if (avs_match_token(&challenge, "nonce", "=") == 0) {
             avs_free(auth->state.nonce);
             if (!(auth->state.nonce =
-                    consume_alloc_quotable_token(&challenge))) {
+                          consume_alloc_quotable_token(&challenge))) {
                 LOG(ERROR, "Could not allocate memory for auth nonce");
                 return -1;
             }
@@ -89,7 +89,7 @@ int _avs_http_auth_setup(http_auth_t *auth, const char *challenge) {
         } else if (avs_match_token(&challenge, "opaque", "=") == 0) {
             avs_free(auth->state.opaque);
             if (!(auth->state.opaque =
-                    consume_alloc_quotable_token(&challenge))) {
+                          consume_alloc_quotable_token(&challenge))) {
                 LOG(ERROR, "Could not allocate memory for auth opaque");
                 return -1;
             }
@@ -153,8 +153,7 @@ int _avs_http_auth_send_header(http_stream_t *stream) {
         return _avs_http_auth_send_header_digest(stream);
 
     default:
-        LOG(ERROR, "unknown auth type %d",
-                  (int) stream->auth.state.flags.type);
+        LOG(ERROR, "unknown auth type %d", (int) stream->auth.state.flags.type);
         return -1;
     }
 }
@@ -185,8 +184,8 @@ int _avs_http_auth_setup_stream(http_stream_t *stream,
     } else {
         const char *password = avs_url_password(parsed_url);
         if (password
-                && !(stream->auth.credentials.password
-                        = avs_strdup(password))) {
+                && !(stream->auth.credentials.password =
+                             avs_strdup(password))) {
             goto error;
         }
     }

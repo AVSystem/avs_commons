@@ -85,8 +85,7 @@ AVS_UNIT_TEST(backend_mbedtls, chain_loading_from_path) {
         AVS_UNIT_ASSERT_SUCCESS(retval);
         const avs_net_trusted_cert_info_t no_permissions_dir =
                 avs_net_trusted_cert_info_from_path(name);
-        retval = _avs_net_mbedtls_load_ca_certs(&chain,
-                                                &no_permissions_dir);
+        retval = _avs_net_mbedtls_load_ca_certs(&chain, &no_permissions_dir);
         (void) rmdir(name);
         AVS_UNIT_ASSERT_FAILED(retval);
 

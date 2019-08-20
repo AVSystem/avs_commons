@@ -25,8 +25,8 @@
 #include <avsystem/commons/log.h>
 
 #ifdef WITH_AVS_COMPAT_THREADING
-# include <avsystem/commons/mutex.h>
-# include <avsystem/commons/init_once.h>
+#    include <avsystem/commons/init_once.h>
+#    include <avsystem/commons/mutex.h>
 #endif // WITH_AVS_COMPAT_THREADING
 
 VISIBILITY_SOURCE_BEGIN
@@ -74,8 +74,7 @@ static int initialize_global_state(void *unused) {
     return avs_mutex_create(&g_log_mutex);
 }
 
-static int _log_lock(const char *init_fail_msg,
-                     const char *lock_fail_msg) {
+static int _log_lock(const char *init_fail_msg, const char *lock_fail_msg) {
     if (avs_init_once(&g_log_init_handle, initialize_global_state, NULL)) {
         g_log.handler(AVS_LOG_ERROR, "avs_log", init_fail_msg);
         return -1;
@@ -87,19 +86,21 @@ static int _log_lock(const char *init_fail_msg,
     return 0;
 }
 
-# define LOG_LOCK() \
-    _log_lock("ERROR [avs_log] " \
-              "[" __FILE__ ":" AVS_QUOTE_MACRO(__LINE__) "]: " \
-              "could not initialize global log state", \
-              "ERROR [avs_log] " \
-              "[" __FILE__ ":" AVS_QUOTE_MACRO(__LINE__) "]: " \
-              "could not lock log mutex")
-# define LOG_UNLOCK() avs_mutex_unlock(g_log_mutex)
+#    define LOG_LOCK()                                                       \
+        _log_lock("ERROR [avs_log] "                                         \
+                  "[" __FILE__ ":" AVS_QUOTE_MACRO(                          \
+                          __LINE__) "]: "                                    \
+                                    "could not initialize global log state", \
+                  "ERROR [avs_log] "                                         \
+                  "[" __FILE__                                               \
+                  ":" AVS_QUOTE_MACRO(__LINE__) "]: "                        \
+                                                "could not lock log mutex")
+#    define LOG_UNLOCK() avs_mutex_unlock(g_log_mutex)
 
 #else // WITH_AVS_COMPAT_THREADING
 
-# define LOG_LOCK() 0
-# define LOG_UNLOCK()
+#    define LOG_LOCK() 0
+#    define LOG_UNLOCK()
 
 #endif // WITH_AVS_COMPAT_THREADING
 
@@ -129,8 +130,8 @@ static avs_log_level_t *level_for(const char *module, int create) {
             return &(*entry_ptr)->level;
         } else if (create) {
             size_t module_size = strlen(module);
-            module_level_t *new_entry = (module_level_t*)
-                    AVS_LIST_NEW_BUFFER(offsetof(module_level_t, module) + module_size + 1);
+            module_level_t *new_entry = (module_level_t *) AVS_LIST_NEW_BUFFER(
+                    offsetof(module_level_t, module) + module_size + 1);
             if (!new_entry) {
                 return NULL;
             }
@@ -144,8 +145,7 @@ static avs_log_level_t *level_for(const char *module, int create) {
     return &g_log.default_level;
 }
 
-static int set_log_level_unlocked(const char *module,
-                                  avs_log_level_t level) {
+static int set_log_level_unlocked(const char *module, avs_log_level_t level) {
     avs_log_level_t *level_ptr = level_for(module, 1);
     if (!level_ptr) {
         if (AVS_LOG_ERROR >= g_log.default_level) {
@@ -218,8 +218,9 @@ static void log_with_buffer_unlocked_v(char *log_buf,
                                        va_list ap) {
     char *log_buf_ptr = log_buf;
     size_t log_buf_left = log_buf_size - 1;
-    int pfresult = snprintf(log_buf_ptr, log_buf_left, "%s [%s] [%s:%u]: ",
-                            level_as_string(level), module, file, line);
+    int pfresult = snprintf(log_buf_ptr, log_buf_left,
+                            "%s [%s] [%s:%u]: ", level_as_string(level), module,
+                            file, line);
     if (pfresult < 0) {
         // it's hard to imagine why snprintf() above might fail,
         // but well, let's be compliant and check it
@@ -255,13 +256,13 @@ void avs_log_internal_forced_v__(avs_log_level_t level,
     if (LOG_LOCK()) {
         return;
     }
-    log_with_buffer_unlocked_v(g_log.buffer, sizeof(g_log.buffer),
-                               level, module, file, line, msg, ap);
+    log_with_buffer_unlocked_v(g_log.buffer, sizeof(g_log.buffer), level,
+                               module, file, line, msg, ap);
     LOG_UNLOCK();
-#else // AVS_LOG_USE_GLOBAL_BUFFER
+#else  // AVS_LOG_USE_GLOBAL_BUFFER
     char log_buf[AVS_LOG_MAX_LINE_LENGTH];
-    log_with_buffer_unlocked_v(log_buf, sizeof(log_buf),
-                               level, module, file, line, msg, ap);
+    log_with_buffer_unlocked_v(log_buf, sizeof(log_buf), level, module, file,
+                               line, msg, ap);
 #endif // AVS_LOG_USE_GLOBAL_BUFFER
 }
 
@@ -280,7 +281,8 @@ void avs_log_internal_forced_l__(avs_log_level_t level,
                                  const char *module,
                                  const char *file,
                                  unsigned line,
-                                 const char *msg, ...) {
+                                 const char *msg,
+                                 ...) {
     va_list ap;
     va_start(ap, msg);
     avs_log_internal_forced_v__(level, module, file, line, msg, ap);
@@ -291,7 +293,8 @@ void avs_log_internal_l__(avs_log_level_t level,
                           const char *module,
                           const char *file,
                           unsigned line,
-                          const char *msg, ...) {
+                          const char *msg,
+                          ...) {
     if (avs_log_should_log__(level, module)) {
         va_list ap;
         va_start(ap, msg);
@@ -301,5 +304,5 @@ void avs_log_internal_l__(avs_log_level_t level,
 }
 
 #ifdef AVS_UNIT_TESTING
-#include "test/test_log.c"
+#    include "test/test_log.c"
 #endif

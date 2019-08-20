@@ -55,4 +55,3 @@ extern const char *const MONTY_PYTHON_PER_LINE_REQUEST;
 extern const char *const MONTY_PYTHON_BIG_REQUEST;
 
 #endif /* AVS_COMMONS_HTTP_TEST_HTTP_H */
-

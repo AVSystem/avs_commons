@@ -22,8 +22,8 @@
 
 #include <avsystem/commons/defs.h>
 
-#include <avsystem/commons/coap/opt.h>
 #include <avsystem/commons/coap/msg_identity.h>
+#include <avsystem/commons/coap/opt.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -62,11 +62,9 @@ typedef enum avs_coap_msg_type {
 #define AVS_COAP_CODE_DETAIL_MASK 0x1F
 #define AVS_COAP_CODE_DETAIL_SHIFT 0
 
-#define AVS_COAP_CODE(cls, detail) \
-    ((((cls) << AVS_COAP_CODE_CLASS_SHIFT) \
-      & AVS_COAP_CODE_CLASS_MASK) \
-     | (((detail) << AVS_COAP_CODE_DETAIL_SHIFT) \
-        & AVS_COAP_CODE_DETAIL_MASK))
+#define AVS_COAP_CODE(cls, detail)                                     \
+    ((((cls) << AVS_COAP_CODE_CLASS_SHIFT) & AVS_COAP_CODE_CLASS_MASK) \
+     | (((detail) << AVS_COAP_CODE_DETAIL_SHIFT) & AVS_COAP_CODE_DETAIL_MASK))
 /** @} */
 
 /** @{
@@ -74,40 +72,40 @@ typedef enum avs_coap_msg_type {
  *
  * For detailed description of their semantics, refer to appropriate RFCs.
  */
-#define AVS_COAP_CODE_EMPTY  AVS_COAP_CODE(0, 0)
+#define AVS_COAP_CODE_EMPTY AVS_COAP_CODE(0, 0)
 
-#define AVS_COAP_CODE_GET    AVS_COAP_CODE(0, 1)
-#define AVS_COAP_CODE_POST   AVS_COAP_CODE(0, 2)
-#define AVS_COAP_CODE_PUT    AVS_COAP_CODE(0, 3)
+#define AVS_COAP_CODE_GET AVS_COAP_CODE(0, 1)
+#define AVS_COAP_CODE_POST AVS_COAP_CODE(0, 2)
+#define AVS_COAP_CODE_PUT AVS_COAP_CODE(0, 3)
 #define AVS_COAP_CODE_DELETE AVS_COAP_CODE(0, 4)
 /** https://tools.ietf.org/html/rfc8132#section-4 */
-#define AVS_COAP_CODE_FETCH  AVS_COAP_CODE(0, 5)
+#define AVS_COAP_CODE_FETCH AVS_COAP_CODE(0, 5)
 #define AVS_COAP_CODE_IPATCH AVS_COAP_CODE(0, 7)
 
-#define AVS_COAP_CODE_CREATED  AVS_COAP_CODE(2, 1)
-#define AVS_COAP_CODE_DELETED  AVS_COAP_CODE(2, 2)
-#define AVS_COAP_CODE_VALID    AVS_COAP_CODE(2, 3)
-#define AVS_COAP_CODE_CHANGED  AVS_COAP_CODE(2, 4)
-#define AVS_COAP_CODE_CONTENT  AVS_COAP_CODE(2, 5)
+#define AVS_COAP_CODE_CREATED AVS_COAP_CODE(2, 1)
+#define AVS_COAP_CODE_DELETED AVS_COAP_CODE(2, 2)
+#define AVS_COAP_CODE_VALID AVS_COAP_CODE(2, 3)
+#define AVS_COAP_CODE_CHANGED AVS_COAP_CODE(2, 4)
+#define AVS_COAP_CODE_CONTENT AVS_COAP_CODE(2, 5)
 #define AVS_COAP_CODE_CONTINUE AVS_COAP_CODE(2, 31)
 
-#define AVS_COAP_CODE_BAD_REQUEST                AVS_COAP_CODE(4, 0)
-#define AVS_COAP_CODE_UNAUTHORIZED               AVS_COAP_CODE(4, 1)
-#define AVS_COAP_CODE_BAD_OPTION                 AVS_COAP_CODE(4, 2)
-#define AVS_COAP_CODE_FORBIDDEN                  AVS_COAP_CODE(4, 3)
-#define AVS_COAP_CODE_NOT_FOUND                  AVS_COAP_CODE(4, 4)
-#define AVS_COAP_CODE_METHOD_NOT_ALLOWED         AVS_COAP_CODE(4, 5)
-#define AVS_COAP_CODE_NOT_ACCEPTABLE             AVS_COAP_CODE(4, 6)
-#define AVS_COAP_CODE_REQUEST_ENTITY_INCOMPLETE  AVS_COAP_CODE(4, 8)
-#define AVS_COAP_CODE_PRECONDITION_FAILED        AVS_COAP_CODE(4, 12)
-#define AVS_COAP_CODE_REQUEST_ENTITY_TOO_LARGE   AVS_COAP_CODE(4, 13)
+#define AVS_COAP_CODE_BAD_REQUEST AVS_COAP_CODE(4, 0)
+#define AVS_COAP_CODE_UNAUTHORIZED AVS_COAP_CODE(4, 1)
+#define AVS_COAP_CODE_BAD_OPTION AVS_COAP_CODE(4, 2)
+#define AVS_COAP_CODE_FORBIDDEN AVS_COAP_CODE(4, 3)
+#define AVS_COAP_CODE_NOT_FOUND AVS_COAP_CODE(4, 4)
+#define AVS_COAP_CODE_METHOD_NOT_ALLOWED AVS_COAP_CODE(4, 5)
+#define AVS_COAP_CODE_NOT_ACCEPTABLE AVS_COAP_CODE(4, 6)
+#define AVS_COAP_CODE_REQUEST_ENTITY_INCOMPLETE AVS_COAP_CODE(4, 8)
+#define AVS_COAP_CODE_PRECONDITION_FAILED AVS_COAP_CODE(4, 12)
+#define AVS_COAP_CODE_REQUEST_ENTITY_TOO_LARGE AVS_COAP_CODE(4, 13)
 #define AVS_COAP_CODE_UNSUPPORTED_CONTENT_FORMAT AVS_COAP_CODE(4, 15)
 
-#define AVS_COAP_CODE_INTERNAL_SERVER_ERROR  AVS_COAP_CODE(5, 0)
-#define AVS_COAP_CODE_NOT_IMPLEMENTED        AVS_COAP_CODE(5, 1)
-#define AVS_COAP_CODE_BAD_GATEWAY            AVS_COAP_CODE(5, 2)
-#define AVS_COAP_CODE_SERVICE_UNAVAILABLE    AVS_COAP_CODE(5, 3)
-#define AVS_COAP_CODE_GATEWAY_TIMEOUT        AVS_COAP_CODE(5, 4)
+#define AVS_COAP_CODE_INTERNAL_SERVER_ERROR AVS_COAP_CODE(5, 0)
+#define AVS_COAP_CODE_NOT_IMPLEMENTED AVS_COAP_CODE(5, 1)
+#define AVS_COAP_CODE_BAD_GATEWAY AVS_COAP_CODE(5, 2)
+#define AVS_COAP_CODE_SERVICE_UNAVAILABLE AVS_COAP_CODE(5, 3)
+#define AVS_COAP_CODE_GATEWAY_TIMEOUT AVS_COAP_CODE(5, 4)
 #define AVS_COAP_CODE_PROXYING_NOT_SUPPORTED AVS_COAP_CODE(5, 5)
 /** @} */
 
@@ -129,7 +127,7 @@ avs_coap_msg_code_to_string(uint8_t code, char *buf, size_t buf_size);
  * a stack-allocated buffer big enough to store any CoAP code string.
  */
 #define AVS_COAP_CODE_STRING(Code) \
-        avs_coap_msg_code_to_string((Code), &(char[32]){0}[0], 32)
+    avs_coap_msg_code_to_string((Code), &(char[32]){ 0 }[0], 32)
 
 /** @{
  * CoAP code class/detail accessors. See RFC7252 for details.
@@ -163,7 +161,7 @@ static inline bool avs_coap_msg_code_is_server_error(uint8_t code) {
  */
 static inline bool avs_coap_msg_code_is_request(uint8_t code) {
     return avs_coap_msg_code_get_class(code) == 0
-            && avs_coap_msg_code_get_detail(code) > 0;
+           && avs_coap_msg_code_get_detail(code) > 0;
 }
 
 /** @returns true if @p code represents a response, false otherwise. */
@@ -201,8 +199,8 @@ typedef struct {
 
 /** Empty iterator object initializer. */
 #define AVS_COAP_OPT_ITERATOR_EMPTY \
-    (avs_coap_opt_iterator_t) { \
-        NULL, NULL, 0 \
+    (avs_coap_opt_iterator_t) {     \
+        NULL, NULL, 0               \
     }
 
 /**
@@ -283,8 +281,7 @@ avs_coap_opt_iterator_t avs_coap_opt_begin(const avs_coap_msg_t *msg);
  * @param optit CoAP Option iterator to operate on.
  * @returns @p optit.
  */
-avs_coap_opt_iterator_t *
-avs_coap_opt_next(avs_coap_opt_iterator_t *optit);
+avs_coap_opt_iterator_t *avs_coap_opt_next(avs_coap_opt_iterator_t *optit);
 
 /**
  * Checks if the @p optit points to the area after CoAP options list.
@@ -349,7 +346,7 @@ avs_coap_msg_summary(const avs_coap_msg_t *msg, char *buf, size_t buf_size);
  * a stack-allocated buffer big enough to store any summary.
  */
 #define AVS_COAP_MSG_SUMMARY(Msg) \
-        avs_coap_msg_summary((Msg), &(char[256]){0}[0], 256)
+    avs_coap_msg_summary((Msg), &(char[256]){ 0 }[0], 256)
 
 #ifdef __cplusplus
 }

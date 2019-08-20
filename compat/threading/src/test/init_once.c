@@ -33,8 +33,7 @@ typedef struct {
     int num_threads_to_block;
 } barrier_t;
 
-static int barrier_init(barrier_t *barrier,
-                        unsigned int num_threads_to_block) {
+static int barrier_init(barrier_t *barrier, unsigned int num_threads_to_block) {
     if (num_threads_to_block == 0
             || pthread_mutex_init(&barrier->mutex, 0) < 0) {
         return -1;
@@ -107,12 +106,12 @@ AVS_UNIT_TEST(init_once, basic) {
         .init_once_handle = NULL
     };
 
-    AVS_UNIT_ASSERT_SUCCESS(barrier_init(&args.barrier,
-                                         AVS_ARRAY_SIZE(threads)));
+    AVS_UNIT_ASSERT_SUCCESS(
+            barrier_init(&args.barrier, AVS_ARRAY_SIZE(threads)));
 
     for (size_t i = 0; i < AVS_ARRAY_SIZE(threads); ++i) {
-        AVS_UNIT_ASSERT_SUCCESS(pthread_create(&threads[i], NULL,
-                                               thread_func, &args));
+        AVS_UNIT_ASSERT_SUCCESS(
+                pthread_create(&threads[i], NULL, thread_func, &args));
     }
 
     for (size_t i = 0; i < AVS_ARRAY_SIZE(threads); ++i) {
@@ -129,8 +128,7 @@ static int init_recursive(void *handles_) {
     volatile avs_init_once_handle_t **handles =
             (volatile avs_init_once_handle_t **) handles_;
     if (*handles) {
-        return avs_init_once(handles[0], init_recursive,
-                             (void *) &handles[1]);
+        return avs_init_once(handles[0], init_recursive, (void *) &handles[1]);
     }
     return 0;
 }
@@ -139,9 +137,8 @@ AVS_UNIT_TEST(init_once, recursive_call_different_handle) {
     volatile avs_init_once_handle_t *handles[] = {
         &(volatile avs_init_once_handle_t){ NULL },
         &(volatile avs_init_once_handle_t){ NULL },
-        &(volatile avs_init_once_handle_t){ NULL },
-        NULL
+        &(volatile avs_init_once_handle_t){ NULL }, NULL
     };
-    AVS_UNIT_ASSERT_SUCCESS(avs_init_once(handles[0], init_recursive,
-                                          (void *) &handles[1]));
+    AVS_UNIT_ASSERT_SUCCESS(
+            avs_init_once(handles[0], init_recursive, (void *) &handles[1]));
 }

@@ -423,9 +423,9 @@ int avs_http_add_header(avs_stream_abstract_t *stream,
  *                           also be cleaned upon deleting the stream or
  *                           resetting this setting to <c>NULL</c>.
  */
-void avs_http_set_header_storage(avs_stream_abstract_t *stream,
-                                 AVS_LIST(const avs_http_header_t)
-                                         * header_storage_ptr);
+void avs_http_set_header_storage(
+        avs_stream_abstract_t *stream,
+        AVS_LIST(const avs_http_header_t) *header_storage_ptr);
 
 /**
  * Determines whether an unsuccessful request should be repeated by user code.

@@ -49,15 +49,14 @@ static int password_cb(char *buf, int num, int rwflag, void *userdata) {
 }
 
 static inline void setup_password_callback(SSL_CTX *ctx, const char *password) {
-    SSL_CTX_set_default_passwd_cb_userdata(
-            ctx,
-            /* const_cast */ (void *) (intptr_t) password);
+    SSL_CTX_set_default_passwd_cb_userdata(ctx,
+                                           /* const_cast */ (
+                                                   void *) (intptr_t) password);
     SSL_CTX_set_default_passwd_cb(ctx, password_cb);
 }
 
-static int load_ca_certs_from_paths(SSL_CTX *ctx,
-                                    const char *file,
-                                    const char *path) {
+static int
+load_ca_certs_from_paths(SSL_CTX *ctx, const char *file, const char *path) {
     AVS_ASSERT(!!file != !!path, "cannot use path and file at the same time");
     LOG(DEBUG, "CA certificate <file=%s, path=%s>: going to load",
         file ? file : "(null)", path ? path : "(null)");
@@ -91,11 +90,7 @@ static int load_ca_certs_from_paths(SSL_CTX *ctx,
     return 0;
 }
 
-typedef enum {
-    ENCODING_UNKNOWN,
-    ENCODING_PEM,
-    ENCODING_DER
-} encoding_t;
+typedef enum { ENCODING_UNKNOWN, ENCODING_PEM, ENCODING_DER } encoding_t;
 
 static encoding_t detect_encoding(const char *buffer, size_t len) {
     static const char *pem_prefix = "-----BEGIN ";
@@ -125,7 +120,7 @@ static X509 *parse_cert(const void *buffer, const size_t len) {
         break;
     }
     case ENCODING_DER: {
-        const unsigned char *data = (const unsigned char *)buffer;
+        const unsigned char *data = (const unsigned char *) buffer;
         cert = d2i_X509(NULL, &data, (int) len);
         break;
     }
@@ -136,9 +131,8 @@ static X509 *parse_cert(const void *buffer, const size_t len) {
     return cert;
 }
 
-static int load_ca_cert_from_buffer(SSL_CTX *ctx,
-                                    const void *buffer,
-                                    const size_t len) {
+static int
+load_ca_cert_from_buffer(SSL_CTX *ctx, const void *buffer, const size_t len) {
     X509 *cert = parse_cert(buffer, len);
     if (!cert) {
         return -1;
@@ -187,8 +181,7 @@ int _avs_net_openssl_load_ca_certs(SSL_CTX *ctx,
     }
 }
 
-static int load_client_cert_from_file(SSL_CTX *ctx,
-                                      const char *filename) {
+static int load_client_cert_from_file(SSL_CTX *ctx, const char *filename) {
     LOG(DEBUG, "client certificate <%s>: going to load", filename);
     // Try PEM.
     if (SSL_CTX_use_certificate_file(ctx, filename, SSL_FILETYPE_PEM) == 1) {
@@ -223,13 +216,15 @@ int _avs_net_openssl_load_client_cert(SSL_CTX *ctx,
     switch (info->desc.source) {
     case AVS_NET_DATA_SOURCE_FILE:
         if (!info->desc.info.file.filename) {
-            LOG(ERROR, "attempt to load client cert from file, but filename=NULL");
+            LOG(ERROR,
+                "attempt to load client cert from file, but filename=NULL");
             return -1;
         }
         return load_client_cert_from_file(ctx, info->desc.info.file.filename);
     case AVS_NET_DATA_SOURCE_BUFFER:
         if (!info->desc.info.buffer.buffer) {
-            LOG(ERROR, "attempt to load client cert from buffer, but buffer=NULL");
+            LOG(ERROR,
+                "attempt to load client cert from buffer, but buffer=NULL");
             return -1;
         }
         return load_client_cert_from_buffer(ctx, info->desc.info.buffer.buffer,
@@ -307,14 +302,16 @@ int _avs_net_openssl_load_client_key(SSL_CTX *ctx,
     switch (info->desc.source) {
     case AVS_NET_DATA_SOURCE_FILE:
         if (!info->desc.info.file.filename) {
-            LOG(ERROR, "attempt to load client key from file, but filename=NULL");
+            LOG(ERROR,
+                "attempt to load client key from file, but filename=NULL");
             return -1;
         }
         return load_client_key_from_file(ctx, info->desc.info.file.filename,
                                          info->desc.info.file.password);
     case AVS_NET_DATA_SOURCE_BUFFER:
         if (!info->desc.info.buffer.buffer) {
-            LOG(ERROR, "attempt to load client key from buffer, but buffer=NULL");
+            LOG(ERROR,
+                "attempt to load client key from buffer, but buffer=NULL");
             return -1;
         }
         return load_client_key_from_buffer(ctx, info->desc.info.buffer.buffer,

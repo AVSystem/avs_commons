@@ -28,10 +28,14 @@ VISIBILITY_SOURCE_BEGIN
 
 // Adapted from:
 // https://www.openssl.org/docs/man1.1.1/man3/EVP_PKEY_CTX_set1_hkdf_key.html
-int avs_crypto_hkdf_sha_256(const unsigned char *salt, size_t salt_len,
-                            const unsigned char *ikm, size_t ikm_len,
-                            const unsigned char *info, size_t info_len,
-                            unsigned char *out_okm, size_t *inout_okm_len) {
+int avs_crypto_hkdf_sha_256(const unsigned char *salt,
+                            size_t salt_len,
+                            const unsigned char *ikm,
+                            size_t ikm_len,
+                            const unsigned char *info,
+                            size_t info_len,
+                            unsigned char *out_okm,
+                            size_t *inout_okm_len) {
     assert(!salt_len || salt);
     assert(ikm && ikm_len);
     assert(!info_len || info);

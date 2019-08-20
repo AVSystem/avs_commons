@@ -61,7 +61,7 @@ int _avs_http_chunked_send_first(http_stream_t *stream,
     stream->auth.state.flags.retried = 0;
     do {
         if (_avs_http_prepare_for_sending(stream)
-            || _avs_http_send_headers(stream, (size_t) -1)) {
+                || _avs_http_send_headers(stream, (size_t) -1)) {
             result = -1;
             _avs_http_maybe_schedule_retry_after_send(stream, result);
         } else {
@@ -99,5 +99,5 @@ int _avs_http_chunked_send(http_stream_t *stream,
 }
 
 #ifdef AVS_UNIT_TESTING
-#include "test/test_chunked.c"
+#    include "test/test_chunked.c"
 #endif

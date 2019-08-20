@@ -25,7 +25,7 @@
 #include <avsystem/commons/defs.h>
 #include <avsystem/commons/socket.h>
 
-#ifdef	__cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
@@ -46,7 +46,7 @@ typedef struct avs_net_addrinfo_struct avs_net_addrinfo_t;
  *
  * This is equivalent to <c>AI_PASSIVE</c> flag to <c>getaddrinfo()</c>.
  */
-#define AVS_NET_ADDRINFO_RESOLVE_F_PASSIVE  (1 << 0)
+#define AVS_NET_ADDRINFO_RESOLVE_F_PASSIVE (1 << 0)
 
 /**
  * When calling @ref avs_net_addrinfo_resolve_ex with this bit set in the
@@ -111,12 +111,12 @@ avs_net_addrinfo_t *avs_net_addrinfo_resolve_ex(
 /**
  * Equivalent to @ref avs_net_addrinfo_resolve_ex with <c>flags</c> set to 0.
  */
-avs_net_addrinfo_t *avs_net_addrinfo_resolve(
-        avs_net_socket_type_t socket_type,
-        avs_net_af_t family,
-        const char *host,
-        const char *port,
-        const avs_net_resolved_endpoint_t *preferred_endpoint);
+avs_net_addrinfo_t *
+avs_net_addrinfo_resolve(avs_net_socket_type_t socket_type,
+                         avs_net_af_t family,
+                         const char *host,
+                         const char *port,
+                         const avs_net_resolved_endpoint_t *preferred_endpoint);
 
 /**
  * Frees an object allocated by @ref avs_net_addrinfo_resolve or
@@ -180,8 +180,10 @@ void avs_net_addrinfo_rewind(avs_net_addrinfo_t *ctx);
  */
 int avs_net_resolved_endpoint_get_host_port(
         const avs_net_resolved_endpoint_t *endp,
-        char *host, size_t hostlen,
-        char *serv, size_t servlen);
+        char *host,
+        size_t hostlen,
+        char *serv,
+        size_t servlen);
 
 /**
  * Equivalent to @ref avs_net_resolved_endpoint_get_host_port with the
@@ -196,11 +198,10 @@ int avs_net_resolved_endpoint_get_host_port(
  *
  * @return 0 for success, or a negative value in case of error.
  */
-static inline int
-avs_net_resolved_endpoint_get_host(const avs_net_resolved_endpoint_t *endp,
-                                   char *host, size_t hostlen) {
-    return avs_net_resolved_endpoint_get_host_port(endp,
-                                                   host, hostlen, NULL, 0);
+static inline int avs_net_resolved_endpoint_get_host(
+        const avs_net_resolved_endpoint_t *endp, char *host, size_t hostlen) {
+    return avs_net_resolved_endpoint_get_host_port(endp, host, hostlen, NULL,
+                                                   0);
 }
 
 /**
@@ -237,9 +238,10 @@ avs_net_resolved_endpoint_get_host(const avs_net_resolved_endpoint_t *endp,
 int avs_net_resolve_host_simple(avs_net_socket_type_t socket_type,
                                 avs_net_af_t family,
                                 const char *host,
-                                char *resolved_buf, size_t resolved_buf_size);
+                                char *resolved_buf,
+                                size_t resolved_buf_size);
 
-#ifdef	__cplusplus
+#ifdef __cplusplus
 }
 #endif
 

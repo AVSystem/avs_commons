@@ -31,57 +31,58 @@
 
 // We need to define AVS_F_PRINTF (normally defined in defs.h)
 // before poisoning "printf"
-#define AVS_F_PRINTF(fmt_idx, ellipsis_idx) __attribute__((format(printf, fmt_idx, ellipsis_idx)))
+#define AVS_F_PRINTF(fmt_idx, ellipsis_idx) \
+    __attribute__((format(printf, fmt_idx, ellipsis_idx)))
 
 #ifndef AVS_STREAM_STREAM_FILE_C
 // File handling funcitons used in stream/src/stream_file.c
-# pragma GCC poison clearerr
-# pragma GCC poison feof
-# pragma GCC poison ferror
-# pragma GCC poison fread
-# pragma GCC poison fseek
-# pragma GCC poison ftell
+#    pragma GCC poison clearerr
+#    pragma GCC poison feof
+#    pragma GCC poison ferror
+#    pragma GCC poison fread
+#    pragma GCC poison fseek
+#    pragma GCC poison ftell
 #endif // AVS_STREAM_STREAM_FILE_C
 
 #ifndef AVS_UNIT_SOURCE
 // stdout functions used in unit test framework
 
-# undef stdout
-# pragma GCC poison stdout
+#    undef stdout
+#    pragma GCC poison stdout
 
-# pragma GCC poison perror
-# pragma GCC poison printf
-# pragma GCC poison vfprintf
-# pragma GCC poison vprintf
+#    pragma GCC poison perror
+#    pragma GCC poison printf
+#    pragma GCC poison vfprintf
+#    pragma GCC poison vprintf
 
-# ifndef AVS_LOG_LOG_C
+#    ifndef AVS_LOG_LOG_C
 // stderr is used in unit test framework and default log handler
-#  undef stderr
-#  pragma GCC poison stderr
-# endif // AVS_LOG_LOG_C
+#        undef stderr
+#        pragma GCC poison stderr
+#    endif // AVS_LOG_LOG_C
 
-# ifndef AVS_STREAM_STREAM_FILE_C
+#    ifndef AVS_STREAM_STREAM_FILE_C
 // fclose is used in unit test framework and stream/src/stream_file.c
-#  pragma GCC poison fclose
-# endif // AVS_STREAM_STREAM_FILE_C
+#        pragma GCC poison fclose
+#    endif // AVS_STREAM_STREAM_FILE_C
 
-# ifndef AVS_NET_API_C
+#    ifndef AVS_NET_API_C
 // fflush is used in unit test framework and network debug log
-#  pragma GCC poison fflush
-# endif // AVS_NET_API_C
+#        pragma GCC poison fflush
+#    endif // AVS_NET_API_C
 
-# if !defined(AVS_LOG_LOG_C) && !defined(AVS_NET_API_C)
+#    if !defined(AVS_LOG_LOG_C) && !defined(AVS_NET_API_C)
 // fprintf is used in unit test framework, network debug log and logging
-#  pragma GCC poison fprintf
-# endif // !defined(AVS_LOG_LOG_C) && !defined(AVS_NET_API_C)
+#        pragma GCC poison fprintf
+#    endif // !defined(AVS_LOG_LOG_C) && !defined(AVS_NET_API_C)
 
 #endif // AVS_UNIT_SOURCE
 
 #if !defined(AVS_STREAM_STREAM_FILE_C) && !defined(AVS_NET_API_C)
 
 // fopen and fwrite are used in stream/src/stream_file.c and network debug log
-# pragma GCC poison fopen
-# pragma GCC poison fwrite
+#    pragma GCC poison fopen
+#    pragma GCC poison fwrite
 
 #endif // !defined(AVS_STREAM_STREAM_FILE_C) && !defined(AVS_NET_API_C)
 
@@ -94,12 +95,12 @@
 
 // getc and putc are macros in GNU libc for some reason
 #ifdef getc
-# undef getc
+#    undef getc
 #endif
 #pragma GCC poison getc
 
 #ifdef putc
-# undef putc
+#    undef putc
 #endif
 #pragma GCC poison putc
 
@@ -151,24 +152,26 @@
 #ifndef AVS_UTILS_COMPAT_STDLIB_MEMORY_C
 // Memory allocation functions - only allowed in utils/compat/stdlib/memory.c;
 // in all other places avs_malloc() etc. shall be used instead.
-# pragma GCC poison malloc
-# pragma GCC poison calloc
-# pragma GCC poison realloc
-# pragma GCC poison free
+#    pragma GCC poison malloc
+#    pragma GCC poison calloc
+#    pragma GCC poison realloc
+#    pragma GCC poison free
 #endif // AVS_UTILS_COMPAT_STDLIB_MEMORY_C
 
 #ifndef AVS_UNIT_SOURCE
 // used in unit testing framework
-# pragma GCC poison atexit
-# pragma GCC poison exit
-# pragma GCC poison getenv
+#    pragma GCC poison atexit
+#    pragma GCC poison exit
+#    pragma GCC poison getenv
 #endif // AVS_UNIT_SOURCE
 
-#if !defined(AVS_UNIT_SOURCE) && !defined(AVS_COMPAT_THREADING_PTHREAD_INIT_ONCE)
+#if !defined(AVS_UNIT_SOURCE) \
+        && !defined(AVS_COMPAT_THREADING_PTHREAD_INIT_ONCE)
 // abort() is also used in PThread init_once implementation if initialization
 // fails really hard
-# pragma GCC poison abort
-#endif // !defined(AVS_UNIT_SOURCE) && !defined(AVS_COMPAT_THREADING_PTHREAD_INIT_ONCE)
+#    pragma GCC poison abort
+#endif // !defined(AVS_UNIT_SOURCE) &&
+       // !defined(AVS_COMPAT_THREADING_PTHREAD_INIT_ONCE)
 
 // System program control flow functions
 #pragma GCC poison _Exit
@@ -186,4 +189,3 @@
 #pragma GCC poison wctomb
 
 #endif /* AVS_COMMONS_POISON_H */
-

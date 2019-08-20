@@ -15,12 +15,12 @@
  */
 
 #ifndef AVS_COMMONS_STREAM_NETBUF_H
-#define	AVS_COMMONS_STREAM_NETBUF_H
+#define AVS_COMMONS_STREAM_NETBUF_H
 
 #include <avsystem/commons/net.h>
 #include <avsystem/commons/stream.h>
 
-#ifdef	__cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
@@ -37,9 +37,8 @@ int avs_stream_netbuf_out_buffer_left(avs_stream_abstract_t *str);
 void avs_stream_netbuf_set_recv_timeout(avs_stream_abstract_t *str,
                                         avs_time_duration_t timeout);
 
-#ifdef	__cplusplus
+#ifdef __cplusplus
 }
 #endif
 
-#endif	/* AVS_COMMONS_STREAM_NETBUF_H */
-
+#endif /* AVS_COMMONS_STREAM_NETBUF_H */

@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
+#include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
-#include <stdarg.h>
 
 #include <avsystem/commons/memory.h>
 #include <avsystem/commons/unit/test.h>
@@ -40,21 +40,22 @@ static void test_rb_dealloc(void *ptr) {
 #ifdef __cplusplus
 class IntptrHelper {
     int value;
+
 public:
     IntptrHelper(int value) : value(value) {}
-    int *ptr() { return &value; }
+    int *ptr() {
+        return &value;
+    }
 };
-#define INTPTR(Value) (IntptrHelper((Value)).ptr())
+#    define INTPTR(Value) (IntptrHelper((Value)).ptr())
 #else
-#define INTPTR(Value) (&(int[]) { (Value) }[0])
+#    define INTPTR(Value) (&(int[]){ (Value) }[0])
 #endif
 
-static int int_comparator(const void *a_,
-                          const void *b_) {
-    int a = *(const int*)a_;
-    int b = *(const int*)b_;
-    return a < b ? -1
-                 : (a == b ? 0 : 1);
+static int int_comparator(const void *a_, const void *b_) {
+    int a = *(const int *) a_;
+    int b = *(const int *) b_;
+    return a < b ? -1 : (a == b ? 0 : 1);
 }
 
 static void assert_rb_properties_hold_recursive(void *node,
@@ -147,9 +148,12 @@ static AVS_RBTREE(int) make_tree(int first, ...) {
 
 static const char *get_color_name(enum rb_color color) {
     switch (color) {
-    case DETACHED: return "DETACHED";
-    case BLACK: return "BLACK";
-    case RED: return "RED";
+    case DETACHED:
+        return "DETACHED";
+    case BLACK:
+        return "BLACK";
+    case RED:
+        return "RED";
     }
 
     return "(invalid color)";
@@ -189,15 +193,15 @@ AVS_UNIT_TEST(rbtree, create_element) {
 }
 
 AVS_UNIT_TEST(rbtree, clear) {
+    // clang-format off
     AVS_RBTREE(int) tree = make_tree(
                       8,
               4,             12,
           2,      6,     10,     14,
         1,  3,  5,  7,  9, 11, 13, 15, 0);
-
-    int expected_cleanup_order[] = {
-        1, 3, 2, 5, 7, 6, 4, 9, 11, 10, 13, 15, 14, 12, 8
-    };
+    // clang-format on
+    int expected_cleanup_order[] = { 1,  3,  2,  5,  7,  6,  4, 9,
+                                     11, 10, 13, 15, 14, 12, 8 };
 
     size_t i = 0;
     AVS_RBTREE_CLEAR(tree) {
@@ -214,15 +218,15 @@ AVS_UNIT_TEST(rbtree, clear) {
 }
 
 AVS_UNIT_TEST(rbtree, delete) {
+    // clang-format off
     AVS_RBTREE(int) tree = make_tree(
                       8,
               4,             12,
           2,      6,     10,     14,
         1,  3,  5,  7,  9, 11, 13, 15, 0);
-
-    int expected_cleanup_order[] = {
-        1, 3, 2, 5, 7, 6, 4, 9, 11, 10, 13, 15, 14, 12, 8
-    };
+    // clang-format on
+    int expected_cleanup_order[] = { 1,  3,  2,  5,  7,  6,  4, 9,
+                                     11, 10, 13, 15, 14, 12, 8 };
 
     size_t i = 0;
     AVS_RBTREE_DELETE(&tree) {
@@ -236,15 +240,15 @@ AVS_UNIT_TEST(rbtree, delete_null) {
 }
 
 AVS_UNIT_TEST(rbtree, delete_break_resume) {
+    // clang-format off
     AVS_RBTREE(int) tree = make_tree(
                       8,
               4,             12,
           2,      6,     10,     14,
         1,  3,  5,  7,  9, 11, 13, 15, 0);
-
-    int expected_cleanup_order[] = {
-        1, 3, 2, 5, 7, 6, 4, 9, 11, 10, 13, 15, 14, 12, 8
-    };
+    // clang-format on
+    int expected_cleanup_order[] = { 1,  3,  2,  5,  7,  6,  4, 9,
+                                     11, 10, 13, 15, 14, 12, 8 };
 
     size_t i = 0;
     AVS_RBTREE_DELETE(&tree) {
@@ -290,12 +294,13 @@ AVS_UNIT_TEST(rbtree, delete_1234) {
 }
 
 AVS_UNIT_TEST(rbtree, simple_clone) {
+    // clang-format off
     AVS_RBTREE(int) tree = make_tree(
                       8,
               4,             12,
           2,      6,     10,     14,
         1,  3,  5,  7,  9, 11, 13, 15, 0);
-
+    // clang-format on
     AVS_RBTREE(int) clone = (AVS_RBTREE(int)) AVS_RBTREE_SIMPLE_CLONE(tree);
     AVS_UNIT_ASSERT_NOT_NULL(clone);
     assert_rb_properties_hold(clone);
@@ -314,83 +319,141 @@ AVS_UNIT_TEST(rbtree, simple_clone) {
 }
 
 AVS_UNIT_TEST(rbtree, lower_bound) {
+    // clang-format off
     AVS_RBTREE(int) tree = make_tree(
                        80,
               40,              120,
           20,     60,     100,      140,
         10, 30, 50, 70, 90, 110, 130, 150, 0);
-
-    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_LOWER_BOUND(tree, INTPTR(1)) == AVS_RBTREE_FIND(tree, INTPTR(10)));
-    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_LOWER_BOUND(tree, INTPTR(10)) == AVS_RBTREE_FIND(tree, INTPTR(10)));
-    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_LOWER_BOUND(tree, INTPTR(12)) == AVS_RBTREE_FIND(tree, INTPTR(20)));
-    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_LOWER_BOUND(tree, INTPTR(20)) == AVS_RBTREE_FIND(tree, INTPTR(20)));
-    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_LOWER_BOUND(tree, INTPTR(23)) == AVS_RBTREE_FIND(tree, INTPTR(30)));
-    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_LOWER_BOUND(tree, INTPTR(30)) == AVS_RBTREE_FIND(tree, INTPTR(30)));
-    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_LOWER_BOUND(tree, INTPTR(34)) == AVS_RBTREE_FIND(tree, INTPTR(40)));
-    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_LOWER_BOUND(tree, INTPTR(40)) == AVS_RBTREE_FIND(tree, INTPTR(40)));
-    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_LOWER_BOUND(tree, INTPTR(45)) == AVS_RBTREE_FIND(tree, INTPTR(50)));
-    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_LOWER_BOUND(tree, INTPTR(50)) == AVS_RBTREE_FIND(tree, INTPTR(50)));
-    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_LOWER_BOUND(tree, INTPTR(56)) == AVS_RBTREE_FIND(tree, INTPTR(60)));
-    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_LOWER_BOUND(tree, INTPTR(60)) == AVS_RBTREE_FIND(tree, INTPTR(60)));
-    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_LOWER_BOUND(tree, INTPTR(67)) == AVS_RBTREE_FIND(tree, INTPTR(70)));
-    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_LOWER_BOUND(tree, INTPTR(70)) == AVS_RBTREE_FIND(tree, INTPTR(70)));
-    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_LOWER_BOUND(tree, INTPTR(78)) == AVS_RBTREE_FIND(tree, INTPTR(80)));
-    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_LOWER_BOUND(tree, INTPTR(80)) == AVS_RBTREE_FIND(tree, INTPTR(80)));
-    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_LOWER_BOUND(tree, INTPTR(89)) == AVS_RBTREE_FIND(tree, INTPTR(90)));
-    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_LOWER_BOUND(tree, INTPTR(90)) == AVS_RBTREE_FIND(tree, INTPTR(90)));
-    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_LOWER_BOUND(tree, INTPTR(91)) == AVS_RBTREE_FIND(tree, INTPTR(100)));
-    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_LOWER_BOUND(tree, INTPTR(100)) == AVS_RBTREE_FIND(tree, INTPTR(100)));
-    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_LOWER_BOUND(tree, INTPTR(102)) == AVS_RBTREE_FIND(tree, INTPTR(110)));
-    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_LOWER_BOUND(tree, INTPTR(110)) == AVS_RBTREE_FIND(tree, INTPTR(110)));
-    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_LOWER_BOUND(tree, INTPTR(113)) == AVS_RBTREE_FIND(tree, INTPTR(120)));
-    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_LOWER_BOUND(tree, INTPTR(120)) == AVS_RBTREE_FIND(tree, INTPTR(120)));
-    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_LOWER_BOUND(tree, INTPTR(124)) == AVS_RBTREE_FIND(tree, INTPTR(130)));
-    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_LOWER_BOUND(tree, INTPTR(130)) == AVS_RBTREE_FIND(tree, INTPTR(130)));
-    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_LOWER_BOUND(tree, INTPTR(135)) == AVS_RBTREE_FIND(tree, INTPTR(140)));
-    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_LOWER_BOUND(tree, INTPTR(140)) == AVS_RBTREE_FIND(tree, INTPTR(140)));
-    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_LOWER_BOUND(tree, INTPTR(146)) == AVS_RBTREE_FIND(tree, INTPTR(150)));
-    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_LOWER_BOUND(tree, INTPTR(150)) == AVS_RBTREE_FIND(tree, INTPTR(150)));
+    // clang-format on
+    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_LOWER_BOUND(tree, INTPTR(1))
+                         == AVS_RBTREE_FIND(tree, INTPTR(10)));
+    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_LOWER_BOUND(tree, INTPTR(10))
+                         == AVS_RBTREE_FIND(tree, INTPTR(10)));
+    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_LOWER_BOUND(tree, INTPTR(12))
+                         == AVS_RBTREE_FIND(tree, INTPTR(20)));
+    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_LOWER_BOUND(tree, INTPTR(20))
+                         == AVS_RBTREE_FIND(tree, INTPTR(20)));
+    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_LOWER_BOUND(tree, INTPTR(23))
+                         == AVS_RBTREE_FIND(tree, INTPTR(30)));
+    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_LOWER_BOUND(tree, INTPTR(30))
+                         == AVS_RBTREE_FIND(tree, INTPTR(30)));
+    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_LOWER_BOUND(tree, INTPTR(34))
+                         == AVS_RBTREE_FIND(tree, INTPTR(40)));
+    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_LOWER_BOUND(tree, INTPTR(40))
+                         == AVS_RBTREE_FIND(tree, INTPTR(40)));
+    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_LOWER_BOUND(tree, INTPTR(45))
+                         == AVS_RBTREE_FIND(tree, INTPTR(50)));
+    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_LOWER_BOUND(tree, INTPTR(50))
+                         == AVS_RBTREE_FIND(tree, INTPTR(50)));
+    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_LOWER_BOUND(tree, INTPTR(56))
+                         == AVS_RBTREE_FIND(tree, INTPTR(60)));
+    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_LOWER_BOUND(tree, INTPTR(60))
+                         == AVS_RBTREE_FIND(tree, INTPTR(60)));
+    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_LOWER_BOUND(tree, INTPTR(67))
+                         == AVS_RBTREE_FIND(tree, INTPTR(70)));
+    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_LOWER_BOUND(tree, INTPTR(70))
+                         == AVS_RBTREE_FIND(tree, INTPTR(70)));
+    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_LOWER_BOUND(tree, INTPTR(78))
+                         == AVS_RBTREE_FIND(tree, INTPTR(80)));
+    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_LOWER_BOUND(tree, INTPTR(80))
+                         == AVS_RBTREE_FIND(tree, INTPTR(80)));
+    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_LOWER_BOUND(tree, INTPTR(89))
+                         == AVS_RBTREE_FIND(tree, INTPTR(90)));
+    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_LOWER_BOUND(tree, INTPTR(90))
+                         == AVS_RBTREE_FIND(tree, INTPTR(90)));
+    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_LOWER_BOUND(tree, INTPTR(91))
+                         == AVS_RBTREE_FIND(tree, INTPTR(100)));
+    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_LOWER_BOUND(tree, INTPTR(100))
+                         == AVS_RBTREE_FIND(tree, INTPTR(100)));
+    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_LOWER_BOUND(tree, INTPTR(102))
+                         == AVS_RBTREE_FIND(tree, INTPTR(110)));
+    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_LOWER_BOUND(tree, INTPTR(110))
+                         == AVS_RBTREE_FIND(tree, INTPTR(110)));
+    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_LOWER_BOUND(tree, INTPTR(113))
+                         == AVS_RBTREE_FIND(tree, INTPTR(120)));
+    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_LOWER_BOUND(tree, INTPTR(120))
+                         == AVS_RBTREE_FIND(tree, INTPTR(120)));
+    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_LOWER_BOUND(tree, INTPTR(124))
+                         == AVS_RBTREE_FIND(tree, INTPTR(130)));
+    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_LOWER_BOUND(tree, INTPTR(130))
+                         == AVS_RBTREE_FIND(tree, INTPTR(130)));
+    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_LOWER_BOUND(tree, INTPTR(135))
+                         == AVS_RBTREE_FIND(tree, INTPTR(140)));
+    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_LOWER_BOUND(tree, INTPTR(140))
+                         == AVS_RBTREE_FIND(tree, INTPTR(140)));
+    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_LOWER_BOUND(tree, INTPTR(146))
+                         == AVS_RBTREE_FIND(tree, INTPTR(150)));
+    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_LOWER_BOUND(tree, INTPTR(150))
+                         == AVS_RBTREE_FIND(tree, INTPTR(150)));
     AVS_UNIT_ASSERT_NULL(AVS_RBTREE_LOWER_BOUND(tree, INTPTR(157)));
 
     AVS_RBTREE_DELETE(&tree);
 }
 
 AVS_UNIT_TEST(rbtree, upper_bound) {
-    AVS_RBTREE(int) tree = make_tree(
-                       80,
-              40,              120,
-          20,     60,     100,      140,
-        10, 30, 50, 70, 90, 110, 130, 150, 0);
-
-    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_UPPER_BOUND(tree, INTPTR(1)) == AVS_RBTREE_FIND(tree, INTPTR(10)));
-    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_UPPER_BOUND(tree, INTPTR(10)) == AVS_RBTREE_FIND(tree, INTPTR(20)));
-    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_UPPER_BOUND(tree, INTPTR(12)) == AVS_RBTREE_FIND(tree, INTPTR(20)));
-    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_UPPER_BOUND(tree, INTPTR(20)) == AVS_RBTREE_FIND(tree, INTPTR(30)));
-    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_UPPER_BOUND(tree, INTPTR(23)) == AVS_RBTREE_FIND(tree, INTPTR(30)));
-    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_UPPER_BOUND(tree, INTPTR(30)) == AVS_RBTREE_FIND(tree, INTPTR(40)));
-    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_UPPER_BOUND(tree, INTPTR(34)) == AVS_RBTREE_FIND(tree, INTPTR(40)));
-    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_UPPER_BOUND(tree, INTPTR(40)) == AVS_RBTREE_FIND(tree, INTPTR(50)));
-    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_UPPER_BOUND(tree, INTPTR(45)) == AVS_RBTREE_FIND(tree, INTPTR(50)));
-    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_UPPER_BOUND(tree, INTPTR(50)) == AVS_RBTREE_FIND(tree, INTPTR(60)));
-    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_UPPER_BOUND(tree, INTPTR(56)) == AVS_RBTREE_FIND(tree, INTPTR(60)));
-    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_UPPER_BOUND(tree, INTPTR(60)) == AVS_RBTREE_FIND(tree, INTPTR(70)));
-    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_UPPER_BOUND(tree, INTPTR(67)) == AVS_RBTREE_FIND(tree, INTPTR(70)));
-    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_UPPER_BOUND(tree, INTPTR(70)) == AVS_RBTREE_FIND(tree, INTPTR(80)));
-    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_UPPER_BOUND(tree, INTPTR(78)) == AVS_RBTREE_FIND(tree, INTPTR(80)));
-    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_UPPER_BOUND(tree, INTPTR(80)) == AVS_RBTREE_FIND(tree, INTPTR(90)));
-    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_UPPER_BOUND(tree, INTPTR(89)) == AVS_RBTREE_FIND(tree, INTPTR(90)));
-    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_UPPER_BOUND(tree, INTPTR(90)) == AVS_RBTREE_FIND(tree, INTPTR(100)));
-    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_UPPER_BOUND(tree, INTPTR(91)) == AVS_RBTREE_FIND(tree, INTPTR(100)));
-    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_UPPER_BOUND(tree, INTPTR(100)) == AVS_RBTREE_FIND(tree, INTPTR(110)));
-    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_UPPER_BOUND(tree, INTPTR(102)) == AVS_RBTREE_FIND(tree, INTPTR(110)));
-    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_UPPER_BOUND(tree, INTPTR(110)) == AVS_RBTREE_FIND(tree, INTPTR(120)));
-    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_UPPER_BOUND(tree, INTPTR(113)) == AVS_RBTREE_FIND(tree, INTPTR(120)));
-    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_UPPER_BOUND(tree, INTPTR(120)) == AVS_RBTREE_FIND(tree, INTPTR(130)));
-    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_UPPER_BOUND(tree, INTPTR(124)) == AVS_RBTREE_FIND(tree, INTPTR(130)));
-    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_UPPER_BOUND(tree, INTPTR(130)) == AVS_RBTREE_FIND(tree, INTPTR(140)));
-    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_UPPER_BOUND(tree, INTPTR(135)) == AVS_RBTREE_FIND(tree, INTPTR(140)));
-    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_UPPER_BOUND(tree, INTPTR(140)) == AVS_RBTREE_FIND(tree, INTPTR(150)));
-    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_UPPER_BOUND(tree, INTPTR(146)) == AVS_RBTREE_FIND(tree, INTPTR(150)));
+    // clang-formt off
+    AVS_RBTREE(int) tree = make_tree(80, 40, 120, 20, 60, 100, 140, 10, 30, 50,
+                                     70, 90, 110, 130, 150, 0);
+    // clang-format on
+    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_UPPER_BOUND(tree, INTPTR(1))
+                         == AVS_RBTREE_FIND(tree, INTPTR(10)));
+    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_UPPER_BOUND(tree, INTPTR(10))
+                         == AVS_RBTREE_FIND(tree, INTPTR(20)));
+    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_UPPER_BOUND(tree, INTPTR(12))
+                         == AVS_RBTREE_FIND(tree, INTPTR(20)));
+    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_UPPER_BOUND(tree, INTPTR(20))
+                         == AVS_RBTREE_FIND(tree, INTPTR(30)));
+    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_UPPER_BOUND(tree, INTPTR(23))
+                         == AVS_RBTREE_FIND(tree, INTPTR(30)));
+    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_UPPER_BOUND(tree, INTPTR(30))
+                         == AVS_RBTREE_FIND(tree, INTPTR(40)));
+    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_UPPER_BOUND(tree, INTPTR(34))
+                         == AVS_RBTREE_FIND(tree, INTPTR(40)));
+    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_UPPER_BOUND(tree, INTPTR(40))
+                         == AVS_RBTREE_FIND(tree, INTPTR(50)));
+    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_UPPER_BOUND(tree, INTPTR(45))
+                         == AVS_RBTREE_FIND(tree, INTPTR(50)));
+    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_UPPER_BOUND(tree, INTPTR(50))
+                         == AVS_RBTREE_FIND(tree, INTPTR(60)));
+    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_UPPER_BOUND(tree, INTPTR(56))
+                         == AVS_RBTREE_FIND(tree, INTPTR(60)));
+    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_UPPER_BOUND(tree, INTPTR(60))
+                         == AVS_RBTREE_FIND(tree, INTPTR(70)));
+    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_UPPER_BOUND(tree, INTPTR(67))
+                         == AVS_RBTREE_FIND(tree, INTPTR(70)));
+    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_UPPER_BOUND(tree, INTPTR(70))
+                         == AVS_RBTREE_FIND(tree, INTPTR(80)));
+    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_UPPER_BOUND(tree, INTPTR(78))
+                         == AVS_RBTREE_FIND(tree, INTPTR(80)));
+    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_UPPER_BOUND(tree, INTPTR(80))
+                         == AVS_RBTREE_FIND(tree, INTPTR(90)));
+    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_UPPER_BOUND(tree, INTPTR(89))
+                         == AVS_RBTREE_FIND(tree, INTPTR(90)));
+    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_UPPER_BOUND(tree, INTPTR(90))
+                         == AVS_RBTREE_FIND(tree, INTPTR(100)));
+    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_UPPER_BOUND(tree, INTPTR(91))
+                         == AVS_RBTREE_FIND(tree, INTPTR(100)));
+    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_UPPER_BOUND(tree, INTPTR(100))
+                         == AVS_RBTREE_FIND(tree, INTPTR(110)));
+    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_UPPER_BOUND(tree, INTPTR(102))
+                         == AVS_RBTREE_FIND(tree, INTPTR(110)));
+    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_UPPER_BOUND(tree, INTPTR(110))
+                         == AVS_RBTREE_FIND(tree, INTPTR(120)));
+    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_UPPER_BOUND(tree, INTPTR(113))
+                         == AVS_RBTREE_FIND(tree, INTPTR(120)));
+    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_UPPER_BOUND(tree, INTPTR(120))
+                         == AVS_RBTREE_FIND(tree, INTPTR(130)));
+    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_UPPER_BOUND(tree, INTPTR(124))
+                         == AVS_RBTREE_FIND(tree, INTPTR(130)));
+    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_UPPER_BOUND(tree, INTPTR(130))
+                         == AVS_RBTREE_FIND(tree, INTPTR(140)));
+    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_UPPER_BOUND(tree, INTPTR(135))
+                         == AVS_RBTREE_FIND(tree, INTPTR(140)));
+    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_UPPER_BOUND(tree, INTPTR(140))
+                         == AVS_RBTREE_FIND(tree, INTPTR(150)));
+    AVS_UNIT_ASSERT_TRUE(AVS_RBTREE_UPPER_BOUND(tree, INTPTR(146))
+                         == AVS_RBTREE_FIND(tree, INTPTR(150)));
     AVS_UNIT_ASSERT_NULL(AVS_RBTREE_UPPER_BOUND(tree, INTPTR(150)));
     AVS_UNIT_ASSERT_NULL(AVS_RBTREE_UPPER_BOUND(tree, INTPTR(157)));
 
@@ -398,18 +461,19 @@ AVS_UNIT_TEST(rbtree, upper_bound) {
 }
 
 AVS_UNIT_TEST(rbtree, swap_nodes_unrelated) {
+    // clang-format off
     AVS_RBTREE(int) tree = make_tree(
                       8,
               4,             12,
           2,      6,     10,     14,
         1,  3,  5,  7,  9, 11, 13, 15, 0);
-
+    // clang-format on
     int *_1 = AVS_RBTREE_FIND(tree, INTPTR(1));
     int *_2 = AVS_RBTREE_FIND(tree, INTPTR(2));
     int *_3 = AVS_RBTREE_FIND(tree, INTPTR(3));
     int *_4 = AVS_RBTREE_FIND(tree, INTPTR(4));
 
-    int *_8 =  AVS_RBTREE_FIND(tree, INTPTR(8));
+    int *_8 = AVS_RBTREE_FIND(tree, INTPTR(8));
     int *_12 = AVS_RBTREE_FIND(tree, INTPTR(12));
     int *_10 = AVS_RBTREE_FIND(tree, INTPTR(10));
     int *_14 = AVS_RBTREE_FIND(tree, INTPTR(14));
@@ -417,24 +481,25 @@ AVS_UNIT_TEST(rbtree, swap_nodes_unrelated) {
     int *a = _2;
     int *b = _12;
 
-    assert_node_equal(a, 2,  BLACK, _4, _1,  _3);
-    assert_node_equal(b, 12, RED,   _8, _10, _14);
+    assert_node_equal(a, 2, BLACK, _4, _1, _3);
+    assert_node_equal(b, 12, RED, _8, _10, _14);
 
     rb_swap_nodes(_AVS_RB_TREE(tree), a, b);
 
-    assert_node_equal(a, 2,  RED,   _8, _10, _14);
-    assert_node_equal(b, 12, BLACK, _4, _1,  _3);
+    assert_node_equal(a, 2, RED, _8, _10, _14);
+    assert_node_equal(b, 12, BLACK, _4, _1, _3);
 
     AVS_RBTREE_DELETE(&tree);
 }
 
 AVS_UNIT_TEST(rbtree, swap_nodes_parent_child) {
+    // clang-format off
     AVS_RBTREE(int) tree = make_tree(
                       8,
               4,             12,
           2,      6,     10,     14,
         1,  3,  5,  7,  9, 11, 13, 15, 0);
-
+    // clang-format on
     int *_1 = AVS_RBTREE_FIND(tree, INTPTR(1));
     int *_2 = AVS_RBTREE_FIND(tree, INTPTR(2));
     int *_3 = AVS_RBTREE_FIND(tree, INTPTR(3));
@@ -446,21 +511,23 @@ AVS_UNIT_TEST(rbtree, swap_nodes_parent_child) {
     int *b = _4;
 
     assert_node_equal(a, 2, BLACK, _4, _1, _3);
-    assert_node_equal(b, 4, RED,   _8, _2, _6);
+    assert_node_equal(b, 4, RED, _8, _2, _6);
 
     rb_swap_nodes(_AVS_RB_TREE(tree), a, b);
 
-    assert_node_equal(a, 2, RED,   _8, _4, _6);
+    assert_node_equal(a, 2, RED, _8, _4, _6);
     assert_node_equal(b, 4, BLACK, _2, _1, _3);
 
     AVS_RBTREE_DELETE(&tree);
 }
 
 AVS_UNIT_TEST(rbtree, swap_nodes_parent_child_under_root) {
+    // clang-format off
     AVS_RBTREE(int) tree = make_tree(
                   4,
               2,      6,
             1,  3,  5,  7, 0);
+    // clang-format on
 
     int *_1 = AVS_RBTREE_FIND(tree, INTPTR(1));
     int *_2 = AVS_RBTREE_FIND(tree, INTPTR(2));
@@ -472,14 +539,14 @@ AVS_UNIT_TEST(rbtree, swap_nodes_parent_child_under_root) {
     int *b = _4;
 
     AVS_UNIT_ASSERT_TRUE(_4 == _AVS_RB_TREE(tree)->root);
-    assert_node_equal(a, 2, BLACK, _4,   _1, _3);
+    assert_node_equal(a, 2, BLACK, _4, _1, _3);
     assert_node_equal(b, 4, BLACK, NULL, _2, _6);
 
     rb_swap_nodes(_AVS_RB_TREE(tree), a, b);
 
     AVS_UNIT_ASSERT_TRUE(_2 == _AVS_RB_TREE(tree)->root);
     assert_node_equal(a, 2, BLACK, NULL, _4, _6);
-    assert_node_equal(b, 4, BLACK, _2,   _1, _3);
+    assert_node_equal(b, 4, BLACK, _2, _1, _3);
 
     AVS_RBTREE_DELETE(&tree);
 }
@@ -498,11 +565,11 @@ AVS_UNIT_TEST(rbtree, rotate_left) {
     int *_4 = AVS_RBTREE_FIND(tree, INTPTR(4));
     int *_7 = AVS_RBTREE_FIND(tree, INTPTR(7));
 
-    assert_node_equal(_3, 3, BLACK, NULL, _2,   _5);
-    assert_node_equal(_2, 2, BLACK, _3,   NULL, NULL);
-    assert_node_equal(_5, 5, BLACK, _3,   _4,   _7);
-    assert_node_equal(_4, 4, RED,   _5,   NULL, NULL);
-    assert_node_equal(_7, 7, RED,   _5,   NULL, NULL);
+    assert_node_equal(_3, 3, BLACK, NULL, _2, _5);
+    assert_node_equal(_2, 2, BLACK, _3, NULL, NULL);
+    assert_node_equal(_5, 5, BLACK, _3, _4, _7);
+    assert_node_equal(_4, 4, RED, _5, NULL, NULL);
+    assert_node_equal(_7, 7, RED, _5, NULL, NULL);
 
     rb_rotate_left(_AVS_RB_TREE(tree), _3);
 
@@ -514,11 +581,11 @@ AVS_UNIT_TEST(rbtree, rotate_left) {
      */
 
     AVS_UNIT_ASSERT_TRUE(_5 == _AVS_RB_TREE(tree)->root);
-    assert_node_equal(_5, 5, BLACK, NULL, _3,   _7);
-    assert_node_equal(_3, 3, BLACK, _5,   _2,   _4);
-    assert_node_equal(_7, 7, RED,   _5,   NULL, NULL);
-    assert_node_equal(_2, 2, BLACK, _3,   NULL, NULL);
-    assert_node_equal(_4, 4, RED,   _3,   NULL, NULL);
+    assert_node_equal(_5, 5, BLACK, NULL, _3, _7);
+    assert_node_equal(_3, 3, BLACK, _5, _2, _4);
+    assert_node_equal(_7, 7, RED, _5, NULL, NULL);
+    assert_node_equal(_2, 2, BLACK, _3, NULL, NULL);
+    assert_node_equal(_4, 4, RED, _3, NULL, NULL);
 
     AVS_RBTREE_DELETE(&tree);
 }
@@ -537,11 +604,11 @@ AVS_UNIT_TEST(rbtree, rotate_right) {
     int *_2 = AVS_RBTREE_FIND(tree, INTPTR(2));
     int *_4 = AVS_RBTREE_FIND(tree, INTPTR(4));
 
-    assert_node_equal(_5, 5, BLACK, NULL, _3,   _7);
-    assert_node_equal(_3, 3, BLACK, _5,   _2,   _4);
-    assert_node_equal(_7, 7, BLACK, _5,   NULL, NULL);
-    assert_node_equal(_2, 2, RED,   _3,   NULL, NULL);
-    assert_node_equal(_4, 4, RED,   _3,   NULL, NULL);
+    assert_node_equal(_5, 5, BLACK, NULL, _3, _7);
+    assert_node_equal(_3, 3, BLACK, _5, _2, _4);
+    assert_node_equal(_7, 7, BLACK, _5, NULL, NULL);
+    assert_node_equal(_2, 2, RED, _3, NULL, NULL);
+    assert_node_equal(_4, 4, RED, _3, NULL, NULL);
 
     rb_rotate_right(_AVS_RB_TREE(tree), _5);
 
@@ -553,11 +620,11 @@ AVS_UNIT_TEST(rbtree, rotate_right) {
      */
 
     AVS_UNIT_ASSERT_TRUE(_3 == _AVS_RB_TREE(tree)->root);
-    assert_node_equal(_3, 3, BLACK, NULL, _2,   _5);
-    assert_node_equal(_2, 2, RED,   _3,   NULL, NULL);
-    assert_node_equal(_5, 5, BLACK, _3,   _4,   _7);
-    assert_node_equal(_7, 7, BLACK, _5,   NULL, NULL);
-    assert_node_equal(_4, 4, RED,   _5,   NULL, NULL);
+    assert_node_equal(_3, 3, BLACK, NULL, _2, _5);
+    assert_node_equal(_2, 2, RED, _3, NULL, NULL);
+    assert_node_equal(_5, 5, BLACK, _3, _4, _7);
+    assert_node_equal(_7, 7, BLACK, _5, NULL, NULL);
+    assert_node_equal(_4, 4, RED, _5, NULL, NULL);
 
     AVS_RBTREE_DELETE(&tree);
 }
@@ -636,10 +703,10 @@ AVS_UNIT_TEST(rbtree, insert_case3) {
 
     AVS_UNIT_ASSERT_TRUE(_5 == _AVS_RB_TREE(tree)->root);
 
-    assert_node_equal(_5, 5, BLACK, NULL, _2,   _7);
-    assert_node_equal(_2, 2, BLACK, _5,   _1,   NULL);
-    assert_node_equal(_1, 1, RED,   _2,   NULL, NULL);
-    assert_node_equal(_7, 7, BLACK, _5,   NULL, NULL);
+    assert_node_equal(_5, 5, BLACK, NULL, _2, _7);
+    assert_node_equal(_2, 2, BLACK, _5, _1, NULL);
+    assert_node_equal(_1, 1, RED, _2, NULL, NULL);
+    assert_node_equal(_7, 7, BLACK, _5, NULL, NULL);
 
     assert_rb_properties_hold(tree);
 
@@ -662,10 +729,10 @@ AVS_UNIT_TEST(rbtree, insert_case4_5) {
 
     AVS_UNIT_ASSERT_TRUE(_5 == _AVS_RB_TREE(tree)->root);
 
-    assert_node_equal(_5, 5, BLACK, NULL, _4,   _7);
-    assert_node_equal(_4, 4, BLACK, _5,   _2,   NULL);
-    assert_node_equal(_7, 7, BLACK, _5,   NULL, NULL);
-    assert_node_equal(_2, 2, RED,   _4,   NULL, NULL);
+    assert_node_equal(_5, 5, BLACK, NULL, _4, _7);
+    assert_node_equal(_4, 4, BLACK, _5, _2, NULL);
+    assert_node_equal(_7, 7, BLACK, _5, NULL, NULL);
+    assert_node_equal(_2, 2, RED, _4, NULL, NULL);
 
     _3 = AVS_RBTREE_ELEM_NEW(int);
     *_3 = 3;
@@ -679,11 +746,11 @@ AVS_UNIT_TEST(rbtree, insert_case4_5) {
      */
 
     AVS_UNIT_ASSERT_TRUE(_5 == _AVS_RB_TREE(tree)->root);
-    assert_node_equal(_5, 5, BLACK, NULL, _3,   _7);
-    assert_node_equal(_3, 3, BLACK, _5,   _2,   _4);
-    assert_node_equal(_7, 7, BLACK, _5,   NULL, NULL);
-    assert_node_equal(_2, 2, RED,   _3,   NULL, NULL);
-    assert_node_equal(_4, 4, RED,   _3,   NULL, NULL);
+    assert_node_equal(_5, 5, BLACK, NULL, _3, _7);
+    assert_node_equal(_3, 3, BLACK, _5, _2, _4);
+    assert_node_equal(_7, 7, BLACK, _5, NULL, NULL);
+    assert_node_equal(_2, 2, RED, _3, NULL, NULL);
+    assert_node_equal(_4, 4, RED, _3, NULL, NULL);
 
     assert_rb_properties_hold(tree);
 
@@ -711,13 +778,13 @@ AVS_UNIT_TEST(rbtree, insert_existing) {
     AVS_RBTREE_DELETE(&tree);
 }
 
-
 static AVS_RBTREE(int) make_full_3level_tree(void) {
+    // clang-format off
     AVS_RBTREE(int) tree = make_tree(
                 4,
             2,      6,
           1,  3,  5,  7, 0);
-
+    // clang-format on
     int *_4 = AVS_RBTREE_FIND(tree, INTPTR(4));
     int *_2 = AVS_RBTREE_FIND(tree, INTPTR(2));
     int *_1 = AVS_RBTREE_FIND(tree, INTPTR(1));
@@ -727,13 +794,13 @@ static AVS_RBTREE(int) make_full_3level_tree(void) {
     int *_7 = AVS_RBTREE_FIND(tree, INTPTR(7));
 
     AVS_UNIT_ASSERT_TRUE(_4 == _AVS_RB_TREE(tree)->root);
-    assert_node_equal(_4, 4, BLACK, NULL, _2,  _6);
-    assert_node_equal(_2, 2, BLACK, _4,   _1,   _3);
-    assert_node_equal(_1, 1, RED,   _2,   NULL, NULL);
-    assert_node_equal(_3, 3, RED,   _2,   NULL, NULL);
-    assert_node_equal(_6, 6, BLACK, _4,   _5,   _7);
-    assert_node_equal(_5, 5, RED,   _6,   NULL, NULL);
-    assert_node_equal(_7, 7, RED,   _6,   NULL, NULL);
+    assert_node_equal(_4, 4, BLACK, NULL, _2, _6);
+    assert_node_equal(_2, 2, BLACK, _4, _1, _3);
+    assert_node_equal(_1, 1, RED, _2, NULL, NULL);
+    assert_node_equal(_3, 3, RED, _2, NULL, NULL);
+    assert_node_equal(_6, 6, BLACK, _4, _5, _7);
+    assert_node_equal(_5, 5, RED, _6, NULL, NULL);
+    assert_node_equal(_7, 7, RED, _6, NULL, NULL);
 
     assert_rb_properties_hold(tree);
 
@@ -932,7 +999,7 @@ AVS_UNIT_TEST(rbtree, detach_single_root_child) {
     _2 = AVS_RBTREE_FIND(tree, INTPTR(2));
 
     assert_node_equal(_1, 1, BLACK, NULL, NULL, _2);
-    assert_node_equal(_2, 2, RED,   _1,   NULL, NULL);
+    assert_node_equal(_2, 2, RED, _1, NULL, NULL);
 
     AVS_UNIT_ASSERT_TRUE(_2 == AVS_RBTREE_DETACH(tree, _2));
     /* should be:

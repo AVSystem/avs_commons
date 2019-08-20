@@ -59,27 +59,24 @@ uint32_t avs_convert_be32(uint32_t value) {
 uint64_t avs_convert_be64(uint64_t value) {
     return value;
 }
-#else // AVS_COMMONS_BIG_ENDIAN
+#else  // AVS_COMMONS_BIG_ENDIAN
 uint16_t avs_convert_be16(uint16_t value) {
     return (uint16_t) ((value >> 8) | (value << 8));
 }
 
 uint32_t avs_convert_be32(uint32_t value) {
-    return (uint32_t) ((value >> 24)
-            | ((value & 0xFF0000) >> 8)
-            | ((value & 0xFF00) << 8)
-            | (value << 24));
+    return (uint32_t) ((value >> 24) | ((value & 0xFF0000) >> 8)
+                       | ((value & 0xFF00) << 8) | (value << 24));
 }
 
 uint64_t avs_convert_be64(uint64_t value) {
     return (uint64_t) ((value >> 56)
-            | ((value & UINT64_C(0xFF000000000000)) >> 40)
-            | ((value & UINT64_C(0xFF0000000000)) >> 24)
-            | ((value & UINT64_C(0xFF00000000)) >> 8)
-            | ((value & UINT64_C(0xFF000000)) << 8)
-            | ((value & UINT64_C(0xFF0000)) << 24)
-            | ((value & UINT64_C(0xFF00)) << 40)
-            | (value << 56));
+                       | ((value & UINT64_C(0xFF000000000000)) >> 40)
+                       | ((value & UINT64_C(0xFF0000000000)) >> 24)
+                       | ((value & UINT64_C(0xFF00000000)) >> 8)
+                       | ((value & UINT64_C(0xFF000000)) << 8)
+                       | ((value & UINT64_C(0xFF0000)) << 24)
+                       | ((value & UINT64_C(0xFF00)) << 40) | (value << 56));
 }
 #endif // AVS_COMMONS_BIG_ENDIAN
 

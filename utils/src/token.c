@@ -23,8 +23,7 @@
 
 VISIBILITY_SOURCE_BEGIN
 
-int avs_match_token(const char **src, const char *token,
-                    const char *delims) {
+int avs_match_token(const char **src, const char *token, const char *delims) {
     size_t len = strlen(token);
     int result;
     /* skip leading whitespace, if any */
@@ -81,5 +80,5 @@ void avs_consume_quotable_token(const char **src,
 }
 
 #ifdef AVS_UNIT_TESTING
-#include "test/token.c"
+#    include "test/token.c"
 #endif // AVS_UNIT_TESTING

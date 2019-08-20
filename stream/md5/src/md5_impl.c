@@ -53,8 +53,10 @@ static void putu32(uint32_t data, unsigned char *addr) {
 #define F4(x, y, z) (y ^ (x | ~z))
 
 /* This is the central step in the MD5 algorithm. */
-#define MD5STEP(f, w, x, y, z, data, s)                                   \
-    (w += f(x, y, z) + data, w &= 0xffffffff, w = w << s | w >> (32 - s), \
+#define MD5STEP(f, w, x, y, z, data, s) \
+    (w += f(x, y, z) + data,            \
+     w &= 0xffffffff,                   \
+     w = w << s | w >> (32 - s),        \
      w += x)
 
 /*

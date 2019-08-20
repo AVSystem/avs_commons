@@ -66,15 +66,16 @@ int avs_url_percent_encode(avs_stream_abstract_t *stream,
     char escaped_buf[4];
     for (; *input; ++input) {
         if (*(const unsigned char *) input >= 0x80 // non-ASCII character
-                || !(isalnum((unsigned char)*input)
-                || strchr(unreserved_chars, *input))) {
+                || !(isalnum((unsigned char) *input)
+                     || strchr(unreserved_chars, *input))) {
             if (input - start > 0) {
                 if (avs_stream_write(stream, start, (size_t) (input - start))) {
                     return -1;
                 }
             }
             if (avs_simple_snprintf(escaped_buf, sizeof(escaped_buf), "%%%02x",
-                                    (unsigned char) *input) != 3
+                                    (unsigned char) *input)
+                            != 3
                     || avs_stream_write(stream, escaped_buf, 3)) {
                 return -1;
             }
@@ -100,8 +101,8 @@ int avs_url_percent_decode(char *data, size_t *unescaped_length) {
 
     while (*src) {
         if (*src == '%') {
-            if (isxdigit((unsigned char)src[1])
-                    && isxdigit((unsigned char)src[2])) {
+            if (isxdigit((unsigned char) src[1])
+                    && isxdigit((unsigned char) src[2])) {
                 char ascii[3];
                 ascii[0] = src[1];
                 ascii[1] = src[2];
@@ -137,17 +138,17 @@ static int prepare_string(char *data) {
 }
 
 static int is_valid_credential_char(char c) {
-    return isalnum((unsigned char)c)
-        || strchr(";?&=" /* explicitly allowed for user/pass */
-                  "$-_.+" /* "safe" set */
-                  "!*'(),", /* "extra" set */
-                  c) != NULL;
+    return isalnum((unsigned char) c)
+           || strchr(";?&="    /* explicitly allowed for user/pass */
+                     "$-_.+"   /* "safe" set */
+                     "!*'(),", /* "extra" set */
+                     c)
+                      != NULL;
 }
 
 static int is_valid_escape_sequence(const char *str) {
-    return str[0] == '%'
-        && isxdigit((unsigned char)str[1])
-        && isxdigit((unsigned char)str[2]);
+    return str[0] == '%' && isxdigit((unsigned char) str[1])
+           && isxdigit((unsigned char) str[2]);
 }
 
 static int is_valid_url_part(const char *str,
@@ -226,8 +227,8 @@ static int url_parse_credentials(const char **url,
     const char *credentials_end = strchr(*url, '@');
     const char *first_slash = strchr(*url, '/');
     if (credentials_end && (!first_slash || credentials_end < first_slash)) {
-        if (parse_username_and_password(*url, credentials_end,
-                                        data_out_ptr, out_limit, parsed_url)) {
+        if (parse_username_and_password(*url, credentials_end, data_out_ptr,
+                                        out_limit, parsed_url)) {
             LOG(ERROR, "cannot parse credentials from URL");
             return -1;
         }
@@ -241,7 +242,7 @@ static int is_valid_url_domain_char(char c) {
      * According to RFC 1783, domains may not contain non-alphanumeric
      * characters beside dot and hyphen. The dot may only be used as
      * domain segment separator. */
-    return c == '-' || isalnum((unsigned char)c);
+    return c == '-' || isalnum((unsigned char) c);
 }
 
 static int is_valid_domain(const char *str) {
@@ -267,7 +268,7 @@ static int is_valid_domain(const char *str) {
     }
 
     /* Last segment MUST start with a letter */
-    if (!isalpha((unsigned char)last_segment[0])) {
+    if (!isalpha((unsigned char) last_segment[0])) {
         LOG(ERROR, "top-level domain does not start with a letter: %s",
             last_segment);
         return 0;
@@ -278,8 +279,8 @@ static int is_valid_domain(const char *str) {
 
 static int is_valid_host(const char *str) {
     return avs_net_validate_ip_address(AVS_NET_AF_INET4, str) == 0
-        || avs_net_validate_ip_address(AVS_NET_AF_INET6, str) == 0
-        || is_valid_domain(str);
+           || avs_net_validate_ip_address(AVS_NET_AF_INET6, str) == 0
+           || is_valid_domain(str);
 }
 
 static int url_parse_host(const char **url,
@@ -298,11 +299,8 @@ static int url_parse_host(const char **url,
             return -1;
         }
     } else {
-        while (*data_out_ptr < out_limit
-                && **url != '\0'
-                && **url != '/'
-                && **url != '?'
-                && **url != ':') {
+        while (*data_out_ptr < out_limit && **url != '\0' && **url != '/'
+               && **url != '?' && **url != ':') {
             parsed_url->data[(*data_out_ptr)++] = *(*url)++;
         }
         assert(**url == '\0' || **url == '/' || **url == '?' || **url == ':');
@@ -330,10 +328,10 @@ static int url_parse_port(const char **url,
     parsed_url->port_ptr = *data_out_ptr;
     ++*url; // move after ':'
     size_t port_limit = AVS_MIN(out_limit, *data_out_ptr + 5);
-    while (*data_out_ptr < port_limit && isdigit((unsigned char)**url)) {
+    while (*data_out_ptr < port_limit && isdigit((unsigned char) **url)) {
         parsed_url->data[(*data_out_ptr)++] = *(*url)++;
     }
-    if (isdigit((unsigned char)**url)) {
+    if (isdigit((unsigned char) **url)) {
         LOG(ERROR, "port too long");
         return -1;
     }
@@ -351,13 +349,14 @@ static int url_parse_port(const char **url,
 
 static int is_valid_url_path_char(char c) {
     /* Assumes English locale. */
-    return isalnum((unsigned char)c)
-        || !!strchr("/"
-                    "?~" /* these technically are reserved, but our
-                            tests ensure it works too */
-                    ";:@&="
-                    "$-_.+" /* "safe" set defined in RFC 1738 */
-                    "!*'(),", c); /* "extra" set */
+    return isalnum((unsigned char) c)
+           || !!strchr("/"
+                       "?~" /* these technically are reserved, but our
+                               tests ensure it works too */
+                       ";:@&="
+                       "$-_.+" /* "safe" set defined in RFC 1738 */
+                       "!*'(),",
+                       c); /* "extra" set */
 }
 
 static int is_valid_path(const char *str) {
@@ -411,16 +410,15 @@ avs_url_t *avs_url_parse(const char *raw_url) {
     //
     // Thus, we know that we need out->data to be strlen(raw_url)+1 bytes long.
     size_t data_length = strlen(raw_url) + 1;
-    avs_url_t *out =
-            (avs_url_t *) avs_calloc(1, offsetof(avs_url_t, data) + data_length);
+    avs_url_t *out = (avs_url_t *) avs_calloc(1, offsetof(avs_url_t, data)
+                                                         + data_length);
     if (!out) {
         LOG(ERROR, "out of memory");
         return NULL;
     }
     size_t data_out_ptr = 0;
     if (url_parse_protocol(&raw_url, &data_out_ptr, data_length, out)
-            || url_parse_credentials(&raw_url,
-                                     &data_out_ptr, data_length, out)
+            || url_parse_credentials(&raw_url, &data_out_ptr, data_length, out)
             || url_parse_host(&raw_url, &data_out_ptr, data_length, out)
             || url_parse_port(&raw_url, &data_out_ptr, data_length, out)
             || url_parse_path(&raw_url, &data_out_ptr, data_length, out)
@@ -474,5 +472,5 @@ void avs_url_free(avs_url_t *url) {
 }
 
 #ifdef AVS_UNIT_TESTING
-#include "test/url.c"
+#    include "test/url.c"
 #endif // AVS_UNIT_TESTING

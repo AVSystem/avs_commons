@@ -45,7 +45,7 @@
 #include "lwip/netdb.h"
 
 #if defined(HAVE_GAI_STRERROR) && defined(HAVE_NETDB_H)
-# include <netdb.h>
+#    include <netdb.h>
 #else
 const char *gai_strerror(int errcode);
 #endif
@@ -69,70 +69,67 @@ int clock_gettime(clockid_t clk_id, struct timespec *tp);
 #endif
 
 #ifndef CLOCK_REALTIME
-# define CLOCK_REALTIME  0
+#    define CLOCK_REALTIME 0
 #endif
 
-
 #if defined(HAVE_STRCASECMP) && defined(HAVE_STRINGS_H)
-#include <strings.h>
+#    include <strings.h>
 #else
 int strcasecmp(const char *s1, const char *s2);
 #endif
 
 #if defined(HAVE_STRNCASECMP) && defined(HAVE_STRINGS_H)
-#include <strings.h>
+#    include <strings.h>
 #else
 int strncasecmp(const char *s1, const char *s2, size_t n);
 #endif
 
 #if defined(HAVE_STRTOK_R)
-# include <string.h>
+#    include <string.h>
 #else
 char *strtok_r(char *str, const char *delim, char **saveptr);
 #endif
 
-
 #if defined(WITH_IPV4)
-# if defined(HAVE_INET_ADDRSTRLEN) && defined(HAVE_NETINET_IN_H)
-#  include <netinet/in.h>
-# elif !defined(INET_ADDRSTRLEN)
-#  define INET_ADDRSTRLEN sizeof("255.255.255.255")
-# endif
+#    if defined(HAVE_INET_ADDRSTRLEN) && defined(HAVE_NETINET_IN_H)
+#        include <netinet/in.h>
+#    elif !defined(INET_ADDRSTRLEN)
+#        define INET_ADDRSTRLEN sizeof("255.255.255.255")
+#    endif
 #endif
 
 #if defined(WITH_IPV6)
-# if defined(HAVE_INET6_ADDRSTRLEN) && defined(HAVE_NETINET_IN_H)
-#  include <netinet/in.h>
-# elif !defined(INET6_ADDRSTRLEN)
-#  define INET6_ADDRSTRLEN sizeof("ffff:ffff:ffff:ffff:ffff:ffff:255.255.255.255")
-# endif
+#    if defined(HAVE_INET6_ADDRSTRLEN) && defined(HAVE_NETINET_IN_H)
+#        include <netinet/in.h>
+#    elif !defined(INET6_ADDRSTRLEN)
+#        define INET6_ADDRSTRLEN \
+            sizeof("ffff:ffff:ffff:ffff:ffff:ffff:255.255.255.255")
+#    endif
 #endif
-
 
 #ifndef HAVE_STRDUP
 char *strdup(const char *s);
 #endif
 
-
 /* optional */
 #if defined(HAVE_INET_PTON) && defined(HAVE_ARPA_INET_H)
-# include <arpa/inet.h>
+#    include <arpa/inet.h>
 #endif
 
 /* optional */
 #if defined(HAVE_INET_NTOP) && defined(HAVE_ARPA_INET_H)
-# include <arpa/inet.h>
+#    include <arpa/inet.h>
 #endif
 
 #if defined(HAVE_IF_NAMESIZE) && defined(HAVE_NET_IF_H)
-# include <net/if.h>
+#    include <net/if.h>
 #else
-# define IF_NAMESIZE 16
+#    define IF_NAMESIZE 16
 #endif
 
 /* optional */
 #if defined(HAVE_RECVMSG) && defined(HAVE_SYS_SOCKET_H)
-# include <sys/socket.h>
+#    include <sys/socket.h>
 #endif
 
 typedef int sockfd_t;

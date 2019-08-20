@@ -43,7 +43,7 @@ static int memstream_write_some(avs_stream_abstract_t *_stream,
 
     if (stream->write_ptr + *inout_data_length > stream->buffer_size) {
         if (stream->write_ptr + *inout_data_length - stream->read_ptr
-            > stream->buffer_size) {
+                > stream->buffer_size) {
             *inout_data_length =
                     stream->buffer_size - stream->write_ptr + stream->read_ptr;
         }

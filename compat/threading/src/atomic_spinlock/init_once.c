@@ -19,8 +19,8 @@
 #define MODULE_NAME init_once_atomic_spinlock
 #include <x_log_config.h>
 
-#include <avsystem/commons/init_once.h>
 #include <avsystem/commons/defs.h>
+#include <avsystem/commons/init_once.h>
 
 #include <stdatomic.h>
 #include <stdbool.h>
@@ -30,14 +30,10 @@ VISIBILITY_SOURCE_BEGIN
 AVS_STATIC_ASSERT(sizeof(avs_init_once_handle_t) >= sizeof(atomic_int),
                   avs_init_once_handle_too_small);
 AVS_STATIC_ASSERT(AVS_ALIGNOF(avs_init_once_handle_t)
-                      >= AVS_ALIGNOF(atomic_int),
+                          >= AVS_ALIGNOF(atomic_int),
                   avs_init_once_alignment_incompatible);
 
-enum init_state {
-    INIT_NOT_STARTED,
-    INIT_IN_PROGRESS,
-    INIT_DONE
-};
+enum init_state { INIT_NOT_STARTED, INIT_IN_PROGRESS, INIT_DONE };
 
 int avs_init_once(volatile avs_init_once_handle_t *handle,
                   avs_init_once_func_t *func,
@@ -54,7 +50,7 @@ int avs_init_once(volatile avs_init_once_handle_t *handle,
          * better performance than `*_strong` variant on some platforms.
          */
     } while (!atomic_compare_exchange_weak(state, &expected, INIT_IN_PROGRESS)
-                && expected != INIT_DONE);
+             && expected != INIT_DONE);
 
     int result = 0;
     if (expected != INIT_DONE) {

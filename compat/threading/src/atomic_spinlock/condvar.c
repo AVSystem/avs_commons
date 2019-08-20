@@ -111,9 +111,9 @@ int avs_condvar_wait(avs_condvar_t *condvar,
     do {
         flag_value = atomic_flag_test_and_set(&waiter.waiting);
     } while (flag_value
-            && (!use_deadline
-                    || avs_time_monotonic_before(avs_time_monotonic_now(),
-                                                 deadline)));
+             && (!use_deadline
+                 || avs_time_monotonic_before(avs_time_monotonic_now(),
+                                              deadline)));
     avs_mutex_lock(mutex);
 
     remove_waiter(condvar, &waiter);

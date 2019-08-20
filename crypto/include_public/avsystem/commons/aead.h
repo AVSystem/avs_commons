@@ -49,13 +49,17 @@ extern "C" {
  *
  * @returns 0 on success, a negative value in case of failure.
  */
-int
-avs_crypto_aead_aes_ccm_encrypt(const unsigned char *key, size_t key_len,
-                                const unsigned char *iv, size_t iv_len,
-                                const unsigned char *aad, size_t aad_len,
-                                const unsigned char *input, size_t input_len,
-                                unsigned char *tag, size_t tag_len,
-                                unsigned char *output);
+int avs_crypto_aead_aes_ccm_encrypt(const unsigned char *key,
+                                    size_t key_len,
+                                    const unsigned char *iv,
+                                    size_t iv_len,
+                                    const unsigned char *aad,
+                                    size_t aad_len,
+                                    const unsigned char *input,
+                                    size_t input_len,
+                                    unsigned char *tag,
+                                    size_t tag_len,
+                                    unsigned char *output);
 
 /**
  * Decrypts data encrypted using AEAD encryption with AES-CCM mode.
@@ -80,15 +84,19 @@ avs_crypto_aead_aes_ccm_encrypt(const unsigned char *key, size_t key_len,
  * @returns 0 on success, a negative value in case of failure or if message
  *          isn't authentic.
  */
-int
-avs_crypto_aead_aes_ccm_decrypt(const unsigned char *key, size_t key_len,
-                                const unsigned char *iv, size_t iv_len,
-                                const unsigned char *aad, size_t aad_len,
-                                const unsigned char *input, size_t input_len,
-                                const unsigned char *tag, size_t tag_len,
-                                unsigned char *output);
+int avs_crypto_aead_aes_ccm_decrypt(const unsigned char *key,
+                                    size_t key_len,
+                                    const unsigned char *iv,
+                                    size_t iv_len,
+                                    const unsigned char *aad,
+                                    size_t aad_len,
+                                    const unsigned char *input,
+                                    size_t input_len,
+                                    const unsigned char *tag,
+                                    size_t tag_len,
+                                    unsigned char *output);
 
-#ifdef	__cplusplus
+#ifdef __cplusplus
 } /* extern "C" */
 #endif
 

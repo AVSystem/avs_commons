@@ -16,11 +16,11 @@
 
 #include <avs_commons_posix_config.h>
 
-#include <avsystem/commons/unit/test.h>
 #include <avsystem/commons/socket.h>
+#include <avsystem/commons/unit/test.h>
 
-#include <openssl/ssl.h>
 #include <openssl/rand.h>
+#include <openssl/ssl.h>
 
 #include <unistd.h>
 
@@ -65,8 +65,8 @@ AVS_UNIT_TEST(backend_openssl, chain_loading_from_file) {
     WITH_OPENSSL_CONTEXT(ctx) {
         // Unsupported.
         const avs_net_trusted_cert_info_t p12 =
-                avs_net_trusted_cert_info_from_file(
-                        AVS_TEST_BIN_DIR "/certs/server.p12");
+                avs_net_trusted_cert_info_from_file(AVS_TEST_BIN_DIR
+                                                    "/certs/server.p12");
         AVS_UNIT_ASSERT_FAILED(_avs_net_openssl_load_ca_certs(ctx, &p12));
     }
 }

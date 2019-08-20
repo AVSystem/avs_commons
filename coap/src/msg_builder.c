@@ -35,7 +35,7 @@ static void append_header(avs_coap_msg_buffer_t *buffer,
     _avs_coap_header_set_code(buffer->msg, msg_code);
     _avs_coap_header_set_id(buffer->msg, msg_id);
 
-    buffer->msg->length = (uint32_t)_avs_coap_header_size(buffer->msg);
+    buffer->msg->length = (uint32_t) _avs_coap_header_size(buffer->msg);
 }
 
 static uint8_t *msg_end_ptr(const avs_coap_msg_buffer_t *buffer) {
@@ -47,9 +47,8 @@ static size_t bytes_remaining(const avs_coap_msg_buffer_t *buffer) {
            - offsetof(avs_coap_msg_t, content);
 }
 
-static int append_data(avs_coap_msg_buffer_t *buffer,
-                       const void *data,
-                       size_t data_size) {
+static int
+append_data(avs_coap_msg_buffer_t *buffer, const void *data, size_t data_size) {
     if (data_size > bytes_remaining(buffer)) {
         LOG(ERROR, "cannot append %u bytes, only %u available",
             (unsigned) data_size, (unsigned) bytes_remaining(buffer));
@@ -57,12 +56,11 @@ static int append_data(avs_coap_msg_buffer_t *buffer,
     }
 
     memcpy(msg_end_ptr(buffer), data, data_size);
-    buffer->msg->length += (uint32_t)data_size;
+    buffer->msg->length += (uint32_t) data_size;
     return 0;
 }
 
-static int append_byte(avs_coap_msg_buffer_t *buffer,
-                       uint8_t value) {
+static int append_byte(avs_coap_msg_buffer_t *buffer, uint8_t value) {
     return append_data(buffer, &value, sizeof(value));
 }
 
@@ -85,25 +83,23 @@ static int append_token(avs_coap_msg_buffer_t *buffer,
     return 0;
 }
 
-static inline size_t encode_ext_value(uint8_t *ptr,
-                                      uint16_t ext_value) {
+static inline size_t encode_ext_value(uint8_t *ptr, uint16_t ext_value) {
     if (ext_value >= AVS_COAP_EXT_U16_BASE) {
         uint16_t value_net_byte_order = avs_convert_be16(
                 (uint16_t) (ext_value - AVS_COAP_EXT_U16_BASE));
         memcpy(ptr, &value_net_byte_order, sizeof(value_net_byte_order));
         return sizeof(value_net_byte_order);
     } else if (ext_value >= AVS_COAP_EXT_U8_BASE) {
-        *ptr = (uint8_t)(ext_value - AVS_COAP_EXT_U8_BASE);
+        *ptr = (uint8_t) (ext_value - AVS_COAP_EXT_U8_BASE);
         return 1;
     }
 
     return 0;
 }
 
-static inline size_t opt_write_header(uint8_t *ptr,
-                                      uint16_t opt_number_delta,
-                                      uint16_t opt_length) {
-    avs_coap_opt_t *opt = (avs_coap_opt_t *)ptr;
+static inline size_t
+opt_write_header(uint8_t *ptr, uint16_t opt_number_delta, uint16_t opt_length) {
+    avs_coap_opt_t *opt = (avs_coap_opt_t *) ptr;
     ptr = opt->content;
 
     if (opt_number_delta >= AVS_COAP_EXT_U16_BASE) {
@@ -111,7 +107,7 @@ static inline size_t opt_write_header(uint8_t *ptr,
     } else if (opt_number_delta >= AVS_COAP_EXT_U8_BASE) {
         _avs_coap_opt_set_short_delta(opt, AVS_COAP_EXT_U8);
     } else {
-        _avs_coap_opt_set_short_delta(opt, (uint8_t)(opt_number_delta & 0xF));
+        _avs_coap_opt_set_short_delta(opt, (uint8_t) (opt_number_delta & 0xF));
     }
 
     if (opt_length >= AVS_COAP_EXT_U16_BASE) {
@@ -119,15 +115,14 @@ static inline size_t opt_write_header(uint8_t *ptr,
     } else if (opt_length >= AVS_COAP_EXT_U8_BASE) {
         _avs_coap_opt_set_short_length(opt, AVS_COAP_EXT_U8);
     } else {
-        _avs_coap_opt_set_short_length(opt, (uint8_t)(opt_length & 0xF));
+        _avs_coap_opt_set_short_length(opt, (uint8_t) (opt_length & 0xF));
     }
 
     ptr += encode_ext_value(ptr, opt_number_delta);
     ptr += encode_ext_value(ptr, opt_length);
 
-    return (size_t)(ptr - (uint8_t *)opt);
+    return (size_t) (ptr - (uint8_t *) opt);
 }
-
 
 static int append_option(avs_coap_msg_buffer_t *buffer,
                          uint16_t opt_number_delta,
@@ -146,9 +141,8 @@ static int append_option(avs_coap_msg_buffer_t *buffer,
         return -1;
     }
 
-    buffer->msg->length += (uint32_t)opt_write_header(msg_end_ptr(buffer),
-                                                      opt_number_delta,
-                                                      opt_data_size);
+    buffer->msg->length += (uint32_t) opt_write_header(
+            msg_end_ptr(buffer), opt_number_delta, opt_data_size);
 
     if (append_data(buffer, opt_data, opt_data_size)) {
         LOG(ERROR, "could not serialize option");
@@ -162,10 +156,10 @@ int avs_coap_msg_builder_init(avs_coap_msg_builder_t *builder,
                               avs_coap_aligned_msg_buffer_t *buffer,
                               size_t buffer_size_bytes,
                               const avs_coap_msg_info_t *info) {
-    *builder = (avs_coap_msg_builder_t){
+    *builder = (avs_coap_msg_builder_t) {
         .has_payload_marker = false,
         .msg_buffer = {
-            .msg = (avs_coap_msg_t *)buffer,
+            .msg = (avs_coap_msg_t *) buffer,
             .capacity = buffer_size_bytes
         }
     };
@@ -186,8 +180,8 @@ int avs_coap_msg_builder_reset(avs_coap_msg_builder_t *builder,
     builder->has_payload_marker = false;
     builder->msg_buffer.msg->length = 0;
 
-    append_header(&builder->msg_buffer,
-                  info->type, info->code, info->identity.msg_id);
+    append_header(&builder->msg_buffer, info->type, info->code,
+                  info->identity.msg_id);
     if (append_token(&builder->msg_buffer, &info->identity.token)) {
         return -1;
     }
@@ -197,9 +191,9 @@ int avs_coap_msg_builder_reset(avs_coap_msg_builder_t *builder,
     AVS_LIST_FOREACH(opt, info->options_) {
         assert(prev_opt_num <= opt->number);
 
-        uint16_t delta = (uint16_t)(opt->number - prev_opt_num);
-        if (append_option(&builder->msg_buffer,
-                          delta, opt->data, opt->data_size)) {
+        uint16_t delta = (uint16_t) (opt->number - prev_opt_num);
+        if (append_option(&builder->msg_buffer, delta, opt->data,
+                          opt->data_size)) {
             return -1;
         }
         prev_opt_num = opt->number;
@@ -243,7 +237,7 @@ size_t avs_coap_msg_builder_payload(avs_coap_msg_builder_t *builder,
 
     result = append_data(&builder->msg_buffer, payload, bytes_to_write);
     AVS_ASSERT(!result, "attempted to write an invalid amount of bytes");
-    (void)result;
+    (void) result;
 
     return bytes_to_write;
 }
@@ -254,5 +248,5 @@ avs_coap_msg_builder_get_msg(const avs_coap_msg_builder_t *builder) {
 }
 
 #ifdef AVS_UNIT_TESTING
-#include "test/msg_builder.c"
+#    include "test/msg_builder.c"
 #endif // AVS_UNIT_TESTING

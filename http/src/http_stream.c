@@ -34,7 +34,7 @@ VISIBILITY_SOURCE_BEGIN
 #define HTTP_MOVE_LIMIT 5
 
 #ifdef AVS_UNIT_TESTING
-#define avs_net_socket_create avs_net_socket_create_TEST_WRAPPER
+#    define avs_net_socket_create avs_net_socket_create_TEST_WRAPPER
 int avs_net_socket_create_TEST_WRAPPER(avs_net_abstract_socket_t **socket,
                                        avs_net_socket_type_t type,
                                        ...);
@@ -115,8 +115,8 @@ static int reconnect_tcp_socket(avs_net_abstract_socket_t *socket,
     LOG(TRACE, "reconnect_tcp_socket");
     *out_error_code = AVS_NO_ERROR;
     if (!socket || avs_net_socket_close(socket)
-        || avs_net_socket_connect(socket, avs_url_host(url),
-                                  resolve_port(url))) {
+            || avs_net_socket_connect(socket, avs_url_host(url),
+                                      resolve_port(url))) {
         LOG(ERROR, "reconnect failed");
         *out_error_code = avs_net_socket_error(socket);
         return -1;
@@ -143,7 +143,7 @@ int _avs_http_redirect(http_stream_t *stream, avs_url_t **url_move) {
     avs_net_socket_close(old_socket);
 
     if (_avs_http_socket_new(&new_socket, stream->http, *url_move)
-        != AVS_NO_ERROR) {
+            != AVS_NO_ERROR) {
         return -1;
     }
 
@@ -160,7 +160,7 @@ int _avs_http_redirect(http_stream_t *stream, avs_url_t **url_move) {
     stream->flags.no_expect = 0;
     stream->flags.keep_connection = 1;
     if ((stream->auth.credentials.user || stream->auth.credentials.password)
-        && strcmp(avs_url_protocol(stream->url), "https") == 0) {
+            && strcmp(avs_url_protocol(stream->url), "https") == 0) {
         stream->auth.state.flags.type = HTTP_AUTH_TYPE_BASIC;
     }
     return 0;
@@ -175,7 +175,7 @@ int _avs_http_prepare_for_sending(http_stream_t *stream) {
         /* we might be at the end of stream already */
         char finished = 0;
         if (!avs_stream_read(stream->body_receiver, NULL, &finished, NULL, 0)
-            && finished) {
+                && finished) {
             avs_stream_cleanup(&stream->body_receiver);
             stream->flags.close_handling_required = 1;
         } else {
@@ -190,8 +190,8 @@ int _avs_http_prepare_for_sending(http_stream_t *stream) {
         LOG(TRACE, "reconnecting stream");
         stream->flags.close_handling_required = 0;
         if (avs_stream_reset(stream->backend)
-            || reconnect_tcp_socket(avs_stream_net_getsock(stream->backend),
-                                    stream->url, &stream->error_code)) {
+                || reconnect_tcp_socket(avs_stream_net_getsock(stream->backend),
+                                        stream->url, &stream->error_code)) {
             return -1;
         } else {
             stream->flags.keep_connection = 1;
@@ -205,7 +205,7 @@ int _avs_http_prepare_for_sending(http_stream_t *stream) {
 void _avs_http_maybe_schedule_retry_after_send(http_stream_t *stream,
                                                int result) {
     if (result && avs_stream_error(stream->backend) == AVS_EPIPE
-        && stream->flags.close_handling_required) {
+            && stream->flags.close_handling_required) {
         stream->flags.keep_connection = 0;
         stream->flags.should_retry = 1;
     }
@@ -220,9 +220,9 @@ static int http_send_simple_request(http_stream_t *stream,
     stream->auth.state.flags.retried = 0;
     do {
         if (_avs_http_prepare_for_sending(stream)
-            || _avs_http_send_headers(stream, buffer_length)
-            || avs_stream_write(stream->backend, buffer, buffer_length)
-            || avs_stream_finish_message(stream->backend)) {
+                || _avs_http_send_headers(stream, buffer_length)
+                || avs_stream_write(stream->backend, buffer, buffer_length)
+                || avs_stream_finish_message(stream->backend)) {
             result = -1;
             _avs_http_maybe_schedule_retry_after_send(stream, result);
         } else {
@@ -275,9 +275,9 @@ int _avs_http_send_via_buffer(http_stream_t *stream,
                               const void *data,
                               size_t data_length) {
     int result = 0;
-    if (data_length
-                > stream->http->buffer_sizes.body_send - stream->out_buffer_pos
-        && _avs_http_buffer_flush(stream, 0)) {
+    if (data_length > stream->http->buffer_sizes.body_send
+                                  - stream->out_buffer_pos
+            && _avs_http_buffer_flush(stream, 0)) {
         return -1;
     }
     if (data_length > stream->http->buffer_sizes.body_send) {

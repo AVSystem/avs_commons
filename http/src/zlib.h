@@ -116,13 +116,17 @@ _avs_http_create_decompressor(http_compression_format_t format,
 
 #else
 
-#define _avs_http_create_compressor(format, level, window_bits, mem_level, \
-                                    input_buffer_size, output_buffer_size) \
-    (NULL)
+#    define _avs_http_create_compressor(format,             \
+                                        level,              \
+                                        window_bits,        \
+                                        mem_level,          \
+                                        input_buffer_size,  \
+                                        output_buffer_size) \
+        (NULL)
 
-#define _avs_http_create_decompressor(format, window_bits, input_buffer_size, \
-                                      output_buffer_size)                     \
-    (NULL)
+#    define _avs_http_create_decompressor(                              \
+            format, window_bits, input_buffer_size, output_buffer_size) \
+        (NULL)
 
 #endif
 

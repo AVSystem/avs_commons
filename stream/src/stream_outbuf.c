@@ -61,8 +61,9 @@ static const avs_stream_v_table_t outbuf_stream_vtable = {
     .extension_list = AVS_STREAM_V_TABLE_NO_EXTENSIONS
 };
 
-const avs_stream_outbuf_t AVS_STREAM_OUTBUF_STATIC_INITIALIZER
-        = {&outbuf_stream_vtable, NULL, 0, 0, 0};
+const avs_stream_outbuf_t AVS_STREAM_OUTBUF_STATIC_INITIALIZER = {
+    &outbuf_stream_vtable, NULL, 0, 0, 0
+};
 
 size_t avs_stream_outbuf_offset(avs_stream_outbuf_t *stream) {
     return stream->buffer_offset;

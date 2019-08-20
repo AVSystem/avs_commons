@@ -28,17 +28,17 @@ avs_coap_block_builder_init(avs_coap_msg_builder_t *msg_builder) {
     assert(msg_builder->msg_buffer.msg != NULL);
     assert(msg_builder->msg_buffer.capacity > 0);
 
-    const uint8_t *payload = (const uint8_t*)
-            avs_coap_msg_payload(msg_builder->msg_buffer.msg);
+    const uint8_t *payload =
+            (const uint8_t *) avs_coap_msg_payload(msg_builder->msg_buffer.msg);
 
-    assert((const uint8_t*)msg_builder->msg_buffer.msg <= payload);
+    assert((const uint8_t *) msg_builder->msg_buffer.msg <= payload);
     size_t read_offset =
-            (size_t)(payload - (const uint8_t*)msg_builder->msg_buffer.msg);
+            (size_t) (payload - (const uint8_t *) msg_builder->msg_buffer.msg);
 
     size_t payload_size =
             avs_coap_msg_payload_length(msg_builder->msg_buffer.msg);
 
-    avs_coap_block_builder_t block_builder = (avs_coap_block_builder_t){
+    avs_coap_block_builder_t block_builder = (avs_coap_block_builder_t) {
         .payload_buffer = msg_builder->msg_buffer.msg,
         .payload_capacity = msg_builder->msg_buffer.capacity,
 
@@ -51,11 +51,11 @@ avs_coap_block_builder_init(avs_coap_msg_builder_t *msg_builder) {
 }
 
 static void *payload_read_ptr(avs_coap_block_builder_t *builder) {
-    return (uint8_t*)builder->payload_buffer + builder->read_offset;
+    return (uint8_t *) builder->payload_buffer + builder->read_offset;
 }
 
 static void *payload_write_ptr(avs_coap_block_builder_t *builder) {
-    return (uint8_t*)builder->payload_buffer + builder->write_offset;
+    return (uint8_t *) builder->payload_buffer + builder->write_offset;
 }
 
 static void shift_payload(avs_coap_block_builder_t *builder) {
@@ -103,7 +103,6 @@ avs_coap_block_builder_build(avs_coap_block_builder_t *builder,
            >= avs_coap_msg_info_get_packet_storage_size(info, block_size));
     AVS_ASSERT(block_size < builder->payload_capacity,
                "payload buffer MUST be able to hold more than a single block");
-
 
     if (builder->read_offset == builder->write_offset) {
         LOG(WARNING, "no payload data to extract!");

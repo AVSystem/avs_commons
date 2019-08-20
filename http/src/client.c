@@ -65,7 +65,7 @@ void avs_http_ssl_configuration(
 }
 
 void avs_http_tcp_configuration(
-        avs_http_t* http,
+        avs_http_t *http,
         const volatile avs_net_socket_configuration_t *tcp_configuration) {
     http->tcp_configuration = tcp_configuration;
 }
@@ -106,15 +106,16 @@ int _avs_http_set_cookie(avs_http_t *client,
     AVS_LIST(http_cookie_t) *it;
     AVS_LIST_FOREACH_PTR(it, &client->cookies) {
         if (strncmp((*it)->value, cookie_header,
-                    (size_t) (equal_sign + 1 - cookie_header)) == 0) {
+                    (size_t) (equal_sign + 1 - cookie_header))
+                == 0) {
             AVS_LIST_DELETE(it);
             break;
         }
     }
     // it now points either at the place of the old cookie, or at the tail
 
-    if (!AVS_LIST_INSERT(it, (AVS_LIST(http_cookie_t))
-            AVS_LIST_NEW_BUFFER((size_t) ((end - cookie_header) + 1)))) {
+    if (!AVS_LIST_INSERT(it, (AVS_LIST(http_cookie_t)) AVS_LIST_NEW_BUFFER(
+                                     (size_t) ((end - cookie_header) + 1)))) {
         LOG(ERROR, "Not enough space to store the cookie");
         return -1;
     }

@@ -36,10 +36,7 @@ extern "C" {
 /**
  * Helper enum used to distinguish BLOCK1 and BLOCK2 transfers in BLOCK APIs.
  */
-typedef enum {
-    AVS_COAP_BLOCK1,
-    AVS_COAP_BLOCK2
-} avs_coap_block_type_t;
+typedef enum { AVS_COAP_BLOCK1, AVS_COAP_BLOCK2 } avs_coap_block_type_t;
 
 /**
  * @returns CoAP option number appropriate for BLOCK transfer of given @p type .

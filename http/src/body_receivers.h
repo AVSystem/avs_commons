@@ -43,9 +43,9 @@ _avs_http_body_receiver_dumb_create(avs_stream_abstract_t *backend);
  * @param backend        The netbuf stream wrapping the TCP socket.
  * @param content_length Limit of the number of bytes to consume.
  */
-avs_stream_abstract_t *_avs_http_body_receiver_content_length_create(
-        avs_stream_abstract_t *backend,
-        size_t content_length);
+avs_stream_abstract_t *
+_avs_http_body_receiver_content_length_create(avs_stream_abstract_t *backend,
+                                              size_t content_length);
 
 /**
  * Creates a body receiver that decodes HTTP chunked encoding.
@@ -75,11 +75,10 @@ avs_stream_abstract_t *_avs_http_body_receiver_chunked_create(
  * body receiver will also be wrapped in a decompressing decorator. See
  * @ref _avs_http_decoding_stream_create for details on that.
  */
-int
-_avs_http_body_receiver_init(http_stream_t *stream,
-                             http_transfer_encoding_t transfer_encoding,
-                             avs_http_content_encoding_t content_encoding,
-                             size_t content_length);
+int _avs_http_body_receiver_init(http_stream_t *stream,
+                                 http_transfer_encoding_t transfer_encoding,
+                                 avs_http_content_encoding_t content_encoding,
+                                 size_t content_length);
 
 VISIBILITY_PRIVATE_HEADER_END
 

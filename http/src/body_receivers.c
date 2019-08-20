@@ -16,8 +16,8 @@
 
 #include <avs_commons_config.h>
 
-#include <avsystem/commons/stream/stream_net.h>
 #include <avsystem/commons/stream/netbuf.h>
+#include <avsystem/commons/stream/stream_net.h>
 
 #include "body_receivers.h"
 #include "client.h"
@@ -35,9 +35,10 @@ create_body_receiver(avs_stream_abstract_t *backend,
     avs_stream_abstract_t *buffer = NULL;
     avs_stream_abstract_t *retval = NULL;
     avs_net_abstract_socket_t *backend_socket = NULL;
-    LOG(TRACE, "create_body_receiver, transfer_encoding == %d, "
-             "content_length == %lu",
-             (int) transfer_encoding, (unsigned long) content_length);
+    LOG(TRACE,
+        "create_body_receiver, transfer_encoding == %d, "
+        "content_length == %lu",
+        (int) transfer_encoding, (unsigned long) content_length);
 
     if (backend && (backend_socket = avs_stream_net_getsock(backend))) {
         avs_stream_netbuf_create(&buffer, backend_socket,
@@ -59,8 +60,8 @@ create_body_receiver(avs_stream_abstract_t *backend,
         break;
 
     case TRANSFER_LENGTH:
-        retval = _avs_http_body_receiver_content_length_create(
-                buffer, content_length);
+        retval = _avs_http_body_receiver_content_length_create(buffer,
+                                                               content_length);
         break;
 
     case TRANSFER_CHUNKED:
@@ -77,14 +78,14 @@ create_body_receiver_return:
     return retval;
 }
 
-int _avs_http_body_receiver_init(
-        http_stream_t *stream,
-        http_transfer_encoding_t transfer_encoding,
-        avs_http_content_encoding_t content_encoding,
-        size_t content_length) {
+int _avs_http_body_receiver_init(http_stream_t *stream,
+                                 http_transfer_encoding_t transfer_encoding,
+                                 avs_http_content_encoding_t content_encoding,
+                                 size_t content_length) {
     avs_stream_abstract_t *decoder = NULL;
     int result = 0;
-    LOG(TRACE, "http_init_body_receiver, transfer_encoding == %d, "
+    LOG(TRACE,
+        "http_init_body_receiver, transfer_encoding == %d, "
         "content_encoding == %d, content_length == %lu, HTTP status == %d",
         (int) transfer_encoding, (int) content_encoding,
         (unsigned long) content_length, stream->status);
@@ -95,8 +96,7 @@ int _avs_http_body_receiver_init(
     }
 
     if (transfer_encoding == TRANSFER_IDENTITY
-            && (stream->status == 204
-            || stream->status == 205)) {
+            && (stream->status == 204 || stream->status == 205)) {
         transfer_encoding = TRANSFER_LENGTH;
         content_length = 0;
     }
@@ -106,9 +106,9 @@ int _avs_http_body_receiver_init(
         stream->flags.keep_connection = 0;
     }
 
-    if (!(stream->body_receiver =
-            create_body_receiver(stream->backend, &stream->http->buffer_sizes,
-                                 transfer_encoding, content_length))) {
+    if (!(stream->body_receiver = create_body_receiver(
+                  stream->backend, &stream->http->buffer_sizes,
+                  transfer_encoding, content_length))) {
         return -1;
     }
 
@@ -132,5 +132,5 @@ int _avs_http_body_receiver_init(
 }
 
 #ifdef AVS_UNIT_TESTING
-#include "test/test_body_receivers.c"
+#    include "test/test_body_receivers.c"
 #endif

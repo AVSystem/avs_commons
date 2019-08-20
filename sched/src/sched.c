@@ -26,16 +26,16 @@
 #include <avsystem/commons/utils.h>
 
 #ifdef WITH_SCHEDULER_THREAD_SAFE
-#   include <avsystem/commons/condvar.h>
-#   include <avsystem/commons/init_once.h>
-#   include <avsystem/commons/mutex.h>
+#    include <avsystem/commons/condvar.h>
+#    include <avsystem/commons/init_once.h>
+#    include <avsystem/commons/mutex.h>
 #else // WITH_SCHEDULER_THREAD_SAFE
-#   define avs_condvar_create(...) 0
-#   define avs_condvar_cleanup(...) ((void) 0)
-#   define avs_condvar_notify_all(...) ((void) 0)
-#   define avs_mutex_create(...) 0
-#   define avs_mutex_cleanup(...) ((void) 0)
-#   define avs_mutex_unlock(...) ((void) 0)
+#    define avs_condvar_create(...) 0
+#    define avs_condvar_cleanup(...) ((void) 0)
+#    define avs_condvar_notify_all(...) ((void) 0)
+#    define avs_mutex_create(...) 0
+#    define avs_mutex_cleanup(...) ((void) 0)
+#    define avs_mutex_unlock(...) ((void) 0)
 #endif // WITH_SCHEDULER_THREAD_SAFE
 
 #define MODULE_NAME avs_sched
@@ -126,7 +126,7 @@ static void nonfailing_mutex_lock(avs_mutex_t *mutex) {
     }
 }
 #else // WITH_SCHEDULER_THREAD_SAFE
-#define nonfailing_mutex_lock(...) ((void) 0)
+#    define nonfailing_mutex_lock(...) ((void) 0)
 #endif // WITH_SCHEDULER_THREAD_SAFE
 
 void _avs_sched_cleanup_global_state(void);
@@ -137,24 +137,23 @@ void _avs_sched_cleanup_global_state(void) {
 #endif // WITH_SCHEDULER_THREAD_SAFE
 }
 
-#define SCHED_LOG(Sched, Level, ...) \
-        LOG(Level, "Scheduler \"%s\": " AVS_VARARG0(__VA_ARGS__), \
-            (Sched)->name AVS_VARARG_REST(__VA_ARGS__))
+#define SCHED_LOG(Sched, Level, ...)                          \
+    LOG(Level, "Scheduler \"%s\": " AVS_VARARG0(__VA_ARGS__), \
+        (Sched)->name AVS_VARARG_REST(__VA_ARGS__))
 
 #ifdef WITH_INTERNAL_LOGS
 
-#   define JOB_LOG_ID_MAX_LENGTH (AVS_LOG_MAX_LINE_LENGTH / 2)
+#    define JOB_LOG_ID_MAX_LENGTH (AVS_LOG_MAX_LINE_LENGTH / 2)
 
-static const char *
-job_log_id_impl(char buf[static JOB_LOG_ID_MAX_LENGTH],
-                const char *file,
-                unsigned line,
-                const char *name) {
+static const char *job_log_id_impl(char buf[static JOB_LOG_ID_MAX_LENGTH],
+                                   const char *file,
+                                   unsigned line,
+                                   const char *name) {
     char *ptr = buf;
     char *limit = buf + JOB_LOG_ID_MAX_LENGTH;
     if (name) {
-        int result = avs_simple_snprintf(ptr, (size_t) (limit - ptr),
-                                         " \"%s\"", name);
+        int result = avs_simple_snprintf(ptr, (size_t) (limit - ptr), " \"%s\"",
+                                         name);
         if (result < 0) {
             return buf;
         } else {
@@ -177,11 +176,11 @@ job_log_id_impl(char buf[static JOB_LOG_ID_MAX_LENGTH],
     return buf;
 }
 
-#   define JOB_LOG_ID_EXPLICIT(File, Line, Name) \
-        job_log_id_impl(&(char[JOB_LOG_ID_MAX_LENGTH]) { "" }[0], \
-                        (File), (Line), (Name))
+#    define JOB_LOG_ID_EXPLICIT(File, Line, Name)                        \
+        job_log_id_impl(&(char[JOB_LOG_ID_MAX_LENGTH]){ "" }[0], (File), \
+                        (Line), (Name))
 
-#   define JOB_LOG_ID(Job) \
+#    define JOB_LOG_ID(Job)                                             \
         JOB_LOG_ID_EXPLICIT((Job)->log_info.file, (Job)->log_info.line, \
                             (Job)->log_info.name)
 
@@ -286,13 +285,14 @@ int avs_sched_wait_until_next(avs_sched_t *sched,
     } else {
         time_of_next = sched_time_of_next_locked(sched);
         result = ((avs_time_monotonic_valid(time_of_next)
-                        && !avs_time_monotonic_before(avs_time_monotonic_now(),
-                                                      time_of_next))
-                ? 0 : AVS_CONDVAR_TIMEOUT);
+                   && !avs_time_monotonic_before(avs_time_monotonic_now(),
+                                                 time_of_next))
+                          ? 0
+                          : AVS_CONDVAR_TIMEOUT);
     }
     avs_mutex_unlock(sched->mutex);
     return result;
-#else // WITH_SCHEDULER_THREAD_SAFE
+#else  // WITH_SCHEDULER_THREAD_SAFE
     (void) deadline;
     (void) sched;
     SCHED_LOG(sched, ERROR,
@@ -307,8 +307,7 @@ static AVS_LIST(avs_sched_job_t) fetch_job(avs_sched_t *sched,
     AVS_LIST(avs_sched_job_t) result = NULL;
     nonfailing_mutex_lock(sched->mutex);
     if (sched->jobs
-            && avs_time_monotonic_before(sched->jobs->instant,
-                                         deadline)) {
+            && avs_time_monotonic_before(sched->jobs->instant, deadline)) {
         if (sched->jobs->handle_ptr) {
             nonfailing_mutex_lock(g_handle_access_mutex);
             assert(*sched->jobs->handle_ptr == sched->jobs);
@@ -385,14 +384,15 @@ static int sched_at_locked(avs_sched_t *sched,
     assert(clb);
     assert(avs_time_monotonic_valid(instant));
     if (sched->shutting_down) {
-        SCHED_LOG(sched, ERROR, "scheduler already shut down when attempting "
-                                "to schedule%s",
+        SCHED_LOG(sched, ERROR,
+                  "scheduler already shut down when attempting "
+                  "to schedule%s",
                   JOB_LOG_ID_EXPLICIT(log_file, log_line, log_name));
         return -1;
     }
 
-    AVS_LIST(avs_sched_job_t) job = (avs_sched_job_t *)
-            AVS_LIST_NEW_BUFFER(sizeof(avs_sched_job_t) + clb_data_size);
+    AVS_LIST(avs_sched_job_t) job = (avs_sched_job_t *) AVS_LIST_NEW_BUFFER(
+            sizeof(avs_sched_job_t) + clb_data_size);
     if (!job) {
         SCHED_LOG(sched, ERROR, "could not allocate scheduler task");
         return -1;
@@ -417,8 +417,9 @@ static int sched_at_locked(avs_sched_t *sched,
             AVS_ASSERT((*out_handle)->sched == sched,
                        "Replacing handles used by a different scheduler is "
                        "not supported");
-            AVS_LIST(avs_sched_job_t) *job_ptr = (AVS_LIST(avs_sched_job_t) *)
-                    AVS_LIST_FIND_PTR(&sched->jobs, *out_handle);
+            AVS_LIST(avs_sched_job_t) *job_ptr =
+                    (AVS_LIST(avs_sched_job_t) *) AVS_LIST_FIND_PTR(
+                            &sched->jobs, *out_handle);
             AVS_ASSERT(job_ptr, "dangling handle detected");
             SCHED_LOG(sched, TRACE,
                       "cancelling job%s due to reschedule policy for job%s",
@@ -466,9 +467,9 @@ int avs_sched_at_impl__(avs_sched_t *sched,
 
     int result = -1;
     nonfailing_mutex_lock(sched->mutex);
-    if (!(result = sched_at_locked(sched, out_handle, instant,
-                                   log_file, log_line, log_name,
-                                   clb, clb_data, clb_data_size))) {
+    if (!(result = sched_at_locked(sched, out_handle, instant, log_file,
+                                   log_line, log_name, clb, clb_data,
+                                   clb_data_size))) {
         avs_condvar_notify_all(sched->task_condvar);
     }
     avs_mutex_unlock(sched->mutex);
@@ -511,7 +512,7 @@ void avs_sched_del(avs_sched_handle_t *handle_ptr) {
 #ifndef WITH_SCHEDULER_THREAD_SAFE
         AVS_ASSERT(job_ptr, "dangling handle detected");
 #endif // WITH_SCHEDULER_THREAD_SAFE
-        // Job might have been removed by another thread, don't do anything
+       // Job might have been removed by another thread, don't do anything
     } else {
         SCHED_LOG(sched, TRACE, "cancelling job%s", JOB_LOG_ID(job));
         nonfailing_mutex_lock(g_handle_access_mutex);
@@ -550,7 +551,7 @@ void avs_sched_detach(avs_sched_handle_t *handle_ptr) {
 #ifndef WITH_SCHEDULER_THREAD_SAFE
         AVS_ASSERT(job_ptr, "dangling handle detected");
 #endif // WITH_SCHEDULER_THREAD_SAFE
-        // Job might have been removed by another thread, don't do anything
+       // Job might have been removed by another thread, don't do anything
     } else {
         nonfailing_mutex_lock(g_handle_access_mutex);
         assert(*job->handle_ptr == job);

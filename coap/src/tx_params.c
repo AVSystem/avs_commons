@@ -73,20 +73,21 @@ avs_coap_exchange_lifetime(const avs_coap_tx_params_t *tx_params) {
 avs_time_duration_t
 avs_coap_max_transmit_span(const avs_coap_tx_params_t *tx_params) {
     return avs_time_duration_fmul(tx_params->ack_timeout,
-                                  (double)((1 << tx_params->max_retransmit) - 1)
+                                  (double) ((1 << tx_params->max_retransmit)
+                                            - 1)
                                           * tx_params->ack_random_factor);
 }
 
 #if AVS_RAND_MAX >= INT64_MAX
-#define RAND63_ITERATIONS 1
+#    define RAND63_ITERATIONS 1
 #elif AVS_RAND_MAX >= 3037000499 // ceil(2^(63/2)) - 1
-#define RAND63_ITERATIONS 2
+#    define RAND63_ITERATIONS 2
 #elif AVS_RAND_MAX >= ((1 << 21) - 1)
-#define RAND63_ITERATIONS 3
+#    define RAND63_ITERATIONS 3
 #elif AVS_RAND_MAX >= 55108 // ceil(2^(63/4)) - 1
-#define RAND63_ITERATIONS 4
+#    define RAND63_ITERATIONS 4
 #else // if AVS_RAND_MAX >= 6208 // ceil(2^(63/5)) - 1
-#define RAND63_ITERATIONS 5
+#    define RAND63_ITERATIONS 5
 #endif
 
 static int64_t rand63(unsigned *seed) {

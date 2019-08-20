@@ -24,9 +24,9 @@
 #include <avsystem/commons/time.h>
 #include <avsystem/commons/utils.h>
 
-#include "compat.h"
 #include "../../src/global.h"
 #include "../../src/net_impl.h"
+#include "compat.h"
 
 VISIBILITY_SOURCE_BEGIN
 
@@ -69,7 +69,7 @@ static void update_ports(struct addrinfo *head, uint16_t port) {
                            + offsetof(struct sockaddr_in6, sin6_port),
                    &port, sizeof(uint16_t));
             break;
-#endif // WITH_IPV6
+#endif            // WITH_IPV6
         default:; // do nothing
         }
     }
@@ -81,7 +81,8 @@ static struct addrinfo *detach_preferred(struct addrinfo **list_ptr,
     for (; *list_ptr; list_ptr = &(*list_ptr)->ai_next) {
         if ((socklen_t) (*list_ptr)->ai_addrlen == preferred_addr_len
                 && memcmp((*list_ptr)->ai_addr, preferred_addr,
-                          (size_t) preferred_addr_len) == 0) {
+                          (size_t) preferred_addr_len)
+                               == 0) {
             struct addrinfo *retval = *list_ptr;
             *list_ptr = retval->ai_next;
             retval->ai_next = NULL;
@@ -91,8 +92,7 @@ static struct addrinfo *detach_preferred(struct addrinfo **list_ptr,
     return NULL;
 }
 
-static void half_addrinfo(struct addrinfo *list,
-                          struct addrinfo **part2_ptr) {
+static void half_addrinfo(struct addrinfo *list, struct addrinfo **part2_ptr) {
     size_t length = 0;
     struct addrinfo *ptr = list;
     assert(list);
@@ -165,7 +165,7 @@ avs_net_addrinfo_t *avs_net_addrinfo_resolve_ex(
     }
 
     struct addrinfo hint;
-    memset((void *) &hint, 0, sizeof (hint));
+    memset((void *) &hint, 0, sizeof(hint));
     hint.ai_family = _avs_net_get_af(family);
     if (family != AVS_NET_AF_UNSPEC && hint.ai_family == AF_UNSPEC) {
         LOG(DEBUG, "Unsupported avs_net_af_t: %d", (int) family);
@@ -279,9 +279,8 @@ int avs_net_addrinfo_next(avs_net_addrinfo_t *ctx,
                           avs_net_resolved_endpoint_t *out) {
 #ifdef WITH_AVS_V4MAPPED
     if (ctx->v4mapped) {
-        while (ctx->to_send
-                && ctx->to_send->ai_family != AF_INET
-                && ctx->to_send->ai_family != AF_INET6) {
+        while (ctx->to_send && ctx->to_send->ai_family != AF_INET
+               && ctx->to_send->ai_family != AF_INET6) {
             ctx->to_send = ctx->to_send->ai_next;
         }
     }
@@ -295,13 +294,12 @@ int avs_net_addrinfo_next(avs_net_addrinfo_t *ctx,
         struct sockaddr_in6 v6_address;
         (void) ((result = create_v4mapped(&v6_address, ctx->to_send))
                 || (result = return_resolved_endpoint(
-                        out, &v6_address, (socklen_t) sizeof(v6_address))));
+                            out, &v6_address, (socklen_t) sizeof(v6_address))));
     } else
 #endif
     {
-        result = return_resolved_endpoint(
-                out, ctx->to_send->ai_addr,
-                (socklen_t) ctx->to_send->ai_addrlen);
+        result = return_resolved_endpoint(out, ctx->to_send->ai_addr,
+                                          (socklen_t) ctx->to_send->ai_addrlen);
     }
     if (!result) {
         ctx->to_send = ctx->to_send->ai_next;

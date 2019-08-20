@@ -25,19 +25,19 @@
 
 #include <execinfo.h>
 
+#include <signal.h>
 #include <sys/types.h>
 #include <sys/wait.h>
-#include <signal.h>
-#include <unistd.h>
 #include <time.h>
+#include <unistd.h>
 
+#include <assert.h>
+#include <stdarg.h>
 #include <stddef.h>
-#include <stdlib.h>
 #include <stdint.h>
 #include <stdio.h>
-#include <stdarg.h>
+#include <stdlib.h>
 #include <string.h>
-#include <assert.h>
 
 #include "test.h"
 
@@ -46,14 +46,14 @@ VISIBILITY_SOURCE_BEGIN
 #define MAX_TRACE_LEVELS 256
 
 #if defined(HAVE_BACKTRACE) && defined(HAVE_BACKTRACE_SYMBOLS)
-#define WITH_AVS_STACK_TRACE
+#    define WITH_AVS_STACK_TRACE
 #endif
 
 #ifndef WITH_AVS_STACK_TRACE
 
 void _avs_unit_stack_trace_init(int argc, char **argv) {
-    (void)argc;
-    (void)argv;
+    (void) argc;
+    (void) argv;
 }
 
 void _avs_unit_stack_trace_print(FILE *file) {
@@ -74,13 +74,12 @@ typedef struct stack_trace {
 
 static char *const *_saved_argv;
 static int addr2line_pid = -1;
-static FILE* addr2line_read;
-static FILE* addr2line_write;
+static FILE *addr2line_read;
+static FILE *addr2line_write;
 
 static int is_addr2line_available(void) {
-    return addr2line_pid >= 0
-        && addr2line_read != NULL
-        && addr2line_write != NULL;
+    return addr2line_pid >= 0 && addr2line_read != NULL
+           && addr2line_write != NULL;
 }
 
 static void cleanup_addr2line(void) {
@@ -122,9 +121,9 @@ static void cleanup_addr2line(void) {
 static void start_addr2line(int argc, char **argv) {
     char addr2line_cmd[] = "/usr/bin/addr2line";
     char addr2line_arg[] = "-Capfe";
-    char* addr2line_argv[4];
+    char *addr2line_argv[4];
 
-    (void)argc;
+    (void) argc;
 
     addr2line_argv[0] = addr2line_cmd;
     addr2line_argv[1] = addr2line_arg;
@@ -133,8 +132,10 @@ static void start_addr2line(int argc, char **argv) {
 
     execv(addr2line_argv[0], addr2line_argv);
     perror("execv() failed");
-    fprintf(stderr, "Could not start %s, stacktrace symbols will not be"
-            " resolved\n", addr2line_cmd);
+    fprintf(stderr,
+            "Could not start %s, stacktrace symbols will not be"
+            " resolved\n",
+            addr2line_cmd);
 }
 
 static int addr2line_ask(char **out_answer,
@@ -154,7 +155,7 @@ static int addr2line_ask(char **out_answer,
         return -1;
     }
 
-    *out_answer_size = (size_t)bytes_read;
+    *out_answer_size = (size_t) bytes_read;
 
     if (out_answer && (*out_answer)[*out_answer_size - 1] != '\n') {
         return -1;
@@ -224,8 +225,7 @@ void _avs_unit_stack_trace_init(int argc, char **argv) {
 
     _saved_argv = argv;
 
-    if (pipe(addr_pipe) != 0
-            || pipe(line_pipe) != 0) {
+    if (pipe(addr_pipe) != 0 || pipe(line_pipe) != 0) {
         goto fail;
     }
 
@@ -233,8 +233,7 @@ void _avs_unit_stack_trace_init(int argc, char **argv) {
     case -1:
         goto fail;
     case 0:
-        if (dup2(addr_pipe[READ], 0) < 0
-                || dup2(line_pipe[WRITE], 1) < 0) {
+        if (dup2(addr_pipe[READ], 0) < 0 || dup2(line_pipe[WRITE], 1) < 0) {
             goto fail;
         }
 
@@ -265,8 +264,7 @@ fail:
     close_pipe(line_pipe);
 }
 
-static char *find_last_not_of(char *haystack,
-                              const char *needles) {
+static char *find_last_not_of(char *haystack, const char *needles) {
     size_t len = strlen(haystack);
     size_t at = len - 1;
 
@@ -279,8 +277,8 @@ static char *find_last_not_of(char *haystack,
     return NULL;
 }
 
-static char *addr2line(void* addr) {
-    char* line = NULL;
+static char *addr2line(void *addr) {
+    char *line = NULL;
     size_t size = 0;
     char *last = NULL;
 
@@ -296,7 +294,6 @@ static char *addr2line(void* addr) {
     return line;
 }
 
-
 static int is_own_symbol(const char *symbol) {
     const char *prog = _saved_argv[0];
     size_t prog_len;
@@ -306,15 +303,13 @@ static int is_own_symbol(const char *symbol) {
     }
 
     prog_len = strlen(prog);
-    return (strncmp(symbol, prog, prog_len) == 0
-            && symbol[prog_len] == '(');
+    return (strncmp(symbol, prog, prog_len) == 0 && symbol[prog_len] == '(');
 }
 
-static stack_frame_t *frame_from_symbol(void *address,
-                                        const char *symbol) {
+static stack_frame_t *frame_from_symbol(void *address, const char *symbol) {
     size_t symbol_len = strlen(symbol);
-    stack_frame_t *frame = (stack_frame_t*)
-        avs_calloc(1, sizeof(stack_frame_t) + symbol_len + 1);
+    stack_frame_t *frame = (stack_frame_t *) avs_calloc(
+            1, sizeof(stack_frame_t) + symbol_len + 1);
 
     if (!frame) {
         return NULL;
@@ -339,8 +334,7 @@ static stack_frame_t *frame_from_address(void *address) {
     return frame;
 }
 
-static stack_frame_t *stack_frame_create(void *address,
-                                         const char *symbol) {
+static stack_frame_t *stack_frame_create(void *address, const char *symbol) {
     if (is_own_symbol(symbol) && is_addr2line_available()) {
         return frame_from_address(address);
     } else {
@@ -387,20 +381,20 @@ static stack_trace_t *stack_trace_create(size_t skip_entries_count) {
     int result;
     stack_trace_t *trace = NULL;
 
-    if ((int)skip_entries_count > num_addrs) {
+    if ((int) skip_entries_count > num_addrs) {
         return NULL;
     }
 
-    trace = (stack_trace_t*)
-        avs_calloc(1, sizeof(stack_trace_t)
-                  + (size_t)num_addrs * sizeof(stack_frame_t));
+    trace = (stack_trace_t *) avs_calloc(
+            1,
+            sizeof(stack_trace_t) + (size_t) num_addrs * sizeof(stack_frame_t));
     if (!trace) {
         return NULL;
     }
 
     symbols = backtrace_symbols(addrs, num_addrs);
     result = fill_stack_trace(trace, addrs + skip_entries_count,
-                              (size_t)num_addrs - skip_entries_count, symbols);
+                              (size_t) num_addrs - skip_entries_count, symbols);
     avs_free(symbols);
 
     if (result) {

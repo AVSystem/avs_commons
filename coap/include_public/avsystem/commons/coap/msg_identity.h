@@ -17,8 +17,8 @@
 #ifndef AVS_COMMONS_COAP_MSG_IDENTITY_H
 #define AVS_COMMONS_COAP_MSG_IDENTITY_H
 
-#include <string.h>
 #include <stdint.h>
+#include <string.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -34,7 +34,7 @@ typedef struct {
 } avs_coap_token_t;
 
 /** All-zeros CoAP token initializer. */
-#define AVS_COAP_TOKEN_EMPTY ((avs_coap_token_t){0})
+#define AVS_COAP_TOKEN_EMPTY ((avs_coap_token_t) { 0 })
 
 /**
  * @returns true if @p first and @p second CoAP tokens are equal,
@@ -43,7 +43,7 @@ typedef struct {
 static inline bool avs_coap_token_equal(const avs_coap_token_t *first,
                                         const avs_coap_token_t *second) {
     return first->size == second->size
-               && !memcmp(first->bytes, second->bytes, first->size);
+           && !memcmp(first->bytes, second->bytes, first->size);
 }
 
 /** A struct combining CoAP message ID and its token. */
@@ -53,15 +53,14 @@ typedef struct avs_coap_msg_identity {
 } avs_coap_msg_identity_t;
 
 /** All-zeros message identity initializer. */
-#define AVS_COAP_MSG_IDENTITY_EMPTY ((avs_coap_msg_identity_t){0,{0}})
+#define AVS_COAP_MSG_IDENTITY_EMPTY ((avs_coap_msg_identity_t) { 0, { 0 } })
 
 /**
  * @returns true if @p a and @p b message identities are equal, false otherwise.
  */
 static inline bool avs_coap_identity_equal(const avs_coap_msg_identity_t *a,
                                            const avs_coap_msg_identity_t *b) {
-    return a->msg_id == b->msg_id
-                && avs_coap_token_equal(&a->token, &b->token);
+    return a->msg_id == b->msg_id && avs_coap_token_equal(&a->token, &b->token);
 }
 
 #ifdef __cplusplus

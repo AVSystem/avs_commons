@@ -27,10 +27,11 @@ VISIBILITY_SOURCE_BEGIN
 
 #define NS_IN_S INT32_C(1000000000)
 
-#define AVS_TIME_INVALID_DECL { \
-    .seconds = 0, \
-    .nanoseconds = -1 \
-}
+#define AVS_TIME_INVALID_DECL \
+    {                         \
+        .seconds = 0,         \
+        .nanoseconds = -1     \
+    }
 
 const avs_time_real_t AVS_TIME_REAL_INVALID = {
     .since_real_epoch = AVS_TIME_INVALID_DECL
@@ -46,7 +47,7 @@ bool avs_time_duration_less(avs_time_duration_t a, avs_time_duration_t b) {
         return false;
     } else {
         return (a.seconds < b.seconds)
-                || (a.seconds == b.seconds && a.nanoseconds < b.nanoseconds);
+               || (a.seconds == b.seconds && a.nanoseconds < b.nanoseconds);
     }
 }
 
@@ -66,7 +67,7 @@ bool avs_time_duration_valid(avs_time_duration_t t) {
 static inline int safe_add_int64_t(int64_t *out, int64_t a, int64_t b) {
     return __builtin_add_overflow(a, b, out) ? -1 : 0;
 }
-#else // HAVE_BUILTIN_ADD_OVERFLOW
+#else  // HAVE_BUILTIN_ADD_OVERFLOW
 static int safe_add_int64_t(int64_t *out, int64_t a, int64_t b) {
     if (a > 0 && b > 0) {
         uint64_t result = ((uint64_t) a) + ((uint64_t) b);
@@ -101,13 +102,13 @@ static inline int
 safe_mul_int64_t(int64_t *out, int64_t input, int64_t multiplier) {
     return __builtin_mul_overflow(input, multiplier, out) ? -1 : 0;
 }
-#else // HAVE_BUILTIN_MUL_OVERFLOW
+#else  // HAVE_BUILTIN_MUL_OVERFLOW
 static int safe_mul_int64_t(int64_t *out, int64_t input, int64_t multiplier) {
     if (input == 0 || multiplier == 0) {
         *out = 0;
         return 0;
     } else if ((input == INT64_MIN && multiplier == 1)
-            || (input == 1 && multiplier == INT64_MIN)) {
+               || (input == 1 && multiplier == INT64_MIN)) {
         *out = INT64_MIN;
         return 0;
     } else if (input == INT64_MIN || multiplier == INT64_MIN) {
@@ -174,15 +175,14 @@ static int negate(avs_time_duration_t *inout) {
         ++inout->seconds;
         inout->nanoseconds -= NS_IN_S;
     }
-    inout->seconds *= -1; // safe, because of the above
+    inout->seconds *= -1;     // safe, because of the above
     inout->nanoseconds *= -1; // safe, because the absolute value
                               // is no greater than 10^9
     return normalize(inout);
 }
 
-avs_time_duration_t
-avs_time_duration_diff(avs_time_duration_t minuend,
-                       avs_time_duration_t subtrahend) {
+avs_time_duration_t avs_time_duration_diff(avs_time_duration_t minuend,
+                                           avs_time_duration_t subtrahend) {
     if (!avs_time_duration_valid(minuend)
             || !avs_time_duration_valid(subtrahend)) {
         return AVS_TIME_DURATION_INVALID;
@@ -190,10 +190,10 @@ avs_time_duration_diff(avs_time_duration_t minuend,
         avs_time_duration_t negated_subtrahend = subtrahend;
         negate(&negated_subtrahend);
         avs_time_duration_t result;
-        result.nanoseconds = minuend.nanoseconds
-                + negated_subtrahend.nanoseconds;
-        if (safe_add_int64_t(&result.seconds,
-                             minuend.seconds, negated_subtrahend.seconds)
+        result.nanoseconds =
+                minuend.nanoseconds + negated_subtrahend.nanoseconds;
+        if (safe_add_int64_t(&result.seconds, minuend.seconds,
+                             negated_subtrahend.seconds)
                 || normalize(&result)) {
             return AVS_TIME_DURATION_INVALID;
         }
@@ -202,10 +202,7 @@ avs_time_duration_diff(avs_time_duration_t minuend,
     }
 }
 
-typedef enum {
-    UCO_MUL,
-    UCO_DIV
-} unit_conv_op_t;
+typedef enum { UCO_MUL, UCO_DIV } unit_conv_op_t;
 
 typedef struct {
     unit_conv_op_t operation;
@@ -218,16 +215,16 @@ typedef struct {
 } time_conv_t;
 
 static const time_conv_t CONVERSIONS[] = {
-    [AVS_TIME_DAY]  = {{ UCO_DIV,      86400 }, { UCO_DIV, 86400000000000LL }},
-    [AVS_TIME_HOUR] = {{ UCO_DIV,       3600 }, { UCO_DIV,  3600000000000LL }},
-    [AVS_TIME_MIN]  = {{ UCO_DIV,         60 }, { UCO_DIV,    60000000000LL }},
-    [AVS_TIME_S]    = {{ UCO_MUL,          1 }, { UCO_DIV,     1000000000LL }},
-    [AVS_TIME_MS]   = {{ UCO_MUL,       1000 }, { UCO_DIV,        1000000LL }},
-    [AVS_TIME_US]   = {{ UCO_MUL,    1000000 }, { UCO_DIV,           1000LL }},
-    [AVS_TIME_NS]   = {{ UCO_MUL, 1000000000 }, { UCO_MUL,              1LL }}
+    [AVS_TIME_DAY] = { { UCO_DIV, 86400 }, { UCO_DIV, 86400000000000LL } },
+    [AVS_TIME_HOUR] = { { UCO_DIV, 3600 }, { UCO_DIV, 3600000000000LL } },
+    [AVS_TIME_MIN] = { { UCO_DIV, 60 }, { UCO_DIV, 60000000000LL } },
+    [AVS_TIME_S] = { { UCO_MUL, 1 }, { UCO_DIV, 1000000000LL } },
+    [AVS_TIME_MS] = { { UCO_MUL, 1000 }, { UCO_DIV, 1000000LL } },
+    [AVS_TIME_US] = { { UCO_MUL, 1000000 }, { UCO_DIV, 1000LL } },
+    [AVS_TIME_NS] = { { UCO_MUL, 1000000000 }, { UCO_MUL, 1LL } }
 };
 
-/** 
+/**
  * Implementation the same as of is_double_within_int64_range() from numbers.c.
  * We don't have internal headers and this function shouldn't be in public API,
  * so it's duplicated instead.
@@ -304,8 +301,7 @@ int avs_time_duration_to_scalar(int64_t *out,
 double avs_time_duration_to_fscalar(avs_time_duration_t value,
                                     avs_time_unit_t unit) {
     double out;
-    if (!unit_valid(unit)
-            || !avs_time_duration_valid(value)
+    if (!unit_valid(unit) || !avs_time_duration_valid(value)
             || time_conv_forward_double(&out, value.seconds, value.nanoseconds,
                                         &CONVERSIONS[unit])) {
         return NAN;
@@ -349,8 +345,8 @@ avs_time_duration_t avs_time_duration_mul(avs_time_duration_t input,
         avs_time_duration_t result;
         result.nanoseconds = (int32_t) (nanoseconds % NS_IN_S);
         if (safe_mul_int64_t(&result.seconds, input.seconds, multiplier)
-                || safe_add_int64_t(&result.seconds,
-                                    result.seconds, seconds_rest)
+                || safe_add_int64_t(&result.seconds, result.seconds,
+                                    seconds_rest)
                 || normalize(&result)) {
             return AVS_TIME_DURATION_INVALID;
         }
@@ -408,19 +404,17 @@ avs_time_duration_t avs_time_duration_fmul(avs_time_duration_t input,
 
 avs_time_duration_t avs_time_duration_div(avs_time_duration_t dividend,
                                           int32_t divisor) {
-    if (!avs_time_duration_valid(dividend)
-            || divisor == 0
-            || (INT64_MIN + INT64_MAX != 0
-                    && dividend.seconds == INT64_MIN
-                    && divisor == -1)) {
+    if (!avs_time_duration_valid(dividend) || divisor == 0
+            || (INT64_MIN + INT64_MAX != 0 && dividend.seconds == INT64_MIN
+                && divisor == -1)) {
         return AVS_TIME_DURATION_INVALID;
     } else {
         int64_t s_rest = dividend.seconds % divisor;
         avs_time_duration_t result = {
             .seconds = dividend.seconds / divisor,
             .nanoseconds = (int32_t) (((double) dividend.nanoseconds
-                                           + (double) s_rest * NS_IN_S)
-                                          / divisor)
+                                       + (double) s_rest * NS_IN_S)
+                                      / divisor)
         };
         normalize(&result);
 
@@ -439,9 +433,10 @@ const char *avs_time_duration_as_string_impl__(
             ++time.seconds;
             time.nanoseconds = 1000000000 - time.nanoseconds;
         }
-        result = avs_simple_snprintf(
-                *buf, AVS_TIME_DURATION_AS_STRING_MAX_LENGTH,
-                "%" PRId64 ".%09" PRId32, time.seconds, time.nanoseconds);
+        result = avs_simple_snprintf(*buf,
+                                     AVS_TIME_DURATION_AS_STRING_MAX_LENGTH,
+                                     "%" PRId64 ".%09" PRId32, time.seconds,
+                                     time.nanoseconds);
     } else {
         result = avs_simple_snprintf(
                 *buf, AVS_TIME_DURATION_AS_STRING_MAX_LENGTH, "TIME_INVALID");
@@ -454,5 +449,5 @@ const char *avs_time_duration_as_string_impl__(
 }
 
 #ifdef AVS_UNIT_TESTING
-#include "test/time.c"
+#    include "test/time.c"
 #endif // AVS_UNIT_TESTING

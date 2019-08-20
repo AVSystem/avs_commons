@@ -53,7 +53,8 @@ AVS_UNIT_TEST(mutex, basic) {
     };
 
     for (size_t i = 0; i < AVS_ARRAY_SIZE(threads); ++i) {
-        AVS_UNIT_ASSERT_SUCCESS(pthread_create(&threads[i], NULL, thread_func, &args));
+        AVS_UNIT_ASSERT_SUCCESS(
+                pthread_create(&threads[i], NULL, thread_func, &args));
     }
 
     for (size_t i = 0; i < AVS_ARRAY_SIZE(threads); ++i) {

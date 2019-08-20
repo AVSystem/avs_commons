@@ -24,23 +24,23 @@ VISIBILITY_PRIVATE_HEADER_BEGIN
 
 /* Following values are not defined e.g. in LwIP 1.4.1 */
 #ifndef AI_ADDRCONFIG
-#   define AI_ADDRCONFIG 0
+#    define AI_ADDRCONFIG 0
 #endif
 #ifndef AI_PASSIVE
-#   define AI_PASSIVE 0
+#    define AI_PASSIVE 0
 #endif
 
 /* Hopefully high enum values will not collide with any existing ones */
 #ifndef SO_BINDTODEVICE
-#   define SO_BINDTODEVICE 0xFFFF
+#    define SO_BINDTODEVICE 0xFFFF
 #endif
 #ifndef SO_PRIORITY
-#   define SO_PRIORITY     0xFFFE
+#    define SO_PRIORITY 0xFFFE
 #endif
 
 /* This one is a bit-flag, so it needs to be set to 0 */
 #ifndef MSG_NOSIGNAL
-#   define MSG_NOSIGNAL 0
+#    define MSG_NOSIGNAL 0
 #endif
 
 int _avs_net_get_af(avs_net_af_t addr_family);

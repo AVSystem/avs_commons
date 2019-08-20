@@ -32,8 +32,8 @@ int avs_coap_msg_find_unique_opt(const avs_coap_msg_t *msg,
     *out_opt = NULL;
 
     for (avs_coap_opt_iterator_t it = avs_coap_opt_begin(msg);
-            !avs_coap_opt_end(&it);
-            avs_coap_opt_next(&it)) {
+         !avs_coap_opt_end(&it);
+         avs_coap_opt_next(&it)) {
         uint32_t curr_opt_number = avs_coap_opt_number(&it);
 
         if (curr_opt_number == opt_number) {
@@ -57,8 +57,7 @@ int avs_coap_msg_get_option_u16(const avs_coap_msg_t *msg,
     const avs_coap_opt_t *opt;
     if (avs_coap_msg_find_unique_opt(msg, option_number, &opt)) {
         if (opt) {
-            LOG(DEBUG, "multiple instances of option %d found",
-                     option_number);
+            LOG(DEBUG, "multiple instances of option %d found", option_number);
             return -1;
         } else {
             LOG(TRACE, "option %d not found", option_number);
@@ -74,8 +73,7 @@ int avs_coap_msg_get_option_u32(const avs_coap_msg_t *msg,
     const avs_coap_opt_t *opt;
     if (avs_coap_msg_find_unique_opt(msg, option_number, &opt)) {
         if (opt) {
-            LOG(DEBUG, "multiple instances of option %d found",
-                     option_number);
+            LOG(DEBUG, "multiple instances of option %d found", option_number);
             return -1;
         } else {
             LOG(TRACE, "option %d not found", option_number);
@@ -111,8 +109,8 @@ int avs_coap_msg_get_option_string_it(const avs_coap_msg_t *msg,
 
 int avs_coap_msg_get_content_format(const avs_coap_msg_t *msg,
                                     uint16_t *out_value) {
-    int result = avs_coap_msg_get_option_u16(
-            msg, AVS_COAP_OPT_CONTENT_FORMAT, out_value);
+    int result = avs_coap_msg_get_option_u16(msg, AVS_COAP_OPT_CONTENT_FORMAT,
+                                             out_value);
 
     if (result == AVS_COAP_OPTION_MISSING) {
         *out_value = AVS_COAP_FORMAT_NONE;
@@ -126,20 +124,20 @@ static bool is_opt_critical(uint32_t opt_number) {
     return opt_number % 2;
 }
 
-static bool is_critical_opt_valid(uint8_t msg_code, uint32_t opt_number,
-            avs_coap_critical_option_validator_t fallback_validator) {
+static bool
+is_critical_opt_valid(uint8_t msg_code,
+                      uint32_t opt_number,
+                      avs_coap_critical_option_validator_t fallback_validator) {
     switch (opt_number) {
     case AVS_COAP_OPT_BLOCK1:
-        return msg_code == AVS_COAP_CODE_PUT
-            || msg_code == AVS_COAP_CODE_POST
-            || msg_code == AVS_COAP_CODE_FETCH
-            || msg_code == AVS_COAP_CODE_IPATCH;
+        return msg_code == AVS_COAP_CODE_PUT || msg_code == AVS_COAP_CODE_POST
+               || msg_code == AVS_COAP_CODE_FETCH
+               || msg_code == AVS_COAP_CODE_IPATCH;
     case AVS_COAP_OPT_BLOCK2:
-        return msg_code == AVS_COAP_CODE_GET
-            || msg_code == AVS_COAP_CODE_PUT
-            || msg_code == AVS_COAP_CODE_POST
-            || msg_code == AVS_COAP_CODE_FETCH
-            || msg_code == AVS_COAP_CODE_IPATCH;
+        return msg_code == AVS_COAP_CODE_GET || msg_code == AVS_COAP_CODE_PUT
+               || msg_code == AVS_COAP_CODE_POST
+               || msg_code == AVS_COAP_CODE_FETCH
+               || msg_code == AVS_COAP_CODE_IPATCH;
     default:
         return fallback_validator(msg_code, opt_number);
     }
@@ -152,14 +150,15 @@ int avs_coap_msg_validate_critical_options(
     uint8_t code = _avs_coap_header_get_code(msg);
 
     for (avs_coap_opt_iterator_t it = avs_coap_opt_begin(msg);
-            !avs_coap_opt_end(&it);
-            avs_coap_opt_next(&it)) {
+         !avs_coap_opt_end(&it);
+         avs_coap_opt_next(&it)) {
         if (is_opt_critical(avs_coap_opt_number(&it))) {
             uint32_t opt_number = avs_coap_opt_number(&it);
 
             if (!is_critical_opt_valid(code, opt_number, validator)) {
-                LOG(DEBUG, "warning: invalid critical option in query %s: %"
-                    PRIu32, AVS_COAP_CODE_STRING(avs_coap_msg_get_code(it.msg)),
+                LOG(DEBUG,
+                    "warning: invalid critical option in query %s: %" PRIu32,
+                    AVS_COAP_CODE_STRING(avs_coap_msg_get_code(it.msg)),
                     opt_number);
                 result = -1;
             }

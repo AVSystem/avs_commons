@@ -18,9 +18,8 @@
 
 #define PAYLOAD_MARKER "\xFF"
 
-static inline void setup_msg(avs_coap_msg_t *msg,
-                             const uint8_t *content,
-                             size_t content_length) {
+static inline void
+setup_msg(avs_coap_msg_t *msg, const uint8_t *content, size_t content_length) {
     memset(msg, 0, sizeof(*msg) + content_length);
 
     _avs_coap_header_set_version(msg, 1);
@@ -31,10 +30,10 @@ static inline void setup_msg(avs_coap_msg_t *msg,
 
     assert(content || content_length == 0);
     if (content_length) {
-        memcpy(msg->content + _avs_coap_header_size(msg),
-               content, content_length);
+        memcpy(msg->content + _avs_coap_header_size(msg), content,
+               content_length);
     }
-    msg->length = (uint32_t)(_avs_coap_header_size(msg) + content_length);
+    msg->length = (uint32_t) (_avs_coap_header_size(msg) + content_length);
 }
 
 static void free_msg(avs_coap_msg_t **msg) {

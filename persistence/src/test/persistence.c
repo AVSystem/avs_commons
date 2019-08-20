@@ -30,10 +30,7 @@ typedef struct {
     avs_stream_abstract_t *stream;
 } persistence_test_env_t;
 
-typedef enum {
-    CONTEXT_STORE = 0,
-    CONTEXT_RESTORE
-} persistence_context_type_t;
+typedef enum { CONTEXT_STORE = 0, CONTEXT_RESTORE } persistence_context_type_t;
 
 typedef avs_persistence_context_t
 persistence_context_constructor_t(avs_stream_abstract_t *);
@@ -54,8 +51,7 @@ static persistence_test_env_t *persistence_test_env_create(void) {
 static void persistence_test_env_destroy(persistence_test_env_t **env) {
     AVS_LIST_CLEAR(&(*env)->contexts);
     char message_finished;
-    AVS_UNIT_ASSERT_SUCCESS(avs_stream_read((*env)->stream,
-                                            &(size_t[]) { 0 }[0],
+    AVS_UNIT_ASSERT_SUCCESS(avs_stream_read((*env)->stream, &(size_t[]){ 0 }[0],
                                             &message_finished, NULL, 0));
     AVS_UNIT_ASSERT_TRUE(message_finished);
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&(*env)->stream));

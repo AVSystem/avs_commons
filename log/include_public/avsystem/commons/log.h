@@ -15,13 +15,13 @@
  */
 
 #ifndef AVS_COMMONS_LOG_H
-#define	AVS_COMMONS_LOG_H
+#define AVS_COMMONS_LOG_H
 
 #include <stdarg.h>
 
 #include <avsystem/commons/defs.h>
 
-#ifdef	__cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
@@ -138,55 +138,56 @@ void avs_log_internal_forced_l__(avs_log_level_t level,
                                  const char *module,
                                  const char *file,
                                  unsigned line,
-                                 const char *msg, ...)
-        AVS_F_PRINTF(5, 6);
+                                 const char *msg,
+                                 ...) AVS_F_PRINTF(5, 6);
 
 void avs_log_internal_l__(avs_log_level_t level,
                           const char *module,
                           const char *file,
                           unsigned line,
-                          const char *msg, ...)
-        AVS_F_PRINTF(5, 6);
+                          const char *msg,
+                          ...) AVS_F_PRINTF(5, 6);
 
-#define AVS_LOG_IMPL__(Level, Variant, ModuleStr, ...) \
-        avs_log_internal_##Variant##__(Level, ModuleStr, __FILE__, __LINE__, \
-                                       __VA_ARGS__)
+#define AVS_LOG_IMPL__(Level, Variant, ModuleStr, ...)                   \
+    avs_log_internal_##Variant##__(Level, ModuleStr, __FILE__, __LINE__, \
+                                   __VA_ARGS__)
 
-#define AVS_LOG_LAZY_IMPL__(Level, Variant, ModuleStr, ...) \
-        (avs_log_should_log__(Level, ModuleStr) \
-                ? avs_log_internal_forced_##Variant##__( \
-                        Level, ModuleStr, __FILE__, __LINE__, __VA_ARGS__) \
-                : (void) 0)
+#define AVS_LOG_LAZY_IMPL__(Level, Variant, ModuleStr, ...)               \
+    (avs_log_should_log__(Level, ModuleStr)                               \
+             ? avs_log_internal_forced_##Variant##__(                     \
+                       Level, ModuleStr, __FILE__, __LINE__, __VA_ARGS__) \
+             : (void) 0)
 
-#define AVS_LOG__TRACE(...)   AVS_LOG_IMPL__(AVS_LOG_TRACE, __VA_ARGS__)
-#define AVS_LOG__DEBUG(...)   AVS_LOG_IMPL__(AVS_LOG_DEBUG, __VA_ARGS__)
-#define AVS_LOG__INFO(...)    AVS_LOG_IMPL__(AVS_LOG_INFO, __VA_ARGS__)
+#define AVS_LOG__TRACE(...) AVS_LOG_IMPL__(AVS_LOG_TRACE, __VA_ARGS__)
+#define AVS_LOG__DEBUG(...) AVS_LOG_IMPL__(AVS_LOG_DEBUG, __VA_ARGS__)
+#define AVS_LOG__INFO(...) AVS_LOG_IMPL__(AVS_LOG_INFO, __VA_ARGS__)
 #define AVS_LOG__WARNING(...) AVS_LOG_IMPL__(AVS_LOG_WARNING, __VA_ARGS__)
-#define AVS_LOG__ERROR(...)   AVS_LOG_IMPL__(AVS_LOG_ERROR, __VA_ARGS__)
+#define AVS_LOG__ERROR(...) AVS_LOG_IMPL__(AVS_LOG_ERROR, __VA_ARGS__)
 
-#define AVS_LOG__LAZY_TRACE(...)   AVS_LOG_LAZY_IMPL__(AVS_LOG_TRACE, __VA_ARGS__)
-#define AVS_LOG__LAZY_DEBUG(...)   AVS_LOG_LAZY_IMPL__(AVS_LOG_DEBUG, __VA_ARGS__)
-#define AVS_LOG__LAZY_INFO(...)    AVS_LOG_LAZY_IMPL__(AVS_LOG_INFO, __VA_ARGS__)
-#define AVS_LOG__LAZY_WARNING(...) AVS_LOG_LAZY_IMPL__(AVS_LOG_WARNING, __VA_ARGS__)
-#define AVS_LOG__LAZY_ERROR(...)   AVS_LOG_LAZY_IMPL__(AVS_LOG_ERROR, __VA_ARGS__)
+#define AVS_LOG__LAZY_TRACE(...) AVS_LOG_LAZY_IMPL__(AVS_LOG_TRACE, __VA_ARGS__)
+#define AVS_LOG__LAZY_DEBUG(...) AVS_LOG_LAZY_IMPL__(AVS_LOG_DEBUG, __VA_ARGS__)
+#define AVS_LOG__LAZY_INFO(...) AVS_LOG_LAZY_IMPL__(AVS_LOG_INFO, __VA_ARGS__)
+#define AVS_LOG__LAZY_WARNING(...) \
+    AVS_LOG_LAZY_IMPL__(AVS_LOG_WARNING, __VA_ARGS__)
+#define AVS_LOG__LAZY_ERROR(...) AVS_LOG_LAZY_IMPL__(AVS_LOG_ERROR, __VA_ARGS__)
 
 /* enable compiling-in TRACE messages */
 #ifndef AVS_LOG_WITH_TRACE
-#undef AVS_LOG__TRACE
-#define AVS_LOG__TRACE(...) \
+#    undef AVS_LOG__TRACE
+#    define AVS_LOG__TRACE(...) \
         ((void) sizeof(AVS_LOG_IMPL__(AVS_LOG_TRACE, __VA_ARGS__), 0))
-#undef AVS_LOG__LAZY_TRACE
-#define AVS_LOG__LAZY_TRACE(...) \
+#    undef AVS_LOG__LAZY_TRACE
+#    define AVS_LOG__LAZY_TRACE(...) \
         ((void) sizeof(AVS_LOG_LAZY_IMPL__(AVS_LOG_TRACE, __VA_ARGS__), 0))
 #endif
 
 /* disable compiling-in DEBUG messages */
 #ifdef AVS_LOG_WITHOUT_DEBUG
-#undef AVS_LOG__DEBUG
-#define AVS_LOG__DEBUG(...) \
+#    undef AVS_LOG__DEBUG
+#    define AVS_LOG__DEBUG(...) \
         ((void) sizeof(AVS_LOG_IMPL__(AVS_LOG_DEBUG, __VA_ARGS__), 0))
-#undef AVS_LOG__LAZY_DEBUG
-#define AVS_LOG__LAZY_DEBUG(...) \
+#    undef AVS_LOG__LAZY_DEBUG
+#    define AVS_LOG__LAZY_DEBUG(...) \
         ((void) sizeof(AVS_LOG_LAZY_IMPL__(AVS_LOG_DEBUG, __VA_ARGS__), 0))
 #endif
 
@@ -209,7 +210,7 @@ int avs_log_set_level__(const char *module, avs_log_level_t level);
  *               currently set for the specified module.
  */
 #define avs_log(Module, Level, ...) \
-        AVS_LOG__##Level(l, AVS_QUOTE_MACRO(Module), __VA_ARGS__)
+    AVS_LOG__##Level(l, AVS_QUOTE_MACRO(Module), __VA_ARGS__)
 
 /**
  * Creates a log message and displays it on a specified error output. Message
@@ -227,7 +228,7 @@ int avs_log_set_level__(const char *module, avs_log_level_t level);
  *               currently set for the specified module.
  */
 #define avs_log_v(Module, Level, ...) \
-        AVS_LOG__##Level(v, AVS_QUOTE_MACRO(Module), __VA_ARGS__)
+    AVS_LOG__##Level(v, AVS_QUOTE_MACRO(Module), __VA_ARGS__)
 
 /**
  * If the current log level is high enough, creates a log message and displays
@@ -244,7 +245,7 @@ int avs_log_set_level__(const char *module, avs_log_level_t level);
  *               than <c>QUIET</c>) with the leading <c>AVS_LOG_</c> omitted.
  */
 #define avs_log_lazy(Module, Level, ...) \
-        avs_log(Module, LAZY_##Level, __VA_ARGS__)
+    avs_log(Module, LAZY_##Level, __VA_ARGS__)
 
 /**
  * If the current log level is high enough, creates a log message and displays
@@ -261,7 +262,7 @@ int avs_log_set_level__(const char *module, avs_log_level_t level);
  *               than <c>QUIET</c>) with the leading <c>AVS_LOG_</c> omitted.
  */
 #define avs_log_lazy_v(Module, Level, ...) \
-        avs_log_v(Module, LAZY_##Level, __VA_ARGS__)
+    avs_log_v(Module, LAZY_##Level, __VA_ARGS__)
 
 /**
  * Sets the logging level for a given module. Messages with lower level than the
@@ -288,7 +289,7 @@ int avs_log_set_level__(const char *module, avs_log_level_t level);
  * </example>
  */
 #define avs_log_set_level(Module, Level) \
-        avs_log_set_level__(AVS_QUOTE_MACRO(Module), Level)
+    avs_log_set_level__(AVS_QUOTE_MACRO(Module), Level)
 
 /**
  * Sets the logging level for a given module. Messages with lower level than the
@@ -300,11 +301,10 @@ int avs_log_set_level__(const char *module, avs_log_level_t level);
  *               values).
  */
 #define avs_log_set_default_level(Level) \
-        ((void) avs_log_set_level__(NULL, Level))
+    ((void) avs_log_set_level__(NULL, Level))
 
-#ifdef	__cplusplus
+#ifdef __cplusplus
 }
 #endif
 
-#endif	/* AVS_COMMONS_LOG_H */
-
+#endif /* AVS_COMMONS_LOG_H */

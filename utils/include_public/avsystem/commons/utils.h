@@ -23,7 +23,7 @@
 #include <stdbool.h>
 #include <string.h>
 
-#ifdef	__cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
@@ -94,7 +94,7 @@ uint32_t avs_rand32_r(avs_rand_seed_t *seed);
  */
 static inline uint64_t avs_rand64_r(avs_rand_seed_t *seed) {
     return (((uint64_t) avs_rand32_r(seed)) << 32)
-        | ((uint64_t) avs_rand32_r(seed));
+           | ((uint64_t) avs_rand32_r(seed));
 }
 
 /** Tests whether @p value is a power of two */
@@ -323,7 +323,7 @@ bool avs_double_convertible_to_int64(double value);
  */
 bool avs_double_convertible_to_uint64(double value);
 
-#ifdef	__cplusplus
+#ifdef __cplusplus
 }
 #endif
 

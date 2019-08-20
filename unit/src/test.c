@@ -35,11 +35,11 @@
 #include <avsystem/commons/utils.h>
 
 #ifdef WITH_AVS_LOG
-#include <avsystem/commons/log.h>
+#    include <avsystem/commons/log.h>
 #endif
 
-#include "test.h"
 #include "stack_trace.h"
+#include "test.h"
 
 VISIBILITY_SOURCE_BEGIN
 
@@ -54,10 +54,7 @@ typedef struct avs_unit_test_suite_struct {
     AVS_LIST(avs_unit_test_t) tests;
 } avs_unit_test_suite_t;
 
-typedef enum message_level {
-    NORMAL,
-    VERBOSE
-} message_level_t;
+typedef enum message_level { NORMAL, VERBOSE } message_level_t;
 
 static jmp_buf _avs_unit_jmp_buf;
 static AVS_LIST(avs_unit_init_function_t) global_init = NULL;
@@ -83,10 +80,8 @@ void avs_unit_add_global_init__(avs_unit_init_function_t init_func) {
     }
 }
 
-static void test_fail_vprintf(const char *file,
-                              int line,
-                              const char *fmt,
-                              va_list list) {
+static void
+test_fail_vprintf(const char *file, int line, const char *fmt, va_list list) {
     printf("\033[1m[%s:%d] ", file, line);
     vprintf(fmt, list);
     printf("\033[0m");
@@ -107,9 +102,8 @@ void avs_unit_abort__(const char *msg, const char *file, int line) {
     abort();
 }
 
-static void print_char(uint8_t value,
-                       bool bold) {
-    if (getenv("AVS_UNIT_UNESCAPE_PRINTABLE") && isgraph((char)value)) {
+static void print_char(uint8_t value, bool bold) {
+    if (getenv("AVS_UNIT_UNESCAPE_PRINTABLE") && isgraph((char) value)) {
         printf(" \033[%dm%c ", bold, value);
     } else {
         printf(" \033[%dm%02x", bold, value);
@@ -125,14 +119,18 @@ static void test_fail_print_hex_diff(const uint8_t *actual,
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 
-    size_t start = (size_t)MAX((ssize_t)diff_start_offset - (ssize_t)context_size, 0);
-    size_t end = MIN(diff_start_offset + diff_bytes + context_size, buffer_size);
+    size_t start =
+            (size_t) MAX((ssize_t) diff_start_offset - (ssize_t) context_size,
+                         0);
+    size_t end =
+            MIN(diff_start_offset + diff_bytes + context_size, buffer_size);
 
 #undef MIN
 #undef MAX
 
     size_t i;
-    size_t marker_offset = sizeof("expected:") + 1 + (diff_start_offset - start) * (sizeof(" 00") - 1);
+    size_t marker_offset = sizeof("expected:") + 1
+                           + (diff_start_offset - start) * (sizeof(" 00") - 1);
 
     printf("  actual:");
     for (i = start; i < end; ++i) {
@@ -142,7 +140,7 @@ static void test_fail_print_hex_diff(const uint8_t *actual,
     for (i = start; i < end; ++i) {
         print_char(expected[i], actual[i] != expected[i]);
     }
-    printf("\033[0m\n%*s\n", (int)marker_offset, "^");
+    printf("\033[0m\n%*s\n", (int) marker_offset, "^");
 }
 
 static avs_unit_test_suite_t *find_test_suite(const char *suite_name) {
@@ -182,8 +180,8 @@ void avs_unit_add_suite_init__(const char *suite_name,
                                avs_unit_init_function_t init_func) {
     avs_unit_test_suite_t *suite = find_or_add_test_suite(suite_name);
     if (add_init_func(&suite->init, init_func)) {
-        fprintf(stderr,
-                "cannot add new init function for suite: %s\n", suite_name);
+        fprintf(stderr, "cannot add new init function for suite: %s\n",
+                suite_name);
         exit(EXIT_FAILURE);
     }
 }
@@ -218,46 +216,39 @@ void _avs_unit_assert_fail(const char *file,
 }
 
 /* <editor-fold defaultstate="collapsed" desc="ASSERTIONS"> */
-void avs_unit_assert_success__(int result,
-                               const char *file,
-                               int line) {
+void avs_unit_assert_success__(int result, const char *file, int line) {
     _avs_unit_assert(result == 0, file, line, "expected success\n");
 }
 
-void avs_unit_assert_failed__(int result,
-                              const char *file,
-                              int line) {
+void avs_unit_assert_failed__(int result, const char *file, int line) {
     _avs_unit_assert(result != 0, file, line, "expected failure\n");
 }
 
-void avs_unit_assert_true__(int result,
-                            const char *file,
-                            int line) {
+void avs_unit_assert_true__(int result, const char *file, int line) {
     _avs_unit_assert(result != 0, file, line, "expected true\n");
 }
 
-void avs_unit_assert_false__(int result,
-                             const char *file,
-                             int line) {
+void avs_unit_assert_false__(int result, const char *file, int line) {
     _avs_unit_assert(result == 0, file, line, "expected false\n");
 }
 
 #define CHECK_EQUAL_BODY(format, ...)                                          \
-{                                                                              \
-    snprintf(strings->actual_str, sizeof(strings->actual_str),                 \
-             format, actual);                                                  \
-    snprintf(strings->expected_str, sizeof(strings->expected_str),             \
-             format, expected);                                                \
-    return (__VA_ARGS__);                                                      \
-}
+    {                                                                          \
+        snprintf(strings->actual_str, sizeof(strings->actual_str), format,     \
+                 actual);                                                      \
+        snprintf(strings->expected_str, sizeof(strings->expected_str), format, \
+                 expected);                                                    \
+        return (__VA_ARGS__);                                                  \
+    }
 
 #define CHECK_EQUAL_BODY_INT(format) \
     CHECK_EQUAL_BODY(format, actual == expected)
 
 #define CHECK_EQUAL_BODY_FLOAT(format) \
-    CHECK_EQUAL_BODY(format, \
+    CHECK_EQUAL_BODY(format,           \
                      isnan(actual) ? isnan(expected) : actual == expected)
 
+// clang-format off
 AVS_UNIT_CHECK_EQUAL_FUNCTION_DECLARE__(char, c) CHECK_EQUAL_BODY_INT("%c")
 AVS_UNIT_CHECK_EQUAL_FUNCTION_DECLARE__(signed char, sc) CHECK_EQUAL_BODY_INT("%d")
 AVS_UNIT_CHECK_EQUAL_FUNCTION_DECLARE__(short, s) CHECK_EQUAL_BODY_INT("%d")
@@ -281,6 +272,7 @@ void avs_unit_assert_equal_func__(int check_result,
     _avs_unit_assert(check_result, file, line, "expected <%s> was <%s>\n",
                      expected_str, actual_str);
 }
+// clang-format on
 
 void avs_unit_assert_not_equal_func__(int check_result,
                                       const char *actual_str,
@@ -297,10 +289,10 @@ void avs_unit_assert_equal_string__(const char *actual,
                                     const char *file,
                                     int line) {
     if (actual != NULL || expected != NULL) {
-        _avs_unit_assert(!!expected, file, line,
-                         "expected NULL was <%s>\n", actual);
-        _avs_unit_assert(!!actual, file, line,
-                         "expected <%s> was NULL\n", expected);
+        _avs_unit_assert(!!expected, file, line, "expected NULL was <%s>\n",
+                         actual);
+        _avs_unit_assert(!!actual, file, line, "expected <%s> was NULL\n",
+                         expected);
         _avs_unit_assert(!strcmp(actual, expected), file, line,
                          "expected <%s> was <%s>\n", expected, actual);
     }
@@ -321,21 +313,23 @@ static size_t find_first__(bool equal,
     return size;
 }
 
-#define find_first_equal(a, b, start, size) find_first__(true, (a), (b), (start), (size))
-#define find_first_different(a, b, start, size) find_first__(false, (a), (b), (start), (size))
+#define find_first_equal(a, b, start, size) \
+    find_first__(true, (a), (b), (start), (size))
+#define find_first_different(a, b, start, size) \
+    find_first__(false, (a), (b), (start), (size))
 
-static void print_differences(const void *actual,
-                              const void *expected,
-                              size_t num_bytes) {
+static void
+print_differences(const void *actual, const void *expected, size_t num_bytes) {
     static const size_t CONTEXT_SIZE = 5;
     static const size_t MAX_ERRORS = 3;
     size_t found_errors = 0;
     size_t at = 0;
-    const uint8_t *actual_ptr = (const uint8_t*)actual;
-    const uint8_t *expected_ptr = (const uint8_t*)expected;
+    const uint8_t *actual_ptr = (const uint8_t *) actual;
+    const uint8_t *expected_ptr = (const uint8_t *) expected;
 
     for (found_errors = 0; found_errors < MAX_ERRORS; ++found_errors) {
-        size_t error_start = find_first_different(actual_ptr, expected_ptr, at, num_bytes);
+        size_t error_start =
+                find_first_different(actual_ptr, expected_ptr, at, num_bytes);
         size_t error_end;
         size_t error_bytes = 0;
 
@@ -343,13 +337,16 @@ static void print_differences(const void *actual,
             return;
         }
 
-        error_end = find_first_equal(actual_ptr, expected_ptr, error_start, num_bytes);
+        error_end = find_first_equal(actual_ptr, expected_ptr, error_start,
+                                     num_bytes);
         error_bytes = error_end - error_start;
 
         while (error_end < num_bytes) {
-            at = find_first_different(actual_ptr, expected_ptr, error_end, num_bytes);
+            at = find_first_different(actual_ptr, expected_ptr, error_end,
+                                      num_bytes);
             if (at - error_end <= CONTEXT_SIZE * 2) {
-                error_end = find_first_equal(actual_ptr, expected_ptr, at, num_bytes);
+                error_end = find_first_equal(actual_ptr, expected_ptr, at,
+                                             num_bytes);
                 error_bytes += error_end - at;
                 at = error_end;
             } else {
@@ -416,9 +413,7 @@ void avs_unit_assert_not_equal_string__(const char *actual,
     }
 }
 
-void avs_unit_assert_null__(const void *pointer,
-                            const char *file,
-                            int line) {
+void avs_unit_assert_null__(const void *pointer, const char *file, int line) {
     _avs_unit_assert(!pointer, file, line, "expected NULL\n");
 }
 
@@ -454,21 +449,22 @@ static void test_printf(message_level_t level, const char *format, ...) {
 static void list_tests_for_suite(avs_unit_test_suite_t *suite) {
     avs_unit_test_t *current_test;
 
-    test_printf(NORMAL, "%s (%u tests)\n",
-                suite->name, (unsigned)AVS_LIST_SIZE(suite->tests));
+    test_printf(NORMAL, "%s (%u tests)\n", suite->name,
+                (unsigned) AVS_LIST_SIZE(suite->tests));
 
     AVS_LIST_FOREACH(current_test, suite->tests) {
         test_printf(NORMAL, "  - %s\n", current_test->name);
     }
 }
 
-static int parse_command_line_args(int argc, char* argv[],
-                                   const char * volatile *out_selected_suite,
-                                   const char * volatile *out_selected_test) {
+static int parse_command_line_args(int argc,
+                                   char *argv[],
+                                   const char *volatile *out_selected_suite,
+                                   const char *volatile *out_selected_test) {
     while (1) {
         static const struct option long_options[] = {
-            { "help",    no_argument, 0, 'h' },
-            { "list",    optional_argument, 0, 'l' },
+            { "help", no_argument, 0, 'h' },
+            { "list", optional_argument, 0, 'l' },
             { "verbose", no_argument, 0, 'v' },
             { 0, 0, 0, 0 }
         };
@@ -522,16 +518,17 @@ static int parse_command_line_args(int argc, char* argv[],
                         "characters compared using ASSERT_EQUAL_BYTES are "
                         "displayed in unescaped form.\n"
                         "\n");
-            test_printf(NORMAL,
-                        "EXAMPLES\n"
-                        "    %1$s            # run all tests\n"
-                        "    %1$s -l         # list all tests, do not run any\n"
-                        "    %1$s -l suite   # list all tests from suite "
-                        "'suite', do not run any\n"
-                        "    %1$s suite      # run all tests from suite 'suite'\n"
-                        "    %1$s suite case # run only test 'case' from suite "
-                        "'suite'\n",
-                        argv[0]);
+            test_printf(
+                    NORMAL,
+                    "EXAMPLES\n"
+                    "    %1$s            # run all tests\n"
+                    "    %1$s -l         # list all tests, do not run any\n"
+                    "    %1$s -l suite   # list all tests from suite "
+                    "'suite', do not run any\n"
+                    "    %1$s suite      # run all tests from suite 'suite'\n"
+                    "    %1$s suite case # run only test 'case' from suite "
+                    "'suite'\n",
+                    argv[0]);
             return -1;
         case 'l': {
             avs_unit_test_suite_t *suite;
@@ -539,7 +536,8 @@ static int parse_command_line_args(int argc, char* argv[],
              * "-l foo"; check for such possibility */
             const char *arg = optarg ? optarg
                                      : (argv[optind] && argv[optind][0] != '-'
-                                             ? argv[optind] : NULL);
+                                                ? argv[optind]
+                                                : NULL);
             if (arg) {
                 suite = find_test_suite(arg);
                 if (suite) {
@@ -575,8 +573,7 @@ static int parse_command_line_args(int argc, char* argv[],
 }
 
 #ifdef WITH_AVS_LOG
-static int parse_log_level(const char *str,
-                           avs_log_level_t *level) {
+static int parse_log_level(const char *str, avs_log_level_t *level) {
     if (!avs_strcasecmp(str, "trace")) {
         *level = AVS_LOG_TRACE;
     } else if (!avs_strcasecmp(str, "debug")) {
@@ -618,10 +615,10 @@ static int parse_log_level_definition(const char **def,
         end = strchr(eq, '\0');
     }
 
-    if (eq - *def < (ssize_t)module_size
-            && end - (eq + 1) < (ssize_t)level_str_size) {
-        memcpy(out_module, *def, (size_t)(eq - *def));
-        memcpy(out_level_str, eq + 1, (size_t)(end - (eq + 1)));
+    if (eq - *def < (ssize_t) module_size
+            && end - (eq + 1) < (ssize_t) level_str_size) {
+        memcpy(out_module, *def, (size_t) (eq - *def));
+        memcpy(out_level_str, eq + 1, (size_t) (end - (eq + 1)));
 
         if (parse_log_level(out_level_str, out_level)) {
             test_printf(NORMAL, "invalid log level: %s for module %s\n",
@@ -649,12 +646,13 @@ static void process_env_vars(void) {
         char level_str[16] = "";
         avs_log_level_t level;
 
-        if (!parse_log_level_definition(&log, module, sizeof(module),
-                                        level_str, sizeof(level_str), &level)) {
+        if (!parse_log_level_definition(&log, module, sizeof(module), level_str,
+                                        sizeof(level_str), &level)) {
             if (!module[0]) {
                 avs_log_set_default_level(level);
                 log_levels_changed = true;
-                test_printf(VERBOSE, "default log level set to %s\n", level_str);
+                test_printf(VERBOSE, "default log level set to %s\n",
+                            level_str);
             } else {
                 avs_log_set_level__(module, level);
                 log_levels_changed = true;
@@ -668,15 +666,15 @@ static void process_env_vars(void) {
         atexit(avs_log_reset);
     }
 }
-#else /* WITH_AVS_LOG */
+#else  /* WITH_AVS_LOG */
 static void process_env_vars(void) {}
 #endif /* WITH_AVS_LOG */
 
 int main(int argc, char *argv[]) {
-    const char * volatile selected_suite = NULL;
-    const char * volatile selected_test = NULL;
-    avs_unit_init_function_t * volatile current_init = NULL;
-    avs_unit_test_suite_t * volatile current_suite = NULL;
+    const char *volatile selected_suite = NULL;
+    const char *volatile selected_test = NULL;
+    avs_unit_init_function_t *volatile current_init = NULL;
+    avs_unit_test_suite_t *volatile current_suite = NULL;
     volatile int tests_result = 0;
 
     _avs_unit_stack_trace_init(argc, argv);
@@ -690,7 +688,7 @@ int main(int argc, char *argv[]) {
     }
 
     AVS_LIST_FOREACH(current_suite, test_suites) {
-        avs_unit_test_t * volatile current_test = NULL;
+        avs_unit_test_t *volatile current_test = NULL;
         volatile size_t tests_passed = 0;
         volatile size_t tests_count;
 
@@ -720,18 +718,19 @@ int main(int argc, char *argv[]) {
             }
 
             if (result) {
-                test_printf(NORMAL, "    %-60s %s\n",
-                            current_test->name, string_status(result));
+                test_printf(NORMAL, "    %-60s %s\n", current_test->name,
+                            string_status(result));
             } else {
-                test_printf(VERBOSE, "    %-60s %s\n",
-                            current_test->name, string_status(result));
+                test_printf(VERBOSE, "    %-60s %s\n", current_test->name,
+                            string_status(result));
                 ++tests_passed;
             }
         }
         test_printf(NORMAL,
                     "\033[0;33m%-65s\033[0;%sm%" PRIu64 "/%" PRIu64 "\033[0m\n",
                     current_suite->name,
-                    (selected_test || tests_passed == tests_count) ? "32" : "31",
+                    (selected_test || tests_passed == tests_count) ? "32"
+                                                                   : "31",
                     (uint64_t) tests_passed, (uint64_t) tests_count);
         test_printf(VERBOSE, "\n");
     }

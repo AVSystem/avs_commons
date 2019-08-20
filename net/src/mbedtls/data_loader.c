@@ -32,15 +32,15 @@
 
 VISIBILITY_SOURCE_BEGIN
 
-#define CREATE_OR_FAIL(type, ptr) \
-do { \
-    avs_free(*ptr); \
-    *ptr = (type *) avs_calloc(1, sizeof(**ptr)); \
-    if (!*ptr) {\
-        LOG(ERROR, "memory allocation error"); \
-        return -1; \
-    } \
-} while (0)
+#define CREATE_OR_FAIL(type, ptr)                     \
+    do {                                              \
+        avs_free(*ptr);                               \
+        *ptr = (type *) avs_calloc(1, sizeof(**ptr)); \
+        if (!*ptr) {                                  \
+            LOG(ERROR, "memory allocation error");    \
+            return -1;                                \
+        }                                             \
+    } while (0)
 
 static int append_cert_from_buffer(mbedtls_x509_crt *chain,
                                    const void *buffer,
@@ -48,8 +48,7 @@ static int append_cert_from_buffer(mbedtls_x509_crt *chain,
     return mbedtls_x509_crt_parse(chain, (const unsigned char *) buffer, len);
 }
 
-static int load_cert_from_file(mbedtls_x509_crt *chain,
-                               const char *name) {
+static int load_cert_from_file(mbedtls_x509_crt *chain, const char *name) {
     LOG(DEBUG, "certificate <%s>: going to load", name);
 
     int retval = mbedtls_x509_crt_parse_file(chain, name);
@@ -117,13 +116,15 @@ int _avs_net_mbedtls_load_client_cert(mbedtls_x509_crt **out,
     switch (info->desc.source) {
     case AVS_NET_DATA_SOURCE_FILE:
         if (!info->desc.info.file.filename) {
-            LOG(ERROR, "attempt to load client cert from file, but filename=NULL");
+            LOG(ERROR,
+                "attempt to load client cert from file, but filename=NULL");
             return -1;
         }
         return load_cert_from_file(*out, info->desc.info.file.filename);
     case AVS_NET_DATA_SOURCE_BUFFER:
         if (!info->desc.info.buffer.buffer) {
-            LOG(ERROR, "attempt to load client cert from buffer, but buffer=NULL");
+            LOG(ERROR,
+                "attempt to load client cert from buffer, but buffer=NULL");
             return -1;
         }
         return append_cert_from_buffer(*out, info->desc.info.buffer.buffer,
@@ -166,7 +167,8 @@ int _avs_net_mbedtls_load_client_key(mbedtls_pk_context **client_key,
     switch (info->desc.source) {
     case AVS_NET_DATA_SOURCE_FILE:
         if (!info->desc.info.file.filename) {
-            LOG(ERROR, "attempt to load client key from file, but filename=NULL");
+            LOG(ERROR,
+                "attempt to load client key from file, but filename=NULL");
             return -1;
         }
         return load_private_key_from_file(*client_key,
@@ -174,7 +176,8 @@ int _avs_net_mbedtls_load_client_key(mbedtls_pk_context **client_key,
                                           info->desc.info.file.password);
     case AVS_NET_DATA_SOURCE_BUFFER:
         if (!info->desc.info.buffer.buffer) {
-            LOG(ERROR, "attempt to load client key from buffer, but buffer=NULL");
+            LOG(ERROR,
+                "attempt to load client key from buffer, but buffer=NULL");
             return -1;
         }
         return load_private_key_from_buffer(*client_key,

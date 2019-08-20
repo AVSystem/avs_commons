@@ -45,9 +45,9 @@
 
 VISIBILITY_SOURCE_BEGIN
 
-#define NS_INT16SZ	 2
-#define NS_INADDRSZ	 4
-#define NS_IN6ADDRSZ	16
+#define NS_INT16SZ 2
+#define NS_INADDRSZ 4
+#define NS_IN6ADDRSZ 16
 
 /*
  * WARNING: Don't even consider trying to compile this on a system where
@@ -155,7 +155,7 @@ static int inet_pton4(const char *src, void *dst) {
  */
 static int inet_pton6(const char *src, void *dst) {
     static const char xdigits_l[] = "0123456789abcdef",
-            xdigits_u[] = "0123456789ABCDEF";
+                      xdigits_u[] = "0123456789ABCDEF";
     unsigned char tmp[NS_IN6ADDRSZ], *tp, *endp, *colonp;
     const char *xdigits, *curtok;
     int ch, saw_xdigit;
@@ -200,8 +200,8 @@ static int inet_pton6(const char *src, void *dst) {
             val = 0;
             continue;
         }
-        if (ch == '.' && ((tp + NS_INADDRSZ) <= endp) &&
-                inet_pton4(curtok, tp) > 0) {
+        if (ch == '.' && ((tp + NS_INADDRSZ) <= endp)
+                && inet_pton4(curtok, tp) > 0) {
             tp += NS_INADDRSZ;
             saw_xdigit = 0;
             break; /* '\0' was seen by inet_pton4(). */
