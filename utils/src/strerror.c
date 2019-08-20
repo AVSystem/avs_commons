@@ -18,6 +18,8 @@
 
 #include <avsystem/commons/errno.h>
 
+VISIBILITY_SOURCE_BEGIN
+
 // Based on:
 // https://code.woboq.org/userspace/glibc/sysdeps/gnu/errlist.c.html#_sys_errlist_internal
 const char *avs_strerror(avs_errno_t error) {
