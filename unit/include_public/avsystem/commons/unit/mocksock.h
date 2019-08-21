@@ -160,7 +160,6 @@ void avs_unit_mocksock_assert_io_clean__(avs_net_abstract_socket_t *socket,
 void avs_unit_mocksock_expect_connect__(avs_net_abstract_socket_t *socket,
                                         const char *host,
                                         const char *port,
-
                                         const mocksock_additional_args_t *args);
 #define avs_unit_mocksock_expect_connect(Socket, Host, /* Port, */...) \
     avs_unit_mocksock_expect_connect__(                                \
@@ -338,8 +337,8 @@ void avs_unit_mocksock_expect_set_opt__(avs_net_abstract_socket_t *socket,
 void avs_unit_mocksock_expect_error__(avs_net_abstract_socket_t *socket,
                                       avs_errno_t to_return,
                                       const mocksock_additional_args_t *args);
-#define avs_unit_mocksock_expect_errno(Socket, /* ToReturn, */...) \
-    avs_unit_mocksock_expect_errno__(                              \
+#define avs_unit_mocksock_expect_error(Socket, /* ToReturn, */...) \
+    avs_unit_mocksock_expect_error__(                              \
             (Socket),                                              \
             (AVS_VARARG0(__VA_ARGS__)),                            \
             &(const mocksock_additional_args_t) {                  \
