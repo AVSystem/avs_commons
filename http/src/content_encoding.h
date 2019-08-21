@@ -38,7 +38,7 @@ VISIBILITY_PRIVATE_HEADER_BEGIN
  *   <c>decoder</c> stream. If it fails, attempts to call the "decode more data"
  *   procedure and retry.
  *
- * - <c>avs_stream_errno</c> - returns 0 if there was no error, or either
+ * - <c>avs_stream_error</c> - returns 0 if there was no error, or either
  *   <c>HTTP_ERRNO_BACKEND</c> or <c>HTTP_ERRNO_DECODER</c>, depending on which
  *   stream failed during the last operation.
  *

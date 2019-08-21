@@ -144,7 +144,7 @@ static int mock_get_opt(avs_net_abstract_socket_t *socket,
 static int mock_set_opt(avs_net_abstract_socket_t *socket,
                         avs_net_socket_opt_key_t option_key,
                         avs_net_socket_opt_value_t option_value);
-static int mock_errno(avs_net_abstract_socket_t *socket);
+static avs_errno_t mock_errno(avs_net_abstract_socket_t *socket);
 
 static int unimplemented() {
     return -1;
@@ -835,11 +835,11 @@ static int mock_set_opt(avs_net_abstract_socket_t *socket_,
     return retval;
 }
 
-static int mock_errno(avs_net_abstract_socket_t *socket_) {
-    int retval = 0;
+static avs_errno_t mock_errno(avs_net_abstract_socket_t *socket_) {
+    avs_errno_t retval = 0;
     mocksock_t *socket = (mocksock_t *) socket_;
     assert_command_expected(socket->expected_commands, MOCKSOCK_COMMAND_ERRNO);
-    retval = socket->expected_commands->retval;
+    retval = (avs_errno_t) socket->expected_commands->retval;
     finish_command(socket);
     return retval;
 }
@@ -1115,12 +1115,12 @@ void avs_unit_mocksock_expect_set_opt__(
     command->data.set_opt.key = key;
 }
 
-void avs_unit_mocksock_expect_errno__(avs_net_abstract_socket_t *socket,
-                                      int to_return,
+void avs_unit_mocksock_expect_error__(avs_net_abstract_socket_t *socket,
+                                      avs_errno_t to_return,
                                       const mocksock_additional_args_t *args) {
     mocksock_expected_command_t *command = new_expected_command(socket, args);
     command->command = MOCKSOCK_COMMAND_ERRNO;
-    command->retval = to_return;
+    command->retval = (int) to_return;
 }
 
 void avs_unit_mocksock_fail_command__(avs_net_abstract_socket_t *socket,

@@ -15,15 +15,16 @@
  */
 
 #ifndef AVS_COMMONS_STREAM_H
-#define	AVS_COMMONS_STREAM_H
+#define AVS_COMMONS_STREAM_H
 
 #include <stdarg.h>
 #include <stddef.h>
 #include <stdio.h>
 
 #include <avsystem/commons/defs.h>
+#include <avsystem/commons/errno.h>
 
-#ifdef	__cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
@@ -49,7 +50,7 @@ extern "C" {
  * Errors are reported via return values of the interface methods. We assume
  * a negative value to indicate an error, and success otherwise. Additionally
  * implementations are allowed to set stream error code (queryable via @ref
- * avs_stream_errno) to provide more information about the occured error.
+ * avs_stream_error) to provide more information about the occured error.
  */
 struct avs_stream_abstract_struct;
 typedef struct avs_stream_abstract_struct avs_stream_abstract_t;
@@ -115,8 +116,8 @@ int avs_stream_finish_message(avs_stream_abstract_t *stream);
  *
  * @return 0 on success, negative value on error.
  */
-int avs_stream_write_f(avs_stream_abstract_t *stream,
-                       const char *msg, ...) AVS_F_PRINTF(2, 3);
+int avs_stream_write_f(avs_stream_abstract_t *stream, const char *msg, ...)
+        AVS_F_PRINTF(2, 3);
 
 /**
  * Works similarly as @ref avs_stream_write_f except that format string
@@ -155,8 +156,8 @@ int avs_stream_write_fv(avs_stream_abstract_t *stream,
  * the same time, if @p buffer_length is 0 and stream was not entirely read
  * before.
  *
- * Note: even if the final outcome of the read operation is an error, it is still
- * possible that some data was written into the @p buffer.
+ * Note: even if the final outcome of the read operation is an error, it is
+ * still possible that some data was written into the @p buffer.
  *
  * @param stream                Stream to operate on.
  * @param out_bytes_read        Pointer to a variable where amount of read bytes
@@ -269,11 +270,11 @@ int avs_stream_getch(avs_stream_abstract_t *stream, char *out_message_finished);
  * will be filled with any data read before the error, and the null byte will
  * always be written after those (or at the beginning).
  *
- * In case of a negative return value, @ref avs_stream_errno can be used to
+ * In case of a negative return value, @ref avs_stream_error can be used to
  * check for detailed error case encountered. While the exact semantics of
- * @ref avs_stream_errno vary between different streams - if this function
+ * @ref avs_stream_error vary between different streams - if this function
  * returns a negative value, while @p out_message_finished is set to true and
- * @ref avs_stream_errno returns 0, it is most likely caused by lack of line
+ * @ref avs_stream_error returns 0, it is most likely caused by lack of line
  * terminator characters at the end of stream.
  */
 int avs_stream_getline(avs_stream_abstract_t *stream,
@@ -346,7 +347,7 @@ int avs_stream_cleanup(avs_stream_abstract_t **stream);
  * @param stream    Stream to operate on.
  * @returns last error code or 0 if no error occurred.
  */
-int avs_stream_errno(avs_stream_abstract_t *stream);
+avs_errno_t avs_stream_error(avs_stream_abstract_t *stream);
 
 /**
  * Optional method on streams that support the NONBLOCK extension. Checks
@@ -378,8 +379,8 @@ int avs_stream_nonblock_read_ready(avs_stream_abstract_t *stream);
 int avs_stream_nonblock_write_ready(avs_stream_abstract_t *stream,
                                     size_t *out_ready_capacity_bytes);
 
-#ifdef	__cplusplus
+#ifdef __cplusplus
 }
 #endif
 
-#endif	/* STREAM_H */
+#endif /* STREAM_H */

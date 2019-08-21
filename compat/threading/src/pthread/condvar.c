@@ -21,10 +21,10 @@
 
 #include <avsystem/commons/condvar.h>
 #include <avsystem/commons/defs.h>
-#include <avsystem/commons/errno.h>
 #include <avsystem/commons/memory.h>
 
 #include <pthread.h>
+#include <errno.h>
 
 #include "structs.h"
 

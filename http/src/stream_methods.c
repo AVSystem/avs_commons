@@ -100,8 +100,7 @@ static int http_send_some(avs_stream_abstract_t *stream_,
         size_t chunk_size = *inout_data_length - data_sent;
         stream->encoder_touched = true;
         if (avs_stream_write_some(stream->encoder,
-                                  (const char *) data + data_sent,
-                                  &chunk_size)
+                                  (const char *) data + data_sent, &chunk_size)
                 || _avs_http_encoder_flush(stream)) {
             return -1;
         }
@@ -126,6 +125,20 @@ static int http_nonblock_write_ready(avs_stream_abstract_t *stream_,
         // This is somewhat innacurate
         return avs_stream_nonblock_write_ready(stream->encoder,
                                                out_ready_capacity_bytes);
+    }
+}
+
+static avs_errno_t http_error(avs_stream_abstract_t *stream_) {
+    http_stream_t *stream = (http_stream_t *) stream_;
+
+    if (stream->error_code) {
+        return stream->error_code;
+    }
+
+    if (stream->body_receiver) {
+        return avs_stream_error(stream->body_receiver);
+    } else {
+        return avs_stream_error(stream->backend);
     }
 }
 
@@ -199,11 +212,8 @@ static int http_receive(avs_stream_abstract_t *stream_,
         return -1;
     }
 
-    result = avs_stream_read(stream->body_receiver,
-                             out_bytes_read,
-                             out_message_finished,
-                             buffer,
-                             buffer_length);
+    result = avs_stream_read(stream->body_receiver, out_bytes_read,
+                             out_message_finished, buffer, buffer_length);
     if (*out_message_finished) {
         LOG(TRACE, "http_receive: clearing body receiver");
         stream->flags.close_handling_required = 1;
@@ -254,7 +264,7 @@ static int http_reset(avs_stream_abstract_t *stream_) {
     avs_stream_cleanup(&stream->body_receiver);
     stream->out_buffer_pos = 0;
     stream->status = 0;
-    stream->error_code = 0;
+    stream->error_code = AVS_NO_ERROR;
     AVS_LIST_CLEAR(&stream->user_headers);
     stream->encoder_touched = false;
     result = avs_stream_reset(stream->backend);
@@ -279,28 +289,12 @@ static int http_close(avs_stream_abstract_t *stream_) {
     return retval;
 }
 
-static int http_errno(avs_stream_abstract_t *stream_) {
-    http_stream_t *stream = (http_stream_t *) stream_;
-
-    if (stream->error_code) {
-        return stream->error_code;
-    }
-
-    /* don't return 1xx, 2xx, 3xx status codes */
-    if (stream->status < 100 || stream->status >= 400) {
-        return stream->status;
-    } else if (stream->body_receiver) {
-        return avs_stream_errno(stream->body_receiver);
-    } else {
-        return avs_stream_errno(stream->backend);
-    }
-}
-
 static int http_getsock(avs_stream_abstract_t *stream,
                         avs_net_abstract_socket_t **out_socket) {
     return (*out_socket =
-            avs_stream_net_getsock(((http_stream_t *) stream)->backend))
-            ? 0 : -1;
+                    avs_stream_net_getsock(((http_stream_t *) stream)->backend))
+                   ? 0
+                   : -1;
 }
 
 static int http_setsock(avs_stream_abstract_t *stream,
@@ -315,38 +309,28 @@ static const avs_stream_v_table_t http_vtable = {
     http_peek,
     http_reset,
     http_close,
-    http_errno,
-    &(avs_stream_v_table_extension_t[]) {
-        {
-            AVS_STREAM_V_TABLE_EXTENSION_NET,
-            &(avs_stream_v_table_extension_net_t[]) {
-                {
-                    http_getsock,
-                    http_setsock
-                }
-            }[0]
-        },
-        {
-            AVS_STREAM_V_TABLE_EXTENSION_NONBLOCK,
-            &(avs_stream_v_table_extension_nonblock_t[]) {
-                {
-                    http_nonblock_read_ready,
-                    http_nonblock_write_ready
-                }
-            }[0]
-        },
-        AVS_STREAM_V_TABLE_EXTENSION_NULL
-    }[0]
+    http_error,
+    &(avs_stream_v_table_extension_t[]){
+            { AVS_STREAM_V_TABLE_EXTENSION_NET,
+              &(avs_stream_v_table_extension_net_t[]){
+                      { http_getsock, http_setsock } }[0] },
+            { AVS_STREAM_V_TABLE_EXTENSION_NONBLOCK,
+              &(avs_stream_v_table_extension_nonblock_t[]){
+                      { http_nonblock_read_ready,
+                        http_nonblock_write_ready } }[0] },
+            AVS_STREAM_V_TABLE_EXTENSION_NULL }[0]
 };
 
 int avs_http_add_header(avs_stream_abstract_t *stream_,
-                        const char *key, const char *value) {
+                        const char *key,
+                        const char *value) {
     http_stream_t *stream = (http_stream_t *) stream_;
     assert(stream->vtable == &http_vtable);
     LOG(TRACE, "http_add_header, %s: %s", key ? key : "(null)",
         value ? value : "(null)");
-    AVS_LIST(http_header_t) new_header = (AVS_LIST(http_header_t))
-            AVS_LIST_APPEND_NEW(http_header_t, &stream->user_headers);
+    AVS_LIST(http_header_t) new_header =
+            (AVS_LIST(http_header_t)) AVS_LIST_APPEND_NEW(
+                    http_header_t, &stream->user_headers);
     if (!new_header) {
         return -1;
     }
@@ -381,18 +365,18 @@ static inline const char *string_or_null(const char *str) {
     return str ? str : "(null)";
 }
 
-int avs_http_open_stream(avs_stream_abstract_t **out,
-                         avs_http_t *http,
-                         avs_http_method_t method,
-                         avs_http_content_encoding_t encoding,
-                         const avs_url_t *url,
-                         const char *auth_username,
-                         const char *auth_password) {
+avs_errno_t avs_http_open_stream(avs_stream_abstract_t **out,
+                                 avs_http_t *http,
+                                 avs_http_method_t method,
+                                 avs_http_content_encoding_t encoding,
+                                 const avs_url_t *url,
+                                 const char *auth_username,
+                                 const char *auth_password) {
     assert(!*out);
     assert(url);
     avs_net_abstract_socket_t *socket = NULL;
     http_stream_t *stream = NULL;
-    int result = 0;
+    avs_errno_t result = 0;
     LOG(TRACE,
         "avs_http_open_stream, method == %d, encoding == %d, "
         "protocol == %s, host == %s, port == %s, path == %s, "
@@ -407,7 +391,7 @@ int avs_http_open_stream(avs_stream_abstract_t **out,
             offsetof(http_stream_t, out_buffer) + http->buffer_sizes.body_send);
     if (!stream) {
         LOG(ERROR, "Could not allocate HTTP stream object");
-        result = ENOMEM;
+        result = AVS_ENOMEM;
         goto http_open_stream_error;
     }
 
@@ -415,18 +399,18 @@ int avs_http_open_stream(avs_stream_abstract_t **out,
     *(avs_http_t **) (intptr_t) &stream->http = http;
     *(avs_http_method_t *) (intptr_t) &stream->method = method;
     if (!(stream->url = avs_url_copy(url))) {
-        result = ENOMEM;
+        result = AVS_ENOMEM;
         goto http_open_stream_error;
     }
 
-    if (_avs_http_auth_setup_stream(stream, url,
-                                    auth_username, auth_password)) {
-        result = ENOMEM;
+    if (_avs_http_auth_setup_stream(stream, url, auth_username,
+                                    auth_password)) {
+        result = AVS_ENOMEM;
         goto http_open_stream_error;
     }
     stream->encoding = encoding;
     if (_avs_http_encoding_init(stream)) {
-        result = ENOMEM;
+        result = AVS_ENOMEM;
         goto http_open_stream_error;
     }
 
@@ -439,7 +423,7 @@ int avs_http_open_stream(avs_stream_abstract_t **out,
                              http->buffer_sizes.send_shaper);
     if (!stream->backend) {
         LOG(ERROR, "error creating buffered netstream");
-        result = ENOMEM;
+        result = AVS_ENOMEM;
         goto http_open_stream_error;
     }
     stream->flags.keep_connection = 1;
@@ -451,7 +435,7 @@ int avs_http_open_stream(avs_stream_abstract_t **out,
     }
 
     *out = (avs_stream_abstract_t *) stream;
-    return 0;
+    return AVS_NO_ERROR;
 
 http_open_stream_error:
     assert(result);
@@ -486,5 +470,5 @@ int avs_http_status_code(avs_stream_abstract_t *stream_) {
 }
 
 #ifdef AVS_UNIT_TESTING
-#include "test/test_stream.c"
+#    include "test/test_stream.c"
 #endif

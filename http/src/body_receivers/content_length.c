@@ -25,7 +25,7 @@
 VISIBILITY_SOURCE_BEGIN
 
 typedef struct {
-    const avs_stream_v_table_t * const vtable;
+    const avs_stream_v_table_t *const vtable;
     avs_stream_abstract_t *backend;
     size_t content_left;
 } content_length_receiver_t;
@@ -35,8 +35,7 @@ static int content_length_read(avs_stream_abstract_t *stream_,
                                char *out_message_finished,
                                void *buffer,
                                size_t buffer_length) {
-    content_length_receiver_t *stream =
-            (content_length_receiver_t *) stream_;
+    content_length_receiver_t *stream = (content_length_receiver_t *) stream_;
     size_t bytes_read = 0;
     char backend_message_finished = 0;
     int result = 0;
@@ -46,8 +45,8 @@ static int content_length_read(avs_stream_abstract_t *stream_,
     }
     if (bytes_to_read) {
         result = avs_stream_read(stream->backend, out_bytes_read,
-                                 &backend_message_finished,
-                                 buffer, bytes_to_read);
+                                 &backend_message_finished, buffer,
+                                 bytes_to_read);
         stream->content_left -= *out_bytes_read;
     } else {
         *out_bytes_read = 0;
@@ -66,8 +65,7 @@ static int content_length_read(avs_stream_abstract_t *stream_,
 }
 
 static int content_length_nonblock_read_ready(avs_stream_abstract_t *stream_) {
-    content_length_receiver_t *stream =
-            (content_length_receiver_t *) stream_;
+    content_length_receiver_t *stream = (content_length_receiver_t *) stream_;
     if (stream->content_left) {
         return avs_stream_nonblock_read_ready(stream->backend);
     }
@@ -75,8 +73,7 @@ static int content_length_nonblock_read_ready(avs_stream_abstract_t *stream_) {
 }
 
 static int content_length_peek(avs_stream_abstract_t *stream_, size_t offset) {
-    content_length_receiver_t *stream =
-            (content_length_receiver_t *) stream_;
+    content_length_receiver_t *stream = (content_length_receiver_t *) stream_;
     int result;
     if (offset >= stream->content_left) {
         result = EOF;
@@ -92,8 +89,8 @@ static int content_length_close(avs_stream_abstract_t *stream_) {
     return avs_stream_cleanup(&stream->backend);
 }
 
-static int content_length_errno(avs_stream_abstract_t *stream) {
-    return avs_stream_errno(((content_length_receiver_t *) stream)->backend);
+static avs_errno_t content_length_error(avs_stream_abstract_t *stream) {
+    return avs_stream_error(((content_length_receiver_t *) stream)->backend);
 }
 
 static int unimplemented() {
@@ -108,23 +105,19 @@ static const avs_stream_v_table_t content_length_receiver_vtable = {
     content_length_peek,
     (avs_stream_reset_t) unimplemented,
     content_length_close,
-    content_length_errno,
-    &(avs_stream_v_table_extension_t[]) {
-        {
-            AVS_STREAM_V_TABLE_EXTENSION_NONBLOCK,
-            &(avs_stream_v_table_extension_nonblock_t[]) {
-                {
-                    content_length_nonblock_read_ready,
-                    (avs_stream_nonblock_write_ready_t) unimplemented
-                }
-            }[0]
-        },
-        AVS_STREAM_V_TABLE_EXTENSION_NULL
-    }[0]
+    content_length_error,
+    &(avs_stream_v_table_extension_t[]){
+            { AVS_STREAM_V_TABLE_EXTENSION_NONBLOCK,
+              &(avs_stream_v_table_extension_nonblock_t[]){
+                      { content_length_nonblock_read_ready,
+                        (avs_stream_nonblock_write_ready_t)
+                                unimplemented } }[0] },
+            AVS_STREAM_V_TABLE_EXTENSION_NULL }[0]
 };
 
-avs_stream_abstract_t *_avs_http_body_receiver_content_length_create(
-        avs_stream_abstract_t *backend, size_t content_length) {
+avs_stream_abstract_t *
+_avs_http_body_receiver_content_length_create(avs_stream_abstract_t *backend,
+                                              size_t content_length) {
     content_length_receiver_t *retval =
             (content_length_receiver_t *) avs_malloc(sizeof(*retval));
     LOG(TRACE, "create_content_length_receiver");

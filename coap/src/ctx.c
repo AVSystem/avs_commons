@@ -87,8 +87,7 @@ uint64_t avs_coap_ctx_get_tx_bytes(avs_coap_ctx_t *ctx) {
 #endif // WITH_AVS_COAP_NET_STATS
 }
 
-uint64_t
-avs_coap_ctx_get_num_incoming_retransmissions(avs_coap_ctx_t *ctx) {
+uint64_t avs_coap_ctx_get_num_incoming_retransmissions(avs_coap_ctx_t *ctx) {
 #ifdef WITH_AVS_COAP_NET_STATS
     return ctx->num_incoming_retransmissions;
 #else
@@ -97,8 +96,7 @@ avs_coap_ctx_get_num_incoming_retransmissions(avs_coap_ctx_t *ctx) {
 #endif // WITH_AVS_COAP_NET_STATS
 }
 
-uint64_t
-avs_coap_ctx_get_num_outgoing_retransmissions(avs_coap_ctx_t *ctx) {
+uint64_t avs_coap_ctx_get_num_outgoing_retransmissions(avs_coap_ctx_t *ctx) {
 #ifdef WITH_AVS_COAP_NET_STATS
     return ctx->num_outgoing_retransmissions;
 #else
@@ -121,12 +119,12 @@ static int map_io_error(avs_net_abstract_socket_t *socket,
                         int result,
                         const char *operation) {
     if (result) {
-        int error = avs_net_socket_errno(socket);
+        avs_errno_t error = avs_net_socket_error(socket);
         LOG(ERROR, "%s failed: errno = %d", operation, error);
 
-        if (error == ETIMEDOUT) {
+        if (error == AVS_ETIMEDOUT) {
             result = AVS_COAP_CTX_ERR_TIMEOUT;
-        } else if (error == EMSGSIZE) {
+        } else if (error == AVS_EMSGSIZE) {
             result = AVS_COAP_CTX_ERR_MSG_TOO_LONG;
         } else {
             result = AVS_COAP_CTX_ERR_NETWORK;
@@ -136,7 +134,7 @@ static int map_io_error(avs_net_abstract_socket_t *socket,
 }
 
 #ifndef WITH_AVS_COAP_MESSAGE_CACHE
-#define try_cache_response(...) 0
+#    define try_cache_response(...) 0
 #else // WITH_AVS_COAP_MESSAGE_CACHE
 
 static int try_cache_response(avs_coap_ctx_t *ctx,
@@ -165,8 +163,8 @@ static size_t packet_overhead(avs_net_abstract_socket_t *socket) {
     avs_net_socket_opt_value_t mtu;
     avs_net_socket_opt_value_t mtu_inner;
     if (avs_net_socket_get_opt(socket, AVS_NET_SOCKET_OPT_MTU, &mtu)
-        || avs_net_socket_get_opt(socket, AVS_NET_SOCKET_OPT_INNER_MTU,
-                                  &mtu_inner)) {
+            || avs_net_socket_get_opt(socket, AVS_NET_SOCKET_OPT_INNER_MTU,
+                                      &mtu_inner)) {
         goto error;
     }
     if (mtu.mtu < mtu_inner.mtu) {
@@ -216,7 +214,7 @@ int avs_coap_ctx_send(avs_coap_ctx_t *ctx,
 }
 
 #ifndef WITH_AVS_COAP_MESSAGE_CACHE
-#define try_send_cached_response(...) (-1)
+#    define try_send_cached_response(...) (-1)
 #else // WITH_AVS_COAP_MESSAGE_CACHE
 
 static int try_send_cached_response(avs_coap_ctx_t *ctx,
@@ -238,9 +236,9 @@ static int try_send_cached_response(avs_coap_ctx_t *ctx,
     const avs_coap_msg_t *res =
             _avs_coap_msg_cache_get(ctx->msg_cache, addr, port, msg_id);
     if (res) {
-#ifdef WITH_AVS_COAP_NET_STATS
+#    ifdef WITH_AVS_COAP_NET_STATS
         ++ctx->num_incoming_retransmissions;
-#endif // WITH_AVS_COAP_NET_STATS
+#    endif // WITH_AVS_COAP_NET_STATS
         return avs_coap_ctx_send(ctx, socket, res);
     } else {
         return -1;
@@ -337,14 +335,14 @@ static void send_response(avs_coap_ctx_t *ctx,
     info.identity = avs_coap_msg_get_identity(request);
 
     if (max_age
-        && avs_coap_msg_info_opt_u32(&info, AVS_COAP_OPT_MAX_AGE, *max_age)) {
+            && avs_coap_msg_info_opt_u32(&info, AVS_COAP_OPT_MAX_AGE,
+                                         *max_age)) {
         LOG(WARNING, "unable to add Max-Age option to response");
     }
 
     union {
         uint8_t buffer[offsetof(avs_coap_msg_t, content)
-                       + AVS_COAP_MAX_TOKEN_LENGTH
-                       + AVS_COAP_OPT_INT_MAX_SIZE];
+                       + AVS_COAP_MAX_TOKEN_LENGTH + AVS_COAP_OPT_INT_MAX_SIZE];
         avs_coap_msg_t force_align_;
     } aligned_buffer;
     const avs_coap_msg_t *error = avs_coap_msg_build_without_payload(

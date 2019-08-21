@@ -15,13 +15,14 @@
  */
 
 #ifndef AVS_COMMONS_STREAM_V_TABLE_H
-#define	AVS_COMMONS_STREAM_V_TABLE_H
+#define AVS_COMMONS_STREAM_V_TABLE_H
 
 #include <stdint.h>
 
+#include <avsystem/commons/errno.h>
 #include <avsystem/commons/stream.h>
 
-#ifdef	__cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
@@ -69,8 +70,8 @@ typedef int (*avs_stream_finish_message_t)(avs_stream_abstract_t *stream);
  * Instead, the implementation should block (waiting for the data) or return an
  * error immediately.
  *
- * Note: even if the final outcome of the read operation is an error, it is still
- * allowed for the implementation to write some data to the @p buffer .
+ * Note: even if the final outcome of the read operation is an error, it is
+ * still allowed for the implementation to write some data to the @p buffer .
  *
  * @param stream                Stream to operate on.
  * @param out_bytes_read        Pointer to a variable where amount of read bytes
@@ -125,14 +126,14 @@ typedef int (*avs_stream_reset_t)(avs_stream_abstract_t *stream);
 typedef int (*avs_stream_close_t)(avs_stream_abstract_t *stream);
 
 /**
- * @ref avs_stream_errno implementation callback type
+ * @ref avs_stream_error implementation callback type
  *
  * Obtains additional error code for last performed operation.
  *
  * @param stream    Stream to operate on.
  * @returns last error code or 0 if no error occurred.
  */
-typedef int (*avs_stream_errno_t)(avs_stream_abstract_t *stream);
+typedef avs_errno_t (*avs_stream_error_t)(avs_stream_abstract_t *stream);
 
 typedef struct {
     uint32_t id;
@@ -140,7 +141,8 @@ typedef struct {
 } avs_stream_v_table_extension_t;
 
 #define AVS_STREAM_V_TABLE_NO_EXTENSIONS NULL
-#define AVS_STREAM_V_TABLE_EXTENSION_NULL { 0, NULL }
+#define AVS_STREAM_V_TABLE_EXTENSION_NULL \
+    { 0, NULL }
 
 typedef struct {
     avs_stream_write_some_t write_some;
@@ -149,7 +151,7 @@ typedef struct {
     avs_stream_peek_t peek;
     avs_stream_reset_t reset;
     avs_stream_close_t close;
-    avs_stream_errno_t get_errno;
+    avs_stream_error_t get_error;
     const avs_stream_v_table_extension_t *extension_list;
 } avs_stream_v_table_t;
 
@@ -189,17 +191,15 @@ typedef int (*avs_stream_nonblock_read_ready_t)(avs_stream_abstract_t *stream);
  *          <c>*out_ready_capacity_bytes</c> set to 0.
  */
 typedef int (*avs_stream_nonblock_write_ready_t)(
-        avs_stream_abstract_t *stream,
-        size_t *out_ready_capacity_bytes);
+        avs_stream_abstract_t *stream, size_t *out_ready_capacity_bytes);
 
 typedef struct {
     avs_stream_nonblock_read_ready_t read_ready;
     avs_stream_nonblock_write_ready_t write_ready;
 } avs_stream_v_table_extension_nonblock_t;
 
-#ifdef	__cplusplus
+#ifdef __cplusplus
 }
 #endif
 
-#endif	/* AVS_COMMONS_STREAM_V_TABLE_H */
-
+#endif /* AVS_COMMONS_STREAM_V_TABLE_H */

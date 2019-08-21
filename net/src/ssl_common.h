@@ -18,7 +18,7 @@
 #define NET_SSL_COMMON_H
 
 #ifndef NET_SSL_COMMON_INTERNALS
-#error "This header is not meant to be included from outside"
+#    error "This header is not meant to be included from outside"
 #endif
 
 #include "api.h"
@@ -32,9 +32,8 @@ static bool is_ssl_started(ssl_socket_t *socket);
 static bool is_session_resumed(ssl_socket_t *socket);
 static int start_ssl(ssl_socket_t *socket, const char *host);
 static void close_ssl_raw(ssl_socket_t *socket);
-static int get_dtls_overhead(ssl_socket_t *socket,
-                             int *out_header,
-                             int *out_padding_size);
+static int
+get_dtls_overhead(ssl_socket_t *socket, int *out_header, int *out_padding_size);
 static int
 initialize_ssl_socket(ssl_socket_t *socket,
                       avs_net_socket_type_t backend_type,
@@ -59,13 +58,17 @@ static int system_socket_ssl(avs_net_abstract_socket_t *ssl_socket,
 static int interface_name_ssl(avs_net_abstract_socket_t *ssl_socket,
                               avs_net_socket_interface_name_t *if_name);
 static int remote_hostname_ssl(avs_net_abstract_socket_t *socket,
-                               char *out_buffer, size_t ouf_buffer_size);
+                               char *out_buffer,
+                               size_t ouf_buffer_size);
 static int remote_host_ssl(avs_net_abstract_socket_t *socket,
-                           char *out_buffer, size_t ouf_buffer_size);
+                           char *out_buffer,
+                           size_t ouf_buffer_size);
 static int remote_port_ssl(avs_net_abstract_socket_t *socket,
-                           char *out_buffer, size_t ouf_buffer_size);
+                           char *out_buffer,
+                           size_t ouf_buffer_size);
 static int local_port_ssl(avs_net_abstract_socket_t *socket,
-                          char *out_buffer, size_t ouf_buffer_size);
+                          char *out_buffer,
+                          size_t ouf_buffer_size);
 static int get_opt_ssl(avs_net_abstract_socket_t *ssl_socket_,
                        avs_net_socket_opt_key_t option_key,
                        avs_net_socket_opt_value_t *out_option_value);
@@ -74,19 +77,19 @@ static int set_opt_ssl(avs_net_abstract_socket_t *net_socket,
                        avs_net_socket_opt_value_t option_value);
 static int errno_ssl(avs_net_abstract_socket_t *net_socket);
 
-#define WRAP_ERRNO_IMPL(SslSocket, BackendSocket, Retval, ...) do { \
-    if (BackendSocket) { \
-        Retval = (__VA_ARGS__); \
-        (SslSocket)->error_code = avs_net_socket_errno((BackendSocket)); \
-    } else { \
-        Retval = -1; \
-        (SslSocket)->error_code = EBADF; \
-    } \
-} while (0)
+#define WRAP_ERRNO_IMPL(SslSocket, BackendSocket, Retval, ...)               \
+    do {                                                                     \
+        if (BackendSocket) {                                                 \
+            Retval = (__VA_ARGS__);                                          \
+            (SslSocket)->error_code = avs_net_socket_error((BackendSocket)); \
+        } else {                                                             \
+            Retval = -1;                                                     \
+            (SslSocket)->error_code = AVS_EBADF;                             \
+        }                                                                    \
+    } while (0)
 
 #define WRAP_ERRNO(SslSocket, Retval, ...) \
-        WRAP_ERRNO_IMPL(SslSocket, (SslSocket)->backend_socket, Retval, \
-                        __VA_ARGS__)
+    WRAP_ERRNO_IMPL(SslSocket, (SslSocket)->backend_socket, Retval, __VA_ARGS__)
 
 static int unimplemented() {
     return -1;
@@ -97,7 +100,7 @@ static int ensure_have_backend_socket(ssl_socket_t *socket) {
             && avs_net_socket_create(&socket->backend_socket,
                                      socket->backend_type,
                                      &socket->backend_configuration)) {
-        socket->error_code = EBADF;
+        socket->error_code = AVS_EBADF;
         return -1;
     }
     return 0;
@@ -122,7 +125,7 @@ static int create_ssl_socket(avs_net_abstract_socket_t **socket,
 
         if (initialize_ssl_socket(ssl_sock, backend_type,
                                   (const avs_net_ssl_configuration_t *)
-                                  socket_configuration)) {
+                                          socket_configuration)) {
             LOG(ERROR, "socket initialization error");
             avs_net_socket_cleanup(socket);
             return -1;
@@ -153,21 +156,21 @@ static int connect_ssl(avs_net_abstract_socket_t *socket_,
                        const char *port) {
     int result;
     ssl_socket_t *socket = (ssl_socket_t *) socket_;
-    LOG(TRACE, "connect_ssl(socket=%p, host=%s, port=%s)",
-        (void *) socket, host, port);
+    LOG(TRACE, "connect_ssl(socket=%p, host=%s, port=%s)", (void *) socket,
+        host, port);
 
     if (is_ssl_started(socket)) {
         LOG(ERROR, "SSL socket already connected");
-        socket->error_code = EISCONN;
+        socket->error_code = AVS_EISCONN;
         return -1;
     }
     if (ensure_have_backend_socket(socket)) {
-        socket->error_code = EBADF;
+        socket->error_code = AVS_EBADF;
         return -1;
     }
     if (avs_net_socket_connect(socket->backend_socket, host, port)) {
         LOG(ERROR, "avs_net_socket_connect() on backend socket failed");
-        socket->error_code = avs_net_socket_errno(socket->backend_socket);
+        socket->error_code = avs_net_socket_error(socket->backend_socket);
         return -1;
     }
 
@@ -181,12 +184,12 @@ static int connect_ssl(avs_net_abstract_socket_t *socket_,
 static int decorate_ssl(avs_net_abstract_socket_t *socket_,
                         avs_net_abstract_socket_t *backend_socket) {
     ssl_socket_t *socket = (ssl_socket_t *) socket_;
-    LOG(TRACE, "decorate_ssl(socket=%p, backend_socket=%p)",
-        (void *) socket, (void *) backend_socket);
+    LOG(TRACE, "decorate_ssl(socket=%p, backend_socket=%p)", (void *) socket,
+        (void *) backend_socket);
 
     if (is_ssl_started(socket)) {
         LOG(ERROR, "SSL socket already connected");
-        socket->error_code = EISCONN;
+        socket->error_code = AVS_EISCONN;
         return -1;
     }
     avs_net_socket_opt_value_t backend_state;
@@ -210,8 +213,8 @@ static int decorate_ssl(avs_net_abstract_socket_t *socket_,
             || backend_state.state == AVS_NET_SOCKET_STATE_CONNECTED) {
         char host[NET_MAX_HOSTNAME_SIZE];
         WRAP_ERRNO_IMPL(socket, backend_socket, result,
-                        avs_net_socket_get_remote_hostname(backend_socket,
-                                                           host, sizeof(host)));
+                        avs_net_socket_get_remote_hostname(backend_socket, host,
+                                                           sizeof(host)));
         if (!result) {
             result = start_ssl(socket, host);
         }
@@ -228,10 +231,10 @@ static int system_socket_ssl(avs_net_abstract_socket_t *socket_,
     ssl_socket_t *socket = (ssl_socket_t *) socket_;
     if (socket->backend_socket) {
         *out = avs_net_socket_get_system(socket->backend_socket);
-        socket->error_code = avs_net_socket_errno(socket->backend_socket);
+        socket->error_code = avs_net_socket_error(socket->backend_socket);
     } else {
         *out = NULL;
-        socket->error_code = EBADF;
+        socket->error_code = AVS_EBADF;
     }
     return *out ? 0 : -1;
 }
@@ -248,7 +251,7 @@ static int close_ssl(avs_net_abstract_socket_t *socket_) {
     ssl_socket_t *socket = (ssl_socket_t *) socket_;
     LOG(TRACE, "close_ssl(socket=%p)", (void *) socket);
     close_ssl_raw(socket);
-    socket->error_code = 0;
+    socket->error_code = AVS_NO_ERROR;
     return 0;
 }
 
@@ -263,7 +266,8 @@ static int interface_name_ssl(avs_net_abstract_socket_t *ssl_socket_,
 }
 
 static int remote_host_ssl(avs_net_abstract_socket_t *socket_,
-                           char *out_buffer, size_t out_buffer_size) {
+                           char *out_buffer,
+                           size_t out_buffer_size) {
     ssl_socket_t *socket = (ssl_socket_t *) socket_;
     int retval;
     WRAP_ERRNO(socket, retval,
@@ -273,7 +277,8 @@ static int remote_host_ssl(avs_net_abstract_socket_t *socket_,
 }
 
 static int remote_hostname_ssl(avs_net_abstract_socket_t *socket_,
-                               char *out_buffer, size_t out_buffer_size) {
+                               char *out_buffer,
+                               size_t out_buffer_size) {
     ssl_socket_t *socket = (ssl_socket_t *) socket_;
     int retval;
     WRAP_ERRNO(socket, retval,
@@ -283,7 +288,8 @@ static int remote_hostname_ssl(avs_net_abstract_socket_t *socket_,
 }
 
 static int remote_port_ssl(avs_net_abstract_socket_t *socket_,
-                           char *out_buffer, size_t out_buffer_size) {
+                           char *out_buffer,
+                           size_t out_buffer_size) {
     ssl_socket_t *socket = (ssl_socket_t *) socket_;
     int retval;
     WRAP_ERRNO(socket, retval,
@@ -293,26 +299,28 @@ static int remote_port_ssl(avs_net_abstract_socket_t *socket_,
 }
 
 static int local_host_ssl(avs_net_abstract_socket_t *socket_,
-                          char *out_buffer, size_t out_buffer_size) {
+                          char *out_buffer,
+                          size_t out_buffer_size) {
     ssl_socket_t *socket = (ssl_socket_t *) socket_;
     int retval;
     WRAP_ERRNO(socket, retval,
-               avs_net_socket_get_local_host(socket->backend_socket,
-                                             out_buffer, out_buffer_size));
+               avs_net_socket_get_local_host(socket->backend_socket, out_buffer,
+                                             out_buffer_size));
     return retval;
 }
 
 static int local_port_ssl(avs_net_abstract_socket_t *socket_,
-                          char *out_buffer, size_t out_buffer_size) {
+                          char *out_buffer,
+                          size_t out_buffer_size) {
     ssl_socket_t *socket = (ssl_socket_t *) socket_;
     int retval;
     WRAP_ERRNO(socket, retval,
-               avs_net_socket_get_local_port(socket->backend_socket,
-                                             out_buffer, out_buffer_size));
+               avs_net_socket_get_local_port(socket->backend_socket, out_buffer,
+                                             out_buffer_size));
     return retval;
 }
 
-static int errno_ssl(avs_net_abstract_socket_t *net_socket) {
+static avs_errno_t errno_ssl(avs_net_abstract_socket_t *net_socket) {
     return ((ssl_socket_t *) net_socket)->error_code;
 }
 
@@ -349,7 +357,8 @@ static int replace_ciphersuites(avs_net_socket_tls_ciphersuites_t *dst,
 
 static avs_net_socket_state_t socket_state(avs_net_abstract_socket_t *socket) {
     avs_net_socket_opt_value_t value;
-    int result = avs_net_socket_get_opt(socket, AVS_NET_SOCKET_OPT_STATE, &value);
+    int result =
+            avs_net_socket_get_opt(socket, AVS_NET_SOCKET_OPT_STATE, &value);
     if (result) {
         return AVS_NET_SOCKET_STATE_CLOSED;
     } else {
@@ -371,7 +380,7 @@ static int set_opt_ssl(avs_net_abstract_socket_t *ssl_socket_,
         case AVS_NET_SOCKET_STATE_BOUND:
             if (replace_ciphersuites(&ssl_socket->enabled_ciphersuites,
                                      option_value.tls_ciphersuites)) {
-                ssl_socket->error_code = ENOMEM;
+                ssl_socket->error_code = AVS_ENOMEM;
                 return -1;
             }
             return 0;
@@ -379,7 +388,7 @@ static int set_opt_ssl(avs_net_abstract_socket_t *ssl_socket_,
         case AVS_NET_SOCKET_STATE_ACCEPTED:
         case AVS_NET_SOCKET_STATE_CONNECTED:
             // disallow changing ciphersuites after handshake
-            ssl_socket->error_code = EISCONN;
+            ssl_socket->error_code = AVS_EISCONN;
             return -1;
         }
         return -1;
@@ -396,10 +405,9 @@ static int get_opt_ssl(avs_net_abstract_socket_t *ssl_socket_,
                        avs_net_socket_opt_key_t option_key,
                        avs_net_socket_opt_value_t *out_option_value) {
     ssl_socket_t *ssl_socket = (ssl_socket_t *) ssl_socket_;
-    ssl_socket->error_code = 0;
+    ssl_socket->error_code = AVS_NO_ERROR;
     switch (option_key) {
-    case AVS_NET_SOCKET_OPT_INNER_MTU:
-    {
+    case AVS_NET_SOCKET_OPT_INNER_MTU: {
         /* getting inner MTU will fail for non-datagram sockets */
         int mtu = get_socket_inner_mtu_or_zero(ssl_socket->backend_socket);
         if (mtu > 0) {
@@ -436,15 +444,15 @@ static int get_opt_ssl(avs_net_abstract_socket_t *ssl_socket_,
         // fall-through
     default:
         if (!ssl_socket->backend_socket) {
-            ssl_socket->error_code = EBADF;
+            ssl_socket->error_code = AVS_EBADF;
             return -1;
         } else {
             int retval = avs_net_socket_get_opt(ssl_socket->backend_socket,
                                                 option_key, out_option_value);
             if (retval
-                    && !(ssl_socket->error_code =
-                            avs_net_socket_errno(ssl_socket->backend_socket))) {
-                ssl_socket->error_code = EPROTO;
+                    && !(ssl_socket->error_code = avs_net_socket_error(
+                                 ssl_socket->backend_socket))) {
+                ssl_socket->error_code = AVS_EPROTO;
             }
             return retval;
         }
@@ -524,10 +532,10 @@ static const avs_net_socket_v_table_t ssl_vtable = {
 };
 
 static const avs_net_dtls_handshake_timeouts_t
-DEFAULT_DTLS_HANDSHAKE_TIMEOUTS = {
-    .min = { 1, 0 },
-    .max = { 60, 0 }
-};
+        DEFAULT_DTLS_HANDSHAKE_TIMEOUTS = {
+            .min = { 1, 0 },
+            .max = { 60, 0 }
+        };
 
 VISIBILITY_PRIVATE_HEADER_END
 

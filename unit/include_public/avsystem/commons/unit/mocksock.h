@@ -45,6 +45,7 @@ void avs_unit_mocksock_create__(avs_net_abstract_socket_t **socket,
                                 mocksock_type_t type,
                                 const char *file,
                                 int line);
+
 #define avs_unit_mocksock_create(Socket) \
     avs_unit_mocksock_create__(          \
             (Socket), AVS_UNIT_MOCKSOCK_TYPE_STREAMING, __FILE__, __LINE__)
@@ -333,11 +334,11 @@ void avs_unit_mocksock_expect_set_opt__(avs_net_abstract_socket_t *socket,
                 .line = __LINE__ AVS_VARARG_REST(__VA_ARGS__)   \
             })
 
-void avs_unit_mocksock_expect_errno__(avs_net_abstract_socket_t *socket,
-                                      int to_return,
+void avs_unit_mocksock_expect_error__(avs_net_abstract_socket_t *socket,
+                                      avs_errno_t to_return,
                                       const mocksock_additional_args_t *args);
-#define avs_unit_mocksock_expect_errno(Socket, /* ToReturn, */...) \
-    avs_unit_mocksock_expect_errno__(                              \
+#define avs_unit_mocksock_expect_error(Socket, /* ToReturn, */...) \
+    avs_unit_mocksock_expect_error__(                              \
             (Socket),                                              \
             (AVS_VARARG0(__VA_ARGS__)),                            \
             &(const mocksock_additional_args_t) {                  \
