@@ -15,14 +15,14 @@
  */
 
 #ifndef AVS_COMMONS_STREAM_STREAM_NET_H
-#define	AVS_COMMONS_STREAM_STREAM_NET_H
+#define AVS_COMMONS_STREAM_STREAM_NET_H
 
 #include <stdint.h>
 
 #include <avsystem/commons/net.h>
 #include <avsystem/commons/stream.h>
 
-#ifdef	__cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
@@ -45,9 +45,8 @@ avs_stream_net_getsock(avs_stream_abstract_t *stream);
 int avs_stream_net_setsock(avs_stream_abstract_t *stream,
                            avs_net_abstract_socket_t *socket);
 
-#ifdef	__cplusplus
+#ifdef __cplusplus
 }
 #endif
 
-#endif	/* AVS_COMMONS_STREAM_STREAM_NET_H */
-
+#endif /* AVS_COMMONS_STREAM_STREAM_NET_H */

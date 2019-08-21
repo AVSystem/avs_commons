@@ -19,7 +19,7 @@
 
 #include <avsystem/commons/stream.h>
 
-#ifdef	__cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
@@ -55,40 +55,39 @@ typedef int avs_simple_io_stream_writer_t(void *context,
  * @return Non-negative if some data have been successfully read, negative value
  *         otherwise.
  */
-typedef int avs_simple_io_stream_reader_t(void *context,
-                                          void *buffer,
-                                          size_t *inout_size);
+typedef int
+avs_simple_io_stream_reader_t(void *context, void *buffer, size_t *inout_size);
 
 /**
  * Creates simple output stream. After use the stream has to be deleted using
  * avs_stream_cleanup().
- * 
+ *
  * @param writer  Function that will be called to perform write to the
  *                implementation-specific destination.
  * @param context Opaque pointer passed to writer implementation.
- * 
+ *
  * @return Pointer to newly created stream or NULL in case of failure.
  */
-avs_stream_abstract_t *avs_stream_simple_output_create(
-        avs_simple_io_stream_writer_t *writer,
-        void *context);
+avs_stream_abstract_t *
+avs_stream_simple_output_create(avs_simple_io_stream_writer_t *writer,
+                                void *context);
 
 /**
  * Creates simple input stream. After use the stream has to be deleted using
  * avs_stream_cleanup().
- * 
+ *
  * @param reader  Function that will be called to perform read from the
  *                implementation-specific source.
  * @param context Opaque pointer passed to reader implementation.
- * 
+ *
  * @return Pointer to newly created stream or NULL in case of failure.
  */
-avs_stream_abstract_t *avs_stream_simple_input_create(
-        avs_simple_io_stream_reader_t *reader,
-        void *context);
+avs_stream_abstract_t *
+avs_stream_simple_input_create(avs_simple_io_stream_reader_t *reader,
+                               void *context);
 
-#ifdef	__cplusplus
+#ifdef __cplusplus
 }
 #endif
 
-#endif	/* AVS_COMMONS_STREAM_SIMPLE_IO_H */
+#endif /* AVS_COMMONS_STREAM_SIMPLE_IO_H */

@@ -16,8 +16,8 @@
 
 #include <avs_commons_config.h>
 
-#include <ctype.h>
 #include <assert.h>
+#include <ctype.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -69,7 +69,8 @@ int avs_strncasecmp(const char *s1, const char *s2, size_t n) {
 }
 
 char *avs_strtok(char *str, const char *delim, char **saveptr) {
-    // adapted from https://git.musl-libc.org/cgit/musl/tree/src/string/strtok_r.c
+    // adapted from
+    // https://git.musl-libc.org/cgit/musl/tree/src/string/strtok_r.c
     if (!str && !(str = *saveptr)) {
         return NULL;
     }

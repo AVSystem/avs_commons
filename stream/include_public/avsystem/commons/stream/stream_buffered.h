@@ -19,7 +19,7 @@
 
 #include <avsystem/commons/stream.h>
 
-#ifdef	__cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
@@ -31,7 +31,7 @@ extern "C" {
  * @p out_buffer_size size and read as chunks of @p in_buffer_size size.
  * After use the stream has to be deleted using avs_stream_cleanup(). An
  * underlying stream is deleted automatically.
- * 
+ *
  * @param *inout_stream   Pointer to an underlying stream which implements at
  *                        least write or read operation. After successful
  *                        return, it will points to an address of newly created
@@ -45,7 +45,7 @@ extern "C" {
  *                        stream cannot perform writes or writes can be
  *                        non-buffered. The maximum allowed size is
  *                        SIZE_MAX / 2.
- * 
+ *
  * @return 0 on success, negative value in case of error. If it fails,
  *         @p inout_stream is not affected and underlying stream should be
  *         deleted manually.
@@ -54,8 +54,8 @@ int avs_stream_buffered_create(avs_stream_abstract_t **inout_stream,
                                size_t in_buffer_size,
                                size_t out_buffer_size);
 
-#ifdef	__cplusplus
+#ifdef __cplusplus
 }
 #endif
 
-#endif	/* AVS_COMMONS_STREAM_BUFFERED_H */
+#endif /* AVS_COMMONS_STREAM_BUFFERED_H */

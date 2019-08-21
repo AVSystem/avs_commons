@@ -27,7 +27,7 @@
 VISIBILITY_PRIVATE_HEADER_BEGIN
 
 #if defined(WITH_IPV4) && defined(WITH_IPV6)
-#define WITH_AVS_V4MAPPED
+#    define WITH_AVS_V4MAPPED
 #endif
 
 /**
@@ -67,7 +67,7 @@ int _avs_net_create_udp_socket(avs_net_abstract_socket_t **socket,
 int _avs_net_create_ssl_socket(avs_net_abstract_socket_t **socket,
                                const void *socket_configuration);
 int _avs_net_create_dtls_socket(avs_net_abstract_socket_t **socket,
-                               const void *socket_configuration);
+                                const void *socket_configuration);
 #endif
 
 VISIBILITY_PRIVATE_HEADER_END

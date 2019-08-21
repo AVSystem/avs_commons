@@ -54,11 +54,10 @@ typedef struct cache_entry {
 
 /* Ensure that if cache_entry_t is properly aligned, one can safely cast
  * entry.data to avs_coap_msg_t* */
-AVS_STATIC_ASSERT(AVS_ALIGNOF(cache_entry_t)
-                      % AVS_ALIGNOF(avs_coap_msg_t) == 0,
+AVS_STATIC_ASSERT(AVS_ALIGNOF(cache_entry_t) % AVS_ALIGNOF(avs_coap_msg_t) == 0,
                   cache_entry_alignment_not_a_multiple_of_msg_alignment);
-AVS_STATIC_ASSERT(offsetof(cache_entry_t, data)
-                      % AVS_ALIGNOF(avs_coap_msg_t) == 0,
+AVS_STATIC_ASSERT(offsetof(cache_entry_t, data) % AVS_ALIGNOF(avs_coap_msg_t)
+                          == 0,
                   invalid_msg_alignment_in_cache_entry_t);
 
 coap_msg_cache_t *_avs_coap_msg_cache_create(size_t capacity) {
@@ -66,8 +65,8 @@ coap_msg_cache_t *_avs_coap_msg_cache_create(size_t capacity) {
         return NULL;
     }
 
-    coap_msg_cache_t *cache = (coap_msg_cache_t *)
-            avs_calloc(1, sizeof(coap_msg_cache_t));
+    coap_msg_cache_t *cache =
+            (coap_msg_cache_t *) avs_calloc(1, sizeof(coap_msg_cache_t));
     if (!cache) {
         return NULL;
     }
@@ -77,8 +76,9 @@ coap_msg_cache_t *_avs_coap_msg_cache_create(size_t capacity) {
         return NULL;
     }
 
-    assert((size_t)(uintptr_t)avs_buffer_raw_insert_ptr(cache->buffer)
-           % AVS_ALIGNOF(cache_entry_t) == 0);
+    assert((size_t) (uintptr_t) avs_buffer_raw_insert_ptr(cache->buffer)
+                   % AVS_ALIGNOF(cache_entry_t)
+           == 0);
     return cache;
 }
 
@@ -113,11 +113,14 @@ static endpoint_t *cache_endpoint_add_ref(coap_msg_cache_t *cache,
     }
 
     if (avs_simple_snprintf(new_ep->addr, sizeof(new_ep->addr), "%s",
-                            remote_addr) < 0
+                            remote_addr)
+                    < 0
             || avs_simple_snprintf(new_ep->port, sizeof(new_ep->port), "%s",
-                                   remote_port) < 0) {
-        LOG(WARNING, "endpoint address or port too long: addr = %s, "
-                     "port = %s",
+                                   remote_port)
+                           < 0) {
+        LOG(WARNING,
+            "endpoint address or port too long: addr = %s, "
+            "port = %s",
             remote_addr, remote_port);
         AVS_LIST_DELETE(&new_ep);
         return NULL;
@@ -133,8 +136,9 @@ static endpoint_t *cache_endpoint_add_ref(coap_msg_cache_t *cache,
 static void cache_endpoint_del_ref(coap_msg_cache_t *cache,
                                    endpoint_t *endpoint) {
     if (--endpoint->refcount == 0) {
-        AVS_LIST(endpoint_t) *ep_ptr = (AVS_LIST(endpoint_t) *)
-                AVS_LIST_FIND_PTR(&cache->endpoints, endpoint);
+        AVS_LIST(endpoint_t) *ep_ptr =
+                (AVS_LIST(endpoint_t) *) AVS_LIST_FIND_PTR(&cache->endpoints,
+                                                           endpoint);
         LOG(TRACE, "removed cache endpoint: %s:%s", (*ep_ptr)->addr,
             (*ep_ptr)->port);
         AVS_LIST_DELETE(ep_ptr);
@@ -144,7 +148,8 @@ static void cache_endpoint_del_ref(coap_msg_cache_t *cache,
 static size_t padding_bytes_after_msg(const avs_coap_msg_t *msg) {
     static const size_t entry_alignment = AVS_ALIGNOF(cache_entry_t);
     const size_t entry_length = offsetof(cache_entry_t, data)
-            + offsetof(avs_coap_msg_t, content) + msg->length;
+                                + offsetof(avs_coap_msg_t, content)
+                                + msg->length;
     if (entry_length % entry_alignment) {
         return entry_alignment - entry_length % entry_alignment;
     } else {
@@ -164,7 +169,7 @@ static void cache_put_entry(coap_msg_cache_t *cache,
     };
 
     assert(avs_buffer_data_size(cache->buffer) % AVS_ALIGNOF(cache_entry_t)
-            == 0);
+           == 0);
     int res;
     res = avs_buffer_append_bytes(cache->buffer, &entry,
                                   offsetof(cache_entry_t, data));
@@ -175,20 +180,20 @@ static void cache_put_entry(coap_msg_cache_t *cache,
                                 padding_bytes_after_msg(msg));
     assert(!res);
     assert(avs_buffer_data_size(cache->buffer) % AVS_ALIGNOF(cache_entry_t)
-            == 0);
+           == 0);
     (void) res;
 }
 
 static const cache_entry_t *entry_first(const coap_msg_cache_t *cache) {
     const cache_entry_t *result =
             (const cache_entry_t *) avs_buffer_data(cache->buffer);
-    assert((size_t)(uintptr_t) result % AVS_ALIGNOF(cache_entry_t) == 0);
+    assert((size_t) (uintptr_t) result % AVS_ALIGNOF(cache_entry_t) == 0);
     return result;
 }
 
 static bool entry_valid(const coap_msg_cache_t *cache,
                         const cache_entry_t *entry) {
-    assert((const char*) entry >= avs_buffer_data(cache->buffer));
+    assert((const char *) entry >= avs_buffer_data(cache->buffer));
     size_t entry_offset =
             (size_t) ((const char *) entry - avs_buffer_data(cache->buffer));
     assert(entry_offset % AVS_ALIGNOF(cache_entry_t) == 0);
@@ -210,9 +215,8 @@ static bool entry_expired(const cache_entry_t *entry,
  * and padding after the message */
 static size_t entry_msg_size(const cache_entry_t *entry) {
     const avs_coap_msg_t *msg = entry_msg(entry);
-    return offsetof(avs_coap_msg_t, content)
-            + msg->length
-            + padding_bytes_after_msg(msg);
+    return offsetof(avs_coap_msg_t, content) + msg->length
+           + padding_bytes_after_msg(msg);
 }
 
 /* returns total size of cache entry, including header, message, and
@@ -228,32 +232,31 @@ static uint16_t entry_id(const cache_entry_t *entry) {
 }
 
 static const cache_entry_t *entry_next(const cache_entry_t *entry) {
-    const cache_entry_t *result = (const cache_entry_t *)
-            ((const char*)entry + entry_size(entry));
-    assert((size_t)(uintptr_t) result % AVS_ALIGNOF(cache_entry_t) == 0);
+    const cache_entry_t *result =
+            (const cache_entry_t *) ((const char *) entry + entry_size(entry));
+    assert((size_t) (uintptr_t) result % AVS_ALIGNOF(cache_entry_t) == 0);
     return result;
 }
 
-static void cache_free_bytes(coap_msg_cache_t *cache,
-                             size_t bytes_required) {
+static void cache_free_bytes(coap_msg_cache_t *cache, size_t bytes_required) {
     assert(bytes_required <= avs_buffer_capacity(cache->buffer));
 
     size_t bytes_free = avs_buffer_space_left(cache->buffer);
 
     const cache_entry_t *entry;
-    for (entry = entry_first(cache);
-            bytes_free < bytes_required;
-            entry = entry_next(entry)) {
+    for (entry = entry_first(cache); bytes_free < bytes_required;
+         entry = entry_next(entry)) {
         assert(entry_valid(cache, entry));
 
-        LOG(TRACE, "msg_cache: dropping msg (id = %u) to make room for"
-                   " a new one (size = %lu)",
+        LOG(TRACE,
+            "msg_cache: dropping msg (id = %u) to make room for"
+            " a new one (size = %lu)",
             entry_id(entry), (unsigned long) bytes_required);
         cache_endpoint_del_ref(cache, entry->endpoint);
         bytes_free += entry_size(entry);
     }
 
-    size_t expired_bytes = (uintptr_t)entry - (uintptr_t)entry_first(cache);
+    size_t expired_bytes = (uintptr_t) entry - (uintptr_t) entry_first(cache);
     int res = avs_buffer_consume_bytes(cache->buffer, expired_bytes);
     assert(!res);
     (void) res;
@@ -262,9 +265,8 @@ static void cache_free_bytes(coap_msg_cache_t *cache,
 static void cache_drop_expired(coap_msg_cache_t *cache,
                                const avs_time_monotonic_t *now) {
     const cache_entry_t *entry;
-    for (entry = entry_first(cache);
-            entry_valid(cache, entry);
-            entry = entry_next(entry)) {
+    for (entry = entry_first(cache); entry_valid(cache, entry);
+         entry = entry_next(entry)) {
         if (entry_expired(entry, now)) {
             LOG(TRACE, "msg_cache: dropping expired msg (id = %u)",
                 entry_id(entry));
@@ -274,7 +276,7 @@ static void cache_drop_expired(coap_msg_cache_t *cache,
         }
     }
 
-    size_t expired_bytes = (uintptr_t)entry - (uintptr_t)entry_first(cache);
+    size_t expired_bytes = (uintptr_t) entry - (uintptr_t) entry_first(cache);
     int res = avs_buffer_consume_bytes(cache->buffer, expired_bytes);
     assert(!res);
     (void) res;
@@ -285,8 +287,8 @@ static const cache_entry_t *find_entry(const coap_msg_cache_t *cache,
                                        const char *remote_port,
                                        uint16_t msg_id) {
     for (const cache_entry_t *entry = entry_first(cache);
-            entry_valid(cache, entry);
-            entry = entry_next(entry)) {
+         entry_valid(cache, entry);
+         entry = entry_next(entry)) {
         if (entry_id(entry) == msg_id
                 && !strcmp(entry->endpoint->addr, remote_addr)
                 && !strcmp(entry->endpoint->port, remote_port)) {
@@ -307,8 +309,7 @@ int _avs_coap_msg_cache_add(coap_msg_cache_t *cache,
     }
 
     size_t cap_req = _avs_coap_msg_cache_overhead(msg)
-                   + offsetof(avs_coap_msg_t, content)
-                   + msg->length;
+                     + offsetof(avs_coap_msg_t, content) + msg->length;
     if (avs_buffer_capacity(cache->buffer) < cap_req) {
         LOG(DEBUG, "msg_cache: not enough space for %" PRIu32 " B message",
             msg->length);
@@ -351,8 +352,8 @@ const avs_coap_msg_t *_avs_coap_msg_cache_get(coap_msg_cache_t *cache,
     avs_time_monotonic_t now = avs_time_monotonic_now();
     cache_drop_expired(cache, &now);
 
-    const cache_entry_t *entry = find_entry(cache, remote_addr, remote_port,
-                                            msg_id);
+    const cache_entry_t *entry =
+            find_entry(cache, remote_addr, remote_port, msg_id);
     if (!entry) {
         return NULL;
     }
@@ -380,8 +381,8 @@ void _avs_coap_msg_cache_debug_print(const coap_msg_cache_t *cache) {
     }
 
     for (const cache_entry_t *entry = entry_first(cache);
-            entry_valid(cache, entry);
-            entry = entry_next(entry)) {
+         entry_valid(cache, entry);
+         entry = entry_next(entry)) {
         LOG(DEBUG, "entry: %p, msg padding: %lu", (const void *) entry,
             (unsigned long) padding_bytes_after_msg(entry_msg(entry)));
         LOG(DEBUG, "endpoint: %s:%s", entry->endpoint->addr,

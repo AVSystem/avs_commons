@@ -18,7 +18,7 @@
 #define COMPAT_H
 
 #if defined(_WINDOWS_) || defined(_WIN32_WINNT)
-#error "winsock-posix-compat.h needs to be included before windows.h or _mingw.h"
+#    error "winsock-posix-compat.h needs to be included before windows.h or _mingw.h"
 #endif
 
 #define WIN32_LEAN_AND_MEAN
@@ -36,7 +36,7 @@
 // Windows headers are REALLY weird. winsock2.h includes windows.h, which
 // includes wingdi.h, even with WIN32_LEAN_AND_MEAN. And wingdi.h defines
 // a macro called ERROR, which conflicts with avs_log() usage.
-#undef ERROR
+#    undef ERROR
 #endif // ERROR
 
 typedef u_short sa_family_t;
@@ -152,31 +152,31 @@ static inline const char *_avs_wsa_set_errno_str(const char *result) {
 #define close(...) _avs_wsa_set_errno(closesocket(__VA_ARGS__))
 #define connect(...) _avs_wsa_set_errno_connect(connect(__VA_ARGS__))
 #define getnameinfo(Addr, Addrlen, Host, Hostlen, Serv, Servlen, Flags) \
-        _avs_wsa_set_errno(getnameinfo((Addr), (Addrlen), \
-                                       (Host), (DWORD) (Hostlen), \
-                                       (Serv), (DWORD) (Servlen), (Flags)))
+    _avs_wsa_set_errno(getnameinfo((Addr), (Addrlen), (Host),           \
+                                   (DWORD) (Hostlen), (Serv),           \
+                                   (DWORD) (Servlen), (Flags)))
 #define getpeername(...) _avs_wsa_set_errno(getpeername(__VA_ARGS__))
 #define getsockname(...) _avs_wsa_set_errno(getsockname(__VA_ARGS__))
 #define getsockopt(Sockfd, Level, Name, Val, Len) \
-        _avs_wsa_set_errno(getsockopt((Sockfd), (Level), (Name), \
-                                      (char *) (Val), (Len)))
-#define inet_ntop(Af, Src, Dst, Size) \
-        _avs_wsa_set_errno_str(inet_ntop((Af), (void *) (intptr_t) (Src), \
-                                         (Dst), (size_t) (Size)))
+    _avs_wsa_set_errno(                           \
+            getsockopt((Sockfd), (Level), (Name), (char *) (Val), (Len)))
+#define inet_ntop(Af, Src, Dst, Size)                                        \
+    _avs_wsa_set_errno_str(inet_ntop((Af), (void *) (intptr_t) (Src), (Dst), \
+                                     (size_t) (Size)))
 #define inet_pton(...) _avs_wsa_set_errno(inet_pton(__VA_ARGS__))
 #define listen(...) _avs_wsa_set_errno(listen(__VA_ARGS__))
 #define poll(...) _avs_wsa_set_errno(WSAPoll(__VA_ARGS__))
 #define recvfrom(Sockfd, Buf, Len, ...) \
-        _avs_wsa_set_errno(recvfrom((Sockfd), (char *) (Buf), (int) (Len), \
-                                    __VA_ARGS__))
+    _avs_wsa_set_errno(                 \
+            recvfrom((Sockfd), (char *) (Buf), (int) (Len), __VA_ARGS__))
 #define send(Sockfd, Buf, Len, Flags) \
-        _avs_wsa_set_errno(send((Sockfd), (Buf), (int) (Len), (Flags)))
+    _avs_wsa_set_errno(send((Sockfd), (Buf), (int) (Len), (Flags)))
 #define sendto(Sockfd, Buf, Len, ...) \
-        _avs_wsa_set_errno(sendto((Sockfd), (const char *) (Buf), (int) (Len), \
-                                  __VA_ARGS__))
-#define setsockopt(Sockfd, Level, Name, Val, Len) \
-        _avs_wsa_set_errno(setsockopt((Sockfd), (Level), (Name), \
-                                      (const char *) (Val), (Len)))
+    _avs_wsa_set_errno(               \
+            sendto((Sockfd), (const char *) (Buf), (int) (Len), __VA_ARGS__))
+#define setsockopt(Sockfd, Level, Name, Val, Len)            \
+    _avs_wsa_set_errno(setsockopt((Sockfd), (Level), (Name), \
+                                  (const char *) (Val), (Len)))
 #define shutdown(...) _avs_wsa_set_errno(shutdown(__VA_ARGS__))
 #define socket(...) _avs_wsa_set_errno_socket(socket(__VA_ARGS__))
 

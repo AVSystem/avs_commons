@@ -56,15 +56,14 @@ static int inbuf_stream_read(avs_stream_abstract_t *stream_,
     return 0;
 }
 
-static int inbuf_stream_peek(avs_stream_abstract_t *stream_,
-                             size_t offset) {
+static int inbuf_stream_peek(avs_stream_abstract_t *stream_, size_t offset) {
     avs_stream_inbuf_t *stream = (avs_stream_inbuf_t *) stream_;
 
     if (stream->buffer_offset + offset >= stream->buffer_size) {
         return EOF;
     }
-    return ((const unsigned char *) stream->buffer)[
-            stream->buffer_offset + offset];
+    return ((const unsigned char *)
+                    stream->buffer)[stream->buffer_offset + offset];
 }
 
 static const avs_stream_v_table_t inbuf_stream_vtable = {
@@ -73,8 +72,9 @@ static const avs_stream_v_table_t inbuf_stream_vtable = {
     .extension_list = AVS_STREAM_V_TABLE_NO_EXTENSIONS
 };
 
-const avs_stream_inbuf_t AVS_STREAM_INBUF_STATIC_INITIALIZER
-        = {&inbuf_stream_vtable, NULL, 0, 0};
+const avs_stream_inbuf_t AVS_STREAM_INBUF_STATIC_INITIALIZER = {
+    &inbuf_stream_vtable, NULL, 0, 0
+};
 
 void avs_stream_inbuf_set_buffer(avs_stream_inbuf_t *stream,
                                  const void *buffer,

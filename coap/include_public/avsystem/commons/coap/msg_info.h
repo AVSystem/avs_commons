@@ -46,7 +46,7 @@ typedef struct avs_coap_msg_info {
  * Initializes a @ref avs_coap_header_msg_info_t .
  */
 static inline avs_coap_msg_info_t avs_coap_msg_info_init() {
-    return (avs_coap_msg_info_t){
+    return (avs_coap_msg_info_t) {
         .code = AVS_COAP_CODE_EMPTY,
         .identity = {
             .msg_id = 0,
@@ -89,7 +89,8 @@ size_t avs_coap_msg_info_get_storage_size(const avs_coap_msg_info_t *info);
 
 /**
  * @returns total number of bytes required for serialized message, assuming
- *          @p payload_size bytes of payload and a token of maximum possible size.
+ *          @p payload_size bytes of payload and a token of maximum possible
+ * size.
  */
 size_t
 avs_coap_msg_info_get_packet_storage_size(const avs_coap_msg_info_t *info,
@@ -100,7 +101,6 @@ avs_coap_msg_info_get_packet_storage_size(const avs_coap_msg_info_t *info,
  */
 void avs_coap_msg_info_opt_remove_by_number(avs_coap_msg_info_t *info,
                                             uint16_t option_number);
-
 
 /**
  * A magic value used to indicate the absence of the Content-Format option.

@@ -96,7 +96,7 @@ int avs_condvar_wait(avs_condvar_t *condvar,
  */
 void avs_condvar_cleanup(avs_condvar_t **condvar);
 
-#ifdef	__cplusplus
+#ifdef __cplusplus
 } /* extern "C" */
 #endif
 

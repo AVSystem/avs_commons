@@ -19,7 +19,7 @@
 
 #include <avsystem/commons/stream.h>
 
-#ifdef	__cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
@@ -172,7 +172,7 @@ const char *avs_url_path(const avs_url_t *url);
  */
 void avs_url_free(avs_url_t *url);
 
-#ifdef	__cplusplus
+#ifdef __cplusplus
 }
 #endif
 

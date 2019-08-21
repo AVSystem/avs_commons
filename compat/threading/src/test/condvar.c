@@ -39,11 +39,12 @@ AVS_UNIT_TEST(condvar, wait_after_notify_on_same_thread) {
         AVS_UNIT_ASSERT_SUCCESS(avs_mutex_lock(mutex));
 
         AVS_UNIT_ASSERT_SUCCESS(avs_condvar_notify_all(cv));
-        AVS_UNIT_ASSERT_EQUAL(avs_condvar_wait(
-                cv, mutex,
-                avs_time_monotonic_add(
-                        avs_time_monotonic_now(),
-                        avs_time_duration_from_scalar(i, AVS_TIME_MS))),
+        AVS_UNIT_ASSERT_EQUAL(
+                avs_condvar_wait(
+                        cv, mutex,
+                        avs_time_monotonic_add(
+                                avs_time_monotonic_now(),
+                                avs_time_duration_from_scalar(i, AVS_TIME_MS))),
                 1); // timeout
 
         AVS_UNIT_ASSERT_SUCCESS(avs_mutex_unlock(mutex));
@@ -87,11 +88,11 @@ AVS_UNIT_TEST(condvar, multiple_threads_with_separate_condition_variables) {
         AVS_UNIT_ASSERT_SUCCESS(avs_mutex_lock(threads[i].mutex));
         AVS_UNIT_ASSERT_FALSE(threads[i].running);
         AVS_UNIT_ASSERT_FALSE(threads[i].finished);
-        AVS_UNIT_ASSERT_SUCCESS(pthread_create(
-                &threads[i].thread,
-                NULL,
-                thread_with_mutex_and_condition_variable_func,
-                &threads[i]));
+        AVS_UNIT_ASSERT_SUCCESS(
+                pthread_create(&threads[i].thread,
+                               NULL,
+                               thread_with_mutex_and_condition_variable_func,
+                               &threads[i]));
         // wait for the thread to start
         while (!threads[i].running) {
             AVS_UNIT_ASSERT_SUCCESS(
@@ -161,11 +162,11 @@ AVS_UNIT_TEST(condvar,
     for (size_t i = 0; i < AVS_ARRAY_SIZE(threads); ++i) {
         AVS_UNIT_ASSERT_FALSE(threads[i].running);
         AVS_UNIT_ASSERT_FALSE(threads[i].finished);
-        AVS_UNIT_ASSERT_SUCCESS(pthread_create(
-                &threads[i].thread,
-                NULL,
-                thread_with_mutex_and_condition_variable_func,
-                &threads[i]));
+        AVS_UNIT_ASSERT_SUCCESS(
+                pthread_create(&threads[i].thread,
+                               NULL,
+                               thread_with_mutex_and_condition_variable_func,
+                               &threads[i]));
     }
     AVS_UNIT_ASSERT_SUCCESS(avs_mutex_unlock(mutex));
 
@@ -173,8 +174,8 @@ AVS_UNIT_TEST(condvar,
     AVS_UNIT_ASSERT_SUCCESS(avs_mutex_lock(mutex));
     for (ssize_t i = AVS_ARRAY_SIZE(threads) - 1; i >= 0; --i) {
         while (!threads[i].running) {
-            AVS_UNIT_ASSERT_SUCCESS(avs_condvar_wait(
-                    cv, mutex, AVS_TIME_MONOTONIC_INVALID));
+            AVS_UNIT_ASSERT_SUCCESS(
+                    avs_condvar_wait(cv, mutex, AVS_TIME_MONOTONIC_INVALID));
         }
     }
     AVS_UNIT_ASSERT_SUCCESS(avs_mutex_unlock(mutex));
@@ -201,8 +202,8 @@ AVS_UNIT_TEST(condvar,
     AVS_UNIT_ASSERT_SUCCESS(avs_mutex_lock(mutex));
     for (size_t i = 0; i < AVS_ARRAY_SIZE(threads); ++i) {
         while (!threads[i].finished) {
-            AVS_UNIT_ASSERT_SUCCESS(avs_condvar_wait(
-                    cv, mutex, AVS_TIME_MONOTONIC_INVALID));
+            AVS_UNIT_ASSERT_SUCCESS(
+                    avs_condvar_wait(cv, mutex, AVS_TIME_MONOTONIC_INVALID));
         }
     }
     AVS_UNIT_ASSERT_SUCCESS(avs_mutex_unlock(mutex));

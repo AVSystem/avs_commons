@@ -24,8 +24,8 @@ AVS_CONCAT(unit_conv_, SCALAR_TYPE, _int64_t)(SCALAR_TYPE *output,
     assert(factor > 0);
     switch (operation) {
     case UCO_MUL:
-        return AVS_CONCAT(safe_mul_, SCALAR_TYPE)(
-                output, (SCALAR_TYPE) input, (SCALAR_TYPE) factor);
+        return AVS_CONCAT(safe_mul_, SCALAR_TYPE)(output, (SCALAR_TYPE) input,
+                                                  (SCALAR_TYPE) factor);
     case UCO_DIV:
         *output = (SCALAR_TYPE) input / (SCALAR_TYPE) factor;
         return 0;
@@ -35,26 +35,24 @@ AVS_CONCAT(unit_conv_, SCALAR_TYPE, _int64_t)(SCALAR_TYPE *output,
     }
 }
 
-static inline int
-AVS_CONCAT(unit_conv_forward_, SCALAR_TYPE, _int64_t)(SCALAR_TYPE *output,
-                                                      int64_t input,
-                                                      const unit_conv_t *conv) {
-    return AVS_CONCAT(unit_conv_, SCALAR_TYPE, _int64_t)(
-            output, input, conv->operation, conv->factor);
+static inline int AVS_CONCAT(unit_conv_forward_, SCALAR_TYPE, _int64_t)(
+        SCALAR_TYPE *output, int64_t input, const unit_conv_t *conv) {
+    return AVS_CONCAT(unit_conv_, SCALAR_TYPE,
+                      _int64_t)(output, input, conv->operation, conv->factor);
 }
 
 static inline int AVS_CONCAT(unit_conv_backward_, SCALAR_TYPE, _int64_t)(
         SCALAR_TYPE *output, int64_t input, const unit_conv_t *conv) {
     return AVS_CONCAT(unit_conv_, SCALAR_TYPE, _int64_t)(
-            output, input,
-            conv->operation == UCO_DIV ? UCO_MUL : UCO_DIV, conv->factor);
+            output, input, conv->operation == UCO_DIV ? UCO_MUL : UCO_DIV,
+            conv->factor);
 }
 
-static int
-AVS_CONCAT(time_conv_forward_, SCALAR_TYPE)(SCALAR_TYPE *output,
-                                            int64_t seconds,
-                                            int32_t nanoseconds,
-                                            const time_conv_t *conv) {
+static int AVS_CONCAT(time_conv_forward_,
+                      SCALAR_TYPE)(SCALAR_TYPE *output,
+                                   int64_t seconds,
+                                   int32_t nanoseconds,
+                                   const time_conv_t *conv) {
     SCALAR_TYPE converted_s;
     SCALAR_TYPE converted_ns;
     if (seconds < 0 && nanoseconds > 0) {
@@ -64,28 +62,28 @@ AVS_CONCAT(time_conv_forward_, SCALAR_TYPE)(SCALAR_TYPE *output,
         ++seconds;
         nanoseconds -= NS_IN_S;
     }
-    if (AVS_CONCAT(unit_conv_forward_, SCALAR_TYPE, _int64_t)(
-                    &converted_s, seconds, &conv->conv_s)
+    if (AVS_CONCAT(unit_conv_forward_, SCALAR_TYPE,
+                   _int64_t)(&converted_s, seconds, &conv->conv_s)
             || AVS_CONCAT(unit_conv_forward_, SCALAR_TYPE, _int64_t)(
-                    &converted_ns, nanoseconds, &conv->conv_ns)) {
+                       &converted_ns, nanoseconds, &conv->conv_ns)) {
         return -1;
     }
-    return AVS_CONCAT(safe_add_, SCALAR_TYPE)(
-            output, converted_s, converted_ns);
+    return AVS_CONCAT(safe_add_, SCALAR_TYPE)(output, converted_s,
+                                              converted_ns);
 }
 
-static int
-AVS_CONCAT(time_conv_backward_, SCALAR_TYPE)(avs_time_duration_t *output,
-                                             SCALAR_TYPE input,
-                                             const time_conv_t *conv) {
+static int AVS_CONCAT(time_conv_backward_,
+                      SCALAR_TYPE)(avs_time_duration_t *output,
+                                   SCALAR_TYPE input,
+                                   const time_conv_t *conv) {
     SCALAR_TYPE seconds_only;
     int64_t output_ns_tmp;
-    if (AVS_CONCAT(unit_conv_backward_int64_t_, SCALAR_TYPE)(
-                    &output->seconds, input, &conv->conv_s)
+    if (AVS_CONCAT(unit_conv_backward_int64_t_,
+                   SCALAR_TYPE)(&output->seconds, input, &conv->conv_s)
             || AVS_CONCAT(unit_conv_forward_, SCALAR_TYPE, _int64_t)(
-                    &seconds_only, output->seconds, &conv->conv_s)
+                       &seconds_only, output->seconds, &conv->conv_s)
             || AVS_CONCAT(unit_conv_backward_int64_t_, SCALAR_TYPE)(
-                    &output_ns_tmp, input - seconds_only, &conv->conv_ns)
+                       &output_ns_tmp, input - seconds_only, &conv->conv_ns)
             || output_ns_tmp <= -NS_IN_S || output_ns_tmp >= NS_IN_S) {
         return -1;
     }

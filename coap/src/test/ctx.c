@@ -20,16 +20,16 @@
 
 #include <signal.h>
 
-#include <poll.h>
-#include <unistd.h>
-#include <errno.h>
 #include <arpa/inet.h>
+#include <errno.h>
 #include <netinet/in.h>
+#include <poll.h>
 #include <sys/socket.h>
 #include <sys/types.h>
+#include <unistd.h>
 
 #if __linux__
-#include <sys/prctl.h>
+#    include <sys/prctl.h>
 #endif // __linux__
 
 #include <avsystem/commons/errno.h>
@@ -39,8 +39,8 @@
 #include <avsystem/commons/unit/test.h>
 #include <avsystem/commons/utils.h>
 
-#include <avsystem/commons/coap/msg_builder.h>
 #include <avsystem/commons/coap/ctx.h>
+#include <avsystem/commons/coap/msg_builder.h>
 
 #include "utils.h"
 
@@ -51,10 +51,7 @@
 
 #define COAP_MSG_MAX_SIZE 1152
 
-typedef enum {
-    TYPE_DTLS,
-    TYPE_UDP
-} socket_type_t;
+typedef enum { TYPE_DTLS, TYPE_UDP } socket_type_t;
 
 typedef struct {
     pid_t pid;
@@ -75,7 +72,7 @@ static void wait_for_child(void) {
     sigset_t set;
     AVS_UNIT_ASSERT_SUCCESS(sigemptyset(&set));
     AVS_UNIT_ASSERT_SUCCESS(sigaddset(&set, SIGUSR1));
-    sigwait(&set, &(int){ -1 });
+    sigwait(&set, &(int) { -1 });
 }
 
 static void kill_servers(void) {
@@ -102,13 +99,14 @@ static void spawn_dtls_echo_server(uint16_t port) {
             avs_simple_snprintf(port_string, sizeof(port_string), "%u", port)
             >= 0);
 
-    char *cmdline[] = {
-        AVS_TEST_BIN_DIR "/tools/dtls_echo_server",
-        "-cafile", AVS_TEST_BIN_DIR "/certs/server-and-root.crt",
-        "-pkeyfile", AVS_TEST_BIN_DIR "/certs/server.key",
-        "-p", port_string,
-        NULL
-    };
+    char *cmdline[] = { AVS_TEST_BIN_DIR "/tools/dtls_echo_server",
+                        "-cafile",
+                        AVS_TEST_BIN_DIR "/certs/server-and-root.crt",
+                        "-pkeyfile",
+                        AVS_TEST_BIN_DIR "/certs/server.key",
+                        "-p",
+                        port_string,
+                        NULL };
     set_sigusr1_mask(SIG_BLOCK);
 
     int pid = -1;
@@ -149,7 +147,7 @@ udp_echo(const char *in, size_t in_size, char *out, size_t out_size) {
     }
 
     memcpy(out, in, in_size);
-    return (ssize_t)in_size;
+    return (ssize_t) in_size;
 }
 
 static void udp_echo_serve(uint16_t port) {
@@ -169,7 +167,7 @@ static void udp_echo_serve(uint16_t port) {
     addr.sin_port = htons(port);
 
     addr.sin_addr.s_addr = inet_addr("127.0.0.1");
-    if (bind(sock, (struct sockaddr*)&addr, sizeof(addr))) {
+    if (bind(sock, (struct sockaddr *) &addr, sizeof(addr))) {
         LOG(ERROR, "UDP server (127.0.0.1:%u) bind failed: %s", port,
             strerror(errno));
         goto cleanup;
@@ -189,27 +187,27 @@ static void udp_echo_serve(uint16_t port) {
         memset(&remote_addr, 0, sizeof(remote_addr));
         socklen_t remote_addr_len = sizeof(remote_addr);
 
-        ssize_t bytes_recv = recvfrom(sock, in_buffer, sizeof(in_buffer), 0,
-                                      (struct sockaddr*)&remote_addr,
-                                      &remote_addr_len);
+        ssize_t bytes_recv =
+                recvfrom(sock, in_buffer, sizeof(in_buffer), 0,
+                         (struct sockaddr *) &remote_addr, &remote_addr_len);
         if (bytes_recv < 0) {
-            LOG(ERROR, "UDP server (127.0.0.1:%u) recvfrom failed: %s",
-                     port, strerror(errno));
+            LOG(ERROR, "UDP server (127.0.0.1:%u) recvfrom failed: %s", port,
+                strerror(errno));
             goto cleanup;
         }
 
         ssize_t bytes_to_send = udp_echo(in_buffer, (size_t) bytes_recv,
                                          out_buffer, sizeof(out_buffer));
         if (bytes_to_send < 0) {
-            LOG(ERROR, "UDP server (127.0.0.1:%u) udp_echo failed",
-                     port);
+            LOG(ERROR, "UDP server (127.0.0.1:%u) udp_echo failed", port);
             goto cleanup;
         }
 
-        if (sendto(sock, out_buffer, (size_t)bytes_to_send, 0,
-                   (struct sockaddr*)&remote_addr, remote_addr_len) != bytes_to_send) {
-            LOG(ERROR, "UDP server (127.0.0.1:%u) sendto failed: %s",
-                     port, strerror(errno));
+        if (sendto(sock, out_buffer, (size_t) bytes_to_send, 0,
+                   (struct sockaddr *) &remote_addr, remote_addr_len)
+                != bytes_to_send) {
+            LOG(ERROR, "UDP server (127.0.0.1:%u) sendto failed: %s", port,
+                strerror(errno));
             goto cleanup;
         }
     }
@@ -263,8 +261,12 @@ static void spawn_udp_echo_server(uint16_t port) {
 static avs_net_abstract_socket_t *setup_socket(socket_type_t type,
                                                uint16_t port) {
     switch (type) {
-    case TYPE_DTLS: spawn_dtls_echo_server(port); break;
-    case TYPE_UDP: spawn_udp_echo_server(port); break;
+    case TYPE_DTLS:
+        spawn_dtls_echo_server(port);
+        break;
+    case TYPE_UDP:
+        spawn_udp_echo_server(port);
+        break;
     }
 
     bool use_nosec = (type == TYPE_UDP);
@@ -282,12 +284,12 @@ static avs_net_abstract_socket_t *setup_socket(socket_type_t type,
             .mode = AVS_NET_SECURITY_CERTIFICATE,
             .data.cert = {
                 .server_cert_validation = true,
-                .trusted_certs = avs_net_trusted_cert_info_from_file(
-                                        ROOT_CRT_FILE),
-                .client_cert = avs_net_client_cert_info_from_file(
-                                        CLIENT_CRT_FILE),
-                .client_key = avs_net_client_key_info_from_file(
-                                        CLIENT_KEY_FILE, NULL)
+                .trusted_certs =
+                        avs_net_trusted_cert_info_from_file(ROOT_CRT_FILE),
+                .client_cert =
+                        avs_net_client_cert_info_from_file(CLIENT_CRT_FILE),
+                .client_key =
+                        avs_net_client_key_info_from_file(CLIENT_KEY_FILE, NULL)
             }
         },
         .backend_configuration = {
@@ -300,8 +302,8 @@ static avs_net_abstract_socket_t *setup_socket(socket_type_t type,
     AVS_UNIT_ASSERT_TRUE(
             avs_simple_snprintf(port_str, sizeof(port_str), "%u", port) >= 0);
 
-    avs_net_socket_type_t sock_type = use_nosec ? AVS_NET_UDP_SOCKET
-                                                : AVS_NET_DTLS_SOCKET;
+    avs_net_socket_type_t sock_type =
+            use_nosec ? AVS_NET_UDP_SOCKET : AVS_NET_DTLS_SOCKET;
     void *sock_config = use_nosec ? (void *) &config.backend_configuration
                                   : (void *) &config;
     AVS_UNIT_ASSERT_SUCCESS(
@@ -309,7 +311,8 @@ static avs_net_abstract_socket_t *setup_socket(socket_type_t type,
     // this doesn't actually do anything,
     // but ensures that bind() and connect() can be used together
     AVS_UNIT_ASSERT_SUCCESS(avs_net_socket_bind(backend, NULL, NULL));
-    AVS_UNIT_ASSERT_SUCCESS(avs_net_socket_connect(backend, "localhost", port_str));
+    AVS_UNIT_ASSERT_SUCCESS(
+            avs_net_socket_connect(backend, "localhost", port_str));
 
     return backend;
 }
@@ -331,13 +334,12 @@ AVS_UNIT_TEST(coap_ctx, coap_udp) {
     void *storage = avs_malloc(storage_size);
 
     const avs_coap_msg_t *msg = avs_coap_msg_build_without_payload(
-            avs_coap_ensure_aligned_buffer(storage),
-            storage_size, &info);
+            avs_coap_ensure_aligned_buffer(storage), storage_size, &info);
 
     AVS_UNIT_ASSERT_NOT_NULL(msg);
 
-    AVS_UNIT_ASSERT_SUCCESS(avs_net_socket_get_opt(
-            backend, AVS_NET_SOCKET_OPT_MTU, &mtu));
+    AVS_UNIT_ASSERT_SUCCESS(
+            avs_net_socket_get_opt(backend, AVS_NET_SOCKET_OPT_MTU, &mtu));
     AVS_UNIT_ASSERT_EQUAL(mtu.mtu, 1500);
     AVS_UNIT_ASSERT_SUCCESS(avs_net_socket_get_opt(
             backend, AVS_NET_SOCKET_OPT_INNER_MTU, &mtu));
@@ -375,13 +377,12 @@ AVS_UNIT_TEST(coap_ctx, coap_dtls) {
     void *storage = avs_malloc(storage_size);
 
     const avs_coap_msg_t *msg = avs_coap_msg_build_without_payload(
-            avs_coap_ensure_aligned_buffer(storage),
-            storage_size, &info);
+            avs_coap_ensure_aligned_buffer(storage), storage_size, &info);
 
     AVS_UNIT_ASSERT_NOT_NULL(msg);
 
-    AVS_UNIT_ASSERT_SUCCESS(avs_net_socket_get_opt(
-            backend, AVS_NET_SOCKET_OPT_MTU, &mtu));
+    AVS_UNIT_ASSERT_SUCCESS(
+            avs_net_socket_get_opt(backend, AVS_NET_SOCKET_OPT_MTU, &mtu));
     AVS_UNIT_ASSERT_EQUAL(mtu.mtu, 1500);
     AVS_UNIT_ASSERT_SUCCESS(avs_net_socket_get_opt(
             backend, AVS_NET_SOCKET_OPT_INNER_MTU, &mtu));
@@ -408,19 +409,19 @@ AVS_UNIT_TEST(coap_ctx, coap_dtls) {
 
     // check message truncation
     AVS_UNIT_ASSERT_SUCCESS(avs_coap_ctx_send(ctx, backend, msg));
-    AVS_UNIT_ASSERT_EQUAL(
-            avs_coap_ctx_recv(ctx, backend, recv_msg,
-                              msg->length + sizeof(msg->length) - 1),
-            AVS_COAP_CTX_ERR_MSG_TOO_LONG);
+    AVS_UNIT_ASSERT_EQUAL(avs_coap_ctx_recv(ctx, backend, recv_msg,
+                                            msg->length + sizeof(msg->length)
+                                                    - 1),
+                          AVS_COAP_CTX_ERR_MSG_TOO_LONG);
     // check that we don't get any leftover data
     AVS_UNIT_ASSERT_SUCCESS(avs_net_socket_set_opt(
             backend, AVS_NET_SOCKET_OPT_RECV_TIMEOUT,
             (const avs_net_socket_opt_value_t) {
                 .recv_timeout = avs_time_duration_from_scalar(100, AVS_TIME_MS)
             }));
-    AVS_UNIT_ASSERT_EQUAL(
-            avs_coap_ctx_recv(ctx, backend, recv_msg, COAP_MSG_MAX_SIZE),
-            AVS_COAP_CTX_ERR_TIMEOUT);
+    AVS_UNIT_ASSERT_EQUAL(avs_coap_ctx_recv(ctx, backend, recv_msg,
+                                            COAP_MSG_MAX_SIZE),
+                          AVS_COAP_CTX_ERR_TIMEOUT);
 
     avs_net_socket_cleanup(&backend);
     avs_coap_ctx_cleanup(&ctx);

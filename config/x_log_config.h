@@ -15,25 +15,25 @@
  */
 
 #ifdef LOG
-#undef LOG
+#    undef LOG
 #endif
 
 #ifdef WITH_INTERNAL_LOGS
 
-#ifdef WITH_INTERNAL_TRACE
-#define AVS_LOG_WITH_TRACE
-#endif
+#    ifdef WITH_INTERNAL_TRACE
+#        define AVS_LOG_WITH_TRACE
+#    endif
 
-#include <avsystem/commons/log.h>
-#define LOG(...) avs_log(MODULE_NAME, __VA_ARGS__)
+#    include <avsystem/commons/log.h>
+#    define LOG(...) avs_log(MODULE_NAME, __VA_ARGS__)
 
 #else
 
-#define LOG(...) ((void) 0)
+#    define LOG(...) ((void) 0)
 
-#ifdef AVS_UNIT_TESTING
+#    ifdef AVS_UNIT_TESTING
 // this should never be called by the library outside test suites
-#define avs_log_set_default_level(...) ((void) 0)
-#endif
+#        define avs_log_set_default_level(...) ((void) 0)
+#    endif
 
 #endif

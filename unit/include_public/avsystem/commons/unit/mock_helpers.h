@@ -17,7 +17,7 @@
 #ifndef AVS_COMMONS_UNIT_MOCK_HELPERS_H
 #define AVS_COMMONS_UNIT_MOCK_HELPERS_H
 
-#ifdef	__cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
@@ -94,8 +94,7 @@ extern "C" {
  * @return lvalue referring to a function pointer which will be invoked instead
  *         of the original function, if not <c>NULL</c>.
  */
-#define AVS_UNIT_MOCK(_function_to_mock) \
-AVS_UNIT_MOCK_##_function_to_mock
+#define AVS_UNIT_MOCK(_function_to_mock) AVS_UNIT_MOCK_##_function_to_mock
 
 /**
  * Wraps invocation to a specific mocked function.
@@ -111,11 +110,11 @@ AVS_UNIT_MOCK_##_function_to_mock
  *
  * @return Mocked callable.
  */
-#define AVS_UNIT_MOCK_WRAPPER(_function_to_wrap) \
-(avs_unit_mock_invoke__( \
-        (avs_unit_mock_func_ptr*) &AVS_UNIT_MOCK(_function_to_wrap)), \
-        (AVS_UNIT_MOCK(_function_to_wrap) ? AVS_UNIT_MOCK(_function_to_wrap) \
-        : _function_to_wrap))
+#define AVS_UNIT_MOCK_WRAPPER(_function_to_wrap)                            \
+    (avs_unit_mock_invoke__(                                                \
+             (avs_unit_mock_func_ptr *) &AVS_UNIT_MOCK(_function_to_wrap)), \
+     (AVS_UNIT_MOCK(_function_to_wrap) ? AVS_UNIT_MOCK(_function_to_wrap)   \
+                                       : _function_to_wrap))
 
 /**
  * Internal functions used by the library to implement the functionality.
@@ -138,25 +137,24 @@ unsigned avs_unit_mock_invocations__(avs_unit_mock_func_ptr *invoked_func);
  * @return Number of times the function was invoked.
  */
 #define AVS_UNIT_MOCK_INVOCATIONS(func) \
-    avs_unit_mock_invocations__((avs_unit_mock_func_ptr*) &AVS_UNIT_MOCK(func))
+    avs_unit_mock_invocations__((avs_unit_mock_func_ptr *) &AVS_UNIT_MOCK(func))
 
 /**
  * Declares and defines a mocked function pointer.
  *
  * @param _function_to_mock Name of the mocked function.
  */
-#define AVS_UNIT_MOCK_CREATE(_function_to_mock) \
-static __typeof__(_function_to_mock) *AVS_UNIT_MOCK(_function_to_mock); \
-static void _avs_unit_mock_constructor_##_function_to_mock(void) \
-        __attribute__((constructor)); \
-static void _avs_unit_mock_constructor_##_function_to_mock(void) { \
-    avs_unit_mock_add__((avs_unit_mock_func_ptr *) \
-                      &AVS_UNIT_MOCK(_function_to_mock)); \
-}
+#define AVS_UNIT_MOCK_CREATE(_function_to_mock)                                \
+    static __typeof__(_function_to_mock) *AVS_UNIT_MOCK(_function_to_mock);    \
+    static void _avs_unit_mock_constructor_##_function_to_mock(void)           \
+            __attribute__((constructor));                                      \
+    static void _avs_unit_mock_constructor_##_function_to_mock(void) {         \
+        avs_unit_mock_add__(                                                   \
+                (avs_unit_mock_func_ptr *) &AVS_UNIT_MOCK(_function_to_mock)); \
+    }
 
-#ifdef	__cplusplus
+#ifdef __cplusplus
 }
 #endif
 
-#endif	/* AVS_COMMONS_UNIT_MOCK_HELPERS_H */
-
+#endif /* AVS_COMMONS_UNIT_MOCK_HELPERS_H */

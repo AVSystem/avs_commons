@@ -93,7 +93,7 @@ int avs_mutex_unlock(avs_mutex_t *mutex);
  */
 void avs_mutex_cleanup(avs_mutex_t **mutex);
 
-#ifdef	__cplusplus
+#ifdef __cplusplus
 } /* extern "C" */
 #endif
 

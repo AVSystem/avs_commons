@@ -53,8 +53,8 @@ void avs_buffer_reset(avs_buffer_t *buffer) {
 }
 
 int avs_buffer_create(avs_buffer_t **buffer_ptr, size_t capacity) {
-    *buffer_ptr = (avs_buffer_t *)
-            avs_malloc(offsetof(avs_buffer_t, data) + capacity);
+    *buffer_ptr = (avs_buffer_t *) avs_malloc(offsetof(avs_buffer_t, data)
+                                              + capacity);
     if (*buffer_ptr) {
         (*buffer_ptr)->capacity = capacity;
         avs_buffer_reset(*buffer_ptr);
@@ -149,5 +149,5 @@ int avs_buffer_fill_bytes(avs_buffer_t *buffer, int value, size_t bytes_count) {
 }
 
 #ifdef AVS_UNIT_TESTING
-#include "test/test_buffer.c"
+#    include "test/test_buffer.c"
 #endif

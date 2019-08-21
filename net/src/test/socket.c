@@ -17,10 +17,7 @@
 #include <avsystem/commons/socket.h>
 #include <avsystem/commons/unit/test.h>
 
-typedef enum {
-    SUCCESS,
-    FAIL
-} test_case_result_t;
+typedef enum { SUCCESS, FAIL } test_case_result_t;
 
 typedef struct {
     test_case_result_t expected_result;
@@ -36,10 +33,10 @@ run_socket_get_opt_test_cases(avs_socket_t *socket,
     for (size_t i = 0; i < test_cases_count; i++) {
         if (test_cases[i].expected_result == SUCCESS) {
             AVS_UNIT_ASSERT_SUCCESS(avs_net_socket_get_opt(
-                socket, test_cases[i].tested_option, &opt_val));
+                    socket, test_cases[i].tested_option, &opt_val));
         } else {
             AVS_UNIT_ASSERT_FAILED(avs_net_socket_get_opt(
-                socket, test_cases[i].tested_option, &opt_val));
+                    socket, test_cases[i].tested_option, &opt_val));
         }
     }
 }
@@ -71,10 +68,10 @@ run_socket_set_opt_test_cases(avs_socket_t *socket,
         switch (test_cases[i].tested_option) {
         case AVS_NET_SOCKET_OPT_RECV_TIMEOUT:
             opt_val.recv_timeout =
-                avs_time_duration_from_scalar(10, AVS_TIME_S);
+                    avs_time_duration_from_scalar(10, AVS_TIME_S);
             break;
         case AVS_NET_SOCKET_OPT_STATE:
-            opt_val.state =  AVS_NET_SOCKET_STATE_CONNECTED;
+            opt_val.state = AVS_NET_SOCKET_STATE_CONNECTED;
             break;
         case AVS_NET_SOCKET_OPT_ADDR_FAMILY:
             opt_val.addr_family = AVS_NET_AF_INET4;
@@ -99,10 +96,10 @@ run_socket_set_opt_test_cases(avs_socket_t *socket,
 
         if (test_cases[i].expected_result == SUCCESS) {
             AVS_UNIT_ASSERT_SUCCESS(avs_net_socket_set_opt(
-                socket, test_cases[i].tested_option, opt_val));
+                    socket, test_cases[i].tested_option, opt_val));
         } else {
             AVS_UNIT_ASSERT_FAILED(avs_net_socket_set_opt(
-                socket, test_cases[i].tested_option, opt_val));
+                    socket, test_cases[i].tested_option, opt_val));
         }
     }
 }
@@ -112,20 +109,20 @@ run_socket_set_opt_test_cases(avs_socket_t *socket,
 AVS_UNIT_TEST(socket, udp_get_opt) {
     avs_socket_t *socket = NULL;
 
-    AVS_UNIT_ASSERT_SUCCESS(avs_net_socket_create(&socket, AVS_NET_UDP_SOCKET,
-                                                  NULL));
-    AVS_UNIT_ASSERT_SUCCESS(avs_net_socket_bind(socket, DEFAULT_ADDRESS,
-                                                DEFAULT_PORT));
+    AVS_UNIT_ASSERT_SUCCESS(
+            avs_net_socket_create(&socket, AVS_NET_UDP_SOCKET, NULL));
+    AVS_UNIT_ASSERT_SUCCESS(
+            avs_net_socket_bind(socket, DEFAULT_ADDRESS, DEFAULT_PORT));
 
     const socket_opt_test_case_t test_cases[] = {
-        {SUCCESS, AVS_NET_SOCKET_OPT_RECV_TIMEOUT},
-        {SUCCESS, AVS_NET_SOCKET_OPT_STATE},
-        {SUCCESS, AVS_NET_SOCKET_OPT_ADDR_FAMILY},
-        {FAIL,    AVS_NET_SOCKET_OPT_MTU},
-        {SUCCESS, AVS_NET_SOCKET_OPT_INNER_MTU},
-        {FAIL,    AVS_NET_SOCKET_OPT_SESSION_RESUMED},
-        {SUCCESS, AVS_NET_SOCKET_OPT_BYTES_SENT},
-        {SUCCESS, AVS_NET_SOCKET_OPT_BYTES_RECEIVED}
+        { SUCCESS, AVS_NET_SOCKET_OPT_RECV_TIMEOUT },
+        { SUCCESS, AVS_NET_SOCKET_OPT_STATE },
+        { SUCCESS, AVS_NET_SOCKET_OPT_ADDR_FAMILY },
+        { FAIL, AVS_NET_SOCKET_OPT_MTU },
+        { SUCCESS, AVS_NET_SOCKET_OPT_INNER_MTU },
+        { FAIL, AVS_NET_SOCKET_OPT_SESSION_RESUMED },
+        { SUCCESS, AVS_NET_SOCKET_OPT_BYTES_SENT },
+        { SUCCESS, AVS_NET_SOCKET_OPT_BYTES_RECEIVED }
     };
     run_socket_get_opt_test_cases(socket, test_cases,
                                   AVS_ARRAY_SIZE(test_cases));
@@ -136,20 +133,20 @@ AVS_UNIT_TEST(socket, udp_get_opt) {
 AVS_UNIT_TEST(socket, tcp_get_opt) {
     avs_socket_t *socket = NULL;
 
-    AVS_UNIT_ASSERT_SUCCESS(avs_net_socket_create(&socket, AVS_NET_TCP_SOCKET,
-                                                  NULL));
-    AVS_UNIT_ASSERT_SUCCESS(avs_net_socket_bind(socket, DEFAULT_ADDRESS,
-                                                DEFAULT_PORT));
+    AVS_UNIT_ASSERT_SUCCESS(
+            avs_net_socket_create(&socket, AVS_NET_TCP_SOCKET, NULL));
+    AVS_UNIT_ASSERT_SUCCESS(
+            avs_net_socket_bind(socket, DEFAULT_ADDRESS, DEFAULT_PORT));
 
     const socket_opt_test_case_t test_cases[] = {
-        {SUCCESS, AVS_NET_SOCKET_OPT_RECV_TIMEOUT},
-        {SUCCESS, AVS_NET_SOCKET_OPT_STATE},
-        {SUCCESS, AVS_NET_SOCKET_OPT_ADDR_FAMILY},
-        {FAIL,    AVS_NET_SOCKET_OPT_MTU},
-        {FAIL,    AVS_NET_SOCKET_OPT_INNER_MTU},
-        {FAIL,    AVS_NET_SOCKET_OPT_SESSION_RESUMED},
-        {SUCCESS, AVS_NET_SOCKET_OPT_BYTES_SENT},
-        {SUCCESS, AVS_NET_SOCKET_OPT_BYTES_RECEIVED}
+        { SUCCESS, AVS_NET_SOCKET_OPT_RECV_TIMEOUT },
+        { SUCCESS, AVS_NET_SOCKET_OPT_STATE },
+        { SUCCESS, AVS_NET_SOCKET_OPT_ADDR_FAMILY },
+        { FAIL, AVS_NET_SOCKET_OPT_MTU },
+        { FAIL, AVS_NET_SOCKET_OPT_INNER_MTU },
+        { FAIL, AVS_NET_SOCKET_OPT_SESSION_RESUMED },
+        { SUCCESS, AVS_NET_SOCKET_OPT_BYTES_SENT },
+        { SUCCESS, AVS_NET_SOCKET_OPT_BYTES_RECEIVED }
     };
     run_socket_get_opt_test_cases(socket, test_cases,
                                   AVS_ARRAY_SIZE(test_cases));
@@ -162,18 +159,18 @@ AVS_UNIT_TEST(socket, ssl_get_opt) {
 
     AVS_UNIT_ASSERT_SUCCESS(avs_net_socket_create(&socket, AVS_NET_SSL_SOCKET,
                                                   &DEFAULT_SSL_CONFIGURATION));
-    AVS_UNIT_ASSERT_SUCCESS(avs_net_socket_bind(socket, DEFAULT_ADDRESS,
-                                                DEFAULT_PORT));
+    AVS_UNIT_ASSERT_SUCCESS(
+            avs_net_socket_bind(socket, DEFAULT_ADDRESS, DEFAULT_PORT));
 
     const socket_opt_test_case_t test_cases[] = {
-        {SUCCESS, AVS_NET_SOCKET_OPT_RECV_TIMEOUT},
-        {SUCCESS, AVS_NET_SOCKET_OPT_STATE},
-        {SUCCESS, AVS_NET_SOCKET_OPT_ADDR_FAMILY},
-        {FAIL,    AVS_NET_SOCKET_OPT_MTU},
-        {SUCCESS, AVS_NET_SOCKET_OPT_INNER_MTU},
-        {SUCCESS, AVS_NET_SOCKET_OPT_SESSION_RESUMED},
-        {SUCCESS, AVS_NET_SOCKET_OPT_BYTES_SENT},
-        {SUCCESS, AVS_NET_SOCKET_OPT_BYTES_RECEIVED}
+        { SUCCESS, AVS_NET_SOCKET_OPT_RECV_TIMEOUT },
+        { SUCCESS, AVS_NET_SOCKET_OPT_STATE },
+        { SUCCESS, AVS_NET_SOCKET_OPT_ADDR_FAMILY },
+        { FAIL, AVS_NET_SOCKET_OPT_MTU },
+        { SUCCESS, AVS_NET_SOCKET_OPT_INNER_MTU },
+        { SUCCESS, AVS_NET_SOCKET_OPT_SESSION_RESUMED },
+        { SUCCESS, AVS_NET_SOCKET_OPT_BYTES_SENT },
+        { SUCCESS, AVS_NET_SOCKET_OPT_BYTES_RECEIVED }
     };
     run_socket_get_opt_test_cases(socket, test_cases,
                                   AVS_ARRAY_SIZE(test_cases));
@@ -186,18 +183,18 @@ AVS_UNIT_TEST(socket, dtls_get_opt) {
 
     AVS_UNIT_ASSERT_SUCCESS(avs_net_socket_create(&socket, AVS_NET_DTLS_SOCKET,
                                                   &DEFAULT_SSL_CONFIGURATION));
-    AVS_UNIT_ASSERT_SUCCESS(avs_net_socket_bind(socket, DEFAULT_ADDRESS,
-                                                DEFAULT_PORT));
+    AVS_UNIT_ASSERT_SUCCESS(
+            avs_net_socket_bind(socket, DEFAULT_ADDRESS, DEFAULT_PORT));
 
     const socket_opt_test_case_t test_cases[] = {
-        {SUCCESS, AVS_NET_SOCKET_OPT_RECV_TIMEOUT},
-        {SUCCESS, AVS_NET_SOCKET_OPT_STATE},
-        {SUCCESS, AVS_NET_SOCKET_OPT_ADDR_FAMILY},
-        {FAIL,    AVS_NET_SOCKET_OPT_MTU},
-        {FAIL,    AVS_NET_SOCKET_OPT_INNER_MTU},
-        {SUCCESS, AVS_NET_SOCKET_OPT_SESSION_RESUMED},
-        {SUCCESS, AVS_NET_SOCKET_OPT_BYTES_SENT},
-        {SUCCESS, AVS_NET_SOCKET_OPT_BYTES_RECEIVED}
+        { SUCCESS, AVS_NET_SOCKET_OPT_RECV_TIMEOUT },
+        { SUCCESS, AVS_NET_SOCKET_OPT_STATE },
+        { SUCCESS, AVS_NET_SOCKET_OPT_ADDR_FAMILY },
+        { FAIL, AVS_NET_SOCKET_OPT_MTU },
+        { FAIL, AVS_NET_SOCKET_OPT_INNER_MTU },
+        { SUCCESS, AVS_NET_SOCKET_OPT_SESSION_RESUMED },
+        { SUCCESS, AVS_NET_SOCKET_OPT_BYTES_SENT },
+        { SUCCESS, AVS_NET_SOCKET_OPT_BYTES_RECEIVED }
     };
     run_socket_get_opt_test_cases(socket, test_cases,
                                   AVS_ARRAY_SIZE(test_cases));
@@ -210,21 +207,21 @@ AVS_UNIT_TEST(socket, dtls_get_opt) {
 AVS_UNIT_TEST(socket, udp_get_opt_after_close) {
     avs_socket_t *socket = NULL;
 
-    AVS_UNIT_ASSERT_SUCCESS(avs_net_socket_create(&socket, AVS_NET_UDP_SOCKET,
-                                                  NULL));
-    AVS_UNIT_ASSERT_SUCCESS(avs_net_socket_bind(socket, DEFAULT_ADDRESS,
-                                                DEFAULT_PORT));
+    AVS_UNIT_ASSERT_SUCCESS(
+            avs_net_socket_create(&socket, AVS_NET_UDP_SOCKET, NULL));
+    AVS_UNIT_ASSERT_SUCCESS(
+            avs_net_socket_bind(socket, DEFAULT_ADDRESS, DEFAULT_PORT));
     AVS_UNIT_ASSERT_SUCCESS(avs_net_socket_close(socket));
 
     const socket_opt_test_case_t test_cases[] = {
-        {SUCCESS, AVS_NET_SOCKET_OPT_RECV_TIMEOUT},
-        {SUCCESS, AVS_NET_SOCKET_OPT_STATE},
-        {SUCCESS, AVS_NET_SOCKET_OPT_ADDR_FAMILY},
-        {FAIL,    AVS_NET_SOCKET_OPT_MTU},
-        {FAIL,    AVS_NET_SOCKET_OPT_INNER_MTU},
-        {FAIL,    AVS_NET_SOCKET_OPT_SESSION_RESUMED},
-        {SUCCESS, AVS_NET_SOCKET_OPT_BYTES_SENT},
-        {SUCCESS, AVS_NET_SOCKET_OPT_BYTES_RECEIVED}
+        { SUCCESS, AVS_NET_SOCKET_OPT_RECV_TIMEOUT },
+        { SUCCESS, AVS_NET_SOCKET_OPT_STATE },
+        { SUCCESS, AVS_NET_SOCKET_OPT_ADDR_FAMILY },
+        { FAIL, AVS_NET_SOCKET_OPT_MTU },
+        { FAIL, AVS_NET_SOCKET_OPT_INNER_MTU },
+        { FAIL, AVS_NET_SOCKET_OPT_SESSION_RESUMED },
+        { SUCCESS, AVS_NET_SOCKET_OPT_BYTES_SENT },
+        { SUCCESS, AVS_NET_SOCKET_OPT_BYTES_RECEIVED }
     };
     run_socket_get_opt_test_cases(socket, test_cases,
                                   AVS_ARRAY_SIZE(test_cases));
@@ -235,21 +232,21 @@ AVS_UNIT_TEST(socket, udp_get_opt_after_close) {
 AVS_UNIT_TEST(socket, tcp_get_opt_after_close) {
     avs_socket_t *socket = NULL;
 
-    AVS_UNIT_ASSERT_SUCCESS(avs_net_socket_create(&socket, AVS_NET_TCP_SOCKET,
-                                                  NULL));
-    AVS_UNIT_ASSERT_SUCCESS(avs_net_socket_bind(socket, DEFAULT_ADDRESS,
-                                                DEFAULT_PORT));
+    AVS_UNIT_ASSERT_SUCCESS(
+            avs_net_socket_create(&socket, AVS_NET_TCP_SOCKET, NULL));
+    AVS_UNIT_ASSERT_SUCCESS(
+            avs_net_socket_bind(socket, DEFAULT_ADDRESS, DEFAULT_PORT));
     AVS_UNIT_ASSERT_SUCCESS(avs_net_socket_close(socket));
 
     const socket_opt_test_case_t test_cases[] = {
-        {SUCCESS, AVS_NET_SOCKET_OPT_RECV_TIMEOUT},
-        {SUCCESS, AVS_NET_SOCKET_OPT_STATE},
-        {SUCCESS, AVS_NET_SOCKET_OPT_ADDR_FAMILY},
-        {FAIL,    AVS_NET_SOCKET_OPT_MTU},
-        {FAIL,    AVS_NET_SOCKET_OPT_INNER_MTU},
-        {FAIL,    AVS_NET_SOCKET_OPT_SESSION_RESUMED},
-        {SUCCESS, AVS_NET_SOCKET_OPT_BYTES_SENT},
-        {SUCCESS, AVS_NET_SOCKET_OPT_BYTES_RECEIVED}
+        { SUCCESS, AVS_NET_SOCKET_OPT_RECV_TIMEOUT },
+        { SUCCESS, AVS_NET_SOCKET_OPT_STATE },
+        { SUCCESS, AVS_NET_SOCKET_OPT_ADDR_FAMILY },
+        { FAIL, AVS_NET_SOCKET_OPT_MTU },
+        { FAIL, AVS_NET_SOCKET_OPT_INNER_MTU },
+        { FAIL, AVS_NET_SOCKET_OPT_SESSION_RESUMED },
+        { SUCCESS, AVS_NET_SOCKET_OPT_BYTES_SENT },
+        { SUCCESS, AVS_NET_SOCKET_OPT_BYTES_RECEIVED }
     };
     run_socket_get_opt_test_cases(socket, test_cases,
                                   AVS_ARRAY_SIZE(test_cases));
@@ -262,19 +259,19 @@ AVS_UNIT_TEST(socket, ssl_get_opt_after_close) {
 
     AVS_UNIT_ASSERT_SUCCESS(avs_net_socket_create(&socket, AVS_NET_SSL_SOCKET,
                                                   &DEFAULT_SSL_CONFIGURATION));
-    AVS_UNIT_ASSERT_SUCCESS(avs_net_socket_bind(socket, DEFAULT_ADDRESS,
-                                                DEFAULT_PORT));
+    AVS_UNIT_ASSERT_SUCCESS(
+            avs_net_socket_bind(socket, DEFAULT_ADDRESS, DEFAULT_PORT));
     AVS_UNIT_ASSERT_SUCCESS(avs_net_socket_close(socket));
 
     const socket_opt_test_case_t test_cases[] = {
-        {SUCCESS, AVS_NET_SOCKET_OPT_RECV_TIMEOUT},
-        {SUCCESS, AVS_NET_SOCKET_OPT_STATE},
-        {SUCCESS, AVS_NET_SOCKET_OPT_ADDR_FAMILY},
-        {FAIL,    AVS_NET_SOCKET_OPT_MTU},
-        {SUCCESS, AVS_NET_SOCKET_OPT_INNER_MTU},
-        {SUCCESS, AVS_NET_SOCKET_OPT_SESSION_RESUMED},
-        {SUCCESS, AVS_NET_SOCKET_OPT_BYTES_SENT},
-        {SUCCESS, AVS_NET_SOCKET_OPT_BYTES_RECEIVED}
+        { SUCCESS, AVS_NET_SOCKET_OPT_RECV_TIMEOUT },
+        { SUCCESS, AVS_NET_SOCKET_OPT_STATE },
+        { SUCCESS, AVS_NET_SOCKET_OPT_ADDR_FAMILY },
+        { FAIL, AVS_NET_SOCKET_OPT_MTU },
+        { SUCCESS, AVS_NET_SOCKET_OPT_INNER_MTU },
+        { SUCCESS, AVS_NET_SOCKET_OPT_SESSION_RESUMED },
+        { SUCCESS, AVS_NET_SOCKET_OPT_BYTES_SENT },
+        { SUCCESS, AVS_NET_SOCKET_OPT_BYTES_RECEIVED }
     };
     run_socket_get_opt_test_cases(socket, test_cases,
                                   AVS_ARRAY_SIZE(test_cases));
@@ -287,19 +284,19 @@ AVS_UNIT_TEST(socket, dtls_get_opt_after_close) {
 
     AVS_UNIT_ASSERT_SUCCESS(avs_net_socket_create(&socket, AVS_NET_DTLS_SOCKET,
                                                   &DEFAULT_SSL_CONFIGURATION));
-    AVS_UNIT_ASSERT_SUCCESS(avs_net_socket_bind(socket, DEFAULT_ADDRESS,
-                                                DEFAULT_PORT));
+    AVS_UNIT_ASSERT_SUCCESS(
+            avs_net_socket_bind(socket, DEFAULT_ADDRESS, DEFAULT_PORT));
     AVS_UNIT_ASSERT_SUCCESS(avs_net_socket_close(socket));
 
     const socket_opt_test_case_t test_cases[] = {
-        {SUCCESS, AVS_NET_SOCKET_OPT_RECV_TIMEOUT},
-        {SUCCESS, AVS_NET_SOCKET_OPT_STATE},
-        {SUCCESS, AVS_NET_SOCKET_OPT_ADDR_FAMILY},
-        {FAIL,    AVS_NET_SOCKET_OPT_MTU},
-        {SUCCESS, AVS_NET_SOCKET_OPT_INNER_MTU},
-        {SUCCESS, AVS_NET_SOCKET_OPT_SESSION_RESUMED},
-        {SUCCESS, AVS_NET_SOCKET_OPT_BYTES_SENT},
-        {SUCCESS, AVS_NET_SOCKET_OPT_BYTES_RECEIVED}
+        { SUCCESS, AVS_NET_SOCKET_OPT_RECV_TIMEOUT },
+        { SUCCESS, AVS_NET_SOCKET_OPT_STATE },
+        { SUCCESS, AVS_NET_SOCKET_OPT_ADDR_FAMILY },
+        { FAIL, AVS_NET_SOCKET_OPT_MTU },
+        { SUCCESS, AVS_NET_SOCKET_OPT_INNER_MTU },
+        { SUCCESS, AVS_NET_SOCKET_OPT_SESSION_RESUMED },
+        { SUCCESS, AVS_NET_SOCKET_OPT_BYTES_SENT },
+        { SUCCESS, AVS_NET_SOCKET_OPT_BYTES_RECEIVED }
     };
     run_socket_get_opt_test_cases(socket, test_cases,
                                   AVS_ARRAY_SIZE(test_cases));
@@ -312,21 +309,21 @@ AVS_UNIT_TEST(socket, dtls_get_opt_after_close) {
 AVS_UNIT_TEST(socket, udp_set_opt) {
     avs_socket_t *socket = NULL;
 
-    AVS_UNIT_ASSERT_SUCCESS(avs_net_socket_create(&socket, AVS_NET_UDP_SOCKET,
-                                                  NULL));
-    AVS_UNIT_ASSERT_SUCCESS(avs_net_socket_bind(socket, DEFAULT_ADDRESS,
-                                                DEFAULT_PORT));
+    AVS_UNIT_ASSERT_SUCCESS(
+            avs_net_socket_create(&socket, AVS_NET_UDP_SOCKET, NULL));
+    AVS_UNIT_ASSERT_SUCCESS(
+            avs_net_socket_bind(socket, DEFAULT_ADDRESS, DEFAULT_PORT));
 
     const socket_opt_test_case_t test_cases[] = {
-        {SUCCESS, AVS_NET_SOCKET_OPT_RECV_TIMEOUT},
-        {FAIL,    AVS_NET_SOCKET_OPT_STATE},
-        {FAIL,    AVS_NET_SOCKET_OPT_ADDR_FAMILY},
-        {FAIL,    AVS_NET_SOCKET_OPT_MTU},
-        {FAIL,    AVS_NET_SOCKET_OPT_INNER_MTU},
-        {FAIL,    AVS_NET_SOCKET_OPT_SESSION_RESUMED},
-        {FAIL,    AVS_NET_SOCKET_OPT_BYTES_SENT},
-        {FAIL,    AVS_NET_SOCKET_OPT_BYTES_RECEIVED},
-        {FAIL,    AVS_NET_SOCKET_OPT_TLS_CIPHERSUITES}
+        { SUCCESS, AVS_NET_SOCKET_OPT_RECV_TIMEOUT },
+        { FAIL, AVS_NET_SOCKET_OPT_STATE },
+        { FAIL, AVS_NET_SOCKET_OPT_ADDR_FAMILY },
+        { FAIL, AVS_NET_SOCKET_OPT_MTU },
+        { FAIL, AVS_NET_SOCKET_OPT_INNER_MTU },
+        { FAIL, AVS_NET_SOCKET_OPT_SESSION_RESUMED },
+        { FAIL, AVS_NET_SOCKET_OPT_BYTES_SENT },
+        { FAIL, AVS_NET_SOCKET_OPT_BYTES_RECEIVED },
+        { FAIL, AVS_NET_SOCKET_OPT_TLS_CIPHERSUITES }
     };
     run_socket_set_opt_test_cases(socket, test_cases,
                                   AVS_ARRAY_SIZE(test_cases));
@@ -337,21 +334,21 @@ AVS_UNIT_TEST(socket, udp_set_opt) {
 AVS_UNIT_TEST(socket, tcp_set_opt) {
     avs_socket_t *socket = NULL;
 
-    AVS_UNIT_ASSERT_SUCCESS(avs_net_socket_create(&socket, AVS_NET_TCP_SOCKET,
-                                                  NULL));
-    AVS_UNIT_ASSERT_SUCCESS(avs_net_socket_bind(socket, DEFAULT_ADDRESS,
-                                                DEFAULT_PORT));
+    AVS_UNIT_ASSERT_SUCCESS(
+            avs_net_socket_create(&socket, AVS_NET_TCP_SOCKET, NULL));
+    AVS_UNIT_ASSERT_SUCCESS(
+            avs_net_socket_bind(socket, DEFAULT_ADDRESS, DEFAULT_PORT));
 
     const socket_opt_test_case_t test_cases[] = {
-        {SUCCESS, AVS_NET_SOCKET_OPT_RECV_TIMEOUT},
-        {FAIL,    AVS_NET_SOCKET_OPT_STATE},
-        {FAIL,    AVS_NET_SOCKET_OPT_ADDR_FAMILY},
-        {FAIL,    AVS_NET_SOCKET_OPT_MTU},
-        {FAIL,    AVS_NET_SOCKET_OPT_INNER_MTU},
-        {FAIL,    AVS_NET_SOCKET_OPT_SESSION_RESUMED},
-        {FAIL,    AVS_NET_SOCKET_OPT_BYTES_SENT},
-        {FAIL,    AVS_NET_SOCKET_OPT_BYTES_RECEIVED},
-        {FAIL,    AVS_NET_SOCKET_OPT_TLS_CIPHERSUITES}
+        { SUCCESS, AVS_NET_SOCKET_OPT_RECV_TIMEOUT },
+        { FAIL, AVS_NET_SOCKET_OPT_STATE },
+        { FAIL, AVS_NET_SOCKET_OPT_ADDR_FAMILY },
+        { FAIL, AVS_NET_SOCKET_OPT_MTU },
+        { FAIL, AVS_NET_SOCKET_OPT_INNER_MTU },
+        { FAIL, AVS_NET_SOCKET_OPT_SESSION_RESUMED },
+        { FAIL, AVS_NET_SOCKET_OPT_BYTES_SENT },
+        { FAIL, AVS_NET_SOCKET_OPT_BYTES_RECEIVED },
+        { FAIL, AVS_NET_SOCKET_OPT_TLS_CIPHERSUITES }
 
     };
     run_socket_set_opt_test_cases(socket, test_cases,
@@ -365,19 +362,19 @@ AVS_UNIT_TEST(socket, ssl_set_opt) {
 
     AVS_UNIT_ASSERT_SUCCESS(avs_net_socket_create(&socket, AVS_NET_SSL_SOCKET,
                                                   &DEFAULT_SSL_CONFIGURATION));
-    AVS_UNIT_ASSERT_SUCCESS(avs_net_socket_bind(socket, DEFAULT_ADDRESS,
-                                                DEFAULT_PORT));
+    AVS_UNIT_ASSERT_SUCCESS(
+            avs_net_socket_bind(socket, DEFAULT_ADDRESS, DEFAULT_PORT));
 
     const socket_opt_test_case_t test_cases[] = {
-        {SUCCESS, AVS_NET_SOCKET_OPT_RECV_TIMEOUT},
-        {FAIL,    AVS_NET_SOCKET_OPT_STATE},
-        {FAIL,    AVS_NET_SOCKET_OPT_ADDR_FAMILY},
-        {FAIL,    AVS_NET_SOCKET_OPT_MTU},
-        {FAIL,    AVS_NET_SOCKET_OPT_INNER_MTU},
-        {FAIL,    AVS_NET_SOCKET_OPT_SESSION_RESUMED},
-        {FAIL,    AVS_NET_SOCKET_OPT_BYTES_SENT},
-        {FAIL,    AVS_NET_SOCKET_OPT_BYTES_RECEIVED},
-        {SUCCESS, AVS_NET_SOCKET_OPT_TLS_CIPHERSUITES}
+        { SUCCESS, AVS_NET_SOCKET_OPT_RECV_TIMEOUT },
+        { FAIL, AVS_NET_SOCKET_OPT_STATE },
+        { FAIL, AVS_NET_SOCKET_OPT_ADDR_FAMILY },
+        { FAIL, AVS_NET_SOCKET_OPT_MTU },
+        { FAIL, AVS_NET_SOCKET_OPT_INNER_MTU },
+        { FAIL, AVS_NET_SOCKET_OPT_SESSION_RESUMED },
+        { FAIL, AVS_NET_SOCKET_OPT_BYTES_SENT },
+        { FAIL, AVS_NET_SOCKET_OPT_BYTES_RECEIVED },
+        { SUCCESS, AVS_NET_SOCKET_OPT_TLS_CIPHERSUITES }
 
     };
     run_socket_set_opt_test_cases(socket, test_cases,
@@ -391,19 +388,19 @@ AVS_UNIT_TEST(socket, dtls_set_opt) {
 
     AVS_UNIT_ASSERT_SUCCESS(avs_net_socket_create(&socket, AVS_NET_DTLS_SOCKET,
                                                   &DEFAULT_SSL_CONFIGURATION));
-    AVS_UNIT_ASSERT_SUCCESS(avs_net_socket_bind(socket, DEFAULT_ADDRESS,
-                                                DEFAULT_PORT));
+    AVS_UNIT_ASSERT_SUCCESS(
+            avs_net_socket_bind(socket, DEFAULT_ADDRESS, DEFAULT_PORT));
 
     const socket_opt_test_case_t test_cases[] = {
-        {SUCCESS, AVS_NET_SOCKET_OPT_RECV_TIMEOUT},
-        {FAIL,    AVS_NET_SOCKET_OPT_STATE},
-        {FAIL,    AVS_NET_SOCKET_OPT_ADDR_FAMILY},
-        {FAIL,    AVS_NET_SOCKET_OPT_MTU},
-        {FAIL,    AVS_NET_SOCKET_OPT_INNER_MTU},
-        {FAIL,    AVS_NET_SOCKET_OPT_SESSION_RESUMED},
-        {FAIL,    AVS_NET_SOCKET_OPT_BYTES_SENT},
-        {FAIL,    AVS_NET_SOCKET_OPT_BYTES_RECEIVED},
-        {SUCCESS, AVS_NET_SOCKET_OPT_TLS_CIPHERSUITES}
+        { SUCCESS, AVS_NET_SOCKET_OPT_RECV_TIMEOUT },
+        { FAIL, AVS_NET_SOCKET_OPT_STATE },
+        { FAIL, AVS_NET_SOCKET_OPT_ADDR_FAMILY },
+        { FAIL, AVS_NET_SOCKET_OPT_MTU },
+        { FAIL, AVS_NET_SOCKET_OPT_INNER_MTU },
+        { FAIL, AVS_NET_SOCKET_OPT_SESSION_RESUMED },
+        { FAIL, AVS_NET_SOCKET_OPT_BYTES_SENT },
+        { FAIL, AVS_NET_SOCKET_OPT_BYTES_RECEIVED },
+        { SUCCESS, AVS_NET_SOCKET_OPT_TLS_CIPHERSUITES }
 
     };
     run_socket_set_opt_test_cases(socket, test_cases,
@@ -417,22 +414,22 @@ AVS_UNIT_TEST(socket, dtls_set_opt) {
 AVS_UNIT_TEST(socket, udp_set_opt_after_close) {
     avs_socket_t *socket = NULL;
 
-    AVS_UNIT_ASSERT_SUCCESS(avs_net_socket_create(&socket, AVS_NET_UDP_SOCKET,
-                                                  NULL));
-    AVS_UNIT_ASSERT_SUCCESS(avs_net_socket_bind(socket, DEFAULT_ADDRESS,
-                                                DEFAULT_PORT));
+    AVS_UNIT_ASSERT_SUCCESS(
+            avs_net_socket_create(&socket, AVS_NET_UDP_SOCKET, NULL));
+    AVS_UNIT_ASSERT_SUCCESS(
+            avs_net_socket_bind(socket, DEFAULT_ADDRESS, DEFAULT_PORT));
     AVS_UNIT_ASSERT_SUCCESS(avs_net_socket_close(socket));
 
     const socket_opt_test_case_t test_cases[] = {
-        {SUCCESS, AVS_NET_SOCKET_OPT_RECV_TIMEOUT},
-        {FAIL,    AVS_NET_SOCKET_OPT_STATE},
-        {FAIL,    AVS_NET_SOCKET_OPT_ADDR_FAMILY},
-        {FAIL,    AVS_NET_SOCKET_OPT_MTU},
-        {FAIL,    AVS_NET_SOCKET_OPT_INNER_MTU},
-        {FAIL,    AVS_NET_SOCKET_OPT_SESSION_RESUMED},
-        {FAIL,    AVS_NET_SOCKET_OPT_BYTES_SENT},
-        {FAIL,    AVS_NET_SOCKET_OPT_BYTES_RECEIVED},
-        {FAIL,    AVS_NET_SOCKET_OPT_TLS_CIPHERSUITES}
+        { SUCCESS, AVS_NET_SOCKET_OPT_RECV_TIMEOUT },
+        { FAIL, AVS_NET_SOCKET_OPT_STATE },
+        { FAIL, AVS_NET_SOCKET_OPT_ADDR_FAMILY },
+        { FAIL, AVS_NET_SOCKET_OPT_MTU },
+        { FAIL, AVS_NET_SOCKET_OPT_INNER_MTU },
+        { FAIL, AVS_NET_SOCKET_OPT_SESSION_RESUMED },
+        { FAIL, AVS_NET_SOCKET_OPT_BYTES_SENT },
+        { FAIL, AVS_NET_SOCKET_OPT_BYTES_RECEIVED },
+        { FAIL, AVS_NET_SOCKET_OPT_TLS_CIPHERSUITES }
 
     };
     run_socket_set_opt_test_cases(socket, test_cases,
@@ -444,22 +441,22 @@ AVS_UNIT_TEST(socket, udp_set_opt_after_close) {
 AVS_UNIT_TEST(socket, tcp_set_opt_after_close) {
     avs_socket_t *socket = NULL;
 
-    AVS_UNIT_ASSERT_SUCCESS(avs_net_socket_create(&socket, AVS_NET_TCP_SOCKET,
-                                                  NULL));
-    AVS_UNIT_ASSERT_SUCCESS(avs_net_socket_bind(socket, DEFAULT_ADDRESS,
-                                                DEFAULT_PORT));
+    AVS_UNIT_ASSERT_SUCCESS(
+            avs_net_socket_create(&socket, AVS_NET_TCP_SOCKET, NULL));
+    AVS_UNIT_ASSERT_SUCCESS(
+            avs_net_socket_bind(socket, DEFAULT_ADDRESS, DEFAULT_PORT));
     AVS_UNIT_ASSERT_SUCCESS(avs_net_socket_close(socket));
 
     const socket_opt_test_case_t test_cases[] = {
-        {SUCCESS, AVS_NET_SOCKET_OPT_RECV_TIMEOUT},
-        {FAIL,    AVS_NET_SOCKET_OPT_STATE},
-        {FAIL,    AVS_NET_SOCKET_OPT_ADDR_FAMILY},
-        {FAIL,    AVS_NET_SOCKET_OPT_MTU},
-        {FAIL,    AVS_NET_SOCKET_OPT_INNER_MTU},
-        {FAIL,    AVS_NET_SOCKET_OPT_SESSION_RESUMED},
-        {FAIL,    AVS_NET_SOCKET_OPT_BYTES_SENT},
-        {FAIL,    AVS_NET_SOCKET_OPT_BYTES_RECEIVED},
-        {FAIL,    AVS_NET_SOCKET_OPT_TLS_CIPHERSUITES}
+        { SUCCESS, AVS_NET_SOCKET_OPT_RECV_TIMEOUT },
+        { FAIL, AVS_NET_SOCKET_OPT_STATE },
+        { FAIL, AVS_NET_SOCKET_OPT_ADDR_FAMILY },
+        { FAIL, AVS_NET_SOCKET_OPT_MTU },
+        { FAIL, AVS_NET_SOCKET_OPT_INNER_MTU },
+        { FAIL, AVS_NET_SOCKET_OPT_SESSION_RESUMED },
+        { FAIL, AVS_NET_SOCKET_OPT_BYTES_SENT },
+        { FAIL, AVS_NET_SOCKET_OPT_BYTES_RECEIVED },
+        { FAIL, AVS_NET_SOCKET_OPT_TLS_CIPHERSUITES }
     };
     run_socket_set_opt_test_cases(socket, test_cases,
                                   AVS_ARRAY_SIZE(test_cases));
@@ -472,20 +469,20 @@ AVS_UNIT_TEST(socket, ssl_set_opt_after_close) {
 
     AVS_UNIT_ASSERT_SUCCESS(avs_net_socket_create(&socket, AVS_NET_SSL_SOCKET,
                                                   &DEFAULT_SSL_CONFIGURATION));
-    AVS_UNIT_ASSERT_SUCCESS(avs_net_socket_bind(socket, DEFAULT_ADDRESS,
-                                                DEFAULT_PORT));
+    AVS_UNIT_ASSERT_SUCCESS(
+            avs_net_socket_bind(socket, DEFAULT_ADDRESS, DEFAULT_PORT));
     AVS_UNIT_ASSERT_SUCCESS(avs_net_socket_close(socket));
 
     const socket_opt_test_case_t test_cases[] = {
-        {SUCCESS, AVS_NET_SOCKET_OPT_RECV_TIMEOUT},
-        {FAIL,    AVS_NET_SOCKET_OPT_STATE},
-        {FAIL,    AVS_NET_SOCKET_OPT_ADDR_FAMILY},
-        {FAIL,    AVS_NET_SOCKET_OPT_MTU},
-        {FAIL,    AVS_NET_SOCKET_OPT_INNER_MTU},
-        {FAIL,    AVS_NET_SOCKET_OPT_SESSION_RESUMED},
-        {FAIL,    AVS_NET_SOCKET_OPT_BYTES_SENT},
-        {FAIL,    AVS_NET_SOCKET_OPT_BYTES_RECEIVED},
-        {SUCCESS, AVS_NET_SOCKET_OPT_TLS_CIPHERSUITES}
+        { SUCCESS, AVS_NET_SOCKET_OPT_RECV_TIMEOUT },
+        { FAIL, AVS_NET_SOCKET_OPT_STATE },
+        { FAIL, AVS_NET_SOCKET_OPT_ADDR_FAMILY },
+        { FAIL, AVS_NET_SOCKET_OPT_MTU },
+        { FAIL, AVS_NET_SOCKET_OPT_INNER_MTU },
+        { FAIL, AVS_NET_SOCKET_OPT_SESSION_RESUMED },
+        { FAIL, AVS_NET_SOCKET_OPT_BYTES_SENT },
+        { FAIL, AVS_NET_SOCKET_OPT_BYTES_RECEIVED },
+        { SUCCESS, AVS_NET_SOCKET_OPT_TLS_CIPHERSUITES }
 
     };
     run_socket_set_opt_test_cases(socket, test_cases,
@@ -499,20 +496,20 @@ AVS_UNIT_TEST(socket, dtls_set_opt_after_close) {
 
     AVS_UNIT_ASSERT_SUCCESS(avs_net_socket_create(&socket, AVS_NET_DTLS_SOCKET,
                                                   &DEFAULT_SSL_CONFIGURATION));
-    AVS_UNIT_ASSERT_SUCCESS(avs_net_socket_bind(socket, DEFAULT_ADDRESS,
-                                                DEFAULT_PORT));
+    AVS_UNIT_ASSERT_SUCCESS(
+            avs_net_socket_bind(socket, DEFAULT_ADDRESS, DEFAULT_PORT));
     AVS_UNIT_ASSERT_SUCCESS(avs_net_socket_close(socket));
 
     const socket_opt_test_case_t test_cases[] = {
-        {SUCCESS, AVS_NET_SOCKET_OPT_RECV_TIMEOUT},
-        {FAIL,    AVS_NET_SOCKET_OPT_STATE},
-        {FAIL,    AVS_NET_SOCKET_OPT_ADDR_FAMILY},
-        {FAIL,    AVS_NET_SOCKET_OPT_MTU},
-        {FAIL,    AVS_NET_SOCKET_OPT_INNER_MTU},
-        {FAIL,    AVS_NET_SOCKET_OPT_SESSION_RESUMED},
-        {FAIL,    AVS_NET_SOCKET_OPT_BYTES_SENT},
-        {FAIL,    AVS_NET_SOCKET_OPT_BYTES_RECEIVED},
-        {SUCCESS, AVS_NET_SOCKET_OPT_TLS_CIPHERSUITES}
+        { SUCCESS, AVS_NET_SOCKET_OPT_RECV_TIMEOUT },
+        { FAIL, AVS_NET_SOCKET_OPT_STATE },
+        { FAIL, AVS_NET_SOCKET_OPT_ADDR_FAMILY },
+        { FAIL, AVS_NET_SOCKET_OPT_MTU },
+        { FAIL, AVS_NET_SOCKET_OPT_INNER_MTU },
+        { FAIL, AVS_NET_SOCKET_OPT_SESSION_RESUMED },
+        { FAIL, AVS_NET_SOCKET_OPT_BYTES_SENT },
+        { FAIL, AVS_NET_SOCKET_OPT_BYTES_RECEIVED },
+        { SUCCESS, AVS_NET_SOCKET_OPT_TLS_CIPHERSUITES }
 
     };
     run_socket_set_opt_test_cases(socket, test_cases,

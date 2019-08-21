@@ -131,6 +131,7 @@ ssize_t avs_base64_decode_custom(uint8_t *out,
                                  size_t out_size,
                                  const char *b64_data,
                                  avs_base64_config_t config) {
+
     uint32_t accumulator = 0;
     uint8_t bits = 0;
     const uint8_t *current = (const uint8_t *) b64_data;
@@ -175,6 +176,7 @@ ssize_t avs_base64_decode_custom(uint8_t *out,
 
     if (config.padding_char && config.require_padding
             && padding != (3 - (out_length % 3)) % 3) {
+
         return -1;
     }
 

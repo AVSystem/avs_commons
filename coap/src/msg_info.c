@@ -16,8 +16,8 @@
 
 #include <avs_commons_config.h>
 
-#include <avsystem/commons/coap/msg_info.h>
 #include <avsystem/commons/coap/msg_builder.h>
+#include <avsystem/commons/coap/msg_info.h>
 #include <avsystem/commons/utils.h>
 
 #include "coap_log.h"
@@ -25,8 +25,7 @@
 
 VISIBILITY_SOURCE_BEGIN
 
-void
-avs_coap_msg_info_reset(avs_coap_msg_info_t *info) {
+void avs_coap_msg_info_reset(avs_coap_msg_info_t *info) {
     AVS_LIST_CLEAR(&info->options_);
 
     *info = avs_coap_msg_info_init();
@@ -41,7 +40,7 @@ get_options_size_bytes(const AVS_LIST(avs_coap_msg_info_opt_t) opts) {
     AVS_LIST_FOREACH(opt, opts) {
         assert(opt->number >= prev_opt_num);
 
-        uint16_t delta = (uint16_t)(opt->number - prev_opt_num);
+        uint16_t delta = (uint16_t) (opt->number - prev_opt_num);
         size += _avs_coap_get_opt_header_size(delta, opt->data_size)
                 + opt->data_size;
         prev_opt_num = opt->number;
@@ -50,19 +49,14 @@ get_options_size_bytes(const AVS_LIST(avs_coap_msg_info_opt_t) opts) {
     return size;
 }
 
-size_t
-avs_coap_msg_info_get_headers_size(const avs_coap_msg_info_t *info) {
-    return AVS_COAP_MAX_HEADER_SIZE
-           + info->identity.token.size
+size_t avs_coap_msg_info_get_headers_size(const avs_coap_msg_info_t *info) {
+    return AVS_COAP_MAX_HEADER_SIZE + info->identity.token.size
            + get_options_size_bytes(info->options_);
 }
 
-size_t
-avs_coap_msg_info_get_storage_size(const avs_coap_msg_info_t *info) {
-    return offsetof(avs_coap_msg_t, content)
-           + AVS_COAP_MAX_HEADER_SIZE
-           + AVS_COAP_MAX_TOKEN_LENGTH
-           + get_options_size_bytes(info->options_);
+size_t avs_coap_msg_info_get_storage_size(const avs_coap_msg_info_t *info) {
+    return offsetof(avs_coap_msg_t, content) + AVS_COAP_MAX_HEADER_SIZE
+           + AVS_COAP_MAX_TOKEN_LENGTH + get_options_size_bytes(info->options_);
 }
 
 size_t
@@ -95,20 +89,35 @@ int avs_coap_msg_info_opt_content_format(avs_coap_msg_info_t *info,
     return avs_coap_msg_info_opt_u16(info, AVS_COAP_OPT_CONTENT_FORMAT, format);
 }
 
-static int encode_block_size(uint16_t size,
-                             uint8_t *out_size_exponent) {
+static int encode_block_size(uint16_t size, uint8_t *out_size_exponent) {
     switch (size) {
-    case 16:   *out_size_exponent = 0; break;
-    case 32:   *out_size_exponent = 1; break;
-    case 64:   *out_size_exponent = 2; break;
-    case 128:  *out_size_exponent = 3; break;
-    case 256:  *out_size_exponent = 4; break;
-    case 512:  *out_size_exponent = 5; break;
-    case 1024: *out_size_exponent = 6; break;
+    case 16:
+        *out_size_exponent = 0;
+        break;
+    case 32:
+        *out_size_exponent = 1;
+        break;
+    case 64:
+        *out_size_exponent = 2;
+        break;
+    case 128:
+        *out_size_exponent = 3;
+        break;
+    case 256:
+        *out_size_exponent = 4;
+        break;
+    case 512:
+        *out_size_exponent = 5;
+        break;
+    case 1024:
+        *out_size_exponent = 6;
+        break;
     default:
-       LOG(ERROR, "invalid block size: %d, expected power of 2 between 16 "
-                "and 1024 (inclusive)", (int)size);
-       return -1;
+        LOG(ERROR,
+            "invalid block size: %d, expected power of 2 between 16 "
+            "and 1024 (inclusive)",
+            (int) size);
+        return -1;
     }
 
     return 0;
@@ -131,8 +140,8 @@ static int add_block_opt(avs_coap_msg_info_t *info,
     }
 
     uint32_t value = ((seq_number & 0x000fffff) << 4)
-                   | ((uint32_t)is_last_chunk << 3)
-                   | (uint32_t)size_exponent;
+                     | ((uint32_t) is_last_chunk << 3)
+                     | (uint32_t) size_exponent;
     return avs_coap_msg_info_opt_u32(info, option_number, value);
 }
 
@@ -151,8 +160,9 @@ int avs_coap_msg_info_opt_opaque(avs_coap_msg_info_t *info,
                                  uint16_t opt_number,
                                  const void *opt_data,
                                  uint16_t opt_data_size) {
-    avs_coap_msg_info_opt_t *opt = (avs_coap_msg_info_opt_t*)
-            AVS_LIST_NEW_BUFFER(sizeof(*opt) + opt_data_size);
+    avs_coap_msg_info_opt_t *opt =
+            (avs_coap_msg_info_opt_t *) AVS_LIST_NEW_BUFFER(sizeof(*opt)
+                                                            + opt_data_size);
     if (!opt) {
         LOG(ERROR, "out of memory");
         return -1;
@@ -209,5 +219,5 @@ int avs_coap_msg_info_opt_uint(avs_coap_msg_info_t *info,
         ++start;
     }
     return avs_coap_msg_info_opt_opaque(info, opt_number, &converted[start],
-                                        (uint16_t)(value_size - start));
+                                        (uint16_t) (value_size - start));
 }

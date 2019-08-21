@@ -74,7 +74,7 @@ AVS_UNIT_TEST(avs_vector, example_usage_pod) {
         /* Yay, operator [] is available after dereferencing! */
         sum += (*v)[i];
     }
-    AVS_UNIT_ASSERT_EQUAL(sum, (129)*(128) / 2);
+    AVS_UNIT_ASSERT_EQUAL(sum, (129) * (128) / 2);
     /**
      * Now we decide to finish our work quickly, without unnecessary cleanups
      * per element - they were just PODs after all.
@@ -172,7 +172,7 @@ AVS_UNIT_TEST(avs_vector, sort) {
     }
     AVS_VECTOR_SORT_RANGE(&u, 0, 5, decreasing);
     for (i = 0; i < 5; i++) {
-        AVS_UNIT_ASSERT_EQUAL((*u)[i], 4-i);
+        AVS_UNIT_ASSERT_EQUAL((*u)[i], 4 - i);
     }
     for (i = 5; i < 64; i++) {
         AVS_UNIT_ASSERT_EQUAL((*u)[i], i);
@@ -197,7 +197,7 @@ AVS_UNIT_TEST(avs_vector, reverse) {
     }
     AVS_VECTOR_REVERSE(&u);
     for (i = 0; i < 10; ++i) {
-        AVS_UNIT_ASSERT_EQUAL((*u)[i], 9-i);
+        AVS_UNIT_ASSERT_EQUAL((*u)[i], 9 - i);
     }
     AVS_VECTOR_DELETE(&u);
 }
@@ -255,4 +255,3 @@ AVS_UNIT_TEST(avs_vector, push_is_idempotent) {
         AVS_VECTOR_DELETE(&vecs[i]);
     }
 }
-

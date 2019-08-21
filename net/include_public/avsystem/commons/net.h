@@ -24,10 +24,10 @@
 
 #include <avsystem/commons/defs.h>
 
-#include <avsystem/commons/socket.h>
 #include <avsystem/commons/addrinfo.h>
+#include <avsystem/commons/socket.h>
 
-#ifdef	__cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
@@ -38,7 +38,7 @@ int avs_net_local_address_for_target_host(const char *target_host,
 
 int avs_net_validate_ip_address(avs_net_af_t family, const char *ip_address);
 
-#ifdef	__cplusplus
+#ifdef __cplusplus
 }
 #endif
 

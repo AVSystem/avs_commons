@@ -17,8 +17,8 @@
 #ifndef AVS_COMMONS_COAP_MSGBUILDER_H
 #define AVS_COMMONS_COAP_MSGBUILDER_H
 
-#include <stdlib.h>
 #include <assert.h>
+#include <stdlib.h>
 
 #include <avsystem/commons/coap/msg_info.h>
 
@@ -50,9 +50,12 @@ typedef struct avs_coap_msg_builder {
  * the constructed message.
  */
 #define AVS_COAP_MSG_BUILDER_UNINITIALIZED \
-    ((avs_coap_msg_builder_t){ \
-        .has_payload_marker = false, \
-        .msg_buffer = { .msg = NULL, .capacity = 0 } \
+    ((avs_coap_msg_builder_t) {            \
+        .has_payload_marker = false,       \
+        .msg_buffer = {                    \
+            .msg = NULL,                   \
+            .capacity = 0                  \
+        }                                  \
     })
 
 /**
@@ -89,10 +92,10 @@ typedef struct avs_coap_aligned_msg_buffer avs_coap_aligned_msg_buffer_t;
  */
 static inline avs_coap_aligned_msg_buffer_t *
 avs_coap_ensure_aligned_buffer(void *buffer) {
-    AVS_ASSERT((uintptr_t)buffer % AVS_ALIGNOF(avs_coap_msg_t) == 0,
+    AVS_ASSERT((uintptr_t) buffer % AVS_ALIGNOF(avs_coap_msg_t) == 0,
                "the buffer MUST have the same alignment as avs_coap_msg_t");
 
-    return (avs_coap_aligned_msg_buffer_t *)buffer;
+    return (avs_coap_aligned_msg_buffer_t *) buffer;
 }
 
 /**

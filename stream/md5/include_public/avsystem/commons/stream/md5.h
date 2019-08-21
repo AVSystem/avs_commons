@@ -19,13 +19,13 @@
 
 #include <avsystem/commons/stream.h>
 
-#ifdef	__cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
 avs_stream_abstract_t *avs_stream_md5_create(void);
 
-#ifdef	__cplusplus
+#ifdef __cplusplus
 }
 #endif
 

@@ -19,7 +19,7 @@
 
 #include <avsystem/commons/time.h>
 
-#ifdef	__cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
@@ -139,10 +139,12 @@ avs_time_monotonic_t avs_sched_time_of_next(avs_sched_t *sched);
  * been missed, @ref AVS_TIME_DURATION_ZERO is returned instead.
  */
 static inline avs_time_duration_t avs_sched_time_to_next(avs_sched_t *sched) {
-    avs_time_duration_t result = avs_time_monotonic_diff(
-            avs_sched_time_of_next(sched), avs_time_monotonic_now());
+    avs_time_duration_t result =
+            avs_time_monotonic_diff(avs_sched_time_of_next(sched),
+                                    avs_time_monotonic_now());
     return avs_time_duration_less(result, AVS_TIME_DURATION_ZERO)
-            ? AVS_TIME_DURATION_ZERO : result;
+                   ? AVS_TIME_DURATION_ZERO
+                   : result;
 }
 
 /**
@@ -200,8 +202,7 @@ int avs_sched_wait_until_next(avs_sched_t *sched,
 static inline int avs_sched_wait_for_next(avs_sched_t *sched,
                                           avs_time_duration_t timeout) {
     return avs_sched_wait_until_next(
-            sched,
-            avs_time_monotonic_add(avs_time_monotonic_now(), timeout));
+            sched, avs_time_monotonic_add(avs_time_monotonic_now(), timeout));
 }
 
 /**
@@ -235,11 +236,12 @@ int avs_resched_at_impl__(avs_sched_handle_t *handle_ptr,
                           avs_time_monotonic_t instant);
 
 #ifndef AVS_LOG_WITH_TRACE
-#   define AVS_SCHED_LOG_ARGS__(...) (NULL), 0, (NULL)
+#    define AVS_SCHED_LOG_ARGS__(...) (NULL), 0, (NULL)
 #elif !defined(AVS_SCHED_WITH_ARGS_LOG)
-#   define AVS_SCHED_LOG_ARGS__(Clb, ClbArgs) __FILE__, __LINE__, AVS_QUOTE(Clb)
+#    define AVS_SCHED_LOG_ARGS__(Clb, ClbArgs) \
+        __FILE__, __LINE__, AVS_QUOTE(Clb)
 #else // !defined(AVS_SCHED_WITH_ARGS_LOG)
-#   define AVS_SCHED_LOG_ARGS__(Clb, ClbArgs) \
+#    define AVS_SCHED_LOG_ARGS__(Clb, ClbArgs) \
         __FILE__, __LINE__, AVS_QUOTE(Clb) AVS_QUOTE(ClbArgs)
 #endif // AVS_LOG_WITH_TRACE // !defined(AVS_SCHED_WITH_ARGS_LOG)
 /*@}*/
@@ -309,9 +311,13 @@ int avs_resched_at_impl__(avs_sched_handle_t *handle_ptr,
  *   - not enough memory available
  */
 #define AVS_SCHED_AT(Sched, OutHandle, Instant, Clb, ClbData, ClbDataSize) \
-        avs_sched_at_impl__((Sched), (OutHandle), (Instant), \
-                            AVS_SCHED_LOG_ARGS__(Clb, (ClbData, ClbDataSize)), \
-                            (Clb), (ClbData), (ClbDataSize))
+    avs_sched_at_impl__((Sched),                                           \
+                        (OutHandle),                                       \
+                        (Instant),                                         \
+                        AVS_SCHED_LOG_ARGS__(Clb, (ClbData, ClbDataSize)), \
+                        (Clb),                                             \
+                        (ClbData),                                         \
+                        (ClbDataSize))
 
 /**
  * A variant of @ref AVS_SCHED_AT that uses a delay relative to "now", instead
@@ -319,9 +325,12 @@ int avs_resched_at_impl__(avs_sched_handle_t *handle_ptr,
  * documentation for details.
  */
 #define AVS_SCHED_DELAYED(Sched, OutHandle, Delay, Clb, ClbData, ClbDataSize) \
-        AVS_SCHED_AT(Sched, OutHandle, \
-                     avs_time_monotonic_add(avs_time_monotonic_now(), Delay), \
-                     Clb, ClbData, ClbDataSize)
+    AVS_SCHED_AT(Sched,                                                       \
+                 OutHandle,                                                   \
+                 avs_time_monotonic_add(avs_time_monotonic_now(), Delay),     \
+                 Clb,                                                         \
+                 ClbData,                                                     \
+                 ClbDataSize)
 
 /**
  * A variant of @ref AVS_SCHED_AT and @ref AVS_SCHED_DELAYED that does not take
@@ -329,8 +338,12 @@ int avs_resched_at_impl__(avs_sched_handle_t *handle_ptr,
  * time) instead. See those macros' documentation for details.
  */
 #define AVS_SCHED_NOW(Sched, OutHandle, Clb, ClbData, ClbDataSize) \
-        AVS_SCHED_AT(Sched, OutHandle, avs_time_monotonic_now(), \
-                     Clb, ClbData, ClbDataSize)
+    AVS_SCHED_AT(Sched,                                            \
+                 OutHandle,                                        \
+                 avs_time_monotonic_now(),                         \
+                 Clb,                                              \
+                 ClbData,                                          \
+                 ClbDataSize)
 
 /**
  * Reschedules a job to the specific point in time in the system monotonic
@@ -432,8 +445,8 @@ void avs_sched_detach(avs_sched_handle_t *handle_ptr);
  */
 int avs_sched_leap_time(avs_sched_t *sched, avs_time_duration_t diff);
 
-#ifdef	__cplusplus
+#ifdef __cplusplus
 }
 #endif
 
-#endif	/* AVS_COMMONS_SCHED_H */
+#endif /* AVS_COMMONS_SCHED_H */

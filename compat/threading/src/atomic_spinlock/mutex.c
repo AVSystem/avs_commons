@@ -19,9 +19,9 @@
 #define MODULE_NAME mutex_atomic_spinlock
 #include <x_log_config.h>
 
-#include <avsystem/commons/mutex.h>
 #include <avsystem/commons/defs.h>
 #include <avsystem/commons/memory.h>
+#include <avsystem/commons/mutex.h>
 
 #include <stdatomic.h>
 #include <stdbool.h>
@@ -50,7 +50,8 @@ int avs_mutex_create(avs_mutex_t **out_mutex) {
 }
 
 int avs_mutex_lock(avs_mutex_t *mutex) {
-    while (atomic_flag_test_and_set(&mutex->locked) != 0) {}
+    while (atomic_flag_test_and_set(&mutex->locked) != 0) {
+    }
     return 0;
 }
 

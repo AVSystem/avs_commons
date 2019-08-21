@@ -17,9 +17,9 @@
 #include <avs_commons_config.h>
 
 #include <assert.h>
-#include <stdlib.h>
-#include <stdint.h>
 #include <stddef.h>
+#include <stdint.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include <avsystem/commons/memory.h>
@@ -36,9 +36,9 @@ struct avs_vector_desc_struct {
 };
 static const uint64_t magic = 0xb5e4189902ba0aaULL;
 
-#define AVS_VECTOR_DESC__(vec) \
-    ((avs_vector_desc_t*)(intptr_t) \
-        ((const char*)(vec) - offsetof(avs_vector_desc_t,data)))
+#define AVS_VECTOR_DESC__(vec)           \
+    ((avs_vector_desc_t *) (intptr_t) (( \
+            const char *) (vec) -offsetof(avs_vector_desc_t, data)))
 
 static avs_vector_desc_t *get_desc(void **ptr) {
     avs_vector_desc_t *desc;
@@ -127,7 +127,8 @@ void avs_vector_delete__(void ***ptr) {
 int avs_vector_push__(void ***ptr, const void *elemptr) {
     avs_vector_desc_t *desc = get_desc(*ptr);
     if (desc->capacity - desc->size == 0
-            && avs_vector_reserve__(ptr, desc->size == 0 ? 1 : 2 * desc->size)) {
+            && avs_vector_reserve__(ptr,
+                                    desc->size == 0 ? 1 : 2 * desc->size)) {
         return -1;
     }
     memcpy((char *) desc->data + desc->size * desc->elem_size, elemptr,
@@ -151,13 +152,14 @@ void *avs_vector_remove__(void ***ptr, size_t index) {
     tmp = avs_malloc(desc->elem_size);
     if (tmp) {
         memcpy(tmp, vector_at_internal(desc, index), desc->elem_size);
-        memmove(vector_at_internal(desc, index), vector_at_internal(desc, index+1),
+        memmove(vector_at_internal(desc, index),
+                vector_at_internal(desc, index + 1),
                 desc->elem_size * (size - index - 1));
-        memcpy(vector_at_internal(desc, size-1), tmp, desc->elem_size);
+        memcpy(vector_at_internal(desc, size - 1), tmp, desc->elem_size);
         avs_free(tmp);
     } else {
-        for (i = index; i < size-1; i++) {
-            vector_swap_internal(desc, i, i+1);
+        for (i = index; i < size - 1; i++) {
+            vector_swap_internal(desc, i, i + 1);
         }
     }
     return vector_pop_internal(desc);
@@ -179,7 +181,9 @@ void *avs_vector_back__(void **ptr) {
     return vector_back_internal(get_desc(ptr));
 }
 
-void avs_vector_sort_range__(void ***ptr, size_t beg, size_t end,
+void avs_vector_sort_range__(void ***ptr,
+                             size_t beg,
+                             size_t end,
                              avs_vector_comparator_func_t cmp) {
     avs_vector_desc_t *desc = get_desc(*ptr);
     assert(end > beg);
@@ -247,5 +251,5 @@ int avs_vector_reserve__(void ***ptr, size_t num_elements) {
 }
 
 #ifdef AVS_UNIT_TESTING
-#include "test/test_vector.c"
+#    include "test/test_vector.c"
 #endif

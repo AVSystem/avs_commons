@@ -23,7 +23,7 @@
 
 #include <avsystem/commons/defs.h>
 
-#ifdef	__cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
@@ -40,7 +40,7 @@ void avs_stream_inbuf_set_buffer(avs_stream_inbuf_t *stream,
                                  const void *buffer,
                                  size_t buffer_size);
 
-#ifdef	__cplusplus
+#ifdef __cplusplus
 }
 #endif
 

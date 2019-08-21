@@ -28,8 +28,8 @@ AVS_UNIT_TEST(token, match_token) {
     AVS_UNIT_ASSERT_NOT_EQUAL(avs_match_token(&test_stream2, "hello", "="), 0);
     AVS_UNIT_ASSERT_EQUAL_STRING(test_stream2, "helloworld=not");
 
-    AVS_UNIT_ASSERT_NOT_EQUAL(avs_match_token(&test_stream2,
-                                              "kthanksbye", "="), 0);
+    AVS_UNIT_ASSERT_NOT_EQUAL(avs_match_token(&test_stream2, "kthanksbye", "="),
+                              0);
     AVS_UNIT_ASSERT_EQUAL_STRING(test_stream2, "helloworld=not");
 }
 

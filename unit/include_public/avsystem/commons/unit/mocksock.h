@@ -45,7 +45,6 @@ void avs_unit_mocksock_create__(avs_net_abstract_socket_t **socket,
                                 mocksock_type_t type,
                                 const char *file,
                                 int line);
-
 #define avs_unit_mocksock_create(Socket) \
     avs_unit_mocksock_create__(          \
             (Socket), AVS_UNIT_MOCKSOCK_TYPE_STREAMING, __FILE__, __LINE__)

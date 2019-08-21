@@ -58,7 +58,7 @@ void avs_unit_mock_cleanup__(void) {
 void avs_unit_mock_invoke__(avs_unit_mock_func_ptr *invoked_func) {
     avs_unit_mock_t *mock_ptr;
     AVS_LIST_FOREACH(mock_ptr, ALL_MOCKS) {
-        if(mock_ptr->mock_ptr == invoked_func) {
+        if (mock_ptr->mock_ptr == invoked_func) {
             ++mock_ptr->invocations;
         }
     }
@@ -67,7 +67,7 @@ void avs_unit_mock_invoke__(avs_unit_mock_func_ptr *invoked_func) {
 unsigned avs_unit_mock_invocations__(avs_unit_mock_func_ptr *invoked_func) {
     avs_unit_mock_t *mock_ptr;
     AVS_LIST_FOREACH(mock_ptr, ALL_MOCKS) {
-        if(mock_ptr->mock_ptr == invoked_func) {
+        if (mock_ptr->mock_ptr == invoked_func) {
             return mock_ptr->invocations;
         }
     }

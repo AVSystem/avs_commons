@@ -15,8 +15,8 @@
  */
 #include <avs_commons_config.h>
 
-#include <avsystem/commons/rbtree.h>
 #include "src/rbtree.h"
+#include <avsystem/commons/rbtree.h>
 
 #include <stdio.h>
 
@@ -67,12 +67,10 @@ static void assert_rb_properties_hold(AVS_RBTREE(int) tree_) {
     assert_rb_properties_hold_recursive(tree->root, &black_height);
 }
 
-static int int_comparator(const void *a_,
-                          const void *b_) {
-    int a = *(const int*)a_;
-    int b = *(const int*)b_;
-    return a < b ? -1
-                 : (a == b ? 0 : 1);
+static int int_comparator(const void *a_, const void *b_) {
+    int a = *(const int *) a_;
+    int b = *(const int *) b_;
+    return a < b ? -1 : (a == b ? 0 : 1);
 }
 
 int main(void) {
@@ -85,37 +83,33 @@ int main(void) {
         if (fread(&op, sizeof(op), 1, stdin) == 1
                 && fread(&val, sizeof(val), 1, stdin) == 1) {
             switch (op) {
-            case 0:
-                {
-                    int *elem = AVS_RBTREE_ELEM_NEW(int);
-                    *elem = val;
+            case 0: {
+                int *elem = AVS_RBTREE_ELEM_NEW(int);
+                *elem = val;
 
-                    size_t prev_size = AVS_RBTREE_SIZE(tree);
-                    if (AVS_RBTREE_INSERT(tree, elem) != elem) {
-                        assert(prev_size == AVS_RBTREE_SIZE(tree));
-                        AVS_RBTREE_ELEM_DELETE_DETACHED(&elem);
-                    } else {
-                        assert(prev_size + 1 == AVS_RBTREE_SIZE(tree));
-                    }
-                    assert(AVS_RBTREE_FIND(tree, &val));
-                    assert_rb_properties_hold(tree);
+                size_t prev_size = AVS_RBTREE_SIZE(tree);
+                if (AVS_RBTREE_INSERT(tree, elem) != elem) {
+                    assert(prev_size == AVS_RBTREE_SIZE(tree));
+                    AVS_RBTREE_ELEM_DELETE_DETACHED(&elem);
+                } else {
+                    assert(prev_size + 1 == AVS_RBTREE_SIZE(tree));
                 }
-                break;
-            case 1:
-                {
-                    size_t expected_size = AVS_RBTREE_SIZE(tree);
-                    if (AVS_RBTREE_FIND(tree, &val)) {
-                        --expected_size;
-                    }
-
-                    int *elem = AVS_RBTREE_FIND(tree, &val);
-                    AVS_RBTREE_DELETE_ELEM(tree, &elem);
-
-                    assert(!AVS_RBTREE_FIND(tree, &val));
-                    assert(expected_size == AVS_RBTREE_SIZE(tree));
-                    assert_rb_properties_hold(tree);
+                assert(AVS_RBTREE_FIND(tree, &val));
+                assert_rb_properties_hold(tree);
+            } break;
+            case 1: {
+                size_t expected_size = AVS_RBTREE_SIZE(tree);
+                if (AVS_RBTREE_FIND(tree, &val)) {
+                    --expected_size;
                 }
-                break;
+
+                int *elem = AVS_RBTREE_FIND(tree, &val);
+                AVS_RBTREE_DELETE_ELEM(tree, &elem);
+
+                assert(!AVS_RBTREE_FIND(tree, &val));
+                assert(expected_size == AVS_RBTREE_SIZE(tree));
+                assert_rb_properties_hold(tree);
+            } break;
             default:
                 break;
             }

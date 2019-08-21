@@ -38,29 +38,27 @@ static int send_common_headers(avs_stream_abstract_t *stream,
     const int is_ipv6 = !!strchr(host, ':');
 
     return !avs_stream_net_getsock(stream)
-            || avs_stream_write_f(stream, "%s %s HTTP/1.1\r\n",
-                                  _AVS_HTTP_METHOD_NAMES[method], path)
-            || avs_stream_write_f(stream, "Host: %s%s%s%s%s\r\n",
-                                  is_ipv6 ? "[" : "", host,
-                                  is_ipv6 ? "]" : "",
-                                  port ? ":" : "", port ? port : "");
+           || avs_stream_write_f(stream, "%s %s HTTP/1.1\r\n",
+                                 _AVS_HTTP_METHOD_NAMES[method], path)
+           || avs_stream_write_f(stream, "Host: %s%s%s%s%s\r\n",
+                                 is_ipv6 ? "[" : "", host, is_ipv6 ? "]" : "",
+                                 port ? ":" : "", port ? port : "");
 }
 
 int _avs_http_send_headers(http_stream_t *stream, size_t content_length) {
     stream->status = 0;
     LOG(TRACE, "http_send_headers");
-    if (send_common_headers(stream->backend, stream->method,
-                            avs_url_host(stream->url),
-                            avs_url_port(stream->url),
-                            avs_url_path(stream->url))
+    if (send_common_headers(
+                stream->backend, stream->method, avs_url_host(stream->url),
+                avs_url_port(stream->url), avs_url_path(stream->url))
 #ifdef WITH_AVS_HTTP_ZLIB
             || (stream->http->buffer_sizes.content_coding_input > 0
-                    && avs_stream_write_f(stream->backend,
-                                          "Accept-Encoding: gzip, deflate\r\n"))
+                && avs_stream_write_f(stream->backend,
+                                      "Accept-Encoding: gzip, deflate\r\n"))
 #endif
             || (stream->http->user_agent
-                    && avs_stream_write_f(stream->backend, "User-Agent: %s\r\n",
-                                          stream->http->user_agent))
+                && avs_stream_write_f(stream->backend, "User-Agent: %s\r\n",
+                                      stream->http->user_agent))
             || _avs_http_auth_send_header(stream)) {
         return -1;
     }
@@ -68,13 +66,13 @@ int _avs_http_send_headers(http_stream_t *stream, size_t content_length) {
         bool first_cookie = true;
         AVS_LIST(http_cookie_t) cookie;
         AVS_LIST_FOREACH(cookie, stream->http->cookies) {
-            if (avs_stream_write_f(stream->backend, "%s%s",
-                                   first_cookie
-                                           ? (stream->http->use_cookie2
-                                                   ? "Cookie: $Version=\"1\"; "
-                                                   : "Cookie: ")
-                                           : "; ",
-                                   cookie->value)) {
+            if (avs_stream_write_f(
+                        stream->backend, "%s%s",
+                        first_cookie ? (stream->http->use_cookie2
+                                                ? "Cookie: $Version=\"1\"; "
+                                                : "Cookie: ")
+                                     : "; ",
+                        cookie->value)) {
                 return -1;
             }
             first_cookie = false;
@@ -85,24 +83,24 @@ int _avs_http_send_headers(http_stream_t *stream, size_t content_length) {
     }
     AVS_LIST(http_header_t) header;
     AVS_LIST_FOREACH(header, stream->user_headers) {
-        if (avs_stream_write_f(stream->backend, "%s: %s\r\n",
-                               header->key, header->value)) {
+        if (avs_stream_write_f(stream->backend, "%s: %s\r\n", header->key,
+                               header->value)) {
             return -1;
         }
     }
     if (content_length == (size_t) -1) {
         if ((!stream->flags.no_expect
-                        && avs_stream_write_f(stream->backend,
-                                              "Expect: 100-continue\r\n"))
+             && avs_stream_write_f(stream->backend, "Expect: 100-continue\r\n"))
                 || avs_stream_write_f(stream->backend,
                                       "Transfer-Encoding: chunked\r\n")) {
             return -1;
         }
     } else if (content_length > 0 || stream->method != AVS_HTTP_GET) {
         char buf[sizeof("Content-Length: \r\n")
-                         + AVS_UINT_STR_BUF_SIZE(unsigned long)];
+                 + AVS_UINT_STR_BUF_SIZE(unsigned long)];
         if (avs_simple_snprintf(buf, sizeof(buf), "Content-Length: %lu\r\n",
-                                (unsigned long) content_length) < 0
+                                (unsigned long) content_length)
+                        < 0
                 || avs_stream_write(stream->backend, buf, strlen(buf))) {
             return -1;
         }

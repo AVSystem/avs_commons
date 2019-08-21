@@ -48,11 +48,13 @@ int _avs_http_auth_send_header_basic(http_stream_t *stream) {
     int result = -1;
     if (avs_simple_snprintf(plaintext, plaintext_size, "%s%s%s",
                             stream->auth.credentials.user
-                                    ? stream->auth.credentials.user : "",
+                                    ? stream->auth.credentials.user
+                                    : "",
                             stream->auth.credentials.password ? ":" : "",
                             stream->auth.credentials.password
                                     ? stream->auth.credentials.password
-                                    : "") < 0) {
+                                    : "")
+            < 0) {
         LOG(ERROR, "Cannot prepare authorization data");
     } else if (avs_base64_encode(encoded, encoded_size,
                                  (const uint8_t *) plaintext,

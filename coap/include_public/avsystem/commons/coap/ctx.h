@@ -34,7 +34,7 @@ extern "C" {
  * The network socket indicate that a timeout expired, but message could not be
  * sent or received.
  */
-#define AVS_COAP_CTX_ERR_TIMEOUT       (-0x5E1)
+#define AVS_COAP_CTX_ERR_TIMEOUT (-0x5E1)
 
 /**
  * A UDP or DTLS datagram was successfully received, but could not be decoded as
@@ -46,7 +46,7 @@ extern "C" {
  * Unspecified error on some layer lower than CoAP. Please check error state of
  * the network socket for details.
  */
-#define AVS_COAP_CTX_ERR_NETWORK       (-0x5E3)
+#define AVS_COAP_CTX_ERR_NETWORK (-0x5E3)
 
 /**
  * While sending: the network socket's internal buffers were too small to hold
@@ -55,20 +55,20 @@ extern "C" {
  * While receiving: <c>msg_capacity</c> was too small to hold the entire
  * received message.
  */
-#define AVS_COAP_CTX_ERR_MSG_TOO_LONG  (-0x5E4)
+#define AVS_COAP_CTX_ERR_MSG_TOO_LONG (-0x5E4)
 
 /**
  * Some message was successfully received and identified as a duplicate of some
  * already handled message. Previous response has been found in the cache and
  * already sent.
  */
-#define AVS_COAP_CTX_ERR_DUPLICATE     (-0x5E5)
+#define AVS_COAP_CTX_ERR_DUPLICATE (-0x5E5)
 
 /**
  * A message has been successfully received and identified as a CoAP-layer ping
  * message. Ping response has been already sent.
  */
-#define AVS_COAP_CTX_ERR_MSG_WAS_PING  (-0x5E6)
+#define AVS_COAP_CTX_ERR_MSG_WAS_PING (-0x5E6)
 /**@}*/
 
 /**
@@ -247,8 +247,7 @@ uint64_t avs_coap_ctx_get_rx_bytes(avs_coap_ctx_t *ctx);
  * NOTE: When <c>WITH_AVS_COAP_NET_STATS</c> is disabled, this function always
  * returns 0.
  */
-uint64_t
-avs_coap_ctx_get_num_incoming_retransmissions(avs_coap_ctx_t *ctx);
+uint64_t avs_coap_ctx_get_num_incoming_retransmissions(avs_coap_ctx_t *ctx);
 
 /**
  * @param ctx CoAP context to operate on.
@@ -259,8 +258,7 @@ avs_coap_ctx_get_num_incoming_retransmissions(avs_coap_ctx_t *ctx);
  * NOTE: When <c>WITH_AVS_COAP_NET_STATS</c> is disabled, this function always
  * returns 0.
  */
-uint64_t
-avs_coap_ctx_get_num_outgoing_retransmissions(avs_coap_ctx_t *ctx);
+uint64_t avs_coap_ctx_get_num_outgoing_retransmissions(avs_coap_ctx_t *ctx);
 
 /** @} */
 

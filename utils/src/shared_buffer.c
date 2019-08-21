@@ -27,15 +27,15 @@ VISIBILITY_SOURCE_BEGIN
 
 #ifndef NDEBUG
 
-uint8_t * _avs_shared_buffer_acquire(avs_shared_buffer_t *buf,
-                                     const char *func,
-                                     const char *file,
-                                     unsigned line) {
+uint8_t *_avs_shared_buffer_acquire(avs_shared_buffer_t *buf,
+                                    const char *func,
+                                    const char *file,
+                                    unsigned line) {
     if (buf->avs_shared_buffer_private_data.file) {
         LOG(ERROR,
             "double use of a shared buffer in %s (%s:%u); last acquired "
-            "in %s (%s:%u) and not released yet", func, file, line,
-            buf->avs_shared_buffer_private_data.func,
+            "in %s (%s:%u) and not released yet",
+            func, file, line, buf->avs_shared_buffer_private_data.func,
             buf->avs_shared_buffer_private_data.file,
             buf->avs_shared_buffer_private_data.line);
         AVS_UNREACHABLE("double use of a shared buffer");

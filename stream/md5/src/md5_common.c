@@ -28,7 +28,7 @@ int _avs_stream_md5_common_read(avs_stream_abstract_t *stream,
                                 char *out_message_finished,
                                 void *buffer,
                                 size_t buffer_length) {
-    avs_stream_md5_common_t * str = (avs_stream_md5_common_t *) stream;
+    avs_stream_md5_common_t *str = (avs_stream_md5_common_t *) stream;
 
     size_t bytes_read;
     char message_finished;
@@ -60,7 +60,7 @@ char _avs_stream_md5_common_is_finalized(avs_stream_md5_common_t *stream) {
 }
 
 void _avs_stream_md5_common_init(avs_stream_md5_common_t *stream,
-                                 const avs_stream_v_table_t * const vtable) {
+                                 const avs_stream_v_table_t *const vtable) {
     *(const avs_stream_v_table_t **) (intptr_t) &stream->vtable = vtable;
     stream->out_ptr = MD5_LENGTH;
 }

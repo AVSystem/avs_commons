@@ -62,8 +62,7 @@ typedef struct avs_vector_desc_struct avs_vector_desc_t;
  * @return A negative value if <c>a &lt; b</c>, zero if <c>a == b</c> or
  *         a positive value if <c>a &gt; b</c>.
  */
-typedef int (*avs_vector_comparator_func_t)(const void *a,
-                                            const void *b);
+typedef int (*avs_vector_comparator_func_t)(const void *a, const void *b);
 
 /**
  * @name Internal functions
@@ -87,7 +86,9 @@ size_t avs_vector_capacity__(void **ptr);
 void *avs_vector_at__(void **vec, size_t index);
 void *avs_vector_back__(void **vec);
 
-void avs_vector_sort_range__(void ***ptr, size_t beg, size_t end,
+void avs_vector_sort_range__(void ***ptr,
+                             size_t beg,
+                             size_t end,
                              avs_vector_comparator_func_t cmp);
 void avs_vector_sort__(void ***ptr, avs_vector_comparator_func_t cmp);
 void avs_vector_swap__(void ***ptr, size_t i, size_t j);
@@ -124,8 +125,7 @@ int avs_vector_reserve__(void ***ptr, size_t num_elements);
  *
  * @param vecptr    Pointer to the initialized AVS_VECTOR
  */
-#define AVS_VECTOR_DELETE(vecptr) \
-    (avs_vector_delete__((void ***) (vecptr)))
+#define AVS_VECTOR_DELETE(vecptr) (avs_vector_delete__((void ***) (vecptr)))
 
 /**
  * Copies an element pointed by @p elemptr and places it at the end of the
@@ -145,17 +145,16 @@ int avs_vector_reserve__(void ***ptr, size_t num_elements);
  *
  * Time complexity: amortized O(1)
  */
-#define AVS_VECTOR_PUSH(vecptr, elemptr) \
+#define AVS_VECTOR_PUSH(vecptr, elemptr)      \
     ((void) (sizeof((elemptr) < **(vecptr))), \
-            avs_vector_push__((void ***) (vecptr), (const void *) (elemptr)))
+     avs_vector_push__((void ***) (vecptr), (const void *) (elemptr)))
 /**
  * Returns number of elements in the AVS_VECTOR @p vec.
  *
  * @param vec   Initialized AVS_VECTOR
  * @return Number of elements
  */
-#define AVS_VECTOR_SIZE(vec) \
-    (avs_vector_size__((void **) (vec)))
+#define AVS_VECTOR_SIZE(vec) (avs_vector_size__((void **) (vec)))
 
 /**
  * Returns number of elements that AVS_VECTOR has currently allocated space for.
@@ -163,8 +162,7 @@ int avs_vector_reserve__(void ***ptr, size_t num_elements);
  * @param vec   Initialized AVS_VECTOR
  * @return Number of elements that AVS_VECTOR has currently allocated space for
  */
-#define AVS_VECTOR_CAPACITY(vec) \
-    (avs_vector_capacity__((void **) (vec)))
+#define AVS_VECTOR_CAPACITY(vec) (avs_vector_capacity__((void **) (vec)))
 
 /**
  * Retrieves pointer to the element at position @p index. If @p index is out of
@@ -181,10 +179,10 @@ template <typename T>
 static inline T *avs_vector_at_impl__(AVS_VECTOR(T) vec, size_t index) {
     return (T *) avs_vector_at__((void **) vec, index);
 }
-#define AVS_VECTOR_AT(vec, index) (avs_vector_at_impl__((vec), (index)))
+#    define AVS_VECTOR_AT(vec, index) (avs_vector_at_impl__((vec), (index)))
 #else
-#define AVS_VECTOR_AT(vec, index) \
-    ((AVS_TYPEOF_PTR(*(vec))) avs_vector_at__((void **) (vec), (index)))
+#    define AVS_VECTOR_AT(vec, index) \
+        ((AVS_TYPEOF_PTR(*(vec))) avs_vector_at__((void **) (vec), (index)))
 #endif
 
 /**
@@ -214,10 +212,10 @@ template <typename T>
 static inline T *avs_vector_back_impl__(AVS_VECTOR(T) vec) {
     return (T *) avs_vector_back__((void **) vec);
 }
-#define AVS_VECTOR_BACK(vec) (avs_vector_back_impl__((vec)))
+#    define AVS_VECTOR_BACK(vec) (avs_vector_back_impl__((vec)))
 #else
-#define AVS_VECTOR_BACK(vec) \
-    ((AVS_TYPEOF_PTR(*(vec))) avs_vector_back__((void **) (vec)))
+#    define AVS_VECTOR_BACK(vec) \
+        ((AVS_TYPEOF_PTR(*(vec))) avs_vector_back__((void **) (vec)))
 #endif
 
 /**
@@ -237,12 +235,12 @@ template <typename T>
 static inline T *avs_vector_remove_impl__(AVS_VECTOR(T) *vecptr, size_t index) {
     return (T *) avs_vector_remove__((void ***) vecptr, index);
 }
-#define AVS_VECTOR_REMOVE_AT(vecptr, index) \
-    (avs_vector_remove_impl__((vecptr), (index)))
+#    define AVS_VECTOR_REMOVE_AT(vecptr, index) \
+        (avs_vector_remove_impl__((vecptr), (index)))
 #else
-#define AVS_VECTOR_REMOVE_AT(vecptr, index) \
-    ((AVS_TYPEOF_PTR(**(vecptr))) \
-        avs_vector_remove__((void ***) (vecptr), (index)))
+#    define AVS_VECTOR_REMOVE_AT(vecptr, index)                                \
+        ((AVS_TYPEOF_PTR(**(vecptr))) avs_vector_remove__((void ***) (vecptr), \
+                                                          (index)))
 #endif
 
 /**
@@ -255,10 +253,10 @@ template <typename T>
 static inline T *avs_vector_pop_impl__(AVS_VECTOR(T) *vecptr) {
     return (T *) avs_vector_pop__((void ***) vecptr);
 }
-#define AVS_VECTOR_POP(vecptr) (avs_vector_pop_impl__((vecptr)))
+#    define AVS_VECTOR_POP(vecptr) (avs_vector_pop_impl__((vecptr)))
 #else
-#define AVS_VECTOR_POP(vecptr) \
-    ((AVS_TYPEOF_PTR(**(vecptr))) avs_vector_pop__((void ***) (vecptr)))
+#    define AVS_VECTOR_POP(vecptr) \
+        ((AVS_TYPEOF_PTR(**(vecptr))) avs_vector_pop__((void ***) (vecptr)))
 #endif
 
 /**
@@ -305,8 +303,7 @@ static inline T *avs_vector_pop_impl__(AVS_VECTOR(T) *vecptr) {
  *
  * Time complexity: O(n)
  */
-#define AVS_VECTOR_FIT(vecptr) \
-    (avs_vector_fit__((void ***) (vecptr)))
+#define AVS_VECTOR_FIT(vecptr) (avs_vector_fit__((void ***) (vecptr)))
 
 /**
  * Increases the capacity of the container to a value that's greater or equal
@@ -338,8 +335,7 @@ static inline T *avs_vector_pop_impl__(AVS_VECTOR(T) *vecptr) {
  * @param vecptr    Pointer to the initialized AVS_VECTOR
  * Time complexity: O(n)
  */
-#define AVS_VECTOR_REVERSE(vecptr) \
-    (avs_vector_reverse__((void ***) (vecptr)))
+#define AVS_VECTOR_REVERSE(vecptr) (avs_vector_reverse__((void ***) (vecptr)))
 
 /**
  * Reverses the range [beg, end) of the vector in-place.

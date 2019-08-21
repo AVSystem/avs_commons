@@ -20,7 +20,7 @@
 
 AVS_UNIT_TEST(coap_opt, sizeof) {
     uint8_t buffer[512] = "";
-    const avs_coap_opt_t *opt = (const avs_coap_opt_t*)buffer;
+    const avs_coap_opt_t *opt = (const avs_coap_opt_t *) buffer;
 
     buffer[0] = 0x00;
     // header byte + extended delta + extended length + value
@@ -59,4 +59,3 @@ AVS_UNIT_TEST(coap_opt, sizeof) {
     buffer[0] = 0xEE;
     AVS_UNIT_ASSERT_EQUAL(avs_coap_opt_sizeof(opt), 1 + 2 + 2 + 269);
 }
-

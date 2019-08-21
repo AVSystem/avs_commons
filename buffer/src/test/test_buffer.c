@@ -16,9 +16,8 @@
 
 #include <string.h>
 
-#include <avsystem/commons/unit/test.h>
 #include <avsystem/commons/buffer.h>
-
+#include <avsystem/commons/unit/test.h>
 
 AVS_UNIT_GLOBAL_INIT(verbose) {
     if (!verbose) {
@@ -30,7 +29,7 @@ AVS_UNIT_TEST(byte_buffer, buffer_free) {
     avs_buffer_t *buffer;
     AVS_UNIT_ASSERT_SUCCESS(avs_buffer_create(&buffer, 16));
     avs_buffer_free(&buffer);
-    AVS_UNIT_ASSERT_EQUAL((intptr_t)buffer, (intptr_t)NULL);
+    AVS_UNIT_ASSERT_EQUAL((intptr_t) buffer, (intptr_t) NULL);
 }
 
 AVS_UNIT_TEST(byte_buffer, reset) {
@@ -39,8 +38,8 @@ AVS_UNIT_TEST(byte_buffer, reset) {
     avs_buffer_t *buffer;
     AVS_UNIT_ASSERT_SUCCESS(avs_buffer_create(&buffer, BUFFER_SIZE));
 
-    AVS_UNIT_ASSERT_SUCCESS(avs_buffer_append_bytes(buffer,
-                                                    DATA, sizeof(DATA)));
+    AVS_UNIT_ASSERT_SUCCESS(
+            avs_buffer_append_bytes(buffer, DATA, sizeof(DATA)));
 
     AVS_UNIT_ASSERT_NOT_EQUAL(avs_buffer_space_left(buffer), BUFFER_SIZE);
     avs_buffer_reset(buffer);
@@ -97,10 +96,12 @@ AVS_UNIT_TEST(byte_buffer, defragment) {
     AVS_UNIT_ASSERT_EQUAL(avs_buffer_data_size(buffer), 2);
     AVS_UNIT_ASSERT_EQUAL(avs_buffer_data(buffer)[0], 0xFF);
     AVS_UNIT_ASSERT_EQUAL(avs_buffer_data(buffer)[1], 0xFF);
-    AVS_UNIT_ASSERT_NOT_EQUAL((intptr_t)buffer->begin, (intptr_t)buffer->data.data);
+    AVS_UNIT_ASSERT_NOT_EQUAL((intptr_t) buffer->begin,
+                              (intptr_t) buffer->data.data);
 
     defragment_buffer(buffer);
-    AVS_UNIT_ASSERT_EQUAL((intptr_t)buffer->begin, (intptr_t)buffer->data.data);
+    AVS_UNIT_ASSERT_EQUAL((intptr_t) buffer->begin,
+                          (intptr_t) buffer->data.data);
     AVS_UNIT_ASSERT_EQUAL(avs_buffer_data_size(buffer), 2);
     AVS_UNIT_ASSERT_EQUAL(avs_buffer_data(buffer)[0], 0xFF);
     AVS_UNIT_ASSERT_EQUAL(avs_buffer_data(buffer)[1], 0xFF);
@@ -116,13 +117,14 @@ AVS_UNIT_TEST(byte_buffer, raw_insert_ptr) {
     AVS_UNIT_ASSERT_SUCCESS(avs_buffer_fill_bytes(buffer, 0, 2));
     AVS_UNIT_ASSERT_SUCCESS(avs_buffer_consume_bytes(buffer, 2));
     AVS_UNIT_ASSERT_EQUAL(avs_buffer_data_size(buffer), 0);
-    AVS_UNIT_ASSERT_NOT_EQUAL((intptr_t)buffer->end, (intptr_t)buffer->data.data);
+    AVS_UNIT_ASSERT_NOT_EQUAL((intptr_t) buffer->end,
+                              (intptr_t) buffer->data.data);
 
     AVS_UNIT_ASSERT_NOT_EQUAL(avs_buffer_space_left(buffer),
                               space_left_without_moving(buffer));
 
-    AVS_UNIT_ASSERT_EQUAL((intptr_t)avs_buffer_raw_insert_ptr(buffer),
-                          (intptr_t)buffer->data.data);
+    AVS_UNIT_ASSERT_EQUAL((intptr_t) avs_buffer_raw_insert_ptr(buffer),
+                          (intptr_t) buffer->data.data);
 
     avs_buffer_free(&buffer);
 }
@@ -155,8 +157,8 @@ AVS_UNIT_TEST(byte_buffer, append_bytes) {
     avs_buffer_t *buffer;
     AVS_UNIT_ASSERT_SUCCESS(avs_buffer_create(&buffer, BUFFER_SIZE));
 
-    AVS_UNIT_ASSERT_SUCCESS(avs_buffer_append_bytes(buffer,
-                                                    DATA, sizeof(DATA)));
+    AVS_UNIT_ASSERT_SUCCESS(
+            avs_buffer_append_bytes(buffer, DATA, sizeof(DATA)));
     AVS_UNIT_ASSERT_SUCCESS(avs_buffer_append_bytes(buffer, NULL, 0));
 
     avs_buffer_free(&buffer);
@@ -199,7 +201,7 @@ AVS_UNIT_TEST(byte_buffer, fill_bytes) {
         unsigned i;
         size_t data_size = avs_buffer_data_size(buffer);
         const char *data = avs_buffer_data(buffer);
-        for (i = 0 ; i < data_size ; ++i) {
+        for (i = 0; i < data_size; ++i) {
             AVS_UNIT_ASSERT_EQUAL(data[i], fill);
         }
     }
@@ -211,7 +213,7 @@ AVS_UNIT_TEST(byte_buffer, fill_bytes) {
         unsigned i;
         size_t data_size = avs_buffer_data_size(buffer);
         const char *data = avs_buffer_data(buffer);
-        for (i = 0 ; i < data_size ; ++i) {
+        for (i = 0; i < data_size; ++i) {
             AVS_UNIT_ASSERT_EQUAL(data[i], fill);
         }
     }

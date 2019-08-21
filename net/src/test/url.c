@@ -227,19 +227,19 @@ AVS_UNIT_TEST(parse_url, slash_within_credentials) {
 }
 
 AVS_UNIT_TEST(parse_url, space_within_credentials) {
-    AVS_UNIT_ASSERT_NULL(avs_url_parse(
-            "http:// user:password@acs.avsystem.com"));
-    AVS_UNIT_ASSERT_NULL(avs_url_parse(
-            "http://us er:password@acs.avsystem.com"));
-    AVS_UNIT_ASSERT_NULL(avs_url_parse(
-            "http://user :password@acs.avsystem.com"));
+    AVS_UNIT_ASSERT_NULL(
+            avs_url_parse("http:// user:password@acs.avsystem.com"));
+    AVS_UNIT_ASSERT_NULL(
+            avs_url_parse("http://us er:password@acs.avsystem.com"));
+    AVS_UNIT_ASSERT_NULL(
+            avs_url_parse("http://user :password@acs.avsystem.com"));
 
-    AVS_UNIT_ASSERT_NULL(avs_url_parse(
-            "http://user: password@acs.avsystem.com"));
-    AVS_UNIT_ASSERT_NULL(avs_url_parse(
-            "http://user:pass word@acs.avsystem.com"));
-    AVS_UNIT_ASSERT_NULL(avs_url_parse(
-            "http://user:password @acs.avsystem.com"));
+    AVS_UNIT_ASSERT_NULL(
+            avs_url_parse("http://user: password@acs.avsystem.com"));
+    AVS_UNIT_ASSERT_NULL(
+            avs_url_parse("http://user:pass word@acs.avsystem.com"));
+    AVS_UNIT_ASSERT_NULL(
+            avs_url_parse("http://user:password @acs.avsystem.com"));
 }
 
 AVS_UNIT_TEST(parse_url, null_in_username_and_password) {
@@ -315,7 +315,8 @@ AVS_UNIT_TEST(parse_url, ipv6_address_with_port_and_path) {
 }
 
 AVS_UNIT_TEST(parse_url, ipv6_address_with_credentials) {
-    avs_url_t *parsed_url = avs_url_parse("http://user%25:p%40ssword@[12::34]:56/78");
+    avs_url_t *parsed_url =
+            avs_url_parse("http://user%25:p%40ssword@[12::34]:56/78");
     AVS_UNIT_ASSERT_NOT_NULL(parsed_url);
 
     AVS_UNIT_ASSERT_EQUAL_STRING(avs_url_protocol(parsed_url), "http");

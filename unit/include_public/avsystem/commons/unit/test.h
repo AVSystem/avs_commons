@@ -20,15 +20,15 @@
 #include <setjmp.h>
 
 #if __STDC_VERSION__ >= 199901L
-#include <stdbool.h>
-#define AVS_UNIT_HAVE_BOOL__
+#    include <stdbool.h>
+#    define AVS_UNIT_HAVE_BOOL__
 #elif defined(__cplusplus)
-#define AVS_UNIT_HAVE_BOOL__
+#    define AVS_UNIT_HAVE_BOOL__
 #endif
 
 #include <avsystem/commons/defs.h>
 
-#ifdef	__cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
@@ -137,13 +137,9 @@ void avs_unit_add_suite_init__(const char *suite_name,
 void avs_unit_add_test__(const char *suite_name,
                          const char *name,
                          avs_unit_test_function_t test);
-void avs_unit_assert_success__(int result,
-                               const char *file,
-                               int line);
+void avs_unit_assert_success__(int result, const char *file, int line);
 void avs_unit_assert_failed__(int result, const char *file, int line);
-void avs_unit_assert_true__(int result,
-                       const char *file,
-                       int line);
+void avs_unit_assert_true__(int result, const char *file, int line);
 void avs_unit_assert_false__(int result, const char *file, int line);
 
 void avs_unit_abort__(const char *msg, const char *file, int line);
@@ -183,7 +179,8 @@ void avs_unit_assert_not_equal_string__(const char *actual,
 
 void avs_unit_assert_null__(const void *pointer, const char *file, int line);
 
-void avs_unit_assert_not_null__(const void *pointer, const char *file,
+void avs_unit_assert_not_null__(const void *pointer,
+                                const char *file,
                                 int line);
 
 typedef struct {
@@ -191,36 +188,42 @@ typedef struct {
     char expected_str[64];
 } avs_unit_check_equal_function_strings_t;
 
-#define AVS_UNIT_CHECK_EQUAL_FUNCTION_DECLARE__(type, name_suffix)             \
-int avs_unit_check_equal_##name_suffix##__(type actual, type expected,         \
-        avs_unit_check_equal_function_strings_t *strings)
+#define AVS_UNIT_CHECK_EQUAL_FUNCTION_DECLARE__(type, name_suffix) \
+    int avs_unit_check_equal_##name_suffix##__(                    \
+            type actual,                                           \
+            type expected,                                         \
+            avs_unit_check_equal_function_strings_t *strings)
 
 #ifdef __cplusplus
 } /* extern "C" */
 
-#define AVS_UNIT_CHECK_EQUAL_FUNCTION__(type, name_suffix) \
+#    define AVS_UNIT_CHECK_EQUAL_FUNCTION__(type, name_suffix)                 \
         extern "C" AVS_UNIT_CHECK_EQUAL_FUNCTION_DECLARE__(type, name_suffix); \
-        template <typename T> \
-        static inline int AVS_UNIT_CHECK_EQUAL__( \
-                type actual, const T &expected, \
-                avs_unit_check_equal_function_strings_t *strings) { \
-            return avs_unit_check_equal_##name_suffix##__(actual, expected, \
-                                                          strings); \
+        template <typename T>                                                  \
+        static inline int AVS_UNIT_CHECK_EQUAL__(                              \
+                type actual,                                                   \
+                const T &expected,                                             \
+                avs_unit_check_equal_function_strings_t *strings) {            \
+            return avs_unit_check_equal_##name_suffix##__(                     \
+                    actual, expected, strings);                                \
         }
 
 #else /* __cplusplus */
-#define AVS_UNIT_CHECK_EQUAL_FUNCTION__(type, name_suffix) \
+#    define AVS_UNIT_CHECK_EQUAL_FUNCTION__(type, name_suffix) \
         AVS_UNIT_CHECK_EQUAL_FUNCTION_DECLARE__(type, name_suffix);
 
-#ifdef AVS_UNIT_HAVE_BOOL__
-#define AVS_UNIT_CHECK_BOOL__(actual, expected, strings, inner)\
-__builtin_choose_expr(__builtin_types_compatible_p(__typeof__(actual), bool),\
-    avs_unit_check_equal_i__((int) (actual), (int) (expected), (strings)),\
-    inner)
-#else
-#define AVS_UNIT_CHECK_BOOL__(actual, expected, strings, inner) inner
-#endif
+#    ifdef AVS_UNIT_HAVE_BOOL__
+#        define AVS_UNIT_CHECK_BOOL__(actual, expected, strings, inner)     \
+            __builtin_choose_expr(                                          \
+                    __builtin_types_compatible_p(__typeof__(actual), bool), \
+                    avs_unit_check_equal_i__(                               \
+                            (int) (actual), (int) (expected), (strings)),   \
+                    inner)
+#    else
+#        define AVS_UNIT_CHECK_BOOL__(actual, expected, strings, inner) inner
+#    endif
 
+// clang-format off
 #define AVS_UNIT_CHECK_EQUAL__(actual, expected, strings)\
 AVS_UNIT_CHECK_BOOL__(actual, expected, strings,\
 __builtin_choose_expr(__builtin_types_compatible_p(__typeof__(actual), char),\
@@ -253,7 +256,7 @@ __builtin_choose_expr(__builtin_types_compatible_p(__typeof__(actual), long doub
     avs_unit_check_equal_ld__((long double) (actual), (long double) (expected), (strings)),\
     avs_unit_abort__("AVS_UNIT_ASSERT_EQUAL called for unsupported data type\n", __FILE__, __LINE__)\
 )))))))))))))))
-
+// clang-format on
 #endif /* __cplusplus */
 
 AVS_UNIT_CHECK_EQUAL_FUNCTION__(char, c)
@@ -271,17 +274,35 @@ AVS_UNIT_CHECK_EQUAL_FUNCTION__(float, f)
 AVS_UNIT_CHECK_EQUAL_FUNCTION__(double, d)
 AVS_UNIT_CHECK_EQUAL_FUNCTION__(long double, ld)
 
-#define AVS_UNIT_ASSERT_EQUAL_BYTES__(actual, expected)\
-__builtin_choose_expr(__builtin_types_compatible_p(__typeof__(expected), const char[])\
-                        || __builtin_types_compatible_p(__typeof__(expected), char[]),\
-        avs_unit_assert_bytes_equal__((actual), (expected), sizeof(expected) - 1, __FILE__, __LINE__),\
-        avs_unit_abort__("AVS_UNIT_ASSERT_EQUAL_BYTES called for unsupported data type\n", __FILE__, __LINE__))
+#define AVS_UNIT_ASSERT_EQUAL_BYTES__(actual, expected)                      \
+    __builtin_choose_expr(                                                   \
+            __builtin_types_compatible_p(__typeof__(expected), const char[]) \
+                    || __builtin_types_compatible_p(__typeof__(expected),    \
+                                                    char[]),                 \
+            avs_unit_assert_bytes_equal__((actual),                          \
+                                          (expected),                        \
+                                          sizeof(expected) - 1,              \
+                                          __FILE__,                          \
+                                          __LINE__),                         \
+            avs_unit_abort__("AVS_UNIT_ASSERT_EQUAL_BYTES called for "       \
+                             "unsupported data type\n",                      \
+                             __FILE__,                                       \
+                             __LINE__))
 
-#define AVS_UNIT_ASSERT_NOT_EQUAL_BYTES__(actual, expected)\
-__builtin_choose_expr(__builtin_types_compatible_p(__typeof__(expected), const char[])\
-                        || __builtin_types_compatible_p(__typeof__(expected), char[]),\
-        avs_unit_assert_bytes_not_equal__((actual), (expected), sizeof(expected) - 1, __FILE__, __LINE__),\
-        avs_unit_abort__("AVS_UNIT_ASSERT_NOT_EQUAL_BYTES called for unsupported data type\n", __FILE__, __LINE__))
+#define AVS_UNIT_ASSERT_NOT_EQUAL_BYTES__(actual, expected)                  \
+    __builtin_choose_expr(                                                   \
+            __builtin_types_compatible_p(__typeof__(expected), const char[]) \
+                    || __builtin_types_compatible_p(__typeof__(expected),    \
+                                                    char[]),                 \
+            avs_unit_assert_bytes_not_equal__((actual),                      \
+                                              (expected),                    \
+                                              sizeof(expected) - 1,          \
+                                              __FILE__,                      \
+                                              __LINE__),                     \
+            avs_unit_abort__("AVS_UNIT_ASSERT_NOT_EQUAL_BYTES called for "   \
+                             "unsupported data type\n",                      \
+                             __FILE__,                                       \
+                             __LINE__))
 /**@}*/
 
 /**
@@ -303,13 +324,14 @@ __builtin_choose_expr(__builtin_types_compatible_p(__typeof__(expected), const c
  * @param VERBOSE_VAR Name of a verbosity level variable (of type <c>int</c>).
  */
 #define AVS_UNIT_GLOBAL_INIT(VERBOSE_VAR)                                      \
-static void AVS_CONCAT(_avs_unit_global_init_, __LINE__) (int VERBOSE_VAR);    \
-void AVS_CONCAT(_avs_unit_global_init_constructor_, __LINE__) (void)           \
-        __attribute__((constructor));                                          \
-void AVS_CONCAT(_avs_unit_global_init_constructor_, __LINE__) (void) {         \
-    avs_unit_add_global_init__(AVS_CONCAT(_avs_unit_global_init_, __LINE__));  \
-}                                                                              \
-static void AVS_CONCAT(_avs_unit_global_init_, __LINE__) (int VERBOSE_VAR)
+    static void AVS_CONCAT(_avs_unit_global_init_, __LINE__)(int VERBOSE_VAR); \
+    void AVS_CONCAT(_avs_unit_global_init_constructor_, __LINE__)(void)        \
+            __attribute__((constructor));                                      \
+    void AVS_CONCAT(_avs_unit_global_init_constructor_, __LINE__)(void) {      \
+        avs_unit_add_global_init__(                                            \
+                AVS_CONCAT(_avs_unit_global_init_, __LINE__));                 \
+    }                                                                          \
+    static void AVS_CONCAT(_avs_unit_global_init_, __LINE__)(int VERBOSE_VAR)
 
 /**
  * Defines a suite initialization function.
@@ -321,18 +343,19 @@ static void AVS_CONCAT(_avs_unit_global_init_, __LINE__) (int VERBOSE_VAR)
  *
  * @param VERBOSE_VAR Name of a verbosity level variable (of type <c>int</c>).
  */
-#define AVS_UNIT_SUITE_INIT(suite, VERBOSE_VAR)                                \
-static void                                                                    \
-AVS_CONCAT(_avs_unit_suite_init_, suite, _, __LINE__) (int VERBOSE_VAR);       \
-void AVS_CONCAT(_avs_unit_suite_init_constructor_, suite, _, __LINE__) (void)  \
-        __attribute__((constructor));                                          \
-void AVS_CONCAT(_avs_unit_suite_init_constructor_, suite, _, __LINE__) (void) {\
-    avs_unit_add_suite_init__(#suite,                                          \
-                              AVS_CONCAT(_avs_unit_suite_init_, suite, _,      \
-                                         __LINE__));                           \
-}                                                                              \
-static void                                                                    \
-AVS_CONCAT(_avs_unit_suite_init_, suite, _, __LINE__) (int VERBOSE_VAR)
+#define AVS_UNIT_SUITE_INIT(suite, VERBOSE_VAR)                             \
+    static void AVS_CONCAT(_avs_unit_suite_init_, suite, _, __LINE__)(      \
+            int VERBOSE_VAR);                                               \
+    void AVS_CONCAT(_avs_unit_suite_init_constructor_, suite, _, __LINE__)( \
+            void) __attribute__((constructor));                             \
+    void AVS_CONCAT(_avs_unit_suite_init_constructor_, suite, _, __LINE__)( \
+            void) {                                                         \
+        avs_unit_add_suite_init__(                                          \
+                #suite,                                                     \
+                AVS_CONCAT(_avs_unit_suite_init_, suite, _, __LINE__));     \
+    }                                                                       \
+    static void AVS_CONCAT(_avs_unit_suite_init_, suite, _, __LINE__)(      \
+            int VERBOSE_VAR)
 
 /**
  * Defines a unit test case.
@@ -350,14 +373,14 @@ AVS_CONCAT(_avs_unit_suite_init_, suite, _, __LINE__) (int VERBOSE_VAR)
  *
  * @param name  Name of the test case.
  */
-#define AVS_UNIT_TEST(suite, name)                                             \
-static void _avs_unit_test_##suite##_##name(void);                             \
-void _avs_unit_test_constructor_##suite##_##name(void)                         \
-        __attribute__((constructor));                                          \
-void _avs_unit_test_constructor_##suite##_##name(void) {                       \
-    avs_unit_add_test__(#suite, #name, _avs_unit_test_##suite##_##name);       \
-}                                                                              \
-static void _avs_unit_test_##suite##_##name(void)
+#define AVS_UNIT_TEST(suite, name)                                           \
+    static void _avs_unit_test_##suite##_##name(void);                       \
+    void _avs_unit_test_constructor_##suite##_##name(void)                   \
+            __attribute__((constructor));                                    \
+    void _avs_unit_test_constructor_##suite##_##name(void) {                 \
+        avs_unit_add_test__(#suite, #name, _avs_unit_test_##suite##_##name); \
+    }                                                                        \
+    static void _avs_unit_test_##suite##_##name(void)
 
 /**
  * Assertions.
@@ -428,13 +451,16 @@ static void _avs_unit_test_##suite##_##name(void)
  *
  * @param expected The expected value to compare with.
  */
-#define AVS_UNIT_ASSERT_EQUAL(actual, expected) \
-do { \
-    avs_unit_check_equal_function_strings_t strings; \
-    avs_unit_assert_equal_func__( \
-            AVS_UNIT_CHECK_EQUAL__(actual, expected, &strings), \
-            strings.actual_str, strings.expected_str, __FILE__, __LINE__); \
-} while(0)
+#define AVS_UNIT_ASSERT_EQUAL(actual, expected)                     \
+    do {                                                            \
+        avs_unit_check_equal_function_strings_t strings;            \
+        avs_unit_assert_equal_func__(                               \
+                AVS_UNIT_CHECK_EQUAL__(actual, expected, &strings), \
+                strings.actual_str,                                 \
+                strings.expected_str,                               \
+                __FILE__,                                           \
+                __LINE__);                                          \
+    } while (0)
 
 /**
  * Asserts that corresponding fields in two specified structures are equal.
@@ -450,14 +476,19 @@ do { \
  *
  * @param field               Name of the structure field to compare.
  */
-#define AVS_UNIT_ASSERT_FIELD_EQUAL(actual_struct_ptr, expected_struct_ptr, field) \
-__builtin_choose_expr( \
-        __builtin_types_compatible_p(__typeof__(*(actual_struct_ptr)), \
-                                     __typeof__(*(expected_struct_ptr))), \
-        ({ AVS_UNIT_ASSERT_EQUAL((actual_struct_ptr)->field, \
-                                 (expected_struct_ptr)->field); }), \
-        avs_unit_abort__("AVS_UNIT_ASSERT_FIELD_EQUAL called for different types\n", \
-                         __FILE__, __LINE__))
+#define AVS_UNIT_ASSERT_FIELD_EQUAL(                                          \
+        actual_struct_ptr, expected_struct_ptr, field)                        \
+    __builtin_choose_expr(                                                    \
+            __builtin_types_compatible_p(__typeof__(*(actual_struct_ptr)),    \
+                                         __typeof__(*(expected_struct_ptr))), \
+            ({                                                                \
+                AVS_UNIT_ASSERT_EQUAL((actual_struct_ptr)->field,             \
+                                      (expected_struct_ptr)->field);          \
+            }),                                                               \
+            avs_unit_abort__("AVS_UNIT_ASSERT_FIELD_EQUAL called for "        \
+                             "different types\n",                             \
+                             __FILE__,                                        \
+                             __LINE__))
 
 /**
  * Asserts that the two specified values are not equal.
@@ -472,13 +503,16 @@ __builtin_choose_expr( \
  * @param not_expected The value to compare with, that is expected not to be
  *                     returned.
  */
-#define AVS_UNIT_ASSERT_NOT_EQUAL(actual, not_expected) \
-do { \
-    avs_unit_check_equal_function_strings_t strings; \
-    avs_unit_assert_not_equal_func__( \
-            AVS_UNIT_CHECK_EQUAL__(actual, not_expected, &strings), \
-            strings.actual_str, strings.expected_str, __FILE__, __LINE__); \
-} while(0)
+#define AVS_UNIT_ASSERT_NOT_EQUAL(actual, not_expected)                 \
+    do {                                                                \
+        avs_unit_check_equal_function_strings_t strings;                \
+        avs_unit_assert_not_equal_func__(                               \
+                AVS_UNIT_CHECK_EQUAL__(actual, not_expected, &strings), \
+                strings.actual_str,                                     \
+                strings.expected_str,                                   \
+                __FILE__,                                               \
+                __LINE__);                                              \
+    } while (0)
 
 /**
  * Asserts that corresponding fields in two specified structures are not equal.
@@ -494,14 +528,19 @@ do { \
  *
  * @param field               Name of the structure field to compare.
  */
-#define AVS_UNIT_ASSERT_FIELD_NOT_EQUAL(actual_struct_ptr, expected_struct_ptr, field) \
-__builtin_choose_expr( \
-        __builtin_types_compatible_p(__typeof__(*(actual_struct_ptr)), \
-                                     __typeof__(*(expected_struct_ptr))), \
-        ({ AVS_UNIT_ASSERT_NOT_EQUAL((actual_struct_ptr)->field, \
-                                     (expected_struct_ptr)->field); }), \
-        avs_unit_abort__("AVS_UNIT_ASSERT_FIELD_NOT_EQUAL called for different types\n", \
-                         __FILE__, __LINE__))
+#define AVS_UNIT_ASSERT_FIELD_NOT_EQUAL(                                      \
+        actual_struct_ptr, expected_struct_ptr, field)                        \
+    __builtin_choose_expr(                                                    \
+            __builtin_types_compatible_p(__typeof__(*(actual_struct_ptr)),    \
+                                         __typeof__(*(expected_struct_ptr))), \
+            ({                                                                \
+                AVS_UNIT_ASSERT_NOT_EQUAL((actual_struct_ptr)->field,         \
+                                          (expected_struct_ptr)->field);      \
+            }),                                                               \
+            avs_unit_abort__("AVS_UNIT_ASSERT_FIELD_NOT_EQUAL called for "    \
+                             "different types\n",                             \
+                             __FILE__,                                        \
+                             __LINE__))
 
 /**
  * Asserts that two specified string values are equal.
@@ -559,7 +598,8 @@ __builtin_choose_expr( \
  * @param num_bytes Number of bytes in each buffer.
  */
 #define AVS_UNIT_ASSERT_EQUAL_BYTES_SIZED(actual, expected, num_bytes) \
-    avs_unit_assert_bytes_equal__(actual, expected, num_bytes, __FILE__, __LINE__)
+    avs_unit_assert_bytes_equal__(                                     \
+            actual, expected, num_bytes, __FILE__, __LINE__)
 
 /**
  * Asserts that two buffers contain different data.
@@ -591,7 +631,8 @@ __builtin_choose_expr( \
  * @param num_bytes Number of bytes in each buffer.
  */
 #define AVS_UNIT_ASSERT_NOT_EQUAL_BYTES_SIZED(actual, expected, num_bytes) \
-    avs_unit_assert_bytes_not_equal__(actual, expected, num_bytes, __FILE__, __LINE__)
+    avs_unit_assert_bytes_not_equal__(                                     \
+            actual, expected, num_bytes, __FILE__, __LINE__)
 
 /**
  * Asserts that the specified pointer is <c>NULL</c>.
@@ -626,29 +667,29 @@ __builtin_choose_expr( \
  * @{
  */
 #ifdef AVS_UNIT_ENABLE_SHORT_ASSERTS
-#   define ASSERT_OK AVS_UNIT_ASSERT_SUCCESS
-#   define ASSERT_FAIL AVS_UNIT_ASSERT_FAILED
+#    define ASSERT_OK AVS_UNIT_ASSERT_SUCCESS
+#    define ASSERT_FAIL AVS_UNIT_ASSERT_FAILED
 
-#   define ASSERT_TRUE  AVS_UNIT_ASSERT_TRUE
-#   define ASSERT_FALSE AVS_UNIT_ASSERT_FALSE
+#    define ASSERT_TRUE AVS_UNIT_ASSERT_TRUE
+#    define ASSERT_FALSE AVS_UNIT_ASSERT_FALSE
 
-#   define ASSERT_EQ AVS_UNIT_ASSERT_EQUAL
-#   define ASSERT_NE AVS_UNIT_ASSERT_NOT_EQUAL
+#    define ASSERT_EQ AVS_UNIT_ASSERT_EQUAL
+#    define ASSERT_NE AVS_UNIT_ASSERT_NOT_EQUAL
 
-#   define ASSERT_FIELD_EQ AVS_UNIT_ASSERT_FIELD_EQUAL
-#   define ASSERT_FIELD_NE AVS_UNIT_ASSERT_FIELD_NOT_EQUAL
+#    define ASSERT_FIELD_EQ AVS_UNIT_ASSERT_FIELD_EQUAL
+#    define ASSERT_FIELD_NE AVS_UNIT_ASSERT_FIELD_NOT_EQUAL
 
-#   define ASSERT_EQ_STR AVS_UNIT_ASSERT_EQUAL_STRING
-#   define ASSERT_NE_STR AVS_UNIT_ASSERT_NOT_EQUAL_STRING
+#    define ASSERT_EQ_STR AVS_UNIT_ASSERT_EQUAL_STRING
+#    define ASSERT_NE_STR AVS_UNIT_ASSERT_NOT_EQUAL_STRING
 
-#   define ASSERT_EQ_BYTES AVS_UNIT_ASSERT_EQUAL_BYTES
-#   define ASSERT_NE_BYTES AVS_UNIT_ASSERT_NOT_EQUAL_BYTES
+#    define ASSERT_EQ_BYTES AVS_UNIT_ASSERT_EQUAL_BYTES
+#    define ASSERT_NE_BYTES AVS_UNIT_ASSERT_NOT_EQUAL_BYTES
 
-#   define ASSERT_EQ_BYTES_SIZED AVS_UNIT_ASSERT_EQUAL_BYTES_SIZED
-#   define ASSERT_NE_BYTES_SIZED AVS_UNIT_ASSERT_NOT_EQUAL_BYTES_SIZED
+#    define ASSERT_EQ_BYTES_SIZED AVS_UNIT_ASSERT_EQUAL_BYTES_SIZED
+#    define ASSERT_NE_BYTES_SIZED AVS_UNIT_ASSERT_NOT_EQUAL_BYTES_SIZED
 
-#   define ASSERT_NULL AVS_UNIT_ASSERT_NULL
-#   define ASSERT_NOT_NULL AVS_UNIT_ASSERT_NOT_NULL
+#    define ASSERT_NULL AVS_UNIT_ASSERT_NULL
+#    define ASSERT_NOT_NULL AVS_UNIT_ASSERT_NOT_NULL
 #endif // AVS_UNIT_ENABLE_SHORT_ASSERTS
 /* @} */
 

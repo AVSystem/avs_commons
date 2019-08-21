@@ -38,13 +38,13 @@ ssize_t avs_hexlify(char *out_hex,
     const size_t bytes_to_hexlify = AVS_MIN(input_size, (out_size - 1) / 2);
     assert(bytes_to_hexlify < SIZE_MAX / 2u);
     for (size_t i = 0; i < bytes_to_hexlify; ++i) {
-        out_hex[2*i + 0] = HEX[((const uint8_t *)input)[i] / 16];
-        out_hex[2*i + 1] = HEX[((const uint8_t *)input)[i] % 16];
+        out_hex[2 * i + 0] = HEX[((const uint8_t *) input)[i] / 16];
+        out_hex[2 * i + 1] = HEX[((const uint8_t *) input)[i] % 16];
     }
-    out_hex[2*bytes_to_hexlify] = '\0';
-    return (ssize_t)bytes_to_hexlify;
+    out_hex[2 * bytes_to_hexlify] = '\0';
+    return (ssize_t) bytes_to_hexlify;
 }
 
 #ifdef AVS_UNIT_TESTING
-#include "test/hexlify.c"
+#    include "test/hexlify.c"
 #endif // AVS_UNIT_TESTING

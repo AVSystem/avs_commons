@@ -27,13 +27,17 @@
 
 VISIBILITY_SOURCE_BEGIN
 
-int
-avs_crypto_aead_aes_ccm_encrypt(const unsigned char *key, size_t key_len,
-                                const unsigned char *iv, size_t iv_len,
-                                const unsigned char *aad, size_t aad_len,
-                                const unsigned char *input, size_t input_len,
-                                unsigned char *tag, size_t tag_len,
-                                unsigned char *output) {
+int avs_crypto_aead_aes_ccm_encrypt(const unsigned char *key,
+                                    size_t key_len,
+                                    const unsigned char *iv,
+                                    size_t iv_len,
+                                    const unsigned char *aad,
+                                    size_t aad_len,
+                                    const unsigned char *input,
+                                    size_t input_len,
+                                    unsigned char *tag,
+                                    size_t tag_len,
+                                    unsigned char *output) {
     assert(key);
     assert(iv);
     assert(!aad_len || aad);
@@ -50,10 +54,9 @@ avs_crypto_aead_aes_ccm_encrypt(const unsigned char *key, size_t key_len,
     int result;
     (void) ((result = mbedtls_ccm_setkey(&ccm_ctx, MBEDTLS_CIPHER_ID_AES, key,
                                          (unsigned int) key_len * 8U))
-                || (result = mbedtls_ccm_encrypt_and_tag(&ccm_ctx, input_len,
-                                                         iv, iv_len, aad,
-                                                         aad_len, input, output,
-                                                         tag, tag_len)));
+            || (result = mbedtls_ccm_encrypt_and_tag(
+                        &ccm_ctx, input_len, iv, iv_len, aad, aad_len, input,
+                        output, tag, tag_len)));
     mbedtls_ccm_free(&ccm_ctx);
     if (result) {
         LOG(ERROR, "mbed TLS error %d", result);
@@ -62,13 +65,17 @@ avs_crypto_aead_aes_ccm_encrypt(const unsigned char *key, size_t key_len,
     return 0;
 }
 
-int
-avs_crypto_aead_aes_ccm_decrypt(const unsigned char *key, size_t key_len,
-                                const unsigned char *iv, size_t iv_len,
-                                const unsigned char *aad, size_t aad_len,
-                                const unsigned char *input, size_t input_len,
-                                const unsigned char *tag, size_t tag_len,
-                                unsigned char *output) {
+int avs_crypto_aead_aes_ccm_decrypt(const unsigned char *key,
+                                    size_t key_len,
+                                    const unsigned char *iv,
+                                    size_t iv_len,
+                                    const unsigned char *aad,
+                                    size_t aad_len,
+                                    const unsigned char *input,
+                                    size_t input_len,
+                                    const unsigned char *tag,
+                                    size_t tag_len,
+                                    unsigned char *output) {
     assert(key);
     assert(iv);
     assert(!aad_len || aad);
@@ -86,10 +93,9 @@ avs_crypto_aead_aes_ccm_decrypt(const unsigned char *key, size_t key_len,
     int result;
     (void) ((result = mbedtls_ccm_setkey(&ccm_ctx, MBEDTLS_CIPHER_ID_AES, key,
                                          (unsigned int) key_len * 8U))
-                || (result = mbedtls_ccm_auth_decrypt(&ccm_ctx, input_len,
-                                                      iv, iv_len, aad, aad_len,
-                                                      input, output, tag,
-                                                      tag_len)));
+            || (result = mbedtls_ccm_auth_decrypt(&ccm_ctx, input_len, iv,
+                                                  iv_len, aad, aad_len, input,
+                                                  output, tag, tag_len)));
     mbedtls_ccm_free(&ccm_ctx);
     if (result) {
         LOG(ERROR, "mbed TLS error %d", result);

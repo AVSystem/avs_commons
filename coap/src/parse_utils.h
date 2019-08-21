@@ -34,8 +34,8 @@ VISIBILITY_PRIVATE_HEADER_BEGIN
 
 #define AVS_FIELD_GET(field, mask, shift) (((field) & (mask)) >> (shift))
 #define AVS_FIELD_SET(field, mask, shift, value) \
-    ((field) = (uint8_t)(((field) & ~(mask))     \
-                         | (uint8_t)(((value) << (shift)) & (mask))))
+    ((field) = (uint8_t) (((field) & ~(mask))    \
+                          | (uint8_t) (((value) << (shift)) & (mask))))
 
 static inline uint16_t extract_u16(const uint8_t *data) {
     uint16_t result;

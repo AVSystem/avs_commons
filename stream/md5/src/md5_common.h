@@ -15,7 +15,7 @@
  */
 
 #ifndef MD5_COMMON_H
-#define	MD5_COMMON_H
+#define MD5_COMMON_H
 
 #include <avsystem/commons/stream.h>
 #include <avsystem/commons/stream_v_table.h>
@@ -25,7 +25,7 @@ VISIBILITY_PRIVATE_HEADER_BEGIN
 #define MD5_LENGTH 16
 
 typedef struct {
-    const avs_stream_v_table_t * const vtable;
+    const avs_stream_v_table_t *const vtable;
     unsigned char result[MD5_LENGTH];
     size_t out_ptr;
 } avs_stream_md5_common_t;
@@ -38,10 +38,10 @@ int _avs_stream_md5_common_read(avs_stream_abstract_t *stream,
 
 char _avs_stream_md5_common_is_finalized(avs_stream_md5_common_t *stream);
 void _avs_stream_md5_common_init(avs_stream_md5_common_t *stream,
-                                 const avs_stream_v_table_t * const vtable);
+                                 const avs_stream_v_table_t *const vtable);
 void _avs_stream_md5_common_finalize(avs_stream_md5_common_t *stream);
 void _avs_stream_md5_common_reset(avs_stream_md5_common_t *stream);
 
 VISIBILITY_PRIVATE_HEADER_END
 
-#endif	/* MD5_COMMON_H */
+#endif /* MD5_COMMON_H */

@@ -22,7 +22,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#ifdef	__cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
@@ -263,9 +263,8 @@ avs_time_monotonic_add(avs_time_monotonic_t a, avs_time_duration_t b) {
  * @return Difference value, or an invalid time value if any of the input
  *         arguments is an invalid time value.
  */
-avs_time_duration_t
-avs_time_duration_diff(avs_time_duration_t minuend,
-                       avs_time_duration_t subtrahend);
+avs_time_duration_t avs_time_duration_diff(avs_time_duration_t minuend,
+                                           avs_time_duration_t subtrahend);
 
 /**
  * Calculates a duration between two realtime instants.
@@ -425,9 +424,8 @@ static inline avs_time_real_t avs_time_real_from_scalar(int64_t value,
  */
 static inline avs_time_monotonic_t
 avs_time_monotonic_from_scalar(int64_t value, avs_time_unit_t unit) {
-    avs_time_monotonic_t result = {
-        avs_time_duration_from_scalar(value, unit)
-    };
+    avs_time_monotonic_t result = { avs_time_duration_from_scalar(value,
+                                                                  unit) };
     return result;
 }
 
@@ -471,9 +469,8 @@ static inline avs_time_real_t avs_time_real_from_fscalar(double value,
  */
 static inline avs_time_monotonic_t
 avs_time_monotonic_from_fscalar(double value, avs_time_unit_t unit) {
-    avs_time_monotonic_t result = {
-        avs_time_duration_from_fscalar(value, unit)
-    };
+    avs_time_monotonic_t result = { avs_time_duration_from_fscalar(value,
+                                                                   unit) };
     return result;
 }
 
@@ -552,11 +549,10 @@ const char *avs_time_duration_as_string_impl__(
  *          enclosing code block) string representation of @p Time .
  */
 #define AVS_TIME_DURATION_AS_STRING(Time) \
-        avs_time_duration_as_string_impl__( \
-                &(char[AVS_TIME_DURATION_AS_STRING_MAX_LENGTH]) { "" }, \
-                (Time))
+    avs_time_duration_as_string_impl__(   \
+            &(char[AVS_TIME_DURATION_AS_STRING_MAX_LENGTH]){ "" }, (Time))
 
-#ifdef	__cplusplus
+#ifdef __cplusplus
 }
 #endif
 

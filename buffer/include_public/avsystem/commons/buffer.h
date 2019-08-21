@@ -20,7 +20,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#ifdef	__cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
@@ -248,8 +248,8 @@ int avs_buffer_advance_ptr(avs_buffer_t *buffer, size_t count);
  */
 int avs_buffer_fill_bytes(avs_buffer_t *buffer, int value, size_t bytes_count);
 
-#ifdef	__cplusplus
+#ifdef __cplusplus
 }
 #endif
 
-#endif	/* AVS_COMMONS_BUFFER_H */
+#endif /* AVS_COMMONS_BUFFER_H */

@@ -59,7 +59,7 @@ int avs_init_once(volatile avs_init_once_handle_t *handle,
                   avs_init_once_func_t *func,
                   void *func_arg);
 
-#ifdef	__cplusplus
+#ifdef __cplusplus
 } /* extern "C" */
 #endif
 

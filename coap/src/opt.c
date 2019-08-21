@@ -19,8 +19,8 @@
 #include <avsystem/commons/coap/opt.h>
 
 #include <assert.h>
-#include <stdio.h>
 #include <inttypes.h>
+#include <stdio.h>
 
 #include <avsystem/commons/coap/block_utils.h>
 #include <avsystem/commons/utils.h>
@@ -50,9 +50,10 @@ static inline uint32_t decode_ext_value(uint8_t base_value,
 
     switch (base_value) {
     case AVS_COAP_EXT_U8:
-        return (uint32_t) * (const uint8_t *)ext_value_ptr + AVS_COAP_EXT_U8_BASE;
+        return (uint32_t) * (const uint8_t *) ext_value_ptr
+               + AVS_COAP_EXT_U8_BASE;
     case AVS_COAP_EXT_U16:
-        return (uint32_t)extract_u16(ext_value_ptr) + AVS_COAP_EXT_U16_BASE;
+        return (uint32_t) extract_u16(ext_value_ptr) + AVS_COAP_EXT_U16_BASE;
     default:
         return base_value;
     }
@@ -69,7 +70,8 @@ static inline const uint8_t *ext_delta_ptr(const avs_coap_opt_t *opt) {
 }
 
 static inline const uint8_t *ext_length_ptr(const avs_coap_opt_t *opt) {
-    return opt->content + get_ext_field_size(_avs_coap_opt_get_short_delta(opt));
+    return opt->content
+           + get_ext_field_size(_avs_coap_opt_get_short_delta(opt));
 }
 
 const uint8_t *avs_coap_opt_value(const avs_coap_opt_t *opt) {
@@ -146,7 +148,7 @@ int avs_coap_opt_block_size(const avs_coap_opt_t *opt, uint16_t *out_size) {
         return -1;
     }
 
-    *out_size = (uint16_t)(1 << ((value & 0x07) + 4));
+    *out_size = (uint16_t) (1 << ((value & 0x07) + 4));
     if (!avs_coap_is_valid_block_size(*out_size)) {
         return -1;
     }
@@ -188,29 +190,28 @@ static inline bool is_length_valid(const avs_coap_opt_t *opt,
 
     uint8_t short_delta = _avs_coap_opt_get_short_delta(opt);
     size_t required_bytes = 1 + get_ext_field_size(short_delta)
-                              + get_ext_field_size(short_length);
+                            + get_ext_field_size(short_length);
     return required_bytes <= max_opt_bytes
            && !ext_value_overflows(short_length, ext_length_ptr(opt));
 }
 
 bool avs_coap_opt_is_valid(const avs_coap_opt_t *opt, size_t max_opt_bytes) {
-    if (max_opt_bytes == 0
-           || !is_delta_valid(opt, max_opt_bytes)
-           || !is_length_valid(opt, max_opt_bytes)) {
+    if (max_opt_bytes == 0 || !is_delta_valid(opt, max_opt_bytes)
+            || !is_length_valid(opt, max_opt_bytes)) {
         return false;
     }
 
-    uint32_t length = (uint32_t)avs_coap_opt_sizeof(opt);
+    uint32_t length = (uint32_t) avs_coap_opt_sizeof(opt);
     return (uintptr_t) opt->content + length >= (uintptr_t) opt->content
-            && length <= max_opt_bytes;
+           && length <= max_opt_bytes;
 }
 
 size_t avs_coap_opt_sizeof(const avs_coap_opt_t *opt) {
     const uint8_t *endptr =
             avs_coap_opt_value(opt) + avs_coap_opt_content_length(opt);
 
-    assert((const uint8_t *)opt < endptr);
-    return (size_t)(endptr - (const uint8_t *)opt);
+    assert((const uint8_t *) opt < endptr);
+    return (size_t) (endptr - (const uint8_t *) opt);
 }
 
 void avs_coap_opt_debug_print(const avs_coap_opt_t *opt) {
@@ -224,5 +225,5 @@ void avs_coap_opt_debug_print(const avs_coap_opt_t *opt) {
 }
 
 #ifdef AVS_UNIT_TESTING
-#include "test/opt.c"
+#    include "test/opt.c"
 #endif // AVS_UNIT_TESTING

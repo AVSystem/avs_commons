@@ -34,7 +34,7 @@ VISIBILITY_SOURCE_BEGIN
 
 typedef struct {
     http_stream_t *stream;
-    AVS_LIST(const avs_http_header_t) * header_storage_end_ptr;
+    AVS_LIST(const avs_http_header_t) *header_storage_end_ptr;
     http_transfer_encoding_t transfer_encoding;
     avs_http_content_encoding_t content_encoding;
     size_t content_length;
@@ -77,13 +77,13 @@ static int http_handle_header(const char *key,
         }
     } else if (avs_strcasecmp(key, "Content-Length") == 0) {
         if (state->transfer_encoding != TRANSFER_IDENTITY
-            || parse_size(&state->content_length, value)) {
+                || parse_size(&state->content_length, value)) {
             return -1;
         }
         state->transfer_encoding = TRANSFER_LENGTH;
     } else if (avs_strcasecmp(key, "Transfer-Encoding") == 0) {
         if (avs_strcasecmp(value, "identity")
-            != 0) { /* see RFC 2616, sec. 4.4 */
+                != 0) { /* see RFC 2616, sec. 4.4 */
             if (state->transfer_encoding != TRANSFER_IDENTITY) {
                 return -1;
             }
@@ -95,7 +95,7 @@ static int http_handle_header(const char *key,
                 return -1;
             }
             if (avs_strcasecmp(value, "gzip") == 0
-                || avs_strcasecmp(value, "x-gzip") == 0) {
+                    || avs_strcasecmp(value, "x-gzip") == 0) {
                 state->content_encoding = AVS_HTTP_CONTENT_GZIP;
             } else if (avs_strcasecmp(value, "deflate") == 0) {
                 state->content_encoding = AVS_HTTP_CONTENT_DEFLATE;
@@ -182,8 +182,8 @@ static int http_receive_headers_internal(header_parser_state_t *state) {
         LOG(TRACE, "HTTP header: %s", state->header_buf);
         bool header_handled;
         if (!(value = http_header_split(state->header_buf))
-            || http_handle_header(state->header_buf, value, state,
-                                  &header_handled)) {
+                || http_handle_header(state->header_buf, value, state,
+                                      &header_handled)) {
             LOG(ERROR, "Error parsing or handling headers");
             return -1;
         }
@@ -225,7 +225,7 @@ static int http_receive_headline_and_headers(header_parser_state_t *state) {
                            state->header_buf_size)) {
         LOG(ERROR, "Could not receive HTTP headline");
         if (bytes_read == 0 && message_finished
-            && state->stream->flags.close_handling_required) {
+                && state->stream->flags.close_handling_required) {
             // end-of-stream: likely a Reset from previous connection
             // issue a fake redirect so that the stream reconnects
             state->stream->status = 399;

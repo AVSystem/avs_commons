@@ -23,15 +23,15 @@
 #include <avsystem/commons/defs.h>
 #include <avsystem/commons/memory.h>
 
-#include <pthread.h>
 #include <errno.h>
+#include <pthread.h>
 
 #include "structs.h"
 
 VISIBILITY_SOURCE_BEGIN
 
 #if defined(CLOCK_MONOTONIC) && defined(HAVE_PTHREAD_CONDATTR_SETCLOCK)
-#   define USE_CLOCK_MONOTONIC
+#    define USE_CLOCK_MONOTONIC
 #endif
 
 int avs_condvar_create(avs_condvar_t **out_condvar) {
@@ -75,20 +75,21 @@ static inline int as_timespec(struct timespec *out_result,
     out_result->tv_sec = (time_t) duration.seconds;
     out_result->tv_nsec = duration.nanoseconds;
     return ((int64_t) out_result->tv_sec == duration.seconds
-            && out_result->tv_nsec == (int32_t) duration.nanoseconds) ? 0 : -1;
+            && out_result->tv_nsec == (int32_t) duration.nanoseconds)
+                   ? 0
+                   : -1;
 }
 
 static int convert_deadline(struct timespec *out_result,
                             avs_time_monotonic_t deadline) {
 #ifdef USE_CLOCK_MONOTONIC
     return as_timespec(out_result, deadline.since_monotonic_epoch);
-#else // USE_CLOCK_MONOTONIC
+#else  // USE_CLOCK_MONOTONIC
     return as_timespec(
             out_result,
-            avs_time_duration_add(
-                    avs_time_real_now().since_real_epoch,
-                    avs_time_monotonic_diff(deadline,
-                                            avs_time_monotonic_now())));
+            avs_time_duration_add(avs_time_real_now().since_real_epoch,
+                                  avs_time_monotonic_diff(
+                                          deadline, avs_time_monotonic_now())));
 #endif // USE_CLOCK_MONOTONIC
 }
 
