@@ -28,6 +28,7 @@ typedef struct {
     const avs_stream_v_table_t *const vtable;
     avs_stream_abstract_t *backend;
     size_t content_left;
+    avs_errno_t error_code;
 } content_length_receiver_t;
 
 static int content_length_read(avs_stream_abstract_t *stream_,
@@ -36,6 +37,7 @@ static int content_length_read(avs_stream_abstract_t *stream_,
                                void *buffer,
                                size_t buffer_length) {
     content_length_receiver_t *stream = (content_length_receiver_t *) stream_;
+    stream->error_code = AVS_NO_ERROR;
     size_t bytes_read = 0;
     char backend_message_finished = 0;
     int result = 0;
@@ -60,12 +62,15 @@ static int content_length_read(avs_stream_abstract_t *stream_,
     }
     if (result) {
         LOG(ERROR, "content_length_read: result == %d", result);
+        stream->error_code = AVS_EIO;
     }
     return result;
 }
 
 static int content_length_nonblock_read_ready(avs_stream_abstract_t *stream_) {
     content_length_receiver_t *stream = (content_length_receiver_t *) stream_;
+    stream->error_code = AVS_NO_ERROR;
+
     if (stream->content_left) {
         return avs_stream_nonblock_read_ready(stream->backend);
     }
@@ -74,6 +79,8 @@ static int content_length_nonblock_read_ready(avs_stream_abstract_t *stream_) {
 
 static int content_length_peek(avs_stream_abstract_t *stream_, size_t offset) {
     content_length_receiver_t *stream = (content_length_receiver_t *) stream_;
+    stream->error_code = AVS_NO_ERROR;
+
     int result;
     if (offset >= stream->content_left) {
         result = EOF;
@@ -85,12 +92,20 @@ static int content_length_peek(avs_stream_abstract_t *stream_, size_t offset) {
 
 static int content_length_close(avs_stream_abstract_t *stream_) {
     content_length_receiver_t *stream = (content_length_receiver_t *) stream_;
+    stream->error_code = AVS_NO_ERROR;
+
     avs_stream_net_setsock(stream->backend, NULL); /* don't close the socket */
     return avs_stream_cleanup(&stream->backend);
 }
 
-static avs_errno_t content_length_error(avs_stream_abstract_t *stream) {
-    return avs_stream_error(((content_length_receiver_t *) stream)->backend);
+static avs_errno_t content_length_error(avs_stream_abstract_t *stream_) {
+    content_length_receiver_t *stream = (content_length_receiver_t *) stream_;
+    avs_errno_t error = avs_stream_error(stream->backend);
+    if (error != AVS_NO_ERROR) {
+        return error;
+    } else {
+        return stream->error_code;
+    }
 }
 
 static int unimplemented() {
@@ -126,6 +141,7 @@ _avs_http_body_receiver_content_length_create(avs_stream_abstract_t *backend,
                 &content_length_receiver_vtable;
         retval->backend = backend;
         retval->content_left = content_length;
+        retval->error_code = AVS_NO_ERROR;
     }
     return (avs_stream_abstract_t *) retval;
 }

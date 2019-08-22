@@ -33,6 +33,7 @@ typedef struct {
     const avs_http_buffer_sizes_t *buffer_sizes;
     size_t chunk_left;
     bool finished;
+    avs_errno_t error_code;
 } chunked_receiver_t;
 
 typedef int (*read_chunk_size_getline_func_t)(void *state,
@@ -104,6 +105,8 @@ static int chunked_read(avs_stream_abstract_t *stream_,
                         void *buffer,
                         size_t buffer_length) {
     chunked_receiver_t *stream = (chunked_receiver_t *) stream_;
+    stream->error_code = AVS_NO_ERROR;
+
     size_t bytes_read = 0;
     char backend_message_finished;
     int result = 0;
@@ -143,12 +146,15 @@ static int chunked_read(avs_stream_abstract_t *stream_,
 finish:
     if (result) {
         LOG(ERROR, "chunked_read: result == %d", result);
+        stream->error_code = AVS_EIO;
     }
     return result;
 }
 
 static int chunked_nonblock_read_ready(avs_stream_abstract_t *stream_) {
     chunked_receiver_t *stream = (chunked_receiver_t *) stream_;
+    stream->error_code = AVS_NO_ERROR;
+
     // This is somewhat inaccurate. If there is a packet boundary somewhere
     // *within* the chunk header, then the next read operation might indeed
     // block. But I don't think there's a good solution to this problem that
@@ -172,6 +178,8 @@ static int read_chunk_size_getline_peeker(void *state_,
 
 static int chunked_peek(avs_stream_abstract_t *stream_, size_t offset) {
     chunked_receiver_t *stream = (chunked_receiver_t *) stream_;
+    stream->error_code = AVS_NO_ERROR;
+
     if (stream->finished) {
         return EOF;
     }
@@ -204,8 +212,14 @@ static int chunked_close(avs_stream_abstract_t *stream_) {
     return avs_stream_cleanup(&stream->backend);
 }
 
-static avs_errno_t chunked_error(avs_stream_abstract_t *stream) {
-    return avs_stream_error(((chunked_receiver_t *) stream)->backend);
+static avs_errno_t chunked_error(avs_stream_abstract_t *stream_) {
+    chunked_receiver_t *stream = (chunked_receiver_t *) stream_;
+    avs_errno_t error = avs_stream_error(stream->backend);
+    if (error != AVS_NO_ERROR) {
+        return error;
+    } else {
+        return stream->error_code;
+    }
 }
 
 static int unimplemented() {
@@ -241,6 +255,7 @@ avs_stream_abstract_t *_avs_http_body_receiver_chunked_create(
                 &chunked_receiver_vtable;
         retval->backend = backend;
         retval->buffer_sizes = buffer_sizes;
+        retval->error_code = AVS_NO_ERROR;
     }
     return (avs_stream_abstract_t *) retval;
 }
