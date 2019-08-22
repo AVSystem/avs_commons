@@ -100,10 +100,11 @@ static int content_length_close(avs_stream_abstract_t *stream_) {
 
 static avs_errno_t content_length_error(avs_stream_abstract_t *stream_) {
     content_length_receiver_t *stream = (content_length_receiver_t *) stream_;
-    if (stream->error_code) {
-        return stream->error_code;
+    avs_errno_t error = avs_stream_error(stream->backend);
+    if (error != AVS_NO_ERROR) {
+        return error;
     } else {
-        return avs_stream_error(stream->backend);
+        return stream->error_code;
     }
 }
 
