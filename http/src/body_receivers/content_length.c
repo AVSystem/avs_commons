@@ -55,7 +55,6 @@ static int content_length_read(avs_stream_abstract_t *stream_,
     }
     if (result == 0 && backend_message_finished && stream->content_left > 0) {
         LOG(ERROR, "remote connection closed unexpectedly");
-        stream->error_code = AVS_ECONNABORTED;
         result = -1;
     }
     if (out_message_finished) {
@@ -63,6 +62,7 @@ static int content_length_read(avs_stream_abstract_t *stream_,
     }
     if (result) {
         LOG(ERROR, "content_length_read: result == %d", result);
+        stream->error_code = AVS_EIO;
     }
     return result;
 }

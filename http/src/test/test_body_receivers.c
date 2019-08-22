@@ -186,6 +186,7 @@ AVS_UNIT_TEST(http, content_length_receiver_not_enough) {
         buffer_ptr += bytes_read;
     }
     AVS_UNIT_ASSERT_FAILED(result);
+    AVS_UNIT_ASSERT_EQUAL(avs_stream_error(receiver), AVS_EIO);
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&receiver));
     avs_unit_mocksock_expect_shutdown(socket);
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&helper_stream));
@@ -320,6 +321,7 @@ AVS_UNIT_TEST(http, chunked_receiver_not_enough) {
         buffer_ptr += bytes_read;
     }
     AVS_UNIT_ASSERT_FAILED(result);
+    AVS_UNIT_ASSERT_EQUAL(avs_stream_error(receiver), AVS_EIO);
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&receiver));
     avs_unit_mocksock_expect_shutdown(socket);
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&helper_stream));
@@ -345,6 +347,7 @@ AVS_UNIT_TEST(http, chunked_receiver_error) {
     AVS_UNIT_ASSERT_FAILED(avs_stream_read(receiver, &bytes_received,
                                            &message_finished, buffer,
                                            sizeof(buffer)));
+    AVS_UNIT_ASSERT_EQUAL(avs_stream_error(receiver), AVS_EIO);
     avs_unit_mocksock_expect_shutdown(socket);
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&receiver));
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&helper_stream));
@@ -382,6 +385,7 @@ AVS_UNIT_TEST(http, chunked_receiver_no_zero) {
         buffer_ptr += bytes_read;
     }
     AVS_UNIT_ASSERT_FAILED(result);
+    AVS_UNIT_ASSERT_EQUAL(avs_stream_error(receiver), AVS_EIO);
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&receiver));
     avs_unit_mocksock_expect_shutdown(socket);
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&helper_stream));
