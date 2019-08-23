@@ -23,9 +23,12 @@
 extern "C" {
 #endif
 
-#ifndef errno
+// Note: It might seem more appropriate to write #ifndef errno, but even though
+// ISO C defines errno as being a macro, on some platforms (e.g. lwIP) it isn't
+// a macro, but rather just an external linkage symbol.
+#ifndef EDOM
 #    error "For this header to be useful, you have to include your system / library / whatever errno.h first."
-#endif // errno
+#endif // EDOM
 
 /**
  * A function that can be used to translate context specific errno values (i.e.
