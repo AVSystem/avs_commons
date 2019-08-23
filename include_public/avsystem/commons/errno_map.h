@@ -23,9 +23,9 @@
 extern "C" {
 #endif
 
-#ifndef errno
+#ifndef EDOM
 #    error "For this header to be useful, you have to include your system / library / whatever errno.h first."
-#endif // errno
+#endif // EDOM
 
 /**
  * A function that can be used to translate context specific errno values (i.e.
