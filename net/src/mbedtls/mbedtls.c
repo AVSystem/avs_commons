@@ -96,8 +96,7 @@ typedef struct {
     int *effective_ciphersuites;
     /// Non empty, when custom server hostname shall be used.
     char server_name_indication[256];
-
-    avs_net_ssl_alert_t *last_alert_ptr;
+    avs_net_ssl_alert_t last_alert;
 } ssl_socket_t;
 
 static bool is_ssl_started(ssl_socket_t *socket) {
@@ -663,16 +662,13 @@ static int start_ssl(ssl_socket_t *socket, const char *host) {
     } else {
         mbedtls_ssl_context *context = get_context(socket);
         if (context->in_msgtype == AVS_TLS_MESSAGE_TYPE_ALERT) {
-            const avs_net_ssl_alert_t alert = {
+            socket->last_alert = (avs_net_ssl_alert_t) {
                 .alert_level = context->in_msg[0],
                 .alert_description = context->in_msg[1]
             };
             LOG(DEBUG, "alert_level = %u, alert_description = %u",
-                alert.alert_level, alert.alert_description);
-
-            if (socket->last_alert_ptr) {
-                *socket->last_alert_ptr = alert;
-            }
+                socket->last_alert.alert_level,
+                socket->last_alert.alert_description);
         }
         LOG(ERROR, "handshake failed: %d", result);
     }
@@ -936,7 +932,6 @@ initialize_ssl_socket(ssl_socket_t *socket,
     socket->backend_configuration = configuration->backend_configuration;
 
     socket->security_mode = configuration->security.mode;
-    socket->last_alert_ptr = configuration->last_alert_ptr;
     switch (configuration->security.mode) {
     case AVS_NET_SECURITY_PSK:
         retval = configure_ssl_psk(socket, &configuration->security.data.psk);

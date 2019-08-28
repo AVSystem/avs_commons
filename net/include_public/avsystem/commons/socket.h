@@ -419,7 +419,6 @@ typedef struct {
     uint8_t alert_level;
     uint8_t alert_description;
 } avs_net_ssl_alert_t;
-
 typedef struct {
     /**
      * SSL/TLS version to use for communication.
@@ -492,18 +491,6 @@ typedef struct {
      * which the connection is performed).
      */
     const char *server_name_indication;
-
-    /**
-     * A pointer to a user-managed <c>avs_net_ssl_alert_t</c> structure to which
-     * the last TLS Alert messages will be stored by the TLS implementation (if
-     * the implementation supports it).
-     *
-     * IMPORTANT: The lifetime of the pointer MUST be at least as long as the
-     * lifetime of the TLS socket.
-     *
-     * If NULL, it is ignored by implementations.
-     */
-    avs_net_ssl_alert_t *last_alert_ptr;
 } avs_net_ssl_configuration_t;
 
 typedef enum {
@@ -569,7 +556,12 @@ typedef enum {
     /**
      * Used to get/set ciphersuites used during (D)TLS handshake.
      */
-    AVS_NET_SOCKET_OPT_TLS_CIPHERSUITES
+    AVS_NET_SOCKET_OPT_TLS_CIPHERSUITES,
+
+    /**
+     * Used to get the last SSL Alert message received during (D)TLS handshake.
+     */
+    AVS_NET_SOCKET_OPT_TLS_LAST_ALERT
 } avs_net_socket_opt_key_t;
 
 typedef enum {
@@ -653,6 +645,8 @@ typedef union {
      * the call completes.
      */
     const avs_net_socket_tls_ciphersuites_t *tls_ciphersuites;
+
+    avs_net_ssl_alert_t last_alert;
 } avs_net_socket_opt_value_t;
 
 int avs_net_socket_debug(int value);
