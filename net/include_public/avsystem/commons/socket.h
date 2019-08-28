@@ -492,6 +492,18 @@ typedef struct {
      * which the connection is performed).
      */
     const char *server_name_indication;
+
+    /**
+     * A pointer to a user-managed <c>avs_net_ssl_alert_t</c> structure to which
+     * the last TLS Alert messages will be stored by the TLS implementation (if
+     * the implementation supports it).
+     *
+     * IMPORTANT: The lifetime of the pointer MUST be at least as long as the
+     * lifetime of the TLS socket.
+     *
+     * If NULL, it is ignored by implementations.
+     */
+    avs_net_ssl_alert_t *last_alert_ptr;
 } avs_net_ssl_configuration_t;
 
 typedef enum {
