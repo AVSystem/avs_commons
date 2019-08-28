@@ -558,6 +558,7 @@ static bool sessions_equal(const mbedtls_ssl_session *left,
 
 static int start_ssl(ssl_socket_t *socket, const char *host) {
     int result;
+    memset(&socket->last_alert, 0, sizeof(socket->last_alert));
     if (update_ssl_endpoint_config(socket)) {
         LOG(ERROR, "could not initialize ssl context");
         return -1;
