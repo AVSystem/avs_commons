@@ -411,6 +411,15 @@ typedef struct {
     avs_time_duration_t max;
 } avs_net_dtls_handshake_timeouts_t;
 
+/**
+ * Structure holding the last SSL alert received from the peer. Meaning of its
+ * fields are as defined in https://tools.ietf.org/html/rfc5246#section-7.2
+ */
+typedef struct {
+    uint8_t alert_level;
+    uint8_t alert_description;
+} avs_net_ssl_alert_t;
+
 typedef struct {
     /**
      * SSL/TLS version to use for communication.
