@@ -537,6 +537,10 @@ static const avs_net_dtls_handshake_timeouts_t
             .max = { 60, 0 }
         };
 
+
+// https://tools.ietf.org/html/rfc5246#section-6.2.1
+#define AVS_TLS_MESSAGE_TYPE_ALERT 21
+
 VISIBILITY_PRIVATE_HEADER_END
 
 #endif /* NET_SSL_COMMON_H */
