@@ -96,6 +96,7 @@ typedef struct {
     int *effective_ciphersuites;
     /// Non empty, when custom server hostname shall be used.
     char server_name_indication[256];
+    avs_net_ssl_alert_t last_alert;
 } ssl_socket_t;
 
 static bool is_ssl_started(ssl_socket_t *socket) {
@@ -131,6 +132,19 @@ static void debug_mbedtls(
 
 #define NET_SSL_COMMON_INTERNALS
 #include "../ssl_common.h"
+
+static void update_alert_if_any(ssl_socket_t *socket) {
+    mbedtls_ssl_context *context = get_context(socket);
+    if (context->in_msgtype == AVS_TLS_MESSAGE_TYPE_ALERT) {
+        socket->last_alert = (avs_net_ssl_alert_t) {
+            .alert_level = context->in_msg[0],
+            .alert_description = context->in_msg[1]
+        };
+        LOG(DEBUG, "alert_level = %u, alert_description = %u",
+            socket->last_alert.alert_level,
+            socket->last_alert.alert_description);
+    }
+}
 
 static struct {
     // this weighs almost 40KB because of HAVEGE state
@@ -659,6 +673,7 @@ static int start_ssl(ssl_socket_t *socket, const char *host) {
             LOG(TRACE, "handshake success: new session started");
         }
     } else {
+        update_alert_if_any(socket);
         LOG(ERROR, "handshake failed: %d", result);
     }
 
@@ -746,6 +761,7 @@ static int receive_ssl(avs_net_abstract_socket_t *socket_,
                        void *buffer,
                        size_t buffer_length) {
     ssl_socket_t *socket = (ssl_socket_t *) socket_;
+    memset(&socket->last_alert, 0, sizeof(socket->last_alert));
     int result = 0;
 
     LOG(TRACE, "receive_ssl(socket=%p, buffer=%p, buffer_length=%lu)",
@@ -780,6 +796,7 @@ static int receive_ssl(avs_net_abstract_socket_t *socket_,
     }
 
     if (result < 0) {
+        update_alert_if_any(socket);
         *out_bytes_received = 0;
         if (result != MBEDTLS_ERR_SSL_PEER_CLOSE_NOTIFY) {
             if (result == MBEDTLS_ERR_SSL_TIMEOUT) {

@@ -55,6 +55,8 @@ typedef struct {
     /// Set of ciphersuites configured by user
     /// TODO: actually use it
     avs_net_socket_tls_ciphersuites_t enabled_ciphersuites;
+    /// TODO: actually implement support for it
+    avs_net_ssl_alert_t last_alert;
 } ssl_socket_t;
 
 #define NET_SSL_COMMON_INTERNALS

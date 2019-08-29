@@ -411,6 +411,14 @@ typedef struct {
     avs_time_duration_t max;
 } avs_net_dtls_handshake_timeouts_t;
 
+/**
+ * Structure holding the last SSL alert received from the peer. Meaning of its
+ * fields are as defined in https://tools.ietf.org/html/rfc5246#section-7.2
+ */
+typedef struct {
+    uint8_t alert_level;
+    uint8_t alert_description;
+} avs_net_ssl_alert_t;
 typedef struct {
     /**
      * SSL/TLS version to use for communication.
@@ -548,7 +556,12 @@ typedef enum {
     /**
      * Used to get/set ciphersuites used during (D)TLS handshake.
      */
-    AVS_NET_SOCKET_OPT_TLS_CIPHERSUITES
+    AVS_NET_SOCKET_OPT_TLS_CIPHERSUITES,
+
+    /**
+     * Used to get the last SSL Alert message received during (D)TLS handshake.
+     */
+    AVS_NET_SOCKET_OPT_TLS_LAST_ALERT
 } avs_net_socket_opt_key_t;
 
 typedef enum {
@@ -632,6 +645,8 @@ typedef union {
      * the call completes.
      */
     const avs_net_socket_tls_ciphersuites_t *tls_ciphersuites;
+
+    avs_net_ssl_alert_t last_alert;
 } avs_net_socket_opt_value_t;
 
 int avs_net_socket_debug(int value);

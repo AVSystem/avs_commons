@@ -436,6 +436,10 @@ static int get_opt_ssl(avs_net_abstract_socket_t *ssl_socket_,
     case AVS_NET_SOCKET_OPT_TLS_CIPHERSUITES:
         out_option_value->tls_ciphersuites = &ssl_socket->enabled_ciphersuites;
         return 0;
+    case AVS_NET_SOCKET_OPT_TLS_LAST_ALERT:
+        out_option_value->last_alert = ssl_socket->last_alert;
+        return 0;
+        break;
     case AVS_NET_SOCKET_OPT_STATE:
         if (!ssl_socket->backend_socket) {
             out_option_value->state = AVS_NET_SOCKET_STATE_CLOSED;
@@ -536,6 +540,9 @@ static const avs_net_dtls_handshake_timeouts_t
             .min = { 1, 0 },
             .max = { 60, 0 }
         };
+
+// https://tools.ietf.org/html/rfc5246#section-6.2.1
+#define AVS_TLS_MESSAGE_TYPE_ALERT 21
 
 VISIBILITY_PRIVATE_HEADER_END
 
