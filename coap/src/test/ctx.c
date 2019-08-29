@@ -359,7 +359,7 @@ AVS_UNIT_TEST(coap_ctx, coap_udp) {
     avs_coap_ctx_cleanup(&ctx);
 }
 
-#ifdef WITH_SSL
+#ifndef WITHOUT_SSL
 AVS_UNIT_TEST(coap_ctx, coap_dtls) {
     avs_net_socket_opt_value_t mtu;
     avs_coap_ctx_t *ctx = NULL;
@@ -427,4 +427,4 @@ AVS_UNIT_TEST(coap_ctx, coap_dtls) {
     avs_coap_ctx_cleanup(&ctx);
     avs_free(storage);
 }
-#endif // WITH_SSL
+#endif // WITHOUT_SSL

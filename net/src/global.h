@@ -23,14 +23,14 @@ int _avs_net_initialize_global_compat_state(void);
 
 void _avs_net_cleanup_global_compat_state(void);
 
-#ifdef WITH_SSL
+#ifndef WITHOUT_SSL
 int _avs_net_initialize_global_ssl_state(void);
 
 void _avs_net_cleanup_global_ssl_state(void);
-#else // WITH_SSL
+#else // WITHOUT_SSL
 #    define _avs_net_initialize_global_ssl_state(...) 0
 #    define _avs_net_cleanup_global_ssl_state(...) ((void) 0)
-#endif // WITH_SSL
+#endif // WITHOUT_SSL
 
 int _avs_net_ensure_global_state(void);
 void _avs_net_cleanup_global_state(void);
