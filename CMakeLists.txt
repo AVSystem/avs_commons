@@ -416,8 +416,8 @@ option(WITH_MBEDTLS "Enable mbed TLS" OFF)
 option(WITH_TINYDTLS "Enable tinyDTLS" OFF)
 
 cmake_dependent_option(WITHOUT_SSL "Disable SSL/TLS/DTLS support" OFF "WITH_OPENSSL OR WITH_MBEDTLS OR WITH_TINYDTLS" ON)
-cmake_dependent_option(WITH_PSK "Enable pre-shared key support" OFF "WITHOUT_SSL" ON)
-cmake_dependent_option(WITH_X509 "Enable X.509 certificate support" OFF "WITHOUT_SSL" ON)
+cmake_dependent_option(WITH_PSK "Enable pre-shared key support" ON "NOT WITHOUT_SSL" OFF)
+cmake_dependent_option(WITH_X509 "Enable X.509 certificate support" ON "NOT WITHOUT_SSL" OFF)
 
 if(WITH_OPENSSL)
     avs_find_library("find_package(OpenSSL REQUIRED)")
