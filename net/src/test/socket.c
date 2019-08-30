@@ -17,6 +17,8 @@
 #include <avsystem/commons/socket.h>
 #include <avsystem/commons/unit/test.h>
 
+#include <string.h>
+
 typedef enum { SUCCESS, FAIL } test_case_result_t;
 
 typedef struct {
@@ -91,6 +93,9 @@ run_socket_set_opt_test_cases(avs_socket_t *socket,
             break;
         case AVS_NET_SOCKET_OPT_TLS_CIPHERSUITES:
             opt_val.tls_ciphersuites = NULL;
+            break;
+        case AVS_NET_SOCKET_OPT_TLS_LAST_ALERT:
+            memset(&opt_val, 0, sizeof(opt_val));
             break;
         }
 

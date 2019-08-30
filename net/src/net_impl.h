@@ -63,12 +63,12 @@ int _avs_net_create_tcp_socket(avs_net_abstract_socket_t **socket,
 int _avs_net_create_udp_socket(avs_net_abstract_socket_t **socket,
                                const void *socket_configuration);
 
-#ifdef WITH_SSL
+#ifndef WITHOUT_SSL
 int _avs_net_create_ssl_socket(avs_net_abstract_socket_t **socket,
                                const void *socket_configuration);
 int _avs_net_create_dtls_socket(avs_net_abstract_socket_t **socket,
                                 const void *socket_configuration);
-#endif
+#endif // WITHOUT_SSL
 
 VISIBILITY_PRIVATE_HEADER_END
 

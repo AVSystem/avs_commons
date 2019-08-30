@@ -78,6 +78,7 @@ install(DIRECTORY include_public/
         FILES_MATCHING REGEX "[.]h$")
 
 add_library(avs_net_nosec ${AVS_NET_SOURCES})
+target_compile_definitions(avs_net_nosec PRIVATE WITHOUT_SSL)
 target_link_libraries(avs_net_nosec PUBLIC avs_net_core)
 
 avs_add_test(NAME avs_net_nosec
@@ -91,7 +92,6 @@ if(WITH_OPENSSL)
     add_library(avs_net_openssl
                 ${AVS_NET_SOURCES}
                 src/openssl/openssl.c)
-    target_compile_definitions(avs_net_openssl PRIVATE WITH_SSL)
     target_link_libraries(avs_net_openssl PUBLIC avs_net_core OpenSSL::SSL OpenSSL::Crypto)
 
     if(WITH_X509)
@@ -111,7 +111,6 @@ if(WITH_MBEDTLS)
     add_library(avs_net_mbedtls
                 ${AVS_NET_SOURCES}
                 src/mbedtls/mbedtls.c)
-    target_compile_definitions(avs_net_mbedtls PRIVATE WITH_SSL)
     target_link_libraries(avs_net_mbedtls PUBLIC avs_net_core mbedtls mbedcrypto mbedx509)
 
     if(WITH_TLS_SESSION_PERSISTENCE)
@@ -138,7 +137,6 @@ if(WITH_TINYDTLS)
     add_library(avs_net_tinydtls
                 ${AVS_NET_SOURCES}
                 src/tinydtls/tinydtls.c)
-    target_compile_definitions(avs_net_tinydtls PRIVATE WITH_SSL)
     target_link_libraries(avs_net_tinydtls PUBLIC avs_net_core tinydtls)
 
     avs_add_test(NAME avs_net_tinydtls
