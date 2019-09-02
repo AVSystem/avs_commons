@@ -117,6 +117,7 @@ static int stream_membuf_write_some(avs_stream_abstract_t *stream_,
                 return -1;
             }
         }
+        assert(stream->buffer);
     }
     memcpy(stream->buffer + stream->index_write, buffer, *inout_data_length);
     stream->index_write += *inout_data_length;
