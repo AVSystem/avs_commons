@@ -775,8 +775,7 @@ static int call_when_ready(const volatile sockfd_t *sockfd_ptr,
 }
 
 static int connect_with_timeout(const volatile sockfd_t *sockfd_ptr,
-                                const sockaddr_endpoint_union_t *endpoint,
-                                char is_stream) {
+                                const sockaddr_endpoint_union_t *endpoint) {
     if (connect(*sockfd_ptr, &endpoint->sockaddr_ep.addr,
                 endpoint->sockaddr_ep.header.size)
                     == -1
@@ -786,19 +785,14 @@ static int connect_with_timeout(const volatile sockfd_t *sockfd_ptr,
     avs_time_monotonic_t deadline =
             avs_time_monotonic_add(avs_time_monotonic_now(),
                                    NET_CONNECT_TIMEOUT);
-    if (wait_until_ready(sockfd_ptr, deadline, 1, 1, is_stream)) {
-        return -1;
-    } else {
+    if (wait_until_ready(sockfd_ptr, deadline, 1, 1, 0)) {
         int error_code = 0;
         socklen_t length = sizeof(error_code);
-        if (getsockopt(*sockfd_ptr, SOL_SOCKET, SO_ERROR, &error_code,
-                       &length)) {
-            return -1;
-        }
-        if (error_code) {
+        if (!getsockopt(*sockfd_ptr, SOL_SOCKET, SO_ERROR, &error_code,
+                        &length)) {
             errno = error_code;
-            return -1;
         }
+        return -1;
     }
     return 0;
 }
@@ -1055,7 +1049,7 @@ resolve_addrinfo_for_socket(avs_net_socket_t *net_socket,
 static int try_connect_open_socket(avs_net_socket_t *net_socket,
                                    const sockaddr_endpoint_union_t *address) {
     char socket_is_stream = (net_socket->type == AVS_NET_TCP_SOCKET);
-    if (connect_with_timeout(&net_socket->socket, address, socket_is_stream) < 0
+    if (connect_with_timeout(&net_socket->socket, address) < 0
             || (socket_is_stream
                 && send_net((avs_net_abstract_socket_t *) net_socket, NULL, 0)
                            < 0)) {
@@ -1679,7 +1673,7 @@ int avs_net_local_address_for_target_host(const char *target_host,
         if (test_socket != INVALID_SOCKET) {
 
             if (fcntl(test_socket, F_SETFL, O_NONBLOCK) != -1
-                    && !connect_with_timeout(&test_socket, &address, 0)) {
+                    && !connect_with_timeout(&test_socket, &address)) {
                 sockaddr_union_t addr;
                 socklen_t addrlen = sizeof(addr);
 
