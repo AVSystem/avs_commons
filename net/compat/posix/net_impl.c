@@ -928,6 +928,19 @@ int _avs_net_get_socket_type(avs_net_socket_type_t socket_type) {
     }
 }
 
+static int get_socket_proto(avs_net_socket_type_t socket_type) {
+    switch (socket_type) {
+    case AVS_NET_TCP_SOCKET:
+    case AVS_NET_SSL_SOCKET:
+        return IPPROTO_TCP;
+    case AVS_NET_UDP_SOCKET:
+    case AVS_NET_DTLS_SOCKET:
+        return IPPROTO_UDP;
+    default:
+        return 0;
+    }
+}
+
 static avs_net_af_t get_avs_af(int af) {
     switch (af) {
 #ifdef WITH_IPV4
@@ -1067,7 +1080,8 @@ static int try_connect(avs_net_socket_t *net_socket,
     if (!socket_was_already_open) {
         if ((net_socket->socket =
                      socket(address->sockaddr_ep.addr.sa_family,
-                            _avs_net_get_socket_type(net_socket->type), 0))
+                            _avs_net_get_socket_type(net_socket->type),
+                            get_socket_proto(net_socket->type)))
                 == INVALID_SOCKET) {
             net_socket->error_code = avs_map_errno(errno);
             LOG(ERROR, "cannot create socket: %s",
@@ -1417,7 +1431,8 @@ static int create_listening_socket(avs_net_socket_t *net_socket,
     }
     errno = 0;
     net_socket->socket = socket(addr->sa_family,
-                                _avs_net_get_socket_type(net_socket->type), 0);
+                                _avs_net_get_socket_type(net_socket->type),
+                                get_socket_proto(net_socket->type));
     if (net_socket->socket == INVALID_SOCKET) {
         net_socket->error_code = avs_map_errno(errno);
         LOG(ERROR, "cannot create system socket: %s",
@@ -1658,8 +1673,8 @@ int avs_net_local_address_for_target_host(const char *target_host,
         return -1;
     }
     while (!(result = avs_net_addrinfo_next(info, &address.api_ep))) {
-        sockfd_t test_socket =
-                socket(address.sockaddr_ep.addr.sa_family, SOCK_DGRAM, 0);
+        sockfd_t test_socket = socket(address.sockaddr_ep.addr.sa_family,
+                                      SOCK_DGRAM, IPPROTO_UDP);
 
         if (test_socket != INVALID_SOCKET) {
 
@@ -1951,7 +1966,8 @@ interface_name_end:
     size_t blen = 32 * sizeof(struct ifconf[1]);
     struct ifreq *reqs = NULL;
     struct ifreq *req;
-    if ((null_socket = socket(AF_INET, SOCK_DGRAM, 0)) == INVALID_SOCKET) {
+    if ((null_socket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP))
+            == INVALID_SOCKET) {
         goto interface_name_end;
     }
 interface_name_retry:
