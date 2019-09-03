@@ -51,7 +51,10 @@ static int append_cert_from_buffer(mbedtls_x509_crt *chain,
 static int load_cert_from_file(mbedtls_x509_crt *chain, const char *name) {
     LOG(DEBUG, "certificate <%s>: going to load", name);
 
-    int retval = mbedtls_x509_crt_parse_file(chain, name);
+    int retval = -1;
+#ifdef MBEDTLS_FS_IO
+    retval = mbedtls_x509_crt_parse_file(chain, name);
+#endif // MBEDTLS_FS_IO
     if (retval) {
         LOG(ERROR, "certificate <%s>: failed to load, result %d", name, retval);
     } else {
@@ -63,10 +66,13 @@ static int load_cert_from_file(mbedtls_x509_crt *chain, const char *name) {
 static int load_ca_from_path(mbedtls_x509_crt *chain, const char *path) {
     LOG(DEBUG, "certificates from path <%s>: going to load", path);
 
+    int retval = -1;
+#ifdef MBEDTLS_FS_IO
     // Note: this function returns negative value if nothing was loaded or
     // everything failed to load, and positive value indicating a number of
     // files that failed to load otherwise.
-    int retval = mbedtls_x509_crt_parse_path(chain, path);
+    retval = mbedtls_x509_crt_parse_path(chain, path);
+#endif // MBEDTLS_FS_IO
     if (retval < 0) {
         LOG(ERROR, "certificates from path <%s>: failed to load, result %d",
             path, retval);
@@ -150,7 +156,10 @@ static int load_private_key_from_file(mbedtls_pk_context *client_key,
                                       const char *password) {
     LOG(DEBUG, "private key <%s>: going to load", filename);
 
-    int retval = mbedtls_pk_parse_keyfile(client_key, filename, password);
+    int retval = -1;
+#ifdef MBEDTLS_FS_IO
+    retval = mbedtls_pk_parse_keyfile(client_key, filename, password);
+#endif // MBEDTLS_FS_IO
     if (retval) {
         LOG(ERROR, "private key <%s>: failed, result %d", filename, retval);
     } else {

@@ -21,6 +21,7 @@
 
 #include <assert.h>
 
+#include <mbedtls/bignum.h>
 #include <mbedtls/platform.h>
 #include <mbedtls/version.h>
 #include <mbedtls/x509_crt.h>

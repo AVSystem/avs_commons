@@ -366,7 +366,7 @@ static int initialize_cert_security(ssl_socket_t *socket) {
 }
 #else // WITH_X509
 #    define is_verification_enabled(...) 0
-#    define initialize_cert_security(...) (void) 0
+#    define initialize_cert_security(...) 0
 #endif // WITH_X509
 
 #ifdef WITH_PSK
