@@ -45,6 +45,7 @@
 
 #include <avsystem/commons/errno_map.h>
 #include <avsystem/commons/memory.h>
+#include <avsystem/commons/utils.h>
 
 #include "../global.h"
 #include "../net_impl.h"
@@ -513,6 +514,13 @@ static int configure_ssl(ssl_socket_t *socket,
         memcpy(socket->server_name_indication,
                configuration->server_name_indication, len + 1);
     }
+#if defined(MBEDTLS_SSL_DTLS_CONNECTION_ID)
+    if (mbedtls_ssl_conf_cid(&socket->config, 0,
+                             MBEDTLS_SSL_UNEXPECTED_CID_IGNORE)) {
+        LOG(ERROR, "cannot configure CID");
+        return -1;
+    }
+#endif // MBEDTLS_SSL_DTLS_CONNECTION_ID
 
     if (configuration->additional_configuration_clb
             && configuration->additional_configuration_clb(&socket->config)) {
@@ -612,6 +620,24 @@ static int start_ssl(ssl_socket_t *socket, const char *host) {
         socket->error_code = AVS_ENOMEM;
         goto finish;
     }
+#if defined(MBEDTLS_SSL_DTLS_CONNECTION_ID)
+    // This may seem a bit odd, but the CID draft says:
+    //
+    // > 3.  The "connection_id" Extension
+    // > [...]
+    // > A zero-length CID value indicates that the client is prepared to send
+    // > with a CID but does not wish the server to use one when sending.
+    // > [...]
+    // > A server willing to use CIDs will respond with a "connection_id"
+    // > extension in the ServerHello, containing the CID it wishes the client
+    // > to use when sending messages towards it.
+    if (mbedtls_ssl_set_cid(get_context(socket), MBEDTLS_SSL_CID_ENABLED, NULL,
+                            0)) {
+        LOG(ERROR, "cannot initialize CID to an empty value");
+        socket->error_code = AVS_EIO;
+        goto finish;
+    }
+#endif // MBEDTLS_SSL_DTLS_CONNECTION_ID
 
 #ifdef WITH_X509
     if ((result = mbedtls_ssl_set_hostname(
@@ -654,6 +680,17 @@ static int start_ssl(ssl_socket_t *socket, const char *host) {
              || result == MBEDTLS_ERR_SSL_WANT_WRITE);
 
     if (result == 0) {
+        unsigned char peer_cid[MBEDTLS_SSL_CID_OUT_LEN_MAX];
+        size_t peer_cid_len = 0;
+        int enabled = 0;
+        (void) mbedtls_ssl_get_peer_cid(get_context(socket), &enabled, peer_cid,
+                                        &peer_cid_len);
+        if (enabled) {
+            char peer_cid_hex[2 * sizeof(peer_cid) + 1] = "";
+            (void) avs_hexlify(peer_cid_hex, sizeof(peer_cid_hex), peer_cid,
+                               peer_cid_len);
+            LOG(DEBUG, "negotiated CID = %s", peer_cid_hex);
+        }
 #ifdef WITH_TLS_SESSION_PERSISTENCE
         if (socket->session_resumption_buffer
                 && socket->config.endpoint == MBEDTLS_SSL_IS_CLIENT) {
