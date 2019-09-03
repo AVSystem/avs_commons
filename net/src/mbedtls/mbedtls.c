@@ -515,8 +515,10 @@ static int configure_ssl(ssl_socket_t *socket,
                configuration->server_name_indication, len + 1);
     }
 #if defined(MBEDTLS_SSL_DTLS_CONNECTION_ID)
-    if (mbedtls_ssl_conf_cid(&socket->config, 0,
-                             MBEDTLS_SSL_UNEXPECTED_CID_IGNORE)) {
+    if (transport_for_socket_type(socket->backend_type)
+                    == MBEDTLS_SSL_TRANSPORT_DATAGRAM
+            && mbedtls_ssl_conf_cid(&socket->config, 0,
+                                    MBEDTLS_SSL_UNEXPECTED_CID_IGNORE)) {
         LOG(ERROR, "cannot configure CID");
         return -1;
     }
@@ -631,8 +633,10 @@ static int start_ssl(ssl_socket_t *socket, const char *host) {
     // > A server willing to use CIDs will respond with a "connection_id"
     // > extension in the ServerHello, containing the CID it wishes the client
     // > to use when sending messages towards it.
-    if (mbedtls_ssl_set_cid(get_context(socket), MBEDTLS_SSL_CID_ENABLED, NULL,
-                            0)) {
+    if (transport_for_socket_type(socket->backend_type)
+                    == MBEDTLS_SSL_TRANSPORT_DATAGRAM
+            && mbedtls_ssl_set_cid(get_context(socket), MBEDTLS_SSL_CID_ENABLED,
+                                   NULL, 0)) {
         LOG(ERROR, "cannot initialize CID to an empty value");
         socket->error_code = AVS_EIO;
         goto finish;
