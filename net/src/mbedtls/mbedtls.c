@@ -680,6 +680,7 @@ static int start_ssl(ssl_socket_t *socket, const char *host) {
              || result == MBEDTLS_ERR_SSL_WANT_WRITE);
 
     if (result == 0) {
+#if defined(MBEDTLS_SSL_DTLS_CONNECTION_ID)
         unsigned char peer_cid[MBEDTLS_SSL_CID_OUT_LEN_MAX];
         size_t peer_cid_len = 0;
         int enabled = 0;
@@ -691,6 +692,7 @@ static int start_ssl(ssl_socket_t *socket, const char *host) {
                                peer_cid_len);
             LOG(DEBUG, "negotiated CID = %s", peer_cid_hex);
         }
+#endif // MBEDTLS_SSL_DTLS_CONNECTION_ID
 #ifdef WITH_TLS_SESSION_PERSISTENCE
         if (socket->session_resumption_buffer
                 && socket->config.endpoint == MBEDTLS_SSL_IS_CLIENT) {
