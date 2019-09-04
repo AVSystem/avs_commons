@@ -491,6 +491,13 @@ typedef struct {
      * which the connection is performed).
      */
     const char *server_name_indication;
+
+    /**
+     * Enables / disables the use of DTLS connection_id extension (if
+     * implemented by the backend). Note that it only works for DTLS sockets,
+     * and has no effect on other socket types.
+     */
+    bool use_connection_id;
 } avs_net_ssl_configuration_t;
 
 typedef enum {

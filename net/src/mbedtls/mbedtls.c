@@ -98,6 +98,7 @@ typedef struct {
     /// Non empty, when custom server hostname shall be used.
     char server_name_indication[256];
     avs_net_ssl_alert_t last_alert;
+    bool use_connection_id;
 } ssl_socket_t;
 
 static bool is_ssl_started(ssl_socket_t *socket) {
@@ -514,9 +515,12 @@ static int configure_ssl(ssl_socket_t *socket,
         memcpy(socket->server_name_indication,
                configuration->server_name_indication, len + 1);
     }
+    socket->use_connection_id = configuration->use_connection_id;
+
 #if defined(MBEDTLS_SSL_DTLS_CONNECTION_ID)
-    if (transport_for_socket_type(socket->backend_type)
-                    == MBEDTLS_SSL_TRANSPORT_DATAGRAM
+    if (socket->use_connection_id
+            && transport_for_socket_type(socket->backend_type)
+                           == MBEDTLS_SSL_TRANSPORT_DATAGRAM
             && mbedtls_ssl_conf_cid(&socket->config, 0,
                                     MBEDTLS_SSL_UNEXPECTED_CID_IGNORE)) {
         LOG(ERROR, "cannot configure CID");
@@ -633,8 +637,9 @@ static int start_ssl(ssl_socket_t *socket, const char *host) {
     // > A server willing to use CIDs will respond with a "connection_id"
     // > extension in the ServerHello, containing the CID it wishes the client
     // > to use when sending messages towards it.
-    if (transport_for_socket_type(socket->backend_type)
-                    == MBEDTLS_SSL_TRANSPORT_DATAGRAM
+    if (socket->use_connection_id
+            && transport_for_socket_type(socket->backend_type)
+                           == MBEDTLS_SSL_TRANSPORT_DATAGRAM
             && mbedtls_ssl_set_cid(get_context(socket), MBEDTLS_SSL_CID_ENABLED,
                                    NULL, 0)) {
         LOG(ERROR, "cannot initialize CID to an empty value");
@@ -685,16 +690,18 @@ static int start_ssl(ssl_socket_t *socket, const char *host) {
 
     if (result == 0) {
 #if defined(MBEDTLS_SSL_DTLS_CONNECTION_ID)
-        unsigned char peer_cid[MBEDTLS_SSL_CID_OUT_LEN_MAX];
-        size_t peer_cid_len = 0;
-        int enabled = 0;
-        (void) mbedtls_ssl_get_peer_cid(get_context(socket), &enabled, peer_cid,
-                                        &peer_cid_len);
-        if (enabled) {
-            char peer_cid_hex[2 * sizeof(peer_cid) + 1] = "";
-            (void) avs_hexlify(peer_cid_hex, sizeof(peer_cid_hex), peer_cid,
-                               peer_cid_len);
-            LOG(DEBUG, "negotiated CID = %s", peer_cid_hex);
+        if (socket->use_connection_id) {
+            unsigned char peer_cid[MBEDTLS_SSL_CID_OUT_LEN_MAX];
+            size_t peer_cid_len = 0;
+            int enabled = 0;
+            (void) mbedtls_ssl_get_peer_cid(get_context(socket), &enabled,
+                                            peer_cid, &peer_cid_len);
+            if (enabled) {
+                char peer_cid_hex[2 * sizeof(peer_cid) + 1] = "";
+                (void) avs_hexlify(peer_cid_hex, sizeof(peer_cid_hex), peer_cid,
+                                   peer_cid_len);
+                LOG(DEBUG, "negotiated CID = %s", peer_cid_hex);
+            }
         }
 #endif // MBEDTLS_SSL_DTLS_CONNECTION_ID
 #ifdef WITH_TLS_SESSION_PERSISTENCE
