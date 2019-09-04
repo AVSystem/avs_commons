@@ -775,8 +775,7 @@ static int call_when_ready(const volatile sockfd_t *sockfd_ptr,
 }
 
 static int connect_with_timeout(const volatile sockfd_t *sockfd_ptr,
-                                const sockaddr_endpoint_union_t *endpoint,
-                                char is_stream) {
+                                const sockaddr_endpoint_union_t *endpoint) {
     if (connect(*sockfd_ptr, &endpoint->sockaddr_ep.addr,
                 endpoint->sockaddr_ep.header.size)
                     == -1
@@ -786,19 +785,14 @@ static int connect_with_timeout(const volatile sockfd_t *sockfd_ptr,
     avs_time_monotonic_t deadline =
             avs_time_monotonic_add(avs_time_monotonic_now(),
                                    NET_CONNECT_TIMEOUT);
-    if (wait_until_ready(sockfd_ptr, deadline, 1, 1, is_stream)) {
-        return -1;
-    } else {
+    if (wait_until_ready(sockfd_ptr, deadline, 1, 1, 0)) {
         int error_code = 0;
         socklen_t length = sizeof(error_code);
-        if (getsockopt(*sockfd_ptr, SOL_SOCKET, SO_ERROR, &error_code,
-                       &length)) {
-            return -1;
-        }
-        if (error_code) {
+        if (!getsockopt(*sockfd_ptr, SOL_SOCKET, SO_ERROR, &error_code,
+                        &length)) {
             errno = error_code;
-            return -1;
         }
+        return -1;
     }
     return 0;
 }
@@ -928,6 +922,19 @@ int _avs_net_get_socket_type(avs_net_socket_type_t socket_type) {
     }
 }
 
+static int get_socket_proto(avs_net_socket_type_t socket_type) {
+    switch (socket_type) {
+    case AVS_NET_TCP_SOCKET:
+    case AVS_NET_SSL_SOCKET:
+        return IPPROTO_TCP;
+    case AVS_NET_UDP_SOCKET:
+    case AVS_NET_DTLS_SOCKET:
+        return IPPROTO_UDP;
+    default:
+        return 0;
+    }
+}
+
 static avs_net_af_t get_avs_af(int af) {
     switch (af) {
 #ifdef WITH_IPV4
@@ -1042,7 +1049,7 @@ resolve_addrinfo_for_socket(avs_net_socket_t *net_socket,
 static int try_connect_open_socket(avs_net_socket_t *net_socket,
                                    const sockaddr_endpoint_union_t *address) {
     char socket_is_stream = (net_socket->type == AVS_NET_TCP_SOCKET);
-    if (connect_with_timeout(&net_socket->socket, address, socket_is_stream) < 0
+    if (connect_with_timeout(&net_socket->socket, address) < 0
             || (socket_is_stream
                 && send_net((avs_net_abstract_socket_t *) net_socket, NULL, 0)
                            < 0)) {
@@ -1067,7 +1074,8 @@ static int try_connect(avs_net_socket_t *net_socket,
     if (!socket_was_already_open) {
         if ((net_socket->socket =
                      socket(address->sockaddr_ep.addr.sa_family,
-                            _avs_net_get_socket_type(net_socket->type), 0))
+                            _avs_net_get_socket_type(net_socket->type),
+                            get_socket_proto(net_socket->type)))
                 == INVALID_SOCKET) {
             net_socket->error_code = avs_map_errno(errno);
             LOG(ERROR, "cannot create socket: %s",
@@ -1417,7 +1425,8 @@ static int create_listening_socket(avs_net_socket_t *net_socket,
     }
     errno = 0;
     net_socket->socket = socket(addr->sa_family,
-                                _avs_net_get_socket_type(net_socket->type), 0);
+                                _avs_net_get_socket_type(net_socket->type),
+                                get_socket_proto(net_socket->type));
     if (net_socket->socket == INVALID_SOCKET) {
         net_socket->error_code = avs_map_errno(errno);
         LOG(ERROR, "cannot create system socket: %s",
@@ -1658,13 +1667,13 @@ int avs_net_local_address_for_target_host(const char *target_host,
         return -1;
     }
     while (!(result = avs_net_addrinfo_next(info, &address.api_ep))) {
-        sockfd_t test_socket =
-                socket(address.sockaddr_ep.addr.sa_family, SOCK_DGRAM, 0);
+        sockfd_t test_socket = socket(address.sockaddr_ep.addr.sa_family,
+                                      SOCK_DGRAM, IPPROTO_UDP);
 
         if (test_socket != INVALID_SOCKET) {
 
             if (fcntl(test_socket, F_SETFL, O_NONBLOCK) != -1
-                    && !connect_with_timeout(&test_socket, &address, 0)) {
+                    && !connect_with_timeout(&test_socket, &address)) {
                 sockaddr_union_t addr;
                 socklen_t addrlen = sizeof(addr);
 
@@ -1951,7 +1960,8 @@ interface_name_end:
     size_t blen = 32 * sizeof(struct ifconf[1]);
     struct ifreq *reqs = NULL;
     struct ifreq *req;
-    if ((null_socket = socket(AF_INET, SOCK_DGRAM, 0)) == INVALID_SOCKET) {
+    if ((null_socket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP))
+            == INVALID_SOCKET) {
         goto interface_name_end;
     }
 interface_name_retry:
