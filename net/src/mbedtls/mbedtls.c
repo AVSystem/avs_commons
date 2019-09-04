@@ -160,13 +160,23 @@ void _avs_net_cleanup_global_ssl_state(void) {
 }
 
 int _avs_net_initialize_global_ssl_state(void) {
+    int result = 0;
     mbedtls_entropy_init(&AVS_SSL_GLOBAL.entropy);
-    mbedtls_ctr_drbg_init(&AVS_SSL_GLOBAL.rng);
-    int result =
-            mbedtls_ctr_drbg_seed(&AVS_SSL_GLOBAL.rng, mbedtls_entropy_func,
-                                  &AVS_SSL_GLOBAL.entropy, NULL, 0);
+#ifdef AVS_COMMONS_MBEDTLS_CUSTOM_ENTROPY_INITIALIZER
+    result = AVS_COMMONS_MBEDTLS_CUSTOM_ENTROPY_INITIALIZER(
+            &AVS_SSL_GLOBAL.entropy);
+#endif // AVS_COMMONS_MBEDTLS_CUSTOM_ENTROPY_INITIALIZER
     if (result) {
-        LOG(ERROR, "mbedtls_ctr_drbg_seed() failed: %d", result);
+        LOG(ERROR, "custom entropy initializer failed: %d", result);
+    } else {
+        mbedtls_ctr_drbg_init(&AVS_SSL_GLOBAL.rng);
+        if ((result = mbedtls_ctr_drbg_seed(
+                     &AVS_SSL_GLOBAL.rng, mbedtls_entropy_func,
+                     &AVS_SSL_GLOBAL.entropy, NULL, 0))) {
+            LOG(ERROR, "mbedtls_ctr_drbg_seed() failed: %d", result);
+        }
+    }
+    if (result) {
         _avs_net_cleanup_global_ssl_state();
     }
     return result;
