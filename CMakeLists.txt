@@ -418,12 +418,9 @@ option(WITH_TINYDTLS "Enable tinyDTLS" OFF)
 cmake_dependent_option(WITHOUT_SSL "Disable SSL/TLS/DTLS support" OFF "WITH_OPENSSL OR WITH_MBEDTLS OR WITH_TINYDTLS" ON)
 cmake_dependent_option(WITH_PSK "Enable pre-shared key support" ON "NOT WITHOUT_SSL" OFF)
 cmake_dependent_option(WITH_X509 "Enable X.509 certificate support" ON "NOT WITHOUT_SSL" OFF)
-
-if(WITH_MBEDTLS)
-    set(MBEDTLS_CUSTOM_ENTROPY_INITIALIZER "" CACHE STRING "Custom function that will be called to initialize mbed TLS entropy pool")
-elseif(NOT DEFINED MBEDTLS_CUSTOM_ENTROPY_INITIALIZER)
-    set(MBEDTLS_CUSTOM_ENTROPY_INITIALIZER "" CACHE INTERNAL "" FORCE)
-endif()
+cmake_dependent_option(WITH_MBEDTLS_CUSTOM_ENTROPY_INITIALIZER
+                       "Enable use of avs_net_mbedtls_entropy_init(mbedtls_entropy_context*) function that has to be provided by the user"
+                       OFF "WITH_MBEDTLS" OFF)
 
 if(WITH_OPENSSL)
     avs_find_library("find_package(OpenSSL REQUIRED)")
@@ -539,7 +536,7 @@ if(NOT ${CMAKE_PROJECT_NAME} STREQUAL ${PROJECT_NAME})
     set(avs_commons_INCLUDE_DIRS ${INCLUDE_DIRS} ${MODULE_INCLUDE_DIRS} PARENT_SCOPE)
 endif()
 
-set(AVS_COMMONS_MBEDTLS_CUSTOM_ENTROPY_INITIALIZER "${MBEDTLS_CUSTOM_ENTROPY_INITIALIZER}")
+set(AVS_COMMONS_WITH_MBEDTLS_CUSTOM_ENTROPY_INITIALIZER "${WITH_MBEDTLS_CUSTOM_ENTROPY_INITIALIZER}")
 
 configure_file("config/avs_commons_config.h.in" "config/avs_commons_config.h")
 configure_file("config/avs_commons_posix_config.h.in" "config/avs_commons_posix_config.h")

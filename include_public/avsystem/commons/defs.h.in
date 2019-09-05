@@ -62,13 +62,11 @@ typedef long ssize_t;
 #    endif
 #endif // AVS_SSIZE_T_DEFINED
 
-#cmakedefine AVS_COMMONS_MBEDTLS_CUSTOM_ENTROPY_INITIALIZER \
-        @AVS_COMMONS_MBEDTLS_CUSTOM_ENTROPY_INITIALIZER@
-#ifdef AVS_COMMONS_MBEDTLS_CUSTOM_ENTROPY_INITIALIZER
+#cmakedefine AVS_COMMONS_WITH_MBEDTLS_CUSTOM_ENTROPY_INITIALIZER
+#ifdef AVS_COMMONS_WITH_MBEDTLS_CUSTOM_ENTROPY_INITIALIZER
 struct mbedtls_entropy_context;
-int AVS_COMMONS_MBEDTLS_CUSTOM_ENTROPY_INITIALIZER(
-        struct mbedtls_entropy_context *);
-#endif // AVS_COMMONS_MBEDTLS_CUSTOM_ENTROPY_INITIALIZER
+int avs_net_mbedtls_entropy_init(struct mbedtls_entropy_context *);
+#endif // AVS_COMMONS_WITH_MBEDTLS_CUSTOM_ENTROPY_INITIALIZER
 
 /**
  * Internal definitions used by the library to implement the functionality.

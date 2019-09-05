@@ -162,10 +162,9 @@ void _avs_net_cleanup_global_ssl_state(void) {
 int _avs_net_initialize_global_ssl_state(void) {
     int result = 0;
     mbedtls_entropy_init(&AVS_SSL_GLOBAL.entropy);
-#ifdef AVS_COMMONS_MBEDTLS_CUSTOM_ENTROPY_INITIALIZER
-    result = AVS_COMMONS_MBEDTLS_CUSTOM_ENTROPY_INITIALIZER(
-            &AVS_SSL_GLOBAL.entropy);
-#endif // AVS_COMMONS_MBEDTLS_CUSTOM_ENTROPY_INITIALIZER
+#ifdef AVS_COMMONS_WITH_MBEDTLS_CUSTOM_ENTROPY_INITIALIZER
+    result = avs_net_mbedtls_entropy_init(&AVS_SSL_GLOBAL.entropy);
+#endif // AVS_COMMONS_WITH_MBEDTLS_CUSTOM_ENTROPY_INITIALIZER
     if (result) {
         LOG(ERROR, "custom entropy initializer failed: %d", result);
     } else {
