@@ -836,7 +836,7 @@ static int mock_set_opt(avs_net_abstract_socket_t *socket_,
 }
 
 static avs_errno_t mock_errno(avs_net_abstract_socket_t *socket_) {
-    avs_errno_t retval = 0;
+    avs_errno_t retval = AVS_NO_ERROR;
     mocksock_t *socket = (mocksock_t *) socket_;
     assert_command_expected(socket->expected_commands, MOCKSOCK_COMMAND_ERRNO);
     retval = (avs_errno_t) socket->expected_commands->retval;
