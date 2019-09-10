@@ -43,11 +43,11 @@ AVS_UNIT_TEST(stream_file, init) {
     AVS_UNIT_ASSERT_SUCCESS(make_temporary(filename));
     AVS_UNIT_ASSERT_NOT_NULL(
             (stream = avs_stream_file_create(filename, AVS_STREAM_FILE_READ)));
-    AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&stream));
+    AVS_UNIT_ASSERT_TRUE(avs_is_ok(avs_stream_cleanup(&stream)));
 
     AVS_UNIT_ASSERT_NOT_NULL(
             (stream = avs_stream_file_create(filename, AVS_STREAM_FILE_WRITE)));
-    AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&stream));
+    AVS_UNIT_ASSERT_TRUE(avs_is_ok(avs_stream_cleanup(&stream)));
 
     AVS_UNIT_ASSERT_NULL(avs_stream_file_create(filename, 0xff));
     unlink(filename);
@@ -60,7 +60,7 @@ AVS_UNIT_TEST(stream_file, write_mode_creates_file) {
     unlink(filename);
     AVS_UNIT_ASSERT_NOT_NULL(
             (stream = avs_stream_file_create(filename, AVS_STREAM_FILE_WRITE)));
-    AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&stream));
+    AVS_UNIT_ASSERT_TRUE(avs_is_ok(avs_stream_cleanup(&stream)));
     unlink(filename);
 }
 
@@ -68,7 +68,7 @@ AVS_UNIT_TEST(stream_file, write_and_read) {
     char filename[sizeof(TEMPLATE)];
     char data[] = "TEST";
     size_t bytes_read;
-    char end_of_msg;
+    bool end_of_msg;
     /* let the valgrind check for eventual overflows */
     char *buf = (char *) avs_malloc(sizeof(data));
 
@@ -80,22 +80,24 @@ AVS_UNIT_TEST(stream_file, write_and_read) {
             (stream = avs_stream_file_create(
                      filename, AVS_STREAM_FILE_WRITE | AVS_STREAM_FILE_READ)));
 
-    AVS_UNIT_ASSERT_SUCCESS(avs_stream_write(stream, data, sizeof(data)));
-    AVS_UNIT_ASSERT_SUCCESS(avs_stream_write(stream, NULL, 0));
+    AVS_UNIT_ASSERT_TRUE(
+            avs_is_ok(avs_stream_write(stream, data, sizeof(data))));
+    AVS_UNIT_ASSERT_TRUE(avs_is_ok(avs_stream_write(stream, NULL, 0)));
 
-    AVS_UNIT_ASSERT_SUCCESS(avs_stream_reset(stream));
-    AVS_UNIT_ASSERT_SUCCESS(avs_stream_read(stream, &bytes_read, &end_of_msg,
-                                            buf, 2 * sizeof(buf)));
+    AVS_UNIT_ASSERT_TRUE(avs_is_ok(avs_stream_reset(stream)));
+    AVS_UNIT_ASSERT_TRUE(avs_is_ok(avs_stream_read(
+            stream, &bytes_read, &end_of_msg, buf, 2 * sizeof(buf))));
     AVS_UNIT_ASSERT_EQUAL(bytes_read, sizeof(data));
     AVS_UNIT_ASSERT_EQUAL(end_of_msg, 1);
     AVS_UNIT_ASSERT_EQUAL_BYTES_SIZED(buf, data, sizeof(data));
-    AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&stream));
+    AVS_UNIT_ASSERT_TRUE(avs_is_ok(avs_stream_cleanup(&stream)));
 
     AVS_UNIT_ASSERT_NOT_NULL(
             (stream = avs_stream_file_create(filename, AVS_STREAM_FILE_READ)));
-    AVS_UNIT_ASSERT_FAILED(avs_stream_write(stream, data, sizeof(data)));
-    AVS_UNIT_ASSERT_EQUAL(avs_stream_error(stream), AVS_EBADF);
-    AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&stream));
+    avs_error_t err = avs_stream_write(stream, data, sizeof(data));
+    AVS_UNIT_ASSERT_EQUAL(err.category, AVS_ERRNO_CATEGORY);
+    AVS_UNIT_ASSERT_EQUAL(err.code, AVS_EBADF);
+    AVS_UNIT_ASSERT_TRUE(avs_is_ok(avs_stream_cleanup(&stream)));
     unlink(filename);
     avs_free(buf);
 }
@@ -104,7 +106,7 @@ AVS_UNIT_TEST(stream_file, seek_peek_and_read) {
     char filename[sizeof(TEMPLATE)];
     char buf[128];
     size_t bytes_read;
-    char end_of_msg;
+    bool end_of_msg;
     avs_stream_t *stream;
 
     AVS_UNIT_ASSERT_SUCCESS(make_temporary(filename));
@@ -115,22 +117,24 @@ AVS_UNIT_TEST(stream_file, seek_peek_and_read) {
     AVS_UNIT_ASSERT_NOT_NULL(
             (stream = avs_stream_file_create(filename, AVS_STREAM_FILE_READ)));
 
-    AVS_UNIT_ASSERT_SUCCESS(
-            avs_stream_read(stream, &bytes_read, &end_of_msg, buf, 0));
+    AVS_UNIT_ASSERT_TRUE(avs_is_ok(
+            avs_stream_read(stream, &bytes_read, &end_of_msg, buf, 0)));
     AVS_UNIT_ASSERT_EQUAL(end_of_msg, 0);
-    AVS_UNIT_ASSERT_SUCCESS(
-            avs_stream_read(stream, &bytes_read, &end_of_msg, buf, 1));
+    AVS_UNIT_ASSERT_TRUE(avs_is_ok(
+            avs_stream_read(stream, &bytes_read, &end_of_msg, buf, 1)));
     AVS_UNIT_ASSERT_EQUAL(end_of_msg, 1);
     AVS_UNIT_ASSERT_EQUAL(bytes_read, 0);
-    AVS_UNIT_ASSERT_EQUAL(avs_stream_peek(stream, 0), EOF);
-    AVS_UNIT_ASSERT_EQUAL(avs_stream_peek(stream, 9001), EOF);
-    AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&stream));
+    AVS_UNIT_ASSERT_TRUE(avs_is_eof(avs_stream_peek(stream, 0, &(char) { 0 })));
+    AVS_UNIT_ASSERT_TRUE(
+            avs_is_eof(avs_stream_peek(stream, 9001, &(char) { 0 })));
+    AVS_UNIT_ASSERT_TRUE(avs_is_ok(avs_stream_cleanup(&stream)));
 
     AVS_UNIT_ASSERT_NOT_NULL(
             (stream = avs_stream_file_create(filename, AVS_STREAM_FILE_READ)));
-    AVS_UNIT_ASSERT_EQUAL(avs_stream_peek(stream, 9001), EOF);
-    AVS_UNIT_ASSERT_EQUAL(avs_stream_peek(stream, 0), EOF);
-    AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&stream));
+    AVS_UNIT_ASSERT_TRUE(
+            avs_is_eof(avs_stream_peek(stream, 9001, &(char) { 0 })));
+    AVS_UNIT_ASSERT_TRUE(avs_is_eof(avs_stream_peek(stream, 0, &(char) { 0 })));
+    AVS_UNIT_ASSERT_TRUE(avs_is_ok(avs_stream_cleanup(&stream)));
     unlink(filename);
 }
 
@@ -142,11 +146,12 @@ AVS_UNIT_TEST(stream_file, extensions_seek) {
     AVS_UNIT_ASSERT_NOT_NULL(
             (stream = avs_stream_file_create(
                      filename, AVS_STREAM_FILE_READ | AVS_STREAM_FILE_WRITE)));
-    AVS_UNIT_ASSERT_SUCCESS(avs_stream_file_seek(stream, 9001));
-    AVS_UNIT_ASSERT_EQUAL(avs_stream_peek(stream, 0), EOF);
-    AVS_UNIT_ASSERT_SUCCESS(avs_stream_reset(stream));
-    AVS_UNIT_ASSERT_SUCCESS(avs_stream_write(stream, data, sizeof(data)));
-    AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&stream));
+    AVS_UNIT_ASSERT_TRUE(avs_is_ok(avs_stream_file_seek(stream, 9001)));
+    AVS_UNIT_ASSERT_TRUE(avs_is_eof(avs_stream_peek(stream, 0, &(char) { 0 })));
+    AVS_UNIT_ASSERT_TRUE(avs_is_ok(avs_stream_reset(stream)));
+    AVS_UNIT_ASSERT_TRUE(
+            avs_is_ok(avs_stream_write(stream, data, sizeof(data))));
+    AVS_UNIT_ASSERT_TRUE(avs_is_ok(avs_stream_cleanup(&stream)));
     unlink(filename);
 }
 
@@ -158,10 +163,12 @@ AVS_UNIT_TEST(stream_file, extensions_length) {
     AVS_UNIT_ASSERT_SUCCESS(make_temporary(filename));
     AVS_UNIT_ASSERT_NOT_NULL(
             (stream = avs_stream_file_create(filename, AVS_STREAM_FILE_WRITE)));
-    AVS_UNIT_ASSERT_SUCCESS(avs_stream_write(stream, data, sizeof(data)));
-    AVS_UNIT_ASSERT_SUCCESS(avs_stream_write(stream, data, sizeof(data)));
-    AVS_UNIT_ASSERT_SUCCESS(avs_stream_file_length(stream, &length));
+    AVS_UNIT_ASSERT_TRUE(
+            avs_is_ok(avs_stream_write(stream, data, sizeof(data))));
+    AVS_UNIT_ASSERT_TRUE(
+            avs_is_ok(avs_stream_write(stream, data, sizeof(data))));
+    AVS_UNIT_ASSERT_TRUE(avs_is_ok(avs_stream_file_length(stream, &length)));
     AVS_UNIT_ASSERT_EQUAL(length, 2 * sizeof(data));
-    AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&stream));
+    AVS_UNIT_ASSERT_TRUE(avs_is_ok(avs_stream_cleanup(&stream)));
     unlink(filename);
 }
