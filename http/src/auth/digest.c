@@ -30,94 +30,97 @@ VISIBILITY_SOURCE_BEGIN
 
 typedef char md5_hexbuf_t[33];
 
-static int http_auth_ha1(avs_stream_t *md5,
-                         const http_auth_t *auth,
-                         const char *cnonce,
-                         md5_hexbuf_t *hexbuf) {
-    int result;
+static avs_error_t http_auth_ha1(avs_stream_t *md5,
+                                 const http_auth_t *auth,
+                                 const char *cnonce,
+                                 md5_hexbuf_t *hexbuf) {
+    avs_error_t err;
     char bytebuf[16];
 
-    if ((result = avs_stream_write_f(
-                 md5, "%s:%s:%s",
-                 auth->credentials.user ? auth->credentials.user : "",
-                 auth->state.realm,
-                 auth->credentials.password ? auth->credentials.password : ""))
-            || (result = avs_stream_finish_message(md5))
-            || (result = avs_stream_read_reliably(md5, bytebuf,
-                                                  sizeof(bytebuf)))) {
-        return result;
+    if (avs_is_err(
+                (err = avs_stream_write_f(
+                         md5, "%s:%s:%s",
+                         auth->credentials.user ? auth->credentials.user : "",
+                         auth->state.realm,
+                         auth->credentials.password ? auth->credentials.password
+                                                    : "")))
+            || avs_is_err((err = avs_stream_finish_message(md5)))
+            || avs_is_err((err = avs_stream_read_reliably(md5, bytebuf,
+                                                          sizeof(bytebuf))))) {
+        return err;
     }
     if (avs_hexlify(*hexbuf, sizeof(*hexbuf), bytebuf, sizeof(bytebuf))
             != sizeof(bytebuf)) {
-        return -1;
+        return avs_errno(AVS_EPROTO);
     }
 
     if (auth->state.flags.use_md5_sess) {
-        if ((result = avs_stream_write_f(md5, "%s:%s:%s", *hexbuf,
-                                         auth->state.nonce, cnonce))
-                || (result = avs_stream_finish_message(md5))
-                || (result = avs_stream_read_reliably(md5, bytebuf,
-                                                      sizeof(bytebuf)))) {
-            return result;
+        if (avs_is_err((err = avs_stream_write_f(md5, "%s:%s:%s", *hexbuf,
+                                                 auth->state.nonce, cnonce)))
+                || avs_is_err((err = avs_stream_finish_message(md5)))
+                || avs_is_err((err = avs_stream_read_reliably(
+                                       md5, bytebuf, sizeof(bytebuf))))) {
+            return err;
         }
         if (avs_hexlify(*hexbuf, sizeof(*hexbuf), bytebuf, sizeof(bytebuf))
                 != sizeof(bytebuf)) {
-            return -1;
+            return avs_errno(AVS_EPROTO);
         }
     }
 
-    return 0;
+    return AVS_OK;
 }
 
-static int http_auth_ha2(avs_stream_t *md5,
-                         avs_http_method_t method,
-                         const char *digest_uri,
-                         md5_hexbuf_t *hexbuf) {
-    int result;
+static avs_error_t http_auth_ha2(avs_stream_t *md5,
+                                 avs_http_method_t method,
+                                 const char *digest_uri,
+                                 md5_hexbuf_t *hexbuf) {
+    avs_error_t err;
     char bytebuf[16];
 
-    if ((result = avs_stream_write_f(
-                 md5, "%s:%s", _AVS_HTTP_METHOD_NAMES[method], digest_uri))
-            || (result = avs_stream_finish_message(md5))
-            || (result = avs_stream_read_reliably(md5, bytebuf,
-                                                  sizeof(bytebuf)))) {
-        return result;
+    if (avs_is_err((err = avs_stream_write_f(md5, "%s:%s",
+                                             _AVS_HTTP_METHOD_NAMES[method],
+                                             digest_uri)))
+            || avs_is_err((err = avs_stream_finish_message(md5)))
+            || avs_is_err((err = avs_stream_read_reliably(md5, bytebuf,
+                                                          sizeof(bytebuf))))) {
+        return err;
     }
     if (avs_hexlify(*hexbuf, sizeof(*hexbuf), bytebuf, sizeof(bytebuf))
             != sizeof(bytebuf)) {
-        return -1;
+        return avs_errno(AVS_EPROTO);
     }
 
-    return 0;
+    return AVS_OK;
 }
 
-static int http_auth_response(avs_stream_t *md5,
-                              const http_auth_t *auth,
-                              const char *ha1,
-                              const char *ha2,
-                              const char *nonce,
-                              const char *nc,
-                              const char *cnonce,
-                              md5_hexbuf_t *hexbuf) {
-    int result;
+static avs_error_t http_auth_response(avs_stream_t *md5,
+                                      const http_auth_t *auth,
+                                      const char *ha1,
+                                      const char *ha2,
+                                      const char *nonce,
+                                      const char *nc,
+                                      const char *cnonce,
+                                      md5_hexbuf_t *hexbuf) {
+    avs_error_t err;
     char bytebuf[16];
 
-    if ((result = avs_stream_write_f(md5, "%s:%s:", ha1, nonce))
+    if (avs_is_err((err = avs_stream_write_f(md5, "%s:%s:", ha1, nonce)))
             || (auth->state.flags.use_qop_auth
-                && (result =
-                            avs_stream_write_f(md5, "%s:%s:auth:", nc, cnonce)))
-            || (result = avs_stream_write_f(md5, "%s", ha2))
-            || (result = avs_stream_finish_message(md5))
-            || (result = avs_stream_read_reliably(md5, bytebuf,
-                                                  sizeof(bytebuf)))) {
-        return result;
+                && avs_is_err((err = avs_stream_write_f(md5, "%s:%s:auth:", nc,
+                                                        cnonce))))
+            || avs_is_err((err = avs_stream_write_f(md5, "%s", ha2)))
+            || avs_is_err((err = avs_stream_finish_message(md5)))
+            || avs_is_err((err = avs_stream_read_reliably(md5, bytebuf,
+                                                          sizeof(bytebuf))))) {
+        return err;
     }
     if (avs_hexlify(*hexbuf, sizeof(*hexbuf), bytebuf, sizeof(bytebuf))
             != sizeof(bytebuf)) {
-        return -1;
+        return avs_errno(AVS_EPROTO);
     }
 
-    return 0;
+    return AVS_OK;
 }
 
 static void generate_random_nonce(char out[17], unsigned *random_seed) {
@@ -130,11 +133,11 @@ static void generate_random_nonce(char out[17], unsigned *random_seed) {
     sprintf(out, "%016" PRIX64, client_nonce);
 }
 
-int _avs_http_auth_send_header_digest(http_stream_t *stream) {
+avs_error_t _avs_http_auth_send_header_digest(http_stream_t *stream) {
     md5_hexbuf_t HA1hex, HA2hex, hash;
     char nc[9];
-    int result = -1;
-    int stream_cleanup_result = -1;
+    avs_error_t err = avs_errno(AVS_ENOMEM);
+    avs_error_t stream_cleanup_err;
     char client_nonce[17];
     avs_stream_t *md5 = avs_stream_md5_create();
 
@@ -145,46 +148,61 @@ int _avs_http_auth_send_header_digest(http_stream_t *stream) {
     sprintf(nc, "%08" PRIx32, stream->auth.state.nc++);
     generate_random_nonce(client_nonce, &stream->random_seed);
 
-    if (http_auth_ha1(md5, &stream->auth, client_nonce, &HA1hex)
-            || http_auth_ha2(md5, stream->method, avs_url_path(stream->url),
-                             &HA2hex)
-            || http_auth_response(md5, &stream->auth, HA1hex, HA2hex,
-                                  stream->auth.state.nonce, nc, client_nonce,
-                                  &hash)) {
+    if (avs_is_err((
+                err = http_auth_ha1(md5, &stream->auth, client_nonce, &HA1hex)))
+            || avs_is_err((err = http_auth_ha2(md5, stream->method,
+                                               avs_url_path(stream->url),
+                                               &HA2hex)))
+            || avs_is_err((err = http_auth_response(
+                                   md5, &stream->auth, HA1hex, HA2hex,
+                                   stream->auth.state.nonce, nc, client_nonce,
+                                   &hash)))) {
         goto auth_digest_error;
     }
 
-    result = (avs_stream_write_f(stream->backend, "Authorization: Digest")
-              || avs_stream_write_f(stream->backend, " username=\"%s\"",
-                                    stream->auth.credentials.user
-                                            ? stream->auth.credentials.user
-                                            : "")
-              || avs_stream_write_f(stream->backend, ", realm=\"%s\"",
-                                    stream->auth.state.realm)
-              || avs_stream_write_f(stream->backend, ", nonce=\"%s\"",
-                                    stream->auth.state.nonce)
-              || avs_stream_write_f(stream->backend, ", uri=\"%s\"",
-                                    avs_url_path(stream->url))
-              || avs_stream_write_f(stream->backend, ", response=\"%s\"", hash)
-              || avs_stream_write_f(stream->backend, ", algorithm=%s",
-                                    stream->auth.state.flags.use_md5_sess
-                                            ? "MD5-sess"
-                                            : "MD5")
-              || (stream->auth.state.opaque
-                  && avs_stream_write_f(stream->backend, ", opaque=\"%s\"",
-                                        stream->auth.state.opaque))
-              || (stream->auth.state.flags.use_qop_auth
-                  && (avs_stream_write_f(stream->backend, ", qop=auth")
-                      || avs_stream_write_f(stream->backend, ", cnonce=\"%s\"",
-                                            client_nonce)
-                      || avs_stream_write_f(stream->backend, ", nc=%s", nc)))
-              || avs_stream_write_f(stream->backend, "\r\n"));
+    (void) (avs_is_err((err = avs_stream_write_f(stream->backend,
+                                                 "Authorization: Digest")))
+            || avs_is_err((err = avs_stream_write_f(
+                                   stream->backend, " username=\"%s\"",
+                                   stream->auth.credentials.user
+                                           ? stream->auth.credentials.user
+                                           : "")))
+            || avs_is_err((err = avs_stream_write_f(stream->backend,
+                                                    ", realm=\"%s\"",
+                                                    stream->auth.state.realm)))
+            || avs_is_err((err = avs_stream_write_f(stream->backend,
+                                                    ", nonce=\"%s\"",
+                                                    stream->auth.state.nonce)))
+            || avs_is_err((err = avs_stream_write_f(stream->backend,
+                                                    ", uri=\"%s\"",
+                                                    avs_url_path(stream->url))))
+            || avs_is_err((err = avs_stream_write_f(stream->backend,
+                                                    ", response=\"%s\"", hash)))
+            || avs_is_err((err = avs_stream_write_f(
+                                   stream->backend, ", algorithm=%s",
+                                   stream->auth.state.flags.use_md5_sess
+                                           ? "MD5-sess"
+                                           : "MD5")))
+            || (stream->auth.state.opaque
+                && avs_is_err((err = avs_stream_write_f(
+                                       stream->backend, ", opaque=\"%s\"",
+                                       stream->auth.state.opaque))))
+            || (stream->auth.state.flags.use_qop_auth
+                && (avs_is_err((err = avs_stream_write_f(stream->backend,
+                                                         ", qop=auth")))
+                    || avs_is_err((err = avs_stream_write_f(stream->backend,
+                                                            ", cnonce=\"%s\"",
+                                                            client_nonce)))
+                    || avs_is_err((err = avs_stream_write_f(stream->backend,
+                                                            ", nc=%s", nc)))))
+            || avs_is_err((err = avs_stream_write_f(stream->backend, "\r\n"))));
 auth_digest_error:
-    if (result) {
-        LOG(ERROR, "error calculating digest auth md5");
-    }
-    if ((stream_cleanup_result = avs_stream_cleanup(&md5))) {
+    if (avs_is_err((stream_cleanup_err = avs_stream_cleanup(&md5)))) {
         LOG(ERROR, "failed to close MD5 stream");
     }
-    return result ? result : stream_cleanup_result;
+    if (avs_is_err(err)) {
+        LOG(ERROR, "error calculating digest auth md5");
+        return err;
+    }
+    return stream_cleanup_err;
 }

@@ -19,6 +19,7 @@
 #include <errno.h>
 
 #include <avsystem/commons/errno.h>
+#include <avsystem/commons/errno_map.h>
 #include <avsystem/commons/memory.h>
 #include <avsystem/commons/stream/stream_net.h>
 
@@ -33,31 +34,35 @@ typedef struct {
     const avs_http_buffer_sizes_t *buffer_sizes;
     size_t chunk_left;
     bool finished;
-    avs_errno_t error_code;
 } chunked_receiver_t;
 
-typedef int (*read_chunk_size_getline_func_t)(void *state,
-                                              char *buffer,
-                                              size_t buffer_length);
+typedef avs_error_t (*read_chunk_size_getline_func_t)(void *state,
+                                                      char *buffer,
+                                                      size_t buffer_length);
 
-static int read_chunk_size(const avs_http_buffer_sizes_t *buffer_sizes,
-                           read_chunk_size_getline_func_t getline_func,
-                           void *getline_func_state,
-                           size_t *out_value) {
+static avs_error_t read_chunk_size(const avs_http_buffer_sizes_t *buffer_sizes,
+                                   read_chunk_size_getline_func_t getline_func,
+                                   void *getline_func_state,
+                                   size_t *out_value) {
     char *line_buf = (char *) avs_malloc(buffer_sizes->header_line);
     if (!line_buf) {
         LOG(ERROR, "Out of memory");
-        return -1;
+        return avs_errno(AVS_ENOMEM);
     }
     unsigned long value = 0;
-    int result;
+    avs_error_t err;
     LOG(TRACE, "read_chunk_size");
-    while (1) {
+    while (true) {
         char *endptr = NULL;
-        result = getline_func(getline_func_state, line_buf,
-                              buffer_sizes->header_line);
-        if (result) { /* this also handles buffer too small problem */
-            LOG(ERROR, "error reading chunk headline");
+        err = getline_func(getline_func_state, line_buf,
+                           buffer_sizes->header_line);
+        if (avs_is_err(err)) {
+            if (avs_is_eof(err)) {
+                LOG(ERROR, "buffer too small to read chunk headline");
+                err = avs_errno(AVS_EIO);
+            } else {
+                LOG(ERROR, "error reading chunk headline");
+            }
             break;
         }
         LOG(TRACE, "chunk headline: %s", line_buf);
@@ -67,7 +72,7 @@ static int read_chunk_size(const avs_http_buffer_sizes_t *buffer_sizes,
         errno = 0;
         value = strtoul(line_buf, &endptr, 16);
         if (errno) {
-            result = errno;
+            err = avs_errno(avs_map_errno(errno));
             LOG(ERROR, "invalid chunk headline");
             break;
         }
@@ -76,90 +81,81 @@ static int read_chunk_size(const avs_http_buffer_sizes_t *buffer_sizes,
         }
     }
     *out_value = (size_t) value;
-    if (result == 0 && *out_value == 0) {
+    if (avs_is_ok(err) && *out_value == 0) {
         /* zero length chunk got, ignore the possible trailers and empty line */
-        while (1) {
-            result = getline_func(getline_func_state, line_buf,
-                                  buffer_sizes->header_line);
-            if (result || !line_buf[0]) {
+        while (true) {
+            err = getline_func(getline_func_state, line_buf,
+                               buffer_sizes->header_line);
+            if (avs_is_err(err) || !line_buf[0]) {
                 break;
             }
             LOG(TRACE, "ignoring trailer: %s", line_buf);
         }
     }
-    LOG(TRACE, "result == %d", result);
     avs_free(line_buf);
-    return result;
+    return err;
 }
 
-static int read_chunk_size_getline_reader(void *state,
-                                          char *buffer,
-                                          size_t buffer_length) {
-    return avs_stream_getline((avs_stream_t *) state, NULL, NULL, buffer,
-                              buffer_length);
+static avs_error_t read_chunk_size_getline_reader(void *state,
+                                                  char *buffer,
+                                                  size_t buffer_length) {
+    return avs_stream_getline((avs_stream_t *) state, NULL, NULL,
+                              buffer, buffer_length);
 }
 
-static int chunked_read(avs_stream_t *stream_,
-                        size_t *out_bytes_read,
-                        char *out_message_finished,
-                        void *buffer,
-                        size_t buffer_length) {
+static avs_error_t chunked_read(avs_stream_t *stream_,
+                                size_t *out_bytes_read,
+                                bool *out_message_finished,
+                                void *buffer,
+                                size_t buffer_length) {
     chunked_receiver_t *stream = (chunked_receiver_t *) stream_;
-    stream->error_code = AVS_NO_ERROR;
-
     size_t bytes_read = 0;
-    char backend_message_finished;
-    int result = 0;
+    bool backend_message_finished;
+    avs_error_t err = AVS_OK;
     if (!out_bytes_read) {
         out_bytes_read = &bytes_read;
     }
     if (stream->chunk_left == 0) {
         *out_bytes_read = 0;
         if (!stream->finished
-                && !(result = read_chunk_size(stream->buffer_sizes,
-                                              read_chunk_size_getline_reader,
-                                              stream->backend,
-                                              &stream->chunk_left))
+                && avs_is_ok((
+                           err = read_chunk_size(stream->buffer_sizes,
+                                                 read_chunk_size_getline_reader,
+                                                 stream->backend,
+                                                 &stream->chunk_left)))
                 && stream->chunk_left == 0) {
             stream->finished = true;
         }
         if (out_message_finished) {
             *out_message_finished = stream->finished;
         }
-        if (result || stream->finished
+        if (avs_is_err(err) || stream->finished
                 || avs_stream_nonblock_read_ready(stream->backend) <= 0) {
-            goto finish;
+            return err;
         }
     }
-    result = avs_stream_read(stream->backend, out_bytes_read,
-                             &backend_message_finished, buffer,
-                             AVS_MIN(buffer_length, stream->chunk_left));
+    err = avs_stream_read(stream->backend, out_bytes_read,
+                          &backend_message_finished, buffer,
+                          AVS_MIN(buffer_length, stream->chunk_left));
     stream->chunk_left -= *out_bytes_read;
-    if (!result && backend_message_finished) {
+    if (avs_is_ok(err) && backend_message_finished) {
         LOG(ERROR, "unexpected end of stream");
-        result = -1;
+        return avs_errno(AVS_EIO);
     }
     if (out_message_finished) {
         // Note that this means that the final read will always be zero-length
         *out_message_finished = 0;
     }
-finish:
-    if (result) {
-        LOG(ERROR, "chunked_read: result == %d", result);
-        stream->error_code = AVS_EIO;
-    }
-    return result;
+    return AVS_OK;
 }
 
-static int chunked_nonblock_read_ready(avs_stream_t *stream_) {
-    chunked_receiver_t *stream = (chunked_receiver_t *) stream_;
-    stream->error_code = AVS_NO_ERROR;
-
+static bool chunked_nonblock_read_ready(avs_stream_t *stream) {
     // This is somewhat inaccurate. If there is a packet boundary somewhere
     // *within* the chunk header, then the next read operation might indeed
     // block. But I don't think there's a good solution to this problem that
     // would not be overkill.
-    return avs_stream_nonblock_read_ready(stream->backend);
+    return avs_stream_nonblock_read_ready(
+            ((chunked_receiver_t *) stream)->backend);
 }
 
 typedef struct {
@@ -167,80 +163,60 @@ typedef struct {
     size_t offset;
 } read_chunk_size_getline_peeker_state_t;
 
-static int read_chunk_size_getline_peeker(void *state_,
-                                          char *buffer,
-                                          size_t buffer_length) {
+static avs_error_t read_chunk_size_getline_peeker(void *state_,
+                                                  char *buffer,
+                                                  size_t buffer_length) {
     read_chunk_size_getline_peeker_state_t *state =
             (read_chunk_size_getline_peeker_state_t *) state_;
     return avs_stream_peekline(state->stream, state->offset, NULL,
                                &state->offset, buffer, buffer_length);
 }
 
-static int chunked_peek(avs_stream_t *stream_, size_t offset) {
+static avs_error_t
+chunked_peek(avs_stream_t *stream_, size_t offset, char *out_value) {
     chunked_receiver_t *stream = (chunked_receiver_t *) stream_;
-    stream->error_code = AVS_NO_ERROR;
-
     if (stream->finished) {
-        return EOF;
+        return AVS_EOF;
     }
     read_chunk_size_getline_peeker_state_t state;
     size_t chunk_left = stream->chunk_left;
-    int result;
+    avs_error_t err;
     state.stream = stream->backend;
     state.offset = 0;
     while (offset >= chunk_left) {
         offset -= chunk_left;
         state.offset += chunk_left;
-        result = read_chunk_size(stream->buffer_sizes,
-                                 read_chunk_size_getline_peeker, &state,
-                                 &chunk_left);
-        if (result || chunk_left == 0) {
-            return EOF;
+        err = read_chunk_size(stream->buffer_sizes,
+                              read_chunk_size_getline_peeker, &state,
+                              &chunk_left);
+        if (avs_is_err(err)) {
+            return err;
+        } else if (chunk_left == 0) {
+            return AVS_EOF;
         }
     }
     offset += state.offset;
-    result = avs_stream_peek(stream->backend, offset);
-    if (result == EOF) {
-        LOG(DEBUG, "chunked_peek: EOF");
-    }
-    return result;
+    return avs_stream_peek(stream->backend, offset, out_value);
 }
 
-static int chunked_close(avs_stream_t *stream_) {
+static avs_error_t chunked_close(avs_stream_t *stream_) {
     chunked_receiver_t *stream = (chunked_receiver_t *) stream_;
     avs_stream_net_setsock(stream->backend, NULL); /* don't close the socket */
     return avs_stream_cleanup(&stream->backend);
 }
 
-static avs_errno_t chunked_error(avs_stream_t *stream_) {
-    chunked_receiver_t *stream = (chunked_receiver_t *) stream_;
-    avs_errno_t error = avs_stream_error(stream->backend);
-    if (error != AVS_NO_ERROR) {
-        return error;
-    } else {
-        return stream->error_code;
-    }
-}
-
-static int unimplemented() {
-    LOG(ERROR, "Vtable method unimplemented");
-    return -1;
-}
-
 static const avs_stream_v_table_t chunked_receiver_vtable = {
-    (avs_stream_write_some_t) unimplemented,
-    (avs_stream_finish_message_t) unimplemented,
-    chunked_read,
-    chunked_peek,
-    (avs_stream_reset_t) unimplemented,
-    chunked_close,
-    chunked_error,
+    .read = chunked_read,
+    .peek = chunked_peek,
+    .close = chunked_close,
     &(avs_stream_v_table_extension_t[]){
             { AVS_STREAM_V_TABLE_EXTENSION_NONBLOCK,
-              &(avs_stream_v_table_extension_nonblock_t[]){
-                      { chunked_nonblock_read_ready,
-                        (avs_stream_nonblock_write_ready_t)
-                                unimplemented } }[0] },
+              &(avs_stream_v_table_extension_nonblock_t[])
+                      {
+                          {
+                              .read_ready = chunked_nonblock_read_ready
+                          }
+                      }[0] },
             AVS_STREAM_V_TABLE_EXTENSION_NULL }[0]
 };
 
@@ -254,7 +230,6 @@ avs_stream_t *_avs_http_body_receiver_chunked_create(
                 &chunked_receiver_vtable;
         retval->backend = backend;
         retval->buffer_sizes = buffer_sizes;
-        retval->error_code = AVS_NO_ERROR;
     }
     return (avs_stream_t *) retval;
 }

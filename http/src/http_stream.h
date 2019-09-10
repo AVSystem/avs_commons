@@ -161,10 +161,6 @@ struct http_stream_struct {
      * Last received HTTP status code.
      */
     int status;
-    /**
-     * Additional error code, if applicable.
-     */
-    avs_errno_t error_code;
 
     AVS_LIST(http_header_t) user_headers;
     AVS_LIST(const avs_http_header_t) *incoming_header_storage;
@@ -194,26 +190,27 @@ struct http_stream_struct {
 
 typedef struct http_stream_struct http_stream_t;
 
-avs_errno_t _avs_http_socket_new(avs_net_abstract_socket_t **out,
+avs_error_t _avs_http_socket_new(avs_net_abstract_socket_t **out,
                                  avs_http_t *client,
                                  const avs_url_t *url);
 
 #define HTTP_TOO_MANY_REDIRECTS_CLASS (-3)
 
-int _avs_http_redirect(http_stream_t *stream, avs_url_t **url_move);
+avs_error_t _avs_http_redirect(http_stream_t *stream, avs_url_t **url_move);
 
-int _avs_http_prepare_for_sending(http_stream_t *stream);
+avs_error_t _avs_http_prepare_for_sending(http_stream_t *stream);
 
 void _avs_http_maybe_schedule_retry_after_send(http_stream_t *stream,
-                                               int result);
+                                               avs_error_t err);
 
-int _avs_http_buffer_flush(http_stream_t *stream, char message_finished);
+avs_error_t _avs_http_buffer_flush(http_stream_t *stream,
+                                   bool message_finished);
 
-int _avs_http_send_via_buffer(http_stream_t *stream,
-                              const void *data,
-                              size_t data_length);
+avs_error_t _avs_http_send_via_buffer(http_stream_t *stream,
+                                      const void *data,
+                                      size_t data_length);
 
-int _avs_http_encoder_flush(http_stream_t *stream);
+avs_error_t _avs_http_encoder_flush(http_stream_t *stream);
 
 VISIBILITY_PRIVATE_HEADER_END
 

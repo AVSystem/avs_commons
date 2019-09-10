@@ -60,10 +60,10 @@ static const char *resolve_port(const avs_url_t *parsed_url) {
     }
 }
 
-avs_errno_t _avs_http_socket_new(avs_net_abstract_socket_t **out,
+avs_error_t _avs_http_socket_new(avs_net_abstract_socket_t **out,
                                  avs_http_t *client,
                                  const avs_url_t *url) {
-    avs_errno_t result = AVS_NO_ERROR;
+    avs_error_t err = AVS_OK;
     avs_net_ssl_configuration_t ssl_config_full;
     LOG(TRACE, "http_new_socket");
     assert(out != NULL);
@@ -81,50 +81,51 @@ avs_errno_t _avs_http_socket_new(avs_net_abstract_socket_t **out,
         LOG(TRACE, "creating TCP socket");
         if (avs_net_socket_create(out, AVS_NET_TCP_SOCKET,
                                   &ssl_config_full.backend_configuration)) {
-            result = AVS_EIO;
+            err = avs_errno(AVS_EIO);
         }
     } else if (strcmp(protocol, "https") == 0) {
         LOG(TRACE, "creating SSL socket");
         if (avs_net_socket_create(out, AVS_NET_SSL_SOCKET, &ssl_config_full)) {
-            result = AVS_EIO;
+            err = avs_errno(AVS_EIO);
         }
     }
-    if (!result) {
+    if (avs_is_ok(err)) {
         assert(*out);
         LOG(TRACE, "socket OK, connecting");
         if (avs_net_socket_connect(*out, avs_url_host(url),
                                    resolve_port(url))) {
-            result = avs_net_socket_error(*out);
-            if (!result) {
-                result = AVS_EIO;
+            err = avs_errno(avs_net_socket_error(*out));
+            if (avs_is_ok(err)) {
+                err = avs_errno(AVS_EIO);
             }
         }
     }
-    if (result) {
+    if (avs_is_err(err)) {
         avs_net_socket_cleanup(out);
-        LOG(ERROR, "http_new_socket: failure: %d", (int) result);
+        LOG(ERROR, "http_new_socket: failure");
     } else {
         LOG(TRACE, "http_new_socket: success");
     }
-    return result;
+    return err;
 }
 
-static int reconnect_tcp_socket(avs_net_abstract_socket_t *socket,
-                                const avs_url_t *url,
-                                avs_errno_t *out_error_code) {
+static avs_error_t reconnect_tcp_socket(avs_net_abstract_socket_t *socket,
+                                        const avs_url_t *url) {
     LOG(TRACE, "reconnect_tcp_socket");
-    *out_error_code = AVS_NO_ERROR;
-    if (!socket || avs_net_socket_close(socket)
+    if (!socket) {
+        LOG(ERROR, "socket not configured");
+        return avs_errno(AVS_EBADF);
+    }
+    if (avs_net_socket_close(socket)
             || avs_net_socket_connect(socket, avs_url_host(url),
                                       resolve_port(url))) {
         LOG(ERROR, "reconnect failed");
-        *out_error_code = avs_net_socket_error(socket);
-        return -1;
+        return avs_errno(avs_net_socket_error(socket));
     }
-    return 0;
+    return AVS_OK;
 }
 
-int _avs_http_redirect(http_stream_t *stream, avs_url_t **url_move) {
+avs_error_t _avs_http_redirect(http_stream_t *stream, avs_url_t **url_move) {
     avs_net_abstract_socket_t *old_socket =
             avs_stream_net_getsock(stream->backend);
     avs_net_abstract_socket_t *new_socket = NULL;
@@ -132,26 +133,32 @@ int _avs_http_redirect(http_stream_t *stream, avs_url_t **url_move) {
     ++stream->redirect_count;
     if (stream->redirect_count > HTTP_MOVE_LIMIT) {
         LOG(ERROR, "redirect count exceeded");
-        return -stream->status;
+        stream->status *= -1;
+        return avs_errno(AVS_EPROTO);
     }
-    if (avs_stream_reset(stream->backend)) {
+    avs_error_t err = avs_stream_reset(stream->backend);
+    if (avs_is_err(err)) {
         LOG(ERROR, "stream reset failed");
-        return -1;
+        stream->status = -1;
+        return err;
     }
     stream->flags.close_handling_required = 0;
     _avs_http_auth_reset(&stream->auth);
     avs_net_socket_close(old_socket);
 
-    if (_avs_http_socket_new(&new_socket, stream->http, *url_move)
-            != AVS_NO_ERROR) {
-        return -1;
+    if (avs_is_err((err = _avs_http_socket_new(&new_socket, stream->http,
+                                               *url_move)))) {
+        stream->status = -1;
+        return err;
     }
 
-    if (avs_stream_net_setsock(stream->backend, new_socket)) {
+    if (avs_is_err(
+                (err = avs_stream_net_setsock(stream->backend, new_socket)))) {
         /* error, clean new socket */
         avs_net_socket_cleanup(&new_socket);
         LOG(ERROR, "setsock failed");
-        return -1;
+        stream->status = -1;
+        return err;
     }
     avs_net_socket_cleanup(&old_socket);
     avs_url_free(stream->url);
@@ -163,25 +170,25 @@ int _avs_http_redirect(http_stream_t *stream, avs_url_t **url_move) {
             && strcmp(avs_url_protocol(stream->url), "https") == 0) {
         stream->auth.state.flags.type = HTTP_AUTH_TYPE_BASIC;
     }
-    return 0;
+    return AVS_OK;
 }
 
-int _avs_http_prepare_for_sending(http_stream_t *stream) {
+avs_error_t _avs_http_prepare_for_sending(http_stream_t *stream) {
     LOG(TRACE, "http_prepare_for_sending");
     stream->flags.should_retry = 0;
 
     /* check stream state */
     if (stream->body_receiver) {
         /* we might be at the end of stream already */
-        char finished = 0;
-        if (!avs_stream_read(stream->body_receiver, NULL, &finished, NULL, 0)
-                && finished) {
+        bool finished = 0;
+        avs_error_t err = avs_stream_read(stream->body_receiver, NULL,
+                                          &finished, NULL, 0);
+        if (avs_is_ok(err) && finished) {
             avs_stream_cleanup(&stream->body_receiver);
             stream->flags.close_handling_required = 1;
         } else {
             LOG(ERROR, "trying to send while still receiving");
-            stream->error_code = AVS_EBUSY;
-            return -1;
+            return avs_is_ok(err) ? avs_errno(AVS_EBUSY) : err;
         }
     }
 
@@ -189,51 +196,54 @@ int _avs_http_prepare_for_sending(http_stream_t *stream) {
     if (!stream->flags.keep_connection) {
         LOG(TRACE, "reconnecting stream");
         stream->flags.close_handling_required = 0;
-        if (avs_stream_reset(stream->backend)
-                || reconnect_tcp_socket(avs_stream_net_getsock(stream->backend),
-                                        stream->url, &stream->error_code)) {
-            return -1;
+        avs_error_t err;
+        if (avs_is_err((err = avs_stream_reset(stream->backend)))
+                || avs_is_err((err = reconnect_tcp_socket(
+                                       avs_stream_net_getsock(stream->backend),
+                                       stream->url)))) {
+            return err;
         } else {
             stream->flags.keep_connection = 1;
         }
     }
 
     LOG(TRACE, "http_prepare_for_sending: success");
-    return 0;
+    return AVS_OK;
 }
 
 void _avs_http_maybe_schedule_retry_after_send(http_stream_t *stream,
-                                               int result) {
-    if (result && avs_stream_error(stream->backend) == AVS_EPIPE
+                                               avs_error_t err) {
+    if (err.category == AVS_ERRNO_CATEGORY && err.code == AVS_EPIPE
             && stream->flags.close_handling_required) {
         stream->flags.keep_connection = 0;
         stream->flags.should_retry = 1;
     }
 }
 
-static int http_send_simple_request(http_stream_t *stream,
-                                    const void *buffer,
-                                    size_t buffer_length) {
-    int result;
+static avs_error_t http_send_simple_request(http_stream_t *stream,
+                                            const void *buffer,
+                                            size_t buffer_length) {
+    avs_error_t err;
     LOG(TRACE, "http_send_simple_request, buffer_length == %lu",
         (unsigned long) buffer_length);
     stream->auth.state.flags.retried = 0;
     do {
-        if (_avs_http_prepare_for_sending(stream)
-                || _avs_http_send_headers(stream, buffer_length)
-                || avs_stream_write(stream->backend, buffer, buffer_length)
-                || avs_stream_finish_message(stream->backend)) {
-            result = -1;
-            _avs_http_maybe_schedule_retry_after_send(stream, result);
+        if (avs_is_err((err = _avs_http_prepare_for_sending(stream)))
+                || avs_is_err((
+                           err = _avs_http_send_headers(stream, buffer_length)))
+                || avs_is_err((err = avs_stream_write(stream->backend, buffer,
+                                                      buffer_length)))
+                || avs_is_err((
+                           err = avs_stream_finish_message(stream->backend)))) {
+            _avs_http_maybe_schedule_retry_after_send(stream, err);
         } else {
-            result = _avs_http_receive_headers(stream);
+            err = _avs_http_receive_headers(stream);
         }
-    } while (result && stream->flags.should_retry);
-    if (result == 0) {
+    } while (avs_is_err(err) && stream->flags.should_retry);
+    if (avs_is_ok(err)) {
         AVS_LIST_CLEAR(&stream->user_headers);
     }
-    LOG(TRACE, "result == %d", result);
-    return result;
+    return err;
 }
 
 /**
@@ -241,79 +251,84 @@ static int http_send_simple_request(http_stream_t *stream,
  * buffering and encoding (i.e. compression). This function could be the public
  * send function if buffering and encoding were not requirements.
  */
-static int http_send_block(http_stream_t *stream,
-                           char message_finished,
-                           const void *data,
-                           size_t data_length) {
-    int result = 0;
+static avs_error_t http_send_block(http_stream_t *stream,
+                                   bool message_finished,
+                                   const void *data,
+                                   size_t data_length) {
+    avs_error_t err = AVS_OK;
     if (stream->flags.chunked_sending) {
-        result = _avs_http_chunked_send(stream, message_finished, data,
-                                        data_length);
-        if (result == 0 && message_finished) {
+        err = _avs_http_chunked_send(stream, message_finished, data,
+                                     data_length);
+        if (avs_is_ok(err) && message_finished) {
             stream->flags.chunked_sending = 0;
         }
     } else {
         if (message_finished) {
-            result = http_send_simple_request(stream, data, data_length);
+            err = http_send_simple_request(stream, data, data_length);
         } else {
-            result = _avs_http_chunked_send_first(stream, data, data_length);
+            err = _avs_http_chunked_send_first(stream, data, data_length);
         }
     }
-    return result;
+    return err;
 }
 
-int _avs_http_buffer_flush(http_stream_t *stream, char message_finished) {
-    int result = http_send_block(stream, message_finished, stream->out_buffer,
-                                 stream->out_buffer_pos);
-    if (result == 0) {
+avs_error_t _avs_http_buffer_flush(http_stream_t *stream,
+                                   bool message_finished) {
+    avs_error_t err =
+            http_send_block(stream, message_finished, stream->out_buffer,
+                            stream->out_buffer_pos);
+    if (avs_is_ok(err)) {
         stream->out_buffer_pos = 0;
     }
-    return result;
+    return err;
 }
 
-int _avs_http_send_via_buffer(http_stream_t *stream,
-                              const void *data,
-                              size_t data_length) {
-    int result = 0;
+avs_error_t _avs_http_send_via_buffer(http_stream_t *stream,
+                                      const void *data,
+                                      size_t data_length) {
+    avs_error_t err = AVS_OK;
     if (data_length > stream->http->buffer_sizes.body_send
                                   - stream->out_buffer_pos
-            && _avs_http_buffer_flush(stream, 0)) {
-        return -1;
+            && avs_is_err((err = _avs_http_buffer_flush(stream, false)))) {
+        return err;
     }
     if (data_length > stream->http->buffer_sizes.body_send) {
-        result = http_send_block(stream, 0, data, data_length);
+        err = http_send_block(stream, 0, data, data_length);
     } else {
         memcpy(stream->out_buffer + stream->out_buffer_pos, data, data_length);
         stream->out_buffer_pos += data_length;
     }
-    return result;
+    return err;
 }
 
-int _avs_http_encoder_flush(http_stream_t *stream) {
+avs_error_t _avs_http_encoder_flush(http_stream_t *stream) {
     char *buffer = (char *) avs_malloc(
             stream->http->buffer_sizes.content_coding_min_input);
     if (!buffer) {
         LOG(ERROR, "Out of memory");
-        return -1;
+        return avs_errno(AVS_ENOMEM);
     }
     size_t bytes_read = 0;
-    char message_finished = 0;
-    int result = -1;
-    while (1) {
-        if (avs_stream_read(
-                    stream->encoder, &bytes_read, &message_finished, buffer,
-                    stream->http->buffer_sizes.content_coding_min_input)) {
+    bool message_finished = false;
+    avs_error_t err;
+    while (true) {
+        if (avs_is_err((err = avs_stream_read(
+                                stream->encoder, &bytes_read, &message_finished,
+                                buffer,
+                                stream->http->buffer_sizes
+                                        .content_coding_min_input)))) {
             goto finish;
         }
         if (!bytes_read) {
-            result = 0;
+            err = AVS_OK;
             goto finish;
         }
-        if (_avs_http_send_via_buffer(stream, buffer, bytes_read)) {
+        if (avs_is_err((err = _avs_http_send_via_buffer(stream, buffer,
+                                                        bytes_read)))) {
             goto finish;
         }
     }
 finish:
     avs_free(buffer);
-    return result;
+    return err;
 }

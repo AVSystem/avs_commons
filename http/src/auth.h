@@ -59,11 +59,12 @@ void _avs_http_auth_reset(http_auth_t *auth);
 
 int _avs_http_auth_setup(http_auth_t *auth, const char *challenge);
 
-int _avs_http_auth_send_header_basic(struct http_stream_struct *stream);
+avs_error_t _avs_http_auth_send_header_basic(struct http_stream_struct *stream);
 
-int _avs_http_auth_send_header_digest(struct http_stream_struct *stream);
+avs_error_t
+_avs_http_auth_send_header_digest(struct http_stream_struct *stream);
 
-int _avs_http_auth_send_header(struct http_stream_struct *stream);
+avs_error_t _avs_http_auth_send_header(struct http_stream_struct *stream);
 
 int _avs_http_auth_setup_stream(struct http_stream_struct *stream,
                                 const avs_url_t *parsed_url,
