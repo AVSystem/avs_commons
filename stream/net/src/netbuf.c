@@ -41,19 +41,11 @@ typedef struct buffered_netstream_struct {
     avs_buffer_t *in_buffer;
 } buffered_netstream_t;
 
-static avs_error_t wrap_error(buffered_netstream_t *stream, int result) {
-    if (result) {
-        return avs_errno(avs_net_socket_error(stream->socket));
-    }
-    return AVS_OK;
-}
-
 static avs_error_t out_buffer_flush(buffered_netstream_t *stream) {
-    avs_error_t err = wrap_error(
-            stream,
+    avs_error_t err =
             avs_net_socket_send(stream->socket,
                                 avs_buffer_data(stream->out_buffer),
-                                avs_buffer_data_size(stream->out_buffer)));
+                                avs_buffer_data_size(stream->out_buffer));
     if (avs_is_ok(err)) {
         avs_buffer_reset(stream->out_buffer);
     }
@@ -73,8 +65,7 @@ static avs_error_t buffered_netstream_write_some(avs_stream_t *stream_,
     } else if (avs_is_err((err = out_buffer_flush(stream)))) {
         return err;
     } else {
-        return wrap_error(stream, avs_net_socket_send(stream->socket, data,
-                                                      *inout_data_length));
+        return avs_net_socket_send(stream->socket, data, *inout_data_length);
     }
 }
 
@@ -106,10 +97,8 @@ static avs_error_t read_data_to_user_buffer(buffered_netstream_t *stream,
                                             bool *out_message_finished,
                                             void *buffer,
                                             size_t buffer_length) {
-    avs_error_t err =
-            wrap_error(stream,
-                       avs_net_socket_receive(stream->socket, out_bytes_read,
-                                              buffer, buffer_length));
+    avs_error_t err = avs_net_socket_receive(stream->socket, out_bytes_read,
+                                             buffer, buffer_length);
     *out_message_finished = (avs_is_err(err) || *out_bytes_read == 0);
     return err;
 }
@@ -124,11 +113,10 @@ static avs_error_t in_buffer_read_some(buffered_netstream_t *stream,
         return avs_errno(AVS_ENOBUFS);
     }
 
-    avs_error_t err = wrap_error(
-            stream,
+    avs_error_t err =
             avs_net_socket_receive(stream->socket, out_bytes_read,
                                    avs_buffer_raw_insert_ptr(in_buffer),
-                                   space_left));
+                                   space_left);
     if (avs_is_ok(err)) {
         avs_buffer_advance_ptr(in_buffer, *out_bytes_read);
     }
@@ -205,27 +193,32 @@ static avs_error_t try_recv_nonblock(buffered_netstream_t *stream) {
         .recv_timeout = AVS_TIME_DURATION_ZERO
     };
 
-    if (avs_net_socket_get_opt(stream->socket, AVS_NET_SOCKET_OPT_RECV_TIMEOUT,
-                               &old_recv_timeout)
-            || avs_net_socket_set_opt(stream->socket,
-                                      AVS_NET_SOCKET_OPT_RECV_TIMEOUT,
-                                      zero_timeout)) {
+    avs_error_t err;
+    if (avs_is_err(
+                (err = avs_net_socket_get_opt(stream->socket,
+                                              AVS_NET_SOCKET_OPT_RECV_TIMEOUT,
+                                              &old_recv_timeout)))
+            || avs_is_err((err = avs_net_socket_set_opt(
+                                   stream->socket,
+                                   AVS_NET_SOCKET_OPT_RECV_TIMEOUT,
+                                   zero_timeout)))) {
         LOG(ERROR, "cannot set socket timeout");
-        return avs_errno(avs_net_socket_error(stream->socket));
+        return err;
     }
 
     size_t bytes_read;
-    avs_error_t err = in_buffer_read_some(stream, &bytes_read);
+    err = in_buffer_read_some(stream, &bytes_read);
     if (err.category == AVS_ERRNO_CATEGORY && err.code == AVS_ETIMEDOUT) {
         // nothing to read - this is expected, ignore
         err = AVS_OK;
     }
 
-    if (avs_net_socket_set_opt(stream->socket, AVS_NET_SOCKET_OPT_RECV_TIMEOUT,
-                               old_recv_timeout)) {
+    avs_error_t restore_err = avs_net_socket_set_opt(
+            stream->socket, AVS_NET_SOCKET_OPT_RECV_TIMEOUT, old_recv_timeout);
+    if (avs_is_ok(restore_err)) {
         LOG(ERROR, "cannot restore socket timeout");
         if (avs_is_ok(err)) {
-            err = avs_errno(avs_net_socket_error(stream->socket));
+            err = restore_err;
         }
     }
 
@@ -285,7 +278,7 @@ static avs_error_t buffered_netstream_close(avs_stream_t *stream_) {
     buffered_netstream_t *stream = (buffered_netstream_t *) stream_;
     avs_error_t err = AVS_OK;
     if (stream->socket) {
-        err = wrap_error(stream, avs_net_socket_shutdown(stream->socket));
+        err = avs_net_socket_shutdown(stream->socket);
     }
     avs_net_socket_cleanup(&stream->socket);
     avs_free(stream->in_buffer);
