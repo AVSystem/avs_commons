@@ -115,22 +115,23 @@ void avs_coap_ctx_cleanup(avs_coap_ctx_t **ctx) {
     *ctx = NULL;
 }
 
-static int map_io_error(avs_net_abstract_socket_t *socket,
-                        int result,
-                        const char *operation) {
-    if (result) {
-        avs_errno_t error = avs_net_socket_error(socket);
-        LOG(ERROR, "%s failed: errno = %d", operation, error);
-
-        if (error == AVS_ETIMEDOUT) {
-            result = AVS_COAP_CTX_ERR_TIMEOUT;
-        } else if (error == AVS_EMSGSIZE) {
-            result = AVS_COAP_CTX_ERR_MSG_TOO_LONG;
-        } else {
-            result = AVS_COAP_CTX_ERR_NETWORK;
-        }
+static int map_io_error(const char *operation, avs_error_t err) {
+    if (avs_is_ok(err)) {
+        return 0;
     }
-    return result;
+
+    if (err.category == AVS_ERRNO_CATEGORY) {
+        LOG(ERROR, "%s failed: %s", operation,
+            avs_strerror((avs_errno_t) err.code));
+        if (err.code == AVS_ETIMEDOUT) {
+            return AVS_COAP_CTX_ERR_TIMEOUT;
+        } else if (err.code == AVS_EMSGSIZE) {
+            return AVS_COAP_CTX_ERR_MSG_TOO_LONG;
+        }
+    } else {
+        LOG(ERROR, "%s failed", operation);
+    }
+    return AVS_COAP_CTX_ERR_NETWORK;
 }
 
 #ifndef WITH_AVS_COAP_MESSAGE_CACHE
@@ -146,8 +147,9 @@ static int try_cache_response(avs_coap_ctx_t *ctx,
 
     char addr[AVS_ADDRSTRLEN];
     char port[sizeof("65535")];
-    if (avs_net_socket_get_remote_host(socket, addr, sizeof(addr))
-            || avs_net_socket_get_remote_port(socket, port, sizeof(port))) {
+    if (avs_is_err(avs_net_socket_get_remote_host(socket, addr, sizeof(addr)))
+            || avs_is_err(avs_net_socket_get_remote_port(socket, port,
+                                                         sizeof(port)))) {
         LOG(DEBUG, "could not get remote host/port");
         return -1;
     }
@@ -162,9 +164,9 @@ static int try_cache_response(avs_coap_ctx_t *ctx,
 static size_t packet_overhead(avs_net_abstract_socket_t *socket) {
     avs_net_socket_opt_value_t mtu;
     avs_net_socket_opt_value_t mtu_inner;
-    if (avs_net_socket_get_opt(socket, AVS_NET_SOCKET_OPT_MTU, &mtu)
-            || avs_net_socket_get_opt(socket, AVS_NET_SOCKET_OPT_INNER_MTU,
-                                      &mtu_inner)) {
+    if (avs_is_err(avs_net_socket_get_opt(socket, AVS_NET_SOCKET_OPT_MTU, &mtu))
+            || avs_is_err(avs_net_socket_get_opt(
+                       socket, AVS_NET_SOCKET_OPT_INNER_MTU, &mtu_inner))) {
         goto error;
     }
     if (mtu.mtu < mtu_inner.mtu) {
@@ -187,8 +189,8 @@ int avs_coap_ctx_send(avs_coap_ctx_t *ctx,
     }
 
     LOG(DEBUG, "send: %s", AVS_COAP_MSG_SUMMARY(msg));
-    int result = avs_net_socket_send(socket, msg->content, msg->length);
-    if (!result) {
+    avs_error_t err = avs_net_socket_send(socket, msg->content, msg->length);
+    if (avs_is_ok(err)) {
         int cache_result = try_cache_response(ctx, socket, msg);
 #ifdef WITH_AVS_COAP_NET_STATS
         bool request_retransmission = false;
@@ -210,7 +212,7 @@ int avs_coap_ctx_send(avs_coap_ctx_t *ctx,
 #endif // WITH_AVS_COAP_NET_STATS
         (void) cache_result;
     }
-    return map_io_error(socket, result, "send");
+    return map_io_error("send", err);
 }
 
 #ifndef WITH_AVS_COAP_MESSAGE_CACHE
@@ -226,8 +228,9 @@ static int try_send_cached_response(avs_coap_ctx_t *ctx,
 
     char addr[AVS_ADDRSTRLEN];
     char port[sizeof("65535")];
-    if (avs_net_socket_get_remote_host(socket, addr, sizeof(addr))
-            || avs_net_socket_get_remote_port(socket, port, sizeof(port))) {
+    if (avs_is_err(avs_net_socket_get_remote_host(socket, addr, sizeof(addr)))
+            || avs_is_err(avs_net_socket_get_remote_port(socket, port,
+                                                         sizeof(port)))) {
         LOG(DEBUG, "could not get remote remote host/port");
         return -1;
     }
@@ -260,12 +263,13 @@ int avs_coap_ctx_recv(avs_coap_ctx_t *ctx,
     assert(msg_capacity < UINT32_MAX);
 
     size_t msg_length = 0;
-    int result = avs_net_socket_receive(socket, &msg_length, out_msg->content,
-                                        msg_capacity - sizeof(out_msg->length));
+    avs_error_t err =
+            avs_net_socket_receive(socket, &msg_length, out_msg->content,
+                                   msg_capacity - sizeof(out_msg->length));
     out_msg->length = (uint32_t) msg_length;
 
-    if (result) {
-        return map_io_error(socket, result, "receive");
+    if (avs_is_err(err)) {
+        return map_io_error("receive", err);
     }
 #ifdef WITH_AVS_COAP_NET_STATS
     ctx->rx_bytes += msg_length + packet_overhead(socket);
