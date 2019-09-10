@@ -135,90 +135,82 @@ typedef enum {
     PREFERRED_FAMILY_BLOCKED
 } preferred_family_mode_t;
 
-static int connect_net(avs_net_abstract_socket_t *net_socket,
-                       const char *host,
-                       const char *port);
-static int send_net(avs_net_abstract_socket_t *net_socket,
-                    const void *buffer,
-                    size_t buffer_length);
-static int send_to_net(avs_net_abstract_socket_t *socket,
-                       const void *buffer,
-                       size_t buffer_length,
-                       const char *host,
-                       const char *port);
-static int receive_net(avs_net_abstract_socket_t *net_socket_,
-                       size_t *out,
-                       void *buffer,
-                       size_t buffer_length);
-static int receive_from_net(avs_net_abstract_socket_t *net_socket,
-                            size_t *out,
-                            void *message_buffer,
-                            size_t buffer_size,
-                            char *host,
-                            size_t host_size,
-                            char *port,
-                            size_t port_size);
-static int bind_net(avs_net_abstract_socket_t *net_socket,
-                    const char *localaddr,
-                    const char *port);
-static int accept_net(avs_net_abstract_socket_t *server_net_socket,
-                      avs_net_abstract_socket_t *new_net_socket);
-static int close_net(avs_net_abstract_socket_t *net_socket);
-static int shutdown_net(avs_net_abstract_socket_t *net_socket);
-static int cleanup_net(avs_net_abstract_socket_t **net_socket);
-static int system_socket_net(avs_net_abstract_socket_t *net_socket,
-                             const void **out);
-static int interface_name_net(avs_net_abstract_socket_t *socket,
-                              avs_net_socket_interface_name_t *if_name);
-static int remote_host_net(avs_net_abstract_socket_t *socket,
-                           char *out_buffer,
-                           size_t out_buffer_size);
-static int remote_hostname_net(avs_net_abstract_socket_t *socket,
-                               char *out_buffer,
-                               size_t out_buffer_size);
-static int remote_port_net(avs_net_abstract_socket_t *socket,
-                           char *out_buffer,
-                           size_t out_buffer_size);
-static int local_host_net(avs_net_abstract_socket_t *socket,
-                          char *out_buffer,
-                          size_t out_buffer_size);
-static int local_port_net(avs_net_abstract_socket_t *socket,
-                          char *out_buffer,
-                          size_t out_buffer_size);
-static int get_opt_net(avs_net_abstract_socket_t *net_socket,
-                       avs_net_socket_opt_key_t option_key,
-                       avs_net_socket_opt_value_t *out_option_value);
-static int set_opt_net(avs_net_abstract_socket_t *net_socket,
-                       avs_net_socket_opt_key_t option_key,
-                       avs_net_socket_opt_value_t option_value);
-static avs_errno_t errno_net(avs_net_abstract_socket_t *net_socket);
-
-static int unimplemented() {
-    return -1;
-}
+static avs_error_t connect_net(avs_net_abstract_socket_t *net_socket,
+                               const char *host,
+                               const char *port);
+static avs_error_t send_net(avs_net_abstract_socket_t *net_socket,
+                            const void *buffer,
+                            size_t buffer_length);
+static avs_error_t send_to_net(avs_net_abstract_socket_t *socket,
+                               const void *buffer,
+                               size_t buffer_length,
+                               const char *host,
+                               const char *port);
+static avs_error_t receive_net(avs_net_abstract_socket_t *net_socket_,
+                               size_t *out,
+                               void *buffer,
+                               size_t buffer_length);
+static avs_error_t receive_from_net(avs_net_abstract_socket_t *net_socket,
+                                    size_t *out,
+                                    void *message_buffer,
+                                    size_t buffer_size,
+                                    char *host,
+                                    size_t host_size,
+                                    char *port,
+                                    size_t port_size);
+static avs_error_t bind_net(avs_net_abstract_socket_t *net_socket,
+                            const char *localaddr,
+                            const char *port);
+static avs_error_t accept_net(avs_net_abstract_socket_t *server_net_socket,
+                              avs_net_abstract_socket_t *new_net_socket);
+static avs_error_t close_net(avs_net_abstract_socket_t *net_socket);
+static avs_error_t shutdown_net(avs_net_abstract_socket_t *net_socket);
+static avs_error_t cleanup_net(avs_net_abstract_socket_t **net_socket);
+static const void *system_socket_net(avs_net_abstract_socket_t *net_socket);
+static avs_error_t interface_name_net(avs_net_abstract_socket_t *socket,
+                                      avs_net_socket_interface_name_t *if_name);
+static avs_error_t remote_host_net(avs_net_abstract_socket_t *socket,
+                                   char *out_buffer,
+                                   size_t out_buffer_size);
+static avs_error_t remote_hostname_net(avs_net_abstract_socket_t *socket,
+                                       char *out_buffer,
+                                       size_t out_buffer_size);
+static avs_error_t remote_port_net(avs_net_abstract_socket_t *socket,
+                                   char *out_buffer,
+                                   size_t out_buffer_size);
+static avs_error_t local_host_net(avs_net_abstract_socket_t *socket,
+                                  char *out_buffer,
+                                  size_t out_buffer_size);
+static avs_error_t local_port_net(avs_net_abstract_socket_t *socket,
+                                  char *out_buffer,
+                                  size_t out_buffer_size);
+static avs_error_t get_opt_net(avs_net_abstract_socket_t *net_socket,
+                               avs_net_socket_opt_key_t option_key,
+                               avs_net_socket_opt_value_t *out_option_value);
+static avs_error_t set_opt_net(avs_net_abstract_socket_t *net_socket,
+                               avs_net_socket_opt_key_t option_key,
+                               avs_net_socket_opt_value_t option_value);
 
 static const avs_net_socket_v_table_t net_vtable = {
-    connect_net,
-    (avs_net_socket_decorate_t) unimplemented,
-    send_net,
-    send_to_net,
-    receive_net,
-    receive_from_net,
-    bind_net,
-    accept_net,
-    close_net,
-    shutdown_net,
-    cleanup_net,
-    system_socket_net,
-    interface_name_net,
-    remote_host_net,
-    remote_hostname_net,
-    remote_port_net,
-    local_host_net,
-    local_port_net,
-    get_opt_net,
-    set_opt_net,
-    errno_net
+    .connect = connect_net,
+    .send = send_net,
+    .send_to = send_to_net,
+    .receive = receive_net,
+    .receive_from = receive_from_net,
+    .bind = bind_net,
+    .accept = accept_net,
+    .close = close_net,
+    .shutdown = shutdown_net,
+    .cleanup = cleanup_net,
+    .get_system_socket = system_socket_net,
+    .get_interface_name = interface_name_net,
+    .get_remote_host = remote_host_net,
+    .get_remote_hostname = remote_hostname_net,
+    .get_remote_port = remote_port_net,
+    .get_local_host = local_host_net,
+    .get_local_port = local_port_net,
+    .get_opt = get_opt_net,
+    .set_opt = set_opt_net
 };
 
 typedef struct {
@@ -234,7 +226,6 @@ typedef struct {
     uint64_t bytes_sent;
 
     avs_time_duration_t recv_timeout;
-    volatile avs_errno_t error_code;
 } avs_net_socket_t;
 
 int _avs_net_get_af(avs_net_af_t addr_family) {
@@ -303,7 +294,15 @@ static const char *get_af_name(avs_net_af_t af) {
     }
 }
 
-static int
+static avs_error_t map_errno_for_sure(void) {
+    avs_errno_t err = avs_map_errno(errno);
+    if (err == AVS_NO_ERROR) {
+        err = AVS_UNKNOWN_ERROR;
+    }
+    return avs_errno(err);
+}
+
+static avs_error_t
 get_string_ip(const sockaddr_union_t *addr, char *buffer, size_t buffer_size) {
     const void *addr_data;
     socklen_t addrlen;
@@ -324,16 +323,16 @@ get_string_ip(const sockaddr_union_t *addr, char *buffer, size_t buffer_size) {
 #endif /* WITH_IPV6 */
 
     default:
-        return -1;
+        return avs_errno(AVS_ERANGE);
     }
 
     if (buffer_size < (size_t) addrlen) {
-        return -1;
+        return avs_errno(AVS_ERANGE);
+    } else if (_avs_inet_ntop(addr->addr.sa_family, addr_data, buffer, addrlen)
+               == NULL) {
+        return map_errno_for_sure();
     } else {
-        return _avs_inet_ntop(addr->addr.sa_family, addr_data, buffer, addrlen)
-                               == NULL
-                       ? -1
-                       : 0;
+        return AVS_OK;
     }
 }
 
@@ -362,9 +361,9 @@ static int get_string_port(const sockaddr_union_t *addr,
                                                                            : 0;
 }
 
-static int remote_host_net(avs_net_abstract_socket_t *socket,
-                           char *out_buffer,
-                           size_t out_buffer_size) {
+static avs_error_t remote_host_net(avs_net_abstract_socket_t *socket,
+                                   char *out_buffer,
+                                   size_t out_buffer_size) {
     avs_net_socket_t *net_socket = (avs_net_socket_t *) socket;
     sockaddr_union_t addr;
     socklen_t addrlen = sizeof(addr);
@@ -372,65 +371,52 @@ static int remote_host_net(avs_net_abstract_socket_t *socket,
     errno = 0;
     if (!getpeername(net_socket->socket, &addr.addr, &addrlen)) {
         (void) unmap_v4mapped(&addr);
-        int result = get_string_ip(&addr, out_buffer, out_buffer_size);
-        net_socket->error_code = (result ? AVS_ERANGE : AVS_NO_ERROR);
-        return result;
+        return get_string_ip(&addr, out_buffer, out_buffer_size);
     } else {
-        net_socket->error_code = avs_map_errno(errno);
-        return -1;
+        return map_errno_for_sure();
     }
 }
 
-static int remote_hostname_net(avs_net_abstract_socket_t *socket_,
-                               char *out_buffer,
-                               size_t out_buffer_size) {
+static avs_error_t remote_hostname_net(avs_net_abstract_socket_t *socket_,
+                                       char *out_buffer,
+                                       size_t out_buffer_size) {
     avs_net_socket_t *socket = (avs_net_socket_t *) socket_;
     if (!socket->remote_hostname[0]) {
-        socket->error_code =
-                (socket->socket == INVALID_SOCKET ? AVS_EBADF : AVS_ENOBUFS);
-        return -1;
+        return avs_errno(socket->socket == INVALID_SOCKET ? AVS_EBADF
+                                                          : AVS_ENOBUFS);
     }
     if (avs_simple_snprintf(out_buffer, out_buffer_size, "%s",
                             socket->remote_hostname)
             < 0) {
-        socket->error_code = AVS_ERANGE;
-        return -1;
+        return avs_errno(AVS_ERANGE);
     } else {
-        socket->error_code = AVS_NO_ERROR;
-        return 0;
+        return AVS_OK;
     }
 }
 
-static int remote_port_net(avs_net_abstract_socket_t *socket_,
-                           char *out_buffer,
-                           size_t out_buffer_size) {
+static avs_error_t remote_port_net(avs_net_abstract_socket_t *socket_,
+                                   char *out_buffer,
+                                   size_t out_buffer_size) {
     avs_net_socket_t *socket = (avs_net_socket_t *) socket_;
     if (!socket->remote_port[0]) {
-        socket->error_code =
-                (socket->socket == INVALID_SOCKET ? AVS_EBADF : AVS_ENOBUFS);
-        return -1;
+        return avs_errno(socket->socket == INVALID_SOCKET ? AVS_EBADF
+                                                          : AVS_ENOBUFS);
     }
     if (avs_simple_snprintf(out_buffer, out_buffer_size, "%s",
                             socket->remote_port)
             < 0) {
-        socket->error_code = AVS_ERANGE;
-        return -1;
+        return avs_errno(AVS_ERANGE);
     } else {
-        socket->error_code = AVS_NO_ERROR;
-        return 0;
+        return AVS_OK;
     }
 }
 
-static int system_socket_net(avs_net_abstract_socket_t *net_socket_,
-                             const void **out) {
+static const void *system_socket_net(avs_net_abstract_socket_t *net_socket_) {
     avs_net_socket_t *net_socket = (avs_net_socket_t *) net_socket_;
     if (net_socket->socket != INVALID_SOCKET) {
-        *out = &net_socket->socket;
-        net_socket->error_code = AVS_NO_ERROR;
-        return 0;
+        return &net_socket->socket;
     } else {
-        net_socket->error_code = AVS_EBADF;
-        return -1;
+        return NULL;
     }
 }
 
@@ -442,28 +428,26 @@ static void close_net_raw(avs_net_socket_t *net_socket) {
     }
 }
 
-static int close_net(avs_net_abstract_socket_t *net_socket_) {
+static avs_error_t close_net(avs_net_abstract_socket_t *net_socket_) {
     avs_net_socket_t *net_socket = (avs_net_socket_t *) net_socket_;
     close_net_raw(net_socket);
-    net_socket->error_code = AVS_NO_ERROR;
-    return 0;
+    return AVS_OK;
 }
 
-static int cleanup_net(avs_net_abstract_socket_t **net_socket) {
+static avs_error_t cleanup_net(avs_net_abstract_socket_t **net_socket) {
     close_net(*net_socket);
     avs_free(*net_socket);
     *net_socket = NULL;
-    return 0;
+    return AVS_OK;
 }
 
-static int shutdown_net(avs_net_abstract_socket_t *net_socket_) {
+static avs_error_t shutdown_net(avs_net_abstract_socket_t *net_socket_) {
     avs_net_socket_t *net_socket = (avs_net_socket_t *) net_socket_;
     int retval;
     errno = 0;
     retval = shutdown(net_socket->socket, SHUT_RDWR);
-    net_socket->error_code = avs_map_errno(errno);
     net_socket->state = AVS_NET_SOCKET_STATE_SHUTDOWN;
-    return retval;
+    return retval ? map_errno_for_sure() : AVS_OK;
 }
 
 static sa_family_t get_socket_family(sockfd_t fd) {
@@ -507,27 +491,27 @@ static sa_family_t get_connection_family(sockfd_t fd) {
 #    define IPV6_TRANSPARENT 75
 #endif
 
-static int configure_socket(avs_net_socket_t *net_socket) {
+static avs_error_t configure_socket(avs_net_socket_t *net_socket) {
     errno = 0;
     LOG(TRACE, "configuration '%s' 0x%02x 0x%02x",
         net_socket->configuration.interface_name,
         net_socket->configuration.dscp, net_socket->configuration.priority);
     if (fcntl(net_socket->socket, F_SETFL, O_NONBLOCK) == -1) {
-        net_socket->error_code = avs_map_errno(errno);
+        avs_error_t err = map_errno_for_sure();
         LOG(ERROR,
             "Could not switch socket to non-blocking mode (fcntl error: %s)",
-            avs_strerror(net_socket->error_code));
-        return -1;
+            avs_strerror((avs_errno_t) err.code));
+        return err;
     }
     if (net_socket->configuration.interface_name[0]) {
         if (setsockopt(net_socket->socket, SOL_SOCKET, SO_BINDTODEVICE,
                        net_socket->configuration.interface_name,
                        (socklen_t) strlen(
                                net_socket->configuration.interface_name))) {
-            net_socket->error_code = avs_map_errno(errno);
+            avs_error_t err = map_errno_for_sure();
             LOG(ERROR, "setsockopt error: %s",
-                avs_strerror(net_socket->error_code));
-            return -1;
+                avs_strerror((avs_errno_t) err.code));
+            return err;
         }
     }
     if (net_socket->configuration.priority) {
@@ -536,10 +520,10 @@ static int configure_socket(avs_net_socket_t *net_socket) {
         socklen_t length = sizeof(priority);
         if (setsockopt(net_socket->socket, SOL_SOCKET, SO_PRIORITY, &priority,
                        length)) {
-            net_socket->error_code = avs_map_errno(errno);
+            avs_error_t err = map_errno_for_sure();
             LOG(ERROR, "setsockopt error: %s",
-                avs_strerror(net_socket->error_code));
-            return -1;
+                avs_strerror((avs_errno_t) err.code));
+            return err;
         }
     }
     if (net_socket->configuration.dscp) {
@@ -547,18 +531,18 @@ static int configure_socket(avs_net_socket_t *net_socket) {
         uint8_t tos;
         socklen_t length = sizeof(tos);
         if (getsockopt(net_socket->socket, IPPROTO_IP, IP_TOS, &tos, &length)) {
-            net_socket->error_code = avs_map_errno(errno);
+            avs_error_t err = map_errno_for_sure();
             LOG(ERROR, "getsockopt error: %s",
-                avs_strerror(net_socket->error_code));
-            return -1;
+                avs_strerror((avs_errno_t) err.code));
+            return err;
         }
         tos &= 0x03; /* clear first 6 bits */
         tos |= (uint8_t) (net_socket->configuration.dscp << 2);
         if (setsockopt(net_socket->socket, IPPROTO_IP, IP_TOS, &tos, length)) {
-            net_socket->error_code = avs_map_errno(errno);
+            avs_error_t err = map_errno_for_sure();
             LOG(ERROR, "setsockopt error: %s",
-                avs_strerror(net_socket->error_code));
-            return -1;
+                avs_strerror((avs_errno_t) err.code));
+            return err;
         }
 #else  // IP_TOS
         net_socket->error_code = AVS_EINVAL;
@@ -591,20 +575,18 @@ static int configure_socket(avs_net_socket_t *net_socket) {
         }
 
         if (retval) {
-            net_socket->error_code = avs_map_errno(errno);
-            return -1;
+            return map_errno_for_sure();
         }
     }
 
-    net_socket->error_code = AVS_NO_ERROR;
-    return 0;
+    return AVS_OK;
 }
 
-static int wait_until_ready_internal(sockfd_t sockfd,
-                                     avs_time_duration_t timeout,
-                                     char in,
-                                     char out,
-                                     char err) {
+static avs_error_t wait_until_ready_internal(sockfd_t sockfd,
+                                             avs_time_duration_t timeout,
+                                             bool in,
+                                             bool out,
+                                             bool err) {
 #ifdef HAVE_POLL
     struct pollfd p;
     short events = (short) ((in ? POLLIN : 0) | (out ? POLLOUT : 0));
@@ -618,13 +600,24 @@ static int wait_until_ready_internal(sockfd_t sockfd,
     } else if (timeout_ms < 0) {
         timeout_ms = 0;
     }
-    if (poll(&p, 1, (int) timeout_ms) != 1) {
-        return -1;
+    errno = 0;
+    int result = poll(&p, 1, (int) timeout_ms);
+    if (result == 0) {
+        return avs_errno(AVS_ETIMEDOUT);
+    }
+    if (result != 1) {
+        return map_errno_for_sure();
     }
     if (err) {
         events = (short) (events | POLLHUP | POLLERR);
     }
-    return (p.revents & events) ? 0 : -1;
+    if (p.revents & events) {
+        return avs_errno(AVS_NO_ERROR);
+    } else if (p.revents & POLLHUP) {
+        return avs_errno(AVS_ECONNRESET);
+    } else {
+        return avs_errno(AVS_ECONNABORTED);
+    }
 #else
     fd_set infds;
     fd_set outfds;
@@ -670,16 +663,21 @@ static int wait_until_ready_internal(sockfd_t sockfd,
         AVS_FD_SET(sockfd, &outfds);
     }
     AVS_FD_SET(sockfd, &errfds);
-    if (select(sockfd + 1, &infds, &outfds, &errfds,
-               avs_time_duration_valid(timeout) ? &timeval_timeout : NULL)
-            <= 0) {
-        return -1;
+    errno = 0;
+    int result =
+            select(sockfd + 1, &infds, &outfds, &errfds,
+                   avs_time_duration_valid(timeout) ? &timeval_timeout : NULL);
+    if (result == 0) {
+        return avs_errno(AVS_ETIMEDOUT);
     }
-    return ((err && AVS_FD_ISSET(sockfd, &errfds))
-            || (in && AVS_FD_ISSET(sockfd, &infds))
-            || (out && AVS_FD_ISSET(sockfd, &outfds)))
-                   ? 0
-                   : -1;
+    if (result < 0) {
+        return map_errno_for_sure();
+    }
+    return avs_errno(((err && AVS_FD_ISSET(sockfd, &errfds))
+                      || (in && AVS_FD_ISSET(sockfd, &infds))
+                      || (out && AVS_FD_ISSET(sockfd, &outfds)))
+                             ? AVS_NO_ERROR
+                             : AVS_ECONNABORTED);
 #    undef AVS_FD_SET
 #    undef AVS_FD_ISSET
 
@@ -690,78 +688,71 @@ static int wait_until_ready_internal(sockfd_t sockfd,
 #endif
 }
 
-static int try_wait_until_ready(sockfd_t sockfd,
-                                avs_time_monotonic_t deadline,
-                                char in,
-                                char out,
-                                char err) {
+static avs_error_t try_wait_until_ready(sockfd_t sockfd,
+                                        avs_time_monotonic_t deadline,
+                                        bool in,
+                                        bool out,
+                                        bool err) {
     avs_time_duration_t timeout =
             avs_time_monotonic_diff(deadline, avs_time_monotonic_now());
 
-    errno = 0;
-    if (!wait_until_ready_internal(sockfd, timeout, in, out, err)) {
-        return 0;
+    avs_error_t error =
+            wait_until_ready_internal(sockfd, timeout, in, out, err);
+    if (avs_is_err(error)
+            && avs_time_duration_less(timeout, AVS_TIME_DURATION_ZERO)) {
+        return avs_errno(AVS_ETIMEDOUT);
     }
-
-    if (!errno || avs_time_duration_less(timeout, AVS_TIME_DURATION_ZERO)) {
-        errno = ETIMEDOUT;
-    }
-    return -1;
+    return error;
 }
 
-static int wait_until_ready(const volatile sockfd_t *sockfd_ptr,
-                            avs_time_monotonic_t deadline,
-                            char in,
-                            char out,
-                            char err) {
-    int result = -1;
+static avs_error_t wait_until_ready(const volatile sockfd_t *sockfd_ptr,
+                                    avs_time_monotonic_t deadline,
+                                    bool in,
+                                    bool out,
+                                    bool err) {
+    avs_error_t error;
     do {
         sockfd_t sockfd = *sockfd_ptr;
         if (sockfd == INVALID_SOCKET) {
             // socket might have been closed in signal handler
             // or something like this
-            errno = EBADF;
-            return -1;
+            return avs_errno(AVS_EBADF);
         }
 
-        result = try_wait_until_ready(sockfd, deadline, in, out, err);
-    } while (result && (errno == EINTR || errno == EAGAIN));
+        error = try_wait_until_ready(sockfd, deadline, in, out, err);
+    } while (error.category == AVS_ERRNO_CATEGORY
+             && (error.code == AVS_EINTR || error.code == AVS_EAGAIN));
 
-    return result;
+    return error;
 }
 
-typedef int call_when_ready_cb_t(sockfd_t sockfd, void *arg);
+typedef avs_error_t call_when_ready_cb_t(sockfd_t sockfd, void *arg);
 
-static int call_when_ready(const volatile sockfd_t *sockfd_ptr,
-                           avs_time_duration_t timeout,
-                           char in,
-                           char out,
-                           char err,
-                           call_when_ready_cb_t *callback,
-                           void *callback_arg) {
-    int result = -1;
+static avs_error_t call_when_ready(const volatile sockfd_t *sockfd_ptr,
+                                   avs_time_duration_t timeout,
+                                   char in,
+                                   char out,
+                                   char err,
+                                   call_when_ready_cb_t *callback,
+                                   void *callback_arg) {
+    avs_error_t error;
     avs_time_monotonic_t deadline =
             avs_time_monotonic_add(avs_time_monotonic_now(), timeout);
-    while (!wait_until_ready(sockfd_ptr, deadline, in, out, err)) {
+    while (avs_is_ok(
+            (error = wait_until_ready(sockfd_ptr, deadline, in, out, err)))) {
         do {
             sockfd_t sockfd = *sockfd_ptr;
             if (sockfd == INVALID_SOCKET) {
                 // socket might have been closed in signal handler
                 // or something like this
-                errno = EBADF;
+                error = avs_errno(AVS_EBADF);
             } else {
-                errno = 0;
-                result = callback(sockfd, callback_arg);
+                error = callback(sockfd, callback_arg);
             }
-        } while (result < 0 && errno == EINTR
+        } while (error.category == AVS_ERRNO_CATEGORY && error.code == AVS_EINTR
                  && !avs_time_monotonic_before(deadline,
                                                avs_time_monotonic_now()));
-        // Additional check if EWOULDBLOCK is equal to EAGAIN prevents some
-        // compilers from rising warning about identical left and right
-        // operands.
-        if (result >= 0
-                || (errno != EWOULDBLOCK
-                    && (EWOULDBLOCK == EAGAIN || errno != EAGAIN))) {
+        if (error.category != AVS_ERRNO_CATEGORY || error.code != AVS_EAGAIN) {
             // EWOULDBLOCK or EAGAIN might signify a false positive result from
             // wait_until_ready(); this might happen e.g. if poll() returned an
             // event when the kernel saw incoming data, but the data turned out
@@ -771,30 +762,31 @@ static int call_when_ready(const volatile sockfd_t *sockfd_ptr,
             break;
         }
     }
-    return result;
+    return error;
 }
 
-static int connect_with_timeout(const volatile sockfd_t *sockfd_ptr,
-                                const sockaddr_endpoint_union_t *endpoint) {
+static avs_error_t
+connect_with_timeout(const volatile sockfd_t *sockfd_ptr,
+                     const sockaddr_endpoint_union_t *endpoint) {
     if (connect(*sockfd_ptr, &endpoint->sockaddr_ep.addr,
                 endpoint->sockaddr_ep.header.size)
                     == -1
             && errno != EINPROGRESS) { // see man connect for details
-        return -1;
+        return map_errno_for_sure();
     }
     avs_time_monotonic_t deadline =
             avs_time_monotonic_add(avs_time_monotonic_now(),
                                    NET_CONNECT_TIMEOUT);
-    if (wait_until_ready(sockfd_ptr, deadline, 1, 1, 0)) {
+    avs_error_t err = wait_until_ready(sockfd_ptr, deadline, true, true, false);
+    if (avs_is_err(err)) {
         int error_code = 0;
         socklen_t length = sizeof(error_code);
-        if (!getsockopt(*sockfd_ptr, SOL_SOCKET, SO_ERROR, &error_code,
-                        &length)) {
-            errno = error_code;
+        if (!getsockopt(*sockfd_ptr, SOL_SOCKET, SO_ERROR, &error_code, &length)
+                && error_code) {
+            err = avs_errno(avs_map_errno(error_code));
         }
-        return -1;
     }
-    return 0;
+    return err;
 }
 
 static void unwrap_4in6(char *host) {
@@ -809,22 +801,22 @@ static void unwrap_4in6(char *host) {
 }
 
 #ifndef HAVE_GETNAMEINFO
-static int get_host_port_ptr(const struct sockaddr *sa,
-                             socklen_t salen,
-                             const void **out_addr_ptr,
-                             const uint16_t **out_port_ptr) {
+static avs_error_t get_host_port_ptr(const struct sockaddr *sa,
+                                     socklen_t salen,
+                                     const void **out_addr_ptr,
+                                     const uint16_t **out_port_ptr) {
     switch (sa->sa_family) {
 #    ifdef WITH_IPV4
     case AF_INET:
         if (salen >= sizeof(struct sockaddr_in)) {
             *out_addr_ptr = &((const struct sockaddr_in *) sa)->sin_addr;
             *out_port_ptr = &((const struct sockaddr_in *) sa)->sin_port;
-            return 0;
+            return AVS_OK;
         } else {
             LOG(ERROR,
                 "malformed IPv4 address (too short: got %uB, expected >= %uB)",
                 (unsigned) salen, (unsigned) sizeof(struct sockaddr_in));
-            return -1;
+            return avs_errno(AVS_EINVAL);
         }
 #    endif /* WITH_IPV4 */
 
@@ -833,80 +825,76 @@ static int get_host_port_ptr(const struct sockaddr *sa,
         if (salen >= sizeof(struct sockaddr_in6)) {
             *out_addr_ptr = &((const struct sockaddr_in6 *) sa)->sin6_addr;
             *out_port_ptr = &((const struct sockaddr_in6 *) sa)->sin6_port;
-            return 0;
+            return AVS_OK;
         } else {
             LOG(ERROR,
                 "malformed IPv6 address (too short: got %uB, expected >= %uB)",
                 (unsigned) salen, (unsigned) sizeof(struct sockaddr_in6));
-            return -1;
+            return avs_errno(AVS_EINVAL);
         }
 #    endif /* WITH_IPV6 */
 
     default:
         LOG(ERROR, "unsupported socket family: %d", (int) sa->sa_family);
-        return -1;
+        return avs_errno(AVS_ENOTSUP);
     }
 }
 #endif /* HAVE_GETNAMEINFO */
 
-static int host_port_to_string_impl(const struct sockaddr *sa,
-                                    socklen_t salen,
-                                    char *host,
-                                    socklen_t hostlen,
-                                    char *serv,
-                                    socklen_t servlen) {
+static avs_error_t host_port_to_string_impl(const struct sockaddr *sa,
+                                            socklen_t salen,
+                                            char *host,
+                                            socklen_t hostlen,
+                                            char *serv,
+                                            socklen_t servlen) {
 #ifdef HAVE_GETNAMEINFO
     int result = getnameinfo(sa, salen, host, hostlen, serv, servlen,
                              NI_NUMERICHOST | NI_NUMERICSERV);
     if (result) {
         LOG(ERROR, "getnameinfo() failed: %s (%d)",
             avs_strerror(avs_map_errno(errno)), avs_map_errno(errno));
-        return result;
+        return map_errno_for_sure();
     } else {
-        return 0;
+        return AVS_OK;
     }
 #else  /* HAVE_GETNAMEINFO */
     const void *addr_ptr = NULL;
     const uint16_t *port_ptr = NULL;
-    int result = get_host_port_ptr(sa, salen, &addr_ptr, &port_ptr);
-    if (result) {
-        return result;
+    avs_error_t err = get_host_port_ptr(sa, salen, &addr_ptr, &port_ptr);
+    if (avs_is_err(err)) {
+        return err;
     }
 
     if (host && _avs_inet_ntop(sa->sa_family, addr_ptr, host, hostlen)) {
+        err = map_errno_for_sure();
         LOG(ERROR, "could not stringify host (buf size %u)",
             (unsigned) hostlen);
-        return -1;
+        return err;
     }
     if (serv
             && avs_simple_snprintf(serv, servlen, "%" PRIu16, ntohs(*port_ptr))
                            < 0) {
         LOG(ERROR, "could not stringify port: %u (buf size %u)",
             ntohs(*port_ptr), (unsigned) servlen);
-        errno = ERANGE;
-        return -1;
+        return avs_errno(AVS_ERANGE);
     }
 
-    return result;
+    return err;
 #endif /* HAVE_GETNAMEINFO */
 }
 
-static int host_port_to_string(const struct sockaddr *sa,
-                               socklen_t salen,
-                               char *host,
-                               socklen_t hostlen,
-                               char *serv,
-                               socklen_t servlen) {
-    int result =
+static avs_error_t host_port_to_string(const struct sockaddr *sa,
+                                       socklen_t salen,
+                                       char *host,
+                                       socklen_t hostlen,
+                                       char *serv,
+                                       socklen_t servlen) {
+    avs_error_t err =
             host_port_to_string_impl(sa, salen, host, hostlen, serv, servlen);
-    if (result) {
-        return result;
-    } else {
-        if (host) {
-            unwrap_4in6(host);
-        }
-        return 0;
+    if (avs_is_ok(err) && host) {
+        unwrap_4in6(host);
     }
+    return err;
 }
 
 int _avs_net_get_socket_type(avs_net_socket_type_t socket_type) {
@@ -1046,15 +1034,17 @@ resolve_addrinfo_for_socket(avs_net_socket_t *net_socket,
                     : NULL);
 }
 
-static int try_connect_open_socket(avs_net_socket_t *net_socket,
-                                   const sockaddr_endpoint_union_t *address) {
-    char socket_is_stream = (net_socket->type == AVS_NET_TCP_SOCKET);
-    if (connect_with_timeout(&net_socket->socket, address) < 0
+static avs_error_t
+try_connect_open_socket(avs_net_socket_t *net_socket,
+                        const sockaddr_endpoint_union_t *address) {
+    bool socket_is_stream = (net_socket->type == AVS_NET_TCP_SOCKET);
+    avs_error_t err;
+    if (avs_is_err((err = connect_with_timeout(&net_socket->socket, address)))
             || (socket_is_stream
-                && send_net((avs_net_abstract_socket_t *) net_socket, NULL, 0)
-                           < 0)) {
-        net_socket->error_code = avs_map_errno(errno);
-        return -1;
+                && avs_is_err((err = send_net(
+                                       (avs_net_abstract_socket_t *) net_socket,
+                                       NULL, 0))))) {
+        return err;
     } else {
         /* SUCCESS */
         net_socket->state = AVS_NET_SOCKET_STATE_CONNECTED;
@@ -1062,66 +1052,61 @@ static int try_connect_open_socket(avs_net_socket_t *net_socket,
         if (net_socket->configuration.preferred_endpoint) {
             *net_socket->configuration.preferred_endpoint = address->api_ep;
         }
-        net_socket->error_code = AVS_NO_ERROR;
-        return 0;
+        return AVS_OK;
     }
 }
 
-static int try_connect(avs_net_socket_t *net_socket,
-                       const sockaddr_endpoint_union_t *address) {
+static avs_error_t try_connect(avs_net_socket_t *net_socket,
+                               const sockaddr_endpoint_union_t *address) {
     char socket_was_already_open = (net_socket->socket != INVALID_SOCKET);
-    int retval = 0;
+    avs_error_t err = AVS_OK;
     if (!socket_was_already_open) {
         if ((net_socket->socket =
                      socket(address->sockaddr_ep.addr.sa_family,
                             _avs_net_get_socket_type(net_socket->type),
                             get_socket_proto(net_socket->type)))
                 == INVALID_SOCKET) {
-            net_socket->error_code = avs_map_errno(errno);
+            err = map_errno_for_sure();
             LOG(ERROR, "cannot create socket: %s",
-                avs_strerror(net_socket->error_code));
-            retval = -1;
-        } else if (configure_socket(net_socket)) {
+                avs_strerror((avs_errno_t) err.code));
+        } else if (avs_is_err((err = configure_socket(net_socket)))) {
             LOG(WARNING, "socket configuration problem");
-            retval = -1;
         }
     }
-    if (!retval) {
-        retval = try_connect_open_socket(net_socket, address);
+    if (avs_is_ok(err)) {
+        err = try_connect_open_socket(net_socket, address);
     }
-    if (retval && !socket_was_already_open
+    if (avs_is_err(err) && !socket_was_already_open
             && net_socket->socket != INVALID_SOCKET) {
         close(net_socket->socket);
         net_socket->socket = INVALID_SOCKET;
     }
-    return retval;
+    return err;
 }
 
-static int connect_net(avs_net_abstract_socket_t *net_socket_,
-                       const char *host,
-                       const char *port) {
+static avs_error_t connect_net(avs_net_abstract_socket_t *net_socket_,
+                               const char *host,
+                               const char *port) {
     avs_net_socket_t *net_socket = (avs_net_socket_t *) net_socket_;
     avs_net_addrinfo_t *info = NULL;
-    int result = 0;
 
     if (net_socket->socket != INVALID_SOCKET) {
         if (net_socket->type != AVS_NET_UDP_SOCKET
                 || net_socket->state != AVS_NET_SOCKET_STATE_BOUND) {
             LOG(ERROR, "socket is already connected or bound");
-            net_socket->error_code = AVS_EISCONN;
-            return -1;
+            return avs_errno(AVS_EISCONN);
         }
     }
 
     LOG(TRACE, "connecting to [%s]:%s", host, port);
 
     errno = 0;
-    net_socket->error_code = AVS_EADDRNOTAVAIL;
+    avs_error_t err = avs_errno(AVS_EADDRNOTAVAIL);
     if ((info = resolve_addrinfo_for_socket(net_socket, host, port, true,
                                             PREFERRED_FAMILY_ONLY))) {
         sockaddr_endpoint_union_t address;
-        while (!(result = avs_net_addrinfo_next(info, &address.api_ep))) {
-            if (!try_connect(net_socket, &address)) {
+        while (!avs_net_addrinfo_next(info, &address.api_ep)) {
+            if (avs_is_ok((err = try_connect(net_socket, &address)))) {
                 goto success;
             }
         }
@@ -1130,16 +1115,16 @@ static int connect_net(avs_net_abstract_socket_t *net_socket_,
     if ((info = resolve_addrinfo_for_socket(net_socket, host, port, true,
                                             PREFERRED_FAMILY_BLOCKED))) {
         sockaddr_endpoint_union_t address;
-        while (!(result = avs_net_addrinfo_next(info, &address.api_ep))) {
-            if (!try_connect(net_socket, &address)) {
+        while (!avs_net_addrinfo_next(info, &address.api_ep)) {
+            if (avs_is_ok((err = try_connect(net_socket, &address)))) {
                 goto success;
             }
         }
     }
     avs_net_addrinfo_delete(&info);
-    LOG(ERROR, "cannot establish connection to [%s]:%s: %s", host, port,
-        avs_strerror(net_socket->error_code));
-    return result < 0 ? result : -1;
+    LOG(ERROR, "cannot establish connection to [%s]:%s", host, port);
+    assert(avs_is_err(err));
+    return err;
 success:
     avs_net_addrinfo_delete(&info);
 
@@ -1155,7 +1140,7 @@ success:
         LOG(WARNING, "Port %s is too long, not storing", port);
         net_socket->remote_port[0] = '\0';
     }
-    return 0;
+    return AVS_OK;
 }
 
 typedef struct {
@@ -1164,19 +1149,19 @@ typedef struct {
     size_t data_length;
 } send_internal_arg_t;
 
-static int send_internal(sockfd_t sockfd, void *arg_) {
+static avs_error_t send_internal(sockfd_t sockfd, void *arg_) {
     send_internal_arg_t *arg = (send_internal_arg_t *) arg_;
     ssize_t result = send(sockfd, arg->data, arg->data_length, MSG_NOSIGNAL);
     if (result < 0) {
-        return (int) result;
+        return map_errno_for_sure();
     }
     arg->bytes_sent = (size_t) result;
-    return 0;
+    return AVS_OK;
 }
 
-static int send_net(avs_net_abstract_socket_t *net_socket_,
-                    const void *buffer,
-                    size_t buffer_length) {
+static avs_error_t send_net(avs_net_abstract_socket_t *net_socket_,
+                            const void *buffer,
+                            size_t buffer_length) {
     avs_net_socket_t *net_socket = (avs_net_socket_t *) net_socket_;
     size_t bytes_sent = 0;
     send_internal_arg_t arg = {
@@ -1187,12 +1172,12 @@ static int send_net(avs_net_abstract_socket_t *net_socket_,
 
     /* send at least one datagram, even if zero-length - hence do..while */
     do {
-        if (call_when_ready(&net_socket->socket, NET_SEND_TIMEOUT, 0, 1, 1,
-                            send_internal, &arg)
-                < 0) {
-            net_socket->error_code = avs_map_errno(errno);
-            LOG(ERROR, "send failed: %s", avs_strerror(net_socket->error_code));
-            return -1;
+        avs_error_t err =
+                call_when_ready(&net_socket->socket, NET_SEND_TIMEOUT, false,
+                                true, true, send_internal, &arg);
+        if (avs_is_err(err)) {
+            LOG(ERROR, "send failed");
+            return err;
         } else if (buffer_length != 0 && arg.bytes_sent == 0) {
             LOG(ERROR, "send returned 0");
             break;
@@ -1209,12 +1194,9 @@ static int send_net(avs_net_abstract_socket_t *net_socket_,
     if (bytes_sent < buffer_length) {
         LOG(ERROR, "sending fail (%lu/%lu)", (unsigned long) bytes_sent,
             (unsigned long) buffer_length);
-        net_socket->error_code = AVS_EIO;
-        return -1;
+        return avs_errno(AVS_EIO);
     } else {
-        /* SUCCESS */
-        net_socket->error_code = AVS_NO_ERROR;
-        return 0;
+        return AVS_OK;
     }
 }
 
@@ -1225,13 +1207,13 @@ typedef struct {
     size_t bytes_sent;
 } send_to_internal_arg_t;
 
-static int send_to_internal(sockfd_t sockfd, void *arg_) {
+static avs_error_t send_to_internal(sockfd_t sockfd, void *arg_) {
     send_to_internal_arg_t *arg = (send_to_internal_arg_t *) arg_;
     ssize_t result = sendto(sockfd, arg->data, arg->data_length, MSG_NOSIGNAL,
                             &arg->dest_addr.sockaddr_ep.addr,
                             arg->dest_addr.sockaddr_ep.header.size);
     if (result < 0) {
-        return (int) result;
+        return map_errno_for_sure();
     }
 
     arg->bytes_sent = (size_t) result;
@@ -1239,21 +1221,20 @@ static int send_to_internal(sockfd_t sockfd, void *arg_) {
     if ((size_t) result != arg->data_length) {
         LOG(ERROR, "send_to fail (%lu/%lu)", (unsigned long) result,
             (unsigned long) arg->data_length);
-        errno = EIO;
-        return -1;
+        return avs_errno(AVS_EIO);
     } else {
-        return 0;
+        return AVS_OK;
     }
 }
 
-static int send_to_net(avs_net_abstract_socket_t *net_socket_,
-                       const void *buffer,
-                       size_t buffer_length,
-                       const char *host,
-                       const char *port) {
+static avs_error_t send_to_net(avs_net_abstract_socket_t *net_socket_,
+                               const void *buffer,
+                               size_t buffer_length,
+                               const char *host,
+                               const char *port) {
     avs_net_socket_t *net_socket = (avs_net_socket_t *) net_socket_;
     avs_net_addrinfo_t *info = NULL;
-    int result = -1;
+    avs_error_t err;
     send_to_internal_arg_t arg = {
         .data = buffer,
         .data_length = buffer_length
@@ -1264,18 +1245,16 @@ static int send_to_net(avs_net_abstract_socket_t *net_socket_,
         info = resolve_addrinfo_for_socket(net_socket, host, port, false,
                                            PREFERRED_FAMILY_BLOCKED);
     }
-    if (!info
-            || (result = avs_net_addrinfo_next(info, &arg.dest_addr.api_ep))) {
+    if (!info || avs_net_addrinfo_next(info, &arg.dest_addr.api_ep)) {
         LOG(ERROR, "cannot resolve address: [%s]:%s", host, port);
-        net_socket->error_code = AVS_EADDRNOTAVAIL;
+        err = avs_errno(AVS_EADDRNOTAVAIL);
     } else {
-        result = call_when_ready(&net_socket->socket, NET_SEND_TIMEOUT, 0, 1, 1,
-                                 send_to_internal, &arg);
-        net_socket->error_code = avs_map_errno(errno);
+        err = call_when_ready(&net_socket->socket, NET_SEND_TIMEOUT, 0, 1, 1,
+                              send_to_internal, &arg);
     }
     avs_net_addrinfo_delete(&info);
     net_socket->bytes_sent += arg.bytes_sent;
-    return result;
+    return err;
 }
 
 typedef struct {
@@ -1291,7 +1270,7 @@ typedef struct {
 
 /* (2017-01-03) LwIP does not implement recvmsg call, try to simulate it using
  * plain recv(), with a little hack to try to detect truncated packets. */
-static int recvfrom_internal(sockfd_t sockfd, void *arg_) {
+static avs_error_t recvfrom_internal(sockfd_t sockfd, void *arg_) {
     recvfrom_internal_arg_t *arg = (recvfrom_internal_arg_t *) arg_;
     arg->src_addr_length = (socklen_t) sizeof(arg->src_addr);
 
@@ -1307,21 +1286,20 @@ static int recvfrom_internal(sockfd_t sockfd, void *arg_) {
          * bytes, but we have no means of distinguishing the edge case
          * without recvmsg.
          * This does only apply to datagram sockets (in our case: UDP). */
-        errno = EMSGSIZE;
         arg->bytes_received = arg->buffer_length;
-        return -1;
+        return avs_errno(AVS_EMSGSIZE);
     } else if (recv_out < 0) {
         arg->bytes_received = 0;
-        return -1;
+        return map_errno_for_sure();
     } else {
         arg->bytes_received = (size_t) recv_out;
-        return 0;
+        return AVS_OK;
     }
 }
 
 #else /* HAVE_RECVMSG */
 
-static int recvfrom_internal(sockfd_t sockfd, void *arg_) {
+static avs_error_t recvfrom_internal(sockfd_t sockfd, void *arg_) {
     recvfrom_internal_arg_t *arg = (recvfrom_internal_arg_t *) arg_;
     ssize_t recv_out;
     struct iovec iov = {
@@ -1341,46 +1319,45 @@ static int recvfrom_internal(sockfd_t sockfd, void *arg_) {
     arg->src_addr_length = msg.msg_namelen;
     if (msg.msg_flags & MSG_TRUNC) {
         /* message too long to fit in the buffer */
-        errno = EMSGSIZE;
         arg->bytes_received = AVS_MIN((size_t) recv_out, arg->buffer_length);
-        return -1;
+        return avs_errno(AVS_EMSGSIZE);
     } else if (recv_out < 0) {
         arg->bytes_received = 0;
-        return -1;
+        return map_errno_for_sure();
     } else {
         arg->bytes_received = (size_t) recv_out;
-        return 0;
+        return AVS_OK;
     }
 }
 
 #endif /* HAVE_RECVMSG */
 
-static int receive_net(avs_net_abstract_socket_t *net_socket_,
-                       size_t *out,
-                       void *buffer,
-                       size_t buffer_length) {
+static avs_error_t receive_net(avs_net_abstract_socket_t *net_socket_,
+                               size_t *out,
+                               void *buffer,
+                               size_t buffer_length) {
     avs_net_socket_t *net_socket = (avs_net_socket_t *) net_socket_;
     recvfrom_internal_arg_t arg = {
         .socket_type = net_socket->type,
         .buffer = buffer,
         .buffer_length = buffer_length
     };
-    int result = call_when_ready(&net_socket->socket, net_socket->recv_timeout,
-                                 1, 0, 1, recvfrom_internal, &arg);
+    avs_error_t err =
+            call_when_ready(&net_socket->socket, net_socket->recv_timeout, true,
+                            false, true, recvfrom_internal, &arg);
     *out = arg.bytes_received;
     net_socket->bytes_received += arg.bytes_received;
-    net_socket->error_code = avs_map_errno(errno);
-    return result;
+    return err;
 }
 
-static int receive_from_net(avs_net_abstract_socket_t *net_socket_,
-                            size_t *out,
-                            void *message_buffer,
-                            size_t buffer_size,
-                            char *host,
-                            size_t host_size,
-                            char *port,
-                            size_t port_size) {
+static avs_error_t receive_from_net(avs_net_abstract_socket_t *net_socket_,
+                                    size_t *out,
+                                    void *message_buffer,
+                                    size_t buffer_size,
+                                    char *host,
+                                    size_t host_size,
+                                    char *port,
+                                    size_t port_size) {
     avs_net_socket_t *net_socket = (avs_net_socket_t *) net_socket_;
 
     assert(host);
@@ -1393,127 +1370,122 @@ static int receive_from_net(avs_net_abstract_socket_t *net_socket_,
         .buffer = message_buffer,
         .buffer_length = buffer_size
     };
-    int result = call_when_ready(&net_socket->socket, net_socket->recv_timeout,
-                                 1, 0, 1, recvfrom_internal, &arg);
+    avs_error_t err =
+            call_when_ready(&net_socket->socket, net_socket->recv_timeout, true,
+                            false, true, recvfrom_internal, &arg);
     net_socket->bytes_received += arg.bytes_received;
     *out = arg.bytes_received;
-    net_socket->error_code = avs_map_errno(errno);
-    if (!result || net_socket->error_code == AVS_EMSGSIZE) {
-        errno = 0;
-        int sub_retval =
+    if (avs_is_ok(err)
+            || (err.category == AVS_ERRNO_CATEGORY
+                && err.code == AVS_EMSGSIZE)) {
+        avs_error_t sub_err =
                 host_port_to_string(&arg.src_addr.addr, arg.src_addr_length,
                                     host, (socklen_t) host_size, port,
                                     (socklen_t) port_size);
-        if (!net_socket->error_code) {
-            net_socket->error_code = avs_map_errno(errno);
-        }
-        if (!result) {
-            result = sub_retval;
+        if (avs_is_ok(err)) {
+            err = sub_err;
         }
     }
-    return result;
+    return err;
 }
 
-static int create_listening_socket(avs_net_socket_t *net_socket,
-                                   const struct sockaddr *addr,
-                                   socklen_t addrlen) {
-    int retval = -1;
+static avs_error_t create_listening_socket(avs_net_socket_t *net_socket,
+                                           const struct sockaddr *addr,
+                                           socklen_t addrlen) {
+    avs_error_t err = avs_errno(AVS_UNKNOWN_ERROR);
     int reuse_addr = net_socket->configuration.reuse_addr;
     if (reuse_addr != 0 && reuse_addr != 1) {
-        net_socket->error_code = AVS_EINVAL;
-        return -1;
+        return avs_errno(AVS_EINVAL);
     }
     errno = 0;
     net_socket->socket = socket(addr->sa_family,
                                 _avs_net_get_socket_type(net_socket->type),
                                 get_socket_proto(net_socket->type));
     if (net_socket->socket == INVALID_SOCKET) {
-        net_socket->error_code = avs_map_errno(errno);
+        err = map_errno_for_sure();
         LOG(ERROR, "cannot create system socket: %s",
-            avs_strerror(net_socket->error_code));
+            avs_strerror((avs_errno_t) err.code));
         goto create_listening_socket_error;
     }
     if (setsockopt(net_socket->socket, SOL_SOCKET, SO_REUSEADDR, &reuse_addr,
                    sizeof(reuse_addr))) {
-        net_socket->error_code = avs_map_errno(errno);
+        err = map_errno_for_sure();
         LOG(ERROR, "can't set socket opt");
         goto create_listening_socket_error;
     }
-    if (configure_socket(net_socket)) {
+    if (avs_is_err((err = configure_socket(net_socket)))) {
         goto create_listening_socket_error;
     }
     // http://pubs.opengroup.org/onlinepubs/9699919799/functions/bind.html
     // says that asynchronous bind()s may happen...
     errno = 0;
     if (bind(net_socket->socket, addr, addrlen) < 0 && errno != EINPROGRESS) {
-        net_socket->error_code = avs_map_errno(errno);
-        LOG(ERROR, "bind error: %s", avs_strerror(net_socket->error_code));
-        retval = -2;
+        err = map_errno_for_sure();
+        LOG(ERROR, "bind error: %s", avs_strerror((avs_errno_t) err.code));
         goto create_listening_socket_error;
     }
     if (net_socket->type == AVS_NET_TCP_SOCKET
             && listen(net_socket->socket, NET_LISTEN_BACKLOG) < 0) {
-        net_socket->error_code = avs_map_errno(errno);
-        LOG(ERROR, "listen error: %s", avs_strerror(net_socket->error_code));
-        retval = -3;
+        err = map_errno_for_sure();
+        LOG(ERROR, "listen error: %s", avs_strerror((avs_errno_t) err.code));
         goto create_listening_socket_error;
     }
-    net_socket->error_code = AVS_NO_ERROR;
-    return 0;
+    return AVS_OK;
 create_listening_socket_error:
     close_net_raw(net_socket);
-    return retval;
+    return err;
 }
 
-static int try_bind(avs_net_socket_t *net_socket,
-                    avs_net_af_t family,
-                    const char *localaddr,
-                    const char *port) {
+static avs_error_t try_bind(avs_net_socket_t *net_socket,
+                            avs_net_af_t family,
+                            const char *localaddr,
+                            const char *port) {
     avs_net_addrinfo_t *info = NULL;
     sockaddr_endpoint_union_t address;
-    int retval = -1;
+    avs_error_t err = avs_errno(AVS_UNKNOWN_ERROR);
     if (net_socket->configuration.address_family != AVS_NET_AF_UNSPEC
             && net_socket->configuration.address_family != family) {
-        net_socket->error_code = AVS_EINVAL;
-        return -1;
+        return avs_errno(AVS_EINVAL);
     }
     if (!(info = avs_net_addrinfo_resolve_ex(
                   net_socket->type, family, localaddr, port,
                   AVS_NET_ADDRINFO_RESOLVE_F_PASSIVE, NULL))
-            || (retval = avs_net_addrinfo_next(info, &address.api_ep))) {
+            || avs_net_addrinfo_next(info, &address.api_ep)) {
         LOG(WARNING, "Cannot get %s address info for %s", get_af_name(family),
             localaddr ? localaddr : "(null)");
-        net_socket->error_code = AVS_EINVAL;
+        err = avs_errno(AVS_EINVAL);
         goto bind_net_end;
     }
     net_socket->state = AVS_NET_SOCKET_STATE_BOUND;
-    retval = create_listening_socket(net_socket, &address.sockaddr_ep.addr,
-                                     address.sockaddr_ep.header.size);
+    err = create_listening_socket(net_socket, &address.sockaddr_ep.addr,
+                                  address.sockaddr_ep.header.size);
 bind_net_end:
     avs_net_addrinfo_delete(&info);
-    return retval;
+    return err;
 }
 
-static int bind_net(avs_net_abstract_socket_t *net_socket_,
-                    const char *localaddr,
-                    const char *port) {
+static avs_error_t bind_net(avs_net_abstract_socket_t *net_socket_,
+                            const char *localaddr,
+                            const char *port) {
     avs_net_socket_t *net_socket = (avs_net_socket_t *) net_socket_;
     if (net_socket->socket != INVALID_SOCKET) {
         LOG(ERROR, "socket is already connected or bound");
-        return -1;
+        return avs_errno(AVS_EISCONN);
     }
 
     avs_net_af_t family;
-    int retval = -1;
+    avs_error_t err = avs_errno(AVS_EINVAL);
     if (!get_requested_family(net_socket, &family, PREFERRED_FAMILY_ONLY)
-            && !(retval = try_bind(net_socket, family, localaddr, port))) {
-        return 0;
+            && avs_is_ok(
+                       (err = try_bind(net_socket, family, localaddr, port)))) {
+        return AVS_OK;
     }
     if (!get_requested_family(net_socket, &family, PREFERRED_FAMILY_BLOCKED)
-            && !(retval = try_bind(net_socket, family, localaddr, port))) {
-        return 0;
+            && avs_is_ok(
+                       (err = try_bind(net_socket, family, localaddr, port)))) {
+        return AVS_OK;
     }
-    return retval;
+    return err;
 }
 
 typedef struct {
@@ -1522,16 +1494,16 @@ typedef struct {
     socklen_t remote_addr_length;
 } accept_internal_arg_t;
 
-static int accept_internal(sockfd_t sockfd, void *arg_) {
+static avs_error_t accept_internal(sockfd_t sockfd, void *arg_) {
     accept_internal_arg_t *arg = (accept_internal_arg_t *) arg_;
     arg->remote_addr_length = (socklen_t) sizeof(arg->remote_addr);
     arg->client_sockfd =
             accept(sockfd, &arg->remote_addr.addr, &arg->remote_addr_length);
-    return arg->client_sockfd == INVALID_SOCKET ? -1 : 0;
+    return arg->client_sockfd == INVALID_SOCKET ? map_errno_for_sure() : AVS_OK;
 }
 
-static int accept_net(avs_net_abstract_socket_t *server_net_socket_,
-                      avs_net_abstract_socket_t *new_net_socket_) {
+static avs_error_t accept_net(avs_net_abstract_socket_t *server_net_socket_,
+                              avs_net_abstract_socket_t *new_net_socket_) {
     avs_net_socket_t *server_net_socket =
             (avs_net_socket_t *) server_net_socket_;
     avs_net_socket_t *new_net_socket = (avs_net_socket_t *) new_net_socket_;
@@ -1540,42 +1512,39 @@ static int accept_net(avs_net_abstract_socket_t *server_net_socket_,
     if (new_net_socket->operations != &net_vtable
             || new_net_socket->type != server_net_socket->type) {
         LOG(ERROR, "accept_net() called with socket of invalid type");
-        server_net_socket->error_code = AVS_EINVAL;
-        return -1;
+        return avs_errno(AVS_EINVAL);
     }
 
     if (new_net_socket->socket != INVALID_SOCKET) {
         LOG(ERROR, "socket is already connected or bound");
-        server_net_socket->error_code = AVS_EISCONN;
-        return -1;
+        return avs_errno(AVS_EISCONN);
     }
 
     accept_internal_arg_t arg = {
         .client_sockfd = INVALID_SOCKET
     };
-    if (call_when_ready(&server_net_socket->socket, NET_ACCEPT_TIMEOUT, 1, 0, 1,
-                        accept_internal, &arg)) {
-        return -1;
+    avs_error_t err =
+            call_when_ready(&server_net_socket->socket, NET_ACCEPT_TIMEOUT,
+                            true, false, true, accept_internal, &arg);
+    if (avs_is_err(err)) {
+        return err;
     }
 
     new_net_socket->socket = arg.client_sockfd;
-    if (host_port_to_string(&arg.remote_addr.addr, arg.remote_addr_length,
+    if (avs_is_err((err = host_port_to_string(
+                            &arg.remote_addr.addr, arg.remote_addr_length,
                             new_net_socket->remote_hostname,
                             sizeof(new_net_socket->remote_hostname),
                             new_net_socket->remote_port,
-                            sizeof(new_net_socket->remote_port))
-            < 0) {
-        server_net_socket->error_code = avs_map_errno(errno);
+                            sizeof(new_net_socket->remote_port))))) {
         close_net_raw(new_net_socket);
-        return -1;
+        return err;
     }
     new_net_socket->state = AVS_NET_SOCKET_STATE_ACCEPTED;
-    int result = configure_socket(new_net_socket);
-    if (result) {
+    if (avs_is_err((err = configure_socket(new_net_socket)))) {
         close_net_raw(new_net_socket);
     }
-    server_net_socket->error_code = new_net_socket->error_code;
-    return result;
+    return err;
 }
 
 static int
@@ -1604,16 +1573,16 @@ store_configuration(avs_net_socket_t *socket,
     LOG(TRACE, "stored socket configuration");
 }
 
-static int create_net_socket(avs_net_abstract_socket_t **socket,
-                             avs_net_socket_type_t socket_type,
-                             const void *socket_configuration) {
+static avs_error_t create_net_socket(avs_net_abstract_socket_t **socket,
+                                     avs_net_socket_type_t socket_type,
+                                     const void *socket_configuration) {
     const avs_net_socket_v_table_t *const VTABLE_PTR = &net_vtable;
     const avs_net_socket_configuration_t *configuration =
             (const avs_net_socket_configuration_t *) socket_configuration;
     avs_net_socket_t *net_socket =
             (avs_net_socket_t *) avs_calloc(1, sizeof(avs_net_socket_t));
     if (!net_socket) {
-        return -1;
+        return avs_errno(AVS_ENOMEM);
     }
 
     memcpy((void *) (intptr_t) &net_socket->operations, &VTABLE_PTR,
@@ -1624,8 +1593,6 @@ static int create_net_socket(avs_net_abstract_socket_t **socket,
 
     VALGRIND_HG_DISABLE_CHECKING(&net_socket->socket,
                                  sizeof(net_socket->socket));
-    VALGRIND_HG_DISABLE_CHECKING(&net_socket->error_code,
-                                 sizeof(net_socket->error_code));
 
     *socket = (avs_net_abstract_socket_t *) net_socket;
 
@@ -1633,69 +1600,74 @@ static int create_net_socket(avs_net_abstract_socket_t **socket,
         if (check_configuration(configuration)) {
             avs_free(*socket);
             *socket = NULL;
-            return -1;
+            return avs_errno(AVS_EINVAL);
         } else {
             store_configuration((avs_net_socket_t *) *socket, configuration);
         }
     } else {
         LOG(TRACE, "no additional socket configuration");
     }
-    return 0;
+    return AVS_OK;
 }
 
-int _avs_net_create_tcp_socket(avs_net_abstract_socket_t **socket,
-                               const void *socket_configuration) {
+avs_error_t _avs_net_create_tcp_socket(avs_net_abstract_socket_t **socket,
+                                       const void *socket_configuration) {
     return create_net_socket(socket, AVS_NET_TCP_SOCKET, socket_configuration);
 }
 
-int _avs_net_create_udp_socket(avs_net_abstract_socket_t **socket,
-                               const void *socket_configuration) {
+avs_error_t _avs_net_create_udp_socket(avs_net_abstract_socket_t **socket,
+                                       const void *socket_configuration) {
     return create_net_socket(socket, AVS_NET_UDP_SOCKET, socket_configuration);
 }
 
-int avs_net_local_address_for_target_host(const char *target_host,
-                                          avs_net_af_t addr_family,
-                                          char *address_buffer,
-                                          size_t buffer_size) {
-    int result = -1;
+avs_error_t avs_net_local_address_for_target_host(const char *target_host,
+                                                  avs_net_af_t addr_family,
+                                                  char *address_buffer,
+                                                  size_t buffer_size) {
+    avs_error_t err = avs_errno(AVS_EADDRNOTAVAIL);
     sockaddr_endpoint_union_t address;
     avs_net_addrinfo_t *info =
             avs_net_addrinfo_resolve(AVS_NET_UDP_SOCKET, addr_family,
                                      target_host, AVS_NET_RESOLVE_DUMMY_PORT,
                                      NULL);
     if (!info) {
-        return -1;
+        return err;
     }
-    while (!(result = avs_net_addrinfo_next(info, &address.api_ep))) {
+    while (!avs_net_addrinfo_next(info, &address.api_ep)) {
         sockfd_t test_socket = socket(address.sockaddr_ep.addr.sa_family,
                                       SOCK_DGRAM, IPPROTO_UDP);
 
-        if (test_socket != INVALID_SOCKET) {
-
-            if (fcntl(test_socket, F_SETFL, O_NONBLOCK) != -1
-                    && !connect_with_timeout(&test_socket, &address)) {
+        if (test_socket == INVALID_SOCKET) {
+            err = map_errno_for_sure();
+        } else {
+            if (fcntl(test_socket, F_SETFL, O_NONBLOCK) == -1) {
+                err = map_errno_for_sure();
+            } else if (avs_is_ok((err = connect_with_timeout(&test_socket,
+                                                             &address)))) {
                 sockaddr_union_t addr;
                 socklen_t addrlen = sizeof(addr);
 
-                if (!getsockname(test_socket, &addr.addr, &addrlen)) {
-                    result = get_string_ip(&addr, address_buffer, buffer_size);
+                if (getsockname(test_socket, &addr.addr, &addrlen)) {
+                    err = map_errno_for_sure();
+                } else {
+                    err = get_string_ip(&addr, address_buffer, buffer_size);
                 }
             }
 
             close(test_socket);
         }
 
-        if (!result) {
+        if (avs_is_ok(err)) {
             break;
         }
     }
     avs_net_addrinfo_delete(&info);
-    return result <= 0 ? result : -1;
+    return err;
 }
 
-static int local_host_net(avs_net_abstract_socket_t *socket,
-                          char *out_buffer,
-                          size_t out_buffer_size) {
+static avs_error_t local_host_net(avs_net_abstract_socket_t *socket,
+                                  char *out_buffer,
+                                  size_t out_buffer_size) {
     avs_net_socket_t *net_socket = (avs_net_socket_t *) socket;
     sockaddr_union_t addr;
     socklen_t addrlen = sizeof(addr);
@@ -1703,18 +1675,15 @@ static int local_host_net(avs_net_abstract_socket_t *socket,
     errno = 0;
     if (!getsockname(net_socket->socket, &addr.addr, &addrlen)) {
         (void) unmap_v4mapped(&addr);
-        int result = get_string_ip(&addr, out_buffer, out_buffer_size);
-        net_socket->error_code = (result ? AVS_ERANGE : AVS_NO_ERROR);
-        return result;
+        return get_string_ip(&addr, out_buffer, out_buffer_size);
     } else {
-        net_socket->error_code = avs_map_errno(errno);
-        return -1;
+        return map_errno_for_sure();
     }
 }
 
-static int local_port_net(avs_net_abstract_socket_t *socket,
-                          char *out_buffer,
-                          size_t out_buffer_size) {
+static avs_error_t local_port_net(avs_net_abstract_socket_t *socket,
+                                  char *out_buffer,
+                                  size_t out_buffer_size) {
     avs_net_socket_t *net_socket = (avs_net_socket_t *) socket;
     sockaddr_union_t addr;
     socklen_t addrlen = sizeof(addr);
@@ -1722,52 +1691,54 @@ static int local_port_net(avs_net_abstract_socket_t *socket,
     errno = 0;
     if (!getsockname(net_socket->socket, &addr.addr, &addrlen)) {
         int result = get_string_port(&addr, out_buffer, out_buffer_size);
-        net_socket->error_code = (result ? AVS_ERANGE : AVS_NO_ERROR);
-        return result;
+        return avs_errno(result ? AVS_ERANGE : AVS_NO_ERROR);
     } else {
-        net_socket->error_code = avs_map_errno(errno);
-        return -1;
+        return map_errno_for_sure();
     }
 }
 
-static int get_mtu(avs_net_socket_t *net_socket, int *out_mtu) {
+static avs_error_t get_mtu(avs_net_socket_t *net_socket, int *out_mtu) {
     if (net_socket->configuration.forced_mtu > 0) {
         *out_mtu = net_socket->configuration.forced_mtu;
-        return 0;
+        return AVS_OK;
     }
 
-    int mtu = -1, retval = -1;
+    int mtu = -1;
+    avs_error_t err = AVS_OK;
     socklen_t dummy = sizeof(mtu);
     switch (get_socket_family(net_socket->socket)) {
 #if defined(WITH_IPV4) && defined(IP_MTU)
     case AF_INET:
         errno = 0;
-        retval = getsockopt(net_socket->socket, IPPROTO_IP, IP_MTU, &mtu,
-                            &dummy);
-        net_socket->error_code = avs_map_errno(errno);
+        if (getsockopt(net_socket->socket, IPPROTO_IP, IP_MTU, &mtu, &dummy)
+                < 0) {
+            err = map_errno_for_sure();
+        }
         break;
 #endif /* defined(WITH_IPV4) && defined(IP_MTU) */
 
 #if defined(WITH_IPV6) && defined(IPV6_MTU)
     case AF_INET6:
         errno = 0;
-        retval = getsockopt(net_socket->socket, IPPROTO_IPV6, IPV6_MTU, &mtu,
-                            &dummy);
-        net_socket->error_code = avs_map_errno(errno);
+        if (getsockopt(net_socket->socket, IPPROTO_IPV6, IPV6_MTU, &mtu, &dummy)
+                < 0) {
+            err = map_errno_for_sure();
+        }
         break;
 #endif /* defined(WITH_IPV6) && defined(IPV6_MTU) */
 
     default:
         (void) dummy;
-        net_socket->error_code = AVS_EINVAL;
-        retval = -1;
+        err = avs_errno(AVS_EINVAL);
     }
-    if (retval < 0 || mtu < 0) {
-        return -1;
-    } else {
-        *out_mtu = mtu;
-        return 0;
+    if (avs_is_ok(err)) {
+        if (mtu >= 0) {
+            *out_mtu = mtu;
+        } else {
+            err = avs_errno(AVS_UNKNOWN_ERROR);
+        }
     }
+    return err;
 }
 
 static int get_fallback_inner_mtu(avs_net_socket_t *socket) {
@@ -1783,36 +1754,35 @@ static int get_fallback_inner_mtu(avs_net_socket_t *socket) {
     }
 }
 
-static int get_udp_overhead(avs_net_socket_t *net_socket, int *out) {
-    net_socket->error_code = AVS_NO_ERROR;
+static avs_error_t get_udp_overhead(avs_net_socket_t *net_socket, int *out) {
     switch (get_socket_family(net_socket->socket)) {
 #ifdef WITH_IPV4
     case AF_INET:
         *out = 28; /* 20 for IP + 8 for UDP */
-        return 0;
+        return AVS_OK;
 #endif /* WITH_IPV4 */
 
 #ifdef WITH_IPV6
     case AF_INET6:
         *out = 48; /* 40 for IPv6 + 8 for UDP */
-        return 0;
+        return AVS_OK;
 #endif /* WITH_IPV6 */
 
     default:
-        net_socket->error_code = AVS_EINVAL;
-        return -1;
+        return avs_errno(AVS_EINVAL);
     }
 }
 
-static int get_inner_mtu(avs_net_socket_t *net_socket, int *out_mtu) {
+static avs_error_t get_inner_mtu(avs_net_socket_t *net_socket, int *out_mtu) {
     if (net_socket->type != AVS_NET_UDP_SOCKET) {
         LOG(ERROR, "get_opt_net: inner MTU calculation unimplemented for TCP");
-        return -1;
+        return avs_errno(AVS_ENOTSUP);
     }
-    if (!get_mtu(net_socket, out_mtu)) {
-        int retval, udp_overhead;
-        if ((retval = get_udp_overhead(net_socket, &udp_overhead))) {
-            return retval;
+    avs_error_t err = get_mtu(net_socket, out_mtu);
+    if (avs_is_ok(err)) {
+        int udp_overhead;
+        if (avs_is_err((err = get_udp_overhead(net_socket, &udp_overhead)))) {
+            return err;
         }
         *out_mtu -= udp_overhead;
         if (*out_mtu < 0) {
@@ -1821,71 +1791,62 @@ static int get_inner_mtu(avs_net_socket_t *net_socket, int *out_mtu) {
     } else {
         if (net_socket->socket == INVALID_SOCKET) {
             LOG(ERROR, "cannot get inner MTU for closed socket");
-            return -1;
+            return avs_errno(AVS_EBADF);
         }
-        net_socket->error_code = AVS_NO_ERROR;
         *out_mtu = get_fallback_inner_mtu(net_socket);
     }
-    return 0;
+    return AVS_OK;
 }
 
-static int get_opt_net(avs_net_abstract_socket_t *net_socket_,
-                       avs_net_socket_opt_key_t option_key,
-                       avs_net_socket_opt_value_t *out_option_value) {
+static avs_error_t get_opt_net(avs_net_abstract_socket_t *net_socket_,
+                               avs_net_socket_opt_key_t option_key,
+                               avs_net_socket_opt_value_t *out_option_value) {
     avs_net_socket_t *net_socket = (avs_net_socket_t *) net_socket_;
-    net_socket->error_code = AVS_NO_ERROR;
     switch (option_key) {
     case AVS_NET_SOCKET_OPT_RECV_TIMEOUT:
         out_option_value->recv_timeout = net_socket->recv_timeout;
-        return 0;
+        return AVS_OK;
     case AVS_NET_SOCKET_OPT_STATE:
         out_option_value->state = net_socket->state;
-        return 0;
+        return AVS_OK;
     case AVS_NET_SOCKET_OPT_ADDR_FAMILY:
         out_option_value->addr_family =
                 get_avs_af(get_socket_family(net_socket->socket));
-        return 0;
+        return AVS_OK;
     case AVS_NET_SOCKET_OPT_MTU:
         return get_mtu(net_socket, &out_option_value->mtu);
     case AVS_NET_SOCKET_OPT_INNER_MTU:
         return get_inner_mtu(net_socket, &out_option_value->mtu);
     case AVS_NET_SOCKET_OPT_BYTES_RECEIVED:
         out_option_value->bytes_received = net_socket->bytes_received;
-        return 0;
+        return AVS_OK;
     case AVS_NET_SOCKET_OPT_BYTES_SENT:
         out_option_value->bytes_sent = net_socket->bytes_sent;
-        return 0;
+        return AVS_OK;
     default:
         LOG(DEBUG,
             "get_opt_net: unknown or unsupported option key: "
             "(avs_net_socket_opt_key_t) %d",
             (int) option_key);
-        net_socket->error_code = AVS_EINVAL;
-        return -1;
+        return avs_errno(AVS_EINVAL);
     }
 }
 
-static int set_opt_net(avs_net_abstract_socket_t *net_socket_,
-                       avs_net_socket_opt_key_t option_key,
-                       avs_net_socket_opt_value_t option_value) {
+static avs_error_t set_opt_net(avs_net_abstract_socket_t *net_socket_,
+                               avs_net_socket_opt_key_t option_key,
+                               avs_net_socket_opt_value_t option_value) {
     avs_net_socket_t *net_socket = (avs_net_socket_t *) net_socket_;
     switch (option_key) {
     case AVS_NET_SOCKET_OPT_RECV_TIMEOUT:
         net_socket->recv_timeout = option_value.recv_timeout;
-        net_socket->error_code = AVS_NO_ERROR;
-        return 0;
+        return AVS_OK;
     default:
         LOG(DEBUG,
             "set_opt_net: unknown or unsupported option key: "
             "(avs_net_socket_opt_key_t) %d",
             (int) option_key);
-        net_socket->error_code = AVS_EINVAL;
-        return -1;
+        return avs_errno(AVS_EINVAL);
     }
-}
-
-static avs_errno_t errno_net(avs_net_abstract_socket_t *net_socket) {
-    return ((avs_net_socket_t *) net_socket)->error_code;
 }
 
 static inline int ifaddr_ip_equal(const struct sockaddr *left,
@@ -1996,8 +1957,9 @@ interface_name_end:
 #undef TRY_ADDRESS
 }
 
-static int interface_name_net(avs_net_abstract_socket_t *socket_,
-                              avs_net_socket_interface_name_t *if_name) {
+static avs_error_t
+interface_name_net(avs_net_abstract_socket_t *socket_,
+                   avs_net_socket_interface_name_t *if_name) {
     avs_net_socket_t *socket = (avs_net_socket_t *) socket_;
     if (socket->configuration.interface_name[0]) {
         memcpy(*if_name, socket->configuration.interface_name,
@@ -2008,12 +1970,10 @@ static int interface_name_net(avs_net_abstract_socket_t *socket_,
         errno = 0;
         if (getsockname(socket->socket, &addr.addr, &addrlen)
                 || find_interface(&addr.addr, if_name)) {
-            socket->error_code = avs_map_errno(errno);
-            return -1;
+            return map_errno_for_sure();
         }
     }
-    socket->error_code = AVS_NO_ERROR;
-    return 0;
+    return AVS_OK;
 }
 
 static int validate_ip_address(avs_net_af_t family, const char *ip_address) {
@@ -2047,23 +2007,23 @@ int avs_net_validate_ip_address(avs_net_af_t family, const char *ip_address) {
     }
 }
 
-int avs_net_resolved_endpoint_get_host_port(
-        const avs_net_resolved_endpoint_t *endp,
-        char *host,
-        size_t hostlen,
-        char *serv,
-        size_t servlen) {
+avs_error_t
+avs_net_resolved_endpoint_get_host_port(const avs_net_resolved_endpoint_t *endp,
+                                        char *host,
+                                        size_t hostlen,
+                                        char *serv,
+                                        size_t servlen) {
     return host_port_to_string((const struct sockaddr *) &endp->data,
                                endp->size, host, (socklen_t) hostlen, serv,
                                (socklen_t) servlen);
 }
 
-int _avs_net_initialize_global_compat_state(void) {
-    int result = 0;
+avs_error_t _avs_net_initialize_global_compat_state(void) {
+    avs_error_t err = AVS_OK;
 #ifdef HAVE_GLOBAL_COMPAT_STATE
-    result = initialize_global_compat_state();
+    err = initialize_global_compat_state();
 #endif // HAVE_GLOBAL_COMPAT_STATE
-    return result;
+    return err;
 }
 
 void _avs_net_cleanup_global_compat_state(void) {

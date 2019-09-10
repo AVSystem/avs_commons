@@ -159,7 +159,7 @@ avs_net_addrinfo_t *avs_net_addrinfo_resolve_ex(
         const char *port_str,
         int flags,
         const avs_net_resolved_endpoint_t *preferred_endpoint) {
-    if (_avs_net_ensure_global_state()) {
+    if (avs_is_err(_avs_net_ensure_global_state())) {
         LOG(ERROR, "avs_net global state initialization error");
         return NULL;
     }

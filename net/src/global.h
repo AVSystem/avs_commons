@@ -17,22 +17,24 @@
 #ifndef NET_GLOBAL_H
 #define NET_GLOBAL_H
 
+#include <avsystem/commons/errno.h>
+
 VISIBILITY_PRIVATE_HEADER_BEGIN
 
-int _avs_net_initialize_global_compat_state(void);
+avs_error_t _avs_net_initialize_global_compat_state(void);
 
 void _avs_net_cleanup_global_compat_state(void);
 
 #ifndef WITHOUT_SSL
-int _avs_net_initialize_global_ssl_state(void);
+avs_error_t _avs_net_initialize_global_ssl_state(void);
 
 void _avs_net_cleanup_global_ssl_state(void);
 #else // WITHOUT_SSL
-#    define _avs_net_initialize_global_ssl_state(...) 0
+#    define _avs_net_initialize_global_ssl_state(...) AVS_OK
 #    define _avs_net_cleanup_global_ssl_state(...) ((void) 0)
 #endif // WITHOUT_SSL
 
-int _avs_net_ensure_global_state(void);
+avs_error_t _avs_net_ensure_global_state(void);
 void _avs_net_cleanup_global_state(void);
 
 VISIBILITY_PRIVATE_HEADER_END
