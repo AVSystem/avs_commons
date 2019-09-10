@@ -79,26 +79,17 @@ avs_error_t _avs_http_socket_new(avs_net_abstract_socket_t **out,
     const char *protocol = avs_url_protocol(url);
     if (strcmp(protocol, "http") == 0) {
         LOG(TRACE, "creating TCP socket");
-        if (avs_net_socket_create(out, AVS_NET_TCP_SOCKET,
-                                  &ssl_config_full.backend_configuration)) {
-            err = avs_errno(AVS_EIO);
-        }
+        err = avs_net_socket_create(out, AVS_NET_TCP_SOCKET,
+                                    &ssl_config_full.backend_configuration);
     } else if (strcmp(protocol, "https") == 0) {
         LOG(TRACE, "creating SSL socket");
-        if (avs_net_socket_create(out, AVS_NET_SSL_SOCKET, &ssl_config_full)) {
-            err = avs_errno(AVS_EIO);
-        }
+        err = avs_net_socket_create(out, AVS_NET_SSL_SOCKET, &ssl_config_full);
     }
     if (avs_is_ok(err)) {
         assert(*out);
         LOG(TRACE, "socket OK, connecting");
-        if (avs_net_socket_connect(*out, avs_url_host(url),
-                                   resolve_port(url))) {
-            err = avs_errno(avs_net_socket_error(*out));
-            if (avs_is_ok(err)) {
-                err = avs_errno(AVS_EIO);
-            }
-        }
+        err = avs_net_socket_connect(*out, avs_url_host(url),
+                                     resolve_port(url));
     }
     if (avs_is_err(err)) {
         avs_net_socket_cleanup(out);
@@ -116,11 +107,13 @@ static avs_error_t reconnect_tcp_socket(avs_net_abstract_socket_t *socket,
         LOG(ERROR, "socket not configured");
         return avs_errno(AVS_EBADF);
     }
-    if (avs_net_socket_close(socket)
-            || avs_net_socket_connect(socket, avs_url_host(url),
-                                      resolve_port(url))) {
+    avs_error_t err;
+    if (avs_is_err((err = avs_net_socket_close(socket)))
+            || avs_is_err(
+                       (err = avs_net_socket_connect(socket, avs_url_host(url),
+                                                     resolve_port(url))))) {
         LOG(ERROR, "reconnect failed");
-        return avs_errno(avs_net_socket_error(socket));
+        return err;
     }
     return AVS_OK;
 }
