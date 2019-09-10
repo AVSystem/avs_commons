@@ -31,15 +31,15 @@ static void successful_request(avs_http_t *client,
     const char *tmp_data = NULL;
     char buffer[64];
     char *buffer_ptr = buffer;
-    char message_finished = 0;
+    bool message_finished = false;
     avs_url_t *url = avs_url_parse("http://example.com/");
     AVS_UNIT_ASSERT_NOT_NULL(url);
     avs_unit_mocksock_create(socket_ptr);
     avs_http_test_expect_create_socket(*socket_ptr, AVS_NET_TCP_SOCKET);
     avs_unit_mocksock_expect_connect(*socket_ptr, "example.com", "80");
-    AVS_UNIT_ASSERT_SUCCESS(
+    AVS_UNIT_ASSERT_TRUE(avs_is_ok(
             avs_http_open_stream(stream_ptr, client, AVS_HTTP_POST,
-                                 AVS_HTTP_CONTENT_IDENTITY, url, NULL, NULL));
+                                 AVS_HTTP_CONTENT_IDENTITY, url, NULL, NULL)));
     avs_url_free(url);
     AVS_UNIT_ASSERT_NOT_NULL(*stream_ptr);
     avs_unit_mocksock_assert_io_clean(*socket_ptr);
@@ -55,15 +55,15 @@ static void successful_request(avs_http_t *client,
                "Content-Length: 5\r\n"
                "\r\n";
     avs_unit_mocksock_input(*socket_ptr, tmp_data, strlen(tmp_data));
-    AVS_UNIT_ASSERT_SUCCESS(avs_stream_finish_message(*stream_ptr));
+    AVS_UNIT_ASSERT_TRUE(avs_is_ok(avs_stream_finish_message(*stream_ptr)));
     avs_unit_mocksock_assert_io_clean(*socket_ptr);
     tmp_data = "Hello";
     avs_unit_mocksock_input(*socket_ptr, tmp_data, strlen(tmp_data));
     while (!message_finished) {
         size_t bytes_read;
-        AVS_UNIT_ASSERT_SUCCESS(avs_stream_read(
+        AVS_UNIT_ASSERT_TRUE(avs_is_ok(avs_stream_read(
                 *stream_ptr, &bytes_read, &message_finished, buffer_ptr,
-                sizeof(buffer) - (buffer_ptr - buffer)));
+                sizeof(buffer) - (buffer_ptr - buffer))));
         buffer_ptr += bytes_read;
     }
     AVS_UNIT_ASSERT_EQUAL(buffer_ptr - buffer, strlen(tmp_data));
@@ -109,10 +109,10 @@ AVS_UNIT_TEST(http_close, chunked_request) {
     while (*tmp_data) {
         send_line(stream, &tmp_data);
     }
-    AVS_UNIT_ASSERT_SUCCESS(avs_stream_finish_message(stream));
+    AVS_UNIT_ASSERT_TRUE(avs_is_ok(avs_stream_finish_message(stream)));
     avs_unit_mocksock_assert_io_clean(socket);
     avs_unit_mocksock_expect_shutdown(socket);
-    AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&stream));
+    AVS_UNIT_ASSERT_TRUE(avs_is_ok(avs_stream_cleanup(&stream)));
     avs_http_free(client);
 }
 
@@ -132,14 +132,14 @@ AVS_UNIT_TEST(http_close, chunked_request_twice) {
     avs_unit_mocksock_output_fail(socket, -1);
     avs_unit_mocksock_expect_error(socket, AVS_EPIPE);
     const char *tmp_data = MONTY_PYTHON_RAW;
-    int result = 0;
-    while (!result && *tmp_data) {
-        result = send_line_result(stream, &tmp_data);
+    avs_error_t err = AVS_OK;
+    while (avs_is_ok(err) && *tmp_data) {
+        err = send_line_result(stream, &tmp_data);
     }
-    AVS_UNIT_ASSERT_FAILED(result);
+    AVS_UNIT_ASSERT_FALSE(avs_is_ok(err));
     avs_unit_mocksock_assert_io_clean(socket);
     avs_unit_mocksock_expect_shutdown(socket);
-    AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&stream));
+    AVS_UNIT_ASSERT_TRUE(avs_is_ok(avs_stream_cleanup(&stream)));
     avs_http_free(client);
 }
 
@@ -183,10 +183,10 @@ AVS_UNIT_TEST(http_close, chunked_request_error_in_first_chunk) {
     while (*tmp_data) {
         send_line(stream, &tmp_data);
     }
-    AVS_UNIT_ASSERT_SUCCESS(avs_stream_finish_message(stream));
+    AVS_UNIT_ASSERT_TRUE(avs_is_ok(avs_stream_finish_message(stream)));
     avs_unit_mocksock_assert_io_clean(socket);
     avs_unit_mocksock_expect_shutdown(socket);
-    AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&stream));
+    AVS_UNIT_ASSERT_TRUE(avs_is_ok(avs_stream_cleanup(&stream)));
     avs_http_free(client);
 }
 
@@ -227,10 +227,10 @@ AVS_UNIT_TEST(http_close, chunked_request_close_when_receiving) {
     while (*tmp_data) {
         send_line(stream, &tmp_data);
     }
-    AVS_UNIT_ASSERT_SUCCESS(avs_stream_finish_message(stream));
+    AVS_UNIT_ASSERT_TRUE(avs_is_ok(avs_stream_finish_message(stream)));
     avs_unit_mocksock_assert_io_clean(socket);
     avs_unit_mocksock_expect_shutdown(socket);
-    AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&stream));
+    AVS_UNIT_ASSERT_TRUE(avs_is_ok(avs_stream_cleanup(&stream)));
     avs_http_free(client);
 }
 
@@ -265,10 +265,10 @@ AVS_UNIT_TEST(http_close, chunked_request_error_in_second_chunk) {
     while (*tmp_data) {
         send_line(stream, &tmp_data);
     }
-    AVS_UNIT_ASSERT_FAILED(avs_stream_finish_message(stream));
+    AVS_UNIT_ASSERT_FALSE(avs_is_ok(avs_stream_finish_message(stream)));
     AVS_UNIT_ASSERT_TRUE(avs_http_should_retry(stream));
     avs_unit_mocksock_assert_io_clean(socket);
     avs_unit_mocksock_expect_shutdown(socket);
-    AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&stream));
+    AVS_UNIT_ASSERT_TRUE(avs_is_ok(avs_stream_cleanup(&stream)));
     avs_http_free(client);
 }

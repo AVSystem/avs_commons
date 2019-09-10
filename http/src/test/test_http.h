@@ -33,20 +33,21 @@ int avs_net_socket_create_TEST_WRAPPER(avs_net_abstract_socket_t **socket,
 void avs_http_test_expect_create_socket(avs_net_abstract_socket_t *socket,
                                         avs_net_socket_type_t type);
 
-static inline int send_line_result(avs_stream_t *stream, const char **ptr) {
+static inline avs_error_t send_line_result(avs_stream_t *stream,
+                                           const char **ptr) {
     const char *end = strchr(*ptr, '\n');
     if (end) {
         ++end; /* past the newline */
     } else {
         end = *ptr + strlen(*ptr);
     }
-    int result = avs_stream_write(stream, *ptr, (size_t) (end - *ptr));
+    avs_error_t err = avs_stream_write(stream, *ptr, (size_t) (end - *ptr));
     *ptr = end;
-    return result;
+    return err;
 }
 
 static inline void send_line(avs_stream_t *stream, const char **ptr) {
-    AVS_UNIT_ASSERT_SUCCESS(send_line_result(stream, ptr));
+    AVS_UNIT_ASSERT_TRUE(avs_is_ok(send_line_result(stream, ptr)));
 }
 
 extern const char *const MONTY_PYTHON_RAW;
