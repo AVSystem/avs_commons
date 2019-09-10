@@ -23,12 +23,15 @@ VISIBILITY_PRIVATE_HEADER_BEGIN
 // NOTE: <openssl/ssl.h> could not be included here. See the note about OpenSSL
 // in data_loader.c for details (and think about circular dependencies with
 // VISIBILITY_PRIVATE_HEADER_BEGIN macros).
-int _avs_net_openssl_load_ca_certs(SSL_CTX *ctx,
-                                   const avs_net_trusted_cert_info_t *info);
-int _avs_net_openssl_load_client_key(SSL_CTX *ctx,
-                                     const avs_net_client_key_info_t *info);
-int _avs_net_openssl_load_client_cert(SSL_CTX *ctx,
-                                      const avs_net_client_cert_info_t *info);
+avs_error_t
+_avs_net_openssl_load_ca_certs(SSL_CTX *ctx,
+                               const avs_net_trusted_cert_info_t *info);
+avs_error_t
+_avs_net_openssl_load_client_key(SSL_CTX *ctx,
+                                 const avs_net_client_key_info_t *info);
+avs_error_t
+_avs_net_openssl_load_client_cert(SSL_CTX *ctx,
+                                  const avs_net_client_cert_info_t *info);
 
 VISIBILITY_PRIVATE_HEADER_END
 #endif // NET_OPENSSL_DATA_LOADER_H
