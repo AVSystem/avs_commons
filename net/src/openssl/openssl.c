@@ -1003,12 +1003,6 @@ static avs_error_t receive_ssl(avs_net_abstract_socket_t *socket_,
     return AVS_OK;
 }
 
-static void add_err(avs_error_t *output, avs_error_t err) {
-    if (avs_is_ok(*output)) {
-        *output = err;
-    }
-}
-
 static avs_error_t cleanup_ssl(avs_net_abstract_socket_t **socket_) {
     ssl_socket_t **socket = (ssl_socket_t **) socket_;
     LOG(TRACE, "cleanup_ssl(*socket=%p)", (void *) *socket);

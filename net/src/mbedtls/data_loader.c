@@ -38,53 +38,64 @@ VISIBILITY_SOURCE_BEGIN
         *ptr = (type *) avs_calloc(1, sizeof(**ptr)); \
         if (!*ptr) {                                  \
             LOG(ERROR, "memory allocation error");    \
-            return -1;                                \
+            return avs_errno(AVS_ENOMEM);             \
         }                                             \
     } while (0)
 
-static int append_cert_from_buffer(mbedtls_x509_crt *chain,
-                                   const void *buffer,
-                                   size_t len) {
-    return mbedtls_x509_crt_parse(chain, (const unsigned char *) buffer, len);
+static avs_error_t append_cert_from_buffer(mbedtls_x509_crt *chain,
+                                           const void *buffer,
+                                           size_t len) {
+    return mbedtls_x509_crt_parse(chain, (const unsigned char *) buffer, len)
+                   ? avs_errno(AVS_EPROTO)
+                   : AVS_OK;
 }
 
-static int load_cert_from_file(mbedtls_x509_crt *chain, const char *name) {
+static avs_error_t load_cert_from_file(mbedtls_x509_crt *chain,
+                                       const char *name) {
     LOG(DEBUG, "certificate <%s>: going to load", name);
 
     int retval = -1;
+    avs_error_t err = avs_errno(AVS_ENOTSUP);
 #ifdef MBEDTLS_FS_IO
-    retval = mbedtls_x509_crt_parse_file(chain, name);
+    err = ((retval = mbedtls_x509_crt_parse_file(chain, name))
+                   ? avs_errno(AVS_EPROTO)
+                   : AVS_OK);
 #endif // MBEDTLS_FS_IO
-    if (retval) {
-        LOG(ERROR, "certificate <%s>: failed to load, result %d", name, retval);
-    } else {
+    if (avs_is_ok(err)) {
         LOG(DEBUG, "certificate <%s>: loaded", name);
+    } else {
+        LOG(ERROR, "certificate <%s>: failed to load, result %d", name, retval);
     }
-    return retval;
+    return err;
 }
 
-static int load_ca_from_path(mbedtls_x509_crt *chain, const char *path) {
+static avs_error_t load_ca_from_path(mbedtls_x509_crt *chain,
+                                     const char *path) {
     LOG(DEBUG, "certificates from path <%s>: going to load", path);
 
     int retval = -1;
+    avs_error_t err = avs_errno(AVS_ENOTSUP);
 #ifdef MBEDTLS_FS_IO
     // Note: this function returns negative value if nothing was loaded or
     // everything failed to load, and positive value indicating a number of
     // files that failed to load otherwise.
-    retval = mbedtls_x509_crt_parse_path(chain, path);
+    err = ((retval = mbedtls_x509_crt_parse_path(chain, path)) < 0
+                   ? avs_errno(AVS_EPROTO)
+                   : AVS_OK);
 #endif // MBEDTLS_FS_IO
-    if (retval < 0) {
-        LOG(ERROR, "certificates from path <%s>: failed to load, result %d",
-            path, retval);
-    } else {
+    if (avs_is_ok(err)) {
         LOG(DEBUG, "certificates from path <%s>: some loaded; not loaded: %d",
             path, retval);
+    } else {
+        LOG(ERROR, "certificates from path <%s>: failed to load, result %d",
+            path, retval);
     }
-    return retval < 0 ? retval : 0;
+    return err;
 }
 
-int _avs_net_mbedtls_load_ca_certs(mbedtls_x509_crt **out,
-                                   const avs_net_trusted_cert_info_t *info) {
+avs_error_t
+_avs_net_mbedtls_load_ca_certs(mbedtls_x509_crt **out,
+                               const avs_net_trusted_cert_info_t *info) {
     CREATE_OR_FAIL(mbedtls_x509_crt, out);
     mbedtls_x509_crt_init(*out);
 
@@ -92,30 +103,31 @@ int _avs_net_mbedtls_load_ca_certs(mbedtls_x509_crt **out,
     case AVS_NET_DATA_SOURCE_FILE:
         if (!info->desc.info.file.filename) {
             LOG(ERROR, "attempt to load CA cert from file, but filename=NULL");
-            return -1;
+            return avs_errno(AVS_EINVAL);
         }
         return load_cert_from_file(*out, info->desc.info.file.filename);
     case AVS_NET_DATA_SOURCE_PATH:
         if (!info->desc.info.path.path) {
             LOG(ERROR, "attempt to load CA cert from path, but path=NULL");
-            return -1;
+            return avs_errno(AVS_EINVAL);
         }
         return load_ca_from_path(*out, info->desc.info.path.path);
     case AVS_NET_DATA_SOURCE_BUFFER:
         if (!info->desc.info.buffer.buffer) {
             LOG(ERROR, "attempt to load CA cert from buffer, but buffer=NULL");
-            return -1;
+            return avs_errno(AVS_EINVAL);
         }
         return append_cert_from_buffer(*out, info->desc.info.buffer.buffer,
                                        info->desc.info.buffer.buffer_size);
     default:
         AVS_UNREACHABLE("invalid data source");
-        return -1;
+        return avs_errno(AVS_EINVAL);
     }
 }
 
-int _avs_net_mbedtls_load_client_cert(mbedtls_x509_crt **out,
-                                      const avs_net_client_cert_info_t *info) {
+avs_error_t
+_avs_net_mbedtls_load_client_cert(mbedtls_x509_crt **out,
+                                  const avs_net_client_cert_info_t *info) {
     CREATE_OR_FAIL(mbedtls_x509_crt, out);
     mbedtls_x509_crt_init(*out);
 
@@ -124,52 +136,58 @@ int _avs_net_mbedtls_load_client_cert(mbedtls_x509_crt **out,
         if (!info->desc.info.file.filename) {
             LOG(ERROR,
                 "attempt to load client cert from file, but filename=NULL");
-            return -1;
+            return avs_errno(AVS_EINVAL);
         }
         return load_cert_from_file(*out, info->desc.info.file.filename);
     case AVS_NET_DATA_SOURCE_BUFFER:
         if (!info->desc.info.buffer.buffer) {
             LOG(ERROR,
                 "attempt to load client cert from buffer, but buffer=NULL");
-            return -1;
+            return avs_errno(AVS_EINVAL);
         }
         return append_cert_from_buffer(*out, info->desc.info.buffer.buffer,
                                        info->desc.info.buffer.buffer_size);
     default:
         AVS_UNREACHABLE("invalid data source");
-        return -1;
+        return avs_errno(AVS_EINVAL);
     }
 }
 
-static int load_private_key_from_buffer(mbedtls_pk_context *client_key,
-                                        const void *buffer,
-                                        size_t len,
-                                        const char *password) {
+static avs_error_t load_private_key_from_buffer(mbedtls_pk_context *client_key,
+                                                const void *buffer,
+                                                size_t len,
+                                                const char *password) {
     const unsigned char *pwd = (const unsigned char *) password;
     const size_t pwd_len = password ? strlen(password) : 0;
     return mbedtls_pk_parse_key(client_key, (const unsigned char *) buffer, len,
-                                pwd, pwd_len);
+                                pwd, pwd_len)
+                   ? avs_errno(AVS_EPROTO)
+                   : AVS_OK;
 }
 
-static int load_private_key_from_file(mbedtls_pk_context *client_key,
-                                      const char *filename,
-                                      const char *password) {
+static avs_error_t load_private_key_from_file(mbedtls_pk_context *client_key,
+                                              const char *filename,
+                                              const char *password) {
     LOG(DEBUG, "private key <%s>: going to load", filename);
 
     int retval = -1;
+    avs_error_t err = avs_errno(AVS_ENOTSUP);
 #ifdef MBEDTLS_FS_IO
-    retval = mbedtls_pk_parse_keyfile(client_key, filename, password);
+    err = ((retval = mbedtls_pk_parse_keyfile(client_key, filename, password))
+                   ? avs_errno(AVS_EPROTO)
+                   : AVS_OK);
 #endif // MBEDTLS_FS_IO
-    if (retval) {
-        LOG(ERROR, "private key <%s>: failed, result %d", filename, retval);
-    } else {
+    if (avs_is_ok(err)) {
         LOG(DEBUG, "private key <%s>: loaded", filename);
+    } else {
+        LOG(ERROR, "private key <%s>: failed, result %d", filename, retval);
     }
-    return retval;
+    return err;
 }
 
-int _avs_net_mbedtls_load_client_key(mbedtls_pk_context **client_key,
-                                     const avs_net_client_key_info_t *info) {
+avs_error_t
+_avs_net_mbedtls_load_client_key(mbedtls_pk_context **client_key,
+                                 const avs_net_client_key_info_t *info) {
     CREATE_OR_FAIL(mbedtls_pk_context, client_key);
     mbedtls_pk_init(*client_key);
 
@@ -178,7 +196,7 @@ int _avs_net_mbedtls_load_client_key(mbedtls_pk_context **client_key,
         if (!info->desc.info.file.filename) {
             LOG(ERROR,
                 "attempt to load client key from file, but filename=NULL");
-            return -1;
+            return avs_errno(AVS_EINVAL);
         }
         return load_private_key_from_file(*client_key,
                                           info->desc.info.file.filename,
@@ -187,7 +205,7 @@ int _avs_net_mbedtls_load_client_key(mbedtls_pk_context **client_key,
         if (!info->desc.info.buffer.buffer) {
             LOG(ERROR,
                 "attempt to load client key from buffer, but buffer=NULL");
-            return -1;
+            return avs_errno(AVS_EINVAL);
         }
         return load_private_key_from_buffer(*client_key,
                                             info->desc.info.buffer.buffer,
@@ -195,6 +213,6 @@ int _avs_net_mbedtls_load_client_key(mbedtls_pk_context **client_key,
                                             info->desc.info.buffer.password);
     default:
         AVS_UNREACHABLE("invalid data source");
-        return -1;
+        return avs_errno(AVS_EINVAL);
     }
 }
