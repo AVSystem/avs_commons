@@ -75,7 +75,7 @@ static int get_opt_ssl(avs_net_abstract_socket_t *ssl_socket_,
 static int set_opt_ssl(avs_net_abstract_socket_t *net_socket,
                        avs_net_socket_opt_key_t option_key,
                        avs_net_socket_opt_value_t option_value);
-static int errno_ssl(avs_net_abstract_socket_t *net_socket);
+static avs_errno_t errno_ssl(avs_net_abstract_socket_t *net_socket);
 
 #define WRAP_ERRNO_IMPL(SslSocket, BackendSocket, Retval, ...)               \
     do {                                                                     \
