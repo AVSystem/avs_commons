@@ -63,7 +63,7 @@ typedef struct {
 #include "../ssl_common.h"
 
 int _avs_net_initialize_global_ssl_state(void) {
-    // no global state - do nothing
+    dtls_init();
     return 0;
 }
 
@@ -175,6 +175,7 @@ static int cleanup_ssl(avs_net_abstract_socket_t **socket_) {
     _avs_net_psk_cleanup(&socket->psk);
 #endif
     close_ssl(*socket_);
+    avs_net_socket_cleanup(&socket->backend_socket);
     avs_free(socket);
     *socket_ = NULL;
     return 0;
@@ -187,11 +188,7 @@ static void close_ssl_raw(ssl_socket_t *socket) {
         socket->ctx = NULL;
     }
     if (socket->backend_socket) {
-        int retval;
-        WRAP_ERRNO(socket, retval,
-                   avs_net_socket_close(socket->backend_socket));
-        (void) retval;
-        avs_net_socket_cleanup(&socket->backend_socket);
+        avs_net_socket_close(socket->backend_socket);
     }
 }
 
@@ -433,19 +430,13 @@ static int
 initialize_ssl_socket(ssl_socket_t *socket,
                       avs_net_socket_type_t backend_type,
                       const avs_net_ssl_configuration_t *configuration) {
+    *(const avs_net_socket_v_table_t **) (intptr_t) &socket->operations =
+            &ssl_vtable;
+
     if (backend_type != AVS_NET_UDP_SOCKET) {
         LOG(ERROR, "tinyDTLS backend supports UDP sockets only");
         return -1;
     }
-    static bool dtls_initialized;
-
-    if (!dtls_initialized) {
-        dtls_initialized = true;
-        dtls_init();
-    }
-
-    *(const avs_net_socket_v_table_t **) (intptr_t) &socket->operations =
-            &ssl_vtable;
 
     socket->backend_type = backend_type;
     socket->ctx = dtls_new_context(socket);
