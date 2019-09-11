@@ -412,13 +412,39 @@ typedef struct {
 } avs_net_dtls_handshake_timeouts_t;
 
 /**
- * Structure holding the last SSL alert received from the peer. Meaning of its
- * fields are as defined in https://tools.ietf.org/html/rfc5246#section-7.2
+ * Category for @ref avs_error_t containing a (D)TLS Alert.
+ *
+ * The <c>code</c> field in errors of this type will contain a packed
+ * representation of the TLS alert. @ref avs_net_ssl_alert_level and
+ * @ref avs_net_ssl_alert_description may be used to unpack the alert fields.
+ *
+ * Errors of this type will be returned by socket operations (and may be
+ * propagated by other code) when a (D)TLS Alert message is received during
+ * some operation, likely a handshake (which is performed during
+ * @ref avs_net_socket_connect and @ref avs_net_socket_decorate).
  */
-typedef struct {
-    uint8_t alert_level;
-    uint8_t alert_description;
-} avs_net_ssl_alert_t;
+#define AVS_NET_SSL_ALERT_CATEGORY 8572 // 'TLSA' on phone keypad
+
+/**
+ * Builds an avs_error_t value corresponding to an SSL alert. Meaning of the
+ * arguments is as defined in https://tools.ietf.org/html/rfc5246#section-7.2
+ */
+static inline avs_error_t avs_net_ssl_alert(uint8_t level,
+                                            uint8_t description) {
+    avs_error_t result = { AVS_NET_SSL_ALERT_CATEGORY,
+                           (uint16_t) ((level << 8) | description) };
+    return result;
+}
+
+static inline uint8_t avs_net_ssl_alert_level(avs_error_t error) {
+    assert(error.category == AVS_NET_SSL_ALERT_CATEGORY);
+    return (uint8_t) (error.code >> 8);
+}
+
+static inline uint8_t avs_net_ssl_alert_description(avs_error_t error) {
+    assert(error.category == AVS_NET_SSL_ALERT_CATEGORY);
+    return (uint8_t) error.code;
+}
 
 typedef struct {
     /**
@@ -564,12 +590,7 @@ typedef enum {
     /**
      * Used to get/set ciphersuites used during (D)TLS handshake.
      */
-    AVS_NET_SOCKET_OPT_TLS_CIPHERSUITES,
-
-    /**
-     * Used to get the last SSL Alert message received during (D)TLS handshake.
-     */
-    AVS_NET_SOCKET_OPT_TLS_LAST_ALERT
+    AVS_NET_SOCKET_OPT_TLS_CIPHERSUITES
 } avs_net_socket_opt_key_t;
 
 typedef enum {
@@ -653,8 +674,6 @@ typedef union {
      * the call completes.
      */
     const avs_net_socket_tls_ciphersuites_t *tls_ciphersuites;
-
-    avs_net_ssl_alert_t last_alert;
 } avs_net_socket_opt_value_t;
 
 int avs_net_socket_debug(int value);
