@@ -148,9 +148,10 @@ avs_persistence_direction(avs_persistence_context_t *ctx);
  * Performs operation (depending on the @p ctx) on bool.
  * @param ctx   context that determines the actual operation
  * @param value pointer of value passed to the underlying operation
- * @return 0 in case of success, negative value in case of failure
+ * @returns @ref AVS_OK for success, or an error condition for which the
+ *          operation failed.
  */
-int avs_persistence_bool(avs_persistence_context_t *ctx, bool *value);
+avs_error_t avs_persistence_bool(avs_persistence_context_t *ctx, bool *value);
 
 /**
  * Performs operation (depending on the @p ctx) on byte sequence.
@@ -173,9 +174,9 @@ int avs_persistence_bool(avs_persistence_context_t *ctx, bool *value);
  *  uint32_t buffer_size = ...;
  *
  *  // Store buffer size so that it can be restored later.
- *  int retval = avs_persistence_u32(persist_ctx, &buffer_size);
- *  if (retval) {
- *      return retval;
+ *  avs_error_t err = avs_persistence_u32(persist_ctx, &buffer_size);
+ *  if (avs_is_err(err)) {
+ *      return err;
  *  }
  *
  *  // Store the buffer itself.
@@ -185,91 +186,106 @@ int avs_persistence_bool(avs_persistence_context_t *ctx, bool *value);
  * @param ctx           Context that determines actual operation.
  * @param buffer        Pointer to the user-allocated buffer or NULL.
  * @param buffer_size   Size of the user-allocated buffer or 0.
- * @return 0 in case of success, negative value in case of failure.
+ * @returns @ref AVS_OK for success, or an error condition for which the
+ *          operation failed.
  */
-int avs_persistence_bytes(avs_persistence_context_t *ctx,
-                          void *buffer,
-                          size_t buffer_size);
+avs_error_t avs_persistence_bytes(avs_persistence_context_t *ctx,
+                                  void *buffer,
+                                  size_t buffer_size);
 
 /**
  * Performs operation (depending on the @p ctx) on uint8_t.
  * @param ctx   context that determines the actual operation
  * @param value pointer of value passed to the underlying operation
- * @return 0 in case of success, negative value in case of failure
+ * @returns @ref AVS_OK for success, or an error condition for which the
+ *          operation failed.
  */
-int avs_persistence_u8(avs_persistence_context_t *ctx, uint8_t *value);
+avs_error_t avs_persistence_u8(avs_persistence_context_t *ctx, uint8_t *value);
 
 /**
  * Performs operation (depending on the @p ctx) on uint16_t.
  * @param ctx   context that determines the actual operation
  * @param value pointer of value passed to the underlying operation
- * @return 0 in case of success, negative value in case of failure
+ * @returns @ref AVS_OK for success, or an error condition for which the
+ *          operation failed.
  */
-int avs_persistence_u16(avs_persistence_context_t *ctx, uint16_t *value);
+avs_error_t avs_persistence_u16(avs_persistence_context_t *ctx,
+                                uint16_t *value);
 
 /**
  * Performs operation (depending on the @p ctx) on uint32_t.
  * @param ctx   context that determines the actual operation
  * @param value pointer of value passed to the underlying operation
- * @return 0 in case of success, negative value in case of failure
+ * @returns @ref AVS_OK for success, or an error condition for which the
+ *          operation failed.
  */
-int avs_persistence_u32(avs_persistence_context_t *ctx, uint32_t *value);
+avs_error_t avs_persistence_u32(avs_persistence_context_t *ctx,
+                                uint32_t *value);
 
 /**
  * Performs operation (depending on the @p ctx) on uint64_t.
  * @param ctx   context that determines the actual operation
  * @param value pointer of value passed to the underlying operation
- * @return 0 in case of success, negative value in case of failure
+ * @returns @ref AVS_OK for success, or an error condition for which the
+ *          operation failed.
  */
-int avs_persistence_u64(avs_persistence_context_t *ctx, uint64_t *value);
+avs_error_t avs_persistence_u64(avs_persistence_context_t *ctx,
+                                uint64_t *value);
 
 /**
  * Performs operation (depending on the @p ctx) on int8_t.
  * @param ctx   context that determines the actual operation
  * @param value pointer of value passed to the underlying operation
- * @return 0 in case of success, negative value in case of failure
+ * @returns @ref AVS_OK for success, or an error condition for which the
+ *          operation failed.
  */
-int avs_persistence_i8(avs_persistence_context_t *ctx, int8_t *value);
+avs_error_t avs_persistence_i8(avs_persistence_context_t *ctx, int8_t *value);
 
 /**
  * Performs operation (depending on the @p ctx) on int16_t.
  * @param ctx   context that determines the actual operation
  * @param value pointer of value passed to the underlying operation
- * @return 0 in case of success, negative value in case of failure
+ * @returns @ref AVS_OK for success, or an error condition for which the
+ *          operation failed.
  */
-int avs_persistence_i16(avs_persistence_context_t *ctx, int16_t *value);
+avs_error_t avs_persistence_i16(avs_persistence_context_t *ctx, int16_t *value);
 
 /**
  * Performs operation (depending on the @p ctx) on int32_t.
  * @param ctx   context that determines the actual operation
  * @param value pointer of value passed to the underlying operation
- * @return 0 in case of success, negative value in case of failure
+ * @returns @ref AVS_OK for success, or an error condition for which the
+ *          operation failed.
  */
-int avs_persistence_i32(avs_persistence_context_t *ctx, int32_t *value);
+avs_error_t avs_persistence_i32(avs_persistence_context_t *ctx, int32_t *value);
 
 /**
  * Performs operation (depending on the @p ctx) on int64_t.
  * @param ctx   context that determines the actual operation
  * @param value pointer of value passed to the underlying operation
- * @return 0 in case of success, negative value in case of failure
+ * @returns @ref AVS_OK for success, or an error condition for which the
+ *          operation failed.
  */
-int avs_persistence_i64(avs_persistence_context_t *ctx, int64_t *value);
+avs_error_t avs_persistence_i64(avs_persistence_context_t *ctx, int64_t *value);
 
 /**
  * Performs operation (depending on the @p ctx) on float.
  * @param ctx   context that determines the actual operation
  * @param value pointer of value passed to the underlying operation
- * @return 0 in case of success, negative value in case of failure
+ * @returns @ref AVS_OK for success, or an error condition for which the
+ *          operation failed.
  */
-int avs_persistence_float(avs_persistence_context_t *ctx, float *value);
+avs_error_t avs_persistence_float(avs_persistence_context_t *ctx, float *value);
 
 /**
  * Performs operation (depending on the @p ctx) on double.
  * @param ctx   context that determines the actual operation
  * @param value pointer of value passed to the underlying operation
- * @return 0 in case of success, negative value in case of failure
+ * @returns @ref AVS_OK for success, or an error condition for which the
+ *          operation failed.
  */
-int avs_persistence_double(avs_persistence_context_t *ctx, double *value);
+avs_error_t avs_persistence_double(avs_persistence_context_t *ctx,
+                                   double *value);
 
 /**
  * Performs an operation (depending on the @p ctx) on a pair of @p data_ptr and
@@ -279,11 +295,12 @@ int avs_persistence_double(avs_persistence_context_t *ctx, double *value);
  * @param ctx      context that determines the actual operation
  * @param data_ptr pointer to a pointer containing the data
  * @param size_ptr pointer to a size variable for the buffer
- * @return 0 in case of success, negative value in case of failure
+ * @returns @ref AVS_OK for success, or an error condition for which the
+ *          operation failed.
  */
-int avs_persistence_sized_buffer(avs_persistence_context_t *ctx,
-                                 void **data_ptr,
-                                 size_t *size_ptr);
+avs_error_t avs_persistence_sized_buffer(avs_persistence_context_t *ctx,
+                                         void **data_ptr,
+                                         size_t *size_ptr);
 
 /**
  * Performs an operation (depending on the @p ctx) on a heap-allocated
@@ -291,9 +308,11 @@ int avs_persistence_sized_buffer(avs_persistence_context_t *ctx,
  *
  * @param ctx        context that determines the actual operation
  * @param string_ptr pointer to a heap-allocated null-terminated string variable
- * @return 0 in case of success, negative value in case of failure
+ * @returns @ref AVS_OK for success, or an error condition for which the
+ *          operation failed.
  */
-int avs_persistence_string(avs_persistence_context_t *ctx, char **string_ptr);
+avs_error_t avs_persistence_string(avs_persistence_context_t *ctx,
+                                   char **string_ptr);
 
 /**
  * Performs a operation (depending on the @p ctx) on a @p list_ptr, using
@@ -320,9 +339,10 @@ int avs_persistence_string(avs_persistence_context_t *ctx, char **string_ptr);
  * @param handler_user_ptr opaque pointer passed to each call to @p handler
  * @param cleanup          function called on all completely or partially
  *                         restored elements in case of an error
- * @return 0 in case of success, negative value in case of failure
+ * @returns @ref AVS_OK for success, or an error condition for which the
+ *          operation failed.
  */
-int avs_persistence_custom_allocated_list(
+avs_error_t avs_persistence_custom_allocated_list(
         avs_persistence_context_t *ctx,
         AVS_LIST(void) *list_ptr,
         avs_persistence_handler_custom_allocated_list_element_t *handler,
@@ -349,14 +369,16 @@ int avs_persistence_custom_allocated_list(
  * @param handler_user_ptr opaque pointer passed to each call to @p handler
  * @param cleanup          function called on all completely or partially
  *                         restored elements in case of an error
- * @return 0 in case of success, negative value in case of failure
+ * @returns @ref AVS_OK for success, or an error condition for which the
+ *          operation failed.
  */
-int avs_persistence_list(avs_persistence_context_t *ctx,
-                         AVS_LIST(void) *list_ptr,
-                         size_t element_size,
-                         avs_persistence_handler_collection_element_t *handler,
-                         void *handler_user_ptr,
-                         avs_persistence_cleanup_collection_element_t *cleanup);
+avs_error_t
+avs_persistence_list(avs_persistence_context_t *ctx,
+                     AVS_LIST(void) *list_ptr,
+                     size_t element_size,
+                     avs_persistence_handler_collection_element_t *handler,
+                     void *handler_user_ptr,
+                     avs_persistence_cleanup_collection_element_t *cleanup);
 
 /**
  * Performs a operation (depending on the @p ctx) on a @p tree, using
@@ -380,9 +402,10 @@ int avs_persistence_list(avs_persistence_context_t *ctx,
  * @param handler_user_ptr opaque pointer passed to each call to @p handler
  * @param cleanup          function called on all completely or partially
  *                         restored elements in case of an error
- * @return 0 in case of success, negative value in case of failure
+ * @returns @ref AVS_OK for success, or an error condition for which the
+ *          operation failed.
  */
-int avs_persistence_custom_allocated_tree(
+avs_error_t avs_persistence_custom_allocated_tree(
         avs_persistence_context_t *ctx,
         AVS_RBTREE(void) tree,
         avs_persistence_handler_custom_allocated_tree_element_t *handler,
@@ -410,14 +433,16 @@ int avs_persistence_custom_allocated_tree(
  * @param handler_user_ptr opaque pointer passed to each call to @p handler
  * @param cleanup          function called on all completely or partially
  *                         restored elements in case of an error
- * @return 0 in case of success, negative value in case of failure
+ * @returns @ref AVS_OK for success, or an error condition for which the
+ *          operation failed.
  */
-int avs_persistence_tree(avs_persistence_context_t *ctx,
-                         AVS_RBTREE(void) tree,
-                         size_t element_size,
-                         avs_persistence_handler_collection_element_t *handler,
-                         void *handler_user_ptr,
-                         avs_persistence_cleanup_collection_element_t *cleanup);
+avs_error_t
+avs_persistence_tree(avs_persistence_context_t *ctx,
+                     AVS_RBTREE(void) tree,
+                     size_t element_size,
+                     avs_persistence_handler_collection_element_t *handler,
+                     void *handler_user_ptr,
+                     avs_persistence_cleanup_collection_element_t *cleanup);
 
 /**
  * Persists or restores (depending on the @p ctx) a magic marker.
@@ -433,11 +458,12 @@ int avs_persistence_tree(avs_persistence_context_t *ctx,
  * @param magic      Pointer to the magic marker constant.
  * @param magic_size Size of the magic marker, in bytes.
  *
- * @return 0 in case of success, negative value in case of failure
+ * @returns @ref AVS_OK for success, or an error condition for which the
+ *          operation failed.
  */
-int avs_persistence_magic(avs_persistence_context_t *ctx,
-                          const void *magic,
-                          size_t magic_size);
+avs_error_t avs_persistence_magic(avs_persistence_context_t *ctx,
+                                  const void *magic,
+                                  size_t magic_size);
 
 /**
  * Persists or restores (depending on the @p ctx) a null-terminated magic
@@ -449,10 +475,12 @@ int avs_persistence_magic(avs_persistence_context_t *ctx,
  * @param ctx   Context that determines the actual operation.
  * @param magic Pointer to the null-terminated magic marker string constant.
  *
- * @return 0 in case of success, negative value in case of failure
+ * @returns @ref AVS_OK for success, or an error condition for which the
+ *          operation failed.
  */
-static inline int avs_persistence_magic_string(avs_persistence_context_t *ctx,
-                                               const char *magic) {
+static inline avs_error_t
+avs_persistence_magic_string(avs_persistence_context_t *ctx,
+                             const char *magic) {
     return avs_persistence_magic(ctx, magic, strlen(magic));
 }
 
@@ -477,12 +505,13 @@ static inline int avs_persistence_magic_string(avs_persistence_context_t *ctx,
  * @param supported_versions_count Number of elements in the
  *                                 <c>supported_versions</c> array.
  *
- * @return 0 in case of success, negative value in case of failure
+ * @returns @ref AVS_OK for success, or an error condition for which the
+ *          operation failed.
  */
-int avs_persistence_version(avs_persistence_context_t *ctx,
-                            uint8_t *version_number,
-                            const uint8_t *supported_versions,
-                            size_t supported_versions_count);
+avs_error_t avs_persistence_version(avs_persistence_context_t *ctx,
+                                    uint8_t *version_number,
+                                    const uint8_t *supported_versions,
+                                    size_t supported_versions_count);
 
 #ifdef __cplusplus
 }
