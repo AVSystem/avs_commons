@@ -56,20 +56,16 @@ typedef struct {
     mbedtls_md5_context ctx;
 } mbedtls_md5_stream_t;
 
-static int unimplemented() {
-    return -1;
-}
-
-static int avs_md5_finish(avs_stream_t *stream) {
+static avs_error_t avs_md5_finish(avs_stream_t *stream) {
     mbedtls_md5_stream_t *str = (mbedtls_md5_stream_t *) stream;
 
     int result = mbedtls_md5_finish_ret(&str->ctx, str->common.result);
     _avs_stream_md5_common_finalize(&str->common);
 
-    return result;
+    return avs_errno(result ? AVS_ENOBUFS : AVS_NO_ERROR);
 }
 
-static int avs_md5_reset(avs_stream_t *stream) {
+static avs_error_t avs_md5_reset(avs_stream_t *stream) {
     mbedtls_md5_stream_t *str = (mbedtls_md5_stream_t *) stream;
 
     if (!_avs_stream_md5_common_is_finalized(&str->common)) {
@@ -77,27 +73,29 @@ static int avs_md5_reset(avs_stream_t *stream) {
     }
     int result = mbedtls_md5_starts_ret(&str->ctx);
     _avs_stream_md5_common_reset(&str->common);
-    return result;
+    return avs_errno(result ? AVS_ENOBUFS : AVS_NO_ERROR);
 }
 
-static int avs_md5_update(avs_stream_t *stream, const void *buf, size_t *len) {
+static avs_error_t
+avs_md5_update(avs_stream_t *stream, const void *buf, size_t *len) {
     mbedtls_md5_stream_t *str = (mbedtls_md5_stream_t *) stream;
 
     if (_avs_stream_md5_common_is_finalized(&str->common)) {
-        return -1;
+        return avs_errno(AVS_EBADF);
     }
 
-    return mbedtls_md5_update_ret(&str->ctx, (const unsigned char *) buf, *len);
+    return avs_errno(
+            mbedtls_md5_update_ret(&str->ctx, (const unsigned char *) buf, *len)
+                    ? AVS_ENOBUFS
+                    : AVS_NO_ERROR);
 }
 
 static const avs_stream_v_table_t md5_vtable = {
-    avs_md5_update,
-    avs_md5_finish,
-    _avs_stream_md5_common_read,
-    (avs_stream_peek_t) unimplemented,
-    avs_md5_reset,
-    avs_md5_finish,
-    (avs_stream_error_t) unimplemented,
+    .write_some = avs_md5_update,
+    .finish_message = avs_md5_finish,
+    .read = _avs_stream_md5_common_read,
+    .reset = avs_md5_reset,
+    .close = avs_md5_finish,
     AVS_STREAM_V_TABLE_NO_EXTENSIONS
 };
 
