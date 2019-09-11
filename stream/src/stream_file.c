@@ -36,11 +36,11 @@ VISIBILITY_SOURCE_BEGIN
 struct avs_file_stream_struct {
     const void *const vtable;
     uint8_t mode;
-    avs_errno_t error_code;
     FILE *fp;
 };
 
-int avs_stream_file_length(avs_stream_t *stream, avs_off_t *out_length) {
+avs_error_t avs_stream_file_length(avs_stream_t *stream,
+                                   avs_off_t *out_length) {
     const avs_stream_v_table_extension_file_t *ext =
             (const avs_stream_v_table_extension_file_t *)
                     avs_stream_v_table_find_extension(
@@ -48,10 +48,11 @@ int avs_stream_file_length(avs_stream_t *stream, avs_off_t *out_length) {
     if (ext) {
         return ext->length(stream, out_length);
     }
-    return -1;
+    return avs_errno(AVS_ENOTSUP);
 }
 
-int avs_stream_file_offset(avs_stream_t *stream, avs_off_t *out_offset) {
+avs_error_t avs_stream_file_offset(avs_stream_t *stream,
+                                   avs_off_t *out_offset) {
     const avs_stream_v_table_extension_file_t *ext =
             (const avs_stream_v_table_extension_file_t *)
                     avs_stream_v_table_find_extension(
@@ -59,10 +60,11 @@ int avs_stream_file_offset(avs_stream_t *stream, avs_off_t *out_offset) {
     if (ext) {
         return ext->offset(stream, out_offset);
     }
-    return -1;
+    return avs_errno(AVS_ENOTSUP);
 }
 
-int avs_stream_file_seek(avs_stream_t *stream, avs_off_t offset_from_start) {
+avs_error_t avs_stream_file_seek(avs_stream_t *stream,
+                                 avs_off_t offset_from_start) {
     const avs_stream_v_table_extension_file_t *ext =
             (const avs_stream_v_table_extension_file_t *)
                     avs_stream_v_table_find_extension(
@@ -70,167 +72,150 @@ int avs_stream_file_seek(avs_stream_t *stream, avs_off_t offset_from_start) {
     if (ext) {
         return ext->seek(stream, offset_from_start);
     }
-    return -1;
+    return avs_errno(AVS_ENOTSUP);
 }
 
-static int stream_file_write_some(avs_stream_t *stream_,
-                                  const void *buffer,
-                                  size_t *inout_data_length) {
+static avs_error_t stream_file_write_some(avs_stream_t *stream_,
+                                          const void *buffer,
+                                          size_t *inout_data_length) {
     avs_stream_file_t *file = (avs_stream_file_t *) stream_;
     if ((file->mode & AVS_STREAM_FILE_WRITE) == 0) {
-        file->error_code = AVS_EBADF;
-        return -1;
+        return avs_errno(AVS_EBADF);
     }
     *inout_data_length = fwrite(buffer, 1, *inout_data_length, file->fp);
     if (ferror(file->fp)) {
-        file->error_code = AVS_EIO;
-        return -1;
+        return avs_errno(AVS_EIO);
     }
-    file->error_code = AVS_NO_ERROR;
-    return 0;
+    return AVS_OK;
 }
 
-static int stream_file_read(avs_stream_t *stream_,
-                            size_t *out_bytes_read,
-                            char *out_message_finished,
-                            void *buffer,
-                            size_t buffer_length) {
+static avs_error_t stream_file_read(avs_stream_t *stream_,
+                                    size_t *out_bytes_read,
+                                    bool *out_message_finished,
+                                    void *buffer,
+                                    size_t buffer_length) {
     avs_stream_file_t *file = (avs_stream_file_t *) stream_;
     if ((file->mode & AVS_STREAM_FILE_READ) == 0) {
-        file->error_code = AVS_EBADF;
-        return -1;
+        return avs_errno(AVS_EBADF);
     }
     size_t bytes_read = fread(buffer, 1, buffer_length, file->fp);
     if (out_bytes_read) {
         *out_bytes_read = bytes_read;
     }
     if (ferror(file->fp)) {
-        file->error_code = AVS_EIO;
-        return -1;
+        return avs_errno(AVS_EIO);
     }
     if (out_message_finished) {
         *out_message_finished = !!feof(file->fp);
     }
-    file->error_code = AVS_NO_ERROR;
-    return 0;
+    return AVS_OK;
 }
 
-static int stream_file_peek(avs_stream_t *stream_, size_t offset) {
+static avs_error_t stream_file_peek(avs_stream_t *stream_,
+                                    size_t offset,
+                                    char *out_value) {
     avs_stream_file_t *file = (avs_stream_file_t *) stream_;
-    int8_t byte = EOF;
     size_t bytes_read;
-    char message_finished;
+    bool message_finished;
     avs_off_t current;
 
     if (offset > LONG_MAX) {
-        file->error_code = AVS_ERANGE;
-        return -1;
+        return avs_errno(AVS_ERANGE);
     }
 
     current = ftell(file->fp);
     if (current < 0) {
-        file->error_code = avs_map_errno(errno);
-        return -1;
+        avs_errno_t err = avs_map_errno(errno);
+        if (!err) {
+            err = AVS_UNKNOWN_ERROR;
+        }
+        return avs_errno(err);
     }
 
     if (fseek(file->fp, (long) offset, SEEK_CUR)) {
-        file->error_code = AVS_EIO;
-        return -1;
+        return avs_errno(AVS_EIO);
     }
 
-    if (stream_file_read(stream_, &bytes_read, &message_finished,
-                         (char *) &byte, 1)) {
-        return -1;
+    avs_error_t err = stream_file_read(stream_, &bytes_read, &message_finished,
+                                       out_value, 1);
+    if (avs_is_err(err)) {
+        return err;
     }
 
     if (fseek(file->fp, current, SEEK_SET)) {
-        file->error_code = AVS_EIO;
-        return -1;
+        return avs_errno(AVS_EIO);
     }
-    file->error_code = AVS_NO_ERROR;
-    return (int) byte;
+    return bytes_read >= 1 ? AVS_OK : AVS_EOF;
 }
 
-static int stream_file_reset(avs_stream_t *stream_) {
+static avs_error_t stream_file_reset(avs_stream_t *stream_) {
     avs_stream_file_t *file = (avs_stream_file_t *) stream_;
     clearerr(file->fp);
     if (fseek(file->fp, 0, SEEK_SET)) {
-        file->error_code = AVS_EIO;
-        return -1;
+        return avs_errno(AVS_EIO);
     }
-    file->error_code = AVS_NO_ERROR;
-    return 0;
+    return AVS_OK;
 }
 
-static avs_errno_t stream_file_error(avs_stream_t *stream_) {
+static avs_error_t stream_file_close(avs_stream_t *stream_) {
     avs_stream_file_t *file = (avs_stream_file_t *) stream_;
-    return file->error_code;
+    return avs_errno(fclose(file->fp) ? AVS_EIO : AVS_NO_ERROR);
 }
 
-static int stream_file_close(avs_stream_t *stream_) {
-    avs_stream_file_t *file = (avs_stream_file_t *) stream_;
-    return fclose(file->fp) ? -1 : 0;
-}
-
-static int unimplemented() {
-    return -1;
-}
-
-static int stream_file_offset(avs_stream_t *stream, avs_off_t *out_offset) {
+static avs_error_t stream_file_offset(avs_stream_t *stream,
+                                      avs_off_t *out_offset) {
     avs_stream_file_t *file = (avs_stream_file_t *) stream;
     avs_off_t offset = ftell(file->fp);
     if (offset == -1) {
-        file->error_code = AVS_EIO;
-        return -1;
+        return avs_errno(AVS_EIO);
     }
-    file->error_code = AVS_NO_ERROR;
     *out_offset = offset;
-    return 0;
+    return AVS_OK;
 }
 
-static int stream_file_seek(avs_stream_t *stream, avs_off_t offset_from_start) {
+static avs_error_t stream_file_seek(avs_stream_t *stream,
+                                    avs_off_t offset_from_start) {
     avs_stream_file_t *file = (avs_stream_file_t *) stream;
     if (offset_from_start < 0) {
-        file->error_code = AVS_ERANGE;
-        return -1;
+        return avs_errno(AVS_ERANGE);
     }
     if (fseek(file->fp, offset_from_start, SEEK_SET)) {
-        file->error_code = AVS_EIO;
-        return -1;
+        return avs_errno(AVS_EIO);
     }
-    file->error_code = AVS_NO_ERROR;
-    return 0;
+    return AVS_OK;
 }
 
-static int stream_file_length(avs_stream_t *stream, avs_off_t *out_length) {
+static avs_error_t stream_file_length(avs_stream_t *stream,
+                                      avs_off_t *out_length) {
     avs_stream_file_t *file = (avs_stream_file_t *) stream;
     avs_off_t offset;
-    if (stream_file_offset(stream, &offset)) {
-        return -1;
+    avs_error_t err = stream_file_offset(stream, &offset);
+    if (avs_is_err(err)) {
+        return err;
     }
-    if (fseek(file->fp, 0, SEEK_END)
-            || stream_file_offset(stream, out_length)) {
-        stream_file_seek(stream, offset);
-        file->error_code = AVS_EIO;
-        return -1;
+    if (fseek(file->fp, 0, SEEK_END)) {
+        err = avs_errno(AVS_EIO);
     }
-    return stream_file_seek(stream, offset);
+    if (avs_is_ok(err)) {
+        err = stream_file_offset(stream, out_length);
+    }
+    avs_error_t seek_err = stream_file_seek(stream, offset);
+    return avs_is_ok(err) ? seek_err : err;
 }
 
-static const avs_stream_v_table_extension_file_t stream_file_ext_vtable = {
-    stream_file_length, stream_file_offset, stream_file_seek
-};
-
-static const avs_stream_v_table_extension_t stream_file_extensions[] = {
-    { AVS_STREAM_V_TABLE_EXTENSION_FILE, &stream_file_ext_vtable },
-    AVS_STREAM_V_TABLE_EXTENSION_NULL
-};
-
 static const avs_stream_v_table_t file_stream_vtable = {
-    stream_file_write_some, (avs_stream_finish_message_t) unimplemented,
-    stream_file_read,       stream_file_peek,
-    stream_file_reset,      stream_file_close,
-    stream_file_error,      stream_file_extensions
+    .write_some = stream_file_write_some,
+    .read = stream_file_read,
+    .peek = stream_file_peek,
+    .reset = stream_file_reset,
+    .close = stream_file_close,
+    .extension_list =
+            (const avs_stream_v_table_extension_t[]) {
+                    { AVS_STREAM_V_TABLE_EXTENSION_FILE,
+                      &(const avs_stream_v_table_extension_file_t) {
+                              stream_file_length, stream_file_offset,
+                              stream_file_seek } },
+                    AVS_STREAM_V_TABLE_EXTENSION_NULL }
 };
 
 avs_stream_t *avs_stream_file_create(const char *path, uint8_t mode) {

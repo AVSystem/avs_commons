@@ -27,15 +27,18 @@
 
 VISIBILITY_SOURCE_BEGIN
 
-static int inbuf_stream_read(avs_stream_t *stream_,
-                             size_t *out_bytes_read,
-                             char *out_message_finished,
-                             void *buffer,
-                             size_t buffer_length) {
+static avs_error_t inbuf_stream_read(avs_stream_t *stream_,
+                                     size_t *out_bytes_read,
+                                     bool *out_message_finished,
+                                     void *buffer,
+                                     size_t buffer_length) {
     avs_stream_inbuf_t *stream = (avs_stream_inbuf_t *) stream_;
     size_t bytes_left, bytes_read;
+    if (!buffer_length) {
+        return AVS_OK;
+    }
     if (!buffer) {
-        return -1;
+        return avs_errno(AVS_EINVAL);
     }
 
     assert(stream->buffer_offset <= stream->buffer_size);
@@ -53,17 +56,20 @@ static int inbuf_stream_read(avs_stream_t *stream_,
         *out_bytes_read = bytes_read;
     }
 
-    return 0;
+    return AVS_OK;
 }
 
-static int inbuf_stream_peek(avs_stream_t *stream_, size_t offset) {
+static avs_error_t inbuf_stream_peek(avs_stream_t *stream_,
+                                     size_t offset,
+                                     char *out_value) {
     avs_stream_inbuf_t *stream = (avs_stream_inbuf_t *) stream_;
 
     if (stream->buffer_offset + offset >= stream->buffer_size) {
-        return EOF;
+        return AVS_EOF;
     }
-    return ((const unsigned char *)
-                    stream->buffer)[stream->buffer_offset + offset];
+    *out_value =
+            ((const char *) stream->buffer)[stream->buffer_offset + offset];
+    return AVS_OK;
 }
 
 static const avs_stream_v_table_t inbuf_stream_vtable = {

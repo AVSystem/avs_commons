@@ -42,64 +42,55 @@ typedef struct {
     avs_stream_t *underlying_stream;
     avs_buffer_t *in_buffer;
     avs_buffer_t *out_buffer;
-    char message_finished;
-    avs_errno_t errno_;
+    bool message_finished;
 } buffered_stream_t;
 
-static ssize_t flush_data(buffered_stream_t *stream) {
-    stream->errno_ = AVS_NO_ERROR;
-
-    size_t bytes_to_write = avs_buffer_data_size(stream->out_buffer);
-    if (!bytes_to_write) {
-        return 0;
+static avs_error_t flush_data(buffered_stream_t *stream,
+                              size_t *out_bytes_written) {
+    if (!(*out_bytes_written = avs_buffer_data_size(stream->out_buffer))) {
+        return AVS_OK;
     }
 
-    int retval = avs_stream_write_some(stream->underlying_stream,
-                                       avs_buffer_data(stream->out_buffer),
-                                       &bytes_to_write);
-    if (retval) {
-        return (ssize_t) retval;
+    avs_error_t err = avs_stream_write_some(stream->underlying_stream,
+                                            avs_buffer_data(stream->out_buffer),
+                                            out_bytes_written);
+    if (avs_is_err(err)) {
+        return err;
     }
 
-    avs_buffer_consume_bytes(stream->out_buffer, bytes_to_write);
-    return (ssize_t) bytes_to_write;
+    avs_buffer_consume_bytes(stream->out_buffer, *out_bytes_written);
+    return AVS_OK;
 }
 
-static ssize_t fetch_data(buffered_stream_t *stream) {
-    stream->errno_ = AVS_NO_ERROR;
-
+static avs_error_t fetch_data(buffered_stream_t *stream,
+                              size_t *out_bytes_read) {
     char *insert_ptr = avs_buffer_raw_insert_ptr(stream->in_buffer);
     size_t bytes_to_read = avs_buffer_space_left(stream->in_buffer);
-    size_t bytes_read = 0;
 
-    int retval = avs_stream_read(stream->underlying_stream, &bytes_read,
-                                 &stream->message_finished, insert_ptr,
-                                 bytes_to_read);
-    if (retval) {
-        return (ssize_t) retval;
+    avs_error_t err = avs_stream_read(stream->underlying_stream, out_bytes_read,
+                                      &stream->message_finished, insert_ptr,
+                                      bytes_to_read);
+    if (avs_is_err(err)) {
+        return err;
     }
 
-    assert(bytes_read <= avs_buffer_capacity(stream->in_buffer));
-    avs_buffer_advance_ptr(stream->in_buffer, bytes_read);
-    return (ssize_t) bytes_read;
+    assert(*out_bytes_read <= avs_buffer_capacity(stream->in_buffer));
+    avs_buffer_advance_ptr(stream->in_buffer, *out_bytes_read);
+    return AVS_OK;
 }
 
-static int stream_buffered_write_some(avs_stream_t *stream_,
-                                      const void *buffer,
-                                      size_t *inout_data_length) {
+static avs_error_t stream_buffered_write_some(avs_stream_t *stream_,
+                                              const void *buffer,
+                                              size_t *inout_data_length) {
     buffered_stream_t *stream = (buffered_stream_t *) stream_;
-    stream->errno_ = AVS_NO_ERROR;
-
     if (!inout_data_length) {
-        stream->errno_ = AVS_EINVAL;
-        return -1;
+        return avs_errno(AVS_EINVAL);
     }
     if (*inout_data_length == 0) {
-        return 0;
+        return AVS_OK;
     }
     if (!buffer) {
-        stream->errno_ = AVS_EINVAL;
-        return -1;
+        return avs_errno(AVS_EINVAL);
     }
     if (!stream->out_buffer) {
         return avs_stream_write_some(stream->underlying_stream, buffer,
@@ -116,9 +107,10 @@ static int stream_buffered_write_some(avs_stream_t *stream_,
                                 bytes_to_write);
         total_written += bytes_to_write;
         if (avs_buffer_space_left(stream->out_buffer) == 0) {
-            ssize_t bytes_flushed = flush_data(stream);
-            if (bytes_flushed < 0) {
-                return -1;
+            size_t bytes_flushed;
+            avs_error_t err = flush_data(stream, &bytes_flushed);
+            if (avs_is_err(err)) {
+                return err;
             } else if (bytes_flushed == 0) {
                 break;
             }
@@ -126,41 +118,39 @@ static int stream_buffered_write_some(avs_stream_t *stream_,
     }
 
     *inout_data_length = total_written;
-    return 0;
+    return AVS_OK;
 }
 
-static int stream_buffered_read(avs_stream_t *stream_,
-                                size_t *out_bytes_read,
-                                char *out_message_finished,
-                                void *buffer,
-                                size_t buffer_length) {
+static avs_error_t stream_buffered_read(avs_stream_t *stream_,
+                                        size_t *out_bytes_read,
+                                        bool *out_message_finished,
+                                        void *buffer,
+                                        size_t buffer_length) {
     buffered_stream_t *stream = (buffered_stream_t *) stream_;
-    stream->errno_ = AVS_NO_ERROR;
-
     size_t bytes_read = 0;
-    int retval = 0;
 
     if (buffer_length == 0) {
         goto finish;
     }
     if (!buffer) {
-        stream->errno_ = AVS_EINVAL;
-        return -1;
+        return avs_errno(AVS_EINVAL);
     }
 
     if (!stream->in_buffer) {
-        if ((retval = avs_stream_read(stream->underlying_stream, &bytes_read,
-                                      &stream->message_finished, buffer,
-                                      buffer_length))) {
-            return retval;
+        avs_error_t err =
+                avs_stream_read(stream->underlying_stream, &bytes_read,
+                                &stream->message_finished, buffer,
+                                buffer_length);
+        if (avs_is_err(err)) {
+            return err;
         }
         goto finish;
     }
 
     if (avs_buffer_data_size(stream->in_buffer) == 0) {
-        retval = (int) fetch_data(stream);
-        if (retval < 0) {
-            return retval;
+        avs_error_t err = fetch_data(stream, &(size_t) { 0 });
+        if (avs_is_err(err)) {
+            return err;
         }
     }
 
@@ -178,81 +168,92 @@ finish:
     if (out_message_finished) {
         *out_message_finished = stream->message_finished;
     }
-    return 0;
+    return AVS_OK;
 }
 
-static int finish_message(buffered_stream_t *stream) {
+static avs_error_t finish_message(buffered_stream_t *stream) {
     assert(stream->out_buffer);
-    ssize_t data_size = (ssize_t) avs_buffer_data_size(stream->out_buffer);
-    return (flush_data(stream) < data_size) ? -1 : 0;
+    size_t data_size = avs_buffer_data_size(stream->out_buffer);
+    size_t bytes_flushed;
+    avs_error_t err = flush_data(stream, &bytes_flushed);
+    if (avs_is_ok(err) && bytes_flushed < data_size) {
+        return avs_errno(AVS_EMSGSIZE);
+    }
+    return err;
 }
 
-static int stream_buffered_finish_message(avs_stream_t *stream_) {
+static avs_error_t
+stream_buffered_finish_message(avs_stream_t *stream_) {
     buffered_stream_t *stream = (buffered_stream_t *) stream_;
-    stream->errno_ = AVS_NO_ERROR;
-    int retval = 0;
+    avs_error_t err = AVS_OK;
     if (stream->out_buffer) {
-        retval = finish_message(stream);
+        err = finish_message(stream);
     }
 
-    int backend_retval = avs_stream_finish_message(stream->underlying_stream);
+    avs_error_t backend_err =
+            avs_stream_finish_message(stream->underlying_stream);
 
-    return retval ? retval : backend_retval;
+    return avs_is_ok(err) ? backend_err : err;
 }
 
-static int stream_buffered_peek(avs_stream_t *stream_, size_t offset) {
+static avs_error_t stream_buffered_peek(avs_stream_t *stream_,
+                                        size_t offset,
+                                        char *out_value) {
     buffered_stream_t *stream = (buffered_stream_t *) stream_;
-    stream->errno_ = AVS_NO_ERROR;
     if (!stream->in_buffer) {
-        return avs_stream_peek(stream->underlying_stream, offset);
+        return avs_stream_peek(stream->underlying_stream, offset, out_value);
     }
 
     if (offset < avs_buffer_capacity(stream->in_buffer)) {
         while (offset >= avs_buffer_data_size(stream->in_buffer)) {
-            ssize_t bytes_read = fetch_data(stream);
-            if (bytes_read < 0) {
+            size_t bytes_read;
+            avs_error_t err = fetch_data(stream, &bytes_read);
+            if (avs_is_err(err)) {
                 LOG(ERROR, "cannot peek - read error");
-                return EOF;
+                return err;
             } else if (bytes_read == 0) {
                 LOG(ERROR, "cannot peek - 0 bytes read");
-                return EOF;
+                return stream->message_finished ? AVS_EOF
+                                                : avs_errno(AVS_ENOBUFS);
             }
         }
-        return (unsigned char) avs_buffer_data(stream->in_buffer)[offset];
+        *out_value = avs_buffer_data(stream->in_buffer)[offset];
+        return AVS_OK;
     }
 
-    int retval =
+    avs_error_t err =
             avs_stream_peek(stream->underlying_stream,
-                            offset - avs_buffer_data_size(stream->in_buffer));
-    if (retval < 0) {
+                            offset - avs_buffer_data_size(stream->in_buffer),
+                            out_value);
+    if (avs_is_err(err)) {
         LOG(ERROR, "cannot peek - buffer is too small and underlying stream's "
                    "peek failed");
-        if (!avs_stream_error(stream->underlying_stream)) {
-            stream->errno_ = AVS_EINVAL;
+        if (err.category == AVS_ERRNO_CATEGORY && err.code == AVS_ENOTSUP) {
+            // underlying stream does not support peeking - map it to ENOBUFS
+            return avs_errno(AVS_ENOBUFS);
         }
     }
-    return retval;
+    return err;
 }
 
-static int stream_buffered_close(avs_stream_t *stream_) {
+static avs_error_t stream_buffered_close(avs_stream_t *stream_) {
     buffered_stream_t *stream = (buffered_stream_t *) stream_;
-    int retval = 0;
+    avs_error_t err = AVS_OK;
     if (stream->out_buffer) {
-        retval = finish_message(stream);
+        err = finish_message(stream);
         avs_buffer_free(&stream->out_buffer);
     }
     if (stream->in_buffer) {
         avs_buffer_free(&stream->in_buffer);
     }
 
-    int backend_retval = avs_stream_cleanup(&stream->underlying_stream);
+    avs_error_t backend_err = avs_stream_cleanup(&stream->underlying_stream);
 
-    return retval ? retval : backend_retval;
+    return avs_is_ok(err) ? backend_err : err;
 }
 
-static int stream_buffered_reset(avs_stream_t *stream_) {
+static avs_error_t stream_buffered_reset(avs_stream_t *stream_) {
     buffered_stream_t *stream = (buffered_stream_t *) stream_;
-    stream->errno_ = AVS_NO_ERROR;
     if (stream->in_buffer) {
         avs_buffer_reset(stream->in_buffer);
     }
@@ -262,22 +263,13 @@ static int stream_buffered_reset(avs_stream_t *stream_) {
     return avs_stream_reset(stream->underlying_stream);
 }
 
-static avs_errno_t stream_buffered_error(avs_stream_t *stream_) {
-    buffered_stream_t *stream = (buffered_stream_t *) stream_;
-    if (stream->errno_) {
-        return stream->errno_;
-    }
-    return avs_stream_error(stream->underlying_stream);
-}
-
 static const avs_stream_v_table_t buffered_stream_vtable = {
     .write_some = stream_buffered_write_some,
     .finish_message = stream_buffered_finish_message,
     .read = stream_buffered_read,
     .peek = stream_buffered_peek,
     .reset = stream_buffered_reset,
-    .close = stream_buffered_close,
-    .get_error = stream_buffered_error
+    .close = stream_buffered_close
 };
 
 int avs_stream_buffered_create(avs_stream_t **inout_stream,
