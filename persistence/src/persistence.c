@@ -28,33 +28,32 @@
 
 VISIBILITY_SOURCE_BEGIN
 
-typedef int persistence_handler_u16_t(avs_persistence_context_t *ctx,
-                                      uint16_t *value);
-typedef int persistence_handler_u32_t(avs_persistence_context_t *ctx,
-                                      uint32_t *value);
-typedef int persistence_handler_u64_t(avs_persistence_context_t *ctx,
-                                      uint64_t *value);
-typedef int persistence_handler_bool_t(avs_persistence_context_t *ctx,
-                                       bool *value);
-typedef int persistence_handler_bytes_t(avs_persistence_context_t *ctx,
-                                        void *buffer,
-                                        size_t buffer_size);
-typedef int persistence_handler_float_t(avs_persistence_context_t *ctx,
-                                        float *value);
-typedef int persistence_handler_double_t(avs_persistence_context_t *ctx,
-                                         double *value);
-typedef int persistence_handler_sized_buffer_t(avs_persistence_context_t *ctx,
-                                               void **data_ptr,
-                                               size_t *size_ptr);
-typedef int persistence_handler_string_t(avs_persistence_context_t *ctx,
-                                         char **string_ptr);
-typedef int persistence_handler_list_t(
+typedef avs_error_t persistence_handler_u16_t(avs_persistence_context_t *ctx,
+                                              uint16_t *value);
+typedef avs_error_t persistence_handler_u32_t(avs_persistence_context_t *ctx,
+                                              uint32_t *value);
+typedef avs_error_t persistence_handler_u64_t(avs_persistence_context_t *ctx,
+                                              uint64_t *value);
+typedef avs_error_t persistence_handler_bool_t(avs_persistence_context_t *ctx,
+                                               bool *value);
+typedef avs_error_t persistence_handler_bytes_t(avs_persistence_context_t *ctx,
+                                                void *buffer,
+                                                size_t buffer_size);
+typedef avs_error_t persistence_handler_float_t(avs_persistence_context_t *ctx,
+                                                float *value);
+typedef avs_error_t persistence_handler_double_t(avs_persistence_context_t *ctx,
+                                                 double *value);
+typedef avs_error_t persistence_handler_sized_buffer_t(
+        avs_persistence_context_t *ctx, void **data_ptr, size_t *size_ptr);
+typedef avs_error_t persistence_handler_string_t(avs_persistence_context_t *ctx,
+                                                 char **string_ptr);
+typedef avs_error_t persistence_handler_list_t(
         avs_persistence_context_t *ctx,
         AVS_LIST(void) *list_ptr,
         avs_persistence_handler_custom_allocated_list_element_t *handler,
         void *handler_user_ptr,
         avs_persistence_cleanup_collection_element_t *cleanup);
-typedef int persistence_handler_tree_t(
+typedef avs_error_t persistence_handler_tree_t(
         avs_persistence_context_t *ctx,
         AVS_RBTREE(void) tree,
         avs_persistence_handler_custom_allocated_tree_element_t *handler,
@@ -78,66 +77,71 @@ struct avs_persistence_context_vtable_struct {
 
 //// PERSIST ///////////////////////////////////////////////////////////////////
 
-static int persist_bool(avs_persistence_context_t *ctx, bool *value) {
+static avs_error_t persist_bool(avs_persistence_context_t *ctx, bool *value) {
     AVS_STATIC_ASSERT(sizeof(*value) == 1, bool_is_1byte);
     return avs_stream_write(ctx->stream, value, 1);
 }
 
-static int persist_bytes(avs_persistence_context_t *ctx,
-                         void *buffer,
-                         size_t buffer_size) {
+static avs_error_t persist_bytes(avs_persistence_context_t *ctx,
+                                 void *buffer,
+                                 size_t buffer_size) {
     return avs_stream_write(ctx->stream, buffer, buffer_size);
 }
 
-static int persist_u16(avs_persistence_context_t *ctx, uint16_t *value) {
+static avs_error_t persist_u16(avs_persistence_context_t *ctx,
+                               uint16_t *value) {
     const uint16_t tmp = avs_convert_be16(*value);
     return avs_stream_write(ctx->stream, &tmp, sizeof(tmp));
 }
 
-static int persist_u32(avs_persistence_context_t *ctx, uint32_t *value) {
+static avs_error_t persist_u32(avs_persistence_context_t *ctx,
+                               uint32_t *value) {
     const uint32_t tmp = avs_convert_be32(*value);
     return avs_stream_write(ctx->stream, &tmp, sizeof(tmp));
 }
 
-static int persist_u64(avs_persistence_context_t *ctx, uint64_t *value) {
+static avs_error_t persist_u64(avs_persistence_context_t *ctx,
+                               uint64_t *value) {
     const uint64_t tmp = avs_convert_be64(*value);
     return avs_stream_write(ctx->stream, &tmp, sizeof(tmp));
 }
 
-static int persist_float(avs_persistence_context_t *ctx, float *value) {
+static avs_error_t persist_float(avs_persistence_context_t *ctx, float *value) {
     const uint32_t value_be = avs_htonf(*value);
     AVS_STATIC_ASSERT(sizeof(*value) == sizeof(value_be), float_is_32);
     return avs_stream_write(ctx->stream, &value_be, sizeof(value_be));
 }
 
-static int persist_double(avs_persistence_context_t *ctx, double *value) {
+static avs_error_t persist_double(avs_persistence_context_t *ctx,
+                                  double *value) {
     const uint64_t value_be = avs_htond(*value);
     AVS_STATIC_ASSERT(sizeof(*value) == sizeof(value_be), double_is_64);
     return avs_stream_write(ctx->stream, &value_be, sizeof(value_be));
 }
 
-static int persist_sized_buffer(avs_persistence_context_t *ctx,
-                                void **data_ptr,
-                                size_t *size_ptr) {
+static avs_error_t persist_sized_buffer(avs_persistence_context_t *ctx,
+                                        void **data_ptr,
+                                        size_t *size_ptr) {
     uint32_t size32 = (uint32_t) *size_ptr;
     if (size32 != *size_ptr) {
         LOG(ERROR,
             "Element too big to persist (%lu is larger than %" PRIu32 ")",
             (unsigned long) *size_ptr, UINT32_MAX);
     }
-    int retval = persist_u32(ctx, &size32);
-    if (!retval && size32 > 0) {
-        retval = persist_bytes(ctx, *data_ptr, *size_ptr);
+    avs_error_t err = persist_u32(ctx, &size32);
+    if (avs_is_ok(err) && size32 > 0) {
+        err = persist_bytes(ctx, *data_ptr, *size_ptr);
     }
-    return retval;
+    return err;
 }
 
-static int persist_string(avs_persistence_context_t *ctx, char **string_ptr) {
+static avs_error_t persist_string(avs_persistence_context_t *ctx,
+                                  char **string_ptr) {
     size_t size = (string_ptr && *string_ptr) ? (strlen(*string_ptr) + 1) : 0;
     return persist_sized_buffer(ctx, (void **) string_ptr, &size);
 }
 
-static int
+static avs_error_t
 persist_list(avs_persistence_context_t *ctx,
              AVS_LIST(void) *list_ptr,
              avs_persistence_handler_custom_allocated_list_element_t *handler,
@@ -147,21 +151,22 @@ persist_list(avs_persistence_context_t *ctx,
     const size_t count = AVS_LIST_SIZE(*list_ptr);
     uint32_t count32 = (uint32_t) count;
     if (count != count32) {
-        return -1;
+        return avs_errno(AVS_EOVERFLOW);
     }
-    int retval = persist_u32(ctx, &count32);
-    if (!retval) {
+    avs_error_t err = persist_u32(ctx, &count32);
+    if (avs_is_ok(err)) {
         AVS_LIST(void) *element_ptr;
         AVS_LIST_FOREACH_PTR(element_ptr, list_ptr) {
-            if ((retval = handler(ctx, element_ptr, handler_user_ptr))) {
+            if (handler(ctx, element_ptr, handler_user_ptr)) {
+                err = avs_errno(AVS_EPIPE);
                 break;
             }
         }
     }
-    return retval;
+    return err;
 }
 
-static int
+static avs_error_t
 persist_tree(avs_persistence_context_t *ctx,
              AVS_RBTREE(void) tree,
              avs_persistence_handler_custom_allocated_tree_element_t *handler,
@@ -171,18 +176,19 @@ persist_tree(avs_persistence_context_t *ctx,
     const size_t count = AVS_RBTREE_SIZE(tree);
     uint32_t count32 = (uint32_t) count;
     if (count != count32) {
-        return -1;
+        return avs_errno(AVS_EOVERFLOW);
     }
-    int retval = persist_u32(ctx, &count32);
-    if (!retval) {
+    avs_error_t err = persist_u32(ctx, &count32);
+    if (avs_is_ok(err)) {
         AVS_RBTREE_ELEM(void) element;
         AVS_RBTREE_FOREACH(element, tree) {
-            if ((retval = handler(ctx, &element, handler_user_ptr))) {
+            if (handler(ctx, &element, handler_user_ptr)) {
+                err = avs_errno(AVS_EPIPE);
                 break;
             }
         }
     }
-    return retval;
+    return err;
 }
 
 static const struct avs_persistence_context_vtable_struct STORE_VTABLE = {
@@ -193,106 +199,107 @@ static const struct avs_persistence_context_vtable_struct STORE_VTABLE = {
 
 //// RESTORE ///////////////////////////////////////////////////////////////////
 
-static int restore_bool(avs_persistence_context_t *ctx, bool *out) {
+static avs_error_t restore_bool(avs_persistence_context_t *ctx, bool *out) {
     AVS_STATIC_ASSERT(sizeof(*out) == 1, bool_is_1byte);
     return avs_stream_read_reliably(ctx->stream, out, 1);
 }
 
-static int restore_bytes(avs_persistence_context_t *ctx,
-                         void *buffer,
-                         size_t buffer_size) {
+static avs_error_t restore_bytes(avs_persistence_context_t *ctx,
+                                 void *buffer,
+                                 size_t buffer_size) {
     return avs_stream_read_reliably(ctx->stream, buffer, buffer_size);
 }
 
-static int restore_u16(avs_persistence_context_t *ctx, uint16_t *out) {
+static avs_error_t restore_u16(avs_persistence_context_t *ctx, uint16_t *out) {
     uint16_t tmp;
-    int retval = avs_stream_read_reliably(ctx->stream, &tmp, sizeof(tmp));
-    if (!retval && out) {
+    avs_error_t err = avs_stream_read_reliably(ctx->stream, &tmp, sizeof(tmp));
+    if (avs_is_ok(err) && out) {
         *out = avs_convert_be16(tmp);
     }
-    return retval;
+    return err;
 }
 
-static int restore_u32(avs_persistence_context_t *ctx, uint32_t *out) {
+static avs_error_t restore_u32(avs_persistence_context_t *ctx, uint32_t *out) {
     uint32_t tmp;
-    int retval = avs_stream_read_reliably(ctx->stream, &tmp, sizeof(tmp));
-    if (!retval) {
+    avs_error_t err = avs_stream_read_reliably(ctx->stream, &tmp, sizeof(tmp));
+    if (avs_is_ok(err)) {
         *out = avs_convert_be32(tmp);
     }
-    return retval;
+    return err;
 }
 
-static int restore_u64(avs_persistence_context_t *ctx, uint64_t *out) {
+static avs_error_t restore_u64(avs_persistence_context_t *ctx, uint64_t *out) {
     uint64_t tmp;
-    int retval = avs_stream_read_reliably(ctx->stream, &tmp, sizeof(tmp));
-    if (!retval) {
+    avs_error_t err = avs_stream_read_reliably(ctx->stream, &tmp, sizeof(tmp));
+    if (avs_is_ok(err)) {
         *out = avs_convert_be64(tmp);
     }
-    return retval;
+    return err;
 }
 
-static int restore_float(avs_persistence_context_t *ctx, float *out) {
+static avs_error_t restore_float(avs_persistence_context_t *ctx, float *out) {
     uint32_t tmp;
     AVS_STATIC_ASSERT(sizeof(*out) == sizeof(tmp), float_is_32);
-    int retval = avs_stream_read_reliably(ctx->stream, &tmp, sizeof(tmp));
-    if (!retval) {
+    avs_error_t err = avs_stream_read_reliably(ctx->stream, &tmp, sizeof(tmp));
+    if (avs_is_ok(err)) {
         *out = avs_ntohf(tmp);
     }
-    return retval;
+    return err;
 }
 
-static int restore_double(avs_persistence_context_t *ctx, double *out) {
+static avs_error_t restore_double(avs_persistence_context_t *ctx, double *out) {
     uint64_t tmp;
     AVS_STATIC_ASSERT(sizeof(*out) == sizeof(tmp), double_is_64);
-    int retval = avs_stream_read_reliably(ctx->stream, &tmp, sizeof(tmp));
-    if (!retval) {
+    avs_error_t err = avs_stream_read_reliably(ctx->stream, &tmp, sizeof(tmp));
+    if (avs_is_ok(err)) {
         *out = avs_ntohd(tmp);
     }
-    return retval;
+    return err;
 }
 
-static int restore_sized_buffer(avs_persistence_context_t *ctx,
-                                void **data_ptr,
-                                size_t *size_ptr) {
+static avs_error_t restore_sized_buffer(avs_persistence_context_t *ctx,
+                                        void **data_ptr,
+                                        size_t *size_ptr) {
     assert(!*data_ptr);
     assert(!*size_ptr);
     uint32_t size32;
-    int retval = restore_u32(ctx, &size32);
-    if (retval) {
-        return retval;
+    avs_error_t err = restore_u32(ctx, &size32);
+    if (avs_is_err(err)) {
+        return err;
     }
     if (size32 == 0) {
-        return 0;
+        return AVS_OK;
     }
     if (!(*data_ptr = avs_malloc(size32))) {
         LOG(ERROR, "Cannot allocate %" PRIu32 " bytes", size32);
-        return -1;
+        return avs_errno(AVS_ENOMEM);
     }
-    if ((retval = restore_bytes(ctx, *data_ptr, size32))) {
+    if (avs_is_err((err = restore_bytes(ctx, *data_ptr, size32)))) {
         avs_free(*data_ptr);
         *data_ptr = NULL;
     } else {
         *size_ptr = size32;
     }
-    return retval;
+    return err;
 }
 
-static int restore_string(avs_persistence_context_t *ctx, char **string_ptr) {
+static avs_error_t restore_string(avs_persistence_context_t *ctx,
+                                  char **string_ptr) {
     size_t size = 0;
-    int retval = restore_sized_buffer(ctx, (void **) string_ptr, &size);
-    if (retval) {
-        return retval;
+    avs_error_t err = restore_sized_buffer(ctx, (void **) string_ptr, &size);
+    if (avs_is_err(err)) {
+        return err;
     }
     if (size > 0 && (*string_ptr)[size - 1] != '\0') {
         LOG(ERROR, "Invalid string");
         avs_free(*string_ptr);
         *string_ptr = NULL;
-        return -1;
+        return avs_errno(AVS_EBADMSG);
     }
-    return 0;
+    return AVS_OK;
 }
 
-static int
+static avs_error_t
 restore_list(avs_persistence_context_t *ctx,
              AVS_LIST(void) *list_ptr,
              avs_persistence_handler_custom_allocated_list_element_t *handler,
@@ -300,25 +307,27 @@ restore_list(avs_persistence_context_t *ctx,
              avs_persistence_cleanup_collection_element_t *cleanup) {
     assert(list_ptr && !*list_ptr);
     uint32_t count;
-    int retval = restore_u32(ctx, &count);
+    avs_error_t err = restore_u32(ctx, &count);
     AVS_LIST(void) *insert_ptr = list_ptr;
-    while (!retval && count--) {
+    while (avs_is_ok(err) && count--) {
         AVS_LIST(void) element = NULL;
-        retval = handler(ctx, &element, handler_user_ptr);
+        if (handler(ctx, &element, handler_user_ptr)) {
+            err = avs_errno(AVS_EPIPE);
+        }
         if (element) {
             AVS_LIST_INSERT(insert_ptr, element);
             insert_ptr = AVS_LIST_NEXT_PTR(insert_ptr);
         }
     }
-    if (retval && cleanup) {
+    if (avs_is_err(err) && cleanup) {
         AVS_LIST_CLEAR(list_ptr) {
             cleanup(*list_ptr);
         }
     }
-    return retval;
+    return err;
 }
 
-static int
+static avs_error_t
 restore_tree(avs_persistence_context_t *ctx,
              AVS_RBTREE(void) tree,
              avs_persistence_handler_custom_allocated_tree_element_t *handler,
@@ -327,24 +336,25 @@ restore_tree(avs_persistence_context_t *ctx,
     assert(AVS_RBTREE_SIZE(tree) == 0);
     assert(cleanup);
     uint32_t count;
-    int retval = restore_u32(ctx, &count);
-    while (!retval && count--) {
+    avs_error_t err = restore_u32(ctx, &count);
+    while (avs_is_ok(err) && count--) {
         AVS_RBTREE_ELEM(void) element = NULL;
-        if (!(retval = handler(ctx, &element, handler_user_ptr)) && element
-                && AVS_RBTREE_INSERT(tree, element) != element) {
-            retval = -1;
+        if (handler(ctx, &element, handler_user_ptr)) {
+            err = avs_errno(AVS_EPIPE);
+        } else if (element && AVS_RBTREE_INSERT(tree, element) != element) {
+            err = avs_errno(AVS_EBADMSG);
         }
-        if (retval && element) {
+        if (avs_is_err(err) && element) {
             cleanup(element);
             AVS_RBTREE_ELEM_DELETE_DETACHED(&element);
         }
     }
-    if (retval) {
+    if (avs_is_err(err)) {
         AVS_RBTREE_CLEAR(tree) {
             cleanup(*tree);
         }
     }
-    return retval;
+    return err;
 }
 
 static const struct avs_persistence_context_vtable_struct RESTORE_VTABLE = {
@@ -386,120 +396,129 @@ avs_persistence_direction(avs_persistence_context_t *ctx) {
     return ctx->vtable->direction;
 }
 
-int avs_persistence_u8(avs_persistence_context_t *ctx, uint8_t *value) {
+avs_error_t avs_persistence_u8(avs_persistence_context_t *ctx, uint8_t *value) {
     if (!ctx) {
-        return -1;
+        return avs_errno(AVS_EBADF);
     }
     return ctx->vtable->handle_bytes(ctx, value, sizeof(*value));
 }
 
-int avs_persistence_u16(avs_persistence_context_t *ctx, uint16_t *value) {
+avs_error_t avs_persistence_u16(avs_persistence_context_t *ctx,
+                                uint16_t *value) {
     if (!ctx) {
-        return -1;
+        return avs_errno(AVS_EBADF);
     }
     return ctx->vtable->handle_u16(ctx, value);
 }
 
-int avs_persistence_u32(avs_persistence_context_t *ctx, uint32_t *value) {
+avs_error_t avs_persistence_u32(avs_persistence_context_t *ctx,
+                                uint32_t *value) {
     if (!ctx) {
-        return -1;
+        return avs_errno(AVS_EBADF);
     }
     return ctx->vtable->handle_u32(ctx, value);
 }
 
-int avs_persistence_u64(avs_persistence_context_t *ctx, uint64_t *value) {
+avs_error_t avs_persistence_u64(avs_persistence_context_t *ctx,
+                                uint64_t *value) {
     if (!ctx) {
-        return -1;
+        return avs_errno(AVS_EBADF);
     }
     return ctx->vtable->handle_u64(ctx, value);
 }
 
-int avs_persistence_i8(avs_persistence_context_t *ctx, int8_t *value) {
+avs_error_t avs_persistence_i8(avs_persistence_context_t *ctx, int8_t *value) {
     if (!ctx) {
-        return -1;
+        return avs_errno(AVS_EBADF);
     }
     return ctx->vtable->handle_bytes(ctx, value, sizeof(*value));
 }
 
-int avs_persistence_i16(avs_persistence_context_t *ctx, int16_t *value) {
+avs_error_t avs_persistence_i16(avs_persistence_context_t *ctx,
+                                int16_t *value) {
     return avs_persistence_u16(ctx, (uint16_t *) value);
 }
 
-int avs_persistence_i32(avs_persistence_context_t *ctx, int32_t *value) {
+avs_error_t avs_persistence_i32(avs_persistence_context_t *ctx,
+                                int32_t *value) {
     return avs_persistence_u32(ctx, (uint32_t *) value);
 }
 
-int avs_persistence_i64(avs_persistence_context_t *ctx, int64_t *value) {
+avs_error_t avs_persistence_i64(avs_persistence_context_t *ctx,
+                                int64_t *value) {
     return avs_persistence_u64(ctx, (uint64_t *) value);
 }
 
-int avs_persistence_bool(avs_persistence_context_t *ctx, bool *value) {
+avs_error_t avs_persistence_bool(avs_persistence_context_t *ctx, bool *value) {
     if (!ctx) {
-        return -1;
+        return avs_errno(AVS_EBADF);
     }
     return ctx->vtable->handle_bool(ctx, value);
 }
 
-int avs_persistence_bytes(avs_persistence_context_t *ctx,
-                          void *buffer,
-                          size_t buffer_size) {
+avs_error_t avs_persistence_bytes(avs_persistence_context_t *ctx,
+                                  void *buffer,
+                                  size_t buffer_size) {
     if (!ctx) {
-        return -1;
+        return avs_errno(AVS_EBADF);
     }
     return ctx->vtable->handle_bytes(ctx, buffer, buffer_size);
 }
 
-int avs_persistence_float(avs_persistence_context_t *ctx, float *value) {
+avs_error_t avs_persistence_float(avs_persistence_context_t *ctx,
+                                  float *value) {
     if (!ctx) {
-        return -1;
+        return avs_errno(AVS_EBADF);
     }
     return ctx->vtable->handle_float(ctx, value);
 }
 
-int avs_persistence_double(avs_persistence_context_t *ctx, double *value) {
+avs_error_t avs_persistence_double(avs_persistence_context_t *ctx,
+                                   double *value) {
     if (!ctx) {
-        return -1;
+        return avs_errno(AVS_EBADF);
     }
     return ctx->vtable->handle_double(ctx, value);
 }
 
-int avs_persistence_sized_buffer(avs_persistence_context_t *ctx,
-                                 void **data_ptr,
-                                 size_t *size_ptr) {
+avs_error_t avs_persistence_sized_buffer(avs_persistence_context_t *ctx,
+                                         void **data_ptr,
+                                         size_t *size_ptr) {
     if (!ctx) {
-        return -1;
+        return avs_errno(AVS_EBADF);
     }
     return ctx->vtable->handle_sized_buffer(ctx, data_ptr, size_ptr);
 }
 
-int avs_persistence_string(avs_persistence_context_t *ctx, char **string_ptr) {
+avs_error_t avs_persistence_string(avs_persistence_context_t *ctx,
+                                   char **string_ptr) {
     if (!ctx) {
-        return -1;
+        return avs_errno(AVS_EBADF);
     }
     return ctx->vtable->handle_string(ctx, string_ptr);
 }
 
-int avs_persistence_custom_allocated_list(
+avs_error_t avs_persistence_custom_allocated_list(
         avs_persistence_context_t *ctx,
         AVS_LIST(void) *list_ptr,
         avs_persistence_handler_custom_allocated_list_element_t *handler,
         void *handler_user_ptr,
         avs_persistence_cleanup_collection_element_t *cleanup) {
     if (!ctx) {
-        return -1;
+        return avs_errno(AVS_EBADF);
     }
     return ctx->vtable->handle_list(ctx, list_ptr, handler, handler_user_ptr,
                                     cleanup);
 }
 
-int avs_persistence_custom_allocated_tree(
+avs_error_t avs_persistence_custom_allocated_tree(
         avs_persistence_context_t *ctx,
         AVS_RBTREE(void) tree,
         avs_persistence_handler_custom_allocated_tree_element_t *handler,
         void *handler_user_ptr,
         avs_persistence_cleanup_collection_element_t *cleanup) {
     if (!ctx) {
-        return -1;
+        return avs_errno(AVS_EBADF);
     }
     return ctx->vtable->handle_tree(ctx, tree, handler, handler_user_ptr,
                                     cleanup);
@@ -529,13 +548,13 @@ typedef struct {
 
 DEFINE_PERSISTENCE_COLLECTION_HANDLER(persistence_list_handler, AVS_LIST)
 
-int avs_persistence_list(
-        avs_persistence_context_t *ctx,
-        AVS_LIST(void) *list_ptr,
-        size_t element_size,
-        avs_persistence_handler_collection_element_t *handler,
-        void *handler_user_ptr,
-        avs_persistence_cleanup_collection_element_t *cleanup) {
+avs_error_t
+avs_persistence_list(avs_persistence_context_t *ctx,
+                     AVS_LIST(void) *list_ptr,
+                     size_t element_size,
+                     avs_persistence_handler_collection_element_t *handler,
+                     void *handler_user_ptr,
+                     avs_persistence_cleanup_collection_element_t *cleanup) {
     persistence_collection_state_t state = {
         .element_size = element_size,
         .handler = handler,
@@ -547,13 +566,13 @@ int avs_persistence_list(
 
 DEFINE_PERSISTENCE_COLLECTION_HANDLER(persistence_tree_handler, AVS_RBTREE_ELEM)
 
-int avs_persistence_tree(
-        avs_persistence_context_t *ctx,
-        AVS_RBTREE(void) tree,
-        size_t element_size,
-        avs_persistence_handler_collection_element_t *handler,
-        void *handler_user_ptr,
-        avs_persistence_cleanup_collection_element_t *cleanup) {
+avs_error_t
+avs_persistence_tree(avs_persistence_context_t *ctx,
+                     AVS_RBTREE(void) tree,
+                     size_t element_size,
+                     avs_persistence_handler_collection_element_t *handler,
+                     void *handler_user_ptr,
+                     avs_persistence_cleanup_collection_element_t *cleanup) {
     persistence_collection_state_t state = {
         .element_size = element_size,
         .handler = handler,
@@ -563,11 +582,11 @@ int avs_persistence_tree(
             ctx, tree, persistence_tree_handler, &state, cleanup);
 }
 
-int avs_persistence_magic(avs_persistence_context_t *ctx,
-                          const void *magic,
-                          size_t magic_size) {
+avs_error_t avs_persistence_magic(avs_persistence_context_t *ctx,
+                                  const void *magic,
+                                  size_t magic_size) {
     if (magic_size == 0) {
-        return 0;
+        return AVS_OK;
     } else if (avs_persistence_direction(ctx) == AVS_PERSISTENCE_STORE) {
         return avs_persistence_bytes(ctx, (void *) (intptr_t) magic,
                                      magic_size);
@@ -575,35 +594,35 @@ int avs_persistence_magic(avs_persistence_context_t *ctx,
         void *bytes = avs_malloc(magic_size);
         if (!bytes) {
             LOG(ERROR, "Out of memory");
-            return -1;
+            return avs_errno(AVS_ENOMEM);
         }
-        int result = avs_persistence_bytes(ctx, bytes, magic_size);
-        if (!result && memcmp(bytes, magic, magic_size) != 0) {
+        avs_error_t err = avs_persistence_bytes(ctx, bytes, magic_size);
+        if (avs_is_ok(err) && memcmp(bytes, magic, magic_size) != 0) {
             LOG(ERROR, "Magic markers do not match");
-            result = -1;
+            err = avs_errno(AVS_EBADMSG);
         }
         avs_free(bytes);
-        return result;
+        return err;
     }
 }
 
-int avs_persistence_version(avs_persistence_context_t *ctx,
-                            uint8_t *version_number,
-                            const uint8_t *supported_versions,
-                            size_t supported_versions_count) {
-    int result = avs_persistence_u8(ctx, version_number);
-    if (result || ctx->vtable != &RESTORE_VTABLE) {
-        return result;
+avs_error_t avs_persistence_version(avs_persistence_context_t *ctx,
+                                    uint8_t *version_number,
+                                    const uint8_t *supported_versions,
+                                    size_t supported_versions_count) {
+    avs_error_t err = avs_persistence_u8(ctx, version_number);
+    if (avs_is_err(err) || ctx->vtable != &RESTORE_VTABLE) {
+        return err;
     }
 
     for (size_t i = 0; i < supported_versions_count; ++i) {
         if (*version_number == supported_versions[i]) {
-            return 0;
+            return AVS_OK;
         }
     }
 
     LOG(ERROR, "Unsupported version number: %u", (unsigned) *version_number);
-    return -1;
+    return avs_errno(AVS_EBADMSG);
 }
 
 #ifdef AVS_UNIT_TESTING
