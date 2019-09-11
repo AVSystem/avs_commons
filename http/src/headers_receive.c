@@ -302,7 +302,10 @@ http_receive_headline_and_headers(header_parser_state_t *state) {
             LOG(WARNING, "http_receive_headers: response read error");
             state->stream->flags.keep_connection = 0;
         } else {
-            err = avs_errno(AVS_EPROTO);
+            err = (avs_error_t) {
+                .category = AVS_HTTP_ERROR_CATEGORY,
+                .code = (uint16_t) state->stream->status
+            };
             state->stream->flags.close_handling_required = 1;
         }
         LOG(TRACE, "http_receive_headers: clearing body receiver");
@@ -319,21 +322,26 @@ http_receive_headers_error:
     return err;
 }
 
-static void update_flags_after_receiving_headers(http_stream_t *stream) {
-    if (stream->status / 100 == 3) {
-        /* redirect happened */
-        stream->flags.should_retry = 1;
-    } else if (stream->status == 401
-               && (stream->auth.credentials.user
-                   || stream->auth.credentials.password)
-               && stream->auth.state.flags.type != HTTP_AUTH_TYPE_NONE
-               && !stream->auth.state.flags.retried) {
-        /* retry authentication */
-        stream->auth.state.flags.retried = 1;
-        stream->flags.should_retry = 1;
-    } else if (stream->status == 417 && !stream->flags.no_expect) {
-        /* retry without Expect: 100-continue */
-        stream->flags.no_expect = 1;
+static void
+update_flags_after_receiving_headers(http_stream_t *stream,
+                                     avs_error_t receive_headers_err) {
+    if (receive_headers_err.category == AVS_HTTP_ERROR_CATEGORY) {
+        assert((uint16_t) stream->status == receive_headers_err.code);
+        if (stream->status == 401
+                && (stream->auth.credentials.user
+                    || stream->auth.credentials.password)
+                && stream->auth.state.flags.type != HTTP_AUTH_TYPE_NONE
+                && !stream->auth.state.flags.retried) {
+            /* retry authentication */
+            stream->auth.state.flags.retried = 1;
+            stream->flags.should_retry = 1;
+        } else if (stream->status == 417 && !stream->flags.no_expect) {
+            /* retry without Expect: 100-continue */
+            stream->flags.no_expect = 1;
+            stream->flags.should_retry = 1;
+        }
+    } else if (stream->status / 100 == 3) {
+        // non-fatal redirect happened
         stream->flags.should_retry = 1;
     }
 }
@@ -384,9 +392,6 @@ avs_error_t _avs_http_receive_headers(http_stream_t *stream) {
         AVS_LIST_CLEAR(stream->incoming_header_storage);
     }
 
-    update_flags_after_receiving_headers(stream);
-    if (stream->status / 100 == HTTP_TOO_MANY_REDIRECTS_CLASS) {
-        stream->status = -stream->status;
-    }
+    update_flags_after_receiving_headers(stream, err);
     return err;
 }

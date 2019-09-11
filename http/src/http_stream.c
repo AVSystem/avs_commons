@@ -133,13 +133,18 @@ avs_error_t _avs_http_redirect(http_stream_t *stream, avs_url_t **url_move) {
     ++stream->redirect_count;
     if (stream->redirect_count > HTTP_MOVE_LIMIT) {
         LOG(ERROR, "redirect count exceeded");
-        stream->status *= -1;
-        return avs_errno(AVS_EPROTO);
+        avs_error_t err = (avs_error_t) {
+            .category = AVS_HTTP_ERROR_CATEGORY,
+            .code = (uint16_t) stream->status
+        };
+        if (!err.code) {
+            err.code = 399;
+        }
+        return err;
     }
     avs_error_t err = avs_stream_reset(stream->backend);
     if (avs_is_err(err)) {
         LOG(ERROR, "stream reset failed");
-        stream->status = -1;
         return err;
     }
     stream->flags.close_handling_required = 0;
@@ -148,7 +153,6 @@ avs_error_t _avs_http_redirect(http_stream_t *stream, avs_url_t **url_move) {
 
     if (avs_is_err((err = _avs_http_socket_new(&new_socket, stream->http,
                                                *url_move)))) {
-        stream->status = -1;
         return err;
     }
 
@@ -157,7 +161,6 @@ avs_error_t _avs_http_redirect(http_stream_t *stream, avs_url_t **url_move) {
         /* error, clean new socket */
         avs_net_socket_cleanup(&new_socket);
         LOG(ERROR, "setsock failed");
-        stream->status = -1;
         return err;
     }
     avs_net_socket_cleanup(&old_socket);
