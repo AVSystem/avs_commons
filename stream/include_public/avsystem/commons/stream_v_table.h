@@ -40,11 +40,12 @@ extern "C" {
  *                          After successful return, it will contain the number
  *                          of bytes actually written.
  *
- * @returns 0 on success, negative value on error.
+ * @returns @ref AVS_OK for success, or an error condition for which the
+ *          operation failed.
  */
-typedef int (*avs_stream_write_some_t)(avs_stream_abstract_t *stream,
-                                       const void *buffer,
-                                       size_t *inout_data_length);
+typedef avs_error_t (*avs_stream_write_some_t)(avs_stream_abstract_t *stream,
+                                               const void *buffer,
+                                               size_t *inout_data_length);
 
 /**
  * @ref avs_stream_finish_message implementation callback type.
@@ -54,9 +55,11 @@ typedef int (*avs_stream_write_some_t)(avs_stream_abstract_t *stream,
  * For example, on some kind of network stream, message finish may cause
  * packet serialization and issuing @ref send() .
  *
- * @param stream    Stream to operate on.
+ * @returns @ref AVS_OK for success, or an error condition for which the
+ *          operation failed.
  */
-typedef int (*avs_stream_finish_message_t)(avs_stream_abstract_t *stream);
+typedef avs_error_t (*avs_stream_finish_message_t)(
+        avs_stream_abstract_t *stream);
 
 /**
  * @ref avs_stream_read implementation callback type.
@@ -82,12 +85,15 @@ typedef int (*avs_stream_finish_message_t)(avs_stream_abstract_t *stream);
  * @param buffer                Pointer to a memory block where read bytes shall
  *                              be stored.
  * @param buffer_length         Available buffer storage.
+ *
+ * @returns @ref AVS_OK for success, or an error condition for which the
+ *          operation failed.
  */
-typedef int (*avs_stream_read_t)(avs_stream_abstract_t *stream,
-                                 size_t *out_bytes_read,
-                                 char *out_message_finished,
-                                 void *buffer,
-                                 size_t buffer_length);
+typedef avs_error_t (*avs_stream_read_t)(avs_stream_abstract_t *stream,
+                                         size_t *out_bytes_read,
+                                         bool *out_message_finished,
+                                         void *buffer,
+                                         size_t buffer_length);
 
 /**
  * @ref avs_stream_peek implementation callback type.
@@ -98,12 +104,21 @@ typedef int (*avs_stream_read_t)(avs_stream_abstract_t *stream,
  * Note: this is an optional feature, and if implemented it is allowed to
  * set arbitrary limit on the maximum supported @p offset value.
  *
- * @param stream    Stream to operate on.
- * @param offset    Offset from the current stream position.
- * @returns 0 on success, EOF if a character cannot be read, negative value
- * (different than EOF) in case of error.
+ * @param[in]  stream    Stream to operate on.
+ * @param[in]  offset    Offset from the current stream position.
+ * @param[out] out_value The variable that the peeked value shall be assigned
+ *                       to.
+ *
+ * @returns @li @ref AVS_OK for success, in which case <c>*out_value</c> is
+ *              set to an actual value,
+ *          @li @ref AVS_EOF if @p offset has been reliably determined as
+ *              pointing past end-of-stream,
+ *          @li an error condition for which the operation failed; this includes
+ *              the stream not having buffered enough data for peeking.
  */
-typedef int (*avs_stream_peek_t)(avs_stream_abstract_t *stream, size_t offset);
+typedef avs_error_t (*avs_stream_peek_t)(avs_stream_abstract_t *stream,
+                                         size_t offset,
+                                         char *out_value);
 
 /**
  * @ref avs_stream_reset implementation callback type.
@@ -112,28 +127,22 @@ typedef int (*avs_stream_peek_t)(avs_stream_abstract_t *stream, size_t offset);
  * semantics, and no constraint is imposed on the implementation.
  *
  * @param stream    Stream to reset.
- * @returns 0 on success, negative value on error.
+ *
+ * @returns @ref AVS_OK for success, or an error condition for which the
+ *          operation failed.
  */
-typedef int (*avs_stream_reset_t)(avs_stream_abstract_t *stream);
+typedef avs_error_t (*avs_stream_reset_t)(avs_stream_abstract_t *stream);
 
 /**
  * Implementation of this method closes the stream, making it ready to be
  * freed.
  *
  * @param stream    Stream to operate on.
- * @returns 0 on success, negative value on error.
- */
-typedef int (*avs_stream_close_t)(avs_stream_abstract_t *stream);
-
-/**
- * @ref avs_stream_error implementation callback type
  *
- * Obtains additional error code for last performed operation.
- *
- * @param stream    Stream to operate on.
- * @returns last error code or 0 if no error occurred.
+ * @returns @ref AVS_OK for success, or an error condition for which the
+ *          operation failed.
  */
-typedef avs_errno_t (*avs_stream_error_t)(avs_stream_abstract_t *stream);
+typedef avs_error_t (*avs_stream_close_t)(avs_stream_abstract_t *stream);
 
 typedef struct {
     uint32_t id;
@@ -151,7 +160,6 @@ typedef struct {
     avs_stream_peek_t peek;
     avs_stream_reset_t reset;
     avs_stream_close_t close;
-    avs_stream_error_t get_error;
     const avs_stream_v_table_extension_t *extension_list;
 } avs_stream_v_table_t;
 
@@ -167,10 +175,11 @@ const void *avs_stream_v_table_find_extension(avs_stream_abstract_t *stream,
  * a non-blocking manner, without performing external I/O.
  *
  * @param stream Stream to operate on.
- * @returns Positive value if non-blocking operation is possible, zero if not,
- *          or a negative value in case of error.
+ *
+ * @returns Boolean value indicating whether non-blocking operation is possible.
+ *          Any errors shall map to <c>false</c>.
  */
-typedef int (*avs_stream_nonblock_read_ready_t)(avs_stream_abstract_t *stream);
+typedef bool (*avs_stream_nonblock_read_ready_t)(avs_stream_abstract_t *stream);
 
 /**
  * @ref avs_stream_nonblock_write_ready implementation callback type
@@ -181,17 +190,12 @@ typedef int (*avs_stream_nonblock_read_ready_t)(avs_stream_abstract_t *stream);
  *
  * @param stream                   Stream to operate on.
  *
- * @param out_ready_capacity_bytes Pointer to a variable that, on successful
- *                                 return, will be filled with the maximum
- *                                 number of bytes that can be written to the
- *                                 stream in a non-blocking manner.
- *
- * @returns 0 on success, negative value on error. Note that if non-blocking
- *          operation is not possible, the expected result is success with
- *          <c>*out_ready_capacity_bytes</c> set to 0.
+ * @returns Maximum number of bytes that can be written to the stream in a
+ *          non-blocking manner. If non-blocking operation is not possible, 0 is
+ *          returned. Any errors shall map to 0 as well.
  */
-typedef int (*avs_stream_nonblock_write_ready_t)(
-        avs_stream_abstract_t *stream, size_t *out_ready_capacity_bytes);
+typedef size_t (*avs_stream_nonblock_write_ready_t)(
+        avs_stream_abstract_t *stream);
 
 typedef struct {
     avs_stream_nonblock_read_ready_t read_ready;
