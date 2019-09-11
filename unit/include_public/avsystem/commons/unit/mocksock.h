@@ -87,7 +87,7 @@ void avs_unit_mocksock_input_from__(avs_net_abstract_socket_t *socket_,
             })
 
 void avs_unit_mocksock_input_fail__(avs_net_abstract_socket_t *socket_,
-                                    int retval,
+                                    avs_error_t retval,
                                     const mocksock_additional_args_t *args);
 #define avs_unit_mocksock_input_fail(Socket, /* Retval, */...) \
     avs_unit_mocksock_input_fail__(                            \
@@ -99,7 +99,7 @@ void avs_unit_mocksock_input_fail__(avs_net_abstract_socket_t *socket_,
             })
 
 void avs_unit_mocksock_output_fail__(avs_net_abstract_socket_t *socket_,
-                                     int retval,
+                                     avs_error_t retval,
                                      const mocksock_additional_args_t *args);
 #define avs_unit_mocksock_output_fail(Socket, /* Retval, */...) \
     avs_unit_mocksock_output_fail__(                            \
@@ -111,10 +111,11 @@ void avs_unit_mocksock_output_fail__(avs_net_abstract_socket_t *socket_,
             })
 
 void avs_unit_mocksock_fail_command__(avs_net_abstract_socket_t *socket,
+                                      avs_error_t retval,
                                       const char *file,
                                       int line);
-#define avs_unit_mocksock_fail_command(Socket) \
-    avs_unit_mocksock_fail_command__((Socket), __FILE__, __LINE__)
+#define avs_unit_mocksock_fail_command(Socket, Retval) \
+    avs_unit_mocksock_fail_command__((Socket), (Retval), __FILE__, __LINE__)
 
 void avs_unit_mocksock_expect_output__(avs_net_abstract_socket_t *socket,
                                        const void *expect,
@@ -331,18 +332,6 @@ void avs_unit_mocksock_expect_set_opt__(avs_net_abstract_socket_t *socket,
             &(const mocksock_additional_args_t) {               \
                 .file = __FILE__,                               \
                 .line = __LINE__ AVS_VARARG_REST(__VA_ARGS__)   \
-            })
-
-void avs_unit_mocksock_expect_error__(avs_net_abstract_socket_t *socket,
-                                      avs_errno_t to_return,
-                                      const mocksock_additional_args_t *args);
-#define avs_unit_mocksock_expect_error(Socket, /* ToReturn, */...) \
-    avs_unit_mocksock_expect_error__(                              \
-            (Socket),                                              \
-            (AVS_VARARG0(__VA_ARGS__)),                            \
-            &(const mocksock_additional_args_t) {                  \
-                .file = __FILE__,                                  \
-                .line = __LINE__ AVS_VARARG_REST(__VA_ARGS__)      \
             })
 
 void avs_unit_mocksock_assert_expects_met__(avs_net_abstract_socket_t *socket_,
