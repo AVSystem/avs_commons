@@ -28,11 +28,11 @@ extern "C" {
 
 #define AVS_STREAM_V_TABLE_EXTENSION_NET 0x4E455453UL /* "NETS" */
 
-typedef int (*avs_stream_net_getsock_t)(avs_stream_t *stream,
-                                        avs_net_abstract_socket_t **out_socket);
+typedef avs_net_abstract_socket_t *(*avs_stream_net_getsock_t)(
+        avs_stream_t *stream);
 
-typedef int (*avs_stream_net_setsock_t)(avs_stream_t *stream,
-                                        avs_net_abstract_socket_t *socket);
+typedef avs_error_t (*avs_stream_net_setsock_t)(
+        avs_stream_t *stream, avs_net_abstract_socket_t *socket);
 
 typedef struct {
     avs_stream_net_getsock_t getsock;
@@ -41,8 +41,8 @@ typedef struct {
 
 avs_net_abstract_socket_t *avs_stream_net_getsock(avs_stream_t *stream);
 
-int avs_stream_net_setsock(avs_stream_t *stream,
-                           avs_net_abstract_socket_t *socket);
+avs_error_t avs_stream_net_setsock(avs_stream_t *stream,
+                                   avs_net_abstract_socket_t *socket);
 
 #ifdef __cplusplus
 }
