@@ -445,6 +445,23 @@ void avs_http_set_header_storage(
 int avs_http_should_retry(avs_stream_t *stream);
 
 /**
+ * Category for @ref avs_error_t containing a HTTP status code.
+ *
+ * The <c>code</c> field in errors of this type will contain a HTTP status code
+ * such as 404 or 503.
+ *
+ * Errors of this type will be returned by stream operations if everything was
+ * fine on the network layer, but a request failed due to the server responding
+ * with a status code outside the 2xx range (including exceeding the limit of
+ * redirections, see below).
+ *
+ * NOTE: If the statuscode is in 3xx class, it indicates that the number of
+ * redirects exceeded the maximum allowed number (5 chained HTTP 3xx
+ * redirections).
+ */
+#define AVS_HTTP_ERROR_CATEGORY 4887 // 'HTTP' on phone keypad
+
+/**
  * Retrieves the last response code received on a given stream.
  *
  * May be used to distinguish zero-length 200 response from 204.
