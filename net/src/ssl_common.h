@@ -376,10 +376,6 @@ static avs_error_t get_opt_ssl(avs_net_abstract_socket_t *ssl_socket_,
     case AVS_NET_SOCKET_OPT_TLS_CIPHERSUITES:
         out_option_value->tls_ciphersuites = &ssl_socket->enabled_ciphersuites;
         return AVS_OK;
-    case AVS_NET_SOCKET_OPT_TLS_LAST_ALERT:
-        out_option_value->last_alert = ssl_socket->last_alert;
-        return AVS_OK;
-        break;
     case AVS_NET_SOCKET_OPT_STATE:
         if (!ssl_socket->backend_socket) {
             out_option_value->state = AVS_NET_SOCKET_STATE_CLOSED;

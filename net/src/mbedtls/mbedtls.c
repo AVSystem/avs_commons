@@ -97,7 +97,6 @@ typedef struct {
     int *effective_ciphersuites;
     /// Non empty, when custom server hostname shall be used.
     char server_name_indication[256];
-    avs_net_ssl_alert_t last_alert;
     bool use_connection_id;
 } ssl_socket_t;
 
@@ -135,17 +134,14 @@ static void debug_mbedtls(
 #define NET_SSL_COMMON_INTERNALS
 #include "../ssl_common.h"
 
-static void update_alert_if_any(ssl_socket_t *socket) {
+static avs_error_t return_alert_if_any(ssl_socket_t *socket) {
     mbedtls_ssl_context *context = get_context(socket);
     if (context->in_msgtype == AVS_TLS_MESSAGE_TYPE_ALERT) {
-        socket->last_alert = (avs_net_ssl_alert_t) {
-            .alert_level = context->in_msg[0],
-            .alert_description = context->in_msg[1]
-        };
         LOG(DEBUG, "alert_level = %u, alert_description = %u",
-            socket->last_alert.alert_level,
-            socket->last_alert.alert_description);
+            context->in_msg[0], context->in_msg[1]);
+        return avs_net_ssl_alert(context->in_msg[0], context->in_msg[1]);
     }
+    return AVS_OK;
 }
 
 static struct {
@@ -734,12 +730,13 @@ static avs_error_t start_ssl(ssl_socket_t *socket, const char *host) {
             LOG(TRACE, "handshake success: new session started");
         }
     } else {
-        if (avs_is_err(socket->bio_error)) {
-            err = socket->bio_error;
-        } else {
-            err = avs_errno(AVS_EPROTO);
+        if (avs_is_ok((err = return_alert_if_any(socket)))) {
+            if (avs_is_err(socket->bio_error)) {
+                err = socket->bio_error;
+            } else {
+                err = avs_errno(AVS_EPROTO);
+            }
         }
-        update_alert_if_any(socket);
         LOG(ERROR, "handshake failed: %d", result);
     }
 
@@ -816,7 +813,6 @@ static avs_error_t receive_ssl(avs_net_abstract_socket_t *socket_,
                                void *buffer,
                                size_t buffer_length) {
     ssl_socket_t *socket = (ssl_socket_t *) socket_;
-    memset(&socket->last_alert, 0, sizeof(socket->last_alert));
     int result = 0;
 
     LOG(TRACE, "receive_ssl(socket=%p, buffer=%p, buffer_length=%lu)",
@@ -853,17 +849,18 @@ static avs_error_t receive_ssl(avs_net_abstract_socket_t *socket_,
     }
 
     if (result < 0) {
-        update_alert_if_any(socket);
         *out_bytes_received = 0;
         if (result == MBEDTLS_ERR_SSL_TIMEOUT) {
             LOG(TRACE, "receive_ssl: timed out");
             return avs_errno(AVS_ETIMEDOUT);
         } else if (result != MBEDTLS_ERR_SSL_PEER_CLOSE_NOTIFY) {
-            avs_error_t err;
-            if (avs_is_err(socket->bio_error)) {
-                err = socket->bio_error;
-            } else if (avs_is_ok((err = avs_errno(avs_map_errno(errno))))) {
-                err = avs_errno(AVS_EPROTO);
+            avs_error_t err = return_alert_if_any(socket);
+            if (avs_is_ok(err)) {
+                if (avs_is_err(socket->bio_error)) {
+                    err = socket->bio_error;
+                } else if (avs_is_ok((err = avs_errno(avs_map_errno(errno))))) {
+                    err = avs_errno(AVS_EPROTO);
+                }
             }
             LOG(ERROR, "receive failed: %d", result);
             return err;
