@@ -59,9 +59,9 @@ static int url_parse_protocol(const char **url,
     return 0;
 }
 
-int avs_url_percent_encode(avs_stream_t *stream,
-                           const char *input,
-                           const char *unreserved_chars) {
+avs_error_t avs_url_percent_encode(avs_stream_t *stream,
+                                   const char *input,
+                                   const char *unreserved_chars) {
     const char *start = input;
     char escaped_buf[4];
     for (; *input; ++input) {
@@ -69,25 +69,28 @@ int avs_url_percent_encode(avs_stream_t *stream,
                 || !(isalnum((unsigned char) *input)
                      || strchr(unreserved_chars, *input))) {
             if (input - start > 0) {
-                if (avs_stream_write(stream, start, (size_t) (input - start))) {
-                    return -1;
+                avs_error_t err = avs_stream_write(stream, start,
+                                                   (size_t) (input - start));
+                if (avs_is_err(err)) {
+                    return err;
                 }
             }
             if (avs_simple_snprintf(escaped_buf, sizeof(escaped_buf), "%%%02x",
                                     (unsigned char) *input)
-                            != 3
-                    || avs_stream_write(stream, escaped_buf, 3)) {
-                return -1;
+                    != 3) {
+                AVS_UNREACHABLE("Percent-encoding failed");
+            }
+            avs_error_t err = avs_stream_write(stream, escaped_buf, 3);
+            if (avs_is_err(err)) {
+                return err;
             }
             start = input + 1;
         }
     }
     if (input - start > 0) {
-        if (avs_stream_write(stream, start, (size_t) (input - start))) {
-            return -1;
-        }
+        return avs_stream_write(stream, start, (size_t) (input - start));
     }
-    return 0;
+    return AVS_OK;
 }
 
 int avs_url_percent_decode(char *data, size_t *unescaped_length) {

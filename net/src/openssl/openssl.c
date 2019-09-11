@@ -633,20 +633,21 @@ static int configure_cipher_list(ssl_socket_t *socket,
     return -1;
 }
 
-static char *
+static avs_error_t
 ids_to_cipher_list(ssl_socket_t *socket,
-                   const avs_net_socket_tls_ciphersuites_t *suites) {
+                   const avs_net_socket_tls_ciphersuites_t *suites,
+                   char **out_cipher_list) {
     if (!suites) {
-        return NULL;
+        return avs_errno(AVS_EINVAL);
     }
 
     avs_stream_t *stream = avs_stream_membuf_create();
     if (!stream) {
-        return NULL;
+        return avs_errno(AVS_ENOMEM);
     }
 
     bool first = true;
-    int result = 0;
+    avs_error_t err = AVS_OK;
 
     for (size_t i = 0; i < suites->num_ids; ++i) {
         if (suites->ids[i] > UINT16_MAX) {
@@ -668,21 +669,21 @@ ids_to_cipher_list(ssl_socket_t *socket,
         if (first) {
             first = false;
         } else {
-            result = avs_stream_write(stream, ":", 1);
+            err = avs_stream_write(stream, ":", 1);
         }
 
-        if (!result) {
+        if (avs_is_ok(err)) {
             const char *name = SSL_CIPHER_get_name(cipher);
-            result = avs_stream_write(stream, name, strlen(name));
+            err = avs_stream_write(stream, name, strlen(name));
         }
     }
 
-    void *cipher_list = NULL;
-    (void) (result || (result = avs_stream_write(stream, "", 1))
-            || (result = avs_stream_membuf_take_ownership(stream, &cipher_list,
-                                                          NULL)));
+    (void) (avs_is_err(err)
+            || avs_is_err((err = avs_stream_write(stream, "", 1)))
+            || avs_is_err((err = avs_stream_membuf_take_ownership(
+                                   stream, (void **) out_cipher_list, NULL))));
     avs_stream_cleanup(&stream);
-    return (char *) cipher_list;
+    return err;
 }
 
 static int start_ssl(ssl_socket_t *socket, const char *host) {
@@ -697,10 +698,14 @@ static int start_ssl(ssl_socket_t *socket, const char *host) {
     SSL_set_app_data(socket->ssl, socket);
 
     if (socket->enabled_ciphersuites.ids != NULL) {
-        char *ciphersuites_string =
-                ids_to_cipher_list(socket, &socket->enabled_ciphersuites);
-        if (!ciphersuites_string) {
-            socket->error_code = AVS_ENOMEM;
+        char *ciphersuites_string;
+        avs_error_t err =
+                ids_to_cipher_list(socket, &socket->enabled_ciphersuites,
+                                   &ciphersuites_string);
+        if (avs_is_err(err)) {
+            socket->error_code =
+                    (err.category == AVS_ERRNO_CATEGORY ? (avs_errno_t) err.code
+                                                        : AVS_UNKNOWN_ERROR);
             return -1;
         }
 

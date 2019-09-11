@@ -28,15 +28,13 @@ avs_net_abstract_socket_t *avs_stream_net_getsock(avs_stream_t *stream) {
                     avs_stream_v_table_find_extension(
                             stream, AVS_STREAM_V_TABLE_EXTENSION_NET);
     if (net) {
-        if (net->getsock(stream, &out) < 0) {
-            out = NULL;
-        }
+        out = net->getsock(stream);
     }
     return out;
 }
 
-int avs_stream_net_setsock(avs_stream_t *stream,
-                           avs_net_abstract_socket_t *socket) {
+avs_error_t avs_stream_net_setsock(avs_stream_t *stream,
+                                   avs_net_abstract_socket_t *socket) {
     const avs_stream_v_table_extension_net_t *net =
             (const avs_stream_v_table_extension_net_t *)
                     avs_stream_v_table_find_extension(
@@ -44,6 +42,6 @@ int avs_stream_net_setsock(avs_stream_t *stream,
     if (net) {
         return net->setsock(stream, socket);
     } else {
-        return -1;
+        return avs_errno(AVS_ENOTSUP);
     }
 }

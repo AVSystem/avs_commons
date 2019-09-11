@@ -675,9 +675,9 @@ static int start_ssl(ssl_socket_t *socket, const char *host) {
 #ifdef WITH_TLS_SESSION_PERSISTENCE
     if (socket->session_resumption_buffer
             && socket->config.endpoint == MBEDTLS_SSL_IS_CLIENT) {
-        if (_avs_net_mbedtls_session_restore(
+        if (avs_is_err(_avs_net_mbedtls_session_restore(
                     &restored_session, socket->session_resumption_buffer,
-                    socket->session_resumption_buffer_size)) {
+                    socket->session_resumption_buffer_size))) {
             LOG(WARNING,
                 "Could not restore session; performing full handshake");
         } else if ((result = mbedtls_ssl_set_session(get_context(socket),
