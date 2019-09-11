@@ -293,20 +293,6 @@ int avs_http_set_user_agent(avs_http_t *http, const char *user_agent);
  *   authentication during the lifetime of this stream, appropriate
  *   Authorization header will be sent even after resetting the stream.
  *
- * - <c>avs_stream_error</c> - returns the error code that corresponds to a
- *   situation in which some user requested operation could not be performed,
- *   e.g. due to out of memory condition, network connectivity issues, server
- *   sending malformed responses, etc. Essentially, if the error from this
- *   function is returned, something very bad happened, and it makes sense to
- *   assume that HTTP exchange failed critically.
- *
- *   IMPORTANT: If this function is called after
- *   <c>avs_stream_finish_message</c>, and it returns <c>AVS_NO_ERROR</c> then
- *   it only means that HTTP request was sent and HTTP response was received
- *   (even if the response code is an error in the HTTP sense). Users are
- *   expected to also check HTTP status code with <c>avs_http_status_code</c>
- *   function.
- *
  * The stream also supports the "net" extension (<c>avs_stream_net_getsock()</c>
  * and <c>avs_stream_net_setsock()</c>).
  *
@@ -362,9 +348,10 @@ int avs_http_set_user_agent(avs_http_t *http, const char *user_agent);
  *                      <c>parsed_url</c> if any. May be <c>NULL</c> if unknown
  *                      or not necessary.
  *
- * @return One of <c>avs_errno_t</c> constants.
+ * @returns @ref AVS_OK, or an error condition for which creating the
+ *          stream failed.
  */
-avs_errno_t avs_http_open_stream(avs_stream_t **out,
+avs_error_t avs_http_open_stream(avs_stream_t **out,
                                  avs_http_t *http,
                                  avs_http_method_t method,
                                  avs_http_content_encoding_t encoding,
