@@ -31,30 +31,30 @@ typedef struct {
     /**
      * Error code category. It is intended to be unique application-wide for any
      * source that can return errors. It determines the meaning of the
-     * <c>error</c> field.
+     * <c>code</c> field.
      */
     uint16_t category;
 
     /**
      * Error code, valid within the given <c>category</c>. For example, if
-     * <c>category</c> is equal to @ref AVS_ERRNO_CATEGORY, <c>error</c> will be
+     * <c>category</c> is equal to @ref AVS_ERRNO_CATEGORY, <c>code</c> will be
      * one of the @ref avs_errno_t values.
      *
-     * NOTE: All categories are REQUIRED to map <c>error</c> value of 0 to
-     * "no error". So, <c>error == 0</c> always means success regardless of the
+     * NOTE: All categories are REQUIRED to map <c>code</c> value of 0 to
+     * "no error". So, <c>code == 0</c> always means success regardless of the
      * <c>category</c>.
      */
-    uint16_t error;
+    uint16_t code;
 } avs_error_t;
 
 #define AVS_SUCCESS    \
     ((avs_error_t) {   \
         .category = 0, \
-        .error = 0     \
+        .code = 0      \
     })
 
 static inline bool avs_is_success(avs_error_t error) {
-    return error.error == 0;
+    return error.code == 0;
 }
 
 /**
@@ -167,10 +167,10 @@ typedef enum avs_errno {
 static inline avs_error_t avs_errno(avs_errno_t error) {
     avs_error_t result = {
         .category = AVS_ERRNO_CATEGORY,
-        .error = (uint16_t) error
+        .code = (uint16_t) error
     };
-    if ((avs_errno_t) result.error != error) {
-        result.error = AVS_UNKNOWN_ERROR;
+    if ((avs_errno_t) result.code != error) {
+        result.code = AVS_UNKNOWN_ERROR;
     }
     return result;
 }
