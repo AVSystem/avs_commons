@@ -47,14 +47,18 @@ typedef struct {
     uint16_t code;
 } avs_error_t;
 
-#define AVS_SUCCESS    \
+#define AVS_OK         \
     ((avs_error_t) {   \
         .category = 0, \
         .code = 0      \
     })
 
-static inline bool avs_is_success(avs_error_t error) {
+static inline bool avs_is_ok(avs_error_t error) {
     return error.code == 0;
+}
+
+static inline bool avs_is_err(avs_error_t error) {
+    return !avs_is_ok(error);
 }
 
 /**
@@ -169,9 +173,7 @@ static inline avs_error_t avs_errno(avs_errno_t error) {
         .category = AVS_ERRNO_CATEGORY,
         .code = (uint16_t) error
     };
-    if ((avs_errno_t) result.code != error) {
-        result.code = AVS_UNKNOWN_ERROR;
-    }
+    assert((avs_errno_t) result.code == error);
     return result;
 }
 
