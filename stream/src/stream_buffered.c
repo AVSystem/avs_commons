@@ -182,8 +182,7 @@ static avs_error_t finish_message(buffered_stream_t *stream) {
     return err;
 }
 
-static avs_error_t
-stream_buffered_finish_message(avs_stream_t *stream_) {
+static avs_error_t stream_buffered_finish_message(avs_stream_t *stream_) {
     buffered_stream_t *stream = (buffered_stream_t *) stream_;
     avs_error_t err = AVS_OK;
     if (stream->out_buffer) {
@@ -196,9 +195,8 @@ stream_buffered_finish_message(avs_stream_t *stream_) {
     return avs_is_ok(err) ? backend_err : err;
 }
 
-static avs_error_t stream_buffered_peek(avs_stream_t *stream_,
-                                        size_t offset,
-                                        char *out_value) {
+static avs_error_t
+stream_buffered_peek(avs_stream_t *stream_, size_t offset, char *out_value) {
     buffered_stream_t *stream = (buffered_stream_t *) stream_;
     if (!stream->in_buffer) {
         return avs_stream_peek(stream->underlying_stream, offset, out_value);

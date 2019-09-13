@@ -59,9 +59,8 @@ static avs_error_t inbuf_stream_read(avs_stream_t *stream_,
     return AVS_OK;
 }
 
-static avs_error_t inbuf_stream_peek(avs_stream_t *stream_,
-                                     size_t offset,
-                                     char *out_value) {
+static avs_error_t
+inbuf_stream_peek(avs_stream_t *stream_, size_t offset, char *out_value) {
     avs_stream_inbuf_t *stream = (avs_stream_inbuf_t *) stream_;
 
     if (stream->buffer_offset + offset >= stream->buffer_size) {

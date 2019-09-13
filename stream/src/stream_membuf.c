@@ -155,9 +155,8 @@ static avs_error_t stream_membuf_read(avs_stream_t *stream_,
     return AVS_OK;
 }
 
-static avs_error_t stream_membuf_peek(avs_stream_t *stream_,
-                                      size_t offset,
-                                      char *out_value) {
+static avs_error_t
+stream_membuf_peek(avs_stream_t *stream_, size_t offset, char *out_value) {
     avs_stream_membuf_t *stream = (avs_stream_membuf_t *) stream_;
     if (stream->index_read + offset >= stream->index_write) {
         return AVS_EOF;
@@ -183,13 +182,12 @@ static avs_error_t stream_membuf_close(avs_stream_t *stream_) {
     return AVS_OK;
 }
 
-static avs_error_t
-stream_membuf_ensure_free_bytes(avs_stream_t *stream_,
-                                size_t additional_size) {
+static avs_error_t stream_membuf_ensure_free_bytes(avs_stream_t *stream_,
+                                                   size_t additional_size) {
     avs_stream_membuf_t *stream = (avs_stream_membuf_t *) stream_;
     defragment_membuf(stream);
     if (additional_size > SIZE_MAX - stream->index_write) {
-        return avs_errno(AVS_EINVAL);
+        return avs_errno(AVS_ENOMEM);
     }
     if (stream->buffer_size < stream->index_write + additional_size) {
         return realloc_membuf(stream, stream->index_write + additional_size);

@@ -104,8 +104,7 @@ avs_error_t avs_stream_cleanup(avs_stream_t **stream) {
     return err;
 }
 
-avs_error_t
-avs_stream_write_f(avs_stream_t *stream, const char *msg, ...) {
+avs_error_t avs_stream_write_f(avs_stream_t *stream, const char *msg, ...) {
     avs_error_t err;
     va_list args;
     va_start(args, msg);
@@ -121,12 +120,7 @@ static avs_error_t try_write_fv(avs_stream_t *stream,
                                 size_t *inout_buf_size) {
     int retval = vsnprintf(buf, *inout_buf_size, msg, args);
     if (retval < 0) {
-        if (*inout_buf_size <= SIZE_MAX / 2) {
-            *inout_buf_size *= 2;
-            return avs_errno(AVS_ENOBUFS);
-        } else {
-            return avs_errno(AVS_EIO);
-        }
+        return avs_errno(AVS_EIO);
     } else if ((size_t) retval >= *inout_buf_size) {
         *inout_buf_size = (size_t) retval + 1;
         return avs_errno(AVS_ENOBUFS);
@@ -160,9 +154,8 @@ static avs_error_t try_heap_write_fv(avs_stream_t *stream,
 #    define va_copy(dest, src) ((dest) = (src))
 #endif
 
-avs_error_t avs_stream_write_fv(avs_stream_t *stream,
-                                const char *msg,
-                                va_list args) {
+avs_error_t
+avs_stream_write_fv(avs_stream_t *stream, const char *msg, va_list args) {
     avs_error_t err;
     size_t previous_buffer_size = 0;
     size_t buffer_size;
@@ -171,7 +164,7 @@ avs_error_t avs_stream_write_fv(avs_stream_t *stream,
     err = try_stack_write_fv(stream, msg, copy, &buffer_size);
     va_end(copy);
     while (err.category == AVS_ERRNO_CATEGORY && err.code == AVS_ENOBUFS
-           && buffer_size != previous_buffer_size) {
+           && buffer_size > previous_buffer_size) {
         previous_buffer_size = buffer_size;
         va_copy(copy, args);
         err = try_heap_write_fv(stream, msg, copy, &buffer_size);
@@ -203,8 +196,9 @@ avs_error_t avs_stream_read_reliably(avs_stream_t *stream,
 avs_error_t avs_stream_ignore_to_end(avs_stream_t *stream) {
     char tmp_char;
     avs_error_t err;
-    while (avs_is_ok((err = avs_stream_getch(stream, &tmp_char, NULL)))) {
-    }
+    do {
+        err = avs_stream_getch(stream, &tmp_char, NULL);
+    } while (avs_is_ok(err));
     if (avs_is_eof(err)) {
         return AVS_OK;
     }
@@ -234,27 +228,36 @@ typedef struct getline_provider_struct {
 
 static avs_error_t validate_line_finished(getline_provider_t *provider,
                                           char last_read_char) {
-    avs_error_t err = AVS_OK;
-    if (last_read_char != '\n'
-            && avs_is_ok((err = provider->peek(provider, 0, &last_read_char)))
-            && last_read_char != '\n'
-            && (last_read_char != '\r'
-                || (avs_is_ok((
-                            err = provider->peek(provider, 1, &last_read_char)))
-                    && last_read_char != '\n'))) {
-        return avs_errno(AVS_ENOBUFS);
+    if (last_read_char == '\n') {
+        // read the EOL already
+        return AVS_OK;
     }
-    return err;
+    avs_error_t err = provider->peek(provider, 0, &last_read_char);
+    if (avs_is_err(err) || last_read_char == '\n') {
+        // EOL right after the last read character
+        return err;
+    }
+    if (last_read_char == '\r') {
+        // special handling for \r\n
+        // if the next character is \n, it's still EOL
+        err = provider->peek(provider, 1, &last_read_char);
+        if (avs_is_err(err) || last_read_char == '\n') {
+            return err;
+        }
+    }
+    // no EOL, so it means the line has been truncated
+    return avs_errno(AVS_ENOBUFS);
 }
 
 static avs_error_t consume_line_terminator(getline_provider_t *provider,
                                            char last_consumed_char,
                                            bool *out_message_finished) {
-    avs_error_t err = AVS_OK;
-    if (last_consumed_char != '\n'
-            && avs_is_ok((err = provider->getch(provider, &last_consumed_char,
-                                                out_message_finished)))
-            && last_consumed_char == '\r') {
+    if (last_consumed_char == '\n') {
+        return AVS_OK;
+    }
+    avs_error_t err = provider->getch(provider, &last_consumed_char,
+                                      out_message_finished);
+    if (avs_is_ok(err) && last_consumed_char == '\r') {
         err = provider->getch(provider, &last_consumed_char,
                               out_message_finished);
     }
@@ -269,25 +272,27 @@ static avs_error_t getline_helper(getline_provider_t *provider,
                                   size_t buffer_length) {
     *out_bytes_read = 0;
     assert(buffer_length > 0);
-    char tmp_char = '\0', next_char;
+    char tmp_char = '\0';
+    char next_char;
     avs_error_t err = AVS_OK;
     *out_message_finished = false;
     while (avs_is_ok(err) && *out_bytes_read < buffer_length - 1) {
-        if (avs_is_err((err = provider->getch(provider, &tmp_char,
-                                              out_message_finished)))) {
+        err = provider->getch(provider, &tmp_char, out_message_finished);
+        if (avs_is_err(err)) {
             break;
         } else if (tmp_char == '\0') {
             err = avs_errno(AVS_EIO);
             break;
         } else if (tmp_char == '\n') {
             break;
-        } else if (tmp_char != '\r'
-                   || (avs_is_ok(
-                               (err = provider->peek(provider, 0, &next_char)))
-                       && next_char != '\n')) {
-            /* ignore '\r's that are before '\n's */
-            buffer[(*out_bytes_read)++] = (char) (unsigned char) tmp_char;
+        } else if (tmp_char == '\r') {
+            err = provider->peek(provider, 0, &next_char);
+            if (avs_is_err(err) || next_char == '\n') {
+                // ignore '\r's that are before '\n's
+                continue;
+            }
         }
+        buffer[(*out_bytes_read)++] = (char) (unsigned char) tmp_char;
     }
     if (avs_is_ok(err)
             && avs_is_ok((err = validate_line_finished(provider, tmp_char)))) {

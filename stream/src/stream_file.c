@@ -111,9 +111,8 @@ static avs_error_t stream_file_read(avs_stream_t *stream_,
     return AVS_OK;
 }
 
-static avs_error_t stream_file_peek(avs_stream_t *stream_,
-                                    size_t offset,
-                                    char *out_value) {
+static avs_error_t
+stream_file_peek(avs_stream_t *stream_, size_t offset, char *out_value) {
     avs_stream_file_t *file = (avs_stream_file_t *) stream_;
     size_t bytes_read;
     bool message_finished;
