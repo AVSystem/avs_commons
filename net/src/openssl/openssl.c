@@ -698,11 +698,12 @@ static int start_ssl(ssl_socket_t *socket, const char *host) {
     SSL_set_app_data(socket->ssl, socket);
 
     if (socket->enabled_ciphersuites.ids != NULL) {
-        char *ciphersuites_string;
+        char *ciphersuites_string = NULL;
         avs_error_t err =
                 ids_to_cipher_list(socket, &socket->enabled_ciphersuites,
                                    &ciphersuites_string);
         if (avs_is_err(err)) {
+            assert(!ciphersuites_string);
             socket->error_code =
                     (err.category == AVS_ERRNO_CATEGORY ? (avs_errno_t) err.code
                                                         : AVS_UNKNOWN_ERROR);
