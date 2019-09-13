@@ -78,32 +78,27 @@ static avs_error_t buffered_netstream_write_some(avs_stream_t *stream_,
     }
 }
 
-static size_t
-buffered_netstream_nonblock_write_ready(avs_stream_t *stream) {
+static size_t buffered_netstream_nonblock_write_ready(avs_stream_t *stream) {
     return avs_buffer_space_left(((buffered_netstream_t *) stream)->out_buffer);
 }
 
-static avs_error_t
-buffered_netstream_finish_message(avs_stream_t *stream) {
+static avs_error_t buffered_netstream_finish_message(avs_stream_t *stream) {
     return out_buffer_flush((buffered_netstream_t *) stream);
 }
 
-static avs_error_t return_data_from_buffer(avs_buffer_t *in_buffer,
-                                           size_t *out_bytes_read,
-                                           bool *out_message_finished,
-                                           void *buffer,
-                                           size_t buffer_length) {
+static void return_data_from_buffer(avs_buffer_t *in_buffer,
+                                    size_t *out_bytes_read,
+                                    void *buffer,
+                                    size_t buffer_length) {
     *out_bytes_read = avs_buffer_data_size(in_buffer);
     if (buffer_length < *out_bytes_read) {
         *out_bytes_read = buffer_length;
     }
 
     memcpy(buffer, avs_buffer_data(in_buffer), *out_bytes_read);
-    avs_buffer_consume_bytes(in_buffer, *out_bytes_read);
-
-    *out_message_finished = false;
-
-    return AVS_OK;
+    if (avs_buffer_consume_bytes(in_buffer, *out_bytes_read)) {
+        AVS_UNREACHABLE();
+    }
 }
 
 static avs_error_t read_data_to_user_buffer(buffered_netstream_t *stream,
@@ -150,17 +145,16 @@ read_data_through_internal_buffer(buffered_netstream_t *stream,
     if (avs_is_err(err)) {
         *out_message_finished = false;
         return err;
-    } else {
-        if (avs_buffer_data_size(stream->in_buffer) > 0) {
-            return return_data_from_buffer(stream->in_buffer, out_bytes_read,
-                                           out_message_finished, buffer,
-                                           buffer_length);
-        } else {
-            *out_bytes_read = 0;
-            *out_message_finished = true;
-            return AVS_OK;
-        }
     }
+    if (avs_buffer_data_size(stream->in_buffer) > 0) {
+        return_data_from_buffer(stream->in_buffer, out_bytes_read, buffer,
+                                buffer_length);
+        *out_message_finished = false;
+    } else {
+        *out_bytes_read = 0;
+        *out_message_finished = true;
+    }
+    return AVS_OK;
 }
 
 static avs_error_t read_new_data(buffered_netstream_t *stream,
@@ -194,14 +188,15 @@ static avs_error_t buffered_netstream_read(avs_stream_t *stream_,
         out_message_finished = &message_finished;
     }
 
-    if (avs_buffer_data_size(stream->in_buffer) > 0) {
-        return return_data_from_buffer(stream->in_buffer, out_bytes_read,
-                                       out_message_finished, buffer,
-                                       buffer_length);
-    } else {
+    if (avs_buffer_data_size(stream->in_buffer) <= 0) {
         return read_new_data(stream, out_bytes_read, out_message_finished,
                              buffer, buffer_length);
     }
+
+    return_data_from_buffer(stream->in_buffer, out_bytes_read, buffer,
+                            buffer_length);
+    *out_message_finished = false;
+    return AVS_OK;
 }
 
 static avs_error_t try_recv_nonblock(buffered_netstream_t *stream) {
@@ -237,8 +232,7 @@ static avs_error_t try_recv_nonblock(buffered_netstream_t *stream) {
     return err;
 }
 
-static bool
-buffered_netstream_nonblock_read_ready(avs_stream_t *stream_) {
+static bool buffered_netstream_nonblock_read_ready(avs_stream_t *stream_) {
     buffered_netstream_t *stream = (buffered_netstream_t *) stream_;
     if (avs_buffer_data_size(stream->in_buffer) > 0) {
         return true;
@@ -257,9 +251,8 @@ buffered_netstream_nonblock_read_ready(avs_stream_t *stream_) {
            && avs_buffer_data_size(stream->in_buffer) > 0;
 }
 
-static avs_error_t buffered_netstream_peek(avs_stream_t *stream_,
-                                           size_t offset,
-                                           char *out_value) {
+static avs_error_t
+buffered_netstream_peek(avs_stream_t *stream_, size_t offset, char *out_value) {
     buffered_netstream_t *stream = (buffered_netstream_t *) stream_;
     if (offset < avs_buffer_capacity(stream->in_buffer)) {
         while (offset >= avs_buffer_data_size(stream->in_buffer)) {

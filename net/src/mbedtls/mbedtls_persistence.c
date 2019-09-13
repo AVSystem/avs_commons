@@ -264,8 +264,6 @@ avs_error_t _avs_net_mbedtls_session_restore(mbedtls_ssl_session *out_session,
     avs_error_t err = avs_persistence_magic(&ctx, PERSISTENCE_MAGIC,
                                             sizeof(PERSISTENCE_MAGIC));
     if (avs_is_err(err)) {
-        // this may happen in a perfectly valid case of empty persistence buffer
-        // (no session stored), so it's not on the ERROR level
         LOG(ERROR, "Could not restore session: invalid magic");
     } else if (avs_is_err(
                        (err = handle_session_persistence(&ctx, out_session)))) {
