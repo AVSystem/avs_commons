@@ -455,6 +455,11 @@ int avs_http_should_retry(avs_stream_t *stream);
  * with a status code outside the 2xx range (including exceeding the limit of
  * redirections, see below).
  *
+ * NOTE: As codes from 1xx and 2xx classes are not error conditions, they will
+ * NEVER be returned via an @ref avs_error_t object. All 2xx responses will be
+ * mapped to @ref AVS_OK. If you need to query the actual status code of a
+ * successful response, you may use @ref avs_http_status_code.
+ *
  * NOTE: If the statuscode is in 3xx class, it indicates that the number of
  * redirects exceeded the maximum allowed number (5 chained HTTP 3xx
  * redirections).
