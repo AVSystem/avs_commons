@@ -44,15 +44,18 @@ static avs_error_t decode_more_data_with_buffer(decoding_stream_t *stream,
                                                 size_t buffer_length,
                                                 bool *out_no_more_data) {
     size_t bytes_read;
-    if (avs_is_err(avs_stream_read(stream->backend, &bytes_read,
-                                   out_no_more_data, buffer, buffer_length))) {
-        return avs_errno(AVS_EIO);
+    avs_error_t err = avs_stream_read(stream->backend, &bytes_read,
+                                      out_no_more_data, buffer, buffer_length);
+    if (avs_is_err(err)) {
+        return err;
     }
     if ((bytes_read > 0
-         && avs_is_err(avs_stream_write(stream->decoder, buffer, bytes_read)))
+         && avs_is_err((err = avs_stream_write(stream->decoder, buffer,
+                                               bytes_read))))
             || (*out_no_more_data
-                && avs_is_err(avs_stream_finish_message(stream->decoder)))) {
-        return avs_errno(AVS_EIO);
+                && avs_is_err((err = avs_stream_finish_message(
+                                       stream->decoder))))) {
+        return err;
     }
     return AVS_OK;
 }
@@ -88,21 +91,26 @@ static avs_error_t decoding_read(avs_stream_t *stream_,
     bool no_more_data = false;
     while (true) {
         /* try reading remaining data from decoder */
-        if (avs_is_err(avs_stream_read(stream->decoder, out_bytes_read,
-                                       out_message_finished, buffer,
-                                       buffer_length))) {
-            return avs_errno(AVS_EIO);
+        avs_error_t err =
+                avs_stream_read(stream->decoder, out_bytes_read,
+                                out_message_finished, buffer, buffer_length);
+        if (avs_is_err(err)) {
+            return err;
         } else if (*out_bytes_read > 0 || *out_message_finished) {
             return AVS_OK;
         }
-        /* read and decode */
-        /* buffer is used here only as temporary storage;
-         * stored data is not used after return from decode_more_data() */
-        if (no_more_data) {
-            return avs_errno(AVS_ENOBUFS);
-        }
-        avs_error_t err =
-                decode_more_data(stream, buffer, buffer_length, &no_more_data);
+        // no_more_data signifies that the underlying stream with *encoded*
+        // (compressed) data has been read to the end - but not necessarily
+        // decoded; i.e. we have received all the data from the network,
+        // buffered it, but not all the data resulting from decompression has
+        // been read yet. In that case, the avs_stream_read() above shall be
+        // enough for reading everything. If we reach here, it means that there
+        // is an error in the decoder implementation.
+        assert(!no_more_data);
+        // read and decode
+        // buffer is used here only as temporary storage;
+        // stored data is not used after return from decode_more_data()
+        err = decode_more_data(stream, buffer, buffer_length, &no_more_data);
         if (avs_is_err(err)) {
             return err;
         }

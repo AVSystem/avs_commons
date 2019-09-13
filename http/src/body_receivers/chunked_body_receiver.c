@@ -58,8 +58,8 @@ static avs_error_t read_chunk_size(const avs_http_buffer_sizes_t *buffer_sizes,
                            buffer_sizes->header_line);
         if (avs_is_err(err)) {
             if (avs_is_eof(err)) {
-                LOG(ERROR, "buffer too small to read chunk headline");
-                err = avs_errno(AVS_EIO);
+                LOG(ERROR, "unexpected end of stream");
+                err = avs_errno(AVS_EPROTO);
             } else {
                 LOG(ERROR, "error reading chunk headline");
             }
@@ -99,8 +99,8 @@ static avs_error_t read_chunk_size(const avs_http_buffer_sizes_t *buffer_sizes,
 static avs_error_t read_chunk_size_getline_reader(void *state,
                                                   char *buffer,
                                                   size_t buffer_length) {
-    return avs_stream_getline((avs_stream_t *) state, NULL, NULL,
-                              buffer, buffer_length);
+    return avs_stream_getline((avs_stream_t *) state, NULL, NULL, buffer,
+                              buffer_length);
 }
 
 static avs_error_t chunked_read(avs_stream_t *stream_,

@@ -232,8 +232,7 @@ static avs_error_t http_reset(avs_stream_t *stream_) {
             (stream->flags.keep_connection && !stream->flags.chunked_sending);
     bool close_handling_required = false;
     if (keep_connection && stream->body_receiver) {
-        avs_error_t err = avs_stream_ignore_to_end(stream->body_receiver);
-        if (avs_is_err(err)) {
+        if (avs_is_err(avs_stream_ignore_to_end(stream->body_receiver))) {
             LOG(WARNING, "Could not discard current message");
             keep_connection = false;
         } else {

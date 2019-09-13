@@ -134,21 +134,19 @@ static avs_error_t get_http_header_line(avs_stream_t *stream,
                                         size_t line_buf_size) {
     avs_error_t err;
 
-    do {
-        if (avs_is_err((err = avs_stream_getline(stream, NULL, NULL, line_buf,
-                                                 line_buf_size)))) {
-            if (err.category == AVS_ERRNO_CATEGORY && err.code == AVS_ENOBUFS) {
-                LOG(WARNING, "HTTP header too long to handle: %s", line_buf);
-                if (avs_is_err((err = discard_line(stream)))) {
-                    LOG(ERROR, "Could not discard header line");
-                    return err;
-                }
-            } else {
-                LOG(ERROR, "Could not read header line");
+    while (avs_is_err((err = avs_stream_getline(stream, NULL, NULL, line_buf,
+                                                line_buf_size)))) {
+        if (err.category == AVS_ERRNO_CATEGORY && err.code == AVS_ENOBUFS) {
+            LOG(WARNING, "HTTP header too long to handle: %s", line_buf);
+            if (avs_is_err((err = discard_line(stream)))) {
+                LOG(ERROR, "Could not discard header line");
                 return err;
             }
+        } else {
+            LOG(ERROR, "Could not read header line");
+            return err;
         }
-    } while (avs_is_err(err));
+    }
 
     return AVS_OK;
 }

@@ -311,24 +311,14 @@ avs_error_t _avs_http_encoder_flush(http_stream_t *stream) {
     size_t bytes_read = 0;
     bool message_finished = false;
     avs_error_t err;
-    while (true) {
-        if (avs_is_err((err = avs_stream_read(
-                                stream->encoder, &bytes_read, &message_finished,
-                                buffer,
-                                stream->http->buffer_sizes
-                                        .content_coding_min_input)))) {
-            goto finish;
-        }
-        if (!bytes_read) {
-            err = AVS_OK;
-            goto finish;
-        }
-        if (avs_is_err((err = _avs_http_send_via_buffer(stream, buffer,
-                                                        bytes_read)))) {
-            goto finish;
-        }
+    while (avs_is_ok((err = avs_stream_read(stream->encoder, &bytes_read,
+                                            &message_finished, buffer,
+                                            stream->http->buffer_sizes
+                                                    .content_coding_min_input)))
+           && bytes_read
+           && avs_is_ok((err = _avs_http_send_via_buffer(stream, buffer,
+                                                         bytes_read)))) {
     }
-finish:
     avs_free(buffer);
     return err;
 }
