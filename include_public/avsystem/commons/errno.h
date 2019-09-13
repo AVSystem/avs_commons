@@ -47,11 +47,7 @@ typedef struct {
     uint16_t code;
 } avs_error_t;
 
-#define AVS_OK         \
-    ((avs_error_t) {   \
-        .category = 0, \
-        .code = 0      \
-    })
+static const avs_error_t AVS_OK = { 0, 0 };
 
 static inline bool avs_is_ok(avs_error_t error) {
     return error.code == 0;
@@ -169,10 +165,7 @@ typedef enum avs_errno {
  * structure from an @ref avs_errno_t value.
  */
 static inline avs_error_t avs_errno(avs_errno_t error) {
-    avs_error_t result = {
-        .category = AVS_ERRNO_CATEGORY,
-        .code = (uint16_t) error
-    };
+    avs_error_t result = { AVS_ERRNO_CATEGORY, (uint16_t) error };
     assert((avs_errno_t) result.code == error);
     return result;
 }
