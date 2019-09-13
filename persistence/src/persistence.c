@@ -157,8 +157,8 @@ persist_list(avs_persistence_context_t *ctx,
     if (avs_is_ok(err)) {
         AVS_LIST(void) *element_ptr;
         AVS_LIST_FOREACH_PTR(element_ptr, list_ptr) {
-            if (handler(ctx, element_ptr, handler_user_ptr)) {
-                err = avs_errno(AVS_EPIPE);
+            if (avs_is_err(
+                        (err = handler(ctx, element_ptr, handler_user_ptr)))) {
                 break;
             }
         }
@@ -182,8 +182,7 @@ persist_tree(avs_persistence_context_t *ctx,
     if (avs_is_ok(err)) {
         AVS_RBTREE_ELEM(void) element;
         AVS_RBTREE_FOREACH(element, tree) {
-            if (handler(ctx, &element, handler_user_ptr)) {
-                err = avs_errno(AVS_EPIPE);
+            if (avs_is_err((err = handler(ctx, &element, handler_user_ptr)))) {
                 break;
             }
         }
@@ -311,9 +310,7 @@ restore_list(avs_persistence_context_t *ctx,
     AVS_LIST(void) *insert_ptr = list_ptr;
     while (avs_is_ok(err) && count--) {
         AVS_LIST(void) element = NULL;
-        if (handler(ctx, &element, handler_user_ptr)) {
-            err = avs_errno(AVS_EPIPE);
-        }
+        err = handler(ctx, &element, handler_user_ptr);
         if (element) {
             AVS_LIST_INSERT(insert_ptr, element);
             insert_ptr = AVS_LIST_NEXT_PTR(insert_ptr);
@@ -339,9 +336,8 @@ restore_tree(avs_persistence_context_t *ctx,
     avs_error_t err = restore_u32(ctx, &count);
     while (avs_is_ok(err) && count--) {
         AVS_RBTREE_ELEM(void) element = NULL;
-        if (handler(ctx, &element, handler_user_ptr)) {
-            err = avs_errno(AVS_EPIPE);
-        } else if (element && AVS_RBTREE_INSERT(tree, element) != element) {
+        if (avs_is_ok((err = handler(ctx, &element, handler_user_ptr)))
+                && element && AVS_RBTREE_INSERT(tree, element) != element) {
             err = avs_errno(AVS_EBADMSG);
         }
         if (avs_is_err(err) && element) {
@@ -530,20 +526,20 @@ typedef struct {
     void *handler_user_ptr;
 } persistence_collection_state_t;
 
-#define DEFINE_PERSISTENCE_COLLECTION_HANDLER(Name, ElementType)      \
-    static int Name(avs_persistence_context_t *ctx,                   \
-                    ElementType(void) * element, void *state_) {      \
-        persistence_collection_state_t *state =                       \
-                (persistence_collection_state_t *) state_;            \
-        if (element && !*element) {                                   \
-            *element = ElementType##_NEW_BUFFER(state->element_size); \
-            if (!element) {                                           \
-                LOG(ERROR, "Out of memory");                          \
-                return -1;                                            \
-            }                                                         \
-        }                                                             \
-        return state->handler(ctx, element ? *element : NULL,         \
-                              state->handler_user_ptr);               \
+#define DEFINE_PERSISTENCE_COLLECTION_HANDLER(Name, ElementType)         \
+    static avs_error_t Name(avs_persistence_context_t *ctx,              \
+                            ElementType(void) * element, void *state_) { \
+        persistence_collection_state_t *state =                          \
+                (persistence_collection_state_t *) state_;               \
+        if (element && !*element) {                                      \
+            *element = ElementType##_NEW_BUFFER(state->element_size);    \
+            if (!element) {                                              \
+                LOG(ERROR, "Out of memory");                             \
+                return avs_errno(AVS_ENOMEM);                            \
+            }                                                            \
+        }                                                                \
+        return state->handler(ctx, element ? *element : NULL,            \
+                              state->handler_user_ptr);                  \
     }
 
 DEFINE_PERSISTENCE_COLLECTION_HANDLER(persistence_list_handler, AVS_LIST)

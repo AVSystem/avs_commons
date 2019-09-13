@@ -42,15 +42,15 @@ typedef enum {
     AVS_PERSISTENCE_RESTORE
 } avs_persistence_direction_t;
 
-typedef int avs_persistence_handler_collection_element_t(
+typedef avs_error_t avs_persistence_handler_collection_element_t(
         avs_persistence_context_t *ctx, void *element, void *user_data);
 
-typedef int avs_persistence_handler_custom_allocated_list_element_t(
+typedef avs_error_t avs_persistence_handler_custom_allocated_list_element_t(
         avs_persistence_context_t *ctx,
         AVS_LIST(void) *element,
         void *user_data);
 
-typedef int avs_persistence_handler_custom_allocated_tree_element_t(
+typedef avs_error_t avs_persistence_handler_custom_allocated_tree_element_t(
         avs_persistence_context_t *ctx,
         AVS_RBTREE_ELEM(void) *element,
         void *user_data);
@@ -77,62 +77,6 @@ avs_persistence_store_context_create(avs_stream_t *stream);
  */
 avs_persistence_context_t
 avs_persistence_restore_context_create(avs_stream_t *stream);
-
-/**
- * Creates a heap-allocated context where each underlying operation writes
- * passed value to the stream.
- * @param stream    stream to operate on
- * @return          NULL on error during context construction, valid pointer
- *                  otherwise
- */
-AVS_DEPRECATED("Please stop using heap allocation and use "
-               "avs_persistence_store_context_create() instead")
-static inline avs_persistence_context_t *
-avs_persistence_store_context_new(avs_stream_t *stream) {
-    if (!stream) {
-        return NULL;
-    }
-    avs_persistence_context_t *ctx = (avs_persistence_context_t *) avs_malloc(
-            sizeof(avs_persistence_context_t));
-    if (ctx) {
-        *ctx = avs_persistence_store_context_create(stream);
-    }
-    return ctx;
-}
-
-/**
- * Creates a heap-allocated context where each underlying operation reads value
- * from the stream and writes it under an address passed by the user.
- * @param stream    stream to operate on
- * @return          NULL on error during context construction, valid pointer
- *                  otherwise
- */
-AVS_DEPRECATED("Please stop using heap allocation and use "
-               "avs_persistence_restore_context_create() instead")
-static inline avs_persistence_context_t *
-avs_persistence_restore_context_new(avs_stream_t *stream) {
-    if (!stream) {
-        return NULL;
-    }
-    avs_persistence_context_t *ctx = (avs_persistence_context_t *) avs_malloc(
-            sizeof(avs_persistence_context_t));
-    if (ctx) {
-        *ctx = avs_persistence_restore_context_create(stream);
-    }
-    return ctx;
-}
-
-/**
- * Deletes @p ctx allocated using @ref avs_persistence_store_context_new or
- * @ref avs_persistence_restore_context_new and frees memory associated with it.
- * Note: stream used to initialize context is not closed.
- * @param ctx       pointer to the context to be deleted
- */
-AVS_DEPRECATED("Please stop using heap allocation for persistence contexts")
-static inline void
-avs_persistence_context_delete(avs_persistence_context_t *ctx) {
-    avs_free(ctx);
-}
 
 /**
  * Returns the direction of @p ctx operation.
