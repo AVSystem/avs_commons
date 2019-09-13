@@ -20,7 +20,7 @@
 #include <avsystem/commons/unit/test.h>
 
 AVS_UNIT_TEST(stream_membuf, write_read) {
-    avs_stream_abstract_t *stream = avs_stream_membuf_create();
+    avs_stream_t *stream = avs_stream_membuf_create();
     static const char *str = "very stream";
     char buf[1024];
     size_t bytes_read;
@@ -45,7 +45,7 @@ AVS_UNIT_TEST(stream_membuf, write_read) {
 }
 
 AVS_UNIT_TEST(stream_membuf, peek) {
-    avs_stream_abstract_t *stream = avs_stream_membuf_create();
+    avs_stream_t *stream = avs_stream_membuf_create();
     static const char *str = "very stream";
     AVS_UNIT_ASSERT_NOT_NULL(stream);
     AVS_UNIT_ASSERT_EQUAL(EOF, avs_stream_peek(stream, 9001));
@@ -57,7 +57,7 @@ AVS_UNIT_TEST(stream_membuf, peek) {
 }
 
 AVS_UNIT_TEST(stream_membuf, reset) {
-    avs_stream_abstract_t *stream = avs_stream_membuf_create();
+    avs_stream_t *stream = avs_stream_membuf_create();
     static const char *str = "very stream";
     char buf[1024] = { 0, 0, 0, 0, 0 };
     size_t bytes_read;
@@ -78,7 +78,7 @@ AVS_UNIT_TEST(stream_membuf, reset) {
 }
 
 AVS_UNIT_TEST(stream_membuf, fit) {
-    avs_stream_abstract_t *stream = avs_stream_membuf_create();
+    avs_stream_t *stream = avs_stream_membuf_create();
     avs_stream_membuf_t *internal = (avs_stream_membuf_t *) stream;
     static const char *str = "very stream";
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_write(stream, str, strlen(str) + 1));
@@ -91,7 +91,7 @@ AVS_UNIT_TEST(stream_membuf, fit) {
 }
 
 AVS_UNIT_TEST(stream_membuf, defragment) {
-    avs_stream_abstract_t *stream = avs_stream_membuf_create();
+    avs_stream_t *stream = avs_stream_membuf_create();
     avs_stream_membuf_t *internal = (avs_stream_membuf_t *) stream;
     static const char *str = "very stream";
     for (const char *ptr = str; *ptr; ++ptr) {
@@ -110,7 +110,7 @@ AVS_UNIT_TEST(stream_membuf, defragment) {
 }
 
 AVS_UNIT_TEST(stream_membuf, defragment_partial) {
-    avs_stream_abstract_t *stream = avs_stream_membuf_create();
+    avs_stream_t *stream = avs_stream_membuf_create();
     avs_stream_membuf_t *internal = (avs_stream_membuf_t *) stream;
     static const char *str = "very stream";
     for (const char *ptr = str; *ptr; ++ptr) {
@@ -131,7 +131,7 @@ AVS_UNIT_TEST(stream_membuf, defragment_partial) {
 }
 
 AVS_UNIT_TEST(stream_getline, simple) {
-    avs_stream_abstract_t *stream = avs_stream_membuf_create();
+    avs_stream_t *stream = avs_stream_membuf_create();
     AVS_UNIT_ASSERT_SUCCESS(
             avs_stream_write_f(stream, "HTTP/1.1 302 Found\r\n"));
     AVS_UNIT_ASSERT_SUCCESS(
@@ -210,7 +210,7 @@ AVS_UNIT_TEST(stream_getline, simple) {
 }
 
 AVS_UNIT_TEST(stream_getline, errors) {
-    avs_stream_abstract_t *stream = avs_stream_membuf_create();
+    avs_stream_t *stream = avs_stream_membuf_create();
     static const char *str = "very stream";
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_write(stream, str, strlen(str) + 1));
 
@@ -243,7 +243,7 @@ AVS_UNIT_TEST(stream_getline, errors) {
 }
 
 AVS_UNIT_TEST(stream_getline, exact) {
-    avs_stream_abstract_t *stream = avs_stream_membuf_create();
+    avs_stream_t *stream = avs_stream_membuf_create();
     static const char *STREAM_DATA_LF = "1234567\n";
     AVS_UNIT_ASSERT_SUCCESS(
             avs_stream_write(stream, STREAM_DATA_LF, strlen(STREAM_DATA_LF)));
@@ -271,7 +271,7 @@ AVS_UNIT_TEST(stream_getline, exact) {
 }
 
 AVS_UNIT_TEST(stream_getline, inline_cr) {
-    avs_stream_abstract_t *stream = avs_stream_membuf_create();
+    avs_stream_t *stream = avs_stream_membuf_create();
     static const char INLINE_CR[] = "fooba\rbaz\r\n";
     int last_result = 1;
     char msg_finished = 0;

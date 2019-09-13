@@ -36,7 +36,7 @@ typedef struct {
     size_t write_ptr;
 } memstream_t;
 
-static int memstream_write_some(avs_stream_abstract_t *_stream,
+static int memstream_write_some(avs_stream_t *_stream,
                                 const void *buffer,
                                 size_t *inout_data_length) {
     memstream_t *stream = (memstream_t *) _stream;
@@ -60,7 +60,7 @@ static int memstream_write_some(avs_stream_abstract_t *_stream,
     return 0;
 }
 
-static int memstream_read(avs_stream_abstract_t *_stream,
+static int memstream_read(avs_stream_t *_stream,
                           size_t *out_bytes_read,
                           char *out_message_finished,
                           void *buffer,
@@ -85,7 +85,7 @@ static int memstream_read(avs_stream_abstract_t *_stream,
     return 0;
 }
 
-static int memstream_peek(avs_stream_abstract_t *_stream, size_t offset) {
+static int memstream_peek(avs_stream_t *_stream, size_t offset) {
     memstream_t *stream = (memstream_t *) _stream;
 
     if (offset < stream->write_ptr - stream->read_ptr) {
@@ -95,7 +95,7 @@ static int memstream_peek(avs_stream_abstract_t *_stream, size_t offset) {
     }
 }
 
-static int memstream_close(avs_stream_abstract_t *stream) {
+static int memstream_close(avs_stream_t *stream) {
     avs_free(((memstream_t *) stream)->buffer);
     return 0;
 }
@@ -105,8 +105,7 @@ static int memstream_fail() {
     return 0;
 }
 
-int avs_unit_memstream_alloc(avs_stream_abstract_t **stream,
-                             size_t buffer_size) {
+int avs_unit_memstream_alloc(avs_stream_t **stream, size_t buffer_size) {
     static const avs_stream_v_table_t V_TABLE = {
         memstream_write_some,
         (avs_stream_finish_message_t) memstream_fail,
@@ -134,6 +133,6 @@ int avs_unit_memstream_alloc(avs_stream_abstract_t **stream,
         return -1;
     }
 
-    *stream = (avs_stream_abstract_t *) ret;
+    *stream = (avs_stream_t *) ret;
     return 0;
 }

@@ -34,11 +34,11 @@
 
 VISIBILITY_SOURCE_BEGIN
 
-struct avs_stream_abstract_struct {
+struct avs_stream_struct {
     const avs_stream_v_table_t *const vtable;
 };
 
-int avs_stream_write_some(avs_stream_abstract_t *stream,
+int avs_stream_write_some(avs_stream_t *stream,
                           const void *buffer,
                           size_t *inout_data_length) {
     if (!stream->vtable->write_some) {
@@ -47,7 +47,7 @@ int avs_stream_write_some(avs_stream_abstract_t *stream,
     return stream->vtable->write_some(stream, buffer, inout_data_length);
 }
 
-int avs_stream_write(avs_stream_abstract_t *stream,
+int avs_stream_write(avs_stream_t *stream,
                      const void *buffer,
                      size_t buffer_length) {
     size_t data_length = buffer_length;
@@ -58,14 +58,14 @@ int avs_stream_write(avs_stream_abstract_t *stream,
     return result;
 }
 
-int avs_stream_finish_message(avs_stream_abstract_t *stream) {
+int avs_stream_finish_message(avs_stream_t *stream) {
     if (!stream->vtable->finish_message) {
         return -1;
     }
     return stream->vtable->finish_message(stream);
 }
 
-int avs_stream_read(avs_stream_abstract_t *stream,
+int avs_stream_read(avs_stream_t *stream,
                     size_t *out_bytes_read,
                     char *out_message_finished,
                     void *buffer,
@@ -77,21 +77,21 @@ int avs_stream_read(avs_stream_abstract_t *stream,
                                 buffer, buffer_length);
 }
 
-int avs_stream_peek(avs_stream_abstract_t *stream, size_t offset) {
+int avs_stream_peek(avs_stream_t *stream, size_t offset) {
     if (!stream->vtable->peek) {
         return -1;
     }
     return stream->vtable->peek(stream, offset);
 }
 
-int avs_stream_reset(avs_stream_abstract_t *stream) {
+int avs_stream_reset(avs_stream_t *stream) {
     if (!stream->vtable->reset) {
         return -1;
     }
     return stream->vtable->reset(stream);
 }
 
-int avs_stream_cleanup(avs_stream_abstract_t **stream) {
+int avs_stream_cleanup(avs_stream_t **stream) {
     int retval = 0;
     if (*stream) {
         if ((*stream)->vtable->close) {
@@ -103,14 +103,14 @@ int avs_stream_cleanup(avs_stream_abstract_t **stream) {
     return retval;
 }
 
-avs_errno_t avs_stream_error(avs_stream_abstract_t *stream) {
+avs_errno_t avs_stream_error(avs_stream_t *stream) {
     if (!stream->vtable->get_error) {
         return AVS_NO_ERROR;
     }
     return stream->vtable->get_error(stream);
 }
 
-int avs_stream_write_f(avs_stream_abstract_t *stream, const char *msg, ...) {
+int avs_stream_write_f(avs_stream_t *stream, const char *msg, ...) {
     int result = 0;
     va_list args;
     va_start(args, msg);
@@ -119,7 +119,7 @@ int avs_stream_write_f(avs_stream_abstract_t *stream, const char *msg, ...) {
     return result;
 }
 
-static int try_write_fv(avs_stream_abstract_t *stream,
+static int try_write_fv(avs_stream_t *stream,
                         const char *msg,
                         va_list args,
                         char *buf,
@@ -138,14 +138,13 @@ static int try_write_fv(avs_stream_abstract_t *stream,
     return avs_stream_write(stream, buf, (size_t) retval);
 }
 
-static int try_stack_write_fv(avs_stream_abstract_t *stream,
-                              const char *msg,
-                              va_list args) {
+static int
+try_stack_write_fv(avs_stream_t *stream, const char *msg, va_list args) {
     char buf[512];
     return try_write_fv(stream, msg, args, buf, sizeof(buf));
 }
 
-static int try_heap_write_fv(avs_stream_abstract_t *stream,
+static int try_heap_write_fv(avs_stream_t *stream,
                              const char *msg,
                              va_list args,
                              size_t size) {
@@ -162,9 +161,7 @@ static int try_heap_write_fv(avs_stream_abstract_t *stream,
 #    define va_copy(dest, src) ((dest) = (src))
 #endif
 
-int avs_stream_write_fv(avs_stream_abstract_t *stream,
-                        const char *msg,
-                        va_list args) {
+int avs_stream_write_fv(avs_stream_t *stream, const char *msg, va_list args) {
     int retval;
     va_list copy;
     va_copy(copy, args);
@@ -178,7 +175,7 @@ int avs_stream_write_fv(avs_stream_abstract_t *stream,
     return retval;
 }
 
-int avs_stream_read_reliably(avs_stream_abstract_t *stream,
+int avs_stream_read_reliably(avs_stream_t *stream,
                              void *buffer,
                              size_t buffer_length) {
     size_t bytes_read = 0;
@@ -196,7 +193,7 @@ int avs_stream_read_reliably(avs_stream_abstract_t *stream,
     return (bytes_read == buffer_length) ? 0 : -1;
 }
 
-int avs_stream_ignore_to_end(avs_stream_abstract_t *stream) {
+int avs_stream_ignore_to_end(avs_stream_t *stream) {
     char message_finished = 0;
     int count = 0;
     while (avs_stream_getch(stream, &message_finished) != EOF) {
@@ -205,7 +202,7 @@ int avs_stream_ignore_to_end(avs_stream_abstract_t *stream) {
     return message_finished ? count : -1;
 }
 
-int avs_stream_getch(avs_stream_abstract_t *stream, char *message_finished) {
+int avs_stream_getch(avs_stream_t *stream, char *message_finished) {
     unsigned char buf;
     size_t bytes_read;
     if (avs_stream_read(stream, &bytes_read, message_finished, &buf, 1) < 0
@@ -273,7 +270,7 @@ static int getline_helper(getline_provider_t *provider,
 
 typedef struct {
     getline_provider_t vtable;
-    avs_stream_abstract_t *stream;
+    avs_stream_t *stream;
     char *out_message_finished;
 } getline_reader_provider_t;
 
@@ -295,7 +292,7 @@ static int getline_reader_peek_func(getline_provider_t *self_, size_t offset) {
     return avs_stream_peek(self->stream, offset);
 }
 
-int avs_stream_getline(avs_stream_abstract_t *stream,
+int avs_stream_getline(avs_stream_t *stream,
                        size_t *out_bytes_read,
                        char *out_message_finished,
                        char *buffer,
@@ -322,7 +319,7 @@ int avs_stream_getline(avs_stream_abstract_t *stream,
 
 typedef struct {
     getline_provider_t vtable;
-    avs_stream_abstract_t *stream;
+    avs_stream_t *stream;
     size_t offset;
 } getline_peeker_provider_t;
 
@@ -342,7 +339,7 @@ static int getline_peeker_peek_func(getline_provider_t *self_, size_t offset) {
     return avs_stream_peek(self->stream, self->offset + offset);
 }
 
-int avs_stream_peekline(avs_stream_abstract_t *stream,
+int avs_stream_peekline(avs_stream_t *stream,
                         size_t offset,
                         size_t *out_bytes_peeked,
                         size_t *out_next_offset,
@@ -370,7 +367,7 @@ int avs_stream_peekline(avs_stream_abstract_t *stream,
     return retval;
 }
 
-const void *avs_stream_v_table_find_extension(avs_stream_abstract_t *stream,
+const void *avs_stream_v_table_find_extension(avs_stream_t *stream,
                                               uint32_t id) {
     const avs_stream_v_table_extension_t *ext;
     if (!stream) {
@@ -384,7 +381,7 @@ const void *avs_stream_v_table_find_extension(avs_stream_abstract_t *stream,
     return NULL;
 }
 
-int avs_stream_nonblock_read_ready(avs_stream_abstract_t *stream) {
+int avs_stream_nonblock_read_ready(avs_stream_t *stream) {
     const avs_stream_v_table_extension_nonblock_t *nonblock =
             (const avs_stream_v_table_extension_nonblock_t *)
                     avs_stream_v_table_find_extension(
@@ -396,7 +393,7 @@ int avs_stream_nonblock_read_ready(avs_stream_abstract_t *stream) {
     }
 }
 
-int avs_stream_nonblock_write_ready(avs_stream_abstract_t *stream,
+int avs_stream_nonblock_write_ready(avs_stream_t *stream,
                                     size_t *out_ready_capacity_bytes) {
     const avs_stream_v_table_extension_nonblock_t *nonblock =
             (const avs_stream_v_table_extension_nonblock_t *)

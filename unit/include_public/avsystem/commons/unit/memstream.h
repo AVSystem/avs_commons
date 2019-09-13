@@ -23,8 +23,7 @@
 extern "C" {
 #endif
 
-int avs_unit_memstream_alloc(avs_stream_abstract_t **stream,
-                             size_t buffer_size);
+int avs_unit_memstream_alloc(avs_stream_t **stream, size_t buffer_size);
 
 #ifdef __cplusplus
 }

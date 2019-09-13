@@ -106,7 +106,7 @@ static zlib_flush_func_holder_t decompressor_flush_holder = {
     decompressor_flush
 };
 
-static int zlib_stream_write_some(avs_stream_abstract_t *stream_,
+static int zlib_stream_write_some(avs_stream_t *stream_,
                                   const void *data,
                                   size_t *inout_data_length) {
     zlib_stream_t *stream = (zlib_stream_t *) stream_;
@@ -130,7 +130,7 @@ static int zlib_stream_write_some(avs_stream_abstract_t *stream_,
     return zlib_stream_flush(stream);
 }
 
-static int zlib_stream_nonblock_write_ready(avs_stream_abstract_t *stream_,
+static int zlib_stream_nonblock_write_ready(avs_stream_t *stream_,
                                             size_t *out_ready_capacity_bytes) {
     zlib_stream_t *stream = (zlib_stream_t *) stream_;
     if (stream->zlib.avail_in > 0 && zlib_stream_flush(stream)) {
@@ -141,13 +141,13 @@ static int zlib_stream_nonblock_write_ready(avs_stream_abstract_t *stream_,
     return 0;
 }
 
-static int zlib_stream_finish_message(avs_stream_abstract_t *stream_) {
+static int zlib_stream_finish_message(avs_stream_t *stream_) {
     zlib_stream_t *stream = (zlib_stream_t *) stream_;
     stream->flush = Z_FINISH;
     return zlib_stream_flush(stream);
 }
 
-static int zlib_stream_read(avs_stream_abstract_t *stream_,
+static int zlib_stream_read(avs_stream_t *stream_,
                             size_t *out_bytes_read,
                             char *out_message_finished,
                             void *buffer,
@@ -190,7 +190,7 @@ static int zlib_stream_read(avs_stream_abstract_t *stream_,
     return 0;
 }
 
-static int zlib_stream_nonblock_read_ready(avs_stream_abstract_t *stream_) {
+static int zlib_stream_nonblock_read_ready(avs_stream_t *stream_) {
     zlib_stream_t *stream = (zlib_stream_t *) stream_;
     if (stream->zlib.avail_out < stream->output_buffer_size) {
         return 1;
@@ -201,7 +201,7 @@ static int zlib_stream_nonblock_read_ready(avs_stream_abstract_t *stream_) {
     return stream->zlib.avail_out < stream->output_buffer_size;
 }
 
-static int zlib_stream_peek(avs_stream_abstract_t *stream_, size_t offset) {
+static int zlib_stream_peek(avs_stream_t *stream_, size_t offset) {
     zlib_stream_t *stream = (zlib_stream_t *) stream_;
     if (offset > stream->output_buffer_size) {
         LOG(ERROR, "cannot peek - buffer is too small");
@@ -228,7 +228,7 @@ static void reset_fields(zlib_stream_t *stream) {
     stream->error = Z_OK;
 }
 
-static avs_errno_t zlib_stream_error(avs_stream_abstract_t *stream_) {
+static avs_errno_t zlib_stream_error(avs_stream_t *stream_) {
     zlib_stream_t *stream = (zlib_stream_t *) stream_;
     if (stream->error == Z_OK || stream->error == Z_STREAM_END) {
         return AVS_NO_ERROR;
@@ -271,14 +271,14 @@ static zlib_stream_t *zlib_stream_init(const avs_stream_v_table_t *vtable,
     return stream;
 }
 
-static int compressor_reset(avs_stream_abstract_t *stream_) {
+static int compressor_reset(avs_stream_t *stream_) {
     zlib_stream_t *stream = (zlib_stream_t *) stream_;
     reset_fields(stream);
     stream->error = deflateReset(&stream->zlib);
     return stream->error == Z_OK ? 0 : -1;
 }
 
-static int compressor_close(avs_stream_abstract_t *stream) {
+static int compressor_close(avs_stream_t *stream) {
     return deflateEnd(&((zlib_stream_t *) stream)->zlib) == Z_OK ? 0 : -1;
 }
 
@@ -296,13 +296,12 @@ static const avs_stream_v_table_t compressor_vtable = {
     zlib_stream_error,      zlib_vtable_extensions
 };
 
-avs_stream_abstract_t *
-_avs_http_create_compressor(http_compression_format_t format,
-                            int level,
-                            int window_bits,
-                            int mem_level,
-                            size_t input_buffer_size,
-                            size_t output_buffer_size) {
+avs_stream_t *_avs_http_create_compressor(http_compression_format_t format,
+                                          int level,
+                                          int window_bits,
+                                          int mem_level,
+                                          size_t input_buffer_size,
+                                          size_t output_buffer_size) {
     int result;
     zlib_stream_t *stream =
             zlib_stream_init(&compressor_vtable, input_buffer_size,
@@ -322,17 +321,17 @@ _avs_http_create_compressor(http_compression_format_t format,
         return NULL;
     }
     reset_fields(stream);
-    return (avs_stream_abstract_t *) stream;
+    return (avs_stream_t *) stream;
 }
 
-static int decompressor_reset(avs_stream_abstract_t *stream_) {
+static int decompressor_reset(avs_stream_t *stream_) {
     zlib_stream_t *stream = (zlib_stream_t *) stream_;
     reset_fields(stream);
     stream->error = inflateReset(&stream->zlib);
     return stream->error == Z_OK ? 0 : -1;
 }
 
-static int decompressor_close(avs_stream_abstract_t *stream) {
+static int decompressor_close(avs_stream_t *stream) {
     return inflateEnd(&((zlib_stream_t *) stream)->zlib) == Z_OK ? 0 : -1;
 }
 
@@ -342,11 +341,10 @@ static const avs_stream_v_table_t decompressor_vtable = {
     zlib_stream_error,      zlib_vtable_extensions
 };
 
-avs_stream_abstract_t *
-_avs_http_create_decompressor(http_compression_format_t format,
-                              int window_bits,
-                              size_t input_buffer_size,
-                              size_t output_buffer_size) {
+avs_stream_t *_avs_http_create_decompressor(http_compression_format_t format,
+                                            int window_bits,
+                                            size_t input_buffer_size,
+                                            size_t output_buffer_size) {
     int result;
     zlib_stream_t *stream =
             zlib_stream_init(&decompressor_vtable, input_buffer_size,
@@ -365,5 +363,5 @@ _avs_http_create_decompressor(http_compression_format_t format,
         return NULL;
     }
     reset_fields(stream);
-    return (avs_stream_abstract_t *) stream;
+    return (avs_stream_t *) stream;
 }

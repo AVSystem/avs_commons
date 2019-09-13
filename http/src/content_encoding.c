@@ -34,8 +34,8 @@ VISIBILITY_SOURCE_BEGIN
 
 typedef struct {
     const avs_stream_v_table_t *const vtable;
-    avs_stream_abstract_t *backend;
-    avs_stream_abstract_t *decoder;
+    avs_stream_t *backend;
+    avs_stream_t *decoder;
     const avs_http_buffer_sizes_t *buffer_sizes;
     avs_errno_t error;
 } decoding_stream_t;
@@ -83,7 +83,7 @@ static int decode_more_data(decoding_stream_t *stream,
     }
 }
 
-static int decoding_read(avs_stream_abstract_t *stream_,
+static int decoding_read(avs_stream_t *stream_,
                          size_t *out_bytes_read,
                          char *out_message_finished,
                          void *buffer,
@@ -113,7 +113,7 @@ static int decoding_read(avs_stream_abstract_t *stream_,
     }
 }
 
-static int decoding_nonblock_read_ready(avs_stream_abstract_t *stream_) {
+static int decoding_nonblock_read_ready(avs_stream_t *stream_) {
     decoding_stream_t *stream = (decoding_stream_t *) stream_;
     char no_more_data = 0;
     while (avs_stream_peek(stream->decoder, 0) == EOF) {
@@ -132,7 +132,7 @@ static int decoding_nonblock_read_ready(avs_stream_abstract_t *stream_) {
     return 1;
 }
 
-static int decoding_peek(avs_stream_abstract_t *stream_, size_t offset) {
+static int decoding_peek(avs_stream_t *stream_, size_t offset) {
     decoding_stream_t *stream = (decoding_stream_t *) stream_;
     char no_more_data = 0;
     int result = avs_stream_peek(stream->decoder, offset);
@@ -147,7 +147,7 @@ static int decoding_peek(avs_stream_abstract_t *stream_, size_t offset) {
     return result;
 }
 
-static int decoding_close(avs_stream_abstract_t *stream_) {
+static int decoding_close(avs_stream_t *stream_) {
     decoding_stream_t *stream = (decoding_stream_t *) stream_;
     int retval = 0;
     if (avs_stream_cleanup(&stream->decoder)) {
@@ -161,7 +161,7 @@ static int decoding_close(avs_stream_abstract_t *stream_) {
     return retval;
 }
 
-static avs_errno_t decoding_error(avs_stream_abstract_t *stream) {
+static avs_errno_t decoding_error(avs_stream_t *stream) {
     return ((decoding_stream_t *) stream)->error;
 }
 
@@ -187,9 +187,9 @@ static const avs_stream_v_table_t decoding_vtable = {
             AVS_STREAM_V_TABLE_EXTENSION_NULL }[0]
 };
 
-avs_stream_abstract_t *
-_avs_http_decoding_stream_create(avs_stream_abstract_t *backend,
-                                 avs_stream_abstract_t *decoder,
+avs_stream_t *
+_avs_http_decoding_stream_create(avs_stream_t *backend,
+                                 avs_stream_t *decoder,
                                  const avs_http_buffer_sizes_t *buffer_sizes) {
     decoding_stream_t *retval =
             (decoding_stream_t *) avs_malloc(sizeof(*retval));
@@ -201,11 +201,11 @@ _avs_http_decoding_stream_create(avs_stream_abstract_t *backend,
         retval->decoder = decoder;
         retval->buffer_sizes = buffer_sizes;
     }
-    return (avs_stream_abstract_t *) retval;
+    return (avs_stream_t *) retval;
 }
 
 int _avs_http_content_decoder_create(
-        avs_stream_abstract_t **out_decoder,
+        avs_stream_t **out_decoder,
         avs_http_content_encoding_t content_encoding,
         const avs_http_buffer_sizes_t *buffer_sizes) {
     (void) buffer_sizes;

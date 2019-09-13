@@ -82,9 +82,8 @@ static int writer(void *context_, const void *buffer, size_t *inout_size) {
     return 0;
 }
 
-static avs_stream_abstract_t *setup_output_stream(stream_ctx_t *ctx) {
-    avs_stream_abstract_t *stream =
-            avs_stream_simple_output_create(writer, ctx);
+static avs_stream_t *setup_output_stream(stream_ctx_t *ctx) {
+    avs_stream_t *stream = avs_stream_simple_output_create(writer, ctx);
     AVS_UNIT_ASSERT_NOT_NULL(stream);
     if (ctx) {
         ctx->data = (char *) avs_calloc(STREAM_SIZE, sizeof(char));
@@ -98,8 +97,8 @@ static avs_stream_abstract_t *setup_output_stream(stream_ctx_t *ctx) {
     return stream;
 }
 
-static avs_stream_abstract_t *setup_input_stream(stream_ctx_t *ctx) {
-    avs_stream_abstract_t *stream = avs_stream_simple_input_create(reader, ctx);
+static avs_stream_t *setup_input_stream(stream_ctx_t *ctx) {
+    avs_stream_t *stream = avs_stream_simple_input_create(reader, ctx);
     AVS_UNIT_ASSERT_NOT_NULL(stream);
     if (ctx) {
         ctx->data = (char *) avs_malloc(STREAM_SIZE);
@@ -113,7 +112,7 @@ static avs_stream_abstract_t *setup_input_stream(stream_ctx_t *ctx) {
     return stream;
 }
 
-static void teardown_stream(avs_stream_abstract_t **stream, stream_ctx_t *ctx) {
+static void teardown_stream(avs_stream_t **stream, stream_ctx_t *ctx) {
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(stream));
     if (ctx) {
         avs_free(ctx->data);
@@ -122,7 +121,7 @@ static void teardown_stream(avs_stream_abstract_t **stream, stream_ctx_t *ctx) {
 
 AVS_UNIT_TEST(stream_buffered, write_some_buffer_sized_bytes) {
     stream_ctx_t ctx;
-    avs_stream_abstract_t *stream = setup_output_stream(&ctx);
+    avs_stream_t *stream = setup_output_stream(&ctx);
     size_t bytes_to_write = STREAM_BUFFER_SIZE;
 
     AVS_UNIT_ASSERT_SUCCESS(
@@ -135,7 +134,7 @@ AVS_UNIT_TEST(stream_buffered, write_some_buffer_sized_bytes) {
 
 AVS_UNIT_TEST(stream_buffered, writer_fail_then_success) {
     stream_ctx_t ctx;
-    avs_stream_abstract_t *stream = setup_output_stream(&ctx);
+    avs_stream_t *stream = setup_output_stream(&ctx);
     WRITER_WRITE_ZERO = true;
     size_t bytes_to_write = STREAM_BUFFER_SIZE + 1;
     size_t total_written = 0;
@@ -161,7 +160,7 @@ AVS_UNIT_TEST(stream_buffered, writer_fail_then_success) {
 
 AVS_UNIT_TEST(stream_buffered, write_some_less_than_buffer_size) {
     stream_ctx_t ctx;
-    avs_stream_abstract_t *stream = setup_output_stream(&ctx);
+    avs_stream_t *stream = setup_output_stream(&ctx);
     size_t bytes_to_write = STREAM_BUFFER_SIZE - 1;
     AVS_UNIT_ASSERT_SUCCESS(
             avs_stream_write_some(stream, TEST_DATA, &bytes_to_write));
@@ -181,7 +180,7 @@ AVS_UNIT_TEST(stream_buffered, write_some_less_than_buffer_size) {
 
 AVS_UNIT_TEST(stream_buffered, write_some_more_than_buffer_size) {
     stream_ctx_t ctx;
-    avs_stream_abstract_t *stream = setup_output_stream(&ctx);
+    avs_stream_t *stream = setup_output_stream(&ctx);
     size_t bytes_to_write = STREAM_BUFFER_SIZE + 1;
 
     AVS_UNIT_ASSERT_SUCCESS(
@@ -201,7 +200,7 @@ AVS_UNIT_TEST(stream_buffered, write_some_more_than_buffer_size) {
 
 AVS_UNIT_TEST(stream_buffered, try_write_some_more_than_stream_size) {
     stream_ctx_t ctx;
-    avs_stream_abstract_t *stream = setup_output_stream(&ctx);
+    avs_stream_t *stream = setup_output_stream(&ctx);
     size_t bytes_to_write = STREAM_SIZE + 1;
 
     AVS_UNIT_ASSERT_SUCCESS(
@@ -219,7 +218,7 @@ AVS_UNIT_TEST(stream_buffered, try_write_some_more_than_stream_size) {
 
 AVS_UNIT_TEST(stream_buffered, write_some_zero_bytes) {
     stream_ctx_t ctx;
-    avs_stream_abstract_t *stream = setup_output_stream(&ctx);
+    avs_stream_t *stream = setup_output_stream(&ctx);
     size_t bytes_to_write = 0;
     avs_stream_write_some(stream, TEST_DATA, &bytes_to_write);
 
@@ -230,7 +229,7 @@ AVS_UNIT_TEST(stream_buffered, write_some_zero_bytes) {
 
 AVS_UNIT_TEST(stream_buffered, try_write_more_than_stream_size) {
     stream_ctx_t ctx;
-    avs_stream_abstract_t *stream = setup_output_stream(&ctx);
+    avs_stream_t *stream = setup_output_stream(&ctx);
 
     AVS_UNIT_ASSERT_SUCCESS(
             avs_stream_write(stream, TEST_DATA, STREAM_SIZE + 1));
@@ -241,7 +240,7 @@ AVS_UNIT_TEST(stream_buffered, try_write_more_than_stream_size) {
 
 AVS_UNIT_TEST(stream_buffered, try_read_more_than_stream_size) {
     stream_ctx_t ctx;
-    avs_stream_abstract_t *stream = setup_input_stream(&ctx);
+    avs_stream_t *stream = setup_input_stream(&ctx);
     size_t bytes_to_read = STREAM_SIZE + 1;
     char *buffer = (char *) avs_calloc(bytes_to_read, sizeof(char));
     AVS_UNIT_ASSERT_NOT_NULL(buffer);
@@ -266,7 +265,7 @@ AVS_UNIT_TEST(stream_buffered, try_read_more_than_stream_size) {
 
 AVS_UNIT_TEST(stream_buffered, read_less_than_buffer_size) {
     stream_ctx_t ctx;
-    avs_stream_abstract_t *stream = setup_input_stream(&ctx);
+    avs_stream_t *stream = setup_input_stream(&ctx);
     size_t bytes_to_read = STREAM_BUFFER_SIZE - 1;
     char *buffer = (char *) avs_calloc(bytes_to_read, sizeof(char));
     AVS_UNIT_ASSERT_NOT_NULL(buffer);
@@ -287,7 +286,7 @@ AVS_UNIT_TEST(stream_buffered, read_less_than_buffer_size) {
 
 AVS_UNIT_TEST(stream_buffered, read_less_than_stream_size) {
     stream_ctx_t ctx;
-    avs_stream_abstract_t *stream = setup_input_stream(&ctx);
+    avs_stream_t *stream = setup_input_stream(&ctx);
     size_t bytes_to_read = STREAM_SIZE - 1;
     char *buffer = (char *) avs_calloc(bytes_to_read, sizeof(char));
     AVS_UNIT_ASSERT_NOT_NULL(buffer);
@@ -312,7 +311,7 @@ AVS_UNIT_TEST(stream_buffered, read_less_than_stream_size) {
 
 AVS_UNIT_TEST(stream_buffered, read_reliably_equal_to_stream_size) {
     stream_ctx_t ctx;
-    avs_stream_abstract_t *stream = setup_input_stream(&ctx);
+    avs_stream_t *stream = setup_input_stream(&ctx);
     size_t bytes_to_read = STREAM_SIZE;
     char *buffer = (char *) avs_calloc(bytes_to_read, sizeof(char));
     AVS_UNIT_ASSERT_NOT_NULL(buffer);
@@ -327,7 +326,7 @@ AVS_UNIT_TEST(stream_buffered, read_reliably_equal_to_stream_size) {
 
 AVS_UNIT_TEST(stream_buffered, read_reliably_less_than_stream_size) {
     stream_ctx_t ctx;
-    avs_stream_abstract_t *stream = setup_input_stream(&ctx);
+    avs_stream_t *stream = setup_input_stream(&ctx);
     const size_t bytes_to_read = STREAM_SIZE - 1;
     char *buffer = (char *) avs_calloc(bytes_to_read, sizeof(char));
     AVS_UNIT_ASSERT_NOT_NULL(buffer);
@@ -342,7 +341,7 @@ AVS_UNIT_TEST(stream_buffered, read_reliably_less_than_stream_size) {
 
 AVS_UNIT_TEST(stream_buffered, try_read_reliably_more_than_stream_size) {
     stream_ctx_t ctx;
-    avs_stream_abstract_t *stream = setup_input_stream(&ctx);
+    avs_stream_t *stream = setup_input_stream(&ctx);
     const size_t bytes_to_read = STREAM_SIZE + 1;
     char *buffer = (char *) avs_calloc(bytes_to_read, sizeof(char));
     AVS_UNIT_ASSERT_NOT_NULL(buffer);
@@ -356,7 +355,7 @@ AVS_UNIT_TEST(stream_buffered, try_read_reliably_more_than_stream_size) {
 
 AVS_UNIT_TEST(stream_buffered, reset) {
     stream_ctx_t ctx;
-    avs_stream_abstract_t *stream = setup_output_stream(&ctx);
+    avs_stream_t *stream = setup_output_stream(&ctx);
     size_t bytes_to_write = STREAM_BUFFER_SIZE - 1;
 
     AVS_UNIT_ASSERT_SUCCESS(
@@ -373,7 +372,7 @@ AVS_UNIT_TEST(stream_buffered, reset) {
 
 AVS_UNIT_TEST(stream_buffered, peek) {
     stream_ctx_t ctx;
-    avs_stream_abstract_t *stream = setup_input_stream(&ctx);
+    avs_stream_t *stream = setup_input_stream(&ctx);
 
     AVS_UNIT_ASSERT_EQUAL(avs_stream_peek(stream, 0), TEST_DATA[0]);
     AVS_UNIT_ASSERT_EQUAL(avs_stream_peek(stream, STREAM_BUFFER_SIZE - 1),

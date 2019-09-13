@@ -33,7 +33,7 @@ struct avs_persistence_context_vtable_struct;
 
 typedef struct avs_persistence_context_struct {
     const struct avs_persistence_context_vtable_struct *vtable;
-    avs_stream_abstract_t *stream;
+    avs_stream_t *stream;
 } avs_persistence_context_t;
 
 typedef enum {
@@ -65,7 +65,7 @@ typedef void avs_persistence_cleanup_collection_element_t(void *element);
  * @param stream      Stream to operate on.
  */
 avs_persistence_context_t
-avs_persistence_store_context_create(avs_stream_abstract_t *stream);
+avs_persistence_store_context_create(avs_stream_t *stream);
 
 /**
  * Creates an initialized persistence context so that each underlying operation
@@ -76,7 +76,7 @@ avs_persistence_store_context_create(avs_stream_abstract_t *stream);
  * @param stream      Stream to operate on.
  */
 avs_persistence_context_t
-avs_persistence_restore_context_create(avs_stream_abstract_t *stream);
+avs_persistence_restore_context_create(avs_stream_t *stream);
 
 /**
  * Creates a heap-allocated context where each underlying operation writes
@@ -88,7 +88,7 @@ avs_persistence_restore_context_create(avs_stream_abstract_t *stream);
 AVS_DEPRECATED("Please stop using heap allocation and use "
                "avs_persistence_store_context_create() instead")
 static inline avs_persistence_context_t *
-avs_persistence_store_context_new(avs_stream_abstract_t *stream) {
+avs_persistence_store_context_new(avs_stream_t *stream) {
     if (!stream) {
         return NULL;
     }
@@ -110,7 +110,7 @@ avs_persistence_store_context_new(avs_stream_abstract_t *stream) {
 AVS_DEPRECATED("Please stop using heap allocation and use "
                "avs_persistence_restore_context_create() instead")
 static inline avs_persistence_context_t *
-avs_persistence_restore_context_new(avs_stream_abstract_t *stream) {
+avs_persistence_restore_context_new(avs_stream_t *stream) {
     if (!stream) {
         return NULL;
     }

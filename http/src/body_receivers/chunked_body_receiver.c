@@ -29,7 +29,7 @@ VISIBILITY_SOURCE_BEGIN
 
 typedef struct {
     const avs_stream_v_table_t *const vtable;
-    avs_stream_abstract_t *backend;
+    avs_stream_t *backend;
     const avs_http_buffer_sizes_t *buffer_sizes;
     size_t chunk_left;
     bool finished;
@@ -95,11 +95,11 @@ static int read_chunk_size(const avs_http_buffer_sizes_t *buffer_sizes,
 static int read_chunk_size_getline_reader(void *state,
                                           char *buffer,
                                           size_t buffer_length) {
-    return avs_stream_getline((avs_stream_abstract_t *) state, NULL, NULL,
-                              buffer, buffer_length);
+    return avs_stream_getline((avs_stream_t *) state, NULL, NULL, buffer,
+                              buffer_length);
 }
 
-static int chunked_read(avs_stream_abstract_t *stream_,
+static int chunked_read(avs_stream_t *stream_,
                         size_t *out_bytes_read,
                         char *out_message_finished,
                         void *buffer,
@@ -151,7 +151,7 @@ finish:
     return result;
 }
 
-static int chunked_nonblock_read_ready(avs_stream_abstract_t *stream_) {
+static int chunked_nonblock_read_ready(avs_stream_t *stream_) {
     chunked_receiver_t *stream = (chunked_receiver_t *) stream_;
     stream->error_code = AVS_NO_ERROR;
 
@@ -163,7 +163,7 @@ static int chunked_nonblock_read_ready(avs_stream_abstract_t *stream_) {
 }
 
 typedef struct {
-    avs_stream_abstract_t *stream;
+    avs_stream_t *stream;
     size_t offset;
 } read_chunk_size_getline_peeker_state_t;
 
@@ -176,7 +176,7 @@ static int read_chunk_size_getline_peeker(void *state_,
                                &state->offset, buffer, buffer_length);
 }
 
-static int chunked_peek(avs_stream_abstract_t *stream_, size_t offset) {
+static int chunked_peek(avs_stream_t *stream_, size_t offset) {
     chunked_receiver_t *stream = (chunked_receiver_t *) stream_;
     stream->error_code = AVS_NO_ERROR;
 
@@ -206,13 +206,13 @@ static int chunked_peek(avs_stream_abstract_t *stream_, size_t offset) {
     return result;
 }
 
-static int chunked_close(avs_stream_abstract_t *stream_) {
+static int chunked_close(avs_stream_t *stream_) {
     chunked_receiver_t *stream = (chunked_receiver_t *) stream_;
     avs_stream_net_setsock(stream->backend, NULL); /* don't close the socket */
     return avs_stream_cleanup(&stream->backend);
 }
 
-static avs_errno_t chunked_error(avs_stream_abstract_t *stream_) {
+static avs_errno_t chunked_error(avs_stream_t *stream_) {
     chunked_receiver_t *stream = (chunked_receiver_t *) stream_;
     avs_errno_t error = avs_stream_error(stream->backend);
     if (error != AVS_NO_ERROR) {
@@ -244,9 +244,8 @@ static const avs_stream_v_table_t chunked_receiver_vtable = {
             AVS_STREAM_V_TABLE_EXTENSION_NULL }[0]
 };
 
-avs_stream_abstract_t *_avs_http_body_receiver_chunked_create(
-        avs_stream_abstract_t *backend,
-        const avs_http_buffer_sizes_t *buffer_sizes) {
+avs_stream_t *_avs_http_body_receiver_chunked_create(
+        avs_stream_t *backend, const avs_http_buffer_sizes_t *buffer_sizes) {
     chunked_receiver_t *retval =
             (chunked_receiver_t *) avs_calloc(1, sizeof(*retval));
     LOG(TRACE, "create_content_length_receiver");
@@ -257,5 +256,5 @@ avs_stream_abstract_t *_avs_http_body_receiver_chunked_create(
         retval->buffer_sizes = buffer_sizes;
         retval->error_code = AVS_NO_ERROR;
     }
-    return (avs_stream_abstract_t *) retval;
+    return (avs_stream_t *) retval;
 }

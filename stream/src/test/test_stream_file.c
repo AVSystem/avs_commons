@@ -39,7 +39,7 @@ static int make_temporary(char *out_filename) {
 
 AVS_UNIT_TEST(stream_file, init) {
     char filename[sizeof(TEMPLATE)];
-    avs_stream_abstract_t *stream;
+    avs_stream_t *stream;
     AVS_UNIT_ASSERT_SUCCESS(make_temporary(filename));
     AVS_UNIT_ASSERT_NOT_NULL(
             (stream = avs_stream_file_create(filename, AVS_STREAM_FILE_READ)));
@@ -55,7 +55,7 @@ AVS_UNIT_TEST(stream_file, init) {
 
 AVS_UNIT_TEST(stream_file, write_mode_creates_file) {
     char filename[sizeof(TEMPLATE)];
-    avs_stream_abstract_t *stream;
+    avs_stream_t *stream;
     AVS_UNIT_ASSERT_SUCCESS(make_temporary(filename));
     unlink(filename);
     AVS_UNIT_ASSERT_NOT_NULL(
@@ -72,7 +72,7 @@ AVS_UNIT_TEST(stream_file, write_and_read) {
     /* let the valgrind check for eventual overflows */
     char *buf = (char *) avs_malloc(sizeof(data));
 
-    avs_stream_abstract_t *stream;
+    avs_stream_t *stream;
 
     AVS_UNIT_ASSERT_NOT_NULL(buf);
     AVS_UNIT_ASSERT_SUCCESS(make_temporary(filename));
@@ -105,7 +105,7 @@ AVS_UNIT_TEST(stream_file, seek_peek_and_read) {
     char buf[128];
     size_t bytes_read;
     char end_of_msg;
-    avs_stream_abstract_t *stream;
+    avs_stream_t *stream;
 
     AVS_UNIT_ASSERT_SUCCESS(make_temporary(filename));
     unlink(filename);
@@ -137,7 +137,7 @@ AVS_UNIT_TEST(stream_file, seek_peek_and_read) {
 AVS_UNIT_TEST(stream_file, extensions_seek) {
     char filename[sizeof(TEMPLATE)];
     char data[] = "TEST";
-    avs_stream_abstract_t *stream;
+    avs_stream_t *stream;
     AVS_UNIT_ASSERT_SUCCESS(make_temporary(filename));
     AVS_UNIT_ASSERT_NOT_NULL(
             (stream = avs_stream_file_create(
@@ -154,7 +154,7 @@ AVS_UNIT_TEST(stream_file, extensions_length) {
     char filename[sizeof(TEMPLATE)];
     char data[] = "TEST";
     avs_off_t length;
-    avs_stream_abstract_t *stream;
+    avs_stream_t *stream;
     AVS_UNIT_ASSERT_SUCCESS(make_temporary(filename));
     AVS_UNIT_ASSERT_NOT_NULL(
             (stream = avs_stream_file_create(filename, AVS_STREAM_FILE_WRITE)));

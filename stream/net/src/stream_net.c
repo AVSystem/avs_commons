@@ -21,8 +21,7 @@
 
 VISIBILITY_SOURCE_BEGIN
 
-avs_net_abstract_socket_t *
-avs_stream_net_getsock(avs_stream_abstract_t *stream) {
+avs_net_abstract_socket_t *avs_stream_net_getsock(avs_stream_t *stream) {
     avs_net_abstract_socket_t *out = NULL;
     const avs_stream_v_table_extension_net_t *net =
             (const avs_stream_v_table_extension_net_t *)
@@ -36,7 +35,7 @@ avs_stream_net_getsock(avs_stream_abstract_t *stream) {
     return out;
 }
 
-int avs_stream_net_setsock(avs_stream_abstract_t *stream,
+int avs_stream_net_setsock(avs_stream_t *stream,
                            avs_net_abstract_socket_t *socket) {
     const avs_stream_v_table_extension_net_t *net =
             (const avs_stream_v_table_extension_net_t *)

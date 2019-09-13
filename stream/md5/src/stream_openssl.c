@@ -32,7 +32,7 @@ typedef struct {
     MD5_CTX ctx;
 } openssl_md5_stream_t;
 
-static int avs_md5_finish(avs_stream_abstract_t *stream) {
+static int avs_md5_finish(avs_stream_t *stream) {
     openssl_md5_stream_t *str = (openssl_md5_stream_t *) stream;
 
     // MD5_Final() returns 1 on success.
@@ -42,7 +42,7 @@ static int avs_md5_finish(avs_stream_abstract_t *stream) {
     return retval;
 }
 
-static int avs_md5_reset(avs_stream_abstract_t *stream) {
+static int avs_md5_reset(avs_stream_t *stream) {
     openssl_md5_stream_t *str = (openssl_md5_stream_t *) stream;
 
     if (_avs_stream_md5_common_is_finalized(&str->common)) {
@@ -53,8 +53,7 @@ static int avs_md5_reset(avs_stream_abstract_t *stream) {
     return 0;
 }
 
-static int
-avs_md5_update(avs_stream_abstract_t *stream, const void *buf, size_t *len) {
+static int avs_md5_update(avs_stream_t *stream, const void *buf, size_t *len) {
     openssl_md5_stream_t *str = (openssl_md5_stream_t *) stream;
 
     if (_avs_stream_md5_common_is_finalized(&str->common)) {
@@ -79,12 +78,12 @@ static const avs_stream_v_table_t md5_vtable = {
     AVS_STREAM_V_TABLE_NO_EXTENSIONS
 };
 
-avs_stream_abstract_t *avs_stream_md5_create(void) {
+avs_stream_t *avs_stream_md5_create(void) {
     openssl_md5_stream_t *retval =
             (openssl_md5_stream_t *) avs_malloc(sizeof(openssl_md5_stream_t));
     if (retval) {
         _avs_stream_md5_common_init(&retval->common, &md5_vtable);
         MD5_Init(&retval->ctx);
     }
-    return (avs_stream_abstract_t *) retval;
+    return (avs_stream_t *) retval;
 }

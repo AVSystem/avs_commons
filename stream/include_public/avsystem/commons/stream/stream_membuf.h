@@ -26,12 +26,13 @@ extern "C" {
 #define AVS_STREAM_V_TABLE_EXTENSION_MEMBUF 0x4d454d42UL /* MEMB */
 
 typedef avs_error_t (*avs_stream_membuf_ensure_free_bytes_t)(
-        avs_stream_abstract_t *stream, size_t additional_size);
+        avs_stream_t *stream, size_t additional_size);
 
-typedef avs_error_t (*avs_stream_membuf_fit_t)(avs_stream_abstract_t *stream);
+typedef avs_error_t (*avs_stream_membuf_fit_t)(avs_stream_t *stream);
 
-typedef avs_error_t (*avs_stream_membuf_take_ownership_t)(
-        avs_stream_abstract_t *stream, void **out_ptr, size_t *out_size);
+typedef avs_error_t (*avs_stream_membuf_take_ownership_t)(avs_stream_t *stream,
+                                                          void **out_ptr,
+                                                          size_t *out_size);
 
 typedef struct {
     avs_stream_membuf_ensure_free_bytes_t ensure_free_bytes;
@@ -50,7 +51,7 @@ typedef struct {
  * @returns @ref AVS_OK for success, or an error condition for which the
  *          operation failed.
  */
-avs_error_t avs_stream_membuf_ensure_free_bytes(avs_stream_abstract_t *stream,
+avs_error_t avs_stream_membuf_ensure_free_bytes(avs_stream_t *stream,
                                                 size_t additional_size);
 
 /**
@@ -61,7 +62,7 @@ avs_error_t avs_stream_membuf_ensure_free_bytes(avs_stream_abstract_t *stream,
  * @returns @ref AVS_OK for success, or an error condition for which the
  *          operation failed.
  */
-avs_error_t avs_stream_membuf_fit(avs_stream_abstract_t *stream);
+avs_error_t avs_stream_membuf_fit(avs_stream_t *stream);
 
 /**
  * Returns the stream's internal buffer (containing all the unread data), and
@@ -78,7 +79,7 @@ avs_error_t avs_stream_membuf_fit(avs_stream_abstract_t *stream);
  *          operation failed. On error, @p out_ptr is guaranteed to not be
  *          changed.
  */
-avs_error_t avs_stream_membuf_take_ownership(avs_stream_abstract_t *stream,
+avs_error_t avs_stream_membuf_take_ownership(avs_stream_t *stream,
                                              void **out_ptr,
                                              size_t *out_size);
 
@@ -90,7 +91,7 @@ typedef struct avs_stream_membuf_struct avs_stream_membuf_t;
  * @return NULL in case of an error, pointer to the newly allocated
  *         stream otherwise
  */
-avs_stream_abstract_t *avs_stream_membuf_create(void);
+avs_stream_t *avs_stream_membuf_create(void);
 
 #ifdef __cplusplus
 }

@@ -214,13 +214,13 @@ int _avs_net_mbedtls_session_save(mbedtls_ssl_session *session,
     avs_persistence_context_t ctx;
     avs_stream_outbuf_t out_buf_stream = AVS_STREAM_OUTBUF_STATIC_INITIALIZER;
     avs_stream_outbuf_set_buffer(&out_buf_stream, out_buf, out_buf_size);
-    int retval = avs_stream_write((avs_stream_abstract_t *) &out_buf_stream,
+    int retval = avs_stream_write((avs_stream_t *) &out_buf_stream,
                                   PERSISTENCE_MAGIC, sizeof(PERSISTENCE_MAGIC));
     if (retval) {
         LOG(ERROR, "Could not write session magic");
     } else {
         ctx = avs_persistence_store_context_create(
-                (avs_stream_abstract_t *) &out_buf_stream);
+                (avs_stream_t *) &out_buf_stream);
         if ((retval = handle_session_persistence(&ctx, session))) {
             LOG(ERROR, "Could not persist session data");
         }
@@ -253,9 +253,8 @@ int _avs_net_mbedtls_session_restore(mbedtls_ssl_session *out_session,
     avs_stream_inbuf_t in_buf_stream = AVS_STREAM_INBUF_STATIC_INITIALIZER;
     avs_stream_inbuf_set_buffer(&in_buf_stream, buf, buf_size);
     char magic_header[sizeof(PERSISTENCE_MAGIC)];
-    int retval =
-            avs_stream_read_reliably((avs_stream_abstract_t *) &in_buf_stream,
-                                     magic_header, sizeof(magic_header));
+    int retval = avs_stream_read_reliably((avs_stream_t *) &in_buf_stream,
+                                          magic_header, sizeof(magic_header));
     if (retval
             || memcmp(magic_header, PERSISTENCE_MAGIC,
                       sizeof(PERSISTENCE_MAGIC))) {
@@ -265,7 +264,7 @@ int _avs_net_mbedtls_session_restore(mbedtls_ssl_session *out_session,
         return -1;
     }
     avs_persistence_context_t ctx = avs_persistence_restore_context_create(
-            (avs_stream_abstract_t *) &in_buf_stream);
+            (avs_stream_t *) &in_buf_stream);
     if ((retval = handle_session_persistence(&ctx, out_session))) {
         LOG(ERROR, "Could not restore session data");
     }

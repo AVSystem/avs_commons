@@ -30,7 +30,7 @@ VISIBILITY_SOURCE_BEGIN
 
 typedef char md5_hexbuf_t[33];
 
-static int http_auth_ha1(avs_stream_abstract_t *md5,
+static int http_auth_ha1(avs_stream_t *md5,
                          const http_auth_t *auth,
                          const char *cnonce,
                          md5_hexbuf_t *hexbuf) {
@@ -69,7 +69,7 @@ static int http_auth_ha1(avs_stream_abstract_t *md5,
     return 0;
 }
 
-static int http_auth_ha2(avs_stream_abstract_t *md5,
+static int http_auth_ha2(avs_stream_t *md5,
                          avs_http_method_t method,
                          const char *digest_uri,
                          md5_hexbuf_t *hexbuf) {
@@ -91,7 +91,7 @@ static int http_auth_ha2(avs_stream_abstract_t *md5,
     return 0;
 }
 
-static int http_auth_response(avs_stream_abstract_t *md5,
+static int http_auth_response(avs_stream_t *md5,
                               const http_auth_t *auth,
                               const char *ha1,
                               const char *ha2,
@@ -136,7 +136,7 @@ int _avs_http_auth_send_header_digest(http_stream_t *stream) {
     int result = -1;
     int stream_cleanup_result = -1;
     char client_nonce[17];
-    avs_stream_abstract_t *md5 = avs_stream_md5_create();
+    avs_stream_t *md5 = avs_stream_md5_create();
 
     if (!md5) {
         goto auth_digest_error;

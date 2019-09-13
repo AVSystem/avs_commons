@@ -64,9 +64,8 @@ static int writer(void *context_, const void *buffer, size_t *inout_size) {
     return 0;
 }
 
-static avs_stream_abstract_t *setup_output_stream(stream_ctx_t *ctx) {
-    avs_stream_abstract_t *stream =
-            avs_stream_simple_output_create(writer, ctx);
+static avs_stream_t *setup_output_stream(stream_ctx_t *ctx) {
+    avs_stream_t *stream = avs_stream_simple_output_create(writer, ctx);
     AVS_UNIT_ASSERT_NOT_NULL(stream);
     if (ctx) {
         ctx->data = (char *) avs_calloc(STREAM_SIZE, sizeof(char));
@@ -76,8 +75,8 @@ static avs_stream_abstract_t *setup_output_stream(stream_ctx_t *ctx) {
     return stream;
 }
 
-static avs_stream_abstract_t *setup_input_stream(stream_ctx_t *ctx) {
-    avs_stream_abstract_t *stream = avs_stream_simple_input_create(reader, ctx);
+static avs_stream_t *setup_input_stream(stream_ctx_t *ctx) {
+    avs_stream_t *stream = avs_stream_simple_input_create(reader, ctx);
     AVS_UNIT_ASSERT_NOT_NULL(stream);
     if (ctx) {
         ctx->data = (char *) avs_malloc(STREAM_SIZE);
@@ -88,7 +87,7 @@ static avs_stream_abstract_t *setup_input_stream(stream_ctx_t *ctx) {
     return stream;
 }
 
-static void teardown_stream(avs_stream_abstract_t **stream, stream_ctx_t *ctx) {
+static void teardown_stream(avs_stream_t **stream, stream_ctx_t *ctx) {
     if (ctx) {
         avs_free(ctx->data);
     }
@@ -96,7 +95,7 @@ static void teardown_stream(avs_stream_abstract_t **stream, stream_ctx_t *ctx) {
 }
 
 AVS_UNIT_TEST(stream_simple_io, init) {
-    avs_stream_abstract_t *stream;
+    avs_stream_t *stream;
     stream_ctx_t ctx;
 
     AVS_UNIT_ASSERT_NOT_NULL(
@@ -110,7 +109,7 @@ AVS_UNIT_TEST(stream_simple_io, init) {
 
 AVS_UNIT_TEST(stream_simple_io, write_some_equal_to_memory_size) {
     stream_ctx_t ctx;
-    avs_stream_abstract_t *stream = setup_output_stream(&ctx);
+    avs_stream_t *stream = setup_output_stream(&ctx);
     size_t bytes_to_write = STREAM_SIZE;
 
     AVS_UNIT_ASSERT_SUCCESS(
@@ -123,7 +122,7 @@ AVS_UNIT_TEST(stream_simple_io, write_some_equal_to_memory_size) {
 
 AVS_UNIT_TEST(stream_simple_io, write_some_less_than_memory_size) {
     stream_ctx_t ctx;
-    avs_stream_abstract_t *stream = setup_output_stream(&ctx);
+    avs_stream_t *stream = setup_output_stream(&ctx);
     size_t bytes_to_write = STREAM_SIZE - 1;
 
     AVS_UNIT_ASSERT_SUCCESS(
@@ -137,7 +136,7 @@ AVS_UNIT_TEST(stream_simple_io, write_some_less_than_memory_size) {
 
 AVS_UNIT_TEST(stream_simple_io, try_write_some_more_than_memory_size) {
     stream_ctx_t ctx;
-    avs_stream_abstract_t *stream = setup_output_stream(&ctx);
+    avs_stream_t *stream = setup_output_stream(&ctx);
     size_t bytes_to_write = STREAM_SIZE + 1;
 
     // This behavior depends on user-implemented writer(). In this case writer()
@@ -152,7 +151,7 @@ AVS_UNIT_TEST(stream_simple_io, try_write_some_more_than_memory_size) {
 
 AVS_UNIT_TEST(stream_simple_io, write_some_zero_bytes) {
     stream_ctx_t ctx;
-    avs_stream_abstract_t *stream = setup_output_stream(&ctx);
+    avs_stream_t *stream = setup_output_stream(&ctx);
     size_t bytes_to_write = 0;
 
     AVS_UNIT_ASSERT_SUCCESS(
@@ -165,7 +164,7 @@ AVS_UNIT_TEST(stream_simple_io, write_some_zero_bytes) {
 
 AVS_UNIT_TEST(stream_simple_io, try_write_more_than_memory_size) {
     stream_ctx_t ctx;
-    avs_stream_abstract_t *stream = setup_output_stream(&ctx);
+    avs_stream_t *stream = setup_output_stream(&ctx);
 
     AVS_UNIT_ASSERT_FAILED(
             avs_stream_write(stream, TEST_DATA, STREAM_SIZE + 1));
@@ -175,7 +174,7 @@ AVS_UNIT_TEST(stream_simple_io, try_write_more_than_memory_size) {
 
 AVS_UNIT_TEST(stream_simple_io, read_zero_bytes) {
     stream_ctx_t ctx;
-    avs_stream_abstract_t *stream = setup_input_stream(&ctx);
+    avs_stream_t *stream = setup_input_stream(&ctx);
     size_t bytes_to_read = 0;
     char *buffer = NULL;
     size_t bytes_read = 0;
@@ -191,7 +190,7 @@ AVS_UNIT_TEST(stream_simple_io, read_zero_bytes) {
 
 AVS_UNIT_TEST(stream_simple_io, read_equal_to_memory_size) {
     stream_ctx_t ctx;
-    avs_stream_abstract_t *stream = setup_input_stream(&ctx);
+    avs_stream_t *stream = setup_input_stream(&ctx);
     size_t bytes_to_read = STREAM_SIZE;
     char *buffer = (char *) avs_calloc(bytes_to_read, sizeof(char));
     AVS_UNIT_ASSERT_NOT_NULL(buffer);
@@ -210,7 +209,7 @@ AVS_UNIT_TEST(stream_simple_io, read_equal_to_memory_size) {
 
 AVS_UNIT_TEST(stream_simple_io, read_less_than_memory_size) {
     stream_ctx_t ctx;
-    avs_stream_abstract_t *stream = setup_input_stream(&ctx);
+    avs_stream_t *stream = setup_input_stream(&ctx);
     size_t bytes_to_read = STREAM_SIZE - 1;
     char *buffer = (char *) avs_calloc(bytes_to_read, sizeof(char));
     AVS_UNIT_ASSERT_NOT_NULL(buffer);
@@ -229,7 +228,7 @@ AVS_UNIT_TEST(stream_simple_io, read_less_than_memory_size) {
 
 AVS_UNIT_TEST(stream_simple_io, try_read_more_than_memory_size) {
     stream_ctx_t ctx;
-    avs_stream_abstract_t *stream = setup_input_stream(&ctx);
+    avs_stream_t *stream = setup_input_stream(&ctx);
     size_t bytes_to_read = STREAM_SIZE + 1;
     char *buffer = (char *) avs_calloc(bytes_to_read, sizeof(char));
     AVS_UNIT_ASSERT_NOT_NULL(buffer);
@@ -254,7 +253,7 @@ AVS_UNIT_TEST(stream_simple_io, try_read_more_than_memory_size) {
 
 AVS_UNIT_TEST(stream_simple_io, read_reliably_equal_to_memory_size) {
     stream_ctx_t ctx;
-    avs_stream_abstract_t *stream = setup_input_stream(&ctx);
+    avs_stream_t *stream = setup_input_stream(&ctx);
     size_t bytes_to_read = STREAM_SIZE;
     char *buffer = (char *) avs_calloc(bytes_to_read, sizeof(char));
     AVS_UNIT_ASSERT_NOT_NULL(buffer);
@@ -269,7 +268,7 @@ AVS_UNIT_TEST(stream_simple_io, read_reliably_equal_to_memory_size) {
 
 AVS_UNIT_TEST(stream_simple_io, read_reliably_less_than_memory_size) {
     stream_ctx_t ctx;
-    avs_stream_abstract_t *stream = setup_input_stream(&ctx);
+    avs_stream_t *stream = setup_input_stream(&ctx);
     const size_t bytes_to_read = STREAM_SIZE - 1;
     char *buffer = (char *) avs_calloc(bytes_to_read, sizeof(char));
     AVS_UNIT_ASSERT_NOT_NULL(buffer);
@@ -284,7 +283,7 @@ AVS_UNIT_TEST(stream_simple_io, read_reliably_less_than_memory_size) {
 
 AVS_UNIT_TEST(stream_simple_io, try_read_reliably_more_than_memory_size) {
     stream_ctx_t ctx;
-    avs_stream_abstract_t *stream = setup_input_stream(&ctx);
+    avs_stream_t *stream = setup_input_stream(&ctx);
     const size_t bytes_to_read = STREAM_SIZE + 1;
     char *buffer = (char *) avs_calloc(bytes_to_read, sizeof(char));
     AVS_UNIT_ASSERT_NOT_NULL(buffer);
@@ -301,7 +300,7 @@ AVS_UNIT_TEST(stream_simple_io, try_read_reliably_more_than_memory_size) {
  */
 
 AVS_UNIT_TEST(stream_simple_io, finish_message) {
-    avs_stream_abstract_t *stream = setup_input_stream(NULL);
+    avs_stream_t *stream = setup_input_stream(NULL);
 
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_finish_message(stream));
 
@@ -309,7 +308,7 @@ AVS_UNIT_TEST(stream_simple_io, finish_message) {
 }
 
 AVS_UNIT_TEST(stream_simple_io, reset) {
-    avs_stream_abstract_t *stream = setup_input_stream(NULL);
+    avs_stream_t *stream = setup_input_stream(NULL);
 
     AVS_UNIT_ASSERT_FAILED(avs_stream_reset(stream));
 
@@ -317,7 +316,7 @@ AVS_UNIT_TEST(stream_simple_io, reset) {
 }
 
 AVS_UNIT_TEST(stream_simple_io, get_errno) {
-    avs_stream_abstract_t *stream = setup_input_stream(NULL);
+    avs_stream_t *stream = setup_input_stream(NULL);
 
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_error(stream));
 
@@ -325,7 +324,7 @@ AVS_UNIT_TEST(stream_simple_io, get_errno) {
 }
 
 AVS_UNIT_TEST(stream_simple_io, peek) {
-    avs_stream_abstract_t *stream = setup_input_stream(NULL);
+    avs_stream_t *stream = setup_input_stream(NULL);
 
     AVS_UNIT_ASSERT_FAILED(avs_stream_peek(stream, 0));
 

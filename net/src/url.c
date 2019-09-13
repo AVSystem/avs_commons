@@ -59,7 +59,7 @@ static int url_parse_protocol(const char **url,
     return 0;
 }
 
-int avs_url_percent_encode(avs_stream_abstract_t *stream,
+int avs_url_percent_encode(avs_stream_t *stream,
                            const char *input,
                            const char *unreserved_chars) {
     const char *start = input;

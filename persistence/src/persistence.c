@@ -363,7 +363,7 @@ static const struct avs_persistence_context_vtable_struct RESTORE_VTABLE = {
 };
 
 avs_persistence_context_t
-avs_persistence_store_context_create(avs_stream_abstract_t *stream) {
+avs_persistence_store_context_create(avs_stream_t *stream) {
     return (avs_persistence_context_t) {
         .vtable = &STORE_VTABLE,
         .stream = stream
@@ -371,7 +371,7 @@ avs_persistence_store_context_create(avs_stream_abstract_t *stream) {
 }
 
 avs_persistence_context_t
-avs_persistence_restore_context_create(avs_stream_abstract_t *stream) {
+avs_persistence_restore_context_create(avs_stream_t *stream) {
     return (avs_persistence_context_t) {
         .vtable = &RESTORE_VTABLE,
         .stream = stream

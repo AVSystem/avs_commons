@@ -27,7 +27,7 @@
 
 VISIBILITY_SOURCE_BEGIN
 
-static int outbuf_stream_write_some(avs_stream_abstract_t *stream_,
+static int outbuf_stream_write_some(avs_stream_t *stream_,
                                     const void *buffer,
                                     size_t *inout_data_length) {
     avs_stream_outbuf_t *stream = (avs_stream_outbuf_t *) stream_;
@@ -43,12 +43,12 @@ static int outbuf_stream_write_some(avs_stream_abstract_t *stream_,
     return 0;
 }
 
-static int outbuf_stream_finish(avs_stream_abstract_t *stream) {
+static int outbuf_stream_finish(avs_stream_t *stream) {
     ((avs_stream_outbuf_t *) stream)->message_finished = 1;
     return 0;
 }
 
-static int outbuf_stream_reset(avs_stream_abstract_t *stream) {
+static int outbuf_stream_reset(avs_stream_t *stream) {
     ((avs_stream_outbuf_t *) stream)->message_finished = 0;
     ((avs_stream_outbuf_t *) stream)->buffer_offset = 0;
     return 0;

@@ -32,7 +32,7 @@ typedef struct {
     bool message_finished;
 } simple_io_stream_t;
 
-static int stream_simple_io_write_some(avs_stream_abstract_t *stream_,
+static int stream_simple_io_write_some(avs_stream_t *stream_,
                                        const void *buffer,
                                        size_t *inout_data_length) {
     simple_io_stream_t *stream = (simple_io_stream_t *) stream_;
@@ -56,7 +56,7 @@ static int stream_simple_io_write_some(avs_stream_abstract_t *stream_,
     return 0;
 }
 
-static int stream_simple_io_read(avs_stream_abstract_t *stream_,
+static int stream_simple_io_read(avs_stream_t *stream_,
                                  size_t *out_bytes_read,
                                  char *out_message_finished,
                                  void *buffer,
@@ -98,7 +98,7 @@ static int stream_simple_io_read(avs_stream_abstract_t *stream_,
     return 0;
 }
 
-static int stream_simple_finish_message(avs_stream_abstract_t *stream) {
+static int stream_simple_finish_message(avs_stream_t *stream) {
     (void) stream;
     return 0;
 }
@@ -109,7 +109,7 @@ static const avs_stream_v_table_t simple_io_stream_vtable = {
     .finish_message = stream_simple_finish_message
 };
 
-static avs_stream_abstract_t *
+static avs_stream_t *
 avs_stream_simple_io_create(avs_simple_io_stream_writer_t *writer,
                             avs_simple_io_stream_reader_t *reader,
                             void *context) {
@@ -125,17 +125,17 @@ avs_stream_simple_io_create(avs_simple_io_stream_writer_t *writer,
     stream->writer = writer;
     stream->reader = reader;
 
-    return (avs_stream_abstract_t *) stream;
+    return (avs_stream_t *) stream;
 }
 
-avs_stream_abstract_t *
+avs_stream_t *
 avs_stream_simple_output_create(avs_simple_io_stream_writer_t *writer,
                                 void *context) {
     assert(writer);
     return avs_stream_simple_io_create(writer, NULL, context);
 }
 
-avs_stream_abstract_t *
+avs_stream_t *
 avs_stream_simple_input_create(avs_simple_io_stream_reader_t *reader,
                                void *context) {
     assert(reader);

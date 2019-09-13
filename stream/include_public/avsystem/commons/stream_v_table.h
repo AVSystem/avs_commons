@@ -43,7 +43,7 @@ extern "C" {
  * @returns @ref AVS_OK for success, or an error condition for which the
  *          operation failed.
  */
-typedef avs_error_t (*avs_stream_write_some_t)(avs_stream_abstract_t *stream,
+typedef avs_error_t (*avs_stream_write_some_t)(avs_stream_t *stream,
                                                const void *buffer,
                                                size_t *inout_data_length);
 
@@ -58,8 +58,7 @@ typedef avs_error_t (*avs_stream_write_some_t)(avs_stream_abstract_t *stream,
  * @returns @ref AVS_OK for success, or an error condition for which the
  *          operation failed.
  */
-typedef avs_error_t (*avs_stream_finish_message_t)(
-        avs_stream_abstract_t *stream);
+typedef avs_error_t (*avs_stream_finish_message_t)(avs_stream_t *stream);
 
 /**
  * @ref avs_stream_read implementation callback type.
@@ -89,7 +88,7 @@ typedef avs_error_t (*avs_stream_finish_message_t)(
  * @returns @ref AVS_OK for success, or an error condition for which the
  *          operation failed.
  */
-typedef avs_error_t (*avs_stream_read_t)(avs_stream_abstract_t *stream,
+typedef avs_error_t (*avs_stream_read_t)(avs_stream_t *stream,
                                          size_t *out_bytes_read,
                                          bool *out_message_finished,
                                          void *buffer,
@@ -116,7 +115,7 @@ typedef avs_error_t (*avs_stream_read_t)(avs_stream_abstract_t *stream,
  *          @li an error condition for which the operation failed; this includes
  *              the stream not having buffered enough data for peeking.
  */
-typedef avs_error_t (*avs_stream_peek_t)(avs_stream_abstract_t *stream,
+typedef avs_error_t (*avs_stream_peek_t)(avs_stream_t *stream,
                                          size_t offset,
                                          char *out_value);
 
@@ -131,7 +130,7 @@ typedef avs_error_t (*avs_stream_peek_t)(avs_stream_abstract_t *stream,
  * @returns @ref AVS_OK for success, or an error condition for which the
  *          operation failed.
  */
-typedef avs_error_t (*avs_stream_reset_t)(avs_stream_abstract_t *stream);
+typedef avs_error_t (*avs_stream_reset_t)(avs_stream_t *stream);
 
 /**
  * Implementation of this method closes the stream, making it ready to be
@@ -142,7 +141,7 @@ typedef avs_error_t (*avs_stream_reset_t)(avs_stream_abstract_t *stream);
  * @returns @ref AVS_OK for success, or an error condition for which the
  *          operation failed.
  */
-typedef avs_error_t (*avs_stream_close_t)(avs_stream_abstract_t *stream);
+typedef avs_error_t (*avs_stream_close_t)(avs_stream_t *stream);
 
 typedef struct {
     uint32_t id;
@@ -163,7 +162,7 @@ typedef struct {
     const avs_stream_v_table_extension_t *extension_list;
 } avs_stream_v_table_t;
 
-const void *avs_stream_v_table_find_extension(avs_stream_abstract_t *stream,
+const void *avs_stream_v_table_find_extension(avs_stream_t *stream,
                                               uint32_t id);
 
 #define AVS_STREAM_V_TABLE_EXTENSION_NONBLOCK 0x4E424C4BUL /* "NBLK" */
@@ -179,7 +178,7 @@ const void *avs_stream_v_table_find_extension(avs_stream_abstract_t *stream,
  * @returns Boolean value indicating whether non-blocking operation is possible.
  *          Any errors shall map to <c>false</c>.
  */
-typedef bool (*avs_stream_nonblock_read_ready_t)(avs_stream_abstract_t *stream);
+typedef bool (*avs_stream_nonblock_read_ready_t)(avs_stream_t *stream);
 
 /**
  * @ref avs_stream_nonblock_write_ready implementation callback type
@@ -194,8 +193,7 @@ typedef bool (*avs_stream_nonblock_read_ready_t)(avs_stream_abstract_t *stream);
  *          non-blocking manner. If non-blocking operation is not possible, 0 is
  *          returned. Any errors shall map to 0 as well.
  */
-typedef size_t (*avs_stream_nonblock_write_ready_t)(
-        avs_stream_abstract_t *stream);
+typedef size_t (*avs_stream_nonblock_write_ready_t)(avs_stream_t *stream);
 
 typedef struct {
     avs_stream_nonblock_read_ready_t read_ready;

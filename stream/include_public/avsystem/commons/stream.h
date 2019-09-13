@@ -18,6 +18,7 @@
 #define AVS_COMMONS_STREAM_H
 
 #include <stdarg.h>
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdio.h>
 
@@ -47,7 +48,7 @@ extern "C" {
 static const avs_error_t AVS_EOF = { AVS_EOF_CATEGORY, 1 };
 
 static inline bool avs_is_eof(avs_error_t error) {
-    return error.category == AVS_EOF_CATEGORY && error.code != 0;
+    return avs_is_err(error) && error.category == AVS_EOF_CATEGORY;
 }
 
 /**
@@ -55,10 +56,10 @@ static inline bool avs_is_eof(avs_error_t error) {
  *
  * Generic stream interface.
  *
- * All functions declared in this file operate on @ref avs_stream_abstract_t
- * which internally stores pointers to the implementations of the interface
- * methods (via @ref avs_stream_v_table_t). You can find sample stream
- * implementations in stream/src folder of the avs_commons source directory.
+ * All functions declared in this file operate on @ref avs_stream_t which
+ * internally stores pointers to the implementations of the interface methods
+ * (via @ref avs_stream_v_table_t). You can find sample stream implementations
+ * in stream/src folder of the avs_commons source directory.
  *
  * Different kind of streams may have different functionality, and using some
  * methods may not make sense for every stream (for example writing to a
@@ -69,9 +70,8 @@ static inline bool avs_is_eof(avs_error_t error) {
  * @ref avs_stream_v_table_extension_t . Again, for sample implementation of
  * this technique see @file stream/src/stream_file.c .
  */
-struct avs_stream_abstract_struct;
-typedef struct avs_stream_abstract_struct avs_stream_abstract_t;
-typedef avs_stream_abstract_t avs_stream_t;
+struct avs_stream_struct;
+typedef struct avs_stream_struct avs_stream_t;
 
 /**
  * Writes data to the stream by calling @ref avs_stream_vtable_t#write_some
@@ -89,7 +89,7 @@ typedef avs_stream_abstract_t avs_stream_t;
  * @returns @ref AVS_OK for success, or an error condition for which the
  *          operation failed.
  */
-avs_error_t avs_stream_write_some(avs_stream_abstract_t *stream,
+avs_error_t avs_stream_write_some(avs_stream_t *stream,
                                   const void *buffer,
                                   size_t *inout_data_length);
 
@@ -105,7 +105,7 @@ avs_error_t avs_stream_write_some(avs_stream_abstract_t *stream,
  * @returns @ref AVS_OK for success, or an error condition for which the
  *          operation failed.
  */
-avs_error_t avs_stream_write(avs_stream_abstract_t *stream,
+avs_error_t avs_stream_write(avs_stream_t *stream,
                              const void *buffer,
                              size_t buffer_length);
 
@@ -122,7 +122,7 @@ avs_error_t avs_stream_write(avs_stream_abstract_t *stream,
  * @returns @ref AVS_OK for success, or an error condition for which the
  *          operation failed.
  */
-avs_error_t avs_stream_finish_message(avs_stream_abstract_t *stream);
+avs_error_t avs_stream_finish_message(avs_stream_t *stream);
 
 /**
  * Helper function that writes formatted message onto the stream by calling
@@ -137,9 +137,8 @@ avs_error_t avs_stream_finish_message(avs_stream_abstract_t *stream);
  * @returns @ref AVS_OK for success, or an error condition for which the
  *          operation failed.
  */
-avs_error_t avs_stream_write_f(avs_stream_abstract_t *stream,
-                               const char *msg,
-                               ...) AVS_F_PRINTF(2, 3);
+avs_error_t avs_stream_write_f(avs_stream_t *stream, const char *msg, ...)
+        AVS_F_PRINTF(2, 3);
 
 /**
  * Works similarly as @ref avs_stream_write_f except that format string
@@ -152,9 +151,8 @@ avs_error_t avs_stream_write_f(avs_stream_abstract_t *stream,
  * @returns @ref AVS_OK for success, or an error condition for which the
  *          operation failed.
  */
-avs_error_t avs_stream_write_fv(avs_stream_abstract_t *stream,
-                                const char *msg,
-                                va_list args);
+avs_error_t
+avs_stream_write_fv(avs_stream_t *stream, const char *msg, va_list args);
 
 /**
  * Reads up to @p buffer_length bytes from the stream by calling
@@ -195,7 +193,7 @@ avs_error_t avs_stream_write_fv(avs_stream_abstract_t *stream,
  * @returns @ref AVS_OK for success, or an error condition for which the
  *          operation failed.
  */
-avs_error_t avs_stream_read(avs_stream_abstract_t *stream,
+avs_error_t avs_stream_read(avs_stream_t *stream,
                             size_t *out_bytes_read,
                             bool *out_message_finished,
                             void *buffer,
@@ -220,7 +218,7 @@ avs_error_t avs_stream_read(avs_stream_abstract_t *stream,
  *          @li an error condition for which underlying @ref avs_stream_read
  *              failed.
  */
-avs_error_t avs_stream_read_reliably(avs_stream_abstract_t *stream,
+avs_error_t avs_stream_read_reliably(avs_stream_t *stream,
                                      void *buffer,
                                      size_t buffer_length);
 
@@ -234,7 +232,7 @@ avs_error_t avs_stream_read_reliably(avs_stream_abstract_t *stream,
  * @returns @ref AVS_OK for success, or an error condition for which the
  *          operation failed.
  */
-avs_error_t avs_stream_ignore_to_end(avs_stream_abstract_t *stream);
+avs_error_t avs_stream_ignore_to_end(avs_stream_t *stream);
 
 /**
  * Peeks a single byte at specified offset (from the current stream position),
@@ -256,7 +254,7 @@ avs_error_t avs_stream_ignore_to_end(avs_stream_abstract_t *stream);
  *              the stream not having buffered enough data for peeking.
  */
 avs_error_t
-avs_stream_peek(avs_stream_abstract_t *stream, size_t offset, char *out_value);
+avs_stream_peek(avs_stream_t *stream, size_t offset, char *out_value);
 
 /**
  * Reads a single byte from the stream. Semantics of "message finished" is the
@@ -275,7 +273,7 @@ avs_stream_peek(avs_stream_abstract_t *stream, size_t offset, char *out_value);
  *          @li @ref AVS_EOF if end-of-stream hs been reached,
  *          @li an error condition for which the operation failed.
  */
-avs_error_t avs_stream_getch(avs_stream_abstract_t *stream,
+avs_error_t avs_stream_getch(avs_stream_t *stream,
                              char *out_value,
                              bool *out_message_finished);
 
@@ -323,7 +321,7 @@ avs_error_t avs_stream_getch(avs_stream_abstract_t *stream,
  * @ref avs_stream_error returns 0, it is most likely caused by lack of line
  * terminator characters at the end of stream.
  */
-avs_error_t avs_stream_getline(avs_stream_abstract_t *stream,
+avs_error_t avs_stream_getline(avs_stream_t *stream,
                                size_t *out_bytes_read,
                                bool *out_message_finished,
                                char *buffer,
@@ -361,7 +359,7 @@ avs_error_t avs_stream_getline(avs_stream_abstract_t *stream,
  *              <c>avs_errno(AVS_ENOBUFS)</c> will be used if @p buffer was too
  *              small to fit the entire line.
  */
-avs_error_t avs_stream_peekline(avs_stream_abstract_t *stream,
+avs_error_t avs_stream_peekline(avs_stream_t *stream,
                                 size_t offset,
                                 size_t *out_bytes_peeked,
                                 size_t *out_next_offset,
@@ -376,7 +374,7 @@ avs_error_t avs_stream_peekline(avs_stream_abstract_t *stream,
  * @returns @ref AVS_OK for success, or an error condition for which the
  *          operation failed.
  */
-avs_error_t avs_stream_reset(avs_stream_abstract_t *stream);
+avs_error_t avs_stream_reset(avs_stream_t *stream);
 
 /**
  * Calls @ref avs_stream_v_table#close on the underlying stream implementation,
@@ -390,7 +388,7 @@ avs_error_t avs_stream_reset(avs_stream_abstract_t *stream);
  *          <c>stream_close</c> failed. Memory is guaranteed to be freed
  *          regardless of the result.
  */
-avs_error_t avs_stream_cleanup(avs_stream_abstract_t **stream);
+avs_error_t avs_stream_cleanup(avs_stream_t **stream);
 
 /**
  * Optional method on streams that support the NONBLOCK extension. Checks
@@ -402,7 +400,7 @@ avs_error_t avs_stream_cleanup(avs_stream_abstract_t **stream);
  * @returns Boolean value indicating whether non-blocking operation is possible.
  *          Any errors map to <c>false</c>.
  */
-bool avs_stream_nonblock_read_ready(avs_stream_abstract_t *stream);
+bool avs_stream_nonblock_read_ready(avs_stream_t *stream);
 
 /**
  * Optional method on streams that support the NONBLOCK extensions. Checks how
@@ -415,7 +413,7 @@ bool avs_stream_nonblock_read_ready(avs_stream_abstract_t *stream);
  *          non-blocking manner. If non-blocking operation is not possible, 0 is
  *          returned. Any errors map to 0 as well.
  */
-size_t avs_stream_nonblock_write_ready(avs_stream_abstract_t *stream);
+size_t avs_stream_nonblock_write_ready(avs_stream_t *stream);
 
 #ifdef __cplusplus
 }

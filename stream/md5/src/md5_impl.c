@@ -156,7 +156,7 @@ static void avs_md5_transform(unsigned char buf[MD5_LENGTH],
  * Start MD5 accumulation.  Set bit count to 0 and buffer to mysterious
  * initialization constants.
  */
-static int avs_md5_reset(avs_stream_abstract_t *stream) {
+static int avs_md5_reset(avs_stream_t *stream) {
     static const unsigned char INITIAL_DATA[] = { 0x01, 0x23, 0x45, 0x67,
                                                   0x89, 0xAB, 0xCD, 0xEF,
                                                   0xFE, 0xDC, 0xBA, 0x98,
@@ -176,7 +176,7 @@ static int avs_md5_reset(avs_stream_abstract_t *stream) {
  * Final wrapup - pad to 64-byte boundary with the bit pattern
  * 1 0* (64-bit count of bits processed, MSB-first)
  */
-static int avs_md5_finish(avs_stream_abstract_t *stream) {
+static int avs_md5_finish(avs_stream_t *stream) {
     md5_stream_t *ctx = (md5_stream_t *) stream;
     unsigned count;
     unsigned char *p = NULL;
@@ -221,8 +221,7 @@ static int avs_md5_finish(avs_stream_abstract_t *stream) {
  * Update context to reflect the concatenation of another buffer full
  * of bytes.
  */
-static int
-avs_md5_update(avs_stream_abstract_t *stream, const void *buf_, size_t *len) {
+static int avs_md5_update(avs_stream_t *stream, const void *buf_, size_t *len) {
     const char *buf = (const char *) buf_;
     md5_stream_t *ctx = (md5_stream_t *) stream;
     size_t remaining = *len;
@@ -287,11 +286,11 @@ static const avs_stream_v_table_t md5_vtable = {
     AVS_STREAM_V_TABLE_NO_EXTENSIONS
 };
 
-avs_stream_abstract_t *avs_stream_md5_create(void) {
+avs_stream_t *avs_stream_md5_create(void) {
     md5_stream_t *retval = (md5_stream_t *) avs_malloc(sizeof(md5_stream_t));
     if (retval) {
         _avs_stream_md5_common_init(&retval->common, &md5_vtable);
-        avs_md5_reset((avs_stream_abstract_t *) retval);
+        avs_md5_reset((avs_stream_t *) retval);
     }
-    return (avs_stream_abstract_t *) retval;
+    return (avs_stream_t *) retval;
 }

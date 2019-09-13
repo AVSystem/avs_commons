@@ -27,7 +27,7 @@
 
 VISIBILITY_SOURCE_BEGIN
 
-static int inbuf_stream_read(avs_stream_abstract_t *stream_,
+static int inbuf_stream_read(avs_stream_t *stream_,
                              size_t *out_bytes_read,
                              char *out_message_finished,
                              void *buffer,
@@ -56,7 +56,7 @@ static int inbuf_stream_read(avs_stream_abstract_t *stream_,
     return 0;
 }
 
-static int inbuf_stream_peek(avs_stream_abstract_t *stream_, size_t offset) {
+static int inbuf_stream_peek(avs_stream_t *stream_, size_t offset) {
     avs_stream_inbuf_t *stream = (avs_stream_inbuf_t *) stream_;
 
     if (stream->buffer_offset + offset >= stream->buffer_size) {

@@ -27,7 +27,7 @@
 
 static void successful_request(avs_http_t *client,
                                avs_net_abstract_socket_t **socket_ptr,
-                               avs_stream_abstract_t **stream_ptr) {
+                               avs_stream_t **stream_ptr) {
     const char *tmp_data = NULL;
     char buffer[64];
     char *buffer_ptr = buffer;
@@ -76,7 +76,7 @@ AVS_UNIT_TEST(http_close, chunked_request) {
     avs_http_t *client = avs_http_new(&AVS_HTTP_DEFAULT_BUFFER_SIZES);
     AVS_UNIT_ASSERT_NOT_NULL(client);
     avs_net_abstract_socket_t *socket = NULL;
-    avs_stream_abstract_t *stream = NULL;
+    avs_stream_t *stream = NULL;
     successful_request(client, &socket, &stream);
 
     // second request
@@ -120,7 +120,7 @@ AVS_UNIT_TEST(http_close, chunked_request_twice) {
     avs_http_t *client = avs_http_new(&AVS_HTTP_DEFAULT_BUFFER_SIZES);
     AVS_UNIT_ASSERT_NOT_NULL(client);
     avs_net_abstract_socket_t *socket = NULL;
-    avs_stream_abstract_t *stream = NULL;
+    avs_stream_t *stream = NULL;
     successful_request(client, &socket, &stream);
 
     // second request
@@ -147,7 +147,7 @@ AVS_UNIT_TEST(http_close, chunked_request_error_in_first_chunk) {
     avs_http_t *client = avs_http_new(&AVS_HTTP_DEFAULT_BUFFER_SIZES);
     AVS_UNIT_ASSERT_NOT_NULL(client);
     avs_net_abstract_socket_t *socket = NULL;
-    avs_stream_abstract_t *stream = NULL;
+    avs_stream_t *stream = NULL;
     successful_request(client, &socket, &stream);
 
     // second request
@@ -194,7 +194,7 @@ AVS_UNIT_TEST(http_close, chunked_request_close_when_receiving) {
     avs_http_t *client = avs_http_new(&AVS_HTTP_DEFAULT_BUFFER_SIZES);
     AVS_UNIT_ASSERT_NOT_NULL(client);
     avs_net_abstract_socket_t *socket = NULL;
-    avs_stream_abstract_t *stream = NULL;
+    avs_stream_t *stream = NULL;
     successful_request(client, &socket, &stream);
 
     // second request
@@ -238,7 +238,7 @@ AVS_UNIT_TEST(http_close, chunked_request_error_in_second_chunk) {
     avs_http_t *client = avs_http_new(&AVS_HTTP_DEFAULT_BUFFER_SIZES);
     AVS_UNIT_ASSERT_NOT_NULL(client);
     avs_net_abstract_socket_t *socket = NULL;
-    avs_stream_abstract_t *stream = NULL;
+    avs_stream_t *stream = NULL;
     successful_request(client, &socket, &stream);
 
     // second request

@@ -39,7 +39,7 @@ VISIBILITY_SOURCE_BEGIN
 
 typedef struct {
     const void *const vtable;
-    avs_stream_abstract_t *underlying_stream;
+    avs_stream_t *underlying_stream;
     avs_buffer_t *in_buffer;
     avs_buffer_t *out_buffer;
     char message_finished;
@@ -84,7 +84,7 @@ static ssize_t fetch_data(buffered_stream_t *stream) {
     return (ssize_t) bytes_read;
 }
 
-static int stream_buffered_write_some(avs_stream_abstract_t *stream_,
+static int stream_buffered_write_some(avs_stream_t *stream_,
                                       const void *buffer,
                                       size_t *inout_data_length) {
     buffered_stream_t *stream = (buffered_stream_t *) stream_;
@@ -129,7 +129,7 @@ static int stream_buffered_write_some(avs_stream_abstract_t *stream_,
     return 0;
 }
 
-static int stream_buffered_read(avs_stream_abstract_t *stream_,
+static int stream_buffered_read(avs_stream_t *stream_,
                                 size_t *out_bytes_read,
                                 char *out_message_finished,
                                 void *buffer,
@@ -187,7 +187,7 @@ static int finish_message(buffered_stream_t *stream) {
     return (flush_data(stream) < data_size) ? -1 : 0;
 }
 
-static int stream_buffered_finish_message(avs_stream_abstract_t *stream_) {
+static int stream_buffered_finish_message(avs_stream_t *stream_) {
     buffered_stream_t *stream = (buffered_stream_t *) stream_;
     stream->errno_ = AVS_NO_ERROR;
     int retval = 0;
@@ -200,7 +200,7 @@ static int stream_buffered_finish_message(avs_stream_abstract_t *stream_) {
     return retval ? retval : backend_retval;
 }
 
-static int stream_buffered_peek(avs_stream_abstract_t *stream_, size_t offset) {
+static int stream_buffered_peek(avs_stream_t *stream_, size_t offset) {
     buffered_stream_t *stream = (buffered_stream_t *) stream_;
     stream->errno_ = AVS_NO_ERROR;
     if (!stream->in_buffer) {
@@ -234,7 +234,7 @@ static int stream_buffered_peek(avs_stream_abstract_t *stream_, size_t offset) {
     return retval;
 }
 
-static int stream_buffered_close(avs_stream_abstract_t *stream_) {
+static int stream_buffered_close(avs_stream_t *stream_) {
     buffered_stream_t *stream = (buffered_stream_t *) stream_;
     int retval = 0;
     if (stream->out_buffer) {
@@ -250,7 +250,7 @@ static int stream_buffered_close(avs_stream_abstract_t *stream_) {
     return retval ? retval : backend_retval;
 }
 
-static int stream_buffered_reset(avs_stream_abstract_t *stream_) {
+static int stream_buffered_reset(avs_stream_t *stream_) {
     buffered_stream_t *stream = (buffered_stream_t *) stream_;
     stream->errno_ = AVS_NO_ERROR;
     if (stream->in_buffer) {
@@ -262,7 +262,7 @@ static int stream_buffered_reset(avs_stream_abstract_t *stream_) {
     return avs_stream_reset(stream->underlying_stream);
 }
 
-static avs_errno_t stream_buffered_error(avs_stream_abstract_t *stream_) {
+static avs_errno_t stream_buffered_error(avs_stream_t *stream_) {
     buffered_stream_t *stream = (buffered_stream_t *) stream_;
     if (stream->errno_) {
         return stream->errno_;
@@ -280,7 +280,7 @@ static const avs_stream_v_table_t buffered_stream_vtable = {
     .get_error = stream_buffered_error
 };
 
-int avs_stream_buffered_create(avs_stream_abstract_t **inout_stream,
+int avs_stream_buffered_create(avs_stream_t **inout_stream,
                                size_t in_buffer_size,
                                size_t out_buffer_size) {
     if (!inout_stream || !*inout_stream) {
@@ -308,14 +308,14 @@ int avs_stream_buffered_create(avs_stream_abstract_t **inout_stream,
                 && avs_buffer_create(&stream->out_buffer, out_buffer_size))) {
         avs_buffer_free(&stream->in_buffer);
         avs_buffer_free(&stream->out_buffer);
-        avs_stream_cleanup((avs_stream_abstract_t **) &stream);
+        avs_stream_cleanup((avs_stream_t **) &stream);
         return -1;
     }
 
     const void *vtable = &buffered_stream_vtable;
     memcpy((void *) (intptr_t) &stream->vtable, &vtable, sizeof(void *));
     stream->underlying_stream = *inout_stream;
-    *inout_stream = (avs_stream_abstract_t *) stream;
+    *inout_stream = (avs_stream_t *) stream;
 
     return 0;
 }

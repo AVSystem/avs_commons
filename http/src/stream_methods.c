@@ -87,7 +87,7 @@ VISIBILITY_SOURCE_BEGIN
  * sending - such as the decision whether to use plain or chunked
  * <em>Transfer-Encoding</em>.
  */
-static int http_send_some(avs_stream_abstract_t *stream_,
+static int http_send_some(avs_stream_t *stream_,
                           const void *data,
                           size_t *inout_data_length) {
     http_stream_t *stream = (http_stream_t *) stream_;
@@ -114,7 +114,7 @@ static int http_send_some(avs_stream_abstract_t *stream_,
     return 0;
 }
 
-static int http_nonblock_write_ready(avs_stream_abstract_t *stream_,
+static int http_nonblock_write_ready(avs_stream_t *stream_,
                                      size_t *out_ready_capacity_bytes) {
     http_stream_t *stream = (http_stream_t *) stream_;
     if (!stream->encoder) {
@@ -128,7 +128,7 @@ static int http_nonblock_write_ready(avs_stream_abstract_t *stream_,
     }
 }
 
-static avs_errno_t http_error(avs_stream_abstract_t *stream_) {
+static avs_errno_t http_error(avs_stream_t *stream_) {
     http_stream_t *stream = (http_stream_t *) stream_;
 
     if (stream->error_code) {
@@ -142,7 +142,7 @@ static avs_errno_t http_error(avs_stream_abstract_t *stream_) {
     }
 }
 
-static int http_finish(avs_stream_abstract_t *stream_) {
+static int http_finish(avs_stream_t *stream_) {
     http_stream_t *stream = (http_stream_t *) stream_;
     if (stream->encoder && stream->encoder_touched) {
         if (avs_stream_finish_message(stream->encoder)
@@ -195,7 +195,7 @@ static int http_finish(avs_stream_abstract_t *stream_) {
  * sending - such as the decision whether to use plain or chunked
  * <em>Transfer-Encoding</em>.
  */
-static int http_receive(avs_stream_abstract_t *stream_,
+static int http_receive(avs_stream_t *stream_,
                         size_t *out_bytes_read,
                         char *out_message_finished,
                         void *buffer,
@@ -222,7 +222,7 @@ static int http_receive(avs_stream_abstract_t *stream_,
     return result;
 }
 
-static int http_nonblock_read_ready(avs_stream_abstract_t *stream_) {
+static int http_nonblock_read_ready(avs_stream_t *stream_) {
     http_stream_t *stream = (http_stream_t *) stream_;
     if (!stream->body_receiver) {
         return -1;
@@ -230,7 +230,7 @@ static int http_nonblock_read_ready(avs_stream_abstract_t *stream_) {
     return avs_stream_nonblock_read_ready(stream->body_receiver);
 }
 
-static int http_peek(avs_stream_abstract_t *stream_, size_t offset) {
+static int http_peek(avs_stream_t *stream_, size_t offset) {
     http_stream_t *stream = (http_stream_t *) stream_;
     if (!stream->body_receiver) {
         return EOF;
@@ -238,7 +238,7 @@ static int http_peek(avs_stream_abstract_t *stream_, size_t offset) {
     return avs_stream_peek(stream->body_receiver, offset);
 }
 
-static int http_reset(avs_stream_abstract_t *stream_) {
+static int http_reset(avs_stream_t *stream_) {
     http_stream_t *stream = (http_stream_t *) stream_;
     int result;
     LOG(TRACE, "http_reset");
@@ -274,7 +274,7 @@ static int http_reset(avs_stream_abstract_t *stream_) {
     return result ? -1 : 0;
 }
 
-static int http_close(avs_stream_abstract_t *stream_) {
+static int http_close(avs_stream_t *stream_) {
     http_stream_t *stream = (http_stream_t *) stream_;
     int retval = 0;
     stream->flags.keep_connection = false;
@@ -289,7 +289,7 @@ static int http_close(avs_stream_abstract_t *stream_) {
     return retval;
 }
 
-static int http_getsock(avs_stream_abstract_t *stream,
+static int http_getsock(avs_stream_t *stream,
                         avs_net_abstract_socket_t **out_socket) {
     return (*out_socket =
                     avs_stream_net_getsock(((http_stream_t *) stream)->backend))
@@ -297,7 +297,7 @@ static int http_getsock(avs_stream_abstract_t *stream,
                    : -1;
 }
 
-static int http_setsock(avs_stream_abstract_t *stream,
+static int http_setsock(avs_stream_t *stream,
                         avs_net_abstract_socket_t *socket) {
     return avs_stream_net_setsock(((http_stream_t *) stream)->backend, socket);
 }
@@ -321,7 +321,7 @@ static const avs_stream_v_table_t http_vtable = {
             AVS_STREAM_V_TABLE_EXTENSION_NULL }[0]
 };
 
-int avs_http_add_header(avs_stream_abstract_t *stream_,
+int avs_http_add_header(avs_stream_t *stream_,
                         const char *key,
                         const char *value) {
     http_stream_t *stream = (http_stream_t *) stream_;
@@ -340,7 +340,7 @@ int avs_http_add_header(avs_stream_abstract_t *stream_,
 }
 
 void avs_http_set_header_storage(
-        avs_stream_abstract_t *stream_,
+        avs_stream_t *stream_,
         AVS_LIST(const avs_http_header_t) *header_storage_ptr) {
     http_stream_t *stream = (http_stream_t *) stream_;
     assert(stream->vtable == &http_vtable);
@@ -351,7 +351,7 @@ void avs_http_set_header_storage(
     stream->incoming_header_storage = header_storage_ptr;
 }
 
-int avs_http_should_retry(avs_stream_abstract_t *stream_) {
+int avs_http_should_retry(avs_stream_t *stream_) {
     http_stream_t *stream = (http_stream_t *) stream_;
     if (stream->vtable != &http_vtable) {
         LOG(ERROR, "Invalid stream passed to avs_http_should_retry");
@@ -365,7 +365,7 @@ static inline const char *string_or_null(const char *str) {
     return str ? str : "(null)";
 }
 
-avs_errno_t avs_http_open_stream(avs_stream_abstract_t **out,
+avs_errno_t avs_http_open_stream(avs_stream_t **out,
                                  avs_http_t *http,
                                  avs_http_method_t method,
                                  avs_http_content_encoding_t encoding,
@@ -434,7 +434,7 @@ avs_errno_t avs_http_open_stream(avs_stream_abstract_t **out,
         stream->auth.state.flags.type = HTTP_AUTH_TYPE_BASIC;
     }
 
-    *out = (avs_stream_abstract_t *) stream;
+    *out = (avs_stream_t *) stream;
     return AVS_NO_ERROR;
 
 http_open_stream_error:
@@ -459,7 +459,7 @@ http_open_stream_error:
     return result;
 }
 
-int avs_http_status_code(avs_stream_abstract_t *stream_) {
+int avs_http_status_code(avs_stream_t *stream_) {
     http_stream_t *stream = (http_stream_t *) stream_;
     if (stream->vtable != &http_vtable) {
         LOG(ERROR, "Invalid stream passed to avs_http_status_code");

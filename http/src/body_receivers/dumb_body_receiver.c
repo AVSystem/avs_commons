@@ -26,10 +26,10 @@ VISIBILITY_SOURCE_BEGIN
 
 typedef struct {
     const avs_stream_v_table_t *const vtable;
-    avs_stream_abstract_t *backend;
+    avs_stream_t *backend;
 } dumb_proxy_receiver_t;
 
-static int dumb_proxy_read(avs_stream_abstract_t *stream,
+static int dumb_proxy_read(avs_stream_t *stream,
                            size_t *out_bytes_read,
                            char *out_message_finished,
                            void *buffer,
@@ -39,22 +39,22 @@ static int dumb_proxy_read(avs_stream_abstract_t *stream,
                            buffer_length);
 }
 
-static int dumb_proxy_nonblock_read_ready(avs_stream_abstract_t *stream) {
+static int dumb_proxy_nonblock_read_ready(avs_stream_t *stream) {
     return avs_stream_nonblock_read_ready(
             ((dumb_proxy_receiver_t *) stream)->backend);
 }
 
-static int dumb_proxy_peek(avs_stream_abstract_t *stream, size_t offset) {
+static int dumb_proxy_peek(avs_stream_t *stream, size_t offset) {
     return avs_stream_peek(((dumb_proxy_receiver_t *) stream)->backend, offset);
 }
 
-static int dumb_close(avs_stream_abstract_t *stream_) {
+static int dumb_close(avs_stream_t *stream_) {
     dumb_proxy_receiver_t *stream = (dumb_proxy_receiver_t *) stream_;
     avs_stream_net_setsock(stream->backend, NULL); /* don't close the socket */
     return avs_stream_cleanup(&stream->backend);
 }
 
-static avs_errno_t dumb_error(avs_stream_abstract_t *stream) {
+static avs_errno_t dumb_error(avs_stream_t *stream) {
     return avs_stream_error(((dumb_proxy_receiver_t *) stream)->backend);
 }
 
@@ -80,8 +80,7 @@ static const avs_stream_v_table_t dumb_body_receiver_vtable = {
             AVS_STREAM_V_TABLE_EXTENSION_NULL }[0]
 };
 
-avs_stream_abstract_t *
-_avs_http_body_receiver_dumb_create(avs_stream_abstract_t *backend) {
+avs_stream_t *_avs_http_body_receiver_dumb_create(avs_stream_t *backend) {
     dumb_proxy_receiver_t *retval =
             (dumb_proxy_receiver_t *) avs_malloc(sizeof(*retval));
     LOG(TRACE, "create_dumb_body_receiver");
@@ -90,5 +89,5 @@ _avs_http_body_receiver_dumb_create(avs_stream_abstract_t *backend) {
                 &dumb_body_receiver_vtable;
         retval->backend = backend;
     }
-    return (avs_stream_abstract_t *) retval;
+    return (avs_stream_t *) retval;
 }

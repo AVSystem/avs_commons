@@ -24,17 +24,16 @@
 extern "C" {
 #endif
 
-int avs_stream_netbuf_create(avs_stream_abstract_t **stream_,
+int avs_stream_netbuf_create(avs_stream_t **stream_,
                              avs_net_abstract_socket_t *socket,
                              size_t in_buffer_size,
                              size_t out_buffer_size);
 
-int avs_stream_netbuf_transfer(avs_stream_abstract_t *destination,
-                               avs_stream_abstract_t *source);
+int avs_stream_netbuf_transfer(avs_stream_t *destination, avs_stream_t *source);
 
-int avs_stream_netbuf_out_buffer_left(avs_stream_abstract_t *str);
+int avs_stream_netbuf_out_buffer_left(avs_stream_t *str);
 
-void avs_stream_netbuf_set_recv_timeout(avs_stream_abstract_t *str,
+void avs_stream_netbuf_set_recv_timeout(avs_stream_t *str,
                                         avs_time_duration_t timeout);
 
 #ifdef __cplusplus

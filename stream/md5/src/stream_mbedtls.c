@@ -60,7 +60,7 @@ static int unimplemented() {
     return -1;
 }
 
-static int avs_md5_finish(avs_stream_abstract_t *stream) {
+static int avs_md5_finish(avs_stream_t *stream) {
     mbedtls_md5_stream_t *str = (mbedtls_md5_stream_t *) stream;
 
     int result = mbedtls_md5_finish_ret(&str->ctx, str->common.result);
@@ -69,7 +69,7 @@ static int avs_md5_finish(avs_stream_abstract_t *stream) {
     return result;
 }
 
-static int avs_md5_reset(avs_stream_abstract_t *stream) {
+static int avs_md5_reset(avs_stream_t *stream) {
     mbedtls_md5_stream_t *str = (mbedtls_md5_stream_t *) stream;
 
     if (!_avs_stream_md5_common_is_finalized(&str->common)) {
@@ -80,8 +80,7 @@ static int avs_md5_reset(avs_stream_abstract_t *stream) {
     return result;
 }
 
-static int
-avs_md5_update(avs_stream_abstract_t *stream, const void *buf, size_t *len) {
+static int avs_md5_update(avs_stream_t *stream, const void *buf, size_t *len) {
     mbedtls_md5_stream_t *str = (mbedtls_md5_stream_t *) stream;
 
     if (_avs_stream_md5_common_is_finalized(&str->common)) {
@@ -102,7 +101,7 @@ static const avs_stream_v_table_t md5_vtable = {
     AVS_STREAM_V_TABLE_NO_EXTENSIONS
 };
 
-avs_stream_abstract_t *avs_stream_md5_create(void) {
+avs_stream_t *avs_stream_md5_create(void) {
     mbedtls_md5_stream_t *retval =
             (mbedtls_md5_stream_t *) avs_malloc(sizeof(mbedtls_md5_stream_t));
     if (retval) {
@@ -113,5 +112,5 @@ avs_stream_abstract_t *avs_stream_md5_create(void) {
             retval = NULL;
         }
     }
-    return (avs_stream_abstract_t *) retval;
+    return (avs_stream_t *) retval;
 }

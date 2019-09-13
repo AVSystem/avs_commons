@@ -42,7 +42,7 @@ AVS_UNIT_TEST(http, init) {
     avs_http_test_expect_create_socket(socket, AVS_NET_TCP_SOCKET);
     avs_unit_mocksock_expect_connect(socket, "www.nooooooooooooooo.com", "80");
     AVS_UNIT_ASSERT_SUCCESS(avs_http_open_stream(
-            (avs_stream_abstract_t **) &stream, client, AVS_HTTP_GET,
+            (avs_stream_t **) &stream, client, AVS_HTTP_GET,
             AVS_HTTP_CONTENT_IDENTITY, url, NULL, NULL));
     AVS_UNIT_ASSERT_NOT_NULL(stream);
     AVS_UNIT_ASSERT_TRUE(stream->vtable == &http_vtable);
@@ -69,14 +69,13 @@ AVS_UNIT_TEST(http, init) {
     AVS_UNIT_ASSERT_EQUAL(stream->redirect_count, 0);
     AVS_UNIT_ASSERT_NULL(stream->user_headers);
     avs_unit_mocksock_expect_shutdown(socket);
-    AVS_UNIT_ASSERT_SUCCESS(
-            avs_stream_cleanup((avs_stream_abstract_t **) &stream));
+    AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup((avs_stream_t **) &stream));
     avs_http_free(client);
 }
 
 AVS_UNIT_TEST(http, init_fail) {
     avs_http_t *client = avs_http_new(&AVS_HTTP_DEFAULT_BUFFER_SIZES);
-    avs_stream_abstract_t *stream = NULL;
+    avs_stream_t *stream = NULL;
     avs_url_t *url = avs_url_parse(
             "http://hasthelargehadroncolliderdestroyedtheworldyet.com/");
     AVS_UNIT_ASSERT_NOT_NULL(url);
@@ -101,7 +100,7 @@ AVS_UNIT_TEST(http, init_https_auth1) {
     avs_http_test_expect_create_socket(socket, AVS_NET_SSL_SOCKET);
     avs_unit_mocksock_expect_connect(socket, "boards.4chan.org", "443");
     AVS_UNIT_ASSERT_SUCCESS(avs_http_open_stream(
-            (avs_stream_abstract_t **) &stream, client, AVS_HTTP_POST,
+            (avs_stream_t **) &stream, client, AVS_HTTP_POST,
             AVS_HTTP_CONTENT_IDENTITY, url, "haruhi", NULL));
     AVS_UNIT_ASSERT_NOT_NULL(stream);
     AVS_UNIT_ASSERT_TRUE(stream->vtable == &http_vtable);
@@ -128,8 +127,7 @@ AVS_UNIT_TEST(http, init_https_auth1) {
     AVS_UNIT_ASSERT_EQUAL(stream->redirect_count, 0);
     AVS_UNIT_ASSERT_NULL(stream->user_headers);
     avs_unit_mocksock_expect_shutdown(socket);
-    AVS_UNIT_ASSERT_SUCCESS(
-            avs_stream_cleanup((avs_stream_abstract_t **) &stream));
+    AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup((avs_stream_t **) &stream));
     avs_http_free(client);
 }
 
@@ -144,7 +142,7 @@ AVS_UNIT_TEST(http, init_https_auth2) {
     avs_http_test_expect_create_socket(socket, AVS_NET_SSL_SOCKET);
     avs_unit_mocksock_expect_connect(socket, "boards.4chan.org", "443");
     AVS_UNIT_ASSERT_SUCCESS(avs_http_open_stream(
-            (avs_stream_abstract_t **) &stream, client, AVS_HTTP_PUT,
+            (avs_stream_t **) &stream, client, AVS_HTTP_PUT,
             AVS_HTTP_CONTENT_IDENTITY, url, NULL, ""));
     AVS_UNIT_ASSERT_NOT_NULL(stream);
     AVS_UNIT_ASSERT_TRUE(stream->vtable == &http_vtable);
@@ -171,7 +169,6 @@ AVS_UNIT_TEST(http, init_https_auth2) {
     AVS_UNIT_ASSERT_EQUAL(stream->redirect_count, 0);
     AVS_UNIT_ASSERT_NULL(stream->user_headers);
     avs_unit_mocksock_expect_shutdown(socket);
-    AVS_UNIT_ASSERT_SUCCESS(
-            avs_stream_cleanup((avs_stream_abstract_t **) &stream));
+    AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup((avs_stream_t **) &stream));
     avs_http_free(client);
 }

@@ -28,7 +28,7 @@
 
 VISIBILITY_SOURCE_BEGIN
 
-static int send_common_headers(avs_stream_abstract_t *stream,
+static int send_common_headers(avs_stream_t *stream,
                                avs_http_method_t method,
                                const char *host,
                                const char *port,

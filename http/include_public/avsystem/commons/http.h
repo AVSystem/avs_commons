@@ -257,7 +257,7 @@ int avs_http_set_user_agent(avs_http_t *http, const char *user_agent);
  * if an HTTP 3xx status code is received - but from the user standpoint, it can
  * be seen as a single conversation with a single server.
  *
- * <c>avs_stream_abstract_t</c> methods are implemented as follows:
+ * <c>avs_stream_t</c> methods are implemented as follows:
  *
  * - <c>avs_stream_write_some</c> - appends some data to the request content,
  *   possibly compressing it on the fly according to the <c>encoding</c>
@@ -364,7 +364,7 @@ int avs_http_set_user_agent(avs_http_t *http, const char *user_agent);
  *
  * @return One of <c>avs_errno_t</c> constants.
  */
-avs_errno_t avs_http_open_stream(avs_stream_abstract_t **out,
+avs_errno_t avs_http_open_stream(avs_stream_t **out,
                                  avs_http_t *http,
                                  avs_http_method_t method,
                                  avs_http_content_encoding_t encoding,
@@ -404,7 +404,7 @@ void avs_http_clear_cookies(avs_http_t *http);
  *
  * @return 0 for success, or a negative value in case of an out-of-memory error.
  */
-int avs_http_add_header(avs_stream_abstract_t *stream,
+int avs_http_add_header(avs_stream_t *stream,
                         const char *key,
                         const char *value);
 
@@ -424,7 +424,7 @@ int avs_http_add_header(avs_stream_abstract_t *stream,
  *                           resetting this setting to <c>NULL</c>.
  */
 void avs_http_set_header_storage(
-        avs_stream_abstract_t *stream,
+        avs_stream_t *stream,
         AVS_LIST(const avs_http_header_t) *header_storage_ptr);
 
 /**
@@ -455,7 +455,7 @@ void avs_http_set_header_storage(
  * @return 0 if the last request was either successful or a fatal error, or
  *         1 if it is appropriate to retry the last request
  */
-int avs_http_should_retry(avs_stream_abstract_t *stream);
+int avs_http_should_retry(avs_stream_t *stream);
 
 /**
  * Retrieves the last response code received on a given stream.
@@ -469,7 +469,7 @@ int avs_http_should_retry(avs_stream_abstract_t *stream);
  * @return HTTP status code (nominally in the range 200-599), or 0 if it cannot
  *         be determined.
  */
-int avs_http_status_code(avs_stream_abstract_t *stream);
+int avs_http_status_code(avs_stream_t *stream);
 
 #ifdef __cplusplus
 }

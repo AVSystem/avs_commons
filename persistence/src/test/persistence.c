@@ -27,13 +27,13 @@ static const char BUFFER[] = "No alarms and no surprises";
 
 typedef struct {
     AVS_LIST(avs_persistence_context_t) contexts;
-    avs_stream_abstract_t *stream;
+    avs_stream_t *stream;
 } persistence_test_env_t;
 
 typedef enum { CONTEXT_STORE = 0, CONTEXT_RESTORE } persistence_context_type_t;
 
 typedef avs_persistence_context_t
-persistence_context_constructor_t(avs_stream_abstract_t *);
+persistence_context_constructor_t(avs_stream_t *);
 
 #define SCOPED_PERSISTENCE_TEST_ENV(Name)                      \
     __attribute__((__cleanup__(persistence_test_env_destroy))) \

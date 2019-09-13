@@ -26,7 +26,7 @@ VISIBILITY_PRIVATE_HEADER_BEGIN
  * decoding, using a stream with semantics as described for
  * @ref _avs_http_create_decompressor.
  *
- * <c>avs_stream_abstract_t</c> methods are implemented as follows:
+ * <c>avs_stream_t</c> methods are implemented as follows:
  *
  * - <c>avs_stream_read</c> - attempts to read some data from the <c>decoder</c>
  *   stream. If nothing could be read and the stream is not finished, it calls
@@ -48,9 +48,9 @@ VISIBILITY_PRIVATE_HEADER_BEGIN
  * end-of-data, <c>avs_stream_finish_message()</c> is also called on the
  * <c>decoder</c> stream.
  */
-avs_stream_abstract_t *
-_avs_http_decoding_stream_create(avs_stream_abstract_t *backend,
-                                 avs_stream_abstract_t *decoder,
+avs_stream_t *
+_avs_http_decoding_stream_create(avs_stream_t *backend,
+                                 avs_stream_t *decoder,
                                  const avs_http_buffer_sizes_t *buffer_sizes);
 
 /**
@@ -58,7 +58,7 @@ _avs_http_decoding_stream_create(avs_stream_abstract_t *backend,
  * appropriate for the specified <c>content_encoding</c>.
  */
 int _avs_http_content_decoder_create(
-        avs_stream_abstract_t **out_decoder,
+        avs_stream_t **out_decoder,
         avs_http_content_encoding_t content_encoding,
         const avs_http_buffer_sizes_t *buffer_sizes);
 

@@ -116,7 +116,7 @@ static int http_handle_header(const char *key,
     return 0;
 }
 
-static int discard_line(avs_stream_abstract_t *stream) {
+static int discard_line(avs_stream_t *stream) {
     int c;
 
     do {
@@ -130,7 +130,7 @@ static int discard_line(avs_stream_abstract_t *stream) {
     return 0;
 }
 
-static int get_http_header_line(avs_stream_abstract_t *stream,
+static int get_http_header_line(avs_stream_t *stream,
                                 char *line_buf,
                                 size_t line_buf_size) {
     int result;

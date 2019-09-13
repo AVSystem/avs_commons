@@ -121,7 +121,7 @@ struct http_stream_struct {
      * bytes while sending headers, and switching to kernel mode for each tiny
      * read while receiving them.
      */
-    avs_stream_abstract_t *backend;
+    avs_stream_t *backend;
 
     avs_http_content_encoding_t encoding;
 
@@ -135,7 +135,7 @@ struct http_stream_struct {
      * <strong>NOT</strong> symmetrical to @ref http_stream_t.body_receiver, see
      * also @ref http_send and @ref http_receive for details.
      */
-    avs_stream_abstract_t *encoder;
+    avs_stream_t *encoder;
     /**
      * Set to true if any write was performed to the <c>encoder</c>.
      *
@@ -187,7 +187,7 @@ struct http_stream_struct {
      * <strong>NOT</strong> symmetrical to @ref http_stream_t.encoder, see also
      * @ref http_send and @ref http_receive in for details.
      */
-    avs_stream_abstract_t *body_receiver;
+    avs_stream_t *body_receiver;
     size_t out_buffer_pos;
     char out_buffer[];
 };

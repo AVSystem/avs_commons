@@ -44,7 +44,7 @@ extern "C" {
  *
  * @return 0 for success, or -1 in case of error
  */
-int avs_url_percent_encode(avs_stream_abstract_t *stream,
+int avs_url_percent_encode(avs_stream_t *stream,
                            const char *input,
                            const char *unreserved_chars);
 
