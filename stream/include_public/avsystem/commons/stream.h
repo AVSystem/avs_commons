@@ -44,11 +44,7 @@ extern "C" {
  *
  * It shall NOT be used for comparisons. Use @ref avs_is_eof instead.
  */
-#define AVS_EOF                       \
-    ((avs_error_t) {                  \
-        .category = AVS_EOF_CATEGORY, \
-        .code = 1                     \
-    })
+static const avs_error_t AVS_EOF = { AVS_EOF_CATEGORY, 1 };
 
 static inline bool avs_is_eof(avs_error_t error) {
     return error.category == AVS_EOF_CATEGORY && error.code != 0;
