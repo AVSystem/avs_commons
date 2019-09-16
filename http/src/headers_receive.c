@@ -19,6 +19,7 @@
 #include <assert.h>
 #include <ctype.h>
 #include <errno.h>
+#include <inttypes.h>
 #include <string.h>
 
 #include <avsystem/commons/errno.h>
@@ -139,11 +140,17 @@ static avs_error_t get_http_header_line(avs_stream_t *stream,
         if (err.category == AVS_ERRNO_CATEGORY && err.code == AVS_ENOBUFS) {
             LOG(WARNING, "HTTP header too long to handle: %s", line_buf);
             if (avs_is_err((err = discard_line(stream)))) {
-                LOG(ERROR, "Could not discard header line");
+                LOG(ERROR,
+                    "Could not discard header line (category == %" PRIu16
+                    ", code == %" PRIu16 ")",
+                    err.category, err.code);
                 return err;
             }
         } else {
-            LOG(ERROR, "Could not read header line");
+            LOG(ERROR,
+                "Could not read header line (category == %" PRIu16
+                ", code == %" PRIu16 ")",
+                err.category, err.code);
             return err;
         }
     }
