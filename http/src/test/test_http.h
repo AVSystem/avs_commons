@@ -26,9 +26,8 @@ typedef struct expected_socket_struct {
 
 extern expected_socket_t *avs_http_test_SOCKETS_TO_CREATE;
 
-int avs_net_socket_create_TEST_WRAPPER(avs_net_abstract_socket_t **socket,
-                                       avs_net_socket_type_t type,
-                                       ...);
+avs_error_t avs_net_socket_create_TEST_WRAPPER(
+        avs_net_abstract_socket_t **socket, avs_net_socket_type_t type, ...);
 
 void avs_http_test_expect_create_socket(avs_net_abstract_socket_t *socket,
                                         avs_net_socket_type_t type);

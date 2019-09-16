@@ -80,8 +80,7 @@ AVS_UNIT_TEST(http_close, chunked_request) {
     successful_request(client, &socket, &stream);
 
     // second request
-    avs_unit_mocksock_output_fail(socket, -1);
-    avs_unit_mocksock_expect_error(socket, AVS_EPIPE);
+    avs_unit_mocksock_output_fail(socket, avs_errno(AVS_EPIPE));
     avs_unit_mocksock_expect_mid_close(socket);
     avs_unit_mocksock_expect_connect(socket, "example.com", "80");
     // second request retry
@@ -124,13 +123,11 @@ AVS_UNIT_TEST(http_close, chunked_request_twice) {
     successful_request(client, &socket, &stream);
 
     // second request
-    avs_unit_mocksock_output_fail(socket, -1);
-    avs_unit_mocksock_expect_error(socket, AVS_EPIPE);
+    avs_unit_mocksock_output_fail(socket, avs_errno(AVS_EPIPE));
     avs_unit_mocksock_expect_mid_close(socket);
     avs_unit_mocksock_expect_connect(socket, "example.com", "80");
     // second request retry
-    avs_unit_mocksock_output_fail(socket, -1);
-    avs_unit_mocksock_expect_error(socket, AVS_EPIPE);
+    avs_unit_mocksock_output_fail(socket, avs_errno(AVS_EPIPE));
     const char *tmp_data = MONTY_PYTHON_RAW;
     avs_error_t err = AVS_OK;
     while (avs_is_ok(err) && *tmp_data) {
@@ -160,10 +157,8 @@ AVS_UNIT_TEST(http_close, chunked_request_error_in_first_chunk) {
                            "Transfer-Encoding: chunked\r\n"
                            "\r\n";
     avs_unit_mocksock_expect_output(socket, tmp_data, strlen(tmp_data));
-    avs_unit_mocksock_input_fail(socket, -1);
-    avs_unit_mocksock_expect_error(socket, AVS_ETIMEDOUT);
-    avs_unit_mocksock_output_fail(socket, -1);
-    avs_unit_mocksock_expect_error(socket, AVS_EPIPE);
+    avs_unit_mocksock_input_fail(socket, avs_errno(AVS_ETIMEDOUT));
+    avs_unit_mocksock_output_fail(socket, avs_errno(AVS_EPIPE));
     avs_unit_mocksock_expect_mid_close(socket);
     avs_unit_mocksock_expect_connect(socket, "example.com", "80");
     // second request retry
@@ -251,16 +246,14 @@ AVS_UNIT_TEST(http_close, chunked_request_error_in_second_chunk) {
                            "Transfer-Encoding: chunked\r\n"
                            "\r\n";
     avs_unit_mocksock_expect_output(socket, tmp_data, strlen(tmp_data));
-    avs_unit_mocksock_input_fail(socket, -1);
-    avs_unit_mocksock_expect_error(socket, AVS_ETIMEDOUT);
+    avs_unit_mocksock_input_fail(socket, avs_errno(AVS_ETIMEDOUT));
     /* The text used in this test is 5119 bytes long.
      * This is to test writing more than buffer size, which is 4096. */
     tmp_data = MONTY_PYTHON_PER_LINE_REQUEST;
     // first chunk only
     avs_unit_mocksock_expect_output(socket, tmp_data,
                                     strstr(tmp_data, "\n\r\n") + 3 - tmp_data);
-    avs_unit_mocksock_output_fail(socket, -1);
-    avs_unit_mocksock_expect_error(socket, AVS_EPIPE);
+    avs_unit_mocksock_output_fail(socket, avs_errno(AVS_EPIPE));
     tmp_data = MONTY_PYTHON_RAW;
     while (*tmp_data) {
         send_line(stream, &tmp_data);

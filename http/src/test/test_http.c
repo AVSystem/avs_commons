@@ -40,16 +40,15 @@ AVS_UNIT_GLOBAL_INIT(verbose) {
 
 expected_socket_t *avs_http_test_SOCKETS_TO_CREATE = NULL;
 
-int avs_net_socket_create_TEST_WRAPPER(avs_net_abstract_socket_t **socket,
-                                       avs_net_socket_type_t type,
-                                       ...) {
+avs_error_t avs_net_socket_create_TEST_WRAPPER(
+        avs_net_abstract_socket_t **socket, avs_net_socket_type_t type, ...) {
     expected_socket_t *removed_entry;
     removed_entry = AVS_LIST_DETACH(&avs_http_test_SOCKETS_TO_CREATE);
     AVS_UNIT_ASSERT_NOT_NULL(removed_entry);
     AVS_UNIT_ASSERT_EQUAL(type, removed_entry->type);
     *socket = removed_entry->socket;
     AVS_LIST_DELETE(&removed_entry);
-    return (*socket) ? 0 : -1;
+    return (*socket) ? AVS_OK : avs_errno(AVS_ENOMEM);
 }
 
 void avs_http_test_expect_create_socket(avs_net_abstract_socket_t *socket,
@@ -150,8 +149,7 @@ AVS_UNIT_TEST(http, reconnect_fail) {
 
     avs_unit_mocksock_expect_mid_close(socket);
     avs_unit_mocksock_expect_connect(socket, "www.avsystem.com", "80");
-    avs_unit_mocksock_fail_command(socket);
-    avs_unit_mocksock_expect_error(socket, AVS_ECONNREFUSED);
+    avs_unit_mocksock_fail_command(socket, avs_errno(AVS_ECONNREFUSED));
     avs_error_t err = avs_stream_finish_message(stream);
     AVS_UNIT_ASSERT_EQUAL(err.category, AVS_ERRNO_CATEGORY);
     AVS_UNIT_ASSERT_EQUAL(err.code, AVS_ECONNREFUSED);
@@ -1147,8 +1145,7 @@ AVS_UNIT_TEST(http, send_headers_fail) {
     tmp_data = "GET / HTTP/1.1\r\n"
                "Host: www.avsystem.com\r\n";
     avs_unit_mocksock_expect_output(socket, tmp_data, strlen(tmp_data));
-    avs_unit_mocksock_output_fail(socket, -1);
-    avs_unit_mocksock_expect_error(socket, AVS_EIO);
+    avs_unit_mocksock_output_fail(socket, avs_errno(AVS_EIO));
     AVS_UNIT_ASSERT_FAILED(avs_stream_finish_message(stream));
     avs_unit_mocksock_assert_io_clean(socket);
     avs_unit_mocksock_expect_shutdown(socket);
@@ -1176,8 +1173,7 @@ AVS_UNIT_TEST(http, ipv6_host_header_has_square_brackets) {
     tmp_data = "GET / HTTP/1.1\r\n"
                "Host: [::1:2:3:4]:1234\r\n";
     avs_unit_mocksock_expect_output(socket, tmp_data, strlen(tmp_data));
-    avs_unit_mocksock_output_fail(socket, -1);
-    avs_unit_mocksock_expect_error(socket, AVS_EIO);
+    avs_unit_mocksock_output_fail(socket, avs_errno(AVS_EIO));
     AVS_UNIT_ASSERT_FAILED(avs_stream_finish_message(stream));
     avs_unit_mocksock_assert_io_clean(socket);
     avs_unit_mocksock_expect_shutdown(socket);

@@ -35,9 +35,8 @@ VISIBILITY_SOURCE_BEGIN
 
 #ifdef AVS_UNIT_TESTING
 #    define avs_net_socket_create avs_net_socket_create_TEST_WRAPPER
-int avs_net_socket_create_TEST_WRAPPER(avs_net_abstract_socket_t **socket,
-                                       avs_net_socket_type_t type,
-                                       ...);
+avs_error_t avs_net_socket_create_TEST_WRAPPER(
+        avs_net_abstract_socket_t **socket, avs_net_socket_type_t type, ...);
 #endif
 
 static const char *default_port_for_protocol(const char *protocol) {
