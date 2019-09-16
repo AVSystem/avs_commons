@@ -27,6 +27,7 @@
 #endif
 
 #include <avsystem/commons/defs.h>
+#include <avsystem/commons/errno.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -137,7 +138,9 @@ void avs_unit_add_suite_init__(const char *suite_name,
 void avs_unit_add_test__(const char *suite_name,
                          const char *name,
                          avs_unit_test_function_t test);
+void avs_unit_assert_avs_ok__(avs_error_t err, const char *file, int line);
 void avs_unit_assert_success__(int result, const char *file, int line);
+void avs_unit_assert_avs_err__(avs_error_t err, const char *file, int line);
 void avs_unit_assert_failed__(int result, const char *file, int line);
 void avs_unit_assert_true__(int result, const char *file, int line);
 void avs_unit_assert_false__(int result, const char *file, int line);
@@ -397,8 +400,22 @@ AVS_UNIT_CHECK_EQUAL_FUNCTION__(long double, ld)
  *
  * @param result Value to check.
  */
-#define AVS_UNIT_ASSERT_SUCCESS(result) \
-    avs_unit_assert_success__(result, __FILE__, __LINE__)
+#ifndef __cplusplus
+#    define AVS_UNIT_ASSERT_SUCCESS(result)                                    \
+        __builtin_choose_expr(                                                 \
+                __builtin_types_compatible_p(__typeof__(result), avs_error_t), \
+                avs_unit_assert_avs_ok__,                                      \
+                avs_unit_assert_success__)((result), __FILE__, __LINE__)
+#else // __cplusplus
+// overloaded variant
+static inline void
+avs_unit_assert_success__(avs_error_t err, const char *file, int line) {
+    return avs_unit_assert_avs_ok__(err, file, line);
+}
+
+#    define AVS_UNIT_ASSERT_SUCCESS(result) \
+        avs_unit_assert_success__((result), __FILE__, __LINE__)
+#endif // __cplusplus
 
 /**
  * Asserts that the specified value is not 0.
@@ -410,8 +427,22 @@ AVS_UNIT_CHECK_EQUAL_FUNCTION__(long double, ld)
  *
  * @param result Value to check.
  */
-#define AVS_UNIT_ASSERT_FAILED(result) \
-    avs_unit_assert_failed__(result, __FILE__, __LINE__)
+#ifndef __cplusplus
+#    define AVS_UNIT_ASSERT_FAILED(result)                                     \
+        __builtin_choose_expr(                                                 \
+                __builtin_types_compatible_p(__typeof__(result), avs_error_t), \
+                avs_unit_assert_avs_err__,                                     \
+                avs_unit_assert_failed__)((result), __FILE__, __LINE__)
+#else // __cplusplus
+// overloaded variant
+static inline void
+avs_unit_assert_failed__(avs_error_t err, const char *file, int line) {
+    return avs_unit_assert_avs_ok__(err, file, line);
+}
+
+#    define AVS_UNIT_ASSERT_FAILED(result) \
+        avs_unit_assert_failed__((result), __FILE__, __LINE__)
+#endif // __cplusplus
 
 /**
  * Asserts that the specified value is not 0.
