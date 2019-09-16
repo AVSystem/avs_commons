@@ -17,7 +17,9 @@
 #ifndef AVS_COMMONS_ERRNO_H
 #define AVS_COMMONS_ERRNO_H
 
+#include <assert.h>
 #include <limits.h>
+#include <stdbool.h>
 #include <stdint.h>
 
 #ifdef __cplusplus
