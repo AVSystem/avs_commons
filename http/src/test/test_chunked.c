@@ -39,11 +39,11 @@ AVS_UNIT_TEST(http, send_chunk) {
                                     strlen(expected_output));
     AVS_UNIT_ASSERT_SUCCESS(
             avs_stream_netbuf_create(&stream.backend, socket, 0, 0));
-    AVS_UNIT_ASSERT_TRUE(avs_is_ok(http_send_single_chunk(
-            &stream, input_buffer, strlen(input_buffer))));
+    AVS_UNIT_ASSERT_SUCCESS(http_send_single_chunk(&stream, input_buffer,
+                                                   strlen(input_buffer)));
     avs_net_socket_close(socket);
     avs_unit_mocksock_expect_shutdown(socket);
-    AVS_UNIT_ASSERT_TRUE(avs_is_ok(avs_stream_cleanup(&stream.backend)));
+    AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&stream.backend));
 
     avs_unit_mocksock_create(&socket);
     avs_unit_mocksock_expect_connect(socket, "CV", "zero-two");
@@ -51,10 +51,10 @@ AVS_UNIT_TEST(http, send_chunk) {
     avs_unit_mocksock_expect_output(socket, "0\r\n\r\n", 5);
     AVS_UNIT_ASSERT_SUCCESS(
             avs_stream_netbuf_create(&stream.backend, socket, 0, 0));
-    AVS_UNIT_ASSERT_TRUE(avs_is_ok(http_send_single_chunk(&stream, NULL, 0)));
+    AVS_UNIT_ASSERT_SUCCESS(http_send_single_chunk(&stream, NULL, 0));
     avs_net_socket_close(socket);
     avs_unit_mocksock_expect_shutdown(socket);
-    AVS_UNIT_ASSERT_TRUE(avs_is_ok(avs_stream_cleanup(&stream.backend)));
+    AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&stream.backend));
 }
 
 #pragma GCC diagnostic pop

@@ -47,7 +47,7 @@ static inline avs_error_t send_line_result(avs_stream_t *stream,
 }
 
 static inline void send_line(avs_stream_t *stream, const char **ptr) {
-    AVS_UNIT_ASSERT_TRUE(avs_is_ok(send_line_result(stream, ptr)));
+    AVS_UNIT_ASSERT_SUCCESS(send_line_result(stream, ptr));
 }
 
 extern const char *const MONTY_PYTHON_RAW;

@@ -45,20 +45,20 @@ AVS_UNIT_TEST(http, dumb_receiver_read) {
     AVS_UNIT_ASSERT_NOT_NULL(receiver);
     while (!message_finished) {
         size_t bytes_read;
-        AVS_UNIT_ASSERT_TRUE(avs_is_ok(
+        AVS_UNIT_ASSERT_SUCCESS(
                 avs_stream_read(receiver,
                                 &bytes_read,
                                 &message_finished,
                                 buffer_ptr,
-                                sizeof(buffer) - (buffer_ptr - buffer))));
+                                sizeof(buffer) - (buffer_ptr - buffer)));
         buffer_ptr += bytes_read;
     }
     AVS_UNIT_ASSERT_EQUAL(buffer_ptr - buffer, strlen(DUMB_INPUT_DATA));
     *buffer_ptr = '\0';
     AVS_UNIT_ASSERT_EQUAL_STRING(buffer, DUMB_INPUT_DATA);
-    AVS_UNIT_ASSERT_TRUE(avs_is_ok(avs_stream_cleanup(&receiver)));
+    AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&receiver));
     avs_unit_mocksock_expect_shutdown(socket);
-    AVS_UNIT_ASSERT_TRUE(avs_is_ok(avs_stream_cleanup(&helper_stream)));
+    AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&helper_stream));
 }
 
 AVS_UNIT_TEST(http, dumb_receiver_peek) {
@@ -83,7 +83,7 @@ AVS_UNIT_TEST(http, dumb_receiver_peek) {
     AVS_UNIT_ASSERT_NOT_NULL(receiver);
     for (i = 0; i < content_length; ++i) {
         char value;
-        AVS_UNIT_ASSERT_TRUE(avs_is_ok(avs_stream_peek(receiver, i, &value)));
+        AVS_UNIT_ASSERT_SUCCESS(avs_stream_peek(receiver, i, &value));
         AVS_UNIT_ASSERT_EQUAL(value, DUMB_INPUT_DATA[i]);
     }
     for (i = content_length; i < 2 * content_length; ++i) {
@@ -92,20 +92,20 @@ AVS_UNIT_TEST(http, dumb_receiver_peek) {
     }
     while (!message_finished) {
         size_t bytes_read;
-        AVS_UNIT_ASSERT_TRUE(avs_is_ok(
+        AVS_UNIT_ASSERT_SUCCESS(
                 avs_stream_read(receiver,
                                 &bytes_read,
                                 &message_finished,
                                 buffer_ptr,
-                                sizeof(buffer) - (buffer_ptr - buffer))));
+                                sizeof(buffer) - (buffer_ptr - buffer)));
         buffer_ptr += bytes_read;
     }
     AVS_UNIT_ASSERT_EQUAL(buffer_ptr - buffer, strlen(DUMB_INPUT_DATA));
     *buffer_ptr = '\0';
     AVS_UNIT_ASSERT_EQUAL_STRING(buffer, DUMB_INPUT_DATA);
-    AVS_UNIT_ASSERT_TRUE(avs_is_ok(avs_stream_cleanup(&receiver)));
+    AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&receiver));
     avs_unit_mocksock_expect_shutdown(socket);
-    AVS_UNIT_ASSERT_TRUE(avs_is_ok(avs_stream_cleanup(&helper_stream)));
+    AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&helper_stream));
 }
 
 const char *LENGTH_INPUT_DATA = "Aa, Kami-sama, onegai, futari dake no\n"
@@ -132,12 +132,12 @@ AVS_UNIT_TEST(http, content_length_receiver_good) {
     AVS_UNIT_ASSERT_NOT_NULL(receiver);
     while (!message_finished) {
         size_t bytes_read;
-        AVS_UNIT_ASSERT_TRUE(avs_is_ok(
+        AVS_UNIT_ASSERT_SUCCESS(
                 avs_stream_read(receiver,
                                 &bytes_read,
                                 &message_finished,
                                 buffer_ptr,
-                                sizeof(buffer) - (buffer_ptr - buffer))));
+                                sizeof(buffer) - (buffer_ptr - buffer)));
         buffer_ptr += bytes_read;
     }
     AVS_UNIT_ASSERT_EQUAL(buffer_ptr - buffer, content_length);
@@ -146,19 +146,19 @@ AVS_UNIT_TEST(http, content_length_receiver_good) {
     message_finished = 0;
     while (!message_finished) {
         size_t bytes_read;
-        AVS_UNIT_ASSERT_TRUE(avs_is_ok(
+        AVS_UNIT_ASSERT_SUCCESS(
                 avs_stream_read(((fake_receiver_t *) receiver)->backend,
                                 &bytes_read, &message_finished, buffer_ptr,
-                                sizeof(buffer) - (buffer_ptr - buffer))));
+                                sizeof(buffer) - (buffer_ptr - buffer)));
         buffer_ptr += bytes_read;
     }
     AVS_UNIT_ASSERT_EQUAL(buffer_ptr - buffer,
                           strlen(LENGTH_INPUT_DATA) - content_length);
     *buffer_ptr = '\0';
     AVS_UNIT_ASSERT_EQUAL_STRING(buffer, LENGTH_INPUT_DATA + content_length);
-    AVS_UNIT_ASSERT_TRUE(avs_is_ok(avs_stream_cleanup(&receiver)));
+    AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&receiver));
     avs_unit_mocksock_expect_shutdown(socket);
-    AVS_UNIT_ASSERT_TRUE(avs_is_ok(avs_stream_cleanup(&helper_stream)));
+    AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&helper_stream));
 }
 
 AVS_UNIT_TEST(http, content_length_receiver_not_enough) {
@@ -190,9 +190,9 @@ AVS_UNIT_TEST(http, content_length_receiver_not_enough) {
     }
     AVS_UNIT_ASSERT_EQUAL(err.category, AVS_ERRNO_CATEGORY);
     AVS_UNIT_ASSERT_EQUAL(err.code, AVS_EIO);
-    AVS_UNIT_ASSERT_TRUE(avs_is_ok(avs_stream_cleanup(&receiver)));
+    AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&receiver));
     avs_unit_mocksock_expect_shutdown(socket);
-    AVS_UNIT_ASSERT_TRUE(avs_is_ok(avs_stream_cleanup(&helper_stream)));
+    AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&helper_stream));
 }
 
 AVS_UNIT_TEST(http, content_length_receiver_peek) {
@@ -215,16 +215,16 @@ AVS_UNIT_TEST(http, content_length_receiver_peek) {
     AVS_UNIT_ASSERT_NOT_NULL(receiver);
     for (i = 0; i < content_length; ++i) {
         char value;
-        AVS_UNIT_ASSERT_TRUE(avs_is_ok(avs_stream_peek(receiver, i, &value)));
+        AVS_UNIT_ASSERT_SUCCESS(avs_stream_peek(receiver, i, &value));
         AVS_UNIT_ASSERT_EQUAL(value, LENGTH_INPUT_DATA[i]);
     }
     for (i = content_length; LENGTH_INPUT_DATA[i]; ++i) {
         AVS_UNIT_ASSERT_TRUE(
                 avs_is_eof(avs_stream_peek(receiver, i, &(char) { 0 })));
     }
-    AVS_UNIT_ASSERT_TRUE(avs_is_ok(avs_stream_cleanup(&receiver)));
+    AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&receiver));
     avs_unit_mocksock_expect_shutdown(socket);
-    AVS_UNIT_ASSERT_TRUE(avs_is_ok(avs_stream_cleanup(&helper_stream)));
+    AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&helper_stream));
 }
 
 const char *CHUNKED_DATA = "3\r\n"
@@ -264,34 +264,34 @@ AVS_UNIT_TEST(http, chunked_receiver_good) {
                                  TRANSFER_CHUNKED, 0);
     AVS_UNIT_ASSERT_NOT_NULL(receiver);
     while (!message_finished) {
-        AVS_UNIT_ASSERT_TRUE(avs_is_ok(avs_stream_read(
+        AVS_UNIT_ASSERT_SUCCESS(avs_stream_read(
                 receiver, &bytes_read, &message_finished, buffer_ptr,
-                sizeof(buffer) - (buffer_ptr - buffer))));
+                sizeof(buffer) - (buffer_ptr - buffer)));
         buffer_ptr += bytes_read;
     }
     AVS_UNIT_ASSERT_EQUAL(buffer_ptr - buffer, strlen(UNCHUNKED_DATA));
     *buffer_ptr = '\0';
     AVS_UNIT_ASSERT_EQUAL_STRING(buffer, UNCHUNKED_DATA);
     message_finished = 0;
-    AVS_UNIT_ASSERT_TRUE(avs_is_ok(avs_stream_read(
-            receiver, &bytes_read, &message_finished, buffer, sizeof(buffer))));
+    AVS_UNIT_ASSERT_SUCCESS(avs_stream_read(
+            receiver, &bytes_read, &message_finished, buffer, sizeof(buffer)));
     AVS_UNIT_ASSERT_EQUAL(bytes_read, 0);
     AVS_UNIT_ASSERT_TRUE(message_finished);
     buffer_ptr = buffer;
     message_finished = 0;
     while (!message_finished) {
-        AVS_UNIT_ASSERT_TRUE(avs_is_ok(
+        AVS_UNIT_ASSERT_SUCCESS(
                 avs_stream_read(((fake_receiver_t *) receiver)->backend,
                                 &bytes_read, &message_finished, buffer_ptr,
-                                sizeof(buffer) - (buffer_ptr - buffer))));
+                                sizeof(buffer) - (buffer_ptr - buffer)));
         buffer_ptr += bytes_read;
     }
     AVS_UNIT_ASSERT_EQUAL(buffer_ptr - buffer, strlen(POST_CHUNKED_DATA));
     *buffer_ptr = '\0';
     AVS_UNIT_ASSERT_EQUAL_STRING(buffer, POST_CHUNKED_DATA);
-    AVS_UNIT_ASSERT_TRUE(avs_is_ok(avs_stream_cleanup(&receiver)));
+    AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&receiver));
     avs_unit_mocksock_expect_shutdown(socket);
-    AVS_UNIT_ASSERT_TRUE(avs_is_ok(avs_stream_cleanup(&helper_stream)));
+    AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&helper_stream));
 }
 
 AVS_UNIT_TEST(http, chunked_receiver_not_enough) {
@@ -327,9 +327,9 @@ AVS_UNIT_TEST(http, chunked_receiver_not_enough) {
     }
     AVS_UNIT_ASSERT_EQUAL(err.category, AVS_ERRNO_CATEGORY);
     AVS_UNIT_ASSERT_EQUAL(err.code, AVS_EIO);
-    AVS_UNIT_ASSERT_TRUE(avs_is_ok(avs_stream_cleanup(&receiver)));
+    AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&receiver));
     avs_unit_mocksock_expect_shutdown(socket);
-    AVS_UNIT_ASSERT_TRUE(avs_is_ok(avs_stream_cleanup(&helper_stream)));
+    AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&helper_stream));
 }
 
 AVS_UNIT_TEST(http, chunked_receiver_error) {
@@ -355,8 +355,8 @@ AVS_UNIT_TEST(http, chunked_receiver_error) {
     AVS_UNIT_ASSERT_EQUAL(err.category, AVS_ERRNO_CATEGORY);
     AVS_UNIT_ASSERT_EQUAL(err.code, AVS_EPROTO);
     avs_unit_mocksock_expect_shutdown(socket);
-    AVS_UNIT_ASSERT_TRUE(avs_is_ok(avs_stream_cleanup(&receiver)));
-    AVS_UNIT_ASSERT_TRUE(avs_is_ok(avs_stream_cleanup(&helper_stream)));
+    AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&receiver));
+    AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&helper_stream));
 }
 
 AVS_UNIT_TEST(http, chunked_receiver_no_zero) {
@@ -366,7 +366,7 @@ AVS_UNIT_TEST(http, chunked_receiver_no_zero) {
                                               "Ichiban Ohime-sama\r\n";
     char buffer[64];
     char *buffer_ptr = buffer;
-    bool message_finished = false;
+    bool message_finished = 0;
     avs_error_t err = AVS_OK;
     avs_net_abstract_socket_t *socket = NULL;
     avs_stream_t *helper_stream = NULL;
@@ -392,9 +392,9 @@ AVS_UNIT_TEST(http, chunked_receiver_no_zero) {
     }
     AVS_UNIT_ASSERT_EQUAL(err.category, AVS_ERRNO_CATEGORY);
     AVS_UNIT_ASSERT_EQUAL(err.code, AVS_EPROTO);
-    AVS_UNIT_ASSERT_TRUE(avs_is_ok(avs_stream_cleanup(&receiver)));
+    AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&receiver));
     avs_unit_mocksock_expect_shutdown(socket);
-    AVS_UNIT_ASSERT_TRUE(avs_is_ok(avs_stream_cleanup(&helper_stream)));
+    AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&helper_stream));
 }
 
 AVS_UNIT_TEST(http, chunked_receiver_peek) {
@@ -415,14 +415,14 @@ AVS_UNIT_TEST(http, chunked_receiver_peek) {
     AVS_UNIT_ASSERT_NOT_NULL(receiver);
     for (i = 0; UNCHUNKED_DATA[i]; ++i) {
         char value;
-        AVS_UNIT_ASSERT_TRUE(avs_is_ok(avs_stream_peek(receiver, i, &value)));
+        AVS_UNIT_ASSERT_SUCCESS(avs_stream_peek(receiver, i, &value));
         AVS_UNIT_ASSERT_EQUAL(value, UNCHUNKED_DATA[i]);
     }
     for (; i < 128; ++i) {
         AVS_UNIT_ASSERT_TRUE(
                 avs_is_eof(avs_stream_peek(receiver, i, &(char) { 0 })));
     }
-    AVS_UNIT_ASSERT_TRUE(avs_is_ok(avs_stream_cleanup(&receiver)));
+    AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&receiver));
     avs_unit_mocksock_expect_shutdown(socket);
-    AVS_UNIT_ASSERT_TRUE(avs_is_ok(avs_stream_cleanup(&helper_stream)));
+    AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&helper_stream));
 }

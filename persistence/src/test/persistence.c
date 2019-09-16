@@ -51,10 +51,10 @@ static persistence_test_env_t *persistence_test_env_create(void) {
 static void persistence_test_env_destroy(persistence_test_env_t **env) {
     AVS_LIST_CLEAR(&(*env)->contexts);
     bool message_finished;
-    AVS_UNIT_ASSERT_TRUE(avs_is_ok(avs_stream_read(
-            (*env)->stream, &(size_t[]){ 0 }[0], &message_finished, NULL, 0)));
+    AVS_UNIT_ASSERT_SUCCESS(avs_stream_read((*env)->stream, &(size_t[]){ 0 }[0],
+                                            &message_finished, NULL, 0));
     AVS_UNIT_ASSERT_TRUE(message_finished);
-    AVS_UNIT_ASSERT_TRUE(avs_is_ok(avs_stream_cleanup(&(*env)->stream)));
+    AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&(*env)->stream));
     avs_free(*env);
 }
 
@@ -81,19 +81,17 @@ AVS_UNIT_TEST(persistence, bytes_store_restore) {
             persistence_create_context(env, CONTEXT_RESTORE);
 
     uint32_t buffer_size = sizeof(BUFFER);
-    AVS_UNIT_ASSERT_TRUE(
-            avs_is_ok(avs_persistence_u32(store_ctx, &buffer_size)));
-    AVS_UNIT_ASSERT_TRUE(avs_is_ok(avs_persistence_bytes(
-            store_ctx, (uint8_t *) (intptr_t) BUFFER, buffer_size)));
+    AVS_UNIT_ASSERT_SUCCESS(avs_persistence_u32(store_ctx, &buffer_size));
+    AVS_UNIT_ASSERT_SUCCESS(avs_persistence_bytes(
+            store_ctx, (uint8_t *) (intptr_t) BUFFER, buffer_size));
 
     uint8_t result[128];
     uint32_t result_size;
-    AVS_UNIT_ASSERT_TRUE(
-            avs_is_ok(avs_persistence_u32(restore_ctx, &result_size)));
+    AVS_UNIT_ASSERT_SUCCESS(avs_persistence_u32(restore_ctx, &result_size));
     AVS_UNIT_ASSERT_EQUAL(result_size, buffer_size);
 
-    AVS_UNIT_ASSERT_TRUE(
-            avs_is_ok(avs_persistence_bytes(restore_ctx, result, result_size)));
+    AVS_UNIT_ASSERT_SUCCESS(
+            avs_persistence_bytes(restore_ctx, result, result_size));
     AVS_UNIT_ASSERT_EQUAL_BYTES_SIZED(result, BUFFER, buffer_size);
 }
 
@@ -106,19 +104,17 @@ AVS_UNIT_TEST(persistence, bytes_restore_too_much) {
             persistence_create_context(env, CONTEXT_RESTORE);
 
     uint32_t buffer_size = sizeof(BUFFER);
-    AVS_UNIT_ASSERT_TRUE(
-            avs_is_ok(avs_persistence_u32(store_ctx, &buffer_size)));
-    AVS_UNIT_ASSERT_TRUE(avs_is_ok(avs_persistence_bytes(
-            store_ctx, (uint8_t *) (intptr_t) BUFFER, buffer_size)));
+    AVS_UNIT_ASSERT_SUCCESS(avs_persistence_u32(store_ctx, &buffer_size));
+    AVS_UNIT_ASSERT_SUCCESS(avs_persistence_bytes(
+            store_ctx, (uint8_t *) (intptr_t) BUFFER, buffer_size));
 
     uint8_t result[128];
     uint32_t result_size;
-    AVS_UNIT_ASSERT_TRUE(
-            avs_is_ok(avs_persistence_u32(restore_ctx, &result_size)));
+    AVS_UNIT_ASSERT_SUCCESS(avs_persistence_u32(restore_ctx, &result_size));
     AVS_UNIT_ASSERT_EQUAL(result_size, buffer_size);
 
-    AVS_UNIT_ASSERT_FALSE(avs_is_ok(
-            avs_persistence_bytes(restore_ctx, result, result_size + 1)));
+    AVS_UNIT_ASSERT_FAILED(
+            avs_persistence_bytes(restore_ctx, result, result_size + 1));
 }
 
 AVS_UNIT_TEST(persistence, magic) {
@@ -131,16 +127,16 @@ AVS_UNIT_TEST(persistence, magic) {
 
     char MAGIC[] = { 'M', '\0', 'A', '\0', 'G', '\0', 'I', '\0', 'C' };
 
-    AVS_UNIT_ASSERT_TRUE(
-            avs_is_ok(avs_persistence_magic(store_ctx, MAGIC, sizeof(MAGIC))));
-    AVS_UNIT_ASSERT_TRUE(avs_is_ok(
-            avs_persistence_magic(restore_ctx, MAGIC, sizeof(MAGIC))));
+    AVS_UNIT_ASSERT_SUCCESS(
+            avs_persistence_magic(store_ctx, MAGIC, sizeof(MAGIC)));
+    AVS_UNIT_ASSERT_SUCCESS(
+            avs_persistence_magic(restore_ctx, MAGIC, sizeof(MAGIC)));
 
-    AVS_UNIT_ASSERT_TRUE(
-            avs_is_ok(avs_persistence_magic(store_ctx, MAGIC, sizeof(MAGIC))));
+    AVS_UNIT_ASSERT_SUCCESS(
+            avs_persistence_magic(store_ctx, MAGIC, sizeof(MAGIC)));
     MAGIC[1] = 'm';
-    AVS_UNIT_ASSERT_FALSE(avs_is_ok(
-            avs_persistence_magic(restore_ctx, MAGIC, sizeof(MAGIC))));
+    AVS_UNIT_ASSERT_FAILED(
+            avs_persistence_magic(restore_ctx, MAGIC, sizeof(MAGIC)));
 }
 
 AVS_UNIT_TEST(persistence, version) {
@@ -154,25 +150,25 @@ AVS_UNIT_TEST(persistence, version) {
     static uint8_t SUPPORTED[] = { 0, 1, 3, 42 };
 
     uint8_t version = 0;
-    AVS_UNIT_ASSERT_TRUE(avs_is_ok(avs_persistence_version(
-            store_ctx, &version, SUPPORTED, AVS_ARRAY_SIZE(SUPPORTED))));
+    AVS_UNIT_ASSERT_SUCCESS(avs_persistence_version(
+            store_ctx, &version, SUPPORTED, AVS_ARRAY_SIZE(SUPPORTED)));
     --version;
-    AVS_UNIT_ASSERT_TRUE(avs_is_ok(avs_persistence_version(
-            restore_ctx, &version, SUPPORTED, AVS_ARRAY_SIZE(SUPPORTED))));
+    AVS_UNIT_ASSERT_SUCCESS(avs_persistence_version(
+            restore_ctx, &version, SUPPORTED, AVS_ARRAY_SIZE(SUPPORTED)));
     AVS_UNIT_ASSERT_EQUAL(version, 0);
 
     version = 5;
-    AVS_UNIT_ASSERT_TRUE(avs_is_ok(avs_persistence_version(
-            store_ctx, &version, SUPPORTED, AVS_ARRAY_SIZE(SUPPORTED))));
+    AVS_UNIT_ASSERT_SUCCESS(avs_persistence_version(
+            store_ctx, &version, SUPPORTED, AVS_ARRAY_SIZE(SUPPORTED)));
     --version;
-    AVS_UNIT_ASSERT_FALSE(avs_is_ok(avs_persistence_version(
-            restore_ctx, &version, SUPPORTED, AVS_ARRAY_SIZE(SUPPORTED))));
+    AVS_UNIT_ASSERT_FAILED(avs_persistence_version(
+            restore_ctx, &version, SUPPORTED, AVS_ARRAY_SIZE(SUPPORTED)));
 
     version = 42;
-    AVS_UNIT_ASSERT_TRUE(avs_is_ok(avs_persistence_version(
-            store_ctx, &version, SUPPORTED, AVS_ARRAY_SIZE(SUPPORTED))));
+    AVS_UNIT_ASSERT_SUCCESS(avs_persistence_version(
+            store_ctx, &version, SUPPORTED, AVS_ARRAY_SIZE(SUPPORTED)));
     --version;
-    AVS_UNIT_ASSERT_TRUE(avs_is_ok(avs_persistence_version(
-            restore_ctx, &version, SUPPORTED, AVS_ARRAY_SIZE(SUPPORTED))));
+    AVS_UNIT_ASSERT_SUCCESS(avs_persistence_version(
+            restore_ctx, &version, SUPPORTED, AVS_ARRAY_SIZE(SUPPORTED)));
     AVS_UNIT_ASSERT_EQUAL(version, 42);
 }
