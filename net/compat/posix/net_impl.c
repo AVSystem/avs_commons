@@ -1385,7 +1385,7 @@ static avs_error_t receive_from_net(avs_net_abstract_socket_t *net_socket_,
 static avs_error_t create_listening_socket(avs_net_socket_t *net_socket,
                                            const struct sockaddr *addr,
                                            socklen_t addrlen) {
-    avs_error_t err = avs_errno(AVS_UNKNOWN_ERROR);
+    avs_error_t err;
     int reuse_addr = net_socket->configuration.reuse_addr;
     if (reuse_addr != 0 && reuse_addr != 1) {
         return avs_errno(AVS_EINVAL);
@@ -1435,7 +1435,7 @@ static avs_error_t try_bind(avs_net_socket_t *net_socket,
                             const char *port) {
     avs_net_addrinfo_t *info = NULL;
     sockaddr_endpoint_union_t address;
-    avs_error_t err = avs_errno(AVS_UNKNOWN_ERROR);
+    avs_error_t err;
     if (net_socket->configuration.address_family != AVS_NET_AF_UNSPEC
             && net_socket->configuration.address_family != family) {
         return avs_errno(AVS_EINVAL);
