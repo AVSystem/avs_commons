@@ -45,7 +45,7 @@ avs_error_t _avs_http_auth_send_header_basic(http_stream_t *stream) {
     char *plaintext = buffer;
     char *encoded = buffer + plaintext_size;
 
-    avs_error_t err = avs_errno(AVS_UNKNOWN_ERROR);
+    avs_error_t err;
     if (avs_simple_snprintf(plaintext, plaintext_size, "%s%s%s",
                             stream->auth.credentials.user
                                     ? stream->auth.credentials.user
@@ -56,10 +56,12 @@ avs_error_t _avs_http_auth_send_header_basic(http_stream_t *stream) {
                                     : "")
             < 0) {
         AVS_UNREACHABLE("Cannot prepare authorization data");
+        err = avs_errno(AVS_UNKNOWN_ERROR);
     } else if (avs_base64_encode(encoded, encoded_size,
                                  (const uint8_t *) plaintext,
                                  strlen(plaintext))) {
         AVS_UNREACHABLE("Cannot encode authorization data");
+        err = avs_errno(AVS_UNKNOWN_ERROR);
     } else {
         LOG(TRACE, "Basic encoded pass: %s", encoded);
         err = avs_stream_write_f(stream->backend, "Authorization: Basic %s\r\n",
