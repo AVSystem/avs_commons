@@ -995,7 +995,7 @@ static avs_error_t
 initialize_ssl_socket(ssl_socket_t *socket,
                       avs_net_socket_type_t backend_type,
                       const avs_net_ssl_configuration_t *configuration) {
-    avs_error_t err = avs_errno(AVS_EINVAL);
+    avs_error_t err;
     *(const avs_net_socket_v_table_t **) (intptr_t) &socket->operations =
             &ssl_vtable;
 
@@ -1013,7 +1013,7 @@ initialize_ssl_socket(ssl_socket_t *socket,
         break;
     default:
         AVS_UNREACHABLE("invalid enum value");
-        break;
+        err = avs_errno(AVS_EINVAL);
     }
 
     return avs_is_ok(err) ? configure_ssl(socket, configuration) : err;

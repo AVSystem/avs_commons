@@ -127,9 +127,9 @@ static avs_error_t handle_cert_persistence(avs_persistence_context_t *ctx,
 static avs_error_t handle_session_persistence(avs_persistence_context_t *ctx,
                                               mbedtls_ssl_session *session) {
     avs_time_real_t session_start;
-    int32_t ciphersuite;
-    int32_t compression;
-    uint8_t id_len;
+    int32_t ciphersuite = 0;
+    int32_t compression = 0;
+    uint8_t id_len = 0;
     // https://github.com/ARMmbed/mbedtls/blob/a928e6727876377322d2fafe46383126e9c69e05/include/mbedtls/ssl.h#L542
     // As you can see, mbedtls_ssl_session structure is crazy with a ton of
     // #ifdefs we need to replicate...
