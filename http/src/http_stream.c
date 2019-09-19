@@ -126,6 +126,7 @@ static avs_error_t reconnect_tcp_socket(avs_net_abstract_socket_t *socket,
 }
 
 avs_error_t _avs_http_redirect(http_stream_t *stream, avs_url_t **url_move) {
+    assert(stream->status / 100 == 3);
     avs_net_abstract_socket_t *old_socket =
             avs_stream_net_getsock(stream->backend);
     avs_net_abstract_socket_t *new_socket = NULL;
@@ -137,9 +138,7 @@ avs_error_t _avs_http_redirect(http_stream_t *stream, avs_url_t **url_move) {
             .category = AVS_HTTP_ERROR_CATEGORY,
             .code = (uint16_t) stream->status
         };
-        if (!err.code) {
-            err.code = 399;
-        }
+        assert(avs_is_err(err));
         return err;
     }
     avs_error_t err = avs_stream_reset(stream->backend);
