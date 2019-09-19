@@ -260,26 +260,26 @@ static avs_error_t http_reset(avs_stream_t *stream_) {
     return backend_err;
 }
 
-static void add_err(avs_error_t *output, avs_error_t err) {
-    if (avs_is_ok(*output)) {
-        *output = err;
-    }
-}
-
 static avs_error_t http_close(avs_stream_t *stream_) {
     http_stream_t *stream = (http_stream_t *) stream_;
     stream->flags.keep_connection = false;
-    avs_error_t err = http_reset(stream_);
+    avs_error_t reset_err = http_reset(stream_);
     LOG(TRACE, "http_close");
-    add_err(&err, avs_stream_cleanup(&stream->backend));
-    avs_error_t encoder_err = avs_stream_cleanup(&stream->encoder);
-    add_err(&err, encoder_err);
-    if (avs_is_err(encoder_err)) {
+    avs_error_t backend_cleanup_err = avs_stream_cleanup(&stream->backend);
+    avs_error_t encoder_cleanup_err = avs_stream_cleanup(&stream->encoder);
+    if (avs_is_err(encoder_cleanup_err)) {
         LOG(ERROR, "failed to close encoder stream");
     }
     _avs_http_auth_clear(&stream->auth);
     avs_url_free(stream->url);
-    return err;
+
+    if (avs_is_err(reset_err)) {
+        return reset_err;
+    } else if (avs_is_err(backend_cleanup_err)) {
+        return backend_cleanup_err;
+    } else {
+        return encoder_cleanup_err;
+    }
 }
 
 static avs_net_abstract_socket_t *http_getsock(avs_stream_t *stream) {

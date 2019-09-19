@@ -180,7 +180,7 @@ avs_error_t _avs_http_prepare_for_sending(http_stream_t *stream) {
     /* check stream state */
     if (stream->body_receiver) {
         /* we might be at the end of stream already */
-        bool finished = 0;
+        bool finished = false;
         avs_error_t err = avs_stream_read(stream->body_receiver, NULL,
                                           &finished, NULL, 0);
         if (avs_is_ok(err) && finished) {

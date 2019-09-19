@@ -37,7 +37,7 @@ static avs_error_t content_length_read(avs_stream_t *stream_,
                                        size_t buffer_length) {
     content_length_receiver_t *stream = (content_length_receiver_t *) stream_;
     size_t bytes_read = 0;
-    bool backend_message_finished = 0;
+    bool backend_message_finished = false;
     avs_error_t err = AVS_OK;
     size_t bytes_to_read = AVS_MIN(buffer_length, stream->content_left);
     if (!out_bytes_read) {
