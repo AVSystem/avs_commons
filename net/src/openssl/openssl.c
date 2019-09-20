@@ -94,6 +94,11 @@ typedef struct {
     avs_net_owned_psk_t psk;
 #endif
 
+#ifdef WITH_TLS_SESSION_PERSISTENCE
+    void *session_resumption_buffer;
+    size_t session_resumption_buffer_size;
+#endif // WITH_TLS_SESSION_PERSISTENCE
+
     /// Set of ciphersuites configured by user
     avs_net_socket_tls_ciphersuites_t enabled_ciphersuites;
     /// Non empty, when custom server hostname shall be used.
@@ -697,9 +702,52 @@ ids_to_cipher_list(ssl_socket_t *socket,
     return err;
 }
 
+#ifdef WITH_TLS_SESSION_PERSISTENCE
+static int new_session_cb(SSL *ssl, SSL_SESSION *sess) {
+    ssl_socket_t *socket = (ssl_socket_t *) SSL_get_app_data(ssl);
+
+    int result = 0;
+    int serialized_size = i2d_SSL_SESSION(sess, NULL);
+    if (serialized_size > 0
+            && (size_t) serialized_size
+                           <= socket->session_resumption_buffer_size) {
+        result = i2d_SSL_SESSION(
+                sess,
+                &(unsigned char *) {
+                        (unsigned char *) socket->session_resumption_buffer });
+        if (result != serialized_size) {
+            result = 0;
+        }
+    }
+    assert((size_t) result <= socket->session_resumption_buffer_size);
+    memset(&((char *) socket->session_resumption_buffer)[result], 0,
+           socket->session_resumption_buffer_size - (size_t) result);
+    return 0;
+}
+
+static void enable_session_cache(ssl_socket_t *socket) {
+    avs_net_socket_opt_value_t state_opt;
+    if (avs_is_ok(avs_net_socket_get_opt((avs_net_socket_t *) socket,
+                                         AVS_NET_SOCKET_OPT_STATE, &state_opt))
+            && state_opt.state == AVS_NET_SOCKET_STATE_CONNECTED) {
+        SSL_CTX_set_session_cache_mode(
+                socket->ctx,
+                SSL_SESS_CACHE_CLIENT | SSL_SESS_CACHE_NO_INTERNAL_STORE);
+        SSL_CTX_sess_set_new_cb(socket->ctx, new_session_cb);
+    } else {
+        SSL_CTX_set_session_cache_mode(socket->ctx, SSL_SESS_CACHE_OFF);
+        SSL_CTX_sess_set_new_cb(socket->ctx, NULL);
+    }
+}
+#endif // WITH_TLS_SESSION_PERSISTENCE
+
 static avs_error_t start_ssl(ssl_socket_t *socket, const char *host) {
     BIO *bio = NULL;
     LOG(TRACE, "start_ssl(socket=%p)", (void *) socket);
+
+#ifdef WITH_TLS_SESSION_PERSISTENCE
+    enable_session_cache(socket);
+#endif // WITH_TLS_SESSION_PERSISTENCE
 
     socket->ssl = SSL_new(socket->ctx);
     if (!socket->ssl) {
@@ -909,6 +957,16 @@ configure_ssl(ssl_socket_t *socket,
             (configuration->dtls_handshake_timeouts
                      ? *configuration->dtls_handshake_timeouts
                      : DEFAULT_DTLS_HANDSHAKE_TIMEOUTS);
+
+    if (configuration->session_resumption_buffer_size > 0) {
+        assert(configuration->session_resumption_buffer);
+#ifdef WITH_TLS_SESSION_PERSISTENCE
+        socket->session_resumption_buffer =
+                configuration->session_resumption_buffer;
+        socket->session_resumption_buffer_size =
+                configuration->session_resumption_buffer_size;
+#endif // WITH_TLS_SESSION_PERSISTENCE
+    }
 
     if (configuration->server_name_indication) {
         size_t len = strlen(configuration->server_name_indication);
