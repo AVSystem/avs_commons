@@ -607,6 +607,24 @@ static avs_error_t ssl_handshake(ssl_socket_t *socket) {
     socket->bio_error = AVS_OK;
     int result;
     if (state_opt.state == AVS_NET_SOCKET_STATE_CONNECTED) {
+#ifdef WITH_TLS_SESSION_PERSISTENCE
+        if (socket->session_resumption_buffer) {
+            const unsigned char *ptr =
+                    (const unsigned char *) socket->session_resumption_buffer;
+            SSL_SESSION *session = d2i_SSL_SESSION(
+                    NULL, &ptr,
+                    (long) AVS_MIN(socket->session_resumption_buffer_size,
+                                   LONG_MAX));
+            if (!session) {
+                LOG(WARNING,
+                    "Could not restore session; performing full handshake");
+            } else if (!SSL_set_session(socket->ssl, session)) {
+                LOG(WARNING,
+                    "SSL_set_session() failed; performing full handshake");
+            }
+            SSL_SESSION_free(session);
+        }
+#endif // WITH_TLS_SESSION_PERSISTENCE
         result = SSL_connect(socket->ssl);
     } else if (state_opt.state == AVS_NET_SOCKET_STATE_ACCEPTED) {
         result = SSL_accept(socket->ssl);
@@ -815,7 +833,9 @@ static bool is_ssl_started(ssl_socket_t *socket) {
 }
 
 static bool is_session_resumed(ssl_socket_t *socket) {
-    (void) socket;
+    if (socket && socket->ssl) {
+        return !!SSL_session_reused(socket->ssl);
+    }
     return false;
 }
 
