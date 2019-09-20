@@ -327,15 +327,9 @@ static avs_time_duration_t adjust_receive_timeout(ssl_socket_t *sock) {
     avs_time_duration_t socket_timeout =
             get_socket_timeout(sock->backend_socket);
     if (avs_time_real_valid(sock->next_deadline)) {
-        avs_time_real_t now = avs_time_real_now();
-        avs_time_duration_t timeout =
-                avs_time_real_diff(sock->next_deadline, now);
-        if (!avs_time_duration_valid(socket_timeout)
-                || avs_time_duration_less(socket_timeout,
-                                          AVS_TIME_DURATION_ZERO)
-                || avs_time_duration_less(timeout, socket_timeout)) {
-            set_socket_timeout(sock->backend_socket, timeout);
-        }
+        set_socket_timeout(sock->backend_socket,
+                           avs_time_real_diff(sock->next_deadline,
+                                              avs_time_real_now()));
     }
     return socket_timeout;
 }
@@ -415,25 +409,36 @@ static long avs_bio_ctrl(BIO *bio, int command, long intarg, void *ptrarg) {
         return get_socket_inner_mtu_or_zero(sock->backend_socket);
     case BIO_CTRL_DGRAM_SET_NEXT_TIMEOUT: {
         struct timeval next_deadline = *(const struct timeval *) ptrarg;
-        avs_time_real_t now = avs_time_real_now();
-        avs_time_duration_t next_timeout = {
-            .seconds = next_deadline.tv_sec - now.since_real_epoch.seconds,
-            .nanoseconds = (int32_t) (next_deadline.tv_usec * 1000)
-                           - now.since_real_epoch.nanoseconds
-        };
-        if (next_timeout.nanoseconds < 0) {
-            next_timeout.seconds--;
-            next_timeout.nanoseconds += 1000000000;
+        if (next_deadline.tv_sec == 0 && next_deadline.tv_usec == 0) {
+            // Compare:
+            // https://github.com/openssl/openssl/blob/ec87a649dd2128bde780f6e34a4833d9469f6b4d/ssl/d1_lib.c#L352
+            // Once DTLS handshake is over, OpenSSL resets the deadline to
+            // { 0, 0 }. Not particularly elegant, but it is unambiguous, unless
+            // some time traveller actually attempts to use DTLS before
+            // January 1, 1970.
+            sock->next_deadline = AVS_TIME_REAL_INVALID;
+        } else {
+            avs_time_real_t now = avs_time_real_now();
+            avs_time_duration_t next_timeout = {
+                .seconds = next_deadline.tv_sec - now.since_real_epoch.seconds,
+                .nanoseconds = (int32_t) (next_deadline.tv_usec * 1000)
+                               - now.since_real_epoch.nanoseconds
+            };
+            if (next_timeout.nanoseconds < 0) {
+                next_timeout.seconds--;
+                next_timeout.nanoseconds += 1000000000;
+            }
+            if (compare_durations(&next_timeout,
+                                  &sock->dtls_handshake_timeouts.min)
+                    < 0) {
+                next_timeout = sock->dtls_handshake_timeouts.min;
+            } else if (compare_durations(&next_timeout,
+                                         &sock->dtls_handshake_timeouts.max)
+                       > 0) {
+                next_timeout = sock->dtls_handshake_timeouts.max;
+            }
+            sock->next_deadline = avs_time_real_add(now, next_timeout);
         }
-        if (compare_durations(&next_timeout, &sock->dtls_handshake_timeouts.min)
-                < 0) {
-            next_timeout = sock->dtls_handshake_timeouts.min;
-        } else if (compare_durations(&next_timeout,
-                                     &sock->dtls_handshake_timeouts.max)
-                   > 0) {
-            next_timeout = sock->dtls_handshake_timeouts.max;
-        }
-        sock->next_deadline = avs_time_real_add(now, next_timeout);
         return 0;
     }
     case BIO_CTRL_DGRAM_GET_SEND_TIMER_EXP:
