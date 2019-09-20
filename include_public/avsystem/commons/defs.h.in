@@ -45,7 +45,9 @@ extern "C" {
 #endif
 
 #ifndef IF_NAMESIZE
-#    cmakedefine HAVE_NET_IF_H
+/* clang-format off */
+#cmakedefine HAVE_NET_IF_H
+/* clang-format on */
 #    ifdef HAVE_NET_IF_H
 #        include <net/if.h>
 #    else
@@ -54,7 +56,9 @@ extern "C" {
 #endif // IF_NAMESIZE
 
 #ifndef AVS_SSIZE_T_DEFINED
-#    cmakedefine HAVE_SYS_TYPES_H
+/* clang-format off */
+#cmakedefine HAVE_SYS_TYPES_H
+/* clang-format on */
 #    ifdef HAVE_SYS_TYPES_H
 #        include <sys/types.h>
 #    else
@@ -403,6 +407,8 @@ struct AvsCallWithCast__ {
 
 #define AVS_PRAGMA(x) _Pragma(#x)
 
+/* clang-format off */
 #define AVS_POISON(identifier) @AVS_POISON_IMPL@
+/* clang-format on */
 
 #endif /* AVS_COMMONS_DEFS_H */

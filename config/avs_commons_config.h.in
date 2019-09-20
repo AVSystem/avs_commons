@@ -47,7 +47,9 @@
 #cmakedefine WITH_TLS_SESSION_PERSISTENCE
 
 #cmakedefine WITH_AVS_LOG
+/* clang-format off */
 #cmakedefine AVS_LOG_MAX_LINE_LENGTH @AVS_LOG_MAX_LINE_LENGTH@
+/* clang-format on */
 #cmakedefine AVS_LOG_USE_GLOBAL_BUFFER
 
 #cmakedefine WITH_INTERNAL_LOGS
@@ -82,7 +84,9 @@ extern void *sbrk (intptr_t __delta);
 #cmakedefine HAVE_PRAGMA_DIAGNOSTIC
 
 #ifndef AVS_UNIT_TESTING
+/* clang-format off */
 #cmakedefine HAVE_VISIBILITY
+/* clang-format on */
 #endif
 
 #if defined(HAVE_VISIBILITY)
