@@ -756,7 +756,6 @@ static int configure_ssl_certs(ssl_socket_t *socket,
 
     if (cert_info->server_cert_validation) {
         socket->verification = 1;
-        SSL_CTX_set_verify(socket->ctx, SSL_VERIFY_PEER, NULL);
 #if OPENSSL_VERSION_NUMBER_LT(0,9,5)
         SSL_CTX_set_verify_depth(socket->ctx, 1);
 #endif
@@ -767,6 +766,7 @@ static int configure_ssl_certs(ssl_socket_t *socket,
         }
     } else {
         LOG(DEBUG, "Server authentication disabled");
+        SSL_CTX_set_verify(socket->ctx, SSL_VERIFY_NONE, NULL);
     }
 
     if (cert_info->client_cert.desc.source != AVS_NET_DATA_SOURCE_EMPTY) {
@@ -890,7 +890,7 @@ static int configure_ssl(ssl_socket_t *socket,
 
     ERR_clear_error();
     SSL_CTX_set_options(socket->ctx, SSL_OP_ALL | SSL_OP_NO_SSLv2);
-    SSL_CTX_set_verify(socket->ctx, SSL_VERIFY_NONE, NULL);
+    SSL_CTX_set_verify(socket->ctx, SSL_VERIFY_PEER, NULL);
 
 #ifdef WITH_OPENSSL_CUSTOM_CIPHERS
     if (configure_cipher_list(socket, WITH_OPENSSL_CUSTOM_CIPHERS)) {
