@@ -582,14 +582,29 @@ static avs_error_t configure_socket(avs_net_socket_t *net_socket) {
     return AVS_OK;
 }
 
+
+// These are flags intended to be passed to wait_until_ready() family's
+// flags argument.
+#define AVS_POLLIN (1 << 0)
+#define AVS_POLLOUT (1 << 1)
+// NOTE: Passing AVS_POLLERR will cause an actual POLLERR condition to be
+// treated as success. The inteded use case is so that such call will be
+// immediately followed (directly or using call_when_ready() by some other
+// socket call, that will return the actual error.
+#define AVS_POLLERR (1 << 2)
+
 static avs_error_t wait_until_ready_internal(sockfd_t sockfd,
                                              avs_time_duration_t timeout,
-                                             bool in,
-                                             bool out,
-                                             bool err) {
+                                             int flags) {
 #ifdef HAVE_POLL
     struct pollfd p;
-    short events = (short) ((in ? POLLIN : 0) | (out ? POLLOUT : 0));
+    short events = 0;
+    if (flags & AVS_POLLIN) {
+        events = (short) (events | POLLIN);
+    }
+    if (flags & AVS_POLLOUT) {
+        events = (short) (events | POLLOUT);
+    }
     p.fd = sockfd;
     p.events = events;
     p.revents = 0;
@@ -608,7 +623,7 @@ static avs_error_t wait_until_ready_internal(sockfd_t sockfd,
     if (result != 1) {
         return failure_from_errno();
     }
-    if (err) {
+    if (flags & AVS_POLLERR) {
         events = (short) (events | POLLHUP | POLLERR);
     }
     if (p.revents & events) {
@@ -656,10 +671,10 @@ static avs_error_t wait_until_ready_internal(sockfd_t sockfd,
 #        define AVS_FD_ISSET FD_ISSET
 #    endif // LWIP_VERSION_MAJOR < 2
 
-    if (in) {
+    if (flags & AVS_POLLIN) {
         AVS_FD_SET(sockfd, &infds);
     }
-    if (out) {
+    if (flags & AVS_POLLOUT) {
         AVS_FD_SET(sockfd, &outfds);
     }
     AVS_FD_SET(sockfd, &errfds);
@@ -673,11 +688,12 @@ static avs_error_t wait_until_ready_internal(sockfd_t sockfd,
     if (result < 0) {
         return failure_from_errno();
     }
-    return avs_errno(((err && AVS_FD_ISSET(sockfd, &errfds))
-                      || (in && AVS_FD_ISSET(sockfd, &infds))
-                      || (out && AVS_FD_ISSET(sockfd, &outfds)))
-                             ? AVS_NO_ERROR
-                             : AVS_ECONNABORTED);
+    return avs_errno(
+            (((flags & AVS_POLLERR) && AVS_FD_ISSET(sockfd, &errfds))
+             || ((flags & AVS_POLLIN) && AVS_FD_ISSET(sockfd, &infds))
+             || ((flags & AVS_POLLOUT) && AVS_FD_ISSET(sockfd, &outfds)))
+                    ? AVS_NO_ERROR
+                    : AVS_ECONNABORTED);
 #    undef AVS_FD_SET
 #    undef AVS_FD_ISSET
 
@@ -690,19 +706,15 @@ static avs_error_t wait_until_ready_internal(sockfd_t sockfd,
 
 static avs_error_t try_wait_until_ready(sockfd_t sockfd,
                                         avs_time_monotonic_t deadline,
-                                        bool in,
-                                        bool out,
-                                        bool err) {
+                                        int flags) {
     avs_time_duration_t timeout =
             avs_time_monotonic_diff(deadline, avs_time_monotonic_now());
-    return wait_until_ready_internal(sockfd, timeout, in, out, err);
+    return wait_until_ready_internal(sockfd, timeout, flags);
 }
 
 static avs_error_t wait_until_ready(const volatile sockfd_t *sockfd_ptr,
                                     avs_time_monotonic_t deadline,
-                                    bool in,
-                                    bool out,
-                                    bool err) {
+                                    int flags) {
     avs_error_t error;
     do {
         sockfd_t sockfd = *sockfd_ptr;
@@ -712,7 +724,7 @@ static avs_error_t wait_until_ready(const volatile sockfd_t *sockfd_ptr,
             return avs_errno(AVS_EBADF);
         }
 
-        error = try_wait_until_ready(sockfd, deadline, in, out, err);
+        error = try_wait_until_ready(sockfd, deadline, flags);
     } while (error.category == AVS_ERRNO_CATEGORY
              && (error.code == AVS_EINTR || error.code == AVS_EAGAIN));
 
@@ -723,16 +735,13 @@ typedef avs_error_t call_when_ready_cb_t(sockfd_t sockfd, void *arg);
 
 static avs_error_t call_when_ready(const volatile sockfd_t *sockfd_ptr,
                                    avs_time_duration_t timeout,
-                                   char in,
-                                   char out,
-                                   char err,
+                                   int flags,
                                    call_when_ready_cb_t *callback,
                                    void *callback_arg) {
     avs_error_t error;
     avs_time_monotonic_t deadline =
             avs_time_monotonic_add(avs_time_monotonic_now(), timeout);
-    while (avs_is_ok(
-            (error = wait_until_ready(sockfd_ptr, deadline, in, out, err)))) {
+    while (avs_is_ok((error = wait_until_ready(sockfd_ptr, deadline, flags)))) {
         do {
             sockfd_t sockfd = *sockfd_ptr;
             if (sockfd == INVALID_SOCKET) {
@@ -770,7 +779,8 @@ connect_with_timeout(const volatile sockfd_t *sockfd_ptr,
     avs_time_monotonic_t deadline =
             avs_time_monotonic_add(avs_time_monotonic_now(),
                                    NET_CONNECT_TIMEOUT);
-    avs_error_t err = wait_until_ready(sockfd_ptr, deadline, true, true, false);
+    avs_error_t err =
+            wait_until_ready(sockfd_ptr, deadline, AVS_POLLIN | AVS_POLLOUT);
     if (avs_is_err(err)) {
         int error_code = 0;
         socklen_t length = sizeof(error_code);
@@ -1166,8 +1176,8 @@ static avs_error_t send_net(avs_net_abstract_socket_t *net_socket_,
     /* send at least one datagram, even if zero-length - hence do..while */
     do {
         avs_error_t err =
-                call_when_ready(&net_socket->socket, NET_SEND_TIMEOUT, false,
-                                true, true, send_internal, &arg);
+                call_when_ready(&net_socket->socket, NET_SEND_TIMEOUT,
+                                AVS_POLLOUT | AVS_POLLERR, send_internal, &arg);
         if (avs_is_err(err)) {
             LOG(ERROR, "send failed");
             return err;
@@ -1242,8 +1252,9 @@ static avs_error_t send_to_net(avs_net_abstract_socket_t *net_socket_,
         LOG(ERROR, "cannot resolve address: [%s]:%s", host, port);
         err = avs_errno(AVS_EADDRNOTAVAIL);
     } else {
-        err = call_when_ready(&net_socket->socket, NET_SEND_TIMEOUT, false,
-                              true, true, send_to_internal, &arg);
+        err = call_when_ready(&net_socket->socket, NET_SEND_TIMEOUT,
+                              AVS_POLLOUT | AVS_POLLERR, send_to_internal,
+                              &arg);
     }
     avs_net_addrinfo_delete(&info);
     net_socket->bytes_sent += arg.bytes_sent;
@@ -1336,8 +1347,8 @@ static avs_error_t receive_net(avs_net_abstract_socket_t *net_socket_,
         .buffer_length = buffer_length
     };
     avs_error_t err =
-            call_when_ready(&net_socket->socket, net_socket->recv_timeout, true,
-                            false, true, recvfrom_internal, &arg);
+            call_when_ready(&net_socket->socket, net_socket->recv_timeout,
+                            AVS_POLLIN | AVS_POLLERR, recvfrom_internal, &arg);
     *out = arg.bytes_received;
     net_socket->bytes_received += arg.bytes_received;
     return err;
@@ -1364,8 +1375,8 @@ static avs_error_t receive_from_net(avs_net_abstract_socket_t *net_socket_,
         .buffer_length = buffer_size
     };
     avs_error_t err =
-            call_when_ready(&net_socket->socket, net_socket->recv_timeout, true,
-                            false, true, recvfrom_internal, &arg);
+            call_when_ready(&net_socket->socket, net_socket->recv_timeout,
+                            AVS_POLLIN | AVS_POLLERR, recvfrom_internal, &arg);
     net_socket->bytes_received += arg.bytes_received;
     *out = arg.bytes_received;
     if (avs_is_ok(err)
@@ -1518,7 +1529,7 @@ static avs_error_t accept_net(avs_net_abstract_socket_t *server_net_socket_,
     };
     avs_error_t err =
             call_when_ready(&server_net_socket->socket, NET_ACCEPT_TIMEOUT,
-                            true, false, true, accept_internal, &arg);
+                            AVS_POLLIN | AVS_POLLERR, accept_internal, &arg);
     if (avs_is_err(err)) {
         return err;
     }
