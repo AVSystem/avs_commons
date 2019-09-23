@@ -755,12 +755,15 @@ static avs_error_t call_when_ready(const volatile sockfd_t *sockfd_ptr,
                  && !avs_time_monotonic_before(deadline,
                                                avs_time_monotonic_now()));
         if (error.category != AVS_ERRNO_CATEGORY || error.code != AVS_EAGAIN) {
-            // EWOULDBLOCK or EAGAIN might signify a false positive result from
+            // AVS_EAGAIN might signify a false positive result from
             // wait_until_ready(); this might happen e.g. if poll() returned an
             // event when the kernel saw incoming data, but the data turned out
             // to have e.g. wrong checksum and were discarded later - this is
             // basically a spurious wakeup; in such case, try again;
-            // otherwise, return
+            // otherwise, return.
+            // NOTE: Both EAGAIN and EWOULDBLOCK map onto AVS_EAGAIN. These
+            // constants are allowed to be equivalent, so we coerce them in
+            // avs_errno_t for simplicity.
             break;
         }
     }
