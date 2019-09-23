@@ -52,39 +52,42 @@ static avs_error_t append_cert_from_buffer(mbedtls_x509_crt *chain,
 
 static avs_error_t load_cert_from_file(mbedtls_x509_crt *chain,
                                        const char *name) {
+#ifdef MBEDTLS_FS_IO
     LOG(DEBUG, "certificate <%s>: going to load", name);
 
     int retval = -1;
-#ifdef MBEDTLS_FS_IO
     avs_error_t err = ((retval = mbedtls_x509_crt_parse_file(chain, name))
                                ? avs_errno(AVS_EPROTO)
                                : AVS_OK);
-#else  // MBEDTLS_FS_IO
-    avs_error_t err = avs_errno(AVS_ENOTSUP);
-#endif // MBEDTLS_FS_IO
     if (avs_is_ok(err)) {
         LOG(DEBUG, "certificate <%s>: loaded", name);
     } else {
         LOG(ERROR, "certificate <%s>: failed to load, result %d", name, retval);
     }
     return err;
+#else  // MBEDTLS_FS_IO
+    (void) chain;
+    (void) name;
+    LOG(DEBUG,
+        "certificate <%s>: mbed TLS configured without file system support, "
+        "cannot load",
+        name);
+    return avs_errno(AVS_ENOTSUP);
+#endif // MBEDTLS_FS_IO
 }
 
 static avs_error_t load_ca_from_path(mbedtls_x509_crt *chain,
                                      const char *path) {
+#ifdef MBEDTLS_FS_IO
     LOG(DEBUG, "certificates from path <%s>: going to load", path);
 
     int retval = -1;
-#ifdef MBEDTLS_FS_IO
     // Note: this function returns negative value if nothing was loaded or
     // everything failed to load, and positive value indicating a number of
     // files that failed to load otherwise.
     avs_error_t err = ((retval = mbedtls_x509_crt_parse_path(chain, path)) < 0
                                ? avs_errno(AVS_EPROTO)
                                : AVS_OK);
-#else  // MBEDTLS_FS_IO
-    avs_error_t err = avs_errno(AVS_ENOTSUP);
-#endif // MBEDTLS_FS_IO
     if (avs_is_ok(err)) {
         LOG(DEBUG, "certificates from path <%s>: some loaded; not loaded: %d",
             path, retval);
@@ -93,6 +96,15 @@ static avs_error_t load_ca_from_path(mbedtls_x509_crt *chain,
             path, retval);
     }
     return err;
+#else  // MBEDTLS_FS_IO
+    (void) chain;
+    (void) path;
+    LOG(DEBUG,
+        "certificates from path <%s>: mbed TLS configured without file system "
+        "support, cannot load",
+        path);
+    return avs_errno(AVS_ENOTSUP);
+#endif // MBEDTLS_FS_IO
 }
 
 avs_error_t
@@ -170,23 +182,30 @@ static avs_error_t load_private_key_from_buffer(mbedtls_pk_context *client_key,
 static avs_error_t load_private_key_from_file(mbedtls_pk_context *client_key,
                                               const char *filename,
                                               const char *password) {
+#ifdef MBEDTLS_FS_IO
     LOG(DEBUG, "private key <%s>: going to load", filename);
 
     int retval = -1;
-#ifdef MBEDTLS_FS_IO
     avs_error_t err =
             ((retval = mbedtls_pk_parse_keyfile(client_key, filename, password))
                      ? avs_errno(AVS_EPROTO)
                      : AVS_OK);
-#else  // MBEDTLS_FS_IO
-    avs_error_t err = avs_errno(AVS_ENOTSUP);
-#endif // MBEDTLS_FS_IO
     if (avs_is_ok(err)) {
         LOG(DEBUG, "private key <%s>: loaded", filename);
     } else {
         LOG(ERROR, "private key <%s>: failed, result %d", filename, retval);
     }
     return err;
+#else  // MBEDTLS_FS_IO
+    (void) client_key;
+    (void) filename;
+    (void) password;
+    LOG(DEBUG,
+        "private key <%s>: mbed TLS configured without file system support, "
+        "cannot load",
+        filename);
+    return avs_errno(AVS_ENOTSUP);
+#endif // MBEDTLS_FS_IO
 }
 
 avs_error_t

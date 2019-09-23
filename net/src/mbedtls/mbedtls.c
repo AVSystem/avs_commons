@@ -786,21 +786,21 @@ static avs_error_t send_ssl(avs_net_abstract_socket_t *socket_,
                                        (size_t) (buffer_length - bytes_sent));
         } while (result == MBEDTLS_ERR_SSL_WANT_WRITE
                  || result == MBEDTLS_ERR_SSL_WANT_READ);
-
         if (result <= 0) {
-            if (result < 0) {
-                if (avs_is_err(socket->bio_error)) {
-                    err = socket->bio_error;
-                } else if (avs_is_ok((err = avs_errno(avs_map_errno(errno))))) {
-                    err = avs_errno(AVS_EPROTO);
-                }
-            }
-            LOG(DEBUG, "ssl_write result %d", result);
             break;
-        } else {
-            bytes_sent += (size_t) result;
+        }
+
+        bytes_sent += (size_t) result;
+    }
+
+    if (result < 0) {
+        if (avs_is_err(socket->bio_error)) {
+            err = socket->bio_error;
+        } else if (avs_is_ok((err = avs_errno(avs_map_errno(errno))))) {
+            err = avs_errno(AVS_EPROTO);
         }
     }
+    LOG(DEBUG, "ssl_write result %d", result);
 
     if (bytes_sent < buffer_length) {
         LOG(ERROR, "send failed (%lu/%lu): %d", (unsigned long) bytes_sent,
