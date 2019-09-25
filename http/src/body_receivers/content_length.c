@@ -69,17 +69,14 @@ static bool content_length_nonblock_read_ready(avs_stream_t *stream_) {
     return true;
 }
 
-static avs_error_t content_length_peek(avs_stream_t *stream_,
-                                       size_t offset,
-                                       char *out_value) {
+static avs_error_t
+content_length_peek(avs_stream_t *stream_, size_t offset, char *out_value) {
     content_length_receiver_t *stream = (content_length_receiver_t *) stream_;
-    avs_error_t err;
     if (offset >= stream->content_left) {
-        err = AVS_EOF;
+        return AVS_EOF;
     } else {
-        err = avs_stream_peek(stream->backend, offset, out_value);
+        return avs_stream_peek(stream->backend, offset, out_value);
     }
-    return err;
 }
 
 static avs_error_t content_length_close(avs_stream_t *stream_) {

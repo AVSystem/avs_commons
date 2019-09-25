@@ -30,7 +30,7 @@ VISIBILITY_SOURCE_BEGIN
 static avs_error_t http_send_single_chunk(http_stream_t *stream,
                                           const void *buffer,
                                           size_t buffer_length) {
-    char size_buf[sizeof(unsigned long) * 2 + 1];
+    char size_buf[sizeof(unsigned long) * 2 + 3];
     avs_error_t err;
     LOG(TRACE, "http_send_single_chunk, buffer_length == %lu",
         (unsigned long) buffer_length);

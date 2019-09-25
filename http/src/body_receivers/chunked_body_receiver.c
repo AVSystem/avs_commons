@@ -82,7 +82,7 @@ static avs_error_t read_chunk_size(const avs_http_buffer_sizes_t *buffer_sizes,
     }
     *out_value = (size_t) value;
     if (avs_is_ok(err) && *out_value == 0) {
-        /* zero length chunk got, ignore the possible trailers and empty line */
+        /* got zero-length chunk, ignore the possible trailers and empty line */
         while (true) {
             err = getline_func(getline_func_state, line_buf,
                                buffer_sizes->header_line);

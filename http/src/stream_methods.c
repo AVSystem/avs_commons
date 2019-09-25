@@ -165,7 +165,7 @@ static avs_error_t http_finish(avs_stream_t *stream_) {
  * @ref http_stream_t.body_receiver - which is a delegate/decorator stream that
  * wraps @ref http_stream_t.backend, which itself wraps the socket.
  *
- * The primary function fo @ref http_stream_t.body_receiver is to abstract away
+ * The primary function of @ref http_stream_t.body_receiver is to abstract away
  * the HTTP <em>Transfer-Encoding</em> (identity, i.e. "read until connection
  * closes", <em>Content-Length</em>, or <em>chunked</em>). However, if
  * non-trivial <em>Content-Encoding</em> (i.e. compression) is used, another
