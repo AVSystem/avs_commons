@@ -582,7 +582,6 @@ static avs_error_t configure_socket(avs_net_socket_t *net_socket) {
     return AVS_OK;
 }
 
-
 // These are flags intended to be passed to wait_until_ready() family's
 // flags argument.
 #define AVS_POLLIN (1 << 0)
@@ -704,14 +703,6 @@ static avs_error_t wait_until_ready_internal(sockfd_t sockfd,
 #endif
 }
 
-static avs_error_t try_wait_until_ready(sockfd_t sockfd,
-                                        avs_time_monotonic_t deadline,
-                                        int flags) {
-    avs_time_duration_t timeout =
-            avs_time_monotonic_diff(deadline, avs_time_monotonic_now());
-    return wait_until_ready_internal(sockfd, timeout, flags);
-}
-
 static avs_error_t wait_until_ready(const volatile sockfd_t *sockfd_ptr,
                                     avs_time_monotonic_t deadline,
                                     int flags) {
@@ -724,7 +715,10 @@ static avs_error_t wait_until_ready(const volatile sockfd_t *sockfd_ptr,
             return avs_errno(AVS_EBADF);
         }
 
-        error = try_wait_until_ready(sockfd, deadline, flags);
+        error = wait_until_ready_internal(
+                sockfd,
+                avs_time_monotonic_diff(deadline, avs_time_monotonic_now()),
+                flags);
     } while (error.category == AVS_ERRNO_CATEGORY
              && (error.code == AVS_EINTR || error.code == AVS_EAGAIN));
 

@@ -737,10 +737,6 @@ avs_error_t avs_net_socket_create(avs_net_abstract_socket_t **debug_socket,
     avs_net_abstract_socket_t *backend_socket = NULL;
     avs_error_t err;
 
-    if (_avs_net_socket_debug) {
-        debug_init();
-    }
-
     avs_net_socket_cleanup(debug_socket);
     err = create_bare_socket(debug_socket, type, configuration);
     if (avs_is_ok(err) && _avs_net_socket_debug) {

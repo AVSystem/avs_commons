@@ -44,7 +44,6 @@ void _avs_net_cleanup_global_state(void) {
 }
 
 avs_error_t _avs_net_ensure_global_state(void) {
-    AVS_STATIC_ASSERT(sizeof(int) >= 4, int_is_at_least_32bit);
     avs_error_t err = avs_errno(AVS_UNKNOWN_ERROR);
     if (avs_init_once(&g_net_init_handle, initialize_global, &err)) {
         assert(avs_is_err(err));
