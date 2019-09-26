@@ -34,7 +34,7 @@ create_body_receiver(avs_stream_t *backend,
                      size_t content_length) {
     avs_stream_t *buffer = NULL;
     avs_stream_t *retval = NULL;
-    avs_net_abstract_socket_t *backend_socket = NULL;
+    avs_net_socket_t *backend_socket = NULL;
     LOG(TRACE,
         "create_body_receiver, transfer_encoding == %d, "
         "content_length == %lu",

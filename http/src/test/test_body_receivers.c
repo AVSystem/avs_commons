@@ -30,7 +30,7 @@ AVS_UNIT_TEST(http, dumb_receiver_read) {
     char buffer[64];
     char *buffer_ptr = buffer;
     bool message_finished = false;
-    avs_net_abstract_socket_t *socket = NULL;
+    avs_net_socket_t *socket = NULL;
     avs_stream_t *helper_stream = NULL;
     avs_stream_t *receiver = NULL;
     avs_unit_mocksock_create(&socket);
@@ -65,7 +65,7 @@ AVS_UNIT_TEST(http, dumb_receiver_peek) {
     char buffer[64];
     char *buffer_ptr = buffer;
     bool message_finished = false;
-    avs_net_abstract_socket_t *socket = NULL;
+    avs_net_socket_t *socket = NULL;
     avs_stream_t *helper_stream = NULL;
     avs_stream_t *receiver = NULL;
     size_t i = 0;
@@ -116,7 +116,7 @@ AVS_UNIT_TEST(http, content_length_receiver_good) {
     char buffer[64];
     char *buffer_ptr = buffer;
     bool message_finished = false;
-    avs_net_abstract_socket_t *socket = NULL;
+    avs_net_socket_t *socket = NULL;
     avs_stream_t *helper_stream = NULL;
     avs_stream_t *receiver = NULL;
     avs_unit_mocksock_create(&socket);
@@ -168,7 +168,7 @@ AVS_UNIT_TEST(http, content_length_receiver_not_enough) {
     char *buffer_ptr = buffer;
     bool message_finished = false;
     avs_error_t err = AVS_OK;
-    avs_net_abstract_socket_t *socket = NULL;
+    avs_net_socket_t *socket = NULL;
     avs_stream_t *helper_stream = NULL;
     avs_stream_t *receiver = NULL;
     avs_unit_mocksock_create(&socket);
@@ -198,7 +198,7 @@ AVS_UNIT_TEST(http, content_length_receiver_not_enough) {
 AVS_UNIT_TEST(http, content_length_receiver_peek) {
     size_t i;
     size_t content_length = strchr(LENGTH_INPUT_DATA, '\n') - LENGTH_INPUT_DATA;
-    avs_net_abstract_socket_t *socket = NULL;
+    avs_net_socket_t *socket = NULL;
     avs_stream_t *helper_stream = NULL;
     avs_stream_t *receiver = NULL;
     avs_unit_mocksock_create(&socket);
@@ -249,7 +249,7 @@ AVS_UNIT_TEST(http, chunked_receiver_good) {
     char *buffer_ptr = buffer;
     size_t bytes_read;
     bool message_finished = false;
-    avs_net_abstract_socket_t *socket = NULL;
+    avs_net_socket_t *socket = NULL;
     avs_stream_t *helper_stream = NULL;
     avs_stream_t *receiver = NULL;
     avs_unit_mocksock_create(&socket);
@@ -303,7 +303,7 @@ AVS_UNIT_TEST(http, chunked_receiver_not_enough) {
     char *buffer_ptr = buffer;
     bool message_finished = false;
     avs_error_t err = AVS_OK;
-    avs_net_abstract_socket_t *socket = NULL;
+    avs_net_socket_t *socket = NULL;
     avs_stream_t *helper_stream = NULL;
     avs_stream_t *receiver = NULL;
     avs_unit_mocksock_create(&socket);
@@ -333,7 +333,7 @@ AVS_UNIT_TEST(http, chunked_receiver_not_enough) {
 }
 
 AVS_UNIT_TEST(http, chunked_receiver_error) {
-    avs_net_abstract_socket_t *socket = NULL;
+    avs_net_socket_t *socket = NULL;
     avs_stream_t *helper_stream = NULL;
     avs_unit_mocksock_create(&socket);
     avs_unit_mocksock_expect_connect(socket, "T.S.O.H", "T.R.O.P");
@@ -368,7 +368,7 @@ AVS_UNIT_TEST(http, chunked_receiver_no_zero) {
     char *buffer_ptr = buffer;
     bool message_finished = 0;
     avs_error_t err = AVS_OK;
-    avs_net_abstract_socket_t *socket = NULL;
+    avs_net_socket_t *socket = NULL;
     avs_stream_t *helper_stream = NULL;
     avs_stream_t *receiver = NULL;
     avs_unit_mocksock_create(&socket);
@@ -399,7 +399,7 @@ AVS_UNIT_TEST(http, chunked_receiver_no_zero) {
 
 AVS_UNIT_TEST(http, chunked_receiver_peek) {
     size_t i;
-    avs_net_abstract_socket_t *socket = NULL;
+    avs_net_socket_t *socket = NULL;
     avs_stream_t *helper_stream = NULL;
     avs_stream_t *receiver = NULL;
     avs_unit_mocksock_create(&socket);

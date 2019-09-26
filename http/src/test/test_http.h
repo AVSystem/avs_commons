@@ -20,16 +20,17 @@
 #include <avsystem/commons/net.h>
 
 typedef struct expected_socket_struct {
-    avs_net_abstract_socket_t *socket;
+    avs_net_socket_t *socket;
     avs_net_socket_type_t type;
 } expected_socket_t;
 
 extern expected_socket_t *avs_http_test_SOCKETS_TO_CREATE;
 
-avs_error_t avs_net_socket_create_TEST_WRAPPER(
-        avs_net_abstract_socket_t **socket, avs_net_socket_type_t type, ...);
+avs_error_t avs_net_socket_create_TEST_WRAPPER(avs_net_socket_t **socket,
+                                               avs_net_socket_type_t type,
+                                               ...);
 
-void avs_http_test_expect_create_socket(avs_net_abstract_socket_t *socket,
+void avs_http_test_expect_create_socket(avs_net_socket_t *socket,
                                         avs_net_socket_type_t type);
 
 static inline avs_error_t send_line_result(avs_stream_t *stream,

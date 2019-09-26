@@ -29,8 +29,7 @@ typedef enum {
     AVS_UNIT_MOCKSOCK_TYPE_DATAGRAM
 } mocksock_type_t;
 
-typedef void mocksock_and_then_callback_t(avs_net_abstract_socket_t *socket,
-                                          void *arg);
+typedef void mocksock_and_then_callback_t(avs_net_socket_t *socket, void *arg);
 
 typedef struct {
     const char *file;
@@ -39,9 +38,9 @@ typedef struct {
     void *and_then_arg;
 } mocksock_additional_args_t;
 
-size_t avs_unit_mocksock_data_read(avs_net_abstract_socket_t *socket);
+size_t avs_unit_mocksock_data_read(avs_net_socket_t *socket);
 
-void avs_unit_mocksock_create__(avs_net_abstract_socket_t **socket,
+void avs_unit_mocksock_create__(avs_net_socket_t **socket,
                                 mocksock_type_t type,
                                 const char *file,
                                 int line);
@@ -53,7 +52,7 @@ void avs_unit_mocksock_create__(avs_net_abstract_socket_t **socket,
     avs_unit_mocksock_create__(                   \
             (Socket), AVS_UNIT_MOCKSOCK_TYPE_DATAGRAM, __FILE__, __LINE__)
 
-void avs_unit_mocksock_input__(avs_net_abstract_socket_t *socket,
+void avs_unit_mocksock_input__(avs_net_socket_t *socket,
                                const void *data,
                                size_t length,
                                const mocksock_additional_args_t *args);
@@ -67,7 +66,7 @@ void avs_unit_mocksock_input__(avs_net_abstract_socket_t *socket,
                 .line = __LINE__ AVS_VARARG_REST(__VA_ARGS__)   \
             })
 
-void avs_unit_mocksock_input_from__(avs_net_abstract_socket_t *socket_,
+void avs_unit_mocksock_input_from__(avs_net_socket_t *socket_,
                                     const void *data,
                                     size_t length,
                                     const char *host,
@@ -86,7 +85,7 @@ void avs_unit_mocksock_input_from__(avs_net_abstract_socket_t *socket_,
                 .line = __LINE__ AVS_VARARG_REST(__VA_ARGS__) \
             })
 
-void avs_unit_mocksock_input_fail__(avs_net_abstract_socket_t *socket_,
+void avs_unit_mocksock_input_fail__(avs_net_socket_t *socket_,
                                     avs_error_t retval,
                                     const mocksock_additional_args_t *args);
 #define avs_unit_mocksock_input_fail(Socket, /* Retval, */...) \
@@ -98,7 +97,7 @@ void avs_unit_mocksock_input_fail__(avs_net_abstract_socket_t *socket_,
                 .line = __LINE__ AVS_VARARG_REST(__VA_ARGS__)  \
             })
 
-void avs_unit_mocksock_output_fail__(avs_net_abstract_socket_t *socket_,
+void avs_unit_mocksock_output_fail__(avs_net_socket_t *socket_,
                                      avs_error_t retval,
                                      const mocksock_additional_args_t *args);
 #define avs_unit_mocksock_output_fail(Socket, /* Retval, */...) \
@@ -110,14 +109,14 @@ void avs_unit_mocksock_output_fail__(avs_net_abstract_socket_t *socket_,
                 .line = __LINE__ AVS_VARARG_REST(__VA_ARGS__)   \
             })
 
-void avs_unit_mocksock_fail_command__(avs_net_abstract_socket_t *socket,
+void avs_unit_mocksock_fail_command__(avs_net_socket_t *socket,
                                       avs_error_t retval,
                                       const char *file,
                                       int line);
 #define avs_unit_mocksock_fail_command(Socket, Retval) \
     avs_unit_mocksock_fail_command__((Socket), (Retval), __FILE__, __LINE__)
 
-void avs_unit_mocksock_expect_output__(avs_net_abstract_socket_t *socket,
+void avs_unit_mocksock_expect_output__(avs_net_socket_t *socket,
                                        const void *expect,
                                        size_t length,
                                        const mocksock_additional_args_t *args);
@@ -132,7 +131,7 @@ void avs_unit_mocksock_expect_output__(avs_net_abstract_socket_t *socket,
             })
 
 void avs_unit_mocksock_expect_output_to__(
-        avs_net_abstract_socket_t *socket_,
+        avs_net_socket_t *socket_,
         const void *expect,
         size_t length,
         const char *host,
@@ -151,13 +150,13 @@ void avs_unit_mocksock_expect_output_to__(
                 .line = __LINE__ AVS_VARARG_REST(__VA_ARGS__) \
             })
 
-void avs_unit_mocksock_assert_io_clean__(avs_net_abstract_socket_t *socket,
+void avs_unit_mocksock_assert_io_clean__(avs_net_socket_t *socket,
                                          const char *file,
                                          int line);
 #define avs_unit_mocksock_assert_io_clean(Socket) \
     avs_unit_mocksock_assert_io_clean__((Socket), __FILE__, __LINE__)
 
-void avs_unit_mocksock_expect_connect__(avs_net_abstract_socket_t *socket,
+void avs_unit_mocksock_expect_connect__(avs_net_socket_t *socket,
                                         const char *host,
                                         const char *port,
                                         const mocksock_additional_args_t *args);
@@ -171,7 +170,7 @@ void avs_unit_mocksock_expect_connect__(avs_net_abstract_socket_t *socket,
                 .line = __LINE__ AVS_VARARG_REST(__VA_ARGS__)          \
             })
 
-void avs_unit_mocksock_expect_bind__(avs_net_abstract_socket_t *socket,
+void avs_unit_mocksock_expect_bind__(avs_net_socket_t *socket,
                                      const char *localaddr,
                                      const char *port,
                                      const mocksock_additional_args_t *args);
@@ -185,7 +184,7 @@ void avs_unit_mocksock_expect_bind__(avs_net_abstract_socket_t *socket,
                 .line = __LINE__ AVS_VARARG_REST(__VA_ARGS__)            \
             })
 
-void avs_unit_mocksock_expect_accept__(avs_net_abstract_socket_t *socket,
+void avs_unit_mocksock_expect_accept__(avs_net_socket_t *socket,
                                        const mocksock_additional_args_t *args);
 #define avs_unit_mocksock_expect_accept(/* Socket, */...)     \
     avs_unit_mocksock_expect_accept__(                        \
@@ -196,8 +195,7 @@ void avs_unit_mocksock_expect_accept__(avs_net_abstract_socket_t *socket,
             })
 
 void avs_unit_mocksock_expect_mid_close__(
-        avs_net_abstract_socket_t *socket,
-        const mocksock_additional_args_t *args);
+        avs_net_socket_t *socket, const mocksock_additional_args_t *args);
 #define avs_unit_mocksock_expect_mid_close(/* Socket, */...)  \
     avs_unit_mocksock_expect_mid_close__(                     \
             (AVS_VARARG0(__VA_ARGS__)),                       \
@@ -207,8 +205,7 @@ void avs_unit_mocksock_expect_mid_close__(
             })
 
 void avs_unit_mocksock_expect_shutdown__(
-        avs_net_abstract_socket_t *socket,
-        const mocksock_additional_args_t *args);
+        avs_net_socket_t *socket, const mocksock_additional_args_t *args);
 #define avs_unit_mocksock_expect_shutdown(/* Socket, */...)   \
     avs_unit_mocksock_expect_shutdown__(                      \
             (AVS_VARARG0(__VA_ARGS__)),                       \
@@ -218,7 +215,7 @@ void avs_unit_mocksock_expect_shutdown__(
             })
 
 void avs_unit_mocksock_expect_system_socket__(
-        avs_net_abstract_socket_t *socket,
+        avs_net_socket_t *socket,
         const void *to_return,
         const mocksock_additional_args_t *args);
 #define avs_unit_mocksock_expect_system_socket(Socket, /* ToReturn, */...) \
@@ -231,7 +228,7 @@ void avs_unit_mocksock_expect_system_socket__(
             })
 
 void avs_unit_mocksock_expect_interface_name__(
-        avs_net_abstract_socket_t *socket,
+        avs_net_socket_t *socket,
         const avs_net_socket_interface_name_t *to_return,
         const mocksock_additional_args_t *args);
 #define avs_unit_mocksock_expect_interface_name(Socket, /* ToReturn, */...) \
@@ -244,7 +241,7 @@ void avs_unit_mocksock_expect_interface_name__(
             })
 
 void avs_unit_mocksock_expect_remote_host__(
-        avs_net_abstract_socket_t *socket,
+        avs_net_socket_t *socket,
         const char *to_return,
         const mocksock_additional_args_t *args);
 #define avs_unit_mocksock_expect_remote_host(Socket, /* ToReturn, */...) \
@@ -257,7 +254,7 @@ void avs_unit_mocksock_expect_remote_host__(
             })
 
 void avs_unit_mocksock_expect_remote_hostname__(
-        avs_net_abstract_socket_t *socket,
+        avs_net_socket_t *socket,
         const char *to_return,
         const mocksock_additional_args_t *args);
 #define avs_unit_mocksock_expect_remote_hostname(Socket, /* ToReturn, */...) \
@@ -270,7 +267,7 @@ void avs_unit_mocksock_expect_remote_hostname__(
             })
 
 void avs_unit_mocksock_expect_remote_port__(
-        avs_net_abstract_socket_t *socket,
+        avs_net_socket_t *socket,
         const char *to_return,
         const mocksock_additional_args_t *args);
 #define avs_unit_mocksock_expect_remote_port(Socket, /* ToReturn, */...) \
@@ -283,7 +280,7 @@ void avs_unit_mocksock_expect_remote_port__(
             })
 
 void avs_unit_mocksock_expect_local_host__(
-        avs_net_abstract_socket_t *socket,
+        avs_net_socket_t *socket,
         const char *to_return,
         const mocksock_additional_args_t *args);
 #define avs_unit_mocksock_expect_local_host(Socket, /* ToReturn, */...) \
@@ -296,7 +293,7 @@ void avs_unit_mocksock_expect_local_host__(
             })
 
 void avs_unit_mocksock_expect_local_port__(
-        avs_net_abstract_socket_t *socket,
+        avs_net_socket_t *socket,
         const char *to_return,
         const mocksock_additional_args_t *args);
 #define avs_unit_mocksock_expect_local_port(Socket, /* ToReturn, */...) \
@@ -308,7 +305,7 @@ void avs_unit_mocksock_expect_local_port__(
                 .line = __LINE__ AVS_VARARG_REST(__VA_ARGS__)           \
             })
 
-void avs_unit_mocksock_expect_get_opt__(avs_net_abstract_socket_t *socket,
+void avs_unit_mocksock_expect_get_opt__(avs_net_socket_t *socket,
                                         avs_net_socket_opt_key_t key,
                                         avs_net_socket_opt_value_t resp_value,
                                         const mocksock_additional_args_t *args);
@@ -322,7 +319,7 @@ void avs_unit_mocksock_expect_get_opt__(avs_net_abstract_socket_t *socket,
                 .line = __LINE__ AVS_VARARG_REST(__VA_ARGS__)              \
             })
 
-void avs_unit_mocksock_expect_set_opt__(avs_net_abstract_socket_t *socket,
+void avs_unit_mocksock_expect_set_opt__(avs_net_socket_t *socket,
                                         avs_net_socket_opt_key_t key,
                                         const mocksock_additional_args_t *args);
 #define avs_unit_mocksock_expect_set_opt(Socket, /* Key, */...) \
@@ -334,28 +331,26 @@ void avs_unit_mocksock_expect_set_opt__(avs_net_abstract_socket_t *socket,
                 .line = __LINE__ AVS_VARARG_REST(__VA_ARGS__)   \
             })
 
-void avs_unit_mocksock_assert_expects_met__(avs_net_abstract_socket_t *socket_,
+void avs_unit_mocksock_assert_expects_met__(avs_net_socket_t *socket_,
                                             const char *file,
                                             int line);
 #define avs_unit_mocksock_assert_expects_met(Socket) \
     avs_unit_mocksock_assert_expects_met__((Socket), __FILE__, __LINE__);
 
 void avs_unit_mocksock_enable_recv_timeout_getsetopt(
-        avs_net_abstract_socket_t *socket_,
-        avs_time_duration_t default_timeout);
+        avs_net_socket_t *socket_, avs_time_duration_t default_timeout);
 
-void avs_unit_mocksock_enable_inner_mtu_getopt(
-        avs_net_abstract_socket_t *socket_, int inner_mtu);
+void avs_unit_mocksock_enable_inner_mtu_getopt(avs_net_socket_t *socket_,
+                                               int inner_mtu);
 
-void avs_unit_mocksock_enable_mtu_getopt(avs_net_abstract_socket_t *socket_,
-                                         int mtu);
+void avs_unit_mocksock_enable_mtu_getopt(avs_net_socket_t *socket_, int mtu);
 
-void avs_unit_mocksock_enable_state_getopt(avs_net_abstract_socket_t *socket);
+void avs_unit_mocksock_enable_state_getopt(avs_net_socket_t *socket);
 
-void avs_unit_mocksock_enable_remote_host(avs_net_abstract_socket_t *socket_,
+void avs_unit_mocksock_enable_remote_host(avs_net_socket_t *socket_,
                                           const char *remote_host);
 
-void avs_unit_mocksock_enable_remote_port(avs_net_abstract_socket_t *socket_,
+void avs_unit_mocksock_enable_remote_port(avs_net_socket_t *socket_,
                                           const char *remote_port);
 
 #ifdef __cplusplus

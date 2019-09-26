@@ -282,12 +282,12 @@ static avs_error_t http_close(avs_stream_t *stream_) {
     }
 }
 
-static avs_net_abstract_socket_t *http_getsock(avs_stream_t *stream) {
+static avs_net_socket_t *http_getsock(avs_stream_t *stream) {
     return avs_stream_net_getsock(((http_stream_t *) stream)->backend);
 }
 
 static avs_error_t http_setsock(avs_stream_t *stream,
-                                avs_net_abstract_socket_t *socket) {
+                                avs_net_socket_t *socket) {
     return avs_stream_net_setsock(((http_stream_t *) stream)->backend, socket);
 }
 
@@ -362,7 +362,7 @@ avs_error_t avs_http_open_stream(avs_stream_t **out,
                                  const char *auth_password) {
     assert(!*out);
     assert(url);
-    avs_net_abstract_socket_t *socket = NULL;
+    avs_net_socket_t *socket = NULL;
     http_stream_t *stream = NULL;
     avs_error_t err = AVS_OK;
     LOG(TRACE,

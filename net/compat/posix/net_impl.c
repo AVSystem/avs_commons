@@ -135,22 +135,21 @@ typedef enum {
     PREFERRED_FAMILY_BLOCKED
 } preferred_family_mode_t;
 
-static avs_error_t connect_net(avs_net_abstract_socket_t *net_socket,
-                               const char *host,
-                               const char *port);
-static avs_error_t send_net(avs_net_abstract_socket_t *net_socket,
+static avs_error_t
+connect_net(avs_net_socket_t *net_socket, const char *host, const char *port);
+static avs_error_t send_net(avs_net_socket_t *net_socket,
                             const void *buffer,
                             size_t buffer_length);
-static avs_error_t send_to_net(avs_net_abstract_socket_t *socket,
+static avs_error_t send_to_net(avs_net_socket_t *socket,
                                const void *buffer,
                                size_t buffer_length,
                                const char *host,
                                const char *port);
-static avs_error_t receive_net(avs_net_abstract_socket_t *net_socket_,
+static avs_error_t receive_net(avs_net_socket_t *net_socket_,
                                size_t *out,
                                void *buffer,
                                size_t buffer_length);
-static avs_error_t receive_from_net(avs_net_abstract_socket_t *net_socket,
+static avs_error_t receive_from_net(avs_net_socket_t *net_socket,
                                     size_t *out,
                                     void *message_buffer,
                                     size_t buffer_size,
@@ -158,36 +157,35 @@ static avs_error_t receive_from_net(avs_net_abstract_socket_t *net_socket,
                                     size_t host_size,
                                     char *port,
                                     size_t port_size);
-static avs_error_t bind_net(avs_net_abstract_socket_t *net_socket,
-                            const char *localaddr,
-                            const char *port);
-static avs_error_t accept_net(avs_net_abstract_socket_t *server_net_socket,
-                              avs_net_abstract_socket_t *new_net_socket);
-static avs_error_t close_net(avs_net_abstract_socket_t *net_socket);
-static avs_error_t shutdown_net(avs_net_abstract_socket_t *net_socket);
-static avs_error_t cleanup_net(avs_net_abstract_socket_t **net_socket);
-static const void *system_socket_net(avs_net_abstract_socket_t *net_socket);
-static avs_error_t interface_name_net(avs_net_abstract_socket_t *socket,
+static avs_error_t
+bind_net(avs_net_socket_t *net_socket, const char *localaddr, const char *port);
+static avs_error_t accept_net(avs_net_socket_t *server_net_socket,
+                              avs_net_socket_t *new_net_socket);
+static avs_error_t close_net(avs_net_socket_t *net_socket);
+static avs_error_t shutdown_net(avs_net_socket_t *net_socket);
+static avs_error_t cleanup_net(avs_net_socket_t **net_socket);
+static const void *system_socket_net(avs_net_socket_t *net_socket);
+static avs_error_t interface_name_net(avs_net_socket_t *socket,
                                       avs_net_socket_interface_name_t *if_name);
-static avs_error_t remote_host_net(avs_net_abstract_socket_t *socket,
+static avs_error_t remote_host_net(avs_net_socket_t *socket,
                                    char *out_buffer,
                                    size_t out_buffer_size);
-static avs_error_t remote_hostname_net(avs_net_abstract_socket_t *socket,
+static avs_error_t remote_hostname_net(avs_net_socket_t *socket,
                                        char *out_buffer,
                                        size_t out_buffer_size);
-static avs_error_t remote_port_net(avs_net_abstract_socket_t *socket,
+static avs_error_t remote_port_net(avs_net_socket_t *socket,
                                    char *out_buffer,
                                    size_t out_buffer_size);
-static avs_error_t local_host_net(avs_net_abstract_socket_t *socket,
+static avs_error_t local_host_net(avs_net_socket_t *socket,
                                   char *out_buffer,
                                   size_t out_buffer_size);
-static avs_error_t local_port_net(avs_net_abstract_socket_t *socket,
+static avs_error_t local_port_net(avs_net_socket_t *socket,
                                   char *out_buffer,
                                   size_t out_buffer_size);
-static avs_error_t get_opt_net(avs_net_abstract_socket_t *net_socket,
+static avs_error_t get_opt_net(avs_net_socket_t *net_socket,
                                avs_net_socket_opt_key_t option_key,
                                avs_net_socket_opt_value_t *out_option_value);
-static avs_error_t set_opt_net(avs_net_abstract_socket_t *net_socket,
+static avs_error_t set_opt_net(avs_net_socket_t *net_socket,
                                avs_net_socket_opt_key_t option_key,
                                avs_net_socket_opt_value_t option_value);
 
@@ -361,7 +359,7 @@ static int get_string_port(const sockaddr_union_t *addr,
                                                                            : 0;
 }
 
-static avs_error_t remote_host_net(avs_net_abstract_socket_t *socket,
+static avs_error_t remote_host_net(avs_net_socket_t *socket,
                                    char *out_buffer,
                                    size_t out_buffer_size) {
     net_socket_impl_t *net_socket = (net_socket_impl_t *) socket;
@@ -377,7 +375,7 @@ static avs_error_t remote_host_net(avs_net_abstract_socket_t *socket,
     }
 }
 
-static avs_error_t remote_hostname_net(avs_net_abstract_socket_t *socket_,
+static avs_error_t remote_hostname_net(avs_net_socket_t *socket_,
                                        char *out_buffer,
                                        size_t out_buffer_size) {
     net_socket_impl_t *socket = (net_socket_impl_t *) socket_;
@@ -394,7 +392,7 @@ static avs_error_t remote_hostname_net(avs_net_abstract_socket_t *socket_,
     }
 }
 
-static avs_error_t remote_port_net(avs_net_abstract_socket_t *socket_,
+static avs_error_t remote_port_net(avs_net_socket_t *socket_,
                                    char *out_buffer,
                                    size_t out_buffer_size) {
     net_socket_impl_t *socket = (net_socket_impl_t *) socket_;
@@ -411,7 +409,7 @@ static avs_error_t remote_port_net(avs_net_abstract_socket_t *socket_,
     }
 }
 
-static const void *system_socket_net(avs_net_abstract_socket_t *net_socket_) {
+static const void *system_socket_net(avs_net_socket_t *net_socket_) {
     net_socket_impl_t *net_socket = (net_socket_impl_t *) net_socket_;
     if (net_socket->socket != INVALID_SOCKET) {
         return &net_socket->socket;
@@ -428,20 +426,20 @@ static void close_net_raw(net_socket_impl_t *net_socket) {
     }
 }
 
-static avs_error_t close_net(avs_net_abstract_socket_t *net_socket_) {
+static avs_error_t close_net(avs_net_socket_t *net_socket_) {
     net_socket_impl_t *net_socket = (net_socket_impl_t *) net_socket_;
     close_net_raw(net_socket);
     return AVS_OK;
 }
 
-static avs_error_t cleanup_net(avs_net_abstract_socket_t **net_socket) {
+static avs_error_t cleanup_net(avs_net_socket_t **net_socket) {
     close_net(*net_socket);
     avs_free(*net_socket);
     *net_socket = NULL;
     return AVS_OK;
 }
 
-static avs_error_t shutdown_net(avs_net_abstract_socket_t *net_socket_) {
+static avs_error_t shutdown_net(avs_net_socket_t *net_socket_) {
     net_socket_impl_t *net_socket = (net_socket_impl_t *) net_socket_;
     int retval;
     errno = 0;
@@ -1041,9 +1039,8 @@ try_connect_open_socket(net_socket_impl_t *net_socket,
     avs_error_t err;
     if (avs_is_err((err = connect_with_timeout(&net_socket->socket, address)))
             || (socket_is_stream
-                && avs_is_err((err = send_net(
-                                       (avs_net_abstract_socket_t *) net_socket,
-                                       NULL, 0))))) {
+                && avs_is_err((err = send_net((avs_net_socket_t *) net_socket,
+                                              NULL, 0))))) {
         return err;
     } else {
         /* SUCCESS */
@@ -1084,9 +1081,8 @@ static avs_error_t try_connect(net_socket_impl_t *net_socket,
     return err;
 }
 
-static avs_error_t connect_net(avs_net_abstract_socket_t *net_socket_,
-                               const char *host,
-                               const char *port) {
+static avs_error_t
+connect_net(avs_net_socket_t *net_socket_, const char *host, const char *port) {
     net_socket_impl_t *net_socket = (net_socket_impl_t *) net_socket_;
     avs_net_addrinfo_t *info = NULL;
 
@@ -1159,7 +1155,7 @@ static avs_error_t send_internal(sockfd_t sockfd, void *arg_) {
     return AVS_OK;
 }
 
-static avs_error_t send_net(avs_net_abstract_socket_t *net_socket_,
+static avs_error_t send_net(avs_net_socket_t *net_socket_,
                             const void *buffer,
                             size_t buffer_length) {
     net_socket_impl_t *net_socket = (net_socket_impl_t *) net_socket_;
@@ -1227,7 +1223,7 @@ static avs_error_t send_to_internal(sockfd_t sockfd, void *arg_) {
     }
 }
 
-static avs_error_t send_to_net(avs_net_abstract_socket_t *net_socket_,
+static avs_error_t send_to_net(avs_net_socket_t *net_socket_,
                                const void *buffer,
                                size_t buffer_length,
                                const char *host,
@@ -1333,7 +1329,7 @@ static avs_error_t recvfrom_internal(sockfd_t sockfd, void *arg_) {
 
 #endif /* HAVE_RECVMSG */
 
-static avs_error_t receive_net(avs_net_abstract_socket_t *net_socket_,
+static avs_error_t receive_net(avs_net_socket_t *net_socket_,
                                size_t *out,
                                void *buffer,
                                size_t buffer_length) {
@@ -1351,7 +1347,7 @@ static avs_error_t receive_net(avs_net_abstract_socket_t *net_socket_,
     return err;
 }
 
-static avs_error_t receive_from_net(avs_net_abstract_socket_t *net_socket_,
+static avs_error_t receive_from_net(avs_net_socket_t *net_socket_,
                                     size_t *out,
                                     void *message_buffer,
                                     size_t buffer_size,
@@ -1465,7 +1461,7 @@ bind_net_end:
     return err;
 }
 
-static avs_error_t bind_net(avs_net_abstract_socket_t *net_socket_,
+static avs_error_t bind_net(avs_net_socket_t *net_socket_,
                             const char *localaddr,
                             const char *port) {
     net_socket_impl_t *net_socket = (net_socket_impl_t *) net_socket_;
@@ -1503,8 +1499,8 @@ static avs_error_t accept_internal(sockfd_t sockfd, void *arg_) {
     return arg->client_sockfd == INVALID_SOCKET ? failure_from_errno() : AVS_OK;
 }
 
-static avs_error_t accept_net(avs_net_abstract_socket_t *server_net_socket_,
-                              avs_net_abstract_socket_t *new_net_socket_) {
+static avs_error_t accept_net(avs_net_socket_t *server_net_socket_,
+                              avs_net_socket_t *new_net_socket_) {
     net_socket_impl_t *server_net_socket =
             (net_socket_impl_t *) server_net_socket_;
     net_socket_impl_t *new_net_socket = (net_socket_impl_t *) new_net_socket_;
@@ -1574,7 +1570,7 @@ store_configuration(net_socket_impl_t *socket,
     LOG(TRACE, "stored socket configuration");
 }
 
-static avs_error_t create_net_socket(avs_net_abstract_socket_t **socket,
+static avs_error_t create_net_socket(avs_net_socket_t **socket,
                                      avs_net_socket_type_t socket_type,
                                      const void *socket_configuration) {
     const avs_net_socket_v_table_t *const VTABLE_PTR = &net_vtable;
@@ -1595,7 +1591,7 @@ static avs_error_t create_net_socket(avs_net_abstract_socket_t **socket,
     VALGRIND_HG_DISABLE_CHECKING(&net_socket->socket,
                                  sizeof(net_socket->socket));
 
-    *socket = (avs_net_abstract_socket_t *) net_socket;
+    *socket = (avs_net_socket_t *) net_socket;
 
     if (configuration) {
         if (check_configuration(configuration)) {
@@ -1611,12 +1607,12 @@ static avs_error_t create_net_socket(avs_net_abstract_socket_t **socket,
     return AVS_OK;
 }
 
-avs_error_t _avs_net_create_tcp_socket(avs_net_abstract_socket_t **socket,
+avs_error_t _avs_net_create_tcp_socket(avs_net_socket_t **socket,
                                        const void *socket_configuration) {
     return create_net_socket(socket, AVS_NET_TCP_SOCKET, socket_configuration);
 }
 
-avs_error_t _avs_net_create_udp_socket(avs_net_abstract_socket_t **socket,
+avs_error_t _avs_net_create_udp_socket(avs_net_socket_t **socket,
                                        const void *socket_configuration) {
     return create_net_socket(socket, AVS_NET_UDP_SOCKET, socket_configuration);
 }
@@ -1666,7 +1662,7 @@ avs_error_t avs_net_local_address_for_target_host(const char *target_host,
     return err;
 }
 
-static avs_error_t local_host_net(avs_net_abstract_socket_t *socket,
+static avs_error_t local_host_net(avs_net_socket_t *socket,
                                   char *out_buffer,
                                   size_t out_buffer_size) {
     net_socket_impl_t *net_socket = (net_socket_impl_t *) socket;
@@ -1682,7 +1678,7 @@ static avs_error_t local_host_net(avs_net_abstract_socket_t *socket,
     }
 }
 
-static avs_error_t local_port_net(avs_net_abstract_socket_t *socket,
+static avs_error_t local_port_net(avs_net_socket_t *socket,
                                   char *out_buffer,
                                   size_t out_buffer_size) {
     net_socket_impl_t *net_socket = (net_socket_impl_t *) socket;
@@ -1799,7 +1795,7 @@ static avs_error_t get_inner_mtu(net_socket_impl_t *net_socket, int *out_mtu) {
     return AVS_OK;
 }
 
-static avs_error_t get_opt_net(avs_net_abstract_socket_t *net_socket_,
+static avs_error_t get_opt_net(avs_net_socket_t *net_socket_,
                                avs_net_socket_opt_key_t option_key,
                                avs_net_socket_opt_value_t *out_option_value) {
     net_socket_impl_t *net_socket = (net_socket_impl_t *) net_socket_;
@@ -1833,7 +1829,7 @@ static avs_error_t get_opt_net(avs_net_abstract_socket_t *net_socket_,
     }
 }
 
-static avs_error_t set_opt_net(avs_net_abstract_socket_t *net_socket_,
+static avs_error_t set_opt_net(avs_net_socket_t *net_socket_,
                                avs_net_socket_opt_key_t option_key,
                                avs_net_socket_opt_value_t option_value) {
     net_socket_impl_t *net_socket = (net_socket_impl_t *) net_socket_;
@@ -1959,7 +1955,7 @@ interface_name_end:
 }
 
 static avs_error_t
-interface_name_net(avs_net_abstract_socket_t *socket_,
+interface_name_net(avs_net_socket_t *socket_,
                    avs_net_socket_interface_name_t *if_name) {
     net_socket_impl_t *socket = (net_socket_impl_t *) socket_;
     if (socket->configuration.interface_name[0]) {

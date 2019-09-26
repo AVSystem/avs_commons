@@ -44,7 +44,7 @@ typedef struct {
     dtls_context_t *ctx;
 
     avs_net_socket_type_t backend_type;
-    avs_net_abstract_socket_t *backend_socket;
+    avs_net_socket_t *backend_socket;
     avs_error_t bio_error;
     avs_net_socket_configuration_t backend_configuration;
 
@@ -105,7 +105,7 @@ static const session_t *get_dtls_session(void) {
     return &DTLS_SESSION;
 }
 
-static avs_error_t send_ssl(avs_net_abstract_socket_t *ssl_socket,
+static avs_error_t send_ssl(avs_net_socket_t *ssl_socket,
                             const void *buffer,
                             size_t buffer_length) {
     ssl_socket_t *socket = (ssl_socket_t *) ssl_socket;
@@ -134,7 +134,7 @@ static avs_error_t send_ssl(avs_net_abstract_socket_t *ssl_socket,
     return AVS_OK;
 }
 
-static avs_error_t receive_ssl(avs_net_abstract_socket_t *socket_,
+static avs_error_t receive_ssl(avs_net_socket_t *socket_,
                                size_t *out_bytes_read,
                                void *out_buffer,
                                size_t buffer_size) {
@@ -171,7 +171,7 @@ static avs_error_t receive_ssl(avs_net_abstract_socket_t *socket_,
     return err;
 }
 
-static avs_error_t cleanup_ssl(avs_net_abstract_socket_t **socket_) {
+static avs_error_t cleanup_ssl(avs_net_socket_t **socket_) {
     ssl_socket_t *socket = *(ssl_socket_t **) socket_;
     LOG(TRACE, "cleanup_ssl(*socket=%p)", (void *) socket);
 

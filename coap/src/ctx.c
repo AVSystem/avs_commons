@@ -139,7 +139,7 @@ static int map_io_error(const char *operation, avs_error_t err) {
 #else // WITH_AVS_COAP_MESSAGE_CACHE
 
 static int try_cache_response(avs_coap_ctx_t *ctx,
-                              avs_net_abstract_socket_t *socket,
+                              avs_net_socket_t *socket,
                               const avs_coap_msg_t *res) {
     if (!avs_coap_msg_is_response(res) || !ctx->msg_cache) {
         return 0;
@@ -161,7 +161,7 @@ static int try_cache_response(avs_coap_ctx_t *ctx,
 #endif // WITH_AVS_COAP_MESSAGE_CACHE
 
 #ifdef WITH_AVS_COAP_NET_STATS
-static size_t packet_overhead(avs_net_abstract_socket_t *socket) {
+static size_t packet_overhead(avs_net_socket_t *socket) {
     avs_net_socket_opt_value_t mtu;
     avs_net_socket_opt_value_t mtu_inner;
     if (avs_is_err(avs_net_socket_get_opt(socket, AVS_NET_SOCKET_OPT_MTU, &mtu))
@@ -180,7 +180,7 @@ error:
 #endif // WITH_AVS_COAP_NET_STATS
 
 int avs_coap_ctx_send(avs_coap_ctx_t *ctx,
-                      avs_net_abstract_socket_t *socket,
+                      avs_net_socket_t *socket,
                       const avs_coap_msg_t *msg) {
     assert(ctx && socket);
     if (!avs_coap_msg_is_valid(msg)) {
@@ -220,7 +220,7 @@ int avs_coap_ctx_send(avs_coap_ctx_t *ctx,
 #else // WITH_AVS_COAP_MESSAGE_CACHE
 
 static int try_send_cached_response(avs_coap_ctx_t *ctx,
-                                    avs_net_abstract_socket_t *socket,
+                                    avs_net_socket_t *socket,
                                     const avs_coap_msg_t *req) {
     if (!avs_coap_msg_is_request(req) || !ctx->msg_cache) {
         return -1;
@@ -256,7 +256,7 @@ static inline bool is_coap_ping(const avs_coap_msg_t *msg) {
 }
 
 int avs_coap_ctx_recv(avs_coap_ctx_t *ctx,
-                      avs_net_abstract_socket_t *socket,
+                      avs_net_socket_t *socket,
                       avs_coap_msg_t *out_msg,
                       size_t msg_capacity) {
     assert(ctx && socket);
@@ -306,7 +306,7 @@ void avs_coap_ctx_set_tx_params(avs_coap_ctx_t *ctx,
 }
 
 int avs_coap_ctx_send_empty(avs_coap_ctx_t *ctx,
-                            avs_net_abstract_socket_t *socket,
+                            avs_net_socket_t *socket,
                             avs_coap_msg_type_t msg_type,
                             uint16_t msg_id) {
     avs_coap_msg_info_t info = avs_coap_msg_info_init();
@@ -328,7 +328,7 @@ int avs_coap_ctx_send_empty(avs_coap_ctx_t *ctx,
 }
 
 static void send_response(avs_coap_ctx_t *ctx,
-                          avs_net_abstract_socket_t *socket,
+                          avs_net_socket_t *socket,
                           const avs_coap_msg_t *request,
                           uint8_t code,
                           const uint32_t *max_age) {
@@ -362,14 +362,14 @@ static void send_response(avs_coap_ctx_t *ctx,
 }
 
 void avs_coap_ctx_send_error(avs_coap_ctx_t *ctx,
-                             avs_net_abstract_socket_t *socket,
+                             avs_net_socket_t *socket,
                              const avs_coap_msg_t *request,
                              uint8_t error_code) {
     send_response(ctx, socket, request, error_code, NULL);
 }
 
 void avs_coap_ctx_send_service_unavailable(avs_coap_ctx_t *ctx,
-                                           avs_net_abstract_socket_t *socket,
+                                           avs_net_socket_t *socket,
                                            const avs_coap_msg_t *request,
                                            avs_time_duration_t retry_after) {
     uint32_t s_to_retry_after = 0;

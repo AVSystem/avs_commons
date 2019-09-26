@@ -58,15 +58,15 @@ typedef struct {
 
 #define AVS_NET_RESOLVE_DUMMY_PORT "1337"
 
-avs_error_t _avs_net_create_tcp_socket(avs_net_abstract_socket_t **socket,
+avs_error_t _avs_net_create_tcp_socket(avs_net_socket_t **socket,
                                        const void *socket_configuration);
-avs_error_t _avs_net_create_udp_socket(avs_net_abstract_socket_t **socket,
+avs_error_t _avs_net_create_udp_socket(avs_net_socket_t **socket,
                                        const void *socket_configuration);
 
 #ifndef WITHOUT_SSL
-avs_error_t _avs_net_create_ssl_socket(avs_net_abstract_socket_t **socket,
+avs_error_t _avs_net_create_ssl_socket(avs_net_socket_t **socket,
                                        const void *socket_configuration);
-avs_error_t _avs_net_create_dtls_socket(avs_net_abstract_socket_t **socket,
+avs_error_t _avs_net_create_dtls_socket(avs_net_socket_t **socket,
                                         const void *socket_configuration);
 #endif // WITHOUT_SSL
 

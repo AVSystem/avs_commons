@@ -35,7 +35,7 @@ VISIBILITY_SOURCE_BEGIN
 
 typedef struct buffered_netstream_struct {
     const avs_stream_v_table_t *const vtable;
-    avs_net_abstract_socket_t *socket;
+    avs_net_socket_t *socket;
 
     avs_buffer_t *out_buffer;
     avs_buffer_t *in_buffer;
@@ -286,14 +286,12 @@ static avs_error_t buffered_netstream_close(avs_stream_t *stream_) {
     return err;
 }
 
-static avs_net_abstract_socket_t *
-buffered_netstream_getsock(avs_stream_t *stream) {
+static avs_net_socket_t *buffered_netstream_getsock(avs_stream_t *stream) {
     return ((buffered_netstream_t *) stream)->socket;
 }
 
-static avs_error_t
-buffered_netstream_setsock(avs_stream_t *stream_,
-                           avs_net_abstract_socket_t *socket) {
+static avs_error_t buffered_netstream_setsock(avs_stream_t *stream_,
+                                              avs_net_socket_t *socket) {
     buffered_netstream_t *stream = (buffered_netstream_t *) stream_;
     stream->socket = socket;
     return AVS_OK;
@@ -321,7 +319,7 @@ static const avs_stream_v_table_t buffered_netstream_vtable = {
 };
 
 int avs_stream_netbuf_create(avs_stream_t **stream_,
-                             avs_net_abstract_socket_t *socket,
+                             avs_net_socket_t *socket,
                              size_t in_buffer_size,
                              size_t out_buffer_size) {
     buffered_netstream_t *stream =

@@ -40,8 +40,9 @@ AVS_UNIT_GLOBAL_INIT(verbose) {
 
 expected_socket_t *avs_http_test_SOCKETS_TO_CREATE = NULL;
 
-avs_error_t avs_net_socket_create_TEST_WRAPPER(
-        avs_net_abstract_socket_t **socket, avs_net_socket_type_t type, ...) {
+avs_error_t avs_net_socket_create_TEST_WRAPPER(avs_net_socket_t **socket,
+                                               avs_net_socket_type_t type,
+                                               ...) {
     expected_socket_t *removed_entry;
     removed_entry = AVS_LIST_DETACH(&avs_http_test_SOCKETS_TO_CREATE);
     AVS_UNIT_ASSERT_NOT_NULL(removed_entry);
@@ -51,7 +52,7 @@ avs_error_t avs_net_socket_create_TEST_WRAPPER(
     return (*socket) ? AVS_OK : avs_errno(AVS_ENOMEM);
 }
 
-void avs_http_test_expect_create_socket(avs_net_abstract_socket_t *socket,
+void avs_http_test_expect_create_socket(avs_net_socket_t *socket,
                                         avs_net_socket_type_t type) {
     expected_socket_t *new_socket = AVS_LIST_NEW_ELEMENT(expected_socket_t);
     AVS_UNIT_ASSERT_NOT_NULL(new_socket);
@@ -66,7 +67,7 @@ AVS_UNIT_TEST(http, full_request) {
     char *buffer_ptr = buffer;
     bool message_finished = false;
     avs_http_t *client = avs_http_new(&AVS_HTTP_DEFAULT_BUFFER_SIZES);
-    avs_net_abstract_socket_t *socket = NULL;
+    avs_net_socket_t *socket = NULL;
     avs_stream_t *stream = NULL;
     avs_url_t *url = avs_url_parse("http://www.zombo.com/");
     AVS_UNIT_ASSERT_NOT_NULL(url);
@@ -120,7 +121,7 @@ AVS_UNIT_TEST(http, full_request) {
 AVS_UNIT_TEST(http, reconnect_fail) {
     const char *tmp_data = NULL;
     avs_http_t *client = avs_http_new(&AVS_HTTP_DEFAULT_BUFFER_SIZES);
-    avs_net_abstract_socket_t *socket = NULL;
+    avs_net_socket_t *socket = NULL;
     avs_stream_t *stream = NULL;
     avs_url_t *url = avs_url_parse("http://www.avsystem.com/");
     AVS_UNIT_ASSERT_NOT_NULL(url);
@@ -162,7 +163,7 @@ AVS_UNIT_TEST(http, reconnect_fail) {
 AVS_UNIT_TEST(http, advanced_request) {
     const char *tmp_data;
     avs_http_t *client = avs_http_new(&AVS_HTTP_DEFAULT_BUFFER_SIZES);
-    avs_net_abstract_socket_t *socket = NULL;
+    avs_net_socket_t *socket = NULL;
     avs_stream_t *stream = NULL;
     avs_url_t *url = avs_url_parse("http://pentagon.osd.mil/");
     AVS_UNIT_ASSERT_NOT_NULL(url);
@@ -219,7 +220,7 @@ AVS_UNIT_TEST(http, advanced_request) {
 AVS_UNIT_TEST(http, invalid_cookies) {
     const char *tmp_data;
     avs_http_t *client = avs_http_new(&AVS_HTTP_DEFAULT_BUFFER_SIZES);
-    avs_net_abstract_socket_t *socket = NULL;
+    avs_net_socket_t *socket = NULL;
     avs_stream_t *stream = NULL;
     avs_url_t *url = avs_url_parse("http://avsystem.com/");
     AVS_UNIT_ASSERT_NOT_NULL(url);
@@ -256,7 +257,7 @@ AVS_UNIT_TEST(http, invalid_cookies) {
 AVS_UNIT_TEST(http, multiple_cookies) {
     const char *tmp_data;
     avs_http_t *client = avs_http_new(&AVS_HTTP_DEFAULT_BUFFER_SIZES);
-    avs_net_abstract_socket_t *socket = NULL;
+    avs_net_socket_t *socket = NULL;
     avs_stream_t *stream = NULL;
     avs_url_t *url = avs_url_parse("http://unicodesnowmanforyou.com/");
     AVS_UNIT_ASSERT_NOT_NULL(url);
@@ -561,7 +562,7 @@ const char *const MONTY_PYTHON_PER_LINE_REQUEST =
 AVS_UNIT_TEST(http, chunked_request) {
     const char *tmp_data = NULL;
     avs_http_t *client = avs_http_new(&AVS_HTTP_DEFAULT_BUFFER_SIZES);
-    avs_net_abstract_socket_t *socket = NULL;
+    avs_net_socket_t *socket = NULL;
     avs_stream_t *stream = NULL;
     avs_url_t *url = avs_url_parse("http://monty.python/");
     AVS_UNIT_ASSERT_NOT_NULL(url);
@@ -608,7 +609,7 @@ AVS_UNIT_TEST(http, chunked_request) {
 AVS_UNIT_TEST(http, no_100_continue) {
     const char *tmp_data = NULL;
     avs_http_t *client = avs_http_new(&AVS_HTTP_DEFAULT_BUFFER_SIZES);
-    avs_net_abstract_socket_t *socket = NULL;
+    avs_net_socket_t *socket = NULL;
     avs_stream_t *stream = NULL;
     avs_url_t *url = avs_url_parse("http://monty.python/");
     AVS_UNIT_ASSERT_NOT_NULL(client);
@@ -651,7 +652,7 @@ AVS_UNIT_TEST(http, no_100_continue) {
 AVS_UNIT_TEST(http, error_417) {
     const char *tmp_data = NULL;
     avs_http_t *client = avs_http_new(&AVS_HTTP_DEFAULT_BUFFER_SIZES);
-    avs_net_abstract_socket_t *socket = NULL;
+    avs_net_socket_t *socket = NULL;
     avs_stream_t *stream = NULL;
     avs_url_t *url = avs_url_parse("http://monty.python/");
     AVS_UNIT_ASSERT_NOT_NULL(client);
@@ -832,7 +833,7 @@ const char *const MONTY_PYTHON_BIG_REQUEST =
 AVS_UNIT_TEST(http, big_chunked_request) {
     const char *tmp_data = NULL;
     avs_http_t *client = avs_http_new(&AVS_HTTP_DEFAULT_BUFFER_SIZES);
-    avs_net_abstract_socket_t *socket = NULL;
+    avs_net_socket_t *socket = NULL;
     avs_stream_t *stream = NULL;
     avs_url_t *url = avs_url_parse("http://python.monty/");
     AVS_UNIT_ASSERT_NOT_NULL(url);
@@ -878,7 +879,7 @@ AVS_UNIT_TEST(http, redirect) {
     const char *tmp_data = NULL;
     size_t i;
     avs_http_t *client = avs_http_new(&AVS_HTTP_DEFAULT_BUFFER_SIZES);
-    avs_net_abstract_socket_t *sockets[6];
+    avs_net_socket_t *sockets[6];
     avs_stream_t *stream = NULL;
     avs_url_t *url = avs_url_parse("http://www.nyan.cat/");
     memset(sockets, 0, sizeof(sockets));
@@ -1000,7 +1001,7 @@ AVS_UNIT_TEST(http, interleaving) {
     bool message_finished = false;
     size_t i;
     avs_http_t *client = avs_http_new(&AVS_HTTP_DEFAULT_BUFFER_SIZES);
-    avs_net_abstract_socket_t *socket = NULL;
+    avs_net_socket_t *socket = NULL;
     avs_stream_t *stream = NULL;
     avs_url_t *url = avs_url_parse("http://pudim.com.br/");
     AVS_UNIT_ASSERT_NOT_NULL(url);
@@ -1089,7 +1090,7 @@ AVS_UNIT_TEST(http, interleaving_error) {
     char buffer[64];
     bool message_finished = false;
     avs_http_t *client = avs_http_new(&AVS_HTTP_DEFAULT_BUFFER_SIZES);
-    avs_net_abstract_socket_t *socket = NULL;
+    avs_net_socket_t *socket = NULL;
     avs_stream_t *stream = NULL;
     avs_url_t *url = avs_url_parse("http://www.omfgdogs.com/");
     AVS_UNIT_ASSERT_NOT_NULL(url);
@@ -1129,7 +1130,7 @@ AVS_UNIT_TEST(http, interleaving_error) {
 AVS_UNIT_TEST(http, send_headers_fail) {
     const char *tmp_data = NULL;
     avs_http_t *client = avs_http_new(&AVS_HTTP_DEFAULT_BUFFER_SIZES);
-    avs_net_abstract_socket_t *socket = NULL;
+    avs_net_socket_t *socket = NULL;
     avs_stream_t *stream = NULL;
     avs_url_t *url = avs_url_parse("http://www.avsystem.com/");
     AVS_UNIT_ASSERT_NOT_NULL(url);
@@ -1157,7 +1158,7 @@ AVS_UNIT_TEST(http, send_headers_fail) {
 AVS_UNIT_TEST(http, ipv6_host_header_has_square_brackets) {
     const char *tmp_data = NULL;
     avs_http_t *client = avs_http_new(&AVS_HTTP_DEFAULT_BUFFER_SIZES);
-    avs_net_abstract_socket_t *socket = NULL;
+    avs_net_socket_t *socket = NULL;
     avs_stream_t *stream = NULL;
     avs_url_t *url = avs_url_parse("http://[::1:2:3:4]:1234/");
     AVS_UNIT_ASSERT_NOT_NULL(url);

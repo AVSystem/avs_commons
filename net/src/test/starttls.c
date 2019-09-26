@@ -21,8 +21,7 @@
 #define SMTP_SERVER_HOSTNAME "smtp.gmail.com"
 #define SMTP_SERVER_PORT "587"
 
-static void assert_receive_smtp_status(avs_net_abstract_socket_t *socket,
-                                       int status) {
+static void assert_receive_smtp_status(avs_net_socket_t *socket, int status) {
     char line_beginning[16];
     char line_full[16];
     char buffer[1024];
@@ -53,7 +52,7 @@ static void assert_receive_smtp_status(avs_net_abstract_socket_t *socket,
 AVS_UNIT_TEST(starttls, starttls_smtp) {
     static const char ehlo_msg[] = "EHLO [127.0.0.1]\r\n";
     static const char starttls_msg[] = "STARTTLS\r\n";
-    avs_net_abstract_socket_t *socket = NULL;
+    avs_net_socket_t *socket = NULL;
     avs_net_ssl_configuration_t ssl_config;
 
     AVS_UNIT_ASSERT_SUCCESS(

@@ -33,7 +33,7 @@ static void assert_equal_url(const avs_url_t *actual,
 
 AVS_UNIT_TEST(http, init) {
     avs_http_t *client = avs_http_new(&AVS_HTTP_DEFAULT_BUFFER_SIZES);
-    avs_net_abstract_socket_t *socket = NULL;
+    avs_net_socket_t *socket = NULL;
     http_stream_t *stream = NULL;
     avs_url_t *url = avs_url_parse("http://www.nooooooooooooooo.com/");
     AVS_UNIT_ASSERT_NOT_NULL(url);
@@ -91,7 +91,7 @@ AVS_UNIT_TEST(http, init_fail) {
 
 AVS_UNIT_TEST(http, init_https_auth1) {
     avs_http_t *client = avs_http_new(&AVS_HTTP_DEFAULT_BUFFER_SIZES);
-    avs_net_abstract_socket_t *socket = NULL;
+    avs_net_socket_t *socket = NULL;
     http_stream_t *stream = NULL;
     avs_url_t *url = avs_url_parse("https://madoka:kaname@boards.4chan.org/b/");
     AVS_UNIT_ASSERT_NOT_NULL(url);
@@ -133,7 +133,7 @@ AVS_UNIT_TEST(http, init_https_auth1) {
 
 AVS_UNIT_TEST(http, init_https_auth2) {
     avs_http_t *client = avs_http_new(&AVS_HTTP_DEFAULT_BUFFER_SIZES);
-    avs_net_abstract_socket_t *socket = NULL;
+    avs_net_socket_t *socket = NULL;
     http_stream_t *stream = NULL;
     avs_url_t *url = avs_url_parse("https://moot@boards.4chan.org/a/");
     AVS_UNIT_ASSERT_NOT_NULL(url);

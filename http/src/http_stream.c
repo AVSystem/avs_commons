@@ -35,8 +35,9 @@ VISIBILITY_SOURCE_BEGIN
 
 #ifdef AVS_UNIT_TESTING
 #    define avs_net_socket_create avs_net_socket_create_TEST_WRAPPER
-avs_error_t avs_net_socket_create_TEST_WRAPPER(
-        avs_net_abstract_socket_t **socket, avs_net_socket_type_t type, ...);
+avs_error_t avs_net_socket_create_TEST_WRAPPER(avs_net_socket_t **socket,
+                                               avs_net_socket_type_t type,
+                                               ...);
 #endif
 
 static const char *default_port_for_protocol(const char *protocol) {
@@ -59,7 +60,7 @@ static const char *resolve_port(const avs_url_t *parsed_url) {
     }
 }
 
-avs_error_t _avs_http_socket_new(avs_net_abstract_socket_t **out,
+avs_error_t _avs_http_socket_new(avs_net_socket_t **out,
                                  avs_http_t *client,
                                  const avs_url_t *url) {
     avs_error_t err = AVS_OK;
@@ -99,7 +100,7 @@ avs_error_t _avs_http_socket_new(avs_net_abstract_socket_t **out,
     return err;
 }
 
-static avs_error_t reconnect_tcp_socket(avs_net_abstract_socket_t *socket,
+static avs_error_t reconnect_tcp_socket(avs_net_socket_t *socket,
                                         const avs_url_t *url) {
     LOG(TRACE, "reconnect_tcp_socket");
     if (!socket) {
@@ -119,9 +120,8 @@ static avs_error_t reconnect_tcp_socket(avs_net_abstract_socket_t *socket,
 
 avs_error_t _avs_http_redirect(http_stream_t *stream, avs_url_t **url_move) {
     assert(stream->status / 100 == 3);
-    avs_net_abstract_socket_t *old_socket =
-            avs_stream_net_getsock(stream->backend);
-    avs_net_abstract_socket_t *new_socket = NULL;
+    avs_net_socket_t *old_socket = avs_stream_net_getsock(stream->backend);
+    avs_net_socket_t *new_socket = NULL;
     LOG(TRACE, "http_redirect");
     ++stream->redirect_count;
     if (stream->redirect_count > HTTP_MOVE_LIMIT) {

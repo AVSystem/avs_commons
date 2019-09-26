@@ -190,7 +190,7 @@ struct http_stream_struct {
 
 typedef struct http_stream_struct http_stream_t;
 
-avs_error_t _avs_http_socket_new(avs_net_abstract_socket_t **out,
+avs_error_t _avs_http_socket_new(avs_net_socket_t **out,
                                  avs_http_t *client,
                                  const avs_url_t *url);
 

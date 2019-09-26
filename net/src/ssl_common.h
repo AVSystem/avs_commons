@@ -40,38 +40,38 @@ initialize_ssl_socket(ssl_socket_t *socket,
                       const avs_net_ssl_configuration_t *configuration);
 
 /* avs_net_socket_v_table_t ssl handlers implemented differently per backend */
-static avs_error_t send_ssl(avs_net_abstract_socket_t *ssl_socket,
+static avs_error_t send_ssl(avs_net_socket_t *ssl_socket,
                             const void *buffer,
                             size_t buffer_length);
-static avs_error_t receive_ssl(avs_net_abstract_socket_t *ssl_socket,
+static avs_error_t receive_ssl(avs_net_socket_t *ssl_socket,
                                size_t *out,
                                void *buffer,
                                size_t buffer_length);
-static avs_error_t cleanup_ssl(avs_net_abstract_socket_t **ssl_socket);
+static avs_error_t cleanup_ssl(avs_net_socket_t **ssl_socket);
 
 /* avs_net_socket_v_table_t ssl handlers implemented in this file */
-static avs_error_t decorate_ssl(avs_net_abstract_socket_t *socket,
-                                avs_net_abstract_socket_t *backend_socket);
-static avs_error_t close_ssl(avs_net_abstract_socket_t *ssl_socket);
-static const void *system_socket_ssl(avs_net_abstract_socket_t *ssl_socket);
-static avs_error_t interface_name_ssl(avs_net_abstract_socket_t *ssl_socket,
+static avs_error_t decorate_ssl(avs_net_socket_t *socket,
+                                avs_net_socket_t *backend_socket);
+static avs_error_t close_ssl(avs_net_socket_t *ssl_socket);
+static const void *system_socket_ssl(avs_net_socket_t *ssl_socket);
+static avs_error_t interface_name_ssl(avs_net_socket_t *ssl_socket,
                                       avs_net_socket_interface_name_t *if_name);
-static avs_error_t remote_hostname_ssl(avs_net_abstract_socket_t *socket,
+static avs_error_t remote_hostname_ssl(avs_net_socket_t *socket,
                                        char *out_buffer,
                                        size_t ouf_buffer_size);
-static avs_error_t remote_host_ssl(avs_net_abstract_socket_t *socket,
+static avs_error_t remote_host_ssl(avs_net_socket_t *socket,
                                    char *out_buffer,
                                    size_t ouf_buffer_size);
-static avs_error_t remote_port_ssl(avs_net_abstract_socket_t *socket,
+static avs_error_t remote_port_ssl(avs_net_socket_t *socket,
                                    char *out_buffer,
                                    size_t ouf_buffer_size);
-static avs_error_t local_port_ssl(avs_net_abstract_socket_t *socket,
+static avs_error_t local_port_ssl(avs_net_socket_t *socket,
                                   char *out_buffer,
                                   size_t ouf_buffer_size);
-static avs_error_t get_opt_ssl(avs_net_abstract_socket_t *ssl_socket_,
+static avs_error_t get_opt_ssl(avs_net_socket_t *ssl_socket_,
                                avs_net_socket_opt_key_t option_key,
                                avs_net_socket_opt_value_t *out_option_value);
-static avs_error_t set_opt_ssl(avs_net_abstract_socket_t *net_socket,
+static avs_error_t set_opt_ssl(avs_net_socket_t *net_socket,
                                avs_net_socket_opt_key_t option_key,
                                avs_net_socket_opt_value_t option_value);
 
@@ -84,7 +84,7 @@ static avs_error_t ensure_have_backend_socket(ssl_socket_t *socket) {
     return AVS_OK;
 }
 
-static avs_error_t create_ssl_socket(avs_net_abstract_socket_t **socket,
+static avs_error_t create_ssl_socket(avs_net_socket_t **socket,
                                      avs_net_socket_type_t backend_type,
                                      const void *socket_configuration) {
     LOG(TRACE, "create_ssl_socket(socket=%p)", (void *) socket);
@@ -96,7 +96,7 @@ static avs_error_t create_ssl_socket(avs_net_abstract_socket_t **socket,
 
     ssl_socket_t *ssl_sock =
             (ssl_socket_t *) avs_calloc(1, sizeof(ssl_socket_t));
-    *socket = (avs_net_abstract_socket_t *) ssl_sock;
+    *socket = (avs_net_socket_t *) ssl_sock;
     if (*socket) {
         LOG(TRACE, "configure_ssl(socket=%p, configuration=%p)",
             (void *) socket, (const void *) socket_configuration);
@@ -117,9 +117,8 @@ static avs_error_t create_ssl_socket(avs_net_abstract_socket_t **socket,
     }
 }
 
-static avs_error_t bind_ssl(avs_net_abstract_socket_t *socket_,
-                            const char *localaddr,
-                            const char *port) {
+static avs_error_t
+bind_ssl(avs_net_socket_t *socket_, const char *localaddr, const char *port) {
     ssl_socket_t *socket = (ssl_socket_t *) socket_;
     avs_error_t err = ensure_have_backend_socket(socket);
     if (avs_is_err(err)) {
@@ -128,9 +127,8 @@ static avs_error_t bind_ssl(avs_net_abstract_socket_t *socket_,
     return avs_net_socket_bind(socket->backend_socket, localaddr, port);
 }
 
-static avs_error_t connect_ssl(avs_net_abstract_socket_t *socket_,
-                               const char *host,
-                               const char *port) {
+static avs_error_t
+connect_ssl(avs_net_socket_t *socket_, const char *host, const char *port) {
     ssl_socket_t *socket = (ssl_socket_t *) socket_;
     LOG(TRACE, "connect_ssl(socket=%p, host=%s, port=%s)", (void *) socket,
         host, port);
@@ -155,8 +153,8 @@ static avs_error_t connect_ssl(avs_net_abstract_socket_t *socket_,
     return err;
 }
 
-static avs_error_t decorate_ssl(avs_net_abstract_socket_t *socket_,
-                                avs_net_abstract_socket_t *backend_socket) {
+static avs_error_t decorate_ssl(avs_net_socket_t *socket_,
+                                avs_net_socket_t *backend_socket) {
     ssl_socket_t *socket = (ssl_socket_t *) socket_;
     LOG(TRACE, "decorate_ssl(socket=%p, backend_socket=%p)", (void *) socket,
         (void *) backend_socket);
@@ -198,7 +196,7 @@ static avs_error_t decorate_ssl(avs_net_abstract_socket_t *socket_,
     return err;
 }
 
-static const void *system_socket_ssl(avs_net_abstract_socket_t *socket_) {
+static const void *system_socket_ssl(avs_net_socket_t *socket_) {
     ssl_socket_t *socket = (ssl_socket_t *) socket_;
     if (socket->backend_socket) {
         return avs_net_socket_get_system(socket->backend_socket);
@@ -207,13 +205,13 @@ static const void *system_socket_ssl(avs_net_abstract_socket_t *socket_) {
     }
 }
 
-static avs_error_t shutdown_ssl(avs_net_abstract_socket_t *socket_) {
+static avs_error_t shutdown_ssl(avs_net_socket_t *socket_) {
     LOG(TRACE, "shutdown_ssl(socket=%p)", (void *) socket_);
     ssl_socket_t *socket = (ssl_socket_t *) socket_;
     return avs_net_socket_shutdown(socket->backend_socket);
 }
 
-static avs_error_t close_ssl(avs_net_abstract_socket_t *socket_) {
+static avs_error_t close_ssl(avs_net_socket_t *socket_) {
     ssl_socket_t *socket = (ssl_socket_t *) socket_;
     LOG(TRACE, "close_ssl(socket=%p)", (void *) socket);
     close_ssl_raw(socket);
@@ -221,13 +219,13 @@ static avs_error_t close_ssl(avs_net_abstract_socket_t *socket_) {
 }
 
 static avs_error_t
-interface_name_ssl(avs_net_abstract_socket_t *ssl_socket_,
+interface_name_ssl(avs_net_socket_t *ssl_socket_,
                    avs_net_socket_interface_name_t *if_name) {
     ssl_socket_t *ssl_socket = (ssl_socket_t *) ssl_socket_;
     return avs_net_socket_interface_name(ssl_socket->backend_socket, if_name);
 }
 
-static avs_error_t remote_host_ssl(avs_net_abstract_socket_t *socket_,
+static avs_error_t remote_host_ssl(avs_net_socket_t *socket_,
                                    char *out_buffer,
                                    size_t out_buffer_size) {
     ssl_socket_t *socket = (ssl_socket_t *) socket_;
@@ -235,7 +233,7 @@ static avs_error_t remote_host_ssl(avs_net_abstract_socket_t *socket_,
                                           out_buffer_size);
 }
 
-static avs_error_t remote_hostname_ssl(avs_net_abstract_socket_t *socket_,
+static avs_error_t remote_hostname_ssl(avs_net_socket_t *socket_,
                                        char *out_buffer,
                                        size_t out_buffer_size) {
     ssl_socket_t *socket = (ssl_socket_t *) socket_;
@@ -243,7 +241,7 @@ static avs_error_t remote_hostname_ssl(avs_net_abstract_socket_t *socket_,
                                               out_buffer, out_buffer_size);
 }
 
-static avs_error_t remote_port_ssl(avs_net_abstract_socket_t *socket_,
+static avs_error_t remote_port_ssl(avs_net_socket_t *socket_,
                                    char *out_buffer,
                                    size_t out_buffer_size) {
     ssl_socket_t *socket = (ssl_socket_t *) socket_;
@@ -251,7 +249,7 @@ static avs_error_t remote_port_ssl(avs_net_abstract_socket_t *socket_,
                                           out_buffer_size);
 }
 
-static avs_error_t local_host_ssl(avs_net_abstract_socket_t *socket_,
+static avs_error_t local_host_ssl(avs_net_socket_t *socket_,
                                   char *out_buffer,
                                   size_t out_buffer_size) {
     ssl_socket_t *socket = (ssl_socket_t *) socket_;
@@ -259,7 +257,7 @@ static avs_error_t local_host_ssl(avs_net_abstract_socket_t *socket_,
                                          out_buffer_size);
 }
 
-static avs_error_t local_port_ssl(avs_net_abstract_socket_t *socket_,
+static avs_error_t local_port_ssl(avs_net_socket_t *socket_,
                                   char *out_buffer,
                                   size_t out_buffer_size) {
     ssl_socket_t *socket = (ssl_socket_t *) socket_;
@@ -267,7 +265,7 @@ static avs_error_t local_port_ssl(avs_net_abstract_socket_t *socket_,
                                          out_buffer_size);
 }
 
-static int get_socket_inner_mtu_or_zero(avs_net_abstract_socket_t *sock) {
+static int get_socket_inner_mtu_or_zero(avs_net_socket_t *sock) {
     avs_net_socket_opt_value_t opt_value;
     if (!sock
             || avs_is_err(avs_net_socket_get_opt(
@@ -298,7 +296,7 @@ static int replace_ciphersuites(avs_net_socket_tls_ciphersuites_t *dst,
     return 0;
 }
 
-static avs_net_socket_state_t socket_state(avs_net_abstract_socket_t *socket) {
+static avs_net_socket_state_t socket_state(avs_net_socket_t *socket) {
     avs_net_socket_opt_value_t value;
     if (avs_is_err(avs_net_socket_get_opt(socket, AVS_NET_SOCKET_OPT_STATE,
                                           &value))) {
@@ -308,7 +306,7 @@ static avs_net_socket_state_t socket_state(avs_net_abstract_socket_t *socket) {
     }
 }
 
-static avs_error_t set_opt_ssl(avs_net_abstract_socket_t *ssl_socket_,
+static avs_error_t set_opt_ssl(avs_net_socket_t *ssl_socket_,
                                avs_net_socket_opt_key_t option_key,
                                avs_net_socket_opt_value_t option_value) {
     ssl_socket_t *ssl_socket = (ssl_socket_t *) ssl_socket_;
@@ -341,7 +339,7 @@ static avs_error_t set_opt_ssl(avs_net_abstract_socket_t *ssl_socket_,
     }
 }
 
-static avs_error_t get_opt_ssl(avs_net_abstract_socket_t *ssl_socket_,
+static avs_error_t get_opt_ssl(avs_net_socket_t *ssl_socket_,
                                avs_net_socket_opt_key_t option_key,
                                avs_net_socket_opt_value_t *out_option_value) {
     ssl_socket_t *ssl_socket = (ssl_socket_t *) ssl_socket_;
@@ -392,12 +390,12 @@ static avs_error_t get_opt_ssl(avs_net_abstract_socket_t *ssl_socket_,
     }
 }
 
-avs_error_t _avs_net_create_ssl_socket(avs_net_abstract_socket_t **socket,
+avs_error_t _avs_net_create_ssl_socket(avs_net_socket_t **socket,
                                        const void *socket_configuration) {
     return create_ssl_socket(socket, AVS_NET_TCP_SOCKET, socket_configuration);
 }
 
-avs_error_t _avs_net_create_dtls_socket(avs_net_abstract_socket_t **socket,
+avs_error_t _avs_net_create_dtls_socket(avs_net_socket_t **socket,
                                         const void *socket_configuration) {
     return create_ssl_socket(socket, AVS_NET_UDP_SOCKET, socket_configuration);
 }

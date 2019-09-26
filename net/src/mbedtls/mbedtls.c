@@ -87,7 +87,7 @@ typedef struct {
     } security;
     mbedtls_timing_delay_context timer;
     avs_net_socket_type_t backend_type;
-    avs_net_abstract_socket_t *backend_socket;
+    avs_net_socket_t *backend_socket;
     avs_error_t bio_error;
     avs_net_socket_configuration_t backend_configuration;
     /// Set of ciphersuites configured by user
@@ -544,7 +544,7 @@ configure_ssl(ssl_socket_t *socket,
 static avs_error_t update_ssl_endpoint_config(ssl_socket_t *socket) {
     avs_net_socket_opt_value_t state_opt;
     avs_error_t err =
-            avs_net_socket_get_opt((avs_net_abstract_socket_t *) socket,
+            avs_net_socket_get_opt((avs_net_socket_t *) socket,
                                    AVS_NET_SOCKET_OPT_STATE, &state_opt);
     if (avs_is_err(err)) {
         LOG(ERROR, "initialize_ssl_config: could not get socket state");
@@ -763,9 +763,8 @@ finish:
     }
 }
 
-static avs_error_t send_ssl(avs_net_abstract_socket_t *socket_,
-                            const void *buffer,
-                            size_t buffer_length) {
+static avs_error_t
+send_ssl(avs_net_socket_t *socket_, const void *buffer, size_t buffer_length) {
     ssl_socket_t *socket = (ssl_socket_t *) socket_;
     size_t bytes_sent = 0;
     int result = 0;
@@ -808,7 +807,7 @@ static avs_error_t send_ssl(avs_net_abstract_socket_t *socket_,
     return AVS_OK;
 }
 
-static avs_error_t receive_ssl(avs_net_abstract_socket_t *socket_,
+static avs_error_t receive_ssl(avs_net_socket_t *socket_,
                                size_t *out_bytes_received,
                                void *buffer,
                                size_t buffer_length) {
@@ -902,7 +901,7 @@ static void cleanup_security_cert(ssl_socket_certs_t *certs) {
 #    define cleanup_security_psk(...) (void) 0
 #endif // WITH_PSK
 
-static avs_error_t cleanup_ssl(avs_net_abstract_socket_t **socket_) {
+static avs_error_t cleanup_ssl(avs_net_socket_t **socket_) {
     ssl_socket_t **socket = (ssl_socket_t **) socket_;
     LOG(TRACE, "cleanup_ssl(*socket=%p)", (void *) *socket);
 

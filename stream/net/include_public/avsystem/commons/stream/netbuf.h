@@ -25,7 +25,7 @@ extern "C" {
 #endif
 
 int avs_stream_netbuf_create(avs_stream_t **stream_,
-                             avs_net_abstract_socket_t *socket,
+                             avs_net_socket_t *socket,
                              size_t in_buffer_size,
                              size_t out_buffer_size);
 

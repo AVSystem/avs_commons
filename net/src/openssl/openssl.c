@@ -85,7 +85,7 @@ typedef struct {
     avs_error_t bio_error;
     avs_time_real_t next_deadline;
     avs_net_socket_type_t backend_type;
-    avs_net_abstract_socket_t *backend_socket;
+    avs_net_socket_t *backend_socket;
     avs_net_dtls_handshake_timeouts_t dtls_handshake_timeouts;
     avs_net_socket_configuration_t backend_configuration;
     avs_net_resolved_endpoint_t endpoint_buffer;
@@ -302,7 +302,7 @@ static int avs_bio_write(BIO *bio, const char *data, int size) {
     }
 }
 
-static avs_time_duration_t get_socket_timeout(avs_net_abstract_socket_t *sock) {
+static avs_time_duration_t get_socket_timeout(avs_net_socket_t *sock) {
     avs_net_socket_opt_value_t opt_value;
     if (avs_is_err(avs_net_socket_get_opt(sock, AVS_NET_SOCKET_OPT_RECV_TIMEOUT,
                                           &opt_value))) {
@@ -311,7 +311,7 @@ static avs_time_duration_t get_socket_timeout(avs_net_abstract_socket_t *sock) {
     return opt_value.recv_timeout;
 }
 
-static void set_socket_timeout(avs_net_abstract_socket_t *sock,
+static void set_socket_timeout(avs_net_socket_t *sock,
                                avs_time_duration_t timeout) {
     avs_net_socket_opt_value_t opt_value;
     opt_value.recv_timeout = timeout;
@@ -517,8 +517,7 @@ static BIO *avs_bio_spawn(ssl_socket_t *socket) {
 #    define avs_bio_init() 0
 
 static BIO *avs_bio_spawn(ssl_socket_t *socket) {
-    const void *fd_ptr =
-            avs_net_socket_get_system((avs_net_abstract_socket_t *) socket);
+    const void *fd_ptr = avs_net_socket_get_system((avs_net_socket_t *) socket);
     if (fd_ptr) {
         int fd = *(const int *) fd_ptr;
         if (!socket_is_datagram(socket)) {
@@ -537,7 +536,7 @@ static BIO *avs_bio_spawn(ssl_socket_t *socket) {
 }
 #endif /* BIO_TYPE_SOURCE_SINK */
 
-static bool socket_can_communicate(avs_net_abstract_socket_t *socket) {
+static bool socket_can_communicate(avs_net_socket_t *socket) {
     avs_net_socket_opt_value_t opt;
     return socket
            && avs_is_ok(avs_net_socket_get_opt(socket, AVS_NET_SOCKET_OPT_STATE,
@@ -930,9 +929,8 @@ configure_ssl(ssl_socket_t *socket,
     return AVS_OK;
 }
 
-static avs_error_t send_ssl(avs_net_abstract_socket_t *socket_,
-                            const void *buffer,
-                            size_t buffer_length) {
+static avs_error_t
+send_ssl(avs_net_socket_t *socket_, const void *buffer, size_t buffer_length) {
     ssl_socket_t *socket = (ssl_socket_t *) socket_;
     int result;
 
@@ -951,7 +949,7 @@ static avs_error_t send_ssl(avs_net_abstract_socket_t *socket_,
     }
 }
 
-static avs_error_t receive_ssl(avs_net_abstract_socket_t *socket_,
+static avs_error_t receive_ssl(avs_net_socket_t *socket_,
                                size_t *out_bytes_received,
                                void *buffer,
                                size_t buffer_length) {
@@ -980,7 +978,7 @@ static avs_error_t receive_ssl(avs_net_abstract_socket_t *socket_,
             // https://github.com/openssl/openssl/issues/5478 for details.
             // We resort to this hack of calling SSL_read() with actual network
             // communication blocked.
-            avs_net_abstract_socket_t *backend_socket = socket->backend_socket;
+            avs_net_socket_t *backend_socket = socket->backend_socket;
             socket->backend_socket = NULL;
             do {
                 char truncation_buffer[TRUNCATION_BUFFER_SIZE];
@@ -1001,7 +999,7 @@ static avs_error_t receive_ssl(avs_net_abstract_socket_t *socket_,
     return AVS_OK;
 }
 
-static avs_error_t cleanup_ssl(avs_net_abstract_socket_t **socket_) {
+static avs_error_t cleanup_ssl(avs_net_socket_t **socket_) {
     ssl_socket_t **socket = (ssl_socket_t **) socket_;
     LOG(TRACE, "cleanup_ssl(*socket=%p)", (void *) *socket);
 
