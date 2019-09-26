@@ -28,9 +28,10 @@ typedef enum {
 } http_transfer_encoding_t;
 
 /* length == (size_t) -1 mean chunked encoding */
-int _avs_http_send_headers(http_stream_t *stream, size_t content_length);
+avs_error_t _avs_http_send_headers(http_stream_t *stream,
+                                   size_t content_length);
 
-int _avs_http_receive_headers(http_stream_t *stream);
+avs_error_t _avs_http_receive_headers(http_stream_t *stream);
 
 VISIBILITY_PRIVATE_HEADER_END
 

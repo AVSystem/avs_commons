@@ -20,11 +20,11 @@
 #include <avsystem/commons/unit/test.h>
 
 AVS_UNIT_TEST(stream_membuf, write_read) {
-    avs_stream_abstract_t *stream = avs_stream_membuf_create();
+    avs_stream_t *stream = avs_stream_membuf_create();
     static const char *str = "very stream";
     char buf[1024];
     size_t bytes_read;
-    char message_finished;
+    bool message_finished;
     AVS_UNIT_ASSERT_NOT_NULL(stream);
     AVS_UNIT_ASSERT_SUCCESS(
             avs_stream_read(stream, &bytes_read, &message_finished, buf, 1024));
@@ -45,23 +45,29 @@ AVS_UNIT_TEST(stream_membuf, write_read) {
 }
 
 AVS_UNIT_TEST(stream_membuf, peek) {
-    avs_stream_abstract_t *stream = avs_stream_membuf_create();
+    avs_stream_t *stream = avs_stream_membuf_create();
     static const char *str = "very stream";
     AVS_UNIT_ASSERT_NOT_NULL(stream);
-    AVS_UNIT_ASSERT_EQUAL(EOF, avs_stream_peek(stream, 9001));
+    AVS_UNIT_ASSERT_TRUE(
+            avs_is_eof(avs_stream_peek(stream, 9001, &(char) { 0 })));
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_write(stream, str, strlen(str) + 1));
-    AVS_UNIT_ASSERT_EQUAL('v', avs_stream_peek(stream, 0));
-    AVS_UNIT_ASSERT_EQUAL('m', avs_stream_peek(stream, strlen(str) - 1));
-    AVS_UNIT_ASSERT_EQUAL('\0', avs_stream_peek(stream, strlen(str)));
+
+    char value;
+    AVS_UNIT_ASSERT_SUCCESS(avs_stream_peek(stream, 0, &value));
+    AVS_UNIT_ASSERT_EQUAL(value, 'v');
+    AVS_UNIT_ASSERT_SUCCESS(avs_stream_peek(stream, strlen(str) - 1, &value));
+    AVS_UNIT_ASSERT_EQUAL(value, 'm');
+    AVS_UNIT_ASSERT_SUCCESS(avs_stream_peek(stream, strlen(str), &value));
+    AVS_UNIT_ASSERT_EQUAL(value, '\0');
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&stream));
 }
 
 AVS_UNIT_TEST(stream_membuf, reset) {
-    avs_stream_abstract_t *stream = avs_stream_membuf_create();
+    avs_stream_t *stream = avs_stream_membuf_create();
     static const char *str = "very stream";
     char buf[1024] = { 0, 0, 0, 0, 0 };
     size_t bytes_read;
-    char message_finished;
+    bool message_finished;
     AVS_UNIT_ASSERT_NOT_NULL(stream);
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_write(stream, str, strlen(str) + 1));
     AVS_UNIT_ASSERT_SUCCESS(
@@ -78,7 +84,7 @@ AVS_UNIT_TEST(stream_membuf, reset) {
 }
 
 AVS_UNIT_TEST(stream_membuf, fit) {
-    avs_stream_abstract_t *stream = avs_stream_membuf_create();
+    avs_stream_t *stream = avs_stream_membuf_create();
     avs_stream_membuf_t *internal = (avs_stream_membuf_t *) stream;
     static const char *str = "very stream";
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_write(stream, str, strlen(str) + 1));
@@ -91,14 +97,14 @@ AVS_UNIT_TEST(stream_membuf, fit) {
 }
 
 AVS_UNIT_TEST(stream_membuf, defragment) {
-    avs_stream_abstract_t *stream = avs_stream_membuf_create();
+    avs_stream_t *stream = avs_stream_membuf_create();
     avs_stream_membuf_t *internal = (avs_stream_membuf_t *) stream;
     static const char *str = "very stream";
     for (const char *ptr = str; *ptr; ++ptr) {
         AVS_UNIT_ASSERT_SUCCESS(avs_stream_write(stream, ptr, 1));
         char buf;
         size_t bytes_read;
-        char message_finished;
+        bool message_finished;
         AVS_UNIT_ASSERT_SUCCESS(avs_stream_read(stream, &bytes_read,
                                                 &message_finished, &buf, 1));
         AVS_UNIT_ASSERT_EQUAL(buf, *ptr);
@@ -110,7 +116,7 @@ AVS_UNIT_TEST(stream_membuf, defragment) {
 }
 
 AVS_UNIT_TEST(stream_membuf, defragment_partial) {
-    avs_stream_abstract_t *stream = avs_stream_membuf_create();
+    avs_stream_t *stream = avs_stream_membuf_create();
     avs_stream_membuf_t *internal = (avs_stream_membuf_t *) stream;
     static const char *str = "very stream";
     for (const char *ptr = str; *ptr; ++ptr) {
@@ -118,7 +124,7 @@ AVS_UNIT_TEST(stream_membuf, defragment_partial) {
         if (ptr > str) {
             char buf;
             size_t bytes_read;
-            char message_finished;
+            bool message_finished;
             AVS_UNIT_ASSERT_SUCCESS(avs_stream_read(
                     stream, &bytes_read, &message_finished, &buf, 1));
             AVS_UNIT_ASSERT_EQUAL(buf, ptr[-1]);
@@ -131,7 +137,7 @@ AVS_UNIT_TEST(stream_membuf, defragment_partial) {
 }
 
 AVS_UNIT_TEST(stream_getline, simple) {
-    avs_stream_abstract_t *stream = avs_stream_membuf_create();
+    avs_stream_t *stream = avs_stream_membuf_create();
     AVS_UNIT_ASSERT_SUCCESS(
             avs_stream_write_f(stream, "HTTP/1.1 302 Found\r\n"));
     AVS_UNIT_ASSERT_SUCCESS(
@@ -154,7 +160,7 @@ AVS_UNIT_TEST(stream_getline, simple) {
             avs_stream_write_f(stream, "</HEAD><BODY></BODY></HTML>"));
 
     char buf[64];
-    char message_finished = 0;
+    bool message_finished = false;
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_getline(stream, NULL, &message_finished,
                                                buf, sizeof(buf)));
     AVS_UNIT_ASSERT_EQUAL_STRING(buf, "HTTP/1.1 302 Found");
@@ -167,9 +173,11 @@ AVS_UNIT_TEST(stream_getline, simple) {
                                                buf, sizeof(buf)));
     AVS_UNIT_ASSERT_EQUAL_STRING(buf, "Content-Type: text/html; charset=UTF-8");
     AVS_UNIT_ASSERT_FALSE(message_finished);
-    AVS_UNIT_ASSERT_EQUAL(avs_stream_getline(stream, NULL, &message_finished,
-                                             buf, sizeof(buf)),
-                          1);
+
+    avs_error_t err = avs_stream_getline(stream, NULL, &message_finished, buf,
+                                         sizeof(buf));
+    AVS_UNIT_ASSERT_EQUAL(err.category, AVS_ERRNO_CATEGORY);
+    AVS_UNIT_ASSERT_EQUAL(err.code, AVS_ENOBUFS);
     AVS_UNIT_ASSERT_EQUAL_STRING(
             buf,
             "Location: http://www.google.pl/?gfe_rd=cr&ei=sQlcWMSSJMSv8weajb");
@@ -190,9 +198,9 @@ AVS_UNIT_TEST(stream_getline, simple) {
                                                buf, sizeof(buf)));
     AVS_UNIT_ASSERT_EQUAL_STRING(buf, "");
     AVS_UNIT_ASSERT_FALSE(message_finished);
-    AVS_UNIT_ASSERT_EQUAL(avs_stream_getline(stream, NULL, &message_finished,
-                                             buf, sizeof(buf)),
-                          1);
+    err = avs_stream_getline(stream, NULL, &message_finished, buf, sizeof(buf));
+    AVS_UNIT_ASSERT_EQUAL(err.category, AVS_ERRNO_CATEGORY);
+    AVS_UNIT_ASSERT_EQUAL(err.code, AVS_ENOBUFS);
     AVS_UNIT_ASSERT_EQUAL_STRING(
             buf, "<HTML><HEAD><meta http-equiv=\"content-type\" "
                  "content=\"text/html;");
@@ -201,30 +209,32 @@ AVS_UNIT_TEST(stream_getline, simple) {
                                                buf, sizeof(buf)));
     AVS_UNIT_ASSERT_EQUAL_STRING(buf, "charset=utf-8\">");
     AVS_UNIT_ASSERT_FALSE(message_finished);
-    AVS_UNIT_ASSERT_EQUAL(avs_stream_getline(stream, NULL, &message_finished,
-                                             buf, sizeof(buf)),
-                          -1);
+    AVS_UNIT_ASSERT_TRUE(avs_is_eof(avs_stream_getline(
+            stream, NULL, &message_finished, buf, sizeof(buf))));
     AVS_UNIT_ASSERT_EQUAL_STRING(buf, "</HEAD><BODY></BODY></HTML>");
     AVS_UNIT_ASSERT_TRUE(message_finished);
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&stream));
 }
 
 AVS_UNIT_TEST(stream_getline, errors) {
-    avs_stream_abstract_t *stream = avs_stream_membuf_create();
+    avs_stream_t *stream = avs_stream_membuf_create();
     static const char *str = "very stream";
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_write(stream, str, strlen(str) + 1));
 
     char buf[32];
     size_t bytes_read;
     size_t next_offset;
-    char msg_finished;
+    bool msg_finished;
 
     buf[0] = -1;
     AVS_UNIT_ASSERT_FAILED(avs_stream_peekline(stream, 0, NULL, NULL, buf, 0));
     AVS_UNIT_ASSERT_FAILED(avs_stream_peekline(stream, 0, NULL, NULL, NULL, 0));
     AVS_UNIT_ASSERT_EQUAL(buf[0], -1);
-    AVS_UNIT_ASSERT_EQUAL(1, avs_stream_peekline(stream, 0, &bytes_read,
-                                                 &next_offset, buf, 1));
+
+    avs_error_t err =
+            avs_stream_peekline(stream, 0, &bytes_read, &next_offset, buf, 1);
+    AVS_UNIT_ASSERT_EQUAL(err.category, AVS_ERRNO_CATEGORY);
+    AVS_UNIT_ASSERT_EQUAL(err.code, AVS_ENOBUFS);
     AVS_UNIT_ASSERT_EQUAL(bytes_read, 0);
     AVS_UNIT_ASSERT_EQUAL(next_offset, 0);
     AVS_UNIT_ASSERT_EQUAL(buf[0], '\0');
@@ -234,8 +244,9 @@ AVS_UNIT_TEST(stream_getline, errors) {
     AVS_UNIT_ASSERT_FAILED(avs_stream_getline(stream, NULL, NULL, NULL, 500));
 
     AVS_UNIT_ASSERT_EQUAL(buf[0], -1);
-    AVS_UNIT_ASSERT_EQUAL(1, avs_stream_getline(stream, &bytes_read,
-                                                &msg_finished, buf, 1));
+    err = avs_stream_getline(stream, &bytes_read, &msg_finished, buf, 1);
+    AVS_UNIT_ASSERT_EQUAL(err.category, AVS_ERRNO_CATEGORY);
+    AVS_UNIT_ASSERT_EQUAL(err.code, AVS_ENOBUFS);
     AVS_UNIT_ASSERT_EQUAL(bytes_read, 0);
     AVS_UNIT_ASSERT_EQUAL(buf[0], '\0');
     AVS_UNIT_ASSERT_EQUAL(msg_finished, 0);
@@ -243,14 +254,14 @@ AVS_UNIT_TEST(stream_getline, errors) {
 }
 
 AVS_UNIT_TEST(stream_getline, exact) {
-    avs_stream_abstract_t *stream = avs_stream_membuf_create();
+    avs_stream_t *stream = avs_stream_membuf_create();
     static const char *STREAM_DATA_LF = "1234567\n";
     AVS_UNIT_ASSERT_SUCCESS(
             avs_stream_write(stream, STREAM_DATA_LF, strlen(STREAM_DATA_LF)));
 
     char buf[strlen(STREAM_DATA_LF)];
     size_t bytes_read;
-    char msg_finished;
+    bool msg_finished;
 
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_getline(
             stream, &bytes_read, &msg_finished, buf, sizeof(buf)));
@@ -271,12 +282,13 @@ AVS_UNIT_TEST(stream_getline, exact) {
 }
 
 AVS_UNIT_TEST(stream_getline, inline_cr) {
-    avs_stream_abstract_t *stream = avs_stream_membuf_create();
+    avs_stream_t *stream = avs_stream_membuf_create();
     static const char INLINE_CR[] = "fooba\rbaz\r\n";
-    int last_result = 1;
-    char msg_finished = 0;
+    avs_error_t last_err = avs_errno(AVS_ENOBUFS);
+    bool msg_finished = false;
     for (size_t i = 2; i <= sizeof(INLINE_CR) - 2; ++i) {
-        AVS_UNIT_ASSERT_EQUAL(last_result, 1);
+        AVS_UNIT_ASSERT_EQUAL(last_err.category, AVS_ERRNO_CATEGORY);
+        AVS_UNIT_ASSERT_EQUAL(last_err.code, AVS_ENOBUFS);
         AVS_UNIT_ASSERT_FALSE(msg_finished);
         AVS_UNIT_ASSERT_SUCCESS(avs_stream_reset(stream));
         AVS_UNIT_ASSERT_SUCCESS(
@@ -288,12 +300,12 @@ AVS_UNIT_TEST(stream_getline, inline_cr) {
 
         char buf[i];
         size_t bytes_read;
-        last_result = avs_stream_getline(stream, &bytes_read, &msg_finished,
-                                         buf, sizeof(buf));
+        last_err = avs_stream_getline(stream, &bytes_read, &msg_finished, buf,
+                                      sizeof(buf));
         AVS_UNIT_ASSERT_EQUAL_STRING(buf, expected);
         AVS_UNIT_ASSERT_EQUAL(bytes_read, i - 1);
     }
-    AVS_UNIT_ASSERT_EQUAL(last_result, 0);
+    AVS_UNIT_ASSERT_SUCCESS(last_err);
     AVS_UNIT_ASSERT_TRUE(msg_finished);
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&stream));
 }

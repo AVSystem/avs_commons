@@ -44,8 +44,8 @@ typedef struct {
     dtls_context_t *ctx;
 
     avs_net_socket_type_t backend_type;
-    avs_net_abstract_socket_t *backend_socket;
-    avs_errno_t error_code;
+    avs_net_socket_t *backend_socket;
+    avs_error_t bio_error;
     avs_net_socket_configuration_t backend_configuration;
 
     ssl_read_context_t *read_ctx;
@@ -55,34 +55,32 @@ typedef struct {
     /// Set of ciphersuites configured by user
     /// TODO: actually use it
     avs_net_socket_tls_ciphersuites_t enabled_ciphersuites;
-    /// TODO: actually implement support for it
-    avs_net_ssl_alert_t last_alert;
 } ssl_socket_t;
 
 #define NET_SSL_COMMON_INTERNALS
 #include "../ssl_common.h"
 
-int _avs_net_initialize_global_ssl_state(void) {
+avs_error_t _avs_net_initialize_global_ssl_state(void) {
     dtls_init();
-    return 0;
+    return AVS_OK;
 }
 
 void _avs_net_cleanup_global_ssl_state(void) {
     // do nothing
 }
 
-static int get_dtls_overhead(ssl_socket_t *socket,
-                             int *out_header,
-                             int *out_padding_size) {
+static avs_error_t get_dtls_overhead(ssl_socket_t *socket,
+                                     int *out_header,
+                                     int *out_padding_size) {
     if (!is_ssl_started(socket)) {
-        return -1;
+        return avs_errno(AVS_EBADF);
     }
     /* tinyDTLS supports AES-128-CCM-8 ciphersuite only */
     *out_header = 13  /* header */
                   + 8 /* nonce */
                   + 8 /* integrity verification code */;
     *out_padding_size = 0;
-    return 0;
+    return AVS_OK;
 }
 
 /**
@@ -107,9 +105,9 @@ static const session_t *get_dtls_session(void) {
     return &DTLS_SESSION;
 }
 
-static int send_ssl(avs_net_abstract_socket_t *ssl_socket,
-                    const void *buffer,
-                    size_t buffer_length) {
+static avs_error_t send_ssl(avs_net_socket_t *ssl_socket,
+                            const void *buffer,
+                            size_t buffer_length) {
     ssl_socket_t *socket = (ssl_socket_t *) ssl_socket;
 
     while (buffer_length > 0) {
@@ -118,36 +116,40 @@ static int send_ssl(avs_net_abstract_socket_t *ssl_socket,
          * pointer to the data to be send. Empirical check proved however that
          * in fact this buffer is not modified, so I guess we may leave that
          * ugly const-cast here. */
+        socket->bio_error = AVS_OK;
         int result = dtls_write(socket->ctx, &session,
                                 (uint8 *) (intptr_t) buffer, buffer_length);
         if (result < 0) {
             LOG(ERROR, "send_ssl() failed");
-            return result;
+            if (avs_is_err(socket->bio_error)) {
+                return socket->bio_error;
+            } else {
+                return avs_errno(AVS_EPROTO);
+            }
         }
         assert((size_t) result <= buffer_length);
         buffer = (const uint8_t *) buffer + result;
         buffer_length -= (size_t) result;
     }
-    return 0;
+    return AVS_OK;
 }
 
-static int receive_ssl(avs_net_abstract_socket_t *socket_,
-                       size_t *out_bytes_read,
-                       void *out_buffer,
-                       size_t buffer_size) {
+static avs_error_t receive_ssl(avs_net_socket_t *socket_,
+                               size_t *out_bytes_read,
+                               void *out_buffer,
+                               size_t buffer_size) {
     ssl_socket_t *socket = (ssl_socket_t *) socket_;
     /* This is technically incorrect as the @p out_buffer is supposed to be used
      * for decoded data, but we use it for encoded data as well to avoid
      * excessive memory consumption. So, in the end, this buffer will never be
      * completely filled with decoded data. */
     size_t message_length;
-    int result;
-    WRAP_ERRNO(socket, result,
-               avs_net_socket_receive(socket->backend_socket, &message_length,
-                                      out_buffer, buffer_size));
+    avs_error_t err =
+            avs_net_socket_receive(socket->backend_socket, &message_length,
+                                   out_buffer, buffer_size);
 
-    if (result) {
-        return result;
+    if (avs_is_err(err)) {
+        return err;
     }
 
     ssl_read_context_t read_context = {
@@ -160,25 +162,27 @@ static int receive_ssl(avs_net_abstract_socket_t *socket_,
     assert(socket->read_ctx == NULL);
     socket->read_ctx = &read_context;
     assert(message_length <= INT_MAX);
-    result = dtls_handle_message(socket->ctx, &session, (uint8 *) out_buffer,
-                                 (int) message_length);
+    if (dtls_handle_message(socket->ctx, &session, (uint8 *) out_buffer,
+                            (int) message_length)) {
+        err = avs_errno(AVS_EPROTO);
+    }
     socket->read_ctx = NULL;
 
-    return result;
+    return err;
 }
 
-static int cleanup_ssl(avs_net_abstract_socket_t **socket_) {
+static avs_error_t cleanup_ssl(avs_net_socket_t **socket_) {
     ssl_socket_t *socket = *(ssl_socket_t **) socket_;
     LOG(TRACE, "cleanup_ssl(*socket=%p)", (void *) socket);
 
 #ifdef DTLS_PSK
     _avs_net_psk_cleanup(&socket->psk);
 #endif
-    close_ssl(*socket_);
-    avs_net_socket_cleanup(&socket->backend_socket);
+    avs_error_t err = close_ssl(*socket_);
+    add_err(&err, avs_net_socket_cleanup(&socket->backend_socket));
     avs_free(socket);
     *socket_ = NULL;
-    return 0;
+    return err;
 }
 
 static void close_ssl_raw(ssl_socket_t *socket) {
@@ -206,7 +210,7 @@ static bool is_session_resumed(ssl_socket_t *socket) {
     return false;
 }
 
-static int ssl_handshake(ssl_socket_t *socket) {
+static avs_error_t ssl_handshake(ssl_socket_t *socket) {
     const dtls_peer_t *peer = dtls_get_peer(socket->ctx, get_dtls_session());
     /* Arbitrary constant limiting the number of packet exchanges between our
      * client and a server. It is definitely enough to handle normal DTLS
@@ -217,89 +221,101 @@ static int ssl_handshake(ssl_socket_t *socket) {
     while (dtls_peer_state(peer) != DTLS_STATE_CONNECTED) {
         if (!handshake_exchanges_remaining--) {
             LOG(ERROR, "ssl_handshake(): too many handshake retries");
-            return -1;
+            return avs_errno(AVS_ETIMEDOUT);
         }
 
         LOG(DEBUG, "ssl_handshake(): client state %d",
             (int) dtls_peer_state(peer));
         char message[DTLS_MAX_BUF];
         size_t message_length;
-        int result;
-        WRAP_ERRNO(socket, result,
-                   avs_net_socket_receive(socket->backend_socket,
-                                          &message_length, message,
-                                          sizeof(message)));
-        if (result) {
-            return result;
+        avs_error_t err =
+                avs_net_socket_receive(socket->backend_socket, &message_length,
+                                       message, sizeof(message));
+        if (avs_is_err(err)) {
+            return err;
         }
 
         session_t session = *get_dtls_session();
         assert(message_length <= INT_MAX);
-        result = dtls_handle_message(socket->ctx, &session, (uint8 *) message,
-                                     (int) message_length);
-        if (result) {
+        socket->bio_error = AVS_OK;
+        if (dtls_handle_message(socket->ctx, &session, (uint8 *) message,
+                                (int) message_length)) {
             LOG(ERROR, "ssl_handshake() failed");
-            return result;
+            if (avs_is_err(socket->bio_error)) {
+                return socket->bio_error;
+            } else {
+                return avs_errno(AVS_EPROTO);
+            }
         }
     }
-    return 0;
+    return AVS_OK;
 }
 
-static int start_ssl(ssl_socket_t *socket, const char *host) {
+static avs_error_t start_ssl(ssl_socket_t *socket, const char *host) {
     (void) host;
+    socket->bio_error = AVS_OK;
     int retval = dtls_connect(socket->ctx, get_dtls_session());
-    if (retval > 0) {
-        retval = ssl_handshake(socket);
+    if (retval < 0) {
+        if (avs_is_err(socket->bio_error)) {
+            return socket->bio_error;
+        } else {
+            return avs_errno(AVS_EPROTO);
+        }
+    } else if (retval == 0) {
+        return AVS_OK;
+    } else {
+        return ssl_handshake(socket);
     }
-    return retval;
 }
 
-static int configure_ssl_psk(ssl_socket_t *socket,
-                             const avs_net_psk_info_t *psk) {
+static avs_error_t configure_ssl_psk(ssl_socket_t *socket,
+                                     const avs_net_psk_info_t *psk) {
     LOG(TRACE, "configure_ssl_psk");
 
 #ifndef DTLS_PSK
     LOG(ERROR, "support for psk is disabled");
-    return -1;
+    return avs_errno(AVS_ENOTSUP);
 #else
     return _avs_net_psk_copy(&socket->psk, psk);
 #endif /* DTLS_PSK */
 }
 
-static int configure_ssl_certs(ssl_socket_t *socket,
-                               const avs_net_certificate_info_t *cert_info) {
+static avs_error_t
+configure_ssl_certs(ssl_socket_t *socket,
+                    const avs_net_certificate_info_t *cert_info) {
     (void) socket;
     (void) cert_info;
     LOG(ERROR, "support for certificate mode is not yet implemented");
-    return -1;
+    return avs_errno(AVS_ENOTSUP);
 }
 
-static int configure_ssl(ssl_socket_t *socket,
-                         const avs_net_ssl_configuration_t *configuration) {
+static avs_error_t
+configure_ssl(ssl_socket_t *socket,
+              const avs_net_ssl_configuration_t *configuration) {
     socket->backend_configuration = configuration->backend_configuration;
 
+    avs_error_t err;
     switch (configuration->security.mode) {
     case AVS_NET_SECURITY_PSK:
-        if (configure_ssl_psk(socket, &configuration->security.data.psk)) {
-            return -1;
-        }
+        err = configure_ssl_psk(socket, &configuration->security.data.psk);
         break;
     case AVS_NET_SECURITY_CERTIFICATE:
-        if (configure_ssl_certs(socket, &configuration->security.data.cert)) {
-            return -1;
-        }
+        err = configure_ssl_certs(socket, &configuration->security.data.cert);
         break;
     default:
         AVS_UNREACHABLE("invalid enum value");
-        return -1;
+        err = avs_errno(AVS_EINVAL);
+    }
+    if (avs_is_err(err)) {
+        return err;
     }
 
     if (configuration->additional_configuration_clb
             && configuration->additional_configuration_clb(socket->ctx)) {
         LOG(ERROR, "Error while setting additional SSL configuration");
-        return -1;
+        return avs_errno(AVS_EPIPE);
     }
-    return 0;
+    return AVS_OK;
 }
 
 static int dtls_write_handler(dtls_context_t *ctx,
@@ -308,12 +324,10 @@ static int dtls_write_handler(dtls_context_t *ctx,
                               size_t length) {
     (void) session;
     ssl_socket_t *socket = (ssl_socket_t *) dtls_get_app_data(ctx);
-    int result;
-    WRAP_ERRNO(socket, result,
-               avs_net_socket_send(socket->backend_socket,
-                                   (const void *) buffer, length));
-    if (result) {
-        return result;
+    if (avs_is_err((socket->bio_error = avs_net_socket_send(
+                            socket->backend_socket, (const void *) buffer,
+                            length)))) {
+        return -1;
     }
     assert(length <= INT_MAX);
     return (int) length;
@@ -426,7 +440,7 @@ static int dtls_event_handler(dtls_context_t *ctx,
     return 0;
 }
 
-static int
+static avs_error_t
 initialize_ssl_socket(ssl_socket_t *socket,
                       avs_net_socket_type_t backend_type,
                       const avs_net_ssl_configuration_t *configuration) {
@@ -435,20 +449,21 @@ initialize_ssl_socket(ssl_socket_t *socket,
 
     if (backend_type != AVS_NET_UDP_SOCKET) {
         LOG(ERROR, "tinyDTLS backend supports UDP sockets only");
-        return -1;
+        return avs_errno(AVS_ENOTSUP);
     }
 
     socket->backend_type = backend_type;
     socket->ctx = dtls_new_context(socket);
     if (!socket->ctx) {
         LOG(ERROR, "could not instantiate tinyDTLS context");
-        return -1;
+        return avs_errno(AVS_ENOMEM);
     }
 
-    if (configure_ssl(socket, configuration)) {
+    avs_error_t err = configure_ssl(socket, configuration);
+    if (avs_is_err(err)) {
         dtls_free_context(socket->ctx);
         socket->ctx = NULL;
-        return -1;
+        return err;
     }
 
     static dtls_handler_t handlers = {
@@ -466,5 +481,5 @@ initialize_ssl_socket(ssl_socket_t *socket,
     };
     dtls_set_handler(socket->ctx, &handlers);
 
-    return 0;
+    return AVS_OK;
 }

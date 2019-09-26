@@ -23,15 +23,15 @@
 
 VISIBILITY_SOURCE_BEGIN
 
-int _avs_stream_md5_common_read(avs_stream_abstract_t *stream,
-                                size_t *out_bytes_read,
-                                char *out_message_finished,
-                                void *buffer,
-                                size_t buffer_length) {
+avs_error_t _avs_stream_md5_common_read(avs_stream_t *stream,
+                                        size_t *out_bytes_read,
+                                        bool *out_message_finished,
+                                        void *buffer,
+                                        size_t buffer_length) {
     avs_stream_md5_common_t *str = (avs_stream_md5_common_t *) stream;
 
     size_t bytes_read;
-    char message_finished;
+    bool message_finished;
 
     if (!out_bytes_read) {
         out_bytes_read = &bytes_read;
@@ -52,7 +52,7 @@ int _avs_stream_md5_common_read(avs_stream_abstract_t *stream,
         return avs_stream_reset(stream);
     }
 
-    return 0;
+    return AVS_OK;
 }
 
 char _avs_stream_md5_common_is_finalized(avs_stream_md5_common_t *stream) {

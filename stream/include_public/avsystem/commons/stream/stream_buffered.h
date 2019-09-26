@@ -50,7 +50,7 @@ extern "C" {
  *         @p inout_stream is not affected and underlying stream should be
  *         deleted manually.
  */
-int avs_stream_buffered_create(avs_stream_abstract_t **inout_stream,
+int avs_stream_buffered_create(avs_stream_t **inout_stream,
                                size_t in_buffer_size,
                                size_t out_buffer_size);
 

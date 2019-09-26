@@ -21,7 +21,7 @@
 //// avs_net_socket_get_opt ////////////////////////////////////////////////////
 
 AVS_UNIT_TEST(socket, dtls_get_opt) {
-    avs_socket_t *socket = NULL;
+    avs_net_socket_t *socket = NULL;
 
     AVS_UNIT_ASSERT_SUCCESS(avs_net_socket_create(&socket, AVS_NET_DTLS_SOCKET,
                                                   &DEFAULT_SSL_CONFIGURATION));
@@ -47,7 +47,7 @@ AVS_UNIT_TEST(socket, dtls_get_opt) {
 //// avs_net_socket_get_opt after avs_net_socket_close /////////////////////////
 
 AVS_UNIT_TEST(socket, dtls_get_opt_after_close) {
-    avs_socket_t *socket = NULL;
+    avs_net_socket_t *socket = NULL;
 
     AVS_UNIT_ASSERT_SUCCESS(avs_net_socket_create(&socket, AVS_NET_DTLS_SOCKET,
                                                   &DEFAULT_SSL_CONFIGURATION));
@@ -74,7 +74,7 @@ AVS_UNIT_TEST(socket, dtls_get_opt_after_close) {
 //// avs_net_socket_set_opt ////////////////////////////////////////////////////
 
 AVS_UNIT_TEST(socket, dtls_set_opt) {
-    avs_socket_t *socket = NULL;
+    avs_net_socket_t *socket = NULL;
 
     AVS_UNIT_ASSERT_SUCCESS(avs_net_socket_create(&socket, AVS_NET_DTLS_SOCKET,
                                                   &DEFAULT_SSL_CONFIGURATION));
@@ -102,7 +102,7 @@ AVS_UNIT_TEST(socket, dtls_set_opt) {
 //// avs_net_socket_set_opt after avs_net_socket_close /////////////////////////
 
 AVS_UNIT_TEST(socket, dtls_set_opt_after_close) {
-    avs_socket_t *socket = NULL;
+    avs_net_socket_t *socket = NULL;
 
     AVS_UNIT_ASSERT_SUCCESS(avs_net_socket_create(&socket, AVS_NET_DTLS_SOCKET,
                                                   &DEFAULT_SSL_CONFIGURATION));

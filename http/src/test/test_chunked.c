@@ -30,7 +30,7 @@ AVS_UNIT_TEST(http, send_chunk) {
                                   "poppipoppipoppoppipou\r\n"
                                   "We are vegetarian.\r\n"
                                   "\r\n";
-    avs_net_abstract_socket_t *socket = NULL;
+    avs_net_socket_t *socket = NULL;
     http_stream_t stream = EMPTY_HTTP_STREAM_INITIALIZER;
     avs_unit_mocksock_create(&socket);
     avs_unit_mocksock_expect_connect(socket, "cv", "02");

@@ -32,38 +32,41 @@ typedef struct {
     bool message_finished;
 } simple_io_stream_t;
 
-static int stream_simple_io_write_some(avs_stream_abstract_t *stream_,
-                                       const void *buffer,
-                                       size_t *inout_data_length) {
+static avs_error_t stream_simple_io_write_some(avs_stream_t *stream_,
+                                               const void *buffer,
+                                               size_t *inout_data_length) {
     simple_io_stream_t *stream = (simple_io_stream_t *) stream_;
-    if (!stream->writer || !inout_data_length) {
-        return -1;
+    if (!stream->writer) {
+        return avs_errno(AVS_EBADF);
+    }
+    if (!inout_data_length) {
+        return avs_errno(AVS_EINVAL);
     }
 
     if (*inout_data_length == 0) {
-        return 0;
+        return AVS_OK;
     }
 
     if (!buffer) {
-        return -1;
+        return avs_errno(AVS_EINVAL);
     }
 
     int retval = stream->writer(stream->context, buffer, inout_data_length);
 
     if (retval < 0) {
-        return retval;
+        return avs_errno(AVS_EIO);
     }
-    return 0;
+    return AVS_OK;
 }
 
-static int stream_simple_io_read(avs_stream_abstract_t *stream_,
-                                 size_t *out_bytes_read,
-                                 char *out_message_finished,
-                                 void *buffer,
-                                 size_t buffer_length) {
+static avs_error_t stream_simple_io_read(avs_stream_t *stream_,
+                                         size_t *out_bytes_read,
+                                         bool *out_message_finished,
+                                         void *buffer,
+                                         size_t buffer_length) {
     simple_io_stream_t *stream = (simple_io_stream_t *) stream_;
     if (!stream->reader) {
-        return -1;
+        return avs_errno(AVS_EBADF);
     }
 
     if (buffer_length == 0) {
@@ -73,18 +76,18 @@ static int stream_simple_io_read(avs_stream_abstract_t *stream_,
         if (out_bytes_read) {
             *out_bytes_read = 0;
         }
-        return 0;
+        return AVS_OK;
     }
 
     if (!buffer) {
-        return -1;
+        return avs_errno(AVS_EINVAL);
     }
 
     size_t bytes_read = buffer_length;
     int retval = stream->reader(stream->context, buffer, &bytes_read);
 
     if (retval < 0) {
-        return retval;
+        return avs_errno(AVS_EIO);
     }
 
     stream->message_finished = (bytes_read < buffer_length);
@@ -95,12 +98,12 @@ static int stream_simple_io_read(avs_stream_abstract_t *stream_,
     if (out_bytes_read) {
         *out_bytes_read = bytes_read;
     }
-    return 0;
+    return AVS_OK;
 }
 
-static int stream_simple_finish_message(avs_stream_abstract_t *stream) {
+static avs_error_t stream_simple_finish_message(avs_stream_t *stream) {
     (void) stream;
-    return 0;
+    return AVS_OK;
 }
 
 static const avs_stream_v_table_t simple_io_stream_vtable = {
@@ -109,7 +112,7 @@ static const avs_stream_v_table_t simple_io_stream_vtable = {
     .finish_message = stream_simple_finish_message
 };
 
-static avs_stream_abstract_t *
+static avs_stream_t *
 avs_stream_simple_io_create(avs_simple_io_stream_writer_t *writer,
                             avs_simple_io_stream_reader_t *reader,
                             void *context) {
@@ -125,17 +128,17 @@ avs_stream_simple_io_create(avs_simple_io_stream_writer_t *writer,
     stream->writer = writer;
     stream->reader = reader;
 
-    return (avs_stream_abstract_t *) stream;
+    return (avs_stream_t *) stream;
 }
 
-avs_stream_abstract_t *
+avs_stream_t *
 avs_stream_simple_output_create(avs_simple_io_stream_writer_t *writer,
                                 void *context) {
     assert(writer);
     return avs_stream_simple_io_create(writer, NULL, context);
 }
 
-avs_stream_abstract_t *
+avs_stream_t *
 avs_stream_simple_input_create(avs_simple_io_stream_reader_t *reader,
                                void *context) {
     assert(reader);

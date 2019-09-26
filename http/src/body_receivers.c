@@ -27,14 +27,14 @@
 VISIBILITY_SOURCE_BEGIN
 
 /******** Generic constructor */
-static avs_stream_abstract_t *
-create_body_receiver(avs_stream_abstract_t *backend,
+static avs_stream_t *
+create_body_receiver(avs_stream_t *backend,
                      const avs_http_buffer_sizes_t *buffer_sizes,
                      http_transfer_encoding_t transfer_encoding,
                      size_t content_length) {
-    avs_stream_abstract_t *buffer = NULL;
-    avs_stream_abstract_t *retval = NULL;
-    avs_net_abstract_socket_t *backend_socket = NULL;
+    avs_stream_t *buffer = NULL;
+    avs_stream_t *retval = NULL;
+    avs_net_socket_t *backend_socket = NULL;
     LOG(TRACE,
         "create_body_receiver, transfer_encoding == %d, "
         "content_length == %lu",
@@ -82,7 +82,7 @@ int _avs_http_body_receiver_init(http_stream_t *stream,
                                  http_transfer_encoding_t transfer_encoding,
                                  avs_http_content_encoding_t content_encoding,
                                  size_t content_length) {
-    avs_stream_abstract_t *decoder = NULL;
+    avs_stream_t *decoder = NULL;
     int result = 0;
     LOG(TRACE,
         "http_init_body_receiver, transfer_encoding == %d, "
@@ -115,7 +115,7 @@ int _avs_http_body_receiver_init(http_stream_t *stream,
     result = _avs_http_content_decoder_create(&decoder, content_encoding,
                                               &stream->http->buffer_sizes);
     if (!result && decoder) {
-        avs_stream_abstract_t *filter_stream =
+        avs_stream_t *filter_stream =
                 _avs_http_decoding_stream_create(stream->body_receiver, decoder,
                                                  &stream->http->buffer_sizes);
         if (filter_stream) {

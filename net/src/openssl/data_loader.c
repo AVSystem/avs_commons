@@ -55,7 +55,7 @@ static inline void setup_password_callback(SSL_CTX *ctx, const char *password) {
     SSL_CTX_set_default_passwd_cb(ctx, password_cb);
 }
 
-static int
+static avs_error_t
 load_ca_certs_from_paths(SSL_CTX *ctx, const char *file, const char *path) {
     AVS_ASSERT(!!file != !!path, "cannot use path and file at the same time");
     LOG(DEBUG, "CA certificate <file=%s, path=%s>: going to load",
@@ -71,23 +71,23 @@ load_ca_certs_from_paths(SSL_CTX *ctx, const char *file, const char *path) {
         X509_STORE *store = SSL_CTX_get_cert_store(ctx);
         X509_LOOKUP *lookup = X509_STORE_add_lookup(store, X509_LOOKUP_file());
         if (lookup == NULL) {
-            return -1;
+            return avs_errno(AVS_ENOMEM);
         }
         if (X509_LOOKUP_load_file(lookup, file, X509_FILETYPE_PEM) == 1) {
-            return 0;
+            return AVS_OK;
         }
         if (X509_LOOKUP_load_file(lookup, file, X509_FILETYPE_ASN1) == 1) {
-            return 0;
+            return AVS_OK;
         }
         log_openssl_error();
-        return -1;
+        return avs_errno(AVS_EPROTO);
     } else {
         if (!SSL_CTX_load_verify_locations(ctx, NULL, path)) {
             log_openssl_error();
-            return -1;
+            return avs_errno(AVS_EPROTO);
         }
     }
-    return 0;
+    return AVS_OK;
 }
 
 typedef enum { ENCODING_UNKNOWN, ENCODING_PEM, ENCODING_DER } encoding_t;
@@ -106,48 +106,52 @@ static encoding_t detect_encoding(const char *buffer, size_t len) {
 
 // NOTE: This function exists only because OpenSSL does not seem to have a
 // method of loading in-buffer PEM encoded certificates.
-static X509 *parse_cert(const void *buffer, const size_t len) {
-    X509 *cert = NULL;
+static avs_error_t
+parse_cert(X509 **out_cert, const void *buffer, const size_t len) {
+    *out_cert = NULL;
     switch (detect_encoding((const char *) buffer, len)) {
     case ENCODING_PEM: {
         // Convert PEM to DER.
         BIO *bio = BIO_new_mem_buf((void *) (intptr_t) buffer, (int) len);
         if (!bio) {
-            return NULL;
+            return avs_errno(AVS_ENOMEM);
         }
-        cert = PEM_read_bio_X509(bio, NULL, NULL, NULL);
+        *out_cert = PEM_read_bio_X509(bio, NULL, NULL, NULL);
         BIO_free(bio);
         break;
     }
     case ENCODING_DER: {
         const unsigned char *data = (const unsigned char *) buffer;
-        cert = d2i_X509(NULL, &data, (int) len);
+        *out_cert = d2i_X509(NULL, &data, (int) len);
         break;
     }
     default:
         LOG(ERROR, "unknown in-memory certificate format");
         break;
     }
-    return cert;
+    return *out_cert ? AVS_OK : avs_errno(AVS_EPROTO);
 }
 
-static int
+static avs_error_t
 load_ca_cert_from_buffer(SSL_CTX *ctx, const void *buffer, const size_t len) {
-    X509 *cert = parse_cert(buffer, len);
-    if (!cert) {
-        return -1;
+    X509 *cert;
+    avs_error_t err = parse_cert(&cert, buffer, len);
+    if (avs_is_err(err)) {
+        return err;
     }
+    assert(cert);
     X509_STORE *store = SSL_CTX_get_cert_store(ctx);
     if (!store || !X509_STORE_add_cert(store, cert)) {
         log_openssl_error();
         X509_free(cert);
-        return -1;
+        return avs_errno(AVS_ENOMEM);
     }
-    return 0;
+    return AVS_OK;
 }
 
-int _avs_net_openssl_load_ca_certs(SSL_CTX *ctx,
-                                   const avs_net_trusted_cert_info_t *info) {
+avs_error_t
+_avs_net_openssl_load_ca_certs(SSL_CTX *ctx,
+                               const avs_net_trusted_cert_info_t *info) {
     setup_password_callback(ctx, NULL);
     if (!SSL_CTX_set_default_verify_paths(ctx)) {
         LOG(WARNING, "could not set default CA verify paths");
@@ -158,59 +162,63 @@ int _avs_net_openssl_load_ca_certs(SSL_CTX *ctx,
     case AVS_NET_DATA_SOURCE_FILE:
         if (!info->desc.info.file.filename) {
             LOG(ERROR, "attempt to load CA cert from file, but filename=NULL");
-            return -1;
+            return avs_errno(AVS_EINVAL);
         }
         return load_ca_certs_from_paths(ctx, info->desc.info.file.filename,
                                         NULL);
     case AVS_NET_DATA_SOURCE_PATH:
         if (!info->desc.info.path.path) {
             LOG(ERROR, "attempt to load CA cert from path, but path=NULL");
-            return -1;
+            return avs_errno(AVS_EINVAL);
         }
         return load_ca_certs_from_paths(ctx, NULL, info->desc.info.path.path);
     case AVS_NET_DATA_SOURCE_BUFFER:
         if (!info->desc.info.buffer.buffer) {
             LOG(ERROR, "attempt to load CA cert from buffer, but buffer=NULL");
-            return -1;
+            return avs_errno(AVS_EINVAL);
         }
         return load_ca_cert_from_buffer(ctx, info->desc.info.buffer.buffer,
                                         info->desc.info.buffer.buffer_size);
     default:
         AVS_UNREACHABLE("invalid data source");
-        return -1;
+        return avs_errno(AVS_EINVAL);
     }
 }
 
-static int load_client_cert_from_file(SSL_CTX *ctx, const char *filename) {
+static avs_error_t load_client_cert_from_file(SSL_CTX *ctx,
+                                              const char *filename) {
     LOG(DEBUG, "client certificate <%s>: going to load", filename);
     // Try PEM.
     if (SSL_CTX_use_certificate_file(ctx, filename, SSL_FILETYPE_PEM) == 1) {
-        return 0;
+        return AVS_OK;
     }
     // Try DER.
     if (SSL_CTX_use_certificate_file(ctx, filename, SSL_FILETYPE_ASN1) == 1) {
-        return 0;
+        return AVS_OK;
     }
     log_openssl_error();
-    return -1;
+    return avs_errno(AVS_EPROTO);
 }
 
-static int
+static avs_error_t
 load_client_cert_from_buffer(SSL_CTX *ctx, const void *buffer, size_t len) {
-    X509 *cert = parse_cert(buffer, len);
-    if (!cert) {
-        return -1;
+    X509 *cert;
+    avs_error_t err = parse_cert(&cert, buffer, len);
+    if (avs_is_err(err)) {
+        return err;
     }
+    assert(cert);
     if (SSL_CTX_use_certificate(ctx, cert) != 1) {
         X509_free(cert);
         log_openssl_error();
-        return -1;
+        return avs_errno(AVS_EPROTO);
     }
-    return 0;
+    return AVS_OK;
 }
 
-int _avs_net_openssl_load_client_cert(SSL_CTX *ctx,
-                                      const avs_net_client_cert_info_t *info) {
+avs_error_t
+_avs_net_openssl_load_client_cert(SSL_CTX *ctx,
+                                  const avs_net_client_cert_info_t *info) {
     setup_password_callback(ctx, NULL);
 
     switch (info->desc.source) {
@@ -218,58 +226,60 @@ int _avs_net_openssl_load_client_cert(SSL_CTX *ctx,
         if (!info->desc.info.file.filename) {
             LOG(ERROR,
                 "attempt to load client cert from file, but filename=NULL");
-            return -1;
+            return avs_errno(AVS_EINVAL);
         }
         return load_client_cert_from_file(ctx, info->desc.info.file.filename);
     case AVS_NET_DATA_SOURCE_BUFFER:
         if (!info->desc.info.buffer.buffer) {
             LOG(ERROR,
                 "attempt to load client cert from buffer, but buffer=NULL");
-            return -1;
+            return avs_errno(AVS_EINVAL);
         }
         return load_client_cert_from_buffer(ctx, info->desc.info.buffer.buffer,
                                             info->desc.info.buffer.buffer_size);
     default:
         AVS_UNREACHABLE("invalid data source");
-        return -1;
+        return avs_errno(AVS_EINVAL);
     }
 }
 
-static int load_client_key_from_file(SSL_CTX *ctx,
-                                     const char *filename,
-                                     const char *password) {
+static avs_error_t load_client_key_from_file(SSL_CTX *ctx,
+                                             const char *filename,
+                                             const char *password) {
     LOG(DEBUG, "client key <%s>: going to load", filename);
     setup_password_callback(ctx, password);
 
     // Try PEM.
     if (SSL_CTX_use_PrivateKey_file(ctx, filename, SSL_FILETYPE_PEM) == 1) {
-        return 0;
+        return AVS_OK;
     }
     // Try DER.
     if (SSL_CTX_use_PrivateKey_file(ctx, filename, SSL_FILETYPE_ASN1) == 1) {
-        return 0;
+        return AVS_OK;
     }
     log_openssl_error();
-    return -1;
+    return avs_errno(AVS_EPROTO);
 }
 
 // NOTE: This function exists only because OpenSSL does not seem to have a
 // method of loading in-buffer PEM encoded private keys.
-static EVP_PKEY *
-parse_key(const void *buffer, const size_t len, const char *password) {
-    EVP_PKEY *key = NULL;
+static avs_error_t parse_key(EVP_PKEY **out_key,
+                             const void *buffer,
+                             const size_t len,
+                             const char *password) {
+    *out_key = NULL;
     BIO *bio = BIO_new_mem_buf((void *) (intptr_t) buffer, (int) len);
     if (!bio) {
-        return NULL;
+        return avs_errno(AVS_ENOMEM);
     }
     switch (detect_encoding((const char *) buffer, len)) {
     case ENCODING_PEM: {
-        key = PEM_read_bio_PrivateKey(bio, NULL, password_cb,
-                                      (void *) (intptr_t) password);
+        *out_key = PEM_read_bio_PrivateKey(bio, NULL, password_cb,
+                                           (void *) (intptr_t) password);
         break;
     }
     case ENCODING_DER: {
-        key = d2i_PrivateKey_bio(bio, NULL);
+        *out_key = d2i_PrivateKey_bio(bio, NULL);
         break;
     }
     default:
@@ -277,34 +287,37 @@ parse_key(const void *buffer, const size_t len, const char *password) {
         break;
     }
     BIO_free(bio);
-    return key;
+    return *out_key ? AVS_OK : avs_errno(AVS_EPROTO);
 }
 
-static int load_client_key_from_buffer(SSL_CTX *ctx,
-                                       const void *buffer,
-                                       size_t len,
-                                       const char *password) {
+static avs_error_t load_client_key_from_buffer(SSL_CTX *ctx,
+                                               const void *buffer,
+                                               size_t len,
+                                               const char *password) {
     setup_password_callback(ctx, password);
 
-    EVP_PKEY *key = parse_key(buffer, len, password);
-    if (!key) {
-        return -1;
+    EVP_PKEY *key;
+    avs_error_t err = parse_key(&key, buffer, len, password);
+    if (avs_is_err(err)) {
+        return err;
     }
+    assert(key);
     if (SSL_CTX_use_PrivateKey(ctx, key) != 1) {
         log_openssl_error();
-        return -1;
+        return avs_errno(AVS_EPROTO);
     }
-    return 0;
+    return AVS_OK;
 }
 
-int _avs_net_openssl_load_client_key(SSL_CTX *ctx,
-                                     const avs_net_client_key_info_t *info) {
+avs_error_t
+_avs_net_openssl_load_client_key(SSL_CTX *ctx,
+                                 const avs_net_client_key_info_t *info) {
     switch (info->desc.source) {
     case AVS_NET_DATA_SOURCE_FILE:
         if (!info->desc.info.file.filename) {
             LOG(ERROR,
                 "attempt to load client key from file, but filename=NULL");
-            return -1;
+            return avs_errno(AVS_EINVAL);
         }
         return load_client_key_from_file(ctx, info->desc.info.file.filename,
                                          info->desc.info.file.password);
@@ -312,13 +325,13 @@ int _avs_net_openssl_load_client_key(SSL_CTX *ctx,
         if (!info->desc.info.buffer.buffer) {
             LOG(ERROR,
                 "attempt to load client key from buffer, but buffer=NULL");
-            return -1;
+            return avs_errno(AVS_EINVAL);
         }
         return load_client_key_from_buffer(ctx, info->desc.info.buffer.buffer,
                                            info->desc.info.buffer.buffer_size,
                                            info->desc.info.buffer.password);
     default:
         AVS_UNREACHABLE("invalid data source");
-        return -1;
+        return avs_errno(AVS_EINVAL);
     }
 }

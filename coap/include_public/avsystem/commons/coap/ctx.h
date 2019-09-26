@@ -114,7 +114,7 @@ void avs_coap_ctx_cleanup(avs_coap_ctx_t **ctx);
  *          <c>AVS_COAP_CTX_ERR_*</c> constants) in case of error.
  */
 int avs_coap_ctx_send(avs_coap_ctx_t *ctx,
-                      avs_net_abstract_socket_t *socket,
+                      avs_net_socket_t *socket,
                       const avs_coap_msg_t *msg);
 
 /**
@@ -136,7 +136,7 @@ int avs_coap_ctx_send(avs_coap_ctx_t *ctx,
  *          response.
  **/
 int avs_coap_ctx_recv(avs_coap_ctx_t *ctx,
-                      avs_net_abstract_socket_t *socket,
+                      avs_net_socket_t *socket,
                       avs_coap_msg_t *out_msg,
                       size_t msg_capacity);
 
@@ -177,7 +177,7 @@ void avs_coap_ctx_set_tx_params(avs_coap_ctx_t *ctx,
  *          <c>AVS_COAP_CTX_ERR_*</c> constants) in case of error.
  */
 int avs_coap_ctx_send_empty(avs_coap_ctx_t *ctx,
-                            avs_net_abstract_socket_t *socket,
+                            avs_net_socket_t *socket,
                             avs_coap_msg_type_t msg_type,
                             uint16_t msg_id);
 
@@ -195,7 +195,7 @@ int avs_coap_ctx_send_empty(avs_coap_ctx_t *ctx,
  *          <c>AVS_COAP_CTX_ERR_*</c> constants) in case of error.
  */
 void avs_coap_ctx_send_error(avs_coap_ctx_t *ctx,
-                             avs_net_abstract_socket_t *socket,
+                             avs_net_socket_t *socket,
                              const avs_coap_msg_t *request,
                              uint8_t error_code);
 
@@ -214,7 +214,7 @@ void avs_coap_ctx_send_error(avs_coap_ctx_t *ctx,
  *          <c>AVS_COAP_CTX_ERR_*</c> constants) in case of error.
  */
 void avs_coap_ctx_send_service_unavailable(avs_coap_ctx_t *ctx,
-                                           avs_net_abstract_socket_t *socket,
+                                           avs_net_socket_t *socket,
                                            const avs_coap_msg_t *request,
                                            avs_time_duration_t retry_after);
 

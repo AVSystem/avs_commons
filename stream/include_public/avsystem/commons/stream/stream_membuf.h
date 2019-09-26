@@ -25,14 +25,14 @@ extern "C" {
 
 #define AVS_STREAM_V_TABLE_EXTENSION_MEMBUF 0x4d454d42UL /* MEMB */
 
-typedef int (*avs_stream_membuf_ensure_free_bytes_t)(
-        avs_stream_abstract_t *stream, size_t additional_size);
+typedef avs_error_t (*avs_stream_membuf_ensure_free_bytes_t)(
+        avs_stream_t *stream, size_t additional_size);
 
-typedef int (*avs_stream_membuf_fit_t)(avs_stream_abstract_t *stream);
+typedef avs_error_t (*avs_stream_membuf_fit_t)(avs_stream_t *stream);
 
-typedef int (*avs_stream_membuf_take_ownership_t)(avs_stream_abstract_t *stream,
-                                                  void **out_ptr,
-                                                  size_t *out_size);
+typedef avs_error_t (*avs_stream_membuf_take_ownership_t)(avs_stream_t *stream,
+                                                          void **out_ptr,
+                                                          size_t *out_size);
 
 typedef struct {
     avs_stream_membuf_ensure_free_bytes_t ensure_free_bytes;
@@ -48,17 +48,21 @@ typedef struct {
  *
  * @param additional_size number of bytes to reserve
  *
- * @returns 0 for success, or a negative value in case of error
+ * @returns @ref AVS_OK for success, or an error condition for which the
+ *          operation failed.
  */
-int avs_stream_membuf_ensure_free_bytes(avs_stream_abstract_t *stream,
-                                        size_t additional_size);
+avs_error_t avs_stream_membuf_ensure_free_bytes(avs_stream_t *stream,
+                                                size_t additional_size);
 
 /**
  * Resizes stream internal buffers to optimize memory usage.
  *
  * @param stream    membuf stream pointer
+ *
+ * @returns @ref AVS_OK for success, or an error condition for which the
+ *          operation failed.
  */
-int avs_stream_membuf_fit(avs_stream_abstract_t *stream);
+avs_error_t avs_stream_membuf_fit(avs_stream_t *stream);
 
 /**
  * Returns the stream's internal buffer (containing all the unread data), and
@@ -71,12 +75,13 @@ int avs_stream_membuf_fit(avs_stream_abstract_t *stream);
  * @param out_size If not NULL, shall point to a variable that will be set to
  *                 the number of valid bytes in the buffer.
  *
- * @returns 0 for success, or a negative value in case of error. On error, @p
- *          out_ptr is guaranteed to not be changed.
+ * @returns @ref AVS_OK for success, or an error condition for which the
+ *          operation failed. On error, @p out_ptr is guaranteed to not be
+ *          changed.
  */
-int avs_stream_membuf_take_ownership(avs_stream_abstract_t *stream,
-                                     void **out_ptr,
-                                     size_t *out_size);
+avs_error_t avs_stream_membuf_take_ownership(avs_stream_t *stream,
+                                             void **out_ptr,
+                                             size_t *out_size);
 
 typedef struct avs_stream_membuf_struct avs_stream_membuf_t;
 
@@ -86,7 +91,7 @@ typedef struct avs_stream_membuf_struct avs_stream_membuf_t;
  * @return NULL in case of an error, pointer to the newly allocated
  *         stream otherwise
  */
-avs_stream_abstract_t *avs_stream_membuf_create(void);
+avs_stream_t *avs_stream_membuf_create(void);
 
 #ifdef __cplusplus
 }

@@ -34,37 +34,36 @@ VISIBILITY_SOURCE_BEGIN
 
 typedef struct {
     const avs_stream_v_table_t *const vtable;
-    avs_stream_abstract_t *backend;
-    avs_stream_abstract_t *decoder;
+    avs_stream_t *backend;
+    avs_stream_t *decoder;
     const avs_http_buffer_sizes_t *buffer_sizes;
-    avs_errno_t error;
 } decoding_stream_t;
 
-static int decode_more_data_with_buffer(decoding_stream_t *stream,
-                                        void *buffer,
-                                        size_t buffer_length,
-                                        char *out_no_more_data) {
+static avs_error_t decode_more_data_with_buffer(decoding_stream_t *stream,
+                                                void *buffer,
+                                                size_t buffer_length,
+                                                bool *out_no_more_data) {
     size_t bytes_read;
-    stream->error = AVS_NO_ERROR;
-    if (avs_stream_read(stream->backend, &bytes_read, out_no_more_data, buffer,
-                        buffer_length)) {
-        stream->error = AVS_EIO;
-        return -1;
+    avs_error_t err = avs_stream_read(stream->backend, &bytes_read,
+                                      out_no_more_data, buffer, buffer_length);
+    if (avs_is_err(err)) {
+        return err;
     }
     if ((bytes_read > 0
-         && avs_stream_write(stream->decoder, buffer, bytes_read))
+         && avs_is_err((err = avs_stream_write(stream->decoder, buffer,
+                                               bytes_read))))
             || (*out_no_more_data
-                && avs_stream_finish_message(stream->decoder))) {
-        stream->error = AVS_EIO;
-        return -1;
+                && avs_is_err((err = avs_stream_finish_message(
+                                       stream->decoder))))) {
+        return err;
     }
-    return 0;
+    return AVS_OK;
 }
 
-static int decode_more_data(decoding_stream_t *stream,
-                            void *temporary_buffer,
-                            size_t buffer_length,
-                            char *out_no_more_data) {
+static avs_error_t decode_more_data(decoding_stream_t *stream,
+                                    void *temporary_buffer,
+                                    size_t buffer_length,
+                                    bool *out_no_more_data) {
     if (buffer_length >= stream->buffer_sizes->content_coding_min_input) {
         return decode_more_data_with_buffer(stream, temporary_buffer,
                                             buffer_length, out_no_more_data);
@@ -72,124 +71,119 @@ static int decode_more_data(decoding_stream_t *stream,
         char *internal_buffer = (char *) avs_malloc(
                 stream->buffer_sizes->content_coding_min_input);
         if (!internal_buffer) {
-            return -1;
+            return avs_errno(AVS_ENOMEM);
         }
-        int result = decode_more_data_with_buffer(
+        avs_error_t err = decode_more_data_with_buffer(
                 stream, internal_buffer,
                 stream->buffer_sizes->content_coding_min_input,
                 out_no_more_data);
         avs_free(internal_buffer);
-        return result;
+        return err;
     }
 }
 
-static int decoding_read(avs_stream_abstract_t *stream_,
-                         size_t *out_bytes_read,
-                         char *out_message_finished,
-                         void *buffer,
-                         size_t buffer_length) {
+static avs_error_t decoding_read(avs_stream_t *stream_,
+                                 size_t *out_bytes_read,
+                                 bool *out_message_finished,
+                                 void *buffer,
+                                 size_t buffer_length) {
     decoding_stream_t *stream = (decoding_stream_t *) stream_;
-    char no_more_data = 0;
-    while (1) {
-        stream->error = AVS_NO_ERROR;
+    bool no_more_data = false;
+    while (true) {
         /* try reading remaining data from decoder */
-        int result =
+        avs_error_t err =
                 avs_stream_read(stream->decoder, out_bytes_read,
                                 out_message_finished, buffer, buffer_length);
-        if (result || *out_bytes_read > 0 || *out_message_finished) {
-            if (result) {
-                stream->error = AVS_EIO;
-            }
-            return result;
+        if (avs_is_err(err)) {
+            return err;
+        } else if (*out_bytes_read > 0 || *out_message_finished) {
+            return AVS_OK;
         }
-        /* read and decode */
-        /* buffer is used here only as temporary storage;
-         * stored data is not used after return from decode_more_data() */
-        if (no_more_data
-                || decode_more_data(stream, buffer, buffer_length,
-                                    &no_more_data)) {
-            return -1;
+        // no_more_data signifies that the underlying stream with *encoded*
+        // (compressed) data has been read to the end - but not necessarily
+        // decoded; i.e. we have received all the data from the network,
+        // buffered it, but not all the data resulting from decompression has
+        // been read yet. In that case, the avs_stream_read() above shall be
+        // enough for reading everything. If we reach here, it means that there
+        // is an error in the decoder implementation.
+        assert(!no_more_data);
+        // read and decode
+        // buffer is used here only as temporary storage;
+        // stored data is not used after return from decode_more_data()
+        err = decode_more_data(stream, buffer, buffer_length, &no_more_data);
+        if (avs_is_err(err)) {
+            return err;
         }
     }
 }
 
-static int decoding_nonblock_read_ready(avs_stream_abstract_t *stream_) {
+static bool decoding_nonblock_read_ready(avs_stream_t *stream_) {
     decoding_stream_t *stream = (decoding_stream_t *) stream_;
-    char no_more_data = 0;
-    while (avs_stream_peek(stream->decoder, 0) == EOF) {
-        int result = avs_stream_nonblock_read_ready(stream->backend);
-        if (result <= 0) {
-            return result;
+    bool no_more_data = false;
+    avs_error_t err;
+    while (avs_is_eof(
+            (err = avs_stream_peek(stream->decoder, 0, &(char) { 0 })))) {
+        if (!avs_stream_nonblock_read_ready(stream->backend)) {
+            return false;
         }
         // this will allocate a temporary buffer inside
-        if ((result = decode_more_data(stream, NULL, 0, &no_more_data))) {
-            return result < 0 ? result : -1;
+        if (avs_is_err(decode_more_data(stream, NULL, 0, &no_more_data))) {
+            return false;
         }
         if (no_more_data) {
-            return 1;
+            return true;
         }
     }
-    return 1;
+    return avs_is_ok(err);
 }
 
-static int decoding_peek(avs_stream_abstract_t *stream_, size_t offset) {
+static avs_error_t
+decoding_peek(avs_stream_t *stream_, size_t offset, char *out_value) {
     decoding_stream_t *stream = (decoding_stream_t *) stream_;
-    char no_more_data = 0;
-    int result = avs_stream_peek(stream->decoder, offset);
-    while (result == EOF && !no_more_data) {
+    bool no_more_data = false;
+    avs_error_t err;
+    while (avs_is_eof(
+                   (err = avs_stream_peek(stream->decoder, offset, out_value)))
+           && !no_more_data) {
         // this will allocate a temporary buffer inside
-        if (decode_more_data(stream, NULL, 0, &no_more_data)) {
-            return EOF;
+        if (avs_is_err(
+                    (err = decode_more_data(stream, NULL, 0, &no_more_data)))) {
+            break;
         }
-        result = avs_stream_peek(stream->decoder, offset);
     }
-    stream->error = AVS_NO_ERROR;
-    return result;
+    return err;
 }
 
-static int decoding_close(avs_stream_abstract_t *stream_) {
+static avs_error_t decoding_close(avs_stream_t *stream_) {
     decoding_stream_t *stream = (decoding_stream_t *) stream_;
-    int retval = 0;
-    if (avs_stream_cleanup(&stream->decoder)) {
+    avs_error_t decoder_err, backend_err;
+    if (avs_is_err((decoder_err = avs_stream_cleanup(&stream->decoder)))) {
         LOG(ERROR, "failed to close decoder stream");
-        retval = -1;
     }
-    if (avs_stream_cleanup(&stream->backend)) {
+    if (avs_is_err((backend_err = avs_stream_cleanup(&stream->backend)))) {
         LOG(ERROR, "failed to close backend stream");
-        retval = -1;
     }
-    return retval;
-}
-
-static avs_errno_t decoding_error(avs_stream_abstract_t *stream) {
-    return ((decoding_stream_t *) stream)->error;
-}
-
-static int unimplemented() {
-    LOG(ERROR, "Vtable method unimplemented");
-    return -1;
+    return avs_is_ok(decoder_err) ? backend_err : decoder_err;
 }
 
 static const avs_stream_v_table_t decoding_vtable = {
-    (avs_stream_write_some_t) unimplemented,
-    (avs_stream_finish_message_t) unimplemented,
-    decoding_read,
-    decoding_peek,
-    (avs_stream_reset_t) unimplemented,
-    decoding_close,
-    decoding_error,
+    .read = decoding_read,
+    .peek = decoding_peek,
+    .close = decoding_close,
     &(avs_stream_v_table_extension_t[]){
             { AVS_STREAM_V_TABLE_EXTENSION_NONBLOCK,
-              &(avs_stream_v_table_extension_nonblock_t[]){
-                      { decoding_nonblock_read_ready,
-                        (avs_stream_nonblock_write_ready_t)
-                                unimplemented } }[0] },
+              &(avs_stream_v_table_extension_nonblock_t[])
+                      {
+                          {
+                              .read_ready = decoding_nonblock_read_ready
+                          }
+                      }[0] },
             AVS_STREAM_V_TABLE_EXTENSION_NULL }[0]
 };
 
-avs_stream_abstract_t *
-_avs_http_decoding_stream_create(avs_stream_abstract_t *backend,
-                                 avs_stream_abstract_t *decoder,
+avs_stream_t *
+_avs_http_decoding_stream_create(avs_stream_t *backend,
+                                 avs_stream_t *decoder,
                                  const avs_http_buffer_sizes_t *buffer_sizes) {
     decoding_stream_t *retval =
             (decoding_stream_t *) avs_malloc(sizeof(*retval));
@@ -201,11 +195,11 @@ _avs_http_decoding_stream_create(avs_stream_abstract_t *backend,
         retval->decoder = decoder;
         retval->buffer_sizes = buffer_sizes;
     }
-    return (avs_stream_abstract_t *) retval;
+    return (avs_stream_t *) retval;
 }
 
 int _avs_http_content_decoder_create(
-        avs_stream_abstract_t **out_decoder,
+        avs_stream_t **out_decoder,
         avs_http_content_encoding_t content_encoding,
         const avs_http_buffer_sizes_t *buffer_sizes) {
     (void) buffer_sizes;

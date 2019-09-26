@@ -22,6 +22,7 @@
 #include <stdio.h>
 
 #include <avsystem/commons/defs.h>
+#include <avsystem/commons/errno.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -39,7 +40,8 @@ extern const avs_stream_outbuf_t AVS_STREAM_OUTBUF_STATIC_INITIALIZER;
 
 size_t avs_stream_outbuf_offset(avs_stream_outbuf_t *stream);
 
-int avs_stream_outbuf_set_offset(avs_stream_outbuf_t *stream, size_t offset);
+avs_error_t avs_stream_outbuf_set_offset(avs_stream_outbuf_t *stream,
+                                         size_t offset);
 
 void avs_stream_outbuf_set_buffer(avs_stream_outbuf_t *stream,
                                   void *buffer,

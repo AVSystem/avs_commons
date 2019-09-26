@@ -25,12 +25,12 @@ extern "C" {
 
 #define AVS_STREAM_V_TABLE_EXTENSION_FILE 0x46494c45UL /* "FILE" */
 
-typedef int (*avs_stream_file_length_t)(avs_stream_abstract_t *stream,
-                                        avs_off_t *out_length);
-typedef int (*avs_stream_file_offset_t)(avs_stream_abstract_t *stream,
-                                        avs_off_t *out_position);
-typedef int (*avs_stream_file_seek_t)(avs_stream_abstract_t *stream,
-                                      avs_off_t offset_from_start);
+typedef avs_error_t (*avs_stream_file_length_t)(avs_stream_t *stream,
+                                                avs_off_t *out_length);
+typedef avs_error_t (*avs_stream_file_offset_t)(avs_stream_t *stream,
+                                                avs_off_t *out_position);
+typedef avs_error_t (*avs_stream_file_seek_t)(avs_stream_t *stream,
+                                              avs_off_t offset_from_start);
 
 typedef struct {
     avs_stream_file_length_t length;
@@ -45,10 +45,10 @@ typedef struct {
  *
  * @param stream        file stream pointer
  * @param out_length    length of the file, must not be NULL
- * @return 0 on success, negative value otherwise
+ * @returns @ref AVS_OK for success, or an error condition for which the
+ *          operation failed.
  */
-int avs_stream_file_length(avs_stream_abstract_t *stream,
-                           avs_off_t *out_length);
+avs_error_t avs_stream_file_length(avs_stream_t *stream, avs_off_t *out_length);
 
 /**
  * Writes stream cursor absolute position to @p out_offset. On error
@@ -57,10 +57,10 @@ int avs_stream_file_length(avs_stream_abstract_t *stream,
  *
  * @param stream        file stream pointer
  * @param out_offset    stream cursor position, must not be NULL
- * @return 0 on success, negative value otherwise
+ * @returns @ref AVS_OK for success, or an error condition for which the
+ *          operation failed.
  */
-int avs_stream_file_offset(avs_stream_abstract_t *stream,
-                           avs_off_t *out_offset);
+avs_error_t avs_stream_file_offset(avs_stream_t *stream, avs_off_t *out_offset);
 
 /**
  * Moves stream cursor to absolute position @p offset_from_start, on error
@@ -68,10 +68,11 @@ int avs_stream_file_offset(avs_stream_abstract_t *stream,
  *
  * @param stream            file stream pointer
  * @param offset_from_start absolute offset, must nonnegative
- * @return 0 on success, negative value otherwise
+ * @returns @ref AVS_OK for success, or an error condition for which the
+ *          operation failed.
  */
-int avs_stream_file_seek(avs_stream_abstract_t *stream,
-                         avs_off_t offset_from_start);
+avs_error_t avs_stream_file_seek(avs_stream_t *stream,
+                                 avs_off_t offset_from_start);
 
 #define AVS_STREAM_FILE_READ 0x01
 #define AVS_STREAM_FILE_WRITE 0x02
@@ -102,7 +103,7 @@ typedef struct avs_file_stream_struct avs_stream_file_t;
  *                                     @ref AVS_STREAM_FILE_WRITE
  * @return pointer to the new file stream, NULL on error
  */
-avs_stream_abstract_t *avs_stream_file_create(const char *path, uint8_t mode);
+avs_stream_t *avs_stream_file_create(const char *path, uint8_t mode);
 
 #ifdef __cplusplus
 }

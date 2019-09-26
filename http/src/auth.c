@@ -137,12 +137,12 @@ int _avs_http_auth_setup(http_auth_t *auth, const char *challenge) {
     return 0;
 }
 
-int _avs_http_auth_send_header(http_stream_t *stream) {
+avs_error_t _avs_http_auth_send_header(http_stream_t *stream) {
     LOG(TRACE, "http_send_auth_header");
     switch (stream->auth.state.flags.type) {
     case HTTP_AUTH_TYPE_NONE:
         LOG(TRACE, "HTTP_AUTH_NONE");
-        return 0;
+        return AVS_OK;
 
     case HTTP_AUTH_TYPE_BASIC:
         LOG(TRACE, "HTTP_AUTH_BASIC");
@@ -154,7 +154,7 @@ int _avs_http_auth_send_header(http_stream_t *stream) {
 
     default:
         LOG(ERROR, "unknown auth type %d", (int) stream->auth.state.flags.type);
-        return -1;
+        return avs_errno(AVS_EPROTO);
     }
 }
 

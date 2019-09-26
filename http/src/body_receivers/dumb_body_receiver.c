@@ -26,62 +26,52 @@ VISIBILITY_SOURCE_BEGIN
 
 typedef struct {
     const avs_stream_v_table_t *const vtable;
-    avs_stream_abstract_t *backend;
+    avs_stream_t *backend;
 } dumb_proxy_receiver_t;
 
-static int dumb_proxy_read(avs_stream_abstract_t *stream,
-                           size_t *out_bytes_read,
-                           char *out_message_finished,
-                           void *buffer,
-                           size_t buffer_length) {
+static avs_error_t dumb_proxy_read(avs_stream_t *stream,
+                                   size_t *out_bytes_read,
+                                   bool *out_message_finished,
+                                   void *buffer,
+                                   size_t buffer_length) {
     return avs_stream_read(((dumb_proxy_receiver_t *) stream)->backend,
                            out_bytes_read, out_message_finished, buffer,
                            buffer_length);
 }
 
-static int dumb_proxy_nonblock_read_ready(avs_stream_abstract_t *stream) {
+static bool dumb_proxy_nonblock_read_ready(avs_stream_t *stream) {
     return avs_stream_nonblock_read_ready(
             ((dumb_proxy_receiver_t *) stream)->backend);
 }
 
-static int dumb_proxy_peek(avs_stream_abstract_t *stream, size_t offset) {
-    return avs_stream_peek(((dumb_proxy_receiver_t *) stream)->backend, offset);
+static avs_error_t
+dumb_proxy_peek(avs_stream_t *stream, size_t offset, char *out_value) {
+    return avs_stream_peek(((dumb_proxy_receiver_t *) stream)->backend, offset,
+                           out_value);
 }
 
-static int dumb_close(avs_stream_abstract_t *stream_) {
+static avs_error_t dumb_close(avs_stream_t *stream_) {
     dumb_proxy_receiver_t *stream = (dumb_proxy_receiver_t *) stream_;
     avs_stream_net_setsock(stream->backend, NULL); /* don't close the socket */
     return avs_stream_cleanup(&stream->backend);
 }
 
-static avs_errno_t dumb_error(avs_stream_abstract_t *stream) {
-    return avs_stream_error(((dumb_proxy_receiver_t *) stream)->backend);
-}
-
-static int unimplemented() {
-    LOG(ERROR, "Vtable method unimplemented");
-    return -1;
-}
-
 static const avs_stream_v_table_t dumb_body_receiver_vtable = {
-    (avs_stream_write_some_t) unimplemented,
-    (avs_stream_finish_message_t) unimplemented,
-    dumb_proxy_read,
-    dumb_proxy_peek,
-    (avs_stream_reset_t) unimplemented,
-    dumb_close,
-    dumb_error,
+    .read = dumb_proxy_read,
+    .peek = dumb_proxy_peek,
+    .close = dumb_close,
     &(avs_stream_v_table_extension_t[]){
             { AVS_STREAM_V_TABLE_EXTENSION_NONBLOCK,
-              &(avs_stream_v_table_extension_nonblock_t[]){
-                      { dumb_proxy_nonblock_read_ready,
-                        (avs_stream_nonblock_write_ready_t)
-                                unimplemented } }[0] },
+              &(avs_stream_v_table_extension_nonblock_t[])
+                      {
+                          {
+                              .read_ready = dumb_proxy_nonblock_read_ready
+                          }
+                      }[0] },
             AVS_STREAM_V_TABLE_EXTENSION_NULL }[0]
 };
 
-avs_stream_abstract_t *
-_avs_http_body_receiver_dumb_create(avs_stream_abstract_t *backend) {
+avs_stream_t *_avs_http_body_receiver_dumb_create(avs_stream_t *backend) {
     dumb_proxy_receiver_t *retval =
             (dumb_proxy_receiver_t *) avs_malloc(sizeof(*retval));
     LOG(TRACE, "create_dumb_body_receiver");
@@ -90,5 +80,5 @@ _avs_http_body_receiver_dumb_create(avs_stream_abstract_t *backend) {
                 &dumb_body_receiver_vtable;
         retval->backend = backend;
     }
-    return (avs_stream_abstract_t *) retval;
+    return (avs_stream_t *) retval;
 }

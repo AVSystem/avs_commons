@@ -61,13 +61,11 @@ typedef enum {
     AVS_NET_AF_INET6
 } avs_net_af_t;
 
-struct avs_net_abstract_socket_struct;
-
 /**
  * Type for socket abstraction object.
  */
-typedef struct avs_net_abstract_socket_struct avs_net_abstract_socket_t;
-typedef avs_net_abstract_socket_t avs_socket_t;
+struct avs_net_socket_struct;
+typedef struct avs_net_socket_struct avs_net_socket_t;
 
 /**
  * This is a type of data used for binding socket to a specific network
@@ -412,13 +410,40 @@ typedef struct {
 } avs_net_dtls_handshake_timeouts_t;
 
 /**
- * Structure holding the last SSL alert received from the peer. Meaning of its
- * fields are as defined in https://tools.ietf.org/html/rfc5246#section-7.2
+ * Category for @ref avs_error_t containing a (D)TLS Alert.
+ *
+ * The <c>code</c> field in errors of this type will contain a packed
+ * representation of the TLS alert. @ref avs_net_ssl_alert_level and
+ * @ref avs_net_ssl_alert_description may be used to unpack the alert fields.
+ *
+ * Errors of this type will be returned by socket operations (and may be
+ * propagated by other code) when a (D)TLS Alert message is received during
+ * some operation, likely a handshake (which is performed during
+ * @ref avs_net_socket_connect and @ref avs_net_socket_decorate).
  */
-typedef struct {
-    uint8_t alert_level;
-    uint8_t alert_description;
-} avs_net_ssl_alert_t;
+#define AVS_NET_SSL_ALERT_CATEGORY 8572 // 'TLSA' on phone keypad
+
+/**
+ * Builds an avs_error_t value corresponding to an SSL alert. Meaning of the
+ * arguments is as defined in https://tools.ietf.org/html/rfc5246#section-7.2
+ */
+static inline avs_error_t avs_net_ssl_alert(uint8_t level,
+                                            uint8_t description) {
+    avs_error_t result = { AVS_NET_SSL_ALERT_CATEGORY,
+                           (uint16_t) ((level << 8) | description) };
+    return result;
+}
+
+static inline uint8_t avs_net_ssl_alert_level(avs_error_t error) {
+    assert(error.category == AVS_NET_SSL_ALERT_CATEGORY);
+    return (uint8_t) (error.code >> 8);
+}
+
+static inline uint8_t avs_net_ssl_alert_description(avs_error_t error) {
+    assert(error.category == AVS_NET_SSL_ALERT_CATEGORY);
+    return (uint8_t) error.code;
+}
+
 typedef struct {
     /**
      * SSL/TLS version to use for communication.
@@ -563,12 +588,7 @@ typedef enum {
     /**
      * Used to get/set ciphersuites used during (D)TLS handshake.
      */
-    AVS_NET_SOCKET_OPT_TLS_CIPHERSUITES,
-
-    /**
-     * Used to get the last SSL Alert message received during (D)TLS handshake.
-     */
-    AVS_NET_SOCKET_OPT_TLS_LAST_ALERT
+    AVS_NET_SOCKET_OPT_TLS_CIPHERSUITES
 } avs_net_socket_opt_key_t;
 
 typedef enum {
@@ -652,8 +672,6 @@ typedef union {
      * the call completes.
      */
     const avs_net_socket_tls_ciphersuites_t *tls_ciphersuites;
-
-    avs_net_ssl_alert_t last_alert;
 } avs_net_socket_opt_value_t;
 
 int avs_net_socket_debug(int value);
@@ -677,11 +695,12 @@ int avs_net_socket_debug(int value);
  *                      defaults) or @ref avs_net_ssl_configuration_t for an SSL
  *                      or DTLS socket.
  *
- * @returns 0 on success, a negative value in case of error.
+ * @returns @ref AVS_OK for success, or an error condition for which the
+ *          operation failed.
  */
-int avs_net_socket_create(avs_net_abstract_socket_t **socket,
-                          avs_net_socket_type_t sock_type,
-                          const void *configuration);
+avs_error_t avs_net_socket_create(avs_net_socket_t **socket,
+                                  avs_net_socket_type_t sock_type,
+                                  const void *configuration);
 
 /**
  * Shuts down @p socket , cleans up any allocated resources and sets
@@ -690,12 +709,12 @@ int avs_net_socket_create(avs_net_abstract_socket_t **socket,
  *
  * @param[inout] socket Socket to clean up.
  *
- * @returns @li 0 on success,
- *          @li a negative value in case of error. Note that regardless
- *              of the return value, all resources associated with @p socket
- *              are cleaned up and <c>*socket</c> is set to NULL.
+ * @returns @li @ref AVS_OK for success
+ *          @li an error condition for which the operation failed. Note that
+ *              regardless of the return value, all resources associated with
+ *              @p socket are cleaned up and <c>*socket</c> is set to NULL.
  */
-int avs_net_socket_cleanup(avs_net_abstract_socket_t **socket);
+avs_error_t avs_net_socket_cleanup(avs_net_socket_t **socket);
 
 /**
  * Sets the remote endpoint of @p socket to given @p host : @p port pair.
@@ -706,14 +725,13 @@ int avs_net_socket_cleanup(avs_net_abstract_socket_t **socket);
  * @param host   Remote hostname or IP address to connect to.
  * @param port   Remote port to connect to.
  *
- * @returns 0 on success, or a negative value in case of error, in which case
- *          @p socket errno (see @ref avs_net_socket_error) is set to an
- *          appropriate value; in particular, if DNS resolution fails, it is set
- *          to <c>AVS_EADDRNOTAVAIL</c>
+ * @returns @ref AVS_OK for success, or an error condition for which the
+ *          operation failed; in particular, if DNS resolution fails,
+ *          <c>avs_errno(AVS_EADDRNOTAVAIL)</c> is returned.
  */
-int avs_net_socket_connect(avs_net_abstract_socket_t *socket,
-                           const char *host,
-                           const char *port);
+avs_error_t avs_net_socket_connect(avs_net_socket_t *socket,
+                                   const char *host,
+                                   const char *port);
 
 /**
  * Makes @p socket use @p backend_socket as a lower-level socket interface.
@@ -733,10 +751,11 @@ int avs_net_socket_connect(avs_net_abstract_socket_t *socket,
  *                       object (in @ref AVS_NET_SOCKET_STATE_CLOSED state).
  * @param backend_socket Lower-layer socket to wrap.
  *
- * @returns 0 on success, a negative value in case of error.
+ * @returns @ref AVS_OK for success, or an error condition for which the
+ *          operation failed.
  */
-int avs_net_socket_decorate(avs_net_abstract_socket_t *socket,
-                            avs_net_abstract_socket_t *backend_socket);
+avs_error_t avs_net_socket_decorate(avs_net_socket_t *socket,
+                                    avs_net_socket_t *backend_socket);
 
 /**
  * Creates a new socket using given @p new_type and @p configuration ,
@@ -750,12 +769,13 @@ int avs_net_socket_decorate(avs_net_abstract_socket_t *socket,
  * @param[in]    configuration Pointer to additional socket configuration to
  *                             pass to @ref avs_net_socket_create .
  *
- * @returns 0 on success, a negative value in case of error. On failure,
- *          <c>*socket</c> value is guaranteed to be left untouched.
+ * @returns @ref AVS_OK for success, or an error condition for which the
+ *          operation failed. On failure, <c>*socket</c> value is guaranteed to
+ *          be left untouched.
  */
-int avs_net_socket_decorate_in_place(avs_net_abstract_socket_t **socket,
-                                     avs_net_socket_type_t new_type,
-                                     const void *configuration);
+avs_error_t avs_net_socket_decorate_in_place(avs_net_socket_t **socket,
+                                             avs_net_socket_type_t new_type,
+                                             const void *configuration);
 
 /**
  * Sends exactly @p buffer_length bytes from @p buffer to @p socket.
@@ -769,14 +789,12 @@ int avs_net_socket_decorate_in_place(avs_net_abstract_socket_t **socket,
  * @param buffer        Data to send.
  * @param buffer_length Number of bytes to send.
  *
- * @returns @li 0 if exactly @p buffer_length bytes were written,
- *          @li a negative value in case of error, in which case @p socket
- *              errno (see @ref avs_net_socket_error) is set to an appropriate
- *              value.
+ * @returns @li @ref AVS_OK if exactly @p buffer_length bytes were written,
+ *          @li an error condition for which the operation failed.
  */
-int avs_net_socket_send(avs_net_abstract_socket_t *socket,
-                        const void *buffer,
-                        size_t buffer_length);
+avs_error_t avs_net_socket_send(avs_net_socket_t *socket,
+                                const void *buffer,
+                                size_t buffer_length);
 
 /**
  * Sends exactly @p buffer_length bytes from @p buffer to @p host / @p port,
@@ -794,17 +812,16 @@ int avs_net_socket_send(avs_net_abstract_socket_t *socket,
  *                            as a string, or a domain name.
  * @param[in]  port           Remote port to send data to: an integer as string.
  *
- * @returns @li 0 if exactly @p buffer_length bytes were written.
- *          @li a negative value in case of error, in which case @p socket
- *              errno (see @ref avs_net_socket_error) is set to an appropriate
- *              value; in particular, if DNS resolution fails, it is set to
- *              <c>AVS_EADDRNOTAVAIL</c>
+ * @returns @li @ref AVS_OK if exactly @p buffer_length bytes were written,
+ *          @li an error condition for which the operation failed; in
+ *          particular, if DNS resolution fails,
+ *          <c>avs_errno(AVS_EADDRNOTAVAIL)</c> is returned.
  */
-int avs_net_socket_send_to(avs_net_abstract_socket_t *socket,
-                           const void *buffer,
-                           size_t buffer_length,
-                           const char *host,
-                           const char *port);
+avs_error_t avs_net_socket_send_to(avs_net_socket_t *socket,
+                                   const void *buffer,
+                                   size_t buffer_length,
+                                   const char *host,
+                                   const char *port);
 /**
  * Receives up to @p buffer_length bytes of data from @p socket into @p buffer .
  *
@@ -826,15 +843,13 @@ int avs_net_socket_send_to(avs_net_abstract_socket_t *socket,
  * @param[out] buffer             Buffer to write read bytes to.
  * @param[in]  buffer_length      Number of bytes available in @p buffer .
  *
- * @returns @li 0 on success,
- *          @li a negative value in case of error, in which case @p socket
- *              errno (see @ref avs_net_socket_error) is set to an appropriate
- *              value.
+ * @returns @ref AVS_OK for success, or an error condition for which the
+ *          operation failed.
  */
-int avs_net_socket_receive(avs_net_abstract_socket_t *socket,
-                           size_t *out_bytes_received,
-                           void *buffer,
-                           size_t buffer_length);
+avs_error_t avs_net_socket_receive(avs_net_socket_t *socket,
+                                   size_t *out_bytes_received,
+                                   void *buffer,
+                                   size_t buffer_length);
 
 /**
  * Receives up to @p buffer_length bytes of data from @p socket into @p buffer .
@@ -865,19 +880,17 @@ int avs_net_socket_receive(avs_net_abstract_socket_t *socket,
  *                                from, converted to a string.
  * @param[in]  port_size          Number of bytes available in @p port .
  *
- * @returns @li 0 on success,
- *          @li a negative value in case of error, in which case @p socket
- *              errno (see @ref avs_net_socket_error) is set to an appropriate
- *              value.
+ * @returns @ref AVS_OK for success, or an error condition for which the
+ *          operation failed.
  */
-int avs_net_socket_receive_from(avs_net_abstract_socket_t *socket,
-                                size_t *out_bytes_received,
-                                void *buffer,
-                                size_t buffer_length,
-                                char *host,
-                                size_t host_size,
-                                char *port,
-                                size_t port_size);
+avs_error_t avs_net_socket_receive_from(avs_net_socket_t *socket,
+                                        size_t *out_bytes_received,
+                                        void *buffer,
+                                        size_t buffer_length,
+                                        char *host,
+                                        size_t host_size,
+                                        char *port,
+                                        size_t port_size);
 
 /**
  * Binds @p socket to specified local @p address and @p port .
@@ -886,11 +899,12 @@ int avs_net_socket_receive_from(avs_net_abstract_socket_t *socket,
  * @param address Local IP address to bind to.
  * @param port    Local port to bind to.
  *
- * @returns 0 on success, a negative value in case of error.
+ * @returns @ref AVS_OK for success, or an error condition for which the
+ *          operation failed.
  */
-int avs_net_socket_bind(avs_net_abstract_socket_t *socket,
-                        const char *address,
-                        const char *port);
+avs_error_t avs_net_socket_bind(avs_net_socket_t *socket,
+                                const char *address,
+                                const char *port);
 
 /**
  * Accepts an incoming connection targeted at @p server_socket and prepares
@@ -903,15 +917,13 @@ int avs_net_socket_bind(avs_net_abstract_socket_t *socket,
  *                      <c>server_socket</c>. An error will be returned
  *                      otherwise.
  *
- * @returns @li 0 on success,
- *          @li a negative value in case of error, in which case
- *              @p server_socket errno (see @ref avs_net_socket_error) is set to
- *              an appropriate value.
+ * @returns @ref AVS_OK for success, or an error condition for which the
+ *          operation failed.
  *
  * NOTE: this function fails for connectionless sockets (e.g. UDP).
  */
-int avs_net_socket_accept(avs_net_abstract_socket_t *server_socket,
-                          avs_net_abstract_socket_t *client_socket);
+avs_error_t avs_net_socket_accept(avs_net_socket_t *server_socket,
+                                  avs_net_socket_t *client_socket);
 
 /**
  * Shuts down the @p socket , so that further communication is not allowed.
@@ -922,16 +934,12 @@ int avs_net_socket_accept(avs_net_abstract_socket_t *server_socket,
  *
  * @param socket Socket to close.
  *
- * @returns @li 0 on success,
- *          @li a negative value in case of error, in which case @p socket
- *              errno (see @ref avs_net_socket_error) is set to an appropriate
- *              value.
- *
- *          Regardless of the return value, the socket is left in
- *          @ref AVS_NET_SOCKET_STATE_CLOSED state and needs to be connected
+ * @returns @ref AVS_OK for success, or an error condition for which the
+ *          operation failed. Regardless of the return value, the socket is left
+ *          in @ref AVS_NET_SOCKET_STATE_CLOSED state and needs to be connected
  *          or bound before using again.
  */
-int avs_net_socket_close(avs_net_abstract_socket_t *socket);
+avs_error_t avs_net_socket_close(avs_net_socket_t *socket);
 
 /**
  * Shuts down the @p socket , so that further communication is not allowed.
@@ -944,16 +952,12 @@ int avs_net_socket_close(avs_net_abstract_socket_t *socket);
  *
  * @param socket Socket to shut down.
  *
- * @returns @li 0 on success,
- *          @li a negative value in case of error, in which case @p socket
- *              errno (see @ref avs_net_socket_error) is set to an appropriate
- *              value.
- *
- *          Regardless of the return value, the socket is left in
- *          @ref AVS_NET_SOCKET_STATE_SHUTDOWN state and needs to be connected
- *          or bound before using again.
+ * @returns @ref AVS_OK for success, or an error condition for which the
+ *          operation failed. Regardless of the return value, the socket is left
+ *          in @ref AVS_NET_SOCKET_STATE_SHUTDOWN state and needs to be
+ *          connected or bound before using again.
  */
-int avs_net_socket_shutdown(avs_net_abstract_socket_t *socket);
+avs_error_t avs_net_socket_shutdown(avs_net_socket_t *socket);
 
 /**
  * Returns the name of an interface @p socket is currently bound to.
@@ -961,13 +965,12 @@ int avs_net_socket_shutdown(avs_net_abstract_socket_t *socket);
  * @param[in]  socket  Bound socket to retrieve interface name for.
  * @param[out] if_name Retrieved interface name.
  *
- * @returns @li 0 on success,
- *          @li a negative value in case of error, in which case @p socket
- *              errno (see @ref avs_net_socket_error) is set to an appropriate
- *              value.
+ * @returns @ref AVS_OK for success, or an error condition for which the
+ *          operation failed.
  */
-int avs_net_socket_interface_name(avs_net_abstract_socket_t *socket,
-                                  avs_net_socket_interface_name_t *if_name);
+avs_error_t
+avs_net_socket_interface_name(avs_net_socket_t *socket,
+                              avs_net_socket_interface_name_t *if_name);
 
 /**
  * Returns the IP address of the remote endpoint @p socket is connected to.
@@ -976,15 +979,13 @@ int avs_net_socket_interface_name(avs_net_abstract_socket_t *socket,
  * @param[out] out_buffer      Buffer to store remote endpoint IP address in.
  * @param[out] out_buffer_size Number of bytes available in @p out_buffer .
  *
- * @returns @li 0 on success, in which case @p out_buffer is guaranteed to be
- *              null-terminated,
- *          @li a negative value in case of error, in which case @p socket
- *              errno (see @ref avs_net_socket_error) is set to an appropriate
- *              value.
+ * @returns @li @ref AVS_OK for success, in which case @p out_buffer is
+ *              guaranteed to be null-terminated,
+ *          @li an error condition for which the operation failed.
  */
-int avs_net_socket_get_remote_host(avs_net_abstract_socket_t *socket,
-                                   char *out_buffer,
-                                   size_t out_buffer_size);
+avs_error_t avs_net_socket_get_remote_host(avs_net_socket_t *socket,
+                                           char *out_buffer,
+                                           size_t out_buffer_size);
 
 /**
  * Returns the hostname of the remote endpoint that was used when connecting
@@ -995,15 +996,13 @@ int avs_net_socket_get_remote_host(avs_net_abstract_socket_t *socket,
  * @param[out] out_buffer      Buffer to store remote endpoint hostname in.
  * @param[out] out_buffer_size Number of bytes available in @p out_buffer .
  *
- * @returns @li 0 on success, in which case @p out_buffer is guaranteed to be
- *              null-terminated,
- *          @li a negative value in case of error, in which case @p socket
- *              errno (see @ref avs_net_socket_error) is set to an appropriate
- *              value.
+ * @returns @li @ref AVS_OK for success, in which case @p out_buffer is
+ *              guaranteed to be null-terminated,
+ *          @li an error condition for which the operation failed.
  */
-int avs_net_socket_get_remote_hostname(avs_net_abstract_socket_t *socket,
-                                       char *out_buffer,
-                                       size_t out_buffer_size);
+avs_error_t avs_net_socket_get_remote_hostname(avs_net_socket_t *socket,
+                                               char *out_buffer,
+                                               size_t out_buffer_size);
 
 /**
  * Returns the remote port @p socket is connected to.
@@ -1013,15 +1012,13 @@ int avs_net_socket_get_remote_hostname(avs_net_abstract_socket_t *socket,
  *                             to a string) in.
  * @param[out] out_buffer_size Number of bytes available in @p out_buffer .
  *
- * @returns @li 0 on success, in which case @p out_buffer is guaranteed to be
- *              null-terminated,
- *          @li a negative value in case of error, in which case @p socket
- *              errno (see @ref avs_net_socket_error) is set to an appropriate
- *              value.
+ * @returns @li @ref AVS_OK for success, in which case @p out_buffer is
+ *              guaranteed to be null-terminated,
+ *          @li an error condition for which the operation failed.
  */
-int avs_net_socket_get_remote_port(avs_net_abstract_socket_t *socket,
-                                   char *out_buffer,
-                                   size_t out_buffer_size);
+avs_error_t avs_net_socket_get_remote_port(avs_net_socket_t *socket,
+                                           char *out_buffer,
+                                           size_t out_buffer_size);
 
 /**
  * Returns the IP address @p socket is bound to.
@@ -1030,15 +1027,13 @@ int avs_net_socket_get_remote_port(avs_net_abstract_socket_t *socket,
  * @param[out] out_buffer      Buffer to store bound-to IP address in.
  * @param[out] out_buffer_size Number of bytes available in @p out_buffer .
  *
- * @returns @li 0 on success, in which case @p out_buffer is guaranteed to be
- *              null-terminated,
- *          @li a negative value in case of error, in which case @p socket
- *              errno (see @ref avs_net_socket_error) is set to an appropriate
- *              value.
+ * @returns @li @ref AVS_OK for success, in which case @p out_buffer is
+ *              guaranteed to be null-terminated,
+ *          @li an error condition for which the operation failed.
  */
-int avs_net_socket_get_local_host(avs_net_abstract_socket_t *socket,
-                                  char *out_buffer,
-                                  size_t out_buffer_size);
+avs_error_t avs_net_socket_get_local_host(avs_net_socket_t *socket,
+                                          char *out_buffer,
+                                          size_t out_buffer_size);
 
 /**
  * Returns the local port @p socket is bound to.
@@ -1048,15 +1043,13 @@ int avs_net_socket_get_local_host(avs_net_abstract_socket_t *socket,
  *                             to a string) in.
  * @param[out] out_buffer_size Number of bytes available in @p out_buffer .
  *
- * @returns @li 0 on success, in which case @p out_buffer is guaranteed to be
- *              null-terminated,
- *          @li a negative value in case of error, in which case @p socket
- *              errno (see @ref avs_net_socket_error) is set to an appropriate
- *              value.
+ * @returns @li @ref AVS_OK for success, in which case @p out_buffer is
+ *              guaranteed to be null-terminated,
+ *          @li an error condition for which the operation failed.
  */
-int avs_net_socket_get_local_port(avs_net_abstract_socket_t *socket,
-                                  char *out_buffer,
-                                  size_t out_buffer_size);
+avs_error_t avs_net_socket_get_local_port(avs_net_socket_t *socket,
+                                          char *out_buffer,
+                                          size_t out_buffer_size);
 
 /**
  * Returns a socket option value. See @ref avs_net_socket_opt_key_t for
@@ -1066,14 +1059,13 @@ int avs_net_socket_get_local_port(avs_net_abstract_socket_t *socket,
  * @param[in]  option_key       Socket option to retrieve.
  * @param[out] out_option_value Buffer to store retrieved option value in.
  *
- * @returns @li 0 on success,
- *          @li a negative value in case of error, in which case @p socket
- *              errno (see @ref avs_net_socket_error) is set to an appropriate
- *              value.
+ * @returns @ref AVS_OK for success, or an error condition for which the
+ *          operation failed.
  */
-int avs_net_socket_get_opt(avs_net_abstract_socket_t *socket,
-                           avs_net_socket_opt_key_t option_key,
-                           avs_net_socket_opt_value_t *out_option_value);
+avs_error_t
+avs_net_socket_get_opt(avs_net_socket_t *socket,
+                       avs_net_socket_opt_key_t option_key,
+                       avs_net_socket_opt_value_t *out_option_value);
 
 /**
  * Sets a socket option value. See @ref avs_net_socket_opt_key_t for a list
@@ -1083,23 +1075,12 @@ int avs_net_socket_get_opt(avs_net_abstract_socket_t *socket,
  * @param option_key   Socket option to modify.
  * @param option_value New option_key value.
  *
- * @returns @li 0 on success,
- *          @li a negative value in case of error, in which case @p socket
- *              errno (see @ref avs_net_socket_error) is set to an appropriate
- *              value.
+ * @returns @ref AVS_OK for success, or an error condition for which the
+ *          operation failed.
  */
-int avs_net_socket_set_opt(avs_net_abstract_socket_t *socket,
-                           avs_net_socket_opt_key_t option_key,
-                           avs_net_socket_opt_value_t option_value);
-
-/**
- * @param socket Socket to get errno value from.
- *
- * @returns Current @p socket errno value.
- *
- * NOTE: socket errno is NOT the same as the standard C global <c>errno</c>.
- */
-avs_errno_t avs_net_socket_error(avs_net_abstract_socket_t *socket);
+avs_error_t avs_net_socket_set_opt(avs_net_socket_t *socket,
+                                   avs_net_socket_opt_key_t option_key,
+                                   avs_net_socket_opt_value_t option_value);
 
 /**
  * Returns a pointer to bare system socket (e.g. to invoke <c>select</c> or
@@ -1116,7 +1097,7 @@ avs_errno_t avs_net_socket_error(avs_net_abstract_socket_t *socket);
  * @param socket pointer to <c>avs_net</c> socket
  * @return const pointer to system socket
  */
-const void *avs_net_socket_get_system(avs_net_abstract_socket_t *socket);
+const void *avs_net_socket_get_system(avs_net_socket_t *socket);
 
 #ifdef __cplusplus
 }

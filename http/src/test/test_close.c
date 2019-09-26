@@ -26,12 +26,12 @@
 #include "test_http.h"
 
 static void successful_request(avs_http_t *client,
-                               avs_net_abstract_socket_t **socket_ptr,
-                               avs_stream_abstract_t **stream_ptr) {
+                               avs_net_socket_t **socket_ptr,
+                               avs_stream_t **stream_ptr) {
     const char *tmp_data = NULL;
     char buffer[64];
     char *buffer_ptr = buffer;
-    char message_finished = 0;
+    bool message_finished = false;
     avs_url_t *url = avs_url_parse("http://example.com/");
     AVS_UNIT_ASSERT_NOT_NULL(url);
     avs_unit_mocksock_create(socket_ptr);
@@ -75,13 +75,12 @@ static void successful_request(avs_http_t *client,
 AVS_UNIT_TEST(http_close, chunked_request) {
     avs_http_t *client = avs_http_new(&AVS_HTTP_DEFAULT_BUFFER_SIZES);
     AVS_UNIT_ASSERT_NOT_NULL(client);
-    avs_net_abstract_socket_t *socket = NULL;
-    avs_stream_abstract_t *stream = NULL;
+    avs_net_socket_t *socket = NULL;
+    avs_stream_t *stream = NULL;
     successful_request(client, &socket, &stream);
 
     // second request
-    avs_unit_mocksock_output_fail(socket, -1);
-    avs_unit_mocksock_expect_error(socket, AVS_EPIPE);
+    avs_unit_mocksock_output_fail(socket, avs_errno(AVS_EPIPE));
     avs_unit_mocksock_expect_mid_close(socket);
     avs_unit_mocksock_expect_connect(socket, "example.com", "80");
     // second request retry
@@ -119,24 +118,22 @@ AVS_UNIT_TEST(http_close, chunked_request) {
 AVS_UNIT_TEST(http_close, chunked_request_twice) {
     avs_http_t *client = avs_http_new(&AVS_HTTP_DEFAULT_BUFFER_SIZES);
     AVS_UNIT_ASSERT_NOT_NULL(client);
-    avs_net_abstract_socket_t *socket = NULL;
-    avs_stream_abstract_t *stream = NULL;
+    avs_net_socket_t *socket = NULL;
+    avs_stream_t *stream = NULL;
     successful_request(client, &socket, &stream);
 
     // second request
-    avs_unit_mocksock_output_fail(socket, -1);
-    avs_unit_mocksock_expect_error(socket, AVS_EPIPE);
+    avs_unit_mocksock_output_fail(socket, avs_errno(AVS_EPIPE));
     avs_unit_mocksock_expect_mid_close(socket);
     avs_unit_mocksock_expect_connect(socket, "example.com", "80");
     // second request retry
-    avs_unit_mocksock_output_fail(socket, -1);
-    avs_unit_mocksock_expect_error(socket, AVS_EPIPE);
+    avs_unit_mocksock_output_fail(socket, avs_errno(AVS_EPIPE));
     const char *tmp_data = MONTY_PYTHON_RAW;
-    int result = 0;
-    while (!result && *tmp_data) {
-        result = send_line_result(stream, &tmp_data);
+    avs_error_t err = AVS_OK;
+    while (avs_is_ok(err) && *tmp_data) {
+        err = send_line_result(stream, &tmp_data);
     }
-    AVS_UNIT_ASSERT_FAILED(result);
+    AVS_UNIT_ASSERT_FAILED(err);
     avs_unit_mocksock_assert_io_clean(socket);
     avs_unit_mocksock_expect_shutdown(socket);
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&stream));
@@ -146,8 +143,8 @@ AVS_UNIT_TEST(http_close, chunked_request_twice) {
 AVS_UNIT_TEST(http_close, chunked_request_error_in_first_chunk) {
     avs_http_t *client = avs_http_new(&AVS_HTTP_DEFAULT_BUFFER_SIZES);
     AVS_UNIT_ASSERT_NOT_NULL(client);
-    avs_net_abstract_socket_t *socket = NULL;
-    avs_stream_abstract_t *stream = NULL;
+    avs_net_socket_t *socket = NULL;
+    avs_stream_t *stream = NULL;
     successful_request(client, &socket, &stream);
 
     // second request
@@ -160,10 +157,8 @@ AVS_UNIT_TEST(http_close, chunked_request_error_in_first_chunk) {
                            "Transfer-Encoding: chunked\r\n"
                            "\r\n";
     avs_unit_mocksock_expect_output(socket, tmp_data, strlen(tmp_data));
-    avs_unit_mocksock_input_fail(socket, -1);
-    avs_unit_mocksock_expect_error(socket, AVS_ETIMEDOUT);
-    avs_unit_mocksock_output_fail(socket, -1);
-    avs_unit_mocksock_expect_error(socket, AVS_EPIPE);
+    avs_unit_mocksock_input_fail(socket, avs_errno(AVS_ETIMEDOUT));
+    avs_unit_mocksock_output_fail(socket, avs_errno(AVS_EPIPE));
     avs_unit_mocksock_expect_mid_close(socket);
     avs_unit_mocksock_expect_connect(socket, "example.com", "80");
     // second request retry
@@ -193,8 +188,8 @@ AVS_UNIT_TEST(http_close, chunked_request_error_in_first_chunk) {
 AVS_UNIT_TEST(http_close, chunked_request_close_when_receiving) {
     avs_http_t *client = avs_http_new(&AVS_HTTP_DEFAULT_BUFFER_SIZES);
     AVS_UNIT_ASSERT_NOT_NULL(client);
-    avs_net_abstract_socket_t *socket = NULL;
-    avs_stream_abstract_t *stream = NULL;
+    avs_net_socket_t *socket = NULL;
+    avs_stream_t *stream = NULL;
     successful_request(client, &socket, &stream);
 
     // second request
@@ -237,8 +232,8 @@ AVS_UNIT_TEST(http_close, chunked_request_close_when_receiving) {
 AVS_UNIT_TEST(http_close, chunked_request_error_in_second_chunk) {
     avs_http_t *client = avs_http_new(&AVS_HTTP_DEFAULT_BUFFER_SIZES);
     AVS_UNIT_ASSERT_NOT_NULL(client);
-    avs_net_abstract_socket_t *socket = NULL;
-    avs_stream_abstract_t *stream = NULL;
+    avs_net_socket_t *socket = NULL;
+    avs_stream_t *stream = NULL;
     successful_request(client, &socket, &stream);
 
     // second request
@@ -251,16 +246,14 @@ AVS_UNIT_TEST(http_close, chunked_request_error_in_second_chunk) {
                            "Transfer-Encoding: chunked\r\n"
                            "\r\n";
     avs_unit_mocksock_expect_output(socket, tmp_data, strlen(tmp_data));
-    avs_unit_mocksock_input_fail(socket, -1);
-    avs_unit_mocksock_expect_error(socket, AVS_ETIMEDOUT);
+    avs_unit_mocksock_input_fail(socket, avs_errno(AVS_ETIMEDOUT));
     /* The text used in this test is 5119 bytes long.
      * This is to test writing more than buffer size, which is 4096. */
     tmp_data = MONTY_PYTHON_PER_LINE_REQUEST;
     // first chunk only
     avs_unit_mocksock_expect_output(socket, tmp_data,
                                     strstr(tmp_data, "\n\r\n") + 3 - tmp_data);
-    avs_unit_mocksock_output_fail(socket, -1);
-    avs_unit_mocksock_expect_error(socket, AVS_EPIPE);
+    avs_unit_mocksock_output_fail(socket, avs_errno(AVS_EPIPE));
     tmp_data = MONTY_PYTHON_RAW;
     while (*tmp_data) {
         send_line(stream, &tmp_data);

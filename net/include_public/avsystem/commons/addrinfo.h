@@ -176,14 +176,15 @@ void avs_net_addrinfo_rewind(avs_net_addrinfo_t *ctx);
  * Either <c>host</c> or <c>serv</c> arguments may be <c>NULL</c> in which case
  * only the non-<c>NULL</c> argument is filled in.
  *
- * @return 0 for success, or a negative value in case of error.
+ * @returns @ref AVS_OK for success, or an error condition for which the
+ *          operation failed.
  */
-int avs_net_resolved_endpoint_get_host_port(
-        const avs_net_resolved_endpoint_t *endp,
-        char *host,
-        size_t hostlen,
-        char *serv,
-        size_t servlen);
+avs_error_t
+avs_net_resolved_endpoint_get_host_port(const avs_net_resolved_endpoint_t *endp,
+                                        char *host,
+                                        size_t hostlen,
+                                        char *serv,
+                                        size_t servlen);
 
 /**
  * Equivalent to @ref avs_net_resolved_endpoint_get_host_port with the
@@ -196,9 +197,10 @@ int avs_net_resolved_endpoint_get_host_port(
  *
  * @param hostlen Size in bytes of the buffer pointed to by <c>host</c>.
  *
- * @return 0 for success, or a negative value in case of error.
+ * @returns @ref AVS_OK for success, or an error condition for which the
+ *          operation failed.
  */
-static inline int avs_net_resolved_endpoint_get_host(
+static inline avs_error_t avs_net_resolved_endpoint_get_host(
         const avs_net_resolved_endpoint_t *endp, char *host, size_t hostlen) {
     return avs_net_resolved_endpoint_get_host_port(endp, host, hostlen, NULL,
                                                    0);
@@ -233,13 +235,14 @@ static inline int avs_net_resolved_endpoint_get_host(
  * @param resolved_buf_size Size in bytes of the buffer pointed to by
  *                          <c>resolved_buf</c>.
  *
- * @ref 0 for success, or a non-zero value in case of error.
+ * @returns @ref AVS_OK for success, or an error condition for which the
+ *          operation failed.
  */
-int avs_net_resolve_host_simple(avs_net_socket_type_t socket_type,
-                                avs_net_af_t family,
-                                const char *host,
-                                char *resolved_buf,
-                                size_t resolved_buf_size);
+avs_error_t avs_net_resolve_host_simple(avs_net_socket_type_t socket_type,
+                                        avs_net_af_t family,
+                                        const char *host,
+                                        char *resolved_buf,
+                                        size_t resolved_buf_size);
 
 #ifdef __cplusplus
 }

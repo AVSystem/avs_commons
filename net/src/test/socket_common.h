@@ -28,7 +28,7 @@ typedef struct {
 } socket_opt_test_case_t;
 
 static void
-run_socket_get_opt_test_cases(avs_socket_t *socket,
+run_socket_get_opt_test_cases(avs_net_socket_t *socket,
                               const socket_opt_test_case_t test_cases[],
                               size_t test_cases_count) {
     avs_net_socket_opt_value_t opt_val;
@@ -63,7 +63,7 @@ static const avs_net_ssl_configuration_t DEFAULT_SSL_CONFIGURATION = {
 };
 
 static void
-run_socket_set_opt_test_cases(avs_socket_t *socket,
+run_socket_set_opt_test_cases(avs_net_socket_t *socket,
                               const socket_opt_test_case_t test_cases[],
                               size_t test_cases_count) {
     for (size_t i = 0; i < test_cases_count; i++) {
@@ -94,9 +94,6 @@ run_socket_set_opt_test_cases(avs_socket_t *socket,
             break;
         case AVS_NET_SOCKET_OPT_TLS_CIPHERSUITES:
             opt_val.tls_ciphersuites = NULL;
-            break;
-        case AVS_NET_SOCKET_OPT_TLS_LAST_ALERT:
-            memset(&opt_val, 0, sizeof(opt_val));
             break;
         }
 

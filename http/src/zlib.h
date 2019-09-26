@@ -52,7 +52,7 @@ typedef enum {
  * are that the user will write uncompressed data to it, which will then make
  * equivalent compressed data available to read.
  *
- * <c>avs_stream_abstract_t</c> methods are implemented as follows:
+ * <c>avs_stream_t</c> methods are implemented as follows:
  *
  * - <c>avs_stream_write</c> - passes some uncompressed data to the compression
  *   engine. It may or may not make some equivalent compressed data available to
@@ -89,13 +89,12 @@ typedef enum {
  *   call if it's anything else than <c>Z_OK</c>, <c>Z_STREAM_END</c> or
  *   <c>Z_ERRNO</c>. In case of <c>Z_ERRNO</c>, <c>errno</c> is returned.
  */
-avs_stream_abstract_t *
-_avs_http_create_compressor(http_compression_format_t format,
-                            int level,
-                            int window_bits,
-                            int mem_level,
-                            size_t input_buffer_size,
-                            size_t output_buffer_size);
+avs_stream_t *_avs_http_create_compressor(http_compression_format_t format,
+                                          int level,
+                                          int window_bits,
+                                          int mem_level,
+                                          size_t input_buffer_size,
+                                          size_t output_buffer_size);
 
 /**
  * Creates a zlib-based decompressor stream.
@@ -104,15 +103,14 @@ _avs_http_create_compressor(http_compression_format_t format,
  * are that the user will write compressed data to it, which will then make
  * equivalent uncompressed data available to read.
  *
- * <c>avs_stream_abstract_t</c> methods are implemented in the same way as for
+ * <c>avs_stream_t</c> methods are implemented in the same way as for
  * @ref _avs_http_create_compressor, but with the "compressed" and
  * "uncompressed" kinds of data reversed.
  */
-avs_stream_abstract_t *
-_avs_http_create_decompressor(http_compression_format_t format,
-                              int window_bits,
-                              size_t input_buffer_size,
-                              size_t output_buffer_size);
+avs_stream_t *_avs_http_create_decompressor(http_compression_format_t format,
+                                            int window_bits,
+                                            size_t input_buffer_size,
+                                            size_t output_buffer_size);
 
 #else
 

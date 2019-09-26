@@ -42,11 +42,12 @@ extern "C" {
  *                         maximum RFC compatibility, use
  *                         @ref AVS_URL_PERCENT_UNRESERVED.
  *
- * @return 0 for success, or -1 in case of error
+ * @returns @ref AVS_OK for success, or an error condition for which the
+ *          operation failed (propagated from @p stream).
  */
-int avs_url_percent_encode(avs_stream_abstract_t *stream,
-                           const char *input,
-                           const char *unreserved_chars);
+avs_error_t avs_url_percent_encode(avs_stream_t *stream,
+                                   const char *input,
+                                   const char *unreserved_chars);
 
 /**
  * Decodes a string that uses percent-encoding as defined in RFC 3986 section

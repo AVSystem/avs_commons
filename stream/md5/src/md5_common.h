@@ -30,11 +30,11 @@ typedef struct {
     size_t out_ptr;
 } avs_stream_md5_common_t;
 
-int _avs_stream_md5_common_read(avs_stream_abstract_t *stream,
-                                size_t *out_bytes_read,
-                                char *out_message_finished,
-                                void *buffer,
-                                size_t buffer_length);
+avs_error_t _avs_stream_md5_common_read(avs_stream_t *stream,
+                                        size_t *out_bytes_read,
+                                        bool *out_message_finished,
+                                        void *buffer,
+                                        size_t buffer_length);
 
 char _avs_stream_md5_common_is_finalized(avs_stream_md5_common_t *stream);
 void _avs_stream_md5_common_init(avs_stream_md5_common_t *stream,

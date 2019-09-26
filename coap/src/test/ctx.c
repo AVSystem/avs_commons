@@ -258,8 +258,7 @@ static void spawn_udp_echo_server(uint16_t port) {
     set_sigusr1_mask(SIG_UNBLOCK);
 }
 
-static avs_net_abstract_socket_t *setup_socket(socket_type_t type,
-                                               uint16_t port) {
+static avs_net_socket_t *setup_socket(socket_type_t type, uint16_t port) {
     switch (type) {
     case TYPE_DTLS:
         spawn_dtls_echo_server(port);
@@ -270,7 +269,7 @@ static avs_net_abstract_socket_t *setup_socket(socket_type_t type,
     }
 
     bool use_nosec = (type == TYPE_UDP);
-    avs_net_abstract_socket_t *backend = NULL;
+    avs_net_socket_t *backend = NULL;
     static const char *ROOT_CRT_FILE = AVS_TEST_BIN_DIR "/certs/root.crt";
     static const char *CLIENT_CRT_FILE = AVS_TEST_BIN_DIR "/certs/client.crt";
     static const char *CLIENT_KEY_FILE = AVS_TEST_BIN_DIR "/certs/client.key";
@@ -323,7 +322,7 @@ AVS_UNIT_TEST(coap_ctx, coap_udp) {
     avs_coap_ctx_t *ctx = NULL;
     AVS_UNIT_ASSERT_SUCCESS(avs_coap_ctx_create(&ctx, 0));
 
-    avs_net_abstract_socket_t *backend = setup_socket(TYPE_UDP, TEST_PORT_UDP);
+    avs_net_socket_t *backend = setup_socket(TYPE_UDP, TEST_PORT_UDP);
 
     avs_coap_msg_info_t info = avs_coap_msg_info_init();
     info.type = AVS_COAP_MSG_CONFIRMABLE;
@@ -365,8 +364,7 @@ AVS_UNIT_TEST(coap_ctx, coap_dtls) {
     avs_coap_ctx_t *ctx = NULL;
     AVS_UNIT_ASSERT_SUCCESS(avs_coap_ctx_create(&ctx, 0));
 
-    avs_net_abstract_socket_t *backend =
-            setup_socket(TYPE_DTLS, TEST_PORT_DTLS);
+    avs_net_socket_t *backend = setup_socket(TYPE_DTLS, TEST_PORT_DTLS);
 
     avs_coap_msg_info_t info = avs_coap_msg_info_init();
     info.type = AVS_COAP_MSG_CONFIRMABLE;

@@ -257,7 +257,7 @@ int avs_http_set_user_agent(avs_http_t *http, const char *user_agent);
  * if an HTTP 3xx status code is received - but from the user standpoint, it can
  * be seen as a single conversation with a single server.
  *
- * <c>avs_stream_abstract_t</c> methods are implemented as follows:
+ * <c>avs_stream_t</c> methods are implemented as follows:
  *
  * - <c>avs_stream_write_some</c> - appends some data to the request content,
  *   possibly compressing it on the fly according to the <c>encoding</c>
@@ -292,20 +292,6 @@ int avs_http_set_user_agent(avs_http_t *http, const char *user_agent);
  *   state, so for example, if there was any response requesting the Digest
  *   authentication during the lifetime of this stream, appropriate
  *   Authorization header will be sent even after resetting the stream.
- *
- * - <c>avs_stream_error</c> - returns the error code that corresponds to a
- *   situation in which some user requested operation could not be performed,
- *   e.g. due to out of memory condition, network connectivity issues, server
- *   sending malformed responses, etc. Essentially, if the error from this
- *   function is returned, something very bad happened, and it makes sense to
- *   assume that HTTP exchange failed critically.
- *
- *   IMPORTANT: If this function is called after
- *   <c>avs_stream_finish_message</c>, and it returns <c>AVS_NO_ERROR</c> then
- *   it only means that HTTP request was sent and HTTP response was received
- *   (even if the response code is an error in the HTTP sense). Users are
- *   expected to also check HTTP status code with <c>avs_http_status_code</c>
- *   function.
  *
  * The stream also supports the "net" extension (<c>avs_stream_net_getsock()</c>
  * and <c>avs_stream_net_setsock()</c>).
@@ -362,9 +348,10 @@ int avs_http_set_user_agent(avs_http_t *http, const char *user_agent);
  *                      <c>parsed_url</c> if any. May be <c>NULL</c> if unknown
  *                      or not necessary.
  *
- * @return One of <c>avs_errno_t</c> constants.
+ * @returns @ref AVS_OK, or an error condition for which creating the
+ *          stream failed.
  */
-avs_errno_t avs_http_open_stream(avs_stream_abstract_t **out,
+avs_error_t avs_http_open_stream(avs_stream_t **out,
                                  avs_http_t *http,
                                  avs_http_method_t method,
                                  avs_http_content_encoding_t encoding,
@@ -404,7 +391,7 @@ void avs_http_clear_cookies(avs_http_t *http);
  *
  * @return 0 for success, or a negative value in case of an out-of-memory error.
  */
-int avs_http_add_header(avs_stream_abstract_t *stream,
+int avs_http_add_header(avs_stream_t *stream,
                         const char *key,
                         const char *value);
 
@@ -424,7 +411,7 @@ int avs_http_add_header(avs_stream_abstract_t *stream,
  *                           resetting this setting to <c>NULL</c>.
  */
 void avs_http_set_header_storage(
-        avs_stream_abstract_t *stream,
+        avs_stream_t *stream,
         AVS_LIST(const avs_http_header_t) *header_storage_ptr);
 
 /**
@@ -455,7 +442,29 @@ void avs_http_set_header_storage(
  * @return 0 if the last request was either successful or a fatal error, or
  *         1 if it is appropriate to retry the last request
  */
-int avs_http_should_retry(avs_stream_abstract_t *stream);
+int avs_http_should_retry(avs_stream_t *stream);
+
+/**
+ * Category for @ref avs_error_t containing a HTTP status code.
+ *
+ * The <c>code</c> field in errors of this type will contain a HTTP status code
+ * such as 404 or 503.
+ *
+ * Errors of this type will be returned by stream operations if everything was
+ * fine on the network layer, but a request failed due to the server responding
+ * with a status code outside the 2xx range (including exceeding the limit of
+ * redirections, see below).
+ *
+ * NOTE: As codes from 1xx and 2xx classes are not error conditions, they will
+ * NEVER be returned via an @ref avs_error_t object. All 2xx responses will be
+ * mapped to @ref AVS_OK. If you need to query the actual status code of a
+ * successful response, you may use @ref avs_http_status_code.
+ *
+ * NOTE: If the statuscode is in 3xx class, it indicates that the number of
+ * redirects exceeded the maximum allowed number (5 chained HTTP 3xx
+ * redirections).
+ */
+#define AVS_HTTP_ERROR_CATEGORY 4887 // 'HTTP' on phone keypad
 
 /**
  * Retrieves the last response code received on a given stream.
@@ -469,7 +478,7 @@ int avs_http_should_retry(avs_stream_abstract_t *stream);
  * @return HTTP status code (nominally in the range 200-599), or 0 if it cannot
  *         be determined.
  */
-int avs_http_status_code(avs_stream_abstract_t *stream);
+int avs_http_status_code(avs_stream_t *stream);
 
 #ifdef __cplusplus
 }

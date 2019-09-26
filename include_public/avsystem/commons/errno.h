@@ -17,11 +17,52 @@
 #ifndef AVS_COMMONS_ERRNO_H
 #define AVS_COMMONS_ERRNO_H
 
+#include <assert.h>
 #include <limits.h>
+#include <stdbool.h>
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/**
+ * Generic error representation, containing a category and an actual error code.
+ */
+typedef struct {
+    /**
+     * Error code category. It is intended to be unique application-wide for any
+     * source that can return errors. It determines the meaning of the
+     * <c>code</c> field.
+     */
+    uint16_t category;
+
+    /**
+     * Error code, valid within the given <c>category</c>. For example, if
+     * <c>category</c> is equal to @ref AVS_ERRNO_CATEGORY, <c>code</c> will be
+     * one of the @ref avs_errno_t values.
+     *
+     * NOTE: All categories are REQUIRED to map <c>code</c> value of 0 to
+     * "no error". So, <c>code == 0</c> always means success regardless of the
+     * <c>category</c>.
+     */
+    uint16_t code;
+} avs_error_t;
+
+static const avs_error_t AVS_OK = { 0, 0 };
+
+static inline bool avs_is_ok(avs_error_t error) {
+    return error.code == 0;
+}
+
+static inline bool avs_is_err(avs_error_t error) {
+    return !avs_is_ok(error);
+}
+
+/**
+ * Category for @ref avs_error_t containing an @ref avs_errno_t error value.
+ */
+#define AVS_ERRNO_CATEGORY 37766 // 'errno' on phone keypad
 
 /**
  * Errno constants are sometimes used in the Commons library, most notably in
@@ -50,7 +91,6 @@ extern "C" {
  * values to and consistent set of <c>avs_errno_t</c> values.
  */
 typedef enum avs_errno {
-    AVS_UNKNOWN_ERROR = INT_MIN,
     AVS_NO_ERROR = 0,
     AVS_E2BIG,
     AVS_EACCES,
@@ -118,8 +158,19 @@ typedef enum avs_errno {
     AVS_ESRCH,
     AVS_ETIMEDOUT,
     AVS_ETXTBSY,
-    AVS_EXDEV
+    AVS_EXDEV,
+    AVS_UNKNOWN_ERROR = UINT16_MAX
 } avs_errno_t;
+
+/**
+ * An inline function that can be used to generate a generic @ref avs_error_t
+ * structure from an @ref avs_errno_t value.
+ */
+static inline avs_error_t avs_errno(avs_errno_t error) {
+    avs_error_t result = { AVS_ERRNO_CATEGORY, (uint16_t) error };
+    assert((avs_errno_t) result.code == error);
+    return result;
+}
 
 /**
  * Behaves like POSIX strerror(), but operates on @ref avs_errno_t values

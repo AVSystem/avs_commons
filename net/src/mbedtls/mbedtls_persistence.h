@@ -23,13 +23,13 @@
 
 VISIBILITY_PRIVATE_HEADER_BEGIN
 
-int _avs_net_mbedtls_session_save(mbedtls_ssl_session *session,
-                                  void *out_buf,
-                                  size_t out_buf_size);
+avs_error_t _avs_net_mbedtls_session_save(mbedtls_ssl_session *session,
+                                          void *out_buf,
+                                          size_t out_buf_size);
 
-int _avs_net_mbedtls_session_restore(mbedtls_ssl_session *out_session,
-                                     const void *buf,
-                                     size_t buf_size);
+avs_error_t _avs_net_mbedtls_session_restore(mbedtls_ssl_session *out_session,
+                                             const void *buf,
+                                             size_t buf_size);
 
 VISIBILITY_PRIVATE_HEADER_END
 

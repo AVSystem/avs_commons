@@ -68,7 +68,7 @@ avs_simple_io_stream_reader_t(void *context, void *buffer, size_t *inout_size);
  *
  * @return Pointer to newly created stream or NULL in case of failure.
  */
-avs_stream_abstract_t *
+avs_stream_t *
 avs_stream_simple_output_create(avs_simple_io_stream_writer_t *writer,
                                 void *context);
 
@@ -82,7 +82,7 @@ avs_stream_simple_output_create(avs_simple_io_stream_writer_t *writer,
  *
  * @return Pointer to newly created stream or NULL in case of failure.
  */
-avs_stream_abstract_t *
+avs_stream_t *
 avs_stream_simple_input_create(avs_simple_io_stream_reader_t *reader,
                                void *context);
 

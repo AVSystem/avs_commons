@@ -193,8 +193,12 @@ static inline int fcntl(SOCKET fd, int cmd, int value) {
 
 #define HAVE_GLOBAL_COMPAT_STATE
 
-static inline int initialize_global_compat_state(void) {
-    return WSAStartup(MAKEWORD(2, 2), &(WSADATA) { 0 });
+static inline avs_error_t initialize_global_compat_state(void) {
+    int result = WSAStartup(MAKEWORD(2, 2), &(WSADATA) { 0 });
+    if (result) {
+        return avs_errno(avs_map_errno(_avs_map_wsaerror(result)));
+    }
+    return AVS_OK;
 }
 
 static inline void cleanup_global_compat_state(void) {

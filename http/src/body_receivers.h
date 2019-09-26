@@ -30,8 +30,7 @@ VISIBILITY_PRIVATE_HEADER_BEGIN
  *
  * @param backend The netbuf stream wrapping the TCP socket.
  */
-avs_stream_abstract_t *
-_avs_http_body_receiver_dumb_create(avs_stream_abstract_t *backend);
+avs_stream_t *_avs_http_body_receiver_dumb_create(avs_stream_t *backend);
 
 /**
  * Creates a body receiver appropriate for when a Content-Length has been
@@ -43,8 +42,8 @@ _avs_http_body_receiver_dumb_create(avs_stream_abstract_t *backend);
  * @param backend        The netbuf stream wrapping the TCP socket.
  * @param content_length Limit of the number of bytes to consume.
  */
-avs_stream_abstract_t *
-_avs_http_body_receiver_content_length_create(avs_stream_abstract_t *backend,
+avs_stream_t *
+_avs_http_body_receiver_content_length_create(avs_stream_t *backend,
                                               size_t content_length);
 
 /**
@@ -58,9 +57,8 @@ _avs_http_body_receiver_content_length_create(avs_stream_abstract_t *backend,
  *                       The pointer must remain valid for the lifetime of the
  *                       created object.
  */
-avs_stream_abstract_t *_avs_http_body_receiver_chunked_create(
-        avs_stream_abstract_t *backend,
-        const avs_http_buffer_sizes_t *buffer_sizes);
+avs_stream_t *_avs_http_body_receiver_chunked_create(
+        avs_stream_t *backend, const avs_http_buffer_sizes_t *buffer_sizes);
 
 /**
  * Puts the HTTP stream in a receiving state, filling the <c>body_receiver</c>

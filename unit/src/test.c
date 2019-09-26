@@ -216,8 +216,16 @@ void _avs_unit_assert_fail(const char *file,
 }
 
 /* <editor-fold defaultstate="collapsed" desc="ASSERTIONS"> */
+void avs_unit_assert_avs_ok__(avs_error_t err, const char *file, int line) {
+    _avs_unit_assert(avs_is_ok(err), file, line, "expected success\n");
+}
+
 void avs_unit_assert_success__(int result, const char *file, int line) {
     _avs_unit_assert(result == 0, file, line, "expected success\n");
+}
+
+void avs_unit_assert_avs_err__(avs_error_t err, const char *file, int line) {
+    _avs_unit_assert(avs_is_err(err), file, line, "expected failure\n");
 }
 
 void avs_unit_assert_failed__(int result, const char *file, int line) {
