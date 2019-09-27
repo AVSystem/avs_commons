@@ -29,7 +29,10 @@
 
 VISIBILITY_SOURCE_BEGIN
 
+#define URL_PTR_INVALID SIZE_MAX
+
 struct avs_url {
+    bool has_protocol;
     size_t user_ptr;
     size_t password_ptr;
     size_t host_ptr;
@@ -56,6 +59,7 @@ static int url_parse_protocol(const char **url,
     *data_out_ptr += proto_len;
     parsed_url->data[(*data_out_ptr)++] = '\0';
     *url += proto_len + sizeof("://") - 1;
+    parsed_url->has_protocol = true;
     return 0;
 }
 
@@ -413,12 +417,20 @@ avs_url_t *avs_url_parse(const char *raw_url) {
     //
     // Thus, we know that we need out->data to be strlen(raw_url)+1 bytes long.
     size_t data_length = strlen(raw_url) + 1;
-    avs_url_t *out = (avs_url_t *) avs_calloc(1, offsetof(avs_url_t, data)
-                                                         + data_length);
+    avs_url_t *out =
+            (avs_url_t *) avs_malloc(offsetof(avs_url_t, data) + data_length);
     if (!out) {
         LOG(ERROR, "out of memory");
         return NULL;
     }
+    *out = (avs_url_t) {
+        .has_protocol = false,
+        .user_ptr = URL_PTR_INVALID,
+        .password_ptr = URL_PTR_INVALID,
+        .host_ptr = URL_PTR_INVALID,
+        .port_ptr = URL_PTR_INVALID,
+        .path_ptr = URL_PTR_INVALID
+    };
     size_t data_out_ptr = 0;
     if (url_parse_protocol(&raw_url, &data_out_ptr, data_length, out)
             || url_parse_credentials(&raw_url, &data_out_ptr, data_length, out)
@@ -433,6 +445,7 @@ avs_url_t *avs_url_parse(const char *raw_url) {
 }
 
 avs_url_t *avs_url_copy(const avs_url_t *url) {
+    assert(url->path_ptr != URL_PTR_INVALID);
     const char *path = &url->data[url->path_ptr];
     const char *last_nullbyte = path + strlen(path);
     ptrdiff_t alloc_size = last_nullbyte + 1 - (const char *) url;
@@ -447,26 +460,32 @@ avs_url_t *avs_url_copy(const avs_url_t *url) {
 }
 
 const char *avs_url_protocol(const avs_url_t *url) {
-    return url->data;
+    return url->has_protocol ? url->data : NULL;
 }
 
 const char *avs_url_user(const avs_url_t *url) {
-    return url->user_ptr ? &url->data[url->user_ptr] : NULL;
+    return (url->user_ptr != URL_PTR_INVALID) ? &url->data[url->user_ptr]
+                                              : NULL;
 }
 
 const char *avs_url_password(const avs_url_t *url) {
-    return url->password_ptr ? &url->data[url->password_ptr] : NULL;
+    return (url->password_ptr != URL_PTR_INVALID)
+                   ? &url->data[url->password_ptr]
+                   : NULL;
 }
 
 const char *avs_url_host(const avs_url_t *url) {
-    return &url->data[url->host_ptr];
+    return (url->host_ptr != URL_PTR_INVALID) ? &url->data[url->host_ptr]
+                                              : NULL;
 }
 
 const char *avs_url_port(const avs_url_t *url) {
-    return url->port_ptr ? &url->data[url->port_ptr] : NULL;
+    return (url->port_ptr != URL_PTR_INVALID) ? &url->data[url->port_ptr]
+                                              : NULL;
 }
 
 const char *avs_url_path(const avs_url_t *url) {
+    assert(url->path_ptr != URL_PTR_INVALID);
     return &url->data[url->path_ptr];
 }
 
