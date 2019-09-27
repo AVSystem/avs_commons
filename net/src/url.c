@@ -411,10 +411,16 @@ static int is_valid_domain(const char *str) {
     return 1;
 }
 
-static int is_valid_host(const char *str) {
-    return avs_net_validate_ip_address(AVS_NET_AF_INET4, str) == 0
-           || avs_net_validate_ip_address(AVS_NET_AF_INET6, str) == 0
-           || is_valid_domain(str);
+int avs_url_validate_host(const char *str) {
+    if (!str) {
+        LOG(ERROR, "host part cannot be empty");
+        return -1;
+    }
+    return (avs_net_validate_ip_address(AVS_NET_AF_INET4, str) == 0
+            || avs_net_validate_ip_address(AVS_NET_AF_INET6, str) == 0
+            || is_valid_domain(str))
+                   ? 0
+                   : -1;
 }
 
 static int is_valid_url_path_char(char c) {
@@ -429,8 +435,9 @@ static int is_valid_url_path_char(char c) {
                        c); /* "extra" set */
 }
 
-static int is_valid_path(const char *str) {
-    return is_valid_url_part(str, is_valid_url_path_char);
+int avs_url_validate_path(const char *str) {
+    return (*str == '/' && is_valid_url_part(str, is_valid_url_path_char)) ? 0
+                                                                           : -1;
 }
 
 int avs_url_validate(const avs_url_t *url) {
@@ -438,11 +445,7 @@ int avs_url_validate(const avs_url_t *url) {
         LOG(ERROR, "no valid protocol in URL");
         return -1;
     }
-    if (url->host_ptr == URL_PTR_INVALID) {
-        LOG(ERROR, "host part cannot be empty");
-        return -1;
-    }
-    if (!is_valid_host(&url->data[url->host_ptr])) {
+    if (avs_url_validate_host(avs_url_host(url))) {
         return -1;
     }
     if (url->port_ptr != URL_PTR_INVALID) {
@@ -452,7 +455,7 @@ int avs_url_validate(const avs_url_t *url) {
             return -1;
         }
     }
-    if (!is_valid_path(&url->data[url->path_ptr])) {
+    if (avs_url_validate_path(avs_url_path(url))) {
         return -1;
     }
     return 0;
