@@ -94,6 +94,41 @@ typedef struct avs_url avs_url_t;
 avs_url_t *avs_url_parse(const char *raw_url);
 
 /**
+ * Parses an URL and stores the parsed data in a newly allocated @ref avs_url_t
+ * object. This variant allows several forms of URLs that are considered invalid
+ * by @ref avs_url_parse:
+ *
+ * - URL scheme (protocol) is optional - protocol-relative URLs such as
+ *   "//example.com/test.html" are supported and will cause
+ *   @ref avs_url_protocol to return NULL.
+ * - Host portion is allowed to be empty (in which case @ref avs_url_host will
+ *   return NULL) and is also not verified to be a valid Internet host address.
+ * - Port is allowed to have an arbitrary number of digits. Zero-length port
+ *   will be represented as non-NULL, but zero-length string returned via
+ *   @ref avs_url_port.
+ * - Path is not validated for syntax.
+ *
+ * The returned object should be accessed using the <c>avs_url_*</c> functions
+ * and freed using @ref avs_url_free.
+ *
+ * @param raw_url A null-terminated string representation of the original URL.
+ *
+ * @return New heap-allocated parsed URL object, or <c>NULL</c> in case of
+ *         error.
+ */
+avs_url_t *avs_url_parse_lenient(const char *raw_url);
+
+/**
+ * Checks whether an URL parsed using @ref avs_url_parse_lenient is valid
+ * according to criteria used by @ref avs_url_parse.
+ *
+ * @param url URL to validate.
+ *
+ * @return 0 if the URL is valid, -1 otherwise.
+ */
+int avs_url_validate(const avs_url_t *url);
+
+/**
  * Makes a copy of a @ref avs_url_t object.
  *
  * @param url Original URL to copy.
