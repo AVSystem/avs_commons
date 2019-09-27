@@ -87,8 +87,8 @@ typedef struct {
     avs_net_socket_type_t backend_type;
     avs_net_socket_t *backend_socket;
     struct {
-        unsigned int min;
-        unsigned int max;
+        unsigned int min_us;
+        unsigned int max_us;
     } dtls_handshake_timeouts;
     avs_net_socket_configuration_t backend_configuration;
     avs_net_resolved_endpoint_t endpoint_buffer;
@@ -743,10 +743,10 @@ static unsigned int dtls_timer_cb(SSL *ssl, unsigned int timer_us) {
     if (!socket->backend_socket) {
         return 0;
     } else if (timer_us == 0) {
-        return socket->dtls_handshake_timeouts.min;
+        return socket->dtls_handshake_timeouts.min_us;
     } else {
         unsigned doubled;
-        if (timer_us >= socket->dtls_handshake_timeouts.max) {
+        if (timer_us >= socket->dtls_handshake_timeouts.max_us) {
             // HACK: OpenSSL has number of DTLS Client Hello retransmissions
             // hardcoded to 12. We block network communication to prevent
             // further retransmissions instead.
@@ -758,7 +758,7 @@ static unsigned int dtls_timer_cb(SSL *ssl, unsigned int timer_us) {
         } else {
             doubled = UINT_MAX;
         }
-        return AVS_MIN(doubled, socket->dtls_handshake_timeouts.max);
+        return AVS_MIN(doubled, socket->dtls_handshake_timeouts.max_us);
     }
 }
 #endif // defined(WITH_DTLS) && OPENSSL_VERSION_NUMBER_GE(1, 1, 1)
@@ -1000,9 +1000,9 @@ configure_ssl(ssl_socket_t *socket,
             (configuration->dtls_handshake_timeouts
                      ? configuration->dtls_handshake_timeouts
                      : &DEFAULT_DTLS_HANDSHAKE_TIMEOUTS);
-    if (duration_to_uint_us(&socket->dtls_handshake_timeouts.min,
+    if (duration_to_uint_us(&socket->dtls_handshake_timeouts.min_us,
                             dtls_handshake_timeouts->min)
-            || duration_to_uint_us(&socket->dtls_handshake_timeouts.max,
+            || duration_to_uint_us(&socket->dtls_handshake_timeouts.max_us,
                                    dtls_handshake_timeouts->max)) {
         LOG(ERROR, "Invalid DTLS handshake timeouts passed");
         return avs_errno(AVS_EINVAL);
