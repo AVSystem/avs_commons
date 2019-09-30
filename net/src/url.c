@@ -41,29 +41,30 @@ struct avs_url {
     char data[];
 };
 
-static int url_parse_protocol(const char **url,
-                              size_t *data_out_ptr,
-                              size_t out_limit,
-                              avs_url_t *parsed_url) {
+static bool is_valid_schema_char(char c) {
+    return isalnum((unsigned char) c) || strchr("+-.", c) != NULL;
+}
+
+static void url_parse_protocol(const char **url,
+                               size_t *data_out_ptr,
+                               size_t out_limit,
+                               avs_url_t *parsed_url) {
     assert(*data_out_ptr == 0);
-    const char *proto_end = strstr(*url, "://");
-    if (proto_end) {
+    const char *proto_end = *url;
+    while (*proto_end && is_valid_schema_char(*proto_end)) {
+        ++proto_end;
+    }
+    if (*proto_end == ':') {
         size_t proto_len = (size_t) (proto_end - *url);
         assert(*data_out_ptr + proto_len < out_limit);
         (void) out_limit;
         memcpy(parsed_url->data, *url, proto_len);
         *data_out_ptr += proto_len;
         parsed_url->data[(*data_out_ptr)++] = '\0';
-        *url += proto_len + sizeof("://") - 1;
+        *url += proto_len + 1;
         parsed_url->has_protocol = true;
-        return 0;
-    } else if ((*url)[0] == '/' && (*url)[1] == '/') {
-        // URL starts with "//" - it's a protocol-relative URL
-        parsed_url->has_protocol = false;
-        return 0;
     } else {
-        LOG(ERROR, "could not parse protocol");
-        return -1;
+        parsed_url->has_protocol = false;
     }
 }
 
@@ -270,10 +271,7 @@ static int url_parse_host(const char **url,
         }
         assert(**url == '\0' || **url == '/' || **url == '?' || **url == ':');
     }
-    if (*data_out_ptr == parsed_url->host_ptr) {
-        // host is empty
-        parsed_url->host_ptr = URL_PTR_INVALID;
-    } else {
+    if (*data_out_ptr != parsed_url->host_ptr) {
         parsed_url->data[(*data_out_ptr)++] = '\0';
     }
     return 0;
@@ -306,7 +304,7 @@ static int url_parse_path(const char **url,
                           size_t out_limit,
                           avs_url_t *parsed_url) {
     parsed_url->path_ptr = *data_out_ptr;
-    if (!**url || **url == '?') {
+    if (parsed_url->host_ptr != URL_PTR_INVALID && (!**url || **url == '?')) {
         parsed_url->data[(*data_out_ptr)++] = '/';
     }
     while (*data_out_ptr < out_limit && **url != '\0') {
@@ -333,16 +331,21 @@ avs_url_t *avs_url_parse_lenient(const char *raw_url) {
     //
     // A copy of the original string would require strlen(raw_url)+1 bytes.
     // Then:
-    // - we replace "://" with a single nullbyte                :  -2 bytes
-    // - we replace ":" before password with nullbyte           : +-0 bytes
-    // - we replace "@" before hostname with nullbyte           : +-0 bytes
-    // - we replace ":" before port with nullbyte               : +-0 bytes
-    // - we add a nullbyte before path's "/"                    :  +1 byte
-    // - we add a "/" in path if it's empty or query string only:  +1 byte
-    //                                                          -----------
-    // TOTAL DIFFERENCE IN REQUIRED SIZE:                           0 bytes
+    // - for a URI that includes the protocol, we replace ":"
+    //   after it with a single nullbyte                       : +-0 bytes
+    // - for a URI that includes the host, we remove "//"      :  -2 bytes
+    // - we replace ":" before password with nullbyte          : +-0 bytes
+    // - we replace "@" before hostname with nullbyte          : +-0 bytes
+    // - we replace ":" before port with nullbyte              : +-0 bytes
+    // - for a URI that includes the host, we add a nullbyte
+    //   after it                                              :  +1 byte
+    // - we add a "/" in path if the URI includes the host, and
+    //   the path is either empty or query string only         :  +1 byte
+    //                                                       -------------
+    // TOTAL DIFFERENCE IN REQUIRED SIZE:                          0 bytes
     //
-    // Thus, we know that we need out->data to be strlen(raw_url)+1 bytes long.
+    // Thus, we know that we need out->data to be strlen(raw_url)+1 bytes long,
+    // both for URIs that inclued the host and those that do not.
     size_t data_length = strlen(raw_url) + 1;
     avs_url_t *out =
             (avs_url_t *) avs_malloc(offsetof(avs_url_t, data) + data_length);
@@ -359,16 +362,23 @@ avs_url_t *avs_url_parse_lenient(const char *raw_url) {
         .path_ptr = URL_PTR_INVALID
     };
     size_t data_out_ptr = 0;
-    if (url_parse_protocol(&raw_url, &data_out_ptr, data_length, out)
-            || url_parse_credentials(&raw_url, &data_out_ptr, data_length, out)
-            || url_parse_host(&raw_url, &data_out_ptr, data_length, out)
-            || url_parse_port(&raw_url, &data_out_ptr, data_length, out)
-            || url_parse_path(&raw_url, &data_out_ptr, data_length, out)
+    url_parse_protocol(&raw_url, &data_out_ptr, data_length, out);
+    if (raw_url[0] == '/' && raw_url[1] == '/') {
+        raw_url += 2;
+        if (url_parse_credentials(&raw_url, &data_out_ptr, data_length, out)
+                || url_parse_host(&raw_url, &data_out_ptr, data_length, out)
+                || url_parse_port(&raw_url, &data_out_ptr, data_length, out)) {
+            goto error;
+        }
+    }
+    if (url_parse_path(&raw_url, &data_out_ptr, data_length, out)
             || url_parsed(raw_url)) {
-        avs_free(out);
-        return NULL;
+        goto error;
     }
     return out;
+error:
+    avs_free(out);
+    return NULL;
 }
 
 static int is_valid_url_domain_char(char c) {

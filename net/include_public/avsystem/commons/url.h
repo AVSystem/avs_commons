@@ -101,8 +101,8 @@ avs_url_t *avs_url_parse(const char *raw_url);
  * - URL scheme (protocol) is optional - protocol-relative URLs such as
  *   "//example.com/test.html" are supported and will cause
  *   @ref avs_url_protocol to return NULL.
- * - Host portion is allowed to be empty (in which case @ref avs_url_host will
- *   return NULL) and is also not verified to be a valid Internet host address.
+ * - Host portion is allowed to be empty and is also not verified to be a valid
+ *   Internet host address.
  * - Port is allowed to have an arbitrary number of digits. Zero-length port
  *   will be represented as non-NULL, but zero-length string returned via
  *   @ref avs_url_port.
