@@ -86,7 +86,10 @@ typedef struct {
     avs_time_real_t next_deadline;
     avs_net_socket_type_t backend_type;
     avs_net_socket_t *backend_socket;
-    avs_net_dtls_handshake_timeouts_t dtls_handshake_timeouts;
+    struct {
+        unsigned int min_us;
+        unsigned int max_us;
+    } dtls_handshake_timeouts;
     avs_net_socket_configuration_t backend_configuration;
     avs_net_resolved_endpoint_t endpoint_buffer;
 
@@ -291,7 +294,8 @@ static avs_error_t get_dtls_overhead(ssl_socket_t *socket,
 static int avs_bio_write(BIO *bio, const char *data, int size) {
     ssl_socket_t *sock = (ssl_socket_t *) BIO_get_data(bio);
     if (!sock->backend_socket) {
-        // see receive_ssl() for explanation why this might happen
+        // see receive_ssl() and dtls_timer_cb() for explanations
+        // why this might happen
         return -1;
     }
     if (!data || size < 0) {
@@ -327,15 +331,9 @@ static avs_time_duration_t adjust_receive_timeout(ssl_socket_t *sock) {
     avs_time_duration_t socket_timeout =
             get_socket_timeout(sock->backend_socket);
     if (avs_time_real_valid(sock->next_deadline)) {
-        avs_time_real_t now = avs_time_real_now();
-        avs_time_duration_t timeout =
-                avs_time_real_diff(sock->next_deadline, now);
-        if (!avs_time_duration_valid(socket_timeout)
-                || avs_time_duration_less(socket_timeout,
-                                          AVS_TIME_DURATION_ZERO)
-                || avs_time_duration_less(timeout, socket_timeout)) {
-            set_socket_timeout(sock->backend_socket, timeout);
-        }
+        set_socket_timeout(sock->backend_socket,
+                           avs_time_real_diff(sock->next_deadline,
+                                              avs_time_real_now()));
     }
     return socket_timeout;
 }
@@ -351,7 +349,8 @@ static int avs_bio_read(BIO *bio, char *buffer, int size) {
     size_t read_bytes;
     int result;
     if (!sock->backend_socket) {
-        // see receive_ssl() for explanation why this might happen
+        // see receive_ssl() and dtls_timer_cb() for explanations
+        // why this might happen
         return -1;
     }
     if (!buffer || size < 0) {
@@ -386,21 +385,6 @@ static int avs_bio_gets(BIO *bio, char *buffer, int size) {
     return -1;
 }
 
-#    ifdef WITH_DTLS
-static int compare_durations(const avs_time_duration_t *left,
-                             const avs_time_duration_t *right) {
-    assert(avs_time_duration_valid(*left));
-    assert(avs_time_duration_valid(*right));
-    if (avs_time_duration_less(*left, *right)) {
-        return -1;
-    } else if (avs_time_duration_less(*right, *left)) {
-        return 1;
-    } else {
-        return 0;
-    }
-}
-#    endif // WITH_DTLS
-
 static long avs_bio_ctrl(BIO *bio, int command, long intarg, void *ptrarg) {
     ssl_socket_t *sock = (ssl_socket_t *) BIO_get_data(bio);
     (void) sock;
@@ -415,25 +399,19 @@ static long avs_bio_ctrl(BIO *bio, int command, long intarg, void *ptrarg) {
         return get_socket_inner_mtu_or_zero(sock->backend_socket);
     case BIO_CTRL_DGRAM_SET_NEXT_TIMEOUT: {
         struct timeval next_deadline = *(const struct timeval *) ptrarg;
-        avs_time_real_t now = avs_time_real_now();
-        avs_time_duration_t next_timeout = {
-            .seconds = next_deadline.tv_sec - now.since_real_epoch.seconds,
-            .nanoseconds = (int32_t) (next_deadline.tv_usec * 1000)
-                           - now.since_real_epoch.nanoseconds
-        };
-        if (next_timeout.nanoseconds < 0) {
-            next_timeout.seconds--;
-            next_timeout.nanoseconds += 1000000000;
+        if (next_deadline.tv_sec == 0 && next_deadline.tv_usec == 0) {
+            // Compare:
+            // https://github.com/openssl/openssl/blob/ec87a649dd2128bde780f6e34a4833d9469f6b4d/ssl/d1_lib.c#L352
+            // Once DTLS handshake is over, OpenSSL resets the deadline to
+            // { 0, 0 }. Not particularly elegant, but it is unambiguous, unless
+            // some time traveller actually attempts to use DTLS before
+            // January 1, 1970.
+            sock->next_deadline = AVS_TIME_REAL_INVALID;
+        } else {
+            sock->next_deadline.since_real_epoch.seconds = next_deadline.tv_sec;
+            sock->next_deadline.since_real_epoch.nanoseconds =
+                    (int32_t) (next_deadline.tv_usec * 1000);
         }
-        if (compare_durations(&next_timeout, &sock->dtls_handshake_timeouts.min)
-                < 0) {
-            next_timeout = sock->dtls_handshake_timeouts.min;
-        } else if (compare_durations(&next_timeout,
-                                     &sock->dtls_handshake_timeouts.max)
-                   > 0) {
-            next_timeout = sock->dtls_handshake_timeouts.max;
-        }
-        sock->next_deadline = avs_time_real_add(now, next_timeout);
         return 0;
     }
     case BIO_CTRL_DGRAM_GET_SEND_TIMER_EXP:
@@ -759,6 +737,32 @@ static void enable_session_cache(ssl_socket_t *socket) {
 }
 #endif // WITH_TLS_SESSION_PERSISTENCE
 
+#if defined(WITH_DTLS) && OPENSSL_VERSION_NUMBER_GE(1, 1, 1)
+static unsigned int dtls_timer_cb(SSL *ssl, unsigned int timer_us) {
+    ssl_socket_t *socket = (ssl_socket_t *) SSL_get_app_data(ssl);
+    if (!socket->backend_socket) {
+        return 0;
+    } else if (timer_us == 0) {
+        return socket->dtls_handshake_timeouts.min_us;
+    } else {
+        unsigned doubled;
+        if (timer_us >= socket->dtls_handshake_timeouts.max_us) {
+            // HACK: OpenSSL has number of DTLS Client Hello retransmissions
+            // hardcoded to 12. We block network communication to prevent
+            // further retransmissions instead.
+            socket->backend_socket = NULL;
+            socket->bio_error = avs_errno(AVS_ETIMEDOUT);
+            return 0;
+        } else if (timer_us <= UINT_MAX / 2) {
+            doubled = timer_us * 2;
+        } else {
+            doubled = UINT_MAX;
+        }
+        return AVS_MIN(doubled, socket->dtls_handshake_timeouts.max_us);
+    }
+}
+#endif // defined(WITH_DTLS) && OPENSSL_VERSION_NUMBER_GE(1, 1, 1)
+
 static avs_error_t start_ssl(ssl_socket_t *socket, const char *host) {
     BIO *bio = NULL;
     LOG(TRACE, "start_ssl(socket=%p)", (void *) socket);
@@ -813,7 +817,16 @@ static avs_error_t start_ssl(ssl_socket_t *socket, const char *host) {
     }
     SSL_set_bio(socket->ssl, bio, bio);
 
+#if defined(WITH_DTLS) && OPENSSL_VERSION_NUMBER_GE(1, 1, 1)
+    if (socket_is_datagram(socket)) {
+        DTLS_set_timer_cb(socket->ssl, dtls_timer_cb);
+    }
+#endif // defined(WITH_DTLS) && OPENSSL_VERSION_NUMBER_GE(1, 1, 1)
+
+    avs_net_socket_t *backend_socket = socket->backend_socket;
     avs_error_t err = ssl_handshake(socket);
+    // Restore backend socket that might have been disabled by dtls_timer_cb()
+    socket->backend_socket = backend_socket;
     if (avs_is_err(err)) {
         LOG(ERROR, "SSL handshake failed.");
         log_openssl_error();
@@ -847,7 +860,6 @@ configure_ssl_certs(ssl_socket_t *socket,
 
     if (cert_info->server_cert_validation) {
         socket->verification = 1;
-        SSL_CTX_set_verify(socket->ctx, SSL_VERIFY_PEER, NULL);
 #    if OPENSSL_VERSION_NUMBER_LT(0, 9, 5)
         SSL_CTX_set_verify_depth(socket->ctx, 1);
 #    endif
@@ -860,6 +872,7 @@ configure_ssl_certs(ssl_socket_t *socket,
         }
     } else {
         LOG(DEBUG, "Server authentication disabled");
+        SSL_CTX_set_verify(socket->ctx, SSL_VERIFY_NONE, NULL);
     }
 
     if (cert_info->client_cert.desc.source != AVS_NET_DATA_SOURCE_EMPTY) {
@@ -936,6 +949,16 @@ static avs_error_t configure_ssl_psk(ssl_socket_t *socket,
 }
 #endif
 
+static int duration_to_uint_us(unsigned *out, avs_time_duration_t in) {
+    int64_t result64;
+    if (avs_time_duration_to_scalar(&result64, AVS_TIME_US, in)
+            || result64 != (unsigned) result64) {
+        return -1;
+    }
+    *out = (unsigned) result64;
+    return 0;
+}
+
 static avs_error_t
 configure_ssl(ssl_socket_t *socket,
               const avs_net_ssl_configuration_t *configuration) {
@@ -955,7 +978,7 @@ configure_ssl(ssl_socket_t *socket,
 
     ERR_clear_error();
     SSL_CTX_set_options(socket->ctx, SSL_OP_ALL | SSL_OP_NO_SSLv2);
-    SSL_CTX_set_verify(socket->ctx, SSL_VERIFY_NONE, NULL);
+    SSL_CTX_set_verify(socket->ctx, SSL_VERIFY_PEER, NULL);
 
     avs_error_t err;
     switch (configuration->security.mode) {
@@ -973,10 +996,17 @@ configure_ssl(ssl_socket_t *socket,
         return err;
     }
 
-    socket->dtls_handshake_timeouts =
+    const avs_net_dtls_handshake_timeouts_t *dtls_handshake_timeouts =
             (configuration->dtls_handshake_timeouts
-                     ? *configuration->dtls_handshake_timeouts
-                     : DEFAULT_DTLS_HANDSHAKE_TIMEOUTS);
+                     ? configuration->dtls_handshake_timeouts
+                     : &DEFAULT_DTLS_HANDSHAKE_TIMEOUTS);
+    if (duration_to_uint_us(&socket->dtls_handshake_timeouts.min_us,
+                            dtls_handshake_timeouts->min)
+            || duration_to_uint_us(&socket->dtls_handshake_timeouts.max_us,
+                                   dtls_handshake_timeouts->max)) {
+        LOG(ERROR, "Invalid DTLS handshake timeouts passed");
+        return avs_errno(AVS_EINVAL);
+    }
 
     if (configuration->session_resumption_buffer_size > 0) {
         assert(configuration->session_resumption_buffer);
