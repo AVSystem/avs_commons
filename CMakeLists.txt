@@ -411,9 +411,14 @@ else(WITH_TEST)
 endif(WITH_TEST)
 
 # SSL
-option(WITH_OPENSSL "Enable OpenSSL" OFF)
-option(WITH_MBEDTLS "Enable mbed TLS" OFF)
-option(WITH_TINYDTLS "Enable tinyDTLS" OFF)
+find_package(OpenSSL)
+option(WITH_OPENSSL "Enable OpenSSL" ${OPENSSL_FOUND})
+
+find_package(MbedTLS)
+option(WITH_MBEDTLS "Enable mbed TLS" ${MBEDTLS_FOUND})
+
+find_package(TinyDTLS)
+option(WITH_TINYDTLS "Enable tinyDTLS" ${TINYDTLS_FOUND})
 
 cmake_dependent_option(WITHOUT_SSL "Disable SSL/TLS/DTLS support" OFF "WITH_OPENSSL OR WITH_MBEDTLS OR WITH_TINYDTLS" ON)
 cmake_dependent_option(WITH_PSK "Enable pre-shared key support" ON "NOT WITHOUT_SSL" OFF)
