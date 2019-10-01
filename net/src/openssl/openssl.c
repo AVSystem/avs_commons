@@ -1121,6 +1121,7 @@ static avs_error_t cleanup_ssl(avs_net_socket_t **socket_) {
         SSL_CTX_free((*socket)->ctx);
         (*socket)->ctx = NULL;
     }
+    avs_free((*socket)->enabled_ciphersuites.ids);
     avs_free(*socket);
     *socket = NULL;
     return err;
