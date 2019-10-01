@@ -90,10 +90,8 @@ typedef struct {
     avs_net_socket_t *backend_socket;
     avs_error_t bio_error;
     avs_net_socket_configuration_t backend_configuration;
-    /// Set of ciphersuites configured by user
-    avs_net_socket_tls_ciphersuites_t enabled_ciphersuites;
-    /// Subset of @ref ssl_socket_t#enabled_ciphersuites appropriate for
-    /// security mode, 0-terminated array
+    /// Subset of @ref avs_net_ssl_configuration_t#tls_ciphersuites appropriate
+    /// for security mode, 0-terminated array
     int *effective_ciphersuites;
     /// Non empty, when custom server hostname shall be used.
     char server_name_indication[256];
@@ -345,10 +343,12 @@ static uint8_t is_verification_enabled(ssl_socket_t *socket) {
            && socket->security.cert.ca_cert != NULL;
 }
 
-static avs_error_t initialize_cert_security(ssl_socket_t *socket) {
+static avs_error_t initialize_cert_security(
+        ssl_socket_t *socket,
+        const avs_net_socket_tls_ciphersuites_t *tls_ciphersuites) {
     avs_free(socket->effective_ciphersuites);
     if (!(socket->effective_ciphersuites =
-                  init_cert_ciphersuites(&socket->enabled_ciphersuites))) {
+                  init_cert_ciphersuites(tls_ciphersuites))) {
         return avs_errno(AVS_ENOMEM);
     }
 
@@ -409,10 +409,12 @@ static int *init_psk_ciphersuites(
     return psk_ciphers;
 }
 
-static avs_error_t initialize_psk_security(ssl_socket_t *socket) {
+static avs_error_t initialize_psk_security(
+        ssl_socket_t *socket,
+        const avs_net_socket_tls_ciphersuites_t *tls_ciphersuites) {
     avs_free(socket->effective_ciphersuites);
     if (!(socket->effective_ciphersuites =
-                  init_psk_ciphersuites(&socket->enabled_ciphersuites))) {
+                  init_psk_ciphersuites(tls_ciphersuites))) {
         return avs_errno(AVS_ENOMEM);
     }
 
@@ -532,6 +534,22 @@ configure_ssl(ssl_socket_t *socket,
     }
 #endif // MBEDTLS_SSL_DTLS_CONNECTION_ID
 
+    avs_error_t err;
+    switch (socket->security_mode) {
+    case AVS_NET_SECURITY_PSK:
+        err = initialize_psk_security(socket, &configuration->ciphersuites);
+        break;
+    case AVS_NET_SECURITY_CERTIFICATE:
+        err = initialize_cert_security(socket, &configuration->ciphersuites);
+        break;
+    default:
+        AVS_UNREACHABLE("invalid enum value");
+        err = avs_errno(AVS_EBADF);
+    }
+    if (avs_is_err(err)) {
+        return err;
+    }
+
     if (configuration->additional_configuration_clb
             && configuration->additional_configuration_clb(&socket->config)) {
         LOG(ERROR, "Error while setting additional SSL configuration");
@@ -596,21 +614,6 @@ static avs_error_t start_ssl(ssl_socket_t *socket, const char *host) {
         return err;
     }
     assert(!socket->flags.context_valid);
-
-    switch (socket->security_mode) {
-    case AVS_NET_SECURITY_PSK:
-        err = initialize_psk_security(socket);
-        break;
-    case AVS_NET_SECURITY_CERTIFICATE:
-        err = initialize_cert_security(socket);
-        break;
-    default:
-        AVS_UNREACHABLE("invalid enum value");
-        err = avs_errno(AVS_EBADF);
-    }
-    if (avs_is_err(err)) {
-        return err;
-    }
 
     bool restore_session = false;
 #ifdef WITH_TLS_SESSION_PERSISTENCE
@@ -916,7 +919,6 @@ static avs_error_t cleanup_ssl(avs_net_socket_t **socket_) {
         cleanup_security_cert(&(*socket)->security.cert);
         break;
     }
-    avs_free((*socket)->enabled_ciphersuites.ids);
     avs_free((*socket)->effective_ciphersuites);
 
 #ifdef WITH_PSK

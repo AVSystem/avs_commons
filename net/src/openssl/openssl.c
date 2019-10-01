@@ -777,7 +777,7 @@ static avs_error_t start_ssl(ssl_socket_t *socket, const char *host) {
     }
     SSL_set_app_data(socket->ssl, socket);
 
-    if (socket->enabled_ciphersuites.ids != NULL) {
+    if (socket->enabled_ciphersuites.num_ids > 0) {
         char *ciphersuites_string = NULL;
         avs_error_t err =
                 ids_to_cipher_list(socket, &socket->enabled_ciphersuites,
@@ -1027,6 +1027,21 @@ configure_ssl(ssl_socket_t *socket,
         }
         memcpy(socket->server_name_indication,
                configuration->server_name_indication, len + 1);
+    }
+
+    if (configuration->ciphersuites.num_ids > 0) {
+        if (!(socket->enabled_ciphersuites.ids = (uint32_t *) avs_malloc(
+                      configuration->ciphersuites.num_ids
+                      * sizeof(*configuration->ciphersuites.ids)))) {
+            LOG(ERROR, "Out of memory");
+            return avs_errno(AVS_ENOMEM);
+        }
+        socket->enabled_ciphersuites.num_ids =
+                configuration->ciphersuites.num_ids;
+        memcpy(socket->enabled_ciphersuites.ids,
+               configuration->ciphersuites.ids,
+               configuration->ciphersuites.num_ids
+                       * sizeof(*configuration->ciphersuites.ids));
     }
 
     if (configuration->additional_configuration_clb
