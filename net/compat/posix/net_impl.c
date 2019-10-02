@@ -424,6 +424,8 @@ static void close_net_raw(net_socket_impl_t *net_socket) {
         net_socket->socket = INVALID_SOCKET;
         net_socket->state = AVS_NET_SOCKET_STATE_CLOSED;
     }
+    net_socket->remote_hostname[0] = '\0';
+    net_socket->remote_port[0] = '\0';
 }
 
 static avs_error_t close_net(avs_net_socket_t *net_socket_) {
@@ -1081,9 +1083,9 @@ static avs_error_t try_connect(net_socket_impl_t *net_socket,
     return err;
 }
 
-static avs_error_t
-connect_net(avs_net_socket_t *net_socket_, const char *host, const char *port) {
-    net_socket_impl_t *net_socket = (net_socket_impl_t *) net_socket_;
+static avs_error_t connect_impl(net_socket_impl_t *net_socket,
+                                const char *host,
+                                const char *port) {
     avs_net_addrinfo_t *info = NULL;
 
     if (net_socket->socket != INVALID_SOCKET) {
@@ -1103,7 +1105,8 @@ connect_net(avs_net_socket_t *net_socket_, const char *host, const char *port) {
         sockaddr_endpoint_union_t address;
         while (!avs_net_addrinfo_next(info, &address.api_ep)) {
             if (avs_is_ok((err = try_connect(net_socket, &address)))) {
-                goto success;
+                avs_net_addrinfo_delete(&info);
+                return AVS_OK;
             }
         }
     }
@@ -1113,7 +1116,8 @@ connect_net(avs_net_socket_t *net_socket_, const char *host, const char *port) {
         sockaddr_endpoint_union_t address;
         while (!avs_net_addrinfo_next(info, &address.api_ep)) {
             if (avs_is_ok((err = try_connect(net_socket, &address)))) {
-                goto success;
+                avs_net_addrinfo_delete(&info);
+                return AVS_OK;
             }
         }
     }
@@ -1121,22 +1125,39 @@ connect_net(avs_net_socket_t *net_socket_, const char *host, const char *port) {
     LOG(ERROR, "cannot establish connection to [%s]:%s", host, port);
     assert(avs_is_err(err));
     return err;
-success:
-    avs_net_addrinfo_delete(&info);
+}
 
+static void cache_remote_hostname(net_socket_impl_t *net_socket,
+                                  const char *remote_hostname) {
     if (avs_simple_snprintf(net_socket->remote_hostname,
-                            sizeof(net_socket->remote_hostname), "%s", host)
+                            sizeof(net_socket->remote_hostname), "%s",
+                            remote_hostname)
             < 0) {
-        LOG(WARNING, "Hostname %s is too long, not storing", host);
+        LOG(WARNING, "Remote hostname %s is too long, not storing",
+            remote_hostname);
         net_socket->remote_hostname[0] = '\0';
     }
+}
+
+static void cache_remote_port(net_socket_impl_t *net_socket,
+                              const char *remote_port) {
     if (avs_simple_snprintf(net_socket->remote_port,
-                            sizeof(net_socket->remote_port), "%s", port)
+                            sizeof(net_socket->remote_port), "%s", remote_port)
             < 0) {
-        LOG(WARNING, "Port %s is too long, not storing", port);
+        LOG(WARNING, "Remote port %s is too long, not storing", remote_port);
         net_socket->remote_port[0] = '\0';
     }
-    return AVS_OK;
+}
+
+static avs_error_t
+connect_net(avs_net_socket_t *net_socket_, const char *host, const char *port) {
+    net_socket_impl_t *net_socket = (net_socket_impl_t *) net_socket_;
+    avs_error_t err = connect_impl(net_socket, host, port);
+    if (avs_is_ok(err)) {
+        cache_remote_hostname(net_socket, host);
+        cache_remote_port(net_socket, port);
+    }
+    return err;
 }
 
 typedef struct {
@@ -1499,6 +1520,125 @@ static avs_error_t accept_internal(sockfd_t sockfd, void *arg_) {
     return arg->client_sockfd == INVALID_SOCKET ? failure_from_errno() : AVS_OK;
 }
 
+static avs_error_t peek_internal(sockfd_t sockfd, void *addr_) {
+    struct sockaddr *addr = (struct sockaddr *) addr_;
+    socklen_t addr_len = sizeof(*addr);
+    return recvfrom(sockfd, NULL, 0, MSG_PEEK, addr, &addr_len) == 0
+                           && addr_len == sizeof(*addr)
+                   ? AVS_OK
+                   : failure_from_errno();
+}
+
+static avs_error_t peek_received_msg_host_port(net_socket_impl_t *net_socket,
+                                               char *host,
+                                               size_t host_size,
+                                               char *port,
+                                               size_t port_size) {
+    avs_error_t err;
+    struct sockaddr addr;
+    (void) (avs_is_err((err = call_when_ready(&net_socket->socket,
+                                              net_socket->recv_timeout,
+                                              AVS_POLLIN | AVS_POLLERR,
+                                              peek_internal, &addr)))
+            || avs_is_err(
+                       (err = host_port_to_string(&addr, sizeof(addr), host,
+                                                  (socklen_t) host_size, port,
+                                                  (socklen_t) port_size)))
+
+    );
+    return err;
+}
+
+static void swap_socket_fd_and_state(net_socket_impl_t *socket1,
+                                     net_socket_impl_t *socket2) {
+    AVS_SWAP(socket1->socket, socket2->socket);
+    AVS_SWAP(socket1->state, socket2->state);
+}
+
+static avs_error_t accept_udp(net_socket_impl_t *server_net_socket,
+                              net_socket_impl_t *new_net_socket) {
+    if (!server_net_socket->configuration.reuse_addr
+            || !new_net_socket->configuration.reuse_addr) {
+        LOG(ERROR, "Both server and client socket must have "
+                   "configuration.reuse_addr set to 1");
+        return avs_errno(AVS_EINVAL);
+    }
+
+    avs_error_t err;
+    char local_hostname[NET_MAX_HOSTNAME_SIZE];
+    char local_port[NET_PORT_SIZE];
+    if (avs_is_err(
+                (err = local_host_net((avs_net_socket_t *) server_net_socket,
+                                      local_hostname, sizeof(local_hostname))))
+            || (avs_is_err((err = local_port_net(
+                                    (avs_net_socket_t *) server_net_socket,
+                                    local_port, sizeof(local_port)))))
+            || (avs_is_err((err = peek_received_msg_host_port(
+                                    server_net_socket,
+                                    new_net_socket->remote_hostname,
+                                    sizeof(new_net_socket->remote_hostname),
+                                    new_net_socket->remote_port,
+                                    sizeof(new_net_socket->remote_port)))))) {
+        const char *error_string =
+                (err.category == AVS_ERRNO_CATEGORY
+                         ? avs_strerror((avs_errno_t) err.code)
+                         : "unknown error");
+        LOG(DEBUG,
+            "Error while gathering info about server_net_socket (%s). "
+            "None of server_net_socket or new_net_socket has been affected.",
+            error_string);
+        return err;
+    }
+
+    swap_socket_fd_and_state(server_net_socket, new_net_socket);
+    if (avs_is_err((err = connect_impl(new_net_socket,
+                                       new_net_socket->remote_hostname,
+                                       new_net_socket->remote_port)))) {
+        LOG(DEBUG,
+            "Error while connecting new_net_socket to %s:%s). Rolling back "
+            "changes.",
+            new_net_socket->remote_hostname, new_net_socket->remote_port);
+        swap_socket_fd_and_state(server_net_socket, new_net_socket);
+        close_net_raw(server_net_socket);
+    }
+    avs_error_t bind_again_err =
+            bind_net((avs_net_socket_t *) server_net_socket, local_hostname,
+                     local_port);
+    if (avs_is_err(bind_again_err)) {
+        LOG(ERROR, "Could not bind server_net_socket again. It's closed now.");
+        close_net_raw(server_net_socket);
+        return bind_again_err;
+    }
+
+    return err;
+}
+
+static avs_error_t accept_tcp(net_socket_impl_t *server_net_socket,
+                              net_socket_impl_t *new_net_socket) {
+    accept_internal_arg_t arg = {
+        .client_sockfd = INVALID_SOCKET
+    };
+    avs_error_t err;
+    if (avs_is_err((err = call_when_ready(&server_net_socket->socket,
+                                          NET_ACCEPT_TIMEOUT,
+                                          AVS_POLLIN | AVS_POLLERR,
+                                          accept_internal, &arg)))) {
+        return err;
+    }
+
+    new_net_socket->socket = arg.client_sockfd;
+    if (avs_is_err((err = host_port_to_string(
+                            &arg.remote_addr.addr, arg.remote_addr_length,
+                            new_net_socket->remote_hostname,
+                            sizeof(new_net_socket->remote_hostname),
+                            new_net_socket->remote_port,
+                            sizeof(new_net_socket->remote_port))))) {
+        close_net_raw(new_net_socket);
+        return err;
+    }
+    return configure_socket(new_net_socket);
+}
+
 static avs_error_t accept_net(avs_net_socket_t *server_net_socket_,
                               avs_net_socket_t *new_net_socket_) {
     net_socket_impl_t *server_net_socket =
@@ -1517,31 +1657,33 @@ static avs_error_t accept_net(avs_net_socket_t *server_net_socket_,
         return avs_errno(AVS_EISCONN);
     }
 
-    accept_internal_arg_t arg = {
-        .client_sockfd = INVALID_SOCKET
-    };
-    avs_error_t err =
-            call_when_ready(&server_net_socket->socket, NET_ACCEPT_TIMEOUT,
-                            AVS_POLLIN | AVS_POLLERR, accept_internal, &arg);
+    if (server_net_socket->state != AVS_NET_SOCKET_STATE_BOUND) {
+        LOG(ERROR, "Server socket must be bound before calling 'accept' on it");
+        return avs_errno(AVS_ENETDOWN);
+    }
+
+    avs_error_t err;
+    switch (server_net_socket->type) {
+    case AVS_NET_UDP_SOCKET:
+        err = accept_udp(server_net_socket, new_net_socket);
+        break;
+    case AVS_NET_TCP_SOCKET:
+        err = accept_tcp(server_net_socket, new_net_socket);
+        break;
+    case AVS_NET_SSL_SOCKET:
+    case AVS_NET_DTLS_SOCKET:
+        AVS_UNREACHABLE("net_vtable applies only to UDP and TCP sockets");
+        err = avs_errno(AVS_EINVAL);
+        break;
+    }
+
     if (avs_is_err(err)) {
+        close_net_raw(new_net_socket);
         return err;
     }
 
-    new_net_socket->socket = arg.client_sockfd;
-    if (avs_is_err((err = host_port_to_string(
-                            &arg.remote_addr.addr, arg.remote_addr_length,
-                            new_net_socket->remote_hostname,
-                            sizeof(new_net_socket->remote_hostname),
-                            new_net_socket->remote_port,
-                            sizeof(new_net_socket->remote_port))))) {
-        close_net_raw(new_net_socket);
-        return err;
-    }
     new_net_socket->state = AVS_NET_SOCKET_STATE_ACCEPTED;
-    if (avs_is_err((err = configure_socket(new_net_socket)))) {
-        close_net_raw(new_net_socket);
-    }
-    return err;
+    return AVS_OK;
 }
 
 static int

@@ -89,12 +89,26 @@ void *avs_calloc(size_t nmemb, size_t size);
  *
  * @param ptr   Pointer to operate on.
  * @param size  New size.
- * @returns either NULL or a unique pointer value (not necessairly equal in
+ * @returns either NULL or a unique pointer value (not necessarily equal in
  *          value to the @p ptr) that can later be successfully passed to @ref
  *          avs_free(). On failure NULL is returned, and the @p ptr remains
  *          untouched.
  */
 void *avs_realloc(void *ptr, size_t size);
+
+/**
+ * Swaps <c>[memptr1, memptr1+n)</c> and <c>[memptr2, memptr2+n)</c> memory
+ * fragments. Contains assertion that the fragments do not intersect.
+ */
+void avs_memswap(void *memptr1, void *memptr2, size_t n);
+
+#define AVS_SWAP(a, b)                                                  \
+    do {                                                                \
+        AVS_STATIC_ASSERT(sizeof(a) == sizeof(b),                       \
+                          attempt_to_swap_variables_of_different_size); \
+        (void) (sizeof(&(a) - &(b)));                                   \
+        avs_memswap(&(a), &(b), sizeof(a));                             \
+    } while (0)
 
 #ifdef __cplusplus
 }

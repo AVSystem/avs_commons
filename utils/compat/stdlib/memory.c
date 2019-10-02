@@ -38,3 +38,15 @@ void *avs_calloc(size_t nmemb, size_t size) {
 void *avs_realloc(void *ptr, size_t size) {
     return realloc(ptr, size);
 }
+
+void avs_memswap(void *memptr1, void *memptr2, size_t n) {
+    char *const ptr1 = (char *) memptr1;
+    char *const ptr2 = (char *) memptr2;
+    AVS_ASSERT(ptr1 >= ptr2 + n || ptr2 >= ptr1 + n,
+               "memory fragments must not intersect");
+    for (size_t i = 0; i < n; i++) {
+        char tmp = ptr1[i];
+        ptr1[i] = ptr2[i];
+        ptr2[i] = tmp;
+    }
+}
