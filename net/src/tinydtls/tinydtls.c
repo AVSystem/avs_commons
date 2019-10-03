@@ -51,10 +51,6 @@ typedef struct {
     ssl_read_context_t *read_ctx;
 
     avs_net_owned_psk_t psk;
-
-    /// Set of ciphersuites configured by user
-    /// TODO: actually use it
-    avs_net_socket_tls_ciphersuites_t enabled_ciphersuites;
 } ssl_socket_t;
 
 #define NET_SSL_COMMON_INTERNALS
@@ -459,6 +455,7 @@ initialize_ssl_socket(ssl_socket_t *socket,
         return avs_errno(AVS_ENOMEM);
     }
 
+    // TODO: actually use configuration->tls_ciphersuites
     avs_error_t err = configure_ssl(socket, configuration);
     if (avs_is_err(err)) {
         dtls_free_context(socket->ctx);

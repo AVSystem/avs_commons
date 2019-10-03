@@ -76,10 +76,8 @@ typedef char avs_net_socket_interface_name_t[IF_NAMESIZE];
 /**
  * Function type for callbacks to be executed for additional SSL configuration.
  *
- * It can be used to set values such as allowed cipher suites.
- *
  * Note that the @ref library_ssl_context parameter is a pointer to a native
- * SSL context object of the SSL library in use. It shall be case to
+ * SSL context object of the SSL library in use. It shall be cast to
  * <c>SSL_CTX *</c> for OpenSSL or <c>ssl_context *</c> for XySSL-derivatives.
  *
  * @param library_ssl_context pointer to a native SSL context object of the
@@ -445,6 +443,13 @@ static inline uint8_t avs_net_ssl_alert_description(avs_error_t error) {
 }
 
 typedef struct {
+    /** Array of ciphersuite IDs, or NULL to enable all ciphers */
+    uint32_t *ids;
+    /** Number of elements in @ref avs_net_socket_tls_ciphersuites_t#ids */
+    size_t num_ids;
+} avs_net_socket_tls_ciphersuites_t;
+
+typedef struct {
     /**
      * SSL/TLS version to use for communication.
      */
@@ -498,6 +503,22 @@ typedef struct {
      * most certificates.
      */
     size_t session_resumption_buffer_size;
+
+    /**
+     * An array of ciphersuite IDs, in big endian. For example,
+     * TLS_PSK_WITH_AES_128_CCM_8 is represented as 0xC0A8.
+     *
+     * For a complete list of ciphersuites, see
+     * https://www.iana.org/assignments/tls-parameters/tls-parameters.xhtml
+     *
+     * Note: cipher entries that are unsupported by the (D)TLS backend will be
+     * silently ignored. An empty ciphersuite list (default) can be used to
+     * enable all supported ciphersuites.
+     *
+     * A copy owned by the socket object is made, so it is not required for this
+     * pointer to be valid after the call completes.
+     */
+    avs_net_socket_tls_ciphersuites_t ciphersuites;
 
     /**
      * Callback that is executed when initializing communication, that can be
@@ -584,11 +605,6 @@ typedef enum {
      * overhead.
      */
     AVS_NET_SOCKET_OPT_BYTES_RECEIVED,
-
-    /**
-     * Used to get/set ciphersuites used during (D)TLS handshake.
-     */
-    AVS_NET_SOCKET_OPT_TLS_CIPHERSUITES
 } avs_net_socket_opt_key_t;
 
 typedef enum {
@@ -632,18 +648,6 @@ typedef enum {
     AVS_NET_SOCKET_STATE_CONNECTED
 } avs_net_socket_state_t;
 
-typedef struct {
-    /** Array of ciphersuite IDs, or NULL to enable all ciphers */
-    uint32_t *ids;
-    /** Number of elements in @ref avs_net_socket_tls_ciphersuites_t#ids */
-    size_t num_ids;
-} avs_net_socket_tls_ciphersuites_t;
-
-/**
- * A value representing the set of all supported ciphersuites.
- */
-#define AVS_NET_SOCKET_TLS_CIPHERSUITES_ALL NULL
-
 typedef union {
     avs_time_duration_t recv_timeout;
     avs_net_socket_state_t state;
@@ -652,26 +656,6 @@ typedef union {
     bool flag;
     uint64_t bytes_sent;
     uint64_t bytes_received;
-
-    /**
-     * An array of ciphersuite IDs, in big endian. For example,
-     * TLS_PSK_WITH_AES_128_CCM_8 is represented as 0xC0A8.
-     *
-     * For a complete list of ciphersuites, see
-     * https://www.iana.org/assignments/tls-parameters/tls-parameters.xhtml
-     *
-     * Note: cipher entries that are unsupported by the (D)TLS backend will be
-     * silently ignored. @ref AVS_NET_SOCKET_TLS_CIPHERSUITES_ALL or an empty
-     * ciphersuite list can be used to enable all supported ciphersuites.
-     *
-     * When returned by @ref avs_net_socket_get_opt call, returns a pointer
-     * with lifetime equal to the socket object.
-     *
-     * When passed to @ref avs_net_socket_set_opt , a copy owned by the socket
-     * object is made, so it is not required for this pointer to be valid after
-     * the call completes.
-     */
-    const avs_net_socket_tls_ciphersuites_t *tls_ciphersuites;
 } avs_net_socket_opt_value_t;
 
 int avs_net_socket_debug(int value);

@@ -276,67 +276,15 @@ static int get_socket_inner_mtu_or_zero(avs_net_socket_t *sock) {
     }
 }
 
-static int replace_ciphersuites(avs_net_socket_tls_ciphersuites_t *dst,
-                                const avs_net_socket_tls_ciphersuites_t *src) {
-    // note: NULL src here means "all ciphers enabled"
-    uint32_t *p = NULL;
-    if (src && src->ids) {
-        p = (uint32_t *) avs_malloc(src->num_ids * sizeof(*p));
-        if (!p) {
-            return -1;
-        }
-        memcpy(p, src->ids, src->num_ids * sizeof(*p));
-    }
-
-    avs_free(dst->ids);
-    *dst = (avs_net_socket_tls_ciphersuites_t) {
-        .ids = p,
-        .num_ids = src ? src->num_ids : 0
-    };
-    return 0;
-}
-
-static avs_net_socket_state_t socket_state(avs_net_socket_t *socket) {
-    avs_net_socket_opt_value_t value;
-    if (avs_is_err(avs_net_socket_get_opt(socket, AVS_NET_SOCKET_OPT_STATE,
-                                          &value))) {
-        return AVS_NET_SOCKET_STATE_CLOSED;
-    } else {
-        return value.state;
-    }
-}
-
 static avs_error_t set_opt_ssl(avs_net_socket_t *ssl_socket_,
                                avs_net_socket_opt_key_t option_key,
                                avs_net_socket_opt_value_t option_value) {
     ssl_socket_t *ssl_socket = (ssl_socket_t *) ssl_socket_;
-
-    switch (option_key) {
-    case AVS_NET_SOCKET_OPT_TLS_CIPHERSUITES:
-        switch (socket_state(ssl_socket_)) {
-        case AVS_NET_SOCKET_STATE_CLOSED:
-        case AVS_NET_SOCKET_STATE_SHUTDOWN:
-        case AVS_NET_SOCKET_STATE_BOUND:
-            if (replace_ciphersuites(&ssl_socket->enabled_ciphersuites,
-                                     option_value.tls_ciphersuites)) {
-                return avs_errno(AVS_ENOMEM);
-            }
-            return AVS_OK;
-
-        case AVS_NET_SOCKET_STATE_ACCEPTED:
-        case AVS_NET_SOCKET_STATE_CONNECTED:
-            // disallow changing ciphersuites after handshake
-            return avs_errno(AVS_EISCONN);
-        }
+    if (!ssl_socket->backend_socket) {
         return avs_errno(AVS_EBADF);
-
-    default:
-        if (!ssl_socket->backend_socket) {
-            return avs_errno(AVS_EBADF);
-        }
-        return avs_net_socket_set_opt(ssl_socket->backend_socket, option_key,
-                                      option_value);
     }
+    return avs_net_socket_set_opt(ssl_socket->backend_socket, option_key,
+                                  option_value);
 }
 
 static avs_error_t get_opt_ssl(avs_net_socket_t *ssl_socket_,
@@ -370,9 +318,6 @@ static avs_error_t get_opt_ssl(avs_net_socket_t *ssl_socket_,
     }
     case AVS_NET_SOCKET_OPT_SESSION_RESUMED:
         out_option_value->flag = is_session_resumed(ssl_socket);
-        return AVS_OK;
-    case AVS_NET_SOCKET_OPT_TLS_CIPHERSUITES:
-        out_option_value->tls_ciphersuites = &ssl_socket->enabled_ciphersuites;
         return AVS_OK;
     case AVS_NET_SOCKET_OPT_STATE:
         if (!ssl_socket->backend_socket) {
