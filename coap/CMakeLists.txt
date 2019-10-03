@@ -52,11 +52,13 @@ avs_add_test(NAME avs_coap
              src/test/ctx.c
              src/test/msg_cache.c)
 get_target_property(AVS_NET_VARIANT avs_net ALIASED_TARGET)
-# NOTE: avs_coap tests require certificate support,
-# which is not implemented for the tinyDTLS backend
-if(${AVS_NET_VARIANT} STREQUAL avs_net_nosec
-   OR ${AVS_NET_VARIANT} STREQUAL avs_net_tinydtls)
-    target_compile_definitions(avs_coap_test PRIVATE WITHOUT_SSL)
+if(TARGET avs_coap_test)
+    # NOTE: avs_coap tests require certificate support,
+    # which is not implemented for the tinyDTLS backend
+    if(${AVS_NET_VARIANT} STREQUAL avs_net_nosec
+       OR ${AVS_NET_VARIANT} STREQUAL avs_net_tinydtls)
+        target_compile_definitions(avs_coap_test PRIVATE WITHOUT_SSL)
+    endif()
 endif()
 
 avs_install_export(avs_coap coap)
