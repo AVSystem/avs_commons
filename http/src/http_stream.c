@@ -22,6 +22,7 @@
 #include <avsystem/commons/errno.h>
 #include <avsystem/commons/memory.h>
 #include <avsystem/commons/stream/stream_net.h>
+#include <avsystem/commons/utils.h>
 
 #include "chunked.h"
 #include "client.h"
@@ -41,9 +42,9 @@ avs_error_t avs_net_socket_create_TEST_WRAPPER(avs_net_socket_t **socket,
 #endif
 
 static const char *default_port_for_protocol(const char *protocol) {
-    if (strcmp(protocol, "http") == 0) {
+    if (avs_strcasecmp(protocol, "http") == 0) {
         return "80";
-    } else if (strcmp(protocol, "https") == 0) {
+    } else if (avs_strcasecmp(protocol, "https") == 0) {
         return "443";
     } else {
         LOG(WARNING, "unknown protocol '%s'", protocol);
@@ -77,13 +78,16 @@ avs_error_t _avs_http_socket_new(avs_net_socket_t **out,
         ssl_config_full.backend_configuration = *client->tcp_configuration;
     }
     const char *protocol = avs_url_protocol(url);
-    if (strcmp(protocol, "http") == 0) {
+    if (avs_strcasecmp(protocol, "http") == 0) {
         LOG(TRACE, "creating TCP socket");
         err = avs_net_socket_create(out, AVS_NET_TCP_SOCKET,
                                     &ssl_config_full.backend_configuration);
-    } else if (strcmp(protocol, "https") == 0) {
+    } else if (avs_strcasecmp(protocol, "https") == 0) {
         LOG(TRACE, "creating SSL socket");
         err = avs_net_socket_create(out, AVS_NET_SSL_SOCKET, &ssl_config_full);
+    } else {
+        LOG(ERROR, "unsupported protocol: %s", protocol);
+        err = avs_errno(AVS_EINVAL);
     }
     if (avs_is_ok(err)) {
         assert(*out);
