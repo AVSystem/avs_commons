@@ -165,7 +165,7 @@ AVS_UNIT_TEST(http, advanced_request) {
     avs_http_t *client = avs_http_new(&AVS_HTTP_DEFAULT_BUFFER_SIZES);
     avs_net_socket_t *socket = NULL;
     avs_stream_t *stream = NULL;
-    avs_url_t *url = avs_url_parse("http://pentagon.osd.mil/");
+    avs_url_t *url = avs_url_parse("HtTp://pentagon.osd.mil/");
     AVS_UNIT_ASSERT_NOT_NULL(url);
     AVS_UNIT_ASSERT_NOT_NULL(client);
     avs_unit_mocksock_create(&socket);
@@ -1182,3 +1182,18 @@ AVS_UNIT_TEST(http, ipv6_host_header_has_square_brackets) {
     avs_http_free(client);
 }
 #endif // WITH_IPV6
+
+AVS_UNIT_TEST(http, invalid_uri_protocol) {
+    avs_http_t *client = avs_http_new(&AVS_HTTP_DEFAULT_BUFFER_SIZES);
+    avs_url_t *url = avs_url_parse("coap://127.0.0.1");
+    AVS_UNIT_ASSERT_NOT_NULL(url);
+    avs_error_t err =
+            avs_http_open_stream(&(avs_stream_t *) { NULL }, client,
+                                 AVS_HTTP_GET, AVS_HTTP_CONTENT_IDENTITY, url,
+                                 NULL, NULL);
+    AVS_UNIT_ASSERT_FAILED(err);
+    AVS_UNIT_ASSERT_EQUAL(err.category, AVS_ERRNO_CATEGORY);
+    AVS_UNIT_ASSERT_EQUAL(err.code, AVS_EINVAL);
+    avs_url_free(url);
+    avs_http_free(client);
+}

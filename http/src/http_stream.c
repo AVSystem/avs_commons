@@ -22,6 +22,7 @@
 #include <avsystem/commons/errno.h>
 #include <avsystem/commons/memory.h>
 #include <avsystem/commons/stream/stream_net.h>
+#include <avsystem/commons/utils.h>
 
 #include "chunked.h"
 #include "client.h"
@@ -40,15 +41,33 @@ avs_error_t avs_net_socket_create_TEST_WRAPPER(avs_net_socket_t **socket,
                                                ...);
 #endif
 
-static const char *default_port_for_protocol(const char *protocol) {
-    if (strcmp(protocol, "http") == 0) {
-        return "80";
-    } else if (strcmp(protocol, "https") == 0) {
-        return "443";
+typedef enum {
+    HTTP_URI_PROTOCOL_UNKNOWN,
+    HTTP_URI_PROTOCOL_HTTP,
+    HTTP_URI_PROTOCOL_HTTPS
+} http_uri_protocol_t;
+
+static http_uri_protocol_t check_protocol(const char *protocol) {
+    if (avs_strcasecmp(protocol, "http") == 0) {
+        return HTTP_URI_PROTOCOL_HTTP;
+    } else if (avs_strcasecmp(protocol, "https") == 0) {
+        return HTTP_URI_PROTOCOL_HTTPS;
     } else {
         LOG(WARNING, "unknown protocol '%s'", protocol);
-        return "";
+        return HTTP_URI_PROTOCOL_UNKNOWN;
     }
+}
+
+static const char *default_port_for_protocol(http_uri_protocol_t protocol) {
+    switch (protocol) {
+    case HTTP_URI_PROTOCOL_HTTP:
+        return "80";
+    case HTTP_URI_PROTOCOL_HTTPS:
+        return "443";
+    case HTTP_URI_PROTOCOL_UNKNOWN:
+        break;
+    }
+    return "";
 }
 
 static const char *resolve_port(const avs_url_t *parsed_url) {
@@ -56,14 +75,14 @@ static const char *resolve_port(const avs_url_t *parsed_url) {
     if (port) {
         return port;
     } else {
-        return default_port_for_protocol(avs_url_protocol(parsed_url));
+        return default_port_for_protocol(
+                check_protocol(avs_url_protocol(parsed_url)));
     }
 }
 
 avs_error_t _avs_http_socket_new(avs_net_socket_t **out,
                                  avs_http_t *client,
                                  const avs_url_t *url) {
-    avs_error_t err = AVS_OK;
     avs_net_ssl_configuration_t ssl_config_full;
     LOG(TRACE, "http_new_socket");
     assert(out != NULL);
@@ -76,14 +95,19 @@ avs_error_t _avs_http_socket_new(avs_net_socket_t **out,
     if (client->tcp_configuration) {
         ssl_config_full.backend_configuration = *client->tcp_configuration;
     }
-    const char *protocol = avs_url_protocol(url);
-    if (strcmp(protocol, "http") == 0) {
+    avs_error_t err = avs_errno(AVS_EINVAL);
+    switch (check_protocol(avs_url_protocol(url))) {
+    case HTTP_URI_PROTOCOL_HTTP:
         LOG(TRACE, "creating TCP socket");
         err = avs_net_socket_create(out, AVS_NET_TCP_SOCKET,
                                     &ssl_config_full.backend_configuration);
-    } else if (strcmp(protocol, "https") == 0) {
+        break;
+    case HTTP_URI_PROTOCOL_HTTPS:
         LOG(TRACE, "creating SSL socket");
         err = avs_net_socket_create(out, AVS_NET_SSL_SOCKET, &ssl_config_full);
+        break;
+    case HTTP_URI_PROTOCOL_UNKNOWN:
+        break;
     }
     if (avs_is_ok(err)) {
         assert(*out);
