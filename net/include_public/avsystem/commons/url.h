@@ -130,8 +130,22 @@ avs_url_t *avs_url_parse_lenient(const char *raw_url);
 int avs_url_validate_host(const char *str);
 
 /**
- * Checks whther a given string is a valid path portion of a URL according to
- * criteria used by @ref avs_url_parse.
+ * Checks whther a given string is a valid relative or absolute path portion of
+ * a URL according to criteria used by @ref avs_url_parse.
+ *
+ * @param str String to validate for being a proper path; NULL is safely
+ *            handled, although treated as invalid.
+ *
+ * @return 0 if the hostname is valid, -1 otherwise.
+ */
+int avs_url_validate_relative_path(const char *str);
+
+/**
+ * Checks whther a given string is a valid absolute path portion of a URL
+ * according to criteria used by @ref avs_url_parse.
+ *
+ * This is equivalent to @ref avs_url_validate_relative_path with an additional
+ * check that the first character is '/'.
  *
  * @param str String to validate for being a proper path; NULL is safely
  *            handled, although treated as invalid.

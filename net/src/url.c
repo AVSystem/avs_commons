@@ -445,9 +445,15 @@ static int is_valid_url_path_char(char c) {
                        c); /* "extra" set */
 }
 
+int avs_url_validate_relative_path(const char *str) {
+    return is_valid_url_part(str, is_valid_url_path_char) ? 0 : -1;
+}
+
 int avs_url_validate_path(const char *str) {
-    return (*str == '/' && is_valid_url_part(str, is_valid_url_path_char)) ? 0
-                                                                           : -1;
+    if (*str != '/') {
+        return -1;
+    }
+    return avs_url_validate_relative_path(str);
 }
 
 int avs_url_validate(const avs_url_t *url) {
