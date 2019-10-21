@@ -171,7 +171,9 @@ avs_net_addrinfo_t *avs_net_addrinfo_resolve_ex(
         LOG(DEBUG, "Unsupported avs_net_af_t: %d", (int) family);
         return NULL;
     }
-    hint.ai_flags = AI_ADDRCONFIG;
+    if (!(flags & AVS_NET_ADDRINFO_RESOLVE_F_NOADDRCONFIG)) {
+        hint.ai_flags |= AI_ADDRCONFIG;
+    }
     if (flags & AVS_NET_ADDRINFO_RESOLVE_F_PASSIVE) {
         hint.ai_flags |= AI_PASSIVE;
     }

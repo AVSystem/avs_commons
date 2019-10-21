@@ -1000,7 +1000,7 @@ resolve_addrinfo_for_socket(net_socket_impl_t *net_socket,
                             const char *port,
                             bool use_preferred_endpoint,
                             preferred_family_mode_t preferred_family_mode) {
-    int resolve_flags = 0;
+    int resolve_flags = AVS_NET_ADDRINFO_RESOLVE_F_NOADDRCONFIG;
     avs_net_af_t family = AVS_NET_AF_UNSPEC;
     if (get_requested_family(net_socket, &family, preferred_family_mode)) {
         return NULL;
@@ -1218,15 +1218,15 @@ static avs_error_t send_net(avs_net_socket_t *net_socket_,
 typedef struct {
     const void *data;
     size_t data_length;
-    sockaddr_endpoint_union_t dest_addr;
+    const sockaddr_endpoint_union_t *dest_addr;
     size_t bytes_sent;
 } send_to_internal_arg_t;
 
 static avs_error_t send_to_internal(sockfd_t sockfd, void *arg_) {
     send_to_internal_arg_t *arg = (send_to_internal_arg_t *) arg_;
     ssize_t result = sendto(sockfd, arg->data, arg->data_length, MSG_NOSIGNAL,
-                            &arg->dest_addr.sockaddr_ep.addr,
-                            arg->dest_addr.sockaddr_ep.header.size);
+                            &arg->dest_addr->sockaddr_ep.addr,
+                            arg->dest_addr->sockaddr_ep.header.size);
     if (result < 0) {
         return failure_from_errno();
     }
@@ -1242,6 +1242,23 @@ static avs_error_t send_to_internal(sockfd_t sockfd, void *arg_) {
     }
 }
 
+static avs_error_t send_to_resolved(net_socket_impl_t *net_socket,
+                                    const void *buffer,
+                                    size_t buffer_length,
+                                    const sockaddr_endpoint_union_t *address) {
+    send_to_internal_arg_t arg = {
+        .data = buffer,
+        .data_length = buffer_length,
+        .dest_addr = address
+    };
+
+    avs_error_t err =
+            call_when_ready(&net_socket->socket, NET_SEND_TIMEOUT,
+                            AVS_POLLOUT | AVS_POLLERR, send_to_internal, &arg);
+    net_socket->bytes_sent += arg.bytes_sent;
+    return err;
+}
+
 static avs_error_t send_to_net(avs_net_socket_t *net_socket_,
                                const void *buffer,
                                size_t buffer_length,
@@ -1249,28 +1266,37 @@ static avs_error_t send_to_net(avs_net_socket_t *net_socket_,
                                const char *port) {
     net_socket_impl_t *net_socket = (net_socket_impl_t *) net_socket_;
     avs_net_addrinfo_t *info = NULL;
-    avs_error_t err;
-    send_to_internal_arg_t arg = {
-        .data = buffer,
-        .data_length = buffer_length
-    };
 
-    if (!(info = resolve_addrinfo_for_socket(net_socket, host, port, false,
-                                             PREFERRED_FAMILY_ONLY))) {
-        info = resolve_addrinfo_for_socket(net_socket, host, port, false,
-                                           PREFERRED_FAMILY_BLOCKED);
-    }
-    if (!info || avs_net_addrinfo_next(info, &arg.dest_addr.api_ep)) {
-        LOG(ERROR, "cannot resolve address: [%s]:%s", host, port);
-        err = avs_errno(AVS_EADDRNOTAVAIL);
-    } else {
-        err = call_when_ready(&net_socket->socket, NET_SEND_TIMEOUT,
-                              AVS_POLLOUT | AVS_POLLERR, send_to_internal,
-                              &arg);
+    avs_error_t err = avs_errno(AVS_EADDRNOTAVAIL);
+    if ((info = resolve_addrinfo_for_socket(net_socket, host, port, false,
+                                            PREFERRED_FAMILY_ONLY))) {
+        sockaddr_endpoint_union_t address;
+        while (!avs_net_addrinfo_next(info, &address.api_ep)) {
+            err = send_to_resolved(net_socket, buffer, buffer_length, &address);
+            if (err.category != AVS_ERRNO_CATEGORY
+                    || err.code != AVS_ENETUNREACH) {
+                avs_net_addrinfo_delete(&info);
+                return err;
+            }
+        }
     }
     avs_net_addrinfo_delete(&info);
-    net_socket->bytes_sent += arg.bytes_sent;
-    return err;
+    if ((info = resolve_addrinfo_for_socket(net_socket, host, port, false,
+                                            PREFERRED_FAMILY_BLOCKED))) {
+        sockaddr_endpoint_union_t address;
+        if (!avs_net_addrinfo_next(info, &address.api_ep)) {
+            err = send_to_resolved(net_socket, buffer, buffer_length, &address);
+            if (err.category != AVS_ERRNO_CATEGORY
+                    || err.code != AVS_ENETUNREACH) {
+                avs_net_addrinfo_delete(&info);
+                return err;
+            }
+        }
+    }
+    avs_net_addrinfo_delete(&info);
+    LOG(ERROR, "cannot resolve address for sending: [%s]:%s", host, port);
+    assert(avs_is_err(err));
+    return avs_errno(AVS_EADDRNOTAVAIL);
 }
 
 typedef struct {
@@ -1764,9 +1790,10 @@ avs_error_t avs_net_local_address_for_target_host(const char *target_host,
     avs_error_t err = avs_errno(AVS_EADDRNOTAVAIL);
     sockaddr_endpoint_union_t address;
     avs_net_addrinfo_t *info =
-            avs_net_addrinfo_resolve(AVS_NET_UDP_SOCKET, addr_family,
-                                     target_host, AVS_NET_RESOLVE_DUMMY_PORT,
-                                     NULL);
+            avs_net_addrinfo_resolve_ex(AVS_NET_UDP_SOCKET, addr_family,
+                                        target_host, AVS_NET_RESOLVE_DUMMY_PORT,
+                                        AVS_NET_ADDRINFO_RESOLVE_F_NOADDRCONFIG,
+                                        NULL);
     if (!info) {
         return err;
     }

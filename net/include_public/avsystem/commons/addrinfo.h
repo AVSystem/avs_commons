@@ -68,6 +68,18 @@ typedef struct avs_net_addrinfo_struct avs_net_addrinfo_t;
 #define AVS_NET_ADDRINFO_RESOLVE_F_V4MAPPED (1 << 1)
 
 /**
+ * When calling @ref avs_net_addrinfo_resolve_ex with this bit set in the
+ * <c>flags</c> parameter, addresses of all families (i.e. both IPv4 and IPv6)
+ * will be allowed to be returned, even if the host has no connectivity over the
+ * given family.
+ *
+ * This is equivalent to an inverse of <c>AI_ADDRCONFIG</c> flag to
+ * <c>getaddrinfo()</c>. For historical compatibility reasons,
+ * <c>AI_ADDRCONFIG</c> is used by default; this flag can be used to disable it.
+ */
+#define AVS_NET_ADDRINFO_RESOLVE_F_NOADDRCONFIG (1 << 2)
+
+/**
  * Resolves a text-represented host and port address to its binary
  * representation, possibly executing a DNS query as necessary.
  *
