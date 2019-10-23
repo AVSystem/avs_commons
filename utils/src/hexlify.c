@@ -45,6 +45,51 @@ ssize_t avs_hexlify(char *out_hex,
     return (ssize_t) bytes_to_hexlify;
 }
 
+static int char_to_value(char c, uint8_t *out_value) {
+    if (c >= '0' && c <= '9') {
+        *out_value = (uint8_t) (c - '0');
+    } else if (c >= 'a' && c <= 'f') {
+        *out_value = (uint8_t) (c - 'a' + 10);
+    } else if (c >= 'A' && c <= 'F') {
+        *out_value = (uint8_t) (c - 'A' + 10);
+    } else {
+        return -1;
+    }
+    return 0;
+}
+
+static int hex_to_uint8(const char *hex, uint8_t *out_value) {
+    uint8_t first_char_value;
+    uint8_t second_char_value;
+    if (char_to_value(*hex, &first_char_value)
+            || char_to_value(*(hex + 1), &second_char_value)) {
+        return -1;
+    }
+    *out_value = (uint8_t) (first_char_value << 4) | second_char_value;
+    return 0;
+}
+
+ssize_t avs_unhexlify(uint8_t *output, size_t out_size, const char *input) {
+    size_t hex_length = strlen(input);
+    if (hex_length % 2) {
+        return -1;
+    }
+
+    size_t data_size = hex_length / 2;
+    if (data_size > out_size) {
+        return -1;
+    }
+
+    size_t bytes_written = 0;
+    while (bytes_written < data_size) {
+        if (hex_to_uint8(input + 2 * bytes_written, output + bytes_written)) {
+            return -1;
+        }
+        ++bytes_written;
+    }
+    return (ssize_t) bytes_written;
+}
+
 #ifdef AVS_UNIT_TESTING
 #    include "test/hexlify.c"
 #endif // AVS_UNIT_TESTING
