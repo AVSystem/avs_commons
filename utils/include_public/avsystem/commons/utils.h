@@ -309,7 +309,7 @@ ssize_t avs_hexlify(char *out_hex,
  * @param output       Buffer to write decoded bytes to.
  * @param out_size     Size of the @p output buffer.
  * @param input        Buffer containing NULL-terminated hexadecimal
- *                     representation.
+ *                     representation without any prefixes.
  * @param out_finished Set to @c true if all bytes were converted. MUST NOT be
  *                     @c NULL .
  *

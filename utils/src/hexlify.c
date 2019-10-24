@@ -45,27 +45,26 @@ ssize_t avs_hexlify(char *out_hex,
     return (ssize_t) bytes_to_hexlify;
 }
 
-static int char_to_value(char c, uint8_t *out_value) {
+static int8_t char_to_value(char c) {
     if (c >= '0' && c <= '9') {
-        *out_value = (uint8_t) (c - '0');
+        return (int8_t) (c - '0');
     } else if (c >= 'a' && c <= 'f') {
-        *out_value = (uint8_t) (c - 'a' + 10);
+        return (int8_t) (c - 'a' + 10);
     } else if (c >= 'A' && c <= 'F') {
-        *out_value = (uint8_t) (c - 'A' + 10);
+        return (int8_t) (c - 'A' + 10);
     } else {
         return -1;
     }
-    return 0;
 }
 
 static int hex_to_uint8(const char *hex, uint8_t *out_value) {
-    uint8_t first_char_value;
-    uint8_t second_char_value;
-    if (char_to_value(*hex, &first_char_value)
-            || char_to_value(*(hex + 1), &second_char_value)) {
+    int8_t first_char_value = char_to_value(*hex);
+    int8_t second_char_value = char_to_value(*(hex + 1));
+
+    if (first_char_value < 0 || second_char_value < 0) {
         return -1;
     }
-    *out_value = (uint8_t) (first_char_value << 4) | second_char_value;
+    *out_value = (uint8_t) ((first_char_value << 4) | second_char_value);
     return 0;
 }
 
