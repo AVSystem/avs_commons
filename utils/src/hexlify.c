@@ -69,24 +69,27 @@ static int hex_to_uint8(const char *hex, uint8_t *out_value) {
     return 0;
 }
 
-ssize_t avs_unhexlify(uint8_t *output, size_t out_size, const char *input) {
+ssize_t avs_unhexlify(uint8_t *output,
+                      size_t out_size,
+                      const char *input,
+                      bool *out_finished) {
+    assert(out_finished);
     size_t hex_length = strlen(input);
     if (hex_length % 2) {
         return -1;
     }
 
-    size_t data_size = hex_length / 2;
-    if (data_size > out_size) {
-        return -1;
-    }
+    const size_t data_size = hex_length / 2;
+    const size_t bytes_to_convert = AVS_MIN(data_size, out_size);
 
     size_t bytes_written = 0;
-    while (bytes_written < data_size) {
+    while (bytes_written < bytes_to_convert) {
         if (hex_to_uint8(input + 2 * bytes_written, output + bytes_written)) {
             return -1;
         }
         ++bytes_written;
     }
+    *out_finished = (bytes_written == data_size);
     return (ssize_t) bytes_written;
 }
 

@@ -51,24 +51,43 @@ AVS_UNIT_TEST(hexlify, full) {
 
 AVS_UNIT_TEST(unhexlify, bad_input) {
     uint8_t out[4];
-    AVS_UNIT_ASSERT_EQUAL(avs_unhexlify(out, sizeof(out), "aaa"), -1);
-    AVS_UNIT_ASSERT_EQUAL(avs_unhexlify(out, sizeof(out), "xddd"), -1);
-    AVS_UNIT_ASSERT_EQUAL(avs_unhexlify(out, sizeof(out), "1122334455"), -1);
+    bool finished;
+    AVS_UNIT_ASSERT_EQUAL(avs_unhexlify(out, sizeof(out), "aaa", &finished),
+                          -1);
+    AVS_UNIT_ASSERT_EQUAL(avs_unhexlify(out, sizeof(out), "xddd", &finished),
+                          -1);
+}
+
+AVS_UNIT_TEST(unhexlify, input_too_long) {
+    uint8_t out[4];
+    bool finished = true;
+    AVS_UNIT_ASSERT_EQUAL(
+            avs_unhexlify(out, sizeof(out), "1122334455", &finished),
+            sizeof(out));
+    AVS_UNIT_ASSERT_FALSE(finished);
 }
 
 AVS_UNIT_TEST(unhexlify, zero_input) {
     uint8_t out[4];
-    AVS_UNIT_ASSERT_EQUAL(avs_unhexlify(out, sizeof(out), ""), 0);
+    bool finished = false;
+    AVS_UNIT_ASSERT_EQUAL(avs_unhexlify(out, sizeof(out), "", &finished), 0);
+    AVS_UNIT_ASSERT_TRUE(finished);
 }
 
 AVS_UNIT_TEST(unhexlify, full) {
     uint8_t out[4];
+    bool finished = false;
 
     memset(out, 0, sizeof(out));
-    AVS_UNIT_ASSERT_EQUAL(avs_unhexlify(out, sizeof(out), "aaff"), 2);
+    AVS_UNIT_ASSERT_EQUAL(avs_unhexlify(out, sizeof(out), "aaff", &finished),
+                          2);
     AVS_UNIT_ASSERT_EQUAL_BYTES_SIZED(out, "\xaa\xff", 2);
+    AVS_UNIT_ASSERT_TRUE(finished);
 
+    finished = false;
     memset(out, 0, sizeof(out));
-    AVS_UNIT_ASSERT_EQUAL(avs_unhexlify(out, sizeof(out), "0099AAFF"), 4);
+    AVS_UNIT_ASSERT_EQUAL(
+            avs_unhexlify(out, sizeof(out), "0099AAFF", &finished), 4);
     AVS_UNIT_ASSERT_EQUAL_BYTES_SIZED(out, "\x00\x99\xaa\xff", 4);
+    AVS_UNIT_ASSERT_TRUE(finished);
 }
