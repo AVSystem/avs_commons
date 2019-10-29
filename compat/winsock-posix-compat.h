@@ -30,7 +30,8 @@
 #include <assert.h>
 #include <time.h>
 
-#include <avsystem/commons/errno.h>
+#include <errno.h>
+#include <avsystem/commons/errno_map.h>
 
 #ifdef ERROR
 // Windows headers are REALLY weird. winsock2.h includes windows.h, which
