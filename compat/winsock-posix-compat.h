@@ -30,6 +30,7 @@
 #include <assert.h>
 #include <time.h>
 
+#include <errno.h>
 #include <avsystem/commons/errno_map.h>
 
 #ifdef ERROR
