@@ -71,14 +71,12 @@ static int hex_to_uint8(const char *hex, uint8_t *out_value) {
 ssize_t avs_unhexlify(uint8_t *output,
                       size_t out_size,
                       const char *input,
-                      bool *out_finished) {
-    assert(out_finished);
-    size_t hex_length = strlen(input);
-    if (hex_length % 2) {
+                      size_t in_size) {
+    if (in_size % 2) {
         return -1;
     }
 
-    const size_t data_size = hex_length / 2;
+    const size_t data_size = in_size / 2;
     const size_t bytes_to_convert = AVS_MIN(data_size, out_size);
 
     size_t bytes_written = 0;
@@ -88,7 +86,6 @@ ssize_t avs_unhexlify(uint8_t *output,
         }
         ++bytes_written;
     }
-    *out_finished = (bytes_written == data_size);
     return (ssize_t) bytes_written;
 }
 
