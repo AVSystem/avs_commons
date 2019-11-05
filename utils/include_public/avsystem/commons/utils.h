@@ -310,7 +310,7 @@ ssize_t avs_hexlify(char *out_hex,
  * @param out_size Size of the @p output buffer.
  * @param input    Buffer containing NULL-terminated hexadecimal representation
  *                 without any prefixes.
- * @param in_size  Length of @p input . MUST be dividable by 2.
+ * @param in_size  Length of @p input . MUST be divisible by 2.
  *
  * @returns Number of bytes saved to @p output buffer or a negative value if
  *          input data is invalid. If not all bytes were converted (return value
