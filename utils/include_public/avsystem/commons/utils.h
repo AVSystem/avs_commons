@@ -304,6 +304,26 @@ ssize_t avs_hexlify(char *out_hex,
                     size_t input_size);
 
 /**
+ * Converts hexadecimal representation of bytes to binary data.
+ *
+ * @param output   Buffer to write decoded bytes to.
+ * @param out_size Size of the @p output buffer.
+ * @param input    Buffer containing NULL-terminated hexadecimal representation
+ *                 without any prefixes.
+ * @param in_size  Length of @p input . MUST be divisible by 2.
+ *
+ * @returns Number of bytes saved to @p output buffer or a negative value if
+ *          input data is invalid. If not all bytes were converted (return value
+ *          is smaller than @p in_size divided by 2), this function may be
+ *          called again with @p input pointer increased by return value
+ *          multiplied by 2, to convert remaining data.
+ */
+ssize_t avs_unhexlify(uint8_t *output,
+                      size_t out_size,
+                      const char *input,
+                      size_t in_size);
+
+/**
  * Utility macros for accessing unaligned data.
  * @{
  */
