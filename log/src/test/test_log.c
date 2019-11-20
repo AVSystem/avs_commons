@@ -282,3 +282,22 @@ AVS_UNIT_TEST(log, lazy_log) {
     ASSERT_LOG_CLEAN;
     reset_everything();
 }
+
+AVS_UNIT_TEST(log, truncated) {
+#define LOG_MSG "log to be truncated"
+
+    ASSERT_LOG(test, INFO, "INFO [test] [plik:1]: log to...");
+    char buf[32];
+    va_list empty_va_list;
+    memset(&empty_va_list, 0, sizeof(empty_va_list));
+    log_with_buffer_unlocked_v(buf,
+                               sizeof(buf),
+                               AVS_LOG_INFO,
+                               "test",
+                               "plik",
+                               1,
+                               LOG_MSG,
+                               empty_va_list);
+
+#undef LOG_MSG
+}
