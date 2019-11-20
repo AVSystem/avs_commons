@@ -239,8 +239,14 @@ static void log_with_buffer_unlocked_v(char *log_buf,
         }
         if ((size_t) pfresult > log_buf_left) {
             pfresult = (int) log_buf_left;
+            log_buf_ptr = log_buf_ptr + pfresult - 3;
+            for (int i = 0; i < 3; i++) {
+                *log_buf_ptr = '.';
+                ++log_buf_ptr;
+            }
+        } else {
+            log_buf_ptr += pfresult;
         }
-        log_buf_ptr += pfresult;
     }
     *log_buf_ptr = '\0';
     g_log.handler(level, module, log_buf);
