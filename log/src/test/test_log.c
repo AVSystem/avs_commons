@@ -17,6 +17,8 @@
 #include <avsystem/commons/log.h>
 #include <avsystem/commons/unit/test.h>
 
+#include <malloc.h>
+
 static avs_log_level_t EXPECTED_LEVEL;
 static char EXPECTED_MODULE[64];
 static char EXPECTED_MESSAGE[512];
@@ -281,4 +283,50 @@ AVS_UNIT_TEST(log, lazy_log) {
 
     ASSERT_LOG_CLEAN;
     reset_everything();
+}
+
+AVS_UNIT_TEST(log, truncated) {
+#define LOG_MSG "log to be truncated"
+#define TEST_BUF_SIZE 32
+
+    char *buf = (char *) malloc(32);
+    va_list empty_va_list;
+    memset(&empty_va_list, 0, sizeof(empty_va_list));
+
+    memset(buf, 'a', 32);
+    ASSERT_LOG(test, INFO, "INFO [test] [plik:1]: log to...");
+    log_with_buffer_unlocked_v(buf,
+                               TEST_BUF_SIZE,
+                               AVS_LOG_INFO,
+                               "test",
+                               "plik",
+                               1,
+                               LOG_MSG,
+                               empty_va_list);
+
+    memset(buf, 'a', 32);
+    ASSERT_LOG(test, INFO, "INFO [test] [pl");
+    log_with_buffer_unlocked_v(buf,
+                               16,
+                               AVS_LOG_INFO,
+                               "test",
+                               "plik",
+                               1,
+                               LOG_MSG,
+                               empty_va_list);
+
+    memset(buf, 'a', 32);
+    ASSERT_LOG(test, INFO, "INFO [test] [plik:1]: 123456789");
+    log_with_buffer_unlocked_v(buf,
+                               TEST_BUF_SIZE,
+                               AVS_LOG_INFO,
+                               "test",
+                               "plik",
+                               1,
+                               "123456789",
+                               empty_va_list);
+
+    free(buf);
+
+#undef LOG_MSG
 }

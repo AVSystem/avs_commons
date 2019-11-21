@@ -217,7 +217,7 @@ static void log_with_buffer_unlocked_v(char *log_buf,
                                        const char *msg,
                                        va_list ap) {
     char *log_buf_ptr = log_buf;
-    size_t log_buf_left = log_buf_size - 1;
+    size_t log_buf_left = log_buf_size;
     int pfresult = snprintf(log_buf_ptr, log_buf_left,
                             "%s [%s] [%s:%u]: ", level_as_string(level), module,
                             file, line);
@@ -238,11 +238,16 @@ static void log_with_buffer_unlocked_v(char *log_buf,
             return;
         }
         if ((size_t) pfresult > log_buf_left) {
-            pfresult = (int) log_buf_left;
+            pfresult = (int) log_buf_left - 1;
+            log_buf_ptr = log_buf_ptr + pfresult - 3;
+            for (int i = 0; i < 3; i++) {
+                *log_buf_ptr = '.';
+                ++log_buf_ptr;
+            }
+        } else {
+            log_buf_ptr += pfresult;
         }
-        log_buf_ptr += pfresult;
     }
-    *log_buf_ptr = '\0';
     g_log.handler(level, module, log_buf);
 }
 
