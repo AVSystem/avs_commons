@@ -244,8 +244,6 @@ static void log_with_buffer_unlocked_v(char *log_buf,
                 *log_buf_ptr = '.';
                 ++log_buf_ptr;
             }
-        } else {
-            log_buf_ptr += pfresult;
         }
     }
     g_log.handler(level, module, log_buf);

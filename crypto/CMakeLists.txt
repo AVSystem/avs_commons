@@ -29,7 +29,7 @@ if(WITH_INTERNAL_LOGS)
     target_link_libraries(avs_crypto_core INTERFACE avs_log)
 endif()
 
-if(WITH_OPENSSL AND OPENSSL_VERSION VERSION_GREATER_EQUAL 1.1.0)
+if(WITH_OPENSSL AND NOT OPENSSL_VERSION VERSION_LESS 1.1.0)
     add_library(avs_crypto_openssl
                 ${AVS_CRYPTO_SOURCES}
                 src/openssl/hkdf.c
@@ -44,7 +44,7 @@ if(WITH_OPENSSL AND OPENSSL_VERSION VERSION_GREATER_EQUAL 1.1.0)
     avs_install_export(avs_crypto_openssl crypto)
 endif()
 
-if(WITH_MBEDTLS AND MBEDTLS_VERSION VERSION_GREATER_EQUAL 2.14.0)
+if(WITH_MBEDTLS AND NOT MBEDTLS_VERSION VERSION_LESS 2.14.0)
     add_library(avs_crypto_mbedtls
                 ${AVS_CRYPTO_SOURCES}
                 src/mbedtls/hkdf.c
