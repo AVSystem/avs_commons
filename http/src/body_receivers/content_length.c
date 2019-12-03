@@ -52,7 +52,7 @@ static avs_error_t content_length_read(avs_stream_t *stream_,
     }
     if (avs_is_ok(err) && backend_message_finished
             && stream->content_left > 0) {
-        LOG(ERROR, "remote connection closed unexpectedly");
+        LOG(ERROR, _("remote connection closed unexpectedly"));
         err = avs_errno(AVS_EIO);
     }
     if (out_message_finished) {
@@ -105,7 +105,7 @@ _avs_http_body_receiver_content_length_create(avs_stream_t *backend,
                                               size_t content_length) {
     content_length_receiver_t *retval =
             (content_length_receiver_t *) avs_malloc(sizeof(*retval));
-    LOG(TRACE, "create_content_length_receiver");
+    LOG(TRACE, _("create_content_length_receiver"));
     if (retval) {
         *(const avs_stream_v_table_t **) (intptr_t) &retval->vtable =
                 &content_length_receiver_vtable;

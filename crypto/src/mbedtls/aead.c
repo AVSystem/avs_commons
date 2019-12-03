@@ -59,7 +59,7 @@ int avs_crypto_aead_aes_ccm_encrypt(const unsigned char *key,
                         output, tag, tag_len)));
     mbedtls_ccm_free(&ccm_ctx);
     if (result) {
-        LOG(ERROR, "mbed TLS error %d", result);
+        LOG(ERROR, _("mbed TLS error ") "%d" , result);
         return -1;
     }
     return 0;
@@ -98,7 +98,7 @@ int avs_crypto_aead_aes_ccm_decrypt(const unsigned char *key,
                                                   output, tag, tag_len)));
     mbedtls_ccm_free(&ccm_ctx);
     if (result) {
-        LOG(ERROR, "mbed TLS error %d", result);
+        LOG(ERROR, _("mbed TLS error ") "%d" , result);
         return -1;
     }
     return 0;

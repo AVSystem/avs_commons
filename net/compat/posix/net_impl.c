@@ -491,13 +491,13 @@ static sa_family_t get_connection_family(sockfd_t fd) {
 
 static avs_error_t configure_socket(net_socket_impl_t *net_socket) {
     errno = 0;
-    LOG(TRACE, "configuration '%s' 0x%02x 0x%02x",
+    LOG(TRACE, _("configuration '") "%s" _("' 0x") "%02x" _(" 0x") "%02x" ,
         net_socket->configuration.interface_name,
         net_socket->configuration.dscp, net_socket->configuration.priority);
     if (fcntl(net_socket->socket, F_SETFL, O_NONBLOCK) == -1) {
         avs_error_t err = failure_from_errno();
         LOG(ERROR,
-            "Could not switch socket to non-blocking mode (fcntl error: %s)",
+            _("Could not switch socket to non-blocking mode (fcntl error: ") "%s" _(")"),
             avs_strerror((avs_errno_t) err.code));
         return err;
     }
@@ -507,7 +507,7 @@ static avs_error_t configure_socket(net_socket_impl_t *net_socket) {
                        (socklen_t) strlen(
                                net_socket->configuration.interface_name))) {
             avs_error_t err = failure_from_errno();
-            LOG(ERROR, "setsockopt error: %s",
+            LOG(ERROR, _("setsockopt error: ") "%s" ,
                 avs_strerror((avs_errno_t) err.code));
             return err;
         }
@@ -519,7 +519,7 @@ static avs_error_t configure_socket(net_socket_impl_t *net_socket) {
         if (setsockopt(net_socket->socket, SOL_SOCKET, SO_PRIORITY, &priority,
                        length)) {
             avs_error_t err = failure_from_errno();
-            LOG(ERROR, "setsockopt error: %s",
+            LOG(ERROR, _("setsockopt error: ") "%s" ,
                 avs_strerror((avs_errno_t) err.code));
             return err;
         }
@@ -530,7 +530,7 @@ static avs_error_t configure_socket(net_socket_impl_t *net_socket) {
         socklen_t length = sizeof(tos);
         if (getsockopt(net_socket->socket, IPPROTO_IP, IP_TOS, &tos, &length)) {
             avs_error_t err = failure_from_errno();
-            LOG(ERROR, "getsockopt error: %s",
+            LOG(ERROR, _("getsockopt error: ") "%s" ,
                 avs_strerror((avs_errno_t) err.code));
             return err;
         }
@@ -538,7 +538,7 @@ static avs_error_t configure_socket(net_socket_impl_t *net_socket) {
         tos |= (uint8_t) (net_socket->configuration.dscp << 2);
         if (setsockopt(net_socket->socket, IPPROTO_IP, IP_TOS, &tos, length)) {
             avs_error_t err = failure_from_errno();
-            LOG(ERROR, "setsockopt error: %s",
+            LOG(ERROR, _("setsockopt error: ") "%s" ,
                 avs_strerror((avs_errno_t) err.code));
             return err;
         }
@@ -812,7 +812,7 @@ static avs_error_t get_host_port_ptr(const struct sockaddr *sa,
             return AVS_OK;
         } else {
             LOG(ERROR,
-                "malformed IPv4 address (too short: got %uB, expected >= %uB)",
+                _("malformed IPv4 address (too short: got ") "%uB" _(", expected >= ") "%uB" _(")"),
                 (unsigned) salen, (unsigned) sizeof(struct sockaddr_in));
             return avs_errno(AVS_EINVAL);
         }
@@ -826,14 +826,14 @@ static avs_error_t get_host_port_ptr(const struct sockaddr *sa,
             return AVS_OK;
         } else {
             LOG(ERROR,
-                "malformed IPv6 address (too short: got %uB, expected >= %uB)",
+                _("malformed IPv6 address (too short: got ") "%uB" _(", expected >= ") "%uB" _(")"),
                 (unsigned) salen, (unsigned) sizeof(struct sockaddr_in6));
             return avs_errno(AVS_EINVAL);
         }
 #    endif /* WITH_IPV6 */
 
     default:
-        LOG(ERROR, "unsupported socket family: %d", (int) sa->sa_family);
+        LOG(ERROR, _("unsupported socket family: ") "%d" , (int) sa->sa_family);
         return avs_errno(AVS_ENOTSUP);
     }
 }
@@ -849,7 +849,7 @@ static avs_error_t host_port_to_string_impl(const struct sockaddr *sa,
     int result = getnameinfo(sa, salen, host, hostlen, serv, servlen,
                              NI_NUMERICHOST | NI_NUMERICSERV);
     if (result) {
-        LOG(ERROR, "getnameinfo() failed: %s (%d)",
+        LOG(ERROR, _("getnameinfo() failed: ") "%s" _(" (") "%d" _(")"),
             avs_strerror(avs_map_errno(errno)), avs_map_errno(errno));
         return failure_from_errno();
     } else {
@@ -865,14 +865,14 @@ static avs_error_t host_port_to_string_impl(const struct sockaddr *sa,
 
     if (host && _avs_inet_ntop(sa->sa_family, addr_ptr, host, hostlen)) {
         err = failure_from_errno();
-        LOG(ERROR, "could not stringify host (buf size %u)",
+        LOG(ERROR, _("could not stringify host (buf size ") "%u" _(")"),
             (unsigned) hostlen);
         return err;
     }
     if (serv
             && avs_simple_snprintf(serv, servlen, "%" PRIu16, ntohs(*port_ptr))
                            < 0) {
-        LOG(ERROR, "could not stringify port: %u (buf size %u)",
+        LOG(ERROR, _("could not stringify port: ") "%u" _(" (buf size ") "%u" _(")"),
             ntohs(*port_ptr), (unsigned) servlen);
         return avs_errno(AVS_ERANGE);
     }
@@ -1064,10 +1064,10 @@ static avs_error_t try_connect(net_socket_impl_t *net_socket,
                             get_socket_proto(net_socket->type)))
                 == INVALID_SOCKET) {
             err = failure_from_errno();
-            LOG(ERROR, "cannot create socket: %s",
+            LOG(ERROR, _("cannot create socket: ") "%s" ,
                 avs_strerror((avs_errno_t) err.code));
         } else if (avs_is_err((err = configure_socket(net_socket)))) {
-            LOG(WARNING, "socket configuration problem");
+            LOG(WARNING, _("socket configuration problem"));
         }
     }
     if (avs_is_ok(err)) {
@@ -1089,12 +1089,12 @@ static avs_error_t connect_impl(net_socket_impl_t *net_socket,
     if (net_socket->socket != INVALID_SOCKET) {
         if (net_socket->type != AVS_NET_UDP_SOCKET
                 || net_socket->state != AVS_NET_SOCKET_STATE_BOUND) {
-            LOG(ERROR, "socket is already connected or bound");
+            LOG(ERROR, _("socket is already connected or bound"));
             return avs_errno(AVS_EISCONN);
         }
     }
 
-    LOG(TRACE, "connecting to [%s]:%s", host, port);
+    LOG(TRACE, _("connecting to [") "%s" _("]:") "%s" , host, port);
 
     errno = 0;
     avs_error_t err = avs_errno(AVS_EADDRNOTAVAIL);
@@ -1120,7 +1120,7 @@ static avs_error_t connect_impl(net_socket_impl_t *net_socket,
         }
     }
     avs_net_addrinfo_delete(&info);
-    LOG(ERROR, "cannot establish connection to [%s]:%s", host, port);
+    LOG(ERROR, _("cannot establish connection to [") "%s" _("]:") "%s" , host, port);
     assert(avs_is_err(err));
     return err;
 }
@@ -1131,7 +1131,7 @@ static void cache_remote_hostname(net_socket_impl_t *net_socket,
                             sizeof(net_socket->remote_hostname), "%s",
                             remote_hostname)
             < 0) {
-        LOG(WARNING, "Remote hostname %s is too long, not storing",
+        LOG(WARNING, _("Remote hostname ") "%s" _(" is too long, not storing"),
             remote_hostname);
         net_socket->remote_hostname[0] = '\0';
     }
@@ -1142,7 +1142,7 @@ static void cache_remote_port(net_socket_impl_t *net_socket,
     if (avs_simple_snprintf(net_socket->remote_port,
                             sizeof(net_socket->remote_port), "%s", remote_port)
             < 0) {
-        LOG(WARNING, "Remote port %s is too long, not storing", remote_port);
+        LOG(WARNING, _("Remote port ") "%s" _(" is too long, not storing"), remote_port);
         net_socket->remote_port[0] = '\0';
     }
 }
@@ -1191,10 +1191,10 @@ static avs_error_t send_net(avs_net_socket_t *net_socket_,
                 call_when_ready(&net_socket->socket, NET_SEND_TIMEOUT,
                                 AVS_POLLOUT | AVS_POLLERR, send_internal, &arg);
         if (avs_is_err(err)) {
-            LOG(ERROR, "send failed");
+            LOG(ERROR, _("send failed"));
             return err;
         } else if (buffer_length != 0 && arg.bytes_sent == 0) {
-            LOG(ERROR, "send returned 0");
+            LOG(ERROR, _("send returned 0"));
             break;
         } else {
             bytes_sent += arg.bytes_sent;
@@ -1207,7 +1207,7 @@ static avs_error_t send_net(avs_net_socket_t *net_socket_,
              && bytes_sent < buffer_length);
 
     if (bytes_sent < buffer_length) {
-        LOG(ERROR, "sending fail (%lu/%lu)", (unsigned long) bytes_sent,
+        LOG(ERROR, _("sending fail (") "%lu" _("/") "%lu" _(")"), (unsigned long) bytes_sent,
             (unsigned long) buffer_length);
         return avs_errno(AVS_EIO);
     } else {
@@ -1234,7 +1234,7 @@ static avs_error_t send_to_internal(sockfd_t sockfd, void *arg_) {
     arg->bytes_sent = (size_t) result;
 
     if ((size_t) result != arg->data_length) {
-        LOG(ERROR, "send_to fail (%lu/%lu)", (unsigned long) result,
+        LOG(ERROR, _("send_to fail (") "%lu" _("/") "%lu" _(")"), (unsigned long) result,
             (unsigned long) arg->data_length);
         return avs_errno(AVS_EIO);
     } else {
@@ -1294,7 +1294,7 @@ static avs_error_t send_to_net(avs_net_socket_t *net_socket_,
         }
     }
     avs_net_addrinfo_delete(&info);
-    LOG(ERROR, "cannot resolve address for sending: [%s]:%s", host, port);
+    LOG(ERROR, _("cannot resolve address for sending: [") "%s" _("]:") "%s" , host, port);
     assert(avs_is_err(err));
     return avs_errno(AVS_EADDRNOTAVAIL);
 }
@@ -1445,14 +1445,14 @@ static avs_error_t create_listening_socket(net_socket_impl_t *net_socket,
                                 get_socket_proto(net_socket->type));
     if (net_socket->socket == INVALID_SOCKET) {
         err = failure_from_errno();
-        LOG(ERROR, "cannot create system socket: %s",
+        LOG(ERROR, _("cannot create system socket: ") "%s" ,
             avs_strerror((avs_errno_t) err.code));
         goto create_listening_socket_error;
     }
     if (setsockopt(net_socket->socket, SOL_SOCKET, SO_REUSEADDR, &reuse_addr,
                    sizeof(reuse_addr))) {
         err = failure_from_errno();
-        LOG(ERROR, "can't set socket opt");
+        LOG(ERROR, _("can't set socket opt"));
         goto create_listening_socket_error;
     }
     if (avs_is_err((err = configure_socket(net_socket)))) {
@@ -1463,13 +1463,13 @@ static avs_error_t create_listening_socket(net_socket_impl_t *net_socket,
     errno = 0;
     if (bind(net_socket->socket, addr, addrlen) < 0 && errno != EINPROGRESS) {
         err = failure_from_errno();
-        LOG(ERROR, "bind error: %s", avs_strerror((avs_errno_t) err.code));
+        LOG(ERROR, _("bind error: ") "%s" , avs_strerror((avs_errno_t) err.code));
         goto create_listening_socket_error;
     }
     if (net_socket->type == AVS_NET_TCP_SOCKET
             && listen(net_socket->socket, NET_LISTEN_BACKLOG) < 0) {
         err = failure_from_errno();
-        LOG(ERROR, "listen error: %s", avs_strerror((avs_errno_t) err.code));
+        LOG(ERROR, _("listen error: ") "%s" , avs_strerror((avs_errno_t) err.code));
         goto create_listening_socket_error;
     }
     return AVS_OK;
@@ -1493,7 +1493,7 @@ static avs_error_t try_bind(net_socket_impl_t *net_socket,
                   net_socket->type, family, localaddr, port,
                   AVS_NET_ADDRINFO_RESOLVE_F_PASSIVE, NULL))
             || avs_net_addrinfo_next(info, &address.api_ep)) {
-        LOG(WARNING, "Cannot get %s address info for %s", get_af_name(family),
+        LOG(WARNING, _("Cannot get ") "%s" _(" address info for ") "%s" , get_af_name(family),
             localaddr ? localaddr : "(null)");
         err = avs_errno(AVS_EINVAL);
         goto bind_net_end;
@@ -1511,7 +1511,7 @@ static avs_error_t bind_net(avs_net_socket_t *net_socket_,
                             const char *port) {
     net_socket_impl_t *net_socket = (net_socket_impl_t *) net_socket_;
     if (net_socket->socket != INVALID_SOCKET) {
-        LOG(ERROR, "socket is already connected or bound");
+        LOG(ERROR, _("socket is already connected or bound"));
         return avs_errno(AVS_EISCONN);
     }
 
@@ -1583,8 +1583,8 @@ static avs_error_t accept_udp(net_socket_impl_t *server_net_socket,
                               net_socket_impl_t *new_net_socket) {
     if (!server_net_socket->configuration.reuse_addr
             || !new_net_socket->configuration.reuse_addr) {
-        LOG(ERROR, "Both server and client socket must have "
-                   "configuration.reuse_addr set to 1");
+        LOG(ERROR, _("Both server and client socket must have ")
+                   _("configuration.reuse_addr set to 1"));
         return avs_errno(AVS_EINVAL);
     }
 
@@ -1608,8 +1608,8 @@ static avs_error_t accept_udp(net_socket_impl_t *server_net_socket,
                          ? avs_strerror((avs_errno_t) err.code)
                          : "unknown error");
         LOG(DEBUG,
-            "Error while gathering info about server_net_socket (%s). "
-            "None of server_net_socket or new_net_socket has been affected.",
+            _("Error while gathering info about server_net_socket (") "%s" _("). ")
+            _("None of server_net_socket or new_net_socket has been affected."),
             error_string);
         return err;
     }
@@ -1619,8 +1619,8 @@ static avs_error_t accept_udp(net_socket_impl_t *server_net_socket,
                                        new_net_socket->remote_hostname,
                                        new_net_socket->remote_port)))) {
         LOG(DEBUG,
-            "Error while connecting new_net_socket to %s:%s). Rolling back "
-            "changes.",
+            _("Error while connecting new_net_socket to ") "%s" _(":") "%s" _("). Rolling back ")
+            _("changes."),
             new_net_socket->remote_hostname, new_net_socket->remote_port);
         swap_socket_fd_and_state(server_net_socket, new_net_socket);
         close_net_raw(server_net_socket);
@@ -1629,7 +1629,7 @@ static avs_error_t accept_udp(net_socket_impl_t *server_net_socket,
             bind_net((avs_net_socket_t *) server_net_socket, local_hostname,
                      local_port);
     if (avs_is_err(bind_again_err)) {
-        LOG(ERROR, "Could not bind server_net_socket again. It's closed now.");
+        LOG(ERROR, _("Could not bind server_net_socket again. It's closed now."));
         close_net_raw(server_net_socket);
         return bind_again_err;
     }
@@ -1672,17 +1672,17 @@ static avs_error_t accept_net(avs_net_socket_t *server_net_socket_,
     assert(server_net_socket->operations == &net_vtable);
     if (new_net_socket->operations != &net_vtable
             || new_net_socket->type != server_net_socket->type) {
-        LOG(ERROR, "accept_net() called with socket of invalid type");
+        LOG(ERROR, _("accept_net() called with socket of invalid type"));
         return avs_errno(AVS_EINVAL);
     }
 
     if (new_net_socket->socket != INVALID_SOCKET) {
-        LOG(ERROR, "socket is already connected or bound");
+        LOG(ERROR, _("socket is already connected or bound"));
         return avs_errno(AVS_EISCONN);
     }
 
     if (server_net_socket->state != AVS_NET_SOCKET_STATE_BOUND) {
-        LOG(ERROR, "Server socket must be bound before calling 'accept' on it");
+        LOG(ERROR, _("Server socket must be bound before calling 'accept' on it"));
         return avs_errno(AVS_ENETDOWN);
     }
 
@@ -1713,16 +1713,16 @@ static avs_error_t accept_net(avs_net_socket_t *server_net_socket_,
 static int
 check_configuration(const avs_net_socket_configuration_t *configuration) {
     if (strlen(configuration->interface_name) >= IF_NAMESIZE) {
-        LOG(ERROR, "interface name too long <%s>",
+        LOG(ERROR, _("interface name too long <") "%s" _(">"),
             configuration->interface_name);
         return -1;
     }
     if (configuration->dscp >= 64) {
-        LOG(ERROR, "bad DSCP value <%x>", (unsigned) configuration->dscp);
+        LOG(ERROR, _("bad DSCP value <") "%x" _(">"), (unsigned) configuration->dscp);
         return -1;
     }
     if (configuration->priority > 7) {
-        LOG(ERROR, "bad priority value <%d>",
+        LOG(ERROR, _("bad priority value <") "%d" _(">"),
             (unsigned) configuration->priority);
         return -1;
     }
@@ -1733,7 +1733,7 @@ static void
 store_configuration(net_socket_impl_t *socket,
                     const avs_net_socket_configuration_t *configuration) {
     memcpy(&socket->configuration, configuration, sizeof(*configuration));
-    LOG(TRACE, "stored socket configuration");
+    LOG(TRACE, _("stored socket configuration"));
 }
 
 static avs_error_t create_net_socket(avs_net_socket_t **socket,
@@ -1768,7 +1768,7 @@ static avs_error_t create_net_socket(avs_net_socket_t **socket,
             store_configuration((net_socket_impl_t *) *socket, configuration);
         }
     } else {
-        LOG(TRACE, "no additional socket configuration");
+        LOG(TRACE, _("no additional socket configuration"));
     }
     return AVS_OK;
 }
@@ -1939,7 +1939,7 @@ static avs_error_t get_udp_overhead(net_socket_impl_t *net_socket, int *out) {
 
 static avs_error_t get_inner_mtu(net_socket_impl_t *net_socket, int *out_mtu) {
     if (net_socket->type != AVS_NET_UDP_SOCKET) {
-        LOG(ERROR, "get_opt_net: inner MTU calculation unimplemented for TCP");
+        LOG(ERROR, _("get_opt_net: inner MTU calculation unimplemented for TCP"));
         return avs_errno(AVS_ENOTSUP);
     }
     avs_error_t err = get_mtu(net_socket, out_mtu);
@@ -1954,7 +1954,7 @@ static avs_error_t get_inner_mtu(net_socket_impl_t *net_socket, int *out_mtu) {
         }
     } else {
         if (net_socket->socket == INVALID_SOCKET) {
-            LOG(ERROR, "cannot get inner MTU for closed socket");
+            LOG(ERROR, _("cannot get inner MTU for closed socket"));
             return avs_errno(AVS_EBADF);
         }
         *out_mtu = get_fallback_inner_mtu(net_socket);
@@ -1989,8 +1989,8 @@ static avs_error_t get_opt_net(avs_net_socket_t *net_socket_,
         return AVS_OK;
     default:
         LOG(DEBUG,
-            "get_opt_net: unknown or unsupported option key: "
-            "(avs_net_socket_opt_key_t) %d",
+            _("get_opt_net: unknown or unsupported option key: ")
+            _("(avs_net_socket_opt_key_t) ") "%d" ,
             (int) option_key);
         return avs_errno(AVS_EINVAL);
     }
@@ -2006,8 +2006,8 @@ static avs_error_t set_opt_net(avs_net_socket_t *net_socket_,
         return AVS_OK;
     default:
         LOG(DEBUG,
-            "set_opt_net: unknown or unsupported option key: "
-            "(avs_net_socket_opt_key_t) %d",
+            _("set_opt_net: unknown or unsupported option key: ")
+            _("(avs_net_socket_opt_key_t) ") "%d" ,
             (int) option_key);
         return avs_errno(AVS_EINVAL);
     }

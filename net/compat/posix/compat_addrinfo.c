@@ -160,7 +160,7 @@ avs_net_addrinfo_t *avs_net_addrinfo_resolve_ex(
         int flags,
         const avs_net_resolved_endpoint_t *preferred_endpoint) {
     if (avs_is_err(_avs_net_ensure_global_state())) {
-        LOG(ERROR, "avs_net global state initialization error");
+        LOG(ERROR, _("avs_net global state initialization error"));
         return NULL;
     }
 
@@ -168,7 +168,7 @@ avs_net_addrinfo_t *avs_net_addrinfo_resolve_ex(
     memset((void *) &hint, 0, sizeof(hint));
     hint.ai_family = _avs_net_get_af(family);
     if (family != AVS_NET_AF_UNSPEC && hint.ai_family == AF_UNSPEC) {
-        LOG(DEBUG, "Unsupported avs_net_af_t: %d", (int) family);
+        LOG(DEBUG, _("Unsupported avs_net_af_t: ") "%d" , (int) family);
         return NULL;
     }
     if (!(flags & AVS_NET_ADDRINFO_RESOLVE_F_NOADDRCONFIG)) {
@@ -182,14 +182,14 @@ avs_net_addrinfo_t *avs_net_addrinfo_resolve_ex(
     // so we use our own port parsing
     uint16_t port;
     if (port_from_string(&port, port_str)) {
-        LOG(ERROR, "Invalid port: %s", port_str);
+        LOG(ERROR, _("Invalid port: ") "%s" , port_str);
         return NULL;
     }
 
     avs_net_addrinfo_t *ctx =
             (avs_net_addrinfo_t *) avs_calloc(1, sizeof(avs_net_addrinfo_t));
     if (!ctx) {
-        LOG(ERROR, "Out of memory");
+        LOG(ERROR, _("Out of memory"));
         return NULL;
     }
 
@@ -218,10 +218,10 @@ avs_net_addrinfo_t *avs_net_addrinfo_resolve_ex(
     int error = getaddrinfo(host, NULL, &hint, &ctx->results);
     if (error) {
 #ifdef HAVE_GAI_STRERROR
-        LOG(DEBUG, "getaddrinfo() error: %s; family == (avs_net_af_t) %d",
+        LOG(DEBUG, _("getaddrinfo() error: ") "%s" _("; family == (avs_net_af_t) ") "%d" ,
             gai_strerror(error), (int) family);
 #else
-        LOG(DEBUG, "getaddrinfo() error: %d; family == (avs_net_af_t) %d",
+        LOG(DEBUG, _("getaddrinfo() error: ") "%d" _("; family == (avs_net_af_t) ") "%d" ,
             error, (int) family);
 #endif
         avs_net_addrinfo_delete(&ctx);

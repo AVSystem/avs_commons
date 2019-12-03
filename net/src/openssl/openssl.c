@@ -224,7 +224,7 @@ static int aead_cipher_tag_len(SSL *ssl) {
         return EVP_GCM_TLS_TAG_LEN;
     }
 
-    LOG(ERROR, "Unsupported cipher mode");
+    LOG(ERROR, _("Unsupported cipher mode"));
     return -1;
 }
 
@@ -551,7 +551,7 @@ static int verify_peer_subject_cn(ssl_socket_t *ssl_socket, const char *host) {
     /* check whether CN matches host portion of the URL */
     peer_certificate = SSL_get_peer_certificate(ssl_socket->ssl);
     if (!peer_certificate) {
-        LOG(ERROR, "Cannot load peer certificate");
+        LOG(ERROR, _("Cannot load peer certificate"));
         return -1;
     }
     X509_NAME_oneline(X509_get_subject_name(peer_certificate), buffer,
@@ -566,7 +566,7 @@ static int verify_peer_subject_cn(ssl_socket_t *ssl_socket, const char *host) {
         cn += 3;
     }
     if (cn == NULL || strcmp(cn, host)) {
-        LOG(ERROR, "Subject CN(%s) does not match the URL (%s)", cn, host);
+        LOG(ERROR, _("Subject CN(") "%s" _(") does not match the URL (") "%s" _(")"), cn, host);
         return -1;
     }
 
@@ -579,7 +579,7 @@ static avs_error_t ssl_handshake(ssl_socket_t *socket) {
             avs_net_socket_get_opt(socket->backend_socket,
                                    AVS_NET_SOCKET_OPT_STATE, &state_opt);
     if (avs_is_err(err)) {
-        LOG(ERROR, "ssl_handshake: could not get socket state");
+        LOG(ERROR, _("ssl_handshake: could not get socket state"));
         return err;
     }
     socket->bio_error = AVS_OK;
@@ -595,10 +595,10 @@ static avs_error_t ssl_handshake(ssl_socket_t *socket) {
                                    LONG_MAX));
             if (!session) {
                 LOG(WARNING,
-                    "Could not restore session; performing full handshake");
+                    _("Could not restore session; performing full handshake"));
             } else if (!SSL_set_session(socket->ssl, session)) {
                 LOG(WARNING,
-                    "SSL_set_session() failed; performing full handshake");
+                    _("SSL_set_session() failed; performing full handshake"));
             }
             SSL_SESSION_free(session);
         }
@@ -607,7 +607,7 @@ static avs_error_t ssl_handshake(ssl_socket_t *socket) {
     } else if (state_opt.state == AVS_NET_SOCKET_STATE_ACCEPTED) {
         result = SSL_accept(socket->ssl);
     } else {
-        LOG(ERROR, "ssl_handshake: invalid socket state");
+        LOG(ERROR, _("ssl_handshake: invalid socket state"));
         return avs_errno(AVS_EBADF);
     }
     if (result <= 0) {
@@ -635,12 +635,12 @@ static avs_error_t ssl_handshake(ssl_socket_t *socket) {
 
 static int configure_cipher_list(ssl_socket_t *socket,
                                  const char *cipher_list) {
-    LOG(DEBUG, "cipher list: %s", cipher_list);
+    LOG(DEBUG, _("cipher list: ") "%s" , cipher_list);
     if (SSL_CTX_set_cipher_list(socket->ctx, cipher_list)) {
         return 0;
     }
 
-    LOG(WARNING, "could not set cipher list to %s", cipher_list);
+    LOG(WARNING, _("could not set cipher list to ") "%s" , cipher_list);
     log_openssl_error();
     return -1;
 }
@@ -663,7 +663,7 @@ ids_to_cipher_list(ssl_socket_t *socket,
 
     for (size_t i = 0; i < suites->num_ids; ++i) {
         if (suites->ids[i] > UINT16_MAX) {
-            LOG(DEBUG, "ignoring unexpectedly large cipher ID: 0x%x",
+            LOG(DEBUG, _("ignoring unexpectedly large cipher ID: 0x") "%x" ,
                 suites->ids[i]);
             continue;
         }
@@ -673,7 +673,7 @@ ids_to_cipher_list(ssl_socket_t *socket,
                                                          & 0xFF) };
         const SSL_CIPHER *cipher = SSL_CIPHER_find(socket->ssl, id_as_chars);
         if (!cipher) {
-            LOG(DEBUG, "ignoring unsupported cipher ID: 0x%04x",
+            LOG(DEBUG, _("ignoring unsupported cipher ID: 0x") "%04x" ,
                 suites->ids[i]);
             continue;
         }
@@ -765,7 +765,7 @@ static unsigned int dtls_timer_cb(SSL *ssl, unsigned int timer_us) {
 
 static avs_error_t start_ssl(ssl_socket_t *socket, const char *host) {
     BIO *bio = NULL;
-    LOG(TRACE, "start_ssl(socket=%p)", (void *) socket);
+    LOG(TRACE, _("start_ssl(socket=") "%p" _(")"), (void *) socket);
 
 #ifdef WITH_TLS_SESSION_PERSISTENCE
     enable_session_cache(socket);
@@ -806,13 +806,13 @@ static avs_error_t start_ssl(ssl_socket_t *socket, const char *host) {
                                              ? socket->server_name_indication
                                              : host))
             == 0) {
-        LOG(ERROR, "cannot setup SNI extension");
+        LOG(ERROR, _("cannot setup SNI extension"));
         return avs_errno(AVS_ENOMEM);
     }
 
     bio = avs_bio_spawn(socket);
     if (!bio) {
-        LOG(ERROR, "cannot create BIO object");
+        LOG(ERROR, _("cannot create BIO object"));
         return avs_errno(AVS_ENOMEM);
     }
     SSL_set_bio(socket->ssl, bio, bio);
@@ -828,13 +828,13 @@ static avs_error_t start_ssl(ssl_socket_t *socket, const char *host) {
     // Restore backend socket that might have been disabled by dtls_timer_cb()
     socket->backend_socket = backend_socket;
     if (avs_is_err(err)) {
-        LOG(ERROR, "SSL handshake failed.");
+        LOG(ERROR, _("SSL handshake failed."));
         log_openssl_error();
         return err;
     }
 
     if (socket->verification && verify_peer_subject_cn(socket, host) != 0) {
-        LOG(ERROR, "server certificate verification failure");
+        LOG(ERROR, _("server certificate verification failure"));
         return avs_errno(AVS_EPROTO);
     }
 
@@ -856,7 +856,7 @@ static bool is_session_resumed(ssl_socket_t *socket) {
 static avs_error_t
 configure_ssl_certs(ssl_socket_t *socket,
                     const avs_net_certificate_info_t *cert_info) {
-    LOG(TRACE, "configure_ssl_certs");
+    LOG(TRACE, _("configure_ssl_certs"));
 
     if (cert_info->server_cert_validation) {
         socket->verification = 1;
@@ -867,11 +867,11 @@ configure_ssl_certs(ssl_socket_t *socket,
                 _avs_net_openssl_load_ca_certs(socket->ctx,
                                                &cert_info->trusted_certs);
         if (avs_is_err(err)) {
-            LOG(ERROR, "could not load CA chain");
+            LOG(ERROR, _("could not load CA chain"));
             return err;
         }
     } else {
-        LOG(DEBUG, "Server authentication disabled");
+        LOG(DEBUG, _("Server authentication disabled"));
         SSL_CTX_set_verify(socket->ctx, SSL_VERIFY_NONE, NULL);
     }
 
@@ -880,16 +880,16 @@ configure_ssl_certs(ssl_socket_t *socket,
                 _avs_net_openssl_load_client_cert(socket->ctx,
                                                   &cert_info->client_cert);
         if (avs_is_err(err)) {
-            LOG(ERROR, "could not load client certificate");
+            LOG(ERROR, _("could not load client certificate"));
             return err;
         }
         if (avs_is_err((err = _avs_net_openssl_load_client_key(
                                 socket->ctx, &cert_info->client_key)))) {
-            LOG(ERROR, "could not load client private key");
+            LOG(ERROR, _("could not load client private key"));
             return err;
         }
     } else {
-        LOG(TRACE, "client certificate not specified");
+        LOG(TRACE, _("client certificate not specified"));
     }
 
     return AVS_OK;
@@ -900,7 +900,7 @@ configure_ssl_certs(ssl_socket_t *socket,
                     const avs_net_certificate_info_t *cert_info) {
     (void) socket;
     (void) psk;
-    LOG(ERROR, "X.509 support disabled");
+    LOG(ERROR, _("X.509 support disabled"));
     return avs_errno(AVS_ENOTSUP);
 }
 #endif // WITH_X509
@@ -931,7 +931,7 @@ static unsigned int psk_client_cb(SSL *ssl,
 
 static avs_error_t configure_ssl_psk(ssl_socket_t *socket,
                                      const avs_net_psk_info_t *psk) {
-    LOG(TRACE, "configure_ssl_psk");
+    LOG(TRACE, _("configure_ssl_psk"));
 
     avs_error_t err = _avs_net_psk_copy(&socket->psk, psk);
     if (avs_is_ok(err)) {
@@ -944,7 +944,7 @@ static avs_error_t configure_ssl_psk(ssl_socket_t *socket,
                                      const avs_net_psk_info_t *psk) {
     (void) socket;
     (void) psk;
-    LOG(ERROR, "PSK not supported in this version of OpenSSL");
+    LOG(ERROR, _("PSK not supported in this version of OpenSSL"));
     return avs_errno(AVS_ENOTSUP);
 }
 #endif
@@ -962,11 +962,11 @@ static int duration_to_uint_us(unsigned *out, avs_time_duration_t in) {
 static avs_error_t
 configure_ssl(ssl_socket_t *socket,
               const avs_net_ssl_configuration_t *configuration) {
-    LOG(TRACE, "configure_ssl(socket=%p, configuration=%p)", (void *) socket,
+    LOG(TRACE, _("configure_ssl(socket=") "%p" _(", configuration=") "%p" _(")"), (void *) socket,
         (const void *) configuration);
 
     if (!configuration) {
-        LOG(WARNING, "configuration not provided");
+        LOG(WARNING, _("configuration not provided"));
         return AVS_OK;
     }
 
@@ -1004,7 +1004,7 @@ configure_ssl(ssl_socket_t *socket,
                             dtls_handshake_timeouts->min)
             || duration_to_uint_us(&socket->dtls_handshake_timeouts.max_us,
                                    dtls_handshake_timeouts->max)) {
-        LOG(ERROR, "Invalid DTLS handshake timeouts passed");
+        LOG(ERROR, _("Invalid DTLS handshake timeouts passed"));
         return avs_errno(AVS_EINVAL);
     }
 
@@ -1021,7 +1021,7 @@ configure_ssl(ssl_socket_t *socket,
     if (configuration->server_name_indication) {
         size_t len = strlen(configuration->server_name_indication);
         if (len >= sizeof(socket->server_name_indication)) {
-            LOG(ERROR, "SNI is too long (maximum allowed size is %u)",
+            LOG(ERROR, _("SNI is too long (maximum allowed size is ") "%u" _(")"),
                 (unsigned) sizeof(socket->server_name_indication) - 1);
             return avs_errno(AVS_ENOBUFS);
         }
@@ -1033,7 +1033,7 @@ configure_ssl(ssl_socket_t *socket,
         if (!(socket->enabled_ciphersuites.ids = (uint32_t *) avs_malloc(
                       configuration->ciphersuites.num_ids
                       * sizeof(*configuration->ciphersuites.ids)))) {
-            LOG(ERROR, "Out of memory");
+            LOG(ERROR, _("Out of memory"));
             return avs_errno(AVS_ENOMEM);
         }
         socket->enabled_ciphersuites.num_ids =
@@ -1046,7 +1046,7 @@ configure_ssl(ssl_socket_t *socket,
 
     if (configuration->additional_configuration_clb
             && configuration->additional_configuration_clb(socket->ctx)) {
-        LOG(ERROR, "Error while setting additional SSL configuration");
+        LOG(ERROR, _("Error while setting additional SSL configuration"));
         return avs_errno(AVS_EPIPE);
     }
     return AVS_OK;
@@ -1057,14 +1057,14 @@ send_ssl(avs_net_socket_t *socket_, const void *buffer, size_t buffer_length) {
     ssl_socket_t *socket = (ssl_socket_t *) socket_;
     int result;
 
-    LOG(TRACE, "send_ssl(socket=%p, buffer=%p, buffer_length=%lu)",
+    LOG(TRACE, _("send_ssl(socket=") "%p" _(", buffer=") "%p" _(", buffer_length=") "%lu" _(")"),
         (void *) socket, buffer, (unsigned long) buffer_length);
 
     errno = 0;
     socket->bio_error = AVS_OK;
     result = SSL_write(socket->ssl, buffer, (int) buffer_length);
     if (result < 0 || (size_t) result < buffer_length) {
-        LOG(ERROR, "write failed");
+        LOG(ERROR, _("write failed"));
         return avs_is_ok(socket->bio_error) ? avs_errno(AVS_EPROTO)
                                             : socket->bio_error;
     } else {
@@ -1078,7 +1078,7 @@ static avs_error_t receive_ssl(avs_net_socket_t *socket_,
                                size_t buffer_length) {
     ssl_socket_t *socket = (ssl_socket_t *) socket_;
     int result = 0;
-    LOG(TRACE, "receive_ssl(socket=%p, buffer=%p, buffer_length=%lu)",
+    LOG(TRACE, _("receive_ssl(socket=") "%p" _(", buffer=") "%p" _(", buffer_length=") "%lu" _(")"),
         (void *) socket, buffer, (unsigned long) buffer_length);
 
     errno = 0;
@@ -1109,7 +1109,7 @@ static avs_error_t receive_ssl(avs_net_socket_t *socket_,
                                        (int) sizeof(truncation_buffer)))
                                 > 0
                         && avs_is_ok(socket->bio_error)) {
-                    LOG(WARNING, "receive_ssl: message truncated");
+                    LOG(WARNING, _("receive_ssl: message truncated"));
                     socket->bio_error = avs_errno(AVS_EMSGSIZE);
                 }
             } while (result > 0);
@@ -1124,7 +1124,7 @@ static avs_error_t receive_ssl(avs_net_socket_t *socket_,
 
 static avs_error_t cleanup_ssl(avs_net_socket_t **socket_) {
     ssl_socket_t **socket = (ssl_socket_t **) socket_;
-    LOG(TRACE, "cleanup_ssl(*socket=%p)", (void *) *socket);
+    LOG(TRACE, _("cleanup_ssl(*socket=") "%p" _(")"), (void *) *socket);
 
 #ifdef WITH_PSK
     _avs_net_psk_cleanup(&(*socket)->psk);
@@ -1147,7 +1147,7 @@ void _avs_net_cleanup_global_ssl_state(void) {
 }
 
 avs_error_t _avs_net_initialize_global_ssl_state(void) {
-    LOG(TRACE, "OpenSSL initialization");
+    LOG(TRACE, _("OpenSSL initialization"));
 
     SSL_library_init();
 #ifdef AVS_LOG_WITH_TRACE
@@ -1155,14 +1155,14 @@ avs_error_t _avs_net_initialize_global_ssl_state(void) {
 #endif
     OpenSSL_add_all_algorithms();
     if (!RAND_load_file("/dev/urandom", -1)) {
-        LOG(WARNING, "RAND_load_file error");
+        LOG(WARNING, _("RAND_load_file error"));
         return avs_errno(AVS_ENOTSUP);
     }
     /* On some OpenSSL version, RAND_load file causes hell to break loose.
      * Get rid of any "uninitialized" memory that it created :( */
     VALGRIND_MAKE_MEM_DEFINED_IF_ADDRESSABLE(0, sbrk(0));
     if (avs_bio_init()) {
-        LOG(WARNING, "avs_bio_init error");
+        LOG(WARNING, _("avs_bio_init error"));
         return avs_errno(AVS_ENOMEM);
     }
     return AVS_OK;
@@ -1242,7 +1242,7 @@ make_ssl_context(SSL_CTX **out_ctx, bool dtls, avs_net_ssl_version_t version) {
         method = stream_method(version);
     }
     if (!method) {
-        LOG(ERROR, "Unsupported SSL version");
+        LOG(ERROR, _("Unsupported SSL version"));
         return avs_errno(AVS_ENOTSUP);
     }
     /* older versions of OpenSSL expect non-const pointer here... */
@@ -1307,11 +1307,11 @@ make_ssl_context(SSL_CTX **out_ctx, bool dtls, avs_net_ssl_version_t version) {
     }
 #    endif
     if (ossl_proto_version < 0) {
-        LOG(ERROR, "Unsupported SSL version");
+        LOG(ERROR, _("Unsupported SSL version"));
         return avs_errno(AVS_ENOTSUP);
     }
     if (!method) {
-        LOG(ERROR, "Could not get OpenSSL method handle");
+        LOG(ERROR, _("Could not get OpenSSL method handle"));
         return avs_errno(AVS_ENOTSUP);
     }
     if (!(*out_ctx = SSL_CTX_new(method))) {

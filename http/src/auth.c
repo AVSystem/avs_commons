@@ -57,14 +57,14 @@ static char *consume_alloc_quotable_token(const char **src) {
 int _avs_http_auth_setup(http_auth_t *auth, const char *challenge) {
     http_auth_new_header(auth);
     if (avs_match_token(&challenge, "Basic", AVS_SPACES) == 0) {
-        LOG(TRACE, "Basic authentication");
+        LOG(TRACE, _("Basic authentication"));
         auth->state.flags.type = HTTP_AUTH_TYPE_BASIC;
     } else if (avs_match_token(&challenge, "Digest", AVS_SPACES) == 0) {
-        LOG(TRACE, "Digest authentication");
+        LOG(TRACE, _("Digest authentication"));
         auth->state.flags.type = HTTP_AUTH_TYPE_DIGEST;
     } else {
         /* unknown scheme, ignore */
-        LOG(WARNING, "No authentication");
+        LOG(WARNING, _("No authentication"));
         return 0;
     }
 
@@ -73,44 +73,44 @@ int _avs_http_auth_setup(http_auth_t *auth, const char *challenge) {
             avs_free(auth->state.realm);
             if (!(auth->state.realm =
                           consume_alloc_quotable_token(&challenge))) {
-                LOG(ERROR, "Could not allocate memory for auth realm");
+                LOG(ERROR, _("Could not allocate memory for auth realm"));
                 return -1;
             }
-            LOG(TRACE, "Auth realm: %s", auth->state.realm);
+            LOG(TRACE, _("Auth realm: ") "%s" , auth->state.realm);
         } else if (avs_match_token(&challenge, "nonce", "=") == 0) {
             avs_free(auth->state.nonce);
             if (!(auth->state.nonce =
                           consume_alloc_quotable_token(&challenge))) {
-                LOG(ERROR, "Could not allocate memory for auth nonce");
+                LOG(ERROR, _("Could not allocate memory for auth nonce"));
                 return -1;
             }
             auth->state.nc = 1;
-            LOG(TRACE, "Auth nonce: %s", auth->state.nonce);
+            LOG(TRACE, _("Auth nonce: ") "%s" , auth->state.nonce);
         } else if (avs_match_token(&challenge, "opaque", "=") == 0) {
             avs_free(auth->state.opaque);
             if (!(auth->state.opaque =
                           consume_alloc_quotable_token(&challenge))) {
-                LOG(ERROR, "Could not allocate memory for auth opaque");
+                LOG(ERROR, _("Could not allocate memory for auth opaque"));
                 return -1;
             }
-            LOG(TRACE, "Auth opaque: %s", auth->state.opaque);
+            LOG(TRACE, _("Auth opaque: ") "%s" , auth->state.opaque);
         } else if (avs_match_token(&challenge, "algorithm", "=") == 0) {
             char algorithm[16];
             avs_consume_quotable_token(&challenge, algorithm, sizeof(algorithm),
                                        "," AVS_SPACES);
             if (avs_strcasecmp(algorithm, "MD5-sess") == 0) {
                 auth->state.flags.use_md5_sess = 1;
-                LOG(TRACE, "Auth algorithm: MD5-sess");
+                LOG(TRACE, _("Auth algorithm: MD5-sess"));
             } else if (avs_strcasecmp(algorithm, "MD5") == 0) {
-                LOG(TRACE, "Auth algorithm: MD5");
+                LOG(TRACE, _("Auth algorithm: MD5"));
             } else {
-                LOG(ERROR, "Unknown auth algorithm: %s", algorithm);
+                LOG(ERROR, _("Unknown auth algorithm: ") "%s" , algorithm);
                 return -1;
             }
         } else if (avs_match_token(&challenge, "qop", "=") == 0) {
             char *qop_options_buf = consume_alloc_quotable_token(&challenge);
             if (!qop_options_buf) {
-                LOG(ERROR, "Could not allocate memory for qop");
+                LOG(ERROR, _("Could not allocate memory for qop"));
                 return -1;
             }
             char *qop_options_tmp, *qop_options = qop_options_buf;
@@ -118,7 +118,7 @@ int _avs_http_auth_setup(http_auth_t *auth, const char *challenge) {
             while ((qop_option = avs_strtok(qop_options, "," AVS_SPACES,
                                             &qop_options_tmp))) {
                 qop_options = NULL;
-                LOG(TRACE, "Auth qop: %s", qop_option);
+                LOG(TRACE, _("Auth qop: ") "%s" , qop_option);
                 if (avs_strcasecmp(qop_option, "auth") == 0) {
                     auth->state.flags.use_qop_auth = 1;
                     break;
@@ -127,7 +127,7 @@ int _avs_http_auth_setup(http_auth_t *auth, const char *challenge) {
             avs_free(qop_options_buf);
             if (!auth->state.flags.use_qop_auth) {
                 LOG(ERROR,
-                    "qop option present, but qop=\"auth\" not supported");
+                    _("qop option present, but qop=\"auth\" not supported"));
                 return -1;
             }
         } else {
@@ -138,22 +138,22 @@ int _avs_http_auth_setup(http_auth_t *auth, const char *challenge) {
 }
 
 avs_error_t _avs_http_auth_send_header(http_stream_t *stream) {
-    LOG(TRACE, "http_send_auth_header");
+    LOG(TRACE, _("http_send_auth_header"));
     switch (stream->auth.state.flags.type) {
     case HTTP_AUTH_TYPE_NONE:
-        LOG(TRACE, "HTTP_AUTH_NONE");
+        LOG(TRACE, _("HTTP_AUTH_NONE"));
         return AVS_OK;
 
     case HTTP_AUTH_TYPE_BASIC:
-        LOG(TRACE, "HTTP_AUTH_BASIC");
+        LOG(TRACE, _("HTTP_AUTH_BASIC"));
         return _avs_http_auth_send_header_basic(stream);
 
     case HTTP_AUTH_TYPE_DIGEST:
-        LOG(TRACE, "HTTP_AUTH_DIGEST");
+        LOG(TRACE, _("HTTP_AUTH_DIGEST"));
         return _avs_http_auth_send_header_digest(stream);
 
     default:
-        LOG(ERROR, "unknown auth type %d", (int) stream->auth.state.flags.type);
+        LOG(ERROR, _("unknown auth type ") "%d" , (int) stream->auth.state.flags.type);
         return avs_errno(AVS_EPROTO);
     }
 }

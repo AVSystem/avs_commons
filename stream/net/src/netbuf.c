@@ -109,7 +109,7 @@ static avs_error_t in_buffer_read_some(buffered_netstream_t *stream,
     size_t space_left = avs_buffer_space_left(in_buffer);
 
     if (!space_left) {
-        LOG(ERROR, "cannot read more data - buffer is full");
+        LOG(ERROR, _("cannot read more data - buffer is full"));
         return avs_errno(AVS_ENOBUFS);
     }
 
@@ -202,7 +202,7 @@ static avs_error_t try_recv_nonblock(buffered_netstream_t *stream) {
                                    stream->socket,
                                    AVS_NET_SOCKET_OPT_RECV_TIMEOUT,
                                    zero_timeout)))) {
-        LOG(ERROR, "cannot set socket timeout");
+        LOG(ERROR, _("cannot set socket timeout"));
         return err;
     }
 
@@ -216,7 +216,7 @@ static avs_error_t try_recv_nonblock(buffered_netstream_t *stream) {
     avs_error_t restore_err = avs_net_socket_set_opt(
             stream->socket, AVS_NET_SOCKET_OPT_RECV_TIMEOUT, old_recv_timeout);
     if (avs_is_ok(restore_err)) {
-        LOG(ERROR, "cannot restore socket timeout");
+        LOG(ERROR, _("cannot restore socket timeout"));
         if (avs_is_ok(err)) {
             err = restore_err;
         }
@@ -252,17 +252,17 @@ buffered_netstream_peek(avs_stream_t *stream_, size_t offset, char *out_value) {
             size_t bytes_read;
             avs_error_t err = in_buffer_read_some(stream, &bytes_read);
             if (avs_is_err(err)) {
-                LOG(ERROR, "cannot peek - read error");
+                LOG(ERROR, _("cannot peek - read error"));
                 return err;
             } else if (bytes_read == 0) {
-                LOG(ERROR, "cannot peek - 0 bytes read");
+                LOG(ERROR, _("cannot peek - 0 bytes read"));
                 return AVS_EOF;
             }
         }
         *out_value = avs_buffer_data(stream->in_buffer)[offset];
         return AVS_OK;
     } else {
-        LOG(ERROR, "cannot peek - buffer is too small");
+        LOG(ERROR, _("cannot peek - buffer is too small"));
         return avs_errno(AVS_EINVAL);
     }
 }
@@ -328,7 +328,7 @@ int avs_stream_netbuf_create(avs_stream_t **stream_,
     *stream_ = (avs_stream_t *) stream;
 
     if (!*stream_) {
-        LOG(ERROR, "cannot allocate memory");
+        LOG(ERROR, _("cannot allocate memory"));
         return -1;
     }
 
@@ -337,11 +337,11 @@ int avs_stream_netbuf_create(avs_stream_t **stream_,
 
     stream->socket = socket;
     if (avs_buffer_create(&stream->in_buffer, in_buffer_size)) {
-        LOG(ERROR, "cannot create input buffer");
+        LOG(ERROR, _("cannot create input buffer"));
         goto buffered_netstream_create_error;
     }
     if (avs_buffer_create(&stream->out_buffer, out_buffer_size)) {
-        LOG(ERROR, "cannot create output buffer");
+        LOG(ERROR, _("cannot create output buffer"));
         goto buffered_netstream_create_error;
     }
     return 0;
@@ -361,7 +361,7 @@ int avs_stream_netbuf_transfer(avs_stream_t *destination_,
 
     if (source->vtable != &buffered_netstream_vtable
             || destination->vtable != &buffered_netstream_vtable) {
-        LOG(ERROR, "buffers can be transferred only between netbuf streams");
+        LOG(ERROR, _("buffers can be transferred only between netbuf streams"));
         return -1;
     }
 
@@ -369,7 +369,7 @@ int avs_stream_netbuf_transfer(avs_stream_t *destination_,
                     < avs_buffer_data_size(source->out_buffer)
             || avs_buffer_space_left(destination->in_buffer)
                            < avs_buffer_data_size(source->in_buffer)) {
-        LOG(ERROR, "no space left in destination buffer");
+        LOG(ERROR, _("no space left in destination buffer"));
         return -1;
     }
 
@@ -390,7 +390,7 @@ int avs_stream_netbuf_transfer(avs_stream_t *destination_,
 int avs_stream_netbuf_out_buffer_left(avs_stream_t *str) {
     buffered_netstream_t *stream = (buffered_netstream_t *) str;
     if (stream->vtable != &buffered_netstream_vtable) {
-        LOG(ERROR, "not a buffered_netstream");
+        LOG(ERROR, _("not a buffered_netstream"));
         return -1;
     }
     return (int) avs_buffer_space_left(stream->out_buffer);

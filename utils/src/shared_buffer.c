@@ -33,8 +33,8 @@ uint8_t *_avs_shared_buffer_acquire(avs_shared_buffer_t *buf,
                                     unsigned line) {
     if (buf->avs_shared_buffer_private_data.file) {
         LOG(ERROR,
-            "double use of a shared buffer in %s (%s:%u); last acquired "
-            "in %s (%s:%u) and not released yet",
+            _("double use of a shared buffer in ") "%s" _(" (") "%s" _(":") "%u" _("); last acquired ")
+            _("in ") "%s" _(" (") "%s" _(":") "%u" _(") and not released yet"),
             func, file, line, buf->avs_shared_buffer_private_data.func,
             buf->avs_shared_buffer_private_data.file,
             buf->avs_shared_buffer_private_data.line);

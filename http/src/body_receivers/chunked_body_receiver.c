@@ -46,26 +46,26 @@ static avs_error_t read_chunk_size(const avs_http_buffer_sizes_t *buffer_sizes,
                                    size_t *out_value) {
     char *line_buf = (char *) avs_malloc(buffer_sizes->header_line);
     if (!line_buf) {
-        LOG(ERROR, "Out of memory");
+        LOG(ERROR, _("Out of memory"));
         return avs_errno(AVS_ENOMEM);
     }
     unsigned long value = 0;
     avs_error_t err;
-    LOG(TRACE, "read_chunk_size");
+    LOG(TRACE, _("read_chunk_size"));
     while (true) {
         char *endptr = NULL;
         err = getline_func(getline_func_state, line_buf,
                            buffer_sizes->header_line);
         if (avs_is_err(err)) {
             if (avs_is_eof(err)) {
-                LOG(ERROR, "unexpected end of stream");
+                LOG(ERROR, _("unexpected end of stream"));
                 err = avs_errno(AVS_EPROTO);
             } else {
-                LOG(ERROR, "error reading chunk headline");
+                LOG(ERROR, _("error reading chunk headline"));
             }
             break;
         }
-        LOG(TRACE, "chunk headline: %s", line_buf);
+        LOG(TRACE, _("chunk headline: ") "%s" , line_buf);
         if (!line_buf[0]) { /* empty string */
             continue;
         }
@@ -73,7 +73,7 @@ static avs_error_t read_chunk_size(const avs_http_buffer_sizes_t *buffer_sizes,
         value = strtoul(line_buf, &endptr, 16);
         if (errno) {
             err = avs_errno(avs_map_errno(errno));
-            LOG(ERROR, "invalid chunk headline");
+            LOG(ERROR, _("invalid chunk headline"));
             break;
         }
         if (*endptr == '\0' || *endptr == ';') { /* entire line read */
@@ -89,7 +89,7 @@ static avs_error_t read_chunk_size(const avs_http_buffer_sizes_t *buffer_sizes,
             if (avs_is_err(err) || !line_buf[0]) {
                 break;
             }
-            LOG(TRACE, "ignoring trailer: %s", line_buf);
+            LOG(TRACE, _("ignoring trailer: ") "%s" , line_buf);
         }
     }
     avs_free(line_buf);
@@ -139,7 +139,7 @@ static avs_error_t chunked_read(avs_stream_t *stream_,
                           AVS_MIN(buffer_length, stream->chunk_left));
     stream->chunk_left -= *out_bytes_read;
     if (avs_is_ok(err) && backend_message_finished) {
-        LOG(ERROR, "unexpected end of stream");
+        LOG(ERROR, _("unexpected end of stream"));
         return avs_errno(AVS_EIO);
     }
     if (out_message_finished) {
@@ -224,7 +224,7 @@ avs_stream_t *_avs_http_body_receiver_chunked_create(
         avs_stream_t *backend, const avs_http_buffer_sizes_t *buffer_sizes) {
     chunked_receiver_t *retval =
             (chunked_receiver_t *) avs_calloc(1, sizeof(*retval));
-    LOG(TRACE, "create_content_length_receiver");
+    LOG(TRACE, _("create_content_length_receiver"));
     if (retval) {
         *(const avs_stream_v_table_t **) (intptr_t) &retval->vtable =
                 &chunked_receiver_vtable;

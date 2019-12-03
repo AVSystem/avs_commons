@@ -39,7 +39,7 @@ avs_error_t _avs_http_auth_send_header_basic(http_stream_t *stream) {
     size_t encoded_size = avs_base64_encoded_size(plaintext_size - 1);
     char *buffer = (char *) avs_malloc(plaintext_size + encoded_size);
     if (!buffer) {
-        LOG(ERROR, "Out of memory");
+        LOG(ERROR, _("Out of memory"));
         return avs_errno(AVS_ENOMEM);
     }
     char *plaintext = buffer;
@@ -63,7 +63,7 @@ avs_error_t _avs_http_auth_send_header_basic(http_stream_t *stream) {
         AVS_UNREACHABLE("Cannot encode authorization data");
         err = avs_errno(AVS_UNKNOWN_ERROR);
     } else {
-        LOG(TRACE, "Basic encoded pass: %s", encoded);
+        LOG(TRACE, _("Basic encoded pass: ") "%s" , encoded);
         err = avs_stream_write_f(stream->backend, "Authorization: Basic %s\r\n",
                                  encoded);
     }

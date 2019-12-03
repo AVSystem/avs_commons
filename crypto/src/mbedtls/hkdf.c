@@ -50,7 +50,7 @@ int avs_crypto_hkdf_sha_256(const unsigned char *salt,
     int result = mbedtls_hkdf(md, salt, salt_len, ikm, ikm_len, info, info_len,
                               out_okm, *inout_okm_len);
     if (result) {
-        LOG(ERROR, "mbed TLS error %d", result);
+        LOG(ERROR, _("mbed TLS error ") "%d" , result);
         return -1;
     }
     return 0;

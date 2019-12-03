@@ -135,7 +135,7 @@ static void debug_mbedtls(
 static avs_error_t return_alert_if_any(ssl_socket_t *socket) {
     mbedtls_ssl_context *context = get_context(socket);
     if (context->in_msgtype == AVS_TLS_MESSAGE_TYPE_ALERT) {
-        LOG(DEBUG, "alert_level = %u, alert_description = %u",
+        LOG(DEBUG, _("alert_level = ") "%u" _(", alert_description = ") "%u" ,
             context->in_msg[0], context->in_msg[1]);
         return avs_net_ssl_alert(context->in_msg[0], context->in_msg[1]);
     }
@@ -160,12 +160,12 @@ avs_error_t _avs_net_initialize_global_ssl_state(void) {
     err = avs_net_mbedtls_entropy_init(&AVS_SSL_GLOBAL.entropy);
 #endif // AVS_COMMONS_WITH_MBEDTLS_CUSTOM_ENTROPY_INITIALIZER
     if (avs_is_err(err)) {
-        LOG(ERROR, "custom entropy initializer failed");
+        LOG(ERROR, _("custom entropy initializer failed"));
     } else {
         mbedtls_ctr_drbg_init(&AVS_SSL_GLOBAL.rng);
         if (mbedtls_ctr_drbg_seed(&AVS_SSL_GLOBAL.rng, mbedtls_entropy_func,
                                   &AVS_SSL_GLOBAL.entropy, NULL, 0)) {
-            LOG(ERROR, "mbedtls_ctr_drbg_seed() failed");
+            LOG(ERROR, _("mbedtls_ctr_drbg_seed() failed"));
             err = avs_errno(AVS_EPROTO);
         }
     }
@@ -288,7 +288,7 @@ static int set_min_ssl_version(mbedtls_ssl_config *config,
                                      MBEDTLS_SSL_MINOR_VERSION_3);
         return 0;
     default:
-        LOG(ERROR, "Unsupported SSL version");
+        LOG(ERROR, _("Unsupported SSL version"));
         return -1;
     }
 }
@@ -324,7 +324,7 @@ static int *init_cert_ciphersuites(
 
     int *ciphers = (int *) avs_calloc(ciphers_count + 1, sizeof(int));
     if (!ciphers) {
-        LOG(ERROR, "out of memory");
+        LOG(ERROR, _("out of memory"));
         return NULL;
     }
 
@@ -392,7 +392,7 @@ static int *init_psk_ciphersuites(
 
     int *psk_ciphers = (int *) avs_calloc(ciphers_count + 1, sizeof(int));
     if (!psk_ciphers) {
-        LOG(ERROR, "out of memory");
+        LOG(ERROR, _("out of memory"));
         return NULL;
     }
 
@@ -432,7 +432,7 @@ static avs_error_t initialize_psk_security(
 }
 #else // WITH_PSK
 #    define initialize_psk_security(...) \
-        (LOG(ERROR, "PSK support disabled"), avs_errno(AVS_ENOTSUP))
+        (LOG(ERROR, _("PSK support disabled")), avs_errno(AVS_ENOTSUP))
 #endif // WITH_PSK
 
 static int transport_for_socket_type(avs_net_socket_type_t backend_type) {
@@ -466,7 +466,7 @@ configure_ssl(ssl_socket_t *socket,
                                     transport_for_socket_type(
                                             socket->backend_type),
                                     MBEDTLS_SSL_PRESET_DEFAULT)) {
-        LOG(ERROR, "mbedtls_ssl_config_defaults() failed");
+        LOG(ERROR, _("mbedtls_ssl_config_defaults() failed"));
         return avs_errno(AVS_ENOTSUP);
     }
 
@@ -477,7 +477,7 @@ configure_ssl(ssl_socket_t *socket,
 #endif // WITH_MBEDTLS_LOGS
 
     if (set_min_ssl_version(&socket->config, configuration->version)) {
-        LOG(ERROR, "Could not set minimum SSL version");
+        LOG(ERROR, _("Could not set minimum SSL version"));
         return avs_errno(AVS_ENOTSUP);
     }
 
@@ -495,7 +495,7 @@ configure_ssl(ssl_socket_t *socket,
                                            dtls_handshake_timeouts->max)
             || min_ms < 0 || min_ms > UINT32_MAX || max_ms < 0
             || max_ms > UINT32_MAX) {
-        LOG(ERROR, "Invalid DTLS handshake timeouts");
+        LOG(ERROR, _("Invalid DTLS handshake timeouts"));
         return avs_errno(AVS_EINVAL);
     }
     mbedtls_ssl_conf_handshake_timeout(&socket->config, (uint32_t) min_ms,
@@ -514,7 +514,7 @@ configure_ssl(ssl_socket_t *socket,
     if (configuration->server_name_indication) {
         size_t len = strlen(configuration->server_name_indication);
         if (len >= sizeof(socket->server_name_indication)) {
-            LOG(ERROR, "SNI is too long (maximum allowed size is %u)",
+            LOG(ERROR, _("SNI is too long (maximum allowed size is ") "%u" _(")"),
                 (unsigned) sizeof(socket->server_name_indication) - 1);
             return avs_errno(AVS_ERANGE);
         }
@@ -529,7 +529,7 @@ configure_ssl(ssl_socket_t *socket,
                            == MBEDTLS_SSL_TRANSPORT_DATAGRAM
             && mbedtls_ssl_conf_cid(&socket->config, 0,
                                     MBEDTLS_SSL_UNEXPECTED_CID_IGNORE)) {
-        LOG(ERROR, "cannot configure CID");
+        LOG(ERROR, _("cannot configure CID"));
         return avs_errno(AVS_ENOTSUP);
     }
 #endif // MBEDTLS_SSL_DTLS_CONNECTION_ID
@@ -552,7 +552,7 @@ configure_ssl(ssl_socket_t *socket,
 
     if (configuration->additional_configuration_clb
             && configuration->additional_configuration_clb(&socket->config)) {
-        LOG(ERROR, "Error while setting additional SSL configuration");
+        LOG(ERROR, _("Error while setting additional SSL configuration"));
         return avs_errno(AVS_EPIPE);
     }
 
@@ -565,7 +565,7 @@ static avs_error_t update_ssl_endpoint_config(ssl_socket_t *socket) {
             avs_net_socket_get_opt((avs_net_socket_t *) socket,
                                    AVS_NET_SOCKET_OPT_STATE, &state_opt);
     if (avs_is_err(err)) {
-        LOG(ERROR, "initialize_ssl_config: could not get socket state");
+        LOG(ERROR, _("initialize_ssl_config: could not get socket state"));
         return err;
     }
     if (state_opt.state == AVS_NET_SOCKET_STATE_CONNECTED) {
@@ -581,7 +581,7 @@ static avs_error_t update_ssl_endpoint_config(ssl_socket_t *socket) {
                                          MBEDTLS_SSL_SESSION_TICKETS_DISABLED);
 #endif // MBEDTLS_SSL_SESSION_TICKETS
     } else {
-        LOG(ERROR, "initialize_ssl_config: invalid socket state");
+        LOG(ERROR, _("initialize_ssl_config: invalid socket state"));
         return avs_errno(AVS_EINVAL);
     }
 
@@ -610,7 +610,7 @@ static avs_error_t start_ssl(ssl_socket_t *socket, const char *host) {
     int result;
     avs_error_t err;
     if (avs_is_err((err = update_ssl_endpoint_config(socket)))) {
-        LOG(ERROR, "could not initialize ssl context");
+        LOG(ERROR, _("could not initialize ssl context"));
         return err;
     }
     assert(!socket->flags.context_valid);
@@ -630,7 +630,7 @@ static avs_error_t start_ssl(ssl_socket_t *socket, const char *host) {
                              mbedtls_timing_set_delay,
                              mbedtls_timing_get_delay);
     if ((result = mbedtls_ssl_setup(get_context(socket), &socket->config))) {
-        LOG(ERROR, "mbedtls_ssl_setup() failed: %d", result);
+        LOG(ERROR, _("mbedtls_ssl_setup() failed: ") "%d" , result);
         err = avs_errno(AVS_ENOMEM);
         goto finish;
     }
@@ -650,7 +650,7 @@ static avs_error_t start_ssl(ssl_socket_t *socket, const char *host) {
                            == MBEDTLS_SSL_TRANSPORT_DATAGRAM
             && mbedtls_ssl_set_cid(get_context(socket), MBEDTLS_SSL_CID_ENABLED,
                                    NULL, 0)) {
-        LOG(ERROR, "cannot initialize CID to an empty value");
+        LOG(ERROR, _("cannot initialize CID to an empty value"));
         err = avs_errno(AVS_EIO);
         goto finish;
     }
@@ -662,7 +662,7 @@ static avs_error_t start_ssl(ssl_socket_t *socket, const char *host) {
                  socket->server_name_indication[0]
                          ? socket->server_name_indication
                          : host))) {
-        LOG(ERROR, "mbedtls_ssl_set_hostname() failed: %d", result);
+        LOG(ERROR, _("mbedtls_ssl_set_hostname() failed: ") "%d" , result);
         err = avs_errno(result == MBEDTLS_ERR_SSL_ALLOC_FAILED ? AVS_ENOMEM
                                                                : AVS_EINVAL);
         goto finish;
@@ -678,12 +678,12 @@ static avs_error_t start_ssl(ssl_socket_t *socket, const char *host) {
                     &restored_session, socket->session_resumption_buffer,
                     socket->session_resumption_buffer_size))) {
             LOG(WARNING,
-                "Could not restore session; performing full handshake");
+                _("Could not restore session; performing full handshake"));
         } else if ((result = mbedtls_ssl_set_session(get_context(socket),
                                                      &restored_session))) {
             LOG(WARNING,
-                "mbedtls_ssl_set_session() failed: %d; performing full "
-                "handshake",
+                _("mbedtls_ssl_set_session() failed: ") "%d" _("; performing full ")
+                _("handshake"),
                 result);
         } else {
             restore_session = true;
@@ -709,7 +709,7 @@ static avs_error_t start_ssl(ssl_socket_t *socket, const char *host) {
                 char peer_cid_hex[2 * sizeof(peer_cid) + 1] = "";
                 (void) avs_hexlify(peer_cid_hex, sizeof(peer_cid_hex), peer_cid,
                                    peer_cid_len);
-                LOG(DEBUG, "negotiated CID = %s", peer_cid_hex);
+                LOG(DEBUG, _("negotiated CID = ") "%s" , peer_cid_hex);
             }
         }
 #endif // MBEDTLS_SSL_DTLS_CONNECTION_ID
@@ -728,9 +728,9 @@ static avs_error_t start_ssl(ssl_socket_t *socket, const char *host) {
                      (restore_session
                       && sessions_equal(get_context(socket)->session,
                                         &restored_session)))) {
-            LOG(TRACE, "handshake success: session restored");
+            LOG(TRACE, _("handshake success: session restored"));
         } else {
-            LOG(TRACE, "handshake success: new session started");
+            LOG(TRACE, _("handshake success: new session started"));
         }
     } else {
         if (avs_is_ok((err = return_alert_if_any(socket)))) {
@@ -740,7 +740,7 @@ static avs_error_t start_ssl(ssl_socket_t *socket, const char *host) {
                 err = avs_errno(AVS_EPROTO);
             }
         }
-        LOG(ERROR, "handshake failed: %d", result);
+        LOG(ERROR, _("handshake failed: ") "%d" , result);
     }
 
     if (avs_is_ok(err) && !socket->flags.session_restored
@@ -748,7 +748,7 @@ static avs_error_t start_ssl(ssl_socket_t *socket, const char *host) {
         uint32_t verify_result =
                 mbedtls_ssl_get_verify_result(get_context(socket));
         if (verify_result) {
-            LOG(ERROR, "server certificate verification failure: %" PRIu32,
+            LOG(ERROR, _("server certificate verification failure: ") "%" PRIu32,
                 verify_result);
             err = avs_errno(AVS_EPROTO);
         }
@@ -772,7 +772,7 @@ send_ssl(avs_net_socket_t *socket_, const void *buffer, size_t buffer_length) {
     size_t bytes_sent = 0;
     int result = 0;
     avs_error_t err = AVS_OK;
-    LOG(TRACE, "send_ssl(socket=%p, buffer=%p, buffer_length=%lu)",
+    LOG(TRACE, _("send_ssl(socket=") "%p" _(", buffer=") "%p" _(", buffer_length=") "%lu" _(")"),
         (void *) socket, buffer, (unsigned long) buffer_length);
 
     while (bytes_sent < buffer_length) {
@@ -799,10 +799,10 @@ send_ssl(avs_net_socket_t *socket_, const void *buffer, size_t buffer_length) {
             err = avs_errno(AVS_EPROTO);
         }
     }
-    LOG(DEBUG, "ssl_write result %d", result);
+    LOG(DEBUG, _("ssl_write result ") "%d" , result);
 
     if (bytes_sent < buffer_length) {
-        LOG(ERROR, "send failed (%lu/%lu): %d", (unsigned long) bytes_sent,
+        LOG(ERROR, _("send failed (") "%lu" _("/") "%lu" _("): ") "%d" , (unsigned long) bytes_sent,
             (unsigned long) buffer_length, result);
         assert(avs_is_err(err));
         return err;
@@ -817,7 +817,7 @@ static avs_error_t receive_ssl(avs_net_socket_t *socket_,
     ssl_socket_t *socket = (ssl_socket_t *) socket_;
     int result = 0;
 
-    LOG(TRACE, "receive_ssl(socket=%p, buffer=%p, buffer_length=%lu)",
+    LOG(TRACE, _("receive_ssl(socket=") "%p" _(", buffer=") "%p" _(", buffer_length=") "%lu" _(")"),
         (void *) socket, buffer, (unsigned long) buffer_length);
 
     if (buffer_length > 0
@@ -853,7 +853,7 @@ static avs_error_t receive_ssl(avs_net_socket_t *socket_,
     if (result < 0) {
         *out_bytes_received = 0;
         if (result == MBEDTLS_ERR_SSL_TIMEOUT) {
-            LOG(TRACE, "receive_ssl: timed out");
+            LOG(TRACE, _("receive_ssl: timed out"));
             return avs_errno(AVS_ETIMEDOUT);
         } else if (result != MBEDTLS_ERR_SSL_PEER_CLOSE_NOTIFY) {
             avs_error_t err = return_alert_if_any(socket);
@@ -864,7 +864,7 @@ static avs_error_t receive_ssl(avs_net_socket_t *socket_,
                     err = avs_errno(AVS_EPROTO);
                 }
             }
-            LOG(ERROR, "receive failed: %d", result);
+            LOG(ERROR, _("receive failed: ") "%d" , result);
             return err;
         }
     } else {
@@ -872,7 +872,7 @@ static avs_error_t receive_ssl(avs_net_socket_t *socket_,
         if (transport_for_socket_type(socket->backend_type)
                         == MBEDTLS_SSL_TRANSPORT_DATAGRAM
                 && mbedtls_ssl_get_bytes_avail(get_context(socket)) > 0) {
-            LOG(WARNING, "receive_ssl: message truncated");
+            LOG(WARNING, _("receive_ssl: message truncated"));
             return avs_errno(AVS_EMSGSIZE);
         }
     }
@@ -906,7 +906,7 @@ static void cleanup_security_cert(ssl_socket_certs_t *certs) {
 
 static avs_error_t cleanup_ssl(avs_net_socket_t **socket_) {
     ssl_socket_t **socket = (ssl_socket_t **) socket_;
-    LOG(TRACE, "cleanup_ssl(*socket=%p)", (void *) *socket);
+    LOG(TRACE, _("cleanup_ssl(*socket=") "%p" _(")"), (void *) *socket);
 
     avs_error_t err = close_ssl(*socket_);
     add_err(&err, avs_net_socket_cleanup(&(*socket)->backend_socket));
@@ -939,18 +939,18 @@ static avs_error_t cleanup_ssl(avs_net_socket_t **socket_) {
 static avs_error_t
 configure_ssl_certs(ssl_socket_certs_t *certs,
                     const avs_net_certificate_info_t *cert_info) {
-    LOG(TRACE, "configure_ssl_certs");
+    LOG(TRACE, _("configure_ssl_certs"));
 
     if (cert_info->server_cert_validation) {
         avs_error_t err =
                 _avs_net_mbedtls_load_ca_certs(&certs->ca_cert,
                                                &cert_info->trusted_certs);
         if (avs_is_err(err)) {
-            LOG(ERROR, "could not load CA chain");
+            LOG(ERROR, _("could not load CA chain"));
             return err;
         }
     } else {
-        LOG(DEBUG, "Server authentication disabled");
+        LOG(DEBUG, _("Server authentication disabled"));
     }
 
     if (cert_info->client_cert.desc.source != AVS_NET_DATA_SOURCE_EMPTY) {
@@ -958,16 +958,16 @@ configure_ssl_certs(ssl_socket_certs_t *certs,
         if (avs_is_err(
                     (err = _avs_net_mbedtls_load_client_cert(
                              &certs->client_cert, &cert_info->client_cert)))) {
-            LOG(ERROR, "could not load client certificate");
+            LOG(ERROR, _("could not load client certificate"));
             return err;
         }
         if (avs_is_err((err = _avs_net_mbedtls_load_client_key(
                                 &certs->client_key, &cert_info->client_key)))) {
-            LOG(ERROR, "could not load client private key");
+            LOG(ERROR, _("could not load client private key"));
             return err;
         }
     } else {
-        LOG(TRACE, "client certificate not specified");
+        LOG(TRACE, _("client certificate not specified"));
     }
 
     return AVS_OK;
@@ -975,18 +975,18 @@ configure_ssl_certs(ssl_socket_certs_t *certs,
 
 #else // WITH_X509
 #    define configure_ssl_certs(...) \
-        (LOG(ERROR, "X.509 support disabled"), avs_errno(AVS_ENOTSUP))
+        (LOG(ERROR, _("X.509 support disabled")), avs_errno(AVS_ENOTSUP))
 #endif // WITH_X509
 
 #ifdef WITH_PSK
 static avs_error_t configure_ssl_psk(ssl_socket_t *socket,
                                      const avs_net_psk_info_t *psk) {
-    LOG(TRACE, "configure_ssl_psk");
+    LOG(TRACE, _("configure_ssl_psk"));
     return _avs_net_psk_copy(&socket->security.psk, psk);
 }
 #else // WITH_PSK
 #    define configure_ssl_psk(...) \
-        (LOG(ERROR, "PSK support disabled"), avs_errno(AVS_ENOTSUP))
+        (LOG(ERROR, _("PSK support disabled")), avs_errno(AVS_ENOTSUP))
 #endif // WITH_PSK
 
 static avs_error_t

@@ -112,7 +112,7 @@ static int http_handle_header(const char *key,
         state->redirect_url = avs_url_parse(value);
     } else {
         *out_header_handled = false;
-        LOG(DEBUG, "Unhandled HTTP header: %s: %s", key, value);
+        LOG(DEBUG, _("Unhandled HTTP header: ") "%s" _(": ") "%s" , key, value);
     }
     return 0;
 }
@@ -138,18 +138,18 @@ static avs_error_t get_http_header_line(avs_stream_t *stream,
     while (avs_is_err((err = avs_stream_getline(stream, NULL, NULL, line_buf,
                                                 line_buf_size)))) {
         if (err.category == AVS_ERRNO_CATEGORY && err.code == AVS_ENOBUFS) {
-            LOG(WARNING, "HTTP header too long to handle: %s", line_buf);
+            LOG(WARNING, _("HTTP header too long to handle: ") "%s" , line_buf);
             if (avs_is_err((err = discard_line(stream)))) {
                 LOG(ERROR,
-                    "Could not discard header line (category == %" PRIu16
-                    ", code == %" PRIu16 ")",
+                    _("Could not discard header line (category == ") "%" PRIu16
+                    _(", code == ") "%" PRIu16 _(")"),
                     err.category, err.code);
                 return err;
             }
         } else {
             LOG(ERROR,
-                "Could not read header line (category == %" PRIu16
-                ", code == %" PRIu16 ")",
+                _("Could not read header line (category == ") "%" PRIu16
+                _(", code == ") "%" PRIu16 _(")"),
                 err.category, err.code);
             return err;
         }
@@ -176,19 +176,19 @@ static avs_error_t http_receive_headers_internal(header_parser_state_t *state) {
                 get_http_header_line(state->stream->backend, state->header_buf,
                                      state->header_buf_size);
         if (avs_is_err(err)) {
-            LOG(ERROR, "Error receiving headers");
+            LOG(ERROR, _("Error receiving headers"));
             return err;
         }
 
         if (state->header_buf[0] == '\0') { /* empty line */
             return AVS_OK;
         }
-        LOG(TRACE, "HTTP header: %s", state->header_buf);
+        LOG(TRACE, _("HTTP header: ") "%s" , state->header_buf);
         bool header_handled;
         if (!(value = http_header_split(state->header_buf))
                 || http_handle_header(state->header_buf, value, state,
                                       &header_handled)) {
-            LOG(ERROR, "Error parsing or handling headers");
+            LOG(ERROR, _("Error parsing or handling headers"));
             return avs_errno(AVS_EPROTO);
         }
 
@@ -201,7 +201,7 @@ static avs_error_t http_receive_headers_internal(header_parser_state_t *state) {
                             sizeof(avs_http_header_t) + key_len + value_len
                             + 2);
             if (!element) {
-                LOG(ERROR, "Could not store received header");
+                LOG(ERROR, _("Could not store received header"));
                 return avs_errno(AVS_ENOMEM);
             }
             element->key = (char *) element + sizeof(avs_http_header_t);
@@ -228,7 +228,7 @@ http_receive_headline_and_headers(header_parser_state_t *state) {
                                          &message_finished, state->header_buf,
                                          state->header_buf_size);
     if (avs_is_err(err)) {
-        LOG(ERROR, "Could not receive HTTP headline");
+        LOG(ERROR, _("Could not receive HTTP headline"));
         if (bytes_read == 0 && message_finished
                 && state->stream->flags.close_handling_required) {
             // end-of-stream: likely a Reset from previous connection
@@ -244,11 +244,11 @@ http_receive_headline_and_headers(header_parser_state_t *state) {
     if (sscanf(state->header_buf, "HTTP/%*s %d", &state->stream->status) != 1) {
         /* discard HTTP version
          * some weird servers return HTTP/1.0 to HTTP/1.1 */
-        LOG(ERROR, "Bad HTTP headline: %s", state->header_buf);
+        LOG(ERROR, _("Bad HTTP headline: ") "%s" , state->header_buf);
         err = avs_errno(AVS_EPROTO);
         goto http_receive_headers_error;
     }
-    LOG(TRACE, "Received HTTP headline, status == %d", state->stream->status);
+    LOG(TRACE, _("Received HTTP headline, status == ") "%d" , state->stream->status);
     if (avs_is_err((err = http_receive_headers_internal(state)))) {
         goto http_receive_headers_error;
     }
@@ -296,10 +296,10 @@ http_receive_headline_and_headers(header_parser_state_t *state) {
         }
         /* we MUST NOT close connection, as required by TR-069,
          * so we actually receive and discard the response */
-        LOG(WARNING, "http_receive_headers: error response");
+        LOG(WARNING, _("http_receive_headers: error response"));
         if (avs_is_err((err = avs_stream_ignore_to_end(
                                 state->stream->body_receiver)))) {
-            LOG(WARNING, "http_receive_headers: response read error");
+            LOG(WARNING, _("http_receive_headers: response read error"));
             state->stream->flags.keep_connection = 0;
         } else {
             err = (avs_error_t) {
@@ -308,16 +308,16 @@ http_receive_headline_and_headers(header_parser_state_t *state) {
             };
             state->stream->flags.close_handling_required = 1;
         }
-        LOG(TRACE, "http_receive_headers: clearing body receiver");
+        LOG(TRACE, _("http_receive_headers: clearing body receiver"));
         avs_stream_cleanup(&state->stream->body_receiver);
         return err; /* without clearing the keep connection flag */
     }
 
-    LOG(TRACE, "http_receive_headers: success");
+    LOG(TRACE, _("http_receive_headers: success"));
     return AVS_OK;
 
 http_receive_headers_error:
-    LOG(ERROR, "http_receive_headers: failure");
+    LOG(ERROR, _("http_receive_headers: failure"));
     state->stream->flags.keep_connection = 0;
     return err;
 }
@@ -354,7 +354,7 @@ avs_error_t _avs_http_receive_headers(http_stream_t *stream) {
      * return to the upper layer to prepare chunked message body. */
     bool skip_100_continue = !stream->flags.chunked_sending;
 
-    LOG(TRACE, "receiving headers, %sskipping 100 Continue",
+    LOG(TRACE, _("receiving headers, ") "%ssk" _("ipping 100 Continue"),
         skip_100_continue ? "" : "NOT ");
 
     if (stream->incoming_header_storage) {
@@ -365,7 +365,7 @@ avs_error_t _avs_http_receive_headers(http_stream_t *stream) {
             offsetof(header_parser_state_t, header_buf)
             + stream->http->buffer_sizes.header_line);
     if (!parser_state) {
-        LOG(ERROR, "Out of memory");
+        LOG(ERROR, _("Out of memory"));
         stream->flags.keep_connection = 0;
         err = avs_errno(AVS_ENOMEM);
     }

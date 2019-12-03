@@ -18,6 +18,9 @@
 #    undef LOG
 #endif
 
+// enable short _() macro
+#define _(Arg) AVS_DISPOSABLE_LOG(Arg)
+
 #ifdef WITH_INTERNAL_LOGS
 
 #    ifdef WITH_INTERNAL_TRACE

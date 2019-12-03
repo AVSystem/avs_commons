@@ -27,15 +27,15 @@ bool _avs_crypto_aead_parameters_valid(size_t key_len,
                                        size_t iv_len,
                                        size_t tag_len) {
     if (key_len != 16 && key_len != 32) {
-        LOG(ERROR, "invalid key length");
+        LOG(ERROR, _("invalid key length"));
         return false;
     }
     if (iv_len < 7 || iv_len > 13) {
-        LOG(ERROR, "invalid IV length");
+        LOG(ERROR, _("invalid IV length"));
         return false;
     }
     if (tag_len < 4 || tag_len > 16 || tag_len % 2 != 0) {
-        LOG(ERROR, "invalid tag length");
+        LOG(ERROR, _("invalid tag length"));
         return false;
     }
     return true;

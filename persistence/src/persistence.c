@@ -125,7 +125,7 @@ static avs_error_t persist_sized_buffer(avs_persistence_context_t *ctx,
     uint32_t size32 = (uint32_t) *size_ptr;
     if (size32 != *size_ptr) {
         LOG(ERROR,
-            "Element too big to persist (%lu is larger than %" PRIu32 ")",
+            _("Element too big to persist (") "%lu" _(" is larger than ") "%" PRIu32 _(")"),
             (unsigned long) *size_ptr, UINT32_MAX);
     }
     avs_error_t err = persist_u32(ctx, &size32);
@@ -270,7 +270,7 @@ static avs_error_t restore_sized_buffer(avs_persistence_context_t *ctx,
         return AVS_OK;
     }
     if (!(*data_ptr = avs_malloc(size32))) {
-        LOG(ERROR, "Cannot allocate %" PRIu32 " bytes", size32);
+        LOG(ERROR, _("Cannot allocate ") "%" PRIu32 _(" bytes"), size32);
         return avs_errno(AVS_ENOMEM);
     }
     if (avs_is_err((err = restore_bytes(ctx, *data_ptr, size32)))) {
@@ -290,7 +290,7 @@ static avs_error_t restore_string(avs_persistence_context_t *ctx,
         return err;
     }
     if (size > 0 && (*string_ptr)[size - 1] != '\0') {
-        LOG(ERROR, "Invalid string");
+        LOG(ERROR, _("Invalid string"));
         avs_free(*string_ptr);
         *string_ptr = NULL;
         return avs_errno(AVS_EBADMSG);
@@ -589,12 +589,12 @@ avs_error_t avs_persistence_magic(avs_persistence_context_t *ctx,
     } else {
         void *bytes = avs_malloc(magic_size);
         if (!bytes) {
-            LOG(ERROR, "Out of memory");
+            LOG(ERROR, _("Out of memory"));
             return avs_errno(AVS_ENOMEM);
         }
         avs_error_t err = avs_persistence_bytes(ctx, bytes, magic_size);
         if (avs_is_ok(err) && memcmp(bytes, magic, magic_size) != 0) {
-            LOG(ERROR, "Magic markers do not match");
+            LOG(ERROR, _("Magic markers do not match"));
             err = avs_errno(AVS_EBADMSG);
         }
         avs_free(bytes);
@@ -617,7 +617,7 @@ avs_error_t avs_persistence_version(avs_persistence_context_t *ctx,
         }
     }
 
-    LOG(ERROR, "Unsupported version number: %u", (unsigned) *version_number);
+    LOG(ERROR, _("Unsupported version number: ") "%u" , (unsigned) *version_number);
     return avs_errno(AVS_EBADMSG);
 }
 

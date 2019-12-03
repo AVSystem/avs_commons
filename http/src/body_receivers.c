@@ -36,8 +36,8 @@ create_body_receiver(avs_stream_t *backend,
     avs_stream_t *retval = NULL;
     avs_net_socket_t *backend_socket = NULL;
     LOG(TRACE,
-        "create_body_receiver, transfer_encoding == %d, "
-        "content_length == %lu",
+        _("create_body_receiver, transfer_encoding == ") "%d" _(", ")
+        _("content_length == ") "%lu" ,
         (int) transfer_encoding, (unsigned long) content_length);
 
     if (backend && (backend_socket = avs_stream_net_getsock(backend))) {
@@ -45,12 +45,12 @@ create_body_receiver(avs_stream_t *backend,
                                  buffer_sizes->body_recv, 0);
     }
     if (!buffer) {
-        LOG(ERROR, "could not create buffered netstream");
+        LOG(ERROR, _("could not create buffered netstream"));
         return NULL;
     }
 
     if (avs_stream_netbuf_transfer(buffer, backend)) {
-        LOG(ERROR, "could not transfer buffered data");
+        LOG(ERROR, _("could not transfer buffered data"));
         goto create_body_receiver_return;
     }
 
@@ -71,7 +71,7 @@ create_body_receiver(avs_stream_t *backend,
 
 create_body_receiver_return:
     if (!retval) {
-        LOG(ERROR, "could not create body receiver");
+        LOG(ERROR, _("could not create body receiver"));
         avs_stream_net_setsock(buffer, NULL); /* don't close the socket */
         avs_stream_cleanup(&buffer);
     }
@@ -85,13 +85,13 @@ int _avs_http_body_receiver_init(http_stream_t *stream,
     avs_stream_t *decoder = NULL;
     int result = 0;
     LOG(TRACE,
-        "http_init_body_receiver, transfer_encoding == %d, "
-        "content_encoding == %d, content_length == %lu, HTTP status == %d",
+        _("http_init_body_receiver, transfer_encoding == ") "%d" _(", ")
+        _("content_encoding == ") "%d" _(", content_length == ") "%lu" _(", HTTP status == ") "%d" ,
         (int) transfer_encoding, (int) content_encoding,
         (unsigned long) content_length, stream->status);
 
     if (stream->body_receiver) {
-        LOG(ERROR, "body receiver already present");
+        LOG(ERROR, _("body receiver already present"));
         return -1;
     }
 

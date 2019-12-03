@@ -58,7 +58,7 @@ static inline void setup_password_callback(SSL_CTX *ctx, const char *password) {
 static avs_error_t
 load_ca_certs_from_paths(SSL_CTX *ctx, const char *file, const char *path) {
     AVS_ASSERT(!!file != !!path, "cannot use path and file at the same time");
-    LOG(DEBUG, "CA certificate <file=%s, path=%s>: going to load",
+    LOG(DEBUG, _("CA certificate <file=") "%s" _(", path=") "%s" _(">: going to load"),
         file ? file : "(null)", path ? path : "(null)");
 
     if (file) {
@@ -126,7 +126,7 @@ parse_cert(X509 **out_cert, const void *buffer, const size_t len) {
         break;
     }
     default:
-        LOG(ERROR, "unknown in-memory certificate format");
+        LOG(ERROR, _("unknown in-memory certificate format"));
         break;
     }
     return *out_cert ? AVS_OK : avs_errno(AVS_EPROTO);
@@ -154,27 +154,27 @@ _avs_net_openssl_load_ca_certs(SSL_CTX *ctx,
                                const avs_net_trusted_cert_info_t *info) {
     setup_password_callback(ctx, NULL);
     if (!SSL_CTX_set_default_verify_paths(ctx)) {
-        LOG(WARNING, "could not set default CA verify paths");
+        LOG(WARNING, _("could not set default CA verify paths"));
         log_openssl_error();
     }
 
     switch (info->desc.source) {
     case AVS_NET_DATA_SOURCE_FILE:
         if (!info->desc.info.file.filename) {
-            LOG(ERROR, "attempt to load CA cert from file, but filename=NULL");
+            LOG(ERROR, _("attempt to load CA cert from file, but filename=NULL"));
             return avs_errno(AVS_EINVAL);
         }
         return load_ca_certs_from_paths(ctx, info->desc.info.file.filename,
                                         NULL);
     case AVS_NET_DATA_SOURCE_PATH:
         if (!info->desc.info.path.path) {
-            LOG(ERROR, "attempt to load CA cert from path, but path=NULL");
+            LOG(ERROR, _("attempt to load CA cert from path, but path=NULL"));
             return avs_errno(AVS_EINVAL);
         }
         return load_ca_certs_from_paths(ctx, NULL, info->desc.info.path.path);
     case AVS_NET_DATA_SOURCE_BUFFER:
         if (!info->desc.info.buffer.buffer) {
-            LOG(ERROR, "attempt to load CA cert from buffer, but buffer=NULL");
+            LOG(ERROR, _("attempt to load CA cert from buffer, but buffer=NULL"));
             return avs_errno(AVS_EINVAL);
         }
         return load_ca_cert_from_buffer(ctx, info->desc.info.buffer.buffer,
@@ -187,7 +187,7 @@ _avs_net_openssl_load_ca_certs(SSL_CTX *ctx,
 
 static avs_error_t load_client_cert_from_file(SSL_CTX *ctx,
                                               const char *filename) {
-    LOG(DEBUG, "client certificate <%s>: going to load", filename);
+    LOG(DEBUG, _("client certificate <") "%s" _(">: going to load"), filename);
     // Try PEM.
     if (SSL_CTX_use_certificate_file(ctx, filename, SSL_FILETYPE_PEM) == 1) {
         return AVS_OK;
@@ -225,14 +225,14 @@ _avs_net_openssl_load_client_cert(SSL_CTX *ctx,
     case AVS_NET_DATA_SOURCE_FILE:
         if (!info->desc.info.file.filename) {
             LOG(ERROR,
-                "attempt to load client cert from file, but filename=NULL");
+                _("attempt to load client cert from file, but filename=NULL"));
             return avs_errno(AVS_EINVAL);
         }
         return load_client_cert_from_file(ctx, info->desc.info.file.filename);
     case AVS_NET_DATA_SOURCE_BUFFER:
         if (!info->desc.info.buffer.buffer) {
             LOG(ERROR,
-                "attempt to load client cert from buffer, but buffer=NULL");
+                _("attempt to load client cert from buffer, but buffer=NULL"));
             return avs_errno(AVS_EINVAL);
         }
         return load_client_cert_from_buffer(ctx, info->desc.info.buffer.buffer,
@@ -246,7 +246,7 @@ _avs_net_openssl_load_client_cert(SSL_CTX *ctx,
 static avs_error_t load_client_key_from_file(SSL_CTX *ctx,
                                              const char *filename,
                                              const char *password) {
-    LOG(DEBUG, "client key <%s>: going to load", filename);
+    LOG(DEBUG, _("client key <") "%s" _(">: going to load"), filename);
     setup_password_callback(ctx, password);
 
     // Try PEM.
@@ -283,7 +283,7 @@ static avs_error_t parse_key(EVP_PKEY **out_key,
         break;
     }
     default:
-        LOG(ERROR, "unknown in-memory certificate format");
+        LOG(ERROR, _("unknown in-memory certificate format"));
         break;
     }
     BIO_free(bio);
@@ -316,7 +316,7 @@ _avs_net_openssl_load_client_key(SSL_CTX *ctx,
     case AVS_NET_DATA_SOURCE_FILE:
         if (!info->desc.info.file.filename) {
             LOG(ERROR,
-                "attempt to load client key from file, but filename=NULL");
+                _("attempt to load client key from file, but filename=NULL"));
             return avs_errno(AVS_EINVAL);
         }
         return load_client_key_from_file(ctx, info->desc.info.file.filename,
@@ -324,7 +324,7 @@ _avs_net_openssl_load_client_key(SSL_CTX *ctx,
     case AVS_NET_DATA_SOURCE_BUFFER:
         if (!info->desc.info.buffer.buffer) {
             LOG(ERROR,
-                "attempt to load client key from buffer, but buffer=NULL");
+                _("attempt to load client key from buffer, but buffer=NULL"));
             return avs_errno(AVS_EINVAL);
         }
         return load_client_key_from_buffer(ctx, info->desc.info.buffer.buffer,

@@ -78,7 +78,7 @@ static avs_error_t compressor_flush(zlib_stream_t *stream) {
     }
     if (stream->error != Z_OK && stream->error != Z_STREAM_END) {
         avs_error_t err = map_zlib_error(stream->error);
-        LOG(ERROR, "Compression error (%d): %s", stream->error,
+        LOG(ERROR, _("Compression error (") "%d" _("): ") "%s" , stream->error,
             get_zlib_msg(stream));
         return err;
     }
@@ -102,7 +102,7 @@ static avs_error_t decompressor_flush(zlib_stream_t *stream) {
     }
     if (stream->error != Z_OK && stream->error != Z_STREAM_END) {
         avs_error_t err = map_zlib_error(stream->error);
-        LOG(ERROR, "Decompression error (%d): %s", stream->error,
+        LOG(ERROR, _("Decompression error (") "%d" _("): ") "%s" , stream->error,
             get_zlib_msg(stream));
         return err;
     }
@@ -121,7 +121,7 @@ static avs_error_t zlib_stream_write_some(avs_stream_t *stream_,
                                           size_t *inout_data_length) {
     zlib_stream_t *stream = (zlib_stream_t *) stream_;
     if (stream->error == Z_STREAM_END || stream->flush != Z_NO_FLUSH) {
-        LOG(ERROR, "Stream finished");
+        LOG(ERROR, _("Stream finished"));
         return avs_errno(AVS_EBADF);
     }
     if (*inout_data_length
@@ -192,7 +192,7 @@ static avs_error_t zlib_stream_read(avs_stream_t *stream_,
         }
     } else if (stream->error != Z_OK) {
         avs_error_t err = map_zlib_error(stream->error);
-        LOG(ERROR, "zlib operation error (%d): %s", stream->error,
+        LOG(ERROR, _("zlib operation error (") "%d" _("): ") "%s" , stream->error,
             get_zlib_msg(stream));
         return err;
     }
@@ -215,7 +215,7 @@ static avs_error_t zlib_stream_peek(avs_stream_t *stream_,
                                     char *out_value) {
     zlib_stream_t *stream = (zlib_stream_t *) stream_;
     if (offset > stream->output_buffer_size) {
-        LOG(ERROR, "cannot peek - buffer is too small");
+        LOG(ERROR, _("cannot peek - buffer is too small"));
         return avs_errno(AVS_ENOBUFS);
     }
     if (stream->zlib.avail_out + offset >= stream->output_buffer_size) {
@@ -255,13 +255,13 @@ static zlib_stream_t *zlib_stream_init(const avs_stream_v_table_t *vtable,
                                        size_t input_buffer_size,
                                        size_t output_buffer_size) {
     if (input_buffer_size <= 0 || output_buffer_size <= 0) {
-        LOG(ERROR, "buffers cannot be zero-length");
+        LOG(ERROR, _("buffers cannot be zero-length"));
         return NULL;
     }
     zlib_stream_t *stream = (zlib_stream_t *) avs_calloc(
             1, sizeof(zlib_stream_t) + input_buffer_size + output_buffer_size);
     if (!stream) {
-        LOG(ERROR, "cannot allocate memory");
+        LOG(ERROR, _("cannot allocate memory"));
         return NULL;
     }
     *(const avs_stream_v_table_t **) (intptr_t) &stream->vtable = vtable;
@@ -323,7 +323,7 @@ avs_stream_t *_avs_http_create_compressor(http_compression_format_t format,
                                   + (format == HTTP_COMPRESSION_GZIP ? 16 : 0),
                           mem_level, Z_DEFAULT_STRATEGY);
     if (result != Z_OK) {
-        LOG(ERROR, "could not initialize zlib (%d): %s", result,
+        LOG(ERROR, _("could not initialize zlib (") "%d" _("): ") "%s" , result,
             get_zlib_msg(stream));
         avs_free(stream);
         return NULL;
@@ -372,7 +372,7 @@ avs_stream_t *_avs_http_create_decompressor(http_compression_format_t format,
                           window_bits
                                   + (format == HTTP_COMPRESSION_GZIP ? 16 : 0));
     if (result != Z_OK) {
-        LOG(ERROR, "could not initialize zlib (%d): %s", result,
+        LOG(ERROR, _("could not initialize zlib (") "%d" _("): ") "%s" , result,
             get_zlib_msg(stream));
         avs_free(stream);
         return NULL;
