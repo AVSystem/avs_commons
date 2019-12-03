@@ -53,24 +53,24 @@ static avs_error_t append_cert_from_buffer(mbedtls_x509_crt *chain,
 static avs_error_t load_cert_from_file(mbedtls_x509_crt *chain,
                                        const char *name) {
 #ifdef MBEDTLS_FS_IO
-    LOG(DEBUG, "certificate <%s>: going to load", name);
+    LOG(DEBUG, _("certificate <") "%s" _(">: going to load"), name);
 
     int retval = -1;
     avs_error_t err = ((retval = mbedtls_x509_crt_parse_file(chain, name))
                                ? avs_errno(AVS_EPROTO)
                                : AVS_OK);
     if (avs_is_ok(err)) {
-        LOG(DEBUG, "certificate <%s>: loaded", name);
+        LOG(DEBUG, _("certificate <") "%s" _(">: loaded"), name);
     } else {
-        LOG(ERROR, "certificate <%s>: failed to load, result %d", name, retval);
+        LOG(ERROR, _("certificate <") "%s" _(">: failed to load, result ") "%d" , name, retval);
     }
     return err;
 #else  // MBEDTLS_FS_IO
     (void) chain;
     (void) name;
     LOG(DEBUG,
-        "certificate <%s>: mbed TLS configured without file system support, "
-        "cannot load",
+        _("certificate <") "%s" _(">: mbed TLS configured without file system support, ")
+        _("cannot load"),
         name);
     return avs_errno(AVS_ENOTSUP);
 #endif // MBEDTLS_FS_IO
@@ -79,7 +79,7 @@ static avs_error_t load_cert_from_file(mbedtls_x509_crt *chain,
 static avs_error_t load_ca_from_path(mbedtls_x509_crt *chain,
                                      const char *path) {
 #ifdef MBEDTLS_FS_IO
-    LOG(DEBUG, "certificates from path <%s>: going to load", path);
+    LOG(DEBUG, _("certificates from path <") "%s" _(">: going to load"), path);
 
     int retval = -1;
     // Note: this function returns negative value if nothing was loaded or
@@ -89,10 +89,10 @@ static avs_error_t load_ca_from_path(mbedtls_x509_crt *chain,
                                ? avs_errno(AVS_EPROTO)
                                : AVS_OK);
     if (avs_is_ok(err)) {
-        LOG(DEBUG, "certificates from path <%s>: some loaded; not loaded: %d",
+        LOG(DEBUG, _("certificates from path <") "%s" _(">: some loaded; not loaded: ") "%d" ,
             path, retval);
     } else {
-        LOG(ERROR, "certificates from path <%s>: failed to load, result %d",
+        LOG(ERROR, _("certificates from path <") "%s" _(">: failed to load, result ") "%d" ,
             path, retval);
     }
     return err;
@@ -100,8 +100,8 @@ static avs_error_t load_ca_from_path(mbedtls_x509_crt *chain,
     (void) chain;
     (void) path;
     LOG(DEBUG,
-        "certificates from path <%s>: mbed TLS configured without file system "
-        "support, cannot load",
+        _("certificates from path <") "%s" _(">: mbed TLS configured without file system ")
+        _("support, cannot load"),
         path);
     return avs_errno(AVS_ENOTSUP);
 #endif // MBEDTLS_FS_IO
@@ -116,19 +116,19 @@ _avs_net_mbedtls_load_ca_certs(mbedtls_x509_crt **out,
     switch (info->desc.source) {
     case AVS_NET_DATA_SOURCE_FILE:
         if (!info->desc.info.file.filename) {
-            LOG(ERROR, "attempt to load CA cert from file, but filename=NULL");
+            LOG(ERROR, _("attempt to load CA cert from file, but filename=NULL"));
             return avs_errno(AVS_EINVAL);
         }
         return load_cert_from_file(*out, info->desc.info.file.filename);
     case AVS_NET_DATA_SOURCE_PATH:
         if (!info->desc.info.path.path) {
-            LOG(ERROR, "attempt to load CA cert from path, but path=NULL");
+            LOG(ERROR, _("attempt to load CA cert from path, but path=NULL"));
             return avs_errno(AVS_EINVAL);
         }
         return load_ca_from_path(*out, info->desc.info.path.path);
     case AVS_NET_DATA_SOURCE_BUFFER:
         if (!info->desc.info.buffer.buffer) {
-            LOG(ERROR, "attempt to load CA cert from buffer, but buffer=NULL");
+            LOG(ERROR, _("attempt to load CA cert from buffer, but buffer=NULL"));
             return avs_errno(AVS_EINVAL);
         }
         return append_cert_from_buffer(*out, info->desc.info.buffer.buffer,
@@ -149,14 +149,14 @@ _avs_net_mbedtls_load_client_cert(mbedtls_x509_crt **out,
     case AVS_NET_DATA_SOURCE_FILE:
         if (!info->desc.info.file.filename) {
             LOG(ERROR,
-                "attempt to load client cert from file, but filename=NULL");
+                _("attempt to load client cert from file, but filename=NULL"));
             return avs_errno(AVS_EINVAL);
         }
         return load_cert_from_file(*out, info->desc.info.file.filename);
     case AVS_NET_DATA_SOURCE_BUFFER:
         if (!info->desc.info.buffer.buffer) {
             LOG(ERROR,
-                "attempt to load client cert from buffer, but buffer=NULL");
+                _("attempt to load client cert from buffer, but buffer=NULL"));
             return avs_errno(AVS_EINVAL);
         }
         return append_cert_from_buffer(*out, info->desc.info.buffer.buffer,
@@ -183,7 +183,7 @@ static avs_error_t load_private_key_from_file(mbedtls_pk_context *client_key,
                                               const char *filename,
                                               const char *password) {
 #ifdef MBEDTLS_FS_IO
-    LOG(DEBUG, "private key <%s>: going to load", filename);
+    LOG(DEBUG, _("private key <") "%s" _(">: going to load"), filename);
 
     int retval = -1;
     avs_error_t err =
@@ -191,9 +191,9 @@ static avs_error_t load_private_key_from_file(mbedtls_pk_context *client_key,
                      ? avs_errno(AVS_EPROTO)
                      : AVS_OK);
     if (avs_is_ok(err)) {
-        LOG(DEBUG, "private key <%s>: loaded", filename);
+        LOG(DEBUG, _("private key <") "%s" _(">: loaded"), filename);
     } else {
-        LOG(ERROR, "private key <%s>: failed, result %d", filename, retval);
+        LOG(ERROR, _("private key <") "%s" _(">: failed, result ") "%d" , filename, retval);
     }
     return err;
 #else  // MBEDTLS_FS_IO
@@ -201,8 +201,8 @@ static avs_error_t load_private_key_from_file(mbedtls_pk_context *client_key,
     (void) filename;
     (void) password;
     LOG(DEBUG,
-        "private key <%s>: mbed TLS configured without file system support, "
-        "cannot load",
+        _("private key <") "%s" _(">: mbed TLS configured without file system support, ")
+        _("cannot load"),
         filename);
     return avs_errno(AVS_ENOTSUP);
 #endif // MBEDTLS_FS_IO
@@ -218,7 +218,7 @@ _avs_net_mbedtls_load_client_key(mbedtls_pk_context **client_key,
     case AVS_NET_DATA_SOURCE_FILE:
         if (!info->desc.info.file.filename) {
             LOG(ERROR,
-                "attempt to load client key from file, but filename=NULL");
+                _("attempt to load client key from file, but filename=NULL"));
             return avs_errno(AVS_EINVAL);
         }
         return load_private_key_from_file(*client_key,
@@ -227,7 +227,7 @@ _avs_net_mbedtls_load_client_key(mbedtls_pk_context **client_key,
     case AVS_NET_DATA_SOURCE_BUFFER:
         if (!info->desc.info.buffer.buffer) {
             LOG(ERROR,
-                "attempt to load client key from buffer, but buffer=NULL");
+                _("attempt to load client key from buffer, but buffer=NULL"));
             return avs_errno(AVS_EINVAL);
         }
         return load_private_key_from_buffer(*client_key,

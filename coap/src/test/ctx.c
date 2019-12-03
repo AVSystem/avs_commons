@@ -88,7 +88,7 @@ static void spawn_dtls_echo_server(uint16_t port) {
     server_t *serv;
     AVS_LIST_FOREACH(serv, dtls_servers) {
         if (serv->port == port) {
-            LOG(ERROR, "another server running on port %u", port);
+            LOG(ERROR, _("another server running on port ") "%u" , port);
             abort();
             return;
         }
@@ -114,14 +114,14 @@ static void spawn_dtls_echo_server(uint16_t port) {
     case 0:
 #if __linux__
         if (prctl(PR_SET_PDEATHSIG, SIGHUP)) {
-            LOG(WARNING, "prctl failed: %s", strerror(errno));
+            LOG(WARNING, _("prctl failed: ") "%s" , strerror(errno));
         }
 #endif // __linux__
         execve(cmdline[0], cmdline, NULL);
         // fall-through
     case -1:
-        LOG(ERROR, "could not start DTLS echo server: %s", strerror(errno));
-        LOG(ERROR, "command: %s %s %s %s", cmdline[0], cmdline[1], cmdline[2],
+        LOG(ERROR, _("could not start DTLS echo server: ") "%s" , strerror(errno));
+        LOG(ERROR, _("command: ") "%s" _(" ") "%s" _(" ") "%s" _(" ") "%s" , cmdline[0], cmdline[1], cmdline[2],
             cmdline[3]);
         abort();
     default:
@@ -168,7 +168,7 @@ static void udp_echo_serve(uint16_t port) {
 
     addr.sin_addr.s_addr = inet_addr("127.0.0.1");
     if (bind(sock, (struct sockaddr *) &addr, sizeof(addr))) {
-        LOG(ERROR, "UDP server (127.0.0.1:%u) bind failed: %s", port,
+        LOG(ERROR, _("UDP server (127.0.0.1:") "%u" _(") bind failed: ") "%s" , port,
             strerror(errno));
         goto cleanup;
     }
@@ -178,7 +178,7 @@ static void udp_echo_serve(uint16_t port) {
 
     while (true) {
         if (poll(&sock_pollfd, 1, -1) < 0) {
-            LOG(ERROR, "UDP server (127.0.0.1:%u) poll failed: %s", port,
+            LOG(ERROR, _("UDP server (127.0.0.1:") "%u" _(") poll failed: ") "%s" , port,
                 strerror(errno));
             goto cleanup;
         }
@@ -191,7 +191,7 @@ static void udp_echo_serve(uint16_t port) {
                 recvfrom(sock, in_buffer, sizeof(in_buffer), 0,
                          (struct sockaddr *) &remote_addr, &remote_addr_len);
         if (bytes_recv < 0) {
-            LOG(ERROR, "UDP server (127.0.0.1:%u) recvfrom failed: %s", port,
+            LOG(ERROR, _("UDP server (127.0.0.1:") "%u" _(") recvfrom failed: ") "%s" , port,
                 strerror(errno));
             goto cleanup;
         }
@@ -199,14 +199,14 @@ static void udp_echo_serve(uint16_t port) {
         ssize_t bytes_to_send = udp_echo(in_buffer, (size_t) bytes_recv,
                                          out_buffer, sizeof(out_buffer));
         if (bytes_to_send < 0) {
-            LOG(ERROR, "UDP server (127.0.0.1:%u) udp_echo failed", port);
+            LOG(ERROR, _("UDP server (127.0.0.1:") "%u" _(") udp_echo failed"), port);
             goto cleanup;
         }
 
         if (sendto(sock, out_buffer, (size_t) bytes_to_send, 0,
                    (struct sockaddr *) &remote_addr, remote_addr_len)
                 != bytes_to_send) {
-            LOG(ERROR, "UDP server (127.0.0.1:%u) sendto failed: %s", port,
+            LOG(ERROR, _("UDP server (127.0.0.1:") "%u" _(") sendto failed: ") "%s" , port,
                 strerror(errno));
             goto cleanup;
         }
@@ -214,14 +214,14 @@ static void udp_echo_serve(uint16_t port) {
 
 cleanup:
     close(sock);
-    LOG(ERROR, "UDP server (127.0.0.1:%u) shutting down", port);
+    LOG(ERROR, _("UDP server (127.0.0.1:") "%u" _(") shutting down"), port);
 }
 
 static void spawn_udp_echo_server(uint16_t port) {
     server_t *serv;
     AVS_LIST_FOREACH(serv, udp_servers) {
         if (serv->port == port) {
-            LOG(ERROR, "another server running on port %u", port);
+            LOG(ERROR, _("another server running on port ") "%u" , port);
             abort();
         }
     }
@@ -233,13 +233,13 @@ static void spawn_udp_echo_server(uint16_t port) {
     case 0:
 #if __linux__
         if (prctl(PR_SET_PDEATHSIG, SIGHUP)) {
-            LOG(WARNING, "prctl failed: %s", strerror(errno));
+            LOG(WARNING, _("prctl failed: ") "%s" , strerror(errno));
         }
 #endif // __linux__
         udp_echo_serve(port);
         // fall-through
     case -1:
-        LOG(ERROR, "could not start UDP server on port %u: %s", port,
+        LOG(ERROR, _("could not start UDP server on port ") "%u" _(": ") "%s" , port,
             strerror(errno));
         abort();
     default:

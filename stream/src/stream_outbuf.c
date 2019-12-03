@@ -72,7 +72,7 @@ size_t avs_stream_outbuf_offset(avs_stream_outbuf_t *stream) {
 avs_error_t avs_stream_outbuf_set_offset(avs_stream_outbuf_t *stream,
                                          size_t offset) {
     if (offset > stream->buffer_offset) {
-        LOG(ERROR, "outbuf stream offset cannot be advanced");
+        LOG(ERROR, _("outbuf stream offset cannot be advanced"));
         return avs_errno(AVS_ERANGE);
     }
     stream->buffer_offset = offset;

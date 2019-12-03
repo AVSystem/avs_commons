@@ -50,7 +50,7 @@ static size_t bytes_remaining(const avs_coap_msg_buffer_t *buffer) {
 static int
 append_data(avs_coap_msg_buffer_t *buffer, const void *data, size_t data_size) {
     if (data_size > bytes_remaining(buffer)) {
-        LOG(ERROR, "cannot append %u bytes, only %u available",
+        LOG(ERROR, _("cannot append ") "%u" _(" bytes, only ") "%u" _(" available"),
             (unsigned) data_size, (unsigned) bytes_remaining(buffer));
         return -1;
     }
@@ -70,13 +70,13 @@ static int append_token(avs_coap_msg_buffer_t *buffer,
 
     if (_avs_coap_header_get_code(buffer->msg) == AVS_COAP_CODE_EMPTY
             && token->size > 0) {
-        LOG(ERROR, "0.00 Empty message must not contain a token");
+        LOG(ERROR, _("0.00 Empty message must not contain a token"));
         return -1;
     }
 
     _avs_coap_header_set_token_length(buffer->msg, token->size);
     if (append_data(buffer, token->bytes, token->size)) {
-        LOG(ERROR, "could not append token");
+        LOG(ERROR, _("could not append token"));
         return -1;
     }
 
@@ -129,7 +129,7 @@ static int append_option(avs_coap_msg_buffer_t *buffer,
                          const void *opt_data,
                          uint16_t opt_data_size) {
     if (_avs_coap_header_get_code(buffer->msg) == AVS_COAP_CODE_EMPTY) {
-        LOG(ERROR, "0.00 Empty message must not contain options");
+        LOG(ERROR, _("0.00 Empty message must not contain options"));
         return -1;
     }
 
@@ -137,7 +137,7 @@ static int append_option(avs_coap_msg_buffer_t *buffer,
             _avs_coap_get_opt_header_size(opt_number_delta, opt_data_size);
 
     if (opt_header_size + opt_data_size > bytes_remaining(buffer)) {
-        LOG(ERROR, "not enough space to serialize option");
+        LOG(ERROR, _("not enough space to serialize option"));
         return -1;
     }
 
@@ -145,7 +145,7 @@ static int append_option(avs_coap_msg_buffer_t *buffer,
             msg_end_ptr(buffer), opt_number_delta, opt_data_size);
 
     if (append_data(buffer, opt_data, opt_data_size)) {
-        LOG(ERROR, "could not serialize option");
+        LOG(ERROR, _("could not serialize option"));
         return -1;
     }
 
@@ -171,7 +171,7 @@ int avs_coap_msg_builder_reset(avs_coap_msg_builder_t *builder,
                                const avs_coap_msg_info_t *info) {
     if (builder->msg_buffer.capacity
             < avs_coap_msg_info_get_headers_size(info)) {
-        LOG(ERROR, "message buffer too small: %u/%u B available",
+        LOG(ERROR, _("message buffer too small: ") "%u" _("/") "%u" _(" B available"),
             (unsigned) builder->msg_buffer.capacity,
             (unsigned) avs_coap_msg_info_get_storage_size(info));
         return -1;

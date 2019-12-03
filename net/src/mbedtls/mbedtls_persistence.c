@@ -116,8 +116,8 @@ static avs_error_t handle_cert_persistence(avs_persistence_context_t *ctx,
     if (data && avs_persistence_direction(ctx) == AVS_PERSISTENCE_RESTORE) {
         // avs_persistence_sized_buffer() could allocate memory if it is restore
         // case
-        LOG(WARNING, "x509 certificates support is not compiled in - ignoring "
-                     "restored certificate");
+        LOG(WARNING, _("x509 certificates support is not compiled in - ignoring ")
+                     _("restored certificate"));
         avs_free(data);
     }
     return AVS_OK;
@@ -223,12 +223,12 @@ avs_error_t _avs_net_mbedtls_session_save(mbedtls_ssl_session *session,
             avs_stream_write((avs_stream_t *) &out_buf_stream,
                              PERSISTENCE_MAGIC, sizeof(PERSISTENCE_MAGIC));
     if (avs_is_err(err)) {
-        LOG(ERROR, "Could not write session magic");
+        LOG(ERROR, _("Could not write session magic"));
     } else {
         ctx = avs_persistence_store_context_create(
                 (avs_stream_t *) &out_buf_stream);
         if (avs_is_err((err = handle_session_persistence(&ctx, session)))) {
-            LOG(ERROR, "Could not persist session data");
+            LOG(ERROR, _("Could not persist session data"));
         }
     }
     // ensure that everything after the persisted data is zeroes, to make
@@ -254,7 +254,7 @@ avs_error_t _avs_net_mbedtls_session_restore(mbedtls_ssl_session *out_session,
                                              const void *buf,
                                              size_t buf_size) {
     if (is_all_zeros(buf, buf_size)) {
-        LOG(TRACE, "Session data empty, not attempting restore");
+        LOG(TRACE, _("Session data empty, not attempting restore"));
         return avs_errno(AVS_EBADMSG);
     }
     avs_stream_inbuf_t in_buf_stream = AVS_STREAM_INBUF_STATIC_INITIALIZER;
@@ -264,10 +264,10 @@ avs_error_t _avs_net_mbedtls_session_restore(mbedtls_ssl_session *out_session,
     avs_error_t err = avs_persistence_magic(&ctx, PERSISTENCE_MAGIC,
                                             sizeof(PERSISTENCE_MAGIC));
     if (avs_is_err(err)) {
-        LOG(ERROR, "Could not restore session: invalid magic");
+        LOG(ERROR, _("Could not restore session: invalid magic"));
     } else if (avs_is_err(
                        (err = handle_session_persistence(&ctx, out_session)))) {
-        LOG(ERROR, "Could not restore session data");
+        LOG(ERROR, _("Could not restore session data"));
     }
     return err;
 }

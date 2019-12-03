@@ -32,7 +32,7 @@ static avs_error_t http_send_single_chunk(http_stream_t *stream,
                                           size_t buffer_length) {
     char size_buf[sizeof(unsigned long) * 2 + 3];
     avs_error_t err;
-    LOG(TRACE, "http_send_single_chunk, buffer_length == %lu",
+    LOG(TRACE, _("http_send_single_chunk, buffer_length == ") "%lu" ,
         (unsigned long) buffer_length);
     if (avs_simple_snprintf(size_buf, sizeof(size_buf), "%lX\r\n",
                             (unsigned long) buffer_length)
@@ -53,7 +53,7 @@ avs_error_t _avs_http_chunked_send_first(http_stream_t *stream,
                                          const void *data,
                                          size_t data_length) {
     avs_error_t err;
-    LOG(TRACE, "http_chunked_send_first");
+    LOG(TRACE, _("http_chunked_send_first"));
     stream->flags.chunked_sending = 1;
     stream->auth.state.flags.retried = 0;
     do {

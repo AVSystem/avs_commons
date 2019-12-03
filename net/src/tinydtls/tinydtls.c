@@ -116,7 +116,7 @@ static avs_error_t send_ssl(avs_net_socket_t *ssl_socket,
         int result = dtls_write(socket->ctx, &session,
                                 (uint8 *) (intptr_t) buffer, buffer_length);
         if (result < 0) {
-            LOG(ERROR, "send_ssl() failed");
+            LOG(ERROR, _("send_ssl() failed"));
             if (avs_is_err(socket->bio_error)) {
                 return socket->bio_error;
             } else {
@@ -169,7 +169,7 @@ static avs_error_t receive_ssl(avs_net_socket_t *socket_,
 
 static avs_error_t cleanup_ssl(avs_net_socket_t **socket_) {
     ssl_socket_t *socket = *(ssl_socket_t **) socket_;
-    LOG(TRACE, "cleanup_ssl(*socket=%p)", (void *) socket);
+    LOG(TRACE, _("cleanup_ssl(*socket=") "%p" _(")"), (void *) socket);
 
 #ifdef DTLS_PSK
     _avs_net_psk_cleanup(&socket->psk);
@@ -182,7 +182,7 @@ static avs_error_t cleanup_ssl(avs_net_socket_t **socket_) {
 }
 
 static void close_ssl_raw(ssl_socket_t *socket) {
-    LOG(TRACE, "close_ssl_raw(socket=%p)", (void *) socket);
+    LOG(TRACE, _("close_ssl_raw(socket=") "%p" _(")"), (void *) socket);
     if (socket->ctx) {
         dtls_free_context(socket->ctx);
         socket->ctx = NULL;
@@ -216,11 +216,11 @@ static avs_error_t ssl_handshake(ssl_socket_t *socket) {
 
     while (dtls_peer_state(peer) != DTLS_STATE_CONNECTED) {
         if (!handshake_exchanges_remaining--) {
-            LOG(ERROR, "ssl_handshake(): too many handshake retries");
+            LOG(ERROR, _("ssl_handshake(): too many handshake retries"));
             return avs_errno(AVS_ETIMEDOUT);
         }
 
-        LOG(DEBUG, "ssl_handshake(): client state %d",
+        LOG(DEBUG, _("ssl_handshake(): client state ") "%d" ,
             (int) dtls_peer_state(peer));
         char message[DTLS_MAX_BUF];
         size_t message_length;
@@ -236,7 +236,7 @@ static avs_error_t ssl_handshake(ssl_socket_t *socket) {
         socket->bio_error = AVS_OK;
         if (dtls_handle_message(socket->ctx, &session, (uint8 *) message,
                                 (int) message_length)) {
-            LOG(ERROR, "ssl_handshake() failed");
+            LOG(ERROR, _("ssl_handshake() failed"));
             if (avs_is_err(socket->bio_error)) {
                 return socket->bio_error;
             } else {
@@ -266,10 +266,10 @@ static avs_error_t start_ssl(ssl_socket_t *socket, const char *host) {
 
 static avs_error_t configure_ssl_psk(ssl_socket_t *socket,
                                      const avs_net_psk_info_t *psk) {
-    LOG(TRACE, "configure_ssl_psk");
+    LOG(TRACE, _("configure_ssl_psk"));
 
 #ifndef DTLS_PSK
-    LOG(ERROR, "support for psk is disabled");
+    LOG(ERROR, _("support for psk is disabled"));
     return avs_errno(AVS_ENOTSUP);
 #else
     return _avs_net_psk_copy(&socket->psk, psk);
@@ -281,7 +281,7 @@ configure_ssl_certs(ssl_socket_t *socket,
                     const avs_net_certificate_info_t *cert_info) {
     (void) socket;
     (void) cert_info;
-    LOG(ERROR, "support for certificate mode is not yet implemented");
+    LOG(ERROR, _("support for certificate mode is not yet implemented"));
     return avs_errno(AVS_ENOTSUP);
 }
 
@@ -308,7 +308,7 @@ configure_ssl(ssl_socket_t *socket,
 
     if (configuration->additional_configuration_clb
             && configuration->additional_configuration_clb(socket->ctx)) {
-        LOG(ERROR, "Error while setting additional SSL configuration");
+        LOG(ERROR, _("Error while setting additional SSL configuration"));
         return avs_errno(AVS_EPIPE);
     }
     return AVS_OK;
@@ -369,7 +369,7 @@ static int dtls_get_psk_info_handler(dtls_context_t *ctx,
         (void) id;
 
         if (size < socket->psk.identity_size) {
-            LOG(WARNING, "tinyDTLS buffer for PSK identity is too small");
+            LOG(WARNING, _("tinyDTLS buffer for PSK identity is too small"));
             return dtls_alert_fatal_create(DTLS_ALERT_INTERNAL_ERROR);
         }
         assert(socket->psk.identity_size <= INT_MAX);
@@ -382,14 +382,14 @@ static int dtls_get_psk_info_handler(dtls_context_t *ctx,
         }
 
         if (size < socket->psk.psk_size) {
-            LOG(WARNING, "tinyDTLS buffer for PSK key is too small");
+            LOG(WARNING, _("tinyDTLS buffer for PSK key is too small"));
             return dtls_alert_fatal_create(DTLS_ALERT_INTERNAL_ERROR);
         }
         assert(socket->psk.psk_size <= INT_MAX);
         memcpy(out_buffer, socket->psk.psk, socket->psk.psk_size);
         return (int) socket->psk.psk_size;
     default:
-        LOG(ERROR, "unsupported request type %d", (int) type);
+        LOG(ERROR, _("unsupported request type ") "%d" , (int) type);
         break;
     }
     return dtls_alert_fatal_create(DTLS_ALERT_INTERNAL_ERROR);
@@ -403,7 +403,7 @@ static int dtls_get_ecdsa_key_handler(dtls_context_t *ctx,
     (void) ctx;
     (void) session;
     (void) result;
-    LOG(ERROR, "tinyDTLS with ECC is not supported");
+    LOG(ERROR, _("tinyDTLS with ECC is not supported"));
     return -1;
 }
 
@@ -417,7 +417,7 @@ static int dtls_verify_ecdsa_key_handler(dtls_context_t *ctx,
     (void) other_pub_x;
     (void) other_pub_y;
     (void) key_size;
-    LOG(ERROR, "tinyDTLS with ECC is not supported");
+    LOG(ERROR, _("tinyDTLS with ECC is not supported"));
     return -1;
 }
 
@@ -429,7 +429,7 @@ static int dtls_event_handler(dtls_context_t *ctx,
                               unsigned short code) {
     (void) ctx;
     (void) session;
-    LOG(DEBUG, "tinyDTLS reported an event (level=%d, code=%d)", (int) level,
+    LOG(DEBUG, _("tinyDTLS reported an event (level=") "%d" _(", code=") "%d" _(")"), (int) level,
         (int) code);
     (void) level;
     (void) code;
@@ -444,14 +444,14 @@ initialize_ssl_socket(ssl_socket_t *socket,
             &ssl_vtable;
 
     if (backend_type != AVS_NET_UDP_SOCKET) {
-        LOG(ERROR, "tinyDTLS backend supports UDP sockets only");
+        LOG(ERROR, _("tinyDTLS backend supports UDP sockets only"));
         return avs_errno(AVS_ENOTSUP);
     }
 
     socket->backend_type = backend_type;
     socket->ctx = dtls_new_context(socket);
     if (!socket->ctx) {
-        LOG(ERROR, "could not instantiate tinyDTLS context");
+        LOG(ERROR, _("could not instantiate tinyDTLS context"));
         return avs_errno(AVS_ENOMEM);
     }
 

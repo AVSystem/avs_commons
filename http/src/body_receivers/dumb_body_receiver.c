@@ -74,7 +74,7 @@ static const avs_stream_v_table_t dumb_body_receiver_vtable = {
 avs_stream_t *_avs_http_body_receiver_dumb_create(avs_stream_t *backend) {
     dumb_proxy_receiver_t *retval =
             (dumb_proxy_receiver_t *) avs_malloc(sizeof(*retval));
-    LOG(TRACE, "create_dumb_body_receiver");
+    LOG(TRACE, _("create_dumb_body_receiver"));
     if (retval) {
         *(const avs_stream_v_table_t **) (intptr_t) &retval->vtable =
                 &dumb_body_receiver_vtable;

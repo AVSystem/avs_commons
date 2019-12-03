@@ -123,7 +123,7 @@ int avs_url_percent_decode(char *data, size_t *unescaped_length) {
                 src += 3;
                 dst += 1;
             } else {
-                LOG(ERROR, "bad escape format (%%XX) ");
+                LOG(ERROR, _("bad escape format (%%XX) "));
                 return -1;
             }
         } else {
@@ -139,11 +139,11 @@ int avs_url_percent_decode(char *data, size_t *unescaped_length) {
 static int prepare_string(char *data) {
     size_t new_length = 0;
     if (avs_url_percent_decode(data, &new_length)) {
-        LOG(ERROR, "unescape failure");
+        LOG(ERROR, _("unescape failure"));
         return -1;
     }
     if (new_length != strlen(data)) {
-        LOG(ERROR, "string cannot include null byte");
+        LOG(ERROR, _("string cannot include null byte"));
         return -1;
     }
     return 0;
@@ -201,7 +201,7 @@ static int parse_username_and_password(const char *begin,
 
     if (!is_valid_credential(&parsed_url->data[user_ptr])
             || prepare_string(&parsed_url->data[user_ptr])) {
-        LOG(ERROR, "invalid username");
+        LOG(ERROR, _("invalid username"));
         return -1;
     }
     parsed_url->user_ptr = user_ptr;
@@ -222,7 +222,7 @@ static int parse_username_and_password(const char *begin,
 
     if (!is_valid_credential(&parsed_url->data[password_ptr])
             || prepare_string(&parsed_url->data[password_ptr])) {
-        LOG(ERROR, "invalid password");
+        LOG(ERROR, _("invalid password"));
         return -1;
     }
     parsed_url->password_ptr = password_ptr;
@@ -241,7 +241,7 @@ static int url_parse_credentials(const char **url,
     if (credentials_end && (!first_slash || credentials_end < first_slash)) {
         if (parse_username_and_password(*url, credentials_end, data_out_ptr,
                                         out_limit, parsed_url)) {
-            LOG(ERROR, "cannot parse credentials from URL");
+            LOG(ERROR, _("cannot parse credentials from URL"));
             return -1;
         }
         *url = credentials_end + 1;
@@ -261,7 +261,7 @@ static int url_parse_host(const char **url,
         }
         assert(**url == '\0' || **url == ']');
         if (*(*url)++ != ']') {
-            LOG(ERROR, "expected ] at the end of host address");
+            LOG(ERROR, _("expected ] at the end of host address"));
             return -1;
         }
     } else {
@@ -292,7 +292,7 @@ static int url_parse_port(const char **url,
     }
     assert(!isdigit((unsigned char) **url));
     if (**url != '\0' && **url != '/' && **url != '?') {
-        LOG(ERROR, "port should have numeric value");
+        LOG(ERROR, _("port should have numeric value"));
         return -1;
     }
     parsed_url->data[(*data_out_ptr)++] = '\0';
@@ -350,7 +350,7 @@ avs_url_t *avs_url_parse_lenient(const char *raw_url) {
     avs_url_t *out =
             (avs_url_t *) avs_malloc(offsetof(avs_url_t, data) + data_length);
     if (!out) {
-        LOG(ERROR, "out of memory");
+        LOG(ERROR, _("out of memory"));
         return NULL;
     }
     *out = (avs_url_t) {
@@ -398,13 +398,13 @@ static int is_valid_domain(const char *str) {
 
         if (c == '.') {
             if (prev_c == '.') {
-                LOG(ERROR, "consecutive dots in domain name");
+                LOG(ERROR, _("consecutive dots in domain name"));
                 return 0;
             }
 
             last_segment = str;
         } else if (!is_valid_url_domain_char(c)) {
-            LOG(ERROR, "invalid character in domain name: %c", c);
+            LOG(ERROR, _("invalid character in domain name: ") "%c" , c);
             return 0;
         }
 
@@ -413,7 +413,7 @@ static int is_valid_domain(const char *str) {
 
     /* Last segment MUST start with a letter */
     if (!isalpha((unsigned char) last_segment[0])) {
-        LOG(ERROR, "top-level domain does not start with a letter: %s",
+        LOG(ERROR, _("top-level domain does not start with a letter: ") "%s" ,
             last_segment);
         return 0;
     }
@@ -423,7 +423,7 @@ static int is_valid_domain(const char *str) {
 
 int avs_url_validate_host(const char *str) {
     if (!str) {
-        LOG(ERROR, "host part cannot be empty");
+        LOG(ERROR, _("host part cannot be empty"));
         return -1;
     }
     return (avs_net_validate_ip_address(AVS_NET_AF_INET4, str) == 0
@@ -458,7 +458,7 @@ int avs_url_validate_path(const char *str) {
 
 int avs_url_validate(const avs_url_t *url) {
     if (!url->has_protocol) {
-        LOG(ERROR, "no valid protocol in URL");
+        LOG(ERROR, _("no valid protocol in URL"));
         return -1;
     }
     if (avs_url_validate_host(avs_url_host(url))) {
@@ -467,7 +467,7 @@ int avs_url_validate(const avs_url_t *url) {
     if (url->port_ptr != URL_PTR_INVALID) {
         size_t port_length = strlen(&url->data[url->port_ptr]);
         if (port_length < 1 || port_length > 5) {
-            LOG(ERROR, "port number must be between 1 and 5 digits long");
+            LOG(ERROR, _("port number must be between 1 and 5 digits long"));
             return -1;
         }
     }
@@ -494,7 +494,7 @@ avs_url_t *avs_url_copy(const avs_url_t *url) {
     assert(alloc_size > 0 && (size_t) alloc_size > offsetof(avs_url_t, data));
     avs_url_t *out = (avs_url_t *) avs_malloc((size_t) alloc_size);
     if (!out) {
-        LOG(ERROR, "out of memory");
+        LOG(ERROR, _("out of memory"));
         return NULL;
     }
     memcpy(out, url, (size_t) alloc_size);

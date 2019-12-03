@@ -36,6 +36,8 @@ extern "C" {
 #cmakedefine WITH_IPV4
 /** Is the library compiled with IPv6 support? */
 #cmakedefine WITH_IPV6
+/** Is the library compiled with micro logs feature? */
+#cmakedefine WITH_AVS_MICRO_LOGS
 
 #ifdef WITH_IPV6
 #    define AVS_ADDRSTRLEN \

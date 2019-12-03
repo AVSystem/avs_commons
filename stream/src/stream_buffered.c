@@ -207,10 +207,10 @@ stream_buffered_peek(avs_stream_t *stream_, size_t offset, char *out_value) {
             size_t bytes_read;
             avs_error_t err = fetch_data(stream, &bytes_read);
             if (avs_is_err(err)) {
-                LOG(ERROR, "cannot peek - read error");
+                LOG(ERROR, _("cannot peek - read error"));
                 return err;
             } else if (bytes_read == 0) {
-                LOG(ERROR, "cannot peek - 0 bytes read");
+                LOG(ERROR, _("cannot peek - 0 bytes read"));
                 return stream->message_finished ? AVS_EOF
                                                 : avs_errno(AVS_ENOBUFS);
             }
@@ -224,8 +224,8 @@ stream_buffered_peek(avs_stream_t *stream_, size_t offset, char *out_value) {
                             offset - avs_buffer_data_size(stream->in_buffer),
                             out_value);
     if (avs_is_err(err)) {
-        LOG(ERROR, "cannot peek - buffer is too small and underlying stream's "
-                   "peek failed");
+        LOG(ERROR, _("cannot peek - buffer is too small and underlying stream's ")
+                   _("peek failed"));
         if (err.category == AVS_ERRNO_CATEGORY && err.code == AVS_ENOTSUP) {
             // underlying stream does not support peeking - map it to ENOBUFS
             return avs_errno(AVS_ENOBUFS);
@@ -274,15 +274,15 @@ int avs_stream_buffered_create(avs_stream_t **inout_stream,
                                size_t in_buffer_size,
                                size_t out_buffer_size) {
     if (!inout_stream || !*inout_stream) {
-        LOG(ERROR, "No underlying stream provided!");
+        LOG(ERROR, _("No underlying stream provided!"));
         return -1;
     }
     if (!in_buffer_size && !out_buffer_size) {
-        LOG(ERROR, "At least one buffer has to be non-zero sized");
+        LOG(ERROR, _("At least one buffer has to be non-zero sized"));
         return -1;
     }
     if (in_buffer_size > SIZE_MAX / 2 || out_buffer_size > SIZE_MAX / 2) {
-        LOG(ERROR, "Buffer size is too big");
+        LOG(ERROR, _("Buffer size is too big"));
         return -1;
     }
 

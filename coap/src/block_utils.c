@@ -37,7 +37,7 @@ int avs_coap_get_block_info(const avs_coap_msg_t *msg,
     if (avs_coap_msg_find_unique_opt(msg, opt_number, &opt)) {
         if (opt) {
             int num = opt_number == AVS_COAP_OPT_BLOCK1 ? 1 : 2;
-            LOG(ERROR, "multiple BLOCK%d options found", num);
+            LOG(ERROR, _("multiple BLOCK") "%d" _(" options found"), num);
             return -1;
         }
         return 0;

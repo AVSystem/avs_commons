@@ -114,8 +114,8 @@ static int encode_block_size(uint16_t size, uint8_t *out_size_exponent) {
         break;
     default:
         LOG(ERROR,
-            "invalid block size: %d, expected power of 2 between 16 "
-            "and 1024 (inclusive)",
+            _("invalid block size: ") "%d" _(", expected power of 2 between 16 ")
+            _("and 1024 (inclusive)"),
             (int) size);
         return -1;
     }
@@ -135,7 +135,7 @@ static int add_block_opt(avs_coap_msg_info_t *info,
 
     AVS_STATIC_ASSERT(sizeof(int) >= sizeof(int32_t), int_type_too_small);
     if (seq_number >= (1 << 20)) {
-        LOG(ERROR, "block sequence number must be less than 2^20");
+        LOG(ERROR, _("block sequence number must be less than 2^20"));
         return -1;
     }
 
@@ -148,7 +148,7 @@ static int add_block_opt(avs_coap_msg_info_t *info,
 int avs_coap_msg_info_opt_block(avs_coap_msg_info_t *info,
                                 const avs_coap_block_info_t *block) {
     if (!block->valid) {
-        LOG(ERROR, "could not add invalid BLOCK option");
+        LOG(ERROR, _("could not add invalid BLOCK option"));
         return -1;
     }
 
@@ -164,7 +164,7 @@ int avs_coap_msg_info_opt_opaque(avs_coap_msg_info_t *info,
             (avs_coap_msg_info_opt_t *) AVS_LIST_NEW_BUFFER(sizeof(*opt)
                                                             + opt_data_size);
     if (!opt) {
-        LOG(ERROR, "out of memory");
+        LOG(ERROR, _("out of memory"));
         return -1;
     }
 

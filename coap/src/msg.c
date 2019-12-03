@@ -173,20 +173,20 @@ size_t avs_coap_msg_payload_length(const avs_coap_msg_t *msg) {
 static bool is_header_valid(const avs_coap_msg_t *msg) {
     uint8_t version = _avs_coap_header_get_version(msg);
     if (version != 1) {
-        LOG(DEBUG, "unsupported CoAP version: %u", version);
+        LOG(DEBUG, _("unsupported CoAP version: ") "%u" , version);
         return false;
     }
 
     uint8_t token_length = _avs_coap_header_get_token_length(msg);
     if (token_length > AVS_COAP_MAX_TOKEN_LENGTH) {
-        LOG(DEBUG, "token too long (%dB, expected 0 <= size <= %d)",
+        LOG(DEBUG, _("token too long (") "%dB" _(", expected 0 <= size <= ") "%d" _(")"),
             token_length, AVS_COAP_MAX_TOKEN_LENGTH);
         return false;
     }
 
     size_t hdr_size = _avs_coap_header_size(msg);
     if (hdr_size + token_length > msg->length) {
-        LOG(DEBUG, "missing/incomplete token (got %u, expected %" PRIu8 ")",
+        LOG(DEBUG, _("missing/incomplete token (got ") "%u" _(", expected ") "%" PRIu8 _(")"),
             (unsigned) (msg->length - hdr_size), token_length);
         return false;
     }
@@ -207,7 +207,7 @@ static bool are_options_valid(const avs_coap_msg_t *msg) {
          avs_coap_opt_next(&optit)) {
         if (!avs_coap_opt_is_valid(optit.curr_opt,
                                    msg->length - length_so_far)) {
-            LOG(DEBUG, "option validation failed");
+            LOG(DEBUG, _("option validation failed"));
             return false;
         }
 
@@ -215,14 +215,14 @@ static bool are_options_valid(const avs_coap_msg_t *msg) {
 
         if (length_so_far > msg->length) {
             LOG(DEBUG,
-                "invalid option length (ends %lu bytes after end of message)",
+                _("invalid option length (ends ") "%lu" _(" bytes after end of message)"),
                 (unsigned long) (length_so_far - msg->length));
             return false;
         }
 
         uint32_t opt_number = avs_coap_opt_number(&optit);
         if (opt_number > UINT16_MAX) {
-            LOG(DEBUG, "invalid option number (%" PRIu32 ")", opt_number);
+            LOG(DEBUG, _("invalid option number (") "%" PRIu32 _(")"), opt_number);
             return false;
         }
     }
@@ -230,7 +230,7 @@ static bool are_options_valid(const avs_coap_msg_t *msg) {
     if (length_so_far + 1 == msg->length && is_payload_marker(optit.curr_opt)) {
         // RFC 7252 3.1: The presence of a Payload Marker followed by a
         // zero-length payload MUST be processed as a message format error.
-        LOG(DEBUG, "validation failed: payload marker at end of message");
+        LOG(DEBUG, _("validation failed: payload marker at end of message"));
         return false;
     }
 
@@ -245,7 +245,7 @@ static bool has_content_format(const avs_coap_msg_t *msg) {
 
 bool avs_coap_msg_is_valid(const avs_coap_msg_t *msg) {
     if (msg->length < AVS_COAP_MSG_MIN_SIZE) {
-        LOG(DEBUG, "message too short (%" PRIu32 "B, expected >= %" PRIu32 ")",
+        LOG(DEBUG, _("message too short (") "%" PRIu32 _("B, expected >= ") "%" PRIu32 _(")"),
             msg->length, (uint32_t) AVS_COAP_MSG_MIN_SIZE);
         return false;
     }
@@ -273,25 +273,25 @@ static const char *msg_type_string(avs_coap_msg_type_t type) {
 }
 
 void avs_coap_msg_debug_print(const avs_coap_msg_t *msg) {
-    LOG(DEBUG, "sizeof(*msg) = %lu, sizeof(len) = %lu, sizeof(header) = %lu",
+    LOG(DEBUG, _("sizeof(*msg) = ") "%lu" _(", sizeof(len) = ") "%lu" _(", sizeof(header) = ") "%lu" ,
         (unsigned long) sizeof(*msg), (unsigned long) sizeof(msg->length),
         (unsigned long) _avs_coap_header_size(msg));
-    LOG(DEBUG, "message (length = %" PRIu32 "):", msg->length);
-    LOG(DEBUG, "type: %u (%s)", avs_coap_msg_get_type(msg),
+    LOG(DEBUG, _("message (length = ") "%" PRIu32 _("):"), msg->length);
+    LOG(DEBUG, _("type: ") "%u" _(" (") "%s" _(")"), avs_coap_msg_get_type(msg),
         msg_type_string(avs_coap_msg_get_type(msg)));
 
-    LOG(DEBUG, "  version: %u", _avs_coap_header_get_version(msg));
-    LOG(DEBUG, "  token_length: %u", _avs_coap_header_get_token_length(msg));
-    LOG(DEBUG, "  code: %s", AVS_COAP_CODE_STRING(avs_coap_msg_get_code(msg)));
-    LOG(DEBUG, "  message_id: %u", avs_coap_msg_get_id(msg));
-    LOG(DEBUG, "  content:");
+    LOG(DEBUG, _("  version: ") "%u" , _avs_coap_header_get_version(msg));
+    LOG(DEBUG, _("  token_length: ") "%u" , _avs_coap_header_get_token_length(msg));
+    LOG(DEBUG, _("  code: ") "%s" , AVS_COAP_CODE_STRING(avs_coap_msg_get_code(msg)));
+    LOG(DEBUG, _("  message_id: ") "%u" , avs_coap_msg_get_id(msg));
+    LOG(DEBUG, _("  content:"));
 
     const uint8_t *content = _avs_coap_header_end_const(msg);
     for (size_t i = 0; i < msg->length - _avs_coap_header_size(msg); i += 8) {
-        LOG(DEBUG, "%02x", content[i]);
+        LOG(DEBUG,  "%02x" , content[i]);
     }
 
-    LOG(DEBUG, "opts:");
+    LOG(DEBUG, _("opts:"));
     for (avs_coap_opt_iterator_t optit = avs_coap_opt_begin(msg);
          !avs_coap_opt_end(&optit);
          avs_coap_opt_next(&optit)) {

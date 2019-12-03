@@ -105,7 +105,7 @@ avs_coap_block_builder_build(avs_coap_block_builder_t *builder,
                "payload buffer MUST be able to hold more than a single block");
 
     if (builder->read_offset == builder->write_offset) {
-        LOG(WARNING, "no payload data to extract!");
+        LOG(WARNING, _("no payload data to extract!"));
         return NULL;
     }
 

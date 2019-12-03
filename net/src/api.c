@@ -357,11 +357,11 @@ get_constructor_for_socket_type(avs_net_socket_type_t type) {
                                           : _avs_net_create_dtls_socket;
 #else
         LOG(ERROR,
-            "could not create secure socket: (D)TLS support is disabled");
+            _("could not create secure socket: (D)TLS support is disabled"));
         return NULL;
 #endif // WITHOUT_SSL
     default:
-        LOG(ERROR, "unknown socket type: %d", (int) type);
+        LOG(ERROR, _("unknown socket type: ") "%d" , (int) type);
         return NULL;
     }
 }
@@ -371,7 +371,7 @@ static avs_error_t create_bare_socket(avs_net_socket_t **socket,
                                       const void *configuration) {
     avs_error_t err = _avs_net_ensure_global_state();
     if (avs_is_err(err)) {
-        LOG(ERROR, "avs_net global state initialization error");
+        LOG(ERROR, _("avs_net global state initialization error"));
         return err;
     }
 

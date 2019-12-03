@@ -297,7 +297,7 @@ static void finish_command(mocksock_t *socket) {
 
 static avs_error_t
 mock_connect(avs_net_socket_t *socket_, const char *host, const char *port) {
-    LOG(TRACE, "mock_connect: host <%s>, port <%s>", host, port);
+    LOG(TRACE, _("mock_connect: host <") "%s" _(">, port <") "%s" _(">"), host, port);
 
     avs_error_t err = AVS_OK;
     mocksock_t *socket = (mocksock_t *) socket_;
@@ -388,7 +388,7 @@ static void hexdump_data(const void *raw_data, size_t data_size) {
     for (size_t offset = 0; offset < data_size; offset += bytes_per_row) {
         hexdumpify(buffer, buffer_size, data + offset, data_size - offset,
                    bytes_per_segment, segments_per_row);
-        LOG(TRACE, "%s", buffer);
+        LOG(TRACE,  "%s" , buffer);
     }
 
     avs_free(buffer);
@@ -408,7 +408,7 @@ static avs_error_t mock_send_to(avs_net_socket_t *socket_,
                                 size_t buffer_length,
                                 const char *host,
                                 const char *port) {
-    LOG(TRACE, "mock_send_to: host <%s>, port <%s>, %zu bytes", host, port,
+    LOG(TRACE, _("mock_send_to: host <") "%s" _(">, port <") "%s" _(">, ") "%zu" _(" bytes"), host, port,
         buffer_length);
     hexdump_data(buffer, buffer_length);
 
@@ -437,12 +437,12 @@ static avs_error_t mock_send_to(avs_net_socket_t *socket_,
             socket->expected_data->args.valid.ptr += to_send;
             if (socket->expected_data->args.valid.ptr
                     == socket->expected_data->args.valid.size) {
-                LOG(TRACE, "mock_send_to: item fully sent");
+                LOG(TRACE, _("mock_send_to: item fully sent"));
                 avs_free((void *) (intptr_t)
                                  socket->expected_data->args.valid.data);
                 finish_data(socket);
             } else {
-                LOG(TRACE, "mock_send_to: partial send, %u/%u",
+                LOG(TRACE, _("mock_send_to: partial send, ") "%u" _("/") "%u" ,
                     (unsigned) to_send,
                     (unsigned) socket->expected_data->args.valid.size);
             }
@@ -453,14 +453,14 @@ static avs_error_t mock_send_to(avs_net_socket_t *socket_,
             avs_error_t err = socket->expected_data->args.retval;
             finish_data(socket);
 
-            LOG(TRACE, "mock_send_to: failure");
+            LOG(TRACE, _("mock_send_to: failure"));
             return err;
         } else {
             AVS_UNIT_ASSERT_TRUE(!"mock_send_to: unexpected send");
         }
     }
 
-    LOG(TRACE, "mock_send_to: sent %zu B", buffer_length);
+    LOG(TRACE, _("mock_send_to: sent ") "%zu" _(" B"), buffer_length);
     return AVS_OK;
 }
 
@@ -487,7 +487,7 @@ static avs_error_t mock_receive_from(avs_net_socket_t *socket_,
                                      size_t out_host_size,
                                      char *out_port,
                                      size_t out_port_size) {
-    LOG(TRACE, "mock_receive_from: buffer_length %zu", buffer_length);
+    LOG(TRACE, _("mock_receive_from: buffer_length ") "%zu" , buffer_length);
 
     mocksock_t *socket = (mocksock_t *) socket_;
     avs_error_t err = AVS_OK;
@@ -515,13 +515,13 @@ static avs_error_t mock_receive_from(avs_net_socket_t *socket_,
                          socket->expected_data->args.valid.remote_port);
         if (socket->expected_data->args.valid.ptr
                 == socket->expected_data->args.valid.size) {
-            LOG(TRACE, "mock_receive_from: item fully received");
+            LOG(TRACE, _("mock_receive_from: item fully received"));
             socket->last_data_read = socket->expected_data->args.valid.ptr;
             avs_free(
                     (void *) (intptr_t) socket->expected_data->args.valid.data);
             finish_data(socket);
         } else {
-            LOG(TRACE, "mock_receive_from: partial receive, %u/%u",
+            LOG(TRACE, _("mock_receive_from: partial receive, ") "%u" _("/") "%u" ,
                 (unsigned) *out,
                 (unsigned) socket->expected_data->args.valid.size);
 
@@ -536,11 +536,11 @@ static avs_error_t mock_receive_from(avs_net_socket_t *socket_,
         err = socket->expected_data->args.retval;
         finish_data(socket);
 
-        LOG(TRACE, "mock_receive_from: failure");
+        LOG(TRACE, _("mock_receive_from: failure"));
         return err;
     }
 
-    LOG(TRACE, "mock_receive_from: recv %zu/%zu B, host <%s>, port <%s>", *out,
+    LOG(TRACE, _("mock_receive_from: recv ") "%zu" _("/") "%zu" _(" B, host <") "%s" _(">, port <") "%s" _(">"), *out,
         buffer_length, out_host, out_port);
     hexdump_data(buffer, *out);
     return err;
@@ -556,7 +556,7 @@ static avs_error_t mock_receive(avs_net_socket_t *socket,
 
 static avs_error_t
 mock_bind(avs_net_socket_t *socket_, const char *localaddr, const char *port) {
-    LOG(TRACE, "mock_bind: localaddr <%s>, port <%s>", localaddr, port);
+    LOG(TRACE, _("mock_bind: localaddr <") "%s" _(">, port <") "%s" _(">"), localaddr, port);
 
     avs_error_t err = AVS_OK;
     mocksock_t *socket = (mocksock_t *) socket_;
@@ -885,7 +885,7 @@ void avs_unit_mocksock_expect_output_to__(
         const char *host,
         const char *port,
         const mocksock_additional_args_t *args) {
-    LOG(TRACE, "expect_output: %zuB", length);
+    LOG(TRACE, _("expect_output: ") "%zuB" , length);
     hexdump_data(expect, length);
 
     mocksock_t *socket = (mocksock_t *) socket_;

@@ -59,7 +59,7 @@ int avs_coap_ctx_create(avs_coap_ctx_t **ctx, size_t msg_cache_size) {
     if (msg_cache_size > 0) {
         (*ctx)->msg_cache = _avs_coap_msg_cache_create(msg_cache_size);
         if (!(*ctx)->msg_cache) {
-            LOG(ERROR, "could not create message cache");
+            LOG(ERROR, _("could not create message cache"));
             avs_free(*ctx);
             return -1;
         }
@@ -121,7 +121,7 @@ static int map_io_error(const char *operation, avs_error_t err) {
     }
 
     if (err.category == AVS_ERRNO_CATEGORY) {
-        LOG(ERROR, "%s failed: %s", operation,
+        LOG(ERROR,  "%s" _(" failed: ") "%s" , operation,
             avs_strerror((avs_errno_t) err.code));
         if (err.code == AVS_ETIMEDOUT) {
             return AVS_COAP_CTX_ERR_TIMEOUT;
@@ -129,7 +129,7 @@ static int map_io_error(const char *operation, avs_error_t err) {
             return AVS_COAP_CTX_ERR_MSG_TOO_LONG;
         }
     } else {
-        LOG(ERROR, "%s failed", operation);
+        LOG(ERROR,  "%s" _(" failed"), operation);
     }
     return AVS_COAP_CTX_ERR_NETWORK;
 }
@@ -150,7 +150,7 @@ static int try_cache_response(avs_coap_ctx_t *ctx,
     if (avs_is_err(avs_net_socket_get_remote_host(socket, addr, sizeof(addr)))
             || avs_is_err(avs_net_socket_get_remote_port(socket, port,
                                                          sizeof(port)))) {
-        LOG(DEBUG, "could not get remote host/port");
+        LOG(DEBUG, _("could not get remote host/port"));
         return -1;
     }
 
@@ -184,11 +184,11 @@ int avs_coap_ctx_send(avs_coap_ctx_t *ctx,
                       const avs_coap_msg_t *msg) {
     assert(ctx && socket);
     if (!avs_coap_msg_is_valid(msg)) {
-        LOG(ERROR, "cannot send an invalid CoAP message\n");
+        LOG(ERROR, _("cannot send an invalid CoAP message\n"));
         return -1;
     }
 
-    LOG(DEBUG, "send: %s", AVS_COAP_MSG_SUMMARY(msg));
+    LOG(DEBUG, _("send: ") "%s" , AVS_COAP_MSG_SUMMARY(msg));
     avs_error_t err = avs_net_socket_send(socket, msg->content, msg->length);
     if (avs_is_ok(err)) {
         int cache_result = try_cache_response(ctx, socket, msg);
@@ -231,7 +231,7 @@ static int try_send_cached_response(avs_coap_ctx_t *ctx,
     if (avs_is_err(avs_net_socket_get_remote_host(socket, addr, sizeof(addr)))
             || avs_is_err(avs_net_socket_get_remote_port(socket, port,
                                                          sizeof(port)))) {
-        LOG(DEBUG, "could not get remote remote host/port");
+        LOG(DEBUG, _("could not get remote remote host/port"));
         return -1;
     }
 
@@ -276,11 +276,11 @@ int avs_coap_ctx_recv(avs_coap_ctx_t *ctx,
 #endif // WITH_AVS_COAP_NET_STATS
 
     if (!avs_coap_msg_is_valid(out_msg)) {
-        LOG(DEBUG, "recv: malformed message");
+        LOG(DEBUG, _("recv: malformed message"));
         return AVS_COAP_CTX_ERR_MSG_MALFORMED;
     }
 
-    LOG(DEBUG, "recv: %s", AVS_COAP_MSG_SUMMARY(out_msg));
+    LOG(DEBUG, _("recv: ") "%s" , AVS_COAP_MSG_SUMMARY(out_msg));
 
     if (is_coap_ping(out_msg)) {
         avs_coap_ctx_send_empty(ctx, socket, AVS_COAP_MSG_RESET,
@@ -341,7 +341,7 @@ static void send_response(avs_coap_ctx_t *ctx,
     if (max_age
             && avs_coap_msg_info_opt_u32(&info, AVS_COAP_OPT_MAX_AGE,
                                          *max_age)) {
-        LOG(WARNING, "unable to add Max-Age option to response");
+        LOG(WARNING, _("unable to add Max-Age option to response"));
     }
 
     union {
@@ -355,7 +355,7 @@ static void send_response(avs_coap_ctx_t *ctx,
     assert(error);
 
     if (avs_coap_ctx_send(ctx, socket, error)) {
-        LOG(WARNING, "failed to send error message");
+        LOG(WARNING, _("failed to send error message"));
     }
 
     avs_coap_msg_info_reset(&info);

@@ -158,10 +158,10 @@ static avs_error_t decoding_close(avs_stream_t *stream_) {
     decoding_stream_t *stream = (decoding_stream_t *) stream_;
     avs_error_t decoder_err, backend_err;
     if (avs_is_err((decoder_err = avs_stream_cleanup(&stream->decoder)))) {
-        LOG(ERROR, "failed to close decoder stream");
+        LOG(ERROR, _("failed to close decoder stream"));
     }
     if (avs_is_err((backend_err = avs_stream_cleanup(&stream->backend)))) {
-        LOG(ERROR, "failed to close backend stream");
+        LOG(ERROR, _("failed to close backend stream"));
     }
     return avs_is_ok(decoder_err) ? backend_err : decoder_err;
 }
@@ -187,7 +187,7 @@ _avs_http_decoding_stream_create(avs_stream_t *backend,
                                  const avs_http_buffer_sizes_t *buffer_sizes) {
     decoding_stream_t *retval =
             (decoding_stream_t *) avs_malloc(sizeof(*retval));
-    LOG(TRACE, "create_decoding_stream");
+    LOG(TRACE, _("create_decoding_stream"));
     if (retval) {
         *(const avs_stream_v_table_t **) (intptr_t) &retval->vtable =
                 &decoding_vtable;
@@ -216,7 +216,7 @@ int _avs_http_content_decoder_create(
         return *out_decoder ? 0 : -1;
 
     case AVS_HTTP_CONTENT_COMPRESS:
-        LOG(ERROR, "'compress' content encoding is not supported");
+        LOG(ERROR, _("'compress' content encoding is not supported"));
         return -1;
 
     case AVS_HTTP_CONTENT_DEFLATE:
@@ -227,7 +227,7 @@ int _avs_http_content_decoder_create(
         return *out_decoder ? 0 : -1;
 
     default:
-        LOG(ERROR, "Unknown content encoding");
+        LOG(ERROR, _("Unknown content encoding"));
         return -1;
     }
 }

@@ -198,10 +198,10 @@ avs_error_t _avs_http_auth_send_header_digest(http_stream_t *stream) {
             || avs_is_err((err = avs_stream_write_f(stream->backend, "\r\n"))));
 auth_digest_error:
     if (avs_is_err((stream_cleanup_err = avs_stream_cleanup(&md5)))) {
-        LOG(ERROR, "failed to close MD5 stream");
+        LOG(ERROR, _("failed to close MD5 stream"));
     }
     if (avs_is_err(err)) {
-        LOG(ERROR, "error calculating digest auth md5");
+        LOG(ERROR, _("error calculating digest auth md5"));
         return err;
     }
     return stream_cleanup_err;

@@ -201,7 +201,7 @@ static avs_error_t http_receive(avs_stream_t *stream_,
     err = avs_stream_read(stream->body_receiver, out_bytes_read,
                           out_message_finished, buffer, buffer_length);
     if (*out_message_finished) {
-        LOG(TRACE, "http_receive: clearing body receiver");
+        LOG(TRACE, _("http_receive: clearing body receiver"));
         stream->flags.close_handling_required = 1;
         avs_stream_cleanup(&stream->body_receiver);
     }
@@ -227,13 +227,13 @@ http_peek(avs_stream_t *stream_, size_t offset, char *out_value) {
 
 static avs_error_t http_reset(avs_stream_t *stream_) {
     http_stream_t *stream = (http_stream_t *) stream_;
-    LOG(TRACE, "http_reset");
+    LOG(TRACE, _("http_reset"));
     bool keep_connection =
             (stream->flags.keep_connection && !stream->flags.chunked_sending);
     bool close_handling_required = false;
     if (keep_connection && stream->body_receiver) {
         if (avs_is_err(avs_stream_ignore_to_end(stream->body_receiver))) {
-            LOG(WARNING, "Could not discard current message");
+            LOG(WARNING, _("Could not discard current message"));
             keep_connection = false;
         } else {
             close_handling_required = true;
@@ -264,11 +264,11 @@ static avs_error_t http_close(avs_stream_t *stream_) {
     http_stream_t *stream = (http_stream_t *) stream_;
     stream->flags.keep_connection = false;
     avs_error_t reset_err = http_reset(stream_);
-    LOG(TRACE, "http_close");
+    LOG(TRACE, _("http_close"));
     avs_error_t backend_cleanup_err = avs_stream_cleanup(&stream->backend);
     avs_error_t encoder_cleanup_err = avs_stream_cleanup(&stream->encoder);
     if (avs_is_err(encoder_cleanup_err)) {
-        LOG(ERROR, "failed to close encoder stream");
+        LOG(ERROR, _("failed to close encoder stream"));
     }
     _avs_http_auth_clear(&stream->auth);
     avs_url_free(stream->url);
@@ -314,7 +314,7 @@ int avs_http_add_header(avs_stream_t *stream_,
                         const char *value) {
     http_stream_t *stream = (http_stream_t *) stream_;
     assert(stream->vtable == &http_vtable);
-    LOG(TRACE, "http_add_header, %s: %s", key ? key : "(null)",
+    LOG(TRACE, _("http_add_header, ") "%s" _(": ") "%s" , key ? key : "(null)",
         value ? value : "(null)");
     AVS_LIST(http_header_t) new_header =
             (AVS_LIST(http_header_t)) AVS_LIST_APPEND_NEW(
@@ -332,7 +332,7 @@ void avs_http_set_header_storage(
         AVS_LIST(const avs_http_header_t) *header_storage_ptr) {
     http_stream_t *stream = (http_stream_t *) stream_;
     assert(stream->vtable == &http_vtable);
-    LOG(TRACE, "http_set_header_storage: %p", (void *) header_storage_ptr);
+    LOG(TRACE, _("http_set_header_storage: ") "%p" , (void *) header_storage_ptr);
     if (stream->incoming_header_storage) {
         AVS_LIST_CLEAR(stream->incoming_header_storage);
     }
@@ -342,7 +342,7 @@ void avs_http_set_header_storage(
 int avs_http_should_retry(avs_stream_t *stream_) {
     http_stream_t *stream = (http_stream_t *) stream_;
     if (stream->vtable != &http_vtable) {
-        LOG(ERROR, "Invalid stream passed to avs_http_should_retry");
+        LOG(ERROR, _("Invalid stream passed to avs_http_should_retry"));
         return 0;
     }
 
@@ -366,9 +366,9 @@ avs_error_t avs_http_open_stream(avs_stream_t **out,
     http_stream_t *stream = NULL;
     avs_error_t err = AVS_OK;
     LOG(TRACE,
-        "avs_http_open_stream, method == %d, encoding == %d, "
-        "protocol == %s, host == %s, port == %s, path == %s, "
-        "auth_username == %s, auth_password == %s",
+        _("avs_http_open_stream, method == ") "%d" _(", encoding == ") "%d" _(", ")
+        _("protocol == ") "%s" _(", host == ") "%s" _(", port == ") "%s" _(", path == ") "%s" _(", ")
+        _("auth_username == ") "%s" _(", auth_password == ") "%s" ,
         (int) method, (int) encoding, string_or_null(avs_url_protocol(url)),
         string_or_null(avs_url_host(url)), string_or_null(avs_url_port(url)),
         string_or_null(avs_url_path(url)), auth_username ? auth_username : "",
@@ -378,7 +378,7 @@ avs_error_t avs_http_open_stream(avs_stream_t **out,
             1,
             offsetof(http_stream_t, out_buffer) + http->buffer_sizes.body_send);
     if (!stream) {
-        LOG(ERROR, "Could not allocate HTTP stream object");
+        LOG(ERROR, _("Could not allocate HTTP stream object"));
         err = avs_errno(AVS_ENOMEM);
         goto http_open_stream_error;
     }
@@ -410,7 +410,7 @@ avs_error_t avs_http_open_stream(avs_stream_t **out,
                              http->buffer_sizes.recv_shaper,
                              http->buffer_sizes.send_shaper);
     if (!stream->backend) {
-        LOG(ERROR, "error creating buffered netstream");
+        LOG(ERROR, _("error creating buffered netstream"));
         err = avs_errno(AVS_ENOMEM);
         goto http_open_stream_error;
     }
@@ -450,7 +450,7 @@ http_open_stream_error:
 int avs_http_status_code(avs_stream_t *stream_) {
     http_stream_t *stream = (http_stream_t *) stream_;
     if (stream->vtable != &http_vtable) {
-        LOG(ERROR, "Invalid stream passed to avs_http_status_code");
+        LOG(ERROR, _("Invalid stream passed to avs_http_status_code"));
         return 0;
     }
 

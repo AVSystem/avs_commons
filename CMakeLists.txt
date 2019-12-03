@@ -124,6 +124,7 @@ option(WITH_AVS_PERSISTENCE "AVSystem persistence framework" ${MODULES_ENABLED})
 option(WITH_AVS_SCHED "AVSystem job scheduler" ${MODULES_ENABLED})
 option(WITH_AVS_COMPAT_THREADING "Use multithreading utility compatibility layer" ${MODULES_ENABLED})
 option(WITH_AVS_CRYPTO "Cryptogaphic functions abstraction layer" ${MODULES_ENABLED})
+option(WITH_AVS_MICRO_LOGS "Replaces all invocations of AVS_DISPOSABLE_LOG() with single space. This saves a lot on binary size in applications that log a lot." OFF)
 
 include(CMakeDependentOption)
 cmake_dependent_option(WITH_INTERNAL_LOGS "Enable logging from inside AVSystem Commons libraries" ON WITH_AVS_LOG OFF)

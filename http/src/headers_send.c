@@ -54,7 +54,7 @@ static avs_error_t send_common_headers(avs_stream_t *stream,
 avs_error_t _avs_http_send_headers(http_stream_t *stream,
                                    size_t content_length) {
     stream->status = 0;
-    LOG(TRACE, "http_send_headers");
+    LOG(TRACE, _("http_send_headers"));
     avs_error_t err;
     if (avs_is_err((err = send_common_headers(stream->backend, stream->method,
                                               avs_url_host(stream->url),
@@ -137,7 +137,7 @@ avs_error_t _avs_http_send_headers(http_stream_t *stream,
                                      "Content-Encoding: gzip\r\n");
             break;
         case AVS_HTTP_CONTENT_COMPRESS:
-            LOG(ERROR, "'compress' content encoding is not supported");
+            LOG(ERROR, _("'compress' content encoding is not supported"));
             err = avs_errno(AVS_ENOTSUP);
             break;
         case AVS_HTTP_CONTENT_DEFLATE:
@@ -145,7 +145,7 @@ avs_error_t _avs_http_send_headers(http_stream_t *stream,
                                      "Content-Encoding: deflate\r\n");
             break;
         default:
-            LOG(ERROR, "Unknown content encoding");
+            LOG(ERROR, _("Unknown content encoding"));
             err = avs_errno(AVS_ENOTSUP);
         }
         if (avs_is_err(err)) {
@@ -155,7 +155,7 @@ avs_error_t _avs_http_send_headers(http_stream_t *stream,
 #endif
     if (avs_is_ok((err = avs_stream_write(stream->backend, "\r\n", 2)))
             && avs_is_ok((err = avs_stream_finish_message(stream->backend)))) {
-        LOG(TRACE, "http_send_headers: success");
+        LOG(TRACE, _("http_send_headers: success"));
     }
     return err;
 }

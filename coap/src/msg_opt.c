@@ -57,10 +57,10 @@ int avs_coap_msg_get_option_u16(const avs_coap_msg_t *msg,
     const avs_coap_opt_t *opt;
     if (avs_coap_msg_find_unique_opt(msg, option_number, &opt)) {
         if (opt) {
-            LOG(DEBUG, "multiple instances of option %d found", option_number);
+            LOG(DEBUG, _("multiple instances of option ") "%d" _(" found"), option_number);
             return -1;
         } else {
-            LOG(TRACE, "option %d not found", option_number);
+            LOG(TRACE, _("option ") "%d" _(" not found"), option_number);
             return AVS_COAP_OPTION_MISSING;
         }
     }
@@ -73,10 +73,10 @@ int avs_coap_msg_get_option_u32(const avs_coap_msg_t *msg,
     const avs_coap_opt_t *opt;
     if (avs_coap_msg_find_unique_opt(msg, option_number, &opt)) {
         if (opt) {
-            LOG(DEBUG, "multiple instances of option %d found", option_number);
+            LOG(DEBUG, _("multiple instances of option ") "%d" _(" found"), option_number);
             return -1;
         } else {
-            LOG(TRACE, "option %d not found", option_number);
+            LOG(TRACE, _("option ") "%d" _(" not found"), option_number);
             return AVS_COAP_OPTION_MISSING;
         }
     }
@@ -157,7 +157,7 @@ int avs_coap_msg_validate_critical_options(
 
             if (!is_critical_opt_valid(code, opt_number, validator)) {
                 LOG(DEBUG,
-                    "warning: invalid critical option in query %s: %" PRIu32,
+                    _("warning: invalid critical option in query ") "%s" _(": ") "%" PRIu32,
                     AVS_COAP_CODE_STRING(avs_coap_msg_get_code(it.msg)),
                     opt_number);
                 result = -1;

@@ -53,7 +53,7 @@ static http_uri_protocol_t check_protocol(const char *protocol) {
     } else if (avs_strcasecmp(protocol, "https") == 0) {
         return HTTP_URI_PROTOCOL_HTTPS;
     } else {
-        LOG(WARNING, "unknown protocol '%s'", protocol);
+        LOG(WARNING, _("unknown protocol '") "%s" _("'"), protocol);
         return HTTP_URI_PROTOCOL_UNKNOWN;
     }
 }
@@ -84,7 +84,7 @@ avs_error_t _avs_http_socket_new(avs_net_socket_t **out,
                                  avs_http_t *client,
                                  const avs_url_t *url) {
     avs_net_ssl_configuration_t ssl_config_full;
-    LOG(TRACE, "http_new_socket");
+    LOG(TRACE, _("http_new_socket"));
     assert(out != NULL);
     *out = NULL;
     if (client->ssl_configuration) {
@@ -98,12 +98,12 @@ avs_error_t _avs_http_socket_new(avs_net_socket_t **out,
     avs_error_t err = avs_errno(AVS_EINVAL);
     switch (check_protocol(avs_url_protocol(url))) {
     case HTTP_URI_PROTOCOL_HTTP:
-        LOG(TRACE, "creating TCP socket");
+        LOG(TRACE, _("creating TCP socket"));
         err = avs_net_socket_create(out, AVS_NET_TCP_SOCKET,
                                     &ssl_config_full.backend_configuration);
         break;
     case HTTP_URI_PROTOCOL_HTTPS:
-        LOG(TRACE, "creating SSL socket");
+        LOG(TRACE, _("creating SSL socket"));
         err = avs_net_socket_create(out, AVS_NET_SSL_SOCKET, &ssl_config_full);
         break;
     case HTTP_URI_PROTOCOL_UNKNOWN:
@@ -111,24 +111,24 @@ avs_error_t _avs_http_socket_new(avs_net_socket_t **out,
     }
     if (avs_is_ok(err)) {
         assert(*out);
-        LOG(TRACE, "socket OK, connecting");
+        LOG(TRACE, _("socket OK, connecting"));
         err = avs_net_socket_connect(*out, avs_url_host(url),
                                      resolve_port(url));
     }
     if (avs_is_err(err)) {
         avs_net_socket_cleanup(out);
-        LOG(ERROR, "http_new_socket: failure");
+        LOG(ERROR, _("http_new_socket: failure"));
     } else {
-        LOG(TRACE, "http_new_socket: success");
+        LOG(TRACE, _("http_new_socket: success"));
     }
     return err;
 }
 
 static avs_error_t reconnect_tcp_socket(avs_net_socket_t *socket,
                                         const avs_url_t *url) {
-    LOG(TRACE, "reconnect_tcp_socket");
+    LOG(TRACE, _("reconnect_tcp_socket"));
     if (!socket) {
-        LOG(ERROR, "socket not configured");
+        LOG(ERROR, _("socket not configured"));
         return avs_errno(AVS_EBADF);
     }
     avs_error_t err;
@@ -136,7 +136,7 @@ static avs_error_t reconnect_tcp_socket(avs_net_socket_t *socket,
             || avs_is_err(
                        (err = avs_net_socket_connect(socket, avs_url_host(url),
                                                      resolve_port(url))))) {
-        LOG(ERROR, "reconnect failed");
+        LOG(ERROR, _("reconnect failed"));
         return err;
     }
     return AVS_OK;
@@ -146,10 +146,10 @@ avs_error_t _avs_http_redirect(http_stream_t *stream, avs_url_t **url_move) {
     assert(stream->status / 100 == 3);
     avs_net_socket_t *old_socket = avs_stream_net_getsock(stream->backend);
     avs_net_socket_t *new_socket = NULL;
-    LOG(TRACE, "http_redirect");
+    LOG(TRACE, _("http_redirect"));
     ++stream->redirect_count;
     if (stream->redirect_count > HTTP_MOVE_LIMIT) {
-        LOG(ERROR, "redirect count exceeded");
+        LOG(ERROR, _("redirect count exceeded"));
         avs_error_t err = (avs_error_t) {
             .category = AVS_HTTP_ERROR_CATEGORY,
             .code = (uint16_t) stream->status
@@ -159,7 +159,7 @@ avs_error_t _avs_http_redirect(http_stream_t *stream, avs_url_t **url_move) {
     }
     avs_error_t err = avs_stream_reset(stream->backend);
     if (avs_is_err(err)) {
-        LOG(ERROR, "stream reset failed");
+        LOG(ERROR, _("stream reset failed"));
         return err;
     }
     stream->flags.close_handling_required = 0;
@@ -175,7 +175,7 @@ avs_error_t _avs_http_redirect(http_stream_t *stream, avs_url_t **url_move) {
                 (err = avs_stream_net_setsock(stream->backend, new_socket)))) {
         /* error, clean new socket */
         avs_net_socket_cleanup(&new_socket);
-        LOG(ERROR, "setsock failed");
+        LOG(ERROR, _("setsock failed"));
         return err;
     }
     avs_net_socket_cleanup(&old_socket);
@@ -192,7 +192,7 @@ avs_error_t _avs_http_redirect(http_stream_t *stream, avs_url_t **url_move) {
 }
 
 avs_error_t _avs_http_prepare_for_sending(http_stream_t *stream) {
-    LOG(TRACE, "http_prepare_for_sending");
+    LOG(TRACE, _("http_prepare_for_sending"));
     stream->flags.should_retry = 0;
 
     /* check stream state */
@@ -205,14 +205,14 @@ avs_error_t _avs_http_prepare_for_sending(http_stream_t *stream) {
             avs_stream_cleanup(&stream->body_receiver);
             stream->flags.close_handling_required = 1;
         } else {
-            LOG(ERROR, "trying to send while still receiving");
+            LOG(ERROR, _("trying to send while still receiving"));
             return avs_is_ok(err) ? avs_errno(AVS_EBUSY) : err;
         }
     }
 
     /* reconnect, if keep-alive not set */
     if (!stream->flags.keep_connection) {
-        LOG(TRACE, "reconnecting stream");
+        LOG(TRACE, _("reconnecting stream"));
         stream->flags.close_handling_required = 0;
         avs_error_t err;
         if (avs_is_err((err = avs_stream_reset(stream->backend)))
@@ -225,7 +225,7 @@ avs_error_t _avs_http_prepare_for_sending(http_stream_t *stream) {
         }
     }
 
-    LOG(TRACE, "http_prepare_for_sending: success");
+    LOG(TRACE, _("http_prepare_for_sending: success"));
     return AVS_OK;
 }
 
@@ -242,7 +242,7 @@ static avs_error_t http_send_simple_request(http_stream_t *stream,
                                             const void *buffer,
                                             size_t buffer_length) {
     avs_error_t err;
-    LOG(TRACE, "http_send_simple_request, buffer_length == %lu",
+    LOG(TRACE, _("http_send_simple_request, buffer_length == ") "%lu" ,
         (unsigned long) buffer_length);
     stream->auth.state.flags.retried = 0;
     do {
@@ -323,7 +323,7 @@ avs_error_t _avs_http_encoder_flush(http_stream_t *stream) {
     char *buffer = (char *) avs_malloc(
             stream->http->buffer_sizes.content_coding_min_input);
     if (!buffer) {
-        LOG(ERROR, "Out of memory");
+        LOG(ERROR, _("Out of memory"));
         return avs_errno(AVS_ENOMEM);
     }
     size_t bytes_read = 0;

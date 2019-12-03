@@ -43,7 +43,7 @@ const char *const _AVS_HTTP_METHOD_NAMES[] = { "GET", "POST", "PUT" };
 avs_http_t *avs_http_new(const avs_http_buffer_sizes_t *buffer_sizes) {
     avs_http_t *result = (avs_http_t *) avs_calloc(1, sizeof(avs_http_t));
     if (!result) {
-        LOG(ERROR, "Out of memory");
+        LOG(ERROR, _("Out of memory"));
         return NULL;
     }
     result->buffer_sizes = *buffer_sizes;
@@ -74,7 +74,7 @@ int avs_http_set_user_agent(avs_http_t *http, const char *user_agent) {
     char *new_user_agent = NULL;
     if (user_agent) {
         if (!(new_user_agent = avs_strdup(user_agent))) {
-            LOG(ERROR, "Out of memory");
+            LOG(ERROR, _("Out of memory"));
             return -1;
         }
     }
@@ -93,9 +93,9 @@ int _avs_http_set_cookie(avs_http_t *client,
                          const char *cookie_header) {
     const char *equal_sign = strchr(cookie_header, '=');
     const char *end = strchr(cookie_header, ';');
-    LOG(TRACE, "Set-Cookie%s: %s", use_cookie2 ? "2" : "", cookie_header);
+    LOG(TRACE, _("Set-Cookie") "%s" _(": ") "%s" , use_cookie2 ? "2" : "", cookie_header);
     if (!equal_sign) {
-        LOG(ERROR, "Invalid cookie format: %s", cookie_header);
+        LOG(ERROR, _("Invalid cookie format: ") "%s" , cookie_header);
         return -1;
     }
     if (!end) { /* no semicolon; read to the end */
@@ -116,7 +116,7 @@ int _avs_http_set_cookie(avs_http_t *client,
 
     if (!AVS_LIST_INSERT(it, (AVS_LIST(http_cookie_t)) AVS_LIST_NEW_BUFFER(
                                      (size_t) ((end - cookie_header) + 1)))) {
-        LOG(ERROR, "Not enough space to store the cookie");
+        LOG(ERROR, _("Not enough space to store the cookie"));
         return -1;
     }
     memcpy((*it)->value, cookie_header, (size_t) (end - cookie_header));
