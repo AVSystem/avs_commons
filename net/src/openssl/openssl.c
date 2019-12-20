@@ -681,12 +681,13 @@ ids_to_cipher_list(ssl_socket_t *socket,
         }
 
         const char *name = SSL_CIPHER_get_name(cipher);
+#ifdef WITH_PSK
         if (socket->psk.psk && !strstr(name, "PSK")) {
             LOG(DEBUG, _("ignoring non-PSK cipher ID: 0x") "%04x",
                 suites->ids[i]);
             continue;
         }
-
+#endif // WITH_PSK
         if (first) {
             first = false;
         } else {
@@ -797,9 +798,12 @@ static avs_error_t start_ssl(ssl_socket_t *socket, const char *host) {
 
         result = configure_cipher_list(socket, ciphersuites_string);
         avs_free(ciphersuites_string);
-    } else if (socket->psk.psk) {
+    }
+#ifdef WITH_PSK
+    else if (socket->psk.psk) {
         result = configure_cipher_list(socket, "PSK");
     }
+#endif // WITH_PSK
     if (result) {
         return avs_errno(AVS_EINVAL);
     }
@@ -909,7 +913,7 @@ static avs_error_t
 configure_ssl_certs(ssl_socket_t *socket,
                     const avs_net_certificate_info_t *cert_info) {
     (void) socket;
-    (void) psk;
+    (void) cert_info;
     LOG(ERROR, _("X.509 support disabled"));
     return avs_errno(AVS_ENOTSUP);
 }
