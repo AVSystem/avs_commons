@@ -566,7 +566,9 @@ static int verify_peer_subject_cn(ssl_socket_t *ssl_socket, const char *host) {
         cn += 3;
     }
     if (cn == NULL || strcmp(cn, host)) {
-        LOG(ERROR, _("Subject CN(") "%s" _(") does not match the URL (") "%s" _(")"), cn, host);
+        LOG(ERROR,
+            _("Subject CN(") "%s" _(") does not match the URL (") "%s" _(")"),
+            cn, host);
         return -1;
     }
 
@@ -635,12 +637,12 @@ static avs_error_t ssl_handshake(ssl_socket_t *socket) {
 
 static int configure_cipher_list(ssl_socket_t *socket,
                                  const char *cipher_list) {
-    LOG(DEBUG, _("cipher list: ") "%s" , cipher_list);
+    LOG(DEBUG, _("cipher list: ") "%s", cipher_list);
     if (SSL_CTX_set_cipher_list(socket->ctx, cipher_list)) {
         return 0;
     }
 
-    LOG(WARNING, _("could not set cipher list to ") "%s" , cipher_list);
+    LOG(WARNING, _("could not set cipher list to ") "%s", cipher_list);
     log_openssl_error();
     return -1;
 }
@@ -663,7 +665,7 @@ ids_to_cipher_list(ssl_socket_t *socket,
 
     for (size_t i = 0; i < suites->num_ids; ++i) {
         if (suites->ids[i] > UINT16_MAX) {
-            LOG(DEBUG, _("ignoring unexpectedly large cipher ID: 0x") "%x" ,
+            LOG(DEBUG, _("ignoring unexpectedly large cipher ID: 0x") "%x",
                 suites->ids[i]);
             continue;
         }
@@ -673,19 +675,25 @@ ids_to_cipher_list(ssl_socket_t *socket,
                                                          & 0xFF) };
         const SSL_CIPHER *cipher = SSL_CIPHER_find(socket->ssl, id_as_chars);
         if (!cipher) {
-            LOG(DEBUG, _("ignoring unsupported cipher ID: 0x") "%04x" ,
+            LOG(DEBUG, _("ignoring unsupported cipher ID: 0x") "%04x",
                 suites->ids[i]);
             continue;
         }
 
+        const char *name = SSL_CIPHER_get_name(cipher);
+#ifdef WITH_PSK
+        if (socket->psk.psk && !strstr(name, "PSK")) {
+            LOG(DEBUG, _("ignoring non-PSK cipher ID: 0x") "%04x",
+                suites->ids[i]);
+            continue;
+        }
+#endif // WITH_PSK
         if (first) {
             first = false;
         } else {
             err = avs_stream_write(stream, ":", 1);
         }
-
         if (avs_is_ok(err)) {
-            const char *name = SSL_CIPHER_get_name(cipher);
             err = avs_stream_write(stream, name, strlen(name));
         }
     }
@@ -777,6 +785,7 @@ static avs_error_t start_ssl(ssl_socket_t *socket, const char *host) {
     }
     SSL_set_app_data(socket->ssl, socket);
 
+    int result = 0;
     if (socket->enabled_ciphersuites.num_ids > 0) {
         char *ciphersuites_string = NULL;
         avs_error_t err =
@@ -787,11 +796,16 @@ static avs_error_t start_ssl(ssl_socket_t *socket, const char *host) {
             return err;
         }
 
-        int result = configure_cipher_list(socket, ciphersuites_string);
+        result = configure_cipher_list(socket, ciphersuites_string);
         avs_free(ciphersuites_string);
-        if (result) {
-            return avs_errno(AVS_EINVAL);
-        }
+    }
+#ifdef WITH_PSK
+    else if (socket->psk.psk) {
+        result = configure_cipher_list(socket, "PSK");
+    }
+#endif // WITH_PSK
+    if (result) {
+        return avs_errno(AVS_EINVAL);
     }
 
 #ifdef SSL_MODE_AUTO_RETRY
@@ -899,7 +913,7 @@ static avs_error_t
 configure_ssl_certs(ssl_socket_t *socket,
                     const avs_net_certificate_info_t *cert_info) {
     (void) socket;
-    (void) psk;
+    (void) cert_info;
     LOG(ERROR, _("X.509 support disabled"));
     return avs_errno(AVS_ENOTSUP);
 }
@@ -962,8 +976,9 @@ static int duration_to_uint_us(unsigned *out, avs_time_duration_t in) {
 static avs_error_t
 configure_ssl(ssl_socket_t *socket,
               const avs_net_ssl_configuration_t *configuration) {
-    LOG(TRACE, _("configure_ssl(socket=") "%p" _(", configuration=") "%p" _(")"), (void *) socket,
-        (const void *) configuration);
+    LOG(TRACE,
+        _("configure_ssl(socket=") "%p" _(", configuration=") "%p" _(")"),
+        (void *) socket, (const void *) configuration);
 
     if (!configuration) {
         LOG(WARNING, _("configuration not provided"));
@@ -1021,7 +1036,8 @@ configure_ssl(ssl_socket_t *socket,
     if (configuration->server_name_indication) {
         size_t len = strlen(configuration->server_name_indication);
         if (len >= sizeof(socket->server_name_indication)) {
-            LOG(ERROR, _("SNI is too long (maximum allowed size is ") "%u" _(")"),
+            LOG(ERROR,
+                _("SNI is too long (maximum allowed size is ") "%u" _(")"),
                 (unsigned) sizeof(socket->server_name_indication) - 1);
             return avs_errno(AVS_ENOBUFS);
         }
@@ -1057,7 +1073,9 @@ send_ssl(avs_net_socket_t *socket_, const void *buffer, size_t buffer_length) {
     ssl_socket_t *socket = (ssl_socket_t *) socket_;
     int result;
 
-    LOG(TRACE, _("send_ssl(socket=") "%p" _(", buffer=") "%p" _(", buffer_length=") "%lu" _(")"),
+    LOG(TRACE,
+        _("send_ssl(socket=") "%p" _(", buffer=") "%p" _(
+                ", buffer_length=") "%lu" _(")"),
         (void *) socket, buffer, (unsigned long) buffer_length);
 
     errno = 0;
@@ -1078,7 +1096,9 @@ static avs_error_t receive_ssl(avs_net_socket_t *socket_,
                                size_t buffer_length) {
     ssl_socket_t *socket = (ssl_socket_t *) socket_;
     int result = 0;
-    LOG(TRACE, _("receive_ssl(socket=") "%p" _(", buffer=") "%p" _(", buffer_length=") "%lu" _(")"),
+    LOG(TRACE,
+        _("receive_ssl(socket=") "%p" _(", buffer=") "%p" _(
+                ", buffer_length=") "%lu" _(")"),
         (void *) socket, buffer, (unsigned long) buffer_length);
 
     errno = 0;
