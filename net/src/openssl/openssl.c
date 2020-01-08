@@ -543,6 +543,7 @@ static void close_ssl_raw(ssl_socket_t *socket) {
     }
 }
 
+#if OPENSSL_VERSION_NUMBER_LT(1, 0, 2)
 static int verify_peer_subject_cn(ssl_socket_t *ssl_socket, const char *host) {
     char buffer[CERT_SUBJECT_NAME_SIZE];
     char *cn = NULL;
@@ -574,6 +575,7 @@ static int verify_peer_subject_cn(ssl_socket_t *ssl_socket, const char *host) {
 
     return 0;
 }
+#endif // OPENSSL_VERSION_NUMBER_LT(1, 0, 2)
 
 static avs_error_t ssl_handshake(ssl_socket_t *socket) {
     avs_net_socket_opt_value_t state_opt;
@@ -812,17 +814,44 @@ static avs_error_t start_ssl(ssl_socket_t *socket, const char *host) {
     SSL_set_mode(socket->ssl, SSL_MODE_AUTO_RETRY);
 #endif
 
-    if (SSL_set_tlsext_host_name(
-                socket->ssl,
-                // NOTE: this ugly cast is required because openssl does
-                // drop const qualifiers...
-                (void *) (intptr_t) (socket->server_name_indication[0]
-                                             ? socket->server_name_indication
-                                             : host))
+    if (socket->server_name_indication[0]) {
+        host = socket->server_name_indication;
+    }
+
+    if (SSL_set_tlsext_host_name(socket->ssl,
+                                 // NOTE: this ugly cast is required because
+                                 // openssl does drop const qualifiers...
+                                 (void *) (intptr_t) host)
             == 0) {
         LOG(ERROR, _("cannot setup SNI extension"));
         return avs_errno(AVS_ENOMEM);
     }
+
+#if defined(WITH_X509) && OPENSSL_VERSION_NUMBER_GE(1, 0, 2)
+    X509_VERIFY_PARAM *param = SSL_get0_param(socket->ssl);
+    if (socket->verification) {
+        if (!param) {
+            result = -1;
+        } else if (!avs_net_validate_ip_address(AVS_NET_AF_UNSPEC, host)) {
+            if (!X509_VERIFY_PARAM_set1_host(param, NULL, 0)
+                    || !X509_VERIFY_PARAM_set1_ip_asc(param, host)) {
+                result = -1;
+            }
+        } else if (!X509_VERIFY_PARAM_set1_host(param, host, 0)
+                   || !X509_VERIFY_PARAM_set1_ip(param, NULL, 0)) {
+            result = -1;
+        }
+    } else if (!X509_VERIFY_PARAM_set1_host(param, NULL, 0)
+               || !X509_VERIFY_PARAM_set1_ip(param, NULL, 0)) {
+        result = -1;
+    }
+    if (result) {
+        LOG(ERROR,
+            _("cannot configure verify parameters for hostname ") "%s",
+            host);
+        return avs_errno(AVS_ENOMEM);
+    }
+#endif // defined(WITH_X509) && OPENSSL_VERSION_NUMBER_GE(1, 0, 2)
 
     bio = avs_bio_spawn(socket);
     if (!bio) {
@@ -847,10 +876,12 @@ static avs_error_t start_ssl(ssl_socket_t *socket, const char *host) {
         return err;
     }
 
+#if OPENSSL_VERSION_NUMBER_LT(1, 0, 2)
     if (socket->verification && verify_peer_subject_cn(socket, host) != 0) {
         LOG(ERROR, _("server certificate verification failure"));
         return avs_errno(AVS_EPROTO);
     }
+#endif // OPENSSL_VERSION_NUMBER_LT(1, 0, 2)
 
     return AVS_OK;
 }
