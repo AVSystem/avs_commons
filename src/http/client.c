@@ -16,23 +16,25 @@
 
 #include <avs_commons_config.h>
 
-#include <string.h>
+#ifdef WITH_AVS_HTTP
 
-#include <avsystem/commons/memory.h>
-#include <avsystem/commons/utils.h>
+#    include <string.h>
 
-#include "client.h"
-#include "http_log.h"
+#    include <avsystem/commons/memory.h>
+#    include <avsystem/commons/utils.h>
+
+#    include "client.h"
+#    include "http_log.h"
 
 VISIBILITY_SOURCE_BEGIN
 
 const avs_http_buffer_sizes_t AVS_HTTP_DEFAULT_BUFFER_SIZES = {
     .body_recv = 4096,
     .body_send = 4096,
-#ifdef WITH_AVS_HTTP_ZLIB
+#    ifdef WITH_AVS_HTTP_ZLIB
     .content_coding_input = 4096,
     .content_coding_min_input = 128,
-#endif
+#    endif
     .header_line = 512,
     .recv_shaper = 128,
     .send_shaper = 128
@@ -125,3 +127,5 @@ int _avs_http_set_cookie(avs_http_t *client,
     client->use_cookie2 = use_cookie2;
     return 0;
 }
+
+#endif // WITH_AVS_HTTP

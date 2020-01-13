@@ -16,14 +16,16 @@
 
 #include <avs_commons_posix_config.h>
 
-#define MODULE_NAME condvar_atomic_spinlock
-#include <x_log_config.h>
+#ifdef WITH_AVS_COMPAT_THREADING_ATOMIC_SPINLOCK
 
-#include <avsystem/commons/condvar.h>
-#include <avsystem/commons/defs.h>
-#include <avsystem/commons/memory.h>
+#    define MODULE_NAME condvar_atomic_spinlock
+#    include <x_log_config.h>
 
-#include "atomic_spinlock_structs.h"
+#    include <avsystem/commons/condvar.h>
+#    include <avsystem/commons/defs.h>
+#    include <avsystem/commons/memory.h>
+
+#    include "atomic_spinlock_structs.h"
 
 VISIBILITY_SOURCE_BEGIN
 
@@ -136,3 +138,5 @@ void avs_condvar_cleanup(avs_condvar_t **condvar) {
     avs_free(*condvar);
     *condvar = NULL;
 }
+
+#endif // WITH_AVS_COMPAT_THREADING_ATOMIC_SPINLOCK

@@ -17,19 +17,21 @@
 #define AVS_STREAM_STREAM_FILE_C
 #include <avs_commons_config.h>
 
-#include <assert.h>
-#include <errno.h>
-#include <limits.h>
-#include <stdarg.h>
-#include <string.h>
+#ifdef WITH_AVS_STREAM
 
-#include <avsystem/commons/errno_map.h>
-#include <avsystem/commons/memory.h>
-#include <avsystem/commons/stream/stream_file.h>
-#include <avsystem/commons/stream_v_table.h>
+#    include <assert.h>
+#    include <errno.h>
+#    include <limits.h>
+#    include <stdarg.h>
+#    include <string.h>
 
-#define MODULE_NAME avs_stream
-#include <x_log_config.h>
+#    include <avsystem/commons/errno_map.h>
+#    include <avsystem/commons/memory.h>
+#    include <avsystem/commons/stream/stream_file.h>
+#    include <avsystem/commons/stream_v_table.h>
+
+#    define MODULE_NAME avs_stream
+#    include <x_log_config.h>
 
 VISIBILITY_SOURCE_BEGIN
 
@@ -246,6 +248,8 @@ error:
     return NULL;
 }
 
-#ifdef AVS_UNIT_TESTING
-#    include "tests/stream/test_stream_file.c"
-#endif
+#    ifdef AVS_UNIT_TESTING
+#        include "tests/stream/test_stream_file.c"
+#    endif
+
+#endif // WITH_AVS_STREAM

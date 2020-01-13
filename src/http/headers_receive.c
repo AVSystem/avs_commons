@@ -16,20 +16,22 @@
 
 #include <avs_commons_config.h>
 
-#include <assert.h>
-#include <ctype.h>
-#include <errno.h>
-#include <inttypes.h>
-#include <string.h>
+#ifdef WITH_AVS_HTTP
 
-#include <avsystem/commons/errno.h>
-#include <avsystem/commons/memory.h>
-#include <avsystem/commons/utils.h>
+#    include <assert.h>
+#    include <ctype.h>
+#    include <errno.h>
+#    include <inttypes.h>
+#    include <string.h>
 
-#include "body_receivers.h"
-#include "client.h"
-#include "headers.h"
-#include "http_log.h"
+#    include <avsystem/commons/errno.h>
+#    include <avsystem/commons/memory.h>
+#    include <avsystem/commons/utils.h>
+
+#    include "body_receivers.h"
+#    include "client.h"
+#    include "headers.h"
+#    include "http_log.h"
 
 VISIBILITY_SOURCE_BEGIN
 
@@ -396,3 +398,5 @@ avs_error_t _avs_http_receive_headers(http_stream_t *stream) {
     update_flags_after_receiving_headers(stream, err);
     return err;
 }
+
+#endif // WITH_AVS_HTTP

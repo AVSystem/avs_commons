@@ -16,30 +16,32 @@
 
 #include <avs_commons_config.h>
 
-#include <assert.h>
-#include <string.h>
+#ifdef WITH_AVS_HTTP
 
-#include <avsystem/commons/errno.h>
-#include <avsystem/commons/memory.h>
-#include <avsystem/commons/stream/stream_net.h>
-#include <avsystem/commons/utils.h>
+#    include <assert.h>
+#    include <string.h>
 
-#include "chunked.h"
-#include "client.h"
-#include "headers.h"
-#include "http_log.h"
-#include "http_stream.h"
+#    include <avsystem/commons/errno.h>
+#    include <avsystem/commons/memory.h>
+#    include <avsystem/commons/stream/stream_net.h>
+#    include <avsystem/commons/utils.h>
+
+#    include "chunked.h"
+#    include "client.h"
+#    include "headers.h"
+#    include "http_log.h"
+#    include "http_stream.h"
 
 VISIBILITY_SOURCE_BEGIN
 
-#define HTTP_MOVE_LIMIT 5
+#    define HTTP_MOVE_LIMIT 5
 
-#ifdef AVS_UNIT_TESTING
-#    define avs_net_socket_create avs_net_socket_create_TEST_WRAPPER
+#    ifdef AVS_UNIT_TESTING
+#        define avs_net_socket_create avs_net_socket_create_TEST_WRAPPER
 avs_error_t avs_net_socket_create_TEST_WRAPPER(avs_net_socket_t **socket,
                                                avs_net_socket_type_t type,
                                                ...);
-#endif
+#    endif
 
 typedef enum {
     HTTP_URI_PROTOCOL_UNKNOWN,
@@ -340,3 +342,5 @@ avs_error_t _avs_http_encoder_flush(http_stream_t *stream) {
     avs_free(buffer);
     return err;
 }
+
+#endif // WITH_AVS_HTTP

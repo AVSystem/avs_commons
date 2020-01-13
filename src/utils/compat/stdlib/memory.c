@@ -17,9 +17,11 @@
 #define AVS_UTILS_COMPAT_STDLIB_MEMORY_C
 #include <avs_commons_config.h>
 
-#include <avsystem/commons/memory.h>
+#ifdef WITH_AVS_UTILS
 
-#include <stdlib.h>
+#    include <avsystem/commons/memory.h>
+
+#    include <stdlib.h>
 
 VISIBILITY_SOURCE_BEGIN
 
@@ -50,3 +52,5 @@ void avs_memswap(void *memptr1, void *memptr2, size_t n) {
         ptr2[i] = tmp;
     }
 }
+
+#endif // WITH_AVS_UTILS

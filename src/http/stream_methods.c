@@ -16,19 +16,21 @@
 
 #include <avs_commons_config.h>
 
-#include <assert.h>
-#include <string.h>
+#ifdef WITH_AVS_HTTP
 
-#include <avsystem/commons/errno.h>
-#include <avsystem/commons/memory.h>
-#include <avsystem/commons/stream/netbuf.h>
-#include <avsystem/commons/stream/stream_net.h>
-#include <avsystem/commons/time.h>
+#    include <assert.h>
+#    include <string.h>
 
-#include "client.h"
-#include "content_encoding.h"
-#include "http_log.h"
-#include "http_stream.h"
+#    include <avsystem/commons/errno.h>
+#    include <avsystem/commons/memory.h>
+#    include <avsystem/commons/stream/netbuf.h>
+#    include <avsystem/commons/stream/stream_net.h>
+#    include <avsystem/commons/time.h>
+
+#    include "client.h"
+#    include "content_encoding.h"
+#    include "http_log.h"
+#    include "http_stream.h"
 
 VISIBILITY_SOURCE_BEGIN
 
@@ -461,6 +463,8 @@ int avs_http_status_code(avs_stream_t *stream_) {
     return stream->status;
 }
 
-#ifdef AVS_UNIT_TESTING
-#    include "tests/http/test_stream.c"
-#endif
+#    ifdef AVS_UNIT_TESTING
+#        include "tests/http/test_stream.c"
+#    endif
+
+#endif // WITH_AVS_HTTP

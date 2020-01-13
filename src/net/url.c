@@ -16,20 +16,22 @@
 
 #include <avs_commons_config.h>
 
-#include <assert.h>
-#include <ctype.h>
-#include <stdlib.h>
-#include <string.h>
+#ifdef WITH_AVS_NET
 
-#include <avsystem/commons/memory.h>
-#include <avsystem/commons/url.h>
-#include <avsystem/commons/utils.h>
+#    include <assert.h>
+#    include <ctype.h>
+#    include <stdlib.h>
+#    include <string.h>
 
-#include "net_impl.h"
+#    include <avsystem/commons/memory.h>
+#    include <avsystem/commons/url.h>
+#    include <avsystem/commons/utils.h>
+
+#    include "net_impl.h"
 
 VISIBILITY_SOURCE_BEGIN
 
-#define URL_PTR_INVALID SIZE_MAX
+#    define URL_PTR_INVALID SIZE_MAX
 
 struct avs_url {
     bool has_protocol;
@@ -535,6 +537,8 @@ void avs_url_free(avs_url_t *url) {
     avs_free(url);
 }
 
-#ifdef AVS_UNIT_TESTING
-#    include "test/url.c"
-#endif // AVS_UNIT_TESTING
+#    ifdef AVS_UNIT_TESTING
+#        include "test/url.c"
+#    endif // AVS_UNIT_TESTING
+
+#endif // WITH_AVS_NET

@@ -16,20 +16,23 @@
 
 #include <avs_commons_config.h>
 
-#include <stdio.h>
-#include <string.h>
+#if defined(WITH_AVS_STREAM) && defined(WITH_AVS_BUFFER) \
+        && defined(WITH_AVS_NET)
 
-#include <avsystem/commons/buffer.h>
-#include <avsystem/commons/errno.h>
-#include <avsystem/commons/memory.h>
-#include <avsystem/commons/net.h>
-#include <avsystem/commons/stream/netbuf.h>
-#include <avsystem/commons/stream_v_table.h>
+#    include <stdio.h>
+#    include <string.h>
 
-#include <avsystem/commons/stream/stream_net.h>
+#    include <avsystem/commons/buffer.h>
+#    include <avsystem/commons/errno.h>
+#    include <avsystem/commons/memory.h>
+#    include <avsystem/commons/net.h>
+#    include <avsystem/commons/stream/netbuf.h>
+#    include <avsystem/commons/stream_v_table.h>
 
-#define MODULE_NAME avs_stream
-#include <x_log_config.h>
+#    include <avsystem/commons/stream/stream_net.h>
+
+#    define MODULE_NAME avs_stream
+#    include <x_log_config.h>
 
 VISIBILITY_SOURCE_BEGIN
 
@@ -405,3 +408,6 @@ void avs_stream_netbuf_set_recv_timeout(avs_stream_t *str,
     avs_net_socket_set_opt(stream->socket, AVS_NET_SOCKET_OPT_RECV_TIMEOUT,
                            timeout_opt);
 }
+
+#endif // defined(WITH_AVS_STREAM) && defined(WITH_AVS_BUFFER) &&
+       // defined(WITH_AVS_NET)

@@ -16,10 +16,12 @@
 
 #include <avs_commons_config.h>
 
-#include "global.h"
-#include "net_impl.h"
+#ifdef WITH_AVS_NET
 
-#include <avsystem/commons/init_once.h>
+#    include "global.h"
+#    include "net_impl.h"
+
+#    include <avsystem/commons/init_once.h>
 
 VISIBILITY_SOURCE_BEGIN
 
@@ -52,3 +54,5 @@ avs_error_t _avs_net_ensure_global_state(void) {
         return AVS_OK;
     }
 }
+
+#endif // WITH_AVS_NET

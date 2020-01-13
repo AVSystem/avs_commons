@@ -16,25 +16,28 @@
 
 #include <avs_commons_config.h>
 
-#include <errno.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#ifdef WITH_AVS_HTTP
 
-#include <zlib.h>
+#    include <errno.h>
+#    include <stdint.h>
+#    include <stdio.h>
+#    include <stdlib.h>
+#    include <string.h>
 
-#include <avsystem/commons/errno_map.h>
-#include <avsystem/commons/memory.h>
-#include <avsystem/commons/stream_v_table.h>
+#    include <zlib.h>
 
-#include "http_log.h"
-#include "zlib.h"
+#    include <avsystem/commons/errno_map.h>
+#    include <avsystem/commons/memory.h>
+#    include <avsystem/commons/stream_v_table.h>
+
+#    include "http_log.h"
+#    include "zlib.h"
 
 VISIBILITY_SOURCE_BEGIN
 
-#define GET_INPUT_BUFFER(stream) ((stream)->data)
-#define GET_OUTPUT_BUFFER(stream) ((stream)->data + (stream)->input_buffer_size)
+#    define GET_INPUT_BUFFER(stream) ((stream)->data)
+#    define GET_OUTPUT_BUFFER(stream) \
+        ((stream)->data + (stream)->input_buffer_size)
 
 typedef struct {
     const avs_stream_v_table_t *const vtable;
@@ -48,14 +51,14 @@ typedef struct {
 
 /* we don't use opaque field in zlib for allocation data,
  * so we can reuse it for flush function pointer */
-#define FLUSH_FUNC(stream) \
-    (((zlib_flush_func_holder_t *) (stream)->zlib.opaque)->flush_func)
+#    define FLUSH_FUNC(stream) \
+        (((zlib_flush_func_holder_t *) (stream)->zlib.opaque)->flush_func)
 
 typedef struct {
     avs_error_t (*flush_func)(zlib_stream_t *);
 } zlib_flush_func_holder_t;
 
-#define zlib_stream_flush(stream) FLUSH_FUNC(stream)(stream)
+#    define zlib_stream_flush(stream) FLUSH_FUNC(stream)(stream)
 
 static const char *get_zlib_msg(const zlib_stream_t *stream) {
     return stream->zlib.msg ? stream->zlib.msg : "(no message)";
@@ -379,3 +382,5 @@ avs_stream_t *_avs_http_create_decompressor(http_compression_format_t format,
     reset_fields(stream);
     return (avs_stream_t *) stream;
 }
+
+#endif // WITH_AVS_HTTP

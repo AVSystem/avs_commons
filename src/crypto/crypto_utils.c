@@ -16,10 +16,12 @@
 
 #include <avs_commons_config.h>
 
-#define MODULE_NAME avs_crypto
-#include <x_log_config.h>
+#ifdef WITH_AVS_CRYPTO
 
-#include "crypto_utils.h"
+#    define MODULE_NAME avs_crypto
+#    include <x_log_config.h>
+
+#    include "crypto_utils.h"
 
 VISIBILITY_SOURCE_BEGIN
 
@@ -40,3 +42,5 @@ bool _avs_crypto_aead_parameters_valid(size_t key_len,
     }
     return true;
 }
+
+#endif // WITH_AVS_CRYPTO

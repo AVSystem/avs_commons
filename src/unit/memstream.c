@@ -16,15 +16,17 @@
 
 #include <avs_commons_config.h>
 
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#ifdef WITH_AVS_UNIT
 
-#include <avsystem/commons/memory.h>
-#include <avsystem/commons/stream_v_table.h>
-#include <avsystem/commons/unit/memstream.h>
-#include <avsystem/commons/unit/test.h>
+#    include <stdint.h>
+#    include <stdio.h>
+#    include <stdlib.h>
+#    include <string.h>
+
+#    include <avsystem/commons/memory.h>
+#    include <avsystem/commons/stream_v_table.h>
+#    include <avsystem/commons/unit/memstream.h>
+#    include <avsystem/commons/unit/test.h>
 
 VISIBILITY_SOURCE_BEGIN
 
@@ -137,3 +139,5 @@ int avs_unit_memstream_alloc(avs_stream_t **stream, size_t buffer_size) {
     *stream = (avs_stream_t *) ret;
     return 0;
 }
+
+#endif // WITH_AVS_UNIT

@@ -16,8 +16,11 @@
 
 #include <avs_commons_config.h>
 
-#include <avsystem/commons/stream/stream_net.h>
-#include <avsystem/commons/stream_v_table.h>
+#if defined(WITH_AVS_STREAM) && defined(WITH_AVS_BUFFER) \
+        && defined(WITH_AVS_NET)
+
+#    include <avsystem/commons/stream/stream_net.h>
+#    include <avsystem/commons/stream_v_table.h>
 
 VISIBILITY_SOURCE_BEGIN
 
@@ -45,3 +48,6 @@ avs_error_t avs_stream_net_setsock(avs_stream_t *stream,
         return avs_errno(AVS_ENOTSUP);
     }
 }
+
+#endif // defined(WITH_AVS_STREAM) && defined(WITH_AVS_BUFFER) &&
+       // defined(WITH_AVS_NET)

@@ -16,23 +16,27 @@
 
 #include <avs_commons_config.h>
 
-#include <avsystem/commons/cleanup.h>
+#ifdef WITH_AVS_UTILS
+
+#    include <avsystem/commons/cleanup.h>
 
 VISIBILITY_SOURCE_BEGIN
 
 void avs_cleanup_global_state(void) {
-#ifdef WITH_AVS_NET
+#    ifdef WITH_AVS_NET
     void _avs_net_cleanup_global_state(void);
     _avs_net_cleanup_global_state();
-#endif // WITH_AVS_NET
+#    endif // WITH_AVS_NET
 
-#ifdef WITH_AVS_LOG
+#    ifdef WITH_AVS_LOG
     void _avs_log_cleanup_global_state(void);
     _avs_log_cleanup_global_state();
-#endif // WITH_AVS_LOG
+#    endif // WITH_AVS_LOG
 
-#ifdef WITH_AVS_SCHED
+#    ifdef WITH_AVS_SCHED
     void _avs_sched_cleanup_global_state(void);
     _avs_sched_cleanup_global_state();
-#endif
+#    endif
 }
+
+#endif // WITH_AVS_UTILS

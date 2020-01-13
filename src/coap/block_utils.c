@@ -16,12 +16,14 @@
 
 #include <avs_commons_config.h>
 
-#include <avsystem/commons/coap/block_utils.h>
-#include <avsystem/commons/coap/msg_opt.h>
-// For avs_is_power_of_2
-#include <avsystem/commons/utils.h>
+#ifdef WITH_AVS_COAP
 
-#include "coap_log.h"
+#    include <avsystem/commons/coap/block_utils.h>
+#    include <avsystem/commons/coap/msg_opt.h>
+// For avs_is_power_of_2
+#    include <avsystem/commons/utils.h>
+
+#    include "coap_log.h"
 
 VISIBILITY_SOURCE_BEGIN
 
@@ -54,3 +56,5 @@ bool avs_coap_is_valid_block_size(uint16_t size) {
     return avs_is_power_of_2(size) && size <= AVS_COAP_MSG_BLOCK_MAX_SIZE
            && size >= AVS_COAP_MSG_BLOCK_MIN_SIZE;
 }
+
+#endif // WITH_AVS_COAP

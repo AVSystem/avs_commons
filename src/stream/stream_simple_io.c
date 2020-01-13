@@ -16,11 +16,13 @@
 
 #include <avs_commons_config.h>
 
-#include <string.h>
+#ifdef WITH_AVS_STREAM
 
-#include <avsystem/commons/memory.h>
-#include <avsystem/commons/stream/stream_simple_io.h>
-#include <avsystem/commons/stream_v_table.h>
+#    include <string.h>
+
+#    include <avsystem/commons/memory.h>
+#    include <avsystem/commons/stream/stream_simple_io.h>
+#    include <avsystem/commons/stream_v_table.h>
 
 VISIBILITY_SOURCE_BEGIN
 
@@ -145,6 +147,8 @@ avs_stream_simple_input_create(avs_simple_io_stream_reader_t *reader,
     return avs_stream_simple_io_create(NULL, reader, context);
 }
 
-#ifdef AVS_UNIT_TESTING
-#    include "tests/stream/test_stream_simple_io.c"
-#endif
+#    ifdef AVS_UNIT_TESTING
+#        include "tests/stream/test_stream_simple_io.c"
+#    endif
+
+#endif // WITH_AVS_STREAM

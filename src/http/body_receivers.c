@@ -16,13 +16,15 @@
 
 #include <avs_commons_config.h>
 
-#include <avsystem/commons/stream/netbuf.h>
-#include <avsystem/commons/stream/stream_net.h>
+#ifdef WITH_AVS_HTTP
 
-#include "body_receivers.h"
-#include "client.h"
-#include "content_encoding.h"
-#include "http_log.h"
+#    include <avsystem/commons/stream/netbuf.h>
+#    include <avsystem/commons/stream/stream_net.h>
+
+#    include "body_receivers.h"
+#    include "client.h"
+#    include "content_encoding.h"
+#    include "http_log.h"
 
 VISIBILITY_SOURCE_BEGIN
 
@@ -133,6 +135,8 @@ int _avs_http_body_receiver_init(http_stream_t *stream,
     return result;
 }
 
-#ifdef AVS_UNIT_TESTING
-#    include "tests/http/test_body_receivers.c"
-#endif
+#    ifdef AVS_UNIT_TESTING
+#        include "tests/http/test_body_receivers.c"
+#    endif
+
+#endif // WITH_AVS_HTTP

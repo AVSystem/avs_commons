@@ -16,31 +16,33 @@
 
 #include <avs_commons_config.h>
 
-#define MODULE_NAME avs_net_data_loader
-#include <x_log_config.h>
+#ifdef WITH_AVS_NET
 
-#include "../api.h"
-#include "mbedtls_data_loader.h"
+#    define MODULE_NAME avs_net_data_loader
+#    include <x_log_config.h>
 
-#include <assert.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#    include "../api.h"
+#    include "mbedtls_data_loader.h"
 
-#include <avsystem/commons/memory.h>
-#include <avsystem/commons/utils.h>
+#    include <assert.h>
+#    include <stdio.h>
+#    include <stdlib.h>
+#    include <string.h>
+
+#    include <avsystem/commons/memory.h>
+#    include <avsystem/commons/utils.h>
 
 VISIBILITY_SOURCE_BEGIN
 
-#define CREATE_OR_FAIL(type, ptr)                     \
-    do {                                              \
-        avs_free(*ptr);                               \
-        *ptr = (type *) avs_calloc(1, sizeof(**ptr)); \
-        if (!*ptr) {                                  \
-            LOG(ERROR, "memory allocation error");    \
-            return avs_errno(AVS_ENOMEM);             \
-        }                                             \
-    } while (0)
+#    define CREATE_OR_FAIL(type, ptr)                     \
+        do {                                              \
+            avs_free(*ptr);                               \
+            *ptr = (type *) avs_calloc(1, sizeof(**ptr)); \
+            if (!*ptr) {                                  \
+                LOG(ERROR, "memory allocation error");    \
+                return avs_errno(AVS_ENOMEM);             \
+            }                                             \
+        } while (0)
 
 static avs_error_t append_cert_from_buffer(mbedtls_x509_crt *chain,
                                            const void *buffer,
@@ -52,7 +54,7 @@ static avs_error_t append_cert_from_buffer(mbedtls_x509_crt *chain,
 
 static avs_error_t load_cert_from_file(mbedtls_x509_crt *chain,
                                        const char *name) {
-#ifdef MBEDTLS_FS_IO
+#    ifdef MBEDTLS_FS_IO
     LOG(DEBUG, _("certificate <") "%s" _(">: going to load"), name);
 
     int retval = -1;
@@ -66,7 +68,7 @@ static avs_error_t load_cert_from_file(mbedtls_x509_crt *chain,
             name, retval);
     }
     return err;
-#else  // MBEDTLS_FS_IO
+#    else  // MBEDTLS_FS_IO
     (void) chain;
     (void) name;
     LOG(DEBUG,
@@ -75,12 +77,12 @@ static avs_error_t load_cert_from_file(mbedtls_x509_crt *chain,
                 _("cannot load"),
         name);
     return avs_errno(AVS_ENOTSUP);
-#endif // MBEDTLS_FS_IO
+#    endif // MBEDTLS_FS_IO
 }
 
 static avs_error_t load_ca_from_path(mbedtls_x509_crt *chain,
                                      const char *path) {
-#ifdef MBEDTLS_FS_IO
+#    ifdef MBEDTLS_FS_IO
     LOG(DEBUG, _("certificates from path <") "%s" _(">: going to load"), path);
 
     int retval = -1;
@@ -102,7 +104,7 @@ static avs_error_t load_ca_from_path(mbedtls_x509_crt *chain,
             path, retval);
     }
     return err;
-#else  // MBEDTLS_FS_IO
+#    else  // MBEDTLS_FS_IO
     (void) chain;
     (void) path;
     LOG(DEBUG,
@@ -111,7 +113,7 @@ static avs_error_t load_ca_from_path(mbedtls_x509_crt *chain,
                 _("support, cannot load"),
         path);
     return avs_errno(AVS_ENOTSUP);
-#endif // MBEDTLS_FS_IO
+#    endif // MBEDTLS_FS_IO
 }
 
 avs_error_t
@@ -191,7 +193,7 @@ static avs_error_t load_private_key_from_buffer(mbedtls_pk_context *client_key,
 static avs_error_t load_private_key_from_file(mbedtls_pk_context *client_key,
                                               const char *filename,
                                               const char *password) {
-#ifdef MBEDTLS_FS_IO
+#    ifdef MBEDTLS_FS_IO
     LOG(DEBUG, _("private key <") "%s" _(">: going to load"), filename);
 
     int retval = -1;
@@ -206,7 +208,7 @@ static avs_error_t load_private_key_from_file(mbedtls_pk_context *client_key,
             filename, retval);
     }
     return err;
-#else  // MBEDTLS_FS_IO
+#    else  // MBEDTLS_FS_IO
     (void) client_key;
     (void) filename;
     (void) password;
@@ -216,7 +218,7 @@ static avs_error_t load_private_key_from_file(mbedtls_pk_context *client_key,
                 _("cannot load"),
         filename);
     return avs_errno(AVS_ENOTSUP);
-#endif // MBEDTLS_FS_IO
+#    endif // MBEDTLS_FS_IO
 }
 
 avs_error_t
@@ -250,3 +252,5 @@ _avs_net_mbedtls_load_client_key(mbedtls_pk_context **client_key,
         return avs_errno(AVS_EINVAL);
     }
 }
+
+#endif // WITH_AVS_NET

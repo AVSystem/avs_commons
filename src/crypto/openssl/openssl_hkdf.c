@@ -20,12 +20,14 @@
 #define AVS_SUPPRESS_POISONING
 #include <avs_commons_config.h>
 
-#include <openssl/evp.h>
-#include <openssl/kdf.h>
+#ifdef WITH_AVS_CRYPTO
 
-#include <avs_commons_poison.h>
+#    include <openssl/evp.h>
+#    include <openssl/kdf.h>
 
-#include <avsystem/commons/hkdf.h>
+#    include <avs_commons_poison.h>
+
+#    include <avsystem/commons/hkdf.h>
 
 VISIBILITY_SOURCE_BEGIN
 
@@ -76,3 +78,5 @@ finish:
     EVP_PKEY_CTX_free(pctx);
     return result;
 }
+
+#endif // WITH_AVS_CRYPTO

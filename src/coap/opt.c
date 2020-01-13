@@ -16,18 +16,20 @@
 
 #include <avs_commons_config.h>
 
-#include <avsystem/commons/coap/opt.h>
+#ifdef WITH_AVS_COAP
 
-#include <assert.h>
-#include <inttypes.h>
-#include <stdio.h>
+#    include <avsystem/commons/coap/opt.h>
 
-#include <avsystem/commons/coap/block_utils.h>
-#include <avsystem/commons/utils.h>
+#    include <assert.h>
+#    include <inttypes.h>
+#    include <stdio.h>
 
-#include "coap_log.h"
-#include "msg_internal.h"
-#include "parse_utils.h"
+#    include <avsystem/commons/coap/block_utils.h>
+#    include <avsystem/commons/utils.h>
+
+#    include "coap_log.h"
+#    include "msg_internal.h"
+#    include "parse_utils.h"
 
 VISIBILITY_SOURCE_BEGIN
 
@@ -225,6 +227,8 @@ void avs_coap_opt_debug_print(const avs_coap_opt_t *opt) {
     }
 }
 
-#ifdef AVS_UNIT_TESTING
-#    include "tests/coap/opt.c"
-#endif // AVS_UNIT_TESTING
+#    ifdef AVS_UNIT_TESTING
+#        include "tests/coap/opt.c"
+#    endif // AVS_UNIT_TESTING
+
+#endif // WITH_AVS_COAP

@@ -16,11 +16,13 @@
 
 #include <avs_commons_config.h>
 
-#include <assert.h>
-#include <ctype.h>
-#include <string.h>
+#ifdef WITH_AVS_ALGORITHM
 
-#include <avsystem/commons/base64.h>
+#    include <assert.h>
+#    include <ctype.h>
+#    include <string.h>
+
+#    include <avsystem/commons/base64.h>
 
 VISIBILITY_SOURCE_BEGIN
 
@@ -183,6 +185,8 @@ ssize_t avs_base64_decode_custom(uint8_t *out,
     return out_length;
 }
 
-#ifdef AVS_UNIT_TESTING
-#    include "tests/algorithm/base64.c"
-#endif
+#    ifdef AVS_UNIT_TESTING
+#        include "tests/algorithm/base64.c"
+#    endif
+
+#endif // WITH_AVS_ALGORITHM

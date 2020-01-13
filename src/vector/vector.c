@@ -16,14 +16,16 @@
 
 #include <avs_commons_config.h>
 
-#include <assert.h>
-#include <stddef.h>
-#include <stdint.h>
-#include <stdlib.h>
-#include <string.h>
+#ifdef WITH_AVS_VECTOR
 
-#include <avsystem/commons/memory.h>
-#include <avsystem/commons/vector.h>
+#    include <assert.h>
+#    include <stddef.h>
+#    include <stdint.h>
+#    include <stdlib.h>
+#    include <string.h>
+
+#    include <avsystem/commons/memory.h>
+#    include <avsystem/commons/vector.h>
 
 VISIBILITY_SOURCE_BEGIN
 
@@ -36,9 +38,9 @@ struct avs_vector_desc_struct {
 };
 static const uint64_t magic = 0xb5e4189902ba0aaULL;
 
-#define AVS_VECTOR_DESC__(vec)           \
-    ((avs_vector_desc_t *) (intptr_t) (( \
-            const char *) (vec) -offsetof(avs_vector_desc_t, data)))
+#    define AVS_VECTOR_DESC__(vec)           \
+        ((avs_vector_desc_t *) (intptr_t) (( \
+                const char *) (vec) -offsetof(avs_vector_desc_t, data)))
 
 static avs_vector_desc_t *get_desc(void **ptr) {
     avs_vector_desc_t *desc;
@@ -250,6 +252,8 @@ int avs_vector_reserve__(void ***ptr, size_t num_elements) {
     return 0;
 }
 
-#ifdef AVS_UNIT_TESTING
-#    include "tests/vector/test_vector.c"
-#endif
+#    ifdef AVS_UNIT_TESTING
+#        include "tests/vector/test_vector.c"
+#    endif
+
+#endif // WITH_AVS_VECTOR

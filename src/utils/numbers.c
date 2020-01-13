@@ -16,10 +16,12 @@
 
 #include <avs_commons_config.h>
 
-#include <avsystem/commons/utils.h>
+#ifdef WITH_AVS_UTILS
 
-#include <math.h>
-#include <stdlib.h>
+#    include <avsystem/commons/utils.h>
+
+#    include <math.h>
+#    include <stdlib.h>
 
 VISIBILITY_SOURCE_BEGIN
 
@@ -28,14 +30,14 @@ int avs_rand_r(avs_rand_seed_t *seed) {
            % (avs_rand_seed_t) (AVS_RAND_MAX + 1);
 }
 
-#if AVS_RAND_MAX >= UINT32_MAX
-#    define RAND32_ITERATIONS 1
-#elif AVS_RAND_MAX >= UINT16_MAX
-#    define RAND32_ITERATIONS 2
-#else
+#    if AVS_RAND_MAX >= UINT32_MAX
+#        define RAND32_ITERATIONS 1
+#    elif AVS_RAND_MAX >= UINT16_MAX
+#        define RAND32_ITERATIONS 2
+#    else
 /* standard guarantees RAND_MAX to be at least 32767 */
-#    define RAND32_ITERATIONS 3
-#endif
+#        define RAND32_ITERATIONS 3
+#    endif
 
 uint32_t avs_rand32_r(avs_rand_seed_t *seed) {
     uint32_t result = 0;
@@ -47,7 +49,7 @@ uint32_t avs_rand32_r(avs_rand_seed_t *seed) {
     return result;
 }
 
-#ifdef AVS_COMMONS_BIG_ENDIAN
+#    ifdef AVS_COMMONS_BIG_ENDIAN
 uint16_t avs_convert_be16(uint16_t value) {
     return value;
 }
@@ -59,7 +61,7 @@ uint32_t avs_convert_be32(uint32_t value) {
 uint64_t avs_convert_be64(uint64_t value) {
     return value;
 }
-#else  // AVS_COMMONS_BIG_ENDIAN
+#    else  // AVS_COMMONS_BIG_ENDIAN
 uint16_t avs_convert_be16(uint16_t value) {
     return (uint16_t) ((value >> 8) | (value << 8));
 }
@@ -78,7 +80,7 @@ uint64_t avs_convert_be64(uint64_t value) {
                        | ((value & UINT64_C(0xFF0000)) << 24)
                        | ((value & UINT64_C(0xFF00)) << 40) | (value << 56));
 }
-#endif // AVS_COMMONS_BIG_ENDIAN
+#    endif // AVS_COMMONS_BIG_ENDIAN
 
 uint32_t avs_htonf(float f) {
     AVS_STATIC_ASSERT(sizeof(float) == sizeof(uint32_t), float_sane);
@@ -142,3 +144,5 @@ static bool is_double_within_uint64_range(double value) {
 bool avs_double_convertible_to_uint64(double value) {
     return nearbyint(value) == value && is_double_within_uint64_range(value);
 }
+
+#endif // WITH_AVS_UTILS

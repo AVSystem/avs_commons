@@ -16,15 +16,17 @@
 
 #include <avs_commons_config.h>
 
-#include <string.h>
+#ifdef WITH_AVS_HTTP
 
-#include <avsystem/commons/base64.h>
-#include <avsystem/commons/memory.h>
-#include <avsystem/commons/utils.h>
+#    include <string.h>
 
-#include "../auth.h"
-#include "../http_log.h"
-#include "../http_stream.h"
+#    include <avsystem/commons/base64.h>
+#    include <avsystem/commons/memory.h>
+#    include <avsystem/commons/utils.h>
+
+#    include "../auth.h"
+#    include "../http_log.h"
+#    include "../http_stream.h"
 
 VISIBILITY_SOURCE_BEGIN
 
@@ -71,3 +73,5 @@ avs_error_t _avs_http_auth_send_header_basic(http_stream_t *stream) {
     avs_free(buffer);
     return err;
 }
+
+#endif // WITH_AVS_HTTP

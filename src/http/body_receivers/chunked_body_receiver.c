@@ -16,15 +16,17 @@
 
 #include <avs_commons_config.h>
 
-#include <errno.h>
+#ifdef WITH_AVS_HTTP
 
-#include <avsystem/commons/errno.h>
-#include <avsystem/commons/errno_map.h>
-#include <avsystem/commons/memory.h>
-#include <avsystem/commons/stream/stream_net.h>
+#    include <errno.h>
 
-#include "../body_receivers.h"
-#include "../http_log.h"
+#    include <avsystem/commons/errno.h>
+#    include <avsystem/commons/errno_map.h>
+#    include <avsystem/commons/memory.h>
+#    include <avsystem/commons/stream/stream_net.h>
+
+#    include "../body_receivers.h"
+#    include "../http_log.h"
 
 VISIBILITY_SOURCE_BEGIN
 
@@ -233,3 +235,5 @@ avs_stream_t *_avs_http_body_receiver_chunked_create(
     }
     return (avs_stream_t *) retval;
 }
+
+#endif // WITH_AVS_HTTP

@@ -16,15 +16,17 @@
 
 #include <avs_commons_config.h>
 
-#include <inttypes.h>
+#ifdef WITH_AVS_HTTP
 
-#include <avsystem/commons/stream/md5.h>
-#include <avsystem/commons/utils.h>
+#    include <inttypes.h>
 
-#include "../auth.h"
-#include "../client.h"
-#include "../http_log.h"
-#include "../http_stream.h"
+#    include <avsystem/commons/stream/md5.h>
+#    include <avsystem/commons/utils.h>
+
+#    include "../auth.h"
+#    include "../client.h"
+#    include "../http_log.h"
+#    include "../http_stream.h"
 
 VISIBILITY_SOURCE_BEGIN
 
@@ -206,3 +208,5 @@ auth_digest_error:
     }
     return stream_cleanup_err;
 }
+
+#endif // WITH_AVS_HTTP

@@ -16,13 +16,15 @@
 
 #include <avs_commons_config.h>
 
-#include <assert.h>
-#include <string.h>
+#ifdef WITH_AVS_NET
 
-#include <avsystem/commons/net.h>
-#include <avsystem/commons/utils.h>
+#    include <assert.h>
+#    include <string.h>
 
-#include "net_impl.h"
+#    include <avsystem/commons/net.h>
+#    include <avsystem/commons/utils.h>
+
+#    include "net_impl.h"
 
 VISIBILITY_SOURCE_BEGIN
 
@@ -53,3 +55,5 @@ avs_error_t avs_net_resolve_host_simple(avs_net_socket_type_t socket_type,
     avs_net_addrinfo_delete(&info);
     return err;
 }
+
+#endif // WITH_AVS_NET

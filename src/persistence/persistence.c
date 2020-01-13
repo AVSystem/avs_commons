@@ -16,15 +16,17 @@
 
 #include <avs_commons_config.h>
 
-#include <assert.h>
-#include <inttypes.h>
+#ifdef WITH_AVS_PERSISTENCE
 
-#include <avsystem/commons/memory.h>
-#include <avsystem/commons/persistence.h>
-#include <avsystem/commons/utils.h>
+#    include <assert.h>
+#    include <inttypes.h>
 
-#define MODULE_NAME avs_persistence
-#include <x_log_config.h>
+#    include <avsystem/commons/memory.h>
+#    include <avsystem/commons/persistence.h>
+#    include <avsystem/commons/utils.h>
+
+#    define MODULE_NAME avs_persistence
+#    include <x_log_config.h>
 
 VISIBILITY_SOURCE_BEGIN
 
@@ -527,21 +529,21 @@ typedef struct {
     void *handler_user_ptr;
 } persistence_collection_state_t;
 
-#define DEFINE_PERSISTENCE_COLLECTION_HANDLER(Name, ElementType)         \
-    static avs_error_t Name(avs_persistence_context_t *ctx,              \
-                            ElementType(void) * element, void *state_) { \
-        persistence_collection_state_t *state =                          \
-                (persistence_collection_state_t *) state_;               \
-        if (element && !*element) {                                      \
-            *element = ElementType##_NEW_BUFFER(state->element_size);    \
-            if (!element) {                                              \
-                LOG(ERROR, "Out of memory");                             \
-                return avs_errno(AVS_ENOMEM);                            \
-            }                                                            \
-        }                                                                \
-        return state->handler(ctx, element ? *element : NULL,            \
-                              state->handler_user_ptr);                  \
-    }
+#    define DEFINE_PERSISTENCE_COLLECTION_HANDLER(Name, ElementType)         \
+        static avs_error_t Name(avs_persistence_context_t *ctx,              \
+                                ElementType(void) * element, void *state_) { \
+            persistence_collection_state_t *state =                          \
+                    (persistence_collection_state_t *) state_;               \
+            if (element && !*element) {                                      \
+                *element = ElementType##_NEW_BUFFER(state->element_size);    \
+                if (!element) {                                              \
+                    LOG(ERROR, "Out of memory");                             \
+                    return avs_errno(AVS_ENOMEM);                            \
+                }                                                            \
+            }                                                                \
+            return state->handler(ctx, element ? *element : NULL,            \
+                                  state->handler_user_ptr);                  \
+        }
 
 DEFINE_PERSISTENCE_COLLECTION_HANDLER(persistence_list_handler, AVS_LIST)
 
@@ -623,6 +625,8 @@ avs_error_t avs_persistence_version(avs_persistence_context_t *ctx,
     return avs_errno(AVS_EBADMSG);
 }
 
-#ifdef AVS_UNIT_TESTING
-#    include "tests/persistence/persistence.c"
-#endif
+#    ifdef AVS_UNIT_TESTING
+#        include "tests/persistence/persistence.c"
+#    endif
+
+#endif // WITH_AVS_PERSISTENCE

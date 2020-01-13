@@ -17,19 +17,21 @@
 #define AVS_NET_API_C
 #include <avs_commons_config.h>
 
-#include <inttypes.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <string.h>
+#ifdef WITH_AVS_NET
 
-#include <avsystem/commons/memory.h>
-#include <avsystem/commons/net.h>
-#include <avsystem/commons/socket.h>
-#include <avsystem/commons/socket_v_table.h>
+#    include <inttypes.h>
+#    include <stdint.h>
+#    include <stdio.h>
+#    include <string.h>
 
-#include "api.h"
-#include "global.h"
-#include "net_impl.h"
+#    include <avsystem/commons/memory.h>
+#    include <avsystem/commons/net.h>
+#    include <avsystem/commons/socket.h>
+#    include <avsystem/commons/socket_v_table.h>
+
+#    include "api.h"
+#    include "global.h"
+#    include "net_impl.h"
 
 VISIBILITY_SOURCE_BEGIN
 
@@ -127,7 +129,7 @@ avs_net_security_info_from_certificates(avs_net_certificate_info_t info) {
     return result;
 }
 
-#ifdef WITH_SOCKET_LOG
+#    ifdef WITH_SOCKET_LOG
 static int _avs_net_socket_debug = 0;
 
 int avs_net_socket_debug(int value) {
@@ -137,14 +139,14 @@ int avs_net_socket_debug(int value) {
     }
     return prev_value;
 }
-#else
+#    else
 int avs_net_socket_debug(int value) {
     if (value > 0) {
         return -1;
     }
     return 0;
 }
-#endif
+#    endif
 
 struct avs_net_socket_struct {
     const avs_net_socket_v_table_t *const operations;
@@ -352,14 +354,14 @@ get_constructor_for_socket_type(avs_net_socket_type_t type) {
         return _avs_net_create_udp_socket;
     case AVS_NET_SSL_SOCKET:
     case AVS_NET_DTLS_SOCKET:
-#ifndef WITHOUT_SSL
+#    ifndef WITHOUT_SSL
         return type == AVS_NET_SSL_SOCKET ? _avs_net_create_ssl_socket
                                           : _avs_net_create_dtls_socket;
-#else
+#    else
         LOG(ERROR,
             _("could not create secure socket: (D)TLS support is disabled"));
         return NULL;
-#endif // WITHOUT_SSL
+#    endif // WITHOUT_SSL
     default:
         LOG(ERROR, _("unknown socket type: ") "%d", (int) type);
         return NULL;
@@ -403,7 +405,7 @@ avs_error_t avs_net_socket_decorate_in_place(avs_net_socket_t **socket,
     return AVS_OK;
 }
 
-#ifdef WITH_SOCKET_LOG
+#    ifdef WITH_SOCKET_LOG
 
 typedef struct {
     const avs_net_socket_v_table_t *const operations;
@@ -746,7 +748,7 @@ avs_error_t avs_net_socket_create(avs_net_socket_t **debug_socket,
     }
     return err;
 }
-#else
+#    else
 
 avs_error_t avs_net_socket_create(avs_net_socket_t **socket,
                                   avs_net_socket_type_t type,
@@ -754,8 +756,10 @@ avs_error_t avs_net_socket_create(avs_net_socket_t **socket,
     return create_bare_socket(socket, type, configuration);
 }
 
-#endif /* WITH_SOCKET_LOG */
+#    endif /* WITH_SOCKET_LOG */
 
-#if !defined(WITHOUT_SSL) && defined(AVS_UNIT_TESTING)
-#    include "test/starttls.c"
-#endif
+#    if !defined(WITHOUT_SSL) && defined(AVS_UNIT_TESTING)
+#        include "test/starttls.c"
+#    endif
+
+#endif // WITH_AVS_NET

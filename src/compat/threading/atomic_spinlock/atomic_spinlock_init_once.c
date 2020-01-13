@@ -16,14 +16,16 @@
 
 #include <avs_commons_config.h>
 
-#define MODULE_NAME init_once_atomic_spinlock
-#include <x_log_config.h>
+#ifdef WITH_AVS_COMPAT_THREADING_ATOMIC_SPINLOCK
 
-#include <avsystem/commons/defs.h>
-#include <avsystem/commons/init_once.h>
+#    define MODULE_NAME init_once_atomic_spinlock
+#    include <x_log_config.h>
 
-#include <stdatomic.h>
-#include <stdbool.h>
+#    include <avsystem/commons/defs.h>
+#    include <avsystem/commons/init_once.h>
+
+#    include <stdatomic.h>
+#    include <stdbool.h>
 
 VISIBILITY_SOURCE_BEGIN
 
@@ -63,3 +65,5 @@ int avs_init_once(volatile avs_init_once_handle_t *handle,
     }
     return result;
 }
+
+#endif // WITH_AVS_COMPAT_THREADING_ATOMIC_SPINLOCK

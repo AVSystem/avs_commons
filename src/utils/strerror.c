@@ -16,7 +16,9 @@
 
 #include <avs_commons_config.h>
 
-#include <avsystem/commons/errno.h>
+#ifdef WITH_AVS_UTILS
+
+#    include <avsystem/commons/errno.h>
 
 VISIBILITY_SOURCE_BEGIN
 
@@ -165,3 +167,5 @@ const char *avs_strerror(avs_errno_t error) {
     }
     return "<unsupported error code>";
 }
+
+#endif // WITH_AVS_UTILS

@@ -16,9 +16,11 @@
 
 #include <avs_commons_posix_config.h>
 
-#include <time.h>
+#ifdef WITH_AVS_UTILS
 
-#include <avsystem/commons/time.h>
+#    include <time.h>
+
+#    include <avsystem/commons/time.h>
 
 VISIBILITY_SOURCE_BEGIN
 
@@ -34,9 +36,9 @@ avs_time_real_t avs_time_real_now(void) {
 avs_time_monotonic_t avs_time_monotonic_now(void) {
     struct timespec system_value;
     avs_time_monotonic_t result;
-#ifdef CLOCK_MONOTONIC
+#    ifdef CLOCK_MONOTONIC
     if (clock_gettime(CLOCK_MONOTONIC, &system_value))
-#endif
+#    endif
     {
         // CLOCK_MONOTONIC is not mandatory in POSIX;
         // fallback to REALTIME if we don't have it
@@ -46,3 +48,5 @@ avs_time_monotonic_t avs_time_monotonic_now(void) {
     result.since_monotonic_epoch.nanoseconds = (int32_t) system_value.tv_nsec;
     return result;
 }
+
+#endif // WITH_AVS_UTILS

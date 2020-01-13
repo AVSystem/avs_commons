@@ -16,14 +16,16 @@
 
 #include <avs_commons_config.h>
 
-#include <string.h>
+#ifdef WITH_AVS_HTTP
 
-#include <avsystem/commons/utils.h>
+#    include <string.h>
 
-#include "chunked.h"
-#include "headers.h"
-#include "http_log.h"
-#include "http_stream.h"
+#    include <avsystem/commons/utils.h>
+
+#    include "chunked.h"
+#    include "headers.h"
+#    include "http_log.h"
+#    include "http_stream.h"
 
 VISIBILITY_SOURCE_BEGIN
 
@@ -91,6 +93,8 @@ avs_error_t _avs_http_chunked_send(http_stream_t *stream,
     return err;
 }
 
-#ifdef AVS_UNIT_TESTING
-#    include "tests/http/test_chunked.c"
-#endif
+#    ifdef AVS_UNIT_TESTING
+#        include "tests/http/test_chunked.c"
+#    endif
+
+#endif // WITH_AVS_HTTP

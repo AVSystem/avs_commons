@@ -16,14 +16,16 @@
 
 #include <avs_commons_config.h>
 
-#define MODULE_NAME avs_crypto_aead
-#include <x_log_config.h>
+#ifdef WITH_AVS_CRYPTO
 
-#include <avsystem/commons/aead.h>
+#    define MODULE_NAME avs_crypto_aead
+#    include <x_log_config.h>
 
-#include <mbedtls/ccm.h>
+#    include <avsystem/commons/aead.h>
 
-#include "../crypto_utils.h"
+#    include <mbedtls/ccm.h>
+
+#    include "../crypto_utils.h"
 
 VISIBILITY_SOURCE_BEGIN
 
@@ -103,3 +105,5 @@ int avs_crypto_aead_aes_ccm_decrypt(const unsigned char *key,
     }
     return 0;
 }
+
+#endif // WITH_AVS_CRYPTO

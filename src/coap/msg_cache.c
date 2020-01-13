@@ -16,20 +16,22 @@
 
 #include <avs_commons_config.h>
 
-#include <avsystem/commons/buffer.h>
-#include <avsystem/commons/defs.h>
-#include <avsystem/commons/list.h>
-#include <avsystem/commons/memory.h>
-#include <avsystem/commons/time.h>
-#include <avsystem/commons/utils.h>
+#ifdef WITH_AVS_COAP
 
-#include <avsystem/commons/coap/msg.h>
+#    include <avsystem/commons/buffer.h>
+#    include <avsystem/commons/defs.h>
+#    include <avsystem/commons/list.h>
+#    include <avsystem/commons/memory.h>
+#    include <avsystem/commons/time.h>
+#    include <avsystem/commons/utils.h>
 
-#include "coap_log.h"
-#include "msg_cache.h"
+#    include <avsystem/commons/coap/msg.h>
 
-#include <assert.h>
-#include <inttypes.h>
+#    include "coap_log.h"
+#    include "msg_cache.h"
+
+#    include <assert.h>
+#    include <inttypes.h>
 
 VISIBILITY_SOURCE_BEGIN
 
@@ -402,3 +404,5 @@ void _avs_coap_msg_cache_debug_print(const coap_msg_cache_t *cache) {
 size_t _avs_coap_msg_cache_overhead(const avs_coap_msg_t *msg) {
     return offsetof(cache_entry_t, data) + padding_bytes_after_msg(msg);
 }
+
+#endif // WITH_AVS_COAP

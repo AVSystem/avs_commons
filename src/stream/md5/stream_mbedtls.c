@@ -16,19 +16,21 @@
 
 #include <avs_commons_config.h>
 
-#include <stdlib.h>
+#ifdef WITH_AVS_STREAM
 
-#include <mbedtls/md5.h>
-#include <mbedtls/version.h>
+#    include <stdlib.h>
 
-#include <avsystem/commons/memory.h>
-#include <avsystem/commons/stream/md5.h>
+#    include <mbedtls/md5.h>
+#    include <mbedtls/version.h>
 
-#include "md5_common.h"
+#    include <avsystem/commons/memory.h>
+#    include <avsystem/commons/stream/md5.h>
+
+#    include "md5_common.h"
 
 VISIBILITY_SOURCE_BEGIN
 
-#if MBEDTLS_VERSION_NUMBER < 0x02070000
+#    if MBEDTLS_VERSION_NUMBER < 0x02070000
 // the _ret variants were introduced in mbed TLS 2.7.0,
 // emulate them on older versions
 
@@ -49,7 +51,7 @@ static inline int mbedtls_md5_finish_ret(mbedtls_md5_context *ctx,
     mbedtls_md5_finish(ctx, output);
     return 0;
 }
-#endif
+#    endif
 
 typedef struct {
     avs_stream_md5_common_t common;
@@ -112,3 +114,5 @@ avs_stream_t *avs_stream_md5_create(void) {
     }
     return (avs_stream_t *) retval;
 }
+
+#endif // WITH_AVS_STREAM

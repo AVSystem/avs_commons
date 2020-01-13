@@ -16,24 +16,26 @@
 
 #include <avs_commons_config.h>
 
-#include <avsystem/commons/stream/stream_buffered.h>
+#ifdef WITH_AVS_STREAM
 
-#include <assert.h>
-#include <stdint.h>
-#include <string.h>
+#    include <avsystem/commons/stream/stream_buffered.h>
+
+#    include <assert.h>
+#    include <stdint.h>
+#    include <string.h>
 /*
  * Added for SIZE_MAX definition on Android ARM NDK, which for some reason does
  * not define it in stdint.h like POSIX says it should
  */
-#include <limits.h>
+#    include <limits.h>
 
-#include <avsystem/commons/buffer.h>
-#include <avsystem/commons/errno.h>
-#include <avsystem/commons/memory.h>
-#include <avsystem/commons/stream_v_table.h>
+#    include <avsystem/commons/buffer.h>
+#    include <avsystem/commons/errno.h>
+#    include <avsystem/commons/memory.h>
+#    include <avsystem/commons/stream_v_table.h>
 
-#define MODULE_NAME stream_buffered
-#include <x_log_config.h>
+#    define MODULE_NAME stream_buffered
+#    include <x_log_config.h>
 
 VISIBILITY_SOURCE_BEGIN
 
@@ -311,6 +313,8 @@ int avs_stream_buffered_create(avs_stream_t **inout_stream,
     return 0;
 }
 
-#ifdef AVS_UNIT_TESTING
-#    include "tests/stream/test_stream_buffered.c"
-#endif
+#    ifdef AVS_UNIT_TESTING
+#        include "tests/stream/test_stream_buffered.c"
+#    endif
+
+#endif // WITH_AVS_STREAM

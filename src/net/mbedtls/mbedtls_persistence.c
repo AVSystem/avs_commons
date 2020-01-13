@@ -17,31 +17,33 @@
 #define AVS_SUPPRESS_POISONING
 #include <avs_commons_config.h>
 
+#ifdef WITH_AVS_NET
+
 // this uses some symbols such as "printf" - include it before poisoning them
-#include <mbedtls/platform.h>
+#    include <mbedtls/platform.h>
 
-#include <avs_commons_poison.h>
+#    include <avs_commons_poison.h>
 
-#include <assert.h>
+#    include <assert.h>
 
-#include <mbedtls/bignum.h>
-#include <mbedtls/platform.h>
-#include <mbedtls/version.h>
-#include <mbedtls/x509_crt.h>
+#    include <mbedtls/bignum.h>
+#    include <mbedtls/platform.h>
+#    include <mbedtls/version.h>
+#    include <mbedtls/x509_crt.h>
 
-#include <avsystem/commons/persistence.h>
-#include <avsystem/commons/stream.h>
-#include <avsystem/commons/stream/stream_inbuf.h>
-#include <avsystem/commons/stream/stream_outbuf.h>
+#    include <avsystem/commons/persistence.h>
+#    include <avsystem/commons/stream.h>
+#    include <avsystem/commons/stream/stream_inbuf.h>
+#    include <avsystem/commons/stream/stream_outbuf.h>
 
-#include "../net_impl.h"
-#include "mbedtls_persistence.h"
+#    include "../net_impl.h"
+#    include "mbedtls_persistence.h"
 
 VISIBILITY_SOURCE_BEGIN
 
-#if MBEDTLS_VERSION_NUMBER < 0x02030000
+#    if MBEDTLS_VERSION_NUMBER < 0x02030000
 typedef time_t mbedtls_time_t; // mbed TLS < 2.3 does not have mbedtls_time_t
-#endif
+#    endif
 
 /**
  * Persistence format summary
@@ -75,7 +77,7 @@ static const char PERSISTENCE_MAGIC[] = { 'M', 'S', 'P', '\0' };
  * to serious problems if we try to restore it on another platform and/or
  * another mbed TLS version.
  */
-#ifdef WITH_X509
+#    ifdef WITH_X509
 static avs_error_t handle_cert_persistence(avs_persistence_context_t *ctx,
                                            mbedtls_x509_crt **cert_ptr) {
     void *data = (*cert_ptr ? (*cert_ptr)->raw.p : NULL);
@@ -106,7 +108,7 @@ static avs_error_t handle_cert_persistence(avs_persistence_context_t *ctx,
     }
     return err;
 }
-#else
+#    else
 static avs_error_t handle_cert_persistence(avs_persistence_context_t *ctx,
                                            mbedtls_x509_crt **cert_ptr) {
     (void) cert_ptr;
@@ -126,7 +128,7 @@ static avs_error_t handle_cert_persistence(avs_persistence_context_t *ctx,
     }
     return AVS_OK;
 }
-#endif // WITH_X509
+#    endif // WITH_X509
 
 static avs_error_t handle_session_persistence(avs_persistence_context_t *ctx,
                                               mbedtls_ssl_session *session) {
@@ -138,35 +140,35 @@ static avs_error_t handle_session_persistence(avs_persistence_context_t *ctx,
     // As you can see, mbedtls_ssl_session structure is crazy with a ton of
     // #ifdefs we need to replicate...
     mbedtls_x509_crt **peer_cert_ptr =
-#ifdef MBEDTLS_X509_CRT_PARSE_C
+#    ifdef MBEDTLS_X509_CRT_PARSE_C
             &session->peer_cert;
-#else  // MBEDTLS_X509_CRT_PARSE_C
+#    else  // MBEDTLS_X509_CRT_PARSE_C
             &(mbedtls_x509_crt *[]){ NULL }[0];
-#endif // MBEDTLS_X509_CRT_PARSE_C
+#    endif // MBEDTLS_X509_CRT_PARSE_C
     uint8_t *mfl_code_ptr =
-#ifdef MBEDTLS_SSL_MAX_FRAGMENT_LENGTH
+#    ifdef MBEDTLS_SSL_MAX_FRAGMENT_LENGTH
             &session->mfl_code;
-#else  // MBEDTLS_SSL_MAX_FRAGMENT_LENGTH
+#    else  // MBEDTLS_SSL_MAX_FRAGMENT_LENGTH
             &(uint8_t[]){ 0 }[0];
-#endif // MBEDTLS_SSL_MAX_FRAGMENT_LENGTH
+#    endif // MBEDTLS_SSL_MAX_FRAGMENT_LENGTH
     bool trunc_hmac = false;
     bool encrypt_then_mac = false;
 
     if (avs_persistence_direction(ctx) == AVS_PERSISTENCE_STORE) {
-#ifdef MBEDTLS_HAVE_TIME
+#    ifdef MBEDTLS_HAVE_TIME
         session_start = avs_time_real_from_scalar(session->start, AVS_TIME_S);
-#else  // MBEDTLS_HAVE_TIME
+#    else  // MBEDTLS_HAVE_TIME
         session_start = avs_time_real_now();
-#endif // MBEDTLS_HAVE_TIME
+#    endif // MBEDTLS_HAVE_TIME
         ciphersuite = (int32_t) session->ciphersuite;
         compression = (int32_t) session->compression;
         id_len = (uint8_t) session->id_len;
-#ifdef MBEDTLS_SSL_TRUNCATED_HMAC
+#    ifdef MBEDTLS_SSL_TRUNCATED_HMAC
         trunc_hmac = !!session->trunc_hmac;
-#endif // MBEDTLS_SSL_TRUNCATED_HMAC
-#ifdef MBEDTLS_SSL_ENCRYPT_THEN_MAC
+#    endif // MBEDTLS_SSL_TRUNCATED_HMAC
+#    ifdef MBEDTLS_SSL_ENCRYPT_THEN_MAC
         encrypt_then_mac = !!session->encrypt_then_mac;
-#endif // MBEDTLS_SSL_ENCRYPT_THEN_MAC
+#    endif // MBEDTLS_SSL_ENCRYPT_THEN_MAC
     }
 
     AVS_STATIC_ASSERT(sizeof(session->id) == 32, session_id_is_32bytes);
@@ -193,27 +195,27 @@ static avs_error_t handle_session_persistence(avs_persistence_context_t *ctx,
 
     if (avs_is_ok(err)
             && avs_persistence_direction(ctx) == AVS_PERSISTENCE_RESTORE) {
-#ifdef MBEDTLS_HAVE_TIME
+#    ifdef MBEDTLS_HAVE_TIME
         session->start =
                 (mbedtls_time_t) session_start.since_real_epoch.seconds;
-#endif // MBEDTLS_HAVE_TIME
+#    endif // MBEDTLS_HAVE_TIME
         session->ciphersuite = (int) ciphersuite;
         session->compression = (int) compression;
         session->id_len = (size_t) id_len;
-#ifdef MBEDTLS_SSL_TRUNCATED_HMAC
+#    ifdef MBEDTLS_SSL_TRUNCATED_HMAC
         session->trunc_hmac = trunc_hmac;
-#endif // MBEDTLS_SSL_TRUNCATED_HMAC
-#ifdef MBEDTLS_SSL_ENCRYPT_THEN_MAC
+#    endif // MBEDTLS_SSL_TRUNCATED_HMAC
+#    ifdef MBEDTLS_SSL_ENCRYPT_THEN_MAC
         session->encrypt_then_mac = encrypt_then_mac;
-#endif // MBEDTLS_SSL_ENCRYPT_THEN_MAC
+#    endif // MBEDTLS_SSL_ENCRYPT_THEN_MAC
     }
 
-#if defined(WITH_X509) && !defined(MBEDTLS_X509_CRT_PARSE_C)
+#    if defined(WITH_X509) && !defined(MBEDTLS_X509_CRT_PARSE_C)
     if (*peer_cert_ptr) {
         mbedtls_x509_crt_free(*peer_cert_ptr);
         mbedtls_free(*peer_cert_ptr);
     }
-#endif // WITH_X509 && !MBEDTLS_X509_CRT_PARSE_C
+#    endif // WITH_X509 && !MBEDTLS_X509_CRT_PARSE_C
     return err;
 }
 
@@ -275,3 +277,5 @@ avs_error_t _avs_net_mbedtls_session_restore(mbedtls_ssl_session *out_session,
     }
     return err;
 }
+
+#endif // WITH_AVS_NET

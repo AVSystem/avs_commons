@@ -16,12 +16,14 @@
 
 #include <avs_commons_config.h>
 
-#include <avsystem/commons/coap/msg_builder.h>
-#include <avsystem/commons/coap/msg_info.h>
-#include <avsystem/commons/utils.h>
+#ifdef WITH_AVS_COAP
 
-#include "coap_log.h"
-#include "msg_internal.h"
+#    include <avsystem/commons/coap/msg_builder.h>
+#    include <avsystem/commons/coap/msg_info.h>
+#    include <avsystem/commons/utils.h>
+
+#    include "coap_log.h"
+#    include "msg_internal.h"
 
 VISIBILITY_SOURCE_BEGIN
 
@@ -205,16 +207,16 @@ int avs_coap_msg_info_opt_uint(avs_coap_msg_info_t *info,
                                uint16_t opt_number,
                                const void *value,
                                size_t value_size) {
-#ifdef AVS_COMMONS_BIG_ENDIAN
+#    ifdef AVS_COMMONS_BIG_ENDIAN
     const uint8_t *converted = (const uint8_t *) value;
-#else
+#    else
     AVS_ASSERT(value_size <= 8,
                "uint options larger than 64 bits are not supported");
     uint8_t converted[8];
     for (size_t i = 0; i < value_size; ++i) {
         converted[value_size - 1 - i] = ((const uint8_t *) value)[i];
     }
-#endif
+#    endif
     size_t start = 0;
     while (start < value_size && !converted[start]) {
         ++start;
@@ -222,3 +224,5 @@ int avs_coap_msg_info_opt_uint(avs_coap_msg_info_t *info,
     return avs_coap_msg_info_opt_opaque(info, opt_number, &converted[start],
                                         (uint16_t) (value_size - start));
 }
+
+#endif // WITH_AVS_COAP

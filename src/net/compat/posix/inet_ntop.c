@@ -35,19 +35,21 @@
 
 #include <avs_commons_posix_config.h>
 
-#include <stdint.h>
-#include <stdio.h>
-#include <string.h>
+#ifdef WITH_AVS_NET
 
-#include <avsystem/commons/errno.h>
+#    include <stdint.h>
+#    include <stdio.h>
+#    include <string.h>
+
+#    include <avsystem/commons/errno.h>
 
 VISIBILITY_SOURCE_BEGIN
 
-#if defined(LIBC_SCCS) && !defined(lint)
+#    if defined(LIBC_SCCS) && !defined(lint)
 static char rcsid[] = "$Id: inet_ntop.c,v 8.5 1996/05/22 04:56:30 vixie Exp $";
-#endif /* LIBC_SCCS and not lint */
+#    endif /* LIBC_SCCS and not lint */
 
-#ifndef __u_char_defined
+#    ifndef __u_char_defined
 
 /* Type definitions for BSD code. */
 typedef unsigned long u_long;
@@ -55,16 +57,16 @@ typedef unsigned int u_int;
 typedef unsigned short u_short;
 typedef unsigned char u_char;
 
-#endif
-
-#ifdef AVS_COMMONS_WITH_IPV6
-#    define IN6ADDRSZ 16
-#    define INT16SZ 2
-
-#    ifndef AF_INET6
-#        define AF_INET6 (AF_MAX + 1) /* just to let this compile */
 #    endif
-#endif /* AVS_COMMONS_WITH_IPV6 */
+
+#    ifdef AVS_COMMONS_WITH_IPV6
+#        define IN6ADDRSZ 16
+#        define INT16SZ 2
+
+#        ifndef AF_INET6
+#            define AF_INET6 (AF_MAX + 1) /* just to let this compile */
+#        endif
+#    endif /* AVS_COMMONS_WITH_IPV6 */
 
 VISIBILITY_SOURCE_BEGIN
 
@@ -75,9 +77,9 @@ VISIBILITY_SOURCE_BEGIN
 
 const char *_avs_inet_ntop(int af, const void *src, char *dst, size_t size);
 static const char *inet_ntop4(const u_char *src, char *dst, size_t size);
-#ifdef AVS_COMMONS_WITH_IPV6
+#    ifdef AVS_COMMONS_WITH_IPV6
 static const char *inet_ntop6(const u_char *src, char *dst, size_t size);
-#endif /* AVS_COMMONS_WITH_IPV6 */
+#    endif /* AVS_COMMONS_WITH_IPV6 */
 
 /* char *
  * inet_ntop(af, src, dst, size)
@@ -89,14 +91,14 @@ static const char *inet_ntop6(const u_char *src, char *dst, size_t size);
  */
 const char *_avs_inet_ntop(int af, const void *src, char *dst, size_t size) {
     switch (af) {
-#ifdef AVS_COMMONS_WITH_IPV4
+#    ifdef AVS_COMMONS_WITH_IPV4
     case AF_INET:
         return (inet_ntop4((const u_char *) src, dst, size));
-#endif /* AVS_COMMONS_WITH_IPV4 */
-#ifdef AVS_COMMONS_WITH_IPV6
+#    endif /* AVS_COMMONS_WITH_IPV4 */
+#    ifdef AVS_COMMONS_WITH_IPV6
     case AF_INET6:
         return (inet_ntop6((const u_char *) src, dst, size));
-#endif /* AVS_COMMONS_WITH_IPV6 */
+#    endif /* AVS_COMMONS_WITH_IPV6 */
     default:
         errno = EAFNOSUPPORT;
         return (NULL);
@@ -128,7 +130,7 @@ static const char *inet_ntop4(const u_char *src, char *dst, size_t size) {
     return (dst);
 }
 
-#ifdef AVS_COMMONS_WITH_IPV6
+#    ifdef AVS_COMMONS_WITH_IPV6
 /* const char *
  * inet_ntop6(src, dst, size)
  *	convert IPv6 binary address into presentation (printable) format
@@ -219,4 +221,6 @@ static const char *inet_ntop6(const u_char *src, char *dst, size_t size) {
     strcpy(dst, tmp);
     return (dst);
 }
-#endif /* AVS_COMMONS_WITH_IPV6 */
+#    endif /* AVS_COMMONS_WITH_IPV6 */
+
+#endif // WITH_AVS_NET

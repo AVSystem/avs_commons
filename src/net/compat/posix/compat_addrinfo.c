@@ -16,24 +16,26 @@
 
 #include <avs_commons_posix_config.h>
 
-#include <assert.h>
-#include <string.h>
+#ifdef WITH_AVS_NET
 
-#include <avsystem/commons/memory.h>
-#include <avsystem/commons/net.h>
-#include <avsystem/commons/time.h>
-#include <avsystem/commons/utils.h>
+#    include <assert.h>
+#    include <string.h>
 
-#include "compat.h"
+#    include <avsystem/commons/memory.h>
+#    include <avsystem/commons/net.h>
+#    include <avsystem/commons/time.h>
+#    include <avsystem/commons/utils.h>
+
+#    include "compat.h"
 
 VISIBILITY_SOURCE_BEGIN
 
 struct avs_net_addrinfo_struct {
     struct addrinfo *results;
     const struct addrinfo *to_send;
-#ifdef WITH_AVS_V4MAPPED
+#    ifdef WITH_AVS_V4MAPPED
     bool v4mapped;
-#endif
+#    endif
 };
 
 static int port_from_string(uint16_t *out, const char *port_str) {
@@ -54,20 +56,20 @@ static void update_ports(struct addrinfo *head, uint16_t port) {
     port = htons(port);
     for (; head; head = head->ai_next) {
         switch (head->ai_family) {
-#ifdef AVS_COMMONS_WITH_IPV4
+#    ifdef AVS_COMMONS_WITH_IPV4
         case AF_INET:
             memcpy((char *) head->ai_addr
                            + offsetof(struct sockaddr_in, sin_port),
                    &port, sizeof(uint16_t));
             break;
-#endif // AVS_COMMONS_WITH_IPV4
-#ifdef AVS_COMMONS_WITH_IPV6
+#    endif // AVS_COMMONS_WITH_IPV4
+#    ifdef AVS_COMMONS_WITH_IPV6
         case AF_INET6:
             memcpy((char *) head->ai_addr
                            + offsetof(struct sockaddr_in6, sin6_port),
                    &port, sizeof(uint16_t));
             break;
-#endif            // AVS_COMMONS_WITH_IPV6
+#    endif        // AVS_COMMONS_WITH_IPV6
         default:; // do nothing
         }
     }
@@ -191,14 +193,14 @@ avs_net_addrinfo_t *avs_net_addrinfo_resolve_ex(
         return NULL;
     }
 
-#ifdef WITH_AVS_V4MAPPED
+#    ifdef WITH_AVS_V4MAPPED
     if (flags & AVS_NET_ADDRINFO_RESOLVE_F_V4MAPPED) {
         ctx->v4mapped = true;
         if (family == AVS_NET_AF_INET6) {
             hint.ai_family = AF_UNSPEC;
         }
     }
-#endif
+#    endif
     hint.ai_socktype = _avs_net_get_socket_type(socket_type);
 
     if (!host || !*host) {
@@ -215,17 +217,17 @@ avs_net_addrinfo_t *avs_net_addrinfo_resolve_ex(
     }
     int error = getaddrinfo(host, NULL, &hint, &ctx->results);
     if (error) {
-#ifdef HAVE_GAI_STRERROR
+#    ifdef HAVE_GAI_STRERROR
         LOG(DEBUG,
             _("getaddrinfo() error: ") "%s" _(
                     "; family == (avs_net_af_t) ") "%d",
             gai_strerror(error), (int) family);
-#else
+#    else
         LOG(DEBUG,
             _("getaddrinfo() error: ") "%d" _(
                     "; family == (avs_net_af_t) ") "%d",
             error, (int) family);
-#endif
+#    endif
         avs_net_addrinfo_delete(&ctx);
         return NULL;
     } else {
@@ -247,7 +249,7 @@ avs_net_addrinfo_t *avs_net_addrinfo_resolve_ex(
     }
 }
 
-#ifdef WITH_AVS_V4MAPPED
+#    ifdef WITH_AVS_V4MAPPED
 static int create_v4mapped(struct sockaddr_in6 *out,
                            const struct addrinfo *in) {
     struct sockaddr_in v4_address;
@@ -265,7 +267,7 @@ static int create_v4mapped(struct sockaddr_in6 *out,
     memcpy(&out->sin6_addr.s6_addr[12], &v4_address.sin_addr, 4);
     return 0;
 }
-#endif // WITH_AVS_V4MAPPED
+#    endif // WITH_AVS_V4MAPPED
 
 static int return_resolved_endpoint(avs_net_resolved_endpoint_t *out,
                                     void *addr,
@@ -281,26 +283,26 @@ static int return_resolved_endpoint(avs_net_resolved_endpoint_t *out,
 
 int avs_net_addrinfo_next(avs_net_addrinfo_t *ctx,
                           avs_net_resolved_endpoint_t *out) {
-#ifdef WITH_AVS_V4MAPPED
+#    ifdef WITH_AVS_V4MAPPED
     if (ctx->v4mapped) {
         while (ctx->to_send && ctx->to_send->ai_family != AF_INET
                && ctx->to_send->ai_family != AF_INET6) {
             ctx->to_send = ctx->to_send->ai_next;
         }
     }
-#endif
+#    endif
     if (!ctx->to_send) {
         return AVS_NET_ADDRINFO_END;
     }
     int result;
-#ifdef WITH_AVS_V4MAPPED
+#    ifdef WITH_AVS_V4MAPPED
     if (ctx->v4mapped && ctx->to_send->ai_family == AF_INET) {
         struct sockaddr_in6 v6_address;
         (void) ((result = create_v4mapped(&v6_address, ctx->to_send))
                 || (result = return_resolved_endpoint(
                             out, &v6_address, (socklen_t) sizeof(v6_address))));
     } else
-#endif
+#    endif
     {
         result = return_resolved_endpoint(out, ctx->to_send->ai_addr,
                                           (socklen_t) ctx->to_send->ai_addrlen);
@@ -314,3 +316,5 @@ int avs_net_addrinfo_next(avs_net_addrinfo_t *ctx,
 void avs_net_addrinfo_rewind(avs_net_addrinfo_t *ctx) {
     ctx->to_send = ctx->results;
 }
+
+#endif // WITH_AVS_NET

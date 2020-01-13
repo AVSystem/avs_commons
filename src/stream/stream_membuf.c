@@ -16,19 +16,21 @@
 
 #include <avs_commons_config.h>
 
-#include <assert.h>
-#include <stdarg.h>
-#include <string.h>
+#ifdef WITH_AVS_STREAM
 
-#include <limits.h>
+#    include <assert.h>
+#    include <stdarg.h>
+#    include <string.h>
 
-#include <avsystem/commons/errno.h>
-#include <avsystem/commons/memory.h>
-#include <avsystem/commons/stream/stream_membuf.h>
-#include <avsystem/commons/stream_v_table.h>
+#    include <limits.h>
 
-#define MODULE_NAME avs_stream
-#include <x_log_config.h>
+#    include <avsystem/commons/errno.h>
+#    include <avsystem/commons/memory.h>
+#    include <avsystem/commons/stream/stream_membuf.h>
+#    include <avsystem/commons/stream_v_table.h>
+
+#    define MODULE_NAME avs_stream
+#    include <x_log_config.h>
 
 VISIBILITY_SOURCE_BEGIN
 
@@ -247,6 +249,8 @@ avs_stream_t *avs_stream_membuf_create(void) {
     return (avs_stream_t *) membuf;
 }
 
-#ifdef AVS_UNIT_TESTING
-#    include "tests/stream/test_stream_membuf.c"
-#endif
+#    ifdef AVS_UNIT_TESTING
+#        include "tests/stream/test_stream_membuf.c"
+#    endif
+
+#endif // WITH_AVS_STREAM

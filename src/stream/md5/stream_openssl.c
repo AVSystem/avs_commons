@@ -16,14 +16,16 @@
 
 #include <avs_commons_config.h>
 
-#include <stdlib.h>
+#ifdef WITH_AVS_STREAM
 
-#include <openssl/md5.h>
+#    include <stdlib.h>
 
-#include <avsystem/commons/memory.h>
-#include <avsystem/commons/stream/md5.h>
+#    include <openssl/md5.h>
 
-#include "md5_common.h"
+#    include <avsystem/commons/memory.h>
+#    include <avsystem/commons/stream/md5.h>
+
+#    include "md5_common.h"
 
 VISIBILITY_SOURCE_BEGIN
 
@@ -82,3 +84,5 @@ avs_stream_t *avs_stream_md5_create(void) {
     }
     return (avs_stream_t *) retval;
 }
+
+#endif // WITH_AVS_STREAM

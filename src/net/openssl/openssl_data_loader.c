@@ -20,24 +20,26 @@
 #define AVS_SUPPRESS_POISONING
 #include <avs_commons_config.h>
 
-#include <openssl/ssl.h>
+#ifdef WITH_AVS_NET
 
-#include <avs_commons_poison.h>
+#    include <openssl/ssl.h>
 
-#define MODULE_NAME avs_net_data_loader
-#include <x_log_config.h>
+#    include <avs_commons_poison.h>
 
-#include "common.h"
-#include "openssl_data_loader.h"
+#    define MODULE_NAME avs_net_data_loader
+#    include <x_log_config.h>
 
-#include "../api.h"
+#    include "common.h"
+#    include "openssl_data_loader.h"
 
-#include <assert.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#    include "../api.h"
 
-#include <avsystem/commons/utils.h>
+#    include <assert.h>
+#    include <stdio.h>
+#    include <stdlib.h>
+#    include <string.h>
+
+#    include <avsystem/commons/utils.h>
 
 VISIBILITY_SOURCE_BEGIN
 
@@ -341,3 +343,5 @@ _avs_net_openssl_load_client_key(SSL_CTX *ctx,
         return avs_errno(AVS_EINVAL);
     }
 }
+
+#endif // WITH_AVS_NET

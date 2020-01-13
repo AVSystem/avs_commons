@@ -16,14 +16,16 @@
 
 #include <avs_commons_config.h>
 
-#include <avsystem/commons/stream/stream_inbuf.h>
-#include <avsystem/commons/stream_v_table.h>
+#ifdef WITH_AVS_STREAM
 
-#include <assert.h>
-#include <string.h>
+#    include <avsystem/commons/stream/stream_inbuf.h>
+#    include <avsystem/commons/stream_v_table.h>
 
-#define MODULE_NAME avs_stream
-#include <x_log_config.h>
+#    include <assert.h>
+#    include <string.h>
+
+#    define MODULE_NAME avs_stream
+#    include <x_log_config.h>
 
 VISIBILITY_SOURCE_BEGIN
 
@@ -88,3 +90,5 @@ void avs_stream_inbuf_set_buffer(avs_stream_inbuf_t *stream,
     stream->buffer_size = buffer_size;
     stream->buffer_offset = 0;
 }
+
+#endif // WITH_AVS_STREAM

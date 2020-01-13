@@ -17,12 +17,14 @@
 #define AVS_UNIT_SOURCE
 #include <avs_commons_config.h>
 
-#include <stdio.h>
-#include <stdlib.h>
+#ifdef WITH_AVS_UNIT
 
-#include <avsystem/commons/list.h>
+#    include <stdio.h>
+#    include <stdlib.h>
 
-#include <avsystem/commons/unit/mock_helpers.h>
+#    include <avsystem/commons/list.h>
+
+#    include <avsystem/commons/unit/mock_helpers.h>
 
 VISIBILITY_SOURCE_BEGIN
 
@@ -73,3 +75,5 @@ unsigned avs_unit_mock_invocations__(avs_unit_mock_func_ptr *invoked_func) {
     }
     return 0;
 }
+
+#endif // WITH_AVS_UNIT

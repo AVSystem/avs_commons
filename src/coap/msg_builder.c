@@ -16,12 +16,14 @@
 
 #include <avs_commons_config.h>
 
-#include <avsystem/commons/coap/msg_builder.h>
-#include <avsystem/commons/utils.h>
+#ifdef WITH_AVS_COAP
 
-#include "coap_log.h"
-#include "msg_internal.h"
-#include "parse_utils.h"
+#    include <avsystem/commons/coap/msg_builder.h>
+#    include <avsystem/commons/utils.h>
+
+#    include "coap_log.h"
+#    include "msg_internal.h"
+#    include "parse_utils.h"
 
 VISIBILITY_SOURCE_BEGIN
 
@@ -250,6 +252,8 @@ avs_coap_msg_builder_get_msg(const avs_coap_msg_builder_t *builder) {
     return builder->msg_buffer.msg;
 }
 
-#ifdef AVS_UNIT_TESTING
-#    include "tests/coap/msg_builder.c"
-#endif // AVS_UNIT_TESTING
+#    ifdef AVS_UNIT_TESTING
+#        include "tests/coap/msg_builder.c"
+#    endif // AVS_UNIT_TESTING
+
+#endif // WITH_AVS_COAP

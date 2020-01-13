@@ -36,18 +36,20 @@
 
 #include <avs_commons_posix_config.h>
 
-#include <stdint.h>
-#include <stdio.h>
-#include <string.h>
+#ifdef WITH_AVS_NET
 
-#include <avsystem/commons/defs.h>
-#include <avsystem/commons/errno.h>
+#    include <stdint.h>
+#    include <stdio.h>
+#    include <string.h>
+
+#    include <avsystem/commons/defs.h>
+#    include <avsystem/commons/errno.h>
 
 VISIBILITY_SOURCE_BEGIN
 
-#define NS_INT16SZ 2
-#define NS_INADDRSZ 4
-#define NS_IN6ADDRSZ 16
+#    define NS_INT16SZ 2
+#    define NS_INADDRSZ 4
+#    define NS_IN6ADDRSZ 16
 
 /*
  * WARNING: Don't even consider trying to compile this on a system where
@@ -57,9 +59,9 @@ AVS_STATIC_ASSERT(sizeof(int) >= 4, sane_sizeof_int);
 
 static int inet_pton4(const char *src, void *dst);
 
-#ifdef AVS_COMMONS_WITH_IPV6
+#    ifdef AVS_COMMONS_WITH_IPV6
 static int inet_pton6(const char *src, void *dst);
-#endif /* AVS_COMMONS_WITH_IPV6 */
+#    endif /* AVS_COMMONS_WITH_IPV6 */
 
 int _avs_inet_pton(int af, const char *src, void *dst);
 
@@ -76,15 +78,15 @@ int _avs_inet_pton(int af, const char *src, void *dst);
  */
 int _avs_inet_pton(int af, const char *src, void *dst) {
     switch (af) {
-#ifdef AVS_COMMONS_WITH_IPV4
+#    ifdef AVS_COMMONS_WITH_IPV4
     case AF_INET:
         return (inet_pton4(src, dst));
-#endif /* AVS_COMMONS_WITH_IPV4 */
+#    endif /* AVS_COMMONS_WITH_IPV4 */
 
-#ifdef AVS_COMMONS_WITH_IPV6
+#    ifdef AVS_COMMONS_WITH_IPV6
     case AF_INET6:
         return (inet_pton6(src, dst));
-#endif /* AVS_COMMONS_WITH_IPV6 */
+#    endif /* AVS_COMMONS_WITH_IPV6 */
 
     default:
         errno = EAFNOSUPPORT;
@@ -139,7 +141,7 @@ static int inet_pton4(const char *src, void *dst) {
     return (1);
 }
 
-#ifdef AVS_COMMONS_WITH_IPV6
+#    ifdef AVS_COMMONS_WITH_IPV6
 /* int
  * inet_pton6(src, dst)
  *	convert presentation level address to network order binary form.
@@ -233,4 +235,6 @@ static int inet_pton6(const char *src, void *dst) {
     memcpy(dst, tmp, NS_IN6ADDRSZ);
     return (1);
 }
-#endif /* AVS_COMMONS_WITH_IPV6 */
+#    endif /* AVS_COMMONS_WITH_IPV6 */
+
+#endif // WITH_AVS_NET

@@ -16,16 +16,18 @@
 
 #include <avs_commons_config.h>
 
-#include <stddef.h>
-#include <stdlib.h>
-#include <string.h>
+#ifdef WITH_AVS_BUFFER
 
-#include <avsystem/commons/buffer.h>
-#include <avsystem/commons/defs.h>
-#include <avsystem/commons/memory.h>
+#    include <stddef.h>
+#    include <stdlib.h>
+#    include <string.h>
 
-#define MODULE_NAME avs_buffer
-#include <x_log_config.h>
+#    include <avsystem/commons/buffer.h>
+#    include <avsystem/commons/defs.h>
+#    include <avsystem/commons/memory.h>
+
+#    define MODULE_NAME avs_buffer
+#    include <x_log_config.h>
 
 VISIBILITY_SOURCE_BEGIN
 
@@ -148,6 +150,8 @@ int avs_buffer_fill_bytes(avs_buffer_t *buffer, int value, size_t bytes_count) {
     }
 }
 
-#ifdef AVS_UNIT_TESTING
-#    include "tests/buffer/test_buffer.c"
-#endif
+#    ifdef AVS_UNIT_TESTING
+#        include "tests/buffer/test_buffer.c"
+#    endif
+
+#endif // WITH_AVS_BUFFER

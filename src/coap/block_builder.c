@@ -16,10 +16,12 @@
 
 #include <avs_commons_config.h>
 
-#include <avsystem/commons/coap/block_builder.h>
-#include <avsystem/commons/utils.h>
+#ifdef WITH_AVS_COAP
 
-#include "coap_log.h"
+#    include <avsystem/commons/coap/block_builder.h>
+#    include <avsystem/commons/utils.h>
+
+#    include "coap_log.h"
 
 VISIBILITY_SOURCE_BEGIN
 
@@ -143,3 +145,5 @@ void avs_coap_block_builder_next(avs_coap_block_builder_t *builder,
     builder->read_offset =
             AVS_MIN(builder->read_offset + block_size, builder->write_offset);
 }
+
+#endif // WITH_AVS_COAP

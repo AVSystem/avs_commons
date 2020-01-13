@@ -20,14 +20,16 @@
 #define AVS_COMPAT_THREADING_PTHREAD_INIT_ONCE
 #include <avs_commons_config.h>
 
-#define MODULE_NAME init_once_pthread
-#include <x_log_config.h>
+#ifdef WITH_AVS_COMPAT_THREADING_PTHREAD
 
-#include <avsystem/commons/defs.h>
-#include <avsystem/commons/init_once.h>
+#    define MODULE_NAME init_once_pthread
+#    include <x_log_config.h>
 
-#include <pthread.h>
-#include <stdlib.h>
+#    include <avsystem/commons/defs.h>
+#    include <avsystem/commons/init_once.h>
+
+#    include <pthread.h>
+#    include <stdlib.h>
 
 VISIBILITY_SOURCE_BEGIN
 
@@ -69,3 +71,5 @@ int avs_init_once(volatile avs_init_once_handle_t *handle,
     pthread_mutex_unlock(&g_mutex);
     return result;
 }
+
+#endif // WITH_AVS_COMPAT_THREADING_PTHREAD

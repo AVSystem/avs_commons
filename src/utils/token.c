@@ -16,10 +16,12 @@
 
 #include <avs_commons_config.h>
 
-#include <ctype.h>
-#include <string.h>
+#ifdef WITH_AVS_UTILS
 
-#include <avsystem/commons/utils.h>
+#    include <ctype.h>
+#    include <string.h>
+
+#    include <avsystem/commons/utils.h>
 
 VISIBILITY_SOURCE_BEGIN
 
@@ -79,6 +81,8 @@ void avs_consume_quotable_token(const char **src,
     }
 }
 
-#ifdef AVS_UNIT_TESTING
-#    include "tests/utils/token.c"
-#endif // AVS_UNIT_TESTING
+#    ifdef AVS_UNIT_TESTING
+#        include "tests/utils/token.c"
+#    endif // AVS_UNIT_TESTING
+
+#endif // WITH_AVS_UTILS

@@ -16,15 +16,17 @@
 
 #include <avs_commons_config.h>
 
-#include <assert.h>
-#include <string.h>
+#ifdef WITH_AVS_HTTP
 
-#include <avsystem/commons/stream/stream_net.h>
-#include <avsystem/commons/utils.h>
+#    include <assert.h>
+#    include <string.h>
 
-#include "client.h"
-#include "headers.h"
-#include "http_log.h"
+#    include <avsystem/commons/stream/stream_net.h>
+#    include <avsystem/commons/utils.h>
+
+#    include "client.h"
+#    include "headers.h"
+#    include "http_log.h"
 
 VISIBILITY_SOURCE_BEGIN
 
@@ -60,12 +62,12 @@ avs_error_t _avs_http_send_headers(http_stream_t *stream,
                                               avs_url_host(stream->url),
                                               avs_url_port(stream->url),
                                               avs_url_path(stream->url))))
-#ifdef WITH_AVS_HTTP_ZLIB
+#    ifdef WITH_AVS_HTTP_ZLIB
             || (stream->http->buffer_sizes.content_coding_input > 0
                 && avs_is_err((err = avs_stream_write_f(
                                        stream->backend,
                                        "Accept-Encoding: gzip, deflate\r\n"))))
-#endif
+#    endif
             || (stream->http->user_agent
                 && avs_is_err((
                            err = avs_stream_write_f(stream->backend,
@@ -126,7 +128,7 @@ avs_error_t _avs_http_send_headers(http_stream_t *stream,
             return err;
         }
     }
-#ifdef WITH_AVS_HTTP_ZLIB
+#    ifdef WITH_AVS_HTTP_ZLIB
     if (content_length != 0) {
         switch (stream->encoding) {
         case AVS_HTTP_CONTENT_IDENTITY:
@@ -152,10 +154,12 @@ avs_error_t _avs_http_send_headers(http_stream_t *stream,
             return err;
         }
     }
-#endif
+#    endif
     if (avs_is_ok((err = avs_stream_write(stream->backend, "\r\n", 2)))
             && avs_is_ok((err = avs_stream_finish_message(stream->backend)))) {
         LOG(TRACE, _("http_send_headers: success"));
     }
     return err;
 }
+
+#endif // WITH_AVS_HTTP

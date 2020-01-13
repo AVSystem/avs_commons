@@ -16,13 +16,15 @@
 
 #include <avs_commons_config.h>
 
-#include "coap_log.h"
-#include "msg_internal.h"
+#ifdef WITH_AVS_COAP
 
-#include <avsystem/commons/coap/msg_info.h>
-#include <avsystem/commons/coap/msg_opt.h>
+#    include "coap_log.h"
+#    include "msg_internal.h"
 
-#include <inttypes.h>
+#    include <avsystem/commons/coap/msg_info.h>
+#    include <avsystem/commons/coap/msg_opt.h>
+
+#    include <inttypes.h>
 
 VISIBILITY_SOURCE_BEGIN
 
@@ -170,3 +172,5 @@ int avs_coap_msg_validate_critical_options(
 
     return result;
 }
+
+#endif // WITH_AVS_COAP

@@ -16,10 +16,12 @@
 
 #include <avs_commons_config.h>
 
-#include <stdio.h>
-#include <string.h>
+#ifdef WITH_AVS_STREAM
 
-#include "md5_common.h"
+#    include <stdio.h>
+#    include <string.h>
+
+#    include "md5_common.h"
 
 VISIBILITY_SOURCE_BEGIN
 
@@ -72,3 +74,5 @@ void _avs_stream_md5_common_finalize(avs_stream_md5_common_t *stream) {
 void _avs_stream_md5_common_reset(avs_stream_md5_common_t *stream) {
     stream->out_ptr = MD5_LENGTH;
 }
+
+#endif // WITH_AVS_STREAM

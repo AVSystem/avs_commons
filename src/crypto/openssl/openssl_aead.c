@@ -13,25 +13,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 #define AVS_SUPPRESS_POISONING
 #include <avs_commons_config.h>
 
-#include <openssl/evp.h>
+#ifdef WITH_AVS_CRYPTO
 
-#include <avs_commons_poison.h>
+#    include <openssl/evp.h>
 
-#define MODULE_NAME avs_crypto_aead
-#include <x_log_config.h>
+#    include <avs_commons_poison.h>
 
-#include <avsystem/commons/aead.h>
+#    define MODULE_NAME avs_crypto_aead
+#    include <x_log_config.h>
 
-#include "../crypto_utils.h"
+#    include <avsystem/commons/aead.h>
+
+#    include "../crypto_utils.h"
 
 VISIBILITY_SOURCE_BEGIN
 
-#define AES128_KEY_LENGTH_IN_BYTES 16
-#define AES256_KEY_LENGTH_IN_BYTES 32
+#    define AES128_KEY_LENGTH_IN_BYTES 16
+#    define AES256_KEY_LENGTH_IN_BYTES 32
 
 // Both functions adapted from
 // https://wiki.openssl.org/index.php/EVP_Authenticated_Encryption_and_Decryption
@@ -161,3 +162,5 @@ int avs_crypto_aead_aes_ccm_decrypt(const unsigned char *key,
     EVP_CIPHER_CTX_free(ctx);
     return result;
 }
+
+#endif // WITH_AVS_CRYPTO

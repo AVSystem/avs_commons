@@ -16,32 +16,34 @@
 
 #include <avs_commons_config.h>
 
-#include <avsystem/commons/coap/ctx.h>
-#include <avsystem/commons/coap/msg_builder.h>
+#ifdef WITH_AVS_COAP
 
-#include <assert.h>
-#include <stdbool.h>
-#include <stdlib.h>
+#    include <avsystem/commons/coap/ctx.h>
+#    include <avsystem/commons/coap/msg_builder.h>
 
-#include <avsystem/commons/errno.h>
-#include <avsystem/commons/list.h>
-#include <avsystem/commons/memory.h>
+#    include <assert.h>
+#    include <stdbool.h>
+#    include <stdlib.h>
 
-#include "coap_log.h"
-#include "msg_cache.h"
+#    include <avsystem/commons/errno.h>
+#    include <avsystem/commons/list.h>
+#    include <avsystem/commons/memory.h>
+
+#    include "coap_log.h"
+#    include "msg_cache.h"
 
 VISIBILITY_SOURCE_BEGIN
 
 struct avs_coap_ctx {
     avs_coap_tx_params_t tx_params;
     coap_msg_cache_t *msg_cache;
-#ifdef WITH_AVS_COAP_NET_STATS
+#    ifdef WITH_AVS_COAP_NET_STATS
     uint64_t rx_bytes;
     uint64_t tx_bytes;
     uint64_t num_incoming_retransmissions;
     uint64_t num_outgoing_retransmissions;
     avs_coap_msg_identity_t last_request_identity;
-#endif
+#    endif
 };
 
 static const avs_coap_tx_params_t DEFAULT_TX_PARAMS = {
@@ -70,39 +72,39 @@ int avs_coap_ctx_create(avs_coap_ctx_t **ctx, size_t msg_cache_size) {
 }
 
 uint64_t avs_coap_ctx_get_rx_bytes(avs_coap_ctx_t *ctx) {
-#ifdef WITH_AVS_COAP_NET_STATS
+#    ifdef WITH_AVS_COAP_NET_STATS
     return ctx->rx_bytes;
-#else
+#    else
     (void) ctx;
     return 0;
-#endif // WITH_AVS_COAP_NET_STATS
+#    endif // WITH_AVS_COAP_NET_STATS
 }
 
 uint64_t avs_coap_ctx_get_tx_bytes(avs_coap_ctx_t *ctx) {
-#ifdef WITH_AVS_COAP_NET_STATS
+#    ifdef WITH_AVS_COAP_NET_STATS
     return ctx->tx_bytes;
-#else
+#    else
     (void) ctx;
     return 0;
-#endif // WITH_AVS_COAP_NET_STATS
+#    endif // WITH_AVS_COAP_NET_STATS
 }
 
 uint64_t avs_coap_ctx_get_num_incoming_retransmissions(avs_coap_ctx_t *ctx) {
-#ifdef WITH_AVS_COAP_NET_STATS
+#    ifdef WITH_AVS_COAP_NET_STATS
     return ctx->num_incoming_retransmissions;
-#else
+#    else
     (void) ctx;
     return 0;
-#endif // WITH_AVS_COAP_NET_STATS
+#    endif // WITH_AVS_COAP_NET_STATS
 }
 
 uint64_t avs_coap_ctx_get_num_outgoing_retransmissions(avs_coap_ctx_t *ctx) {
-#ifdef WITH_AVS_COAP_NET_STATS
+#    ifdef WITH_AVS_COAP_NET_STATS
     return ctx->num_outgoing_retransmissions;
-#else
+#    else
     (void) ctx;
     return 0;
-#endif // WITH_AVS_COAP_NET_STATS
+#    endif // WITH_AVS_COAP_NET_STATS
 }
 
 void avs_coap_ctx_cleanup(avs_coap_ctx_t **ctx) {
@@ -134,9 +136,9 @@ static int map_io_error(const char *operation, avs_error_t err) {
     return AVS_COAP_CTX_ERR_NETWORK;
 }
 
-#ifndef WITH_AVS_COAP_MESSAGE_CACHE
-#    define try_cache_response(...) 0
-#else // WITH_AVS_COAP_MESSAGE_CACHE
+#    ifndef WITH_AVS_COAP_MESSAGE_CACHE
+#        define try_cache_response(...) 0
+#    else // WITH_AVS_COAP_MESSAGE_CACHE
 
 static int try_cache_response(avs_coap_ctx_t *ctx,
                               avs_net_socket_t *socket,
@@ -158,9 +160,9 @@ static int try_cache_response(avs_coap_ctx_t *ctx,
                                    &ctx->tx_params);
 }
 
-#endif // WITH_AVS_COAP_MESSAGE_CACHE
+#    endif // WITH_AVS_COAP_MESSAGE_CACHE
 
-#ifdef WITH_AVS_COAP_NET_STATS
+#    ifdef WITH_AVS_COAP_NET_STATS
 static size_t packet_overhead(avs_net_socket_t *socket) {
     avs_net_socket_opt_value_t mtu;
     avs_net_socket_opt_value_t mtu_inner;
@@ -177,7 +179,7 @@ static size_t packet_overhead(avs_net_socket_t *socket) {
 error:
     return 0;
 }
-#endif // WITH_AVS_COAP_NET_STATS
+#    endif // WITH_AVS_COAP_NET_STATS
 
 int avs_coap_ctx_send(avs_coap_ctx_t *ctx,
                       avs_net_socket_t *socket,
@@ -192,7 +194,7 @@ int avs_coap_ctx_send(avs_coap_ctx_t *ctx,
     avs_error_t err = avs_net_socket_send(socket, msg->content, msg->length);
     if (avs_is_ok(err)) {
         int cache_result = try_cache_response(ctx, socket, msg);
-#ifdef WITH_AVS_COAP_NET_STATS
+#    ifdef WITH_AVS_COAP_NET_STATS
         bool request_retransmission = false;
         if (avs_coap_msg_is_request(msg)) {
             const avs_coap_msg_identity_t msg_identity =
@@ -209,15 +211,15 @@ int avs_coap_ctx_send(avs_coap_ctx_t *ctx,
             ++ctx->num_outgoing_retransmissions;
         }
         ctx->tx_bytes += msg->length + packet_overhead(socket);
-#endif // WITH_AVS_COAP_NET_STATS
+#    endif // WITH_AVS_COAP_NET_STATS
         (void) cache_result;
     }
     return map_io_error("send", err);
 }
 
-#ifndef WITH_AVS_COAP_MESSAGE_CACHE
-#    define try_send_cached_response(...) (-1)
-#else // WITH_AVS_COAP_MESSAGE_CACHE
+#    ifndef WITH_AVS_COAP_MESSAGE_CACHE
+#        define try_send_cached_response(...) (-1)
+#    else // WITH_AVS_COAP_MESSAGE_CACHE
 
 static int try_send_cached_response(avs_coap_ctx_t *ctx,
                                     avs_net_socket_t *socket,
@@ -239,16 +241,16 @@ static int try_send_cached_response(avs_coap_ctx_t *ctx,
     const avs_coap_msg_t *res =
             _avs_coap_msg_cache_get(ctx->msg_cache, addr, port, msg_id);
     if (res) {
-#    ifdef WITH_AVS_COAP_NET_STATS
+#        ifdef WITH_AVS_COAP_NET_STATS
         ++ctx->num_incoming_retransmissions;
-#    endif // WITH_AVS_COAP_NET_STATS
+#        endif // WITH_AVS_COAP_NET_STATS
         return avs_coap_ctx_send(ctx, socket, res);
     } else {
         return -1;
     }
 }
 
-#endif // WITH_AVS_COAP_MESSAGE_CACHE
+#    endif // WITH_AVS_COAP_MESSAGE_CACHE
 
 static inline bool is_coap_ping(const avs_coap_msg_t *msg) {
     return avs_coap_msg_get_type(msg) == AVS_COAP_MSG_CONFIRMABLE
@@ -271,9 +273,9 @@ int avs_coap_ctx_recv(avs_coap_ctx_t *ctx,
     if (avs_is_err(err)) {
         return map_io_error("receive", err);
     }
-#ifdef WITH_AVS_COAP_NET_STATS
+#    ifdef WITH_AVS_COAP_NET_STATS
     ctx->rx_bytes += msg_length + packet_overhead(socket);
-#endif // WITH_AVS_COAP_NET_STATS
+#    endif // WITH_AVS_COAP_NET_STATS
 
     if (!avs_coap_msg_is_valid(out_msg)) {
         LOG(DEBUG, _("recv: malformed message"));
@@ -382,3 +384,5 @@ void avs_coap_ctx_send_service_unavailable(avs_coap_ctx_t *ctx,
     send_response(ctx, socket, request, AVS_COAP_CODE_SERVICE_UNAVAILABLE,
                   &s_to_retry_after);
 }
+
+#endif // WITH_AVS_COAP

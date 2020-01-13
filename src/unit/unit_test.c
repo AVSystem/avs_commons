@@ -17,29 +17,31 @@
 #define AVS_UNIT_SOURCE
 #include <avs_commons_posix_config.h>
 
-#include <ctype.h>
-#include <inttypes.h>
-#include <math.h>
-#include <stdarg.h>
-#include <stdbool.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#ifdef WITH_AVS_UNIT
 
-#include <getopt.h>
+#    include <ctype.h>
+#    include <inttypes.h>
+#    include <math.h>
+#    include <stdarg.h>
+#    include <stdbool.h>
+#    include <stdio.h>
+#    include <stdlib.h>
+#    include <string.h>
 
-#include <avsystem/commons/defs.h>
-#include <avsystem/commons/list.h>
-#include <avsystem/commons/unit/mock_helpers.h>
-#include <avsystem/commons/unit/test.h>
-#include <avsystem/commons/utils.h>
+#    include <getopt.h>
 
-#ifdef WITH_AVS_LOG
-#    include <avsystem/commons/log.h>
-#endif
+#    include <avsystem/commons/defs.h>
+#    include <avsystem/commons/list.h>
+#    include <avsystem/commons/unit/mock_helpers.h>
+#    include <avsystem/commons/unit/test.h>
+#    include <avsystem/commons/utils.h>
 
-#include "stack_trace.h"
-#include "unit_test.h"
+#    ifdef WITH_AVS_LOG
+#        include <avsystem/commons/log.h>
+#    endif
+
+#    include "stack_trace.h"
+#    include "unit_test.h"
 
 VISIBILITY_SOURCE_BEGIN
 
@@ -116,8 +118,8 @@ static void test_fail_print_hex_diff(const uint8_t *actual,
                                      size_t diff_start_offset,
                                      size_t diff_bytes,
                                      size_t context_size) {
-#define MIN(a, b) ((a) < (b) ? (a) : (b))
-#define MAX(a, b) ((a) > (b) ? (a) : (b))
+#    define MIN(a, b) ((a) < (b) ? (a) : (b))
+#    define MAX(a, b) ((a) > (b) ? (a) : (b))
 
     size_t start =
             (size_t) MAX((ssize_t) diff_start_offset - (ssize_t) context_size,
@@ -125,8 +127,8 @@ static void test_fail_print_hex_diff(const uint8_t *actual,
     size_t end =
             MIN(diff_start_offset + diff_bytes + context_size, buffer_size);
 
-#undef MIN
-#undef MAX
+#    undef MIN
+#    undef MAX
 
     size_t i;
     size_t marker_offset = sizeof("expected:") + 1
@@ -240,21 +242,21 @@ void avs_unit_assert_false__(int result, const char *file, int line) {
     _avs_unit_assert(result == 0, file, line, "expected false\n");
 }
 
-#define CHECK_EQUAL_BODY(format, ...)                                          \
-    {                                                                          \
-        snprintf(strings->actual_str, sizeof(strings->actual_str), format,     \
-                 actual);                                                      \
-        snprintf(strings->expected_str, sizeof(strings->expected_str), format, \
-                 expected);                                                    \
-        return (__VA_ARGS__);                                                  \
-    }
+#    define CHECK_EQUAL_BODY(format, ...)                                      \
+        {                                                                      \
+            snprintf(strings->actual_str, sizeof(strings->actual_str), format, \
+                     actual);                                                  \
+            snprintf(strings->expected_str, sizeof(strings->expected_str),     \
+                     format, expected);                                        \
+            return (__VA_ARGS__);                                              \
+        }
 
-#define CHECK_EQUAL_BODY_INT(format) \
-    CHECK_EQUAL_BODY(format, actual == expected)
+#    define CHECK_EQUAL_BODY_INT(format) \
+        CHECK_EQUAL_BODY(format, actual == expected)
 
-#define CHECK_EQUAL_BODY_FLOAT(format) \
-    CHECK_EQUAL_BODY(format,           \
-                     isnan(actual) ? isnan(expected) : actual == expected)
+#    define CHECK_EQUAL_BODY_FLOAT(format) \
+        CHECK_EQUAL_BODY(format,           \
+                         isnan(actual) ? isnan(expected) : actual == expected)
 
 // clang-format off
 AVS_UNIT_CHECK_EQUAL_FUNCTION_DECLARE__(char, c) CHECK_EQUAL_BODY_INT("%c")
@@ -321,10 +323,10 @@ static size_t find_first__(bool equal,
     return size;
 }
 
-#define find_first_equal(a, b, start, size) \
-    find_first__(true, (a), (b), (start), (size))
-#define find_first_different(a, b, start, size) \
-    find_first__(false, (a), (b), (start), (size))
+#    define find_first_equal(a, b, start, size) \
+        find_first__(true, (a), (b), (start), (size))
+#    define find_first_different(a, b, start, size) \
+        find_first__(false, (a), (b), (start), (size))
 
 static void
 print_differences(const void *actual, const void *expected, size_t num_bytes) {
@@ -580,7 +582,7 @@ static int parse_command_line_args(int argc,
     return 0;
 }
 
-#ifdef WITH_AVS_LOG
+#    ifdef WITH_AVS_LOG
 static int parse_log_level(const char *str, avs_log_level_t *level) {
     if (!avs_strcasecmp(str, "trace")) {
         *level = AVS_LOG_TRACE;
@@ -674,9 +676,9 @@ static void process_env_vars(void) {
         atexit(avs_log_reset);
     }
 }
-#else  /* WITH_AVS_LOG */
+#    else  /* WITH_AVS_LOG */
 static void process_env_vars(void) {}
-#endif /* WITH_AVS_LOG */
+#    endif /* WITH_AVS_LOG */
 
 int main(int argc, char *argv[]) {
     const char *volatile selected_suite = NULL;
@@ -751,3 +753,5 @@ int main(int argc, char *argv[]) {
 
     return tests_result;
 }
+
+#endif // WITH_AVS_UNIT

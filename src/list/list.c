@@ -16,19 +16,22 @@
 
 #include <avs_commons_config.h>
 
-#include <string.h>
+#ifdef WITH_AVS_LIST
+
+#    include <string.h>
 
 /* We don't want avs_list_assert_acyclic__ called from our own internals */
-#ifndef NDEBUG
-#    define NDEBUG
-#endif
-#include <avsystem/commons/list.h>
+#    ifndef NDEBUG
+#        define NDEBUG
+#    endif
+#    include <avsystem/commons/list.h>
 
-#ifdef NDEBUG
-#    undef NDEBUG /* We want to call assert() in avs_list_assert_acyclic__() \
-                   */
-#endif
-#include <assert.h>
+#    ifdef NDEBUG
+#        undef NDEBUG /* We want to call assert() in \
+                       * avs_list_assert_acyclic__() \
+                       */
+#    endif
+#    include <assert.h>
 
 VISIBILITY_SOURCE_BEGIN
 
@@ -228,3 +231,5 @@ void avs_list_merge__(void **target,
         target = AVS_LIST_NEXT_PTR(target);
     }
 }
+
+#endif // WITH_AVS_LIST

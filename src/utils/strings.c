@@ -16,15 +16,17 @@
 
 #include <avs_commons_config.h>
 
-#include <assert.h>
-#include <ctype.h>
-#include <stdarg.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#ifdef WITH_AVS_UTILS
 
-#include <avsystem/commons/memory.h>
-#include <avsystem/commons/utils.h>
+#    include <assert.h>
+#    include <ctype.h>
+#    include <stdarg.h>
+#    include <stdio.h>
+#    include <stdlib.h>
+#    include <string.h>
+
+#    include <avsystem/commons/memory.h>
+#    include <avsystem/commons/utils.h>
 
 VISIBILITY_SOURCE_BEGIN
 
@@ -97,3 +99,5 @@ char *avs_strdup(const char *str) {
     memcpy(retval, str, len + 1);
     return retval;
 }
+
+#endif // WITH_AVS_UTILS

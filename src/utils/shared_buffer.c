@@ -18,14 +18,16 @@
 
 #include <avs_commons_config.h>
 
-#include <avsystem/commons/shared_buffer.h>
+#ifdef WITH_AVS_UTILS
 
-#define MODULE_NAME shared_buffer
-#include <x_log_config.h>
+#    include <avsystem/commons/shared_buffer.h>
+
+#    define MODULE_NAME shared_buffer
+#    include <x_log_config.h>
 
 VISIBILITY_SOURCE_BEGIN
 
-#ifndef NDEBUG
+#    ifndef NDEBUG
 
 uint8_t *_avs_shared_buffer_acquire(avs_shared_buffer_t *buf,
                                     const char *func,
@@ -49,4 +51,6 @@ uint8_t *_avs_shared_buffer_acquire(avs_shared_buffer_t *buf,
     return (uint8_t *) (uintptr_t) buf->data;
 }
 
-#endif
+#    endif // NDEBUG
+
+#endif // WITH_AVS_UTILS

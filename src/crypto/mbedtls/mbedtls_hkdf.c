@@ -16,12 +16,14 @@
 
 #include <avs_commons_config.h>
 
-#define MODULE_NAME avs_crypto_hkdf
-#include <x_log_config.h>
+#ifdef WITH_AVS_CRYPTO
 
-#include <avsystem/commons/hkdf.h>
+#    define MODULE_NAME avs_crypto_hkdf
+#    include <x_log_config.h>
 
-#include <mbedtls/hkdf.h>
+#    include <avsystem/commons/hkdf.h>
+
+#    include <mbedtls/hkdf.h>
 
 VISIBILITY_SOURCE_BEGIN
 
@@ -55,3 +57,5 @@ int avs_crypto_hkdf_sha_256(const unsigned char *salt,
     }
     return 0;
 }
+
+#endif // WITH_AVS_CRYPTO

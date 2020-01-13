@@ -16,22 +16,24 @@
 
 #include <avs_commons_config.h>
 
-#define MODULE_NAME mocksock
-#include <x_log_config.h>
+#ifdef WITH_AVS_UNIT
 
-#include <assert.h>
-#include <ctype.h>
-#include <stdio.h>
-#include <string.h>
+#    define MODULE_NAME mocksock
+#    include <x_log_config.h>
 
-#include <avsystem/commons/list.h>
-#include <avsystem/commons/memory.h>
-#include <avsystem/commons/net.h>
-#include <avsystem/commons/socket_v_table.h>
-#include <avsystem/commons/unit/mocksock.h>
-#include <avsystem/commons/unit/test.h>
+#    include <assert.h>
+#    include <ctype.h>
+#    include <stdio.h>
+#    include <string.h>
 
-#include "unit_test.h"
+#    include <avsystem/commons/list.h>
+#    include <avsystem/commons/memory.h>
+#    include <avsystem/commons/net.h>
+#    include <avsystem/commons/socket_v_table.h>
+#    include <avsystem/commons/unit/mocksock.h>
+#    include <avsystem/commons/unit/test.h>
+
+#    include "unit_test.h"
 
 VISIBILITY_SOURCE_BEGIN
 
@@ -1160,3 +1162,5 @@ void avs_unit_mocksock_enable_remote_port(avs_net_socket_t *socket_,
     socket->remote_port_enabled = true;
     socket->remote_port = remote_port;
 }
+
+#endif // WITH_AVS_UNIT

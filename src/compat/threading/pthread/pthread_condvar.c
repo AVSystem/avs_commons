@@ -16,23 +16,25 @@
 
 #include <avs_commons_posix_config.h>
 
-#define MODULE_NAME condvar_pthread
-#include <x_log_config.h>
+#ifdef WITH_AVS_COMPAT_THREADING_PTHREAD
 
-#include <avsystem/commons/condvar.h>
-#include <avsystem/commons/defs.h>
-#include <avsystem/commons/memory.h>
+#    define MODULE_NAME condvar_pthread
+#    include <x_log_config.h>
 
-#include <errno.h>
-#include <pthread.h>
+#    include <avsystem/commons/condvar.h>
+#    include <avsystem/commons/defs.h>
+#    include <avsystem/commons/memory.h>
 
-#include "pthread_structs.h"
+#    include <errno.h>
+#    include <pthread.h>
+
+#    include "pthread_structs.h"
 
 VISIBILITY_SOURCE_BEGIN
 
-#if defined(CLOCK_MONOTONIC) && defined(HAVE_PTHREAD_CONDATTR_SETCLOCK)
-#    define USE_CLOCK_MONOTONIC
-#endif
+#    if defined(CLOCK_MONOTONIC) && defined(HAVE_PTHREAD_CONDATTR_SETCLOCK)
+#        define USE_CLOCK_MONOTONIC
+#    endif
 
 int avs_condvar_create(avs_condvar_t **out_condvar) {
     AVS_ASSERT(!*out_condvar,
@@ -45,13 +47,13 @@ int avs_condvar_create(avs_condvar_t **out_condvar) {
 
     int result = 0;
     pthread_condattr_t *attr_ptr = NULL;
-#ifdef USE_CLOCK_MONOTONIC
+#    ifdef USE_CLOCK_MONOTONIC
     pthread_condattr_t attr;
     if (!(result = pthread_condattr_init(&attr))) {
         attr_ptr = &attr;
         result = pthread_condattr_setclock(&attr, CLOCK_MONOTONIC);
     }
-#endif // USE_CLOCK_MONOTONIC
+#    endif // USE_CLOCK_MONOTONIC
 
     if (!result) {
         result = pthread_cond_init(&(*out_condvar)->pthread_cond, attr_ptr);
@@ -82,15 +84,15 @@ static inline int as_timespec(struct timespec *out_result,
 
 static int convert_deadline(struct timespec *out_result,
                             avs_time_monotonic_t deadline) {
-#ifdef USE_CLOCK_MONOTONIC
+#    ifdef USE_CLOCK_MONOTONIC
     return as_timespec(out_result, deadline.since_monotonic_epoch);
-#else  // USE_CLOCK_MONOTONIC
+#    else  // USE_CLOCK_MONOTONIC
     return as_timespec(
             out_result,
             avs_time_duration_add(avs_time_real_now().since_real_epoch,
                                   avs_time_monotonic_diff(
                                           deadline, avs_time_monotonic_now())));
-#endif // USE_CLOCK_MONOTONIC
+#    endif // USE_CLOCK_MONOTONIC
 }
 
 int avs_condvar_wait(avs_condvar_t *condvar,
@@ -129,3 +131,5 @@ void avs_condvar_cleanup(avs_condvar_t **condvar) {
     avs_free(*condvar);
     *condvar = NULL;
 }
+
+#endif // WITH_AVS_COMPAT_THREADING_PTHREAD

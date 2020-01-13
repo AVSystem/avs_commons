@@ -16,15 +16,17 @@
 
 #include <avs_commons_config.h>
 
-#include <ctype.h>
-#include <string.h>
+#ifdef WITH_AVS_HTTP
 
-#include <avsystem/commons/memory.h>
-#include <avsystem/commons/utils.h>
+#    include <ctype.h>
+#    include <string.h>
 
-#include "auth.h"
-#include "http_log.h"
-#include "http_stream.h"
+#    include <avsystem/commons/memory.h>
+#    include <avsystem/commons/utils.h>
+
+#    include "auth.h"
+#    include "http_log.h"
+#    include "http_stream.h"
 
 VISIBILITY_SOURCE_BEGIN
 
@@ -204,3 +206,5 @@ void _avs_http_auth_clear(http_auth_t *auth) {
     avs_free(auth->credentials.password);
     auth->credentials.password = NULL;
 }
+
+#endif // WITH_AVS_HTTP

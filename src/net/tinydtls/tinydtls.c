@@ -16,20 +16,22 @@
 
 #include <avs_commons_config.h>
 
-#include <assert.h>
-#include <inttypes.h>
-#include <string.h>
+#ifdef WITH_AVS_NET
 
-#include <avsystem/commons/errno.h>
-#include <avsystem/commons/memory.h>
+#    include <assert.h>
+#    include <inttypes.h>
+#    include <string.h>
 
-#define uthash_malloc(Size) avs_malloc(Size)
-#define uthash_free(Ptr, Size) avs_free(Ptr)
+#    include <avsystem/commons/errno.h>
+#    include <avsystem/commons/memory.h>
 
-#include <tinydtls/dtls.h>
+#    define uthash_malloc(Size) avs_malloc(Size)
+#    define uthash_free(Ptr, Size) avs_free(Ptr)
 
-#include "../global.h"
-#include "../net_impl.h"
+#    include <tinydtls/dtls.h>
+
+#    include "../global.h"
+#    include "../net_impl.h"
 
 VISIBILITY_SOURCE_BEGIN
 
@@ -53,8 +55,8 @@ typedef struct {
     avs_net_owned_psk_t psk;
 } ssl_socket_t;
 
-#define NET_SSL_COMMON_INTERNALS
-#include "../ssl_common.h"
+#    define NET_SSL_COMMON_INTERNALS
+#    include "../ssl_common.h"
 
 avs_error_t _avs_net_initialize_global_ssl_state(void) {
     dtls_init();
@@ -171,9 +173,9 @@ static avs_error_t cleanup_ssl(avs_net_socket_t **socket_) {
     ssl_socket_t *socket = *(ssl_socket_t **) socket_;
     LOG(TRACE, _("cleanup_ssl(*socket=") "%p" _(")"), (void *) socket);
 
-#ifdef DTLS_PSK
+#    ifdef DTLS_PSK
     _avs_net_psk_cleanup(&socket->psk);
-#endif
+#    endif
     avs_error_t err = close_ssl(*socket_);
     add_err(&err, avs_net_socket_cleanup(&socket->backend_socket));
     avs_free(socket);
@@ -268,12 +270,12 @@ static avs_error_t configure_ssl_psk(ssl_socket_t *socket,
                                      const avs_net_psk_info_t *psk) {
     LOG(TRACE, _("configure_ssl_psk"));
 
-#ifndef DTLS_PSK
+#    ifndef DTLS_PSK
     LOG(ERROR, _("support for psk is disabled"));
     return avs_errno(AVS_ENOTSUP);
-#else
+#    else
     return _avs_net_psk_copy(&socket->psk, psk);
-#endif /* DTLS_PSK */
+#    endif /* DTLS_PSK */
 }
 
 static avs_error_t
@@ -345,7 +347,7 @@ static int dtls_read_handler(dtls_context_t *ctx,
     return 0;
 }
 
-#ifdef DTLS_PSK
+#    ifdef DTLS_PSK
 static int dtls_get_psk_info_handler(dtls_context_t *ctx,
                                      const session_t *session,
                                      dtls_credentials_type_t type,
@@ -394,9 +396,9 @@ static int dtls_get_psk_info_handler(dtls_context_t *ctx,
     }
     return dtls_alert_fatal_create(DTLS_ALERT_INTERNAL_ERROR);
 }
-#endif /* #ifdef DTLS_PSK */
+#    endif /* #ifdef DTLS_PSK */
 
-#ifdef DTLS_ECC
+#    ifdef DTLS_ECC
 static int dtls_get_ecdsa_key_handler(dtls_context_t *ctx,
                                       const session_t *session,
                                       const dtls_ecdsa_key_t **result) {
@@ -421,7 +423,7 @@ static int dtls_verify_ecdsa_key_handler(dtls_context_t *ctx,
     return -1;
 }
 
-#endif /* #ifdef DTLS_ECC */
+#    endif /* #ifdef DTLS_ECC */
 
 static int dtls_event_handler(dtls_context_t *ctx,
                               session_t *session,
@@ -468,16 +470,18 @@ initialize_ssl_socket(ssl_socket_t *socket,
         .write = dtls_write_handler,
         .read = dtls_read_handler,
         .event = dtls_event_handler,
-#ifdef DTLS_PSK
+#    ifdef DTLS_PSK
         .get_psk_info = dtls_get_psk_info_handler,
-#endif
+#    endif
 
-#ifdef DTLS_ECC
+#    ifdef DTLS_ECC
         .get_ecdsa_key = dtls_get_ecdsa_key_handler,
         .verify_ecdsa_key = dtls_verify_ecdsa_key_handler
-#endif
+#    endif
     };
     dtls_set_handler(socket->ctx, &handlers);
 
     return AVS_OK;
 }
+
+#endif // WITH_AVS_NET

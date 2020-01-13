@@ -17,55 +17,57 @@
 #define AVS_SUPPRESS_POISONING
 #include <avs_commons_config.h>
 
+#ifdef WITH_AVS_NET
+
 // this uses some symbols such as "printf" - include it before poisoning them
-#include <mbedtls/platform.h>
+#    include <mbedtls/platform.h>
 
-#include <avs_commons_poison.h>
+#    include <avs_commons_poison.h>
 
-#include <assert.h>
-#include <errno.h>
-#include <inttypes.h>
-#include <string.h>
+#    include <assert.h>
+#    include <errno.h>
+#    include <inttypes.h>
+#    include <string.h>
 
-#if !defined(__STDC_VERSION__) || (__STDC_VERSION__ < 199901L)
-#    define inline
-#endif
+#    if !defined(__STDC_VERSION__) || (__STDC_VERSION__ < 199901L)
+#        define inline
+#    endif
 
-#include <mbedtls/ctr_drbg.h>
-#include <mbedtls/entropy.h>
-#include <mbedtls/platform.h>
-#include <mbedtls/version.h>
-#if MBEDTLS_VERSION_NUMBER >= 0x02040000 // mbed TLS 2.4 deprecated net.h
-#    include <mbedtls/net_sockets.h>
-#else // support mbed TLS <=2.3
-#    include <mbedtls/net.h>
-#endif
-#include <mbedtls/ssl.h>
-#include <mbedtls/timing.h>
-#ifdef WITH_MBEDTLS_LOGS
-#    include <mbedtls/debug.h>
-#endif // WITH_MBEDTLS_LOGS
+#    include <mbedtls/ctr_drbg.h>
+#    include <mbedtls/entropy.h>
+#    include <mbedtls/platform.h>
+#    include <mbedtls/version.h>
+#    if MBEDTLS_VERSION_NUMBER >= 0x02040000 // mbed TLS 2.4 deprecated net.h
+#        include <mbedtls/net_sockets.h>
+#    else // support mbed TLS <=2.3
+#        include <mbedtls/net.h>
+#    endif
+#    include <mbedtls/ssl.h>
+#    include <mbedtls/timing.h>
+#    ifdef WITH_MBEDTLS_LOGS
+#        include <mbedtls/debug.h>
+#    endif // WITH_MBEDTLS_LOGS
 
-#include <avsystem/commons/errno_map.h>
-#include <avsystem/commons/memory.h>
-#include <avsystem/commons/utils.h>
+#    include <avsystem/commons/errno_map.h>
+#    include <avsystem/commons/memory.h>
+#    include <avsystem/commons/utils.h>
 
-#include "../global.h"
-#include "../net_impl.h"
-#ifdef WITH_X509
-#    include "mbedtls_data_loader.h"
-#endif // WITH_X509
-#include "mbedtls_persistence.h"
+#    include "../global.h"
+#    include "../net_impl.h"
+#    ifdef WITH_X509
+#        include "mbedtls_data_loader.h"
+#    endif // WITH_X509
+#    include "mbedtls_persistence.h"
 
 VISIBILITY_SOURCE_BEGIN
 
-#ifdef WITH_X509
+#    ifdef WITH_X509
 typedef struct {
     mbedtls_x509_crt *ca_cert;
     mbedtls_x509_crt *client_cert;
     mbedtls_pk_context *client_key;
 } ssl_socket_certs_t;
-#endif // WITH_X509
+#    endif // WITH_X509
 
 typedef struct {
     const avs_net_socket_v_table_t *const operations;
@@ -75,18 +77,18 @@ typedef struct {
     } flags;
     mbedtls_ssl_context context;
     mbedtls_ssl_config config;
-#ifdef WITH_TLS_SESSION_PERSISTENCE
+#    ifdef WITH_TLS_SESSION_PERSISTENCE
     void *session_resumption_buffer;
     size_t session_resumption_buffer_size;
-#endif // WITH_TLS_SESSION_PERSISTENCE
+#    endif // WITH_TLS_SESSION_PERSISTENCE
     avs_net_security_mode_t security_mode;
     union {
-#ifdef WITH_X509
+#    ifdef WITH_X509
         ssl_socket_certs_t cert;
-#endif // WITH_X509
-#ifdef WITH_PSK
+#    endif // WITH_X509
+#    ifdef WITH_PSK
         avs_net_owned_psk_t psk;
-#endif // WITH_PSK
+#    endif // WITH_PSK
     } security;
     mbedtls_timing_delay_context timer;
     avs_net_socket_type_t backend_type;
@@ -114,7 +116,7 @@ static mbedtls_ssl_context *get_context(ssl_socket_t *socket) {
     return &socket->context;
 }
 
-#ifdef WITH_MBEDTLS_LOGS
+#    ifdef WITH_MBEDTLS_LOGS
 static void debug_mbedtls(
         void *ctx, int level, const char *file, int line, const char *str) {
     (void) ctx;
@@ -130,10 +132,10 @@ static void debug_mbedtls(
     avs_log_internal_l__(AVS_LOG_TRACE, "mbedtls", file, (unsigned) line, "%s",
                          msg);
 }
-#endif // WITH_MBEDTLS_LOGS
+#    endif // WITH_MBEDTLS_LOGS
 
-#define NET_SSL_COMMON_INTERNALS
-#include "../ssl_common.h"
+#    define NET_SSL_COMMON_INTERNALS
+#    include "../ssl_common.h"
 
 static avs_error_t return_alert_if_any(ssl_socket_t *socket) {
     mbedtls_ssl_context *context = get_context(socket);
@@ -159,9 +161,9 @@ void _avs_net_cleanup_global_ssl_state(void) {
 avs_error_t _avs_net_initialize_global_ssl_state(void) {
     avs_error_t err = AVS_OK;
     mbedtls_entropy_init(&AVS_SSL_GLOBAL.entropy);
-#ifdef AVS_COMMONS_WITH_MBEDTLS_CUSTOM_ENTROPY_INITIALIZER
+#    ifdef AVS_COMMONS_WITH_MBEDTLS_CUSTOM_ENTROPY_INITIALIZER
     err = avs_net_mbedtls_entropy_init(&AVS_SSL_GLOBAL.entropy);
-#endif // AVS_COMMONS_WITH_MBEDTLS_CUSTOM_ENTROPY_INITIALIZER
+#    endif // AVS_COMMONS_WITH_MBEDTLS_CUSTOM_ENTROPY_INITIALIZER
     if (avs_is_err(err)) {
         LOG(ERROR, _("custom entropy initializer failed"));
     } else {
@@ -296,7 +298,7 @@ static int set_min_ssl_version(mbedtls_ssl_config *config,
     }
 }
 
-#if defined(WITH_X509) || defined(WITH_PSK)
+#    if defined(WITH_X509) || defined(WITH_PSK)
 static bool
 contains_cipher(const avs_net_socket_tls_ciphersuites_t *enabled_ciphers,
                 int cipher) {
@@ -311,9 +313,9 @@ contains_cipher(const avs_net_socket_tls_ciphersuites_t *enabled_ciphers,
         return false;
     }
 }
-#endif // defined(WITH_X509) || defined(WITH_PSK)
+#    endif // defined(WITH_X509) || defined(WITH_PSK)
 
-#ifdef WITH_X509
+#    ifdef WITH_X509
 static int *init_cert_ciphersuites(
         const avs_net_socket_tls_ciphersuites_t *enabled_ciphers) {
     const int *all_ciphers = mbedtls_ssl_list_ciphersuites();
@@ -373,12 +375,12 @@ static avs_error_t initialize_cert_security(
                                   socket->effective_ciphersuites);
     return AVS_OK;
 }
-#else // WITH_X509
-#    define is_verification_enabled(...) 0
-#    define initialize_cert_security(...) avs_errno(AVS_ENOTSUP)
-#endif // WITH_X509
+#    else // WITH_X509
+#        define is_verification_enabled(...) 0
+#        define initialize_cert_security(...) avs_errno(AVS_ENOTSUP)
+#    endif // WITH_X509
 
-#ifdef WITH_PSK
+#    ifdef WITH_PSK
 static int *init_psk_ciphersuites(
         const avs_net_socket_tls_ciphersuites_t *enabled_ciphers) {
     const int *all_ciphers = mbedtls_ssl_list_ciphersuites();
@@ -433,10 +435,10 @@ static avs_error_t initialize_psk_security(
                                   socket->effective_ciphersuites);
     return AVS_OK;
 }
-#else // WITH_PSK
-#    define initialize_psk_security(...) \
-        (LOG(ERROR, _("PSK support disabled")), avs_errno(AVS_ENOTSUP))
-#endif // WITH_PSK
+#    else // WITH_PSK
+#        define initialize_psk_security(...) \
+            (LOG(ERROR, _("PSK support disabled")), avs_errno(AVS_ENOTSUP))
+#    endif // WITH_PSK
 
 static int transport_for_socket_type(avs_net_socket_type_t backend_type) {
     switch (backend_type) {
@@ -473,11 +475,11 @@ configure_ssl(ssl_socket_t *socket,
         return avs_errno(AVS_ENOTSUP);
     }
 
-#ifdef WITH_MBEDTLS_LOGS
+#    ifdef WITH_MBEDTLS_LOGS
     // most verbose logs available
     mbedtls_debug_set_threshold(4);
     mbedtls_ssl_conf_dbg(&socket->config, debug_mbedtls, NULL);
-#endif // WITH_MBEDTLS_LOGS
+#    endif // WITH_MBEDTLS_LOGS
 
     if (set_min_ssl_version(&socket->config, configuration->version)) {
         LOG(ERROR, _("Could not set minimum SSL version"));
@@ -506,12 +508,12 @@ configure_ssl(ssl_socket_t *socket,
 
     if (configuration->session_resumption_buffer_size > 0) {
         assert(configuration->session_resumption_buffer);
-#ifdef WITH_TLS_SESSION_PERSISTENCE
+#    ifdef WITH_TLS_SESSION_PERSISTENCE
         socket->session_resumption_buffer =
                 configuration->session_resumption_buffer;
         socket->session_resumption_buffer_size =
                 configuration->session_resumption_buffer_size;
-#endif // WITH_TLS_SESSION_PERSISTENCE
+#    endif // WITH_TLS_SESSION_PERSISTENCE
     }
 
     if (configuration->server_name_indication) {
@@ -527,7 +529,7 @@ configure_ssl(ssl_socket_t *socket,
     }
     socket->use_connection_id = configuration->use_connection_id;
 
-#if defined(MBEDTLS_SSL_DTLS_CONNECTION_ID)
+#    if defined(MBEDTLS_SSL_DTLS_CONNECTION_ID)
     if (socket->use_connection_id
             && transport_for_socket_type(socket->backend_type)
                            == MBEDTLS_SSL_TRANSPORT_DATAGRAM
@@ -536,7 +538,7 @@ configure_ssl(ssl_socket_t *socket,
         LOG(ERROR, _("cannot configure CID"));
         return avs_errno(AVS_ENOTSUP);
     }
-#endif // MBEDTLS_SSL_DTLS_CONNECTION_ID
+#    endif // MBEDTLS_SSL_DTLS_CONNECTION_ID
 
     avs_error_t err;
     switch (socket->security_mode) {
@@ -574,16 +576,16 @@ static avs_error_t update_ssl_endpoint_config(ssl_socket_t *socket) {
     }
     if (state_opt.state == AVS_NET_SOCKET_STATE_CONNECTED) {
         mbedtls_ssl_conf_endpoint(&socket->config, MBEDTLS_SSL_IS_CLIENT);
-#ifdef MBEDTLS_SSL_SESSION_TICKETS
+#    ifdef MBEDTLS_SSL_SESSION_TICKETS
         mbedtls_ssl_conf_session_tickets(&socket->config,
                                          MBEDTLS_SSL_SESSION_TICKETS_ENABLED);
-#endif // MBEDTLS_SSL_SESSION_TICKETS
+#    endif // MBEDTLS_SSL_SESSION_TICKETS
     } else if (state_opt.state == AVS_NET_SOCKET_STATE_ACCEPTED) {
         mbedtls_ssl_conf_endpoint(&socket->config, MBEDTLS_SSL_IS_SERVER);
-#ifdef MBEDTLS_SSL_SESSION_TICKETS
+#    ifdef MBEDTLS_SSL_SESSION_TICKETS
         mbedtls_ssl_conf_session_tickets(&socket->config,
                                          MBEDTLS_SSL_SESSION_TICKETS_DISABLED);
-#endif // MBEDTLS_SSL_SESSION_TICKETS
+#    endif // MBEDTLS_SSL_SESSION_TICKETS
     } else {
         LOG(ERROR, _("initialize_ssl_config: invalid socket state"));
         return avs_errno(AVS_EINVAL);
@@ -592,7 +594,7 @@ static avs_error_t update_ssl_endpoint_config(ssl_socket_t *socket) {
     return AVS_OK;
 }
 
-#ifdef WITH_TLS_SESSION_PERSISTENCE
+#    ifdef WITH_TLS_SESSION_PERSISTENCE
 static bool sessions_equal(const mbedtls_ssl_session *left,
                            const mbedtls_ssl_session *right) {
     if (!left && !right) {
@@ -600,15 +602,15 @@ static bool sessions_equal(const mbedtls_ssl_session *left,
     }
     return left && right && left->ciphersuite == right->ciphersuite
            && left->compression == right->compression
-#    ifdef MBEDTLS_HAVE_TIME
+#        ifdef MBEDTLS_HAVE_TIME
            && left->start == right->start
-#    endif // MBEDTLS_HAVE_TIME
+#        endif // MBEDTLS_HAVE_TIME
            && left->id_len == right->id_len
            && memcmp(left->id, right->id, left->id_len) == 0;
 }
-#else // WITH_TLS_SESSION_PERSISTENCE
-#    define sessions_equal(left, right) false
-#endif // WITH_TLS_SESSION_PERSISTENCE
+#    else // WITH_TLS_SESSION_PERSISTENCE
+#        define sessions_equal(left, right) false
+#    endif // WITH_TLS_SESSION_PERSISTENCE
 
 static avs_error_t start_ssl(ssl_socket_t *socket, const char *host) {
     int result;
@@ -620,10 +622,10 @@ static avs_error_t start_ssl(ssl_socket_t *socket, const char *host) {
     assert(!socket->flags.context_valid);
 
     bool restore_session = false;
-#ifdef WITH_TLS_SESSION_PERSISTENCE
+#    ifdef WITH_TLS_SESSION_PERSISTENCE
     mbedtls_ssl_session restored_session;
     mbedtls_ssl_session_init(&restored_session);
-#endif // WITH_TLS_SESSION_PERSISTENCE
+#    endif // WITH_TLS_SESSION_PERSISTENCE
 
     mbedtls_ssl_init(&socket->context);
     socket->flags.context_valid = true;
@@ -638,7 +640,7 @@ static avs_error_t start_ssl(ssl_socket_t *socket, const char *host) {
         err = avs_errno(AVS_ENOMEM);
         goto finish;
     }
-#if defined(MBEDTLS_SSL_DTLS_CONNECTION_ID)
+#    if defined(MBEDTLS_SSL_DTLS_CONNECTION_ID)
     // This may seem a bit odd, but the CID draft says:
     //
     // > 3.  The "connection_id" Extension
@@ -658,9 +660,9 @@ static avs_error_t start_ssl(ssl_socket_t *socket, const char *host) {
         err = avs_errno(AVS_EIO);
         goto finish;
     }
-#endif // MBEDTLS_SSL_DTLS_CONNECTION_ID
+#    endif // MBEDTLS_SSL_DTLS_CONNECTION_ID
 
-#ifdef WITH_X509
+#    ifdef WITH_X509
     if ((result = mbedtls_ssl_set_hostname(
                  get_context(socket),
                  socket->server_name_indication[0]
@@ -671,11 +673,11 @@ static avs_error_t start_ssl(ssl_socket_t *socket, const char *host) {
                                                                : AVS_EINVAL);
         goto finish;
     }
-#else
+#    else
     (void) host;
-#endif // WITH_X509
+#    endif // WITH_X509
 
-#ifdef WITH_TLS_SESSION_PERSISTENCE
+#    ifdef WITH_TLS_SESSION_PERSISTENCE
     if (socket->session_resumption_buffer
             && socket->config.endpoint == MBEDTLS_SSL_IS_CLIENT) {
         if (avs_is_err(_avs_net_mbedtls_session_restore(
@@ -693,7 +695,7 @@ static avs_error_t start_ssl(ssl_socket_t *socket, const char *host) {
             restore_session = true;
         }
     }
-#endif // WITH_TLS_SESSION_PERSISTENCE
+#    endif // WITH_TLS_SESSION_PERSISTENCE
 
     socket->bio_error = AVS_OK;
     do {
@@ -702,7 +704,7 @@ static avs_error_t start_ssl(ssl_socket_t *socket, const char *host) {
              || result == MBEDTLS_ERR_SSL_WANT_WRITE);
 
     if (result == 0) {
-#if defined(MBEDTLS_SSL_DTLS_CONNECTION_ID)
+#    if defined(MBEDTLS_SSL_DTLS_CONNECTION_ID)
         if (socket->use_connection_id) {
             unsigned char peer_cid[MBEDTLS_SSL_CID_OUT_LEN_MAX];
             size_t peer_cid_len = 0;
@@ -716,8 +718,8 @@ static avs_error_t start_ssl(ssl_socket_t *socket, const char *host) {
                 LOG(DEBUG, _("negotiated CID = ") "%s", peer_cid_hex);
             }
         }
-#endif // MBEDTLS_SSL_DTLS_CONNECTION_ID
-#ifdef WITH_TLS_SESSION_PERSISTENCE
+#    endif // MBEDTLS_SSL_DTLS_CONNECTION_ID
+#    ifdef WITH_TLS_SESSION_PERSISTENCE
         if (socket->session_resumption_buffer
                 && socket->config.endpoint == MBEDTLS_SSL_IS_CLIENT) {
             // We rely on session renegotation being disabled in
@@ -727,7 +729,7 @@ static avs_error_t start_ssl(ssl_socket_t *socket, const char *host) {
                     socket->session_resumption_buffer,
                     socket->session_resumption_buffer_size);
         }
-#endif // WITH_TLS_SESSION_PERSISTENCE
+#    endif // WITH_TLS_SESSION_PERSISTENCE
         if ((socket->flags.session_restored =
                      (restore_session
                       && sessions_equal(get_context(socket)->session,
@@ -759,9 +761,9 @@ static avs_error_t start_ssl(ssl_socket_t *socket, const char *host) {
         }
     }
 finish:
-#ifdef WITH_TLS_SESSION_PERSISTENCE
+#    ifdef WITH_TLS_SESSION_PERSISTENCE
     mbedtls_ssl_session_free(&restored_session);
-#endif // WITH_TLS_SESSION_PERSISTENCE
+#    endif // WITH_TLS_SESSION_PERSISTENCE
     if (avs_is_err(err)) {
         mbedtls_ssl_free(get_context(socket));
         socket->flags.context_valid = false;
@@ -888,7 +890,7 @@ static avs_error_t receive_ssl(avs_net_socket_t *socket_,
     return AVS_OK;
 }
 
-#ifdef WITH_X509
+#    ifdef WITH_X509
 static void cleanup_security_cert(ssl_socket_certs_t *certs) {
     if (certs->ca_cert) {
         mbedtls_x509_crt_free(certs->ca_cert);
@@ -903,15 +905,15 @@ static void cleanup_security_cert(ssl_socket_certs_t *certs) {
         avs_free(certs->client_key);
     }
 }
-#else // WITH_X509
-#    define cleanup_security_cert(...) (void) 0
-#endif // WITH_X509
+#    else // WITH_X509
+#        define cleanup_security_cert(...) (void) 0
+#    endif // WITH_X509
 
-#ifdef WITH_PSK
-#    define cleanup_security_psk _avs_net_psk_cleanup
-#else // WITH_PSK
-#    define cleanup_security_psk(...) (void) 0
-#endif // WITH_PSK
+#    ifdef WITH_PSK
+#        define cleanup_security_psk _avs_net_psk_cleanup
+#    else // WITH_PSK
+#        define cleanup_security_psk(...) (void) 0
+#    endif // WITH_PSK
 
 static avs_error_t cleanup_ssl(avs_net_socket_t **socket_) {
     ssl_socket_t **socket = (ssl_socket_t **) socket_;
@@ -930,13 +932,13 @@ static avs_error_t cleanup_ssl(avs_net_socket_t **socket_) {
     }
     avs_free((*socket)->effective_ciphersuites);
 
-#ifdef WITH_PSK
+#    ifdef WITH_PSK
     /* Detach the uncopied PSK values */
     (*socket)->config.psk = NULL;
     (*socket)->config.psk_len = 0;
     (*socket)->config.psk_identity = NULL;
     (*socket)->config.psk_identity_len = 0;
-#endif // WITH_PSK
+#    endif // WITH_PSK
     mbedtls_ssl_config_free(&(*socket)->config);
 
     avs_free(*socket);
@@ -944,7 +946,7 @@ static avs_error_t cleanup_ssl(avs_net_socket_t **socket_) {
     return AVS_OK;
 }
 
-#ifdef WITH_X509
+#    ifdef WITH_X509
 static avs_error_t
 configure_ssl_certs(ssl_socket_certs_t *certs,
                     const avs_net_certificate_info_t *cert_info) {
@@ -982,21 +984,21 @@ configure_ssl_certs(ssl_socket_certs_t *certs,
     return AVS_OK;
 }
 
-#else // WITH_X509
-#    define configure_ssl_certs(...) \
-        (LOG(ERROR, _("X.509 support disabled")), avs_errno(AVS_ENOTSUP))
-#endif // WITH_X509
+#    else // WITH_X509
+#        define configure_ssl_certs(...) \
+            (LOG(ERROR, _("X.509 support disabled")), avs_errno(AVS_ENOTSUP))
+#    endif // WITH_X509
 
-#ifdef WITH_PSK
+#    ifdef WITH_PSK
 static avs_error_t configure_ssl_psk(ssl_socket_t *socket,
                                      const avs_net_psk_info_t *psk) {
     LOG(TRACE, _("configure_ssl_psk"));
     return _avs_net_psk_copy(&socket->security.psk, psk);
 }
-#else // WITH_PSK
-#    define configure_ssl_psk(...) \
-        (LOG(ERROR, _("PSK support disabled")), avs_errno(AVS_ENOTSUP))
-#endif // WITH_PSK
+#    else // WITH_PSK
+#        define configure_ssl_psk(...) \
+            (LOG(ERROR, _("PSK support disabled")), avs_errno(AVS_ENOTSUP))
+#    endif // WITH_PSK
 
 static avs_error_t
 initialize_ssl_socket(ssl_socket_t *socket,
@@ -1025,3 +1027,5 @@ initialize_ssl_socket(ssl_socket_t *socket,
 
     return avs_is_ok(err) ? configure_ssl(socket, configuration) : err;
 }
+
+#endif // WITH_AVS_NET

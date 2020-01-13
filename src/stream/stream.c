@@ -16,21 +16,23 @@
 
 #include <avs_commons_config.h>
 
-#include <assert.h>
-#include <stdarg.h>
-#include <stdbool.h>
-#include <stdlib.h>
-#include <string.h>
+#ifdef WITH_AVS_STREAM
 
-#include <limits.h>
+#    include <assert.h>
+#    include <stdarg.h>
+#    include <stdbool.h>
+#    include <stdlib.h>
+#    include <string.h>
 
-#include <avsystem/commons/errno.h>
-#include <avsystem/commons/memory.h>
-#include <avsystem/commons/stream.h>
-#include <avsystem/commons/stream_v_table.h>
+#    include <limits.h>
 
-#define MODULE_NAME avs_stream
-#include <x_log_config.h>
+#    include <avsystem/commons/errno.h>
+#    include <avsystem/commons/memory.h>
+#    include <avsystem/commons/stream.h>
+#    include <avsystem/commons/stream_v_table.h>
+
+#    define MODULE_NAME avs_stream
+#    include <x_log_config.h>
 
 VISIBILITY_SOURCE_BEGIN
 
@@ -150,9 +152,9 @@ static avs_error_t try_heap_write_fv(avs_stream_t *stream,
     return err;
 }
 
-#ifndef va_copy
-#    define va_copy(dest, src) ((dest) = (src))
-#endif
+#    ifndef va_copy
+#        define va_copy(dest, src) ((dest) = (src))
+#    endif
 
 avs_error_t
 avs_stream_write_fv(avs_stream_t *stream, const char *msg, va_list args) {
@@ -439,3 +441,5 @@ size_t avs_stream_nonblock_write_ready(avs_stream_t *stream) {
         return 0;
     }
 }
+
+#endif // WITH_AVS_STREAM

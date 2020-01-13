@@ -16,16 +16,18 @@
 
 #include <avs_commons_config.h>
 
-#define MODULE_NAME mutex_pthread
-#include <x_log_config.h>
+#ifdef WITH_AVS_COMPAT_THREADING_PTHREAD
 
-#include <avsystem/commons/defs.h>
-#include <avsystem/commons/memory.h>
-#include <avsystem/commons/mutex.h>
+#    define MODULE_NAME mutex_pthread
+#    include <x_log_config.h>
 
-#include <pthread.h>
+#    include <avsystem/commons/defs.h>
+#    include <avsystem/commons/memory.h>
+#    include <avsystem/commons/mutex.h>
 
-#include "pthread_structs.h"
+#    include <pthread.h>
+
+#    include "pthread_structs.h"
 
 VISIBILITY_SOURCE_BEGIN
 
@@ -70,3 +72,5 @@ void avs_mutex_cleanup(avs_mutex_t **mutex) {
     avs_free(*mutex);
     *mutex = NULL;
 }
+
+#endif // WITH_AVS_COMPAT_THREADING_PTHREAD

@@ -16,22 +16,24 @@
 
 #include <avs_commons_config.h>
 
-#include <assert.h>
-#include <inttypes.h>
-#include <math.h>
+#ifdef WITH_AVS_UTILS
 
-#include <avsystem/commons/time.h>
-#include <avsystem/commons/utils.h>
+#    include <assert.h>
+#    include <inttypes.h>
+#    include <math.h>
+
+#    include <avsystem/commons/time.h>
+#    include <avsystem/commons/utils.h>
 
 VISIBILITY_SOURCE_BEGIN
 
-#define NS_IN_S INT32_C(1000000000)
+#    define NS_IN_S INT32_C(1000000000)
 
-#define AVS_TIME_INVALID_DECL \
-    {                         \
-        .seconds = 0,         \
-        .nanoseconds = -1     \
-    }
+#    define AVS_TIME_INVALID_DECL \
+        {                         \
+            .seconds = 0,         \
+            .nanoseconds = -1     \
+        }
 
 const avs_time_real_t AVS_TIME_REAL_INVALID = {
     .since_real_epoch = AVS_TIME_INVALID_DECL
@@ -63,11 +65,11 @@ bool avs_time_duration_valid(avs_time_duration_t t) {
     return (t.nanoseconds >= 0 && t.nanoseconds < NS_IN_S);
 }
 
-#ifdef HAVE_BUILTIN_ADD_OVERFLOW
+#    ifdef HAVE_BUILTIN_ADD_OVERFLOW
 static inline int safe_add_int64_t(int64_t *out, int64_t a, int64_t b) {
     return __builtin_add_overflow(a, b, out) ? -1 : 0;
 }
-#else  // HAVE_BUILTIN_ADD_OVERFLOW
+#    else  // HAVE_BUILTIN_ADD_OVERFLOW
 static int safe_add_int64_t(int64_t *out, int64_t a, int64_t b) {
     if (a > 0 && b > 0) {
         uint64_t result = ((uint64_t) a) + ((uint64_t) b);
@@ -90,19 +92,19 @@ static int safe_add_int64_t(int64_t *out, int64_t a, int64_t b) {
     }
     return 0;
 }
-#endif // HAVE_BUILTIN_ADD_OVERFLOW
+#    endif // HAVE_BUILTIN_ADD_OVERFLOW
 
 static inline int safe_add_double(double *out, double a, double b) {
     *out = a + b;
     return isfinite(*out) ? 0 : -1;
 }
 
-#ifdef HAVE_BUILTIN_MUL_OVERFLOW
+#    ifdef HAVE_BUILTIN_MUL_OVERFLOW
 static inline int
 safe_mul_int64_t(int64_t *out, int64_t input, int64_t multiplier) {
     return __builtin_mul_overflow(input, multiplier, out) ? -1 : 0;
 }
-#else  // HAVE_BUILTIN_MUL_OVERFLOW
+#    else  // HAVE_BUILTIN_MUL_OVERFLOW
 static int safe_mul_int64_t(int64_t *out, int64_t input, int64_t multiplier) {
     if (input == 0 || multiplier == 0) {
         *out = 0;
@@ -124,7 +126,7 @@ static int safe_mul_int64_t(int64_t *out, int64_t input, int64_t multiplier) {
         return 0;
     }
 }
-#endif // HAVE_BUILTIN_MUL_OVERFLOW
+#    endif // HAVE_BUILTIN_MUL_OVERFLOW
 
 static inline int
 safe_mul_double(double *out, double input, double multiplier) {
@@ -269,16 +271,16 @@ static int unit_conv_backward_int64_t_double(int64_t *output,
 // unit_conv_backward_int64_t_int64_t
 // time_conv_forward_int64_t
 // time_conv_backward_int64_t
-#define SCALAR_TYPE int64_t
-#include "x_time_conv.h"
+#    define SCALAR_TYPE int64_t
+#    include "x_time_conv.h"
 
 // unit_conv_double_int64_t
 // unit_conv_forward_double_int64_t
 // unit_conv_backward_double_int64_t
 // time_conv_forward_double
 // time_conv_backward_double
-#define SCALAR_TYPE double
-#include "x_time_conv.h"
+#    define SCALAR_TYPE double
+#    include "x_time_conv.h"
 
 static bool unit_valid(avs_time_unit_t unit) {
     /* Some compilers implement avs_time_unit_t as unsigned int, causing
@@ -448,6 +450,8 @@ const char *avs_time_duration_as_string_impl__(
     return *buf;
 }
 
-#ifdef AVS_UNIT_TESTING
-#    include "tests/utils/time.c"
-#endif // AVS_UNIT_TESTING
+#    ifdef AVS_UNIT_TESTING
+#        include "tests/utils/time.c"
+#    endif // AVS_UNIT_TESTING
+
+#endif // WITH_AVS_UTILS

@@ -16,21 +16,23 @@
 
 #include <avs_commons_config.h>
 
-#include <avsystem/commons/memory.h>
-#include <avsystem/commons/stream_v_table.h>
+#ifdef WITH_AVS_HTTP
 
-#include "zlib.h"
+#    include <avsystem/commons/memory.h>
+#    include <avsystem/commons/stream_v_table.h>
 
-#include "client.h"
-#include "content_encoding.h"
-#include "http_log.h"
+#    include "zlib.h"
+
+#    include "client.h"
+#    include "content_encoding.h"
+#    include "http_log.h"
 
 VISIBILITY_SOURCE_BEGIN
 
-#define HTTP_CONTENT_CODING_OUT_BUF_FACTOR 1.2
-#define HTTP_CONTENT_CODING_OUT_BUF_SIZE(BufferSizes) \
-    ((size_t) (HTTP_CONTENT_CODING_OUT_BUF_FACTOR     \
-               * (double) (BufferSizes)->content_coding_input))
+#    define HTTP_CONTENT_CODING_OUT_BUF_FACTOR 1.2
+#    define HTTP_CONTENT_CODING_OUT_BUF_SIZE(BufferSizes) \
+        ((size_t) (HTTP_CONTENT_CODING_OUT_BUF_FACTOR     \
+                   * (double) (BufferSizes)->content_coding_input))
 
 typedef struct {
     const avs_stream_v_table_t *const vtable;
@@ -246,3 +248,5 @@ int _avs_http_encoding_init(http_stream_t *stream) {
             HTTP_CONTENT_CODING_OUT_BUF_SIZE(&stream->http->buffer_sizes));
     return stream->encoder ? 0 : -1;
 }
+
+#endif // WITH_AVS_HTTP

@@ -16,10 +16,12 @@
 
 #include <avs_commons_config.h>
 
-#include <assert.h>
-#include <limits.h>
+#ifdef WITH_AVS_UTILS
 
-#include <avsystem/commons/utils.h>
+#    include <assert.h>
+#    include <limits.h>
+
+#    include <avsystem/commons/utils.h>
 
 VISIBILITY_SOURCE_BEGIN
 
@@ -89,6 +91,8 @@ ssize_t avs_unhexlify(uint8_t *output,
     return (ssize_t) bytes_written;
 }
 
-#ifdef AVS_UNIT_TESTING
-#    include "tests/utils/hexlify.c"
-#endif // AVS_UNIT_TESTING
+#    ifdef AVS_UNIT_TESTING
+#        include "tests/utils/hexlify.c"
+#    endif // AVS_UNIT_TESTING
+
+#endif // WITH_AVS_UTILS
