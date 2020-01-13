@@ -22,6 +22,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include <avsystem/commons/avs_commons_public_config.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -31,21 +33,6 @@ extern "C" {
  *
  * Global common definitions.
  */
-
-/** Is the library compiled with IPv4 support? */
-#cmakedefine AVS_COMMONS_WITH_IPV4
-/** Is the library compiled with IPv6 support? */
-#cmakedefine AVS_COMMONS_WITH_IPV6
-/** Is the library compiled to use custom mbed TLS entropy initializer? */
-#cmakedefine AVS_COMMONS_WITH_MBEDTLS_CUSTOM_ENTROPY_INITIALIZER
-/** Is the library compiled with micro logs feature? */
-#cmakedefine WITH_AVS_MICRO_LOGS
-/** Is net/if.h available in the system? */
-#cmakedefine AVS_COMMONS_HAVE_NET_IF_H
-/** Is sys/types.h available in the system? */
-#cmakedefine AVS_COMMONS_HAVE_SYS_TYPES_H
-/** Is the library compiled with GCC symbol poisoning support? */
-#cmakedefine AVS_COMMONS_WITH_POISONING
 
 #ifdef AVS_COMMONS_WITH_IPV6
 #    define AVS_ADDRSTRLEN \

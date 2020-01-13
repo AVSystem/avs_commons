@@ -548,8 +548,8 @@ set(AVS_COMMONS_WITH_MBEDTLS_CUSTOM_ENTROPY_INITIALIZER "${WITH_MBEDTLS_CUSTOM_E
 
 configure_file("config/avs_commons_config.h.in" "config/avs_commons_config.h")
 configure_file("config/avs_commons_posix_config.h.in" "config/avs_commons_posix_config.h")
-configure_file("include_public/avsystem/commons/defs.h.in"
-               "include_public/avsystem/commons/defs.h")
+configure_file("include_public/avsystem/commons/avs_commons_public_config.h.in"
+               "include_public/avsystem/commons/avs_commons_public_config.h")
 
 get_property(LIBRARY_FIND_ROUTINES GLOBAL PROPERTY AVS_LIBRARY_FIND_ROUTINES)
 configure_file(avs_commons-config.cmake.in avs_commons-config.cmake @ONLY)
