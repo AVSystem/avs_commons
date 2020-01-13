@@ -121,7 +121,7 @@ char *strdup(const char *s);
 #    include <arpa/inet.h>
 #endif
 
-#if defined(HAVE_IF_NAMESIZE) && defined(HAVE_NET_IF_H)
+#if defined(HAVE_IF_NAMESIZE) && defined(AVS_COMMONS_HAVE_NET_IF_H)
 #    include <net/if.h>
 #else
 #    define IF_NAMESIZE 16

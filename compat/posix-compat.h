@@ -25,7 +25,7 @@
  * to compile avs_commons library.
  */
 
-#if defined(HAVE_SSIZE_T) && defined(HAVE_SYS_TYPES_H)
+#if defined(HAVE_SSIZE_T) && defined(AVS_COMMONS_HAVE_SYS_TYPES_H)
 #    include <sys/types.h>
 #else
 typedef ptrdiff_t ssize_t;
@@ -159,7 +159,7 @@ char *strdup(const char *s);
 #    include <arpa/inet.h>
 #endif
 
-#if defined(HAVE_IF_NAMESIZE) && defined(HAVE_NET_IF_H)
+#if defined(HAVE_IF_NAMESIZE) && defined(AVS_COMMONS_HAVE_NET_IF_H)
 #    include <net/if.h>
 #else
 #    define IF_NAMESIZE 16
