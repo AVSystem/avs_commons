@@ -6,3 +6,63 @@
    fun:gaih_inet*
    fun:getaddrinfo
 }
+{
+   libcrypto-value
+   Memcheck:Value8
+   obj:*/libcrypto.so.*
+}
+{
+   libcrypto-indirect-value
+   Memcheck:Value8
+   ...
+   obj:*/libcrypto.so.*
+}
+{
+   libssl-value
+   Memcheck:Value8
+   obj:*/libssl.so.*
+}
+{
+   libssl-indirect-value
+   Memcheck:Value8
+   ...
+   obj:*/libssl.so.*
+}
+{
+   libcrypto-cond
+   Memcheck:Cond
+   obj:*/libcrypto.so.*
+}
+{
+   libcrypto-indirect-cond
+   Memcheck:Cond
+   ...
+   obj:*/libcrypto.so.*
+}
+{
+   libssl-cond
+   Memcheck:Cond
+   obj:*/libssl.so.*
+}
+{
+   libssl-indirect-cond
+   Memcheck:Cond
+   ...
+   obj:*/libssl.so.*
+}
+{
+    sendto-msg
+    Memcheck:Param
+    socketcall.sendto(msg)
+    ...
+    fun:avs_net_socket_send
+    fun:avs_bio_write
+}
+{
+    sendto-len
+    Memcheck:Param
+    sendto(len)
+    ...
+    fun:avs_net_socket_send
+    fun:avs_bio_write
+}
