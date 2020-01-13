@@ -90,7 +90,7 @@ int strncasecmp(const char *s1, const char *s2, size_t n);
 char *strtok_r(char *str, const char *delim, char **saveptr);
 #endif
 
-#if defined(WITH_IPV4)
+#if defined(AVS_COMMONS_WITH_IPV4)
 #    if defined(HAVE_INET_ADDRSTRLEN) && defined(HAVE_NETINET_IN_H)
 #        include <netinet/in.h>
 #    elif !defined(INET_ADDRSTRLEN)
@@ -98,7 +98,7 @@ char *strtok_r(char *str, const char *delim, char **saveptr);
 #    endif
 #endif
 
-#if defined(WITH_IPV6)
+#if defined(AVS_COMMONS_WITH_IPV6)
 #    if defined(HAVE_INET6_ADDRSTRLEN) && defined(HAVE_NETINET_IN_H)
 #        include <netinet/in.h>
 #    elif !defined(INET6_ADDRSTRLEN)

@@ -26,7 +26,7 @@
 
 VISIBILITY_PRIVATE_HEADER_BEGIN
 
-#if defined(WITH_IPV4) && defined(WITH_IPV6)
+#if defined(AVS_COMMONS_WITH_IPV4) && defined(AVS_COMMONS_WITH_IPV6)
 #    define WITH_AVS_V4MAPPED
 #endif
 

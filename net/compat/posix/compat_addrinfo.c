@@ -56,20 +56,20 @@ static void update_ports(struct addrinfo *head, uint16_t port) {
     port = htons(port);
     for (; head; head = head->ai_next) {
         switch (head->ai_family) {
-#ifdef WITH_IPV4
+#ifdef AVS_COMMONS_WITH_IPV4
         case AF_INET:
             memcpy((char *) head->ai_addr
                            + offsetof(struct sockaddr_in, sin_port),
                    &port, sizeof(uint16_t));
             break;
-#endif // WITH_IPV4
-#ifdef WITH_IPV6
+#endif // AVS_COMMONS_WITH_IPV4
+#ifdef AVS_COMMONS_WITH_IPV6
         case AF_INET6:
             memcpy((char *) head->ai_addr
                            + offsetof(struct sockaddr_in6, sin6_port),
                    &port, sizeof(uint16_t));
             break;
-#endif            // WITH_IPV6
+#endif            // AVS_COMMONS_WITH_IPV6
         default:; // do nothing
         }
     }
@@ -168,7 +168,7 @@ avs_net_addrinfo_t *avs_net_addrinfo_resolve_ex(
     memset((void *) &hint, 0, sizeof(hint));
     hint.ai_family = _avs_net_get_af(family);
     if (family != AVS_NET_AF_UNSPEC && hint.ai_family == AF_UNSPEC) {
-        LOG(DEBUG, _("Unsupported avs_net_af_t: ") "%d" , (int) family);
+        LOG(DEBUG, _("Unsupported avs_net_af_t: ") "%d", (int) family);
         return NULL;
     }
     if (!(flags & AVS_NET_ADDRINFO_RESOLVE_F_NOADDRCONFIG)) {
@@ -182,7 +182,7 @@ avs_net_addrinfo_t *avs_net_addrinfo_resolve_ex(
     // so we use our own port parsing
     uint16_t port;
     if (port_from_string(&port, port_str)) {
-        LOG(ERROR, _("Invalid port: ") "%s" , port_str);
+        LOG(ERROR, _("Invalid port: ") "%s", port_str);
         return NULL;
     }
 
@@ -218,10 +218,14 @@ avs_net_addrinfo_t *avs_net_addrinfo_resolve_ex(
     int error = getaddrinfo(host, NULL, &hint, &ctx->results);
     if (error) {
 #ifdef HAVE_GAI_STRERROR
-        LOG(DEBUG, _("getaddrinfo() error: ") "%s" _("; family == (avs_net_af_t) ") "%d" ,
+        LOG(DEBUG,
+            _("getaddrinfo() error: ") "%s" _(
+                    "; family == (avs_net_af_t) ") "%d",
             gai_strerror(error), (int) family);
 #else
-        LOG(DEBUG, _("getaddrinfo() error: ") "%d" _("; family == (avs_net_af_t) ") "%d" ,
+        LOG(DEBUG,
+            _("getaddrinfo() error: ") "%d" _(
+                    "; family == (avs_net_af_t) ") "%d",
             error, (int) family);
 #endif
         avs_net_addrinfo_delete(&ctx);

@@ -33,16 +33,16 @@ extern "C" {
  */
 
 /** Is the library compiled with IPv4 support? */
-#cmakedefine WITH_IPV4
+#cmakedefine AVS_COMMONS_WITH_IPV4
 /** Is the library compiled with IPv6 support? */
-#cmakedefine WITH_IPV6
+#cmakedefine AVS_COMMONS_WITH_IPV6
 /** Is the library compiled with micro logs feature? */
 #cmakedefine WITH_AVS_MICRO_LOGS
 
-#ifdef WITH_IPV6
+#ifdef AVS_COMMONS_WITH_IPV6
 #    define AVS_ADDRSTRLEN \
         sizeof("ffff:ffff:ffff:ffff:ffff:ffff:255.255.255.255")
-#elif defined(WITH_IPV4)
+#elif defined(AVS_COMMONS_WITH_IPV4)
 #    define AVS_ADDRSTRLEN sizeof("255.255.255.255")
 #endif
 

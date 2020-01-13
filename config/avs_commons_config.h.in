@@ -25,20 +25,20 @@
 #cmakedefine HAVE_C11_STDATOMIC
 #cmakedefine HAVE_PTHREAD_CONDATTR_SETCLOCK
 
-#if !defined(WITH_IPV4) && !defined(WITH_IPV6)
-#error "At least one IP protocol version must be enabled"
+#if !defined(AVS_COMMONS_WITH_IPV4) && !defined(AVS_COMMONS_WITH_IPV6)
+#    error "At least one IP protocol version must be enabled"
 #endif
 
-#ifdef WITH_IPV4
-# define IPV4_AVAILABLE 1
+#ifdef AVS_COMMONS_WITH_IPV4
+#    define IPV4_AVAILABLE 1
 #else
-# define IPV4_AVAILABLE 0
+#    define IPV4_AVAILABLE 0
 #endif
 
-#ifdef WITH_IPV6
-# define IPV6_AVAILABLE 1
+#ifdef AVS_COMMONS_WITH_IPV6
+#    define IPV6_AVAILABLE 1
 #else
-# define IPV6_AVAILABLE 0
+#    define IPV6_AVAILABLE 0
 #endif
 
 #cmakedefine WITH_DTLS
@@ -68,15 +68,15 @@
 #cmakedefine WITH_AVS_COMPAT_THREADING
 #cmakedefine WITH_VALGRIND
 #ifdef WITH_VALGRIND
-#include <valgrind/valgrind.h>
-#include <valgrind/memcheck.h>
-#include <valgrind/helgrind.h>
-#include <stdint.h>
-extern void *sbrk (intptr_t __delta);
+#    include <stdint.h>
+#    include <valgrind/helgrind.h>
+#    include <valgrind/memcheck.h>
+#    include <valgrind/valgrind.h>
+extern void *sbrk(intptr_t __delta);
 #else
-#define RUNNING_ON_VALGRIND 0
-#define VALGRIND_HG_DISABLE_CHECKING(addr, len) ((void) 0)
-#define VALGRIND_MAKE_MEM_DEFINED_IF_ADDRESSABLE(addr, len) ((void) 0)
+#    define RUNNING_ON_VALGRIND 0
+#    define VALGRIND_HG_DISABLE_CHECKING(addr, len) ((void) 0)
+#    define VALGRIND_MAKE_MEM_DEFINED_IF_ADDRESSABLE(addr, len) ((void) 0)
 #endif
 
 #cmakedefine WITH_SCHEDULER_THREAD_SAFE
@@ -91,17 +91,18 @@ extern void *sbrk (intptr_t __delta);
 
 #if defined(HAVE_VISIBILITY)
 /* set default visibility for external symbols */
-#pragma GCC visibility push(default)
-#define VISIBILITY_SOURCE_BEGIN         _Pragma("GCC visibility push(hidden)")
-#define VISIBILITY_PRIVATE_HEADER_BEGIN _Pragma("GCC visibility push(hidden)")
-#define VISIBILITY_PRIVATE_HEADER_END   _Pragma("GCC visibility pop")
+#    pragma GCC visibility push(default)
+#    define VISIBILITY_SOURCE_BEGIN _Pragma("GCC visibility push(hidden)")
+#    define VISIBILITY_PRIVATE_HEADER_BEGIN \
+        _Pragma("GCC visibility push(hidden)")
+#    define VISIBILITY_PRIVATE_HEADER_END _Pragma("GCC visibility pop")
 #else
-#define VISIBILITY_SOURCE_BEGIN
-#define VISIBILITY_PRIVATE_HEADER_BEGIN
-#define VISIBILITY_PRIVATE_HEADER_END
+#    define VISIBILITY_SOURCE_BEGIN
+#    define VISIBILITY_PRIVATE_HEADER_BEGIN
+#    define VISIBILITY_PRIVATE_HEADER_END
 #endif
 
 #cmakedefine WITH_POISONING
 #if defined(WITH_POISONING) && !defined(AVS_UNIT_TESTING)
-#include "avs_commons_poison.h"
+#    include "avs_commons_poison.h"
 #endif

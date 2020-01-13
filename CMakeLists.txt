@@ -233,6 +233,9 @@ endif()
 option(WITH_IPV4 "Enable IPv4 support" ON)
 option(WITH_IPV6 "Enable IPv6 support" ON)
 
+set(AVS_COMMONS_WITH_IPV4 "${WITH_IPV4}")
+set(AVS_COMMONS_WITH_IPV6 "${WITH_IPV6}")
+
 option(WITH_SOCKET_LOG "Enable socket communication logging" OFF)
 
 find_program(VALGRIND_EXECUTABLE valgrind)
