@@ -42,7 +42,14 @@ set(AVS_NET_SOURCES
     addrinfo.c
     api.c
     global.c
-    url.c)
+    url.c
+
+    compat/posix/compat.h
+
+    compat/posix/compat_addrinfo.c
+    compat/posix/inet_ntop.c
+    compat/posix/inet_pton.c
+    compat/posix/net_impl.c)
 
 add_library(avs_net_core INTERFACE)
 target_link_libraries(avs_net_core INTERFACE avs_commons_global_headers)
@@ -53,17 +60,6 @@ target_include_directories(avs_net_core INTERFACE
 if(WITH_POSIX_AVS_SOCKET)
     target_include_directories(avs_net_core INTERFACE
                                $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/compat/posix>)
-    list(APPEND AVS_NET_SOURCES
-         compat/posix/compat.h
-
-         compat/posix/compat_addrinfo.c
-         compat/posix/net_impl.c)
-    if(NOT HAVE_INET_NTOP)
-        list(APPEND AVS_NET_SOURCES compat/posix/inet_ntop.c)
-    endif()
-    if(NOT HAVE_INET_PTON)
-        list(APPEND AVS_NET_SOURCES compat/posix/inet_pton.c)
-    endif()
 endif()
 
 if(WITH_INTERNAL_LOGS)
@@ -94,12 +90,9 @@ if(WITH_OPENSSL)
 
     add_library(avs_net_openssl
                 ${AVS_NET_SOURCES}
-                openssl/openssl.c)
+                openssl/openssl.c
+                openssl/openssl_data_loader.c)
     target_link_libraries(avs_net_openssl PUBLIC avs_net_core OpenSSL::SSL OpenSSL::Crypto)
-
-    if(WITH_X509)
-        target_sources(avs_net_openssl PRIVATE openssl/openssl_data_loader.c)
-    endif()
 
     avs_add_test(NAME avs_net_openssl
                  LIBS avs_net_openssl
@@ -114,18 +107,14 @@ endif()
 if(WITH_MBEDTLS)
     add_library(avs_net_mbedtls
                 ${AVS_NET_SOURCES}
-                mbedtls/mbedtls.c)
+                mbedtls/mbedtls.c
+                mbedtls/mbedtls_data_loader.c
+                mbedtls/mbedtls_persistence.c
+                mbedtls/mbedtls_persistence.h)
     target_link_libraries(avs_net_mbedtls PUBLIC avs_net_core mbedtls mbedcrypto mbedx509)
 
     if(WITH_TLS_SESSION_PERSISTENCE)
-        target_sources(avs_net_mbedtls PRIVATE
-                       mbedtls/mbedtls_persistence.c
-                       mbedtls/mbedtls_persistence.h)
-
         target_link_libraries(avs_net_mbedtls PUBLIC avs_persistence avs_rbtree)
-    endif()
-    if(WITH_X509)
-        target_sources(avs_net_mbedtls PRIVATE mbedtls/mbedtls_data_loader.c)
     endif()
 
     avs_add_test(NAME avs_net_mbedtls

@@ -30,7 +30,10 @@ add_library(avs_utils STATIC
             strings.c
             strerror.c
             time.c
-            token.c)
+            token.c
+
+            compat/posix/compat_time.c
+            compat/stdlib/memory.c)
 
 if(UNIX OR WIN32)
     set(POSIX_AVS_TIME_DEFAULT ON)
@@ -39,16 +42,8 @@ else()
 endif()
 
 option(WITH_POSIX_AVS_TIME "Enable avs_time_real_now() and avs_time_monotonic_now() implementation based on POSIX clock_gettime()" "${POSIX_AVS_TIME_DEFAULT}")
-if(WITH_POSIX_AVS_TIME)
-    target_sources(avs_utils PRIVATE
-                   compat/posix/compat_time.c)
-endif()
 
 option(WITH_STANDARD_ALLOCATOR "Enable default implementation of avs_malloc/calloc/realloc/free" ON)
-if(WITH_STANDARD_ALLOCATOR)
-    target_sources(avs_utils PRIVATE
-                   compat/stdlib/memory.c)
-endif()
 
 target_include_directories(avs_utils PUBLIC
                            $<BUILD_INTERFACE:${AVS_COMMONS_SOURCE_DIR}/include_public>

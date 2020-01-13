@@ -27,16 +27,13 @@ add_library(avs_coap STATIC
             block_builder.c
             block_utils.c
             ctx.c
-            msg_builder.c
             msg.c
+            msg_builder.c
+            msg_cache.c
             msg_info.c
             msg_opt.c
             opt.c
             tx_params.c)
-
-if(WITH_AVS_COAP_MESSAGE_CACHE)
-    target_sources(avs_coap PRIVATE msg_cache.c)
-endif()
 
 target_include_directories(avs_coap PUBLIC
                            $<BUILD_INTERFACE:${AVS_COMMONS_SOURCE_DIR}/include_public>

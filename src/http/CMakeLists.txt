@@ -41,7 +41,8 @@ add_library(avs_http STATIC
             headers_receive.c
             headers_send.c
             http_stream.c
-            stream_methods.c)
+            stream_methods.c
+            zlib.c)
 
 target_include_directories(avs_http PUBLIC
                            $<BUILD_INTERFACE:${AVS_COMMONS_SOURCE_DIR}/include_public>
@@ -50,7 +51,6 @@ target_link_libraries(avs_http PUBLIC avs_commons_global_headers avs_algorithm a
 
 if(WITH_AVS_HTTP_ZLIB)
     avs_find_library("find_package(ZLIB REQUIRED)")
-    target_sources(avs_http PRIVATE zlib.c)
     target_link_libraries(avs_http PUBLIC ZLIB::ZLIB)
 endif()
 
