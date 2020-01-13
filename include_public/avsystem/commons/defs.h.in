@@ -44,6 +44,8 @@ extern "C" {
 #cmakedefine AVS_COMMONS_HAVE_NET_IF_H
 /** Is sys/types.h available in the system? */
 #cmakedefine AVS_COMMONS_HAVE_SYS_TYPES_H
+/** Is the library compiled with GCC symbol poisoning support? */
+#cmakedefine AVS_COMMONS_WITH_POISONING
 
 #ifdef AVS_COMMONS_WITH_IPV6
 #    define AVS_ADDRSTRLEN \
@@ -408,8 +410,10 @@ struct AvsCallWithCast__ {
 
 #define AVS_PRAGMA(x) _Pragma(#x)
 
-/* clang-format off */
-#define AVS_POISON(identifier) @AVS_POISON_IMPL@
-/* clang-format on */
+#ifdef AVS_COMMONS_WITH_POISONING
+#    define AVS_POISON(identifier) AVS_PRAGMA(GCC poison identifier)
+#else
+#    define AVS_POISON(identifier)
+#endif
 
 #endif /* AVS_COMMONS_DEFS_H */
