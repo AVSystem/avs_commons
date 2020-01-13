@@ -82,7 +82,6 @@ install(FILES ${AVS_NET_PUBLIC_HEADERS}
         DESTINATION ${INCLUDE_INSTALL_DIR}/avsystem/commons)
 
 add_library(avs_net_nosec ${AVS_NET_SOURCES})
-target_compile_definitions(avs_net_nosec PRIVATE WITHOUT_SSL)
 target_link_libraries(avs_net_nosec PUBLIC avs_net_core)
 
 avs_add_test(NAME avs_net_nosec

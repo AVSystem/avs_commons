@@ -424,9 +424,8 @@ option(WITH_MBEDTLS "Enable mbed TLS" ${MBEDTLS_FOUND})
 find_package(TinyDTLS)
 option(WITH_TINYDTLS "Enable tinyDTLS" ${TINYDTLS_FOUND})
 
-cmake_dependent_option(WITHOUT_SSL "Disable SSL/TLS/DTLS support" OFF "WITH_OPENSSL OR WITH_MBEDTLS OR WITH_TINYDTLS" ON)
-cmake_dependent_option(WITH_PSK "Enable pre-shared key support" ON "NOT WITHOUT_SSL" OFF)
-cmake_dependent_option(WITH_X509 "Enable X.509 certificate support" ON "NOT WITHOUT_SSL" OFF)
+cmake_dependent_option(WITH_PSK "Enable pre-shared key support" ON "WITH_OPENSSL OR WITH_MBEDTLS OR WITH_TINYDTLS" OFF)
+cmake_dependent_option(WITH_X509 "Enable X.509 certificate support" ON "WITH_OPENSSL OR WITH_MBEDTLS OR WITH_TINYDTLS" OFF)
 cmake_dependent_option(WITH_MBEDTLS_CUSTOM_ENTROPY_INITIALIZER
                        "Enable use of avs_net_mbedtls_entropy_init(mbedtls_entropy_context*) function that has to be provided by the user"
                        OFF "WITH_MBEDTLS" OFF)

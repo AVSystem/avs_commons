@@ -60,6 +60,10 @@
 #    define IPV6_AVAILABLE 0
 #endif
 
+#cmakedefine WITH_OPENSSL
+#cmakedefine WITH_MBEDTLS
+#cmakedefine WITH_TINYDTLS
+
 #cmakedefine WITH_DTLS
 #cmakedefine WITH_PSK
 #cmakedefine WITH_X509
@@ -122,6 +126,10 @@ extern void *sbrk(intptr_t __delta);
 #cmakedefine WITH_POISONING
 #if !defined(AVS_UNIT_TESTING) && !defined(AVS_SUPPRESS_POISONING)
 #    include "avs_commons_poison.h"
+#endif
+
+#if !(defined(WITH_OPENSSL) || defined(WITH_MBEDTLS) || defined(WITH_TINYDTLS))
+#    define WITHOUT_SSL
 #endif
 
 #cmakedefine WITH_POSIX_AVS_TIME
