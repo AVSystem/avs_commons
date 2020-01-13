@@ -103,6 +103,6 @@ extern void *sbrk(intptr_t __delta);
 #endif
 
 #cmakedefine WITH_POISONING
-#if defined(WITH_POISONING) && !defined(AVS_UNIT_TESTING)
+#if !defined(AVS_UNIT_TESTING) && !defined(AVS_SUPPRESS_POISONING)
 #    include "avs_commons_poison.h"
 #endif

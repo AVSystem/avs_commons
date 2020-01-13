@@ -14,10 +14,13 @@
  * limitations under the License.
  */
 
+#define AVS_SUPPRESS_POISONING
+#include <avs_commons_config.h>
+
 // this uses some symbols such as "printf" - include it before poisoning them
 #include <mbedtls/platform.h>
 
-#include <avs_commons_config.h>
+#include <avs_commons_poison.h>
 
 #include <assert.h>
 #include <errno.h>

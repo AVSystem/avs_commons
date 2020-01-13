@@ -44,6 +44,7 @@ INCLUDE_WHITELIST = {
     # r'wchar\.h',
     # r'wctype\.h',
     r'avs_commons_config\.h',
+    r'avs_commons_poison\.h',
     r'x_log_config\.h',
     r'avsystem/commons/[^.]*\.h'
 }

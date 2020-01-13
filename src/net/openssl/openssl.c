@@ -16,7 +16,10 @@
 
 // NOTE: OpenSSL headers sometimes (depending on a version) contain some of the
 // symbols poisoned via inclusion of avs_commons_config.h. Therefore they must
-// be included first.
+// be included before poison.
+#define AVS_SUPPRESS_POISONING
+#include <avs_commons_config.h>
+
 #include <openssl/bn.h>
 #include <openssl/hmac.h>
 #include <openssl/md5.h>
@@ -24,7 +27,7 @@
 #include <openssl/rsa.h>
 #include <openssl/ssl.h>
 
-#include <avs_commons_config.h>
+#include <avs_commons_poison.h>
 
 #include <assert.h>
 #include <ctype.h>

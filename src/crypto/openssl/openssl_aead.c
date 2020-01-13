@@ -13,9 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+#define AVS_SUPPRESS_POISONING
+#include <avs_commons_config.h>
+
 #include <openssl/evp.h>
 
-#include <avs_commons_config.h>
+#include <avs_commons_poison.h>
 
 #define MODULE_NAME avs_crypto_aead
 #include <x_log_config.h>
