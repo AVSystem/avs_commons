@@ -16,7 +16,7 @@
 
 #include <avs_commons_config.h>
 
-#ifdef WITH_AVS_CRYPTO
+#if defined(WITH_AVS_CRYPTO) && defined(WITH_MBEDTLS)
 
 #    define MODULE_NAME avs_crypto_aead
 #    include <x_log_config.h>
@@ -106,4 +106,4 @@ int avs_crypto_aead_aes_ccm_decrypt(const unsigned char *key,
     return 0;
 }
 
-#endif // WITH_AVS_CRYPTO
+#endif // defined(WITH_AVS_CRYPTO) && defined(WITH_MBEDTLS)

@@ -16,7 +16,7 @@
 
 #include <avs_commons_config.h>
 
-#ifdef WITH_AVS_STREAM
+#if defined(WITH_AVS_STREAM) && !defined(WITH_OPENSSL) && !defined(WITH_MBEDTLS)
 
 #    include <stdlib.h>
 #    include <string.h>
@@ -292,4 +292,5 @@ avs_stream_t *avs_stream_md5_create(void) {
     return (avs_stream_t *) retval;
 }
 
-#endif // WITH_AVS_STREAM
+#endif // defined(WITH_AVS_STREAM) && !defined(WITH_OPENSSL) &&
+       // !defined(WITH_MBEDTLS)

@@ -20,7 +20,7 @@
 #define AVS_SUPPRESS_POISONING
 #include <avs_commons_config.h>
 
-#ifdef WITH_AVS_NET
+#if defined(WITH_AVS_NET) && defined(WITH_OPENSSL)
 
 #    include <openssl/bn.h>
 #    include <openssl/hmac.h>
@@ -1404,4 +1404,4 @@ initialize_ssl_socket(ssl_socket_t *socket,
     return err;
 }
 
-#endif // WITH_AVS_NET
+#endif // defined(WITH_AVS_NET) && defined(WITH_OPENSSL)
