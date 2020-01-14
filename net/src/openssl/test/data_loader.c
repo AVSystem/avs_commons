@@ -87,9 +87,9 @@ AVS_UNIT_TEST(backend_openssl, chain_loading_from_path) {
     WITH_OPENSSL_CONTEXT(ctx) {
         const avs_net_trusted_cert_info_t empty_dir =
                 avs_net_trusted_cert_info_from_path(name);
-        int retval = _avs_net_openssl_load_ca_certs(ctx, &empty_dir);
+        avs_error_t err = _avs_net_openssl_load_ca_certs(ctx, &empty_dir);
         (void) rmdir(name);
-        AVS_UNIT_ASSERT_SUCCESS(retval);
+        AVS_UNIT_ASSERT_SUCCESS(err);
     }
 
     WITH_OPENSSL_CONTEXT(ctx) {

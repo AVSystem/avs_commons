@@ -61,9 +61,9 @@ AVS_UNIT_TEST(backend_mbedtls, chain_loading_from_path) {
         AVS_UNIT_ASSERT_NOT_NULL(mkdtemp(name));
         const avs_net_trusted_cert_info_t empty_dir =
                 avs_net_trusted_cert_info_from_path(name);
-        int retval = _avs_net_mbedtls_load_ca_certs(&chain, &empty_dir);
+        avs_error_t err = _avs_net_mbedtls_load_ca_certs(&chain, &empty_dir);
         (void) rmdir(name);
-        AVS_UNIT_ASSERT_SUCCESS(retval);
+        AVS_UNIT_ASSERT_SUCCESS(err);
     }
 
     // Directory without permissions.
@@ -85,9 +85,10 @@ AVS_UNIT_TEST(backend_mbedtls, chain_loading_from_path) {
         AVS_UNIT_ASSERT_SUCCESS(retval);
         const avs_net_trusted_cert_info_t no_permissions_dir =
                 avs_net_trusted_cert_info_from_path(name);
-        retval = _avs_net_mbedtls_load_ca_certs(&chain, &no_permissions_dir);
+        avs_error_t err =
+                _avs_net_mbedtls_load_ca_certs(&chain, &no_permissions_dir);
         (void) rmdir(name);
-        AVS_UNIT_ASSERT_FAILED(retval);
+        AVS_UNIT_ASSERT_FAILED(err);
 
         if (original_uid == 0) {
             // restore root privileges if we had them

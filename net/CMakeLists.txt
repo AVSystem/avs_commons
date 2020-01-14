@@ -96,9 +96,6 @@ if(WITH_OPENSSL)
 
     if(WITH_X509)
         target_sources(avs_net_openssl PRIVATE src/openssl/data_loader.c)
-        if(TARGET avs_net_test)
-            target_sources(avs_net_openssl_test PRIVATE src/openssl/test/data_loader.c)
-        endif()
     endif()
 
     avs_add_test(NAME avs_net_openssl
@@ -106,7 +103,8 @@ if(WITH_OPENSSL)
                  SOURCES
                  src/test/socket_nosec.c
                  src/test/socket_tls.c
-                 $<$<BOOL:${WITH_DTLS}>:src/test/socket_dtls.c>)
+                 $<$<BOOL:${WITH_DTLS}>:src/test/socket_dtls.c>
+                 $<$<BOOL:${WITH_X509}>:src/openssl/test/data_loader.c>)
     avs_install_export(avs_net_openssl net)
 endif()
 
@@ -125,9 +123,6 @@ if(WITH_MBEDTLS)
     endif()
     if(WITH_X509)
         target_sources(avs_net_mbedtls PRIVATE src/mbedtls/data_loader.c)
-        if(TARGET avs_net_test)
-            target_sources(avs_net_mbedtls_test PRIVATE src/mbedtls/test/data_loader.c)
-        endif()
     endif()
 
     avs_add_test(NAME avs_net_mbedtls
@@ -135,7 +130,8 @@ if(WITH_MBEDTLS)
                  SOURCES
                  src/test/socket_nosec.c
                  src/test/socket_tls.c
-                 src/test/socket_dtls.c)
+                 src/test/socket_dtls.c
+                 $<$<BOOL:${WITH_X509}>:src/mbedtls/test/data_loader.c>)
     avs_install_export(avs_net_mbedtls net)
 endif()
 
