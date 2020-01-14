@@ -18,7 +18,7 @@
 
 #include <avs_commons_posix_config.h>
 
-#ifdef WITH_AVS_NET
+#if defined(WITH_AVS_NET) && defined(WITH_POSIX_AVS_SOCKET)
 
 #    include <errno.h>
 
@@ -2212,4 +2212,4 @@ void _avs_net_cleanup_global_compat_state(void) {
 #    endif // HAVE_GLOBAL_COMPAT_STATE
 }
 
-#endif // WITH_AVS_NET
+#endif // defined(WITH_AVS_NET) && defined(WITH_POSIX_AVS_SOCKET)

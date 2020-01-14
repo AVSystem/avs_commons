@@ -16,7 +16,7 @@
 
 #include <avs_commons_config.h>
 
-#ifdef WITH_AVS_COAP
+#if defined(WITH_AVS_COAP) && defined(WITH_AVS_COAP_MESSAGE_CACHE)
 
 #    include <avsystem/commons/buffer.h>
 #    include <avsystem/commons/defs.h>
@@ -405,4 +405,4 @@ size_t _avs_coap_msg_cache_overhead(const avs_coap_msg_t *msg) {
     return offsetof(cache_entry_t, data) + padding_bytes_after_msg(msg);
 }
 
-#endif // WITH_AVS_COAP
+#endif // defined(WITH_AVS_COAP) && defined(WITH_AVS_COAP_MESSAGE_CACHE)

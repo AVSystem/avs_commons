@@ -16,7 +16,7 @@
 
 #include <avs_commons_config.h>
 
-#ifdef WITH_AVS_HTTP
+#if defined(WITH_AVS_HTTP) && defined(WITH_AVS_HTTP_ZLIB)
 
 #    include <errno.h>
 #    include <stdint.h>
@@ -383,4 +383,4 @@ avs_stream_t *_avs_http_create_decompressor(http_compression_format_t format,
     return (avs_stream_t *) stream;
 }
 
-#endif // WITH_AVS_HTTP
+#endif // defined(WITH_AVS_HTTP) && defined(WITH_AVS_HTTP_ZLIB)

@@ -16,7 +16,7 @@
 
 #include <avs_commons_config.h>
 
-#ifdef WITH_AVS_NET
+#if defined(WITH_AVS_NET) && defined(WITH_X509)
 
 #    define MODULE_NAME avs_net_data_loader
 #    include <x_log_config.h>
@@ -253,4 +253,4 @@ _avs_net_mbedtls_load_client_key(mbedtls_pk_context **client_key,
     }
 }
 
-#endif // WITH_AVS_NET
+#endif // defined(WITH_AVS_NET) && defined(WITH_X509)

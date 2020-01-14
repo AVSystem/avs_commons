@@ -36,7 +36,8 @@
 
 #include <avs_commons_posix_config.h>
 
-#ifdef WITH_AVS_NET
+#if defined(WITH_AVS_NET) && defined(WITH_POSIX_AVS_SOCKET) \
+        && !defined(HAVE_INET_PTON)
 
 #    include <stdint.h>
 #    include <stdio.h>
@@ -237,4 +238,5 @@ static int inet_pton6(const char *src, void *dst) {
 }
 #    endif /* AVS_COMMONS_WITH_IPV6 */
 
-#endif // WITH_AVS_NET
+#endif // defined(WITH_AVS_NET) && defined(WITH_POSIX_AVS_SOCKET) &&
+       // !defined(HAVE_INET_PTON)

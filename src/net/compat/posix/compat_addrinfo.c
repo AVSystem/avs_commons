@@ -16,7 +16,7 @@
 
 #include <avs_commons_posix_config.h>
 
-#ifdef WITH_AVS_NET
+#if defined(WITH_AVS_NET) && defined(WITH_POSIX_AVS_SOCKET)
 
 #    include <assert.h>
 #    include <string.h>
@@ -317,4 +317,4 @@ void avs_net_addrinfo_rewind(avs_net_addrinfo_t *ctx) {
     ctx->to_send = ctx->results;
 }
 
-#endif // WITH_AVS_NET
+#endif // defined(WITH_AVS_NET) && defined(WITH_POSIX_AVS_SOCKET)

@@ -35,7 +35,8 @@
 
 #include <avs_commons_posix_config.h>
 
-#ifdef WITH_AVS_NET
+#if defined(WITH_AVS_NET) && defined(WITH_POSIX_AVS_SOCKET) \
+        && !defined(HAVE_INET_NTOP)
 
 #    include <stdint.h>
 #    include <stdio.h>
@@ -223,4 +224,5 @@ static const char *inet_ntop6(const u_char *src, char *dst, size_t size) {
 }
 #    endif /* AVS_COMMONS_WITH_IPV6 */
 
-#endif // WITH_AVS_NET
+#endif // defined(WITH_AVS_NET) && defined(WITH_POSIX_AVS_SOCKET) &&
+       // !defined(HAVE_INET_NTOP)

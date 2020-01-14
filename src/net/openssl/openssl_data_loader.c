@@ -20,7 +20,7 @@
 #define AVS_SUPPRESS_POISONING
 #include <avs_commons_config.h>
 
-#ifdef WITH_AVS_NET
+#if defined(WITH_AVS_NET) && defined(WITH_X509)
 
 #    include <openssl/ssl.h>
 
@@ -344,4 +344,4 @@ _avs_net_openssl_load_client_key(SSL_CTX *ctx,
     }
 }
 
-#endif // WITH_AVS_NET
+#endif // defined(WITH_AVS_NET) && defined(WITH_X509)
