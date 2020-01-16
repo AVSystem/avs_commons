@@ -49,8 +49,8 @@ avs_add_test(NAME avs_coap
              LIBS avs_coap
              SOURCES
              $<TARGET_PROPERTY:avs_coap,SOURCES>
-             test/ctx.c
-             test/msg_cache.c)
+             ${AVS_COMMONS_SOURCE_DIR}/tests/coap/ctx.c
+             ${AVS_COMMONS_SOURCE_DIR}/tests/coap/msg_cache.c)
 get_target_property(AVS_NET_VARIANT avs_net ALIASED_TARGET)
 if(TARGET avs_coap_test)
     # NOTE: avs_coap tests require certificate support,

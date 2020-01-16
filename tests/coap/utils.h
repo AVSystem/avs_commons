@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "../msg_internal.h"
+#include "src/coap/msg_internal.h"
 
 #define PAYLOAD_MARKER "\xFF"
 

@@ -22,8 +22,8 @@
 #include <avsystem/commons/memory.h>
 #include <avsystem/commons/unit/test.h>
 
-#include "../coap_log.h"
-#include "../msg_cache.h"
+#include "src/coap/coap_log.h"
+#include "src/coap/msg_cache.h"
 #include "utils.h"
 
 /* minimum size of a valid avs_coap_msg_t */

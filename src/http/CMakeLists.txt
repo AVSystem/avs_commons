@@ -61,5 +61,5 @@ avs_add_test(NAME avs_http
              LIBS avs_http
              SOURCES
              $<TARGET_PROPERTY:avs_http,SOURCES>
-             test/test_close.c
-             test/test_http.c)
+             ${AVS_COMMONS_SOURCE_DIR}/tests/http/test_close.c
+             ${AVS_COMMONS_SOURCE_DIR}/tests/http/test_http.c)

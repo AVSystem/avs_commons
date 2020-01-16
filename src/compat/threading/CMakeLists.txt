@@ -18,9 +18,9 @@ set(COMPAT_THREADING_PUBLIC_HEADERS
     ${CMAKE_CURRENT_SOURCE_DIR}/include_public/avsystem/commons/init_once.h)
 
 set(COMPAT_THREADING_TEST_SOURCES
-    ${CMAKE_CURRENT_SOURCE_DIR}/test/condvar.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/test/mutex.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/test/init_once.c)
+    ${AVS_COMMONS_SOURCE_DIR}/tests/compat/threading/condvar.c
+    ${AVS_COMMONS_SOURCE_DIR}/tests/compat/threading/mutex.c
+    ${AVS_COMMONS_SOURCE_DIR}/tests/compat/threading/init_once.c)
 
 option(WITH_CUSTOM_AVS_THREADING "Do not provide any default implementations of avs_threading" OFF)
 if(NOT WITH_CUSTOM_AVS_THREADING)

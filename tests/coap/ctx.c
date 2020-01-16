@@ -44,7 +44,7 @@
 
 #include "utils.h"
 
-#include "../coap_log.h"
+#include "src/coap/coap_log.h"
 
 #define TEST_PORT_DTLS 4321
 #define TEST_PORT_UDP 4322

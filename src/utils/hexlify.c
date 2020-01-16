@@ -90,5 +90,5 @@ ssize_t avs_unhexlify(uint8_t *output,
 }
 
 #ifdef AVS_UNIT_TESTING
-#    include "test/hexlify.c"
+#    include "tests/utils/hexlify.c"
 #endif // AVS_UNIT_TESTING

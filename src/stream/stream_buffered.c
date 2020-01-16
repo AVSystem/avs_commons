@@ -312,5 +312,5 @@ int avs_stream_buffered_create(avs_stream_t **inout_stream,
 }
 
 #ifdef AVS_UNIT_TESTING
-#    include "test/test_stream_buffered.c"
+#    include "tests/stream/test_stream_buffered.c"
 #endif

@@ -307,5 +307,5 @@ void avs_log_internal_l__(avs_log_level_t level,
 }
 
 #ifdef AVS_UNIT_TESTING
-#    include "test/test_log.c"
+#    include "tests/log/test_log.c"
 #endif

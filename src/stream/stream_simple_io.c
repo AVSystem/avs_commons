@@ -146,5 +146,5 @@ avs_stream_simple_input_create(avs_simple_io_stream_reader_t *reader,
 }
 
 #ifdef AVS_UNIT_TESTING
-#    include "test/test_stream_simple_io.c"
+#    include "tests/stream/test_stream_simple_io.c"
 #endif

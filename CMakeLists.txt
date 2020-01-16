@@ -388,6 +388,7 @@ if(WITH_TEST)
         add_executable(${AAT_NAME}_test EXCLUDE_FROM_ALL
                        ${AAT_SOURCES})
         target_link_libraries(${AAT_NAME}_test PRIVATE avs_unit ${AAT_LIBS})
+        target_include_directories(${AAT_NAME}_test PRIVATE "${AVS_COMMONS_SOURCE_DIR}")
         add_dependencies(${AAT_NAME}_test dtls_echo_server)
 
         set_property(TARGET ${AAT_NAME}_test APPEND PROPERTY COMPILE_DEFINITIONS AVS_UNIT_TESTING)

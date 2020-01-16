@@ -80,5 +80,5 @@ void avs_consume_quotable_token(const char **src,
 }
 
 #ifdef AVS_UNIT_TESTING
-#    include "test/token.c"
+#    include "tests/utils/token.c"
 #endif // AVS_UNIT_TESTING

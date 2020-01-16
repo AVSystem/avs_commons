@@ -624,5 +624,5 @@ avs_error_t avs_persistence_version(avs_persistence_context_t *ctx,
 }
 
 #ifdef AVS_UNIT_TESTING
-#    include "test/persistence.c"
+#    include "tests/persistence/persistence.c"
 #endif

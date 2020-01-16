@@ -30,7 +30,7 @@
 
 #include "test_http.h"
 
-#include "../body_receivers.h"
+#include "src/http/body_receivers.h"
 
 AVS_UNIT_GLOBAL_INIT(verbose) {
     if (!verbose) {

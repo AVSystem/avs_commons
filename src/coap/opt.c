@@ -226,5 +226,5 @@ void avs_coap_opt_debug_print(const avs_coap_opt_t *opt) {
 }
 
 #ifdef AVS_UNIT_TESTING
-#    include "test/opt.c"
+#    include "tests/coap/opt.c"
 #endif // AVS_UNIT_TESTING

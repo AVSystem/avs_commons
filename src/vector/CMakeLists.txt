@@ -35,5 +35,5 @@ avs_add_test(NAME avs_vector
 if(WITH_CXX_TESTS)
     avs_add_test(NAME avs_vector_cxx
                  LIBS avs_vector
-                 SOURCES test/test_vector_cxx.cpp)
+                 SOURCES ${AVS_COMMONS_SOURCE_DIR}/tests/vector/test_vector_cxx.cpp)
 endif()

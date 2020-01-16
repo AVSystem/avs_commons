@@ -251,5 +251,5 @@ avs_coap_msg_builder_get_msg(const avs_coap_msg_builder_t *builder) {
 }
 
 #ifdef AVS_UNIT_TESTING
-#    include "test/msg_builder.c"
+#    include "tests/coap/msg_builder.c"
 #endif // AVS_UNIT_TESTING

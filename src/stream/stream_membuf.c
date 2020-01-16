@@ -248,5 +248,5 @@ avs_stream_t *avs_stream_membuf_create(void) {
 }
 
 #ifdef AVS_UNIT_TESTING
-#    include "test/test_stream_membuf.c"
+#    include "tests/stream/test_stream_membuf.c"
 #endif

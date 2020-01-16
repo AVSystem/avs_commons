@@ -462,5 +462,5 @@ int avs_http_status_code(avs_stream_t *stream_) {
 }
 
 #ifdef AVS_UNIT_TESTING
-#    include "test/test_stream.c"
+#    include "tests/http/test_stream.c"
 #endif

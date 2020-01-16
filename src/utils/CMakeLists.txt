@@ -59,8 +59,8 @@ avs_add_test(NAME avs_utils
              LIBS avs_utils
              SOURCES
              $<TARGET_PROPERTY:avs_utils,SOURCES>
-             test/memory.c
-             test/shared_buffer.c)
+             ${AVS_COMMONS_SOURCE_DIR}/tests/utils/memory.c
+             ${AVS_COMMONS_SOURCE_DIR}/tests/utils/shared_buffer.c)
 
 avs_install_export(avs_utils utils)
 install(DIRECTORY include_public/

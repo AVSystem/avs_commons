@@ -92,5 +92,5 @@ avs_error_t _avs_http_chunked_send(http_stream_t *stream,
 }
 
 #ifdef AVS_UNIT_TESTING
-#    include "test/test_chunked.c"
+#    include "tests/http/test_chunked.c"
 #endif

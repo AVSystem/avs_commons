@@ -134,5 +134,5 @@ int _avs_http_body_receiver_init(http_stream_t *stream,
 }
 
 #ifdef AVS_UNIT_TESTING
-#    include "test/test_body_receivers.c"
+#    include "tests/http/test_body_receivers.c"
 #endif

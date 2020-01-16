@@ -247,5 +247,5 @@ error:
 }
 
 #ifdef AVS_UNIT_TESTING
-#    include "test/test_stream_file.c"
+#    include "tests/stream/test_stream_file.c"
 #endif

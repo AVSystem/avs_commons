@@ -39,8 +39,8 @@ if(WITH_OPENSSL AND NOT OPENSSL_VERSION VERSION_LESS 1.1.0)
     avs_add_test(NAME avs_crypto_openssl
                  LIBS avs_crypto_openssl
                  SOURCES
-                 test/hkdf.c
-                 test/aead.c)
+                 ${AVS_COMMONS_SOURCE_DIR}/tests/crypto/hkdf.c
+                 ${AVS_COMMONS_SOURCE_DIR}/tests/crypto/aead.c)
     avs_install_export(avs_crypto_openssl crypto)
 endif()
 
@@ -54,8 +54,8 @@ if(WITH_MBEDTLS AND NOT MBEDTLS_VERSION VERSION_LESS 2.14.0)
     avs_add_test(NAME avs_crypto_mbedtls
                  LIBS avs_crypto_mbedtls
                  SOURCES
-                 test/hkdf.c
-                 test/aead.c)
+                 ${AVS_COMMONS_SOURCE_DIR}/tests/crypto/hkdf.c
+                 ${AVS_COMMONS_SOURCE_DIR}/tests/crypto/aead.c)
     avs_install_export(avs_crypto_mbedtls crypto)
 endif()
 

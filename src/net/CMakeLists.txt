@@ -83,7 +83,7 @@ target_link_libraries(avs_net_nosec PUBLIC avs_net_core)
 
 avs_add_test(NAME avs_net_nosec
              LIBS avs_net_nosec
-             SOURCES test/socket_nosec.c)
+             SOURCES ${AVS_COMMONS_SOURCE_DIR}/tests/net/socket_nosec.c)
 avs_install_export(avs_net_nosec net)
 
 if(WITH_OPENSSL)
@@ -101,10 +101,10 @@ if(WITH_OPENSSL)
     avs_add_test(NAME avs_net_openssl
                  LIBS avs_net_openssl
                  SOURCES
-                 test/socket_nosec.c
-                 test/socket_tls.c
-                 $<$<BOOL:${WITH_DTLS}>:test/socket_dtls.c>
-                 $<$<BOOL:${WITH_X509}>:openssl/test/data_loader.c>)
+                 ${AVS_COMMONS_SOURCE_DIR}/tests/net/socket_nosec.c
+                 ${AVS_COMMONS_SOURCE_DIR}/tests/net/socket_tls.c
+                 $<$<BOOL:${WITH_DTLS}>:${AVS_COMMONS_SOURCE_DIR}/tests/net/socket_dtls.c>
+                 $<$<BOOL:${WITH_X509}>:${AVS_COMMONS_SOURCE_DIR}/tests/net/openssl/data_loader.c>)
     avs_install_export(avs_net_openssl net)
 endif()
 
@@ -128,10 +128,10 @@ if(WITH_MBEDTLS)
     avs_add_test(NAME avs_net_mbedtls
                  LIBS avs_net_mbedtls
                  SOURCES
-                 test/socket_nosec.c
-                 test/socket_tls.c
-                 test/socket_dtls.c
-                 $<$<BOOL:${WITH_X509}>:mbedtls/test/data_loader.c>)
+                 ${AVS_COMMONS_SOURCE_DIR}/tests/net/socket_nosec.c
+                 ${AVS_COMMONS_SOURCE_DIR}/tests/net/socket_tls.c
+                 ${AVS_COMMONS_SOURCE_DIR}/tests/net/socket_dtls.c
+                 $<$<BOOL:${WITH_X509}>:${AVS_COMMONS_SOURCE_DIR}/tests/net/mbedtls/data_loader.c>)
     avs_install_export(avs_net_mbedtls net)
 endif()
 
@@ -144,8 +144,8 @@ if(WITH_TINYDTLS)
     avs_add_test(NAME avs_net_tinydtls
                  LIBS avs_net_tinydtls
                  SOURCES
-                 test/socket_nosec.c
-                 test/socket_dtls.c)
+                 ${AVS_COMMONS_SOURCE_DIR}/tests/net/socket_nosec.c
+                 ${AVS_COMMONS_SOURCE_DIR}/tests/net/socket_dtls.c)
     avs_install_export(avs_net_tinydtls net)
 endif()
 

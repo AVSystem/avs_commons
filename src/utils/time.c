@@ -449,5 +449,5 @@ const char *avs_time_duration_as_string_impl__(
 }
 
 #ifdef AVS_UNIT_TESTING
-#    include "test/time.c"
+#    include "tests/utils/time.c"
 #endif // AVS_UNIT_TESTING

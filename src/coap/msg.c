@@ -429,5 +429,5 @@ uint16_t avs_coap_msg_get_id(const avs_coap_msg_t *msg) {
 }
 
 #ifdef AVS_UNIT_TESTING
-#    include "test/msg.c"
+#    include "tests/coap/msg.c"
 #endif // AVS_UNIT_TESTING

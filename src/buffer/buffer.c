@@ -149,5 +149,5 @@ int avs_buffer_fill_bytes(avs_buffer_t *buffer, int value, size_t bytes_count) {
 }
 
 #ifdef AVS_UNIT_TESTING
-#    include "test/test_buffer.c"
+#    include "tests/buffer/test_buffer.c"
 #endif

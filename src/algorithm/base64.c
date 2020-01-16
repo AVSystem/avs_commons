@@ -184,5 +184,5 @@ ssize_t avs_base64_decode_custom(uint8_t *out,
 }
 
 #ifdef AVS_UNIT_TESTING
-#    include "test/base64.c"
+#    include "tests/algorithm/base64.c"
 #endif

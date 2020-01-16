@@ -872,5 +872,5 @@ AVS_RBTREE_ELEM(void) avs_rbtree_cleanup_next__(AVS_RBTREE(void) tree) {
 }
 
 #ifdef AVS_UNIT_TESTING
-#    include "test/test_rbtree.c"
+#    include "tests/rbtree/test_rbtree.c"
 #endif

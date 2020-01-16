@@ -251,5 +251,5 @@ int avs_vector_reserve__(void ***ptr, size_t num_elements) {
 }
 
 #ifdef AVS_UNIT_TESTING
-#    include "test/test_vector.c"
+#    include "tests/vector/test_vector.c"
 #endif

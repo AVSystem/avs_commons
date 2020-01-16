@@ -35,5 +35,5 @@ avs_add_test(NAME avs_rbtree
 if(WITH_CXX_TESTS)
     avs_add_test(NAME avs_rbtree_cxx
                  LIBS avs_rbtree
-                 SOURCES test/test_rbtree_cxx.cpp)
+                 SOURCES ${AVS_COMMONS_SOURCE_DIR}/tests/rbtree/test_rbtree_cxx.cpp)
 endif()

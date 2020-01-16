@@ -32,12 +32,12 @@ avs_add_test(NAME avs_list
              LIBS avs_list
              SOURCES
              $<TARGET_PROPERTY:avs_list,SOURCES>
-             test/test_list.c)
+             ${AVS_COMMONS_SOURCE_DIR}/tests/list/test_list.c)
 
 if(WITH_CXX_TESTS)
     avs_add_test(NAME avs_list_cxx
                  LIBS avs_list
                  SOURCES
                  $<TARGET_PROPERTY:avs_list,SOURCES>
-                 test/test_list_cxx.cpp)
+                 ${AVS_COMMONS_SOURCE_DIR}/tests/list/test_list_cxx.cpp)
 endif()

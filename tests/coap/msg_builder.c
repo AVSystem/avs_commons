@@ -16,7 +16,7 @@
 
 #include <avs_commons_config.h>
 
-#include "../msg_internal.h"
+#include "src/coap/msg_internal.h"
 
 #include <avsystem/commons/coap/msg_info.h>
 #include <avsystem/commons/memory.h>
