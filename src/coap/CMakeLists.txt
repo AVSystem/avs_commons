@@ -20,6 +20,8 @@ add_library(avs_coap STATIC
             include_public/avsystem/commons/coap/msg.h
             include_public/avsystem/commons/coap/msg_identity.h
             include_public/avsystem/commons/coap/msg_info.h
+            include_public/avsystem/commons/coap/msg_opt.h
+            include_public/avsystem/commons/coap/opt.h
             include_public/avsystem/commons/coap/tx_params.h
 
             block_builder.c

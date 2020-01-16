@@ -26,7 +26,9 @@ cmake_dependent_option(WITH_TLS_SESSION_PERSISTENCE "Enable support for TLS sess
 # TODO: it should be possible to decouple them enough to be able to reuse a
 # single build of "core" sources for all cases.
 set(AVS_NET_SOURCES
+    include_public/avsystem/commons/addrinfo.h
     include_public/avsystem/commons/net.h
+    include_public/avsystem/commons/socket.h
     include_public/avsystem/commons/socket_v_table.h
     include_public/avsystem/commons/url.h
 

@@ -13,9 +13,10 @@
 # limitations under the License.
 
 add_library(avs_utils STATIC
-            include_public/avsystem/commons/time.h
+            include_public/avsystem/commons/cleanup.h
             include_public/avsystem/commons/memory.h
             include_public/avsystem/commons/shared_buffer.h
+            include_public/avsystem/commons/time.h
             include_public/avsystem/commons/utils.h
 
             x_time_conv.h
