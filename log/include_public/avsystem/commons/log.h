@@ -148,15 +148,15 @@ void avs_log_internal_l__(avs_log_level_t level,
                           const char *msg,
                           ...) AVS_F_PRINTF(5, 6);
 
-#ifndef WITH_AVS_MICRO_LOGS
+#ifndef AVS_COMMONS_WITH_MICRO_LOGS
 #    define AVS_DISPOSABLE_LOG(Arg) Arg
 #else
 #    define AVS_DISPOSABLE_LOG(Arg) " "
-#endif // WITH_AVS_MICRO_LOGS
+#endif // AVS_COMMONS_WITH_MICRO_LOGS
 
-#define AVS_LOG_IMPL__(Level, Variant, ModuleStr, ...)                   \
-    avs_log_internal_##Variant##__(Level, ModuleStr, __FILE__, __LINE__, \
-                                   __VA_ARGS__)
+#define AVS_LOG_IMPL__(Level, Variant, ModuleStr, ...) \
+    avs_log_internal_##Variant##__(                    \
+            Level, ModuleStr, __FILE__, __LINE__, __VA_ARGS__)
 
 #define AVS_LOG_LAZY_IMPL__(Level, Variant, ModuleStr, ...)               \
     (avs_log_should_log__(Level, ModuleStr)                               \

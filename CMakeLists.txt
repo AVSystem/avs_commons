@@ -163,8 +163,6 @@ endif()
 
 option(WITH_POISONING "Poison libc symbols that shall not be used" ${WITH_TEST})
 
-set(AVS_COMMONS_WITH_POISONING "${WITH_POISONING}")
-
 if(CMAKE_C_COMPILE_OPTIONS_PIC)
     option(WITH_PIC "Generate position-independent code" ON)
     if(WITH_PIC)
@@ -231,9 +229,6 @@ endif()
 
 option(WITH_IPV4 "Enable IPv4 support" ON)
 option(WITH_IPV6 "Enable IPv6 support" ON)
-
-set(AVS_COMMONS_WITH_IPV4 "${WITH_IPV4}")
-set(AVS_COMMONS_WITH_IPV6 "${WITH_IPV6}")
 
 option(WITH_SOCKET_LOG "Enable socket communication logging" OFF)
 
@@ -544,7 +539,11 @@ if(NOT ${CMAKE_PROJECT_NAME} STREQUAL ${PROJECT_NAME})
     set(avs_commons_INCLUDE_DIRS ${INCLUDE_DIRS} ${MODULE_INCLUDE_DIRS} PARENT_SCOPE)
 endif()
 
+set(AVS_COMMONS_WITH_IPV4 "${WITH_IPV4}")
+set(AVS_COMMONS_WITH_IPV6 "${WITH_IPV6}")
 set(AVS_COMMONS_WITH_MBEDTLS_CUSTOM_ENTROPY_INITIALIZER "${WITH_MBEDTLS_CUSTOM_ENTROPY_INITIALIZER}")
+set(AVS_COMMONS_WITH_MICRO_LOGS "${WITH_AVS_MICRO_LOGS}")
+set(AVS_COMMONS_WITH_POISONING "${WITH_POISONING}")
 
 configure_file("config/avs_commons_config.h.in" "config/avs_commons_config.h")
 configure_file("config/avs_commons_posix_config.h.in" "config/avs_commons_posix_config.h")

@@ -24,7 +24,7 @@
 /** Is the library compiled to use custom mbed TLS entropy initializer? */
 #cmakedefine AVS_COMMONS_WITH_MBEDTLS_CUSTOM_ENTROPY_INITIALIZER
 /** Is the library compiled with micro logs feature? */
-#cmakedefine WITH_AVS_MICRO_LOGS
+#cmakedefine AVS_COMMONS_WITH_MICRO_LOGS
 /** Is net/if.h available in the system? */
 #cmakedefine AVS_COMMONS_HAVE_NET_IF_H
 /** Is sys/types.h available in the system? */
