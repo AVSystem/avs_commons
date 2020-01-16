@@ -12,9 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-add_library(avs_log STATIC
-            include_public/avsystem/commons/log.h
+set(AVS_LOG_PUBLIC_HEADERS
+    include_public/avsystem/commons/log.h)
 
+add_library(avs_log STATIC
+            ${AVS_LOG_PUBLIC_HEADERS}
             log.c)
 
 target_include_directories(avs_log PUBLIC
@@ -27,10 +29,9 @@ if(WITH_AVS_COMPAT_THREADING)
 endif()
 
 avs_install_export(avs_log log)
-install(DIRECTORY include_public/
+install(FILES ${AVS_LOG_PUBLIC_HEADERS}
         COMPONENT log
-        DESTINATION ${INCLUDE_INSTALL_DIR}
-        FILES_MATCHING REGEX "[.]h$")
+        DESTINATION ${INCLUDE_INSTALL_DIR}/avsystem/commons)
 
 avs_add_test(NAME avs_log
              LIBS avs_log

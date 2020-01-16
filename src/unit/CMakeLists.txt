@@ -42,7 +42,7 @@ if(WITH_AVS_STREAM)
 endif()
 
 avs_install_export(avs_unit unit)
-install(DIRECTORY include_public/
+install(DIRECTORY include_public/avsystem/commons/unit
         COMPONENT unit
-        DESTINATION ${INCLUDE_INSTALL_DIR}
+        DESTINATION ${INCLUDE_INSTALL_DIR}/avsystem/commons
         FILES_MATCHING REGEX "[.]h$")

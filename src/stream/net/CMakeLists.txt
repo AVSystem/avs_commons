@@ -17,10 +17,12 @@ if(NOT WITH_AVS_BUFFER OR NOT WITH_AVS_NET)
     return()
 endif()
 
-add_library(avs_stream_net STATIC
-            include_public/avsystem/commons/stream/stream_net.h
-            include_public/avsystem/commons/stream/netbuf.h
+set(AVS_STREAM_NET_PUBLIC_HEADERS
+    include_public/avsystem/commons/stream/stream_net.h
+    include_public/avsystem/commons/stream/netbuf.h)
 
+add_library(avs_stream_net STATIC
+            ${AVS_STREM_NET_PUBLIC_HEADERS}
             stream_net.c
             netbuf.c)
 
@@ -30,7 +32,6 @@ target_include_directories(avs_stream_net PUBLIC
 target_link_libraries(avs_stream_net PUBLIC avs_stream avs_buffer avs_net)
 
 avs_install_export(avs_stream_net stream)
-install(DIRECTORY include_public/
+install(FILES ${AVS_STREAM_NET_PUBLIC_HEADERS}
         COMPONENT stream_net
-        DESTINATION ${INCLUDE_INSTALL_DIR}
-        FILES_MATCHING REGEX "[.]h$")
+        DESTINATION ${INCLUDE_INSTALL_DIR}/avsystem/commons/stream)

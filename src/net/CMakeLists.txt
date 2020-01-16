@@ -20,17 +20,20 @@ endif()
 option(WITH_POSIX_AVS_SOCKET "Enable avs_socket implementation based on POSIX socket API" "${POSIX_AVS_SOCKET_DEFAULT}")
 cmake_dependent_option(WITH_TLS_SESSION_PERSISTENCE "Enable support for TLS session persistence" ON WITH_AVS_PERSISTENCE OFF)
 
+set(AVS_NET_PUBLIC_HEADERS
+    include_public/avsystem/commons/addrinfo.h
+    include_public/avsystem/commons/net.h
+    include_public/avsystem/commons/socket.h
+    include_public/avsystem/commons/socket_v_table.h
+    include_public/avsystem/commons/url.h)
+
 # Because of complex internal dependencies of avs_net source files, all of them
 # have to be recompiled for every single (D)TLS backend.
 #
 # TODO: it should be possible to decouple them enough to be able to reuse a
 # single build of "core" sources for all cases.
 set(AVS_NET_SOURCES
-    include_public/avsystem/commons/addrinfo.h
-    include_public/avsystem/commons/net.h
-    include_public/avsystem/commons/socket.h
-    include_public/avsystem/commons/socket_v_table.h
-    include_public/avsystem/commons/url.h
+    ${AVS_NET_PUBLIC_HEADERS}
 
     api.h
     global.h
@@ -74,10 +77,9 @@ endif()
 target_link_libraries(avs_net_core INTERFACE avs_stream avs_utils avs_compat_threading)
 
 avs_install_export(avs_net_core net)
-install(DIRECTORY include_public/
+install(FILES ${AVS_NET_PUBLIC_HEADERS}
         COMPONENT net
-        DESTINATION ${INCLUDE_INSTALL_DIR}
-        FILES_MATCHING REGEX "[.]h$")
+        DESTINATION ${INCLUDE_INSTALL_DIR}/avsystem/commons)
 
 add_library(avs_net_nosec ${AVS_NET_SOURCES})
 target_compile_definitions(avs_net_nosec PRIVATE WITHOUT_SSL)

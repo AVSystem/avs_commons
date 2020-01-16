@@ -12,9 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-add_library(avs_sched STATIC
-            include_public/avsystem/commons/sched.h
+set(AVS_SCHED_PUBLIC_HEADERS
+    include_public/avsystem/commons/sched.h)
 
+add_library(avs_sched STATIC
+            ${AVS_SCHED_PUBLIC_HEADERS}
             sched.c)
 
 target_include_directories(avs_sched PUBLIC
@@ -25,10 +27,9 @@ target_link_libraries(avs_sched PUBLIC avs_commons_global_headers avs_list)
 cmake_dependent_option(WITH_SCHEDULER_THREAD_SAFE "Enable thread-safe locking of scheduler structures" ON WITH_AVS_COMPAT_THREADING OFF)
 
 avs_install_export(avs_sched sched)
-install(DIRECTORY include_public/
+install(FILES ${AVS_SCHED_PUBLIC_HEADERS}
         COMPONENT sched
-        DESTINATION ${INCLUDE_INSTALL_DIR}
-        FILES_MATCHING REGEX "[.]h$")
+        DESTINATION ${INCLUDE_INSTALL_DIR}/avsystem/commons)
 
 # On Linux, one needs to link libdl to use dlsym(). On BSD, it is not necessary,
 # and even harmful, since libdl does not exist.

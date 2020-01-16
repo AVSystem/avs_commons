@@ -12,9 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-add_library(avs_algorithm STATIC
-            include_public/avsystem/commons/base64.h
+set(AVS_ALGORITHM_PUBLIC_HEADERS
+    include_public/avsystem/commons/base64.h)
 
+add_library(avs_algorithm STATIC
+            ${AVS_ALGORITHM_PUBLIC_HEADERS}
             base64.c)
 
 target_include_directories(avs_algorithm PUBLIC
@@ -27,7 +29,6 @@ avs_add_test(NAME avs_algorithm
              SOURCES $<TARGET_PROPERTY:avs_algorithm,SOURCES>)
 
 avs_install_export(avs_algorithm algorithm)
-install(DIRECTORY include_public/
+install(FILES ${AVS_ALGORITHM_PUBLIC_HEADERS}
         COMPONENT algorithm
-        DESTINATION ${INCLUDE_INSTALL_DIR}
-        FILES_MATCHING REGEX "[.]h$")
+        DESTINATION ${INCLUDE_INSTALL_DIR}/avsystem/commons)

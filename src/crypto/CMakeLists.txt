@@ -12,10 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set(AVS_CRYPTO_SOURCES
+set(AVS_CRYPTO_PUBLIC_HEADERS
     include_public/avsystem/commons/hkdf.h
-    include_public/avsystem/commons/aead.h
+    include_public/avsystem/commons/aead.h)
 
+set(AVS_CRYPTO_SOURCES
+    ${AVS_CRYPTO_PUBLIC_HEADERS}
     crypto_utils.c
     crypto_utils.h)
 
@@ -70,9 +72,8 @@ endforeach()
 if(NOT TARGET avs_crypto)
     message(WARNING "No supported crypto backend available, avs_crypto will be disabled")
 else()
-    install(DIRECTORY include_public/
+    install(FILES ${AVS_CRYPTO_PUBLIC_HEADERS}
             COMPONENT crypto
-            DESTINATION ${INCLUDE_INSTALL_DIR}
-            FILES_MATCHING REGEX "[.]h$")
+            DESTINATION ${INCLUDE_INSTALL_DIR}/avsystem/commons)
     avs_install_export(avs_crypto_core crypto)
 endif()

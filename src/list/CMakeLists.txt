@@ -12,9 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-add_library(avs_list STATIC
-            include_public/avsystem/commons/list.h
+set(AVS_LIST_PUBLIC_HEADERS
+    include_public/avsystem/commons/list.h)
 
+add_library(avs_list STATIC
+            ${AVS_LIST_PUBLIC_HEADERS}
             list.c)
 
 target_include_directories(avs_list PUBLIC
@@ -23,10 +25,9 @@ target_include_directories(avs_list PUBLIC
 target_link_libraries(avs_list PUBLIC avs_commons_global_headers avs_utils)
 
 avs_install_export(avs_list list)
-install(DIRECTORY include_public/
+install(FILES ${AVS_LIST_PUBLIC_HEADERS}
         COMPONENT list
-        DESTINATION ${INCLUDE_INSTALL_DIR}
-        FILES_MATCHING REGEX "[.]h$")
+        DESTINATION ${INCLUDE_INSTALL_DIR}/avsystem/commons)
 
 avs_add_test(NAME avs_list
              LIBS avs_list

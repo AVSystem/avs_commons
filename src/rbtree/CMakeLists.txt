@@ -12,9 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-add_library(avs_rbtree STATIC
-            include_public/avsystem/commons/rbtree.h
+set(AVS_RBTREE_PUBLIC_HEADERS
+    include_public/avsystem/commons/rbtree.h)
 
+add_library(avs_rbtree STATIC
+            ${AVS_RBTREE_PUBLIC_HEADERS}
             rbtree.c)
 
 target_include_directories(avs_rbtree PUBLIC
@@ -23,10 +25,9 @@ target_include_directories(avs_rbtree PUBLIC
 target_link_libraries(avs_rbtree PUBLIC avs_commons_global_headers avs_utils)
 
 avs_install_export(avs_rbtree rbtree)
-install(DIRECTORY include_public/
+install(FILES ${AVS_RBTREE_PUBLIC_HEADERS}
         COMPONENT rbtree
-        DESTINATION ${INCLUDE_INSTALL_DIR}
-        FILES_MATCHING REGEX "[.]h$")
+        DESTINATION ${INCLUDE_INSTALL_DIR}/avsystem/commons)
 
 avs_add_test(NAME avs_rbtree
              LIBS avs_rbtree

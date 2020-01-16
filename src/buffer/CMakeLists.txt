@@ -12,9 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-add_library(avs_buffer STATIC
-            include_public/avsystem/commons/buffer.h
+set(AVS_BUFFER_PUBLIC_HEADERS
+    include_public/avsystem/commons/buffer.h)
 
+add_library(avs_buffer STATIC
+            ${AVS_BUFFER_PUBLIC_HEADERS}
             buffer.c)
 
 target_include_directories(avs_buffer PUBLIC
@@ -23,10 +25,9 @@ target_include_directories(avs_buffer PUBLIC
 target_link_libraries(avs_buffer PUBLIC avs_commons_global_headers avs_utils)
 
 avs_install_export(avs_buffer buffer)
-install(DIRECTORY include_public/
+install(FILES ${AVS_BUFFER_PUBLIC_HEADERS}
         COMPONENT buffer
-        DESTINATION ${INCLUDE_INSTALL_DIR}
-        FILES_MATCHING REGEX "[.]h$")
+        DESTINATION ${INCLUDE_INSTALL_DIR}/avsystem/commons)
 
 avs_add_test(NAME avs_buffer
              LIBS avs_buffer

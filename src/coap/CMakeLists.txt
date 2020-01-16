@@ -64,7 +64,7 @@ if(TARGET avs_coap_test)
 endif()
 
 avs_install_export(avs_coap coap)
-install(DIRECTORY include_public/
+install(DIRECTORY include_public/avsystem/commons/coap
         COMPONENT coap
-        DESTINATION ${INCLUDE_INSTALL_DIR}
+        DESTINATION ${INCLUDE_INSTALL_DIR}/avsystem/commons
         FILES_MATCHING REGEX "[.]h$")

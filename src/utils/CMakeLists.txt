@@ -12,13 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-add_library(avs_utils STATIC
-            include_public/avsystem/commons/cleanup.h
-            include_public/avsystem/commons/memory.h
-            include_public/avsystem/commons/shared_buffer.h
-            include_public/avsystem/commons/time.h
-            include_public/avsystem/commons/utils.h
+set(AVS_UTILS_PUBLIC_HEADERS
+    include_public/avsystem/commons/cleanup.h
+    include_public/avsystem/commons/memory.h
+    include_public/avsystem/commons/shared_buffer.h
+    include_public/avsystem/commons/time.h
+    include_public/avsystem/commons/utils.h)
 
+add_library(avs_utils STATIC
+            ${AVS_UTILS_PUBLIC_HEADERS}
             x_time_conv.h
 
             cleanup.c
@@ -64,7 +66,6 @@ avs_add_test(NAME avs_utils
              ${AVS_COMMONS_SOURCE_DIR}/tests/utils/shared_buffer.c)
 
 avs_install_export(avs_utils utils)
-install(DIRECTORY include_public/
+install(FILES ${AVS_UTILS_PUBLIC_HEADERS}
         COMPONENT utils
-        DESTINATION ${INCLUDE_INSTALL_DIR}
-        FILES_MATCHING REGEX "[.]h$")
+        DESTINATION ${INCLUDE_INSTALL_DIR}/avsystem/commons)

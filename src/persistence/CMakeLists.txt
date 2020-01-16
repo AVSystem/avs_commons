@@ -12,9 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-add_library(avs_persistence STATIC
-            include_public/avsystem/commons/persistence.h
+set(AVS_PERSISTENCE_PUBLIC_HEADERS
+    include_public/avsystem/commons/persistence.h)
 
+add_library(avs_persistence STATIC
+            ${AVS_PERSISTENCE_PUBLIC_HEADERS}
             persistence.c)
 
 target_include_directories(avs_persistence PUBLIC
@@ -23,10 +25,9 @@ target_include_directories(avs_persistence PUBLIC
 target_link_libraries(avs_persistence PUBLIC avs_commons_global_headers avs_rbtree avs_stream avs_utils avs_list)
 
 avs_install_export(avs_persistence persistence)
-install(DIRECTORY include_public/
+install(FILES ${AVS_PERSISTENCE_PUBLIC_HEADERS}
         COMPONENT persistence
-        DESTINATION ${INCLUDE_INSTALL_DIR}
-        FILES_MATCHING REGEX "[.]h$")
+        DESTINATION ${INCLUDE_INSTALL_DIR}/avsystem/commons)
 
 avs_add_test(NAME avs_persistence
              LIBS avs_persistence

@@ -12,9 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-add_library(avs_stream_md5 STATIC
-            include_public/avsystem/commons/stream/md5.h
+set(AVS_STREAM_MD5_PUBLIC_HEADERS
+    include_public/avsystem/commons/stream/md5.h)
 
+add_library(avs_stream_md5 STATIC
+            ${AVS_STREAM_MD5_PUBLIC_HEADERS}
             md5_common.h
             md5_common.c)
 
@@ -33,7 +35,6 @@ target_include_directories(avs_stream_md5 PUBLIC
 target_link_libraries(avs_stream_md5 PUBLIC avs_stream avs_net)
 
 avs_install_export(avs_stream_md5 stream)
-install(DIRECTORY include_public/
+install(FILES ${AVS_STREAM_MD5_PUBLIC_HEADERS}
         COMPONENT stream_md5
-        DESTINATION ${INCLUDE_INSTALL_DIR}
-        FILES_MATCHING REGEX "[.]h$")
+        DESTINATION ${INCLUDE_INSTALL_DIR}/avsystem/commons/stream)

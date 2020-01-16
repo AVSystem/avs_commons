@@ -41,7 +41,6 @@ if(NOT TARGET avs_compat_threading)
     avs_install_export(avs_compat_threading compat_threading)
 endif()
 
-install(DIRECTORY include_public/
+install(FILES ${COMPAT_THREADING_PUBLIC_HEADERS}
         COMPONENT compat_threading
-        DESTINATION ${INCLUDE_INSTALL_DIR}
-        FILES_MATCHING REGEX "[.]h$")
+        DESTINATION ${INCLUDE_INSTALL_DIR}/avsystem/commons)

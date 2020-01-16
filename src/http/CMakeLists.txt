@@ -12,8 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+set(AVS_HTTP_PUBLIC_HEADERS
+    include_public/avsystem/commons/http.h)
+
 add_library(avs_http STATIC
-            include_public/avsystem/commons/http.h
+            ${AVS_HTTP_PUBLIC_HEADERS}
 
             auth.h
             body_receivers.h
@@ -52,10 +55,9 @@ if(WITH_AVS_HTTP_ZLIB)
 endif()
 
 avs_install_export(avs_http http)
-install(DIRECTORY include_public/
+install(FILES ${AVS_HTTP_PUBLIC_HEADERS}
         COMPONENT http
-        DESTINATION ${INCLUDE_INSTALL_DIR}
-        FILES_MATCHING REGEX "[.]h$")
+        DESTINATION ${INCLUDE_INSTALL_DIR}/avsystem/commons)
 
 avs_add_test(NAME avs_http
              LIBS avs_http

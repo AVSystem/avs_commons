@@ -12,9 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-add_library(avs_vector STATIC
-            include_public/avsystem/commons/vector.h
+set(AVS_VECTOR_PUBLIC_HEADERS
+    include_public/avsystem/commons/vector.h)
 
+add_library(avs_vector STATIC
+            ${AVS_VECTOR_PUBLIC_HEADERS}
             vector.c)
 
 target_include_directories(avs_vector PUBLIC
@@ -23,10 +25,9 @@ target_include_directories(avs_vector PUBLIC
 target_link_libraries(avs_vector PUBLIC avs_commons_global_headers avs_utils)
 
 avs_install_export(avs_vector vector)
-install(DIRECTORY include_public/
+install(FILES ${AVS_VECTOR_PUBLIC_HEADERS}
         COMPONENT vector
-        DESTINATION ${INCLUDE_INSTALL_DIR}
-        FILES_MATCHING REGEX "[.]h$")
+        DESTINATION ${INCLUDE_INSTALL_DIR}/avsystem/commons)
 
 avs_add_test(NAME avs_vector
              LIBS avs_vector
