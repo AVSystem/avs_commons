@@ -29,20 +29,20 @@
 AVS_UNIT_TEST(backend_mbedtls, chain_loading_from_file) {
     mbedtls_x509_crt *chain = NULL;
 
-    const avs_net_trusted_cert_info_t pem = avs_net_trusted_cert_info_from_file(
-            AVS_TEST_BIN_DIR "/certs/root.crt");
+    const avs_net_trusted_cert_info_t pem =
+            avs_net_trusted_cert_info_from_file("../certs/root.crt");
     AVS_UNIT_ASSERT_SUCCESS(_avs_net_mbedtls_load_ca_certs(&chain, &pem));
     mbedtls_x509_crt_free(chain);
 
-    const avs_net_trusted_cert_info_t der = avs_net_trusted_cert_info_from_file(
-            AVS_TEST_BIN_DIR "/certs/root.crt.der");
+    const avs_net_trusted_cert_info_t der =
+            avs_net_trusted_cert_info_from_file("../certs/root.crt.der");
 
     AVS_UNIT_ASSERT_SUCCESS(_avs_net_mbedtls_load_ca_certs(&chain, &der));
     mbedtls_x509_crt_free(chain);
 
     // Unsupported pkcs12. Loading should fail.
-    const avs_net_trusted_cert_info_t p12 = avs_net_trusted_cert_info_from_file(
-            AVS_TEST_BIN_DIR "/certs/server.p12");
+    const avs_net_trusted_cert_info_t p12 =
+            avs_net_trusted_cert_info_from_file("../certs/server.p12");
     AVS_UNIT_ASSERT_FAILED(_avs_net_mbedtls_load_ca_certs(&chain, &p12));
     avs_free(chain);
 }
@@ -51,7 +51,7 @@ AVS_UNIT_TEST(backend_mbedtls, chain_loading_from_path) {
     mbedtls_x509_crt *chain = NULL;
 
     const avs_net_trusted_cert_info_t path =
-            avs_net_trusted_cert_info_from_path(AVS_TEST_BIN_DIR "/certs");
+            avs_net_trusted_cert_info_from_path("../certs");
     AVS_UNIT_ASSERT_SUCCESS(_avs_net_mbedtls_load_ca_certs(&chain, &path));
     mbedtls_x509_crt_free(chain);
 
@@ -136,33 +136,33 @@ AVS_UNIT_TEST(backend_mbedtls, cert_loading_from_null) {
 
 AVS_UNIT_TEST(backend_mbedtls, cert_loading_from_file) {
     mbedtls_x509_crt *cert = NULL;
-    const avs_net_client_cert_info_t pem = avs_net_client_cert_info_from_file(
-            AVS_TEST_BIN_DIR "/certs/client.crt");
+    const avs_net_client_cert_info_t pem =
+            avs_net_client_cert_info_from_file("../certs/client.crt");
     AVS_UNIT_ASSERT_SUCCESS(_avs_net_mbedtls_load_client_cert(&cert, &pem));
     mbedtls_x509_crt_free(cert);
 
-    const avs_net_client_cert_info_t der = avs_net_client_cert_info_from_file(
-            AVS_TEST_BIN_DIR "/certs/client.crt.der");
+    const avs_net_client_cert_info_t der =
+            avs_net_client_cert_info_from_file("../certs/client.crt.der");
 
     AVS_UNIT_ASSERT_SUCCESS(_avs_net_mbedtls_load_client_cert(&cert, &der));
     mbedtls_x509_crt_free(cert);
 
     // Unsupported pkcs12. Loading should fail.
-    const avs_net_client_cert_info_t p12 = avs_net_client_cert_info_from_file(
-            AVS_TEST_BIN_DIR "/certs/client.p12");
+    const avs_net_client_cert_info_t p12 =
+            avs_net_client_cert_info_from_file("../certs/client.p12");
     AVS_UNIT_ASSERT_FAILED(_avs_net_mbedtls_load_client_cert(&cert, &p12));
     avs_free(cert);
 }
 
 AVS_UNIT_TEST(backend_mbedtls, key_loading) {
     mbedtls_pk_context *pk = NULL;
-    const avs_net_client_key_info_t pem = avs_net_client_key_info_from_file(
-            AVS_TEST_BIN_DIR "/certs/client.key", NULL);
+    const avs_net_client_key_info_t pem =
+            avs_net_client_key_info_from_file("../certs/client.key", NULL);
     AVS_UNIT_ASSERT_SUCCESS(_avs_net_mbedtls_load_client_key(&pk, &pem));
     mbedtls_pk_free(pk);
 
-    const avs_net_client_key_info_t der = avs_net_client_key_info_from_file(
-            AVS_TEST_BIN_DIR "/certs/client.key.der", NULL);
+    const avs_net_client_key_info_t der =
+            avs_net_client_key_info_from_file("../certs/client.key.der", NULL);
     AVS_UNIT_ASSERT_SUCCESS(_avs_net_mbedtls_load_client_key(&pk, &der));
     mbedtls_pk_free(pk);
     avs_free(pk);

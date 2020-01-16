@@ -20,6 +20,12 @@ set(AVS_COMMONS_VERSION SNAPSHOT)
 
 ################# DISTRIBUTION #################################################
 
+set(AVS_COMMONS_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
+set(AVS_COMMONS_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/output")
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${AVS_COMMONS_BINARY_DIR}/bin")
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${AVS_COMMONS_BINARY_DIR}/lib")
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${AVS_COMMONS_BINARY_DIR}/lib")
+
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "AVSystem Commons Library")
 set(CPACK_PACKAGE_VENDOR "AVSystem")
 set(CPACK_PACKAGE_VERSION "${AVS_COMMONS_VERSION}")
@@ -327,11 +333,11 @@ if(WITH_TEST)
         message(FATAL_ERROR "WITH_TEST requires WITH_AVS_UNIT to be enabled")
     endif()
 
-    if(NOT EXISTS "${CMAKE_CURRENT_BINARY_DIR}/certs/client.crt.der")
+    if(NOT EXISTS "${AVS_COMMONS_BINARY_DIR}/certs/client.crt.der")
         execute_process(COMMAND
                         env bash
                         "${CMAKE_CURRENT_SOURCE_DIR}/tools/generate-certs.sh"
-                        "${CMAKE_CURRENT_BINARY_DIR}/certs"
+                        "${AVS_COMMONS_BINARY_DIR}/certs"
                         RESULT_VARIABLE RES)
         if(NOT ${RES} EQUAL 0)
             message(FATAL_ERROR "could not generate SSL certificates")
@@ -384,19 +390,20 @@ if(WITH_TEST)
         target_link_libraries(${AAT_NAME}_test PRIVATE avs_unit ${AAT_LIBS})
         add_dependencies(${AAT_NAME}_test dtls_echo_server)
 
-        set_property(TARGET ${AAT_NAME}_test APPEND PROPERTY COMPILE_DEFINITIONS
-                     AVS_UNIT_TESTING
-                     AVS_TEST_BIN_DIR="${_BINARY_DIR}")
+        set_property(TARGET ${AAT_NAME}_test APPEND PROPERTY COMPILE_DEFINITIONS AVS_UNIT_TESTING)
         set_property(TARGET ${AAT_NAME}_test APPEND PROPERTY COMPILE_FLAGS
                      "-Wno-clobbered -Wno-overlength-strings -Wno-sign-conversion -Wno-vla")
 
         if(VALGRIND)
-            set(VALGRIND_CMD ${VALGRIND} --log-file=VALGRIND.${AAT_NAME}.log ${AAT_VALGRIND_ARGS})
+            file(MAKE_DIRECTORY "${AVS_COMMONS_BINARY_DIR}/log")
+            set(VALGRIND_CMD ${VALGRIND} "--log-file=${AVS_COMMONS_BINARY_DIR}/log/VALGRIND.${AAT_NAME}.log" ${AAT_VALGRIND_ARGS})
         else()
             set(VALGRIND_CMD)
         endif()
 
-        add_test(NAME ${AAT_NAME}_test COMMAND ${VALGRIND_CMD} $<TARGET_FILE:${AAT_NAME}_test>)
+        add_test(NAME ${AAT_NAME}_test
+                 COMMAND ${VALGRIND_CMD} $<TARGET_FILE:${AAT_NAME}_test>
+                 WORKING_DIRECTORY $<TARGET_FILE_DIR:${AAT_NAME}_test>)
 
         add_custom_target(${AAT_NAME}_check COMMAND ${CMAKE_CTEST_COMMAND} -V -R "^${AAT_NAME}_test$" DEPENDS ${AAT_NAME}_test)
         add_dependencies(avs_commons_check ${AAT_NAME}_check)
