@@ -291,7 +291,7 @@ function(add_module_with_include_dirs)
         message(FATAL_ERROR "Required argument NAME not given")
     endif()
     if(NOT DEFINED AMWID_PATH)
-        set(AMWID_PATH "${AMWID_NAME}")
+        set(AMWID_PATH "src/${AMWID_NAME}")
     endif()
     if(NOT DEFINED INCLUDE_DIRS_VAR)
         set(AMWID_INCLUDE_DIRS_VAR MODULE_INCLUDE_DIRS)
@@ -508,7 +508,7 @@ endif()
 
 if(WITH_AVS_COMPAT_THREADING)
     add_module_with_include_dirs(NAME compat_threading
-                                 PATH compat/threading)
+                                 PATH src/compat/threading)
 endif()
 
 if(WITH_AVS_CRYPTO)
