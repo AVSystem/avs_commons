@@ -13,14 +13,14 @@
 # limitations under the License.
 
 set(AVS_LOG_PUBLIC_HEADERS
-    include_public/avsystem/commons/log.h)
+    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/log.h")
 
 add_library(avs_log STATIC
             ${AVS_LOG_PUBLIC_HEADERS}
             log.c)
 
 target_include_directories(avs_log PUBLIC
-                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include_public>
+                           $<BUILD_INTERFACE:${AVS_COMMONS_SOURCE_DIR}/include_public>
                            $<INSTALL_INTERFACE:include>)
 target_link_libraries(avs_log PUBLIC avs_commons_global_headers avs_utils avs_list)
 

@@ -13,16 +13,16 @@
 # limitations under the License.
 
 add_library(avs_coap STATIC
-            include_public/avsystem/commons/coap/block_builder.h
-            include_public/avsystem/commons/coap/block_utils.h
-            include_public/avsystem/commons/coap/ctx.h
-            include_public/avsystem/commons/coap/msg_builder.h
-            include_public/avsystem/commons/coap/msg.h
-            include_public/avsystem/commons/coap/msg_identity.h
-            include_public/avsystem/commons/coap/msg_info.h
-            include_public/avsystem/commons/coap/msg_opt.h
-            include_public/avsystem/commons/coap/opt.h
-            include_public/avsystem/commons/coap/tx_params.h
+            "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/coap/block_builder.h"
+            "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/coap/block_utils.h"
+            "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/coap/ctx.h"
+            "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/coap/msg_builder.h"
+            "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/coap/msg.h"
+            "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/coap/msg_identity.h"
+            "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/coap/msg_info.h"
+            "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/coap/msg_opt.h"
+            "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/coap/opt.h"
+            "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/coap/tx_params.h"
 
             block_builder.c
             block_utils.c
@@ -39,7 +39,7 @@ if(WITH_AVS_COAP_MESSAGE_CACHE)
 endif()
 
 target_include_directories(avs_coap PUBLIC
-                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include_public>
+                           $<BUILD_INTERFACE:${AVS_COMMONS_SOURCE_DIR}/include_public>
                            $<INSTALL_INTERFACE:include>)
 target_link_libraries(avs_coap PUBLIC avs_commons_global_headers avs_buffer avs_utils avs_net avs_list)
 
@@ -64,7 +64,7 @@ if(TARGET avs_coap_test)
 endif()
 
 avs_install_export(avs_coap coap)
-install(DIRECTORY include_public/avsystem/commons/coap
+install(DIRECTORY "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/coap"
         COMPONENT coap
         DESTINATION ${INCLUDE_INSTALL_DIR}/avsystem/commons
         FILES_MATCHING REGEX "[.]h$")

@@ -29,7 +29,7 @@ add_library(avs_compat_threading_pthread STATIC
             init_once.c
             structs.h)
 target_include_directories(avs_compat_threading_pthread PUBLIC
-                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include_public>
+                           $<BUILD_INTERFACE:${AVS_COMMONS_SOURCE_DIR}/include_public>
                            $<INSTALL_INTERFACE:include>)
 target_link_libraries(avs_compat_threading_pthread PUBLIC avs_utils ${CMAKE_THREAD_LIBS_INIT})
 if(WITH_INTERNAL_LOGS)

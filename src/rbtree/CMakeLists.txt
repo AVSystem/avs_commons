@@ -13,14 +13,14 @@
 # limitations under the License.
 
 set(AVS_RBTREE_PUBLIC_HEADERS
-    include_public/avsystem/commons/rbtree.h)
+    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/rbtree.h")
 
 add_library(avs_rbtree STATIC
             ${AVS_RBTREE_PUBLIC_HEADERS}
             rbtree.c)
 
 target_include_directories(avs_rbtree PUBLIC
-                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include_public>
+                           $<BUILD_INTERFACE:${AVS_COMMONS_SOURCE_DIR}/include_public>
                            $<INSTALL_INTERFACE:include>)
 target_link_libraries(avs_rbtree PUBLIC avs_commons_global_headers avs_utils)
 

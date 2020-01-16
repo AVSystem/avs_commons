@@ -18,8 +18,8 @@ if(NOT WITH_AVS_BUFFER OR NOT WITH_AVS_NET)
 endif()
 
 set(AVS_STREAM_NET_PUBLIC_HEADERS
-    include_public/avsystem/commons/stream/stream_net.h
-    include_public/avsystem/commons/stream/netbuf.h)
+    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/stream/stream_net.h"
+    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/stream/netbuf.h")
 
 add_library(avs_stream_net STATIC
             ${AVS_STREM_NET_PUBLIC_HEADERS}
@@ -27,7 +27,7 @@ add_library(avs_stream_net STATIC
             netbuf.c)
 
 target_include_directories(avs_stream_net PUBLIC
-                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include_public>
+                           $<BUILD_INTERFACE:${AVS_COMMONS_SOURCE_DIR}/include_public>
                            $<INSTALL_INTERFACE:include>)
 target_link_libraries(avs_stream_net PUBLIC avs_stream avs_buffer avs_net)
 

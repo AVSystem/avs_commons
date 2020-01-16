@@ -13,11 +13,11 @@
 # limitations under the License.
 
 set(AVS_UTILS_PUBLIC_HEADERS
-    include_public/avsystem/commons/cleanup.h
-    include_public/avsystem/commons/memory.h
-    include_public/avsystem/commons/shared_buffer.h
-    include_public/avsystem/commons/time.h
-    include_public/avsystem/commons/utils.h)
+    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/cleanup.h"
+    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/memory.h"
+    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/shared_buffer.h"
+    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/time.h"
+    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/utils.h")
 
 add_library(avs_utils STATIC
             ${AVS_UTILS_PUBLIC_HEADERS}
@@ -51,7 +51,7 @@ if(WITH_STANDARD_ALLOCATOR)
 endif()
 
 target_include_directories(avs_utils PUBLIC
-                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include_public>
+                           $<BUILD_INTERFACE:${AVS_COMMONS_SOURCE_DIR}/include_public>
                            $<INSTALL_INTERFACE:include>)
 target_link_libraries(avs_utils PUBLIC avs_commons_global_headers ${MATH_LIBRARY})
 if(WITH_INTERNAL_LOGS)

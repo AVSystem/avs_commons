@@ -21,11 +21,11 @@ option(WITH_POSIX_AVS_SOCKET "Enable avs_socket implementation based on POSIX so
 cmake_dependent_option(WITH_TLS_SESSION_PERSISTENCE "Enable support for TLS session persistence" ON WITH_AVS_PERSISTENCE OFF)
 
 set(AVS_NET_PUBLIC_HEADERS
-    include_public/avsystem/commons/addrinfo.h
-    include_public/avsystem/commons/net.h
-    include_public/avsystem/commons/socket.h
-    include_public/avsystem/commons/socket_v_table.h
-    include_public/avsystem/commons/url.h)
+    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/addrinfo.h"
+    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/net.h"
+    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/socket.h"
+    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/socket_v_table.h"
+    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/url.h")
 
 # Because of complex internal dependencies of avs_net source files, all of them
 # have to be recompiled for every single (D)TLS backend.
@@ -47,7 +47,7 @@ set(AVS_NET_SOURCES
 add_library(avs_net_core INTERFACE)
 target_link_libraries(avs_net_core INTERFACE avs_commons_global_headers)
 target_include_directories(avs_net_core INTERFACE
-                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include_public>
+                           $<BUILD_INTERFACE:${AVS_COMMONS_SOURCE_DIR}/include_public>
                            $<INSTALL_INTERFACE:include>)
 
 if(WITH_POSIX_AVS_SOCKET)

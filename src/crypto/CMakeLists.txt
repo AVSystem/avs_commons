@@ -13,8 +13,8 @@
 # limitations under the License.
 
 set(AVS_CRYPTO_PUBLIC_HEADERS
-    include_public/avsystem/commons/hkdf.h
-    include_public/avsystem/commons/aead.h)
+    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/hkdf.h"
+    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/aead.h")
 
 set(AVS_CRYPTO_SOURCES
     ${AVS_CRYPTO_PUBLIC_HEADERS}

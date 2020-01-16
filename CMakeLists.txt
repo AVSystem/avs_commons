@@ -569,10 +569,8 @@ install(FILES
         ${CMAKE_CURRENT_SOURCE_DIR}/cmake/FindTinyDTLS.cmake
         DESTINATION ${LIB_INSTALL_DIR}/avs_commons/cmake)
 install(FILES
+        "${CMAKE_CURRENT_BINARY_DIR}/include_public/avsystem/commons/avs_commons_public_config.h"
         "${CMAKE_CURRENT_SOURCE_DIR}/include_public/avsystem/commons/defs.h"
         "${CMAKE_CURRENT_SOURCE_DIR}/include_public/avsystem/commons/errno.h"
         "${CMAKE_CURRENT_SOURCE_DIR}/include_public/avsystem/commons/errno_map.h"
         DESTINATION "${INCLUDE_INSTALL_DIR}/avsystem/commons")
-install(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/include_public/"
-        DESTINATION ${INCLUDE_INSTALL_DIR}
-        FILES_MATCHING REGEX "[.]h$")

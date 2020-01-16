@@ -13,14 +13,14 @@
 # limitations under the License.
 
 set(AVS_PERSISTENCE_PUBLIC_HEADERS
-    include_public/avsystem/commons/persistence.h)
+    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/persistence.h")
 
 add_library(avs_persistence STATIC
             ${AVS_PERSISTENCE_PUBLIC_HEADERS}
             persistence.c)
 
 target_include_directories(avs_persistence PUBLIC
-                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include_public>
+                           $<BUILD_INTERFACE:${AVS_COMMONS_SOURCE_DIR}/include_public>
                            $<INSTALL_INTERFACE:include>)
 target_link_libraries(avs_persistence PUBLIC avs_commons_global_headers avs_rbtree avs_stream avs_utils avs_list)
 

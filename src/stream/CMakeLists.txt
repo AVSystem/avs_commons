@@ -13,16 +13,16 @@
 # limitations under the License.
 
 set(AVS_STREAM_PUBLIC_HEADERS_ROOT
-    include_public/avsystem/commons/stream.h
-    include_public/avsystem/commons/stream_v_table.h)
+    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/stream.h"
+    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/stream_v_table.h")
 
 set(AVS_STREAM_PUBLIC_HEADERS_STREAM
-    include_public/avsystem/commons/stream/stream_buffered.h
-    include_public/avsystem/commons/stream/stream_file.h
-    include_public/avsystem/commons/stream/stream_inbuf.h
-    include_public/avsystem/commons/stream/stream_membuf.h
-    include_public/avsystem/commons/stream/stream_outbuf.h
-    include_public/avsystem/commons/stream/stream_simple_io.h)
+    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/stream/stream_buffered.h"
+    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/stream/stream_file.h"
+    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/stream/stream_inbuf.h"
+    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/stream/stream_membuf.h"
+    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/stream/stream_outbuf.h"
+    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/stream/stream_simple_io.h")
 
 add_library(avs_stream STATIC
             ${AVS_STREAM_PUBLIC_HEADERS_ROOT}
@@ -36,7 +36,7 @@ add_library(avs_stream STATIC
             stream_simple_io.c)
 
 target_include_directories(avs_stream PUBLIC
-                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include_public>
+                           $<BUILD_INTERFACE:${AVS_COMMONS_SOURCE_DIR}/include_public>
                            $<INSTALL_INTERFACE:include>)
 target_link_libraries(avs_stream PUBLIC avs_commons_global_headers avs_buffer)
 if(WITH_INTERNAL_LOGS)

@@ -13,14 +13,14 @@
 # limitations under the License.
 
 set(AVS_BUFFER_PUBLIC_HEADERS
-    include_public/avsystem/commons/buffer.h)
+    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/buffer.h")
 
 add_library(avs_buffer STATIC
             ${AVS_BUFFER_PUBLIC_HEADERS}
             buffer.c)
 
 target_include_directories(avs_buffer PUBLIC
-                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include_public>
+                           $<BUILD_INTERFACE:${AVS_COMMONS_SOURCE_DIR}/include_public>
                            $<INSTALL_INTERFACE:include>)
 target_link_libraries(avs_buffer PUBLIC avs_commons_global_headers avs_utils)
 

@@ -13,7 +13,7 @@
 # limitations under the License.
 
 set(AVS_STREAM_MD5_PUBLIC_HEADERS
-    include_public/avsystem/commons/stream/md5.h)
+    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/stream/md5.h")
 
 add_library(avs_stream_md5 STATIC
             ${AVS_STREAM_MD5_PUBLIC_HEADERS}
@@ -29,7 +29,7 @@ else()
 endif()
 
 target_include_directories(avs_stream_md5 PUBLIC
-                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include_public>
+                           $<BUILD_INTERFACE:${AVS_COMMONS_SOURCE_DIR}/include_public>
                            $<INSTALL_INTERFACE:include>)
 # TODO: this should depend directly on OpenSSL/mbedtls rather than avs_net
 target_link_libraries(avs_stream_md5 PUBLIC avs_stream avs_net)

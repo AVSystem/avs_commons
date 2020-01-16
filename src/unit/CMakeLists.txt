@@ -13,17 +13,17 @@
 # limitations under the License.
 
 add_library(avs_unit STATIC
-            include_public/avsystem/commons/unit/memstream.h
-            include_public/avsystem/commons/unit/mock_helpers.h
-            include_public/avsystem/commons/unit/mocksock.h
-            include_public/avsystem/commons/unit/test.h
+            "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/unit/memstream.h"
+            "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/unit/mock_helpers.h"
+            "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/unit/mocksock.h"
+            "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/unit/test.h"
 
             mock.c
             test.c
             stack_trace.c)
 
 target_include_directories(avs_unit PUBLIC
-                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include_public>
+                           $<BUILD_INTERFACE:${AVS_COMMONS_SOURCE_DIR}/include_public>
                            $<INSTALL_INTERFACE:include>)
 target_link_libraries(avs_unit PUBLIC avs_commons_global_headers avs_list)
 
@@ -42,7 +42,7 @@ if(WITH_AVS_STREAM)
 endif()
 
 avs_install_export(avs_unit unit)
-install(DIRECTORY include_public/avsystem/commons/unit
+install(DIRECTORY "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/unit"
         COMPONENT unit
         DESTINATION ${INCLUDE_INSTALL_DIR}/avsystem/commons
         FILES_MATCHING REGEX "[.]h$")
