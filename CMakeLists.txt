@@ -408,8 +408,6 @@ if(WITH_TEST)
         add_custom_target(${AAT_NAME}_check COMMAND ${CMAKE_CTEST_COMMAND} -V -R "^${AAT_NAME}_test$" DEPENDS ${AAT_NAME}_test)
         add_dependencies(avs_commons_check ${AAT_NAME}_check)
     endfunction()
-
-    add_subdirectory(tests)
 else(WITH_TEST)
     function(avs_add_test)
     endfunction()
