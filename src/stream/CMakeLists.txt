@@ -22,13 +22,13 @@ add_library(avs_stream STATIC
             include_public/avsystem/commons/stream/stream_simple_io.h
             include_public/avsystem/commons/stream_v_table.h
 
-            src/stream.c
-            src/stream_buffered.c
-            src/stream_file.c
-            src/stream_inbuf.c
-            src/stream_membuf.c
-            src/stream_outbuf.c
-            src/stream_simple_io.c)
+            stream.c
+            stream_buffered.c
+            stream_file.c
+            stream_inbuf.c
+            stream_membuf.c
+            stream_outbuf.c
+            stream_simple_io.c)
 
 target_include_directories(avs_stream PUBLIC
                            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include_public>

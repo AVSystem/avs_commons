@@ -30,14 +30,14 @@ set(AVS_NET_SOURCES
     include_public/avsystem/commons/socket_v_table.h
     include_public/avsystem/commons/url.h
 
-    src/api.h
-    src/global.h
-    src/net_impl.h
+    api.h
+    global.h
+    net_impl.h
 
-    src/addrinfo.c
-    src/api.c
-    src/global.c
-    src/url.c)
+    addrinfo.c
+    api.c
+    global.c
+    url.c)
 
 add_library(avs_net_core INTERFACE)
 target_link_libraries(avs_net_core INTERFACE avs_commons_global_headers)
@@ -83,7 +83,7 @@ target_link_libraries(avs_net_nosec PUBLIC avs_net_core)
 
 avs_add_test(NAME avs_net_nosec
              LIBS avs_net_nosec
-             SOURCES src/test/socket_nosec.c)
+             SOURCES test/socket_nosec.c)
 avs_install_export(avs_net_nosec net)
 
 if(WITH_OPENSSL)
@@ -91,61 +91,61 @@ if(WITH_OPENSSL)
 
     add_library(avs_net_openssl
                 ${AVS_NET_SOURCES}
-                src/openssl/openssl.c)
+                openssl/openssl.c)
     target_link_libraries(avs_net_openssl PUBLIC avs_net_core OpenSSL::SSL OpenSSL::Crypto)
 
     if(WITH_X509)
-        target_sources(avs_net_openssl PRIVATE src/openssl/data_loader.c)
+        target_sources(avs_net_openssl PRIVATE openssl/data_loader.c)
     endif()
 
     avs_add_test(NAME avs_net_openssl
                  LIBS avs_net_openssl
                  SOURCES
-                 src/test/socket_nosec.c
-                 src/test/socket_tls.c
-                 $<$<BOOL:${WITH_DTLS}>:src/test/socket_dtls.c>
-                 $<$<BOOL:${WITH_X509}>:src/openssl/test/data_loader.c>)
+                 test/socket_nosec.c
+                 test/socket_tls.c
+                 $<$<BOOL:${WITH_DTLS}>:test/socket_dtls.c>
+                 $<$<BOOL:${WITH_X509}>:openssl/test/data_loader.c>)
     avs_install_export(avs_net_openssl net)
 endif()
 
 if(WITH_MBEDTLS)
     add_library(avs_net_mbedtls
                 ${AVS_NET_SOURCES}
-                src/mbedtls/mbedtls.c)
+                mbedtls/mbedtls.c)
     target_link_libraries(avs_net_mbedtls PUBLIC avs_net_core mbedtls mbedcrypto mbedx509)
 
     if(WITH_TLS_SESSION_PERSISTENCE)
         target_sources(avs_net_mbedtls PRIVATE
-                       src/mbedtls/mbedtls_persistence.c
-                       src/mbedtls/mbedtls_persistence.h)
+                       mbedtls/mbedtls_persistence.c
+                       mbedtls/mbedtls_persistence.h)
 
         target_link_libraries(avs_net_mbedtls PUBLIC avs_persistence avs_rbtree)
     endif()
     if(WITH_X509)
-        target_sources(avs_net_mbedtls PRIVATE src/mbedtls/data_loader.c)
+        target_sources(avs_net_mbedtls PRIVATE mbedtls/data_loader.c)
     endif()
 
     avs_add_test(NAME avs_net_mbedtls
                  LIBS avs_net_mbedtls
                  SOURCES
-                 src/test/socket_nosec.c
-                 src/test/socket_tls.c
-                 src/test/socket_dtls.c
-                 $<$<BOOL:${WITH_X509}>:src/mbedtls/test/data_loader.c>)
+                 test/socket_nosec.c
+                 test/socket_tls.c
+                 test/socket_dtls.c
+                 $<$<BOOL:${WITH_X509}>:mbedtls/test/data_loader.c>)
     avs_install_export(avs_net_mbedtls net)
 endif()
 
 if(WITH_TINYDTLS)
     add_library(avs_net_tinydtls
                 ${AVS_NET_SOURCES}
-                src/tinydtls/tinydtls.c)
+                tinydtls/tinydtls.c)
     target_link_libraries(avs_net_tinydtls PUBLIC avs_net_core tinydtls)
 
     avs_add_test(NAME avs_net_tinydtls
                  LIBS avs_net_tinydtls
                  SOURCES
-                 src/test/socket_nosec.c
-                 src/test/socket_dtls.c)
+                 test/socket_nosec.c
+                 test/socket_dtls.c)
     avs_install_export(avs_net_tinydtls net)
 endif()
 

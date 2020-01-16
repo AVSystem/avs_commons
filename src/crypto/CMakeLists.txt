@@ -16,8 +16,8 @@ set(AVS_CRYPTO_SOURCES
     include_public/avsystem/commons/hkdf.h
     include_public/avsystem/commons/aead.h
 
-    src/crypto_utils.c
-    src/crypto_utils.h)
+    crypto_utils.c
+    crypto_utils.h)
 
 add_library(avs_crypto_core INTERFACE)
 target_include_directories(avs_crypto_core INTERFACE
@@ -32,30 +32,30 @@ endif()
 if(WITH_OPENSSL AND NOT OPENSSL_VERSION VERSION_LESS 1.1.0)
     add_library(avs_crypto_openssl
                 ${AVS_CRYPTO_SOURCES}
-                src/openssl/hkdf.c
-                src/openssl/aead.c)
+                openssl/hkdf.c
+                openssl/aead.c)
     target_link_libraries(avs_crypto_openssl PUBLIC avs_crypto_core OpenSSL::Crypto)
 
     avs_add_test(NAME avs_crypto_openssl
                  LIBS avs_crypto_openssl
                  SOURCES
-                 src/test/hkdf.c
-                 src/test/aead.c)
+                 test/hkdf.c
+                 test/aead.c)
     avs_install_export(avs_crypto_openssl crypto)
 endif()
 
 if(WITH_MBEDTLS AND NOT MBEDTLS_VERSION VERSION_LESS 2.14.0)
     add_library(avs_crypto_mbedtls
                 ${AVS_CRYPTO_SOURCES}
-                src/mbedtls/hkdf.c
-                src/mbedtls/aead.c)
+                mbedtls/hkdf.c
+                mbedtls/aead.c)
     target_link_libraries(avs_crypto_mbedtls PUBLIC avs_crypto_core mbedcrypto)
 
     avs_add_test(NAME avs_crypto_mbedtls
                  LIBS avs_crypto_mbedtls
                  SOURCES
-                 src/test/hkdf.c
-                 src/test/aead.c)
+                 test/hkdf.c
+                 test/aead.c)
     avs_install_export(avs_crypto_mbedtls crypto)
 endif()
 

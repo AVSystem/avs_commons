@@ -15,15 +15,15 @@
 add_library(avs_stream_md5 STATIC
             include_public/avsystem/commons/stream/md5.h
 
-            src/md5_common.h
-            src/md5_common.c)
+            md5_common.h
+            md5_common.c)
 
 if(WITH_OPENSSL)
-    target_sources(avs_stream_md5 PRIVATE src/stream_openssl.c)
+    target_sources(avs_stream_md5 PRIVATE stream_openssl.c)
 elseif(WITH_MBEDTLS)
-    target_sources(avs_stream_md5 PRIVATE src/stream_mbedtls.c)
+    target_sources(avs_stream_md5 PRIVATE stream_mbedtls.c)
 else()
-    target_sources(avs_stream_md5 PRIVATE src/md5_impl.c)
+    target_sources(avs_stream_md5 PRIVATE md5_impl.c)
 endif()
 
 target_include_directories(avs_stream_md5 PUBLIC

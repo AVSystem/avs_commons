@@ -21,8 +21,8 @@ add_library(avs_stream_net STATIC
             include_public/avsystem/commons/stream/stream_net.h
             include_public/avsystem/commons/stream/netbuf.h
 
-            src/stream_net.c
-            src/netbuf.c)
+            stream_net.c
+            netbuf.c)
 
 target_include_directories(avs_stream_net PUBLIC
                            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include_public>

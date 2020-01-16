@@ -15,7 +15,7 @@
 add_library(avs_log STATIC
             include_public/avsystem/commons/log.h
 
-            src/log.c)
+            log.c)
 
 target_include_directories(avs_log PUBLIC
                            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include_public>

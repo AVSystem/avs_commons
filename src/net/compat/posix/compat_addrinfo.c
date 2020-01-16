@@ -24,8 +24,6 @@
 #include <avsystem/commons/time.h>
 #include <avsystem/commons/utils.h>
 
-#include "../../src/global.h"
-#include "../../src/net_impl.h"
 #include "compat.h"
 
 VISIBILITY_SOURCE_BEGIN

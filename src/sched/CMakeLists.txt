@@ -15,7 +15,7 @@
 add_library(avs_sched STATIC
             include_public/avsystem/commons/sched.h
 
-            src/sched.c)
+            sched.c)
 
 target_include_directories(avs_sched PUBLIC
                            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include_public>
@@ -54,7 +54,7 @@ set(DLSYM_LIBRARY "${DETECTED_DLSYM_LIBRARY}" CACHE STRING "Name of the library 
 avs_add_test(NAME avs_sched
              LIBS avs_sched "${DLSYM_LIBRARY}"
              SOURCES $<TARGET_PROPERTY:avs_sched,SOURCES>
-                     src/test/test_sched.c)
+                     test/test_sched.c)
 
 if(WITH_INTERNAL_LOGS)
     target_link_libraries(avs_sched PUBLIC avs_log)

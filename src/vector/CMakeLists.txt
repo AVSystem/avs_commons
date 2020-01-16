@@ -15,7 +15,7 @@
 add_library(avs_vector STATIC
             include_public/avsystem/commons/vector.h
 
-            src/vector.c)
+            vector.c)
 
 target_include_directories(avs_vector PUBLIC
                            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include_public>
@@ -35,5 +35,5 @@ avs_add_test(NAME avs_vector
 if(WITH_CXX_TESTS)
     avs_add_test(NAME avs_vector_cxx
                  LIBS avs_vector
-                 SOURCES src/test/test_vector_cxx.cpp)
+                 SOURCES test/test_vector_cxx.cpp)
 endif()

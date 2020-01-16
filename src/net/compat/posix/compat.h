@@ -17,8 +17,8 @@
 #ifndef AVS_COMMONS_NET_COMPAT_H
 #define AVS_COMMONS_NET_COMPAT_H
 
-#include "../../src/global.h"
-#include "../../src/net_impl.h"
+#include "../../global.h"
+#include "../../net_impl.h"
 
 VISIBILITY_PRIVATE_HEADER_BEGIN
 

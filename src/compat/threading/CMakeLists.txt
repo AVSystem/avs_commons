@@ -18,15 +18,15 @@ set(COMPAT_THREADING_PUBLIC_HEADERS
     ${CMAKE_CURRENT_SOURCE_DIR}/include_public/avsystem/commons/init_once.h)
 
 set(COMPAT_THREADING_TEST_SOURCES
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/test/condvar.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/test/mutex.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/test/init_once.c)
+    ${CMAKE_CURRENT_SOURCE_DIR}/test/condvar.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/test/mutex.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/test/init_once.c)
 
 option(WITH_CUSTOM_AVS_THREADING "Do not provide any default implementations of avs_threading" OFF)
 if(NOT WITH_CUSTOM_AVS_THREADING)
 # NOTE: first available implementation defines default avs_compat_threading targets
-    add_subdirectory(src/atomic_spinlock)
-    add_subdirectory(src/pthread)
+    add_subdirectory(atomic_spinlock)
+    add_subdirectory(pthread)
 endif()
 
 if(NOT TARGET avs_compat_threading)

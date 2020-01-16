@@ -18,9 +18,9 @@ add_library(avs_unit STATIC
             include_public/avsystem/commons/unit/mocksock.h
             include_public/avsystem/commons/unit/test.h
 
-            src/mock.c
-            src/test.c
-            src/stack_trace.c)
+            mock.c
+            test.c
+            stack_trace.c)
 
 target_include_directories(avs_unit PUBLIC
                            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include_public>
@@ -32,12 +32,12 @@ if(WITH_AVS_LOG)
 endif()
 
 if(WITH_AVS_NET)
-    target_sources(avs_unit PRIVATE src/mocksock.c)
+    target_sources(avs_unit PRIVATE mocksock.c)
     target_link_libraries(avs_unit PUBLIC avs_net)
 endif()
 
 if(WITH_AVS_STREAM)
-    target_sources(avs_unit PRIVATE src/memstream.c)
+    target_sources(avs_unit PRIVATE memstream.c)
     target_link_libraries(avs_unit PUBLIC avs_stream)
 endif()
 

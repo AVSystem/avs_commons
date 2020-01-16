@@ -15,7 +15,7 @@
 add_library(avs_algorithm STATIC
             include_public/avsystem/commons/base64.h
 
-            src/base64.c)
+            base64.c)
 
 target_include_directories(avs_algorithm PUBLIC
                            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include_public>

@@ -22,18 +22,18 @@ add_library(avs_coap STATIC
             include_public/avsystem/commons/coap/msg_info.h
             include_public/avsystem/commons/coap/tx_params.h
 
-            src/block_builder.c
-            src/block_utils.c
-            src/ctx.c
-            src/msg_builder.c
-            src/msg.c
-            src/msg_info.c
-            src/msg_opt.c
-            src/opt.c
-            src/tx_params.c)
+            block_builder.c
+            block_utils.c
+            ctx.c
+            msg_builder.c
+            msg.c
+            msg_info.c
+            msg_opt.c
+            opt.c
+            tx_params.c)
 
 if(WITH_AVS_COAP_MESSAGE_CACHE)
-    target_sources(avs_coap PRIVATE src/msg_cache.c)
+    target_sources(avs_coap PRIVATE msg_cache.c)
 endif()
 
 target_include_directories(avs_coap PUBLIC
@@ -49,8 +49,8 @@ avs_add_test(NAME avs_coap
              LIBS avs_coap
              SOURCES
              $<TARGET_PROPERTY:avs_coap,SOURCES>
-             src/test/ctx.c
-             src/test/msg_cache.c)
+             test/ctx.c
+             test/msg_cache.c)
 get_target_property(AVS_NET_VARIANT avs_net ALIASED_TARGET)
 if(TARGET avs_coap_test)
     # NOTE: avs_coap tests require certificate support,

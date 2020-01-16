@@ -15,7 +15,7 @@
 add_library(avs_rbtree STATIC
             include_public/avsystem/commons/rbtree.h
 
-            src/rbtree.c)
+            rbtree.c)
 
 target_include_directories(avs_rbtree PUBLIC
                            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include_public>
@@ -35,5 +35,5 @@ avs_add_test(NAME avs_rbtree
 if(WITH_CXX_TESTS)
     avs_add_test(NAME avs_rbtree_cxx
                  LIBS avs_rbtree
-                 SOURCES src/test/test_rbtree_cxx.cpp)
+                 SOURCES test/test_rbtree_cxx.cpp)
 endif()

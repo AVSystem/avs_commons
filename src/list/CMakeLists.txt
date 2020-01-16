@@ -15,7 +15,7 @@
 add_library(avs_list STATIC
             include_public/avsystem/commons/list.h
 
-            src/list.c)
+            list.c)
 
 target_include_directories(avs_list PUBLIC
                            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include_public>
@@ -32,12 +32,12 @@ avs_add_test(NAME avs_list
              LIBS avs_list
              SOURCES
              $<TARGET_PROPERTY:avs_list,SOURCES>
-             src/test/test_list.c)
+             test/test_list.c)
 
 if(WITH_CXX_TESTS)
     avs_add_test(NAME avs_list_cxx
                  LIBS avs_list
                  SOURCES
                  $<TARGET_PROPERTY:avs_list,SOURCES>
-                 src/test/test_list_cxx.cpp)
+                 test/test_list_cxx.cpp)
 endif()

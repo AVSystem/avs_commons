@@ -15,7 +15,7 @@
 add_library(avs_buffer STATIC
             include_public/avsystem/commons/buffer.h
 
-            src/buffer.c)
+            buffer.c)
 
 target_include_directories(avs_buffer PUBLIC
                            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include_public>

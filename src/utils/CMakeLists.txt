@@ -18,16 +18,16 @@ add_library(avs_utils STATIC
             include_public/avsystem/commons/shared_buffer.h
             include_public/avsystem/commons/utils.h
 
-            src/x_time_conv.h
+            x_time_conv.h
 
-            src/cleanup.c
-            src/hexlify.c
-            src/numbers.c
-            src/shared_buffer.c
-            src/strings.c
-            src/strerror.c
-            src/time.c
-            src/token.c)
+            cleanup.c
+            hexlify.c
+            numbers.c
+            shared_buffer.c
+            strings.c
+            strerror.c
+            time.c
+            token.c)
 
 if(UNIX OR WIN32)
     set(POSIX_AVS_TIME_DEFAULT ON)
@@ -58,7 +58,7 @@ endif()
 avs_add_test(NAME avs_utils
              LIBS avs_utils
              SOURCES $<TARGET_PROPERTY:avs_utils,SOURCES>
-             src/test/shared_buffer.c)
+             test/shared_buffer.c)
 
 avs_install_export(avs_utils utils)
 install(DIRECTORY include_public/

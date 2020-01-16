@@ -15,30 +15,30 @@
 add_library(avs_http STATIC
             include_public/avsystem/commons/http.h
 
-            src/auth.h
-            src/body_receivers.h
-            src/chunked.h
-            src/client.h
-            src/content_encoding.h
-            src/headers.h
-            src/http_log.h
-            src/http_stream.h
-            src/zlib.h
+            auth.h
+            body_receivers.h
+            chunked.h
+            client.h
+            content_encoding.h
+            headers.h
+            http_log.h
+            http_stream.h
+            zlib.h
 
-            src/auth/basic.c
-            src/auth/digest.c
-            src/body_receivers/chunked_body_receiver.c
-            src/body_receivers/content_length.c
-            src/body_receivers/dumb_body_receiver.c
-            src/auth.c
-            src/body_receivers.c
-            src/chunked.c
-            src/client.c
-            src/content_encoding.c
-            src/headers_receive.c
-            src/headers_send.c
-            src/http_stream.c
-            src/stream_methods.c)
+            auth/basic.c
+            auth/digest.c
+            body_receivers/chunked_body_receiver.c
+            body_receivers/content_length.c
+            body_receivers/dumb_body_receiver.c
+            auth.c
+            body_receivers.c
+            chunked.c
+            client.c
+            content_encoding.c
+            headers_receive.c
+            headers_send.c
+            http_stream.c
+            stream_methods.c)
 
 target_include_directories(avs_http PUBLIC
                            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include_public>
@@ -47,7 +47,7 @@ target_link_libraries(avs_http PUBLIC avs_commons_global_headers avs_algorithm a
 
 if(WITH_AVS_HTTP_ZLIB)
     avs_find_library("find_package(ZLIB REQUIRED)")
-    target_sources(avs_http PRIVATE src/zlib.c)
+    target_sources(avs_http PRIVATE zlib.c)
     target_link_libraries(avs_http PUBLIC ZLIB::ZLIB)
 endif()
 
@@ -61,5 +61,5 @@ avs_add_test(NAME avs_http
              LIBS avs_http
              SOURCES
              $<TARGET_PROPERTY:avs_http,SOURCES>
-             src/test/test_close.c
-             src/test/test_http.c)
+             test/test_close.c
+             test/test_http.c)

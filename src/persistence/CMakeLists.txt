@@ -15,7 +15,7 @@
 add_library(avs_persistence STATIC
             include_public/avsystem/commons/persistence.h
 
-            src/persistence.c)
+            persistence.c)
 
 target_include_directories(avs_persistence PUBLIC
                            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include_public>
