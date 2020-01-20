@@ -11,9 +11,9 @@ Currently the included components are:
    * `avs_rbtree` - basic implementation of a red-black binary search tree
    * `avs_vector` - generic implementation of a C++-style vector (dynamic array)
  * Networking framework
-   * `avs_coap` - implementation of the [Constrained Application Protocol (CoAP)](https://tools.ietf.org/html/rfc7252)
    * `avs_http` - minimal implementation of a [Hypertext Transfer Protocol (HTTP)](https://tools.ietf.org/html/rfc7230) client
    * `avs_net` - abstraction layer for TCP, UDP, SSL/TLS and DTLS network sockets, as well as DNS resolution and URL parsing
+   * **NOTE:** `avs_commons` versions up to 4.0.x included an `avs_coap` module. This has been removed in favor of the [new CoAP implementation](https://github.com/AVSystem/Anjay/tree/master/deps/avs_coap) distributed as part of [Anjay](https://github.com/AVSystem/Anjay)
  * Other modules
    * `avs_algorithm` - currently contains a base64 encoder and decoder
    * `avs_log` - simple logging framework

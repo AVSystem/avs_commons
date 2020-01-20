@@ -124,7 +124,6 @@ option(WITH_AVS_NET "AVSystem network communication abstraction layer" ${MODULES
 option(WITH_AVS_STREAM "AVSystem IO stream abstraction layer" ${MODULES_ENABLED})
 option(WITH_AVS_LOG "AVSystem logging framework" ${MODULES_ENABLED})
 option(WITH_AVS_RBTREE "AVSystem generic red-black tree implementation" ${MODULES_ENABLED})
-option(WITH_AVS_COAP "AVSystem CoAP abstraction layer" ${MODULES_ENABLED})
 option(WITH_AVS_HTTP "AVSystem HTTP client" ${MODULES_ENABLED})
 option(WITH_AVS_PERSISTENCE "AVSystem persistence framework" ${MODULES_ENABLED})
 option(WITH_AVS_SCHED "AVSystem job scheduler" ${MODULES_ENABLED})
@@ -487,17 +486,6 @@ endif()
 
 if(WITH_AVS_SCHED)
     add_module_with_include_dirs(NAME sched)
-endif()
-
-cmake_dependent_option(WITH_AVS_COAP_MESSAGE_CACHE
-                       "Enable support for message caching to detect and automatically handle duplicate messages"
-                       ON WITH_AVS_COAP OFF)
-cmake_dependent_option(WITH_AVS_COAP_NET_STATS
-                       "Enable support for measuring some CoAP socket statistics"
-                       ON WITH_AVS_COAP OFF)
-
-if(WITH_AVS_COAP)
-    add_module_with_include_dirs(NAME coap)
 endif()
 
 cmake_dependent_option(WITH_AVS_HTTP_ZLIB
