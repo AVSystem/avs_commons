@@ -46,6 +46,18 @@ VISIBILITY_SOURCE_BEGIN
 #        define INET_ADDRSTRLEN 16
 #    endif
 
+#    ifdef AVS_COMMONS_WITH_IPV4
+#        define IPV4_AVAILABLE 1
+#    else
+#        define IPV4_AVAILABLE 0
+#    endif
+
+#    ifdef AVS_COMMONS_WITH_IPV6
+#        define IPV6_AVAILABLE 1
+#    else
+#        define IPV6_AVAILABLE 0
+#    endif
+
 static const avs_time_duration_t NET_SEND_TIMEOUT = { 30, 0 };
 static const avs_time_duration_t NET_CONNECT_TIMEOUT = { 10, 0 };
 static const avs_time_duration_t NET_ACCEPT_TIMEOUT = { 5, 0 };
