@@ -43,10 +43,6 @@
 #cmakedefine HAVE_C11_STDATOMIC
 #cmakedefine HAVE_PTHREAD_CONDATTR_SETCLOCK
 
-#if !defined(AVS_COMMONS_WITH_IPV4) && !defined(AVS_COMMONS_WITH_IPV6)
-#    error "At least one IP protocol version must be enabled"
-#endif
-
 #cmakedefine WITH_OPENSSL
 #cmakedefine WITH_MBEDTLS
 #cmakedefine WITH_TINYDTLS
