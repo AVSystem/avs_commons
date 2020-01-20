@@ -39,7 +39,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "test.h"
+#include "unit_test.h"
 
 VISIBILITY_SOURCE_BEGIN
 

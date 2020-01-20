@@ -23,7 +23,7 @@
 #include <avsystem/commons/defs.h>
 #include <avsystem/commons/memory.h>
 
-#include "structs.h"
+#include "atomic_spinlock_structs.h"
 
 VISIBILITY_SOURCE_BEGIN
 

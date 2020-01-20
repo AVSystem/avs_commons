@@ -44,7 +44,7 @@
 
 #include "common.h"
 #ifdef WITH_X509
-#    include "data_loader.h"
+#    include "openssl_data_loader.h"
 #endif // WITH_X509
 
 VISIBILITY_SOURCE_BEGIN

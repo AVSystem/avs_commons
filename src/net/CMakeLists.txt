@@ -99,7 +99,7 @@ if(WITH_OPENSSL)
     target_link_libraries(avs_net_openssl PUBLIC avs_net_core OpenSSL::SSL OpenSSL::Crypto)
 
     if(WITH_X509)
-        target_sources(avs_net_openssl PRIVATE openssl/data_loader.c)
+        target_sources(avs_net_openssl PRIVATE openssl/openssl_data_loader.c)
     endif()
 
     avs_add_test(NAME avs_net_openssl
@@ -108,7 +108,7 @@ if(WITH_OPENSSL)
                  ${AVS_COMMONS_SOURCE_DIR}/tests/net/socket_nosec.c
                  ${AVS_COMMONS_SOURCE_DIR}/tests/net/socket_tls.c
                  $<$<BOOL:${WITH_DTLS}>:${AVS_COMMONS_SOURCE_DIR}/tests/net/socket_dtls.c>
-                 $<$<BOOL:${WITH_X509}>:${AVS_COMMONS_SOURCE_DIR}/tests/net/openssl/data_loader.c>)
+                 $<$<BOOL:${WITH_X509}>:${AVS_COMMONS_SOURCE_DIR}/tests/net/openssl/openssl_data_loader.c>)
     avs_install_export(avs_net_openssl net)
 endif()
 
@@ -126,7 +126,7 @@ if(WITH_MBEDTLS)
         target_link_libraries(avs_net_mbedtls PUBLIC avs_persistence avs_rbtree)
     endif()
     if(WITH_X509)
-        target_sources(avs_net_mbedtls PRIVATE mbedtls/data_loader.c)
+        target_sources(avs_net_mbedtls PRIVATE mbedtls/mbedtls_data_loader.c)
     endif()
 
     avs_add_test(NAME avs_net_mbedtls
@@ -135,7 +135,7 @@ if(WITH_MBEDTLS)
                  ${AVS_COMMONS_SOURCE_DIR}/tests/net/socket_nosec.c
                  ${AVS_COMMONS_SOURCE_DIR}/tests/net/socket_tls.c
                  ${AVS_COMMONS_SOURCE_DIR}/tests/net/socket_dtls.c
-                 $<$<BOOL:${WITH_X509}>:${AVS_COMMONS_SOURCE_DIR}/tests/net/mbedtls/data_loader.c>)
+                 $<$<BOOL:${WITH_X509}>:${AVS_COMMONS_SOURCE_DIR}/tests/net/mbedtls/mbedtls_data_loader.c>)
     avs_install_export(avs_net_mbedtls net)
 endif()
 

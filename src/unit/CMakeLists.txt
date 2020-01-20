@@ -19,8 +19,8 @@ add_library(avs_unit STATIC
             "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/unit/test.h"
 
             mock.c
-            test.c
-            stack_trace.c)
+            stack_trace.c
+            unit_test.c)
 
 target_include_directories(avs_unit PUBLIC
                            $<BUILD_INTERFACE:${AVS_COMMONS_SOURCE_DIR}/include_public>

@@ -26,7 +26,7 @@
 #include <errno.h>
 #include <pthread.h>
 
-#include "structs.h"
+#include "pthread_structs.h"
 
 VISIBILITY_SOURCE_BEGIN
 

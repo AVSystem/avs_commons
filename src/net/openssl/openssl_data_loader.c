@@ -25,7 +25,7 @@
 #include <x_log_config.h>
 
 #include "common.h"
-#include "data_loader.h"
+#include "openssl_data_loader.h"
 
 #include "../api.h"
 

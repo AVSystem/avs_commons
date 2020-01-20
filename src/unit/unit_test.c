@@ -39,7 +39,7 @@
 #endif
 
 #include "stack_trace.h"
-#include "test.h"
+#include "unit_test.h"
 
 VISIBILITY_SOURCE_BEGIN
 

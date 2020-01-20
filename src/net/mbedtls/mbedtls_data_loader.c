@@ -20,7 +20,7 @@
 #include <x_log_config.h>
 
 #include "../api.h"
-#include "data_loader.h"
+#include "mbedtls_data_loader.h"
 
 #include <assert.h>
 #include <stdio.h>

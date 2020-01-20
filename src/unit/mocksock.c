@@ -31,7 +31,7 @@
 #include <avsystem/commons/unit/mocksock.h>
 #include <avsystem/commons/unit/test.h>
 
-#include "test.h"
+#include "unit_test.h"
 
 VISIBILITY_SOURCE_BEGIN
 

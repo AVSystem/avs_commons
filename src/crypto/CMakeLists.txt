@@ -34,8 +34,8 @@ endif()
 if(WITH_OPENSSL AND NOT OPENSSL_VERSION VERSION_LESS 1.1.0)
     add_library(avs_crypto_openssl
                 ${AVS_CRYPTO_SOURCES}
-                openssl/hkdf.c
-                openssl/aead.c)
+                openssl/openssl_hkdf.c
+                openssl/openssl_aead.c)
     target_link_libraries(avs_crypto_openssl PUBLIC avs_crypto_core OpenSSL::Crypto)
 
     avs_add_test(NAME avs_crypto_openssl
@@ -49,8 +49,8 @@ endif()
 if(WITH_MBEDTLS AND NOT MBEDTLS_VERSION VERSION_LESS 2.14.0)
     add_library(avs_crypto_mbedtls
                 ${AVS_CRYPTO_SOURCES}
-                mbedtls/hkdf.c
-                mbedtls/aead.c)
+                mbedtls/mbedtls_hkdf.c
+                mbedtls/mbedtls_aead.c)
     target_link_libraries(avs_crypto_mbedtls PUBLIC avs_crypto_core mbedcrypto)
 
     avs_add_test(NAME avs_crypto_mbedtls

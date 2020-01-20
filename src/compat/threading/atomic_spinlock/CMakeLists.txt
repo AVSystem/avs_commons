@@ -19,10 +19,10 @@ endif()
 
 add_library(avs_compat_threading_atomic_spinlock STATIC
             ${COMPAT_THREADING_PUBLIC_HEADERS}
-            condvar.c
-            mutex.c
-            init_once.c
-            structs.h)
+            atomic_spinlock_condvar.c
+            atomic_spinlock_mutex.c
+            atomic_spinlock_init_once.c
+            atomic_spinlock_structs.h)
 
 target_include_directories(avs_compat_threading_atomic_spinlock PUBLIC
                            $<BUILD_INTERFACE:${AVS_COMMONS_SOURCE_DIR}/include_public>

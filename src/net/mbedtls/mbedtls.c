@@ -50,7 +50,7 @@
 #include "../global.h"
 #include "../net_impl.h"
 #ifdef WITH_X509
-#    include "data_loader.h"
+#    include "mbedtls_data_loader.h"
 #endif // WITH_X509
 #include "mbedtls_persistence.h"
 

@@ -16,46 +16,58 @@
 
 #include <avs_commons_config.h>
 
-#define MODULE_NAME mutex_pthread
+#define MODULE_NAME mutex_atomic_spinlock
 #include <x_log_config.h>
 
 #include <avsystem/commons/defs.h>
 #include <avsystem/commons/memory.h>
 #include <avsystem/commons/mutex.h>
 
-#include <pthread.h>
+#include <stdatomic.h>
+#include <stdbool.h>
+#include <stdlib.h>
 
-#include "structs.h"
+#include "atomic_spinlock_structs.h"
 
 VISIBILITY_SOURCE_BEGIN
+
+void _avs_mutex_init(avs_mutex_t *mutex) {
+    // While it would make sense that a zero-allocated flag is in "clear"
+    // state, the documentation of atomic_flag is not explicit about it.
+    // We clear it manually just to be sure.
+    avs_mutex_unlock(mutex);
+}
 
 int avs_mutex_create(avs_mutex_t **out_mutex) {
     AVS_ASSERT(!*out_mutex, "possible attempt to reinitialize a mutex");
 
-    *out_mutex = (avs_mutex_t *) avs_calloc(1, sizeof(avs_mutex_t));
-    if (!*out_mutex) {
-        return -1;
+    *out_mutex = (struct avs_mutex *) avs_calloc(1, sizeof(struct avs_mutex));
+    if (*out_mutex) {
+        _avs_mutex_init(*out_mutex);
+        return 0;
     }
-
-    if (pthread_mutex_init(&(*out_mutex)->pthread_mutex, NULL)) {
-        avs_free(*out_mutex);
-        *out_mutex = NULL;
-        return -1;
-    }
-
-    return 0;
+    return -1;
 }
 
 int avs_mutex_lock(avs_mutex_t *mutex) {
-    return pthread_mutex_lock(&mutex->pthread_mutex);
+    while (atomic_flag_test_and_set(&mutex->locked) != 0) {
+    }
+    return 0;
 }
 
 int avs_mutex_try_lock(avs_mutex_t *mutex) {
-    return pthread_mutex_trylock(&mutex->pthread_mutex);
+    return atomic_flag_test_and_set(&mutex->locked) == 0 ? 0 : 1;
 }
 
 int avs_mutex_unlock(avs_mutex_t *mutex) {
-    return pthread_mutex_unlock(&mutex->pthread_mutex);
+    atomic_flag_clear(&mutex->locked);
+    return 0;
+}
+
+void _avs_mutex_destroy(avs_mutex_t *mutex) {
+    (void) mutex;
+    AVS_ASSERT(atomic_flag_test_and_set(&mutex->locked) == 0,
+               "attempted to cleanup a locked mutex");
 }
 
 void avs_mutex_cleanup(avs_mutex_t **mutex) {
@@ -63,10 +75,7 @@ void avs_mutex_cleanup(avs_mutex_t **mutex) {
         return;
     }
 
-    int result = pthread_mutex_destroy(&(*mutex)->pthread_mutex);
-    (void) result;
-    AVS_ASSERT(result == 0, "pthread_mutex_destroy failed");
-
+    _avs_mutex_destroy(*mutex);
     avs_free(*mutex);
     *mutex = NULL;
 }

@@ -24,7 +24,7 @@
 
 #include <unistd.h>
 
-#include "src/net/openssl/data_loader.h"
+#include "src/net/openssl/openssl_data_loader.h"
 
 __attribute__((constructor)) static void global_ssl_init(void) {
     SSL_library_init();

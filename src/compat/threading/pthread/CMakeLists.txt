@@ -24,10 +24,10 @@ set(CMAKE_REQUIRED_LIBRARIES)
 
 add_library(avs_compat_threading_pthread STATIC
             ${COMPAT_THREADING_PUBLIC_HEADERS}
-            condvar.c
-            mutex.c
-            init_once.c
-            structs.h)
+            pthread_condvar.c
+            pthread_mutex.c
+            pthread_init_once.c
+            pthread_structs.h)
 target_include_directories(avs_compat_threading_pthread PUBLIC
                            $<BUILD_INTERFACE:${AVS_COMMONS_SOURCE_DIR}/include_public>
                            $<INSTALL_INTERFACE:include>)
