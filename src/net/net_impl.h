@@ -24,6 +24,8 @@
 #define MODULE_NAME avs_net
 #include <x_log_config.h>
 
+#include "api.h"
+
 VISIBILITY_PRIVATE_HEADER_BEGIN
 
 #if !defined(AVS_COMMONS_WITH_IPV4) && !defined(AVS_COMMONS_WITH_IPV6)
