@@ -24,14 +24,14 @@ TRUSTSTORE_PASSWORD=rootPass
 KEYSTORE_PASSWORD=endPass
 
 if [ -z "$OPENSSL" ]; then
-    OPENSSL=openssl
-    for f in /usr/local/opt/openssl*/bin/openssl; do
-        if [ -x "$f" ]; then
-            # default OpenSSL on macOS is outdated and buggy
-            # use the one from Homebrew if available
-            OPENSSL="$f"
-        fi
-    done
+    # default OpenSSL on macOS is outdated and buggy
+    # use the one from Homebrew if available
+    BREW_OPENSSL="$(brew --prefix openssl 2>/dev/null || true)"
+    if [ "$BREW_OPENSSL" ]; then
+        OPENSSL="$BREW_OPENSSL/bin/openssl"
+    else
+        OPENSSL=openssl
+    fi
 fi
 
 if [[ "$#" -lt 1 ]]; then
