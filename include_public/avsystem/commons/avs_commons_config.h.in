@@ -188,14 +188,77 @@
  */
 #cmakedefine AVS_COMMONS_HTTP_WITH_ZLIB
 
+/**
+ * Options related to avs_log and logging support within avs_commons.
+ */
+/**@{*/
+/* clang-format off */
+/**
+ * Size, in bytes, of the avs_log buffer.
+ *
+ * Log messages that would (including the level, module name and code location)
+ * otherwise be longer than this value minus one (for the terminating null
+ * character) will be truncated.
+ *
+ * NOTE: This macro MUST be defined if avs_log is enabled.
+ *
+ * If editing this file manually, <c>@AVS_COMMONS_LOG_MAX_LINE_LENGTH@</c> shall
+ * be replaced with a positive integer literal. The default value define in
+ * CMake build scripts is 512.
+ */
+#cmakedefine AVS_COMMONS_LOG_MAX_LINE_LENGTH @AVS_COMMONS_LOG_MAX_LINE_LENGTH@
+/* clang-format on */
+
+/**
+ * Configures avs_log to use a synchronized global buffer instead of allocating
+ * a buffer on the stack when constructing log messages.
+ *
+ * Requires avs_compat_threading to be enabled.
+ *
+ * Enabling this option would reduce the stack space required to use avs_log, at
+ * the expense of global storage and the complexity of using a mutex.
+ */
+#cmakedefine AVS_COMMONS_LOG_USE_GLOBAL_BUFFER
+
+/**
+ * Enables the "micro logs" feature.
+ *
+ * Replaces all occurrences of the <c>AVS_DISPOSABLE_LOG()</c> macro with single
+ * space strings. This is intended to reduce the size of the compiled code, by
+ * stripping it of almost all log string data.
+ *
+ * Note that this setting will propagate both to avs_commons components
+ * themselves (as all its internal logs make use of <c>AVS_DISPOSABLE_LOG()</c>)
+ * and the user code that uses it.
+ */
+#cmakedefine AVS_COMMONS_WITH_MICRO_LOGS
+
+/**
+ * Enables logging inside avs_commons.
+ *
+ * If this macro is not defined at avs_commons compile time, calls to avs_log
+ * will not be generated inside avs_commons components.
+ */
+#cmakedefine AVS_COMMONS_WITH_INTERNAL_LOGS
+
+/**
+ * Enables TRACE-level logs inside avs_commons.
+ *
+ * Only meaningful if AVS_COMMONS_WITH_INTERNAL_LOGS is enabled.
+ *
+ * If this macro is not defined at avs_commons compile time, calls to avs_log
+ * with the level set to TRACE will not be generated inside avs_commons
+ * components.
+ */
+#cmakedefine AVS_COMMONS_WITH_INTERNAL_TRACE
+/**@}*/
+
 /** Is the library compiled with IPv4 support? */
 #cmakedefine AVS_COMMONS_WITH_IPV4
 /** Is the library compiled with IPv6 support? */
 #cmakedefine AVS_COMMONS_WITH_IPV6
 /** Is the library compiled to use custom mbed TLS entropy initializer? */
 #cmakedefine AVS_COMMONS_WITH_MBEDTLS_CUSTOM_ENTROPY_INITIALIZER
-/** Is the library compiled with micro logs feature? */
-#cmakedefine AVS_COMMONS_WITH_MICRO_LOGS
 /** Is the library compiled with GCC symbol poisoning support? */
 #cmakedefine AVS_COMMONS_WITH_POISONING
 
@@ -204,13 +267,6 @@
 #cmakedefine WITH_X509
 #cmakedefine WITH_TLS_SESSION_PERSISTENCE
 
-/* clang-format off */
-#cmakedefine AVS_LOG_MAX_LINE_LENGTH @AVS_LOG_MAX_LINE_LENGTH@
-/* clang-format on */
-#cmakedefine AVS_LOG_USE_GLOBAL_BUFFER
-
-#cmakedefine WITH_INTERNAL_LOGS
-#cmakedefine WITH_INTERNAL_TRACE
 #cmakedefine WITH_SOCKET_LOG
 #cmakedefine WITH_MBEDTLS_LOGS
 

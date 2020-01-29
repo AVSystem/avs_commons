@@ -21,9 +21,9 @@
 // enable short _() macro
 #define _(Arg) AVS_DISPOSABLE_LOG(Arg)
 
-#ifdef WITH_INTERNAL_LOGS
+#ifdef AVS_COMMONS_WITH_INTERNAL_LOGS
 
-#    ifdef WITH_INTERNAL_TRACE
+#    ifdef AVS_COMMONS_WITH_INTERNAL_TRACE
 #        define AVS_LOG_WITH_TRACE
 #    endif
 

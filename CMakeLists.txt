@@ -133,14 +133,18 @@ option(WITH_AVS_MICRO_LOGS "Replaces all invocations of AVS_DISPOSABLE_LOG() wit
 
 include(CMakeDependentOption)
 cmake_dependent_option(WITH_INTERNAL_LOGS "Enable logging from inside AVSystem Commons libraries" ON WITH_AVS_LOG OFF)
+set(AVS_COMMONS_WITH_INTERNAL_LOGS ${WITH_INTERNAL_LOGS})
 cmake_dependent_option(WITH_INTERNAL_TRACE "Enable TRACE-level logs inside AVSystem Commons libraries" OFF WITH_INTERNAL_LOGS OFF)
+set(AVS_COMMONS_WITH_INTERNAL_TRACE ${WITH_INTERNAL_TRACE})
 cmake_dependent_option(WITH_MBEDTLS_LOGS "Enable logging from mbedTLS backend library (if used)" OFF "WITH_INTERNAL_LOGS;WITH_MBEDTLS" OFF)
 
 if(WITH_AVS_LOG)
     set(AVS_LOG_MAX_LINE_LENGTH 512 CACHE INTEGER "Max length of a single log message. Longer ones will be truncated.")
+    set(AVS_COMMONS_LOG_MAX_LINE_LENGTH ${AVS_LOG_MAX_LINE_LENGTH})
     cmake_dependent_option(AVS_LOG_USE_GLOBAL_BUFFER
                            "Use global log message buffer instead of allocating one on stack. Reduces stack usage of threads that use avs_log() at the cost of synchronized access to the buffer."
-                           OFF WITH_AVS_MUTEX OFF)
+                           OFF WITH_AVS_COMPAT_THREADING OFF)
+    set(AVS_COMMONS_LOG_USE_GLOBAL_BUFFER ${AVS_LOG_USE_GLOBAL_BUFFER})
 endif()
 
 cmake_dependent_option(WITH_TEST "Enable unit tests of AVSystem Commons library itself" OFF WITH_AVS_UNIT OFF)

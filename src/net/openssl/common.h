@@ -20,7 +20,7 @@
 
 VISIBILITY_PRIVATE_HEADER_BEGIN
 
-#ifdef WITH_INTERNAL_LOGS
+#ifdef AVS_COMMONS_WITH_INTERNAL_LOGS
 
 #    define log_openssl_error()                                                \
         do {                                                                   \
@@ -28,11 +28,11 @@ VISIBILITY_PRIVATE_HEADER_BEGIN
             LOG(ERROR, "%s", ERR_error_string(ERR_get_error(), error_buffer)); \
         } while (0)
 
-#else // WITH_INTERNAL_LOGS
+#else // AVS_COMMONS_WITH_INTERNAL_LOGS
 
 #    define log_openssl_error() ((void) 0)
 
-#endif // WITH_INTERNAL_LOGS
+#endif // AVS_COMMONS_WITH_INTERNAL_LOGS
 
 VISIBILITY_PRIVATE_HEADER_END
 

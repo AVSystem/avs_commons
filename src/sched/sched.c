@@ -55,7 +55,7 @@ struct avs_sched_job_struct {
     /** Instant in time at which the job is scheduled. */
     avs_time_monotonic_t instant;
 
-#    ifdef WITH_INTERNAL_LOGS
+#    ifdef AVS_COMMONS_WITH_INTERNAL_LOGS
     struct {
         /** File from which AVS_SCHED*() was called. */
         const char *file;
@@ -64,7 +64,7 @@ struct avs_sched_job_struct {
         /** Stringified value of what was passed as the callback function. */
         const char *name;
     } log_info;
-#    endif // WITH_INTERNAL_LOGS
+#    endif // AVS_COMMONS_WITH_INTERNAL_LOGS
 
     /** Callback function to execute. */
     avs_sched_clb_t *clb;
@@ -75,10 +75,10 @@ struct avs_sched_job_struct {
 };
 
 struct avs_sched_struct {
-#    ifdef WITH_INTERNAL_LOGS
+#    ifdef AVS_COMMONS_WITH_INTERNAL_LOGS
     /** Name of the scheduler. */
     const char *name;
-#    endif // WITH_INTERNAL_LOGS
+#    endif // AVS_COMMONS_WITH_INTERNAL_LOGS
 
     /** Opaque data, retrievable using @ref avs_sched_data . */
     void *data;
@@ -143,9 +143,9 @@ void _avs_sched_cleanup_global_state(void) {
         LOG(Level, "Scheduler \"%s\": " AVS_VARARG0(__VA_ARGS__), \
             (Sched)->name AVS_VARARG_REST(__VA_ARGS__))
 
-#    ifdef WITH_INTERNAL_LOGS
+#    ifdef AVS_COMMONS_WITH_INTERNAL_LOGS
 
-#        define JOB_LOG_ID_MAX_LENGTH (AVS_LOG_MAX_LINE_LENGTH / 2)
+#        define JOB_LOG_ID_MAX_LENGTH (AVS_COMMONS_LOG_MAX_LINE_LENGTH / 2)
 
 static const char *job_log_id_impl(char buf[static JOB_LOG_ID_MAX_LENGTH],
                                    const char *file,
@@ -186,7 +186,7 @@ static const char *job_log_id_impl(char buf[static JOB_LOG_ID_MAX_LENGTH],
             JOB_LOG_ID_EXPLICIT((Job)->log_info.file, (Job)->log_info.line, \
                                 (Job)->log_info.name)
 
-#    endif // WITH_INTERNAL_LOGS
+#    endif // AVS_COMMONS_WITH_INTERNAL_LOGS
 
 avs_sched_t *avs_sched_new(const char *name, void *data) {
 #    ifdef WITH_SCHEDULER_THREAD_SAFE
@@ -349,7 +349,7 @@ void avs_sched_run(avs_sched_t *sched) {
 
     SCHED_LOG(sched, TRACE, "%" PRIu64 _(" jobs executed"), tasks_executed);
 
-#    ifdef WITH_INTERNAL_TRACE
+#    ifdef AVS_COMMONS_WITH_INTERNAL_TRACE
     avs_time_monotonic_t next = avs_sched_time_of_next(sched);
     avs_time_duration_t remaining = avs_time_monotonic_diff(next, now);
     if (!avs_time_duration_valid(remaining)) {
@@ -360,7 +360,7 @@ void avs_sched_run(avs_sched_t *sched) {
                   AVS_TIME_DURATION_AS_STRING(next.since_monotonic_epoch),
                   AVS_TIME_DURATION_AS_STRING(remaining));
     }
-#    endif // WITH_INTERNAL_TRACE
+#    endif // AVS_COMMONS_WITH_INTERNAL_TRACE
 }
 
 static void schedule_job(avs_sched_t *sched, avs_sched_job_t *job) {
@@ -405,11 +405,11 @@ static int sched_at_locked(avs_sched_t *sched,
 
     job->sched = sched;
     job->instant = instant;
-#    ifdef WITH_INTERNAL_LOGS
+#    ifdef AVS_COMMONS_WITH_INTERNAL_LOGS
     job->log_info.file = log_file;
     job->log_info.line = log_line;
     job->log_info.name = log_name;
-#    endif // WITH_INTERNAL_LOGS
+#    endif // AVS_COMMONS_WITH_INTERNAL_LOGS
     job->clb = clb;
     if (clb_data_size) {
         memcpy(job->clb_data, clb_data, clb_data_size);
@@ -438,7 +438,7 @@ static int sched_at_locked(avs_sched_t *sched,
     }
 
     schedule_job(sched, job);
-#    ifdef WITH_INTERNAL_TRACE
+#    ifdef AVS_COMMONS_WITH_INTERNAL_TRACE
     avs_time_duration_t remaining =
             avs_time_monotonic_diff(instant, avs_time_monotonic_now());
     SCHED_LOG(sched, TRACE,
@@ -446,7 +446,7 @@ static int sched_at_locked(avs_sched_t *sched,
               JOB_LOG_ID(job),
               AVS_TIME_DURATION_AS_STRING(instant.since_monotonic_epoch),
               AVS_TIME_DURATION_AS_STRING(remaining));
-#    endif // WITH_INTERNAL_TRACE
+#    endif // AVS_COMMONS_WITH_INTERNAL_TRACE
     return 0;
 }
 
