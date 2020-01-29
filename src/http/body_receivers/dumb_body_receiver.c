@@ -16,7 +16,7 @@
 
 #include <avs_commons_init.h>
 
-#ifdef WITH_AVS_HTTP
+#ifdef AVS_COMMONS_WITH_AVS_HTTP
 
 #    include <avsystem/commons/memory.h>
 #    include <avsystem/commons/stream/stream_net.h>
@@ -85,4 +85,4 @@ avs_stream_t *_avs_http_body_receiver_dumb_create(avs_stream_t *backend) {
     return (avs_stream_t *) retval;
 }
 
-#endif // WITH_AVS_HTTP
+#endif // AVS_COMMONS_WITH_AVS_HTTP

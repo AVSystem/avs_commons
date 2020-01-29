@@ -16,7 +16,7 @@
 
 #include <avs_commons_init.h>
 
-#ifdef WITH_AVS_HTTP
+#ifdef AVS_COMMONS_WITH_AVS_HTTP
 
 #    include <errno.h>
 
@@ -236,4 +236,4 @@ avs_stream_t *_avs_http_body_receiver_chunked_create(
     return (avs_stream_t *) retval;
 }
 
-#endif // WITH_AVS_HTTP
+#endif // AVS_COMMONS_WITH_AVS_HTTP

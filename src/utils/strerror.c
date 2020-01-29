@@ -16,7 +16,7 @@
 
 #include <avs_commons_init.h>
 
-#ifdef WITH_AVS_UTILS
+#ifdef AVS_COMMONS_WITH_AVS_UTILS
 
 #    include <avsystem/commons/errno.h>
 
@@ -168,4 +168,4 @@ const char *avs_strerror(avs_errno_t error) {
     return "<unsupported error code>";
 }
 
-#endif // WITH_AVS_UTILS
+#endif // AVS_COMMONS_WITH_AVS_UTILS

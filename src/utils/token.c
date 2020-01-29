@@ -16,7 +16,7 @@
 
 #include <avs_commons_init.h>
 
-#ifdef WITH_AVS_UTILS
+#ifdef AVS_COMMONS_WITH_AVS_UTILS
 
 #    include <ctype.h>
 #    include <string.h>
@@ -85,4 +85,4 @@ void avs_consume_quotable_token(const char **src,
 #        include "tests/utils/token.c"
 #    endif // AVS_UNIT_TESTING
 
-#endif // WITH_AVS_UTILS
+#endif // AVS_COMMONS_WITH_AVS_UTILS

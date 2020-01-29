@@ -37,7 +37,7 @@
 #    define WITHOUT_SSL
 #endif
 
-#if defined(WITH_AVS_NET) && defined(WITH_TLS_SESSION_PERSISTENCE) \
-        && !defined(WITH_AVS_PERSISTENCE)
-#    error "WITH_AVS_PERSISTENCE is required for WITH_TLS_SESSION_PERSISTENCE"
+#if defined(AVS_COMMONS_WITH_AVS_NET) && defined(WITH_TLS_SESSION_PERSISTENCE) \
+        && !defined(AVS_COMMONS_WITH_AVS_PERSISTENCE)
+#    error "AVS_COMMONS_WITH_AVS_PERSISTENCE is required for WITH_TLS_SESSION_PERSISTENCE"
 #endif

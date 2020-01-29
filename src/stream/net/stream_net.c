@@ -16,8 +16,9 @@
 
 #include <avs_commons_init.h>
 
-#if defined(WITH_AVS_STREAM) && defined(WITH_AVS_BUFFER) \
-        && defined(WITH_AVS_NET)
+#if defined(AVS_COMMONS_WITH_AVS_STREAM)        \
+        && defined(AVS_COMMONS_WITH_AVS_BUFFER) \
+        && defined(AVS_COMMONS_WITH_AVS_NET)
 
 #    include <avsystem/commons/stream/stream_net.h>
 #    include <avsystem/commons/stream_v_table.h>
@@ -49,5 +50,6 @@ avs_error_t avs_stream_net_setsock(avs_stream_t *stream,
     }
 }
 
-#endif // defined(WITH_AVS_STREAM) && defined(WITH_AVS_BUFFER) &&
-       // defined(WITH_AVS_NET)
+#endif // defined(AVS_COMMONS_WITH_AVS_STREAM) &&
+       // defined(AVS_COMMONS_WITH_AVS_BUFFER) &&
+       // defined(AVS_COMMONS_WITH_AVS_NET)

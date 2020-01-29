@@ -16,7 +16,7 @@
 
 #include <avs_commons_init.h>
 
-#ifdef WITH_AVS_STREAM
+#ifdef AVS_COMMONS_WITH_AVS_STREAM
 
 #    include <avsystem/commons/stream/stream_buffered.h>
 
@@ -317,4 +317,4 @@ int avs_stream_buffered_create(avs_stream_t **inout_stream,
 #        include "tests/stream/test_stream_buffered.c"
 #    endif
 
-#endif // WITH_AVS_STREAM
+#endif // AVS_COMMONS_WITH_AVS_STREAM

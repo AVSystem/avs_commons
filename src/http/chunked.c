@@ -16,7 +16,7 @@
 
 #include <avs_commons_init.h>
 
-#ifdef WITH_AVS_HTTP
+#ifdef AVS_COMMONS_WITH_AVS_HTTP
 
 #    include <string.h>
 
@@ -97,4 +97,4 @@ avs_error_t _avs_http_chunked_send(http_stream_t *stream,
 #        include "tests/http/test_chunked.c"
 #    endif
 
-#endif // WITH_AVS_HTTP
+#endif // AVS_COMMONS_WITH_AVS_HTTP

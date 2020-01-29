@@ -16,7 +16,7 @@
 
 #include <avs_commons_init.h>
 
-#ifdef WITH_AVS_NET
+#ifdef AVS_COMMONS_WITH_AVS_NET
 
 #    include <assert.h>
 #    include <inttypes.h>
@@ -484,4 +484,4 @@ initialize_ssl_socket(ssl_socket_t *socket,
     return AVS_OK;
 }
 
-#endif // WITH_AVS_NET
+#endif // AVS_COMMONS_WITH_AVS_NET

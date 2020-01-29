@@ -17,7 +17,7 @@
 #define AVS_UTILS_COMPAT_STDLIB_MEMORY_C
 #include <avs_commons_init.h>
 
-#if defined(WITH_AVS_UTILS) && defined(WITH_STANDARD_ALLOCATOR)
+#if defined(AVS_COMMONS_WITH_AVS_UTILS) && defined(WITH_STANDARD_ALLOCATOR)
 
 #    include <avsystem/commons/memory.h>
 
@@ -53,4 +53,5 @@ void avs_memswap(void *memptr1, void *memptr2, size_t n) {
     }
 }
 
-#endif // defined(WITH_AVS_UTILS) && defined(WITH_STANDARD_ALLOCATOR)
+#endif // defined(AVS_COMMONS_WITH_AVS_UTILS) &&
+       // defined(WITH_STANDARD_ALLOCATOR)

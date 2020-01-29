@@ -16,7 +16,7 @@
 
 #include <avs_commons_init.h>
 
-#ifdef WITH_AVS_UTILS
+#ifdef AVS_COMMONS_WITH_AVS_UTILS
 
 #    include <assert.h>
 #    include <inttypes.h>
@@ -454,4 +454,4 @@ const char *avs_time_duration_as_string_impl__(
 #        include "tests/utils/time.c"
 #    endif // AVS_UNIT_TESTING
 
-#endif // WITH_AVS_UTILS
+#endif // AVS_COMMONS_WITH_AVS_UTILS

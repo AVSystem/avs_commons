@@ -16,7 +16,7 @@
 
 #include <avs_commons_init.h>
 
-#ifdef WITH_AVS_HTTP
+#ifdef AVS_COMMONS_WITH_AVS_HTTP
 
 #    include <ctype.h>
 #    include <string.h>
@@ -207,4 +207,4 @@ void _avs_http_auth_clear(http_auth_t *auth) {
     auth->credentials.password = NULL;
 }
 
-#endif // WITH_AVS_HTTP
+#endif // AVS_COMMONS_WITH_AVS_HTTP

@@ -16,7 +16,7 @@
 
 #include <avs_commons_init.h>
 
-#ifdef WITH_AVS_UNIT
+#ifdef AVS_COMMONS_WITH_AVS_UNIT
 
 #    include <stdint.h>
 #    include <stdio.h>
@@ -140,4 +140,4 @@ int avs_unit_memstream_alloc(avs_stream_t **stream, size_t buffer_size) {
     return 0;
 }
 
-#endif // WITH_AVS_UNIT
+#endif // AVS_COMMONS_WITH_AVS_UNIT

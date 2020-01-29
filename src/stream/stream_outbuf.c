@@ -16,7 +16,7 @@
 
 #include <avs_commons_init.h>
 
-#ifdef WITH_AVS_STREAM
+#ifdef AVS_COMMONS_WITH_AVS_STREAM
 
 #    include <avsystem/commons/stream/stream_outbuf.h>
 #    include <avsystem/commons/stream_v_table.h>
@@ -89,4 +89,4 @@ void avs_stream_outbuf_set_buffer(avs_stream_outbuf_t *stream,
     stream->buffer_offset = 0;
 }
 
-#endif // WITH_AVS_STREAM
+#endif // AVS_COMMONS_WITH_AVS_STREAM

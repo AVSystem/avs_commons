@@ -17,7 +17,7 @@
 #define AVS_NET_API_C
 #include <avs_commons_init.h>
 
-#ifdef WITH_AVS_NET
+#ifdef AVS_COMMONS_WITH_AVS_NET
 
 #    include <inttypes.h>
 #    include <stdint.h>
@@ -762,4 +762,4 @@ avs_error_t avs_net_socket_create(avs_net_socket_t **socket,
 #        include "test/starttls.c"
 #    endif
 
-#endif // WITH_AVS_NET
+#endif // AVS_COMMONS_WITH_AVS_NET

@@ -304,6 +304,7 @@ function(add_module_with_include_dirs)
     endif()
 
     string(TOUPPER "${AMWID_NAME}" AMWID_NAME_UPPER)
+    set(AVS_COMMONS_WITH_AVS_${AMWID_NAME_UPPER} "${WITH_AVS_${AMWID_NAME_UPPER}}" PARENT_SCOPE)
 
     if(WITH_AVS_${AMWID_NAME_UPPER})
         add_subdirectory(${AMWID_PATH})

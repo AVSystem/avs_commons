@@ -17,6 +17,28 @@
 #ifndef AVS_COMMONS_CONFIG_H
 #define AVS_COMMONS_CONFIG_H
 
+/**
+ * Each of the configuration options below enables, if defined, one of the core
+ * components of the avs_commons library.
+ */
+/**@{*/
+#cmakedefine AVS_COMMONS_WITH_AVS_ALGORITHM
+#cmakedefine AVS_COMMONS_WITH_AVS_BUFFER
+#cmakedefine AVS_COMMONS_WITH_AVS_COMPAT_THREADING
+#cmakedefine AVS_COMMONS_WITH_AVS_CRYPTO
+#cmakedefine AVS_COMMONS_WITH_AVS_HTTP
+#cmakedefine AVS_COMMONS_WITH_AVS_LIST
+#cmakedefine AVS_COMMONS_WITH_AVS_LOG
+#cmakedefine AVS_COMMONS_WITH_AVS_NET
+#cmakedefine AVS_COMMONS_WITH_AVS_PERSISTENCE
+#cmakedefine AVS_COMMONS_WITH_AVS_RBTREE
+#cmakedefine AVS_COMMONS_WITH_AVS_SCHED
+#cmakedefine AVS_COMMONS_WITH_AVS_STREAM
+#cmakedefine AVS_COMMONS_WITH_AVS_UNIT
+#cmakedefine AVS_COMMONS_WITH_AVS_UTILS
+#cmakedefine AVS_COMMONS_WITH_AVS_VECTOR
+/**@}*/
+
 /** Is the library compiled with IPv4 support? */
 #cmakedefine AVS_COMMONS_WITH_IPV4
 /** Is the library compiled with IPv6 support? */
@@ -32,23 +54,8 @@
 /** Is the library compiled with GCC symbol poisoning support? */
 #cmakedefine AVS_COMMONS_WITH_POISONING
 
-#cmakedefine WITH_AVS_ALGORITHM
-#cmakedefine WITH_AVS_BUFFER
-#cmakedefine WITH_AVS_COMPAT_THREADING
 #cmakedefine WITH_AVS_COMPAT_THREADING_ATOMIC_SPINLOCK
 #cmakedefine WITH_AVS_COMPAT_THREADING_PTHREAD
-#cmakedefine WITH_AVS_CRYPTO
-#cmakedefine WITH_AVS_HTTP
-#cmakedefine WITH_AVS_LIST
-#cmakedefine WITH_AVS_LOG
-#cmakedefine WITH_AVS_NET
-#cmakedefine WITH_AVS_PERSISTENCE
-#cmakedefine WITH_AVS_RBTREE
-#cmakedefine WITH_AVS_SCHED
-#cmakedefine WITH_AVS_STREAM
-#cmakedefine WITH_AVS_UNIT
-#cmakedefine WITH_AVS_UTILS
-#cmakedefine WITH_AVS_VECTOR
 
 #cmakedefine AVS_COMMONS_BIG_ENDIAN
 

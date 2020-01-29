@@ -16,7 +16,7 @@
 
 #include <avs_commons_init.h>
 
-#ifdef WITH_AVS_HTTP
+#ifdef AVS_COMMONS_WITH_AVS_HTTP
 
 #    include <avsystem/commons/memory.h>
 #    include <avsystem/commons/stream_v_table.h>
@@ -249,4 +249,4 @@ int _avs_http_encoding_init(http_stream_t *stream) {
     return stream->encoder ? 0 : -1;
 }
 
-#endif // WITH_AVS_HTTP
+#endif // AVS_COMMONS_WITH_AVS_HTTP

@@ -16,7 +16,7 @@
 
 #include <avs_commons_init.h>
 
-#ifdef WITH_AVS_NET
+#ifdef AVS_COMMONS_WITH_AVS_NET
 
 #    include <assert.h>
 #    include <string.h>
@@ -56,4 +56,4 @@ avs_error_t avs_net_resolve_host_simple(avs_net_socket_type_t socket_type,
     return err;
 }
 
-#endif // WITH_AVS_NET
+#endif // AVS_COMMONS_WITH_AVS_NET

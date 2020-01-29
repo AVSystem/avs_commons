@@ -17,7 +17,7 @@
 #define AVS_UNIT_SOURCE
 #include <avs_commons_posix_config.h>
 
-#ifdef WITH_AVS_UNIT
+#ifdef AVS_COMMONS_WITH_AVS_UNIT
 
 #    include <avsystem/commons/defs.h>
 #    include <avsystem/commons/memory.h>
@@ -433,4 +433,4 @@ void _avs_unit_stack_trace_print(FILE *file) {
 
 #    endif /* WITH_AVS_STACK_TRACE */
 
-#endif // WITH_AVS_UNIT
+#endif // AVS_COMMONS_WITH_AVS_UNIT

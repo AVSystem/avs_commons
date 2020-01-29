@@ -16,7 +16,7 @@
 
 #include <avs_commons_init.h>
 
-#ifdef WITH_AVS_SCHED
+#ifdef AVS_COMMONS_WITH_AVS_SCHED
 
 #    include <assert.h>
 #    include <inttypes.h>
@@ -643,4 +643,4 @@ int avs_resched_at_impl__(avs_sched_handle_t *handle_ptr,
     return retval;
 }
 
-#endif // WITH_AVS_SCHED
+#endif // AVS_COMMONS_WITH_AVS_SCHED

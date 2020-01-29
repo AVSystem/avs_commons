@@ -16,7 +16,7 @@
 
 #include <avs_commons_init.h>
 
-#ifdef WITH_AVS_STREAM
+#ifdef AVS_COMMONS_WITH_AVS_STREAM
 
 #    include <stdio.h>
 #    include <string.h>
@@ -75,4 +75,4 @@ void _avs_stream_md5_common_reset(avs_stream_md5_common_t *stream) {
     stream->out_ptr = MD5_LENGTH;
 }
 
-#endif // WITH_AVS_STREAM
+#endif // AVS_COMMONS_WITH_AVS_STREAM

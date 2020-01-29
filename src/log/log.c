@@ -17,7 +17,7 @@
 #define AVS_LOG_LOG_C
 #include <avs_commons_init.h>
 
-#ifdef WITH_AVS_LOG
+#ifdef AVS_COMMONS_WITH_AVS_LOG
 
 #    include <stdarg.h>
 #    include <stdio.h>
@@ -26,10 +26,10 @@
 #    include <avsystem/commons/list.h>
 #    include <avsystem/commons/log.h>
 
-#    ifdef WITH_AVS_COMPAT_THREADING
+#    ifdef AVS_COMMONS_WITH_AVS_COMPAT_THREADING
 #        include <avsystem/commons/init_once.h>
 #        include <avsystem/commons/mutex.h>
-#    endif // WITH_AVS_COMPAT_THREADING
+#    endif // AVS_COMMONS_WITH_AVS_COMPAT_THREADING
 
 VISIBILITY_SOURCE_BEGIN
 
@@ -60,7 +60,7 @@ static struct {
     .module_levels = NULL
 };
 
-#    ifdef WITH_AVS_COMPAT_THREADING
+#    ifdef AVS_COMMONS_WITH_AVS_COMPAT_THREADING
 static avs_mutex_t *g_log_mutex;
 static avs_init_once_handle_t g_log_init_handle;
 
@@ -100,12 +100,12 @@ static int _log_lock(const char *init_fail_msg, const char *lock_fail_msg) {
                                                   "could not lock log mutex")
 #        define LOG_UNLOCK() avs_mutex_unlock(g_log_mutex)
 
-#    else // WITH_AVS_COMPAT_THREADING
+#    else // AVS_COMMONS_WITH_AVS_COMPAT_THREADING
 
 #        define LOG_LOCK() 0
 #        define LOG_UNLOCK()
 
-#    endif // WITH_AVS_COMPAT_THREADING
+#    endif // AVS_COMMONS_WITH_AVS_COMPAT_THREADING
 
 static inline void set_log_handler_unlocked(avs_log_handler_t *log_handler) {
     g_log.handler = log_handler;
@@ -313,4 +313,4 @@ void avs_log_internal_l__(avs_log_level_t level,
 #        include "tests/log/test_log.c"
 #    endif
 
-#endif // WITH_AVS_LOG
+#endif // AVS_COMMONS_WITH_AVS_LOG

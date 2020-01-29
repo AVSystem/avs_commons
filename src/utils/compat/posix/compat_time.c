@@ -16,7 +16,7 @@
 
 #include <avs_commons_posix_config.h>
 
-#if defined(WITH_AVS_UTILS) && defined(WITH_POSIX_AVS_TIME)
+#if defined(AVS_COMMONS_WITH_AVS_UTILS) && defined(WITH_POSIX_AVS_TIME)
 
 #    include <time.h>
 
@@ -49,4 +49,4 @@ avs_time_monotonic_t avs_time_monotonic_now(void) {
     return result;
 }
 
-#endif // defined(WITH_AVS_UTILS) && defined(WITH_POSIX_AVS_TIME)
+#endif // defined(AVS_COMMONS_WITH_AVS_UTILS) && defined(WITH_POSIX_AVS_TIME)

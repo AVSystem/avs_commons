@@ -16,7 +16,7 @@
 
 #include <avs_commons_init.h>
 
-#ifdef WITH_AVS_ALGORITHM
+#ifdef AVS_COMMONS_WITH_AVS_ALGORITHM
 
 #    include <assert.h>
 #    include <ctype.h>
@@ -189,4 +189,4 @@ ssize_t avs_base64_decode_custom(uint8_t *out,
 #        include "tests/algorithm/base64.c"
 #    endif
 
-#endif // WITH_AVS_ALGORITHM
+#endif // AVS_COMMONS_WITH_AVS_ALGORITHM

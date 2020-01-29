@@ -17,7 +17,7 @@
 #define AVS_SUPPRESS_POISONING
 #include <avs_commons_init.h>
 
-#if defined(WITH_AVS_NET) && defined(WITH_MBEDTLS) \
+#if defined(AVS_COMMONS_WITH_AVS_NET) && defined(WITH_MBEDTLS) \
         && defined(WITH_TLS_SESSION_PERSISTENCE)
 
 // this uses some symbols such as "printf" - include it before poisoning them
@@ -279,5 +279,5 @@ avs_error_t _avs_net_mbedtls_session_restore(mbedtls_ssl_session *out_session,
     return err;
 }
 
-#endif // defined(WITH_AVS_NET) && defined(WITH_MBEDTLS) &&
+#endif // defined(AVS_COMMONS_WITH_AVS_NET) && defined(WITH_MBEDTLS) &&
        // defined(WITH_TLS_SESSION_PERSISTENCE)

@@ -16,7 +16,7 @@
 
 #include <avs_commons_init.h>
 
-#ifdef WITH_AVS_HTTP
+#ifdef AVS_COMMONS_WITH_AVS_HTTP
 
 #    include <assert.h>
 #    include <string.h>
@@ -467,4 +467,4 @@ int avs_http_status_code(avs_stream_t *stream_) {
 #        include "tests/http/test_stream.c"
 #    endif
 
-#endif // WITH_AVS_HTTP
+#endif // AVS_COMMONS_WITH_AVS_HTTP
