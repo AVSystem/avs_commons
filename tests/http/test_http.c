@@ -1154,7 +1154,7 @@ AVS_UNIT_TEST(http, send_headers_fail) {
     avs_http_free(client);
 }
 
-#ifdef AVS_COMMONS_WITH_IPV6
+#ifdef AVS_COMMONS_NET_WITH_IPV6
 AVS_UNIT_TEST(http, ipv6_host_header_has_square_brackets) {
     const char *tmp_data = NULL;
     avs_http_t *client = avs_http_new(&AVS_HTTP_DEFAULT_BUFFER_SIZES);
@@ -1181,7 +1181,7 @@ AVS_UNIT_TEST(http, ipv6_host_header_has_square_brackets) {
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&stream));
     avs_http_free(client);
 }
-#endif // AVS_COMMONS_WITH_IPV6
+#endif // AVS_COMMONS_NET_WITH_IPV6
 
 AVS_UNIT_TEST(http, invalid_uri_protocol) {
     avs_http_t *client = avs_http_new(&AVS_HTTP_DEFAULT_BUFFER_SIZES);

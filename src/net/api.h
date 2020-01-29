@@ -17,7 +17,7 @@
 #ifndef NET_API_H
 #define NET_API_H
 
-#ifdef WITH_VALGRIND
+#ifdef AVS_COMMONS_NET_WITH_VALGRIND
 #    include <stdint.h>
 #    include <valgrind/helgrind.h>
 #    include <valgrind/memcheck.h>

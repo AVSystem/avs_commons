@@ -137,6 +137,7 @@ set(AVS_COMMONS_WITH_INTERNAL_LOGS ${WITH_INTERNAL_LOGS})
 cmake_dependent_option(WITH_INTERNAL_TRACE "Enable TRACE-level logs inside AVSystem Commons libraries" OFF WITH_INTERNAL_LOGS OFF)
 set(AVS_COMMONS_WITH_INTERNAL_TRACE ${WITH_INTERNAL_TRACE})
 cmake_dependent_option(WITH_MBEDTLS_LOGS "Enable logging from mbedTLS backend library (if used)" OFF "WITH_INTERNAL_LOGS;WITH_MBEDTLS" OFF)
+set(AVS_COMMONS_NET_WITH_MBEDTLS_LOGS ${WITH_MBEDTLS_LOGS})
 
 if(WITH_AVS_LOG)
     set(AVS_LOG_MAX_LINE_LENGTH 512 CACHE INTEGER "Max length of a single log message. Longer ones will be truncated.")
@@ -244,12 +245,14 @@ option(WITH_IPV4 "Enable IPv4 support" ON)
 option(WITH_IPV6 "Enable IPv6 support" ON)
 
 option(WITH_SOCKET_LOG "Enable socket communication logging" OFF)
+set(AVS_COMMONS_NET_WITH_SOCKET_LOG ${WITH_SOCKET_LOG})
 
 find_program(VALGRIND_EXECUTABLE valgrind)
 if(VALGRIND_EXECUTABLE)
     # This is enabled in devconfig only, and should be disabled in CMakeLists.txt,
     # to avoid cross-compilation errors on stations with valgrind installed.
     option(WITH_VALGRIND "Enable usage of valgrind during unit tests" OFF)
+    set(AVS_COMMONS_NET_WITH_VALGRIND ${WITH_VALGRIND})
 endif()
 if(WITH_VALGRIND)
     execute_process(COMMAND ${VALGRIND_EXECUTABLE} --tool=helgrind --version
@@ -439,7 +442,9 @@ option(WITH_TINYDTLS "Enable tinyDTLS" ${TINYDTLS_FOUND})
 set(AVS_COMMONS_WITH_TINYDTLS ${WITH_TINYDTLS})
 
 cmake_dependent_option(WITH_PSK "Enable pre-shared key support" ON "WITH_OPENSSL OR WITH_MBEDTLS OR WITH_TINYDTLS" OFF)
+set(AVS_COMMONS_NET_WITH_PSK ${WITH_PSK})
 cmake_dependent_option(WITH_X509 "Enable X.509 certificate support" ON "WITH_OPENSSL OR WITH_MBEDTLS OR WITH_TINYDTLS" OFF)
+set(AVS_COMMONS_NET_WITH_X509 ${WITH_X509})
 cmake_dependent_option(WITH_MBEDTLS_CUSTOM_ENTROPY_INITIALIZER
                        "Enable use of avs_net_mbedtls_entropy_init(mbedtls_entropy_context*) function that has to be provided by the user"
                        OFF "WITH_MBEDTLS" OFF)
@@ -509,9 +514,12 @@ if(NOT ${CMAKE_PROJECT_NAME} STREQUAL ${PROJECT_NAME})
     set(avs_commons_INCLUDE_DIRS ${INCLUDE_DIRS} ${MODULE_INCLUDE_DIRS} PARENT_SCOPE)
 endif()
 
-set(AVS_COMMONS_WITH_IPV4 "${WITH_IPV4}")
-set(AVS_COMMONS_WITH_IPV6 "${WITH_IPV6}")
-set(AVS_COMMONS_WITH_MBEDTLS_CUSTOM_ENTROPY_INITIALIZER "${WITH_MBEDTLS_CUSTOM_ENTROPY_INITIALIZER}")
+set(AVS_COMMONS_NET_WITH_IPV4 "${WITH_IPV4}")
+set(AVS_COMMONS_NET_WITH_IPV6 "${WITH_IPV6}")
+set(AVS_COMMONS_NET_WITH_DTLS "${WITH_DTLS}")
+set(AVS_COMMONS_NET_WITH_MBEDTLS_CUSTOM_ENTROPY_INITIALIZER "${WITH_MBEDTLS_CUSTOM_ENTROPY_INITIALIZER}")
+set(AVS_COMMONS_NET_WITH_POSIX_AVS_SOCKET "${WITH_POSIX_AVS_SOCKET}")
+set(AVS_COMMONS_NET_WITH_TLS_SESSION_PERSISTENCE "${WITH_TLS_SESSION_PERSISTENCE}")
 set(AVS_COMMONS_WITH_MICRO_LOGS "${WITH_AVS_MICRO_LOGS}")
 set(AVS_COMMONS_WITH_POISONING "${WITH_POISONING}")
 

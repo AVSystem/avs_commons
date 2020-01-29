@@ -34,10 +34,10 @@ extern "C" {
  * Global common definitions.
  */
 
-#ifdef AVS_COMMONS_WITH_IPV6
+#ifdef AVS_COMMONS_NET_WITH_IPV6
 #    define AVS_ADDRSTRLEN \
         sizeof("ffff:ffff:ffff:ffff:ffff:ffff:255.255.255.255")
-#elif defined(AVS_COMMONS_WITH_IPV4)
+#elif defined(AVS_COMMONS_NET_WITH_IPV4)
 #    define AVS_ADDRSTRLEN sizeof("255.255.255.255")
 #endif
 
@@ -57,10 +57,10 @@ typedef long ssize_t;
 #    endif
 #endif // AVS_SSIZE_T_DEFINED
 
-#ifdef AVS_COMMONS_WITH_MBEDTLS_CUSTOM_ENTROPY_INITIALIZER
+#ifdef AVS_COMMONS_NET_WITH_MBEDTLS_CUSTOM_ENTROPY_INITIALIZER
 #    include <avsystem/commons/errno.h>
 avs_error_t avs_net_mbedtls_entropy_init(struct mbedtls_entropy_context *);
-#endif // AVS_COMMONS_WITH_MBEDTLS_CUSTOM_ENTROPY_INITIALIZER
+#endif // AVS_COMMONS_NET_WITH_MBEDTLS_CUSTOM_ENTROPY_INITIALIZER
 
 /**
  * Internal definitions used by the library to implement the functionality.

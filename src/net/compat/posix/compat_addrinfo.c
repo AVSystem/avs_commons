@@ -16,7 +16,8 @@
 
 #include <avs_commons_posix_config.h>
 
-#if defined(AVS_COMMONS_WITH_AVS_NET) && defined(WITH_POSIX_AVS_SOCKET)
+#if defined(AVS_COMMONS_WITH_AVS_NET) \
+        && defined(AVS_COMMONS_NET_WITH_POSIX_AVS_SOCKET)
 
 #    include <assert.h>
 #    include <string.h>
@@ -56,20 +57,20 @@ static void update_ports(struct addrinfo *head, uint16_t port) {
     port = htons(port);
     for (; head; head = head->ai_next) {
         switch (head->ai_family) {
-#    ifdef AVS_COMMONS_WITH_IPV4
+#    ifdef AVS_COMMONS_NET_WITH_IPV4
         case AF_INET:
             memcpy((char *) head->ai_addr
                            + offsetof(struct sockaddr_in, sin_port),
                    &port, sizeof(uint16_t));
             break;
-#    endif // AVS_COMMONS_WITH_IPV4
-#    ifdef AVS_COMMONS_WITH_IPV6
+#    endif // AVS_COMMONS_NET_WITH_IPV4
+#    ifdef AVS_COMMONS_NET_WITH_IPV6
         case AF_INET6:
             memcpy((char *) head->ai_addr
                            + offsetof(struct sockaddr_in6, sin6_port),
                    &port, sizeof(uint16_t));
             break;
-#    endif        // AVS_COMMONS_WITH_IPV6
+#    endif        // AVS_COMMONS_NET_WITH_IPV6
         default:; // do nothing
         }
     }
@@ -317,4 +318,5 @@ void avs_net_addrinfo_rewind(avs_net_addrinfo_t *ctx) {
     ctx->to_send = ctx->results;
 }
 
-#endif // defined(AVS_COMMONS_WITH_AVS_NET) && defined(WITH_POSIX_AVS_SOCKET)
+#endif // defined(AVS_COMMONS_WITH_AVS_NET) &&
+       // defined(AVS_COMMONS_NET_WITH_POSIX_AVS_SOCKET)

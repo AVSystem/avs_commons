@@ -129,7 +129,7 @@ avs_net_security_info_from_certificates(avs_net_certificate_info_t info) {
     return result;
 }
 
-#    ifdef WITH_SOCKET_LOG
+#    ifdef AVS_COMMONS_NET_WITH_SOCKET_LOG
 static int _avs_net_socket_debug = 0;
 
 int avs_net_socket_debug(int value) {
@@ -405,7 +405,7 @@ avs_error_t avs_net_socket_decorate_in_place(avs_net_socket_t **socket,
     return AVS_OK;
 }
 
-#    ifdef WITH_SOCKET_LOG
+#    ifdef AVS_COMMONS_NET_WITH_SOCKET_LOG
 
 typedef struct {
     const avs_net_socket_v_table_t *const operations;
@@ -756,7 +756,7 @@ avs_error_t avs_net_socket_create(avs_net_socket_t **socket,
     return create_bare_socket(socket, type, configuration);
 }
 
-#    endif /* WITH_SOCKET_LOG */
+#    endif /* AVS_COMMONS_NET_WITH_SOCKET_LOG */
 
 #    if !defined(WITHOUT_SSL) && defined(AVS_UNIT_TESTING)
 #        include "test/starttls.c"

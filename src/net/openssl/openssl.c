@@ -48,9 +48,9 @@
 #    include "../net_impl.h"
 
 #    include "common.h"
-#    ifdef WITH_X509
+#    ifdef AVS_COMMONS_NET_WITH_X509
 #        include "openssl_data_loader.h"
-#    endif // WITH_X509
+#    endif // AVS_COMMONS_NET_WITH_X509
 
 VISIBILITY_SOURCE_BEGIN
 
@@ -72,14 +72,14 @@ VISIBILITY_SOURCE_BEGIN
         (!OPENSSL_VERSION_NUMBER_GE(Major, Minor, Fix))
 
 #    if (OPENSSL_VERSION_NUMBER_LT(1, 0, 0) || defined(OPENSSL_NO_PSK)) \
-            && defined(WITH_PSK)
+            && defined(AVS_COMMONS_NET_WITH_PSK)
 #        warning "Detected OpenSSL version does not support PSK - disabling"
-#        undef WITH_PSK
+#        undef AVS_COMMONS_NET_WITH_PSK
 #    endif
 
-#    if OPENSSL_VERSION_NUMBER_LT(1, 0, 1) && defined(WITH_DTLS)
+#    if OPENSSL_VERSION_NUMBER_LT(1, 0, 1) && defined(AVS_COMMONS_NET_WITH_DTLS)
 #        warning "Detected OpenSSL version does not support DTLS - disabling"
-#        undef WITH_DTLS
+#        undef AVS_COMMONS_NET_WITH_DTLS
 #    endif
 
 typedef struct {
@@ -98,14 +98,14 @@ typedef struct {
     avs_net_socket_configuration_t backend_configuration;
     avs_net_resolved_endpoint_t endpoint_buffer;
 
-#    ifdef WITH_PSK
+#    ifdef AVS_COMMONS_NET_WITH_PSK
     avs_net_owned_psk_t psk;
 #    endif
 
-#    ifdef WITH_TLS_SESSION_PERSISTENCE
+#    ifdef AVS_COMMONS_NET_WITH_TLS_SESSION_PERSISTENCE
     void *session_resumption_buffer;
     size_t session_resumption_buffer_size;
-#    endif // WITH_TLS_SESSION_PERSISTENCE
+#    endif // AVS_COMMONS_NET_WITH_TLS_SESSION_PERSISTENCE
 
     /// Set of ciphersuites configured by user
     avs_net_socket_tls_ciphersuites_t enabled_ciphersuites;
@@ -116,7 +116,7 @@ typedef struct {
 #    define NET_SSL_COMMON_INTERNALS
 #    include "../ssl_common.h"
 
-#    ifdef WITH_DTLS
+#    ifdef AVS_COMMONS_NET_WITH_DTLS
 #        if OPENSSL_VERSION_NUMBER_LT(1, 1, 0)
 static const EVP_CIPHER *get_evp_cipher(SSL *ssl) {
     EVP_CIPHER_CTX *ctx = ssl->enc_write_ctx;
@@ -277,7 +277,7 @@ static avs_error_t get_dtls_overhead(ssl_socket_t *socket,
     }
     return AVS_OK;
 }
-#    else  /* WITH_DTLS */
+#    else  /* AVS_COMMONS_NET_WITH_DTLS */
 static avs_error_t get_dtls_overhead(ssl_socket_t *socket,
                                      int *out_header,
                                      int *out_padding_size) {
@@ -286,7 +286,7 @@ static avs_error_t get_dtls_overhead(ssl_socket_t *socket,
     (void) out_padding_size;
     return avs_errno(AVS_ENOTSUP);
 }
-#    endif /* WITH_DTLS */
+#    endif /* AVS_COMMONS_NET_WITH_DTLS */
 
 #    ifdef BIO_TYPE_SOURCE_SINK
 
@@ -398,7 +398,7 @@ static long avs_bio_ctrl(BIO *bio, int command, long intarg, void *ptrarg) {
     switch (command) {
     case BIO_CTRL_FLUSH:
         return 1;
-#        ifdef WITH_DTLS
+#        ifdef AVS_COMMONS_NET_WITH_DTLS
     case BIO_CTRL_DGRAM_QUERY_MTU:
     case BIO_CTRL_DGRAM_GET_FALLBACK_MTU:
         return get_socket_inner_mtu_or_zero(sock->backend_socket);
@@ -432,7 +432,7 @@ static long avs_bio_ctrl(BIO *bio, int command, long intarg, void *ptrarg) {
         memcpy(ptrarg, sock->backend_configuration.preferred_endpoint->data.buf,
                sock->backend_configuration.preferred_endpoint->size);
         return sock->backend_configuration.preferred_endpoint->size;
-#        endif // WITH_DTLS
+#        endif // AVS_COMMONS_NET_WITH_DTLS
     default:
         return 0;
     }
@@ -511,7 +511,7 @@ static BIO *avs_bio_spawn(ssl_socket_t *socket) {
         if (!socket_is_datagram(socket)) {
             return BIO_new_socket(fd, 0);
         }
-#        ifdef WITH_DTLS
+#        ifdef AVS_COMMONS_NET_WITH_DTLS
         if (socket_is_datagram(socket)) {
             BIO *bio = BIO_new_dgram(fd, 0);
             BIO_ctrl(bio, BIO_CTRL_DGRAM_SET_CONNECTED, 0,
@@ -594,7 +594,7 @@ static avs_error_t ssl_handshake(ssl_socket_t *socket) {
     socket->bio_error = AVS_OK;
     int result;
     if (state_opt.state == AVS_NET_SOCKET_STATE_CONNECTED) {
-#    ifdef WITH_TLS_SESSION_PERSISTENCE
+#    ifdef AVS_COMMONS_NET_WITH_TLS_SESSION_PERSISTENCE
         if (socket->session_resumption_buffer) {
             const unsigned char *ptr =
                     (const unsigned char *) socket->session_resumption_buffer;
@@ -611,7 +611,7 @@ static avs_error_t ssl_handshake(ssl_socket_t *socket) {
             }
             SSL_SESSION_free(session);
         }
-#    endif // WITH_TLS_SESSION_PERSISTENCE
+#    endif // AVS_COMMONS_NET_WITH_TLS_SESSION_PERSISTENCE
         result = SSL_connect(socket->ssl);
     } else if (state_opt.state == AVS_NET_SOCKET_STATE_ACCEPTED) {
         result = SSL_accept(socket->ssl);
@@ -629,7 +629,7 @@ static avs_error_t ssl_handshake(ssl_socket_t *socket) {
     return AVS_OK;
 }
 
-#    if !defined(WITH_PSK) && !defined(SSL_set_app_data)
+#    if !defined(AVS_COMMONS_NET_WITH_PSK) && !defined(SSL_set_app_data)
 /*
  * SSL_set_app_data is not available in some versions, but also not used
  * anywhere if PSK is not used.
@@ -688,13 +688,13 @@ ids_to_cipher_list(ssl_socket_t *socket,
         }
 
         const char *name = SSL_CIPHER_get_name(cipher);
-#    ifdef WITH_PSK
+#    ifdef AVS_COMMONS_NET_WITH_PSK
         if (socket->psk.psk && !strstr(name, "PSK")) {
             LOG(DEBUG, _("ignoring non-PSK cipher ID: 0x") "%04x",
                 suites->ids[i]);
             continue;
         }
-#    endif // WITH_PSK
+#    endif // AVS_COMMONS_NET_WITH_PSK
         if (first) {
             first = false;
         } else {
@@ -713,7 +713,7 @@ ids_to_cipher_list(ssl_socket_t *socket,
     return err;
 }
 
-#    ifdef WITH_TLS_SESSION_PERSISTENCE
+#    ifdef AVS_COMMONS_NET_WITH_TLS_SESSION_PERSISTENCE
 static int new_session_cb(SSL *ssl, SSL_SESSION *sess) {
     ssl_socket_t *socket = (ssl_socket_t *) SSL_get_app_data(ssl);
 
@@ -750,9 +750,9 @@ static void enable_session_cache(ssl_socket_t *socket) {
         SSL_CTX_sess_set_new_cb(socket->ctx, NULL);
     }
 }
-#    endif // WITH_TLS_SESSION_PERSISTENCE
+#    endif // AVS_COMMONS_NET_WITH_TLS_SESSION_PERSISTENCE
 
-#    if defined(WITH_DTLS) && OPENSSL_VERSION_NUMBER_GE(1, 1, 1)
+#    if defined(AVS_COMMONS_NET_WITH_DTLS) && OPENSSL_VERSION_NUMBER_GE(1, 1, 1)
 static unsigned int dtls_timer_cb(SSL *ssl, unsigned int timer_us) {
     ssl_socket_t *socket = (ssl_socket_t *) SSL_get_app_data(ssl);
     if (!socket->backend_socket) {
@@ -776,15 +776,16 @@ static unsigned int dtls_timer_cb(SSL *ssl, unsigned int timer_us) {
         return AVS_MIN(doubled, socket->dtls_handshake_timeouts.max_us);
     }
 }
-#    endif // defined(WITH_DTLS) && OPENSSL_VERSION_NUMBER_GE(1, 1, 1)
+#    endif // defined(AVS_COMMONS_NET_WITH_DTLS) && OPENSSL_VERSION_NUMBER_GE(1,
+           // 1, 1)
 
 static avs_error_t start_ssl(ssl_socket_t *socket, const char *host) {
     BIO *bio = NULL;
     LOG(TRACE, _("start_ssl(socket=") "%p" _(")"), (void *) socket);
 
-#    ifdef WITH_TLS_SESSION_PERSISTENCE
+#    ifdef AVS_COMMONS_NET_WITH_TLS_SESSION_PERSISTENCE
     enable_session_cache(socket);
-#    endif // WITH_TLS_SESSION_PERSISTENCE
+#    endif // AVS_COMMONS_NET_WITH_TLS_SESSION_PERSISTENCE
 
     socket->ssl = SSL_new(socket->ctx);
     if (!socket->ssl) {
@@ -806,11 +807,11 @@ static avs_error_t start_ssl(ssl_socket_t *socket, const char *host) {
         result = configure_cipher_list(socket, ciphersuites_string);
         avs_free(ciphersuites_string);
     }
-#    ifdef WITH_PSK
+#    ifdef AVS_COMMONS_NET_WITH_PSK
     else if (socket->psk.psk) {
         result = configure_cipher_list(socket, "PSK");
     }
-#    endif // WITH_PSK
+#    endif // AVS_COMMONS_NET_WITH_PSK
     if (result) {
         return avs_errno(AVS_EINVAL);
     }
@@ -832,7 +833,7 @@ static avs_error_t start_ssl(ssl_socket_t *socket, const char *host) {
         return avs_errno(AVS_ENOMEM);
     }
 
-#    if defined(WITH_X509) && OPENSSL_VERSION_NUMBER_GE(1, 0, 2)
+#    if defined(AVS_COMMONS_NET_WITH_X509) && OPENSSL_VERSION_NUMBER_GE(1, 0, 2)
     X509_VERIFY_PARAM *param = SSL_get0_param(socket->ssl);
     if (socket->verification) {
         if (!param) {
@@ -856,7 +857,8 @@ static avs_error_t start_ssl(ssl_socket_t *socket, const char *host) {
             host);
         return avs_errno(AVS_ENOMEM);
     }
-#    endif // defined(WITH_X509) && OPENSSL_VERSION_NUMBER_GE(1, 0, 2)
+#    endif // defined(AVS_COMMONS_NET_WITH_X509) && OPENSSL_VERSION_NUMBER_GE(1,
+           // 0, 2)
 
     bio = avs_bio_spawn(socket);
     if (!bio) {
@@ -865,11 +867,12 @@ static avs_error_t start_ssl(ssl_socket_t *socket, const char *host) {
     }
     SSL_set_bio(socket->ssl, bio, bio);
 
-#    if defined(WITH_DTLS) && OPENSSL_VERSION_NUMBER_GE(1, 1, 1)
+#    if defined(AVS_COMMONS_NET_WITH_DTLS) && OPENSSL_VERSION_NUMBER_GE(1, 1, 1)
     if (socket_is_datagram(socket)) {
         DTLS_set_timer_cb(socket->ssl, dtls_timer_cb);
     }
-#    endif // defined(WITH_DTLS) && OPENSSL_VERSION_NUMBER_GE(1, 1, 1)
+#    endif // defined(AVS_COMMONS_NET_WITH_DTLS) && OPENSSL_VERSION_NUMBER_GE(1,
+           // 1, 1)
 
     avs_net_socket_t *backend_socket = socket->backend_socket;
     avs_error_t err = ssl_handshake(socket);
@@ -902,7 +905,7 @@ static bool is_session_resumed(ssl_socket_t *socket) {
     return false;
 }
 
-#    ifdef WITH_X509
+#    ifdef AVS_COMMONS_NET_WITH_X509
 static avs_error_t
 configure_ssl_certs(ssl_socket_t *socket,
                     const avs_net_certificate_info_t *cert_info) {
@@ -953,9 +956,9 @@ configure_ssl_certs(ssl_socket_t *socket,
     LOG(ERROR, _("X.509 support disabled"));
     return avs_errno(AVS_ENOTSUP);
 }
-#    endif // WITH_X509
+#    endif // AVS_COMMONS_NET_WITH_X509
 
-#    ifdef WITH_PSK
+#    ifdef AVS_COMMONS_NET_WITH_PSK
 static unsigned int psk_client_cb(SSL *ssl,
                                   const char *hint,
                                   char *identity,
@@ -1061,12 +1064,12 @@ configure_ssl(ssl_socket_t *socket,
 
     if (configuration->session_resumption_buffer_size > 0) {
         assert(configuration->session_resumption_buffer);
-#    ifdef WITH_TLS_SESSION_PERSISTENCE
+#    ifdef AVS_COMMONS_NET_WITH_TLS_SESSION_PERSISTENCE
         socket->session_resumption_buffer =
                 configuration->session_resumption_buffer;
         socket->session_resumption_buffer_size =
                 configuration->session_resumption_buffer_size;
-#    endif // WITH_TLS_SESSION_PERSISTENCE
+#    endif // AVS_COMMONS_NET_WITH_TLS_SESSION_PERSISTENCE
     }
 
     if (configuration->server_name_indication) {
@@ -1182,7 +1185,7 @@ static avs_error_t cleanup_ssl(avs_net_socket_t **socket_) {
     ssl_socket_t **socket = (ssl_socket_t **) socket_;
     LOG(TRACE, _("cleanup_ssl(*socket=") "%p" _(")"), (void *) *socket);
 
-#    ifdef WITH_PSK
+#    ifdef AVS_COMMONS_NET_WITH_PSK
     _avs_net_psk_cleanup(&(*socket)->psk);
 #    endif
 
@@ -1261,9 +1264,9 @@ static const SSL_METHOD *stream_method(avs_net_ssl_version_t version) {
     }
 }
 
-#        ifndef WITH_DTLS
+#        ifndef AVS_COMMONS_NET_WITH_DTLS
 #            define dgram_method(x) ((void) (x), (const SSL_METHOD *) NULL)
-#        else /* WITH_DTLS */
+#        else /* AVS_COMMONS_NET_WITH_DTLS */
 
 static const SSL_METHOD *dgram_method(avs_net_ssl_version_t version) {
     switch (version) {
@@ -1286,7 +1289,7 @@ static const SSL_METHOD *dgram_method(avs_net_ssl_version_t version) {
     }
 }
 
-#        endif /* WITH_DTLS */
+#        endif /* AVS_COMMONS_NET_WITH_DTLS */
 
 static avs_error_t
 make_ssl_context(SSL_CTX **out_ctx, bool dtls, avs_net_ssl_version_t version) {
@@ -1327,9 +1330,9 @@ static int stream_proto_version(avs_net_ssl_version_t version) {
     }
 }
 
-#        ifndef WITH_DTLS
+#        ifndef AVS_COMMONS_NET_WITH_DTLS
 #            define dgram_proto_version(x) ((void) (x), -1)
-#        else /* WITH_DTLS */
+#        else /* AVS_COMMONS_NET_WITH_DTLS */
 
 static int dgram_proto_version(avs_net_ssl_version_t version) {
     switch (version) {
@@ -1345,7 +1348,7 @@ static int dgram_proto_version(avs_net_ssl_version_t version) {
     }
 }
 
-#        endif /* WITH_DTLS */
+#        endif /* AVS_COMMONS_NET_WITH_DTLS */
 
 static avs_error_t
 make_ssl_context(SSL_CTX **out_ctx, bool dtls, avs_net_ssl_version_t version) {
@@ -1356,7 +1359,7 @@ make_ssl_context(SSL_CTX **out_ctx, bool dtls, avs_net_ssl_version_t version) {
         method = OPENSSL_METHOD(TLS)();
         ossl_proto_version = stream_proto_version(version);
     }
-#        ifdef WITH_DTLS
+#        ifdef AVS_COMMONS_NET_WITH_DTLS
     else {
         method = OPENSSL_METHOD(DTLS)();
         ossl_proto_version = dgram_proto_version(version);

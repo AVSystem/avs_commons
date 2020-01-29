@@ -21,7 +21,7 @@
 #include <avs_commons_init.h>
 
 #if defined(AVS_COMMONS_WITH_AVS_NET) && defined(AVS_COMMONS_WITH_OPENSSL) \
-        && defined(WITH_X509)
+        && defined(AVS_COMMONS_NET_WITH_X509)
 
 #    include <openssl/ssl.h>
 
@@ -346,4 +346,4 @@ _avs_net_openssl_load_client_key(SSL_CTX *ctx,
 }
 
 #endif // defined(AVS_COMMONS_WITH_AVS_NET) && defined(AVS_COMMONS_WITH_OPENSSL)
-       // && defined(WITH_X509)
+       // && defined(AVS_COMMONS_NET_WITH_X509)
