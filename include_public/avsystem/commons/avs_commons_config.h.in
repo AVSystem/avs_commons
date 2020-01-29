@@ -115,13 +115,6 @@
 #cmakedefine WITH_AVS_COMPAT_THREADING_ATOMIC_SPINLOCK
 #cmakedefine WITH_AVS_COMPAT_THREADING_PTHREAD
 
-#cmakedefine HAVE_GETIFADDRS
-#cmakedefine HAVE_BACKTRACE
-#cmakedefine HAVE_BACKTRACE_SYMBOLS
-#cmakedefine HAVE_POLL
-#cmakedefine HAVE_C11_STDATOMIC
-#cmakedefine HAVE_PTHREAD_CONDATTR_SETCLOCK
-
 #cmakedefine WITH_OPENSSL
 #cmakedefine WITH_MBEDTLS
 #cmakedefine WITH_TINYDTLS
@@ -149,8 +142,6 @@
 #cmakedefine WITH_VALGRIND
 
 #cmakedefine WITH_SCHEDULER_THREAD_SAFE
-
-#cmakedefine HAVE_PRAGMA_DIAGNOSTIC
 
 #cmakedefine HAVE_VISIBILITY
 

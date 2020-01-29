@@ -56,6 +56,7 @@
 #cmakedefine HAVE_FREEADDRINFO
 #cmakedefine HAVE_GAI_STRERROR
 #cmakedefine HAVE_GETADDRINFO
+#cmakedefine HAVE_GETIFADDRS
 #cmakedefine HAVE_GETNAMEINFO
 #cmakedefine HAVE_INET_NTOP
 #cmakedefine HAVE_INET_PTON
@@ -69,6 +70,12 @@
 #cmakedefine HAVE_HTONL
 #cmakedefine HAVE_RECVMSG
 #cmakedefine HAVE_CLOSE
+#cmakedefine HAVE_BACKTRACE
+#cmakedefine HAVE_BACKTRACE_SYMBOLS
+#cmakedefine HAVE_PTHREAD_CONDATTR_SETCLOCK
+
+/* compiler features */
+#cmakedefine HAVE_PRAGMA_DIAGNOSTIC
 
 #cmakedefine POSIX_COMPAT_HEADER
 #ifndef POSIX_COMPAT_HEADER
