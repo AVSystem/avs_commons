@@ -45,7 +45,7 @@ static void successful_request(avs_http_t *client,
     avs_unit_mocksock_assert_io_clean(*socket_ptr);
     tmp_data = "POST / HTTP/1.1\r\n"
                "Host: example.com\r\n"
-#ifdef WITH_AVS_HTTP_ZLIB
+#ifdef AVS_COMMONS_HTTP_WITH_ZLIB
                "Accept-Encoding: gzip, deflate\r\n"
 #endif
                "Content-Length: 0\r\n"
@@ -86,7 +86,7 @@ AVS_UNIT_TEST(http_close, chunked_request) {
     // second request retry
     const char *tmp_data = "POST / HTTP/1.1\r\n"
                            "Host: example.com\r\n"
-#ifdef WITH_AVS_HTTP_ZLIB
+#ifdef AVS_COMMONS_HTTP_WITH_ZLIB
                            "Accept-Encoding: gzip, deflate\r\n"
 #endif
                            "Expect: 100-continue\r\n"
@@ -150,7 +150,7 @@ AVS_UNIT_TEST(http_close, chunked_request_error_in_first_chunk) {
     // second request
     const char *tmp_data = "POST / HTTP/1.1\r\n"
                            "Host: example.com\r\n"
-#ifdef WITH_AVS_HTTP_ZLIB
+#ifdef AVS_COMMONS_HTTP_WITH_ZLIB
                            "Accept-Encoding: gzip, deflate\r\n"
 #endif
                            "Expect: 100-continue\r\n"
@@ -195,7 +195,7 @@ AVS_UNIT_TEST(http_close, chunked_request_close_when_receiving) {
     // second request
     const char *tmp_data = "POST / HTTP/1.1\r\n"
                            "Host: example.com\r\n"
-#ifdef WITH_AVS_HTTP_ZLIB
+#ifdef AVS_COMMONS_HTTP_WITH_ZLIB
                            "Accept-Encoding: gzip, deflate\r\n"
 #endif
                            "Expect: 100-continue\r\n"
@@ -239,7 +239,7 @@ AVS_UNIT_TEST(http_close, chunked_request_error_in_second_chunk) {
     // second request
     const char *tmp_data = "POST / HTTP/1.1\r\n"
                            "Host: example.com\r\n"
-#ifdef WITH_AVS_HTTP_ZLIB
+#ifdef AVS_COMMONS_HTTP_WITH_ZLIB
                            "Accept-Encoding: gzip, deflate\r\n"
 #endif
                            "Expect: 100-continue\r\n"

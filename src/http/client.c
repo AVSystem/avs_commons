@@ -31,7 +31,7 @@ VISIBILITY_SOURCE_BEGIN
 const avs_http_buffer_sizes_t AVS_HTTP_DEFAULT_BUFFER_SIZES = {
     .body_recv = 4096,
     .body_send = 4096,
-#    ifdef WITH_AVS_HTTP_ZLIB
+#    ifdef AVS_COMMONS_HTTP_WITH_ZLIB
     .content_coding_input = 4096,
     .content_coding_min_input = 128,
 #    endif

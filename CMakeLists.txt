@@ -473,6 +473,7 @@ add_module_with_include_dirs(NAME sched)
 cmake_dependent_option(WITH_AVS_HTTP_ZLIB
                        "Enable support for HTTP compression using zlib"
                        ON WITH_AVS_HTTP OFF)
+set(AVS_COMMONS_HTTP_WITH_ZLIB ${WITH_AVS_HTTP_ZLIB})
 add_module_with_include_dirs(NAME http)
 
 add_module_with_include_dirs(NAME persistence)

@@ -112,6 +112,9 @@
  *
  * Each of the configuration options below enables, if defined, one of the core
  * components of the avs_commons library.
+ *
+ * NOTE: Enabling avs_unit will cause an object file with an implementation of
+ * main() to be generated.
  */
 /**@{*/
 #cmakedefine AVS_COMMONS_WITH_AVS_ALGORITHM
@@ -178,6 +181,13 @@
 #cmakedefine AVS_COMMONS_WITH_TINYDTLS
 /**@}*/
 
+/**
+ * Enable support for HTTP content compression in avs_http.
+ *
+ * Requires linking with zlib.
+ */
+#cmakedefine AVS_COMMONS_HTTP_WITH_ZLIB
+
 /** Is the library compiled with IPv4 support? */
 #cmakedefine AVS_COMMONS_WITH_IPV4
 /** Is the library compiled with IPv6 support? */
@@ -188,7 +198,6 @@
 #cmakedefine AVS_COMMONS_WITH_MICRO_LOGS
 /** Is the library compiled with GCC symbol poisoning support? */
 #cmakedefine AVS_COMMONS_WITH_POISONING
-
 
 #cmakedefine WITH_DTLS
 #cmakedefine WITH_PSK
@@ -204,8 +213,6 @@
 #cmakedefine WITH_INTERNAL_TRACE
 #cmakedefine WITH_SOCKET_LOG
 #cmakedefine WITH_MBEDTLS_LOGS
-
-#cmakedefine WITH_AVS_HTTP_ZLIB
 
 #cmakedefine WITH_VALGRIND
 
