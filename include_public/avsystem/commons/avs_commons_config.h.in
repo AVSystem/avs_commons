@@ -159,6 +159,25 @@
 #cmakedefine AVS_COMMONS_COMPAT_THREADING_WITH_PTHREAD
 /**@}*/
 
+/**
+ * Options that control compilation of code depending on TLS backend library.
+ *
+ * If CMake is not used, in the typical scenario at most one of the following
+ * DTLS backends may be enabled at the same time. If none is enabled,
+ * functionalities that depends on cryptography will be disabled.
+ *
+ * Affects avs_crypto, avs_net, and avs_stream (for the MD5 implementation).
+ *
+ * mbed TLS is the main development backend, and is preferred as such. OpenSSL
+ * backend supports most functionality as well, but is not as thoroughly tested.
+ * TinyDTLS support is only rudimentary.
+ */
+/**@{*/
+#cmakedefine AVS_COMMONS_WITH_MBEDTLS
+#cmakedefine AVS_COMMONS_WITH_OPENSSL
+#cmakedefine AVS_COMMONS_WITH_TINYDTLS
+/**@}*/
+
 /** Is the library compiled with IPv4 support? */
 #cmakedefine AVS_COMMONS_WITH_IPV4
 /** Is the library compiled with IPv6 support? */
@@ -170,9 +189,6 @@
 /** Is the library compiled with GCC symbol poisoning support? */
 #cmakedefine AVS_COMMONS_WITH_POISONING
 
-#cmakedefine WITH_OPENSSL
-#cmakedefine WITH_MBEDTLS
-#cmakedefine WITH_TINYDTLS
 
 #cmakedefine WITH_DTLS
 #cmakedefine WITH_PSK

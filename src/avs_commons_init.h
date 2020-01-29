@@ -33,7 +33,8 @@
 #    include "avs_commons_poison.h"
 #endif
 
-#if !(defined(WITH_OPENSSL) || defined(WITH_MBEDTLS) || defined(WITH_TINYDTLS))
+#if !(defined(AVS_COMMONS_WITH_OPENSSL) || defined(AVS_COMMONS_WITH_MBEDTLS) \
+      || defined(AVS_COMMONS_WITH_TINYDTLS))
 #    define WITHOUT_SSL
 #endif
 

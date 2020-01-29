@@ -16,8 +16,8 @@
 
 #include <avs_commons_init.h>
 
-#if defined(AVS_COMMONS_WITH_AVS_STREAM) && !defined(WITH_OPENSSL) \
-        && !defined(WITH_MBEDTLS)
+#if defined(AVS_COMMONS_WITH_AVS_STREAM) && !defined(AVS_COMMONS_WITH_OPENSSL) \
+        && !defined(AVS_COMMONS_WITH_MBEDTLS)
 
 #    include <stdlib.h>
 #    include <string.h>
@@ -293,5 +293,6 @@ avs_stream_t *avs_stream_md5_create(void) {
     return (avs_stream_t *) retval;
 }
 
-#endif // defined(AVS_COMMONS_WITH_AVS_STREAM) && !defined(WITH_OPENSSL) &&
-       // !defined(WITH_MBEDTLS)
+#endif // defined(AVS_COMMONS_WITH_AVS_STREAM) &&
+       // !defined(AVS_COMMONS_WITH_OPENSSL) &&
+       // !defined(AVS_COMMONS_WITH_MBEDTLS)

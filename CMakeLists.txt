@@ -424,12 +424,15 @@ endif(WITH_TEST)
 # SSL
 find_package(OpenSSL)
 option(WITH_OPENSSL "Enable OpenSSL" ${OPENSSL_FOUND})
+set(AVS_COMMONS_WITH_OPENSSL ${WITH_OPENSSL})
 
 find_package(MbedTLS)
 option(WITH_MBEDTLS "Enable mbed TLS" ${MBEDTLS_FOUND})
+set(AVS_COMMONS_WITH_MBEDTLS ${WITH_MBEDTLS})
 
 find_package(TinyDTLS)
 option(WITH_TINYDTLS "Enable tinyDTLS" ${TINYDTLS_FOUND})
+set(AVS_COMMONS_WITH_TINYDTLS ${WITH_TINYDTLS})
 
 cmake_dependent_option(WITH_PSK "Enable pre-shared key support" ON "WITH_OPENSSL OR WITH_MBEDTLS OR WITH_TINYDTLS" OFF)
 cmake_dependent_option(WITH_X509 "Enable X.509 certificate support" ON "WITH_OPENSSL OR WITH_MBEDTLS OR WITH_TINYDTLS" OFF)

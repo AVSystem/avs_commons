@@ -17,7 +17,7 @@
 #define AVS_SUPPRESS_POISONING
 #include <avs_commons_init.h>
 
-#if defined(AVS_COMMONS_WITH_AVS_NET) && defined(WITH_MBEDTLS)
+#if defined(AVS_COMMONS_WITH_AVS_NET) && defined(AVS_COMMONS_WITH_MBEDTLS)
 
 // this uses some symbols such as "printf" - include it before poisoning them
 #    include <mbedtls/platform.h>
@@ -1028,4 +1028,4 @@ initialize_ssl_socket(ssl_socket_t *socket,
     return avs_is_ok(err) ? configure_ssl(socket, configuration) : err;
 }
 
-#endif // defined(AVS_COMMONS_WITH_AVS_NET) && defined(WITH_MBEDTLS)
+#endif // defined(AVS_COMMONS_WITH_AVS_NET) && defined(AVS_COMMONS_WITH_MBEDTLS)
