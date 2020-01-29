@@ -70,7 +70,6 @@
 #cmakedefine HAVE_HTONL
 #cmakedefine HAVE_RECVMSG
 #cmakedefine HAVE_CLOSE
-#cmakedefine HAVE_BACKTRACE
 #cmakedefine HAVE_BACKTRACE_SYMBOLS
 #cmakedefine HAVE_PTHREAD_CONDATTR_SETCLOCK
 
