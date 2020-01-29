@@ -179,9 +179,9 @@ if(CMAKE_C_COMPILE_OPTIONS_PIC)
 endif()
 
 # -fvisibility, #pragma GCC visibility
-if(NOT DEFINED HAVE_VISIBILITY)
+if(NOT DEFINED AVS_COMMONS_HAVE_VISIBILITY)
     file(WRITE ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp/visibility.c "#pragma GCC visibility push(default)\nint f();\n#pragma GCC visibility push(hidden)\nint f() { return 0; }\n#pragma GCC visibility pop\nint main() { return f(); }\n\n")
-    try_compile(HAVE_VISIBILITY
+    try_compile(AVS_COMMONS_HAVE_VISIBILITY
                 ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp
                 ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp/visibility.c
                 COMPILE_DEFINITIONS -Wall -Wextra -Werror -fvisibility=default)
@@ -200,8 +200,8 @@ endif()
 # as they might not work on Clang if -rtlib=compiler-rt is not set
 file(WRITE ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp/builtin_add_overflow.c "#include <stdint.h>\nint main() { int64_t a=0,b=0,c=0; return __builtin_add_overflow(a, b, &c); }\n")
 file(WRITE ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp/builtin_mul_overflow.c "#include <stdint.h>\nint main() { int64_t a=0,b=0,c=0; return __builtin_mul_overflow(a, b, &c); }\n")
-try_compile(HAVE_BUILTIN_ADD_OVERFLOW ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp/builtin_add_overflow.c)
-try_compile(HAVE_BUILTIN_MUL_OVERFLOW ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp/builtin_mul_overflow.c)
+try_compile(AVS_COMMONS_HAVE_BUILTIN_ADD_OVERFLOW ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp/builtin_add_overflow.c)
+try_compile(AVS_COMMONS_HAVE_BUILTIN_MUL_OVERFLOW ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp/builtin_mul_overflow.c)
 
 # C11 stdatomic
 file(WRITE ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp/c11_stdatomic.c "#include <stdatomic.h>\nint main() { volatile atomic_flag a = ATOMIC_FLAG_INIT; return atomic_flag_test_and_set(&a); }\n")

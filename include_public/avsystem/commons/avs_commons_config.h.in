@@ -59,6 +59,24 @@
 #cmakedefine AVS_COMMONS_BIG_ENDIAN
 
 /**
+ * Is GNU __builtin_add_overflow() extension available?
+ *
+ * Affects time handling functions in avs_utils. If disabled, software overflow
+ * checking will be compiled. Note that this software overflow checking code
+ * relies on U2 representation of signed integers.
+ */
+#cmakedefine AVS_COMMONS_HAVE_BUILTIN_ADD_OVERFLOW
+
+/**
+ * Is GNU __builtin_mul_overflow() extension available?
+ *
+ * Affects time handling functions in avs_utils. If disabled, software overflow
+ * checking will be compiled. Note that this software overflow checking code
+ * relies on U2 representation of signed integers.
+ */
+#cmakedefine AVS_COMMONS_HAVE_BUILTIN_MUL_OVERFLOW
+
+/**
  * Is net/if.h available in the system?
  *
  * NOTE: If the header is indeed available, but this option is not defined, the
@@ -75,6 +93,18 @@
  * headers</strong>, which may conflict with system definitions.
  */
 #cmakedefine AVS_COMMONS_HAVE_SYS_TYPES_H
+
+/**
+ * Are GNU visibility pragmas (#pragma GCC visibility push/pop) available?
+ *
+ * Meaningful mostly if avs_commons will be directly or indirectly linked into
+ * a shared library. Causes all symbols except those declared in public headers
+ * to be hidden, i.e. not exported outside the shared library. If not defined,
+ * default compiler visibility settings will be used, but you still may use
+ * compiler flags and linker version scripts to replicate this manually if
+ * needed.
+ */
+#cmakedefine AVS_COMMONS_HAVE_VISIBILITY
 /**@}*/
 
 /**
@@ -134,16 +164,11 @@
 #cmakedefine WITH_SOCKET_LOG
 #cmakedefine WITH_MBEDTLS_LOGS
 
-#cmakedefine HAVE_BUILTIN_ADD_OVERFLOW
-#cmakedefine HAVE_BUILTIN_MUL_OVERFLOW
-
 #cmakedefine WITH_AVS_HTTP_ZLIB
 
 #cmakedefine WITH_VALGRIND
 
 #cmakedefine WITH_SCHEDULER_THREAD_SAFE
-
-#cmakedefine HAVE_VISIBILITY
 
 #cmakedefine WITH_POISONING
 

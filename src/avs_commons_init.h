@@ -16,7 +16,7 @@
 
 #include <avsystem/commons/defs.h>
 
-#if defined(HAVE_VISIBILITY) && !defined(AVS_UNIT_TESTING)
+#if defined(AVS_COMMONS_HAVE_VISIBILITY) && !defined(AVS_UNIT_TESTING)
 /* set default visibility for external symbols */
 #    pragma GCC visibility push(default)
 #    define VISIBILITY_SOURCE_BEGIN _Pragma("GCC visibility push(hidden)")
