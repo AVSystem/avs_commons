@@ -20,7 +20,8 @@
 #define AVS_COMPAT_THREADING_PTHREAD_INIT_ONCE
 #include <avs_commons_init.h>
 
-#ifdef WITH_AVS_COMPAT_THREADING_PTHREAD
+#if defined(AVS_COMMONS_WITH_AVS_COMPAT_THREADING) \
+        && defined(AVS_COMMONS_COMPAT_THREADING_WITH_PTHREAD)
 
 #    define MODULE_NAME init_once_pthread
 #    include <x_log_config.h>
@@ -72,4 +73,5 @@ int avs_init_once(volatile avs_init_once_handle_t *handle,
     return result;
 }
 
-#endif // WITH_AVS_COMPAT_THREADING_PTHREAD
+#endif // defined(AVS_COMMONS_WITH_AVS_COMPAT_THREADING) &&
+       // defined(AVS_COMMONS_COMPAT_THREADING_WITH_PTHREAD)

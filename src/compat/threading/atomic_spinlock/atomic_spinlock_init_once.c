@@ -16,7 +16,8 @@
 
 #include <avs_commons_init.h>
 
-#ifdef WITH_AVS_COMPAT_THREADING_ATOMIC_SPINLOCK
+#if defined(AVS_COMMONS_WITH_AVS_COMPAT_THREADING) \
+        && defined(AVS_COMMONS_COMPAT_THREADING_WITH_ATOMIC_SPINLOCK)
 
 #    define MODULE_NAME init_once_atomic_spinlock
 #    include <x_log_config.h>
@@ -66,4 +67,5 @@ int avs_init_once(volatile avs_init_once_handle_t *handle,
     return result;
 }
 
-#endif // WITH_AVS_COMPAT_THREADING_ATOMIC_SPINLOCK
+#endif // defined(AVS_COMMONS_WITH_AVS_COMPAT_THREADING) &&
+       // defined(AVS_COMMONS_COMPAT_THREADING_WITH_ATOMIC_SPINLOCK)

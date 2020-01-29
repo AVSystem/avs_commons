@@ -131,6 +131,34 @@
 #cmakedefine AVS_COMMONS_WITH_AVS_VECTOR
 /**@}*/
 
+/**
+ * Options that control compilation of avs_compat_threading implementations.
+ *
+ * If CMake is not used, in the typical scenario at most one of the following
+ * implementation may be enabled at the same time. If none is enabled, the
+ * relevant symbols will need to be provided by the user, if used.
+ *
+ * These are meaningful only if <c>AVS_COMMONS_WITH_AVS_COMPAT_THREADING</c> is
+ * defined.
+ */
+/**@{*/
+/**
+ * Enable implementation based on spinlocks.
+ *
+ * This implementation is usually very inefficient, and requires C11 stdatomic.h
+ * header to be available.
+ */
+#cmakedefine AVS_COMMONS_COMPAT_THREADING_WITH_ATOMIC_SPINLOCK
+
+/**
+ * Enable implementation based on the POSIX Threads library.
+ *
+ * This implementation is preferred over the spinlock-based one, but the POSIX
+ * Threads library is normally available only in UNIX-like environments.
+ */
+#cmakedefine AVS_COMMONS_COMPAT_THREADING_WITH_PTHREAD
+/**@}*/
+
 /** Is the library compiled with IPv4 support? */
 #cmakedefine AVS_COMMONS_WITH_IPV4
 /** Is the library compiled with IPv6 support? */
@@ -141,9 +169,6 @@
 #cmakedefine AVS_COMMONS_WITH_MICRO_LOGS
 /** Is the library compiled with GCC symbol poisoning support? */
 #cmakedefine AVS_COMMONS_WITH_POISONING
-
-#cmakedefine WITH_AVS_COMPAT_THREADING_ATOMIC_SPINLOCK
-#cmakedefine WITH_AVS_COMPAT_THREADING_PTHREAD
 
 #cmakedefine WITH_OPENSSL
 #cmakedefine WITH_MBEDTLS
