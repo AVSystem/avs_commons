@@ -73,13 +73,15 @@
 
 #cmakedefine HAVE_PRAGMA_DIAGNOSTIC
 
-#ifndef AVS_UNIT_TESTING
-/* clang-format off */
 #cmakedefine HAVE_VISIBILITY
-/* clang-format on */
-#endif
 
-#if defined(HAVE_VISIBILITY)
+#cmakedefine WITH_POISONING
+
+#cmakedefine WITH_POSIX_AVS_TIME
+#cmakedefine WITH_STANDARD_ALLOCATOR
+#cmakedefine WITH_POSIX_AVS_SOCKET
+
+#if defined(HAVE_VISIBILITY) && !defined(AVS_UNIT_TESTING)
 /* set default visibility for external symbols */
 #    pragma GCC visibility push(default)
 #    define VISIBILITY_SOURCE_BEGIN _Pragma("GCC visibility push(hidden)")
@@ -92,7 +94,6 @@
 #    define VISIBILITY_PRIVATE_HEADER_END
 #endif
 
-#cmakedefine WITH_POISONING
 #if !defined(AVS_UNIT_TESTING) && !defined(AVS_SUPPRESS_POISONING)
 #    include "avs_commons_poison.h"
 #endif
@@ -100,10 +101,6 @@
 #if !(defined(WITH_OPENSSL) || defined(WITH_MBEDTLS) || defined(WITH_TINYDTLS))
 #    define WITHOUT_SSL
 #endif
-
-#cmakedefine WITH_POSIX_AVS_TIME
-#cmakedefine WITH_STANDARD_ALLOCATOR
-#cmakedefine WITH_POSIX_AVS_SOCKET
 
 // VERIFICATIONS
 
