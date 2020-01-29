@@ -18,6 +18,68 @@
 #define AVS_COMMONS_CONFIG_H
 
 /**
+ * @file avs_commons_config.h
+ *
+ * avs_commons library configuration.
+ *
+ * The preferred way to compile avs_commons is to use CMake, in which case this
+ * file will be generated automatically by CMake.
+ *
+ * However, to provide compatibility with various build systems used especially
+ * by embedded platforms, it is alternatively supported to compile avs_commons
+ * by other means, in which case this file will need to be provided manually.
+ *
+ * In the repository, this file is provided as <c>avs_commons_config.h.in</c>,
+ * intended to be processed by CMake. If editing this file manually, please copy
+ * or rename it to <c>avs_commons_config.h</c> and for each of the
+ * <c>#cmakedefine</c> directives, please either replace it with regular
+ * <c>#define</c> to enable it, or comment it out to disable. You may also need
+ * to replace <c>@VARIABLE@</c> arguments with concrete values. Please refer to
+ * the comments above each of the specific definition for details.
+ */
+
+/**
+ * Options that describe capabilities of the build environment.
+ *
+ * NOTE: If you leave some of these macros undefined, even though the given
+ * feature is actually available in the system, avs_commons will attempt to use
+ * its own substitutes, which may be incompatible with the definition in the
+ * system and lead to undefined behaviour.
+ */
+/**@{*/
+/**
+ * Is the target platform big-endian?
+ *
+ * If undefined, little-endian is assumed. Mixed-endian architectures are not
+ * supported.
+ *
+ * Affects <c>avs_convert_be*()</c> and <c>avs_[hn]to[hn]*()</c> calls in
+ * avs_utils and, by extension, avs_persistence.
+ */
+#cmakedefine AVS_COMMONS_BIG_ENDIAN
+
+/**
+ * Is net/if.h available in the system?
+ *
+ * NOTE: If the header is indeed available, but this option is not defined, the
+ * <c>IF_NAMESIZE</c> macro will be defined <strong>publicly by avs_commons
+ * headers</strong>, which may conflict with system definitions.
+ */
+#cmakedefine AVS_COMMONS_HAVE_NET_IF_H
+
+/**
+ * Is sys/types.h available in the system?
+ *
+ * NOTE: If the header is indeed available, but this option is not defined, the
+ * <c>ssize_t</c> type will be defined <strong>publicly by avs_commons
+ * headers</strong>, which may conflict with system definitions.
+ */
+#cmakedefine AVS_COMMONS_HAVE_SYS_TYPES_H
+/**@}*/
+
+/**
+ * Options that control compilation of avs_commons components.
+ *
  * Each of the configuration options below enables, if defined, one of the core
  * components of the avs_commons library.
  */
@@ -47,17 +109,11 @@
 #cmakedefine AVS_COMMONS_WITH_MBEDTLS_CUSTOM_ENTROPY_INITIALIZER
 /** Is the library compiled with micro logs feature? */
 #cmakedefine AVS_COMMONS_WITH_MICRO_LOGS
-/** Is net/if.h available in the system? */
-#cmakedefine AVS_COMMONS_HAVE_NET_IF_H
-/** Is sys/types.h available in the system? */
-#cmakedefine AVS_COMMONS_HAVE_SYS_TYPES_H
 /** Is the library compiled with GCC symbol poisoning support? */
 #cmakedefine AVS_COMMONS_WITH_POISONING
 
 #cmakedefine WITH_AVS_COMPAT_THREADING_ATOMIC_SPINLOCK
 #cmakedefine WITH_AVS_COMPAT_THREADING_PTHREAD
-
-#cmakedefine AVS_COMMONS_BIG_ENDIAN
 
 #cmakedefine HAVE_GETIFADDRS
 #cmakedefine HAVE_BACKTRACE
