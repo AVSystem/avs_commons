@@ -14,4 +14,32 @@
  * limitations under the License.
  */
 
+#include <avsystem/commons/defs.h>
+
 #include <avs_commons_config.h>
+
+#if defined(HAVE_VISIBILITY) && !defined(AVS_UNIT_TESTING)
+/* set default visibility for external symbols */
+#    pragma GCC visibility push(default)
+#    define VISIBILITY_SOURCE_BEGIN _Pragma("GCC visibility push(hidden)")
+#    define VISIBILITY_PRIVATE_HEADER_BEGIN \
+        _Pragma("GCC visibility push(hidden)")
+#    define VISIBILITY_PRIVATE_HEADER_END _Pragma("GCC visibility pop")
+#else
+#    define VISIBILITY_SOURCE_BEGIN
+#    define VISIBILITY_PRIVATE_HEADER_BEGIN
+#    define VISIBILITY_PRIVATE_HEADER_END
+#endif
+
+#if !defined(AVS_UNIT_TESTING) && !defined(AVS_SUPPRESS_POISONING)
+#    include "avs_commons_poison.h"
+#endif
+
+#if !(defined(WITH_OPENSSL) || defined(WITH_MBEDTLS) || defined(WITH_TINYDTLS))
+#    define WITHOUT_SSL
+#endif
+
+#if defined(WITH_AVS_NET) && defined(WITH_TLS_SESSION_PERSISTENCE) \
+        && !defined(WITH_AVS_PERSISTENCE)
+#    error "WITH_AVS_PERSISTENCE is required for WITH_TLS_SESSION_PERSISTENCE"
+#endif
