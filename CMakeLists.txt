@@ -539,7 +539,6 @@ set(AVS_COMMONS_WITH_MBEDTLS_CUSTOM_ENTROPY_INITIALIZER "${WITH_MBEDTLS_CUSTOM_E
 set(AVS_COMMONS_WITH_MICRO_LOGS "${WITH_AVS_MICRO_LOGS}")
 set(AVS_COMMONS_WITH_POISONING "${WITH_POISONING}")
 
-configure_file("config/avs_commons_config.h.in" "config/avs_commons_config.h")
 configure_file("config/avs_commons_posix_config.h.in" "config/avs_commons_posix_config.h")
 configure_file("include_public/avsystem/commons/avs_commons_public_config.h.in"
                "include_public/avsystem/commons/avs_commons_public_config.h")
