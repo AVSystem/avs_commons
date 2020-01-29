@@ -303,30 +303,32 @@ function(add_module_with_include_dirs)
         set(AMWID_INCLUDE_DIRS_VAR MODULE_INCLUDE_DIRS)
     endif()
 
-    add_subdirectory(${AMWID_PATH})
+    string(TOUPPER "${AMWID_NAME}" AMWID_NAME_UPPER)
 
-    # Append module includes to a specified variable name (i.e. MODULE_INCLUDE_DIRS_VAR).
-    set(${AMWID_INCLUDE_DIRS_VAR}
-        ${${AMWID_INCLUDE_DIRS_VAR}}
-        $<TARGET_PROPERTY:${AMWID_NAME},INTERFACE_INCLUDE_DIRECTORIES>
-        PARENT_SCOPE)
+    if(WITH_AVS_${AMWID_NAME_UPPER})
+        add_subdirectory(${AMWID_PATH})
 
-    if(TARGET avs_${AMWID_NAME}_check)
-        add_test(NAME test_avs_${AMWID_NAME}_symbols
-                 COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/test_symbols.sh $<TARGET_FILE:avs_${AMWID_NAME}> avs_ AVS_ _avs _AVS_)
-        add_dependencies(avs_commons_symbols_check avs_${AMWID_NAME})
+        # Append module includes to a specified variable name (i.e. MODULE_INCLUDE_DIRS_VAR).
+        set(${AMWID_INCLUDE_DIRS_VAR}
+            ${${AMWID_INCLUDE_DIRS_VAR}}
+            $<TARGET_PROPERTY:${AMWID_NAME},INTERFACE_INCLUDE_DIRECTORIES>
+            PARENT_SCOPE)
+
+        if(TARGET avs_${AMWID_NAME}_check)
+            add_test(NAME test_avs_${AMWID_NAME}_symbols
+                     COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/test_symbols.sh $<TARGET_FILE:avs_${AMWID_NAME}> avs_ AVS_ _avs _AVS_)
+            add_dependencies(avs_commons_symbols_check avs_${AMWID_NAME})
+        endif()
+        file(GLOB_RECURSE MODULE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/${AMWID_PATH}/*.c
+                                       ${CMAKE_CURRENT_SOURCE_DIR}/${AMWID_PATH}/*.h)
+        foreach(F ${MODULE_FILES})
+            add_test(NAME test_${F}_visibility COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/test_visibility.py ${F})
+            add_test(NAME test_${F}_headers COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/test_headers.py ${F})
+        endforeach()
     endif()
-    file(GLOB_RECURSE MODULE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/${AMWID_PATH}/*.c
-                                   ${CMAKE_CURRENT_SOURCE_DIR}/${AMWID_PATH}/*.h)
-    foreach(F ${MODULE_FILES})
-        add_test(NAME test_${F}_visibility COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/test_visibility.py ${F})
-        add_test(NAME test_${F}_headers COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/test_headers.py ${F})
-    endforeach()
 endfunction()
 
-if(WITH_AVS_UNIT)
-    add_module_with_include_dirs(NAME unit)
-endif()
+add_module_with_include_dirs(NAME unit)
 
 if(WITH_TEST)
     if(NOT WITH_AVS_UNIT)
@@ -449,65 +451,26 @@ if(WITH_TINYDTLS)
     ")
 endif()
 
-if(WITH_AVS_ALGORITHM)
-    add_module_with_include_dirs(NAME algorithm)
-endif()
-
-if(WITH_AVS_BUFFER)
-    add_module_with_include_dirs(NAME buffer)
-endif()
-
-if(WITH_AVS_LIST)
-    add_module_with_include_dirs(NAME list)
-endif()
-
-if(WITH_AVS_VECTOR)
-    add_module_with_include_dirs(NAME vector)
-endif()
-
-if(WITH_AVS_UTILS)
-    add_module_with_include_dirs(NAME utils)
-endif()
-
-if(WITH_AVS_NET)
-    add_module_with_include_dirs(NAME net)
-endif()
-
-if(WITH_AVS_STREAM)
-    add_module_with_include_dirs(NAME stream)
-endif()
-
-if(WITH_AVS_LOG)
-    add_module_with_include_dirs(NAME log)
-endif()
-
-if(WITH_AVS_RBTREE)
-    add_module_with_include_dirs(NAME rbtree)
-endif()
-
-if(WITH_AVS_SCHED)
-    add_module_with_include_dirs(NAME sched)
-endif()
+add_module_with_include_dirs(NAME algorithm)
+add_module_with_include_dirs(NAME buffer)
+add_module_with_include_dirs(NAME list)
+add_module_with_include_dirs(NAME vector)
+add_module_with_include_dirs(NAME utils)
+add_module_with_include_dirs(NAME net)
+add_module_with_include_dirs(NAME stream)
+add_module_with_include_dirs(NAME log)
+add_module_with_include_dirs(NAME rbtree)
+add_module_with_include_dirs(NAME sched)
 
 cmake_dependent_option(WITH_AVS_HTTP_ZLIB
                        "Enable support for HTTP compression using zlib"
                        ON WITH_AVS_HTTP OFF)
-if(WITH_AVS_HTTP)
-    add_module_with_include_dirs(NAME http)
-endif()
+add_module_with_include_dirs(NAME http)
 
-if(WITH_AVS_PERSISTENCE)
-    add_module_with_include_dirs(NAME persistence)
-endif()
-
-if(WITH_AVS_COMPAT_THREADING)
-    add_module_with_include_dirs(NAME compat_threading
-                                 PATH src/compat/threading)
-endif()
-
-if(WITH_AVS_CRYPTO)
-    add_module_with_include_dirs(NAME crypto)
-endif()
+add_module_with_include_dirs(NAME persistence)
+add_module_with_include_dirs(NAME compat_threading
+                             PATH src/compat/threading)
+add_module_with_include_dirs(NAME crypto)
 
 # API documentation
 set(DOXYGEN_SKIP_DOT TRUE)
