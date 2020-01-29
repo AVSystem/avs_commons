@@ -24,10 +24,11 @@ TRUSTSTORE_PASSWORD=rootPass
 KEYSTORE_PASSWORD=endPass
 
 if [ -z "$OPENSSL" ]; then
-    if [ -x /usr/local/opt/openssl/bin/openssl ]; then
-        # default OpenSSL on macOS is outdated and buggy
-        # use the one from Homebrew if available
-        OPENSSL=/usr/local/opt/openssl/bin/openssl
+    # default OpenSSL on macOS is outdated and buggy
+    # use the one from Homebrew if available
+    BREW_OPENSSL="$(brew --prefix openssl 2>/dev/null || true)"
+    if [ "$BREW_OPENSSL" ]; then
+        OPENSSL="$BREW_OPENSSL/bin/openssl"
     else
         OPENSSL=openssl
     fi
@@ -50,7 +51,7 @@ pushd "$CERTS_DIR" >/dev/null 2>&1
 
 echo "* generating root cert"
 "$OPENSSL" ecparam -name prime256v1 -genkey -out root.key
-"$OPENSSL" req -batch -new -key root.key -x509 -sha256 -days 9999 -out root.crt
+"$OPENSSL" req -batch -new -subj '/CN=root' -key root.key -x509 -sha256 -days 9999 -out root.crt
 echo "* generating root cert - done"
 
 for NAME in client server; do

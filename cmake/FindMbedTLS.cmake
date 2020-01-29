@@ -147,6 +147,7 @@ endif()
 if(NOT TARGET mbedcrypto)
     add_library(mbedcrypto UNKNOWN IMPORTED)
     set_target_properties(mbedcrypto PROPERTIES
+                          INTERFACE_INCLUDE_DIRECTORIES "${MBEDTLS_INCLUDE_DIR}"
                           IMPORTED_LINK_INTERFACE_LANGUAGES "C"
                           IMPORTED_LOCATION "${MBEDTLS_CRYPTO_LIBRARY}")
 endif()
@@ -154,6 +155,7 @@ endif()
 if(NOT TARGET mbedx509)
     add_library(mbedx509 UNKNOWN IMPORTED)
     set_target_properties(mbedx509 PROPERTIES
+                          INTERFACE_INCLUDE_DIRECTORIES "${MBEDTLS_INCLUDE_DIR}"
                           IMPORTED_LINK_INTERFACE_LANGUAGES "C"
                           IMPORTED_LOCATION "${MBEDTLS_X509_LIBRARY}")
 endif()

@@ -17,7 +17,7 @@
 #include <avsystem/commons/log.h>
 #include <avsystem/commons/unit/test.h>
 
-#include <malloc.h>
+#include <stdlib.h>
 
 static avs_log_level_t EXPECTED_LEVEL;
 static char EXPECTED_MODULE[64];
