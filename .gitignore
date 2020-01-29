@@ -30,7 +30,7 @@ install_manifest.txt
 _CPack_Packages/
 Testing/
 /config/avs_commons_posix_config.h
-/include_public/avsystem/commons/avs_commons_public_config.h
+/include_public/avsystem/commons/avs_commons_config.h
 
 # documentation
 /doc/*

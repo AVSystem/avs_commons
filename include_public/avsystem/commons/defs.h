@@ -22,7 +22,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include <avsystem/commons/avs_commons_public_config.h>
+#include <avsystem/commons/avs_commons_config.h>
 
 #ifdef __cplusplus
 extern "C" {

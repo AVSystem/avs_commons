@@ -540,8 +540,8 @@ set(AVS_COMMONS_WITH_MICRO_LOGS "${WITH_AVS_MICRO_LOGS}")
 set(AVS_COMMONS_WITH_POISONING "${WITH_POISONING}")
 
 configure_file("config/avs_commons_posix_config.h.in" "config/avs_commons_posix_config.h")
-configure_file("include_public/avsystem/commons/avs_commons_public_config.h.in"
-               "include_public/avsystem/commons/avs_commons_public_config.h")
+configure_file("include_public/avsystem/commons/avs_commons_config.h.in"
+               "include_public/avsystem/commons/avs_commons_config.h")
 
 get_property(LIBRARY_FIND_ROUTINES GLOBAL PROPERTY AVS_LIBRARY_FIND_ROUTINES)
 configure_file(avs_commons-config.cmake.in avs_commons-config.cmake @ONLY)
@@ -556,7 +556,7 @@ install(FILES
         ${CMAKE_CURRENT_SOURCE_DIR}/cmake/FindTinyDTLS.cmake
         DESTINATION ${LIB_INSTALL_DIR}/avs_commons/cmake)
 install(FILES
-        "${CMAKE_CURRENT_BINARY_DIR}/include_public/avsystem/commons/avs_commons_public_config.h"
+        "${CMAKE_CURRENT_BINARY_DIR}/include_public/avsystem/commons/avs_commons_config.h"
         "${CMAKE_CURRENT_SOURCE_DIR}/include_public/avsystem/commons/defs.h"
         "${CMAKE_CURRENT_SOURCE_DIR}/include_public/avsystem/commons/errno.h"
         "${CMAKE_CURRENT_SOURCE_DIR}/include_public/avsystem/commons/errno_map.h"
