@@ -146,6 +146,6 @@ typedef int sockfd_t;
 #    define INVALID_SOCKET (-1)
 #endif
 
-#include <avs_commons_config.h>
+#include <avs_commons_init.h>
 
 #endif /* CONFIG_POSIX_CONFIG_H */

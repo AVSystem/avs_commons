@@ -15,7 +15,7 @@
  */
 
 #define AVS_STREAM_STREAM_FILE_C
-#include <avs_commons_config.h>
+#include <avs_commons_init.h>
 
 #ifdef WITH_AVS_STREAM
 

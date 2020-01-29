@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include <avs_commons_config.h>
+#include <avs_commons_init.h>
 
 #include <time.h>
 

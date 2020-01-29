@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <avs_commons_config.h>
+#include <avs_commons_init.h>
 
 #include "src/rbtree.h"
 #include <avsystem/commons/rbtree.h>

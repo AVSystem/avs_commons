@@ -269,7 +269,8 @@ if(NOT INCLUDE_INSTALL_DIR)
 endif()
 
 include_directories($<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/config>
-                    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/config>)
+                    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/config>
+                    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>)
 
 add_library(avs_commons_global_headers INTERFACE)
 target_include_directories(avs_commons_global_headers INTERFACE

@@ -15,7 +15,7 @@
  */
 
 #define AVS_LOG_LOG_C
-#include <avs_commons_config.h>
+#include <avs_commons_init.h>
 
 #ifdef WITH_AVS_LOG
 

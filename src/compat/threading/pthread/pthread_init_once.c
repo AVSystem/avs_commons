@@ -18,7 +18,7 @@
 #define _POSIX_C_SOURCE 200809L
 
 #define AVS_COMPAT_THREADING_PTHREAD_INIT_ONCE
-#include <avs_commons_config.h>
+#include <avs_commons_init.h>
 
 #ifdef WITH_AVS_COMPAT_THREADING_PTHREAD
 

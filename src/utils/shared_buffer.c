@@ -16,7 +16,7 @@
 
 #define AVS_SHARED_BUFFER_IMPL
 
-#include <avs_commons_config.h>
+#include <avs_commons_init.h>
 
 #ifdef WITH_AVS_UTILS
 
