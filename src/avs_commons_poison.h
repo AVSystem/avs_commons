@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#if defined(WITH_POISONING) && !defined(AVS_COMMONS_POISON_H)
+#if defined(AVS_COMMONS_WITH_POISONING) && !defined(AVS_COMMONS_POISON_H)
 #    define AVS_COMMONS_POISON_H
 
 // This file ensures that some functions we "don't like" from the standard
@@ -188,4 +188,4 @@
 #    pragma GCC poison wcstombs
 #    pragma GCC poison wctomb
 
-#endif // defined(WITH_POISONING) && !defined(AVS_COMMONS_POISON_H)
+#endif // defined(AVS_COMMONS_WITH_POISONING) && !defined(AVS_COMMONS_POISON_H)

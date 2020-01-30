@@ -108,6 +108,19 @@
 /**@}*/
 
 /**
+ * Enable poisoning of unwanted symbols when compiling avs_commons.
+ *
+ * Requires a compiler that supports #pragma GCC poison.
+ *
+ * This is mostly useful during development, to ensure that avs_commons do not
+ * attempt to call functions considered harmful in this library, such as printf.
+ * This is not guaranteed to work as intended on every platform, e.g. on macOS
+ * it is known to generate false positives due to different dependencies between
+ * system headers.
+ */
+#cmakedefine AVS_COMMONS_WITH_POISONING
+
+/**
  * Options that control compilation of avs_commons components.
  *
  * Each of the configuration options below enables, if defined, one of the core
@@ -378,10 +391,5 @@
  */
 #cmakedefine AVS_COMMONS_UTILS_WITH_STANDARD_ALLOCATOR
 /**@}*/
-
-/** Is the library compiled with GCC symbol poisoning support? */
-#cmakedefine AVS_COMMONS_WITH_POISONING
-
-#cmakedefine WITH_POISONING
 
 #endif /* AVS_COMMONS_CONFIG_H */
