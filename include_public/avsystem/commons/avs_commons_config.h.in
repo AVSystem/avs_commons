@@ -347,10 +347,16 @@
 #cmakedefine AVS_COMMONS_NET_WITH_X509
 /**@}*/
 
+/**
+ * Enable thread safety in avs_sched.
+ *
+ * Makes all scheduler accesses synchronized and thread-safe, at the cost of
+ * requiring avs_compat_threading to be enabled, and higher resource usage.
+ */
+#cmakedefine AVS_COMMONS_SCHED_THREAD_SAFE
+
 /** Is the library compiled with GCC symbol poisoning support? */
 #cmakedefine AVS_COMMONS_WITH_POISONING
-
-#cmakedefine WITH_SCHEDULER_THREAD_SAFE
 
 #cmakedefine WITH_POISONING
 

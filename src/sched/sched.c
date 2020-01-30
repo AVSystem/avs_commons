@@ -27,18 +27,18 @@
 #    include <avsystem/commons/sched.h>
 #    include <avsystem/commons/utils.h>
 
-#    ifdef WITH_SCHEDULER_THREAD_SAFE
+#    ifdef AVS_COMMONS_SCHED_THREAD_SAFE
 #        include <avsystem/commons/condvar.h>
 #        include <avsystem/commons/init_once.h>
 #        include <avsystem/commons/mutex.h>
-#    else // WITH_SCHEDULER_THREAD_SAFE
+#    else // AVS_COMMONS_SCHED_THREAD_SAFE
 #        define avs_condvar_create(...) 0
 #        define avs_condvar_cleanup(...) ((void) 0)
 #        define avs_condvar_notify_all(...) ((void) 0)
 #        define avs_mutex_create(...) 0
 #        define avs_mutex_cleanup(...) ((void) 0)
 #        define avs_mutex_unlock(...) ((void) 0)
-#    endif // WITH_SCHEDULER_THREAD_SAFE
+#    endif // AVS_COMMONS_SCHED_THREAD_SAFE
 
 #    define MODULE_NAME avs_sched
 #    include <x_log_config.h>
@@ -83,7 +83,7 @@ struct avs_sched_struct {
     /** Opaque data, retrievable using @ref avs_sched_data . */
     void *data;
 
-#    ifdef WITH_SCHEDULER_THREAD_SAFE
+#    ifdef AVS_COMMONS_SCHED_THREAD_SAFE
     /**
      * Mutex that guards access to the jobs list.
      */
@@ -94,7 +94,7 @@ struct avs_sched_struct {
      * @ref avs_sched_wait_until_next call.
      */
     avs_condvar_t *task_condvar;
-#    endif // WITH_SCHEDULER_THREAD_SAFE
+#    endif // AVS_COMMONS_SCHED_THREAD_SAFE
 
     /** Scheduled jobs. */
     AVS_LIST(avs_sched_job_t) jobs;
@@ -106,7 +106,7 @@ struct avs_sched_struct {
     bool shutting_down;
 };
 
-#    ifdef WITH_SCHEDULER_THREAD_SAFE
+#    ifdef AVS_COMMONS_SCHED_THREAD_SAFE
 /**
  * The global mutex that guards accesses to all @ref avs_sched_handle_t
  * variables.
@@ -127,16 +127,16 @@ static void nonfailing_mutex_lock(avs_mutex_t *mutex) {
         AVS_UNREACHABLE("could not lock mutex");
     }
 }
-#    else // WITH_SCHEDULER_THREAD_SAFE
+#    else // AVS_COMMONS_SCHED_THREAD_SAFE
 #        define nonfailing_mutex_lock(...) ((void) 0)
-#    endif // WITH_SCHEDULER_THREAD_SAFE
+#    endif // AVS_COMMONS_SCHED_THREAD_SAFE
 
 void _avs_sched_cleanup_global_state(void);
 void _avs_sched_cleanup_global_state(void) {
-#    ifdef WITH_SCHEDULER_THREAD_SAFE
+#    ifdef AVS_COMMONS_SCHED_THREAD_SAFE
     avs_mutex_cleanup(&g_handle_access_mutex);
     g_init_handle = NULL;
-#    endif // WITH_SCHEDULER_THREAD_SAFE
+#    endif // AVS_COMMONS_SCHED_THREAD_SAFE
 }
 
 #    define SCHED_LOG(Sched, Level, ...)                          \
@@ -189,12 +189,12 @@ static const char *job_log_id_impl(char buf[static JOB_LOG_ID_MAX_LENGTH],
 #    endif // AVS_COMMONS_WITH_INTERNAL_LOGS
 
 avs_sched_t *avs_sched_new(const char *name, void *data) {
-#    ifdef WITH_SCHEDULER_THREAD_SAFE
+#    ifdef AVS_COMMONS_SCHED_THREAD_SAFE
     if (avs_init_once(&g_init_handle, init_globals, NULL)) {
         LOG(ERROR, _("Could not initialize globals"));
         return NULL;
     }
-#    endif // WITH_SCHEDULER_THREAD_SAFE
+#    endif // AVS_COMMONS_SCHED_THREAD_SAFE
     (void) name;
     avs_sched_t *sched = (avs_sched_t *) avs_calloc(1, sizeof(avs_sched_t));
     if (!sched) {
@@ -269,7 +269,7 @@ avs_time_monotonic_t avs_sched_time_of_next(avs_sched_t *sched) {
 
 int avs_sched_wait_until_next(avs_sched_t *sched,
                               avs_time_monotonic_t deadline) {
-#    ifdef WITH_SCHEDULER_THREAD_SAFE
+#    ifdef AVS_COMMONS_SCHED_THREAD_SAFE
     nonfailing_mutex_lock(sched->mutex);
     avs_time_monotonic_t time_of_next;
     int result = -1;
@@ -295,7 +295,7 @@ int avs_sched_wait_until_next(avs_sched_t *sched,
     }
     avs_mutex_unlock(sched->mutex);
     return result;
-#    else  // WITH_SCHEDULER_THREAD_SAFE
+#    else  // AVS_COMMONS_SCHED_THREAD_SAFE
     (void) deadline;
     (void) sched;
     SCHED_LOG(
@@ -303,7 +303,7 @@ int avs_sched_wait_until_next(avs_sched_t *sched,
             _("avs_sched_wait_until_next() is not supported because avs_sched ")
                     _("was compiled with thread safety disabled"));
     return -1;
-#    endif // WITH_SCHEDULER_THREAD_SAFE
+#    endif // AVS_COMMONS_SCHED_THREAD_SAFE
 }
 
 static AVS_LIST(avs_sched_job_t) fetch_job(avs_sched_t *sched,
@@ -518,9 +518,9 @@ void avs_sched_del(avs_sched_handle_t *handle_ptr) {
     AVS_LIST(avs_sched_job_t) *job_ptr =
             (AVS_LIST(avs_sched_job_t) *) AVS_LIST_FIND_PTR(&sched->jobs, job);
     if (!job_ptr) {
-#    ifndef WITH_SCHEDULER_THREAD_SAFE
+#    ifndef AVS_COMMONS_SCHED_THREAD_SAFE
         AVS_ASSERT(job_ptr, "dangling handle detected");
-#    endif // WITH_SCHEDULER_THREAD_SAFE
+#    endif // AVS_COMMONS_SCHED_THREAD_SAFE
            // Job might have been removed by another thread, don't do anything
     } else {
         SCHED_LOG(sched, TRACE, _("cancelling job") "%s", JOB_LOG_ID(job));
@@ -557,9 +557,9 @@ void avs_sched_detach(avs_sched_handle_t *handle_ptr) {
     AVS_LIST(avs_sched_job_t) *job_ptr =
             (AVS_LIST(avs_sched_job_t) *) AVS_LIST_FIND_PTR(&sched->jobs, job);
     if (!job_ptr) {
-#    ifndef WITH_SCHEDULER_THREAD_SAFE
+#    ifndef AVS_COMMONS_SCHED_THREAD_SAFE
         AVS_ASSERT(job_ptr, "dangling handle detected");
-#    endif // WITH_SCHEDULER_THREAD_SAFE
+#    endif // AVS_COMMONS_SCHED_THREAD_SAFE
            // Job might have been removed by another thread, don't do anything
     } else {
         nonfailing_mutex_lock(g_handle_access_mutex);
@@ -633,9 +633,9 @@ int avs_resched_at_impl__(avs_sched_handle_t *handle_ptr,
         schedule_job(sched, detached_job);
         avs_condvar_notify_all(sched->task_condvar);
     } else {
-#    ifndef WITH_SCHEDULER_THREAD_SAFE
+#    ifndef AVS_COMMONS_SCHED_THREAD_SAFE
         AVS_ASSERT(job_ptr, "dangling handle detected");
-#    endif // WITH_SCHEDULER_THREAD_SAFE
+#    endif // AVS_COMMONS_SCHED_THREAD_SAFE
         retval = -1;
     }
 
