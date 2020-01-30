@@ -17,7 +17,8 @@
 #define AVS_UTILS_COMPAT_STDLIB_MEMORY_C
 #include <avs_commons_init.h>
 
-#if defined(AVS_COMMONS_WITH_AVS_UTILS) && defined(WITH_STANDARD_ALLOCATOR)
+#if defined(AVS_COMMONS_WITH_AVS_UTILS) \
+        && defined(AVS_COMMONS_UTILS_WITH_STANDARD_ALLOCATOR)
 
 #    include <avsystem/commons/memory.h>
 
@@ -41,17 +42,5 @@ void *avs_realloc(void *ptr, size_t size) {
     return realloc(ptr, size);
 }
 
-void avs_memswap(void *memptr1, void *memptr2, size_t n) {
-    char *const ptr1 = (char *) memptr1;
-    char *const ptr2 = (char *) memptr2;
-    AVS_ASSERT(ptr1 >= ptr2 + n || ptr2 >= ptr1 + n,
-               "memory fragments must not intersect");
-    for (size_t i = 0; i < n; i++) {
-        char tmp = ptr1[i];
-        ptr1[i] = ptr2[i];
-        ptr2[i] = tmp;
-    }
-}
-
 #endif // defined(AVS_COMMONS_WITH_AVS_UTILS) &&
-       // defined(WITH_STANDARD_ALLOCATOR)
+       // defined(AVS_COMMONS_UTILS_WITH_STANDARD_ALLOCATOR)

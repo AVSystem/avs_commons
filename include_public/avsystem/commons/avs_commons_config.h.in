@@ -355,12 +355,33 @@
  */
 #cmakedefine AVS_COMMONS_SCHED_THREAD_SAFE
 
+/**
+ * Options related to avs_utils.
+ */
+/**@{*/
+/**
+ * Enable the default implementation of avs_time_real_now() and
+ * avs_time_monotonic_now().
+ *
+ * Requires an operating environment that supports a clock_gettime() call
+ * compatible with POSIX.
+ */
+#cmakedefine AVS_COMMONS_UTILS_WITH_POSIX_AVS_TIME
+
+/**
+ * Enable the default implementation of avs_malloc(), avs_free(), avs_calloc()
+ * and avs_realloc() that forwards to system malloc(), free(), calloc() and
+ * realloc() calls.
+ *
+ * You might disable this option if for any reason you need to use a custom
+ * allocator.
+ */
+#cmakedefine AVS_COMMONS_UTILS_WITH_STANDARD_ALLOCATOR
+/**@}*/
+
 /** Is the library compiled with GCC symbol poisoning support? */
 #cmakedefine AVS_COMMONS_WITH_POISONING
 
 #cmakedefine WITH_POISONING
-
-#cmakedefine WITH_POSIX_AVS_TIME
-#cmakedefine WITH_STANDARD_ALLOCATOR
 
 #endif /* AVS_COMMONS_CONFIG_H */

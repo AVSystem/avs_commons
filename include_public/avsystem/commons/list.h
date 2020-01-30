@@ -75,7 +75,7 @@
 
 #if defined(AVS_LIST_CONFIG_ALLOC) || defined(AVS_LIST_CONFIG_FREE)
 #    warning "AVS_LIST_CONFIG_ALLOC and AVS_LIST_CONFIG_FREE are no longer " \
-         "supported, disable WITH_STANDARD_ALLOCATOR instead"
+         "supported, disable AVS_COMMONS_UTILS_WITH_STANDARD_ALLOCATOR instead"
 #endif
 
 #ifdef __cplusplus
