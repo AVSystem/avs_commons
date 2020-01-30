@@ -49,13 +49,11 @@ extern "C" {
 #    endif
 #endif // IF_NAMESIZE
 
-#ifndef AVS_SSIZE_T_DEFINED
-#    ifdef AVS_COMMONS_HAVE_SYS_TYPES_H
-#        include <sys/types.h>
-#    else
+#ifdef AVS_COMMONS_HAVE_SYS_TYPES_H
+#    include <sys/types.h>
+#else
 typedef long ssize_t;
-#    endif
-#endif // AVS_SSIZE_T_DEFINED
+#endif
 
 #ifdef AVS_COMMONS_NET_WITH_MBEDTLS_CUSTOM_ENTROPY_INITIALIZER
 #    include <avsystem/commons/errno.h>
