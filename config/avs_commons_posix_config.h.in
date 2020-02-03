@@ -36,8 +36,8 @@
 /* compiler features */
 #cmakedefine AVS_COMMONS_HAVE_PRAGMA_DIAGNOSTIC
 
-#cmakedefine POSIX_COMPAT_HEADER "@POSIX_COMPAT_HEADER@"
-#ifndef POSIX_COMPAT_HEADER
+#cmakedefine AVS_COMMONS_POSIX_COMPAT_HEADER "@AVS_COMMONS_POSIX_COMPAT_HEADER@"
+#ifndef AVS_COMMONS_POSIX_COMPAT_HEADER
 
 // by default we try to compile in strict ISO C99 mode;
 // if it's enabled, then declare _POSIX_C_SOURCE to enable POSIX APIs;
@@ -64,8 +64,8 @@
 #    include <time.h>
 #    include <unistd.h>
 typedef int sockfd_t;
-#else // POSIX_COMPAT_HEADER
-#    include POSIX_COMPAT_HEADER
+#else // AVS_COMMONS_POSIX_COMPAT_HEADER
+#    include AVS_COMMONS_POSIX_COMPAT_HEADER
 // If POSIX socket APIs are implemented as macros (e.g. LwIP), redefining
 // common words like close to something else wreaks havoc all over the place.
 #    ifndef _AVS_NEED_POSIX_SOCKET
@@ -106,7 +106,7 @@ typedef int sockfd_t;
 #            undef close
 #        endif
 #    endif // _AVS_NEED_POSIX_SOCKET
-#endif     // POSIX_COMPAT_HEADER
+#endif     // AVS_COMMONS_POSIX_COMPAT_HEADER
 
 #ifndef INVALID_SOCKET
 #    define INVALID_SOCKET (-1)

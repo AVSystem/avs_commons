@@ -18,8 +18,8 @@
 #define COMPAT_H
 
 /*
- * Example implementation of a POSIX_COMPAT_HEADER file required for non-POSIX
- * platforms that use LwIP 1.4.1.
+ * Example implementation of a AVS_COMMONS_POSIX_COMPAT_HEADER file required for
+ * non-POSIX platforms that use LwIP 1.4.1.
  *
  * Contains all types/macros/symbols not defined in core C that are required
  * to compile avs_commons library.

@@ -160,6 +160,7 @@ if(WIN32)
 endif()
 
 set(POSIX_COMPAT_HEADER ${POSIX_COMPAT_HEADER_DEFAULT} CACHE STRING "POSIX compatibility header path, if required")
+set(AVS_COMMONS_POSIX_COMPAT_HEADER "${POSIX_COMPAT_HEADER}")
 
 ################################################################################
 
