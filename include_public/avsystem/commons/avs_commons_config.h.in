@@ -177,6 +177,19 @@
  * Threads library is normally available only in UNIX-like environments.
  */
 #cmakedefine AVS_COMMONS_COMPAT_THREADING_WITH_PTHREAD
+
+/**
+ * Is the <c>pthread_condattr_setclock()</c> function available?
+ *
+ * This flag only makes sense when
+ * <c>AVS_COMMONS_COMPAT_THREADING_WITH_PTHREAD</c> is enabled.
+ *
+ * If this flag is disabled, or if <c>CLOCK_MONOTONIC</c> macro is not
+ * available, the <c>avs_condvar_wait()</c> will internally use the real-time
+ * clock instead of the monotonic clock. Time values will be converted so that
+ * this change does not affect API usage.
+ */
+#cmakedefine AVS_COMMONS_COMPAT_THREADING_PTHREAD_HAVE_PTHREAD_CONDATTR_SETCLOCK
 /**@}*/
 
 /**
@@ -492,9 +505,6 @@
  */
 #cmakedefine AVS_COMMONS_UTILS_WITH_STANDARD_ALLOCATOR
 /**@}*/
-
-/* avs_compat_threading/phtread */
-#cmakedefine AVS_COMMONS_COMPAT_THREADING_PTHREAD_HAVE_PTHREAD_CONDATTR_SETCLOCK
 
 /* compiler features */
 #cmakedefine AVS_COMMONS_HAVE_PRAGMA_DIAGNOSTIC
