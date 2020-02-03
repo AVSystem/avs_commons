@@ -28,7 +28,7 @@
 #cmakedefine AVS_COMMONS_NET_POSIX_AVS_SOCKET_HAVE_RECVMSG
 
 /* avs_unit */
-#cmakedefine HAVE_BACKTRACE_SYMBOLS
+#cmakedefine HAVE_BACKTRACE
 
 /* avs_compat_threading/phtread */
 #cmakedefine HAVE_PTHREAD_CONDATTR_SETCLOCK

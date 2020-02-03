@@ -47,7 +47,7 @@ VISIBILITY_SOURCE_BEGIN
 
 #    define MAX_TRACE_LEVELS 256
 
-#    ifndef HAVE_BACKTRACE_SYMBOLS
+#    ifndef HAVE_BACKTRACE
 
 void _avs_unit_stack_trace_init(int argc, char **argv) {
     (void) argc;
@@ -58,7 +58,7 @@ void _avs_unit_stack_trace_print(FILE *file) {
     fprintf(file, "(stack trace not available)\n");
 }
 
-#    else /* HAVE_BACKTRACE_SYMBOLS */
+#    else /* HAVE_BACKTRACE */
 
 typedef struct stack_frame {
     void *address;
@@ -427,6 +427,6 @@ void _avs_unit_stack_trace_print(FILE *file) {
     stack_trace_release(&trace);
 }
 
-#    endif /* HAVE_BACKTRACE_SYMBOLS */
+#    endif /* HAVE_BACKTRACE */
 
 #endif // AVS_COMMONS_WITH_AVS_UNIT
