@@ -17,21 +17,20 @@
 #ifndef CONFIG_POSIX_CONFIG_H
 #define CONFIG_POSIX_CONFIG_H
 
-/* POSIX headers */
-#cmakedefine AVS_COMMONS_HAVE_NET_IF_H
-
-/* POSIX macros */
-#cmakedefine HAVE_IN6_IS_ADDR_V4MAPPED
-
-/* POSIX functions */
+/* avs_net/compat/posix */
 #cmakedefine HAVE_GAI_STRERROR
 #cmakedefine HAVE_GETIFADDRS
 #cmakedefine HAVE_GETNAMEINFO
+#cmakedefine HAVE_IN6_IS_ADDR_V4MAPPED
 #cmakedefine HAVE_INET_NTOP
 #cmakedefine HAVE_INET_PTON
 #cmakedefine HAVE_POLL
 #cmakedefine HAVE_RECVMSG
+
+/* avs_unit */
 #cmakedefine HAVE_BACKTRACE_SYMBOLS
+
+/* avs_compat_threading/phtread */
 #cmakedefine HAVE_PTHREAD_CONDATTR_SETCLOCK
 
 /* compiler features */
