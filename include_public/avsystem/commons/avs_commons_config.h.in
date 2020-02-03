@@ -365,6 +365,92 @@
 /**@}*/
 
 /**
+ * Options related to avs_net's default implementation of TCP and UDP sockets.
+ *
+ * These options make sense only when @ref AVS_COMMONS_NET_WITH_POSIX_AVS_SOCKET
+ * is enabled. They describe capabilities of the Unix-like environment in which
+ * the library is built.
+ *
+ * Note that if @ref AVS_COMMONS_POSIX_COMPAT_HEADER is defined, it might
+ * redefine these flags independently of the settings in this file.
+ */
+/**@{*/
+/**
+ * Is the <c>gai_strerror()</c> function available?
+ *
+ * Enabling this flag will provide more detailed log messages in case that
+ * <c>getaddrinfo()</c> fails. If this flag is disabled, numeric error codes
+ * values will be logged.
+ */
+#cmakedefine AVS_COMMONS_NET_POSIX_AVS_SOCKET_HAVE_GAI_STRERROR
+
+/**
+ * Is the <c>getifaddrs()</c> function available?
+ *
+ * Disabling this flag will cause <c>avs_net_socket_interface_name()</c> to use
+ * a less optimal implementation based on the <c>SIOCGIFCONF</c> ioctl.
+ *
+ * If <c>SIOCGIFCONF</c> is not defined, either, then
+ * <c>avs_net_socket_interface_name()</c> will always return an error.
+ */
+#cmakedefine AVS_COMMONS_NET_POSIX_AVS_SOCKET_HAVE_GETIFADDRS
+
+/**
+ * Is the <c>getnameinfo()</c> function available?
+ *
+ * Disabling this flag will cause <c>avs_net_socket_receive_from()</c>,
+ * <c>avs_net_socket_accept()</c>,
+ * <c>avs_net_resolved_endpoint_get_host_port()</c>,
+ * <c>avs_net_resolved_endpoint_get_host()</c> and
+ * <c>avs_net_resolve_host_simple()</c> to use a custom reimplementation of
+ * <c>getnameinfo()</c> based on <c>inet_ntop()</c>.
+ */
+#cmakedefine AVS_COMMONS_NET_POSIX_AVS_SOCKET_HAVE_GETNAMEINFO
+
+/**
+ * Is the <c>IN6_IS_ADDR_V4MAPPED</c> macro available and usable?
+ *
+ * Disabling this flag will cause a custom code that compares IPv6 addresses
+ * with the <c>::ffff:0.0.0.0/32</c> mask to be used instead.
+ */
+#cmakedefine AVS_COMMONS_NET_POSIX_AVS_SOCKET_HAVE_IN6_IS_ADDR_V4MAPPED
+
+/**
+ * Is the <c>inet_ntop()</c> function available?
+ *
+ * Disabling this flag will cause an internal implementation of this function
+ * adapted from BIND 4.9.4 to be used instead.
+ */
+#cmakedefine AVS_COMMONS_NET_POSIX_AVS_SOCKET_HAVE_INET_NTOP
+
+/**
+ * Is the <c>inet_pton()</c> function available?
+ *
+ * Disabling this flag will cause an internal implementation of this function
+ * adapted from BIND 4.9.4 to be used instead.
+ */
+#cmakedefine AVS_COMMONS_NET_POSIX_AVS_SOCKET_HAVE_INET_PTON
+
+/**
+ * Is the <c>poll()</c> function available?
+ *
+ * Disabling this flag will cause a less robust code based on <c>select()</c> to
+ * be used instead.
+ */
+#cmakedefine AVS_COMMONS_NET_POSIX_AVS_SOCKET_HAVE_POLL
+
+/**
+ * Is the <c>recvmsg() function available?
+ *
+ * Disabling this flag will cause <c>recvfrom()</c> to be used instead. Note
+ * that for UDP sockets, this will cause false positives for datagram truncation
+ * detection (<c>AVS_EMSGSIZE</c>) to be reported when the received message is
+ * exactly the size of the buffer.
+ */
+#cmakedefine AVS_COMMONS_NET_POSIX_AVS_SOCKET_HAVE_RECVMSG
+/**@}*/
+
+/**
  * Enable thread safety in avs_sched.
  *
  * Makes all scheduler accesses synchronized and thread-safe, at the cost of
@@ -395,16 +481,6 @@
  */
 #cmakedefine AVS_COMMONS_UTILS_WITH_STANDARD_ALLOCATOR
 /**@}*/
-
-/* avs_net/compat/posix */
-#cmakedefine AVS_COMMONS_NET_POSIX_AVS_SOCKET_HAVE_GAI_STRERROR
-#cmakedefine AVS_COMMONS_NET_POSIX_AVS_SOCKET_HAVE_GETIFADDRS
-#cmakedefine AVS_COMMONS_NET_POSIX_AVS_SOCKET_HAVE_GETNAMEINFO
-#cmakedefine AVS_COMMONS_NET_POSIX_AVS_SOCKET_HAVE_IN6_IS_ADDR_V4MAPPED
-#cmakedefine AVS_COMMONS_NET_POSIX_AVS_SOCKET_HAVE_INET_NTOP
-#cmakedefine AVS_COMMONS_NET_POSIX_AVS_SOCKET_HAVE_INET_PTON
-#cmakedefine AVS_COMMONS_NET_POSIX_AVS_SOCKET_HAVE_POLL
-#cmakedefine AVS_COMMONS_NET_POSIX_AVS_SOCKET_HAVE_RECVMSG
 
 /* avs_unit */
 #cmakedefine AVS_COMMONS_UNIT_POSIX_HAVE_BACKTRACE
