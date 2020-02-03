@@ -192,9 +192,9 @@ if(NOT DEFINED AVS_COMMONS_HAVE_VISIBILITY)
                 COMPILE_DEFINITIONS -Wall -Wextra -Werror -fvisibility=default)
 endif()
 
-if(NOT DEFINED HAVE_PRAGMA_DIAGNOSTIC)
+if(NOT DEFINED AVS_COMMONS_HAVE_PRAGMA_DIAGNOSTIC)
     file(WRITE ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp/diagnostic.c "#pragma GCC diagnostic ignored \"-Wformat\"\nint main(){}\n\n")
-    try_compile(HAVE_PRAGMA_DIAGNOSTIC
+    try_compile(AVS_COMMONS_HAVE_PRAGMA_DIAGNOSTIC
                 ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp
                 ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp/diagnostic.c
                 COMPILE_DEFINITIONS -Werror)

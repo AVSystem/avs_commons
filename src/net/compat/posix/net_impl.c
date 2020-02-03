@@ -673,12 +673,12 @@ static avs_error_t wait_until_ready_internal(sockfd_t sockfd,
     FD_ZERO(&outfds);
     FD_ZERO(&errfds);
 
-#        ifdef HAVE_PRAGMA_DIAGNOSTIC
+#        ifdef AVS_COMMONS_HAVE_PRAGMA_DIAGNOSTIC
 // LwIP implementation of FD_SET (and others) is a bit clumsy. No matter what we
 // do, it finally assigns an `int` to the `unsigned char`, which GCC really
 // doesn't like.
 #            pragma GCC diagnostic ignored "-Wconversion"
-#        endif // HAVE_PRAGMA_DIAGNOSTIC
+#        endif // AVS_COMMONS_HAVE_PRAGMA_DIAGNOSTIC
 #        if LWIP_VERSION_MAJOR < 2
 // LwIP < 2.0 lacks cast to unsigned inside FD_* macros
 #            define AVS_FD_SET(fd, set) FD_SET((unsigned) (fd), (set))
@@ -714,9 +714,9 @@ static avs_error_t wait_until_ready_internal(sockfd_t sockfd,
 #        undef AVS_FD_SET
 #        undef AVS_FD_ISSET
 
-#        ifdef HAVE_PRAGMA_DIAGNOSTIC
+#        ifdef AVS_COMMONS_HAVE_PRAGMA_DIAGNOSTIC
 #            pragma GCC diagnostic pop
-#        endif // HAVE_PRAGMA_DIAGNOSTIC
+#        endif // AVS_COMMONS_HAVE_PRAGMA_DIAGNOSTIC
 
 #    endif
 }
