@@ -459,6 +459,17 @@
 #cmakedefine AVS_COMMONS_SCHED_THREAD_SAFE
 
 /**
+ * Enable usage of <c>backtrace()</c> and <c>backtrace_symbols()</c> when
+ * reporting assertion failures from avs_unit.
+ *
+ * Requires the afore-mentioned GNU-specific functions to be available.
+ *
+ * If this flag is disabled, stack traces will not be displayed with assertion
+ * failures.
+ */
+#cmakedefine AVS_COMMONS_UNIT_POSIX_HAVE_BACKTRACE
+
+/**
  * Options related to avs_utils.
  */
 /**@{*/
@@ -481,9 +492,6 @@
  */
 #cmakedefine AVS_COMMONS_UTILS_WITH_STANDARD_ALLOCATOR
 /**@}*/
-
-/* avs_unit */
-#cmakedefine AVS_COMMONS_UNIT_POSIX_HAVE_BACKTRACE
 
 /* avs_compat_threading/phtread */
 #cmakedefine AVS_COMMONS_COMPAT_THREADING_PTHREAD_HAVE_PTHREAD_CONDATTR_SETCLOCK
