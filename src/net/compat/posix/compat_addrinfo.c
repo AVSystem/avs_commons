@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include <avs_commons_posix_config.h>
+#include <avs_commons_posix_init.h>
 
 #if defined(AVS_COMMONS_WITH_AVS_NET) \
         && defined(AVS_COMMONS_NET_WITH_POSIX_AVS_SOCKET)

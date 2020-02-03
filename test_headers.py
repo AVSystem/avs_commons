@@ -67,7 +67,7 @@ if __name__ == '__main__':
 
     filename = sys.argv[1]
 
-    if any(w in filename for w in ('/test/', '/tests/', '/compat/', '/config/', '/unit/')):
+    if any(w in filename for w in ('/test/', '/tests/', '/compat/', '/unit/')):
         sys.exit(0)
 
     with open(filename, 'r') as fp:

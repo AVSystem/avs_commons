@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef CONFIG_POSIX_CONFIG_H
-#define CONFIG_POSIX_CONFIG_H
+#ifndef AVS_COMMONS_POSIX_INIT_H
+#define AVS_COMMONS_POSIX_INIT_H
 
 #include <avsystem/commons/avs_commons_config.h>
 
@@ -96,4 +96,4 @@ typedef int sockfd_t;
 
 #include <avs_commons_init.h>
 
-#endif /* CONFIG_POSIX_CONFIG_H */
+#endif /* AVS_COMMONS_POSIX_INIT_H */

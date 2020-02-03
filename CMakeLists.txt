@@ -279,9 +279,7 @@ if(NOT INCLUDE_INSTALL_DIR)
     set(INCLUDE_INSTALL_DIR include)
 endif()
 
-include_directories($<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/config>
-                    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/config>
-                    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>)
+include_directories($<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>)
 
 add_library(avs_commons_global_headers INTERFACE)
 target_include_directories(avs_commons_global_headers INTERFACE
@@ -526,7 +524,6 @@ set(AVS_COMMONS_UTILS_WITH_STANDARD_ALLOCATOR "${WITH_STANDARD_ALLOCATOR}")
 set(AVS_COMMONS_WITH_MICRO_LOGS "${WITH_AVS_MICRO_LOGS}")
 set(AVS_COMMONS_WITH_POISONING "${WITH_POISONING}")
 
-configure_file("config/avs_commons_posix_config.h.in" "config/avs_commons_posix_config.h")
 configure_file("include_public/avsystem/commons/avs_commons_config.h.in"
                "include_public/avsystem/commons/avs_commons_config.h")
 

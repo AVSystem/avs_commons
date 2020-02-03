@@ -15,7 +15,7 @@
  */
 
 #define _GNU_SOURCE // for RTLD_NEXT
-#include <avs_commons_posix_config.h>
+#include <avs_commons_posix_init.h>
 
 #define MODULE_NAME sched_test
 #include <x_log_config.h>
