@@ -37,7 +37,7 @@
 
 #if defined(AVS_COMMONS_WITH_AVS_NET)                     \
         && defined(AVS_COMMONS_NET_WITH_POSIX_AVS_SOCKET) \
-        && !defined(HAVE_INET_NTOP)
+        && !defined(AVS_COMMONS_NET_POSIX_AVS_SOCKET_HAVE_INET_NTOP)
 
 #    include <stdint.h>
 #    include <stdio.h>
@@ -227,4 +227,4 @@ static const char *inet_ntop6(const u_char *src, char *dst, size_t size) {
 
 #endif // defined(AVS_COMMONS_WITH_AVS_NET) &&
        // defined(AVS_COMMONS_NET_WITH_POSIX_AVS_SOCKET) &&
-       // !defined(HAVE_INET_NTOP)
+       // !defined(AVS_COMMONS_NET_POSIX_AVS_SOCKET_HAVE_INET_NTOP)

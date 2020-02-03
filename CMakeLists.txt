@@ -218,7 +218,6 @@ include(TestBigEndian)
 test_big_endian(AVS_COMMONS_BIG_ENDIAN)
 
 include(CheckFunctionExists)
-check_function_exists(getifaddrs HAVE_GETIFADDRS)
 check_function_exists(backtrace HAVE_BACKTRACE)
 if(HAVE_BACKTRACE)
     check_function_exists(backtrace_symbols HAVE_BACKTRACE_SYMBOLS)

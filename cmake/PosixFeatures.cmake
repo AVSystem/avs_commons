@@ -22,13 +22,16 @@ include(CheckIncludeFiles)
 check_include_files("sys/types.h" AVS_COMMONS_HAVE_SYS_TYPES_H)
 check_include_files("net/if.h" AVS_COMMONS_HAVE_NET_IF_H)
 
+include(CheckFunctionExists)
+check_function_exists(getifaddrs AVS_COMMONS_NET_POSIX_AVS_SOCKET_HAVE_GETIFADDRS)
+
 include(CheckSymbolExists)
-check_symbol_exists("gai_strerror" "netdb.h" HAVE_GAI_STRERROR)
-check_symbol_exists("getnameinfo" "netdb.h" HAVE_GETNAMEINFO)
-check_symbol_exists("inet_ntop" "arpa/inet.h" HAVE_INET_NTOP)
-check_symbol_exists("inet_pton" "arpa/inet.h" HAVE_INET_PTON)
-check_symbol_exists("poll" "poll.h" HAVE_POLL)
-check_symbol_exists("recvmsg" "sys/socket.h" HAVE_RECVMSG)
+check_symbol_exists("gai_strerror" "netdb.h" AVS_COMMONS_NET_POSIX_AVS_SOCKET_HAVE_GAI_STRERROR)
+check_symbol_exists("getnameinfo" "netdb.h" AVS_COMMONS_NET_POSIX_AVS_SOCKET_HAVE_GETNAMEINFO)
+check_symbol_exists("inet_ntop" "arpa/inet.h" AVS_COMMONS_NET_POSIX_AVS_SOCKET_HAVE_INET_NTOP)
+check_symbol_exists("inet_pton" "arpa/inet.h" AVS_COMMONS_NET_POSIX_AVS_SOCKET_HAVE_INET_PTON)
+check_symbol_exists("poll" "poll.h" AVS_COMMONS_NET_POSIX_AVS_SOCKET_HAVE_POLL)
+check_symbol_exists("recvmsg" "sys/socket.h" AVS_COMMONS_NET_POSIX_AVS_SOCKET_HAVE_RECVMSG)
 
 # When _POSIX_C_SOURCE is defined, but none of _BSD_SOURCE, _SVID_SOURCE and
 # _GNU_SOURCE, some toolchains (e.g. default GCC on Ubuntu 16.04 or CentOS 7)
@@ -37,11 +40,11 @@ check_symbol_exists("recvmsg" "sys/socket.h" HAVE_RECVMSG)
 message(STATUS "Checking if IN6_IS_ADDR_V4MAPPED is usable")
 file(WRITE ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp/in6_is_addr_v4mapped.c
      "#include <netinet/in.h>\nint main() { struct in6_addr addr = {0}; IN6_IS_ADDR_V4MAPPED(&addr); return 0; }\n")
-try_compile(HAVE_IN6_IS_ADDR_V4MAPPED
+try_compile(AVS_COMMONS_NET_POSIX_AVS_SOCKET_HAVE_IN6_IS_ADDR_V4MAPPED
             ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp
             ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp/in6_is_addr_v4mapped.c
             COMPILE_DEFINITIONS ${CMAKE_REQUIRED_DEFINITIONS})
-if(HAVE_IN6_IS_ADDR_V4MAPPED)
+if(AVS_COMMONS_NET_POSIX_AVS_SOCKET_HAVE_IN6_IS_ADDR_V4MAPPED)
     message(STATUS "Checking if IN6_IS_ADDR_V4MAPPED is usable - yes")
 else()
     message(STATUS "Checking if IN6_IS_ADDR_V4MAPPED is usable - no")

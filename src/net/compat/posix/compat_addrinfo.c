@@ -218,7 +218,7 @@ avs_net_addrinfo_t *avs_net_addrinfo_resolve_ex(
     }
     int error = getaddrinfo(host, NULL, &hint, &ctx->results);
     if (error) {
-#    ifdef HAVE_GAI_STRERROR
+#    ifdef AVS_COMMONS_NET_POSIX_AVS_SOCKET_HAVE_GAI_STRERROR
         LOG(DEBUG,
             _("getaddrinfo() error: ") "%s" _(
                     "; family == (avs_net_af_t) ") "%d",
