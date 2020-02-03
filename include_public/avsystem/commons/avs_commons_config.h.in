@@ -99,6 +99,16 @@
 #cmakedefine AVS_COMMONS_HAVE_SYS_TYPES_H
 
 /**
+ * Are GNU diagnostic pragmas (#pragma GCC diagnostic push/pop/ignored)
+ * available?
+ *
+ * If defined, they will be used to suppress compiler warnings for some code
+ * that is known to generate them and cannot be improved in a more robust way,
+ * e.g. for code that is known to generate warnings from within system headers.
+ */
+#cmakedefine AVS_COMMONS_HAVE_PRAGMA_DIAGNOSTIC
+
+/**
  * Are GNU visibility pragmas (#pragma GCC visibility push/pop) available?
  *
  * Meaningful mostly if avs_commons will be directly or indirectly linked into
@@ -505,9 +515,6 @@
  */
 #cmakedefine AVS_COMMONS_UTILS_WITH_STANDARD_ALLOCATOR
 /**@}*/
-
-/* compiler features */
-#cmakedefine AVS_COMMONS_HAVE_PRAGMA_DIAGNOSTIC
 
 #cmakedefine AVS_COMMONS_POSIX_COMPAT_HEADER "@AVS_COMMONS_POSIX_COMPAT_HEADER@"
 
