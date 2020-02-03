@@ -31,7 +31,7 @@
 #cmakedefine AVS_COMMONS_UNIT_POSIX_HAVE_BACKTRACE
 
 /* avs_compat_threading/phtread */
-#cmakedefine HAVE_PTHREAD_CONDATTR_SETCLOCK
+#cmakedefine AVS_COMMONS_COMPAT_THREADING_PTHREAD_HAVE_PTHREAD_CONDATTR_SETCLOCK
 
 /* compiler features */
 #cmakedefine HAVE_PRAGMA_DIAGNOSTIC

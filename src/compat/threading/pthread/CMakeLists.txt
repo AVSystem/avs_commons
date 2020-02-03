@@ -20,7 +20,7 @@ if(NOT WITH_AVS_COMPAT_THREADING_PTHREAD)
 endif()
 
 set(CMAKE_REQUIRED_LIBRARIES ${CMAKE_THREAD_LIBS_INIT})
-check_function_exists(pthread_condattr_setclock HAVE_PTHREAD_CONDATTR_SETCLOCK)
+check_function_exists(pthread_condattr_setclock AVS_COMMONS_COMPAT_THREADING_PTHREAD_HAVE_PTHREAD_CONDATTR_SETCLOCK)
 set(CMAKE_REQUIRED_LIBRARIES)
 
 add_library(avs_compat_threading_pthread STATIC
