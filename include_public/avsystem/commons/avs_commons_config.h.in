@@ -102,9 +102,9 @@
  * Are GNU diagnostic pragmas (#pragma GCC diagnostic push/pop/ignored)
  * available?
  *
- * If defined, they will be used to suppress compiler warnings for some code
- * that is known to generate them and cannot be improved in a more robust way,
- * e.g. for code that is known to generate warnings from within system headers.
+ * If defined, those pragmas will be used to suppress compiler warnings for some
+ * code known to generate them and cannot be improved in a more robust way, e.g.
+ * for code that is known to generate warnings from within system headers.
  */
 #cmakedefine AVS_COMMONS_HAVE_PRAGMA_DIAGNOSTIC
 
@@ -119,6 +119,33 @@
  * needed.
  */
 #cmakedefine AVS_COMMONS_HAVE_VISIBILITY
+
+/**
+ * Specify an optional compatibility header that allows use of POSIX-specific
+ * code that is not compliant with POSIX enough to be compiled directly.
+ *
+ * This header, if specified, will be included only by the following components,
+ * which may be enabled or disabled depending on state of the referenced flags:
+ * - avs_compat_threading implementation based on POSIX Threads
+ *   (@ref AVS_COMMONS_COMPAT_THREADING_WITH_PTHREAD)
+ * - default avs_net socket implementation
+ *   (@ref AVS_COMMONS_NET_WITH_POSIX_AVS_SOCKET)
+ * - avs_unit (@ref AVS_COMMONS_WITH_AVS_UNIT)
+ * - default implementation of avs_time routines
+ *   (@ref AVS_COMMONS_UTILS_WITH_POSIX_AVS_TIME)
+ *
+ * Compatibility headers for lwIP and Microsoft Windows are provided with the
+ * library (see the <c>compat</c> directory).
+ *
+ * If this macro is not defined, the afore-mentioned components, if enabled,
+ * will use system headers directly, assuming they are POSIX-compliant.
+ *
+ * If this macro is enabled, the specified file will be included through an
+ * <c>#include AVS_COMMONS_POSIX_COMPAT_HEADER</c> statement. Thus, if editing
+ * this file manually, <c>@AVS_COMMONS_POSIX_COMPAT_HEADER@</c> shall be
+ * replaced with a path to such file.
+ */
+#cmakedefine AVS_COMMONS_POSIX_COMPAT_HEADER "@AVS_COMMONS_POSIX_COMPAT_HEADER@"
 /**@}*/
 
 /**
@@ -342,8 +369,8 @@
  *
  * Requires either a UNIX-like operating environment, or a compatibility layer
  * with a high degree of compatibility with standard BSD sockets with an
- * appropriate compatibility header - lwIP and Winsock are currently supported
- * for this scenario.
+ * appropriate compatibility header (see @ref AVS_COMMONS_POSIX_COMPAT_HEADER) -
+ * lwIP and Winsock are currently supported for this scenario.
  */
 #cmakedefine AVS_COMMONS_NET_WITH_POSIX_AVS_SOCKET
 
@@ -515,7 +542,5 @@
  */
 #cmakedefine AVS_COMMONS_UTILS_WITH_STANDARD_ALLOCATOR
 /**@}*/
-
-#cmakedefine AVS_COMMONS_POSIX_COMPAT_HEADER "@AVS_COMMONS_POSIX_COMPAT_HEADER@"
 
 #endif /* AVS_COMMONS_CONFIG_H */
