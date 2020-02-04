@@ -885,7 +885,8 @@ static avs_error_t host_port_to_string_impl(const struct sockaddr *sa,
         return err;
     }
 
-    if (host && _avs_inet_ntop(sa->sa_family, addr_ptr, host, hostlen)) {
+    if (host
+            && _avs_inet_ntop(sa->sa_family, addr_ptr, host, hostlen) == NULL) {
         err = failure_from_errno();
         LOG(ERROR, _("could not stringify host (buf size ") "%u" _(")"),
             (unsigned) hostlen);
