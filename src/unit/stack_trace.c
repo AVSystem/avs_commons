@@ -25,13 +25,11 @@
 
 #    include "stack_trace.h"
 
-#    include <execinfo.h>
+#    ifdef AVS_COMMONS_UNIT_POSIX_HAVE_BACKTRACE
+#        include <execinfo.h>
+#    endif
 
 #    include <signal.h>
-#    include <sys/types.h>
-#    include <sys/wait.h>
-#    include <time.h>
-#    include <unistd.h>
 
 #    include <assert.h>
 #    include <stdarg.h>

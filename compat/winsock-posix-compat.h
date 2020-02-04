@@ -144,6 +144,7 @@ static inline const char *_avs_wsa_set_errno_str(const char *result) {
     return result;
 }
 
+#define AVS_COMMONS_NET_POSIX_AVS_SOCKET_HAVE_GAI_STRERROR
 #define AVS_COMMONS_NET_POSIX_AVS_SOCKET_HAVE_GETNAMEINFO
 #define AVS_COMMONS_NET_POSIX_AVS_SOCKET_HAVE_INET_NTOP
 #define AVS_COMMONS_NET_POSIX_AVS_SOCKET_HAVE_INET_PTON
