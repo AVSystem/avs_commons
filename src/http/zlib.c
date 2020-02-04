@@ -14,17 +14,23 @@
  * limitations under the License.
  */
 
+// NOTE: zlib headers sometimes (depending on a version) contain some of the
+// symbols poisoned via inclusion of avs_commons_init.h. Therefore they must
+// be included before poison.
+#define AVS_SUPPRESS_POISONING
 #include <avs_commons_init.h>
 
 #if defined(AVS_COMMONS_WITH_AVS_HTTP) && defined(AVS_COMMONS_HTTP_WITH_ZLIB)
+
+#    include <zlib.h>
+
+#    include <avs_commons_poison.h>
 
 #    include <errno.h>
 #    include <stdint.h>
 #    include <stdio.h>
 #    include <stdlib.h>
 #    include <string.h>
-
-#    include <zlib.h>
 
 #    include <avsystem/commons/errno_map.h>
 #    include <avsystem/commons/memory.h>
