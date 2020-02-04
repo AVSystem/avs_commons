@@ -21,9 +21,8 @@
 #    include <avsystem/commons/memory.h>
 #    include <avsystem/commons/stream_v_table.h>
 
-#    include "zlib.h"
-
 #    include "client.h"
+#    include "compression.h"
 #    include "content_encoding.h"
 #    include "http_log.h"
 

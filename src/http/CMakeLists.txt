@@ -22,11 +22,11 @@ add_library(avs_http STATIC
             body_receivers.h
             chunked.h
             client.h
+            compression.h
             content_encoding.h
             headers.h
             http_log.h
             http_stream.h
-            zlib.h
 
             auth/basic.c
             auth/digest.c
@@ -37,12 +37,12 @@ add_library(avs_http STATIC
             body_receivers.c
             chunked.c
             client.c
+            compression.c
             content_encoding.c
             headers_receive.c
             headers_send.c
             http_stream.c
-            stream_methods.c
-            zlib.c)
+            stream_methods.c)
 
 target_include_directories(avs_http PUBLIC
                            $<BUILD_INTERFACE:${AVS_COMMONS_SOURCE_DIR}/include_public>
