@@ -44,7 +44,12 @@
 #    endif
 #    include <mbedtls/ssl.h>
 #    include <mbedtls/timing.h>
+
 #    ifdef AVS_COMMONS_NET_WITH_MBEDTLS_LOGS
+#        ifndef AVS_COMMONS_WITH_INTERNAL_LOGS
+#            error "AVS_COMMONS_NET_WITH_MBEDTLS_LOGS requires AVS_COMMONS_WITH_INTERNAL_LOGS to be enabled"
+#        endif // AVS_COMMONS_WITH_INTERNAL_LOGS
+
 #        include <mbedtls/debug.h>
 #    endif // AVS_COMMONS_NET_WITH_MBEDTLS_LOGS
 
