@@ -16,7 +16,8 @@
 
 #include <avs_commons_posix_config.h>
 
-#ifdef WITH_AVS_COMPAT_THREADING_ATOMIC_SPINLOCK
+#if defined(AVS_COMMONS_WITH_AVS_COMPAT_THREADING) \
+        && defined(AVS_COMMONS_COMPAT_THREADING_WITH_ATOMIC_SPINLOCK)
 
 #    define MODULE_NAME condvar_atomic_spinlock
 #    include <x_log_config.h>
@@ -139,4 +140,5 @@ void avs_condvar_cleanup(avs_condvar_t **condvar) {
     *condvar = NULL;
 }
 
-#endif // WITH_AVS_COMPAT_THREADING_ATOMIC_SPINLOCK
+#endif // defined(AVS_COMMONS_WITH_AVS_COMPAT_THREADING) &&
+       // defined(AVS_COMMONS_COMPAT_THREADING_WITH_ATOMIC_SPINLOCK)

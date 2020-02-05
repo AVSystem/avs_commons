@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-#include <avs_commons_config.h>
+#include <avs_commons_init.h>
 
-#ifdef WITH_AVS_UTILS
+#ifdef AVS_COMMONS_WITH_AVS_UTILS
 
 #    include <assert.h>
 #    include <ctype.h>
@@ -100,4 +100,16 @@ char *avs_strdup(const char *str) {
     return retval;
 }
 
-#endif // WITH_AVS_UTILS
+void avs_memswap(void *memptr1, void *memptr2, size_t n) {
+    char *const ptr1 = (char *) memptr1;
+    char *const ptr2 = (char *) memptr2;
+    AVS_ASSERT(ptr1 >= ptr2 + n || ptr2 >= ptr1 + n,
+               "memory fragments must not intersect");
+    for (size_t i = 0; i < n; i++) {
+        char tmp = ptr1[i];
+        ptr1[i] = ptr2[i];
+        ptr2[i] = tmp;
+    }
+}
+
+#endif // AVS_COMMONS_WITH_AVS_UTILS

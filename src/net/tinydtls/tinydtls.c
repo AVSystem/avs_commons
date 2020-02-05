@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-#include <avs_commons_config.h>
+#include <avs_commons_init.h>
 
-#ifdef WITH_AVS_NET
+#if defined(AVS_COMMONS_WITH_AVS_NET) && defined(AVS_COMMONS_WITH_TINYDTLS)
 
 #    include <assert.h>
 #    include <inttypes.h>
@@ -484,4 +484,5 @@ initialize_ssl_socket(ssl_socket_t *socket,
     return AVS_OK;
 }
 
-#endif // WITH_AVS_NET
+#endif // defined(AVS_COMMONS_WITH_AVS_NET) &&
+       // defined(AVS_COMMONS_WITH_TINYDTLS)

@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-#include <avs_commons_config.h>
+#include <avs_commons_init.h>
 
-#ifdef WITH_AVS_CRYPTO
+#ifdef AVS_COMMONS_WITH_AVS_CRYPTO
 
 #    define MODULE_NAME avs_crypto
 #    include <x_log_config.h>
@@ -43,4 +43,4 @@ bool _avs_crypto_aead_parameters_valid(size_t key_len,
     return true;
 }
 
-#endif // WITH_AVS_CRYPTO
+#endif // AVS_COMMONS_WITH_AVS_CRYPTO

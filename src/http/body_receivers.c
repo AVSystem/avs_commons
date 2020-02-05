@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-#include <avs_commons_config.h>
+#include <avs_commons_init.h>
 
-#ifdef WITH_AVS_HTTP
+#ifdef AVS_COMMONS_WITH_AVS_HTTP
 
 #    include <avsystem/commons/stream/netbuf.h>
 #    include <avsystem/commons/stream/stream_net.h>
@@ -139,4 +139,4 @@ int _avs_http_body_receiver_init(http_stream_t *stream,
 #        include "tests/http/test_body_receivers.c"
 #    endif
 
-#endif // WITH_AVS_HTTP
+#endif // AVS_COMMONS_WITH_AVS_HTTP

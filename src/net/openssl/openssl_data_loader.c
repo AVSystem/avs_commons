@@ -15,12 +15,13 @@
  */
 
 // NOTE: OpenSSL headers sometimes (depending on a version) contain some of the
-// symbols poisoned via inclusion of avs_commons_config.h. Therefore they must
+// symbols poisoned via inclusion of avs_commons_init.h. Therefore they must
 // be included before poison.
 #define AVS_SUPPRESS_POISONING
-#include <avs_commons_config.h>
+#include <avs_commons_init.h>
 
-#if defined(WITH_AVS_NET) && defined(WITH_OPENSSL) && defined(WITH_X509)
+#if defined(AVS_COMMONS_WITH_AVS_NET) && defined(AVS_COMMONS_WITH_OPENSSL) \
+        && defined(AVS_COMMONS_NET_WITH_X509)
 
 #    include <openssl/ssl.h>
 
@@ -344,4 +345,5 @@ _avs_net_openssl_load_client_key(SSL_CTX *ctx,
     }
 }
 
-#endif // defined(WITH_AVS_NET) && defined(WITH_OPENSSL) && defined(WITH_X509)
+#endif // defined(AVS_COMMONS_WITH_AVS_NET) && defined(AVS_COMMONS_WITH_OPENSSL)
+       // && defined(AVS_COMMONS_NET_WITH_X509)

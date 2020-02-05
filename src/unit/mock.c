@@ -15,9 +15,9 @@
  */
 
 #define AVS_UNIT_SOURCE
-#include <avs_commons_config.h>
+#include <avs_commons_init.h>
 
-#ifdef WITH_AVS_UNIT
+#ifdef AVS_COMMONS_WITH_AVS_UNIT
 
 #    include <stdio.h>
 #    include <stdlib.h>
@@ -76,4 +76,4 @@ unsigned avs_unit_mock_invocations__(avs_unit_mock_func_ptr *invoked_func) {
     return 0;
 }
 
-#endif // WITH_AVS_UNIT
+#endif // AVS_COMMONS_WITH_AVS_UNIT

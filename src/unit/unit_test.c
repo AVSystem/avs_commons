@@ -17,7 +17,7 @@
 #define AVS_UNIT_SOURCE
 #include <avs_commons_posix_config.h>
 
-#ifdef WITH_AVS_UNIT
+#ifdef AVS_COMMONS_WITH_AVS_UNIT
 
 #    include <ctype.h>
 #    include <inttypes.h>
@@ -36,7 +36,7 @@
 #    include <avsystem/commons/unit/test.h>
 #    include <avsystem/commons/utils.h>
 
-#    ifdef WITH_AVS_LOG
+#    ifdef AVS_COMMONS_WITH_AVS_LOG
 #        include <avsystem/commons/log.h>
 #    endif
 
@@ -582,7 +582,7 @@ static int parse_command_line_args(int argc,
     return 0;
 }
 
-#    ifdef WITH_AVS_LOG
+#    ifdef AVS_COMMONS_WITH_AVS_LOG
 static int parse_log_level(const char *str, avs_log_level_t *level) {
     if (!avs_strcasecmp(str, "trace")) {
         *level = AVS_LOG_TRACE;
@@ -676,9 +676,9 @@ static void process_env_vars(void) {
         atexit(avs_log_reset);
     }
 }
-#    else  /* WITH_AVS_LOG */
+#    else  /* AVS_COMMONS_WITH_AVS_LOG */
 static void process_env_vars(void) {}
-#    endif /* WITH_AVS_LOG */
+#    endif /* AVS_COMMONS_WITH_AVS_LOG */
 
 int main(int argc, char *argv[]) {
     const char *volatile selected_suite = NULL;
@@ -754,4 +754,4 @@ int main(int argc, char *argv[]) {
     return tests_result;
 }
 
-#endif // WITH_AVS_UNIT
+#endif // AVS_COMMONS_WITH_AVS_UNIT

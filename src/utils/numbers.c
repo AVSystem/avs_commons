@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-#include <avs_commons_config.h>
+#include <avs_commons_init.h>
 
-#ifdef WITH_AVS_UTILS
+#ifdef AVS_COMMONS_WITH_AVS_UTILS
 
 #    include <avsystem/commons/utils.h>
 
@@ -145,4 +145,4 @@ bool avs_double_convertible_to_uint64(double value) {
     return nearbyint(value) == value && is_double_within_uint64_range(value);
 }
 
-#endif // WITH_AVS_UTILS
+#endif // AVS_COMMONS_WITH_AVS_UTILS

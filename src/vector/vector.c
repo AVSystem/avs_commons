@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-#include <avs_commons_config.h>
+#include <avs_commons_init.h>
 
-#ifdef WITH_AVS_VECTOR
+#ifdef AVS_COMMONS_WITH_AVS_VECTOR
 
 #    include <assert.h>
 #    include <stddef.h>
@@ -256,4 +256,4 @@ int avs_vector_reserve__(void ***ptr, size_t num_elements) {
 #        include "tests/vector/test_vector.c"
 #    endif
 
-#endif // WITH_AVS_VECTOR
+#endif // AVS_COMMONS_WITH_AVS_VECTOR

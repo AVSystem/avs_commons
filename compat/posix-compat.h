@@ -86,7 +86,7 @@ char *strtok_r(char *str, const char *delim, char **saveptr);
 int close(int fd);
 #endif
 
-#if defined(AVS_COMMONS_WITH_IPV4)
+#if defined(AVS_COMMONS_NET_WITH_IPV4)
 #    if defined(HAVE_INET_ADDRSTRLEN) && defined(HAVE_NETINET_IN_H)
 #        include <netinet/in.h>
 #    else
@@ -94,7 +94,7 @@ int close(int fd);
 #    endif
 #endif
 
-#if defined(AVS_COMMONS_WITH_IPV6)
+#if defined(AVS_COMMONS_NET_WITH_IPV6)
 #    if defined(HAVE_INET6_ADDRSTRLEN) && defined(HAVE_NETINET_IN_H)
 #        include <netinet/in.h>
 #    else

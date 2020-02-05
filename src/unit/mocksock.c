@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-#include <avs_commons_config.h>
+#include <avs_commons_init.h>
 
-#ifdef WITH_AVS_UNIT
+#ifdef AVS_COMMONS_WITH_AVS_UNIT
 
 #    define MODULE_NAME mocksock
 #    include <x_log_config.h>
@@ -1163,4 +1163,4 @@ void avs_unit_mocksock_enable_remote_port(avs_net_socket_t *socket_,
     socket->remote_port = remote_port;
 }
 
-#endif // WITH_AVS_UNIT
+#endif // AVS_COMMONS_WITH_AVS_UNIT

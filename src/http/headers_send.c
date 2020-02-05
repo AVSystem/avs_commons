@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-#include <avs_commons_config.h>
+#include <avs_commons_init.h>
 
-#ifdef WITH_AVS_HTTP
+#ifdef AVS_COMMONS_WITH_AVS_HTTP
 
 #    include <assert.h>
 #    include <string.h>
@@ -62,7 +62,7 @@ avs_error_t _avs_http_send_headers(http_stream_t *stream,
                                               avs_url_host(stream->url),
                                               avs_url_port(stream->url),
                                               avs_url_path(stream->url))))
-#    ifdef WITH_AVS_HTTP_ZLIB
+#    ifdef AVS_COMMONS_HTTP_WITH_ZLIB
             || (stream->http->buffer_sizes.content_coding_input > 0
                 && avs_is_err((err = avs_stream_write_f(
                                        stream->backend,
@@ -128,7 +128,7 @@ avs_error_t _avs_http_send_headers(http_stream_t *stream,
             return err;
         }
     }
-#    ifdef WITH_AVS_HTTP_ZLIB
+#    ifdef AVS_COMMONS_HTTP_WITH_ZLIB
     if (content_length != 0) {
         switch (stream->encoding) {
         case AVS_HTTP_CONTENT_IDENTITY:
@@ -162,4 +162,4 @@ avs_error_t _avs_http_send_headers(http_stream_t *stream,
     return err;
 }
 
-#endif // WITH_AVS_HTTP
+#endif // AVS_COMMONS_WITH_AVS_HTTP

@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
-#include <avs_commons_config.h>
+#include <avs_commons_init.h>
 
-#ifdef WITH_AVS_COMPAT_THREADING_PTHREAD
+#if defined(AVS_COMMONS_WITH_AVS_COMPAT_THREADING) \
+        && defined(AVS_COMMONS_COMPAT_THREADING_WITH_PTHREAD)
 
 #    define MODULE_NAME mutex_pthread
 #    include <x_log_config.h>
@@ -73,4 +74,5 @@ void avs_mutex_cleanup(avs_mutex_t **mutex) {
     *mutex = NULL;
 }
 
-#endif // WITH_AVS_COMPAT_THREADING_PTHREAD
+#endif // defined(AVS_COMMONS_WITH_AVS_COMPAT_THREADING) &&
+       // defined(AVS_COMMONS_COMPAT_THREADING_WITH_PTHREAD)

@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-#include <avs_commons_config.h>
+#include <avs_commons_init.h>
 
-#if defined(WITH_AVS_STREAM) && defined(WITH_MBEDTLS)
+#if defined(AVS_COMMONS_WITH_AVS_STREAM) && defined(AVS_COMMONS_WITH_MBEDTLS)
 
 #    include <stdlib.h>
 
@@ -115,4 +115,5 @@ avs_stream_t *avs_stream_md5_create(void) {
     return (avs_stream_t *) retval;
 }
 
-#endif // defined(WITH_AVS_STREAM) && defined(WITH_MBEDTLS)
+#endif // defined(AVS_COMMONS_WITH_AVS_STREAM) &&
+       // defined(AVS_COMMONS_WITH_MBEDTLS)

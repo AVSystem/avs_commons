@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-#include <avs_commons_config.h>
+#include <avs_commons_init.h>
 
-#if defined(WITH_AVS_HTTP) && defined(WITH_AVS_HTTP_ZLIB)
+#if defined(AVS_COMMONS_WITH_AVS_HTTP) && defined(AVS_COMMONS_HTTP_WITH_ZLIB)
 
 #    include <errno.h>
 #    include <stdint.h>
@@ -383,4 +383,5 @@ avs_stream_t *_avs_http_create_decompressor(http_compression_format_t format,
     return (avs_stream_t *) stream;
 }
 
-#endif // defined(WITH_AVS_HTTP) && defined(WITH_AVS_HTTP_ZLIB)
+#endif // defined(AVS_COMMONS_WITH_AVS_HTTP) &&
+       // defined(AVS_COMMONS_HTTP_WITH_ZLIB)

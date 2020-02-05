@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-#include <avs_commons_config.h>
+#include <avs_commons_init.h>
 
-#ifdef WITH_AVS_STREAM
+#ifdef AVS_COMMONS_WITH_AVS_STREAM
 
 #    include <string.h>
 
@@ -151,4 +151,4 @@ avs_stream_simple_input_create(avs_simple_io_stream_reader_t *reader,
 #        include "tests/stream/test_stream_simple_io.c"
 #    endif
 
-#endif // WITH_AVS_STREAM
+#endif // AVS_COMMONS_WITH_AVS_STREAM

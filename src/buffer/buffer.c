@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-#include <avs_commons_config.h>
+#include <avs_commons_init.h>
 
-#ifdef WITH_AVS_BUFFER
+#ifdef AVS_COMMONS_WITH_AVS_BUFFER
 
 #    include <stddef.h>
 #    include <stdlib.h>
@@ -154,4 +154,4 @@ int avs_buffer_fill_bytes(avs_buffer_t *buffer, int value, size_t bytes_count) {
 #        include "tests/buffer/test_buffer.c"
 #    endif
 
-#endif // WITH_AVS_BUFFER
+#endif // AVS_COMMONS_WITH_AVS_BUFFER

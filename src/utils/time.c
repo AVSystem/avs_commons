@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-#include <avs_commons_config.h>
+#include <avs_commons_init.h>
 
-#ifdef WITH_AVS_UTILS
+#ifdef AVS_COMMONS_WITH_AVS_UTILS
 
 #    include <assert.h>
 #    include <inttypes.h>
@@ -65,11 +65,11 @@ bool avs_time_duration_valid(avs_time_duration_t t) {
     return (t.nanoseconds >= 0 && t.nanoseconds < NS_IN_S);
 }
 
-#    ifdef HAVE_BUILTIN_ADD_OVERFLOW
+#    ifdef AVS_COMMONS_HAVE_BUILTIN_ADD_OVERFLOW
 static inline int safe_add_int64_t(int64_t *out, int64_t a, int64_t b) {
     return __builtin_add_overflow(a, b, out) ? -1 : 0;
 }
-#    else  // HAVE_BUILTIN_ADD_OVERFLOW
+#    else  // AVS_COMMONS_HAVE_BUILTIN_ADD_OVERFLOW
 static int safe_add_int64_t(int64_t *out, int64_t a, int64_t b) {
     if (a > 0 && b > 0) {
         uint64_t result = ((uint64_t) a) + ((uint64_t) b);
@@ -92,19 +92,19 @@ static int safe_add_int64_t(int64_t *out, int64_t a, int64_t b) {
     }
     return 0;
 }
-#    endif // HAVE_BUILTIN_ADD_OVERFLOW
+#    endif // AVS_COMMONS_HAVE_BUILTIN_ADD_OVERFLOW
 
 static inline int safe_add_double(double *out, double a, double b) {
     *out = a + b;
     return isfinite(*out) ? 0 : -1;
 }
 
-#    ifdef HAVE_BUILTIN_MUL_OVERFLOW
+#    ifdef AVS_COMMONS_HAVE_BUILTIN_MUL_OVERFLOW
 static inline int
 safe_mul_int64_t(int64_t *out, int64_t input, int64_t multiplier) {
     return __builtin_mul_overflow(input, multiplier, out) ? -1 : 0;
 }
-#    else  // HAVE_BUILTIN_MUL_OVERFLOW
+#    else  // AVS_COMMONS_HAVE_BUILTIN_MUL_OVERFLOW
 static int safe_mul_int64_t(int64_t *out, int64_t input, int64_t multiplier) {
     if (input == 0 || multiplier == 0) {
         *out = 0;
@@ -126,7 +126,7 @@ static int safe_mul_int64_t(int64_t *out, int64_t input, int64_t multiplier) {
         return 0;
     }
 }
-#    endif // HAVE_BUILTIN_MUL_OVERFLOW
+#    endif // AVS_COMMONS_HAVE_BUILTIN_MUL_OVERFLOW
 
 static inline int
 safe_mul_double(double *out, double input, double multiplier) {
@@ -454,4 +454,4 @@ const char *avs_time_duration_as_string_impl__(
 #        include "tests/utils/time.c"
 #    endif // AVS_UNIT_TESTING
 
-#endif // WITH_AVS_UTILS
+#endif // AVS_COMMONS_WITH_AVS_UTILS

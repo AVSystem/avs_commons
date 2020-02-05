@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <avs_commons_config.h>
+#include <avs_commons_init.h>
 
-#ifdef WITH_AVS_RBTREE
+#ifdef AVS_COMMONS_WITH_AVS_RBTREE
 
 #    include <avsystem/commons/memory.h>
 #    include <avsystem/commons/rbtree.h>
@@ -877,4 +877,4 @@ AVS_RBTREE_ELEM(void) avs_rbtree_cleanup_next__(AVS_RBTREE(void) tree) {
 #        include "tests/rbtree/test_rbtree.c"
 #    endif
 
-#endif // WITH_AVS_RBTREE
+#endif // AVS_COMMONS_WITH_AVS_RBTREE

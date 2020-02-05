@@ -17,7 +17,7 @@
 #define AVS_UNIT_SOURCE
 #include <avs_commons_posix_config.h>
 
-#ifdef WITH_AVS_UNIT
+#ifdef AVS_COMMONS_WITH_AVS_UNIT
 
 #    include <avsystem/commons/defs.h>
 #    include <avsystem/commons/memory.h>
@@ -47,11 +47,7 @@ VISIBILITY_SOURCE_BEGIN
 
 #    define MAX_TRACE_LEVELS 256
 
-#    if defined(HAVE_BACKTRACE) && defined(HAVE_BACKTRACE_SYMBOLS)
-#        define WITH_AVS_STACK_TRACE
-#    endif
-
-#    ifndef WITH_AVS_STACK_TRACE
+#    ifndef HAVE_BACKTRACE_SYMBOLS
 
 void _avs_unit_stack_trace_init(int argc, char **argv) {
     (void) argc;
@@ -62,7 +58,7 @@ void _avs_unit_stack_trace_print(FILE *file) {
     fprintf(file, "(stack trace not available)\n");
 }
 
-#    else /* WITH_AVS_STACK_TRACE */
+#    else /* HAVE_BACKTRACE_SYMBOLS */
 
 typedef struct stack_frame {
     void *address;
@@ -431,6 +427,6 @@ void _avs_unit_stack_trace_print(FILE *file) {
     stack_trace_release(&trace);
 }
 
-#    endif /* WITH_AVS_STACK_TRACE */
+#    endif /* HAVE_BACKTRACE_SYMBOLS */
 
-#endif // WITH_AVS_UNIT
+#endif // AVS_COMMONS_WITH_AVS_UNIT

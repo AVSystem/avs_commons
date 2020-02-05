@@ -18,7 +18,8 @@
 
 #include <avs_commons_posix_config.h>
 
-#if defined(WITH_AVS_NET) && defined(WITH_POSIX_AVS_SOCKET)
+#if defined(AVS_COMMONS_WITH_AVS_NET) \
+        && defined(AVS_COMMONS_NET_WITH_POSIX_AVS_SOCKET)
 
 #    include <errno.h>
 
@@ -46,6 +47,18 @@ VISIBILITY_SOURCE_BEGIN
 #        define INET_ADDRSTRLEN 16
 #    endif
 
+#    ifdef AVS_COMMONS_NET_WITH_IPV4
+#        define IPV4_AVAILABLE 1
+#    else
+#        define IPV4_AVAILABLE 0
+#    endif
+
+#    ifdef AVS_COMMONS_NET_WITH_IPV6
+#        define IPV6_AVAILABLE 1
+#    else
+#        define IPV6_AVAILABLE 0
+#    endif
+
 static const avs_time_duration_t NET_SEND_TIMEOUT = { 30, 0 };
 static const avs_time_duration_t NET_CONNECT_TIMEOUT = { 10, 0 };
 static const avs_time_duration_t NET_ACCEPT_TIMEOUT = { 5, 0 };
@@ -68,13 +81,13 @@ typedef union {
     struct sockaddr addr;
     struct sockaddr_storage addr_storage;
 
-#    ifdef AVS_COMMONS_WITH_IPV4
+#    ifdef AVS_COMMONS_NET_WITH_IPV4
     struct sockaddr_in addr_in;
-#    endif /* AVS_COMMONS_WITH_IPV4 */
+#    endif /* AVS_COMMONS_NET_WITH_IPV4 */
 
-#    ifdef AVS_COMMONS_WITH_IPV6
+#    ifdef AVS_COMMONS_NET_WITH_IPV6
     struct sockaddr_in6 addr_in6;
-#    endif /* AVS_COMMONS_WITH_IPV6 */
+#    endif /* AVS_COMMONS_NET_WITH_IPV6 */
 } sockaddr_union_t;
 
 /**
@@ -228,15 +241,15 @@ typedef struct {
 
 int _avs_net_get_af(avs_net_af_t addr_family) {
     switch (addr_family) {
-#    ifdef AVS_COMMONS_WITH_IPV4
+#    ifdef AVS_COMMONS_NET_WITH_IPV4
     case AVS_NET_AF_INET4:
         return AF_INET;
-#    endif /* AVS_COMMONS_WITH_IPV4 */
+#    endif /* AVS_COMMONS_NET_WITH_IPV4 */
 
-#    ifdef AVS_COMMONS_WITH_IPV6
+#    ifdef AVS_COMMONS_NET_WITH_IPV6
     case AVS_NET_AF_INET6:
         return AF_INET6;
-#    endif /* AVS_COMMONS_WITH_IPV6 */
+#    endif /* AVS_COMMONS_NET_WITH_IPV6 */
 
     case AVS_NET_AF_UNSPEC:
     default:
@@ -244,7 +257,7 @@ int _avs_net_get_af(avs_net_af_t addr_family) {
     }
 }
 
-#    if defined(AVS_COMMONS_WITH_IPV4) && defined(AVS_COMMONS_WITH_IPV6)
+#    if defined(AVS_COMMONS_NET_WITH_IPV4) && defined(AVS_COMMONS_NET_WITH_IPV6)
 static bool is_v4mapped(const struct sockaddr_in6 *addr) {
 #        ifdef HAVE_IN6_IS_ADDR_V4MAPPED
     return IN6_IS_ADDR_V4MAPPED(&addr->sin6_addr);
@@ -270,21 +283,23 @@ static int unmap_v4mapped(sockaddr_union_t *addr) {
         return 0;
     }
 }
-#    else // defined(AVS_COMMONS_WITH_IPV4) && defined(AVS_COMMONS_WITH_IPV6)
+#    else // defined(AVS_COMMONS_NET_WITH_IPV4) &&
+          // defined(AVS_COMMONS_NET_WITH_IPV6)
 #        define unmap_v4mapped(Addr) (-1)
-#    endif // defined(AVS_COMMONS_WITH_IPV4) && defined(AVS_COMMONS_WITH_IPV6)
+#    endif // defined(AVS_COMMONS_NET_WITH_IPV4) &&
+           // defined(AVS_COMMONS_NET_WITH_IPV6)
 
 static const char *get_af_name(avs_net_af_t af) {
     switch (af) {
-#    ifdef AVS_COMMONS_WITH_IPV4
+#    ifdef AVS_COMMONS_NET_WITH_IPV4
     case AVS_NET_AF_INET4:
         return "AF_INET";
-#    endif /* AVS_COMMONS_WITH_IPV4 */
+#    endif /* AVS_COMMONS_NET_WITH_IPV4 */
 
-#    ifdef AVS_COMMONS_WITH_IPV6
+#    ifdef AVS_COMMONS_NET_WITH_IPV6
     case AVS_NET_AF_INET6:
         return "AF_INET6";
-#    endif /* AVS_COMMONS_WITH_IPV6 */
+#    endif /* AVS_COMMONS_NET_WITH_IPV6 */
 
     case AVS_NET_AF_UNSPEC:
     default:
@@ -306,19 +321,19 @@ get_string_ip(const sockaddr_union_t *addr, char *buffer, size_t buffer_size) {
     socklen_t addrlen;
 
     switch (addr->addr.sa_family) {
-#    ifdef AVS_COMMONS_WITH_IPV4
+#    ifdef AVS_COMMONS_NET_WITH_IPV4
     case AF_INET:
         addr_data = &addr->addr_in.sin_addr;
         addrlen = INET_ADDRSTRLEN;
         break;
-#    endif /* AVS_COMMONS_WITH_IPV4 */
+#    endif /* AVS_COMMONS_NET_WITH_IPV4 */
 
-#    ifdef AVS_COMMONS_WITH_IPV6
+#    ifdef AVS_COMMONS_NET_WITH_IPV6
     case AF_INET6:
         addr_data = &addr->addr_in6.sin6_addr;
         addrlen = INET6_ADDRSTRLEN;
         break;
-#    endif /* AVS_COMMONS_WITH_IPV6 */
+#    endif /* AVS_COMMONS_NET_WITH_IPV6 */
 
     default:
         return avs_errno(AVS_ERANGE);
@@ -339,17 +354,17 @@ static int get_string_port(const sockaddr_union_t *addr,
                            size_t buffer_size) {
     uint16_t port;
     switch (addr->addr.sa_family) {
-#    ifdef AVS_COMMONS_WITH_IPV4
+#    ifdef AVS_COMMONS_NET_WITH_IPV4
     case AF_INET:
         port = addr->addr_in.sin_port;
         break;
-#    endif /* AVS_COMMONS_WITH_IPV4 */
+#    endif /* AVS_COMMONS_NET_WITH_IPV4 */
 
-#    ifdef AVS_COMMONS_WITH_IPV6
+#    ifdef AVS_COMMONS_NET_WITH_IPV6
     case AF_INET6:
         port = addr->addr_in6.sin6_port;
         break;
-#    endif /* AVS_COMMONS_WITH_IPV6 */
+#    endif /* AVS_COMMONS_NET_WITH_IPV6 */
 
     default:
         return -1;
@@ -461,7 +476,7 @@ static sa_family_t get_socket_family(sockfd_t fd) {
     }
 }
 
-#    ifdef AVS_COMMONS_WITH_IPV6
+#    ifdef AVS_COMMONS_NET_WITH_IPV6
 /**
  * Differs from get_socket_family() by the fact that if the socket is AF_INET6
  * at the kernel level, but is connected to an IPv4-mapped address, it returns
@@ -473,7 +488,8 @@ static sa_family_t get_connection_family(sockfd_t fd) {
 
     if (getpeername(fd, &addr.addr, &addrlen)) {
         return get_socket_family(fd);
-#        if defined(AVS_COMMONS_WITH_IPV4) && defined(AVS_COMMONS_WITH_IPV6)
+#        if defined(AVS_COMMONS_NET_WITH_IPV4) \
+                && defined(AVS_COMMONS_NET_WITH_IPV6)
     } else if (addr.addr.sa_family == AF_INET6 && is_v4mapped(&addr.addr_in6)) {
         return AF_INET;
 #        endif
@@ -481,7 +497,7 @@ static sa_family_t get_connection_family(sockfd_t fd) {
         return addr.addr.sa_family;
     }
 }
-#    endif // AVS_COMMONS_WITH_IPV6
+#    endif // AVS_COMMONS_NET_WITH_IPV6
 
 #    if !defined(IP_TRANSPARENT) && defined(__linux__)
 #        define IP_TRANSPARENT 19
@@ -555,19 +571,20 @@ static avs_error_t configure_socket(net_socket_impl_t *net_socket) {
         int retval = -1;
         errno = EINVAL;
         switch (get_socket_family(net_socket->socket)) {
-#    if defined(AVS_COMMONS_WITH_IPV4) && defined(IP_TRANSPARENT)
+#    if defined(AVS_COMMONS_NET_WITH_IPV4) && defined(IP_TRANSPARENT)
         case AF_INET:
             retval = setsockopt(net_socket->socket, SOL_IP, IP_TRANSPARENT,
                                 &value, sizeof(value));
             break;
-#    endif /* defined(AVS_COMMONS_WITH_IPV4) && defined(IP_TRANSPARENT) */
+#    endif /* defined(AVS_COMMONS_NET_WITH_IPV4) && defined(IP_TRANSPARENT) */
 
-#    if defined(AVS_COMMONS_WITH_IPV6) && defined(IPV6_TRANSPARENT)
+#    if defined(AVS_COMMONS_NET_WITH_IPV6) && defined(IPV6_TRANSPARENT)
         case AF_INET6:
             retval = setsockopt(net_socket->socket, SOL_IPV6, IPV6_TRANSPARENT,
                                 &value, sizeof(value));
             break;
-#    endif /* defined(AVS_COMMONS_WITH_IPV6) && defined(IPV6_TRANSPARENT) */
+#    endif /* defined(AVS_COMMONS_NET_WITH_IPV6) && defined(IPV6_TRANSPARENT) \
+            */
 
         default:
             (void) value;
@@ -807,7 +824,7 @@ static avs_error_t get_host_port_ptr(const struct sockaddr *sa,
                                      const void **out_addr_ptr,
                                      const uint16_t **out_port_ptr) {
     switch (sa->sa_family) {
-#        ifdef AVS_COMMONS_WITH_IPV4
+#        ifdef AVS_COMMONS_NET_WITH_IPV4
     case AF_INET:
         if (salen >= sizeof(struct sockaddr_in)) {
             *out_addr_ptr = &((const struct sockaddr_in *) sa)->sin_addr;
@@ -820,9 +837,9 @@ static avs_error_t get_host_port_ptr(const struct sockaddr *sa,
                 (unsigned) salen, (unsigned) sizeof(struct sockaddr_in));
             return avs_errno(AVS_EINVAL);
         }
-#        endif /* AVS_COMMONS_WITH_IPV4 */
+#        endif /* AVS_COMMONS_NET_WITH_IPV4 */
 
-#        ifdef AVS_COMMONS_WITH_IPV6
+#        ifdef AVS_COMMONS_NET_WITH_IPV6
     case AF_INET6:
         if (salen >= sizeof(struct sockaddr_in6)) {
             *out_addr_ptr = &((const struct sockaddr_in6 *) sa)->sin6_addr;
@@ -835,7 +852,7 @@ static avs_error_t get_host_port_ptr(const struct sockaddr *sa,
                 (unsigned) salen, (unsigned) sizeof(struct sockaddr_in6));
             return avs_errno(AVS_EINVAL);
         }
-#        endif /* AVS_COMMONS_WITH_IPV6 */
+#        endif /* AVS_COMMONS_NET_WITH_IPV6 */
 
     default:
         LOG(ERROR, _("unsupported socket family: ") "%d", (int) sa->sa_family);
@@ -929,15 +946,15 @@ static int get_socket_proto(avs_net_socket_type_t socket_type) {
 
 static avs_net_af_t get_avs_af(int af) {
     switch (af) {
-#    ifdef AVS_COMMONS_WITH_IPV4
+#    ifdef AVS_COMMONS_NET_WITH_IPV4
     case AF_INET:
         return AVS_NET_AF_INET4;
-#    endif /* AVS_COMMONS_WITH_IPV4 */
+#    endif /* AVS_COMMONS_NET_WITH_IPV4 */
 
-#    ifdef AVS_COMMONS_WITH_IPV6
+#    ifdef AVS_COMMONS_NET_WITH_IPV6
     case AF_INET6:
         return AVS_NET_AF_INET6;
-#    endif /* AVS_COMMONS_WITH_IPV6 */
+#    endif /* AVS_COMMONS_NET_WITH_IPV6 */
 
     default:
         return AVS_NET_AF_UNSPEC;
@@ -948,14 +965,15 @@ static int get_other_family(avs_net_af_t *out, avs_net_af_t in) {
     (void) out;
     (void) in;
     switch (in) {
-#    if defined(AVS_COMMONS_WITH_IPV4) && defined(AVS_COMMONS_WITH_IPV6)
+#    if defined(AVS_COMMONS_NET_WITH_IPV4) && defined(AVS_COMMONS_NET_WITH_IPV6)
     case AVS_NET_AF_INET4:
         *out = AVS_NET_AF_INET6;
         return 0;
     case AVS_NET_AF_INET6:
         *out = AVS_NET_AF_INET4;
         return 0;
-#    endif // defined(AVS_COMMONS_WITH_IPV4) && defined(AVS_COMMONS_WITH_IPV6)
+#    endif // defined(AVS_COMMONS_NET_WITH_IPV4) &&
+           // defined(AVS_COMMONS_NET_WITH_IPV6)
     default:
         return -1;
     }
@@ -970,9 +988,9 @@ static int get_requested_family(net_socket_impl_t *net_socket,
         avs_net_af_t preferred_family =
                 net_socket->configuration.preferred_family;
         if (preferred_family == AVS_NET_AF_UNSPEC) {
-#    ifdef AVS_COMMONS_WITH_IPV6
+#    ifdef AVS_COMMONS_NET_WITH_IPV6
             preferred_family = AVS_NET_AF_INET6;
-#    elif defined(AVS_COMMONS_WITH_IPV4)
+#    elif defined(AVS_COMMONS_NET_WITH_IPV4)
             preferred_family = AVS_NET_AF_INET4;
 #    else
             return -1;
@@ -1886,7 +1904,7 @@ static avs_error_t get_mtu(net_socket_impl_t *net_socket, int *out_mtu) {
     avs_error_t err = AVS_OK;
     socklen_t dummy = sizeof(mtu);
     switch (get_socket_family(net_socket->socket)) {
-#    if defined(AVS_COMMONS_WITH_IPV4) && defined(IP_MTU)
+#    if defined(AVS_COMMONS_NET_WITH_IPV4) && defined(IP_MTU)
     case AF_INET:
         errno = 0;
         if (getsockopt(net_socket->socket, IPPROTO_IP, IP_MTU, &mtu, &dummy)
@@ -1894,9 +1912,9 @@ static avs_error_t get_mtu(net_socket_impl_t *net_socket, int *out_mtu) {
             err = failure_from_errno();
         }
         break;
-#    endif /* defined(AVS_COMMONS_WITH_IPV4) && defined(IP_MTU) */
+#    endif /* defined(AVS_COMMONS_NET_WITH_IPV4) && defined(IP_MTU) */
 
-#    if defined(AVS_COMMONS_WITH_IPV6) && defined(IPV6_MTU)
+#    if defined(AVS_COMMONS_NET_WITH_IPV6) && defined(IPV6_MTU)
     case AF_INET6:
         errno = 0;
         if (getsockopt(net_socket->socket, IPPROTO_IPV6, IPV6_MTU, &mtu, &dummy)
@@ -1904,7 +1922,7 @@ static avs_error_t get_mtu(net_socket_impl_t *net_socket, int *out_mtu) {
             err = failure_from_errno();
         }
         break;
-#    endif /* defined(AVS_COMMONS_WITH_IPV6) && defined(IPV6_MTU) */
+#    endif /* defined(AVS_COMMONS_NET_WITH_IPV6) && defined(IPV6_MTU) */
 
     default:
         (void) dummy;
@@ -1922,7 +1940,7 @@ static avs_error_t get_mtu(net_socket_impl_t *net_socket, int *out_mtu) {
 
 static int get_fallback_inner_mtu(net_socket_impl_t *socket) {
     assert(socket->socket != INVALID_SOCKET);
-#    ifdef AVS_COMMONS_WITH_IPV6
+#    ifdef AVS_COMMONS_NET_WITH_IPV6
     if (get_connection_family(socket->socket) == AF_INET6) { /* IPv6 */
         return 1232;                                         /* 1280 - 48 */
     } else
@@ -1935,17 +1953,17 @@ static int get_fallback_inner_mtu(net_socket_impl_t *socket) {
 
 static avs_error_t get_udp_overhead(net_socket_impl_t *net_socket, int *out) {
     switch (get_socket_family(net_socket->socket)) {
-#    ifdef AVS_COMMONS_WITH_IPV4
+#    ifdef AVS_COMMONS_NET_WITH_IPV4
     case AF_INET:
         *out = 28; /* 20 for IP + 8 for UDP */
         return AVS_OK;
-#    endif /* AVS_COMMONS_WITH_IPV4 */
+#    endif /* AVS_COMMONS_NET_WITH_IPV4 */
 
-#    ifdef AVS_COMMONS_WITH_IPV6
+#    ifdef AVS_COMMONS_NET_WITH_IPV6
     case AF_INET6:
         *out = 48; /* 40 for IPv6 + 8 for UDP */
         return AVS_OK;
-#    endif /* AVS_COMMONS_WITH_IPV6 */
+#    endif /* AVS_COMMONS_NET_WITH_IPV6 */
 
     default:
         return avs_errno(AVS_EINVAL);
@@ -2040,19 +2058,19 @@ static inline int ifaddr_ip_equal(const struct sockaddr *left,
     }
 
     switch (left->sa_family) {
-#    ifdef AVS_COMMONS_WITH_IPV4
+#    ifdef AVS_COMMONS_NET_WITH_IPV4
     case AF_INET:
         offset = offsetof(struct sockaddr_in, sin_addr);
         length = 4;
         break;
-#    endif /* AVS_COMMONS_WITH_IPV4 */
+#    endif /* AVS_COMMONS_NET_WITH_IPV4 */
 
-#    ifdef AVS_COMMONS_WITH_IPV6
+#    ifdef AVS_COMMONS_NET_WITH_IPV6
     case AF_INET6:
         offset = offsetof(struct sockaddr_in6, sin6_addr);
         length = 16;
         break;
-#    endif /* AVS_COMMONS_WITH_IPV6 */
+#    endif /* AVS_COMMONS_NET_WITH_IPV6 */
 
     default:
         return -1;
@@ -2158,13 +2176,13 @@ interface_name_net(avs_net_socket_t *socket_,
 
 static int validate_ip_address(avs_net_af_t family, const char *ip_address) {
     union {
-#    ifdef AVS_COMMONS_WITH_IPV4
+#    ifdef AVS_COMMONS_NET_WITH_IPV4
         struct in_addr sa4;
-#    endif /* AVS_COMMONS_WITH_IPV4 */
+#    endif /* AVS_COMMONS_NET_WITH_IPV4 */
 
-#    ifdef AVS_COMMONS_WITH_IPV6
+#    ifdef AVS_COMMONS_NET_WITH_IPV6
         struct in6_addr sa6;
-#    endif /* AVS_COMMONS_WITH_IPV6 */
+#    endif /* AVS_COMMONS_NET_WITH_IPV6 */
     } sa;
     if (_avs_inet_pton(_avs_net_get_af(family), ip_address, &sa) < 1) {
         return -1;
@@ -2212,4 +2230,5 @@ void _avs_net_cleanup_global_compat_state(void) {
 #    endif // HAVE_GLOBAL_COMPAT_STATE
 }
 
-#endif // defined(WITH_AVS_NET) && defined(WITH_POSIX_AVS_SOCKET)
+#endif // defined(AVS_COMMONS_WITH_AVS_NET) &&
+       // defined(AVS_COMMONS_NET_WITH_POSIX_AVS_SOCKET)

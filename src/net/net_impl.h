@@ -24,9 +24,15 @@
 #define MODULE_NAME avs_net
 #include <x_log_config.h>
 
+#include "api.h"
+
 VISIBILITY_PRIVATE_HEADER_BEGIN
 
-#if defined(AVS_COMMONS_WITH_IPV4) && defined(AVS_COMMONS_WITH_IPV6)
+#if !defined(AVS_COMMONS_NET_WITH_IPV4) && !defined(AVS_COMMONS_NET_WITH_IPV6)
+#    error "At least one IP protocol version must be enabled"
+#endif
+
+#if defined(AVS_COMMONS_NET_WITH_IPV4) && defined(AVS_COMMONS_NET_WITH_IPV6)
 #    define WITH_AVS_V4MAPPED
 #endif
 

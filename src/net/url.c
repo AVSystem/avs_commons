@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-#include <avs_commons_config.h>
+#include <avs_commons_init.h>
 
-#ifdef WITH_AVS_NET
+#ifdef AVS_COMMONS_WITH_AVS_NET
 
 #    include <assert.h>
 #    include <ctype.h>
@@ -541,4 +541,4 @@ void avs_url_free(avs_url_t *url) {
 #        include "test/url.c"
 #    endif // AVS_UNIT_TESTING
 
-#endif // WITH_AVS_NET
+#endif // AVS_COMMONS_WITH_AVS_NET

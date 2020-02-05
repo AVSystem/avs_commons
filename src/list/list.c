@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-#include <avs_commons_config.h>
+#include <avs_commons_init.h>
 
-#ifdef WITH_AVS_LIST
+#ifdef AVS_COMMONS_WITH_AVS_LIST
 
 #    include <string.h>
 
@@ -232,4 +232,4 @@ void avs_list_merge__(void **target,
     }
 }
 
-#endif // WITH_AVS_LIST
+#endif // AVS_COMMONS_WITH_AVS_LIST

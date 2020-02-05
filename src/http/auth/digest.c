@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-#include <avs_commons_config.h>
+#include <avs_commons_init.h>
 
-#ifdef WITH_AVS_HTTP
+#ifdef AVS_COMMONS_WITH_AVS_HTTP
 
 #    include <inttypes.h>
 
@@ -209,4 +209,4 @@ auth_digest_error:
     return stream_cleanup_err;
 }
 
-#endif // WITH_AVS_HTTP
+#endif // AVS_COMMONS_WITH_AVS_HTTP

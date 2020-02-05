@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include <avs_commons_config.h>
+#include <avs_commons_init.h>
 
 #define MODULE_NAME http_test
 #include <x_log_config.h>
@@ -84,7 +84,7 @@ AVS_UNIT_TEST(http, full_request) {
     avs_unit_mocksock_assert_io_clean(socket);
     tmp_data = "POST / HTTP/1.1\r\n"
                "Host: www.zombo.com\r\n"
-#ifdef WITH_AVS_HTTP_ZLIB
+#ifdef AVS_COMMONS_HTTP_WITH_ZLIB
                "Accept-Encoding: gzip, deflate\r\n"
 #endif
                "Content-Length: 22\r\n"
@@ -136,7 +136,7 @@ AVS_UNIT_TEST(http, reconnect_fail) {
     AVS_UNIT_ASSERT_NOT_NULL(stream);
     tmp_data = "GET / HTTP/1.1\r\n"
                "Host: www.avsystem.com\r\n"
-#ifdef WITH_AVS_HTTP_ZLIB
+#ifdef AVS_COMMONS_HTTP_WITH_ZLIB
                "Accept-Encoding: gzip, deflate\r\n"
 #endif
                "\r\n";
@@ -179,7 +179,7 @@ AVS_UNIT_TEST(http, advanced_request) {
     AVS_UNIT_ASSERT_SUCCESS(avs_http_add_header(stream, "I-Am", "h4x0r"));
     tmp_data = "GET / HTTP/1.1\r\n" /* first request */
                "Host: pentagon.osd.mil\r\n"
-#ifdef WITH_AVS_HTTP_ZLIB
+#ifdef AVS_COMMONS_HTTP_WITH_ZLIB
                "Accept-Encoding: gzip, deflate\r\n"
 #endif
                "I-Am: h4x0r\r\n"
@@ -194,7 +194,7 @@ AVS_UNIT_TEST(http, advanced_request) {
     avs_unit_mocksock_input(socket, tmp_data, strlen(tmp_data));
     tmp_data = "GET / HTTP/1.1\r\n" /* second request */
                "Host: pentagon.osd.mil\r\n"
-#ifdef WITH_AVS_HTTP_ZLIB
+#ifdef AVS_COMMONS_HTTP_WITH_ZLIB
                "Accept-Encoding: gzip, deflate\r\n"
 #endif
                "Authorization: Basic cm9vdDoxMjM0NQ==\r\n"
@@ -235,7 +235,7 @@ AVS_UNIT_TEST(http, invalid_cookies) {
     AVS_UNIT_ASSERT_NOT_NULL(stream);
     tmp_data = "GET / HTTP/1.1\r\n" /* first request */
                "Host: avsystem.com\r\n"
-#ifdef WITH_AVS_HTTP_ZLIB
+#ifdef AVS_COMMONS_HTTP_WITH_ZLIB
                "Accept-Encoding: gzip, deflate\r\n"
 #endif
                "\r\n";
@@ -272,7 +272,7 @@ AVS_UNIT_TEST(http, multiple_cookies) {
     AVS_UNIT_ASSERT_NOT_NULL(stream);
     tmp_data = "GET / HTTP/1.1\r\n" /* first request */
                "Host: unicodesnowmanforyou.com\r\n"
-#ifdef WITH_AVS_HTTP_ZLIB
+#ifdef AVS_COMMONS_HTTP_WITH_ZLIB
                "Accept-Encoding: gzip, deflate\r\n"
 #endif
                "\r\n";
@@ -286,7 +286,7 @@ AVS_UNIT_TEST(http, multiple_cookies) {
     avs_unit_mocksock_input(socket, tmp_data, strlen(tmp_data));
     tmp_data = "GET / HTTP/1.1\r\n" /* second request */
                "Host: unicodesnowmanforyou.com\r\n"
-#ifdef WITH_AVS_HTTP_ZLIB
+#ifdef AVS_COMMONS_HTTP_WITH_ZLIB
                "Accept-Encoding: gzip, deflate\r\n"
 #endif
                "Authorization: Basic b21hZV93YTptb3Vfc2hpbmRlaXJ1\r\n"
@@ -577,7 +577,7 @@ AVS_UNIT_TEST(http, chunked_request) {
     AVS_UNIT_ASSERT_NOT_NULL(stream);
     tmp_data = "POST / HTTP/1.1\r\n"
                "Host: monty.python\r\n"
-#ifdef WITH_AVS_HTTP_ZLIB
+#ifdef AVS_COMMONS_HTTP_WITH_ZLIB
                "Accept-Encoding: gzip, deflate\r\n"
 #endif
                "Expect: 100-continue\r\n"
@@ -623,7 +623,7 @@ AVS_UNIT_TEST(http, no_100_continue) {
     AVS_UNIT_ASSERT_NOT_NULL(stream);
     tmp_data = "POST / HTTP/1.1\r\n"
                "Host: monty.python\r\n"
-#ifdef WITH_AVS_HTTP_ZLIB
+#ifdef AVS_COMMONS_HTTP_WITH_ZLIB
                "Accept-Encoding: gzip, deflate\r\n"
 #endif
                "Expect: 100-continue\r\n"
@@ -666,7 +666,7 @@ AVS_UNIT_TEST(http, error_417) {
     AVS_UNIT_ASSERT_NOT_NULL(stream);
     tmp_data = "POST / HTTP/1.1\r\n"
                "Host: monty.python\r\n"
-#ifdef WITH_AVS_HTTP_ZLIB
+#ifdef AVS_COMMONS_HTTP_WITH_ZLIB
                "Accept-Encoding: gzip, deflate\r\n"
 #endif
                "Expect: 100-continue\r\n"
@@ -679,7 +679,7 @@ AVS_UNIT_TEST(http, error_417) {
     avs_unit_mocksock_input(socket, tmp_data, strlen(tmp_data));
     tmp_data = "POST / HTTP/1.1\r\n"
                "Host: monty.python\r\n"
-#ifdef WITH_AVS_HTTP_ZLIB
+#ifdef AVS_COMMONS_HTTP_WITH_ZLIB
                "Accept-Encoding: gzip, deflate\r\n"
 #endif
                "Transfer-Encoding: chunked\r\n"
@@ -848,7 +848,7 @@ AVS_UNIT_TEST(http, big_chunked_request) {
     AVS_UNIT_ASSERT_NOT_NULL(stream);
     tmp_data = "POST / HTTP/1.1\r\n"
                "Host: python.monty\r\n"
-#ifdef WITH_AVS_HTTP_ZLIB
+#ifdef AVS_COMMONS_HTTP_WITH_ZLIB
                "Accept-Encoding: gzip, deflate\r\n"
 #endif
                "Expect: 100-continue\r\n"
@@ -896,7 +896,7 @@ AVS_UNIT_TEST(http, redirect) {
     AVS_UNIT_ASSERT_NOT_NULL(stream);
     tmp_data = "GET / HTTP/1.1\r\n"
                "Host: www.nyan.cat\r\n"
-#ifdef WITH_AVS_HTTP_ZLIB
+#ifdef AVS_COMMONS_HTTP_WITH_ZLIB
                "Accept-Encoding: gzip, deflate\r\n"
 #endif
                "\r\n";
@@ -911,7 +911,7 @@ AVS_UNIT_TEST(http, redirect) {
     avs_unit_mocksock_expect_connect(sockets[1], "www.poteflon.pl", "80");
     tmp_data = "GET / HTTP/1.1\r\n"
                "Host: www.poteflon.pl\r\n"
-#ifdef WITH_AVS_HTTP_ZLIB
+#ifdef AVS_COMMONS_HTTP_WITH_ZLIB
                "Accept-Encoding: gzip, deflate\r\n"
 #endif
                "\r\n";
@@ -926,7 +926,7 @@ AVS_UNIT_TEST(http, redirect) {
     avs_unit_mocksock_expect_connect(sockets[2], "htf.atom.com", "80");
     tmp_data = "GET / HTTP/1.1\r\n"
                "Host: htf.atom.com\r\n"
-#ifdef WITH_AVS_HTTP_ZLIB
+#ifdef AVS_COMMONS_HTTP_WITH_ZLIB
                "Accept-Encoding: gzip, deflate\r\n"
 #endif
                "\r\n";
@@ -942,7 +942,7 @@ AVS_UNIT_TEST(http, redirect) {
     avs_unit_mocksock_expect_connect(sockets[3], "www.youtube.com", "80");
     tmp_data = "GET /watch?v=dQw4w9WgXcQ HTTP/1.1\r\n"
                "Host: www.youtube.com\r\n"
-#ifdef WITH_AVS_HTTP_ZLIB
+#ifdef AVS_COMMONS_HTTP_WITH_ZLIB
                "Accept-Encoding: gzip, deflate\r\n"
 #endif
                "\r\n";
@@ -959,7 +959,7 @@ AVS_UNIT_TEST(http, redirect) {
             sockets[4], "isnickelbacktheworstbandever.tumblr.com", "80");
     tmp_data = "GET / HTTP/1.1\r\n"
                "Host: isnickelbacktheworstbandever.tumblr.com\r\n"
-#ifdef WITH_AVS_HTTP_ZLIB
+#ifdef AVS_COMMONS_HTTP_WITH_ZLIB
                "Accept-Encoding: gzip, deflate\r\n"
 #endif
                "\r\n";
@@ -974,7 +974,7 @@ AVS_UNIT_TEST(http, redirect) {
     avs_unit_mocksock_expect_connect(sockets[5], "www.badumtss.net", "80");
     tmp_data = "GET / HTTP/1.1\r\n"
                "Host: www.badumtss.net\r\n"
-#ifdef WITH_AVS_HTTP_ZLIB
+#ifdef AVS_COMMONS_HTTP_WITH_ZLIB
                "Accept-Encoding: gzip, deflate\r\n"
 #endif
                "\r\n";
@@ -1016,7 +1016,7 @@ AVS_UNIT_TEST(http, interleaving) {
     AVS_UNIT_ASSERT_NOT_NULL(stream);
     tmp_data = "POST / HTTP/1.1\r\n"
                "Host: pudim.com.br\r\n"
-#ifdef WITH_AVS_HTTP_ZLIB
+#ifdef AVS_COMMONS_HTTP_WITH_ZLIB
                "Accept-Encoding: gzip, deflate\r\n"
 #endif
                "Content-Length: 0\r\n"
@@ -1057,7 +1057,7 @@ AVS_UNIT_TEST(http, interleaving) {
     avs_unit_mocksock_assert_io_clean(socket);
     tmp_data = "POST / HTTP/1.1\r\n"
                "Host: pudim.com.br\r\n"
-#ifdef WITH_AVS_HTTP_ZLIB
+#ifdef AVS_COMMONS_HTTP_WITH_ZLIB
                "Accept-Encoding: gzip, deflate\r\n"
 #endif
                "Content-Length: 264\r\n"
@@ -1105,7 +1105,7 @@ AVS_UNIT_TEST(http, interleaving_error) {
     AVS_UNIT_ASSERT_NOT_NULL(stream);
     tmp_data = "POST / HTTP/1.1\r\n"
                "Host: www.omfgdogs.com\r\n"
-#ifdef WITH_AVS_HTTP_ZLIB
+#ifdef AVS_COMMONS_HTTP_WITH_ZLIB
                "Accept-Encoding: gzip, deflate\r\n"
 #endif
                "Content-Length: 0\r\n"
@@ -1154,7 +1154,7 @@ AVS_UNIT_TEST(http, send_headers_fail) {
     avs_http_free(client);
 }
 
-#ifdef AVS_COMMONS_WITH_IPV6
+#ifdef AVS_COMMONS_NET_WITH_IPV6
 AVS_UNIT_TEST(http, ipv6_host_header_has_square_brackets) {
     const char *tmp_data = NULL;
     avs_http_t *client = avs_http_new(&AVS_HTTP_DEFAULT_BUFFER_SIZES);
@@ -1181,7 +1181,7 @@ AVS_UNIT_TEST(http, ipv6_host_header_has_square_brackets) {
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&stream));
     avs_http_free(client);
 }
-#endif // AVS_COMMONS_WITH_IPV6
+#endif // AVS_COMMONS_NET_WITH_IPV6
 
 AVS_UNIT_TEST(http, invalid_uri_protocol) {
     avs_http_t *client = avs_http_new(&AVS_HTTP_DEFAULT_BUFFER_SIZES);

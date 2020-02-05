@@ -13,6 +13,7 @@
 # limitations under the License.
 
 option(WITH_AVS_COMPAT_THREADING_ATOMIC_SPINLOCK "Enable threading primitives implementation based on spinlocks and C11 atomics" ${HAVE_C11_STDATOMIC})
+set(AVS_COMMONS_COMPAT_THREADING_WITH_ATOMIC_SPINLOCK ${WITH_AVS_COMPAT_THREADING_ATOMIC_SPINLOCK} CACHE INTERNAL "" FORCE)
 if(NOT WITH_AVS_COMPAT_THREADING_ATOMIC_SPINLOCK)
     return()
 endif()

@@ -18,6 +18,8 @@
 
 #include <avsystem/commons/socket.h>
 
+#include "../api.h"
+
 VISIBILITY_PRIVATE_HEADER_BEGIN
 
 // NOTE: <openssl/ssl.h> could not be included here. See the note about OpenSSL

@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
-#include <avs_commons_config.h>
+#include <avs_commons_init.h>
 
-#if defined(WITH_AVS_STREAM) && defined(WITH_AVS_BUFFER) \
-        && defined(WITH_AVS_NET)
+#if defined(AVS_COMMONS_WITH_AVS_STREAM)        \
+        && defined(AVS_COMMONS_WITH_AVS_BUFFER) \
+        && defined(AVS_COMMONS_WITH_AVS_NET)
 
 #    include <stdio.h>
 #    include <string.h>
@@ -409,5 +410,6 @@ void avs_stream_netbuf_set_recv_timeout(avs_stream_t *str,
                            timeout_opt);
 }
 
-#endif // defined(WITH_AVS_STREAM) && defined(WITH_AVS_BUFFER) &&
-       // defined(WITH_AVS_NET)
+#endif // defined(AVS_COMMONS_WITH_AVS_STREAM) &&
+       // defined(AVS_COMMONS_WITH_AVS_BUFFER) &&
+       // defined(AVS_COMMONS_WITH_AVS_NET)

@@ -36,7 +36,8 @@
 
 #include <avs_commons_posix_config.h>
 
-#if defined(WITH_AVS_NET) && defined(WITH_POSIX_AVS_SOCKET) \
+#if defined(AVS_COMMONS_WITH_AVS_NET)                     \
+        && defined(AVS_COMMONS_NET_WITH_POSIX_AVS_SOCKET) \
         && !defined(HAVE_INET_PTON)
 
 #    include <stdint.h>
@@ -60,9 +61,9 @@ AVS_STATIC_ASSERT(sizeof(int) >= 4, sane_sizeof_int);
 
 static int inet_pton4(const char *src, void *dst);
 
-#    ifdef AVS_COMMONS_WITH_IPV6
+#    ifdef AVS_COMMONS_NET_WITH_IPV6
 static int inet_pton6(const char *src, void *dst);
-#    endif /* AVS_COMMONS_WITH_IPV6 */
+#    endif /* AVS_COMMONS_NET_WITH_IPV6 */
 
 int _avs_inet_pton(int af, const char *src, void *dst);
 
@@ -79,15 +80,15 @@ int _avs_inet_pton(int af, const char *src, void *dst);
  */
 int _avs_inet_pton(int af, const char *src, void *dst) {
     switch (af) {
-#    ifdef AVS_COMMONS_WITH_IPV4
+#    ifdef AVS_COMMONS_NET_WITH_IPV4
     case AF_INET:
         return (inet_pton4(src, dst));
-#    endif /* AVS_COMMONS_WITH_IPV4 */
+#    endif /* AVS_COMMONS_NET_WITH_IPV4 */
 
-#    ifdef AVS_COMMONS_WITH_IPV6
+#    ifdef AVS_COMMONS_NET_WITH_IPV6
     case AF_INET6:
         return (inet_pton6(src, dst));
-#    endif /* AVS_COMMONS_WITH_IPV6 */
+#    endif /* AVS_COMMONS_NET_WITH_IPV6 */
 
     default:
         errno = EAFNOSUPPORT;
@@ -142,7 +143,7 @@ static int inet_pton4(const char *src, void *dst) {
     return (1);
 }
 
-#    ifdef AVS_COMMONS_WITH_IPV6
+#    ifdef AVS_COMMONS_NET_WITH_IPV6
 /* int
  * inet_pton6(src, dst)
  *	convert presentation level address to network order binary form.
@@ -236,7 +237,8 @@ static int inet_pton6(const char *src, void *dst) {
     memcpy(dst, tmp, NS_IN6ADDRSZ);
     return (1);
 }
-#    endif /* AVS_COMMONS_WITH_IPV6 */
+#    endif /* AVS_COMMONS_NET_WITH_IPV6 */
 
-#endif // defined(WITH_AVS_NET) && defined(WITH_POSIX_AVS_SOCKET) &&
+#endif // defined(AVS_COMMONS_WITH_AVS_NET) &&
+       // defined(AVS_COMMONS_NET_WITH_POSIX_AVS_SOCKET) &&
        // !defined(HAVE_INET_PTON)

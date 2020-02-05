@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
-#include <avs_commons_config.h>
+#include <avs_commons_init.h>
 
-#ifdef WITH_AVS_COMPAT_THREADING_ATOMIC_SPINLOCK
+#if defined(AVS_COMMONS_WITH_AVS_COMPAT_THREADING) \
+        && defined(AVS_COMMONS_COMPAT_THREADING_WITH_ATOMIC_SPINLOCK)
 
 #    define MODULE_NAME mutex_atomic_spinlock
 #    include <x_log_config.h>
@@ -82,4 +83,5 @@ void avs_mutex_cleanup(avs_mutex_t **mutex) {
     *mutex = NULL;
 }
 
-#endif // WITH_AVS_COMPAT_THREADING_ATOMIC_SPINLOCK
+#endif // defined(AVS_COMMONS_WITH_AVS_COMPAT_THREADING) &&
+       // defined(AVS_COMMONS_COMPAT_THREADING_WITH_ATOMIC_SPINLOCK)

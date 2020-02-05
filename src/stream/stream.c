@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-#include <avs_commons_config.h>
+#include <avs_commons_init.h>
 
-#ifdef WITH_AVS_STREAM
+#ifdef AVS_COMMONS_WITH_AVS_STREAM
 
 #    include <assert.h>
 #    include <stdarg.h>
@@ -442,4 +442,4 @@ size_t avs_stream_nonblock_write_ready(avs_stream_t *stream) {
     }
 }
 
-#endif // WITH_AVS_STREAM
+#endif // AVS_COMMONS_WITH_AVS_STREAM

@@ -15,10 +15,10 @@
  */
 
 #define AVS_SUPPRESS_POISONING
-#include <avs_commons_config.h>
+#include <avs_commons_init.h>
 
-#if defined(WITH_AVS_NET) && defined(WITH_MBEDTLS) \
-        && defined(WITH_TLS_SESSION_PERSISTENCE)
+#if defined(AVS_COMMONS_WITH_AVS_NET) && defined(AVS_COMMONS_WITH_MBEDTLS) \
+        && defined(AVS_COMMONS_NET_WITH_TLS_SESSION_PERSISTENCE)
 
 // this uses some symbols such as "printf" - include it before poisoning them
 #    include <mbedtls/platform.h>
@@ -78,7 +78,7 @@ static const char PERSISTENCE_MAGIC[] = { 'M', 'S', 'P', '\0' };
  * to serious problems if we try to restore it on another platform and/or
  * another mbed TLS version.
  */
-#    ifdef WITH_X509
+#    ifdef AVS_COMMONS_NET_WITH_X509
 static avs_error_t handle_cert_persistence(avs_persistence_context_t *ctx,
                                            mbedtls_x509_crt **cert_ptr) {
     void *data = (*cert_ptr ? (*cert_ptr)->raw.p : NULL);
@@ -129,7 +129,7 @@ static avs_error_t handle_cert_persistence(avs_persistence_context_t *ctx,
     }
     return AVS_OK;
 }
-#    endif // WITH_X509
+#    endif // AVS_COMMONS_NET_WITH_X509
 
 static avs_error_t handle_session_persistence(avs_persistence_context_t *ctx,
                                               mbedtls_ssl_session *session) {
@@ -211,12 +211,12 @@ static avs_error_t handle_session_persistence(avs_persistence_context_t *ctx,
 #    endif // MBEDTLS_SSL_ENCRYPT_THEN_MAC
     }
 
-#    if defined(WITH_X509) && !defined(MBEDTLS_X509_CRT_PARSE_C)
+#    if defined(AVS_COMMONS_NET_WITH_X509) && !defined(MBEDTLS_X509_CRT_PARSE_C)
     if (*peer_cert_ptr) {
         mbedtls_x509_crt_free(*peer_cert_ptr);
         mbedtls_free(*peer_cert_ptr);
     }
-#    endif // WITH_X509 && !MBEDTLS_X509_CRT_PARSE_C
+#    endif // AVS_COMMONS_NET_WITH_X509 && !MBEDTLS_X509_CRT_PARSE_C
     return err;
 }
 
@@ -279,5 +279,5 @@ avs_error_t _avs_net_mbedtls_session_restore(mbedtls_ssl_session *out_session,
     return err;
 }
 
-#endif // defined(WITH_AVS_NET) && defined(WITH_MBEDTLS) &&
-       // defined(WITH_TLS_SESSION_PERSISTENCE)
+#endif // defined(AVS_COMMONS_WITH_AVS_NET) && defined(AVS_COMMONS_WITH_MBEDTLS)
+       // && defined(AVS_COMMONS_NET_WITH_TLS_SESSION_PERSISTENCE)

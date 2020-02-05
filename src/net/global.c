@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-#include <avs_commons_config.h>
+#include <avs_commons_init.h>
 
-#ifdef WITH_AVS_NET
+#ifdef AVS_COMMONS_WITH_AVS_NET
 
 #    include "global.h"
 #    include "net_impl.h"
@@ -55,4 +55,4 @@ avs_error_t _avs_net_ensure_global_state(void) {
     }
 }
 
-#endif // WITH_AVS_NET
+#endif // AVS_COMMONS_WITH_AVS_NET

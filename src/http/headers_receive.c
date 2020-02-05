@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-#include <avs_commons_config.h>
+#include <avs_commons_init.h>
 
-#ifdef WITH_AVS_HTTP
+#ifdef AVS_COMMONS_WITH_AVS_HTTP
 
 #    include <assert.h>
 #    include <ctype.h>
@@ -399,4 +399,4 @@ avs_error_t _avs_http_receive_headers(http_stream_t *stream) {
     return err;
 }
 
-#endif // WITH_AVS_HTTP
+#endif // AVS_COMMONS_WITH_AVS_HTTP

@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-#include <avs_commons_config.h>
+#include <avs_commons_init.h>
 
-#if defined(WITH_AVS_CRYPTO) && defined(WITH_MBEDTLS)
+#if defined(AVS_COMMONS_WITH_AVS_CRYPTO) && defined(AVS_COMMONS_WITH_MBEDTLS)
 
 #    define MODULE_NAME avs_crypto_hkdf
 #    include <x_log_config.h>
@@ -58,4 +58,5 @@ int avs_crypto_hkdf_sha_256(const unsigned char *salt,
     return 0;
 }
 
-#endif // defined(WITH_AVS_CRYPTO) && defined(WITH_MBEDTLS)
+#endif // defined(AVS_COMMONS_WITH_AVS_CRYPTO) &&
+       // defined(AVS_COMMONS_WITH_MBEDTLS)

@@ -133,14 +133,19 @@ option(WITH_AVS_MICRO_LOGS "Replaces all invocations of AVS_DISPOSABLE_LOG() wit
 
 include(CMakeDependentOption)
 cmake_dependent_option(WITH_INTERNAL_LOGS "Enable logging from inside AVSystem Commons libraries" ON WITH_AVS_LOG OFF)
+set(AVS_COMMONS_WITH_INTERNAL_LOGS ${WITH_INTERNAL_LOGS})
 cmake_dependent_option(WITH_INTERNAL_TRACE "Enable TRACE-level logs inside AVSystem Commons libraries" OFF WITH_INTERNAL_LOGS OFF)
+set(AVS_COMMONS_WITH_INTERNAL_TRACE ${WITH_INTERNAL_TRACE})
 cmake_dependent_option(WITH_MBEDTLS_LOGS "Enable logging from mbedTLS backend library (if used)" OFF "WITH_INTERNAL_LOGS;WITH_MBEDTLS" OFF)
+set(AVS_COMMONS_NET_WITH_MBEDTLS_LOGS ${WITH_MBEDTLS_LOGS})
 
 if(WITH_AVS_LOG)
     set(AVS_LOG_MAX_LINE_LENGTH 512 CACHE INTEGER "Max length of a single log message. Longer ones will be truncated.")
+    set(AVS_COMMONS_LOG_MAX_LINE_LENGTH ${AVS_LOG_MAX_LINE_LENGTH})
     cmake_dependent_option(AVS_LOG_USE_GLOBAL_BUFFER
                            "Use global log message buffer instead of allocating one on stack. Reduces stack usage of threads that use avs_log() at the cost of synchronized access to the buffer."
-                           OFF WITH_AVS_MUTEX OFF)
+                           OFF WITH_AVS_COMPAT_THREADING OFF)
+    set(AVS_COMMONS_LOG_USE_GLOBAL_BUFFER ${AVS_LOG_USE_GLOBAL_BUFFER})
 endif()
 
 cmake_dependent_option(WITH_TEST "Enable unit tests of AVSystem Commons library itself" OFF WITH_AVS_UNIT OFF)
@@ -179,9 +184,9 @@ if(CMAKE_C_COMPILE_OPTIONS_PIC)
 endif()
 
 # -fvisibility, #pragma GCC visibility
-if(NOT DEFINED HAVE_VISIBILITY)
+if(NOT DEFINED AVS_COMMONS_HAVE_VISIBILITY)
     file(WRITE ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp/visibility.c "#pragma GCC visibility push(default)\nint f();\n#pragma GCC visibility push(hidden)\nint f() { return 0; }\n#pragma GCC visibility pop\nint main() { return f(); }\n\n")
-    try_compile(HAVE_VISIBILITY
+    try_compile(AVS_COMMONS_HAVE_VISIBILITY
                 ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp
                 ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp/visibility.c
                 COMPILE_DEFINITIONS -Wall -Wextra -Werror -fvisibility=default)
@@ -200,8 +205,8 @@ endif()
 # as they might not work on Clang if -rtlib=compiler-rt is not set
 file(WRITE ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp/builtin_add_overflow.c "#include <stdint.h>\nint main() { int64_t a=0,b=0,c=0; return __builtin_add_overflow(a, b, &c); }\n")
 file(WRITE ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp/builtin_mul_overflow.c "#include <stdint.h>\nint main() { int64_t a=0,b=0,c=0; return __builtin_mul_overflow(a, b, &c); }\n")
-try_compile(HAVE_BUILTIN_ADD_OVERFLOW ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp/builtin_add_overflow.c)
-try_compile(HAVE_BUILTIN_MUL_OVERFLOW ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp/builtin_mul_overflow.c)
+try_compile(AVS_COMMONS_HAVE_BUILTIN_ADD_OVERFLOW ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp/builtin_add_overflow.c)
+try_compile(AVS_COMMONS_HAVE_BUILTIN_MUL_OVERFLOW ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp/builtin_mul_overflow.c)
 
 # C11 stdatomic
 file(WRITE ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp/c11_stdatomic.c "#include <stdatomic.h>\nint main() { volatile atomic_flag a = ATOMIC_FLAG_INIT; return atomic_flag_test_and_set(&a); }\n")
@@ -215,7 +220,11 @@ test_big_endian(AVS_COMMONS_BIG_ENDIAN)
 include(CheckFunctionExists)
 check_function_exists(getifaddrs HAVE_GETIFADDRS)
 check_function_exists(backtrace HAVE_BACKTRACE)
-check_function_exists(backtrace_symbols HAVE_BACKTRACE_SYMBOLS)
+if(HAVE_BACKTRACE)
+    check_function_exists(backtrace_symbols HAVE_BACKTRACE_SYMBOLS)
+else()
+    set(HAVE_BACKTRACE_SYMBOLS 0)
+endif()
 
 include(CheckSymbolExists)
 if(NOT HAVE_MATH_LIBRARY)
@@ -236,12 +245,14 @@ option(WITH_IPV4 "Enable IPv4 support" ON)
 option(WITH_IPV6 "Enable IPv6 support" ON)
 
 option(WITH_SOCKET_LOG "Enable socket communication logging" OFF)
+set(AVS_COMMONS_NET_WITH_SOCKET_LOG ${WITH_SOCKET_LOG})
 
 find_program(VALGRIND_EXECUTABLE valgrind)
 if(VALGRIND_EXECUTABLE)
     # This is enabled in devconfig only, and should be disabled in CMakeLists.txt,
     # to avoid cross-compilation errors on stations with valgrind installed.
     option(WITH_VALGRIND "Enable usage of valgrind during unit tests" OFF)
+    set(AVS_COMMONS_NET_WITH_VALGRIND ${WITH_VALGRIND})
 endif()
 if(WITH_VALGRIND)
     execute_process(COMMAND ${VALGRIND_EXECUTABLE} --tool=helgrind --version
@@ -269,7 +280,8 @@ if(NOT INCLUDE_INSTALL_DIR)
 endif()
 
 include_directories($<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/config>
-                    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/config>)
+                    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/config>
+                    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>)
 
 add_library(avs_commons_global_headers INTERFACE)
 target_include_directories(avs_commons_global_headers INTERFACE
@@ -302,30 +314,33 @@ function(add_module_with_include_dirs)
         set(AMWID_INCLUDE_DIRS_VAR MODULE_INCLUDE_DIRS)
     endif()
 
-    add_subdirectory(${AMWID_PATH})
+    string(TOUPPER "${AMWID_NAME}" AMWID_NAME_UPPER)
+    set(AVS_COMMONS_WITH_AVS_${AMWID_NAME_UPPER} "${WITH_AVS_${AMWID_NAME_UPPER}}" PARENT_SCOPE)
 
-    # Append module includes to a specified variable name (i.e. MODULE_INCLUDE_DIRS_VAR).
-    set(${AMWID_INCLUDE_DIRS_VAR}
-        ${${AMWID_INCLUDE_DIRS_VAR}}
-        $<TARGET_PROPERTY:${AMWID_NAME},INTERFACE_INCLUDE_DIRECTORIES>
-        PARENT_SCOPE)
+    if(WITH_AVS_${AMWID_NAME_UPPER})
+        add_subdirectory(${AMWID_PATH})
 
-    if(TARGET avs_${AMWID_NAME}_check)
-        add_test(NAME test_avs_${AMWID_NAME}_symbols
-                 COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/test_symbols.sh $<TARGET_FILE:avs_${AMWID_NAME}> avs_ AVS_ _avs _AVS_)
-        add_dependencies(avs_commons_symbols_check avs_${AMWID_NAME})
+        # Append module includes to a specified variable name (i.e. MODULE_INCLUDE_DIRS_VAR).
+        set(${AMWID_INCLUDE_DIRS_VAR}
+            ${${AMWID_INCLUDE_DIRS_VAR}}
+            $<TARGET_PROPERTY:${AMWID_NAME},INTERFACE_INCLUDE_DIRECTORIES>
+            PARENT_SCOPE)
+
+        if(TARGET avs_${AMWID_NAME}_check)
+            add_test(NAME test_avs_${AMWID_NAME}_symbols
+                     COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/test_symbols.sh $<TARGET_FILE:avs_${AMWID_NAME}> avs_ AVS_ _avs _AVS_)
+            add_dependencies(avs_commons_symbols_check avs_${AMWID_NAME})
+        endif()
+        file(GLOB_RECURSE MODULE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/${AMWID_PATH}/*.c
+                                       ${CMAKE_CURRENT_SOURCE_DIR}/${AMWID_PATH}/*.h)
+        foreach(F ${MODULE_FILES})
+            add_test(NAME test_${F}_visibility COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/test_visibility.py ${F})
+            add_test(NAME test_${F}_headers COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/test_headers.py ${F})
+        endforeach()
     endif()
-    file(GLOB_RECURSE MODULE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/${AMWID_PATH}/*.c
-                                   ${CMAKE_CURRENT_SOURCE_DIR}/${AMWID_PATH}/*.h)
-    foreach(F ${MODULE_FILES})
-        add_test(NAME test_${F}_visibility COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/test_visibility.py ${F})
-        add_test(NAME test_${F}_headers COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/test_headers.py ${F})
-    endforeach()
 endfunction()
 
-if(WITH_AVS_UNIT)
-    add_module_with_include_dirs(NAME unit)
-endif()
+add_module_with_include_dirs(NAME unit)
 
 if(WITH_TEST)
     if(NOT WITH_AVS_UNIT)
@@ -416,15 +431,20 @@ endif(WITH_TEST)
 # SSL
 find_package(OpenSSL)
 option(WITH_OPENSSL "Enable OpenSSL" ${OPENSSL_FOUND})
+set(AVS_COMMONS_WITH_OPENSSL ${WITH_OPENSSL})
 
 find_package(MbedTLS)
 option(WITH_MBEDTLS "Enable mbed TLS" ${MBEDTLS_FOUND})
+set(AVS_COMMONS_WITH_MBEDTLS ${WITH_MBEDTLS})
 
 find_package(TinyDTLS)
 option(WITH_TINYDTLS "Enable tinyDTLS" ${TINYDTLS_FOUND})
+set(AVS_COMMONS_WITH_TINYDTLS ${WITH_TINYDTLS})
 
 cmake_dependent_option(WITH_PSK "Enable pre-shared key support" ON "WITH_OPENSSL OR WITH_MBEDTLS OR WITH_TINYDTLS" OFF)
+set(AVS_COMMONS_NET_WITH_PSK ${WITH_PSK})
 cmake_dependent_option(WITH_X509 "Enable X.509 certificate support" ON "WITH_OPENSSL OR WITH_MBEDTLS OR WITH_TINYDTLS" OFF)
+set(AVS_COMMONS_NET_WITH_X509 ${WITH_X509})
 cmake_dependent_option(WITH_MBEDTLS_CUSTOM_ENTROPY_INITIALIZER
                        "Enable use of avs_net_mbedtls_entropy_init(mbedtls_entropy_context*) function that has to be provided by the user"
                        OFF "WITH_MBEDTLS" OFF)
@@ -448,65 +468,27 @@ if(WITH_TINYDTLS)
     ")
 endif()
 
-if(WITH_AVS_ALGORITHM)
-    add_module_with_include_dirs(NAME algorithm)
-endif()
-
-if(WITH_AVS_BUFFER)
-    add_module_with_include_dirs(NAME buffer)
-endif()
-
-if(WITH_AVS_LIST)
-    add_module_with_include_dirs(NAME list)
-endif()
-
-if(WITH_AVS_VECTOR)
-    add_module_with_include_dirs(NAME vector)
-endif()
-
-if(WITH_AVS_UTILS)
-    add_module_with_include_dirs(NAME utils)
-endif()
-
-if(WITH_AVS_NET)
-    add_module_with_include_dirs(NAME net)
-endif()
-
-if(WITH_AVS_STREAM)
-    add_module_with_include_dirs(NAME stream)
-endif()
-
-if(WITH_AVS_LOG)
-    add_module_with_include_dirs(NAME log)
-endif()
-
-if(WITH_AVS_RBTREE)
-    add_module_with_include_dirs(NAME rbtree)
-endif()
-
-if(WITH_AVS_SCHED)
-    add_module_with_include_dirs(NAME sched)
-endif()
+add_module_with_include_dirs(NAME algorithm)
+add_module_with_include_dirs(NAME buffer)
+add_module_with_include_dirs(NAME list)
+add_module_with_include_dirs(NAME vector)
+add_module_with_include_dirs(NAME utils)
+add_module_with_include_dirs(NAME net)
+add_module_with_include_dirs(NAME stream)
+add_module_with_include_dirs(NAME log)
+add_module_with_include_dirs(NAME rbtree)
+add_module_with_include_dirs(NAME sched)
 
 cmake_dependent_option(WITH_AVS_HTTP_ZLIB
                        "Enable support for HTTP compression using zlib"
                        ON WITH_AVS_HTTP OFF)
-if(WITH_AVS_HTTP)
-    add_module_with_include_dirs(NAME http)
-endif()
+set(AVS_COMMONS_HTTP_WITH_ZLIB ${WITH_AVS_HTTP_ZLIB})
+add_module_with_include_dirs(NAME http)
 
-if(WITH_AVS_PERSISTENCE)
-    add_module_with_include_dirs(NAME persistence)
-endif()
-
-if(WITH_AVS_COMPAT_THREADING)
-    add_module_with_include_dirs(NAME compat_threading
-                                 PATH src/compat/threading)
-endif()
-
-if(WITH_AVS_CRYPTO)
-    add_module_with_include_dirs(NAME crypto)
-endif()
+add_module_with_include_dirs(NAME persistence)
+add_module_with_include_dirs(NAME compat_threading
+                             PATH src/compat/threading)
+add_module_with_include_dirs(NAME crypto)
 
 # API documentation
 set(DOXYGEN_SKIP_DOT TRUE)
@@ -532,16 +514,21 @@ if(NOT ${CMAKE_PROJECT_NAME} STREQUAL ${PROJECT_NAME})
     set(avs_commons_INCLUDE_DIRS ${INCLUDE_DIRS} ${MODULE_INCLUDE_DIRS} PARENT_SCOPE)
 endif()
 
-set(AVS_COMMONS_WITH_IPV4 "${WITH_IPV4}")
-set(AVS_COMMONS_WITH_IPV6 "${WITH_IPV6}")
-set(AVS_COMMONS_WITH_MBEDTLS_CUSTOM_ENTROPY_INITIALIZER "${WITH_MBEDTLS_CUSTOM_ENTROPY_INITIALIZER}")
+set(AVS_COMMONS_NET_WITH_IPV4 "${WITH_IPV4}")
+set(AVS_COMMONS_NET_WITH_IPV6 "${WITH_IPV6}")
+set(AVS_COMMONS_NET_WITH_DTLS "${WITH_DTLS}")
+set(AVS_COMMONS_NET_WITH_MBEDTLS_CUSTOM_ENTROPY_INITIALIZER "${WITH_MBEDTLS_CUSTOM_ENTROPY_INITIALIZER}")
+set(AVS_COMMONS_NET_WITH_POSIX_AVS_SOCKET "${WITH_POSIX_AVS_SOCKET}")
+set(AVS_COMMONS_NET_WITH_TLS_SESSION_PERSISTENCE "${WITH_TLS_SESSION_PERSISTENCE}")
+set(AVS_COMMONS_SCHED_THREAD_SAFE "${WITH_SCHEDULER_THREAD_SAFE}")
+set(AVS_COMMONS_UTILS_WITH_POSIX_AVS_TIME "${WITH_POSIX_AVS_TIME}")
+set(AVS_COMMONS_UTILS_WITH_STANDARD_ALLOCATOR "${WITH_STANDARD_ALLOCATOR}")
 set(AVS_COMMONS_WITH_MICRO_LOGS "${WITH_AVS_MICRO_LOGS}")
 set(AVS_COMMONS_WITH_POISONING "${WITH_POISONING}")
 
-configure_file("config/avs_commons_config.h.in" "config/avs_commons_config.h")
 configure_file("config/avs_commons_posix_config.h.in" "config/avs_commons_posix_config.h")
-configure_file("include_public/avsystem/commons/avs_commons_public_config.h.in"
-               "include_public/avsystem/commons/avs_commons_public_config.h")
+configure_file("include_public/avsystem/commons/avs_commons_config.h.in"
+               "include_public/avsystem/commons/avs_commons_config.h")
 
 get_property(LIBRARY_FIND_ROUTINES GLOBAL PROPERTY AVS_LIBRARY_FIND_ROUTINES)
 configure_file(avs_commons-config.cmake.in avs_commons-config.cmake @ONLY)
@@ -556,7 +543,7 @@ install(FILES
         ${CMAKE_CURRENT_SOURCE_DIR}/cmake/FindTinyDTLS.cmake
         DESTINATION ${LIB_INSTALL_DIR}/avs_commons/cmake)
 install(FILES
-        "${CMAKE_CURRENT_BINARY_DIR}/include_public/avsystem/commons/avs_commons_public_config.h"
+        "${CMAKE_CURRENT_BINARY_DIR}/include_public/avsystem/commons/avs_commons_config.h"
         "${CMAKE_CURRENT_SOURCE_DIR}/include_public/avsystem/commons/defs.h"
         "${CMAKE_CURRENT_SOURCE_DIR}/include_public/avsystem/commons/errno.h"
         "${CMAKE_CURRENT_SOURCE_DIR}/include_public/avsystem/commons/errno_map.h"

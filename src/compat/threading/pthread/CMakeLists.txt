@@ -14,6 +14,7 @@
 
 find_package(Threads)
 cmake_dependent_option(WITH_AVS_COMPAT_THREADING_PTHREAD "Enable threading primitives implementation based on pthreads" ON THREADS_FOUND OFF)
+set(AVS_COMMONS_COMPAT_THREADING_WITH_PTHREAD ${WITH_AVS_COMPAT_THREADING_PTHREAD} CACHE INTERNAL "" FORCE)
 if(NOT WITH_AVS_COMPAT_THREADING_PTHREAD)
     return()
 endif()

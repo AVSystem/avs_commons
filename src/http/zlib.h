@@ -43,7 +43,7 @@ typedef enum {
 #define HTTP_DECOMPRESSOR_WINDOW_BITS_DEFAULT \
     HTTP_COMPRESSOR_WINDOW_BITS_DEFAULT
 
-#ifdef WITH_AVS_HTTP_ZLIB
+#ifdef AVS_COMMONS_HTTP_WITH_ZLIB
 
 /**
  * Creates a zlib-based compressor stream.

@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-#include <avs_commons_config.h>
+#include <avs_commons_init.h>
 
-#ifdef WITH_AVS_PERSISTENCE
+#ifdef AVS_COMMONS_WITH_AVS_PERSISTENCE
 
 #    include <assert.h>
 #    include <inttypes.h>
@@ -629,4 +629,4 @@ avs_error_t avs_persistence_version(avs_persistence_context_t *ctx,
 #        include "tests/persistence/persistence.c"
 #    endif
 
-#endif // WITH_AVS_PERSISTENCE
+#endif // AVS_COMMONS_WITH_AVS_PERSISTENCE

@@ -16,9 +16,9 @@
 
 #define AVS_SHARED_BUFFER_IMPL
 
-#include <avs_commons_config.h>
+#include <avs_commons_init.h>
 
-#ifdef WITH_AVS_UTILS
+#ifdef AVS_COMMONS_WITH_AVS_UTILS
 
 #    include <avsystem/commons/shared_buffer.h>
 
@@ -53,4 +53,4 @@ uint8_t *_avs_shared_buffer_acquire(avs_shared_buffer_t *buf,
 
 #    endif // NDEBUG
 
-#endif // WITH_AVS_UTILS
+#endif // AVS_COMMONS_WITH_AVS_UTILS
