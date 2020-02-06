@@ -22,9 +22,6 @@ set(AVS_CRYPTO_SOURCES
     crypto_utils.h)
 
 add_library(avs_crypto_core INTERFACE)
-target_include_directories(avs_crypto_core INTERFACE
-                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include_public>
-                           $<INSTALL_INTERFACE:include>)
 target_link_libraries(avs_crypto_core INTERFACE avs_commons_global_headers avs_utils)
 
 if(WITH_INTERNAL_LOGS)

@@ -19,9 +19,6 @@ add_library(avs_sched STATIC
             ${AVS_SCHED_PUBLIC_HEADERS}
             sched.c)
 
-target_include_directories(avs_sched PUBLIC
-                           $<BUILD_INTERFACE:${AVS_COMMONS_SOURCE_DIR}/include_public>
-                           $<INSTALL_INTERFACE:include>)
 target_link_libraries(avs_sched PUBLIC avs_commons_global_headers avs_list)
 
 cmake_dependent_option(WITH_SCHEDULER_THREAD_SAFE "Enable thread-safe locking of scheduler structures" ON WITH_AVS_COMPAT_THREADING OFF)

@@ -28,9 +28,6 @@ else()
     target_sources(avs_stream_md5 PRIVATE md5_impl.c)
 endif()
 
-target_include_directories(avs_stream_md5 PUBLIC
-                           $<BUILD_INTERFACE:${AVS_COMMONS_SOURCE_DIR}/include_public>
-                           $<INSTALL_INTERFACE:include>)
 # TODO: this should depend directly on OpenSSL/mbedtls rather than avs_net
 target_link_libraries(avs_stream_md5 PUBLIC avs_stream avs_net)
 

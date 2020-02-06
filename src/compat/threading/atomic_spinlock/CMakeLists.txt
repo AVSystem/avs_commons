@@ -25,9 +25,6 @@ add_library(avs_compat_threading_atomic_spinlock STATIC
             atomic_spinlock_init_once.c
             atomic_spinlock_structs.h)
 
-target_include_directories(avs_compat_threading_atomic_spinlock PUBLIC
-                           $<BUILD_INTERFACE:${AVS_COMMONS_SOURCE_DIR}/include_public>
-                           $<INSTALL_INTERFACE:include>)
 target_link_libraries(avs_compat_threading_atomic_spinlock PUBLIC avs_utils)
 if(WITH_INTERNAL_LOGS)
     target_link_libraries(avs_compat_threading_atomic_spinlock PUBLIC avs_log)

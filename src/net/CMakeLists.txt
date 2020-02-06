@@ -53,14 +53,6 @@ set(AVS_NET_SOURCES
 
 add_library(avs_net_core INTERFACE)
 target_link_libraries(avs_net_core INTERFACE avs_commons_global_headers)
-target_include_directories(avs_net_core INTERFACE
-                           $<BUILD_INTERFACE:${AVS_COMMONS_SOURCE_DIR}/include_public>
-                           $<INSTALL_INTERFACE:include>)
-
-if(WITH_POSIX_AVS_SOCKET)
-    target_include_directories(avs_net_core INTERFACE
-                               $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/compat/posix>)
-endif()
 
 if(WITH_INTERNAL_LOGS)
     target_link_libraries(avs_net_core INTERFACE avs_log)

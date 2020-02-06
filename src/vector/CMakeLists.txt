@@ -19,9 +19,6 @@ add_library(avs_vector STATIC
             ${AVS_VECTOR_PUBLIC_HEADERS}
             vector.c)
 
-target_include_directories(avs_vector PUBLIC
-                           $<BUILD_INTERFACE:${AVS_COMMONS_SOURCE_DIR}/include_public>
-                           $<INSTALL_INTERFACE:include>)
 target_link_libraries(avs_vector PUBLIC avs_commons_global_headers avs_utils)
 
 avs_install_export(avs_vector vector)

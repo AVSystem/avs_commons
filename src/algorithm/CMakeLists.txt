@@ -19,9 +19,6 @@ add_library(avs_algorithm STATIC
             ${AVS_ALGORITHM_PUBLIC_HEADERS}
             base64.c)
 
-target_include_directories(avs_algorithm PUBLIC
-                           $<BUILD_INTERFACE:${AVS_COMMONS_SOURCE_DIR}/include_public>
-                           $<INSTALL_INTERFACE:include>)
 target_link_libraries(avs_algorithm PUBLIC avs_commons_global_headers)
 
 avs_add_test(NAME avs_algorithm

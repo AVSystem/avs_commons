@@ -19,9 +19,6 @@ add_library(avs_rbtree STATIC
             ${AVS_RBTREE_PUBLIC_HEADERS}
             rbtree.c)
 
-target_include_directories(avs_rbtree PUBLIC
-                           $<BUILD_INTERFACE:${AVS_COMMONS_SOURCE_DIR}/include_public>
-                           $<INSTALL_INTERFACE:include>)
 target_link_libraries(avs_rbtree PUBLIC avs_commons_global_headers avs_utils)
 
 avs_install_export(avs_rbtree rbtree)

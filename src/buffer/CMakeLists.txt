@@ -19,9 +19,6 @@ add_library(avs_buffer STATIC
             ${AVS_BUFFER_PUBLIC_HEADERS}
             buffer.c)
 
-target_include_directories(avs_buffer PUBLIC
-                           $<BUILD_INTERFACE:${AVS_COMMONS_SOURCE_DIR}/include_public>
-                           $<INSTALL_INTERFACE:include>)
 target_link_libraries(avs_buffer PUBLIC avs_commons_global_headers avs_utils)
 
 avs_install_export(avs_buffer buffer)

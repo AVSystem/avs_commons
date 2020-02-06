@@ -35,9 +35,6 @@ add_library(avs_stream STATIC
             stream_outbuf.c
             stream_simple_io.c)
 
-target_include_directories(avs_stream PUBLIC
-                           $<BUILD_INTERFACE:${AVS_COMMONS_SOURCE_DIR}/include_public>
-                           $<INSTALL_INTERFACE:include>)
 target_link_libraries(avs_stream PUBLIC avs_commons_global_headers avs_buffer)
 if(WITH_INTERNAL_LOGS)
     target_link_libraries(avs_stream PUBLIC avs_log)

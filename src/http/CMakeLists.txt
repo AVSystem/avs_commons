@@ -44,9 +44,6 @@ add_library(avs_http STATIC
             http_stream.c
             stream_methods.c)
 
-target_include_directories(avs_http PUBLIC
-                           $<BUILD_INTERFACE:${AVS_COMMONS_SOURCE_DIR}/include_public>
-                           $<INSTALL_INTERFACE:include>)
 target_link_libraries(avs_http PUBLIC avs_commons_global_headers avs_algorithm avs_net avs_stream avs_stream_md5 avs_stream_net avs_utils avs_list)
 
 if(WITH_AVS_HTTP_ZLIB)

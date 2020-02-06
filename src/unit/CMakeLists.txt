@@ -22,9 +22,6 @@ add_library(avs_unit STATIC
             stack_trace.c
             unit_test.c)
 
-target_include_directories(avs_unit PUBLIC
-                           $<BUILD_INTERFACE:${AVS_COMMONS_SOURCE_DIR}/include_public>
-                           $<INSTALL_INTERFACE:include>)
 target_link_libraries(avs_unit PUBLIC avs_commons_global_headers avs_list)
 
 if(WITH_AVS_LOG)

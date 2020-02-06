@@ -45,9 +45,6 @@ option(WITH_POSIX_AVS_TIME "Enable avs_time_real_now() and avs_time_monotonic_no
 
 option(WITH_STANDARD_ALLOCATOR "Enable default implementation of avs_malloc/calloc/realloc/free" ON)
 
-target_include_directories(avs_utils PUBLIC
-                           $<BUILD_INTERFACE:${AVS_COMMONS_SOURCE_DIR}/include_public>
-                           $<INSTALL_INTERFACE:include>)
 target_link_libraries(avs_utils PUBLIC avs_commons_global_headers ${MATH_LIBRARY})
 if(WITH_INTERNAL_LOGS)
     target_link_libraries(avs_utils PUBLIC avs_log)

@@ -19,9 +19,6 @@ add_library(avs_list STATIC
             ${AVS_LIST_PUBLIC_HEADERS}
             list.c)
 
-target_include_directories(avs_list PUBLIC
-                           $<BUILD_INTERFACE:${AVS_COMMONS_SOURCE_DIR}/include_public>
-                           $<INSTALL_INTERFACE:include>)
 target_link_libraries(avs_list PUBLIC avs_commons_global_headers avs_utils)
 
 avs_install_export(avs_list list)

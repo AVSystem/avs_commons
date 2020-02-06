@@ -26,9 +26,6 @@ add_library(avs_stream_net STATIC
             stream_net.c
             netbuf.c)
 
-target_include_directories(avs_stream_net PUBLIC
-                           $<BUILD_INTERFACE:${AVS_COMMONS_SOURCE_DIR}/include_public>
-                           $<INSTALL_INTERFACE:include>)
 target_link_libraries(avs_stream_net PUBLIC avs_stream avs_buffer avs_net)
 
 avs_install_export(avs_stream_net stream)
