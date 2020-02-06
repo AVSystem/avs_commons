@@ -160,6 +160,7 @@ if(WIN32)
 endif()
 
 set(POSIX_COMPAT_HEADER ${POSIX_COMPAT_HEADER_DEFAULT} CACHE STRING "POSIX compatibility header path, if required")
+set(AVS_COMMONS_POSIX_COMPAT_HEADER "${POSIX_COMPAT_HEADER}")
 
 ################################################################################
 
@@ -192,9 +193,9 @@ if(NOT DEFINED AVS_COMMONS_HAVE_VISIBILITY)
                 COMPILE_DEFINITIONS -Wall -Wextra -Werror -fvisibility=default)
 endif()
 
-if(NOT DEFINED HAVE_PRAGMA_DIAGNOSTIC)
+if(NOT DEFINED AVS_COMMONS_HAVE_PRAGMA_DIAGNOSTIC)
     file(WRITE ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp/diagnostic.c "#pragma GCC diagnostic ignored \"-Wformat\"\nint main(){}\n\n")
-    try_compile(HAVE_PRAGMA_DIAGNOSTIC
+    try_compile(AVS_COMMONS_HAVE_PRAGMA_DIAGNOSTIC
                 ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp
                 ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp/diagnostic.c
                 COMPILE_DEFINITIONS -Werror)
@@ -218,12 +219,11 @@ include(TestBigEndian)
 test_big_endian(AVS_COMMONS_BIG_ENDIAN)
 
 include(CheckFunctionExists)
-check_function_exists(getifaddrs HAVE_GETIFADDRS)
-check_function_exists(backtrace HAVE_BACKTRACE)
-if(HAVE_BACKTRACE)
-    check_function_exists(backtrace_symbols HAVE_BACKTRACE_SYMBOLS)
+check_function_exists(backtrace_symbols HAVE_BACKTRACE_SYMBOLS)
+if(HAVE_BACKTRACE_SYMBOLS)
+    check_function_exists(backtrace AVS_COMMONS_UNIT_POSIX_HAVE_BACKTRACE)
 else()
-    set(HAVE_BACKTRACE_SYMBOLS 0)
+    set(AVS_COMMONS_UNIT_POSIX_HAVE_BACKTRACE 0)
 endif()
 
 include(CheckSymbolExists)
@@ -248,12 +248,10 @@ option(WITH_SOCKET_LOG "Enable socket communication logging" OFF)
 set(AVS_COMMONS_NET_WITH_SOCKET_LOG ${WITH_SOCKET_LOG})
 
 find_program(VALGRIND_EXECUTABLE valgrind)
-if(VALGRIND_EXECUTABLE)
-    # This is enabled in devconfig only, and should be disabled in CMakeLists.txt,
-    # to avoid cross-compilation errors on stations with valgrind installed.
-    option(WITH_VALGRIND "Enable usage of valgrind during unit tests" OFF)
-    set(AVS_COMMONS_NET_WITH_VALGRIND ${WITH_VALGRIND})
-endif()
+# This is enabled in devconfig only, and should be disabled in CMakeLists.txt,
+# to avoid cross-compilation errors on stations with valgrind installed.
+cmake_dependent_option(WITH_VALGRIND "Enable usage of valgrind during unit tests" OFF VALGRIND_EXECUTABLE OFF)
+set(AVS_COMMONS_NET_WITH_VALGRIND ${WITH_VALGRIND})
 if(WITH_VALGRIND)
     execute_process(COMMAND ${VALGRIND_EXECUTABLE} --tool=helgrind --version
                     RESULT_VARIABLE HELGRIND_TEST_RESULT
@@ -279,9 +277,7 @@ if(NOT INCLUDE_INSTALL_DIR)
     set(INCLUDE_INSTALL_DIR include)
 endif()
 
-include_directories($<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/config>
-                    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/config>
-                    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>)
+include_directories($<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>)
 
 add_library(avs_commons_global_headers INTERFACE)
 target_include_directories(avs_commons_global_headers INTERFACE
@@ -526,7 +522,6 @@ set(AVS_COMMONS_UTILS_WITH_STANDARD_ALLOCATOR "${WITH_STANDARD_ALLOCATOR}")
 set(AVS_COMMONS_WITH_MICRO_LOGS "${WITH_AVS_MICRO_LOGS}")
 set(AVS_COMMONS_WITH_POISONING "${WITH_POISONING}")
 
-configure_file("config/avs_commons_posix_config.h.in" "config/avs_commons_posix_config.h")
 configure_file("include_public/avsystem/commons/avs_commons_config.h.in"
                "include_public/avsystem/commons/avs_commons_config.h")
 

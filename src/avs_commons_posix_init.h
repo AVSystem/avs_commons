@@ -14,70 +14,12 @@
  * limitations under the License.
  */
 
-#ifndef CONFIG_POSIX_CONFIG_H
-#define CONFIG_POSIX_CONFIG_H
+#ifndef AVS_COMMONS_POSIX_INIT_H
+#define AVS_COMMONS_POSIX_INIT_H
 
-/* POSIX headers */
-#cmakedefine HAVE_SYS_SELECT_H
-#cmakedefine HAVE_SYS_SOCKET_H
-#cmakedefine HAVE_SYS_TIME_H
-#cmakedefine AVS_COMMONS_HAVE_SYS_TYPES_H
-#cmakedefine HAVE_ARPA_INET_H
-#cmakedefine HAVE_FCNTL_H
-#cmakedefine AVS_COMMONS_HAVE_NET_IF_H
-#cmakedefine HAVE_NETDB_H
-#cmakedefine HAVE_NETINET_IN_H
-#cmakedefine HAVE_POLL_H
-#cmakedefine HAVE_STRINGS_H
-#cmakedefine HAVE_UNISTD_H
+#include <avsystem/commons/avs_commons_config.h>
 
-/* POSIX types */
-#cmakedefine HAVE_STRUCT_TIMESPEC
-#cmakedefine HAVE_CLOCKID_T
-#cmakedefine HAVE_STRUCT_TIMEVAL
-#cmakedefine HAVE_STRUCT_FD_SET
-#cmakedefine HAVE_SSIZE_T
-#cmakedefine HAVE_SOCKLEN_T
-#cmakedefine HAVE_STRUCT_ADDRINFO
-
-/* POSIX macros */
-#cmakedefine HAVE_F_GETFL
-#cmakedefine HAVE_F_SETFL
-#cmakedefine HAVE_IF_NAMESIZE
-#cmakedefine HAVE_INET6_ADDRSTRLEN
-#cmakedefine HAVE_INET_ADDRSTRLEN
-#cmakedefine HAVE_O_NONBLOCK
-#cmakedefine HAVE_CLOCK_REALTIME
-#cmakedefine HAVE_IN6_IS_ADDR_V4MAPPED
-
-/* POSIX functions */
-#cmakedefine HAVE_CLOCK_GETTIME
-#cmakedefine HAVE_FCNTL
-#cmakedefine HAVE_FREEADDRINFO
-#cmakedefine HAVE_GAI_STRERROR
-#cmakedefine HAVE_GETADDRINFO
-#cmakedefine HAVE_GETIFADDRS
-#cmakedefine HAVE_GETNAMEINFO
-#cmakedefine HAVE_INET_NTOP
-#cmakedefine HAVE_INET_PTON
-#cmakedefine HAVE_POLL
-#cmakedefine HAVE_SELECT
-#cmakedefine HAVE_STRCASECMP
-#cmakedefine HAVE_STRNCASECMP
-#cmakedefine HAVE_HTONS
-#cmakedefine HAVE_NTOHS
-#cmakedefine HAVE_HTONL
-#cmakedefine HAVE_HTONL
-#cmakedefine HAVE_RECVMSG
-#cmakedefine HAVE_CLOSE
-#cmakedefine HAVE_BACKTRACE_SYMBOLS
-#cmakedefine HAVE_PTHREAD_CONDATTR_SETCLOCK
-
-/* compiler features */
-#cmakedefine HAVE_PRAGMA_DIAGNOSTIC
-
-#cmakedefine POSIX_COMPAT_HEADER
-#ifndef POSIX_COMPAT_HEADER
+#ifndef AVS_COMMONS_POSIX_COMPAT_HEADER
 
 // by default we try to compile in strict ISO C99 mode;
 // if it's enabled, then declare _POSIX_C_SOURCE to enable POSIX APIs;
@@ -101,11 +43,12 @@
 #    include <sys/socket.h>
 #    include <sys/time.h>
 #    include <sys/types.h>
+#    include <sys/wait.h>
 #    include <time.h>
 #    include <unistd.h>
 typedef int sockfd_t;
-#else // POSIX_COMPAT_HEADER
-#    include "@POSIX_COMPAT_HEADER@"
+#else // AVS_COMMONS_POSIX_COMPAT_HEADER
+#    include AVS_COMMONS_POSIX_COMPAT_HEADER
 // If POSIX socket APIs are implemented as macros (e.g. LwIP), redefining
 // common words like close to something else wreaks havoc all over the place.
 #    ifndef _AVS_NEED_POSIX_SOCKET
@@ -146,7 +89,7 @@ typedef int sockfd_t;
 #            undef close
 #        endif
 #    endif // _AVS_NEED_POSIX_SOCKET
-#endif     // POSIX_COMPAT_HEADER
+#endif     // AVS_COMMONS_POSIX_COMPAT_HEADER
 
 #ifndef INVALID_SOCKET
 #    define INVALID_SOCKET (-1)
@@ -154,4 +97,4 @@ typedef int sockfd_t;
 
 #include <avs_commons_init.h>
 
-#endif /* CONFIG_POSIX_CONFIG_H */
+#endif /* AVS_COMMONS_POSIX_INIT_H */

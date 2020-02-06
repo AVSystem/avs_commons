@@ -16,7 +16,7 @@
 
 #define _AVS_NEED_POSIX_SOCKET
 
-#include <avs_commons_posix_config.h>
+#include <avs_commons_posix_init.h>
 
 #if defined(AVS_COMMONS_WITH_AVS_NET) \
         && defined(AVS_COMMONS_NET_WITH_POSIX_AVS_SOCKET)
@@ -35,7 +35,7 @@
 #    include <string.h>
 #    include <time.h>
 
-#    ifdef HAVE_GETIFADDRS
+#    ifdef AVS_COMMONS_NET_POSIX_AVS_SOCKET_HAVE_GETIFADDRS
 #        include <ifaddrs.h>
 #    endif
 
@@ -65,13 +65,13 @@ static const avs_time_duration_t NET_ACCEPT_TIMEOUT = { 5, 0 };
 
 #    define NET_LISTEN_BACKLOG 1024
 
-#    ifdef HAVE_INET_NTOP
+#    ifdef AVS_COMMONS_NET_POSIX_AVS_SOCKET_HAVE_INET_NTOP
 #        define _avs_inet_ntop inet_ntop
 #    else
 const char *_avs_inet_ntop(int af, const void *src, char *dst, socklen_t size);
 #    endif
 
-#    ifdef HAVE_INET_PTON
+#    ifdef AVS_COMMONS_NET_POSIX_AVS_SOCKET_HAVE_INET_PTON
 #        define _avs_inet_pton inet_pton
 #    else
 int _avs_inet_pton(int af, const char *src, void *dst);
@@ -259,7 +259,7 @@ int _avs_net_get_af(avs_net_af_t addr_family) {
 
 #    if defined(AVS_COMMONS_NET_WITH_IPV4) && defined(AVS_COMMONS_NET_WITH_IPV6)
 static bool is_v4mapped(const struct sockaddr_in6 *addr) {
-#        ifdef HAVE_IN6_IS_ADDR_V4MAPPED
+#        ifdef AVS_COMMONS_NET_POSIX_AVS_SOCKET_HAVE_IN6_IS_ADDR_V4MAPPED
     return IN6_IS_ADDR_V4MAPPED(&addr->sin6_addr);
 #        else
     static const uint8_t V4MAPPED_ADDR_HEADER[] = { 0, 0, 0, 0, 0,    0,
@@ -613,7 +613,7 @@ static avs_error_t configure_socket(net_socket_impl_t *net_socket) {
 static avs_error_t wait_until_ready_internal(sockfd_t sockfd,
                                              avs_time_duration_t timeout,
                                              int flags) {
-#    ifdef HAVE_POLL
+#    ifdef AVS_COMMONS_NET_POSIX_AVS_SOCKET_HAVE_POLL
     struct pollfd p;
     short events = 0;
     if (flags & AVS_POLLIN) {
@@ -673,12 +673,12 @@ static avs_error_t wait_until_ready_internal(sockfd_t sockfd,
     FD_ZERO(&outfds);
     FD_ZERO(&errfds);
 
-#        ifdef HAVE_PRAGMA_DIAGNOSTIC
+#        ifdef AVS_COMMONS_HAVE_PRAGMA_DIAGNOSTIC
 // LwIP implementation of FD_SET (and others) is a bit clumsy. No matter what we
 // do, it finally assigns an `int` to the `unsigned char`, which GCC really
 // doesn't like.
 #            pragma GCC diagnostic ignored "-Wconversion"
-#        endif // HAVE_PRAGMA_DIAGNOSTIC
+#        endif // AVS_COMMONS_HAVE_PRAGMA_DIAGNOSTIC
 #        if LWIP_VERSION_MAJOR < 2
 // LwIP < 2.0 lacks cast to unsigned inside FD_* macros
 #            define AVS_FD_SET(fd, set) FD_SET((unsigned) (fd), (set))
@@ -714,9 +714,9 @@ static avs_error_t wait_until_ready_internal(sockfd_t sockfd,
 #        undef AVS_FD_SET
 #        undef AVS_FD_ISSET
 
-#        ifdef HAVE_PRAGMA_DIAGNOSTIC
+#        ifdef AVS_COMMONS_HAVE_PRAGMA_DIAGNOSTIC
 #            pragma GCC diagnostic pop
-#        endif // HAVE_PRAGMA_DIAGNOSTIC
+#        endif // AVS_COMMONS_HAVE_PRAGMA_DIAGNOSTIC
 
 #    endif
 }
@@ -818,7 +818,7 @@ static void unwrap_4in6(char *host) {
     }
 }
 
-#    ifndef HAVE_GETNAMEINFO
+#    ifndef AVS_COMMONS_NET_POSIX_AVS_SOCKET_HAVE_GETNAMEINFO
 static avs_error_t get_host_port_ptr(const struct sockaddr *sa,
                                      socklen_t salen,
                                      const void **out_addr_ptr,
@@ -859,7 +859,7 @@ static avs_error_t get_host_port_ptr(const struct sockaddr *sa,
         return avs_errno(AVS_ENOTSUP);
     }
 }
-#    endif /* HAVE_GETNAMEINFO */
+#    endif /* AVS_COMMONS_NET_POSIX_AVS_SOCKET_HAVE_GETNAMEINFO */
 
 static avs_error_t host_port_to_string_impl(const struct sockaddr *sa,
                                             socklen_t salen,
@@ -867,7 +867,7 @@ static avs_error_t host_port_to_string_impl(const struct sockaddr *sa,
                                             socklen_t hostlen,
                                             char *serv,
                                             socklen_t servlen) {
-#    ifdef HAVE_GETNAMEINFO
+#    ifdef AVS_COMMONS_NET_POSIX_AVS_SOCKET_HAVE_GETNAMEINFO
     int result = getnameinfo(sa, salen, host, hostlen, serv, servlen,
                              NI_NUMERICHOST | NI_NUMERICSERV);
     if (result) {
@@ -877,7 +877,7 @@ static avs_error_t host_port_to_string_impl(const struct sockaddr *sa,
     } else {
         return AVS_OK;
     }
-#    else  /* HAVE_GETNAMEINFO */
+#    else  /* AVS_COMMONS_NET_POSIX_AVS_SOCKET_HAVE_GETNAMEINFO */
     const void *addr_ptr = NULL;
     const uint16_t *port_ptr = NULL;
     avs_error_t err = get_host_port_ptr(sa, salen, &addr_ptr, &port_ptr);
@@ -885,7 +885,8 @@ static avs_error_t host_port_to_string_impl(const struct sockaddr *sa,
         return err;
     }
 
-    if (host && _avs_inet_ntop(sa->sa_family, addr_ptr, host, hostlen)) {
+    if (host
+            && _avs_inet_ntop(sa->sa_family, addr_ptr, host, hostlen) == NULL) {
         err = failure_from_errno();
         LOG(ERROR, _("could not stringify host (buf size ") "%u" _(")"),
             (unsigned) hostlen);
@@ -901,7 +902,7 @@ static avs_error_t host_port_to_string_impl(const struct sockaddr *sa,
     }
 
     return err;
-#    endif /* HAVE_GETNAMEINFO */
+#    endif /* AVS_COMMONS_NET_POSIX_AVS_SOCKET_HAVE_GETNAMEINFO */
 }
 
 static avs_error_t host_port_to_string(const struct sockaddr *sa,
@@ -1335,7 +1336,7 @@ typedef struct {
     socklen_t src_addr_length;
 } recvfrom_internal_arg_t;
 
-#    ifndef HAVE_RECVMSG
+#    ifndef AVS_COMMONS_NET_POSIX_AVS_SOCKET_HAVE_RECVMSG
 
 /* (2017-01-03) LwIP does not implement recvmsg call, try to simulate it using
  * plain recv(), with a little hack to try to detect truncated packets. */
@@ -1366,7 +1367,7 @@ static avs_error_t recvfrom_internal(sockfd_t sockfd, void *arg_) {
     }
 }
 
-#    else /* HAVE_RECVMSG */
+#    else /* AVS_COMMONS_NET_POSIX_AVS_SOCKET_HAVE_RECVMSG */
 
 static avs_error_t recvfrom_internal(sockfd_t sockfd, void *arg_) {
     recvfrom_internal_arg_t *arg = (recvfrom_internal_arg_t *) arg_;
@@ -1399,7 +1400,7 @@ static avs_error_t recvfrom_internal(sockfd_t sockfd, void *arg_) {
     }
 }
 
-#    endif /* HAVE_RECVMSG */
+#    endif /* AVS_COMMONS_NET_POSIX_AVS_SOCKET_HAVE_RECVMSG */
 
 static avs_error_t receive_net(avs_net_socket_t *net_socket_,
                                size_t *out,
@@ -2094,7 +2095,7 @@ static int find_interface(const struct sockaddr *addr,
                 goto interface_name_end;                                       \
             }                                                                  \
         } while (0)
-#    ifdef HAVE_GETIFADDRS
+#    ifdef AVS_COMMONS_NET_POSIX_AVS_SOCKET_HAVE_GETIFADDRS
     int retval = -1;
     struct ifaddrs *ifaddrs = NULL;
     struct ifaddrs *ifaddr = NULL;

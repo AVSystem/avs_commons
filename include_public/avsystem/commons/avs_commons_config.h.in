@@ -99,6 +99,16 @@
 #cmakedefine AVS_COMMONS_HAVE_SYS_TYPES_H
 
 /**
+ * Are GNU diagnostic pragmas (#pragma GCC diagnostic push/pop/ignored)
+ * available?
+ *
+ * If defined, those pragmas will be used to suppress compiler warnings for some
+ * code known to generate them and cannot be improved in a more robust way, e.g.
+ * for code that is known to generate warnings from within system headers.
+ */
+#cmakedefine AVS_COMMONS_HAVE_PRAGMA_DIAGNOSTIC
+
+/**
  * Are GNU visibility pragmas (#pragma GCC visibility push/pop) available?
  *
  * Meaningful mostly if avs_commons will be directly or indirectly linked into
@@ -109,6 +119,33 @@
  * needed.
  */
 #cmakedefine AVS_COMMONS_HAVE_VISIBILITY
+
+/**
+ * Specify an optional compatibility header that allows use of POSIX-specific
+ * code that is not compliant with POSIX enough to be compiled directly.
+ *
+ * This header, if specified, will be included only by the following components,
+ * which may be enabled or disabled depending on state of the referenced flags:
+ * - avs_compat_threading implementation based on POSIX Threads
+ *   (@ref AVS_COMMONS_COMPAT_THREADING_WITH_PTHREAD)
+ * - default avs_net socket implementation
+ *   (@ref AVS_COMMONS_NET_WITH_POSIX_AVS_SOCKET)
+ * - avs_unit (@ref AVS_COMMONS_WITH_AVS_UNIT)
+ * - default implementation of avs_time routines
+ *   (@ref AVS_COMMONS_UTILS_WITH_POSIX_AVS_TIME)
+ *
+ * Compatibility headers for lwIP and Microsoft Windows are provided with the
+ * library (see the <c>compat</c> directory).
+ *
+ * If this macro is not defined, the afore-mentioned components, if enabled,
+ * will use system headers directly, assuming they are POSIX-compliant.
+ *
+ * If this macro is enabled, the specified file will be included through an
+ * <c>#include AVS_COMMONS_POSIX_COMPAT_HEADER</c> statement. Thus, if editing
+ * this file manually, <c>@AVS_COMMONS_POSIX_COMPAT_HEADER@</c> shall be
+ * replaced with a path to such file.
+ */
+#cmakedefine AVS_COMMONS_POSIX_COMPAT_HEADER "@AVS_COMMONS_POSIX_COMPAT_HEADER@"
 /**@}*/
 
 /**
@@ -177,6 +214,19 @@
  * Threads library is normally available only in UNIX-like environments.
  */
 #cmakedefine AVS_COMMONS_COMPAT_THREADING_WITH_PTHREAD
+
+/**
+ * Is the <c>pthread_condattr_setclock()</c> function available?
+ *
+ * This flag only makes sense when
+ * <c>AVS_COMMONS_COMPAT_THREADING_WITH_PTHREAD</c> is enabled.
+ *
+ * If this flag is disabled, or if <c>CLOCK_MONOTONIC</c> macro is not
+ * available, the <c>avs_condvar_wait()</c> will internally use the real-time
+ * clock instead of the monotonic clock. Time values will be converted so that
+ * this change does not affect API usage.
+ */
+#cmakedefine AVS_COMMONS_COMPAT_THREADING_PTHREAD_HAVE_PTHREAD_CONDATTR_SETCLOCK
 /**@}*/
 
 /**
@@ -319,8 +369,8 @@
  *
  * Requires either a UNIX-like operating environment, or a compatibility layer
  * with a high degree of compatibility with standard BSD sockets with an
- * appropriate compatibility header - lwIP and Winsock are currently supported
- * for this scenario.
+ * appropriate compatibility header (see @ref AVS_COMMONS_POSIX_COMPAT_HEADER) -
+ * lwIP and Winsock are currently supported for this scenario.
  */
 #cmakedefine AVS_COMMONS_NET_WITH_POSIX_AVS_SOCKET
 
@@ -365,12 +415,109 @@
 /**@}*/
 
 /**
+ * Options related to avs_net's default implementation of TCP and UDP sockets.
+ *
+ * These options make sense only when @ref AVS_COMMONS_NET_WITH_POSIX_AVS_SOCKET
+ * is enabled. They describe capabilities of the Unix-like environment in which
+ * the library is built.
+ *
+ * Note that if @ref AVS_COMMONS_POSIX_COMPAT_HEADER is defined, it might
+ * redefine these flags independently of the settings in this file.
+ */
+/**@{*/
+/**
+ * Is the <c>gai_strerror()</c> function available?
+ *
+ * Enabling this flag will provide more detailed log messages in case that
+ * <c>getaddrinfo()</c> fails. If this flag is disabled, numeric error codes
+ * values will be logged.
+ */
+#cmakedefine AVS_COMMONS_NET_POSIX_AVS_SOCKET_HAVE_GAI_STRERROR
+
+/**
+ * Is the <c>getifaddrs()</c> function available?
+ *
+ * Disabling this flag will cause <c>avs_net_socket_interface_name()</c> to use
+ * a less optimal implementation based on the <c>SIOCGIFCONF</c> ioctl.
+ *
+ * If <c>SIOCGIFCONF</c> is not defined, either, then
+ * <c>avs_net_socket_interface_name()</c> will always return an error.
+ */
+#cmakedefine AVS_COMMONS_NET_POSIX_AVS_SOCKET_HAVE_GETIFADDRS
+
+/**
+ * Is the <c>getnameinfo()</c> function available?
+ *
+ * Disabling this flag will cause <c>avs_net_socket_receive_from()</c>,
+ * <c>avs_net_socket_accept()</c>,
+ * <c>avs_net_resolved_endpoint_get_host_port()</c>,
+ * <c>avs_net_resolved_endpoint_get_host()</c> and
+ * <c>avs_net_resolve_host_simple()</c> to use a custom reimplementation of
+ * <c>getnameinfo()</c> based on <c>inet_ntop()</c>.
+ */
+#cmakedefine AVS_COMMONS_NET_POSIX_AVS_SOCKET_HAVE_GETNAMEINFO
+
+/**
+ * Is the <c>IN6_IS_ADDR_V4MAPPED</c> macro available and usable?
+ *
+ * Disabling this flag will cause a custom code that compares IPv6 addresses
+ * with the <c>::ffff:0.0.0.0/32</c> mask to be used instead.
+ */
+#cmakedefine AVS_COMMONS_NET_POSIX_AVS_SOCKET_HAVE_IN6_IS_ADDR_V4MAPPED
+
+/**
+ * Is the <c>inet_ntop()</c> function available?
+ *
+ * Disabling this flag will cause an internal implementation of this function
+ * adapted from BIND 4.9.4 to be used instead.
+ */
+#cmakedefine AVS_COMMONS_NET_POSIX_AVS_SOCKET_HAVE_INET_NTOP
+
+/**
+ * Is the <c>inet_pton()</c> function available?
+ *
+ * Disabling this flag will cause an internal implementation of this function
+ * adapted from BIND 4.9.4 to be used instead.
+ */
+#cmakedefine AVS_COMMONS_NET_POSIX_AVS_SOCKET_HAVE_INET_PTON
+
+/**
+ * Is the <c>poll()</c> function available?
+ *
+ * Disabling this flag will cause a less robust code based on <c>select()</c> to
+ * be used instead.
+ */
+#cmakedefine AVS_COMMONS_NET_POSIX_AVS_SOCKET_HAVE_POLL
+
+/**
+ * Is the <c>recvmsg() function available?
+ *
+ * Disabling this flag will cause <c>recvfrom()</c> to be used instead. Note
+ * that for UDP sockets, this will cause false positives for datagram truncation
+ * detection (<c>AVS_EMSGSIZE</c>) to be reported when the received message is
+ * exactly the size of the buffer.
+ */
+#cmakedefine AVS_COMMONS_NET_POSIX_AVS_SOCKET_HAVE_RECVMSG
+/**@}*/
+
+/**
  * Enable thread safety in avs_sched.
  *
  * Makes all scheduler accesses synchronized and thread-safe, at the cost of
  * requiring avs_compat_threading to be enabled, and higher resource usage.
  */
 #cmakedefine AVS_COMMONS_SCHED_THREAD_SAFE
+
+/**
+ * Enable usage of <c>backtrace()</c> and <c>backtrace_symbols()</c> when
+ * reporting assertion failures from avs_unit.
+ *
+ * Requires the afore-mentioned GNU-specific functions to be available.
+ *
+ * If this flag is disabled, stack traces will not be displayed with assertion
+ * failures.
+ */
+#cmakedefine AVS_COMMONS_UNIT_POSIX_HAVE_BACKTRACE
 
 /**
  * Options related to avs_utils.

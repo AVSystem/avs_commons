@@ -34,11 +34,11 @@
  * WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#include <avs_commons_posix_config.h>
+#include <avs_commons_posix_init.h>
 
 #if defined(AVS_COMMONS_WITH_AVS_NET)                     \
         && defined(AVS_COMMONS_NET_WITH_POSIX_AVS_SOCKET) \
-        && !defined(HAVE_INET_PTON)
+        && !defined(AVS_COMMONS_NET_POSIX_AVS_SOCKET_HAVE_INET_PTON)
 
 #    include <stdint.h>
 #    include <stdio.h>
@@ -241,4 +241,4 @@ static int inet_pton6(const char *src, void *dst) {
 
 #endif // defined(AVS_COMMONS_WITH_AVS_NET) &&
        // defined(AVS_COMMONS_NET_WITH_POSIX_AVS_SOCKET) &&
-       // !defined(HAVE_INET_PTON)
+       // !defined(AVS_COMMONS_NET_POSIX_AVS_SOCKET_HAVE_INET_PTON)

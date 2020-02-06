@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include <avs_commons_posix_config.h>
+#include <avs_commons_posix_init.h>
 
 #if defined(AVS_COMMONS_WITH_AVS_COMPAT_THREADING) \
         && defined(AVS_COMMONS_COMPAT_THREADING_WITH_PTHREAD)
@@ -33,7 +33,8 @@
 
 VISIBILITY_SOURCE_BEGIN
 
-#    if defined(CLOCK_MONOTONIC) && defined(HAVE_PTHREAD_CONDATTR_SETCLOCK)
+#    if defined(CLOCK_MONOTONIC) \
+            && defined(AVS_COMMONS_COMPAT_THREADING_PTHREAD_HAVE_PTHREAD_CONDATTR_SETCLOCK)
 #        define USE_CLOCK_MONOTONIC
 #    endif
 

@@ -15,7 +15,7 @@
  */
 
 #define AVS_UNIT_SOURCE
-#include <avs_commons_posix_config.h>
+#include <avs_commons_posix_init.h>
 
 #ifdef AVS_COMMONS_WITH_AVS_UNIT
 
@@ -25,13 +25,11 @@
 
 #    include "stack_trace.h"
 
-#    include <execinfo.h>
+#    ifdef AVS_COMMONS_UNIT_POSIX_HAVE_BACKTRACE
+#        include <execinfo.h>
+#    endif
 
 #    include <signal.h>
-#    include <sys/types.h>
-#    include <sys/wait.h>
-#    include <time.h>
-#    include <unistd.h>
 
 #    include <assert.h>
 #    include <stdarg.h>
@@ -47,7 +45,7 @@ VISIBILITY_SOURCE_BEGIN
 
 #    define MAX_TRACE_LEVELS 256
 
-#    ifndef HAVE_BACKTRACE_SYMBOLS
+#    ifndef AVS_COMMONS_UNIT_POSIX_HAVE_BACKTRACE
 
 void _avs_unit_stack_trace_init(int argc, char **argv) {
     (void) argc;
@@ -58,7 +56,7 @@ void _avs_unit_stack_trace_print(FILE *file) {
     fprintf(file, "(stack trace not available)\n");
 }
 
-#    else /* HAVE_BACKTRACE_SYMBOLS */
+#    else /* AVS_COMMONS_UNIT_POSIX_HAVE_BACKTRACE */
 
 typedef struct stack_frame {
     void *address;
@@ -427,6 +425,6 @@ void _avs_unit_stack_trace_print(FILE *file) {
     stack_trace_release(&trace);
 }
 
-#    endif /* HAVE_BACKTRACE_SYMBOLS */
+#    endif /* AVS_COMMONS_UNIT_POSIX_HAVE_BACKTRACE */
 
 #endif // AVS_COMMONS_WITH_AVS_UNIT
