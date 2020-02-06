@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef AVS_COMMONS_HTTP_ZLIB_H
-#define AVS_COMMONS_HTTP_ZLIB_H
+#ifndef AVS_COMMONS_HTTP_COMPRESSION_H
+#define AVS_COMMONS_HTTP_COMPRESSION_H
 
 #include <avsystem/commons/stream.h>
 
@@ -130,4 +130,4 @@ avs_stream_t *_avs_http_create_decompressor(http_compression_format_t format,
 
 VISIBILITY_PRIVATE_HEADER_END
 
-#endif /* AVS_COMMONS_HTTP_ZLIB_H */
+#endif /* AVS_COMMONS_HTTP_COMPRESSION_H */

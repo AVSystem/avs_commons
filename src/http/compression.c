@@ -36,8 +36,8 @@
 #    include <avsystem/commons/memory.h>
 #    include <avsystem/commons/stream_v_table.h>
 
+#    include "compression.h"
 #    include "http_log.h"
-#    include "zlib.h"
 
 VISIBILITY_SOURCE_BEGIN
 
