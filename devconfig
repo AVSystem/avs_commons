@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Copyright 2017-2019 AVSystem <avsystem@avsystem.com>
+# Copyright 2017-2020 AVSystem <avsystem@avsystem.com>
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,6 +14,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# use Homebrew-installed OpenSSL on macOS if available
+EXTRA_FLAGS=()
+BREW_OPENSSL="$(brew --prefix openssl 2>/dev/null)"
+if [ "$BREW_OPENSSL" ]; then
+    EXTRA_FLAGS[${#EXTRA_FLAGS[@]}]="-DOPENSSL_ROOT_DIR=$BREW_OPENSSL"
+fi
+
 rm -f CMakeCache.txt
 rm -rf CMakeFiles
 cmake -D WITH_EXTRA_WARNINGS=ON \
@@ -26,5 +33,6 @@ cmake -D WITH_EXTRA_WARNINGS=ON \
       -D WITH_VALGRIND=ON \
       -D CMAKE_C_FLAGS=-g \
       -D CMAKE_INSTALL_PREFIX:PATH=/tmp \
+      "${EXTRA_FLAGS[@]}" \
       "$@" "$(dirname "$0")" &&
 make clean

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Copyright 2017-2019 AVSystem <avsystem@avsystem.com>
+# Copyright 2017-2020 AVSystem <avsystem@avsystem.com>
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -40,6 +40,9 @@ else
     CERTS_DIR="$1"
 fi
 
+# MSYS translates arguments that start with "/" to Windows paths... but we use /CN= which are not paths
+export MSYS2_ARG_CONV_EXCL='*'
+
 if [[ -d "$CERTS_DIR" ]]; then
     echo "WARNING: $CERTS_DIR already exists, its contents will be removed"
     echo -n "[ENTER to continue, CTRL-C to abort] "
@@ -57,8 +60,7 @@ echo "* generating root cert - done"
 for NAME in client server; do
     echo "* generating $NAME cert"
     "$OPENSSL" ecparam -name prime256v1 -genkey -out "${NAME}.key"
-    # MSYS translates arguments that start with "/" to Windows paths... but /CN= is not a path, so we disable it for this call
-    MSYS2_ARG_CONV_EXCL='*' "$OPENSSL" req -batch -new -subj '/CN=localhost' -key "${NAME}.key" -sha256 -out "${NAME}.csr"
+    "$OPENSSL" req -batch -new -subj '/CN=localhost' -key "${NAME}.key" -sha256 -out "${NAME}.csr"
     "$OPENSSL" x509 -sha256 -req -in "${NAME}.csr" -CA root.crt -CAkey root.key -out "${NAME}.crt" -days 9999 -CAcreateserial
     cat "${NAME}.crt" root.crt > "${NAME}-and-root.crt"
     echo "* generating $NAME cert - done"

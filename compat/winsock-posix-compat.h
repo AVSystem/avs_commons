@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 AVSystem <avsystem@avsystem.com>
+ * Copyright 2017-2020 AVSystem <avsystem@avsystem.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,7 @@
 #include <time.h>
 
 #include <errno.h>
+
 #include <avsystem/commons/errno_map.h>
 
 #ifdef ERROR
@@ -143,10 +144,11 @@ static inline const char *_avs_wsa_set_errno_str(const char *result) {
     return result;
 }
 
-#define HAVE_GETNAMEINFO
-#define HAVE_INET_NTOP
-#define HAVE_INET_PTON
-#define HAVE_POLL
+#define AVS_COMMONS_NET_POSIX_AVS_SOCKET_HAVE_GAI_STRERROR
+#define AVS_COMMONS_NET_POSIX_AVS_SOCKET_HAVE_GETNAMEINFO
+#define AVS_COMMONS_NET_POSIX_AVS_SOCKET_HAVE_INET_NTOP
+#define AVS_COMMONS_NET_POSIX_AVS_SOCKET_HAVE_INET_PTON
+#define AVS_COMMONS_NET_POSIX_AVS_SOCKET_HAVE_POLL
 
 #define accept(...) _avs_wsa_set_errno_socket(accept(__VA_ARGS__))
 #define bind(...) _avs_wsa_set_errno(bind(__VA_ARGS__))

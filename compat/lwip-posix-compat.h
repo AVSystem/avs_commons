@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 AVSystem <avsystem@avsystem.com>
+ * Copyright 2017-2020 AVSystem <avsystem@avsystem.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,8 +18,8 @@
 #define COMPAT_H
 
 /*
- * Example implementation of a POSIX_COMPAT_HEADER file required for non-POSIX
- * platforms that use LwIP 1.4.1.
+ * Example implementation of a AVS_COMMONS_POSIX_COMPAT_HEADER file required for
+ * non-POSIX platforms that use LwIP 1.4.1.
  *
  * Contains all types/macros/symbols not defined in core C that are required
  * to compile avs_commons library.
@@ -44,93 +44,10 @@
 /* Provides getaddrinfo/freeaddrinfo/struct addrinfo */
 #include "lwip/netdb.h"
 
-#if defined(HAVE_GAI_STRERROR) && defined(HAVE_NETDB_H)
-#    include <netdb.h>
-#else
-const char *gai_strerror(int errcode);
-#endif
-
-/* for time_t */
-#include <time.h>
-
-#ifndef HAVE_STRUCT_TIMESPEC
-struct timespec {
-    time_t tv_sec;
-    long tv_nsec;
-};
-#endif
-
-#ifndef HAVE_CLOCKID_T
-typedef int clockid_t;
-#endif
-
-#ifndef HAVE_CLOCK_GETTIME
-int clock_gettime(clockid_t clk_id, struct timespec *tp);
-#endif
-
-#ifndef CLOCK_REALTIME
-#    define CLOCK_REALTIME 0
-#endif
-
-#if defined(HAVE_STRCASECMP) && defined(HAVE_STRINGS_H)
-#    include <strings.h>
-#else
-int strcasecmp(const char *s1, const char *s2);
-#endif
-
-#if defined(HAVE_STRNCASECMP) && defined(HAVE_STRINGS_H)
-#    include <strings.h>
-#else
-int strncasecmp(const char *s1, const char *s2, size_t n);
-#endif
-
-#if defined(HAVE_STRTOK_R)
-#    include <string.h>
-#else
-char *strtok_r(char *str, const char *delim, char **saveptr);
-#endif
-
-#if defined(WITH_IPV4)
-#    if defined(HAVE_INET_ADDRSTRLEN) && defined(HAVE_NETINET_IN_H)
-#        include <netinet/in.h>
-#    elif !defined(INET_ADDRSTRLEN)
-#        define INET_ADDRSTRLEN sizeof("255.255.255.255")
-#    endif
-#endif
-
-#if defined(WITH_IPV6)
-#    if defined(HAVE_INET6_ADDRSTRLEN) && defined(HAVE_NETINET_IN_H)
-#        include <netinet/in.h>
-#    elif !defined(INET6_ADDRSTRLEN)
-#        define INET6_ADDRSTRLEN \
-            sizeof("ffff:ffff:ffff:ffff:ffff:ffff:255.255.255.255")
-#    endif
-#endif
-
-#ifndef HAVE_STRDUP
-char *strdup(const char *s);
-#endif
-
-/* optional */
-#if defined(HAVE_INET_PTON) && defined(HAVE_ARPA_INET_H)
-#    include <arpa/inet.h>
-#endif
-
-/* optional */
-#if defined(HAVE_INET_NTOP) && defined(HAVE_ARPA_INET_H)
-#    include <arpa/inet.h>
-#endif
-
-#if defined(HAVE_IF_NAMESIZE) && defined(HAVE_NET_IF_H)
-#    include <net/if.h>
-#else
-#    define IF_NAMESIZE 16
-#endif
-
-/* optional */
-#if defined(HAVE_RECVMSG) && defined(HAVE_SYS_SOCKET_H)
-#    include <sys/socket.h>
-#endif
+#if LWIP_VERSION_MAJOR >= 2
+#    define AVS_COMMONS_NET_POSIX_AVS_SOCKET_HAVE_INET_NTOP
+#    define AVS_COMMONS_NET_POSIX_AVS_SOCKET_HAVE_INET_PTON
+#endif // LWIP_VERSION_MAJOR >= 2
 
 typedef int sockfd_t;
 

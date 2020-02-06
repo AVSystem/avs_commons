@@ -1,4 +1,4 @@
-# Copyright 2017-2019 AVSystem <avsystem@avsystem.com>
+# Copyright 2017-2020 AVSystem <avsystem@avsystem.com>
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,6 +15,5 @@
 find_package(OpenSSL REQUIRED)
 add_executable(dtls_echo_server EXCLUDE_FROM_ALL dtls_echo_server.c)
 set_target_properties(dtls_echo_server PROPERTIES
-                      RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRRENT_BINARY_DIR}"
                       COMPILE_FLAGS "-D_POSIX_C_SOURCE")
 target_link_libraries(dtls_echo_server OpenSSL::SSL OpenSSL::Crypto)

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# Copyright 2017-2019 AVSystem <avsystem@avsystem.com>
+# Copyright 2017-2020 AVSystem <avsystem@avsystem.com>
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -43,7 +43,8 @@ INCLUDE_WHITELIST = {
     # r'time\.h',
     # r'wchar\.h',
     # r'wctype\.h',
-    r'avs_commons_config\.h',
+    r'avs_commons_init\.h',
+    r'avs_commons_poison\.h',
     r'x_log_config\.h',
     r'avsystem/commons/[^.]*\.h'
 }
@@ -55,7 +56,8 @@ CONDITIONAL_WHITELIST = {
     (r'openssl', r'openssl/.*'),
     (r'openssl', r'sys/time\.h'),
     (r'tinydtls', r'tinydtls/.*'),
-    (r'zlib', r'zlib\.h')
+    (r'compression', r'zlib\.h'),
+    (r'net/api\.h', r'valgrind/.*')
 }
 
 if __name__ == '__main__':
@@ -65,7 +67,7 @@ if __name__ == '__main__':
 
     filename = sys.argv[1]
 
-    if any(w in filename for w in ('/test/', '/tests/', '/compat/', '/config/', '/unit/')):
+    if any(w in filename for w in ('/test/', '/tests/', '/compat/', '/unit/')):
         sys.exit(0)
 
     with open(filename, 'r') as fp:
