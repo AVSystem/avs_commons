@@ -562,8 +562,7 @@ static avs_error_t configure_socket(net_socket_impl_t *net_socket) {
             return err;
         }
 #    else  // IP_TOS
-        net_socket->error_code = AVS_EINVAL;
-        return -1;
+        return avs_errno(AVS_EINVAL);
 #    endif // IP_TOS
     }
     if (net_socket->configuration.transparent) {
