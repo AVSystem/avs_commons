@@ -491,14 +491,12 @@ set(DOXYGEN_SKIP_DOT TRUE)
 find_package(Doxygen)
 
 if(DOXYGEN_FOUND)
-    set(DOXYGEN_INPUT_PATHS ${MODULE_INCLUDE_DIRS})
-    # doxygen expects whitespace-separated list, cmake stores them as
-    # semicolon-separated strings
-    string(REPLACE ";" " " DOXYGEN_INPUT_PATHS "${DOXYGEN_INPUT_PATHS}")
-    configure_file(doc/Doxyfile.in doc/Doxyfile @ONLY)
+    set(DOXYGEN_INPUT_PATHS ${AVS_COMMONS_SOURCE_DIR}/include_public)
+    configure_file(${AVS_COMMONS_SOURCE_DIR}/doc/Doxyfile.in
+                   ${AVS_COMMONS_BINARY_DIR}/doc/Doxyfile
+                   @ONLY)
     add_custom_target(avs_commons_doc
-                      COMMAND ${DOXYGEN_EXECUTABLE} ${CMAKE_BINARY_DIR}/doc/Doxyfile)
-
+                      COMMAND ${DOXYGEN_EXECUTABLE} ${AVS_COMMONS_BINARY_DIR}/doc/Doxyfile)
     if(${CMAKE_PROJECT_NAME} STREQUAL ${PROJECT_NAME})
         add_custom_target(doc)
         add_dependencies(doc avs_commons_doc)
