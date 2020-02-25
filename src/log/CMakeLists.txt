@@ -17,7 +17,7 @@ set(AVS_LOG_PUBLIC_HEADERS
 
 add_library(avs_log STATIC
             ${AVS_LOG_PUBLIC_HEADERS}
-            log.c)
+            avs_log.c)
 
 target_link_libraries(avs_log PUBLIC avs_commons_global_headers avs_utils avs_list)
 

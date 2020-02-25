@@ -14,4 +14,4 @@
  * limitations under the License.
  */
 
-#include "src/vector/vector.c"
+#include "src/vector/avs_vector.c"

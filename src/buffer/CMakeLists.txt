@@ -17,7 +17,7 @@ set(AVS_BUFFER_PUBLIC_HEADERS
 
 add_library(avs_buffer STATIC
             ${AVS_BUFFER_PUBLIC_HEADERS}
-            buffer.c)
+            avs_buffer.c)
 
 target_link_libraries(avs_buffer PUBLIC avs_commons_global_headers avs_utils)
 

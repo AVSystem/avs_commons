@@ -17,7 +17,7 @@ set(AVS_RBTREE_PUBLIC_HEADERS
 
 add_library(avs_rbtree STATIC
             ${AVS_RBTREE_PUBLIC_HEADERS}
-            rbtree.c)
+            avs_rbtree.c)
 
 target_link_libraries(avs_rbtree PUBLIC avs_commons_global_headers avs_utils)
 

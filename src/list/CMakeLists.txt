@@ -17,7 +17,7 @@ set(AVS_LIST_PUBLIC_HEADERS
 
 add_library(avs_list STATIC
             ${AVS_LIST_PUBLIC_HEADERS}
-            list.c)
+            avs_list.c)
 
 target_link_libraries(avs_list PUBLIC avs_commons_global_headers avs_utils)
 

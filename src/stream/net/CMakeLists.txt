@@ -23,8 +23,8 @@ set(AVS_STREAM_NET_PUBLIC_HEADERS
 
 add_library(avs_stream_net STATIC
             ${AVS_STREM_NET_PUBLIC_HEADERS}
-            stream_net.c
-            netbuf.c)
+            avs_stream_net.c
+            avs_netbuf.c)
 
 target_link_libraries(avs_stream_net PUBLIC avs_stream avs_buffer avs_net)
 

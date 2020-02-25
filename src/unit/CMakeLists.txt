@@ -20,9 +20,9 @@ set(AVS_UNIT_PUBLIC_HEADERS
 
 add_library(avs_unit STATIC
             ${AVS_UNIT_PUBLIC_HEADERS}
-            mock.c
-            stack_trace.c
-            unit_test.c)
+            avs_mock.c
+            avs_stack_trace.c
+            avs_unit_test.c)
 
 target_link_libraries(avs_unit PUBLIC avs_commons_global_headers avs_list)
 
@@ -31,12 +31,12 @@ if(WITH_AVS_LOG)
 endif()
 
 if(WITH_AVS_NET)
-    target_sources(avs_unit PRIVATE mocksock.c)
+    target_sources(avs_unit PRIVATE avs_mocksock.c)
     target_link_libraries(avs_unit PUBLIC avs_net)
 endif()
 
 if(WITH_AVS_STREAM)
-    target_sources(avs_unit PRIVATE memstream.c)
+    target_sources(avs_unit PRIVATE avs_memstream.c)
     target_link_libraries(avs_unit PUBLIC avs_stream)
 endif()
 

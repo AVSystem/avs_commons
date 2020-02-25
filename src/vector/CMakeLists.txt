@@ -17,7 +17,7 @@ set(AVS_VECTOR_PUBLIC_HEADERS
 
 add_library(avs_vector STATIC
             ${AVS_VECTOR_PUBLIC_HEADERS}
-            vector.c)
+            avs_vector.c)
 
 target_link_libraries(avs_vector PUBLIC avs_commons_global_headers avs_utils)
 

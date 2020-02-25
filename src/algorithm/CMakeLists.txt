@@ -17,7 +17,7 @@ set(AVS_ALGORITHM_PUBLIC_HEADERS
 
 add_library(avs_algorithm STATIC
             ${AVS_ALGORITHM_PUBLIC_HEADERS}
-            base64.c)
+            avs_base64.c)
 
 target_link_libraries(avs_algorithm PUBLIC avs_commons_global_headers)
 

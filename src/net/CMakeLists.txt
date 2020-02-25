@@ -39,17 +39,17 @@ set(AVS_NET_SOURCES
     avs_global.h
     avs_net_impl.h
 
-    addrinfo.c
-    api.c
-    global.c
-    url.c
+    avs_addrinfo.c
+    avs_api.c
+    avs_global.c
+    avs_url.c
 
     compat/posix/avs_compat.h
 
-    compat/posix/compat_addrinfo.c
-    compat/posix/inet_ntop.c
-    compat/posix/inet_pton.c
-    compat/posix/net_impl.c)
+    compat/posix/avs_compat_addrinfo.c
+    compat/posix/avs_inet_ntop.c
+    compat/posix/avs_inet_pton.c
+    compat/posix/avs_net_impl.c)
 
 add_library(avs_net_core INTERFACE)
 target_link_libraries(avs_net_core INTERFACE avs_commons_global_headers)
@@ -85,8 +85,8 @@ if(WITH_OPENSSL)
 
     set(AVS_NET_OPENSSL_SOURCES
         ${AVS_NET_SOURCES}
-        openssl/openssl.c
-        openssl/openssl_data_loader.c)
+        openssl/avs_openssl.c
+        openssl/avs_openssl_data_loader.c)
 
     add_library(avs_net_openssl ${AVS_NET_OPENSSL_SOURCES})
     target_link_libraries(avs_net_openssl PUBLIC avs_net_core OpenSSL::SSL OpenSSL::Crypto)
@@ -105,10 +105,10 @@ endif()
 if(WITH_MBEDTLS)
     set(AVS_NET_MBEDTLS_SOURCES
         ${AVS_NET_SOURCES}
-        mbedtls/avs_mbedtls_persistence.h
-        mbedtls/mbedtls.c
-        mbedtls/mbedtls_data_loader.c
-        mbedtls/mbedtls_persistence.c)
+        mbedtls/avs_mbedtls.c
+        mbedtls/avs_mbedtls_data_loader.c
+        mbedtls/avs_mbedtls_persistence.c
+        mbedtls/avs_mbedtls_persistence.h)
 
     add_library(avs_net_mbedtls ${AVS_NET_MBEDTLS_SOURCES})
     target_link_libraries(avs_net_mbedtls PUBLIC avs_net_core mbedtls mbedcrypto mbedx509)
@@ -131,7 +131,7 @@ endif()
 if(WITH_TINYDTLS)
     set(AVS_NET_TINYDTLS_SOURCES
         ${AVS_NET_SOURCES}
-        tinydtls/tinydtls.c)
+        tinydtls/avs_tinydtls.c)
 
     add_library(avs_net_tinydtls ${AVS_NET_TINYDTLS_SOURCES})
     target_link_libraries(avs_net_tinydtls PUBLIC avs_net_core tinydtls)

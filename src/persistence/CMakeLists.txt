@@ -17,7 +17,7 @@ set(AVS_PERSISTENCE_PUBLIC_HEADERS
 
 add_library(avs_persistence STATIC
             ${AVS_PERSISTENCE_PUBLIC_HEADERS}
-            persistence.c)
+            avs_persistence.c)
 
 target_link_libraries(avs_persistence PUBLIC avs_commons_global_headers avs_rbtree avs_stream avs_utils avs_list)
 

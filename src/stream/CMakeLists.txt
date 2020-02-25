@@ -24,13 +24,13 @@ set(AVS_STREAM_PUBLIC_HEADERS
 
 add_library(avs_stream STATIC
             ${AVS_STREAM_PUBLIC_HEADERS}
-            stream.c
-            stream_buffered.c
-            stream_file.c
-            stream_inbuf.c
-            stream_membuf.c
-            stream_outbuf.c
-            stream_simple_io.c)
+            avs_stream.c
+            avs_stream_buffered.c
+            avs_stream_file.c
+            avs_stream_inbuf.c
+            avs_stream_membuf.c
+            avs_stream_outbuf.c
+            avs_stream_simple_io.c)
 
 target_link_libraries(avs_stream PUBLIC avs_commons_global_headers avs_buffer)
 if(WITH_INTERNAL_LOGS)
