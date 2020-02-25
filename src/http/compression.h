@@ -17,7 +17,7 @@
 #ifndef AVS_COMMONS_HTTP_COMPRESSION_H
 #define AVS_COMMONS_HTTP_COMPRESSION_H
 
-#include <avsystem/commons/stream.h>
+#include <avsystem/commons/avs_stream.h>
 
 VISIBILITY_PRIVATE_HEADER_BEGIN
 

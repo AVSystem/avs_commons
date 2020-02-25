@@ -17,7 +17,7 @@
 #ifndef AVS_COMMONS_HTTP_TEST_HTTP_H
 #define AVS_COMMONS_HTTP_TEST_HTTP_H
 
-#include <avsystem/commons/net.h>
+#include <avsystem/commons/avs_net.h>
 
 typedef struct expected_socket_struct {
     avs_net_socket_t *socket;

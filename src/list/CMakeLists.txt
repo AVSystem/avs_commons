@@ -13,7 +13,7 @@
 # limitations under the License.
 
 set(AVS_LIST_PUBLIC_HEADERS
-    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/list.h")
+    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/avs_list.h")
 
 add_library(avs_list STATIC
             ${AVS_LIST_PUBLIC_HEADERS}

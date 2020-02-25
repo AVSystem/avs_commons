@@ -23,7 +23,7 @@
 #    include <mbedtls/md5.h>
 #    include <mbedtls/version.h>
 
-#    include <avsystem/commons/memory.h>
+#    include <avsystem/commons/avs_memory.h>
 #    include <avsystem/commons/stream/md5.h>
 
 #    include "md5_common.h"

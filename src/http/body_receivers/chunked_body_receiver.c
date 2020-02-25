@@ -20,9 +20,9 @@
 
 #    include <errno.h>
 
-#    include <avsystem/commons/errno.h>
-#    include <avsystem/commons/errno_map.h>
-#    include <avsystem/commons/memory.h>
+#    include <avsystem/commons/avs_errno.h>
+#    include <avsystem/commons/avs_errno_map.h>
+#    include <avsystem/commons/avs_memory.h>
 #    include <avsystem/commons/stream/stream_net.h>
 
 #    include "../body_receivers.h"

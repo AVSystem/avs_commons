@@ -19,7 +19,7 @@
 
 #include <stdint.h>
 
-#include <avsystem/commons/socket_v_table.h>
+#include <avsystem/commons/avs_socket_v_table.h>
 
 #define MODULE_NAME avs_net
 #include <x_log_config.h>

@@ -13,9 +13,9 @@
 # limitations under the License.
 
 set(COMPAT_THREADING_PUBLIC_HEADERS
-    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/condvar.h"
-    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/mutex.h"
-    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/init_once.h")
+    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/avs_condvar.h"
+    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/avs_mutex.h"
+    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/avs_init_once.h")
 
 set(COMPAT_THREADING_TEST_SOURCES
     ${AVS_COMMONS_SOURCE_DIR}/tests/compat/threading/condvar.c

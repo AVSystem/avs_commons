@@ -24,7 +24,7 @@
 #    ifndef NDEBUG
 #        define NDEBUG
 #    endif
-#    include <avsystem/commons/list.h>
+#    include <avsystem/commons/avs_list.h>
 
 #    ifdef NDEBUG
 #        undef NDEBUG /* We want to call assert() in \

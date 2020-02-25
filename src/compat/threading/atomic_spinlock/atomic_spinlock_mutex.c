@@ -22,9 +22,9 @@
 #    define MODULE_NAME mutex_atomic_spinlock
 #    include <x_log_config.h>
 
-#    include <avsystem/commons/defs.h>
-#    include <avsystem/commons/memory.h>
-#    include <avsystem/commons/mutex.h>
+#    include <avsystem/commons/avs_defs.h>
+#    include <avsystem/commons/avs_memory.h>
+#    include <avsystem/commons/avs_mutex.h>
 
 #    include <stdatomic.h>
 #    include <stdbool.h>

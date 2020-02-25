@@ -19,7 +19,7 @@
 
 #include <stdarg.h>
 
-#include <avsystem/commons/defs.h>
+#include <avsystem/commons/avs_defs.h>
 
 #ifdef __cplusplus
 extern "C" {

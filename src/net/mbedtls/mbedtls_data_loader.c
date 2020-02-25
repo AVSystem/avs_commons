@@ -30,8 +30,8 @@
 #    include <stdlib.h>
 #    include <string.h>
 
-#    include <avsystem/commons/memory.h>
-#    include <avsystem/commons/utils.h>
+#    include <avsystem/commons/avs_memory.h>
+#    include <avsystem/commons/avs_utils.h>
 
 VISIBILITY_SOURCE_BEGIN
 

@@ -17,8 +17,8 @@
 #ifndef AVS_COMMONS_COMPAT_THREADING_PTHREAD_STRUCTS_H
 #define AVS_COMMONS_COMPAT_THREADING_PTHREAD_STRUCTS_H
 
-#include <avsystem/commons/condvar.h>
-#include <avsystem/commons/mutex.h>
+#include <avsystem/commons/avs_condvar.h>
+#include <avsystem/commons/avs_mutex.h>
 
 #include <pthread.h>
 

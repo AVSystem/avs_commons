@@ -33,7 +33,7 @@ extern "C" {
  * @code
  * #include <stdio.h>
  * #include <string.h>
- * #include <avsystem/commons/buffer.h>
+ * #include <avsystem/commons/avs_buffer.h>
  *
  * int main() {
  *     avs_buffer_t *buffer;

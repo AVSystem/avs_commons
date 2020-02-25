@@ -20,7 +20,7 @@
 
 #ifdef AVS_COMMONS_WITH_AVS_UTILS
 
-#    include <avsystem/commons/shared_buffer.h>
+#    include <avsystem/commons/avs_shared_buffer.h>
 
 #    define MODULE_NAME shared_buffer
 #    include <x_log_config.h>

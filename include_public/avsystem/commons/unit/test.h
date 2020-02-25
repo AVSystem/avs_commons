@@ -26,8 +26,8 @@
 #    define AVS_UNIT_HAVE_BOOL__
 #endif
 
-#include <avsystem/commons/defs.h>
-#include <avsystem/commons/errno.h>
+#include <avsystem/commons/avs_defs.h>
+#include <avsystem/commons/avs_errno.h>
 
 #ifdef __cplusplus
 extern "C" {

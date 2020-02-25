@@ -29,10 +29,10 @@
  */
 #    include <limits.h>
 
-#    include <avsystem/commons/buffer.h>
-#    include <avsystem/commons/errno.h>
-#    include <avsystem/commons/memory.h>
-#    include <avsystem/commons/stream_v_table.h>
+#    include <avsystem/commons/avs_buffer.h>
+#    include <avsystem/commons/avs_errno.h>
+#    include <avsystem/commons/avs_memory.h>
+#    include <avsystem/commons/avs_stream_v_table.h>
 
 #    define MODULE_NAME stream_buffered
 #    include <x_log_config.h>

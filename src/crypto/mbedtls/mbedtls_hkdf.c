@@ -21,7 +21,7 @@
 #    define MODULE_NAME avs_crypto_hkdf
 #    include <x_log_config.h>
 
-#    include <avsystem/commons/hkdf.h>
+#    include <avsystem/commons/avs_hkdf.h>
 
 #    include <mbedtls/hkdf.h>
 

@@ -20,8 +20,8 @@
         && defined(AVS_COMMONS_WITH_AVS_BUFFER) \
         && defined(AVS_COMMONS_WITH_AVS_NET)
 
+#    include <avsystem/commons/avs_stream_v_table.h>
 #    include <avsystem/commons/stream/stream_net.h>
-#    include <avsystem/commons/stream_v_table.h>
 
 VISIBILITY_SOURCE_BEGIN
 

@@ -20,7 +20,7 @@
 
 #    include <string.h>
 
-#    include <avsystem/commons/utils.h>
+#    include <avsystem/commons/avs_utils.h>
 
 #    include "chunked.h"
 #    include "headers.h"

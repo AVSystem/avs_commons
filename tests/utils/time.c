@@ -18,7 +18,7 @@
 
 #include <time.h>
 
-#include <avsystem/commons/time.h>
+#include <avsystem/commons/avs_time.h>
 #include <avsystem/commons/unit/test.h>
 
 AVS_UNIT_TEST(time, time_arithmetic) {

@@ -13,7 +13,7 @@
 # limitations under the License.
 
 set(AVS_HTTP_PUBLIC_HEADERS
-    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/http.h")
+    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/avs_http.h")
 
 add_library(avs_http STATIC
             ${AVS_HTTP_PUBLIC_HEADERS}

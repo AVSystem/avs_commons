@@ -17,8 +17,8 @@
 #define AVS_UNIT_ENABLE_SHORT_ASSERTS
 #include <avsystem/commons/unit/test.h>
 
-#include <avsystem/commons/aead.h>
-#include <avsystem/commons/memory.h>
+#include <avsystem/commons/avs_aead.h>
+#include <avsystem/commons/avs_memory.h>
 
 #include <string.h>
 

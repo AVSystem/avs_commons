@@ -17,7 +17,7 @@
 #ifndef AVS_COMMONS_UTILS_MEMORY_H
 #define AVS_COMMONS_UTILS_MEMORY_H
 
-#include <avsystem/commons/defs.h>
+#include <avsystem/commons/avs_defs.h>
 
 #ifdef __cplusplus
 extern "C" {

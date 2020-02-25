@@ -17,8 +17,8 @@
 #ifndef AVS_COMMONS_HTTP_CLIENT_H
 #define AVS_COMMONS_HTTP_CLIENT_H
 
-#include <avsystem/commons/http.h>
-#include <avsystem/commons/list.h>
+#include <avsystem/commons/avs_http.h>
+#include <avsystem/commons/avs_list.h>
 
 VISIBILITY_PRIVATE_HEADER_BEGIN
 

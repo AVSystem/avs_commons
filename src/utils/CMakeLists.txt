@@ -13,11 +13,11 @@
 # limitations under the License.
 
 set(AVS_UTILS_PUBLIC_HEADERS
-    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/cleanup.h"
-    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/memory.h"
-    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/shared_buffer.h"
-    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/time.h"
-    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/utils.h")
+    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/avs_cleanup.h"
+    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/avs_memory.h"
+    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/avs_shared_buffer.h"
+    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/avs_time.h"
+    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/avs_utils.h")
 
 add_library(avs_utils STATIC
             ${AVS_UTILS_PUBLIC_HEADERS}

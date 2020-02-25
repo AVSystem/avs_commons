@@ -19,14 +19,14 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <avsystem/commons/memory.h>
+#include <avsystem/commons/avs_memory.h>
 #include <avsystem/commons/unit/mock_helpers.h>
 #include <avsystem/commons/unit/test.h>
 
 AVS_UNIT_MOCK_CREATE(avs_calloc)
 #define avs_calloc(...) AVS_UNIT_MOCK_WRAPPER(avs_calloc)(__VA_ARGS__)
 
-#include <avsystem/commons/list.h>
+#include <avsystem/commons/avs_list.h>
 
 AVS_UNIT_TEST(list, one_element) {
     size_t count = 0;

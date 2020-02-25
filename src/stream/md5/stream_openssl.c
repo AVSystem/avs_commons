@@ -22,7 +22,7 @@
 
 #    include <openssl/md5.h>
 
-#    include <avsystem/commons/memory.h>
+#    include <avsystem/commons/avs_memory.h>
 #    include <avsystem/commons/stream/md5.h>
 
 #    include "md5_common.h"

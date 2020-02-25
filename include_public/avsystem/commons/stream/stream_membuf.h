@@ -17,7 +17,7 @@
 #ifndef AVS_COMMONS_STREAM_MEMBUF_H
 #define AVS_COMMONS_STREAM_MEMBUF_H
 
-#include <avsystem/commons/stream.h>
+#include <avsystem/commons/avs_stream.h>
 
 #ifdef __cplusplus
 extern "C" {

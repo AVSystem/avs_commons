@@ -17,8 +17,8 @@
 
 #ifdef AVS_COMMONS_WITH_AVS_RBTREE
 
-#    include <avsystem/commons/memory.h>
-#    include <avsystem/commons/rbtree.h>
+#    include <avsystem/commons/avs_memory.h>
+#    include <avsystem/commons/avs_rbtree.h>
 
 #    include <assert.h>
 

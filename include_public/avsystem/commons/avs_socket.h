@@ -22,10 +22,10 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#include <avsystem/commons/defs.h>
-#include <avsystem/commons/errno.h>
-#include <avsystem/commons/memory.h>
-#include <avsystem/commons/time.h>
+#include <avsystem/commons/avs_defs.h>
+#include <avsystem/commons/avs_errno.h>
+#include <avsystem/commons/avs_memory.h>
+#include <avsystem/commons/avs_time.h>
 
 #ifdef __cplusplus
 extern "C" {

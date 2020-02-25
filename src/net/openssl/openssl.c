@@ -39,10 +39,10 @@
 
 #    include <sys/time.h> // for struct timeval
 
-#    include <avsystem/commons/errno_map.h>
-#    include <avsystem/commons/memory.h>
+#    include <avsystem/commons/avs_errno_map.h>
+#    include <avsystem/commons/avs_memory.h>
+#    include <avsystem/commons/avs_time.h>
 #    include <avsystem/commons/stream/stream_membuf.h>
-#    include <avsystem/commons/time.h>
 
 #    include "../global.h"
 #    include "../net_impl.h"

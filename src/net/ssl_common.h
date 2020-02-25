@@ -23,7 +23,7 @@
 
 #include "api.h"
 
-#include <avsystem/commons/memory.h>
+#include <avsystem/commons/avs_memory.h>
 
 VISIBILITY_PRIVATE_HEADER_BEGIN
 

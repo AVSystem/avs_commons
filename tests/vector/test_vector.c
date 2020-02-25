@@ -17,7 +17,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <avsystem/commons/memory.h>
+#include <avsystem/commons/avs_memory.h>
 #include <avsystem/commons/unit/test.h>
 
 typedef struct {

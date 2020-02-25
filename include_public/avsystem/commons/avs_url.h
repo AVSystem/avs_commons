@@ -17,7 +17,7 @@
 #ifndef AVS_COMMONS_URL_H
 #define AVS_COMMONS_URL_H
 
-#include <avsystem/commons/stream.h>
+#include <avsystem/commons/avs_stream.h>
 
 #ifdef __cplusplus
 extern "C" {

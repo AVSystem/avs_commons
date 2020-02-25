@@ -53,9 +53,9 @@
 #        include <mbedtls/debug.h>
 #    endif // AVS_COMMONS_NET_WITH_MBEDTLS_LOGS
 
-#    include <avsystem/commons/errno_map.h>
-#    include <avsystem/commons/memory.h>
-#    include <avsystem/commons/utils.h>
+#    include <avsystem/commons/avs_errno_map.h>
+#    include <avsystem/commons/avs_memory.h>
+#    include <avsystem/commons/avs_utils.h>
 
 #    include "../global.h"
 #    include "../net_impl.h"

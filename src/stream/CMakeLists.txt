@@ -13,8 +13,8 @@
 # limitations under the License.
 
 set(AVS_STREAM_PUBLIC_HEADERS_ROOT
-    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/stream.h"
-    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/stream_v_table.h")
+    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/avs_stream.h"
+    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/avs_stream_v_table.h")
 
 set(AVS_STREAM_PUBLIC_HEADERS_STREAM
     "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/stream/stream_buffered.h"

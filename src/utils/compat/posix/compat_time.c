@@ -21,7 +21,7 @@
 
 #    include <time.h>
 
-#    include <avsystem/commons/time.h>
+#    include <avsystem/commons/avs_time.h>
 
 VISIBILITY_SOURCE_BEGIN
 

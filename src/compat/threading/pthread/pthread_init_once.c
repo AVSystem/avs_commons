@@ -26,8 +26,8 @@
 #    define MODULE_NAME init_once_pthread
 #    include <x_log_config.h>
 
-#    include <avsystem/commons/defs.h>
-#    include <avsystem/commons/init_once.h>
+#    include <avsystem/commons/avs_defs.h>
+#    include <avsystem/commons/avs_init_once.h>
 
 #    include <pthread.h>
 #    include <stdlib.h>

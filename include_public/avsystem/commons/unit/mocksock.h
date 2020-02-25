@@ -17,8 +17,8 @@
 #ifndef AVS_COMMONS_UNIT_MOCKSOCK_H
 #define AVS_COMMONS_UNIT_MOCKSOCK_H
 
-#include <avsystem/commons/net.h>
-#include <avsystem/commons/time.h>
+#include <avsystem/commons/avs_net.h>
+#include <avsystem/commons/avs_time.h>
 
 #ifdef __cplusplus
 extern "C" {

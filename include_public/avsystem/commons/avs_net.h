@@ -22,10 +22,10 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#include <avsystem/commons/defs.h>
+#include <avsystem/commons/avs_defs.h>
 
-#include <avsystem/commons/addrinfo.h>
-#include <avsystem/commons/socket.h>
+#include <avsystem/commons/avs_addrinfo.h>
+#include <avsystem/commons/avs_socket.h>
 
 #ifdef __cplusplus
 extern "C" {

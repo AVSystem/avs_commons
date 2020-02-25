@@ -19,8 +19,8 @@
 
 #include <stdint.h>
 
-#include <avsystem/commons/net.h>
-#include <avsystem/commons/stream.h>
+#include <avsystem/commons/avs_net.h>
+#include <avsystem/commons/avs_stream.h>
 
 #ifdef __cplusplus
 extern "C" {

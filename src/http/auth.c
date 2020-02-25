@@ -21,8 +21,8 @@
 #    include <ctype.h>
 #    include <string.h>
 
-#    include <avsystem/commons/memory.h>
-#    include <avsystem/commons/utils.h>
+#    include <avsystem/commons/avs_memory.h>
+#    include <avsystem/commons/avs_utils.h>
 
 #    include "auth.h"
 #    include "http_log.h"

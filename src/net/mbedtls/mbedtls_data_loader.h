@@ -18,7 +18,7 @@
 
 #include <mbedtls/ssl.h>
 
-#include <avsystem/commons/socket.h>
+#include <avsystem/commons/avs_socket.h>
 
 VISIBILITY_PRIVATE_HEADER_BEGIN
 

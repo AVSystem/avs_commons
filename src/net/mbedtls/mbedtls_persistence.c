@@ -32,8 +32,8 @@
 #    include <mbedtls/version.h>
 #    include <mbedtls/x509_crt.h>
 
-#    include <avsystem/commons/persistence.h>
-#    include <avsystem/commons/stream.h>
+#    include <avsystem/commons/avs_persistence.h>
+#    include <avsystem/commons/avs_stream.h>
 #    include <avsystem/commons/stream/stream_inbuf.h>
 #    include <avsystem/commons/stream/stream_outbuf.h>
 

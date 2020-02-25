@@ -18,8 +18,8 @@
 
 #ifdef AVS_COMMONS_WITH_AVS_HTTP
 
-#    include <avsystem/commons/memory.h>
-#    include <avsystem/commons/stream_v_table.h>
+#    include <avsystem/commons/avs_memory.h>
+#    include <avsystem/commons/avs_stream_v_table.h>
 
 #    include "client.h"
 #    include "compression.h"

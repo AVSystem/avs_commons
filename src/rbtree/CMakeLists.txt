@@ -13,7 +13,7 @@
 # limitations under the License.
 
 set(AVS_RBTREE_PUBLIC_HEADERS
-    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/rbtree.h")
+    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/avs_rbtree.h")
 
 add_library(avs_rbtree STATIC
             ${AVS_RBTREE_PUBLIC_HEADERS}

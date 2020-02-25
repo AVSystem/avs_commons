@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include <avsystem/commons/defs.h>
+#include <avsystem/commons/avs_defs.h>
 
 #if defined(AVS_COMMONS_HAVE_VISIBILITY) && !defined(AVS_UNIT_TESTING)
 /* set default visibility for external symbols */

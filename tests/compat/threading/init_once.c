@@ -16,7 +16,7 @@
 
 #include <avs_commons_posix_init.h>
 
-#include <avsystem/commons/init_once.h>
+#include <avsystem/commons/avs_init_once.h>
 
 #include <pthread.h>
 

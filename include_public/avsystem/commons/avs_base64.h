@@ -17,7 +17,7 @@
 #ifndef AVS_COMMONS_ALGORITHM_BASE64_H
 #define AVS_COMMONS_ALGORITHM_BASE64_H
 
-#include <avsystem/commons/defs.h>
+#include <avsystem/commons/avs_defs.h>
 
 #include <stdbool.h>
 #include <stddef.h>

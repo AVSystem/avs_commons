@@ -20,7 +20,7 @@
 #if defined(AVS_COMMONS_WITH_AVS_UTILS) \
         && defined(AVS_COMMONS_UTILS_WITH_STANDARD_ALLOCATOR)
 
-#    include <avsystem/commons/memory.h>
+#    include <avsystem/commons/avs_memory.h>
 
 #    include <stdlib.h>
 

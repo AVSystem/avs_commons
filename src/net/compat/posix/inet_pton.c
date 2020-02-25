@@ -44,8 +44,8 @@
 #    include <stdio.h>
 #    include <string.h>
 
-#    include <avsystem/commons/defs.h>
-#    include <avsystem/commons/errno.h>
+#    include <avsystem/commons/avs_defs.h>
+#    include <avsystem/commons/avs_errno.h>
 
 VISIBILITY_SOURCE_BEGIN
 

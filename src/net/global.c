@@ -21,7 +21,7 @@
 #    include "global.h"
 #    include "net_impl.h"
 
-#    include <avsystem/commons/init_once.h>
+#    include <avsystem/commons/avs_init_once.h>
 
 VISIBILITY_SOURCE_BEGIN
 

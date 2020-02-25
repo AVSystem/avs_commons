@@ -21,9 +21,9 @@
 #    include <assert.h>
 #    include <inttypes.h>
 
-#    include <avsystem/commons/memory.h>
-#    include <avsystem/commons/persistence.h>
-#    include <avsystem/commons/utils.h>
+#    include <avsystem/commons/avs_memory.h>
+#    include <avsystem/commons/avs_persistence.h>
+#    include <avsystem/commons/avs_utils.h>
 
 #    define MODULE_NAME avs_persistence
 #    include <x_log_config.h>

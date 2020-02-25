@@ -30,14 +30,14 @@
 
 #    include <getopt.h>
 
-#    include <avsystem/commons/defs.h>
-#    include <avsystem/commons/list.h>
+#    include <avsystem/commons/avs_defs.h>
+#    include <avsystem/commons/avs_list.h>
+#    include <avsystem/commons/avs_utils.h>
 #    include <avsystem/commons/unit/mock_helpers.h>
 #    include <avsystem/commons/unit/test.h>
-#    include <avsystem/commons/utils.h>
 
 #    ifdef AVS_COMMONS_WITH_AVS_LOG
-#        include <avsystem/commons/log.h>
+#        include <avsystem/commons/avs_log.h>
 #    endif
 
 #    include "stack_trace.h"

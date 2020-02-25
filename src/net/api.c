@@ -24,10 +24,10 @@
 #    include <stdio.h>
 #    include <string.h>
 
-#    include <avsystem/commons/memory.h>
-#    include <avsystem/commons/net.h>
-#    include <avsystem/commons/socket.h>
-#    include <avsystem/commons/socket_v_table.h>
+#    include <avsystem/commons/avs_memory.h>
+#    include <avsystem/commons/avs_net.h>
+#    include <avsystem/commons/avs_socket.h>
+#    include <avsystem/commons/avs_socket_v_table.h>
 
 #    include "api.h"
 #    include "global.h"

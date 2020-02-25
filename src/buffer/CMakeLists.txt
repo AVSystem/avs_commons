@@ -13,7 +13,7 @@
 # limitations under the License.
 
 set(AVS_BUFFER_PUBLIC_HEADERS
-    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/buffer.h")
+    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/avs_buffer.h")
 
 add_library(avs_buffer STATIC
             ${AVS_BUFFER_PUBLIC_HEADERS}

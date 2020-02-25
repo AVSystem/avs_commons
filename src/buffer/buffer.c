@@ -22,9 +22,9 @@
 #    include <stdlib.h>
 #    include <string.h>
 
-#    include <avsystem/commons/buffer.h>
-#    include <avsystem/commons/defs.h>
-#    include <avsystem/commons/memory.h>
+#    include <avsystem/commons/avs_buffer.h>
+#    include <avsystem/commons/avs_defs.h>
+#    include <avsystem/commons/avs_memory.h>
 
 #    define MODULE_NAME avs_buffer
 #    include <x_log_config.h>

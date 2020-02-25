@@ -17,8 +17,8 @@
 #ifndef AVS_COMMONS_SOCKET_V_TABLE_H
 #define AVS_COMMONS_SOCKET_V_TABLE_H
 
-#include <avsystem/commons/errno.h>
-#include <avsystem/commons/net.h>
+#include <avsystem/commons/avs_errno.h>
+#include <avsystem/commons/avs_net.h>
 
 #ifdef __cplusplus
 extern "C" {

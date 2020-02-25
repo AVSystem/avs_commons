@@ -13,7 +13,7 @@
 # limitations under the License.
 
 set(AVS_LOG_PUBLIC_HEADERS
-    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/log.h")
+    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/avs_log.h")
 
 add_library(avs_log STATIC
             ${AVS_LOG_PUBLIC_HEADERS}

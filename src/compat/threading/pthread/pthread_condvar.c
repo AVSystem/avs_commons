@@ -22,9 +22,9 @@
 #    define MODULE_NAME condvar_pthread
 #    include <x_log_config.h>
 
-#    include <avsystem/commons/condvar.h>
-#    include <avsystem/commons/defs.h>
-#    include <avsystem/commons/memory.h>
+#    include <avsystem/commons/avs_condvar.h>
+#    include <avsystem/commons/avs_defs.h>
+#    include <avsystem/commons/avs_memory.h>
 
 #    include <errno.h>
 #    include <pthread.h>

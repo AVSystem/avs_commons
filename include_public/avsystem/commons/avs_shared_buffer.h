@@ -19,8 +19,8 @@
 
 #include <string.h>
 
-#include <avsystem/commons/defs.h>
-#include <avsystem/commons/memory.h>
+#include <avsystem/commons/avs_defs.h>
+#include <avsystem/commons/avs_memory.h>
 
 #ifdef __cplusplus
 extern "C" {

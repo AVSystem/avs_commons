@@ -20,8 +20,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include <avsystem/commons/defs.h>
-#include <avsystem/commons/memory.h>
+#include <avsystem/commons/avs_defs.h>
+#include <avsystem/commons/avs_memory.h>
 
 /**
  * @file list.h
@@ -32,7 +32,7 @@
  * @code
  * #define _GNU_SOURCE // for asprintf()
  * #include <stdio.h>
- * #include <avsystem/commons/list.h>
+ * #include <avsystem/commons/avs_list.h>
  *
  * typedef struct {
  *     int index;

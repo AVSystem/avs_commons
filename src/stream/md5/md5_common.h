@@ -17,8 +17,8 @@
 #ifndef MD5_COMMON_H
 #define MD5_COMMON_H
 
-#include <avsystem/commons/stream.h>
-#include <avsystem/commons/stream_v_table.h>
+#include <avsystem/commons/avs_stream.h>
+#include <avsystem/commons/avs_stream_v_table.h>
 
 VISIBILITY_PRIVATE_HEADER_BEGIN
 

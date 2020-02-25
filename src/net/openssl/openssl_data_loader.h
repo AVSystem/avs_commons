@@ -16,7 +16,7 @@
 #ifndef NET_OPENSSL_DATA_LOADER_H
 #define NET_OPENSSL_DATA_LOADER_H
 
-#include <avsystem/commons/socket.h>
+#include <avsystem/commons/avs_socket.h>
 
 #include "../api.h"
 

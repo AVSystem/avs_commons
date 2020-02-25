@@ -17,7 +17,7 @@
 #define AVS_UNIT_ENABLE_SHORT_ASSERTS
 #include <avsystem/commons/unit/test.h>
 
-#include <avsystem/commons/hkdf.h>
+#include <avsystem/commons/avs_hkdf.h>
 
 #include <string.h>
 

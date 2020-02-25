@@ -32,9 +32,9 @@
 #    include <stdlib.h>
 #    include <string.h>
 
-#    include <avsystem/commons/errno_map.h>
-#    include <avsystem/commons/memory.h>
-#    include <avsystem/commons/stream_v_table.h>
+#    include <avsystem/commons/avs_errno_map.h>
+#    include <avsystem/commons/avs_memory.h>
+#    include <avsystem/commons/avs_stream_v_table.h>
 
 #    include "compression.h"
 #    include "http_log.h"

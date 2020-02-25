@@ -17,10 +17,10 @@
 #ifndef AVS_COMMONS_HTTP_H
 #define AVS_COMMONS_HTTP_H
 
-#include <avsystem/commons/list.h>
-#include <avsystem/commons/net.h>
-#include <avsystem/commons/stream.h>
-#include <avsystem/commons/url.h>
+#include <avsystem/commons/avs_list.h>
+#include <avsystem/commons/avs_net.h>
+#include <avsystem/commons/avs_stream.h>
+#include <avsystem/commons/avs_url.h>
 
 #ifdef __cplusplus
 extern "C" {

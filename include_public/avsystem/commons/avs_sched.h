@@ -17,7 +17,7 @@
 #ifndef AVS_COMMONS_SCHED_H
 #define AVS_COMMONS_SCHED_H
 
-#include <avsystem/commons/time.h>
+#include <avsystem/commons/avs_time.h>
 
 #ifdef __cplusplus
 extern "C" {

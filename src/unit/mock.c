@@ -22,7 +22,7 @@
 #    include <stdio.h>
 #    include <stdlib.h>
 
-#    include <avsystem/commons/list.h>
+#    include <avsystem/commons/avs_list.h>
 
 #    include <avsystem/commons/unit/mock_helpers.h>
 

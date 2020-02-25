@@ -22,8 +22,8 @@
 #include <ctype.h>
 #include <string.h>
 
-#include <avsystem/commons/errno.h>
-#include <avsystem/commons/list.h>
+#include <avsystem/commons/avs_errno.h>
+#include <avsystem/commons/avs_list.h>
 #include <avsystem/commons/stream/netbuf.h>
 #include <avsystem/commons/unit/mocksock.h>
 #include <avsystem/commons/unit/test.h>

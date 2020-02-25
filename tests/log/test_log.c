@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include <avsystem/commons/log.h>
+#include <avsystem/commons/avs_log.h>
 #include <avsystem/commons/unit/test.h>
 
 #include <stdlib.h>

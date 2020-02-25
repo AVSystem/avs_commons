@@ -23,14 +23,14 @@
 #    include <stdio.h>
 #    include <string.h>
 
-#    include <avsystem/commons/list.h>
-#    include <avsystem/commons/sched.h>
-#    include <avsystem/commons/utils.h>
+#    include <avsystem/commons/avs_list.h>
+#    include <avsystem/commons/avs_sched.h>
+#    include <avsystem/commons/avs_utils.h>
 
 #    ifdef AVS_COMMONS_SCHED_THREAD_SAFE
-#        include <avsystem/commons/condvar.h>
-#        include <avsystem/commons/init_once.h>
-#        include <avsystem/commons/mutex.h>
+#        include <avsystem/commons/avs_condvar.h>
+#        include <avsystem/commons/avs_init_once.h>
+#        include <avsystem/commons/avs_mutex.h>
 #    else // AVS_COMMONS_SCHED_THREAD_SAFE
 #        define avs_condvar_create(...) 0
 #        define avs_condvar_cleanup(...) ((void) 0)

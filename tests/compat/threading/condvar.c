@@ -16,7 +16,7 @@
 
 #include <avs_commons_posix_init.h>
 
-#include <avsystem/commons/condvar.h>
+#include <avsystem/commons/avs_condvar.h>
 
 #include <pthread.h>
 #include <string.h>

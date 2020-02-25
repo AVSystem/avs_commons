@@ -23,12 +23,12 @@
 #    include <stdio.h>
 #    include <string.h>
 
-#    include <avsystem/commons/buffer.h>
-#    include <avsystem/commons/errno.h>
-#    include <avsystem/commons/memory.h>
-#    include <avsystem/commons/net.h>
+#    include <avsystem/commons/avs_buffer.h>
+#    include <avsystem/commons/avs_errno.h>
+#    include <avsystem/commons/avs_memory.h>
+#    include <avsystem/commons/avs_net.h>
+#    include <avsystem/commons/avs_stream_v_table.h>
 #    include <avsystem/commons/stream/netbuf.h>
-#    include <avsystem/commons/stream_v_table.h>
 
 #    include <avsystem/commons/stream/stream_net.h>
 

@@ -24,8 +24,8 @@
 #    include <stdlib.h>
 #    include <string.h>
 
-#    include <avsystem/commons/memory.h>
-#    include <avsystem/commons/vector.h>
+#    include <avsystem/commons/avs_memory.h>
+#    include <avsystem/commons/avs_vector.h>
 
 VISIBILITY_SOURCE_BEGIN
 

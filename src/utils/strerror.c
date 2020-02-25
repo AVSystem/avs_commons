@@ -18,7 +18,7 @@
 
 #ifdef AVS_COMMONS_WITH_AVS_UTILS
 
-#    include <avsystem/commons/errno.h>
+#    include <avsystem/commons/avs_errno.h>
 
 VISIBILITY_SOURCE_BEGIN
 

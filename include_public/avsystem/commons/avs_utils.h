@@ -17,7 +17,7 @@
 #ifndef AVS_COMMONS_UTILS_UTILS_H
 #define AVS_COMMONS_UTILS_UTILS_H
 
-#include <avsystem/commons/defs.h>
+#include <avsystem/commons/avs_defs.h>
 
 #include <stdarg.h>
 #include <stdbool.h>

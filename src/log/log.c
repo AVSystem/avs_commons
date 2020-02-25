@@ -23,12 +23,12 @@
 #    include <stdio.h>
 #    include <string.h>
 
-#    include <avsystem/commons/list.h>
-#    include <avsystem/commons/log.h>
+#    include <avsystem/commons/avs_list.h>
+#    include <avsystem/commons/avs_log.h>
 
 #    ifdef AVS_COMMONS_WITH_AVS_COMPAT_THREADING
-#        include <avsystem/commons/init_once.h>
-#        include <avsystem/commons/mutex.h>
+#        include <avsystem/commons/avs_init_once.h>
+#        include <avsystem/commons/avs_mutex.h>
 #    endif // AVS_COMMONS_WITH_AVS_COMPAT_THREADING
 
 VISIBILITY_SOURCE_BEGIN

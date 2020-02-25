@@ -24,9 +24,9 @@
 #    include <inttypes.h>
 #    include <string.h>
 
-#    include <avsystem/commons/errno.h>
-#    include <avsystem/commons/memory.h>
-#    include <avsystem/commons/utils.h>
+#    include <avsystem/commons/avs_errno.h>
+#    include <avsystem/commons/avs_memory.h>
+#    include <avsystem/commons/avs_utils.h>
 
 #    include "body_receivers.h"
 #    include "client.h"

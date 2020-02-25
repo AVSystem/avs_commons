@@ -19,9 +19,9 @@
 
 #ifdef AVS_COMMONS_WITH_AVS_UNIT
 
-#    include <avsystem/commons/defs.h>
-#    include <avsystem/commons/memory.h>
-#    include <avsystem/commons/utils.h>
+#    include <avsystem/commons/avs_defs.h>
+#    include <avsystem/commons/avs_memory.h>
+#    include <avsystem/commons/avs_utils.h>
 
 #    include "stack_trace.h"
 

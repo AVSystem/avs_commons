@@ -16,8 +16,8 @@
 
 #include <avs_commons_posix_init.h>
 
-#include <avsystem/commons/memory.h>
-#include <avsystem/commons/socket.h>
+#include <avsystem/commons/avs_memory.h>
+#include <avsystem/commons/avs_socket.h>
 #include <avsystem/commons/unit/test.h>
 
 #include <unistd.h>

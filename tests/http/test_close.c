@@ -18,8 +18,8 @@
 
 #include <string.h>
 
-#include <avsystem/commons/errno.h>
-#include <avsystem/commons/http.h>
+#include <avsystem/commons/avs_errno.h>
+#include <avsystem/commons/avs_http.h>
 #include <avsystem/commons/unit/mocksock.h>
 #include <avsystem/commons/unit/test.h>
 

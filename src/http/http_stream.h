@@ -17,9 +17,9 @@
 #ifndef AVS_COMMONS_HTTP_STREAM_H
 #define AVS_COMMONS_HTTP_STREAM_H
 
-#include <avsystem/commons/list.h>
-#include <avsystem/commons/stream.h>
-#include <avsystem/commons/stream_v_table.h>
+#include <avsystem/commons/avs_list.h>
+#include <avsystem/commons/avs_stream.h>
+#include <avsystem/commons/avs_stream_v_table.h>
 
 #include "auth.h"
 

@@ -20,8 +20,8 @@
 
 #    include <inttypes.h>
 
+#    include <avsystem/commons/avs_utils.h>
 #    include <avsystem/commons/stream/md5.h>
-#    include <avsystem/commons/utils.h>
 
 #    include "../auth.h"
 #    include "../client.h"

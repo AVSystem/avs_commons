@@ -16,7 +16,7 @@
 
 #include <avs_commons_init.h>
 
-#include <avsystem/commons/shared_buffer.h>
+#include <avsystem/commons/avs_shared_buffer.h>
 
 #define AVS_UNIT_ENABLE_SHORT_ASSERTS
 #include <avsystem/commons/unit/test.h>

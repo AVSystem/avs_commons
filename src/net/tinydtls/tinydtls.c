@@ -22,8 +22,8 @@
 #    include <inttypes.h>
 #    include <string.h>
 
-#    include <avsystem/commons/errno.h>
-#    include <avsystem/commons/memory.h>
+#    include <avsystem/commons/avs_errno.h>
+#    include <avsystem/commons/avs_memory.h>
 
 #    define uthash_malloc(Size) avs_malloc(Size)
 #    define uthash_free(Ptr, Size) avs_free(Ptr)

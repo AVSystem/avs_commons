@@ -23,8 +23,8 @@
 #    include <stdlib.h>
 #    include <string.h>
 
-#    include <avsystem/commons/memory.h>
-#    include <avsystem/commons/stream_v_table.h>
+#    include <avsystem/commons/avs_memory.h>
+#    include <avsystem/commons/avs_stream_v_table.h>
 #    include <avsystem/commons/unit/memstream.h>
 #    include <avsystem/commons/unit/test.h>
 

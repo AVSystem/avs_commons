@@ -32,7 +32,7 @@
 
 #include <errno.h>
 
-#include <avsystem/commons/errno_map.h>
+#include <avsystem/commons/avs_errno_map.h>
 
 #ifdef ERROR
 // Windows headers are REALLY weird. winsock2.h includes windows.h, which

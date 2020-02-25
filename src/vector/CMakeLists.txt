@@ -13,7 +13,7 @@
 # limitations under the License.
 
 set(AVS_VECTOR_PUBLIC_HEADERS
-    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/vector.h")
+    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/avs_vector.h")
 
 add_library(avs_vector STATIC
             ${AVS_VECTOR_PUBLIC_HEADERS}

@@ -17,8 +17,8 @@
 #ifndef AVS_COMMONS_CONDVAR_H
 #define AVS_COMMONS_CONDVAR_H
 
-#include <avsystem/commons/mutex.h>
-#include <avsystem/commons/time.h>
+#include <avsystem/commons/avs_mutex.h>
+#include <avsystem/commons/avs_time.h>
 
 #ifdef __cplusplus
 extern "C" {

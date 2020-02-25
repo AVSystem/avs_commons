@@ -17,7 +17,7 @@
 #ifndef AVS_COMMONS_ERRNO_MAP_H
 #define AVS_COMMONS_ERRNO_MAP_H
 
-#include <avsystem/commons/errno.h>
+#include <avsystem/commons/avs_errno.h>
 
 #ifdef __cplusplus
 extern "C" {

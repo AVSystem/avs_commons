@@ -21,7 +21,7 @@
 #    define MODULE_NAME avs_crypto_aead
 #    include <x_log_config.h>
 
-#    include <avsystem/commons/aead.h>
+#    include <avsystem/commons/avs_aead.h>
 
 #    include <mbedtls/ccm.h>
 

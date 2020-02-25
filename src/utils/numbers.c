@@ -18,7 +18,7 @@
 
 #ifdef AVS_COMMONS_WITH_AVS_UTILS
 
-#    include <avsystem/commons/utils.h>
+#    include <avsystem/commons/avs_utils.h>
 
 #    include <math.h>
 #    include <stdlib.h>

@@ -26,10 +26,10 @@
 
 #    include <limits.h>
 
-#    include <avsystem/commons/errno.h>
-#    include <avsystem/commons/memory.h>
-#    include <avsystem/commons/stream.h>
-#    include <avsystem/commons/stream_v_table.h>
+#    include <avsystem/commons/avs_errno.h>
+#    include <avsystem/commons/avs_memory.h>
+#    include <avsystem/commons/avs_stream.h>
+#    include <avsystem/commons/avs_stream_v_table.h>
 
 #    define MODULE_NAME avs_stream
 #    include <x_log_config.h>

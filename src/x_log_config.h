@@ -27,7 +27,7 @@
 #        define AVS_LOG_WITH_TRACE
 #    endif
 
-#    include <avsystem/commons/log.h>
+#    include <avsystem/commons/avs_log.h>
 #    define LOG(...) avs_log(MODULE_NAME, __VA_ARGS__)
 
 #else

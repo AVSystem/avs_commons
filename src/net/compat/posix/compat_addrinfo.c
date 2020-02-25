@@ -22,10 +22,10 @@
 #    include <assert.h>
 #    include <string.h>
 
-#    include <avsystem/commons/memory.h>
-#    include <avsystem/commons/net.h>
-#    include <avsystem/commons/time.h>
-#    include <avsystem/commons/utils.h>
+#    include <avsystem/commons/avs_memory.h>
+#    include <avsystem/commons/avs_net.h>
+#    include <avsystem/commons/avs_time.h>
+#    include <avsystem/commons/avs_utils.h>
 
 #    include "compat.h"
 

@@ -27,7 +27,7 @@
 
 #    include <avs_commons_poison.h>
 
-#    include <avsystem/commons/hkdf.h>
+#    include <avsystem/commons/avs_hkdf.h>
 
 VISIBILITY_SOURCE_BEGIN
 

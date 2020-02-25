@@ -17,7 +17,7 @@
 #ifndef NET_GLOBAL_H
 #define NET_GLOBAL_H
 
-#include <avsystem/commons/errno.h>
+#include <avsystem/commons/avs_errno.h>
 
 VISIBILITY_PRIVATE_HEADER_BEGIN
 

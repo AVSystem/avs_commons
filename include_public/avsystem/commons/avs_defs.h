@@ -56,7 +56,7 @@ typedef long ssize_t;
 #endif
 
 #ifdef AVS_COMMONS_NET_WITH_MBEDTLS_CUSTOM_ENTROPY_INITIALIZER
-#    include <avsystem/commons/errno.h>
+#    include <avsystem/commons/avs_errno.h>
 struct mbedtls_entropy_context;
 avs_error_t avs_net_mbedtls_entropy_init(struct mbedtls_entropy_context *);
 #endif // AVS_COMMONS_NET_WITH_MBEDTLS_CUSTOM_ENTROPY_INITIALIZER

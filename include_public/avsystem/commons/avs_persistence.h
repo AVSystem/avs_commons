@@ -21,9 +21,9 @@
 #include <stdint.h>
 #include <string.h>
 
-#include <avsystem/commons/list.h>
-#include <avsystem/commons/rbtree.h>
-#include <avsystem/commons/stream.h>
+#include <avsystem/commons/avs_list.h>
+#include <avsystem/commons/avs_rbtree.h>
+#include <avsystem/commons/avs_stream.h>
 
 #ifdef __cplusplus
 extern "C" {

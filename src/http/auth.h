@@ -17,7 +17,7 @@
 #ifndef AVS_COMMONS_HTTP_AUTH_H
 #define AVS_COMMONS_HTTP_AUTH_H
 
-#include <avsystem/commons/http.h>
+#include <avsystem/commons/avs_http.h>
 
 VISIBILITY_PRIVATE_HEADER_BEGIN
 
