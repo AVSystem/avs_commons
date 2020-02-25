@@ -20,7 +20,7 @@
         && defined(AVS_COMMONS_COMPAT_THREADING_WITH_ATOMIC_SPINLOCK)
 
 #    define MODULE_NAME mutex_atomic_spinlock
-#    include <x_log_config.h>
+#    include <avs_x_log_config.h>
 
 #    include <avsystem/commons/avs_defs.h>
 #    include <avsystem/commons/avs_memory.h>
@@ -30,7 +30,7 @@
 #    include <stdbool.h>
 #    include <stdlib.h>
 
-#    include "atomic_spinlock_structs.h"
+#    include "avs_atomic_spinlock_structs.h"
 
 VISIBILITY_SOURCE_BEGIN
 

@@ -272,7 +272,7 @@ static int unit_conv_backward_int64_t_double(int64_t *output,
 // time_conv_forward_int64_t
 // time_conv_backward_int64_t
 #    define SCALAR_TYPE int64_t
-#    include "x_time_conv.h"
+#    include "avs_x_time_conv.h"
 
 // unit_conv_double_int64_t
 // unit_conv_forward_double_int64_t
@@ -280,7 +280,7 @@ static int unit_conv_backward_int64_t_double(int64_t *output,
 // time_conv_forward_double
 // time_conv_backward_double
 #    define SCALAR_TYPE double
-#    include "x_time_conv.h"
+#    include "avs_x_time_conv.h"
 
 static bool unit_valid(avs_time_unit_t unit) {
     /* Some compilers implement avs_time_unit_t as unsigned int, causing

@@ -17,7 +17,7 @@
 #include <avs_commons_init.h>
 
 #define MODULE_NAME http_test
-#include <x_log_config.h>
+#include <avs_x_log_config.h>
 
 #include <ctype.h>
 #include <string.h>
@@ -30,7 +30,7 @@
 
 #include "test_http.h"
 
-#include "src/http/body_receivers.h"
+#include "src/http/avs_body_receivers.h"
 
 AVS_UNIT_GLOBAL_INIT(verbose) {
     if (!verbose) {

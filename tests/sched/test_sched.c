@@ -18,7 +18,7 @@
 #include <avs_commons_posix_init.h>
 
 #define MODULE_NAME sched_test
-#include <x_log_config.h>
+#include <avs_x_log_config.h>
 
 #include <time.h>
 

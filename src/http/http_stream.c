@@ -26,11 +26,11 @@
 #    include <avsystem/commons/avs_stream_net.h>
 #    include <avsystem/commons/avs_utils.h>
 
-#    include "chunked.h"
-#    include "client.h"
-#    include "headers.h"
-#    include "http_log.h"
-#    include "http_stream.h"
+#    include "avs_chunked.h"
+#    include "avs_client.h"
+#    include "avs_headers.h"
+#    include "avs_http_log.h"
+#    include "avs_http_stream.h"
 
 VISIBILITY_SOURCE_BEGIN
 

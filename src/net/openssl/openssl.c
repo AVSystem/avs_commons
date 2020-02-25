@@ -44,12 +44,12 @@
 #    include <avsystem/commons/avs_stream_membuf.h>
 #    include <avsystem/commons/avs_time.h>
 
-#    include "../global.h"
-#    include "../net_impl.h"
+#    include "../avs_global.h"
+#    include "../avs_net_impl.h"
 
-#    include "common.h"
+#    include "avs_common.h"
 #    ifdef AVS_COMMONS_NET_WITH_X509
-#        include "openssl_data_loader.h"
+#        include "avs_openssl_data_loader.h"
 #    endif // AVS_COMMONS_NET_WITH_X509
 
 VISIBILITY_SOURCE_BEGIN
@@ -114,7 +114,7 @@ typedef struct {
 } ssl_socket_t;
 
 #    define NET_SSL_COMMON_INTERNALS
-#    include "../ssl_common.h"
+#    include "../avs_ssl_common.h"
 
 #    ifdef AVS_COMMONS_NET_WITH_DTLS
 #        if OPENSSL_VERSION_NUMBER_LT(1, 1, 0)

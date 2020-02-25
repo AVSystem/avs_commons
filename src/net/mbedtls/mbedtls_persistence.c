@@ -37,8 +37,8 @@
 #    include <avsystem/commons/avs_stream_inbuf.h>
 #    include <avsystem/commons/avs_stream_outbuf.h>
 
-#    include "../net_impl.h"
-#    include "mbedtls_persistence.h"
+#    include "../avs_net_impl.h"
+#    include "avs_mbedtls_persistence.h"
 
 VISIBILITY_SOURCE_BEGIN
 

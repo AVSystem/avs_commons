@@ -18,15 +18,15 @@ set(AVS_HTTP_PUBLIC_HEADERS
 add_library(avs_http STATIC
             ${AVS_HTTP_PUBLIC_HEADERS}
 
-            auth.h
-            body_receivers.h
-            chunked.h
-            client.h
-            compression.h
-            content_encoding.h
-            headers.h
-            http_log.h
-            http_stream.h
+            avs_auth.h
+            avs_body_receivers.h
+            avs_chunked.h
+            avs_client.h
+            avs_compression.h
+            avs_content_encoding.h
+            avs_headers.h
+            avs_http_log.h
+            avs_http_stream.h
 
             auth/basic.c
             auth/digest.c

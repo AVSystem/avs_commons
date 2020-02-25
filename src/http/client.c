@@ -23,8 +23,8 @@
 #    include <avsystem/commons/avs_memory.h>
 #    include <avsystem/commons/avs_utils.h>
 
-#    include "client.h"
-#    include "http_log.h"
+#    include "avs_client.h"
+#    include "avs_http_log.h"
 
 VISIBILITY_SOURCE_BEGIN
 

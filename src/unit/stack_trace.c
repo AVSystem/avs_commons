@@ -23,7 +23,7 @@
 #    include <avsystem/commons/avs_memory.h>
 #    include <avsystem/commons/avs_utils.h>
 
-#    include "stack_trace.h"
+#    include "avs_stack_trace.h"
 
 #    ifdef AVS_COMMONS_UNIT_POSIX_HAVE_BACKTRACE
 #        include <execinfo.h>
@@ -39,7 +39,7 @@
 #    include <stdlib.h>
 #    include <string.h>
 
-#    include "unit_test.h"
+#    include "avs_unit_test_private.h"
 
 VISIBILITY_SOURCE_BEGIN
 

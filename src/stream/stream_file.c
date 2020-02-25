@@ -31,7 +31,7 @@
 #    include <avsystem/commons/avs_stream_v_table.h>
 
 #    define MODULE_NAME avs_stream
-#    include <x_log_config.h>
+#    include <avs_x_log_config.h>
 
 VISIBILITY_SOURCE_BEGIN
 

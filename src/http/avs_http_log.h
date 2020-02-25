@@ -14,22 +14,13 @@
  * limitations under the License.
  */
 
-#ifndef AVS_COMMONS_HTTP_CHUNKED_H
-#define AVS_COMMONS_HTTP_CHUNKED_H
+#ifndef AVS_COMMONS_HTTP_LOG_H
+#define AVS_COMMONS_HTTP_LOG_H
 
-#include "http_stream.h"
+#define MODULE_NAME avs_http
+#include <avs_x_log_config.h>
 
 VISIBILITY_PRIVATE_HEADER_BEGIN
-
-avs_error_t _avs_http_chunked_send_first(http_stream_t *stream,
-                                         const void *data,
-                                         size_t data_length);
-
-avs_error_t _avs_http_chunked_send(http_stream_t *stream,
-                                   bool message_finished,
-                                   const void *data,
-                                   size_t data_length);
-
 VISIBILITY_PRIVATE_HEADER_END
 
-#endif /* AVS_COMMONS_HTTP_CHUNKED_H */
+#endif // AVS_COMMONS_HTTP_LOG_H

@@ -57,12 +57,12 @@
 #    include <avsystem/commons/avs_memory.h>
 #    include <avsystem/commons/avs_utils.h>
 
-#    include "../global.h"
-#    include "../net_impl.h"
+#    include "../avs_global.h"
+#    include "../avs_net_impl.h"
 #    ifdef AVS_COMMONS_NET_WITH_X509
-#        include "mbedtls_data_loader.h"
+#        include "avs_mbedtls_data_loader.h"
 #    endif // AVS_COMMONS_NET_WITH_X509
-#    include "mbedtls_persistence.h"
+#    include "avs_mbedtls_persistence.h"
 
 VISIBILITY_SOURCE_BEGIN
 
@@ -140,7 +140,7 @@ static void debug_mbedtls(
 #    endif // AVS_COMMONS_NET_WITH_MBEDTLS_LOGS
 
 #    define NET_SSL_COMMON_INTERNALS
-#    include "../ssl_common.h"
+#    include "../avs_ssl_common.h"
 
 static avs_error_t return_alert_if_any(ssl_socket_t *socket) {
     mbedtls_ssl_context *context = get_context(socket);

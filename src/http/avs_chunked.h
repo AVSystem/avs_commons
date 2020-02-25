@@ -14,25 +14,22 @@
  * limitations under the License.
  */
 
-#ifndef AVS_COMMONS_HTTP_HEADERS_H
-#define AVS_COMMONS_HTTP_HEADERS_H
+#ifndef AVS_COMMONS_HTTP_CHUNKED_H
+#define AVS_COMMONS_HTTP_CHUNKED_H
 
-#include "http_stream.h"
+#include "avs_http_stream.h"
 
 VISIBILITY_PRIVATE_HEADER_BEGIN
 
-typedef enum {
-    TRANSFER_IDENTITY,
-    TRANSFER_LENGTH,
-    TRANSFER_CHUNKED
-} http_transfer_encoding_t;
+avs_error_t _avs_http_chunked_send_first(http_stream_t *stream,
+                                         const void *data,
+                                         size_t data_length);
 
-/* length == (size_t) -1 mean chunked encoding */
-avs_error_t _avs_http_send_headers(http_stream_t *stream,
-                                   size_t content_length);
-
-avs_error_t _avs_http_receive_headers(http_stream_t *stream);
+avs_error_t _avs_http_chunked_send(http_stream_t *stream,
+                                   bool message_finished,
+                                   const void *data,
+                                   size_t data_length);
 
 VISIBILITY_PRIVATE_HEADER_END
 
-#endif /* AVS_COMMONS_HTTP_HEADERS_H */
+#endif /* AVS_COMMONS_HTTP_CHUNKED_H */

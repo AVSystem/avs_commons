@@ -30,8 +30,8 @@
 
 #    include <tinydtls/dtls.h>
 
-#    include "../global.h"
-#    include "../net_impl.h"
+#    include "../avs_global.h"
+#    include "../avs_net_impl.h"
 
 VISIBILITY_SOURCE_BEGIN
 
@@ -56,7 +56,7 @@ typedef struct {
 } ssl_socket_t;
 
 #    define NET_SSL_COMMON_INTERNALS
-#    include "../ssl_common.h"
+#    include "../avs_ssl_common.h"
 
 avs_error_t _avs_net_initialize_global_ssl_state(void) {
     dtls_init();

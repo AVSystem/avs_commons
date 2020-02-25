@@ -29,9 +29,9 @@
 #    include <avsystem/commons/avs_socket.h>
 #    include <avsystem/commons/avs_socket_v_table.h>
 
-#    include "api.h"
-#    include "global.h"
-#    include "net_impl.h"
+#    include "avs_api.h"
+#    include "avs_global.h"
+#    include "avs_net_impl.h"
 
 VISIBILITY_SOURCE_BEGIN
 

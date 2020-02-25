@@ -17,7 +17,7 @@ set(AVS_STREAM_MD5_PUBLIC_HEADERS
 
 add_library(avs_stream_md5 STATIC
             ${AVS_STREAM_MD5_PUBLIC_HEADERS}
-            md5_common.h
+            avs_md5_common.h
             md5_common.c)
 
 if(WITH_OPENSSL)

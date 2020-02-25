@@ -18,7 +18,7 @@
 
 #include <avsystem/commons/avs_socket.h>
 
-#include "../api.h"
+#include "../avs_api.h"
 
 VISIBILITY_PRIVATE_HEADER_BEGIN
 

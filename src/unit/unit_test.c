@@ -40,8 +40,8 @@
 #        include <avsystem/commons/avs_log.h>
 #    endif
 
-#    include "stack_trace.h"
-#    include "unit_test.h"
+#    include "avs_stack_trace.h"
+#    include "avs_unit_test_private.h"
 
 VISIBILITY_SOURCE_BEGIN
 

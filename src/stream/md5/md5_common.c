@@ -21,7 +21,7 @@
 #    include <stdio.h>
 #    include <string.h>
 
-#    include "md5_common.h"
+#    include "avs_md5_common.h"
 
 VISIBILITY_SOURCE_BEGIN
 

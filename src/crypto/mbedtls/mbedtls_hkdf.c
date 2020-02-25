@@ -19,7 +19,7 @@
 #if defined(AVS_COMMONS_WITH_AVS_CRYPTO) && defined(AVS_COMMONS_WITH_MBEDTLS)
 
 #    define MODULE_NAME avs_crypto_hkdf
-#    include <x_log_config.h>
+#    include <avs_x_log_config.h>
 
 #    include <avsystem/commons/avs_hkdf.h>
 

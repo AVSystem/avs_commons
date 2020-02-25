@@ -35,16 +35,16 @@ set(AVS_NET_PUBLIC_HEADERS
 set(AVS_NET_SOURCES
     ${AVS_NET_PUBLIC_HEADERS}
 
-    api.h
-    global.h
-    net_impl.h
+    avs_api.h
+    avs_global.h
+    avs_net_impl.h
 
     addrinfo.c
     api.c
     global.c
     url.c
 
-    compat/posix/compat.h
+    compat/posix/avs_compat.h
 
     compat/posix/compat_addrinfo.c
     compat/posix/inet_ntop.c
@@ -105,10 +105,10 @@ endif()
 if(WITH_MBEDTLS)
     set(AVS_NET_MBEDTLS_SOURCES
         ${AVS_NET_SOURCES}
+        mbedtls/avs_mbedtls_persistence.h
         mbedtls/mbedtls.c
         mbedtls/mbedtls_data_loader.c
-        mbedtls/mbedtls_persistence.c
-        mbedtls/mbedtls_persistence.h)
+        mbedtls/mbedtls_persistence.c)
 
     add_library(avs_net_mbedtls ${AVS_NET_MBEDTLS_SOURCES})
     target_link_libraries(avs_net_mbedtls PUBLIC avs_net_core mbedtls mbedcrypto mbedx509)

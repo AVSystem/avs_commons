@@ -28,12 +28,12 @@
 #    include <avs_commons_poison.h>
 
 #    define MODULE_NAME avs_net_data_loader
-#    include <x_log_config.h>
+#    include <avs_x_log_config.h>
 
-#    include "common.h"
-#    include "openssl_data_loader.h"
+#    include "avs_common.h"
+#    include "avs_openssl_data_loader.h"
 
-#    include "../api.h"
+#    include "../avs_api.h"
 
 #    include <assert.h>
 #    include <stdio.h>

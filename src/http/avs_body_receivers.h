@@ -17,7 +17,7 @@
 #ifndef AVS_COMMONS_HTTP_BODY_RECEIVERS_H
 #define AVS_COMMONS_HTTP_BODY_RECEIVERS_H
 
-#include "headers.h"
+#include "avs_headers.h"
 
 VISIBILITY_PRIVATE_HEADER_BEGIN
 

@@ -21,7 +21,7 @@
 #include <avsystem/commons/avs_stream.h>
 #include <avsystem/commons/avs_stream_v_table.h>
 
-#include "auth.h"
+#include "avs_auth.h"
 
 VISIBILITY_PRIVATE_HEADER_BEGIN
 

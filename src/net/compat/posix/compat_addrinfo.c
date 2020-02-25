@@ -27,7 +27,7 @@
 #    include <avsystem/commons/avs_time.h>
 #    include <avsystem/commons/avs_utils.h>
 
-#    include "compat.h"
+#    include "avs_compat.h"
 
 VISIBILITY_SOURCE_BEGIN
 

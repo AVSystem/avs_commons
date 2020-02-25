@@ -24,7 +24,7 @@
 
 #include <sys/stat.h>
 
-#include "src/net/mbedtls/mbedtls_data_loader.h"
+#include "src/net/mbedtls/avs_mbedtls_data_loader.h"
 
 AVS_UNIT_TEST(backend_mbedtls, chain_loading_from_file) {
     mbedtls_x509_crt *chain = NULL;

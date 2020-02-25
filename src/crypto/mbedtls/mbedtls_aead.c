@@ -19,13 +19,13 @@
 #if defined(AVS_COMMONS_WITH_AVS_CRYPTO) && defined(AVS_COMMONS_WITH_MBEDTLS)
 
 #    define MODULE_NAME avs_crypto_aead
-#    include <x_log_config.h>
+#    include <avs_x_log_config.h>
 
 #    include <avsystem/commons/avs_aead.h>
 
 #    include <mbedtls/ccm.h>
 
-#    include "../crypto_utils.h"
+#    include "../avs_crypto_utils.h"
 
 VISIBILITY_SOURCE_BEGIN
 

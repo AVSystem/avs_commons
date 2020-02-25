@@ -19,9 +19,9 @@
 #ifdef AVS_COMMONS_WITH_AVS_CRYPTO
 
 #    define MODULE_NAME avs_crypto
-#    include <x_log_config.h>
+#    include <avs_x_log_config.h>
 
-#    include "crypto_utils.h"
+#    include "avs_crypto_utils.h"
 
 VISIBILITY_SOURCE_BEGIN
 

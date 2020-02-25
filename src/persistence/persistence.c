@@ -26,7 +26,7 @@
 #    include <avsystem/commons/avs_utils.h>
 
 #    define MODULE_NAME avs_persistence
-#    include <x_log_config.h>
+#    include <avs_x_log_config.h>
 
 VISIBILITY_SOURCE_BEGIN
 

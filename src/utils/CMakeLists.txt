@@ -21,7 +21,7 @@ set(AVS_UTILS_PUBLIC_HEADERS
 
 add_library(avs_utils STATIC
             ${AVS_UTILS_PUBLIC_HEADERS}
-            x_time_conv.h
+            avs_x_time_conv.h
 
             cleanup.c
             hexlify.c

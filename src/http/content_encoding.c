@@ -21,10 +21,10 @@
 #    include <avsystem/commons/avs_memory.h>
 #    include <avsystem/commons/avs_stream_v_table.h>
 
-#    include "client.h"
-#    include "compression.h"
-#    include "content_encoding.h"
-#    include "http_log.h"
+#    include "avs_client.h"
+#    include "avs_compression.h"
+#    include "avs_content_encoding.h"
+#    include "avs_http_log.h"
 
 VISIBILITY_SOURCE_BEGIN
 

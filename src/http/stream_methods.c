@@ -27,10 +27,10 @@
 #    include <avsystem/commons/avs_stream_netbuf.h>
 #    include <avsystem/commons/avs_time.h>
 
-#    include "client.h"
-#    include "content_encoding.h"
-#    include "http_log.h"
-#    include "http_stream.h"
+#    include "avs_client.h"
+#    include "avs_content_encoding.h"
+#    include "avs_http_log.h"
+#    include "avs_http_stream.h"
 
 VISIBILITY_SOURCE_BEGIN
 

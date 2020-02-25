@@ -39,7 +39,7 @@
 #        include <ifaddrs.h>
 #    endif
 
-#    include "compat.h"
+#    include "avs_compat.h"
 
 VISIBILITY_SOURCE_BEGIN
 

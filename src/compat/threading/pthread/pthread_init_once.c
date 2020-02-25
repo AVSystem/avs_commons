@@ -24,7 +24,7 @@
         && defined(AVS_COMMONS_COMPAT_THREADING_WITH_PTHREAD)
 
 #    define MODULE_NAME init_once_pthread
-#    include <x_log_config.h>
+#    include <avs_x_log_config.h>
 
 #    include <avsystem/commons/avs_defs.h>
 #    include <avsystem/commons/avs_init_once.h>

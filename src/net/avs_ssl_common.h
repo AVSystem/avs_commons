@@ -21,7 +21,7 @@
 #    error "This header is not meant to be included from outside"
 #endif
 
-#include "api.h"
+#include "avs_api.h"
 
 #include <avsystem/commons/avs_memory.h>
 

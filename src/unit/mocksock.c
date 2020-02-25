@@ -19,7 +19,7 @@
 #ifdef AVS_COMMONS_WITH_AVS_UNIT
 
 #    define MODULE_NAME mocksock
-#    include <x_log_config.h>
+#    include <avs_x_log_config.h>
 
 #    include <assert.h>
 #    include <ctype.h>
@@ -33,7 +33,7 @@
 #    include <avsystem/commons/avs_unit_mocksock.h>
 #    include <avsystem/commons/avs_unit_test.h>
 
-#    include "unit_test.h"
+#    include "avs_unit_test_private.h"
 
 VISIBILITY_SOURCE_BEGIN
 

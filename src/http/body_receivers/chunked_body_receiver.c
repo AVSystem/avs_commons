@@ -25,8 +25,8 @@
 #    include <avsystem/commons/avs_memory.h>
 #    include <avsystem/commons/avs_stream_net.h>
 
-#    include "../body_receivers.h"
-#    include "../http_log.h"
+#    include "../avs_body_receivers.h"
+#    include "../avs_http_log.h"
 
 VISIBILITY_SOURCE_BEGIN
 

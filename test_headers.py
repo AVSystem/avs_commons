@@ -45,7 +45,7 @@ INCLUDE_WHITELIST = {
     # r'wctype\.h',
     r'avs_commons_init\.h',
     r'avs_commons_poison\.h',
-    r'x_log_config\.h',
+    r'avs_x_log_config\.h',
     r'avsystem/commons/[^.]*\.h'
 }
 
@@ -57,7 +57,7 @@ CONDITIONAL_WHITELIST = {
     (r'openssl', r'sys/time\.h'),
     (r'tinydtls', r'tinydtls/.*'),
     (r'compression', r'zlib\.h'),
-    (r'net/api\.h', r'valgrind/.*')
+    (r'net/avs_api\.h', r'valgrind/.*')
 }
 
 if __name__ == '__main__':

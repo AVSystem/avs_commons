@@ -27,7 +27,7 @@
 #    include <avsystem/commons/avs_url.h>
 #    include <avsystem/commons/avs_utils.h>
 
-#    include "net_impl.h"
+#    include "avs_net_impl.h"
 
 VISIBILITY_SOURCE_BEGIN
 

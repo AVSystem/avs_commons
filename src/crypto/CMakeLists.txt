@@ -18,8 +18,8 @@ set(AVS_CRYPTO_PUBLIC_HEADERS
 
 set(AVS_CRYPTO_SOURCES
     ${AVS_CRYPTO_PUBLIC_HEADERS}
-    crypto_utils.c
-    crypto_utils.h)
+    avs_crypto_utils.h
+    crypto_utils.c)
 
 add_library(avs_crypto_core INTERFACE)
 target_link_libraries(avs_crypto_core INTERFACE avs_commons_global_headers avs_utils)

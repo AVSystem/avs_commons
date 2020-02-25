@@ -22,9 +22,9 @@
 #include <avsystem/commons/avs_socket_v_table.h>
 
 #define MODULE_NAME avs_net
-#include <x_log_config.h>
+#include <avs_x_log_config.h>
 
-#include "api.h"
+#include "avs_api.h"
 
 VISIBILITY_PRIVATE_HEADER_BEGIN
 

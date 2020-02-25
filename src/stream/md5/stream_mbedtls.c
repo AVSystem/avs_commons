@@ -26,7 +26,7 @@
 #    include <avsystem/commons/avs_memory.h>
 #    include <avsystem/commons/avs_stream_md5.h>
 
-#    include "md5_common.h"
+#    include "avs_md5_common.h"
 
 VISIBILITY_SOURCE_BEGIN
 
