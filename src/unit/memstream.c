@@ -25,8 +25,8 @@
 
 #    include <avsystem/commons/avs_memory.h>
 #    include <avsystem/commons/avs_stream_v_table.h>
-#    include <avsystem/commons/unit/memstream.h>
-#    include <avsystem/commons/unit/test.h>
+#    include <avsystem/commons/avs_unit_memstream.h>
+#    include <avsystem/commons/avs_unit_test.h>
 
 VISIBILITY_SOURCE_BEGIN
 

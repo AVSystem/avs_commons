@@ -26,7 +26,7 @@
 
 #include <avsystem/commons/avs_sched.h>
 #include <avsystem/commons/avs_time.h>
-#include <avsystem/commons/unit/test.h>
+#include <avsystem/commons/avs_unit_test.h>
 
 static avs_time_monotonic_t MOCK_CLOCK = { { 0, -1 } };
 

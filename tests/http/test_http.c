@@ -25,8 +25,8 @@
 #include <avsystem/commons/avs_errno.h>
 #include <avsystem/commons/avs_list.h>
 #include <avsystem/commons/avs_stream_netbuf.h>
-#include <avsystem/commons/unit/mocksock.h>
-#include <avsystem/commons/unit/test.h>
+#include <avsystem/commons/avs_unit_mocksock.h>
+#include <avsystem/commons/avs_unit_test.h>
 
 #include "test_http.h"
 

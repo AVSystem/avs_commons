@@ -32,9 +32,9 @@
 
 #    include <avsystem/commons/avs_defs.h>
 #    include <avsystem/commons/avs_list.h>
+#    include <avsystem/commons/avs_unit_mock_helpers.h>
+#    include <avsystem/commons/avs_unit_test.h>
 #    include <avsystem/commons/avs_utils.h>
-#    include <avsystem/commons/unit/mock_helpers.h>
-#    include <avsystem/commons/unit/test.h>
 
 #    ifdef AVS_COMMONS_WITH_AVS_LOG
 #        include <avsystem/commons/avs_log.h>

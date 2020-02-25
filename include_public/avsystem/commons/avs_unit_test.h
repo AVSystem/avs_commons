@@ -93,7 +93,7 @@ extern "C" {
  *
  * @code
  * //// test_file.c ////
- * #include <avsystem/commons/unit/test.h>
+ * #include <avsystem/commons/avs_unit_test.h>
  *
  * AVS_UNIT_TEST(square, small_numbers) {
  *     AVS_UNIT_ASSERT_EQUAL(square(2), 4);

@@ -20,7 +20,7 @@
 
 #include <pthread.h>
 
-#include <avsystem/commons/unit/test.h>
+#include <avsystem/commons/avs_unit_test.h>
 
 /*
  * Basically equivalent to pthread_barrier_t. We could use the pthread one,

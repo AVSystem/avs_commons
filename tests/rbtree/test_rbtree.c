@@ -19,7 +19,7 @@
 #include <string.h>
 
 #include <avsystem/commons/avs_memory.h>
-#include <avsystem/commons/unit/test.h>
+#include <avsystem/commons/avs_unit_test.h>
 
 static size_t test_rb_alloc_null_countdown = 0;
 

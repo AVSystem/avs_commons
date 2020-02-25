@@ -17,7 +17,7 @@
 #include <string.h>
 
 #include <avsystem/commons/avs_buffer.h>
-#include <avsystem/commons/unit/test.h>
+#include <avsystem/commons/avs_unit_test.h>
 
 AVS_UNIT_GLOBAL_INIT(verbose) {
     if (!verbose) {

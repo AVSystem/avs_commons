@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include <avsystem/commons/unit/test.h>
+#include <avsystem/commons/avs_unit_test.h>
 
 /* Underlying stream implementation used for tests */
 #include <avsystem/commons/avs_stream_simple_io.h>

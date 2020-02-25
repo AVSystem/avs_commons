@@ -24,7 +24,7 @@
 
 #    include <avsystem/commons/avs_list.h>
 
-#    include <avsystem/commons/unit/mock_helpers.h>
+#    include <avsystem/commons/avs_unit_mock_helpers.h>
 
 VISIBILITY_SOURCE_BEGIN
 

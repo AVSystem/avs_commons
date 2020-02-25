@@ -12,12 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-add_library(avs_unit STATIC
-            "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/unit/memstream.h"
-            "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/unit/mock_helpers.h"
-            "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/unit/mocksock.h"
-            "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/unit/test.h"
+set(AVS_UNIT_PUBLIC_HEADERS
+    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/avs_unit_memstream.h"
+    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/avs_unit_mock_helpers.h"
+    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/avs_unit_mocksock.h"
+    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/avs_unit_test.h")
 
+add_library(avs_unit STATIC
+            ${AVS_UNIT_PUBLIC_HEADERS}
             mock.c
             stack_trace.c
             unit_test.c)
@@ -39,7 +41,6 @@ if(WITH_AVS_STREAM)
 endif()
 
 avs_install_export(avs_unit unit)
-install(DIRECTORY "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/avs_unit"
-        COMPONENT unit
-        DESTINATION ${INCLUDE_INSTALL_DIR}/avsystem/commons
-        FILES_MATCHING REGEX "[.]h$")
+install(FILES ${AVS_UTILS_PUBLIC_HEADERS}
+        COMPONENT utils
+        DESTINATION ${INCLUDE_INSTALL_DIR}/avsystem/commons)

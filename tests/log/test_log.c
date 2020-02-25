@@ -15,7 +15,7 @@
  */
 
 #include <avsystem/commons/avs_log.h>
-#include <avsystem/commons/unit/test.h>
+#include <avsystem/commons/avs_unit_test.h>
 
 #include <stdlib.h>
 

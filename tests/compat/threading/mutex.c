@@ -20,7 +20,7 @@
 
 #include <pthread.h>
 
-#include <avsystem/commons/unit/test.h>
+#include <avsystem/commons/avs_unit_test.h>
 
 typedef struct {
     avs_mutex_t *mutex;

@@ -18,7 +18,7 @@
 
 #include <avsystem/commons/avs_memory.h>
 #include <avsystem/commons/avs_socket.h>
-#include <avsystem/commons/unit/test.h>
+#include <avsystem/commons/avs_unit_test.h>
 
 #include <unistd.h>
 

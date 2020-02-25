@@ -53,7 +53,7 @@ extern "C" {
  * <c>safe_malloc_mocks.h</c>:
  *
  * @code
- * #include <avsystem/commons/unit/mock_helpers.h>
+ * #include <avsystem/commons/avs_unit_mock_helpers.h>
  *
  * AVS_UNIT_MOCK_CREATE(malloc)
  * #define malloc(...) AVS_UNIT_MOCK_WRAPPER(malloc)(__VA_ARGS__)
@@ -65,7 +65,7 @@ extern "C" {
  * <c>safe_malloc_test.c</c>:
  *
  * @code
- * #include <avsystem/commons/unit/test.h>
+ * #include <avsystem/commons/avs_unit_test.h>
  *
  * static void *failing_malloc(size_t size) {
  *     return NULL;

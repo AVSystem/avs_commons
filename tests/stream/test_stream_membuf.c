@@ -17,7 +17,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <avsystem/commons/unit/test.h>
+#include <avsystem/commons/avs_unit_test.h>
 
 AVS_UNIT_TEST(stream_membuf, write_read) {
     avs_stream_t *stream = avs_stream_membuf_create();

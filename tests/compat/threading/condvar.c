@@ -21,7 +21,7 @@
 #include <pthread.h>
 #include <string.h>
 
-#include <avsystem/commons/unit/test.h>
+#include <avsystem/commons/avs_unit_test.h>
 
 // Test cases adapted from:
 // https://github.com/v8/v8/blob/master/test/unittests/base/platform/condition-variable-unittest.cc

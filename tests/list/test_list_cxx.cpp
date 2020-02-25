@@ -20,8 +20,8 @@
 #include <string.h>
 
 #include <avsystem/commons/avs_memory.h>
-#include <avsystem/commons/unit/mock_helpers.h>
-#include <avsystem/commons/unit/test.h>
+#include <avsystem/commons/avs_unit_mock_helpers.h>
+#include <avsystem/commons/avs_unit_test.h>
 
 AVS_UNIT_MOCK_CREATE(avs_calloc)
 #define avs_calloc(...) AVS_UNIT_MOCK_WRAPPER(avs_calloc)(__VA_ARGS__)
