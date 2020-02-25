@@ -12,21 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set(AVS_STREAM_PUBLIC_HEADERS_ROOT
+set(AVS_STREAM_PUBLIC_HEADERS
+    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/avs_stream_buffered.h"
+    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/avs_stream_file.h"
     "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/avs_stream.h"
+    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/avs_stream_inbuf.h"
+    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/avs_stream_membuf.h"
+    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/avs_stream_outbuf.h"
+    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/avs_stream_simple_io.h"
     "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/avs_stream_v_table.h")
 
-set(AVS_STREAM_PUBLIC_HEADERS_STREAM
-    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/stream/stream_buffered.h"
-    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/stream/stream_file.h"
-    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/stream/stream_inbuf.h"
-    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/stream/stream_membuf.h"
-    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/stream/stream_outbuf.h"
-    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/stream/stream_simple_io.h")
-
 add_library(avs_stream STATIC
-            ${AVS_STREAM_PUBLIC_HEADERS_ROOT}
-            ${AVS_STREAM_PUBLIC_HEADERS_STREAM}
+            ${AVS_STREAM_PUBLIC_HEADERS}
             stream.c
             stream_buffered.c
             stream_file.c
@@ -41,12 +38,9 @@ if(WITH_INTERNAL_LOGS)
 endif()
 
 avs_install_export(avs_stream stream)
-install(FILES ${AVS_STREAM_PUBLIC_HEADERS_ROOT}
+install(FILES ${AVS_STREAM_PUBLIC_HEADERS}
         COMPONENT stream
         DESTINATION ${INCLUDE_INSTALL_DIR}/avsystem/commons)
-install(FILES ${AVS_STREAM_PUBLIC_HEADERS_STREAM}
-        COMPONENT stream
-        DESTINATION ${INCLUDE_INSTALL_DIR}/avsystem/commons/stream)
 
 avs_add_test(NAME avs_stream
              LIBS avs_stream

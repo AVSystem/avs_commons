@@ -18,7 +18,7 @@
 #include <avsystem/commons/avs_memory.h>
 #include <avsystem/commons/avs_persistence.h>
 #include <avsystem/commons/avs_stream.h>
-#include <avsystem/commons/stream/stream_membuf.h>
+#include <avsystem/commons/avs_stream_membuf.h>
 #include <avsystem/commons/unit/test.h>
 
 #include <string.h>

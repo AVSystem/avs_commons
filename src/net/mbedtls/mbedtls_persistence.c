@@ -34,8 +34,8 @@
 
 #    include <avsystem/commons/avs_persistence.h>
 #    include <avsystem/commons/avs_stream.h>
-#    include <avsystem/commons/stream/stream_inbuf.h>
-#    include <avsystem/commons/stream/stream_outbuf.h>
+#    include <avsystem/commons/avs_stream_inbuf.h>
+#    include <avsystem/commons/avs_stream_outbuf.h>
 
 #    include "../net_impl.h"
 #    include "mbedtls_persistence.h"

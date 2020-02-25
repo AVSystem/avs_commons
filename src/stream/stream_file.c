@@ -27,8 +27,8 @@
 
 #    include <avsystem/commons/avs_errno_map.h>
 #    include <avsystem/commons/avs_memory.h>
+#    include <avsystem/commons/avs_stream_file.h>
 #    include <avsystem/commons/avs_stream_v_table.h>
-#    include <avsystem/commons/stream/stream_file.h>
 
 #    define MODULE_NAME avs_stream
 #    include <x_log_config.h>

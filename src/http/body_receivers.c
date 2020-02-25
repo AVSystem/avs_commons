@@ -18,8 +18,8 @@
 
 #ifdef AVS_COMMONS_WITH_AVS_HTTP
 
-#    include <avsystem/commons/stream/netbuf.h>
-#    include <avsystem/commons/stream/stream_net.h>
+#    include <avsystem/commons/avs_stream_net.h>
+#    include <avsystem/commons/avs_stream_netbuf.h>
 
 #    include "body_receivers.h"
 #    include "client.h"

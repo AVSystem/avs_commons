@@ -21,8 +21,8 @@
 #    include <assert.h>
 #    include <string.h>
 
+#    include <avsystem/commons/avs_stream_net.h>
 #    include <avsystem/commons/avs_utils.h>
-#    include <avsystem/commons/stream/stream_net.h>
 
 #    include "client.h"
 #    include "headers.h"

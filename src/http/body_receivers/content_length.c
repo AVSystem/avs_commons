@@ -19,7 +19,7 @@
 #ifdef AVS_COMMONS_WITH_AVS_HTTP
 
 #    include <avsystem/commons/avs_memory.h>
-#    include <avsystem/commons/stream/stream_net.h>
+#    include <avsystem/commons/avs_stream_net.h>
 
 #    include "../body_receivers.h"
 #    include "../http_log.h"

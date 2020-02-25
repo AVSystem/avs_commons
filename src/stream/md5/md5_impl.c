@@ -23,7 +23,7 @@
 #    include <string.h>
 
 #    include <avsystem/commons/avs_memory.h>
-#    include <avsystem/commons/stream/md5.h>
+#    include <avsystem/commons/avs_stream_md5.h>
 
 #    include "md5_common.h"
 

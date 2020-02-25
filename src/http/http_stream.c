@@ -23,8 +23,8 @@
 
 #    include <avsystem/commons/avs_errno.h>
 #    include <avsystem/commons/avs_memory.h>
+#    include <avsystem/commons/avs_stream_net.h>
 #    include <avsystem/commons/avs_utils.h>
-#    include <avsystem/commons/stream/stream_net.h>
 
 #    include "chunked.h"
 #    include "client.h"

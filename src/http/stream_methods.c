@@ -23,9 +23,9 @@
 
 #    include <avsystem/commons/avs_errno.h>
 #    include <avsystem/commons/avs_memory.h>
+#    include <avsystem/commons/avs_stream_net.h>
+#    include <avsystem/commons/avs_stream_netbuf.h>
 #    include <avsystem/commons/avs_time.h>
-#    include <avsystem/commons/stream/netbuf.h>
-#    include <avsystem/commons/stream/stream_net.h>
 
 #    include "client.h"
 #    include "content_encoding.h"

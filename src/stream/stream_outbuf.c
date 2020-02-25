@@ -18,8 +18,8 @@
 
 #ifdef AVS_COMMONS_WITH_AVS_STREAM
 
+#    include <avsystem/commons/avs_stream_outbuf.h>
 #    include <avsystem/commons/avs_stream_v_table.h>
-#    include <avsystem/commons/stream/stream_outbuf.h>
 
 #    include <assert.h>
 #    include <string.h>

@@ -21,8 +21,8 @@
 #    include <string.h>
 
 #    include <avsystem/commons/avs_memory.h>
+#    include <avsystem/commons/avs_stream_simple_io.h>
 #    include <avsystem/commons/avs_stream_v_table.h>
-#    include <avsystem/commons/stream/stream_simple_io.h>
 
 VISIBILITY_SOURCE_BEGIN
 

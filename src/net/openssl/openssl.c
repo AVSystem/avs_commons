@@ -41,8 +41,8 @@
 
 #    include <avsystem/commons/avs_errno_map.h>
 #    include <avsystem/commons/avs_memory.h>
+#    include <avsystem/commons/avs_stream_membuf.h>
 #    include <avsystem/commons/avs_time.h>
-#    include <avsystem/commons/stream/stream_membuf.h>
 
 #    include "../global.h"
 #    include "../net_impl.h"

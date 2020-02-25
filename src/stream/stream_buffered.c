@@ -18,7 +18,7 @@
 
 #ifdef AVS_COMMONS_WITH_AVS_STREAM
 
-#    include <avsystem/commons/stream/stream_buffered.h>
+#    include <avsystem/commons/avs_stream_buffered.h>
 
 #    include <assert.h>
 #    include <stdint.h>
