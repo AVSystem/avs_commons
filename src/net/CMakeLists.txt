@@ -73,22 +73,28 @@ add_library(avs_net_nosec ${AVS_NET_SOURCES})
 target_link_libraries(avs_net_nosec PUBLIC avs_net_core)
 
 avs_add_test(NAME avs_net_nosec
-             LIBS avs_net_nosec
-             SOURCES ${AVS_COMMONS_SOURCE_DIR}/tests/net/socket_nosec.c)
+             LIBS $<TARGET_PROPERTY:avs_net_nosec,LINK_LIBRARIES>
+             SOURCES
+             ${AVS_NET_SOURCES}
+             ${AVS_COMMONS_SOURCE_DIR}/tests/net/socket_nosec.c)
+target_compile_definitions(avs_net_nosec_test PRIVATE WITHOUT_SSL)
 avs_install_export(avs_net_nosec net)
 
 if(WITH_OPENSSL)
     option(WITH_DTLS "Enable OpenSSL DTLS support" ON)
 
-    add_library(avs_net_openssl
-                ${AVS_NET_SOURCES}
-                openssl/openssl.c
-                openssl/openssl_data_loader.c)
+    set(AVS_NET_OPENSSL_SOURCES
+        ${AVS_NET_SOURCES}
+        openssl/openssl.c
+        openssl/openssl_data_loader.c)
+
+    add_library(avs_net_openssl ${AVS_NET_OPENSSL_SOURCES})
     target_link_libraries(avs_net_openssl PUBLIC avs_net_core OpenSSL::SSL OpenSSL::Crypto)
 
     avs_add_test(NAME avs_net_openssl
-                 LIBS avs_net_openssl
+                 LIBS $<TARGET_PROPERTY:avs_net_openssl,LINK_LIBRARIES>
                  SOURCES
+                 ${AVS_NET_OPENSSL_SOURCES}
                  ${AVS_COMMONS_SOURCE_DIR}/tests/net/socket_nosec.c
                  ${AVS_COMMONS_SOURCE_DIR}/tests/net/socket_tls.c
                  $<$<BOOL:${WITH_DTLS}>:${AVS_COMMONS_SOURCE_DIR}/tests/net/socket_dtls.c>
@@ -97,12 +103,14 @@ if(WITH_OPENSSL)
 endif()
 
 if(WITH_MBEDTLS)
-    add_library(avs_net_mbedtls
-                ${AVS_NET_SOURCES}
-                mbedtls/mbedtls.c
-                mbedtls/mbedtls_data_loader.c
-                mbedtls/mbedtls_persistence.c
-                mbedtls/mbedtls_persistence.h)
+    set(AVS_NET_MBEDTLS_SOURCES
+        ${AVS_NET_SOURCES}
+        mbedtls/mbedtls.c
+        mbedtls/mbedtls_data_loader.c
+        mbedtls/mbedtls_persistence.c
+        mbedtls/mbedtls_persistence.h)
+
+    add_library(avs_net_mbedtls ${AVS_NET_MBEDTLS_SOURCES})
     target_link_libraries(avs_net_mbedtls PUBLIC avs_net_core mbedtls mbedcrypto mbedx509)
 
     if(WITH_TLS_SESSION_PERSISTENCE)
@@ -110,8 +118,9 @@ if(WITH_MBEDTLS)
     endif()
 
     avs_add_test(NAME avs_net_mbedtls
-                 LIBS avs_net_mbedtls
+                 LIBS $<TARGET_PROPERTY:avs_net_mbedtls,LINK_LIBRARIES>
                  SOURCES
+                 ${AVS_NET_MBEDTLS_SOURCES}
                  ${AVS_COMMONS_SOURCE_DIR}/tests/net/socket_nosec.c
                  ${AVS_COMMONS_SOURCE_DIR}/tests/net/socket_tls.c
                  ${AVS_COMMONS_SOURCE_DIR}/tests/net/socket_dtls.c
@@ -120,14 +129,17 @@ if(WITH_MBEDTLS)
 endif()
 
 if(WITH_TINYDTLS)
-    add_library(avs_net_tinydtls
-                ${AVS_NET_SOURCES}
-                tinydtls/tinydtls.c)
+    set(AVS_NET_TINYDTLS_SOURCES
+        ${AVS_NET_SOURCES}
+        tinydtls/tinydtls.c)
+
+    add_library(avs_net_tinydtls ${AVS_NET_TINYDTLS_SOURCES})
     target_link_libraries(avs_net_tinydtls PUBLIC avs_net_core tinydtls)
 
     avs_add_test(NAME avs_net_tinydtls
-                 LIBS avs_net_tinydtls
+                 LIBS $<TARGET_PROPERTY:avs_net_tinydtls,LINK_LIBRARIES>
                  SOURCES
+                 ${AVS_NET_TINYDTLS_SOURCES}
                  ${AVS_COMMONS_SOURCE_DIR}/tests/net/socket_nosec.c
                  ${AVS_COMMONS_SOURCE_DIR}/tests/net/socket_dtls.c)
     avs_install_export(avs_net_tinydtls net)

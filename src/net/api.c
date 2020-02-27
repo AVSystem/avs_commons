@@ -758,8 +758,4 @@ avs_error_t avs_net_socket_create(avs_net_socket_t **socket,
 
 #    endif /* AVS_COMMONS_NET_WITH_SOCKET_LOG */
 
-#    if !defined(WITHOUT_SSL) && defined(AVS_UNIT_TESTING)
-#        include "test/starttls.c"
-#    endif
-
 #endif // AVS_COMMONS_WITH_AVS_NET

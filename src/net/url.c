@@ -538,7 +538,7 @@ void avs_url_free(avs_url_t *url) {
 }
 
 #    ifdef AVS_UNIT_TESTING
-#        include "test/url.c"
+#        include "tests/net/url.c"
 #    endif // AVS_UNIT_TESTING
 
 #endif // AVS_COMMONS_WITH_AVS_NET
