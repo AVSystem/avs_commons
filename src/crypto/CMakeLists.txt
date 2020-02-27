@@ -14,7 +14,8 @@
 
 set(AVS_CRYPTO_PUBLIC_HEADERS
     "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/avs_hkdf.h"
-    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/avs_aead.h")
+    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/avs_aead.h"
+    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/rng.h")
 
 set(AVS_CRYPTO_SOURCES
     ${AVS_CRYPTO_PUBLIC_HEADERS}
@@ -32,14 +33,16 @@ if(WITH_OPENSSL AND NOT OPENSSL_VERSION VERSION_LESS 1.1.0)
     add_library(avs_crypto_openssl
                 ${AVS_CRYPTO_SOURCES}
                 openssl/avs_openssl_aead.c
-                openssl/avs_openssl_hkdf.c)
+                openssl/avs_openssl_hkdf.c
+                openssl/openssl_rng.c)
     target_link_libraries(avs_crypto_openssl PUBLIC avs_crypto_core OpenSSL::Crypto)
 
     avs_add_test(NAME avs_crypto_openssl
                  LIBS avs_crypto_openssl
                  SOURCES
                  ${AVS_COMMONS_SOURCE_DIR}/tests/crypto/aead.c
-                 ${AVS_COMMONS_SOURCE_DIR}/tests/crypto/hkdf.c)
+                 ${AVS_COMMONS_SOURCE_DIR}/tests/crypto/hkdf.c
+                 ${AVS_COMMONS_SOURCE_DIR}/tests/crypto/rng.c)
     avs_install_export(avs_crypto_openssl crypto)
 endif()
 
@@ -47,14 +50,16 @@ if(WITH_MBEDTLS AND NOT MBEDTLS_VERSION VERSION_LESS 2.14.0)
     add_library(avs_crypto_mbedtls
                 ${AVS_CRYPTO_SOURCES}
                 mbedtls/avs_mbedtls_aead.c
-                mbedtls/avs_mbedtls_hkdf.c)
+                mbedtls/avs_mbedtls_hkdf.c
+                mbedtls/mbedtls_rng.c)
     target_link_libraries(avs_crypto_mbedtls PUBLIC avs_crypto_core mbedcrypto)
 
     avs_add_test(NAME avs_crypto_mbedtls
                  LIBS avs_crypto_mbedtls
                  SOURCES
                  ${AVS_COMMONS_SOURCE_DIR}/tests/crypto/aead.c
-                 ${AVS_COMMONS_SOURCE_DIR}/tests/crypto/hkdf.c)
+                 ${AVS_COMMONS_SOURCE_DIR}/tests/crypto/hkdf.c
+                 ${AVS_COMMONS_SOURCE_DIR}/tests/crypto/rng.c)
     avs_install_export(avs_crypto_mbedtls crypto)
 endif()
 
