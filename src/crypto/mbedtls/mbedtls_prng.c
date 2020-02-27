@@ -71,13 +71,12 @@ void avs_crypto_prng_free(avs_crypto_prng_ctx_t *ctx) {
 }
 
 int avs_crypto_prng_bytes(avs_crypto_prng_ctx_t *ctx,
-                          void *out_buf,
+                          unsigned char *out_buf,
                           size_t out_buf_size) {
     if (!ctx || !out_buf || !out_buf_size) {
         return -1;
     }
-    return mbedtls_ctr_drbg_random(
-            &ctx->mbedtls_ctx, (unsigned char *) out_buf, out_buf_size);
+    return mbedtls_ctr_drbg_random(&ctx->mbedtls_ctx, out_buf, out_buf_size);
 }
 
 #endif // defined(AVS_COMMONS_WITH_AVS_CRYPTO) &&

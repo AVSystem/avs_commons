@@ -22,7 +22,7 @@
 
 #include <string.h>
 
-static int entropy_callback(void *out_buf, size_t out_buf_len) {
+static int entropy_callback(unsigned char *out_buf, size_t out_buf_len) {
     memset(out_buf, 7, out_buf_len);
     return 0;
 }
@@ -32,10 +32,10 @@ AVS_UNIT_TEST(avs_crypto_prng, get_random_bytes) {
     avs_crypto_prng_ctx_t *ctx = avs_crypto_prng_new(entropy_callback);
     ASSERT_NOT_NULL(ctx);
 
-    void *test_buf = avs_calloc(1, test_buf_len);
+    unsigned char *test_buf = (unsigned char *) avs_calloc(1, test_buf_len);
     ASSERT_NOT_NULL(test_buf);
 
-    void *compare_buf = avs_calloc(1, test_buf_len);
+    unsigned char *compare_buf = (unsigned char *) avs_calloc(1, test_buf_len);
     ASSERT_NOT_NULL(compare_buf);
 
     ASSERT_OK(avs_crypto_prng_bytes(ctx, test_buf, test_buf_len));

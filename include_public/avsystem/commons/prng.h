@@ -33,7 +33,8 @@ typedef struct avs_crypto_prng_ctx_struct avs_crypto_prng_ctx_t;
  *
  * @returns 0 on success, negative value otherwise.
  */
-typedef int (*avs_prng_entropy_callback_t)(void *out_buf, size_t out_buf_len);
+typedef int (*avs_prng_entropy_callback_t)(unsigned char *out_buf,
+                                           size_t out_buf_len);
 
 /**
  * Creates Pseudo-Random Number Generator context, which can be used then for
@@ -65,7 +66,7 @@ void avs_crypto_prng_free(avs_crypto_prng_ctx_t *ctx);
  * @returns 0 on success, negative value otherwise.
  */
 int avs_crypto_prng_bytes(avs_crypto_prng_ctx_t *ctx,
-                          void *out_buf,
+                          unsigned char *out_buf,
                           size_t out_buf_size);
 
 #ifdef __cplusplus

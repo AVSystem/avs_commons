@@ -34,7 +34,7 @@ struct avs_crypto_prng_ctx_struct {
 
 static int reseed_if_needed(avs_prng_entropy_callback_t seed_cb) {
     if (RAND_status() != 1) {
-        uint8_t data[64];
+        unsigned char data[64];
         if (seed_cb(data, sizeof(data))) {
             return -1;
         }
@@ -68,7 +68,7 @@ void avs_crypto_prng_free(avs_crypto_prng_ctx_t *ctx) {
 }
 
 int avs_crypto_prng_bytes(avs_crypto_prng_ctx_t *ctx,
-                          void *out_buf,
+                          unsigned char *out_buf,
                           size_t out_buf_size) {
     if (!ctx || !out_buf || !out_buf_size) {
         return -1;
@@ -78,7 +78,7 @@ int avs_crypto_prng_bytes(avs_crypto_prng_ctx_t *ctx,
         return -1;
     }
 
-    if (RAND_bytes((unsigned char *) out_buf, (int) out_buf_size) != 1) {
+    if (RAND_bytes(out_buf, (int) out_buf_size) != 1) {
         return -1;
     }
 
