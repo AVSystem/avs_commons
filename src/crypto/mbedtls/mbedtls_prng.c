@@ -18,31 +18,32 @@
 
 #if defined(AVS_COMMONS_WITH_AVS_CRYPTO) && defined(AVS_COMMONS_WITH_MBEDTLS)
 
-#    define MODULE_NAME avs_crypto_rng
+#    define MODULE_NAME avs_crypto_prng
 #    include <x_log_config.h>
 
 #    include <avsystem/commons/memory.h>
-#    include <avsystem/commons/rng.h>
+#    include <avsystem/commons/prng.h>
 
 #    include <mbedtls/ctr_drbg.h>
 
 VISIBILITY_SOURCE_BEGIN
 
-struct avs_crypto_rng_ctx_struct {
+struct avs_crypto_prng_ctx_struct {
     mbedtls_ctr_drbg_context mbedtls_ctx;
-    avs_rng_entropy_callback_t seed_callback;
+    avs_prng_entropy_callback_t seed_callback;
 };
 
 static int
 entropy_callback(void *ctx_, unsigned char *out_buf, size_t out_buf_size) {
-    avs_crypto_rng_ctx_t *ctx = (avs_crypto_rng_ctx_t *) ctx_;
+    avs_crypto_prng_ctx_t *ctx = (avs_crypto_prng_ctx_t *) ctx_;
     return ctx->seed_callback(out_buf, out_buf_size);
 }
 
-avs_crypto_rng_ctx_t *avs_crypto_rng_new(avs_rng_entropy_callback_t seed_cb) {
-    avs_crypto_rng_ctx_t *ctx =
-            (avs_crypto_rng_ctx_t *) avs_calloc(1,
-                                                sizeof(avs_crypto_rng_ctx_t));
+avs_crypto_prng_ctx_t *
+avs_crypto_prng_new(avs_prng_entropy_callback_t seed_cb) {
+    avs_crypto_prng_ctx_t *ctx =
+            (avs_crypto_prng_ctx_t *) avs_calloc(1,
+                                                 sizeof(avs_crypto_prng_ctx_t));
     if (!ctx) {
         return NULL;
     }
@@ -52,19 +53,19 @@ avs_crypto_rng_ctx_t *avs_crypto_rng_new(avs_rng_entropy_callback_t seed_cb) {
 
     if (mbedtls_ctr_drbg_seed(
                 &ctx->mbedtls_ctx, entropy_callback, ctx, NULL, 0)) {
-        avs_crypto_rng_free(ctx);
+        avs_crypto_prng_free(ctx);
         return NULL;
     }
 
     return ctx;
 }
 
-void avs_crypto_rng_free(avs_crypto_rng_ctx_t *ctx) {
+void avs_crypto_prng_free(avs_crypto_prng_ctx_t *ctx) {
     mbedtls_ctr_drbg_free(&ctx->mbedtls_ctx);
     avs_free(ctx);
 }
 
-int avs_crypto_rng_random(avs_crypto_rng_ctx_t *ctx,
+int avs_crypto_prng_bytes(avs_crypto_prng_ctx_t *ctx,
                           void *out_buf,
                           size_t out_buf_size) {
     return mbedtls_ctr_drbg_random(

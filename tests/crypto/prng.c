@@ -18,7 +18,7 @@
 #include <avsystem/commons/unit/test.h>
 
 #include <avsystem/commons/memory.h>
-#include <avsystem/commons/rng.h>
+#include <avsystem/commons/prng.h>
 
 #include <string.h>
 
@@ -27,9 +27,9 @@ static int entropy_callback(void *out_buf, size_t out_buf_len) {
     return 0;
 }
 
-AVS_UNIT_TEST(avs_crypto_rng, get_random_bytes) {
+AVS_UNIT_TEST(avs_crypto_prng, get_random_bytes) {
     const size_t test_buf_len = 64;
-    avs_crypto_rng_ctx_t *ctx = avs_crypto_rng_new(entropy_callback);
+    avs_crypto_prng_ctx_t *ctx = avs_crypto_prng_new(entropy_callback);
     ASSERT_NOT_NULL(ctx);
 
     void *test_buf = avs_calloc(1, test_buf_len);
@@ -38,11 +38,11 @@ AVS_UNIT_TEST(avs_crypto_rng, get_random_bytes) {
     void *compare_buf = avs_calloc(1, test_buf_len);
     ASSERT_NOT_NULL(compare_buf);
 
-    ASSERT_OK(avs_crypto_rng_random(ctx, test_buf, test_buf_len));
+    ASSERT_OK(avs_crypto_prng_bytes(ctx, test_buf, test_buf_len));
 
     ASSERT_NE_BYTES_SIZED(test_buf, compare_buf, test_buf_len);
 
-    avs_crypto_rng_free(ctx);
+    avs_crypto_prng_free(ctx);
     avs_free(test_buf);
     avs_free(compare_buf);
 }

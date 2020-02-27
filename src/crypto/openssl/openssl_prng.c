@@ -18,21 +18,21 @@
 
 #if defined(AVS_COMMONS_WITH_AVS_CRYPTO) && defined(AVS_COMMONS_WITH_OPENSSL)
 
-#    define MODULE_NAME avs_crypto_rng
+#    define MODULE_NAME avs_crypto_prng
 #    include <x_log_config.h>
 
 #    include <avsystem/commons/memory.h>
-#    include <avsystem/commons/rng.h>
+#    include <avsystem/commons/prng.h>
 
 #    include <openssl/rand.h>
 
 VISIBILITY_SOURCE_BEGIN
 
-struct avs_crypto_rng_ctx_struct {
-    avs_rng_entropy_callback_t seed_callback;
+struct avs_crypto_prng_ctx_struct {
+    avs_prng_entropy_callback_t seed_callback;
 };
 
-static int reseed_if_needed(avs_rng_entropy_callback_t seed_cb) {
+static int reseed_if_needed(avs_prng_entropy_callback_t seed_cb) {
     if (RAND_status() != 1) {
         uint8_t data[64];
         if (seed_cb(data, sizeof(data))) {
@@ -43,14 +43,15 @@ static int reseed_if_needed(avs_rng_entropy_callback_t seed_cb) {
     return 0;
 }
 
-avs_crypto_rng_ctx_t *avs_crypto_rng_new(avs_rng_entropy_callback_t seed_cb) {
+avs_crypto_prng_ctx_t *
+avs_crypto_prng_new(avs_prng_entropy_callback_t seed_cb) {
     if (reseed_if_needed(seed_cb)) {
         return NULL;
     }
 
-    avs_crypto_rng_ctx_t *ctx =
-            (avs_crypto_rng_ctx_t *) avs_calloc(1,
-                                                sizeof(avs_crypto_rng_ctx_t));
+    avs_crypto_prng_ctx_t *ctx =
+            (avs_crypto_prng_ctx_t *) avs_calloc(1,
+                                                 sizeof(avs_crypto_prng_ctx_t));
     if (ctx) {
         ctx->seed_callback = seed_cb;
     }
@@ -58,11 +59,11 @@ avs_crypto_rng_ctx_t *avs_crypto_rng_new(avs_rng_entropy_callback_t seed_cb) {
     return ctx;
 }
 
-void avs_crypto_rng_free(avs_crypto_rng_ctx_t *ctx) {
+void avs_crypto_prng_free(avs_crypto_prng_ctx_t *ctx) {
     avs_free(ctx);
 }
 
-int avs_crypto_rng_random(avs_crypto_rng_ctx_t *ctx,
+int avs_crypto_prng_bytes(avs_crypto_prng_ctx_t *ctx,
                           void *out_buf,
                           size_t out_buf_size) {
     if (reseed_if_needed(ctx->seed_callback)) {
