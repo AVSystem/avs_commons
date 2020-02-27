@@ -42,7 +42,7 @@ entropy_callback(void *ctx_, unsigned char *out_buf, size_t out_buf_size) {
 avs_crypto_prng_ctx_t *
 avs_crypto_prng_new(avs_prng_entropy_callback_t seed_cb) {
     if (!seed_cb) {
-        return -1;
+        return NULL;
     }
     avs_crypto_prng_ctx_t *ctx =
             (avs_crypto_prng_ctx_t *) avs_calloc(1,

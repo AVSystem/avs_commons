@@ -46,7 +46,7 @@ static int reseed_if_needed(avs_prng_entropy_callback_t seed_cb) {
 avs_crypto_prng_ctx_t *
 avs_crypto_prng_new(avs_prng_entropy_callback_t seed_cb) {
     if (!seed_cb) {
-        return -1;
+        return NULL;
     }
 
     if (reseed_if_needed(seed_cb)) {
