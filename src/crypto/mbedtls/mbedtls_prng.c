@@ -41,6 +41,9 @@ entropy_callback(void *ctx_, unsigned char *out_buf, size_t out_buf_size) {
 
 avs_crypto_prng_ctx_t *
 avs_crypto_prng_new(avs_prng_entropy_callback_t seed_cb) {
+    if (!seed_cb) {
+        return -1;
+    }
     avs_crypto_prng_ctx_t *ctx =
             (avs_crypto_prng_ctx_t *) avs_calloc(1,
                                                  sizeof(avs_crypto_prng_ctx_t));
@@ -61,13 +64,18 @@ avs_crypto_prng_new(avs_prng_entropy_callback_t seed_cb) {
 }
 
 void avs_crypto_prng_free(avs_crypto_prng_ctx_t *ctx) {
-    mbedtls_ctr_drbg_free(&ctx->mbedtls_ctx);
-    avs_free(ctx);
+    if (ctx) {
+        mbedtls_ctr_drbg_free(&ctx->mbedtls_ctx);
+        avs_free(ctx);
+    }
 }
 
 int avs_crypto_prng_bytes(avs_crypto_prng_ctx_t *ctx,
                           void *out_buf,
                           size_t out_buf_size) {
+    if (!ctx || !out_buf || !out_buf_size) {
+        return -1;
+    }
     return mbedtls_ctr_drbg_random(
             &ctx->mbedtls_ctx, (unsigned char *) out_buf, out_buf_size);
 }

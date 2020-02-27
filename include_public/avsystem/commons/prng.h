@@ -39,7 +39,8 @@ typedef int (*avs_prng_entropy_callback_t)(void *out_buf, size_t out_buf_len);
  * Creates Pseudo-Random Number Generator context, which can be used then for
  * generating pseudo-random data.
  *
- * @param entropy_cb Pointer to @def avs_prng_entropy_callback_t function.
+ * @param entropy_cb Pointer to @def avs_prng_entropy_callback_t function. MUST
+ *                   NOT be @c NULL .
  *
  * @returns 0 on success, negative value otherwise.
  */
@@ -48,6 +49,8 @@ avs_crypto_prng_new(avs_prng_entropy_callback_t entropy_cb);
 
 /**
  * Frees PRNG context previously created with @ref avs_crypto_prng_new() .
+ *
+ * @param ctx MUST NOT be @c NULL .
  */
 void avs_crypto_prng_free(avs_crypto_prng_ctx_t *ctx);
 
@@ -55,9 +58,9 @@ void avs_crypto_prng_free(avs_crypto_prng_ctx_t *ctx);
  * Gets pseudo-random data from initialized PRNG context.
  *
  * @param ctx          Pointer to PRNG context created with
- *                     @ref avs_crypto_prng_new() .
- * @param out_buf      Pointer to write the data to.
- * @param out_buf_size Size of @p out_buf .
+ *                     @ref avs_crypto_prng_new() . MUST NOT be @c NULL .
+ * @param out_buf      Pointer to write the data to. MUST NOT be @c NULL .
+ * @param out_buf_size Size of @p out_buf . MUST NOT be 0.
  *
  * @returns 0 on success, negative value otherwise.
  */

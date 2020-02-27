@@ -45,6 +45,10 @@ static int reseed_if_needed(avs_prng_entropy_callback_t seed_cb) {
 
 avs_crypto_prng_ctx_t *
 avs_crypto_prng_new(avs_prng_entropy_callback_t seed_cb) {
+    if (!seed_cb) {
+        return -1;
+    }
+
     if (reseed_if_needed(seed_cb)) {
         return NULL;
     }
@@ -66,6 +70,10 @@ void avs_crypto_prng_free(avs_crypto_prng_ctx_t *ctx) {
 int avs_crypto_prng_bytes(avs_crypto_prng_ctx_t *ctx,
                           void *out_buf,
                           size_t out_buf_size) {
+    if (!ctx || !out_buf || !out_buf_size) {
+        return -1;
+    }
+
     if (reseed_if_needed(ctx->seed_callback)) {
         return -1;
     }
