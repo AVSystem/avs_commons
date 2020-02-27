@@ -24,7 +24,7 @@
 #include <avsystem/commons/avs_memory.h>
 
 /**
- * @file list.h
+ * @file avs_list.h
  *
  * A generic singly linked list implementation.
  *

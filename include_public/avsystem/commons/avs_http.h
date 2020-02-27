@@ -27,7 +27,7 @@ extern "C" {
 #endif
 
 /**
- * @file http.h
+ * @file avs_http.h
  *
  * Simple HTTP client.
  */

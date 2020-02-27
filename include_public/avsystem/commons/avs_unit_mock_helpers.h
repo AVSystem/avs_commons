@@ -22,7 +22,7 @@ extern "C" {
 #endif
 
 /**
- * @file mock_helpers.h
+ * @file avs_mock_helpers.h
  *
  * This file allows mocking specific functions for testing purposes. It works
  * by replacing specific functions with macros that can be configured at test

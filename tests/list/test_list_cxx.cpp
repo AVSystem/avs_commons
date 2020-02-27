@@ -27,6 +27,7 @@ AVS_UNIT_MOCK_CREATE(avs_calloc)
 #define avs_calloc(...) AVS_UNIT_MOCK_WRAPPER(avs_calloc)(__VA_ARGS__)
 
 #include <avsystem/commons/avs_list.h>
+#include <avsystem/commons/avs_list_cxx.hpp>
 
 AVS_UNIT_TEST(list, one_element) {
     size_t count = 0;
@@ -448,4 +449,76 @@ AVS_UNIT_TEST(list, merge_when_one_list_is_empty) {
 
     AVS_LIST_CLEAR(&first);
     AVS_LIST_CLEAR(&second);
+}
+
+AVS_UNIT_TEST(avsList, iterate) {
+    avs::List<int> list;
+    list.push_back(12);
+    list.push_back(34);
+    list.push_back(56);
+
+    avs::ListView<const int> view = list;
+    const int expected_values[] = { 12, 34, 56 };
+    size_t index = 0;
+    for (avs::ListIterator<const int> it = view.begin(); it != view.end();
+         it++) {
+        AVS_UNIT_ASSERT_TRUE(index < AVS_ARRAY_SIZE(expected_values));
+        AVS_UNIT_ASSERT_EQUAL(*it, expected_values[index]);
+        index++;
+    }
+}
+
+namespace {
+
+template <typename T>
+size_t avs_list_size(const avs::List<T> &list) {
+    size_t count = 0;
+    for (avs::ListIterator<const T> it = list.begin(); it != list.end(); it++) {
+        count++;
+    }
+    return count;
+}
+
+} // namespace
+
+AVS_UNIT_TEST(avsList, clear) {
+    avs::List<std::string> list;
+    list.push_back("not");
+    list.push_back("so");
+    list.push_back("empty");
+    list.push_back("list");
+    AVS_UNIT_ASSERT_EQUAL(avs_list_size(list), 4);
+    list.clear();
+    AVS_UNIT_ASSERT_EQUAL(avs_list_size(list), 0);
+}
+
+class InstanceCounter {
+    size_t *counter_;
+
+public:
+    InstanceCounter(size_t *counter_ptr) : counter_(counter_ptr) {
+        (*counter_)++;
+    }
+
+    InstanceCounter(const InstanceCounter &other) : counter_(other.counter_) {
+        (*counter_)++;
+    }
+
+    ~InstanceCounter() {
+        (*counter_)--;
+    }
+};
+
+AVS_UNIT_TEST(avsList, constructor_and_destructor) {
+    size_t counter = 0;
+    avs::List<InstanceCounter> list;
+
+    list.push_back(InstanceCounter(&counter));
+    AVS_UNIT_ASSERT_EQUAL(counter, 1);
+    list.push_back(InstanceCounter(&counter));
+    AVS_UNIT_ASSERT_EQUAL(counter, 2);
+    list.push_back(InstanceCounter(&counter));
+    AVS_UNIT_ASSERT_EQUAL(counter, 3);
+    list.clear();
+    AVS_UNIT_ASSERT_EQUAL(counter, 0);
 }

@@ -28,7 +28,7 @@ extern "C" {
 #endif
 
 /**
- * @file base64.h
+ * @file avs_base64.h
  *
  * Base64 encoder / decoder.
  */

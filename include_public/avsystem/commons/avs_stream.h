@@ -52,7 +52,7 @@ static inline bool avs_is_eof(avs_error_t error) {
 }
 
 /**
- * @file stream.h
+ * @file avs_stream.h
  *
  * Generic stream interface.
  *

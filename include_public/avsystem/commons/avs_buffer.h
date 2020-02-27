@@ -25,7 +25,7 @@ extern "C" {
 #endif
 
 /**
- * @file buffer.h
+ * @file avs_buffer.h
  *
  * Implementation of a byte buffer with circular semantics.
  *

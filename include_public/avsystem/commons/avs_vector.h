@@ -23,7 +23,7 @@
 #include <avsystem/commons/avs_defs.h>
 
 /**
- * @file vector.h
+ * @file avs_vector.h
  *
  * A generic vector implementation.
  *

@@ -24,7 +24,7 @@ extern "C" {
 #endif
 
 /**
- * @file sched.h
+ * @file avs_sched.h
  */
 
 /**

@@ -29,7 +29,7 @@ extern "C" {
 #endif
 
 /**
- * @file defs.h
+ * @file avs_defs.h
  *
  * Global common definitions.
  */

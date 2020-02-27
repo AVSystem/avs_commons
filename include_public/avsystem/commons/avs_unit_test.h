@@ -34,7 +34,7 @@ extern "C" {
 #endif
 
 /**
- * @file test.h
+ * @file avs_test.h
  *
  * This file allows implementing unit tests that will be automatically executed
  * by the <c>avs_unit</c> library.

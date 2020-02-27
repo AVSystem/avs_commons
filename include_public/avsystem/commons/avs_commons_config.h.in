@@ -18,7 +18,7 @@
 #define AVS_COMMONS_CONFIG_H
 
 /**
- * @file avs_commons_config.h
+ * @file avs_avs_commons_config.h
  *
  * avs_commons library configuration.
  *
