@@ -17,8 +17,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <avsystem/commons/memory.h>
-#include <avsystem/commons/unit/test.h>
+#include <avsystem/commons/avs_memory.h>
+#include <avsystem/commons/avs_unit_test.h>
 
 typedef struct {
     int *data;

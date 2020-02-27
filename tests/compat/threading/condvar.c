@@ -16,12 +16,12 @@
 
 #include <avs_commons_posix_init.h>
 
-#include <avsystem/commons/condvar.h>
+#include <avsystem/commons/avs_condvar.h>
 
 #include <pthread.h>
 #include <string.h>
 
-#include <avsystem/commons/unit/test.h>
+#include <avsystem/commons/avs_unit_test.h>
 
 // Test cases adapted from:
 // https://github.com/v8/v8/blob/master/test/unittests/base/platform/condition-variable-unittest.cc

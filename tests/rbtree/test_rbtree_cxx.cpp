@@ -14,4 +14,4 @@
  * limitations under the License.
  */
 
-#include "src/rbtree/rbtree.c"
+#include "src/rbtree/avs_rbtree.c"

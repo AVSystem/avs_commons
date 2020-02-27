@@ -16,8 +16,8 @@
 
 #include <avs_commons_init.h>
 
-#include <avsystem/commons/defs.h>
-#include <avsystem/commons/unit/test.h>
+#include <avsystem/commons/avs_defs.h>
+#include <avsystem/commons/avs_unit_test.h>
 
 AVS_UNIT_TEST(align_pointer, correct_alignment) {
     AVS_UNIT_ASSERT_EQUAL(

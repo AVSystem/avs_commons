@@ -16,10 +16,10 @@
 
 #include <avs_commons_init.h>
 
-#include <avsystem/commons/shared_buffer.h>
+#include <avsystem/commons/avs_shared_buffer.h>
 
 #define AVS_UNIT_ENABLE_SHORT_ASSERTS
-#include <avsystem/commons/unit/test.h>
+#include <avsystem/commons/avs_unit_test.h>
 
 #ifndef NDEBUG
 static inline void assert_acquired(avs_shared_buffer_t *buf) {

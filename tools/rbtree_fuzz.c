@@ -16,7 +16,7 @@
 #include <avs_commons_init.h>
 
 #include "src/rbtree.h"
-#include <avsystem/commons/rbtree.h>
+#include <avsystem/commons/avs_rbtree.h>
 
 #include <stdio.h>
 

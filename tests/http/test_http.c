@@ -17,20 +17,20 @@
 #include <avs_commons_init.h>
 
 #define MODULE_NAME http_test
-#include <x_log_config.h>
+#include <avs_x_log_config.h>
 
 #include <ctype.h>
 #include <string.h>
 
-#include <avsystem/commons/errno.h>
-#include <avsystem/commons/list.h>
-#include <avsystem/commons/stream/netbuf.h>
-#include <avsystem/commons/unit/mocksock.h>
-#include <avsystem/commons/unit/test.h>
+#include <avsystem/commons/avs_errno.h>
+#include <avsystem/commons/avs_list.h>
+#include <avsystem/commons/avs_stream_netbuf.h>
+#include <avsystem/commons/avs_unit_mocksock.h>
+#include <avsystem/commons/avs_unit_test.h>
 
 #include "test_http.h"
 
-#include "src/http/body_receivers.h"
+#include "src/http/avs_body_receivers.h"
 
 AVS_UNIT_GLOBAL_INIT(verbose) {
     if (!verbose) {

@@ -13,11 +13,11 @@
 # limitations under the License.
 
 set(AVS_PERSISTENCE_PUBLIC_HEADERS
-    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/persistence.h")
+    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/avs_persistence.h")
 
 add_library(avs_persistence STATIC
             ${AVS_PERSISTENCE_PUBLIC_HEADERS}
-            persistence.c)
+            avs_persistence.c)
 
 target_link_libraries(avs_persistence PUBLIC avs_commons_global_headers avs_rbtree avs_stream avs_utils avs_list)
 

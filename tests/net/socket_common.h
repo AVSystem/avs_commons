@@ -17,8 +17,8 @@
 #ifndef AVS_COMMONS_TEST_SOCKET_COMMON_H
 #define AVS_COMMONS_TEST_SOCKET_COMMON_H
 
-#include <avsystem/commons/socket.h>
-#include <avsystem/commons/unit/test.h>
+#include <avsystem/commons/avs_socket.h>
+#include <avsystem/commons/avs_unit_test.h>
 
 typedef enum { SUCCESS, FAIL } test_case_result_t;
 

@@ -13,13 +13,13 @@
 # limitations under the License.
 
 set(AVS_CRYPTO_PUBLIC_HEADERS
-    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/hkdf.h"
-    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/aead.h")
+    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/avs_hkdf.h"
+    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/avs_aead.h")
 
 set(AVS_CRYPTO_SOURCES
     ${AVS_CRYPTO_PUBLIC_HEADERS}
-    crypto_utils.c
-    crypto_utils.h)
+    avs_crypto_utils.c
+    avs_crypto_utils.h)
 
 add_library(avs_crypto_core INTERFACE)
 target_link_libraries(avs_crypto_core INTERFACE avs_commons_global_headers avs_utils)
@@ -31,8 +31,8 @@ endif()
 if(WITH_OPENSSL AND NOT OPENSSL_VERSION VERSION_LESS 1.1.0)
     add_library(avs_crypto_openssl
                 ${AVS_CRYPTO_SOURCES}
-                openssl/openssl_aead.c
-                openssl/openssl_hkdf.c)
+                openssl/avs_openssl_aead.c
+                openssl/avs_openssl_hkdf.c)
     target_link_libraries(avs_crypto_openssl PUBLIC avs_crypto_core OpenSSL::Crypto)
 
     avs_add_test(NAME avs_crypto_openssl
@@ -46,8 +46,8 @@ endif()
 if(WITH_MBEDTLS AND NOT MBEDTLS_VERSION VERSION_LESS 2.14.0)
     add_library(avs_crypto_mbedtls
                 ${AVS_CRYPTO_SOURCES}
-                mbedtls/mbedtls_aead.c
-                mbedtls/mbedtls_hkdf.c)
+                mbedtls/avs_mbedtls_aead.c
+                mbedtls/avs_mbedtls_hkdf.c)
     target_link_libraries(avs_crypto_mbedtls PUBLIC avs_crypto_core mbedcrypto)
 
     avs_add_test(NAME avs_crypto_mbedtls

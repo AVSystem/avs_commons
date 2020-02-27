@@ -18,7 +18,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <avsystem/commons/unit/test.h>
+#include <avsystem/commons/avs_unit_test.h>
 
 AVS_UNIT_TEST(base64, padding) {
     char result[5];

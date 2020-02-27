@@ -17,7 +17,7 @@
 #include <avs_commons_init.h>
 #define _GNU_SOURCE
 
-#include <avsystem/commons/unit/test.h>
+#include <avsystem/commons/avs_unit_test.h>
 
 AVS_UNIT_TEST(token, match_token) {
     const char *test_stream1 = "  hello==world";

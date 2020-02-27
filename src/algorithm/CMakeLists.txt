@@ -13,11 +13,11 @@
 # limitations under the License.
 
 set(AVS_ALGORITHM_PUBLIC_HEADERS
-    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/base64.h")
+    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/avs_base64.h")
 
 add_library(avs_algorithm STATIC
             ${AVS_ALGORITHM_PUBLIC_HEADERS}
-            base64.c)
+            avs_base64.c)
 
 target_link_libraries(avs_algorithm PUBLIC avs_commons_global_headers)
 

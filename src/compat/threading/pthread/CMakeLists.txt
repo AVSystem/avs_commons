@@ -25,10 +25,10 @@ set(CMAKE_REQUIRED_LIBRARIES)
 
 add_library(avs_compat_threading_pthread STATIC
             ${COMPAT_THREADING_PUBLIC_HEADERS}
-            pthread_condvar.c
-            pthread_mutex.c
-            pthread_init_once.c
-            pthread_structs.h)
+            avs_pthread_condvar.c
+            avs_pthread_init_once.c
+            avs_pthread_mutex.c
+            avs_pthread_structs.h)
 target_link_libraries(avs_compat_threading_pthread PUBLIC avs_utils ${CMAKE_THREAD_LIBS_INIT})
 if(WITH_INTERNAL_LOGS)
     target_link_libraries(avs_compat_threading_pthread PUBLIC avs_log)

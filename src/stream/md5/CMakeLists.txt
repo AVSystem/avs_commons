@@ -13,19 +13,19 @@
 # limitations under the License.
 
 set(AVS_STREAM_MD5_PUBLIC_HEADERS
-    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/stream/md5.h")
+    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/avs_stream_md5.h")
 
 add_library(avs_stream_md5 STATIC
             ${AVS_STREAM_MD5_PUBLIC_HEADERS}
-            md5_common.h
-            md5_common.c)
+            avs_md5_common.c
+            avs_md5_common.h)
 
 if(WITH_OPENSSL)
-    target_sources(avs_stream_md5 PRIVATE stream_openssl.c)
+    target_sources(avs_stream_md5 PRIVATE avs_stream_openssl.c)
 elseif(WITH_MBEDTLS)
-    target_sources(avs_stream_md5 PRIVATE stream_mbedtls.c)
+    target_sources(avs_stream_md5 PRIVATE avs_stream_mbedtls.c)
 else()
-    target_sources(avs_stream_md5 PRIVATE md5_impl.c)
+    target_sources(avs_stream_md5 PRIVATE avs_md5_impl.c)
 endif()
 
 # TODO: this should depend directly on OpenSSL/mbedtls rather than avs_net
@@ -34,4 +34,4 @@ target_link_libraries(avs_stream_md5 PUBLIC avs_stream avs_net)
 avs_install_export(avs_stream_md5 stream)
 install(FILES ${AVS_STREAM_MD5_PUBLIC_HEADERS}
         COMPONENT stream_md5
-        DESTINATION ${INCLUDE_INSTALL_DIR}/avsystem/commons/stream)
+        DESTINATION ${INCLUDE_INSTALL_DIR}/avsystem/commons)

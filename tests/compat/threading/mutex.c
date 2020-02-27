@@ -16,11 +16,11 @@
 
 #include <avs_commons_posix_init.h>
 
-#include <avsystem/commons/mutex.h>
+#include <avsystem/commons/avs_mutex.h>
 
 #include <pthread.h>
 
-#include <avsystem/commons/unit/test.h>
+#include <avsystem/commons/avs_unit_test.h>
 
 typedef struct {
     avs_mutex_t *mutex;

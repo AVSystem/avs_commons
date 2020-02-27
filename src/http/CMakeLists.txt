@@ -13,36 +13,36 @@
 # limitations under the License.
 
 set(AVS_HTTP_PUBLIC_HEADERS
-    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/http.h")
+    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/avs_http.h")
 
 add_library(avs_http STATIC
             ${AVS_HTTP_PUBLIC_HEADERS}
 
-            auth.h
-            body_receivers.h
-            chunked.h
-            client.h
-            compression.h
-            content_encoding.h
-            headers.h
-            http_log.h
-            http_stream.h
+            avs_auth.h
+            avs_body_receivers.h
+            avs_chunked.h
+            avs_client.h
+            avs_compression.h
+            avs_content_encoding.h
+            avs_headers.h
+            avs_http_log.h
+            avs_http_stream.h
 
-            auth/basic.c
-            auth/digest.c
-            body_receivers/chunked_body_receiver.c
-            body_receivers/content_length.c
-            body_receivers/dumb_body_receiver.c
-            auth.c
-            body_receivers.c
-            chunked.c
-            client.c
-            compression.c
-            content_encoding.c
-            headers_receive.c
-            headers_send.c
-            http_stream.c
-            stream_methods.c)
+            auth/avs_basic.c
+            auth/avs_digest.c
+            body_receivers/avs_chunked_body_receiver.c
+            body_receivers/avs_content_length.c
+            body_receivers/avs_dumb_body_receiver.c
+            avs_auth.c
+            avs_body_receivers.c
+            avs_chunked.c
+            avs_client.c
+            avs_compression.c
+            avs_content_encoding.c
+            avs_headers_receive.c
+            avs_headers_send.c
+            avs_http_stream.c
+            avs_stream_methods.c)
 
 target_link_libraries(avs_http PUBLIC avs_commons_global_headers avs_algorithm avs_net avs_stream avs_stream_md5 avs_stream_net avs_utils avs_list)
 

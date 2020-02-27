@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-#include <avsystem/commons/unit/test.h>
+#include <avsystem/commons/avs_unit_test.h>
 
 /* Underlying stream implementation used for tests */
-#include <avsystem/commons/stream/stream_simple_io.h>
+#include <avsystem/commons/avs_stream_simple_io.h>
 
 #define STREAM_BUFFER_SIZE 64
 #define STREAM_SIZE 128

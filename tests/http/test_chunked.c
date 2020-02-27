@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-#include <avsystem/commons/stream/netbuf.h>
-#include <avsystem/commons/unit/mocksock.h>
-#include <avsystem/commons/unit/test.h>
+#include <avsystem/commons/avs_stream_netbuf.h>
+#include <avsystem/commons/avs_unit_mocksock.h>
+#include <avsystem/commons/avs_unit_test.h>
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmissing-field-initializers"

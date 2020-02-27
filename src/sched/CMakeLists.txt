@@ -13,11 +13,11 @@
 # limitations under the License.
 
 set(AVS_SCHED_PUBLIC_HEADERS
-    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/sched.h")
+    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/avs_sched.h")
 
 add_library(avs_sched STATIC
             ${AVS_SCHED_PUBLIC_HEADERS}
-            sched.c)
+            avs_sched.c)
 
 target_link_libraries(avs_sched PUBLIC avs_commons_global_headers avs_list)
 

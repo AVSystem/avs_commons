@@ -16,15 +16,15 @@
 
 #include <avs_commons_posix_init.h>
 
-#include <avsystem/commons/memory.h>
-#include <avsystem/commons/socket.h>
-#include <avsystem/commons/unit/test.h>
+#include <avsystem/commons/avs_memory.h>
+#include <avsystem/commons/avs_socket.h>
+#include <avsystem/commons/avs_unit_test.h>
 
 #include <unistd.h>
 
 #include <sys/stat.h>
 
-#include "src/net/mbedtls/mbedtls_data_loader.h"
+#include "src/net/mbedtls/avs_mbedtls_data_loader.h"
 
 AVS_UNIT_TEST(backend_mbedtls, chain_loading_from_file) {
     mbedtls_x509_crt *chain = NULL;

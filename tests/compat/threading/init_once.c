@@ -16,11 +16,11 @@
 
 #include <avs_commons_posix_init.h>
 
-#include <avsystem/commons/init_once.h>
+#include <avsystem/commons/avs_init_once.h>
 
 #include <pthread.h>
 
-#include <avsystem/commons/unit/test.h>
+#include <avsystem/commons/avs_unit_test.h>
 
 /*
  * Basically equivalent to pthread_barrier_t. We could use the pthread one,

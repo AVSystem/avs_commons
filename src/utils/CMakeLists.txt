@@ -13,27 +13,27 @@
 # limitations under the License.
 
 set(AVS_UTILS_PUBLIC_HEADERS
-    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/cleanup.h"
-    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/memory.h"
-    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/shared_buffer.h"
-    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/time.h"
-    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/utils.h")
+    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/avs_cleanup.h"
+    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/avs_memory.h"
+    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/avs_shared_buffer.h"
+    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/avs_time.h"
+    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/avs_utils.h")
 
 add_library(avs_utils STATIC
             ${AVS_UTILS_PUBLIC_HEADERS}
-            x_time_conv.h
+            avs_x_time_conv.h
 
-            cleanup.c
-            hexlify.c
-            numbers.c
-            shared_buffer.c
-            strings.c
-            strerror.c
-            time.c
-            token.c
+            avs_cleanup.c
+            avs_hexlify.c
+            avs_numbers.c
+            avs_shared_buffer.c
+            avs_strings.c
+            avs_strerror.c
+            avs_time.c
+            avs_token.c
 
-            compat/posix/compat_time.c
-            compat/stdlib/memory.c)
+            compat/posix/avs_compat_time.c
+            compat/stdlib/avs_memory.c)
 
 if(UNIX OR WIN32)
     set(POSIX_AVS_TIME_DEFAULT ON)

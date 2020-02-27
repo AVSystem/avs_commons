@@ -18,8 +18,8 @@
 
 #include <time.h>
 
-#include <avsystem/commons/time.h>
-#include <avsystem/commons/unit/test.h>
+#include <avsystem/commons/avs_time.h>
+#include <avsystem/commons/avs_unit_test.h>
 
 AVS_UNIT_TEST(time, time_arithmetic) {
     avs_time_real_t realtime =

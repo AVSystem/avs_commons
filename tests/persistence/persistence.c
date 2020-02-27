@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-#include <avsystem/commons/list.h>
-#include <avsystem/commons/memory.h>
-#include <avsystem/commons/persistence.h>
-#include <avsystem/commons/stream.h>
-#include <avsystem/commons/stream/stream_membuf.h>
-#include <avsystem/commons/unit/test.h>
+#include <avsystem/commons/avs_list.h>
+#include <avsystem/commons/avs_memory.h>
+#include <avsystem/commons/avs_persistence.h>
+#include <avsystem/commons/avs_stream.h>
+#include <avsystem/commons/avs_stream_membuf.h>
+#include <avsystem/commons/avs_unit_test.h>
 
 #include <string.h>
 

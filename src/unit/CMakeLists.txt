@@ -12,15 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-add_library(avs_unit STATIC
-            "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/unit/memstream.h"
-            "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/unit/mock_helpers.h"
-            "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/unit/mocksock.h"
-            "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/unit/test.h"
+set(AVS_UNIT_PUBLIC_HEADERS
+    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/avs_unit_memstream.h"
+    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/avs_unit_mock_helpers.h"
+    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/avs_unit_mocksock.h"
+    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/avs_unit_test.h")
 
-            mock.c
-            stack_trace.c
-            unit_test.c)
+add_library(avs_unit STATIC
+            ${AVS_UNIT_PUBLIC_HEADERS}
+            avs_mock.c
+            avs_stack_trace.c
+            avs_unit_test.c)
 
 target_link_libraries(avs_unit PUBLIC avs_commons_global_headers avs_list)
 
@@ -29,17 +31,16 @@ if(WITH_AVS_LOG)
 endif()
 
 if(WITH_AVS_NET)
-    target_sources(avs_unit PRIVATE mocksock.c)
+    target_sources(avs_unit PRIVATE avs_mocksock.c)
     target_link_libraries(avs_unit PUBLIC avs_net)
 endif()
 
 if(WITH_AVS_STREAM)
-    target_sources(avs_unit PRIVATE memstream.c)
+    target_sources(avs_unit PRIVATE avs_memstream.c)
     target_link_libraries(avs_unit PUBLIC avs_stream)
 endif()
 
 avs_install_export(avs_unit unit)
-install(DIRECTORY "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/unit"
-        COMPONENT unit
-        DESTINATION ${INCLUDE_INSTALL_DIR}/avsystem/commons
-        FILES_MATCHING REGEX "[.]h$")
+install(FILES ${AVS_UTILS_PUBLIC_HEADERS}
+        COMPONENT utils
+        DESTINATION ${INCLUDE_INSTALL_DIR}/avsystem/commons)

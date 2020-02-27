@@ -16,15 +16,15 @@
 
 #include <avs_commons_posix_init.h>
 
-#include <avsystem/commons/socket.h>
-#include <avsystem/commons/unit/test.h>
+#include <avsystem/commons/avs_socket.h>
+#include <avsystem/commons/avs_unit_test.h>
 
 #include <openssl/rand.h>
 #include <openssl/ssl.h>
 
 #include <unistd.h>
 
-#include "src/net/openssl/openssl_data_loader.h"
+#include "src/net/openssl/avs_openssl_data_loader.h"
 
 __attribute__((constructor)) static void global_ssl_init(void) {
     SSL_library_init();

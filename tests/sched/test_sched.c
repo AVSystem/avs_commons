@@ -18,15 +18,15 @@
 #include <avs_commons_posix_init.h>
 
 #define MODULE_NAME sched_test
-#include <x_log_config.h>
+#include <avs_x_log_config.h>
 
 #include <time.h>
 
 #include <dlfcn.h>
 
-#include <avsystem/commons/sched.h>
-#include <avsystem/commons/time.h>
-#include <avsystem/commons/unit/test.h>
+#include <avsystem/commons/avs_sched.h>
+#include <avsystem/commons/avs_time.h>
+#include <avsystem/commons/avs_unit_test.h>
 
 static avs_time_monotonic_t MOCK_CLOCK = { { 0, -1 } };
 

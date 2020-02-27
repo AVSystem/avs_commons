@@ -18,8 +18,8 @@
 #include <string.h>
 #include <unistd.h>
 
-#include <avsystem/commons/memory.h>
-#include <avsystem/commons/unit/test.h>
+#include <avsystem/commons/avs_memory.h>
+#include <avsystem/commons/avs_unit_test.h>
 
 int mkstemp(char *filename_template);
 

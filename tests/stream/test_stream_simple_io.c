@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include <avsystem/commons/unit/test.h>
+#include <avsystem/commons/avs_unit_test.h>
 
 /* Amount of memory in stream in bytes */
 #define STREAM_SIZE 128
