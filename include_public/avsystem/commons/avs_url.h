@@ -19,6 +19,12 @@
 
 #include <avsystem/commons/avs_stream.h>
 
+/**
+ * @file avs_url.h
+ *
+ * URL handling routines.
+ */
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -213,7 +219,7 @@ const char *avs_url_password(const avs_url_t *url);
 
 /**
  * Returns the hostname portion of the parsed URL, which may be an empty string
- * or <c>NULL</c> (if there was no <c>//</c> in the URL) when using
+ * or @c NULL (if there was no @c // in the URL) when using
  * @ref avs_url_parse_lenient.
  *
  * @param url A parsed URL object previously returned by @ref avs_url_parse
