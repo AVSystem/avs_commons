@@ -42,7 +42,8 @@ AVS_UNIT_TEST(avs_crypto_prng, get_random_bytes) {
 
     ASSERT_NE_BYTES_SIZED(test_buf, compare_buf, test_buf_len);
 
-    avs_crypto_prng_free(ctx);
+    avs_crypto_prng_free(&ctx);
+    ASSERT_NULL(ctx);
     avs_free(test_buf);
     avs_free(compare_buf);
 }

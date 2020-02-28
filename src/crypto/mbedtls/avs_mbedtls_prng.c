@@ -56,17 +56,17 @@ avs_crypto_prng_new(avs_prng_entropy_callback_t seed_cb) {
 
     if (mbedtls_ctr_drbg_seed(
                 &ctx->mbedtls_ctx, entropy_callback, ctx, NULL, 0)) {
-        avs_crypto_prng_free(ctx);
-        return NULL;
+        avs_crypto_prng_free(&ctx);
     }
 
     return ctx;
 }
 
-void avs_crypto_prng_free(avs_crypto_prng_ctx_t *ctx) {
+void avs_crypto_prng_free(avs_crypto_prng_ctx_t **ctx) {
     if (ctx) {
-        mbedtls_ctr_drbg_free(&ctx->mbedtls_ctx);
-        avs_free(ctx);
+        mbedtls_ctr_drbg_free(&(*ctx)->mbedtls_ctx);
+        avs_free(*ctx);
+        *ctx = NULL;
     }
 }
 

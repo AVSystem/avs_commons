@@ -63,8 +63,11 @@ avs_crypto_prng_new(avs_prng_entropy_callback_t seed_cb) {
     return ctx;
 }
 
-void avs_crypto_prng_free(avs_crypto_prng_ctx_t *ctx) {
-    avs_free(ctx);
+void avs_crypto_prng_free(avs_crypto_prng_ctx_t **ctx) {
+    if (ctx) {
+        avs_free(*ctx);
+        *ctx = NULL;
+    }
 }
 
 int avs_crypto_prng_bytes(avs_crypto_prng_ctx_t *ctx,

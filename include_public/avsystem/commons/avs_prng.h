@@ -50,10 +50,8 @@ avs_crypto_prng_new(avs_prng_entropy_callback_t entropy_cb);
 
 /**
  * Frees PRNG context previously created with @ref avs_crypto_prng_new() .
- *
- * @param ctx MUST NOT be @c NULL .
  */
-void avs_crypto_prng_free(avs_crypto_prng_ctx_t *ctx);
+void avs_crypto_prng_free(avs_crypto_prng_ctx_t **ctx);
 
 /**
  * Gets pseudo-random data from initialized PRNG context.
