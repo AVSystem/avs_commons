@@ -74,10 +74,10 @@ target_link_libraries(avs_net_nosec PUBLIC avs_net_core)
 
 avs_add_test(NAME avs_net_nosec
              LIBS $<TARGET_PROPERTY:avs_net_nosec,LINK_LIBRARIES>
+             COMPILE_DEFINITIONS WITHOUT_SSL
              SOURCES
              ${AVS_NET_SOURCES}
              ${AVS_COMMONS_SOURCE_DIR}/tests/net/socket_nosec.c)
-target_compile_definitions(avs_net_nosec_test PRIVATE WITHOUT_SSL)
 avs_install_export(avs_net_nosec net)
 
 if(WITH_OPENSSL)
