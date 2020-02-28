@@ -63,7 +63,7 @@ avs_crypto_prng_new(avs_prng_entropy_callback_t seed_cb) {
 }
 
 void avs_crypto_prng_free(avs_crypto_prng_ctx_t **ctx) {
-    if (ctx) {
+    if (ctx && *ctx) {
         mbedtls_ctr_drbg_free(&(*ctx)->mbedtls_ctx);
         avs_free(*ctx);
         *ctx = NULL;
