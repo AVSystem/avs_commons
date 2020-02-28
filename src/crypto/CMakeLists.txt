@@ -15,7 +15,7 @@
 set(AVS_CRYPTO_PUBLIC_HEADERS
     "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/avs_hkdf.h"
     "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/avs_aead.h"
-    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/prng.h")
+    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/avs_prng.h")
 
 set(AVS_CRYPTO_SOURCES
     ${AVS_CRYPTO_PUBLIC_HEADERS}
@@ -34,7 +34,7 @@ if(WITH_OPENSSL AND NOT OPENSSL_VERSION VERSION_LESS 1.1.0)
                 ${AVS_CRYPTO_SOURCES}
                 openssl/avs_openssl_aead.c
                 openssl/avs_openssl_hkdf.c
-                openssl/openssl_prng.c)
+                openssl/avs_openssl_prng.c)
     target_link_libraries(avs_crypto_openssl PUBLIC avs_crypto_core OpenSSL::Crypto)
 
     avs_add_test(NAME avs_crypto_openssl
@@ -51,7 +51,7 @@ if(WITH_MBEDTLS AND NOT MBEDTLS_VERSION VERSION_LESS 2.14.0)
                 ${AVS_CRYPTO_SOURCES}
                 mbedtls/avs_mbedtls_aead.c
                 mbedtls/avs_mbedtls_hkdf.c
-                mbedtls/mbedtls_prng.c)
+                mbedtls/avs_mbedtls_prng.c)
     target_link_libraries(avs_crypto_mbedtls PUBLIC avs_crypto_core mbedcrypto)
 
     avs_add_test(NAME avs_crypto_mbedtls

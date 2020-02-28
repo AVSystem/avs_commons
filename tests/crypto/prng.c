@@ -15,10 +15,10 @@
  */
 
 #define AVS_UNIT_ENABLE_SHORT_ASSERTS
-#include <avsystem/commons/unit/test.h>
+#include <avsystem/commons/avs_unit_test.h>
 
-#include <avsystem/commons/memory.h>
-#include <avsystem/commons/prng.h>
+#include <avsystem/commons/avs_memory.h>
+#include <avsystem/commons/avs_prng.h>
 
 #include <string.h>
 
