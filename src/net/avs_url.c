@@ -273,9 +273,7 @@ static int url_parse_host(const char **url,
         }
         assert(**url == '\0' || **url == '/' || **url == '?' || **url == ':');
     }
-    if (*data_out_ptr != parsed_url->host_ptr) {
-        parsed_url->data[(*data_out_ptr)++] = '\0';
-    }
+    parsed_url->data[(*data_out_ptr)++] = '\0';
     return 0;
 }
 

@@ -19,6 +19,12 @@
 
 #include <avsystem/commons/avs_stream.h>
 
+/**
+ * @file avs_url.h
+ *
+ * URL handling routines.
+ */
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -175,9 +181,11 @@ int avs_url_validate(const avs_url_t *url);
 avs_url_t *avs_url_copy(const avs_url_t *url);
 
 /**
- * Returns the protocol (scheme name) portion of the parsed URL.
+ * Returns the protocol (scheme name) portion of the parsed URL, or <c>NULL</c>
+ * if it was not present (only possible for @ref avs_url_parse_lenient).
  *
- * @param url A parsed URL object previously returned by @ref avs_url_parse.
+ * @param url A parsed URL object previously returned by @ref avs_url_parse
+ *            or @ref avs_url_parse_lenient.
  *
  * @return Value of the protocol portion of the URL.
  */
@@ -189,7 +197,8 @@ const char *avs_url_protocol(const avs_url_t *url);
  *
  * NOTE: Any percent-encoding in the password is already decoded.
  *
- * @param url A parsed URL object previously returned by @ref avs_url_parse.
+ * @param url A parsed URL object previously returned by @ref avs_url_parse
+ *            or @ref avs_url_parse_lenient.
  *
  * @return Value of the username given in the URL.
  */
@@ -201,37 +210,43 @@ const char *avs_url_user(const avs_url_t *url);
  *
  * NOTE: Any percent-encoding in the password is already decoded.
  *
- * @param url A parsed URL object previously returned by @ref avs_url_parse.
+ * @param url A parsed URL object previously returned by @ref avs_url_parse
+ *            or @ref avs_url_parse_lenient.
  *
  * @return Value of the password given in the URL.
  */
 const char *avs_url_password(const avs_url_t *url);
 
 /**
- * Returns the hostname portion of the parsed URL.
+ * Returns the hostname portion of the parsed URL, which may be an empty string
+ * or @c NULL (if there was no @c // in the URL) when using
+ * @ref avs_url_parse_lenient.
  *
- * @param url A parsed URL object previously returned by @ref avs_url_parse.
+ * @param url A parsed URL object previously returned by @ref avs_url_parse
+ *            or @ref avs_url_parse_lenient.
  *
  * @return Value of the hostname portion of the URL.
  */
 const char *avs_url_host(const avs_url_t *url);
 
 /**
- * Returns the port portion of the parsed URL. It may be an empty string if the
- * port was not given in the URL - scheme defaults are not implicitly supported.
+ * Returns the port portion of the parsed URL, or <c>NULL</c> if it was not
+ * present in the URL.
  *
- * @param url A parsed URL object previously returned by @ref avs_url_parse.
+ * @param url A parsed URL object previously returned by @ref avs_url_parse
+ *            or @ref avs_url_parse_lenient.
  *
  * @return Value of the port portion of the URL.
  */
 const char *avs_url_port(const avs_url_t *url);
 
 /**
- * Returns the path portion of the parsed URL.
+ * Returns the path portion of the parsed URL. Guaranteed to be non-<c>NULL</c>.
  *
  * NOTE: Any percent-encoding in the path is NOT decoded automatically.
  *
- * @param url A parsed URL object previously returned by @ref avs_url_parse.
+ * @param url A parsed URL object previously returned by @ref avs_url_parse
+ *            or @ref avs_url_parse_lenient.
  *
  * @return Value of the path portion of the URL.
  */

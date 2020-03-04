@@ -349,6 +349,93 @@ AVS_UNIT_TEST(parse_url, empty_host) {
     AVS_UNIT_ASSERT_NULL(avs_url_parse("http://:123"));
 }
 
+AVS_UNIT_TEST(parse_url_lenient, empty_proto) {
+    avs_url_t *parsed_url = avs_url_parse_lenient("hello/world");
+    AVS_UNIT_ASSERT_NOT_NULL(parsed_url);
+    AVS_UNIT_ASSERT_NULL(avs_url_protocol(parsed_url));
+    AVS_UNIT_ASSERT_NULL(avs_url_user(parsed_url));
+    AVS_UNIT_ASSERT_NULL(avs_url_password(parsed_url));
+    AVS_UNIT_ASSERT_NULL(avs_url_host(parsed_url));
+    AVS_UNIT_ASSERT_NULL(avs_url_port(parsed_url));
+    AVS_UNIT_ASSERT_EQUAL_STRING(avs_url_path(parsed_url), "hello/world");
+    avs_url_free(parsed_url);
+}
+
+AVS_UNIT_TEST(parse_url_lenient, empty_proto_absolute) {
+    avs_url_t *parsed_url =
+            avs_url_parse_lenient("//user%25:p%40ssword@[12::34]:56/78");
+    AVS_UNIT_ASSERT_NOT_NULL(parsed_url);
+    AVS_UNIT_ASSERT_NULL(avs_url_protocol(parsed_url));
+    AVS_UNIT_ASSERT_EQUAL_STRING(avs_url_user(parsed_url), "user%");
+    AVS_UNIT_ASSERT_EQUAL_STRING(avs_url_password(parsed_url), "p@ssword");
+    AVS_UNIT_ASSERT_EQUAL_STRING(avs_url_host(parsed_url), "12::34");
+    AVS_UNIT_ASSERT_EQUAL_STRING(avs_url_port(parsed_url), "56");
+    AVS_UNIT_ASSERT_EQUAL_STRING(avs_url_path(parsed_url), "/78");
+    avs_url_free(parsed_url);
+}
+
+AVS_UNIT_TEST(parse_url_lenient, empty_host) {
+    avs_url_t *parsed_url =
+            avs_url_parse_lenient("//user%25:p%40ssword@:12/34");
+    AVS_UNIT_ASSERT_NOT_NULL(parsed_url);
+    AVS_UNIT_ASSERT_NULL(avs_url_protocol(parsed_url));
+    AVS_UNIT_ASSERT_EQUAL_STRING(avs_url_user(parsed_url), "user%");
+    AVS_UNIT_ASSERT_EQUAL_STRING(avs_url_password(parsed_url), "p@ssword");
+    AVS_UNIT_ASSERT_EQUAL_STRING(avs_url_host(parsed_url), "");
+    AVS_UNIT_ASSERT_EQUAL_STRING(avs_url_port(parsed_url), "12");
+    AVS_UNIT_ASSERT_EQUAL_STRING(avs_url_path(parsed_url), "/34");
+    avs_url_free(parsed_url);
+}
+
+AVS_UNIT_TEST(parse_url_lenient, empty_port) {
+    avs_url_t *parsed_url = avs_url_parse_lenient("//:/wat");
+    AVS_UNIT_ASSERT_NOT_NULL(parsed_url);
+    AVS_UNIT_ASSERT_NULL(avs_url_protocol(parsed_url));
+    AVS_UNIT_ASSERT_NULL(avs_url_user(parsed_url));
+    AVS_UNIT_ASSERT_NULL(avs_url_password(parsed_url));
+    AVS_UNIT_ASSERT_EQUAL_STRING(avs_url_host(parsed_url), "");
+    AVS_UNIT_ASSERT_EQUAL_STRING(avs_url_port(parsed_url), "");
+    AVS_UNIT_ASSERT_EQUAL_STRING(avs_url_path(parsed_url), "/wat");
+    avs_url_free(parsed_url);
+}
+
+AVS_UNIT_TEST(parse_url_lenient, long_port) {
+    avs_url_t *parsed_url = avs_url_parse_lenient("//:83947283975891247591");
+    AVS_UNIT_ASSERT_NOT_NULL(parsed_url);
+    AVS_UNIT_ASSERT_NULL(avs_url_protocol(parsed_url));
+    AVS_UNIT_ASSERT_NULL(avs_url_user(parsed_url));
+    AVS_UNIT_ASSERT_NULL(avs_url_password(parsed_url));
+    AVS_UNIT_ASSERT_EQUAL_STRING(avs_url_host(parsed_url), "");
+    AVS_UNIT_ASSERT_EQUAL_STRING(avs_url_port(parsed_url),
+                                 "83947283975891247591");
+    AVS_UNIT_ASSERT_EQUAL_STRING(avs_url_path(parsed_url), "/");
+    avs_url_free(parsed_url);
+}
+
+AVS_UNIT_TEST(parse_url_lenient, empty_host_and_port) {
+    avs_url_t *parsed_url = avs_url_parse_lenient("///wat");
+    AVS_UNIT_ASSERT_NOT_NULL(parsed_url);
+    AVS_UNIT_ASSERT_NULL(avs_url_protocol(parsed_url));
+    AVS_UNIT_ASSERT_NULL(avs_url_user(parsed_url));
+    AVS_UNIT_ASSERT_NULL(avs_url_password(parsed_url));
+    AVS_UNIT_ASSERT_EQUAL_STRING(avs_url_host(parsed_url), "");
+    AVS_UNIT_ASSERT_NULL(avs_url_port(parsed_url));
+    AVS_UNIT_ASSERT_EQUAL_STRING(avs_url_path(parsed_url), "/wat");
+    avs_url_free(parsed_url);
+}
+
+AVS_UNIT_TEST(parse_url_lenient, tel) {
+    avs_url_t *parsed_url = avs_url_parse_lenient("tel:+48126194700");
+    AVS_UNIT_ASSERT_NOT_NULL(parsed_url);
+    AVS_UNIT_ASSERT_EQUAL_STRING(avs_url_protocol(parsed_url), "tel");
+    AVS_UNIT_ASSERT_NULL(avs_url_user(parsed_url));
+    AVS_UNIT_ASSERT_NULL(avs_url_password(parsed_url));
+    AVS_UNIT_ASSERT_NULL(avs_url_host(parsed_url));
+    AVS_UNIT_ASSERT_NULL(avs_url_port(parsed_url));
+    AVS_UNIT_ASSERT_EQUAL_STRING(avs_url_path(parsed_url), "+48126194700");
+    avs_url_free(parsed_url);
+}
+
 AVS_UNIT_TEST(url_unescape, empty_string) {
     char data[] = "";
     size_t length;
