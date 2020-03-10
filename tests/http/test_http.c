@@ -40,9 +40,8 @@ AVS_UNIT_GLOBAL_INIT(verbose) {
 
 expected_socket_t *avs_http_test_SOCKETS_TO_CREATE = NULL;
 
-avs_error_t avs_net_socket_create_TEST_WRAPPER(avs_net_socket_t **socket,
-                                               avs_net_socket_type_t type,
-                                               ...) {
+avs_error_t test_socket_create(avs_net_socket_t **socket,
+                               avs_net_socket_type_t type) {
     expected_socket_t *removed_entry;
     removed_entry = AVS_LIST_DETACH(&avs_http_test_SOCKETS_TO_CREATE);
     AVS_UNIT_ASSERT_NOT_NULL(removed_entry);
@@ -50,6 +49,16 @@ avs_error_t avs_net_socket_create_TEST_WRAPPER(avs_net_socket_t **socket,
     *socket = removed_entry->socket;
     AVS_LIST_DELETE(&removed_entry);
     return (*socket) ? AVS_OK : avs_errno(AVS_ENOMEM);
+}
+
+avs_error_t avs_net_tcp_socket_create_TEST_WRAPPER(avs_net_socket_t **socket,
+                                                   ...) {
+    return test_socket_create(socket, AVS_NET_TCP_SOCKET);
+}
+
+avs_error_t avs_net_ssl_socket_create_TEST_WRAPPER(avs_net_socket_t **socket,
+                                                   ...) {
+    return test_socket_create(socket, AVS_NET_SSL_SOCKET);
 }
 
 void avs_http_test_expect_create_socket(avs_net_socket_t *socket,

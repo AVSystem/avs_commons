@@ -37,10 +37,13 @@ VISIBILITY_SOURCE_BEGIN
 #    define HTTP_MOVE_LIMIT 5
 
 #    ifdef AVS_UNIT_TESTING
-#        define avs_net_socket_create avs_net_socket_create_TEST_WRAPPER
-avs_error_t avs_net_socket_create_TEST_WRAPPER(avs_net_socket_t **socket,
-                                               avs_net_socket_type_t type,
-                                               ...);
+#        define avs_net_tcp_socket_create avs_net_tcp_socket_create_TEST_WRAPPER
+avs_error_t avs_net_tcp_socket_create_TEST_WRAPPER(avs_net_socket_t **socket,
+                                                   ...);
+
+#        define avs_net_ssl_socket_create avs_net_ssl_socket_create_TEST_WRAPPER
+avs_error_t avs_net_ssl_socket_create_TEST_WRAPPER(avs_net_socket_t **socket,
+                                                   ...);
 #    endif
 
 typedef enum {
