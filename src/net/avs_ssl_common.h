@@ -77,9 +77,15 @@ static avs_error_t set_opt_ssl(avs_net_socket_t *net_socket,
 
 static avs_error_t ensure_have_backend_socket(ssl_socket_t *socket) {
     if (!socket->backend_socket) {
-        return avs_net_socket_create(&socket->backend_socket,
-                                     socket->backend_type,
-                                     &socket->backend_configuration);
+        if (socket->backend_type == AVS_NET_UDP_SOCKET) {
+            return avs_net_udp_socket_create(&socket->backend_socket,
+                                             &socket->backend_configuration);
+        } else if (socket->backend_type == AVS_NET_TCP_SOCKET) {
+            return avs_net_tcp_socket_create(&socket->backend_socket,
+                                             &socket->backend_configuration);
+        } else {
+            return avs_errno(AVS_EINVAL);
+        }
     }
     return AVS_OK;
 }
@@ -335,13 +341,15 @@ static avs_error_t get_opt_ssl(avs_net_socket_t *ssl_socket_,
     }
 }
 
-avs_error_t _avs_net_create_ssl_socket(avs_net_socket_t **socket,
-                                       const void *socket_configuration) {
+inline avs_error_t
+_avs_net_create_ssl_socket(avs_net_socket_t **socket,
+                           const void *socket_configuration) {
     return create_ssl_socket(socket, AVS_NET_TCP_SOCKET, socket_configuration);
 }
 
-avs_error_t _avs_net_create_dtls_socket(avs_net_socket_t **socket,
-                                        const void *socket_configuration) {
+inline avs_error_t
+_avs_net_create_dtls_socket(avs_net_socket_t **socket,
+                            const void *socket_configuration) {
     return create_ssl_socket(socket, AVS_NET_UDP_SOCKET, socket_configuration);
 }
 

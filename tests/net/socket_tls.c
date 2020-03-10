@@ -24,8 +24,8 @@
 AVS_UNIT_TEST(socket, ssl_get_opt) {
     avs_net_socket_t *socket = NULL;
 
-    AVS_UNIT_ASSERT_SUCCESS(avs_net_socket_create(&socket, AVS_NET_SSL_SOCKET,
-                                                  &DEFAULT_SSL_CONFIGURATION));
+    AVS_UNIT_ASSERT_SUCCESS(
+            avs_net_ssl_socket_create(&socket, &DEFAULT_SSL_CONFIGURATION));
     AVS_UNIT_ASSERT_SUCCESS(
             avs_net_socket_bind(socket, DEFAULT_ADDRESS, DEFAULT_PORT));
 
@@ -50,8 +50,8 @@ AVS_UNIT_TEST(socket, ssl_get_opt) {
 AVS_UNIT_TEST(socket, ssl_get_opt_after_close) {
     avs_net_socket_t *socket = NULL;
 
-    AVS_UNIT_ASSERT_SUCCESS(avs_net_socket_create(&socket, AVS_NET_SSL_SOCKET,
-                                                  &DEFAULT_SSL_CONFIGURATION));
+    AVS_UNIT_ASSERT_SUCCESS(
+            avs_net_ssl_socket_create(&socket, &DEFAULT_SSL_CONFIGURATION));
     AVS_UNIT_ASSERT_SUCCESS(
             avs_net_socket_bind(socket, DEFAULT_ADDRESS, DEFAULT_PORT));
     AVS_UNIT_ASSERT_SUCCESS(avs_net_socket_close(socket));
@@ -77,8 +77,8 @@ AVS_UNIT_TEST(socket, ssl_get_opt_after_close) {
 AVS_UNIT_TEST(socket, ssl_set_opt) {
     avs_net_socket_t *socket = NULL;
 
-    AVS_UNIT_ASSERT_SUCCESS(avs_net_socket_create(&socket, AVS_NET_SSL_SOCKET,
-                                                  &DEFAULT_SSL_CONFIGURATION));
+    AVS_UNIT_ASSERT_SUCCESS(
+            avs_net_ssl_socket_create(&socket, &DEFAULT_SSL_CONFIGURATION));
     AVS_UNIT_ASSERT_SUCCESS(
             avs_net_socket_bind(socket, DEFAULT_ADDRESS, DEFAULT_PORT));
 
@@ -135,8 +135,7 @@ AVS_UNIT_TEST(starttls, starttls_smtp) {
     avs_net_socket_t *socket = NULL;
     avs_net_ssl_configuration_t ssl_config;
 
-    AVS_UNIT_ASSERT_SUCCESS(
-            avs_net_socket_create(&socket, AVS_NET_TCP_SOCKET, NULL));
+    AVS_UNIT_ASSERT_SUCCESS(avs_net_tcp_socket_create(&socket, NULL));
     AVS_UNIT_ASSERT_SUCCESS(avs_net_socket_connect(socket, SMTP_SERVER_HOSTNAME,
                                                    SMTP_SERVER_PORT));
 
@@ -149,8 +148,8 @@ AVS_UNIT_TEST(starttls, starttls_smtp) {
 
     memset(&ssl_config, 0, sizeof(ssl_config));
     ssl_config.version = AVS_NET_SSL_VERSION_TLSv1;
-    AVS_UNIT_ASSERT_SUCCESS(avs_net_socket_decorate_in_place(
-            &socket, AVS_NET_SSL_SOCKET, &ssl_config));
+    AVS_UNIT_ASSERT_SUCCESS(
+            avs_net_ssl_socket_decorate_in_place(&socket, &ssl_config));
 
     AVS_UNIT_ASSERT_SUCCESS(
             avs_net_socket_send(socket, ehlo_msg, strlen(ehlo_msg)));

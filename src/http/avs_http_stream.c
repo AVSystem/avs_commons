@@ -101,12 +101,12 @@ avs_error_t _avs_http_socket_new(avs_net_socket_t **out,
     switch (check_protocol(avs_url_protocol(url))) {
     case HTTP_URI_PROTOCOL_HTTP:
         LOG(TRACE, _("creating TCP socket"));
-        err = avs_net_socket_create(out, AVS_NET_TCP_SOCKET,
-                                    &ssl_config_full.backend_configuration);
+        err = avs_net_tcp_socket_create(out,
+                                        &ssl_config_full.backend_configuration);
         break;
     case HTTP_URI_PROTOCOL_HTTPS:
         LOG(TRACE, _("creating SSL socket"));
-        err = avs_net_socket_create(out, AVS_NET_SSL_SOCKET, &ssl_config_full);
+        err = avs_net_ssl_socket_create(out, &ssl_config_full);
         break;
     case HTTP_URI_PROTOCOL_UNKNOWN:
         break;

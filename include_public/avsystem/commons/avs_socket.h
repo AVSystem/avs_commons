@@ -682,9 +682,25 @@ int avs_net_socket_debug(int value);
  * @returns @ref AVS_OK for success, or an error condition for which the
  *          operation failed.
  */
-avs_error_t avs_net_socket_create(avs_net_socket_t **socket,
-                                  avs_net_socket_type_t sock_type,
-                                  const void *configuration);
+// avs_error_t avs_net_socket_create(avs_net_socket_t **socket,
+//                                   avs_net_socket_type_t sock_type,
+//                                   const void *configuration);
+
+avs_error_t
+avs_net_udp_socket_create(avs_net_socket_t **socket,
+                          const avs_net_socket_configuration_t *config);
+
+avs_error_t
+avs_net_tcp_socket_create(avs_net_socket_t **socket,
+                          const avs_net_socket_configuration_t *config);
+
+avs_error_t
+avs_net_dtls_socket_create(avs_net_socket_t **socket,
+                           const avs_net_ssl_configuration_t *config);
+
+avs_error_t
+avs_net_ssl_socket_create(avs_net_socket_t **socket,
+                          const avs_net_ssl_configuration_t *config);
 
 /**
  * Shuts down @p socket , cleans up any allocated resources and sets
@@ -757,9 +773,17 @@ avs_error_t avs_net_socket_decorate(avs_net_socket_t *socket,
  *          operation failed. On failure, <c>*socket</c> value is guaranteed to
  *          be left untouched.
  */
-avs_error_t avs_net_socket_decorate_in_place(avs_net_socket_t **socket,
-                                             avs_net_socket_type_t new_type,
-                                             const void *configuration);
+// avs_error_t avs_net_socket_decorate_in_place(avs_net_socket_t **socket,
+//                                              avs_net_socket_type_t new_type,
+//                                              const void *configuration);
+
+avs_error_t
+avs_net_dtls_socket_decorate_in_place(avs_net_socket_t **socket,
+                                      avs_net_ssl_configuration_t *config);
+
+avs_error_t
+avs_net_ssl_socket_decorate_in_place(avs_net_socket_t **socket,
+                                     avs_net_ssl_configuration_t *config);
 
 /**
  * Sends exactly @p buffer_length bytes from @p buffer to @p socket.
