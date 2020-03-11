@@ -25,12 +25,16 @@
 #    include <avsystem/commons/avs_prng.h>
 
 #    include <mbedtls/ctr_drbg.h>
+#    include <mbedtls/entropy.h>
 
 VISIBILITY_SOURCE_BEGIN
 
 struct avs_crypto_prng_ctx_struct {
-    mbedtls_ctr_drbg_context mbedtls_ctx;
+    mbedtls_ctr_drbg_context mbedtls_prng_ctx;
     avs_prng_entropy_callback_t seed_callback;
+    // FAM to avoid two allocations, but it's actually a single
+    // mbedtls_entropy_context
+    mbedtls_entropy_context mbedtls_entropy_ctx[];
 };
 
 static int
@@ -41,22 +45,38 @@ entropy_callback(void *ctx_, unsigned char *out_buf, size_t out_buf_size) {
 
 avs_crypto_prng_ctx_t *
 avs_crypto_prng_new(avs_prng_entropy_callback_t seed_cb) {
-    if (!seed_cb) {
-        return NULL;
+    avs_crypto_prng_ctx_t *ctx = NULL;
+    if (seed_cb) {
+        ctx = (avs_crypto_prng_ctx_t *) avs_calloc(
+                1, sizeof(avs_crypto_prng_ctx_t));
+    } else {
+        ctx = (avs_crypto_prng_ctx_t *) avs_calloc(
+                1,
+                sizeof(avs_crypto_prng_ctx_t)
+                        + sizeof(mbedtls_entropy_context));
     }
-    avs_crypto_prng_ctx_t *ctx =
-            (avs_crypto_prng_ctx_t *) avs_calloc(1,
-                                                 sizeof(avs_crypto_prng_ctx_t));
+
     if (!ctx) {
         return NULL;
     }
 
-    mbedtls_ctr_drbg_init(&ctx->mbedtls_ctx);
+    mbedtls_ctr_drbg_init(&ctx->mbedtls_prng_ctx);
     ctx->seed_callback = seed_cb;
 
-    if (mbedtls_ctr_drbg_seed(
-                &ctx->mbedtls_ctx, entropy_callback, ctx, NULL, 0)) {
+    int result = 0;
+    if (seed_cb) {
+        result = mbedtls_ctr_drbg_seed(&ctx->mbedtls_prng_ctx, entropy_callback,
+                                       ctx, NULL, 0);
+    } else {
+        mbedtls_entropy_init(&ctx->mbedtls_entropy_ctx[0]);
+        result = mbedtls_ctr_drbg_seed(&ctx->mbedtls_prng_ctx,
+                                       mbedtls_entropy_func,
+                                       &ctx->mbedtls_entropy_ctx, NULL, 0);
+    }
+
+    if (result) {
         avs_crypto_prng_free(&ctx);
+        LOG(ERROR, "mbedtls_ctr_drbg_seed() failed");
     }
 
     return ctx;
@@ -64,7 +84,7 @@ avs_crypto_prng_new(avs_prng_entropy_callback_t seed_cb) {
 
 void avs_crypto_prng_free(avs_crypto_prng_ctx_t **ctx) {
     if (ctx && *ctx) {
-        mbedtls_ctr_drbg_free(&(*ctx)->mbedtls_ctx);
+        mbedtls_ctr_drbg_free(&(*ctx)->mbedtls_prng_ctx);
         avs_free(*ctx);
         *ctx = NULL;
     }
@@ -76,7 +96,8 @@ int avs_crypto_prng_bytes(avs_crypto_prng_ctx_t *ctx,
     if (!ctx || !out_buf || !out_buf_size) {
         return -1;
     }
-    return mbedtls_ctr_drbg_random(&ctx->mbedtls_ctx, out_buf, out_buf_size);
+    return mbedtls_ctr_drbg_random(&ctx->mbedtls_prng_ctx, out_buf,
+                                   out_buf_size);
 }
 
 #endif // defined(AVS_COMMONS_WITH_AVS_CRYPTO) &&

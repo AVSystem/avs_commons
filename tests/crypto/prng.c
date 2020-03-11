@@ -19,31 +19,46 @@
 
 #include <avsystem/commons/avs_memory.h>
 #include <avsystem/commons/avs_prng.h>
+#include <avsystem/commons/avs_utils.h>
 
 #include <string.h>
 
-static int entropy_callback(unsigned char *out_buf, size_t out_buf_len) {
+static int test_entropy_callback(unsigned char *out_buf, size_t out_buf_len) {
     memset(out_buf, 7, out_buf_len);
     return 0;
 }
 
-AVS_UNIT_TEST(avs_crypto_prng, get_random_bytes) {
-    const size_t test_buf_len = 64;
-    avs_crypto_prng_ctx_t *ctx = avs_crypto_prng_new(entropy_callback);
+void test_impl(avs_prng_entropy_callback_t entropy_cb) {
+    const size_t random_data_size = 64;
+    avs_crypto_prng_ctx_t *ctx = avs_crypto_prng_new(entropy_cb);
     ASSERT_NOT_NULL(ctx);
 
-    unsigned char *test_buf = (unsigned char *) avs_calloc(1, test_buf_len);
-    ASSERT_NOT_NULL(test_buf);
+    unsigned char *random_data_buf =
+            (unsigned char *) avs_calloc(1, random_data_size);
+    ASSERT_NOT_NULL(random_data_buf);
 
-    unsigned char *compare_buf = (unsigned char *) avs_calloc(1, test_buf_len);
+    unsigned char *compare_buf =
+            (unsigned char *) avs_calloc(1, random_data_size);
     ASSERT_NOT_NULL(compare_buf);
 
-    ASSERT_OK(avs_crypto_prng_bytes(ctx, test_buf, test_buf_len));
-
-    ASSERT_NE_BYTES_SIZED(test_buf, compare_buf, test_buf_len);
+    size_t test_runs = 2;
+    while (test_runs--) {
+        ASSERT_OK(
+                avs_crypto_prng_bytes(ctx, random_data_buf, random_data_size));
+        ASSERT_NE_BYTES_SIZED(random_data_buf, compare_buf, random_data_size);
+        memcpy(compare_buf, random_data_buf, random_data_size);
+    }
 
     avs_crypto_prng_free(&ctx);
     ASSERT_NULL(ctx);
-    avs_free(test_buf);
+    avs_free(random_data_buf);
     avs_free(compare_buf);
+}
+
+AVS_UNIT_TEST(avs_crypto_prng, get_random_bytes) {
+    test_impl(test_entropy_callback);
+}
+
+AVS_UNIT_TEST(avs_crypto_prng, no_callback_defined) {
+    test_impl(NULL);
 }
