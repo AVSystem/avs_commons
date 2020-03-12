@@ -23,6 +23,7 @@
 
 #    include <avsystem/commons/avs_memory.h>
 #    include <avsystem/commons/avs_prng.h>
+#    include <avsystem/commons/avs_time.h>
 #    include <avsystem/commons/avs_utils.h>
 
 VISIBILITY_SOURCE_BEGIN
@@ -31,12 +32,25 @@ struct avs_crypto_prng_ctx_struct {
     avs_rand_seed_t seed;
 };
 
+int seed_callback(unsigned char *out_buf, size_t out_buf_len) {
+    AVS_STATIC_ASSERT(sizeof(avs_rand_seed_t) == sizeof(uint32_t),
+                      seed_size_does_not_match);
+    uint32_t seed = (avs_time_real_now().since_real_epoch.seconds
+                     ^ avs_time_real_now().since_real_epoch.nanoseconds)
+                    % UINT32_MAX;
+    memcpy(out_buf, (unsigned char *) &seed, out_buf_len);
+}
+
 avs_crypto_prng_ctx_t *
 avs_crypto_prng_new(avs_prng_entropy_callback_t seed_cb) {
     avs_crypto_prng_ctx_t *ctx =
             (avs_crypto_prng_ctx_t *) avs_malloc(sizeof(avs_crypto_prng_ctx_t));
 
-    if (ctx && seed_cb(&ctx->seed, sizeof(ctx->seed))) {
+    if (!seed_cb) {
+        seed_cb = seed_callback;
+    }
+
+    if (ctx && seed_cb((unsigned char *) &ctx->seed, sizeof(ctx->seed))) {
         avs_free(ctx);
     }
 
@@ -57,19 +71,17 @@ int avs_crypto_prng_bytes(avs_crypto_prng_ctx_t *ctx,
         return -1;
     }
 
-    unsigned char *curr_ptr = out_buf;
-
     size_t complete_chunks_count = out_buf_size / sizeof(uint32_t);
     while (complete_chunks_count--) {
         uint32_t random_value = avs_rand32_r(&ctx->seed);
-        memcpy(curr_ptr, &random_value, sizeof(random_value));
-        curr_ptr += sizeof(random_value);
+        memcpy(out_buf, &random_value, sizeof(random_value));
+        out_buf += sizeof(random_value);
     }
 
     size_t remaining_bytes = out_buf_size % sizeof(uint32_t);
     if (remaining_bytes) {
         uint32_t random_value = avs_rand32_r(&ctx->seed);
-        memcpy(curr_ptr, &random_value, remaining_bytes);
+        memcpy(out_buf, &random_value, remaining_bytes);
     }
 
     return 0;

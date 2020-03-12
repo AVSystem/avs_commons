@@ -16,7 +16,9 @@
 
 #include <avs_commons_init.h>
 
-#if defined(AVS_COMMONS_WITH_AVS_CRYPTO) && defined(AVS_COMMONS_WITH_MBEDTLS)
+#if defined(AVS_COMMONS_WITH_AVS_CRYPTO)                          \
+        && defined(AVS_COMMONS_WITH_AVS_CRYPTO_ADVANCED_FEATURES) \
+        && defined(AVS_COMMONS_WITH_MBEDTLS)
 
 #    define MODULE_NAME avs_crypto_hkdf
 #    include <avs_x_log_config.h>
@@ -59,4 +61,5 @@ int avs_crypto_hkdf_sha_256(const unsigned char *salt,
 }
 
 #endif // defined(AVS_COMMONS_WITH_AVS_CRYPTO) &&
+       // defined(AVS_COMMONS_WITH_AVS_CRYPTO_ADVANCED_FEATURES) &&
        // defined(AVS_COMMONS_WITH_MBEDTLS)

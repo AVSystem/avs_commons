@@ -13,14 +13,26 @@
 # limitations under the License.
 
 set(AVS_CRYPTO_PUBLIC_HEADERS
-    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/avs_hkdf.h"
-    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/avs_aead.h"
-    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/avs_prng.h")
+    ${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/avs_prng.h)
 
-set(AVS_CRYPTO_SOURCES
-    ${AVS_CRYPTO_PUBLIC_HEADERS}
+set(AVS_CRYPTO_ADVANCED_FEATURES_COMMON_SOURCES
     avs_crypto_utils.c
     avs_crypto_utils.h)
+
+set(AVS_CRYPTO_TEST_SOURCES ${AVS_COMMONS_SOURCE_DIR}/tests/crypto/prng.c)
+
+set(AVS_CRYPTO_ADVANCED_FEATURES_TEST_SOURCES
+    ${AVS_COMMONS_SOURCE_DIR}/tests/crypto/aead.c
+    ${AVS_COMMONS_SOURCE_DIR}/tests/crypto/hkdf.c)
+
+if((WITH_OPENSSL AND NOT OPENSSL_VERSION VERSION_LESS 1.1.0) OR (WITH_MBEDTLS AND NOT MBEDTLS_VERSION VERSION_LESS 2.14.0))
+    set(AVS_CRYPTO_PUBLIC_HEADERS
+        ${AVS_CRYPTO_PUBLIC_HEADERS}
+        "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/avs_hkdf.h"
+        "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/avs_aead.h")
+    set(AVS_COMMONS_WITH_AVS_CRYPTO_ADVANCED_FEATURES ON CACHE BOOL "")
+endif()
+
 
 add_library(avs_crypto_core INTERFACE)
 target_link_libraries(avs_crypto_core INTERFACE avs_commons_global_headers avs_utils)
@@ -29,43 +41,64 @@ if(WITH_INTERNAL_LOGS)
     target_link_libraries(avs_crypto_core INTERFACE avs_log)
 endif()
 
-if(WITH_OPENSSL AND NOT OPENSSL_VERSION VERSION_LESS 1.1.0)
+if(WITH_OPENSSL)
+    set(AVS_CRYPTO_OPENSSL_SOURCES "openssl/avs_openssl_prng.c")
+    set(AVS_CRYPTO_OPENSSL_TEST_SOURCES ${AVS_CRYPTO_TEST_SOURCES})
+    if(NOT OPENSSL_VERSION VERSION_LESS 1.1.0)
+        set(AVS_CRYPTO_OPENSSL_SOURCES
+            ${AVS_CRYPTO_OPENSSL_SOURCES}
+            ${AVS_CRYPTO_ADVANCED_FEATURES_COMMON_SOURCES}
+            openssl/avs_openssl_aead.c
+            openssl/avs_openssl_hkdf.c)
+
+        set(AVS_CRYPTO_OPENSSL_TEST_SOURCES
+            ${AVS_CRYPTO_OPENSSL_TEST_SOURCES}
+            ${AVS_CRYPTO_ADVANCED_FEATURES_TEST_SOURCES})
+    endif()
+
     add_library(avs_crypto_openssl
-                ${AVS_CRYPTO_SOURCES}
-                openssl/avs_openssl_aead.c
-                openssl/avs_openssl_hkdf.c
-                openssl/avs_openssl_prng.c)
+                ${AVS_CRYPTO_PUBLIC_HEADERS}
+                ${AVS_CRYPTO_OPENSSL_SOURCES})
     target_link_libraries(avs_crypto_openssl PUBLIC avs_crypto_core OpenSSL::Crypto)
 
     avs_add_test(NAME avs_crypto_openssl
                  LIBS avs_crypto_openssl
                  SOURCES
-                 ${AVS_COMMONS_SOURCE_DIR}/tests/crypto/aead.c
-                 ${AVS_COMMONS_SOURCE_DIR}/tests/crypto/hkdf.c
-                 ${AVS_COMMONS_SOURCE_DIR}/tests/crypto/prng.c)
+                 ${AVS_CRYPTO_OPENSSL_TEST_SOURCES})
     avs_install_export(avs_crypto_openssl crypto)
 endif()
 
-if(WITH_MBEDTLS AND NOT MBEDTLS_VERSION VERSION_LESS 2.14.0)
-    add_library(avs_crypto_mbedtls
-                ${AVS_CRYPTO_SOURCES}
+if(WITH_MBEDTLS)
+    if(NOT MBEDTLS_VERSION VERSION_LESS 2.14.0)
+        set(AVS_CRYPTO_MBEDTLS_SOURCES "mbedtls/avs_mbedtls_prng.c")
+        set(AVS_CRYPTO_MBEDTLS_TEST_SOURCES ${AVS_CRYPTO_TEST_SOURCES})
+        if(NOT MBEDTLS_VERSION VERSION_LESS 1.1.0)
+            set(AVS_CRYPTO_MBEDTLS_SOURCES
+                ${AVS_CRYPTO_MBEDTLS_SOURCES}
+                ${AVS_CRYPTO_ADVANCED_FEATURES_COMMON_SOURCES}
                 mbedtls/avs_mbedtls_aead.c
-                mbedtls/avs_mbedtls_hkdf.c
-                mbedtls/avs_mbedtls_prng.c)
-    target_link_libraries(avs_crypto_mbedtls PUBLIC avs_crypto_core mbedcrypto)
+                mbedtls/avs_mbedtls_hkdf.c)
 
-    avs_add_test(NAME avs_crypto_mbedtls
-                 LIBS avs_crypto_mbedtls
-                 SOURCES
-                 ${AVS_COMMONS_SOURCE_DIR}/tests/crypto/aead.c
-                 ${AVS_COMMONS_SOURCE_DIR}/tests/crypto/hkdf.c
-                 ${AVS_COMMONS_SOURCE_DIR}/tests/crypto/prng.c)
-    avs_install_export(avs_crypto_mbedtls crypto)
+            set(AVS_CRYPTO_MBEDTLS_TEST_SOURCES
+                ${AVS_CRYPTO_MBEDTLS_TEST_SOURCES}
+                ${AVS_CRYPTO_ADVANCED_FEATURES_TEST_SOURCES})
+        endif()
+        add_library(avs_crypto_mbedtls
+                    ${AVS_CRYPTO_PUBLIC_HEADERS}
+                    ${AVS_CRYPTO_MBEDTLS_SOURCES})
+        target_link_libraries(avs_crypto_mbedtls PUBLIC avs_crypto_core mbedcrypto)
+
+        avs_add_test(NAME avs_crypto_mbedtls
+                     LIBS avs_crypto_mbedtls
+                     SOURCES
+                     ${AVS_CRYPTO_MBEDTLS_TEST_SOURCES})
+        avs_install_export(avs_crypto_mbedtls crypto)
+    endif()
 endif()
 
 if(WITH_TINYDTLS)
     add_library(avs_crypto_tinydtls
-                ${AVS_CRYPTO_SOURCES}
+                ${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/avs_prng.h
                 tinydtls/avs_tinydtls_prng.c)
     target_link_libraries(avs_crypto_tinydtls PUBLIC avs_crypto_core tinydtls)
 

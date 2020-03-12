@@ -189,6 +189,12 @@
 /**@}*/
 
 /**
+ * Enable AEAD and HKDF support in avs_crypto. Requires MbedTLS in version at
+ * least 2.14.0 or OpenSSL in version at least 1.1.0.
+ */
+#cmakedefine AVS_COMMONS_WITH_AVS_CRYPTO_ADVANCED_FEATURES
+
+/**
  * Options that control compilation of avs_compat_threading implementations.
  *
  * If CMake is not used, in the typical scenario at most one of the following
