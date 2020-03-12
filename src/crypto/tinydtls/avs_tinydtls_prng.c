@@ -16,29 +16,31 @@
 
 #include <avs_commons_init.h>
 
-#if defined(AVS_COMMONS_WITH_AVS_CRYPTO) && defined(AVS_COMMONS_WITH_OPENSSL)
+#if defined(AVS_COMMONS_WITH_AVS_CRYPTO) && defined(AVS_COMMONS_WITH_TINYDTLS)
 
 #    define MODULE_NAME avs_crypto_prng
 #    include <avs_x_log_config.h>
 
 #    include <avsystem/commons/avs_memory.h>
 #    include <avsystem/commons/avs_prng.h>
-
-#    include <tinydtls/prng.h>
+#    include <avsystem/commons/avs_utils.h>
 
 VISIBILITY_SOURCE_BEGIN
 
 struct avs_crypto_prng_ctx_struct {
-    avs_prng_entropy_callback_t seed_callback;
+    avs_rand_seed_t seed;
 };
-
-static int reseed_if_needed(avs_prng_entropy_callback_t seed_cb) {
-    return 0;
-}
 
 avs_crypto_prng_ctx_t *
 avs_crypto_prng_new(avs_prng_entropy_callback_t seed_cb) {
-    return NULL;
+    avs_crypto_prng_ctx_t *ctx =
+            (avs_crypto_prng_ctx_t *) avs_malloc(sizeof(avs_crypto_prng_ctx_t));
+
+    if (ctx && seed_cb(&ctx->seed, sizeof(ctx->seed))) {
+        avs_free(ctx);
+    }
+
+    return ctx;
 }
 
 void avs_crypto_prng_free(avs_crypto_prng_ctx_t **ctx) {
@@ -55,8 +57,23 @@ int avs_crypto_prng_bytes(avs_crypto_prng_ctx_t *ctx,
         return -1;
     }
 
+    unsigned char *curr_ptr = out_buf;
+
+    size_t complete_chunks_count = out_buf_size / sizeof(uint32_t);
+    while (complete_chunks_count--) {
+        uint32_t random_value = avs_rand32_r(&ctx->seed);
+        memcpy(curr_ptr, &random_value, sizeof(random_value));
+        curr_ptr += sizeof(random_value);
+    }
+
+    size_t remaining_bytes = out_buf_size % sizeof(uint32_t);
+    if (remaining_bytes) {
+        uint32_t random_value = avs_rand32_r(&ctx->seed);
+        memcpy(curr_ptr, &random_value, remaining_bytes);
+    }
+
     return 0;
 }
 
 #endif // defined(AVS_COMMONS_WITH_AVS_CRYPTO) &&
-       // defined(AVS_COMMONS_WITH_OPENSSL)
+       // defined(AVS_COMMONS_WITH_TINYDTLS)

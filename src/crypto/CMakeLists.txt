@@ -63,8 +63,21 @@ if(WITH_MBEDTLS AND NOT MBEDTLS_VERSION VERSION_LESS 2.14.0)
     avs_install_export(avs_crypto_mbedtls crypto)
 endif()
 
+if(WITH_TINYDTLS)
+    add_library(avs_crypto_tinydtls
+                ${AVS_CRYPTO_SOURCES}
+                tinydtls/avs_tinydtls_prng.c)
+    target_link_libraries(avs_crypto_tinydtls PUBLIC avs_crypto_core tinydtls)
+
+    avs_add_test(NAME avs_crypto_tinydtls
+                 LIBS avs_crypto_tinydtls
+                 SOURCES
+                 ${AVS_COMMONS_SOURCE_DIR}/tests/crypto/prng.c)
+    avs_install_export(avs_crypto_tinydtls crypto)
+endif()
+
 # alias avs_net to first available implementation
-foreach(target IN ITEMS avs_crypto_mbedtls avs_crypto_openssl)
+foreach(target IN ITEMS avs_crypto_mbedtls avs_crypto_openssl avs_crypto_tinydtls)
     if(TARGET "${target}")
         add_library(avs_crypto ALIAS "${target}")
         break()
