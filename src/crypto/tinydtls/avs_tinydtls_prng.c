@@ -40,6 +40,7 @@ int seed_callback(unsigned char *out_buf, size_t out_buf_len, void *user_ptr) {
                      ^ avs_time_real_now().since_real_epoch.nanoseconds)
                     % UINT32_MAX;
     memcpy(out_buf, (unsigned char *) &seed, out_buf_len);
+    return 0;
 }
 
 avs_crypto_prng_ctx_t *avs_crypto_prng_new(avs_prng_entropy_callback_t seed_cb,
@@ -55,7 +56,7 @@ avs_crypto_prng_ctx_t *avs_crypto_prng_new(avs_prng_entropy_callback_t seed_cb,
             && seed_cb((unsigned char *) &ctx->seed,
                        sizeof(ctx->seed),
                        user_ptr)) {
-        avs_free(ctx);
+        avs_crypto_prng_free(&ctx);
     }
 
     return ctx;
