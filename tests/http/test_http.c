@@ -40,8 +40,8 @@ AVS_UNIT_GLOBAL_INIT(verbose) {
 
 expected_socket_t *avs_http_test_SOCKETS_TO_CREATE = NULL;
 
-avs_error_t test_socket_create(avs_net_socket_t **socket,
-                               avs_net_socket_type_t type) {
+static avs_error_t test_socket_create(avs_net_socket_t **socket,
+                                      avs_net_socket_type_t type) {
     expected_socket_t *removed_entry;
     removed_entry = AVS_LIST_DETACH(&avs_http_test_SOCKETS_TO_CREATE);
     AVS_UNIT_ASSERT_NOT_NULL(removed_entry);

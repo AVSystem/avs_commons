@@ -341,15 +341,13 @@ static avs_error_t get_opt_ssl(avs_net_socket_t *ssl_socket_,
     }
 }
 
-inline avs_error_t
-_avs_net_create_ssl_socket(avs_net_socket_t **socket,
-                           const void *socket_configuration) {
+avs_error_t _avs_net_create_ssl_socket(avs_net_socket_t **socket,
+                                       const void *socket_configuration) {
     return create_ssl_socket(socket, AVS_NET_TCP_SOCKET, socket_configuration);
 }
 
-inline avs_error_t
-_avs_net_create_dtls_socket(avs_net_socket_t **socket,
-                            const void *socket_configuration) {
+avs_error_t _avs_net_create_dtls_socket(avs_net_socket_t **socket,
+                                        const void *socket_configuration) {
     return create_ssl_socket(socket, AVS_NET_UDP_SOCKET, socket_configuration);
 }
 
