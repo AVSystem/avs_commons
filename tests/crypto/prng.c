@@ -23,14 +23,19 @@
 
 #include <string.h>
 
-static int test_entropy_callback(unsigned char *out_buf, size_t out_buf_len) {
+char *test_user_arg = "rand";
+
+static int test_entropy_callback(unsigned char *out_buf,
+                                 size_t out_buf_len,
+                                 void *user_ptr) {
+    ASSERT_TRUE(user_ptr == test_user_arg);
     memset(out_buf, 7, out_buf_len);
     return 0;
 }
 
 void test_impl(avs_prng_entropy_callback_t entropy_cb) {
     const size_t random_data_size = 64;
-    avs_crypto_prng_ctx_t *ctx = avs_crypto_prng_new(entropy_cb);
+    avs_crypto_prng_ctx_t *ctx = avs_crypto_prng_new(entropy_cb, test_user_arg);
     ASSERT_NOT_NULL(ctx);
 
     unsigned char *random_data_buf =

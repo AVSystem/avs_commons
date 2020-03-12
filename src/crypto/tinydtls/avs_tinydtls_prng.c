@@ -32,7 +32,8 @@ struct avs_crypto_prng_ctx_struct {
     avs_rand_seed_t seed;
 };
 
-int seed_callback(unsigned char *out_buf, size_t out_buf_len) {
+int seed_callback(unsigned char *out_buf, size_t out_buf_len, void *user_ptr) {
+    (void) user_ptr;
     AVS_STATIC_ASSERT(sizeof(avs_rand_seed_t) == sizeof(uint32_t),
                       seed_size_does_not_match);
     uint32_t seed = (avs_time_real_now().since_real_epoch.seconds
@@ -41,8 +42,8 @@ int seed_callback(unsigned char *out_buf, size_t out_buf_len) {
     memcpy(out_buf, (unsigned char *) &seed, out_buf_len);
 }
 
-avs_crypto_prng_ctx_t *
-avs_crypto_prng_new(avs_prng_entropy_callback_t seed_cb) {
+avs_crypto_prng_ctx_t *avs_crypto_prng_new(avs_prng_entropy_callback_t seed_cb,
+                                           void *user_ptr) {
     avs_crypto_prng_ctx_t *ctx =
             (avs_crypto_prng_ctx_t *) avs_malloc(sizeof(avs_crypto_prng_ctx_t));
 
@@ -50,7 +51,10 @@ avs_crypto_prng_new(avs_prng_entropy_callback_t seed_cb) {
         seed_cb = seed_callback;
     }
 
-    if (ctx && seed_cb((unsigned char *) &ctx->seed, sizeof(ctx->seed))) {
+    if (ctx
+            && seed_cb((unsigned char *) &ctx->seed,
+                       sizeof(ctx->seed),
+                       user_ptr)) {
         avs_free(ctx);
     }
 

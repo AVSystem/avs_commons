@@ -30,23 +30,28 @@ typedef struct avs_crypto_prng_ctx_struct avs_crypto_prng_ctx_t;
  *
  * @param out_buf     Buffer to be filled with random data.
  * @param out_buf_len Number of bytes to write to @p out_buf .
+ * @param user_ptr    User pointer passed in a call to
+ *                    @ref avs_crypto_prng_new()
  *
  * @returns 0 on success, negative value otherwise.
  */
 typedef int (*avs_prng_entropy_callback_t)(unsigned char *out_buf,
-                                           size_t out_buf_len);
+                                           size_t out_buf_len,
+                                           void *user_ptr);
 
 /**
  * Creates Pseudo-Random Number Generator context, which can be used then for
  * generating pseudo-random data.
  *
- * @param entropy_cb Pointer to @def avs_prng_entropy_callback_t function. MUST
- *                   NOT be @c NULL .
+ * @param entropy_cb Pointer to @def avs_prng_entropy_callback_t function. If
+ *                   @c NULL, a default entropy source for selected cryptography
+ *                   backend will be used.
+ * @param user_ptr   User pointer passed to @p entropy_cb in every call.
  *
  * @returns 0 on success, negative value otherwise.
  */
 avs_crypto_prng_ctx_t *
-avs_crypto_prng_new(avs_prng_entropy_callback_t entropy_cb);
+avs_crypto_prng_new(avs_prng_entropy_callback_t entropy_cb, void *user_ptr);
 
 /**
  * Frees PRNG context previously created with @ref avs_crypto_prng_new() .

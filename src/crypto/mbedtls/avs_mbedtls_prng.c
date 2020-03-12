@@ -32,6 +32,7 @@ VISIBILITY_SOURCE_BEGIN
 struct avs_crypto_prng_ctx_struct {
     mbedtls_ctr_drbg_context mbedtls_prng_ctx;
     avs_prng_entropy_callback_t seed_callback;
+    void *user_ptr;
     // FAM to avoid two allocations, but it's actually a single
     // mbedtls_entropy_context
     mbedtls_entropy_context mbedtls_entropy_ctx[];
@@ -40,11 +41,11 @@ struct avs_crypto_prng_ctx_struct {
 static int
 entropy_callback(void *ctx_, unsigned char *out_buf, size_t out_buf_size) {
     avs_crypto_prng_ctx_t *ctx = (avs_crypto_prng_ctx_t *) ctx_;
-    return ctx->seed_callback(out_buf, out_buf_size);
+    return ctx->seed_callback(out_buf, out_buf_size, ctx->user_ptr);
 }
 
 avs_crypto_prng_ctx_t *
-avs_crypto_prng_new(avs_prng_entropy_callback_t seed_cb) {
+avs_crypto_prng_new(avs_prng_entropy_callback_t seed_cb, void *user_ptr) {
     avs_crypto_prng_ctx_t *ctx = NULL;
     if (seed_cb) {
         ctx = (avs_crypto_prng_ctx_t *) avs_calloc(
@@ -65,6 +66,7 @@ avs_crypto_prng_new(avs_prng_entropy_callback_t seed_cb) {
 
     int result = 0;
     if (seed_cb) {
+        ctx->user_ptr = user_ptr;
         result = mbedtls_ctr_drbg_seed(&ctx->mbedtls_prng_ctx, entropy_callback,
                                        ctx, NULL, 0);
     } else {
