@@ -35,7 +35,8 @@ struct avs_crypto_prng_ctx_struct {
     avs_rand_seed_t seed;
 };
 
-int seed_callback(unsigned char *out_buf, size_t out_buf_len, void *user_ptr) {
+static int
+seed_callback(unsigned char *out_buf, size_t out_buf_len, void *user_ptr) {
     (void) user_ptr;
     AVS_STATIC_ASSERT(sizeof(avs_rand_seed_t) == sizeof(uint32_t),
                       seed_size_does_not_match);
