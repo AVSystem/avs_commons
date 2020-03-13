@@ -96,21 +96,20 @@ if(WITH_MBEDTLS)
     endif()
 endif()
 
-if(WITH_TINYDTLS)
-    add_library(avs_crypto_tinydtls
-                ${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/avs_prng.h
-                tinydtls/avs_tinydtls_prng.c)
-    target_link_libraries(avs_crypto_tinydtls PUBLIC avs_crypto_core tinydtls)
+# Contains only simple PRNG generator if OpenSSL and MbedTLS aren't available.
+add_library(avs_crypto_generic
+            ${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/avs_prng.h
+            generic/avs_generic_prng.c)
+target_link_libraries(avs_crypto_generic PUBLIC avs_crypto_core)
 
-    avs_add_test(NAME avs_crypto_tinydtls
-                 LIBS avs_crypto_tinydtls
-                 SOURCES
-                 ${AVS_COMMONS_SOURCE_DIR}/tests/crypto/prng.c)
-    avs_install_export(avs_crypto_tinydtls crypto)
-endif()
+avs_add_test(NAME avs_crypto_generic
+             LIBS avs_crypto_generic
+             SOURCES
+             ${AVS_COMMONS_SOURCE_DIR}/tests/crypto/prng.c)
+avs_install_export(avs_crypto_generic crypto)
 
-# alias avs_net to first available implementation
-foreach(target IN ITEMS avs_crypto_mbedtls avs_crypto_openssl avs_crypto_tinydtls)
+# alias avs_crypto to first available implementation
+foreach(target IN ITEMS avs_crypto_mbedtls avs_crypto_openssl avs_crypto_generic)
     if(TARGET "${target}")
         add_library(avs_crypto ALIAS "${target}")
         break()
