@@ -30,16 +30,18 @@ VISIBILITY_SOURCE_BEGIN
 
 struct avs_crypto_prng_ctx_struct {
     avs_prng_entropy_callback_t seed_callback;
+    void *user_ptr;
 };
 
-static int reseed_if_needed(avs_prng_entropy_callback_t seed_cb) {
+static int reseed_if_needed(avs_prng_entropy_callback_t seed_cb,
+                            void *user_ptr) {
     if (RAND_status() != 1) {
         if (!seed_cb) {
             LOG(ERROR, "reseeding required, but seed callback is not defined");
             return -1;
         }
         unsigned char data[48];
-        if (seed_cb(data, sizeof(data))) {
+        if (seed_cb(data, sizeof(data), user_ptr)) {
             return -1;
         }
         RAND_seed(data, sizeof(data));
@@ -47,9 +49,9 @@ static int reseed_if_needed(avs_prng_entropy_callback_t seed_cb) {
     return 0;
 }
 
-avs_crypto_prng_ctx_t *
-avs_crypto_prng_new(avs_prng_entropy_callback_t seed_cb) {
-    if (reseed_if_needed(seed_cb)) {
+avs_crypto_prng_ctx_t *avs_crypto_prng_new(avs_prng_entropy_callback_t seed_cb,
+                                           void *user_ptr) {
+    if (reseed_if_needed(seed_cb, user_ptr)) {
         return NULL;
     }
 
@@ -58,6 +60,7 @@ avs_crypto_prng_new(avs_prng_entropy_callback_t seed_cb) {
                                                  sizeof(avs_crypto_prng_ctx_t));
     if (ctx) {
         ctx->seed_callback = seed_cb;
+        ctx->user_ptr = user_ptr;
     }
 
     return ctx;
@@ -77,7 +80,7 @@ int avs_crypto_prng_bytes(avs_crypto_prng_ctx_t *ctx,
         return -1;
     }
 
-    if (reseed_if_needed(ctx->seed_callback)) {
+    if (reseed_if_needed(ctx->seed_callback, ctx->user_ptr)) {
         return -1;
     }
 
