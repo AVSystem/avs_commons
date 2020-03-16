@@ -16,10 +16,8 @@
 
 #include <avs_commons_init.h>
 
-#if defined(AVS_COMMONS_WITH_AVS_CRYPTO)           \
-        && (defined(AVS_UNIT_TESTING)              \
-            || (!defined(AVS_COMMONS_WITH_MBEDTLS) \
-                && !defined(AVS_COMMONS_WITH_OPENSSL)))
+#if defined(AVS_COMMONS_WITH_AVS_CRYPTO) \
+        && (defined(WITHOUT_SSL) || defined(AVS_COMMONS_WITH_TINYDTLS))
 
 #    define MODULE_NAME avs_crypto_prng
 #    include <avs_x_log_config.h>
@@ -96,6 +94,5 @@ int avs_crypto_prng_bytes(avs_crypto_prng_ctx_t *ctx,
     return 0;
 }
 
-#endif // defined(AVS_COMMONS_WITH_AVS_CRYPTO) && (defined(AVS_UNIT_TESTING) ||
-       // (!defined(AVS_COMMONS_WITH_MBEDTLS) &&
-       // !defined(AVS_COMMONS_WITH_OPENSSL)))
+#endif // defined(AVS_COMMONS_WITH_AVS_CRYPTO) && (defined(WITHOUT_SSL) ||
+       // defined(AVS_COMMONS_WITH_TINYDTLS))

@@ -100,6 +100,7 @@ endif()
 add_library(avs_crypto_generic
             ${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/avs_prng.h
             generic/avs_generic_prng.c)
+target_compile_definitions(avs_crypto_generic PRIVATE -DWITHOUT_SSL)
 target_link_libraries(avs_crypto_generic PUBLIC avs_crypto_core)
 
 avs_add_test(NAME avs_crypto_generic
