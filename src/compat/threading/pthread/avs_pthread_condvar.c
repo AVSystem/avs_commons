@@ -14,10 +14,12 @@
  * limitations under the License.
  */
 
-#include <avs_commons_posix_init.h>
+#include <avsystem/commons/avs_commons_config.h>
 
 #if defined(AVS_COMMONS_WITH_AVS_COMPAT_THREADING) \
         && defined(AVS_COMMONS_COMPAT_THREADING_WITH_PTHREAD)
+
+#    include <avs_commons_posix_init.h>
 
 #    define MODULE_NAME condvar_pthread
 #    include <avs_x_log_config.h>

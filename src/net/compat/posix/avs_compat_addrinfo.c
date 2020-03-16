@@ -14,10 +14,12 @@
  * limitations under the License.
  */
 
-#include <avs_commons_posix_init.h>
+#include <avsystem/commons/avs_commons_config.h>
 
 #if defined(AVS_COMMONS_WITH_AVS_NET) \
         && defined(AVS_COMMONS_NET_WITH_POSIX_AVS_SOCKET)
+
+#    include <avs_commons_posix_init.h>
 
 #    include <assert.h>
 #    include <string.h>

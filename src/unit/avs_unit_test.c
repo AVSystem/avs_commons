@@ -15,9 +15,11 @@
  */
 
 #define AVS_UNIT_SOURCE
-#include <avs_commons_posix_init.h>
+#include <avsystem/commons/avs_commons_config.h>
 
 #ifdef AVS_COMMONS_WITH_AVS_UNIT
+
+#    include <avs_commons_posix_init.h>
 
 #    include <ctype.h>
 #    include <inttypes.h>

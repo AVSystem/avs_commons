@@ -34,11 +34,13 @@
  * WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#include <avs_commons_posix_init.h>
+#include <avsystem/commons/avs_commons_config.h>
 
 #if defined(AVS_COMMONS_WITH_AVS_NET)                     \
         && defined(AVS_COMMONS_NET_WITH_POSIX_AVS_SOCKET) \
         && !defined(AVS_COMMONS_NET_POSIX_AVS_SOCKET_HAVE_INET_PTON)
+
+#    include <avs_commons_posix_init.h>
 
 #    include <stdint.h>
 #    include <stdio.h>
