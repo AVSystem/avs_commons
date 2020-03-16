@@ -97,8 +97,8 @@ typedef int avs_ssl_additional_configuration_clb_t(void *library_ssl_context);
  *
  * A structure initialized with all zeroes (e.g. using <c>memset()</c>) is
  * a valid, default configuration - it is used when <c>NULL</c> is passed to
- * @ref avs_net_socket_create, and may also be used as a starting point for
- * customizations.
+ * @ref avs_net_tcp_socket_create or @ref avs_net_udp_socket_create , and may
+ * also be used as a starting point for customizations.
  */
 typedef struct {
     /**
@@ -769,7 +769,8 @@ avs_error_t avs_net_socket_decorate(avs_net_socket_t *socket,
  *                      success, <c>*socket</c> is replaced with a newly-created
  *                      socket of given @p new_type .
  * @param[in]    config Pointer to additional socket configuration to pass to
- *                      @ref avs_net_socket_create .
+ *                      @ref avs_net_ssl_socket_create or
+ *                      @ref avs_net_dtls_socket_create .
  *
  * @returns @ref AVS_OK for success, or an error condition for which the
  *          operation failed. On failure, <c>*socket</c> value is guaranteed to
