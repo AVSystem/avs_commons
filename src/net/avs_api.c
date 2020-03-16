@@ -362,7 +362,7 @@ static avs_error_t decorate_socket_in_place(
         avs_net_socket_t **socket,
         avs_error_t (*new_socket_constructor)(
                 avs_net_socket_t **, const avs_net_ssl_configuration_t *),
-        avs_net_ssl_configuration_t *config) {
+        const avs_net_ssl_configuration_t *config) {
     avs_net_socket_t *new_socket = NULL;
     avs_error_t err = new_socket_constructor(&new_socket, config);
     if (avs_is_err(err)) {
@@ -377,15 +377,13 @@ static avs_error_t decorate_socket_in_place(
     return AVS_OK;
 }
 
-avs_error_t
-avs_net_dtls_socket_decorate_in_place(avs_net_socket_t **socket,
-                                      avs_net_ssl_configuration_t *config) {
+avs_error_t avs_net_dtls_socket_decorate_in_place(
+        avs_net_socket_t **socket, const avs_net_ssl_configuration_t *config) {
     return decorate_socket_in_place(socket, avs_net_dtls_socket_create, config);
 }
 
-avs_error_t
-avs_net_ssl_socket_decorate_in_place(avs_net_socket_t **socket,
-                                     avs_net_ssl_configuration_t *config) {
+avs_error_t avs_net_ssl_socket_decorate_in_place(
+        avs_net_socket_t **socket, const avs_net_ssl_configuration_t *config) {
     return decorate_socket_in_place(socket, avs_net_ssl_socket_create, config);
 }
 

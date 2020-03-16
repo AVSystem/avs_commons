@@ -778,13 +778,12 @@ avs_error_t avs_net_socket_decorate(avs_net_socket_t *socket,
  * @{
  */
 
-avs_error_t
-avs_net_dtls_socket_decorate_in_place(avs_net_socket_t **socket,
-                                      avs_net_ssl_configuration_t *config);
+avs_error_t avs_net_dtls_socket_decorate_in_place(
+        avs_net_socket_t **socket, const avs_net_ssl_configuration_t *config);
 
 avs_error_t
 avs_net_ssl_socket_decorate_in_place(avs_net_socket_t **socket,
-                                     avs_net_ssl_configuration_t *config);
+                                     const avs_net_ssl_configuration_t *config);
 
 /**@}*/
 
