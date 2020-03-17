@@ -16,7 +16,8 @@
 
 #include <avs_commons_init.h>
 
-#ifdef AVS_COMMONS_WITH_AVS_CRYPTO
+#if defined(AVS_COMMONS_WITH_AVS_CRYPTO) \
+        && defined(AVS_COMMONS_WITH_AVS_CRYPTO_ADVANCED_FEATURES)
 
 #    define MODULE_NAME avs_crypto
 #    include <avs_x_log_config.h>
@@ -43,4 +44,5 @@ bool _avs_crypto_aead_parameters_valid(size_t key_len,
     return true;
 }
 
-#endif // AVS_COMMONS_WITH_AVS_CRYPTO
+#endif // defined(AVS_COMMONS_WITH_AVS_CRYPTO) &&
+       // defined(AVS_COMMONS_WITH_AVS_CRYPTO_ADVANCED_FEATURES)

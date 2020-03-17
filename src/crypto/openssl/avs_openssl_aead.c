@@ -16,7 +16,9 @@
 #define AVS_SUPPRESS_POISONING
 #include <avs_commons_init.h>
 
-#if defined(AVS_COMMONS_WITH_AVS_CRYPTO) && defined(AVS_COMMONS_WITH_OPENSSL)
+#if defined(AVS_COMMONS_WITH_AVS_CRYPTO)                          \
+        && defined(AVS_COMMONS_WITH_AVS_CRYPTO_ADVANCED_FEATURES) \
+        && defined(AVS_COMMONS_WITH_OPENSSL)
 
 #    include <openssl/evp.h>
 
@@ -164,4 +166,5 @@ int avs_crypto_aead_aes_ccm_decrypt(const unsigned char *key,
 }
 
 #endif // defined(AVS_COMMONS_WITH_AVS_CRYPTO) &&
+       // defined(AVS_COMMONS_WITH_AVS_CRYPTO_ADVANCED_FEATURES) &&
        // defined(AVS_COMMONS_WITH_OPENSSL)
