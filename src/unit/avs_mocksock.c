@@ -854,9 +854,11 @@ void avs_unit_mocksock_input_from__(avs_net_socket_t *socket_,
     new_data->type = MOCKSOCK_DATA_TYPE_INPUT;
     new_data->args.valid.remote_host = host;
     new_data->args.valid.remote_port = port;
-    new_data->args.valid.data = avs_malloc(length);
-    AVS_UNIT_ASSERT_NOT_NULL(new_data->args.valid.data);
-    memcpy((void *) (intptr_t) new_data->args.valid.data, data, length);
+    if (length) {
+        new_data->args.valid.data = avs_malloc(length);
+        AVS_UNIT_ASSERT_NOT_NULL(new_data->args.valid.data);
+        memcpy((void *) (intptr_t) new_data->args.valid.data, data, length);
+    }
     new_data->args.valid.ptr = 0;
     new_data->args.valid.size = length;
 }
@@ -902,9 +904,11 @@ void avs_unit_mocksock_expect_output_to__(
     new_data->type = MOCKSOCK_DATA_TYPE_OUTPUT;
     new_data->args.valid.remote_host = host;
     new_data->args.valid.remote_port = port;
-    new_data->args.valid.data = avs_malloc(length);
-    AVS_UNIT_ASSERT_NOT_NULL(new_data->args.valid.data);
-    memcpy((void *) (intptr_t) new_data->args.valid.data, expect, length);
+    if (length) {
+        new_data->args.valid.data = avs_malloc(length);
+        AVS_UNIT_ASSERT_NOT_NULL(new_data->args.valid.data);
+        memcpy((void *) (intptr_t) new_data->args.valid.data, expect, length);
+    }
     new_data->args.valid.ptr = 0;
     new_data->args.valid.size = length;
 }
