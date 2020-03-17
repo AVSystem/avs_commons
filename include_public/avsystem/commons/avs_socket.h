@@ -14,6 +14,10 @@
  * limitations under the License.
  */
 
+/**
+ * @file avs_socket.h
+ */
+
 #ifndef AVS_COMMONS_SOCKET_H
 #define AVS_COMMONS_SOCKET_H
 
@@ -93,8 +97,8 @@ typedef int avs_ssl_additional_configuration_clb_t(void *library_ssl_context);
  *
  * A structure initialized with all zeroes (e.g. using <c>memset()</c>) is
  * a valid, default configuration - it is used when <c>NULL</c> is passed to
- * @ref avs_net_socket_create, and may also be used as a starting point for
- * customizations.
+ * @ref avs_net_tcp_socket_create or @ref avs_net_udp_socket_create , and may
+ * also be used as a starting point for customizations.
  */
 typedef struct {
     /**
@@ -661,30 +665,43 @@ typedef union {
 int avs_net_socket_debug(int value);
 
 /**
+ * @name Sockets constructors
  * Creates a new socket of a specified type.
  *
- * @param socket        A variable to hold the newly created socket in. If it
- *                      already is initialized to any socket, the existing
- *                      socket will be destroyed and freed. This also means that
- *                      at first use, the variable <strong>MUST</strong> be
- *                      initialized to <c>NULL</c>.
+ * @param socket A variable to hold the newly created socket in. If it already
+ *               is initialized to any socket, the existing socket will be
+ *               destroyed and freed. This also means that at first use, the
+ *               variable <strong>MUST</strong> be initialized to <c>NULL</c>.
  *
- * @param sock_type     Type of the socket to create.
- *
- * @param configuration Pointer to additional configuration for the socket to
- *                      create. The type of configuration data is dependent on
- *                      the type of the socket:
- *                      @ref avs_net_socket_configuration_t for a TCP or UDP
- *                      socket (in which case it may also be <c>NULL</c> for
- *                      defaults) or @ref avs_net_ssl_configuration_t for an SSL
- *                      or DTLS socket.
+ * @param config Pointer to additional configuration for the socket to create.
+ *               The type of configuration data is dependent on the type of the
+ *               socket: @ref avs_net_socket_configuration_t for a TCP or UDP
+ *               socket (in which case it may also be <c>NULL</c> for defaults)
+ *               or @ref avs_net_ssl_configuration_t for an SSL or DTLS socket.
  *
  * @returns @ref AVS_OK for success, or an error condition for which the
  *          operation failed.
+ *
+ * @{
  */
-avs_error_t avs_net_socket_create(avs_net_socket_t **socket,
-                                  avs_net_socket_type_t sock_type,
-                                  const void *configuration);
+
+avs_error_t
+avs_net_udp_socket_create(avs_net_socket_t **socket,
+                          const avs_net_socket_configuration_t *config);
+
+avs_error_t
+avs_net_tcp_socket_create(avs_net_socket_t **socket,
+                          const avs_net_socket_configuration_t *config);
+
+avs_error_t
+avs_net_dtls_socket_create(avs_net_socket_t **socket,
+                           const avs_net_ssl_configuration_t *config);
+
+avs_error_t
+avs_net_ssl_socket_create(avs_net_socket_t **socket,
+                          const avs_net_ssl_configuration_t *config);
+
+/**@}*/
 
 /**
  * Shuts down @p socket , cleans up any allocated resources and sets
@@ -742,24 +759,34 @@ avs_error_t avs_net_socket_decorate(avs_net_socket_t *socket,
                                     avs_net_socket_t *backend_socket);
 
 /**
- * Creates a new socket using given @p new_type and @p configuration ,
- * then performs @ref avs_net_socket_decorate with <c>*socket</c> as the
- * backend socket and replaces <c>*socket</c> with newly-created socket.
+ * @name Sockets decorators
  *
- * @param[inout] socket        Pointer to a socket object to use as backend.
- *                             On success, <c>*socket</c> is replaced with
- *                             a newly-created socket of given @p new_type .
- * @param[in]    new_type      Type of the socket to create.
- * @param[in]    configuration Pointer to additional socket configuration to
- *                             pass to @ref avs_net_socket_create .
+ * Creates DTLS or SSL socket with given @p config , then performs
+ * @ref avs_net_socket_decorate with <c>*socket</c> as the backend socket and
+ * replaces <c>*socket</c> with newly-created socket.
+ *
+ * @param[inout] socket Pointer to a socket object to use as backend. On
+ *                      success, <c>*socket</c> is replaced with a newly-created
+ *                      socket of given @p new_type .
+ * @param[in]    config Pointer to additional socket configuration to pass to
+ *                      @ref avs_net_ssl_socket_create or
+ *                      @ref avs_net_dtls_socket_create .
  *
  * @returns @ref AVS_OK for success, or an error condition for which the
  *          operation failed. On failure, <c>*socket</c> value is guaranteed to
  *          be left untouched.
+ *
+ * @{
  */
-avs_error_t avs_net_socket_decorate_in_place(avs_net_socket_t **socket,
-                                             avs_net_socket_type_t new_type,
-                                             const void *configuration);
+
+avs_error_t avs_net_dtls_socket_decorate_in_place(
+        avs_net_socket_t **socket, const avs_net_ssl_configuration_t *config);
+
+avs_error_t
+avs_net_ssl_socket_decorate_in_place(avs_net_socket_t **socket,
+                                     const avs_net_ssl_configuration_t *config);
+
+/**@}*/
 
 /**
  * Sends exactly @p buffer_length bytes from @p buffer to @p socket.

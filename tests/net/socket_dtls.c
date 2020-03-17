@@ -23,8 +23,8 @@
 AVS_UNIT_TEST(socket, dtls_get_opt) {
     avs_net_socket_t *socket = NULL;
 
-    AVS_UNIT_ASSERT_SUCCESS(avs_net_socket_create(&socket, AVS_NET_DTLS_SOCKET,
-                                                  &DEFAULT_SSL_CONFIGURATION));
+    AVS_UNIT_ASSERT_SUCCESS(
+            avs_net_dtls_socket_create(&socket, &DEFAULT_SSL_CONFIGURATION));
     AVS_UNIT_ASSERT_SUCCESS(
             avs_net_socket_bind(socket, DEFAULT_ADDRESS, DEFAULT_PORT));
 
@@ -49,8 +49,8 @@ AVS_UNIT_TEST(socket, dtls_get_opt) {
 AVS_UNIT_TEST(socket, dtls_get_opt_after_close) {
     avs_net_socket_t *socket = NULL;
 
-    AVS_UNIT_ASSERT_SUCCESS(avs_net_socket_create(&socket, AVS_NET_DTLS_SOCKET,
-                                                  &DEFAULT_SSL_CONFIGURATION));
+    AVS_UNIT_ASSERT_SUCCESS(
+            avs_net_dtls_socket_create(&socket, &DEFAULT_SSL_CONFIGURATION));
     AVS_UNIT_ASSERT_SUCCESS(
             avs_net_socket_bind(socket, DEFAULT_ADDRESS, DEFAULT_PORT));
     AVS_UNIT_ASSERT_SUCCESS(avs_net_socket_close(socket));
@@ -76,8 +76,8 @@ AVS_UNIT_TEST(socket, dtls_get_opt_after_close) {
 AVS_UNIT_TEST(socket, dtls_set_opt) {
     avs_net_socket_t *socket = NULL;
 
-    AVS_UNIT_ASSERT_SUCCESS(avs_net_socket_create(&socket, AVS_NET_DTLS_SOCKET,
-                                                  &DEFAULT_SSL_CONFIGURATION));
+    AVS_UNIT_ASSERT_SUCCESS(
+            avs_net_dtls_socket_create(&socket, &DEFAULT_SSL_CONFIGURATION));
     AVS_UNIT_ASSERT_SUCCESS(
             avs_net_socket_bind(socket, DEFAULT_ADDRESS, DEFAULT_PORT));
 
@@ -102,8 +102,8 @@ AVS_UNIT_TEST(socket, dtls_set_opt) {
 AVS_UNIT_TEST(socket, dtls_set_opt_after_close) {
     avs_net_socket_t *socket = NULL;
 
-    AVS_UNIT_ASSERT_SUCCESS(avs_net_socket_create(&socket, AVS_NET_DTLS_SOCKET,
-                                                  &DEFAULT_SSL_CONFIGURATION));
+    AVS_UNIT_ASSERT_SUCCESS(
+            avs_net_dtls_socket_create(&socket, &DEFAULT_SSL_CONFIGURATION));
     AVS_UNIT_ASSERT_SUCCESS(
             avs_net_socket_bind(socket, DEFAULT_ADDRESS, DEFAULT_PORT));
     AVS_UNIT_ASSERT_SUCCESS(avs_net_socket_close(socket));

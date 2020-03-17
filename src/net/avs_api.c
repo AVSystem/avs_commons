@@ -345,31 +345,8 @@ avs_error_t avs_net_socket_set_opt(avs_net_socket_t *socket,
 typedef avs_error_t (*socket_constructor_t)(avs_net_socket_t **socket,
                                             const void *socket_configuration);
 
-static socket_constructor_t
-get_constructor_for_socket_type(avs_net_socket_type_t type) {
-    switch (type) {
-    case AVS_NET_TCP_SOCKET:
-        return _avs_net_create_tcp_socket;
-    case AVS_NET_UDP_SOCKET:
-        return _avs_net_create_udp_socket;
-    case AVS_NET_SSL_SOCKET:
-    case AVS_NET_DTLS_SOCKET:
-#    ifndef WITHOUT_SSL
-        return type == AVS_NET_SSL_SOCKET ? _avs_net_create_ssl_socket
-                                          : _avs_net_create_dtls_socket;
-#    else
-        LOG(ERROR,
-            _("could not create secure socket: (D)TLS support is disabled"));
-        return NULL;
-#    endif // WITHOUT_SSL
-    default:
-        LOG(ERROR, _("unknown socket type: ") "%d", (int) type);
-        return NULL;
-    }
-}
-
 static avs_error_t create_bare_socket(avs_net_socket_t **socket,
-                                      avs_net_socket_type_t type,
+                                      socket_constructor_t socket_constructor,
                                       const void *configuration) {
     avs_error_t err = _avs_net_ensure_global_state();
     if (avs_is_err(err)) {
@@ -377,22 +354,17 @@ static avs_error_t create_bare_socket(avs_net_socket_t **socket,
         return err;
     }
 
-    socket_constructor_t constructor = get_constructor_for_socket_type(type);
-
     avs_net_socket_cleanup(socket);
-    if (constructor) {
-        return constructor(socket, configuration);
-    } else {
-        return avs_errno(AVS_ENOTSUP);
-    }
+    return socket_constructor(socket, configuration);
 }
 
-avs_error_t avs_net_socket_decorate_in_place(avs_net_socket_t **socket,
-                                             avs_net_socket_type_t new_type,
-                                             const void *configuration) {
+static avs_error_t decorate_socket_in_place(
+        avs_net_socket_t **socket,
+        avs_error_t (*new_socket_constructor)(
+                avs_net_socket_t **, const avs_net_ssl_configuration_t *),
+        const avs_net_ssl_configuration_t *config) {
     avs_net_socket_t *new_socket = NULL;
-    avs_error_t err =
-            avs_net_socket_create(&new_socket, new_type, configuration);
+    avs_error_t err = new_socket_constructor(&new_socket, config);
     if (avs_is_err(err)) {
         return err;
     }
@@ -403,6 +375,16 @@ avs_error_t avs_net_socket_decorate_in_place(avs_net_socket_t **socket,
 
     *socket = new_socket;
     return AVS_OK;
+}
+
+avs_error_t avs_net_dtls_socket_decorate_in_place(
+        avs_net_socket_t **socket, const avs_net_ssl_configuration_t *config) {
+    return decorate_socket_in_place(socket, avs_net_dtls_socket_create, config);
+}
+
+avs_error_t avs_net_ssl_socket_decorate_in_place(
+        avs_net_socket_t **socket, const avs_net_ssl_configuration_t *config) {
+    return decorate_socket_in_place(socket, avs_net_ssl_socket_create, config);
 }
 
 #    ifdef AVS_COMMONS_NET_WITH_SOCKET_LOG
@@ -729,33 +711,72 @@ static avs_error_t create_socket_debug(avs_net_socket_t **debug_socket,
     }
 }
 
-avs_error_t avs_net_socket_create(avs_net_socket_t **debug_socket,
-                                  avs_net_socket_type_t type,
-                                  const void *configuration) {
-    avs_net_socket_t *backend_socket = NULL;
-    avs_error_t err;
-
-    avs_net_socket_cleanup(debug_socket);
-    err = create_bare_socket(debug_socket, type, configuration);
-    if (avs_is_ok(err) && _avs_net_socket_debug) {
+static avs_error_t
+init_debug_socket_if_applicable(avs_net_socket_t **debug_socket,
+                                avs_error_t curr_err) {
+    if (avs_is_ok(curr_err) && _avs_net_socket_debug) {
         debug_init();
-        backend_socket = *debug_socket;
+        avs_net_socket_t *backend_socket = *debug_socket;
         *debug_socket = NULL;
-        err = create_socket_debug(debug_socket, backend_socket);
-        if (avs_is_err(err)) {
+        curr_err = create_socket_debug(debug_socket, backend_socket);
+        if (avs_is_err(curr_err)) {
             avs_net_socket_cleanup(&backend_socket);
         }
     }
-    return err;
+    return curr_err;
 }
+
 #    else
 
-avs_error_t avs_net_socket_create(avs_net_socket_t **socket,
-                                  avs_net_socket_type_t type,
-                                  const void *configuration) {
-    return create_bare_socket(socket, type, configuration);
+static avs_error_t
+init_debug_socket_if_applicable(avs_net_socket_t **debug_socket,
+                                avs_error_t curr_err) {
+    (void) debug_socket;
+    return curr_err;
 }
 
 #    endif /* AVS_COMMONS_NET_WITH_SOCKET_LOG */
+
+avs_error_t
+avs_net_udp_socket_create(avs_net_socket_t **socket,
+                          const avs_net_socket_configuration_t *config) {
+    avs_error_t err =
+            create_bare_socket(socket, _avs_net_create_udp_socket, config);
+    return init_debug_socket_if_applicable(socket, err);
+}
+
+avs_error_t
+avs_net_tcp_socket_create(avs_net_socket_t **socket,
+                          const avs_net_socket_configuration_t *config) {
+    avs_error_t err =
+            create_bare_socket(socket, _avs_net_create_tcp_socket, config);
+    return init_debug_socket_if_applicable(socket, err);
+}
+
+avs_error_t
+avs_net_dtls_socket_create(avs_net_socket_t **socket,
+                           const avs_net_ssl_configuration_t *config) {
+#    ifndef WITHOUT_SSL
+    avs_error_t err =
+            create_bare_socket(socket, _avs_net_create_dtls_socket, config);
+    return init_debug_socket_if_applicable(socket, err);
+#    else  // WITHOUT_SSL
+    LOG(ERROR, _("could not create secure socket: (D)TLS support is disabled"));
+    return avs_errno(AVS_ENOTSUP);
+#    endif // WITHOUT_SSL
+}
+
+avs_error_t
+avs_net_ssl_socket_create(avs_net_socket_t **socket,
+                          const avs_net_ssl_configuration_t *config) {
+#    ifndef WITHOUT_SSL
+    avs_error_t err =
+            create_bare_socket(socket, _avs_net_create_ssl_socket, config);
+    return init_debug_socket_if_applicable(socket, err);
+#    else  // WITHOUT_SSL
+    LOG(ERROR, _("could not create secure socket: (D)TLS support is disabled"));
+    return avs_errno(AVS_ENOTSUP);
+#    endif // WITHOUT_SSL
+}
 
 #endif // AVS_COMMONS_WITH_AVS_NET
