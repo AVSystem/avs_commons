@@ -24,8 +24,8 @@
 AVS_UNIT_TEST(socket, ssl_get_opt) {
     avs_net_socket_t *socket = NULL;
 
-    AVS_UNIT_ASSERT_SUCCESS(
-            avs_net_ssl_socket_create(&socket, &DEFAULT_SSL_CONFIGURATION));
+    avs_net_ssl_configuration_t config = get_default_ssl_config();
+    AVS_UNIT_ASSERT_SUCCESS(avs_net_ssl_socket_create(&socket, &config));
     AVS_UNIT_ASSERT_SUCCESS(
             avs_net_socket_bind(socket, DEFAULT_ADDRESS, DEFAULT_PORT));
 
@@ -43,6 +43,7 @@ AVS_UNIT_TEST(socket, ssl_get_opt) {
                                   AVS_ARRAY_SIZE(test_cases));
 
     AVS_UNIT_ASSERT_SUCCESS(avs_net_socket_cleanup(&socket));
+    cleanup_default_ssl_config(&config);
 }
 
 //// avs_net_socket_get_opt after avs_net_socket_close /////////////////////////
@@ -50,8 +51,8 @@ AVS_UNIT_TEST(socket, ssl_get_opt) {
 AVS_UNIT_TEST(socket, ssl_get_opt_after_close) {
     avs_net_socket_t *socket = NULL;
 
-    AVS_UNIT_ASSERT_SUCCESS(
-            avs_net_ssl_socket_create(&socket, &DEFAULT_SSL_CONFIGURATION));
+    avs_net_ssl_configuration_t config = get_default_ssl_config();
+    AVS_UNIT_ASSERT_SUCCESS(avs_net_ssl_socket_create(&socket, &config));
     AVS_UNIT_ASSERT_SUCCESS(
             avs_net_socket_bind(socket, DEFAULT_ADDRESS, DEFAULT_PORT));
     AVS_UNIT_ASSERT_SUCCESS(avs_net_socket_close(socket));
@@ -70,6 +71,7 @@ AVS_UNIT_TEST(socket, ssl_get_opt_after_close) {
                                   AVS_ARRAY_SIZE(test_cases));
 
     AVS_UNIT_ASSERT_SUCCESS(avs_net_socket_cleanup(&socket));
+    cleanup_default_ssl_config(&config);
 }
 
 //// avs_net_socket_set_opt ////////////////////////////////////////////////////
@@ -77,8 +79,8 @@ AVS_UNIT_TEST(socket, ssl_get_opt_after_close) {
 AVS_UNIT_TEST(socket, ssl_set_opt) {
     avs_net_socket_t *socket = NULL;
 
-    AVS_UNIT_ASSERT_SUCCESS(
-            avs_net_ssl_socket_create(&socket, &DEFAULT_SSL_CONFIGURATION));
+    avs_net_ssl_configuration_t config = get_default_ssl_config();
+    AVS_UNIT_ASSERT_SUCCESS(avs_net_ssl_socket_create(&socket, &config));
     AVS_UNIT_ASSERT_SUCCESS(
             avs_net_socket_bind(socket, DEFAULT_ADDRESS, DEFAULT_PORT));
 
@@ -96,6 +98,7 @@ AVS_UNIT_TEST(socket, ssl_set_opt) {
                                   AVS_ARRAY_SIZE(test_cases));
 
     AVS_UNIT_ASSERT_SUCCESS(avs_net_socket_cleanup(&socket));
+    cleanup_default_ssl_config(&config);
 }
 
 #define SMTP_SERVER_HOSTNAME "smtp.gmail.com"
@@ -135,6 +138,8 @@ AVS_UNIT_TEST(starttls, starttls_smtp) {
     avs_net_socket_t *socket = NULL;
     avs_net_ssl_configuration_t ssl_config;
 
+    avs_crypto_prng_ctx_t *prng_ctx = avs_crypto_prng_new(NULL, NULL);
+    AVS_UNIT_ASSERT_NOT_NULL(prng_ctx);
     AVS_UNIT_ASSERT_SUCCESS(avs_net_tcp_socket_create(&socket, NULL));
     AVS_UNIT_ASSERT_SUCCESS(avs_net_socket_connect(socket, SMTP_SERVER_HOSTNAME,
                                                    SMTP_SERVER_PORT));
@@ -148,6 +153,8 @@ AVS_UNIT_TEST(starttls, starttls_smtp) {
 
     memset(&ssl_config, 0, sizeof(ssl_config));
     ssl_config.version = AVS_NET_SSL_VERSION_TLSv1;
+    ssl_config.prng_ctx = prng_ctx;
+
     AVS_UNIT_ASSERT_SUCCESS(
             avs_net_ssl_socket_decorate_in_place(&socket, &ssl_config));
 
@@ -156,4 +163,5 @@ AVS_UNIT_TEST(starttls, starttls_smtp) {
     assert_receive_smtp_status(socket, 250);
 
     avs_net_socket_cleanup(&socket);
+    avs_crypto_prng_free(&prng_ctx);
 }

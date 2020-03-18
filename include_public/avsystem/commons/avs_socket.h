@@ -29,6 +29,7 @@
 #include <avsystem/commons/avs_defs.h>
 #include <avsystem/commons/avs_errno.h>
 #include <avsystem/commons/avs_memory.h>
+#include <avsystem/commons/avs_prng.h>
 #include <avsystem/commons/avs_time.h>
 
 #ifdef __cplusplus
@@ -548,6 +549,12 @@ typedef struct {
      * and has no effect on other socket types.
      */
     bool use_connection_id;
+
+    /**
+     * PRNG context to use. It must outlive the created socket. MUST NOT be
+     * @c NULL .
+     */
+    avs_crypto_prng_ctx_t *prng_ctx;
 } avs_net_ssl_configuration_t;
 
 typedef enum {

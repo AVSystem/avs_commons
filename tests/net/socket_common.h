@@ -49,18 +49,28 @@ run_socket_get_opt_test_cases(avs_net_socket_t *socket,
 #define DEFAULT_IDENTITY "sesame"
 #define DEFAULT_PSK "password"
 
-static const avs_net_ssl_configuration_t DEFAULT_SSL_CONFIGURATION = {
-    .version = AVS_NET_SSL_VERSION_DEFAULT,
-    .security = {
-        .mode = AVS_NET_SECURITY_PSK,
-        .data.psk = {
-            .psk = DEFAULT_PSK,
-            .psk_size = sizeof(DEFAULT_PSK) - 1,
-            .identity = DEFAULT_IDENTITY,
-            .identity_size = sizeof(DEFAULT_IDENTITY) - 1
-        }
-    }
-};
+static avs_net_ssl_configuration_t get_default_ssl_config() {
+    avs_net_ssl_configuration_t config = {
+        .version = AVS_NET_SSL_VERSION_DEFAULT,
+        .security = {
+            .mode = AVS_NET_SECURITY_PSK,
+            .data.psk = {
+                .psk = DEFAULT_PSK,
+                .psk_size = sizeof(DEFAULT_PSK) - 1,
+                .identity = DEFAULT_IDENTITY,
+                .identity_size = sizeof(DEFAULT_IDENTITY) - 1
+            }
+        },
+        .prng_ctx = avs_crypto_prng_new(NULL, NULL)
+    };
+    AVS_UNIT_ASSERT_NOT_NULL(config.prng_ctx);
+    return config;
+}
+
+static avs_net_ssl_configuration_t
+cleanup_default_ssl_config(avs_net_ssl_configuration_t *config) {
+    avs_crypto_prng_free(&config->prng_ctx);
+}
 
 static void
 run_socket_set_opt_test_cases(avs_net_socket_t *socket,
