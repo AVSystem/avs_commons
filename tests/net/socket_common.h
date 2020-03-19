@@ -49,7 +49,7 @@ run_socket_get_opt_test_cases(avs_net_socket_t *socket,
 #define DEFAULT_IDENTITY "sesame"
 #define DEFAULT_PSK "password"
 
-static avs_net_ssl_configuration_t get_default_ssl_config() {
+static avs_net_ssl_configuration_t create_default_ssl_config() {
     avs_net_ssl_configuration_t config = {
         .version = AVS_NET_SSL_VERSION_DEFAULT,
         .security = {

@@ -347,14 +347,6 @@
 #cmakedefine AVS_COMMONS_NET_WITH_IPV6
 
 /**
- * If the TLS backend is set to mbed TLS, allows to use a custom user-provided
- * function to initialize mbed TLS entropy context.
- *
- * See the check for this macro in defs.h for more information.
- */
-#cmakedefine AVS_COMMONS_NET_WITH_MBEDTLS_CUSTOM_ENTROPY_INITIALIZER
-
-/**
  * If the TLS backend is set to OpenSSL, enables support for DTLS.
  *
  * DTLS is always enabled for the mbed TLS and TinyDTLS backends.

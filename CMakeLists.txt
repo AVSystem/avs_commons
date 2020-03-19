@@ -441,9 +441,6 @@ cmake_dependent_option(WITH_PSK "Enable pre-shared key support" ON "WITH_OPENSSL
 set(AVS_COMMONS_NET_WITH_PSK ${WITH_PSK})
 cmake_dependent_option(WITH_X509 "Enable X.509 certificate support" ON "WITH_OPENSSL OR WITH_MBEDTLS OR WITH_TINYDTLS" OFF)
 set(AVS_COMMONS_NET_WITH_X509 ${WITH_X509})
-cmake_dependent_option(WITH_MBEDTLS_CUSTOM_ENTROPY_INITIALIZER
-                       "Enable use of avs_net_mbedtls_entropy_init(mbedtls_entropy_context*) function that has to be provided by the user"
-                       OFF "WITH_MBEDTLS" OFF)
 
 if(WITH_OPENSSL)
     avs_find_library("find_package(OpenSSL REQUIRED)")
@@ -511,7 +508,6 @@ endif()
 set(AVS_COMMONS_NET_WITH_IPV4 "${WITH_IPV4}")
 set(AVS_COMMONS_NET_WITH_IPV6 "${WITH_IPV6}")
 set(AVS_COMMONS_NET_WITH_DTLS "${WITH_DTLS}")
-set(AVS_COMMONS_NET_WITH_MBEDTLS_CUSTOM_ENTROPY_INITIALIZER "${WITH_MBEDTLS_CUSTOM_ENTROPY_INITIALIZER}")
 set(AVS_COMMONS_NET_WITH_POSIX_AVS_SOCKET "${WITH_POSIX_AVS_SOCKET}")
 set(AVS_COMMONS_NET_WITH_TLS_SESSION_PERSISTENCE "${WITH_TLS_SESSION_PERSISTENCE}")
 set(AVS_COMMONS_SCHED_THREAD_SAFE "${WITH_SCHEDULER_THREAD_SAFE}")
