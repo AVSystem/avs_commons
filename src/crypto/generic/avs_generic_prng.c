@@ -38,9 +38,10 @@ seed_callback(unsigned char *out_buf, size_t out_buf_len, void *user_ptr) {
     (void) user_ptr;
     AVS_STATIC_ASSERT(sizeof(avs_rand_seed_t) == sizeof(uint32_t),
                       seed_size_does_not_match);
-    uint32_t seed = (avs_time_real_now().since_real_epoch.seconds
-                     ^ avs_time_real_now().since_real_epoch.nanoseconds)
-                    % UINT32_MAX;
+    uint32_t seed =
+            (uint32_t) (avs_time_real_now().since_real_epoch.seconds
+                        ^ avs_time_real_now().since_real_epoch.nanoseconds)
+            % UINT32_MAX;
     memcpy(out_buf, (unsigned char *) &seed, out_buf_len);
     return 0;
 }

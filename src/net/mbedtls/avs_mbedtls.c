@@ -439,7 +439,8 @@ static int transport_for_socket_type(avs_net_socket_type_t backend_type) {
 
 static int
 rng_function(void *ctx, unsigned char *out_buf, size_t out_buf_size) {
-    return avs_crypto_prng_bytes(ctx, out_buf, out_buf_size);
+    return avs_crypto_prng_bytes((avs_crypto_prng_ctx_t *) ctx, out_buf,
+                                 out_buf_size);
 }
 
 static avs_error_t
