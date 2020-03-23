@@ -67,8 +67,7 @@ static avs_net_ssl_configuration_t create_default_ssl_config() {
     return config;
 }
 
-static avs_net_ssl_configuration_t
-cleanup_default_ssl_config(avs_net_ssl_configuration_t *config) {
+static void cleanup_default_ssl_config(avs_net_ssl_configuration_t *config) {
     avs_crypto_prng_free(&config->prng_ctx);
 }
 
