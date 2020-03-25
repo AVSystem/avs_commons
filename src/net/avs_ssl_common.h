@@ -138,7 +138,8 @@ static avs_error_t
 connect_ssl(avs_net_socket_t *socket_, const char *host, const char *port) {
     ssl_socket_t *socket = (ssl_socket_t *) socket_;
     LOG(TRACE,
-        _("connect_ssl(socket=") "%p"_(", host=") "%s" _(", port=") "%s" _(")"),
+        _("connect_ssl(socket=") "%p" _(", host=") "%s" _(", port=") "%s" _(
+                ")"),
         (void *) socket, host, port);
 
     if (is_ssl_started(socket)) {
