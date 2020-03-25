@@ -37,7 +37,8 @@ static int reseed_if_needed(avs_prng_entropy_callback_t seed_cb,
                             void *user_ptr) {
     if (RAND_status() != 1) {
         if (!seed_cb) {
-            LOG(ERROR, "reseeding required, but seed callback is not defined");
+            LOG(ERROR,
+                _("reseeding required, but seed callback is not defined"));
             return -1;
         }
         unsigned char data[48];
