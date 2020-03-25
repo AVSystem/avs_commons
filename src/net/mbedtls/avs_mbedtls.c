@@ -312,7 +312,7 @@ static int *init_cert_ciphersuites(
 
     int *ciphers = (int *) avs_calloc(ciphers_count + 1, sizeof(int));
     if (!ciphers) {
-        LOG(ERROR, _("out of memory"));
+        LOG(ERROR, _("Out of memory"));
         return NULL;
     }
 
@@ -380,7 +380,7 @@ static int *init_psk_ciphersuites(
 
     int *psk_ciphers = (int *) avs_calloc(ciphers_count + 1, sizeof(int));
     if (!psk_ciphers) {
-        LOG(ERROR, _("out of memory"));
+        LOG(ERROR, _("Out of memory"));
         return NULL;
     }
 
