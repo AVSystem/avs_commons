@@ -1213,13 +1213,6 @@ avs_error_t _avs_net_initialize_global_ssl_state(void) {
     SSL_load_error_strings();
 #    endif
     OpenSSL_add_all_algorithms();
-    if (!RAND_load_file("/dev/urandom", -1)) {
-        LOG(WARNING, _("RAND_load_file error"));
-        return avs_errno(AVS_ENOTSUP);
-    }
-    /* On some OpenSSL version, RAND_load file causes hell to break loose.
-     * Get rid of any "uninitialized" memory that it created :( */
-    VALGRIND_MAKE_MEM_DEFINED_IF_ADDRESSABLE(0, sbrk(0));
     if (avs_bio_init()) {
         LOG(WARNING, _("avs_bio_init error"));
         return avs_errno(AVS_ENOMEM);

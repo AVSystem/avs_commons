@@ -62,7 +62,7 @@ if(WIN32)
     target_link_libraries(avs_net_core INTERFACE ws2_32)
 endif()
 
-target_link_libraries(avs_net_core INTERFACE avs_stream avs_utils avs_compat_threading)
+target_link_libraries(avs_net_core INTERFACE avs_stream avs_utils avs_compat_threading avs_crypto)
 
 avs_install_export(avs_net_core net)
 install(FILES ${AVS_NET_PUBLIC_HEADERS}

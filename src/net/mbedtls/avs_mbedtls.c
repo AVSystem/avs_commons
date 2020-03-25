@@ -55,6 +55,7 @@
 
 #    include <avsystem/commons/avs_errno_map.h>
 #    include <avsystem/commons/avs_memory.h>
+#    include <avsystem/commons/avs_prng.h>
 #    include <avsystem/commons/avs_utils.h>
 
 #    include "../avs_global.h"
@@ -152,37 +153,13 @@ static avs_error_t return_alert_if_any(ssl_socket_t *socket) {
     return AVS_OK;
 }
 
-static struct {
-    // this weighs almost 40KB because of HAVEGE state
-    mbedtls_entropy_context entropy;
-    mbedtls_ctr_drbg_context rng;
-} AVS_SSL_GLOBAL;
-
 void _avs_net_cleanup_global_ssl_state(void) {
-    mbedtls_ctr_drbg_free(&AVS_SSL_GLOBAL.rng);
-    mbedtls_entropy_free(&AVS_SSL_GLOBAL.entropy);
+    // do nothing
 }
 
 avs_error_t _avs_net_initialize_global_ssl_state(void) {
-    avs_error_t err = AVS_OK;
-    mbedtls_entropy_init(&AVS_SSL_GLOBAL.entropy);
-#    ifdef AVS_COMMONS_NET_WITH_MBEDTLS_CUSTOM_ENTROPY_INITIALIZER
-    err = avs_net_mbedtls_entropy_init(&AVS_SSL_GLOBAL.entropy);
-#    endif // AVS_COMMONS_NET_WITH_MBEDTLS_CUSTOM_ENTROPY_INITIALIZER
-    if (avs_is_err(err)) {
-        LOG(ERROR, _("custom entropy initializer failed"));
-    } else {
-        mbedtls_ctr_drbg_init(&AVS_SSL_GLOBAL.rng);
-        if (mbedtls_ctr_drbg_seed(&AVS_SSL_GLOBAL.rng, mbedtls_entropy_func,
-                                  &AVS_SSL_GLOBAL.entropy, NULL, 0)) {
-            LOG(ERROR, _("mbedtls_ctr_drbg_seed() failed"));
-            err = avs_errno(AVS_EPROTO);
-        }
-    }
-    if (avs_is_err(err)) {
-        _avs_net_cleanup_global_ssl_state();
-    }
-    return err;
+    // do nothing
+    return AVS_OK;
 }
 
 static int
@@ -460,6 +437,12 @@ static int transport_for_socket_type(avs_net_socket_type_t backend_type) {
     }
 }
 
+static int
+rng_function(void *ctx, unsigned char *out_buf, size_t out_buf_size) {
+    return avs_crypto_prng_bytes((avs_crypto_prng_ctx_t *) ctx, out_buf,
+                                 out_buf_size);
+}
+
 static avs_error_t
 configure_ssl(ssl_socket_t *socket,
               const avs_net_ssl_configuration_t *configuration) {
@@ -492,8 +475,8 @@ configure_ssl(ssl_socket_t *socket,
         return avs_errno(AVS_ENOTSUP);
     }
 
-    mbedtls_ssl_conf_rng(&socket->config, mbedtls_ctr_drbg_random,
-                         &AVS_SSL_GLOBAL.rng);
+    mbedtls_ssl_conf_rng(&socket->config, rng_function,
+                         configuration->prng_ctx);
 
     const avs_net_dtls_handshake_timeouts_t *dtls_handshake_timeouts =
             configuration->dtls_handshake_timeouts
