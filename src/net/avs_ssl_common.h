@@ -93,10 +93,10 @@ static avs_error_t ensure_have_backend_socket(ssl_socket_t *socket) {
 static avs_error_t create_ssl_socket(avs_net_socket_t **socket,
                                      avs_net_socket_type_t backend_type,
                                      const void *socket_configuration) {
-    LOG(TRACE, "create_ssl_socket(socket=%p)", (void *) socket);
+    LOG(TRACE, _("create_ssl_socket(socket=") "%p" _(")"), (void *) socket);
 
     if (!socket_configuration) {
-        LOG(ERROR, "SSL configuration not specified");
+        LOG(ERROR, _("SSL configuration not specified"));
         return avs_errno(AVS_EINVAL);
     }
 
@@ -104,21 +104,22 @@ static avs_error_t create_ssl_socket(avs_net_socket_t **socket,
             (ssl_socket_t *) avs_calloc(1, sizeof(ssl_socket_t));
     *socket = (avs_net_socket_t *) ssl_sock;
     if (*socket) {
-        LOG(TRACE, "configure_ssl(socket=%p, configuration=%p)",
+        LOG(TRACE,
+            _("configure_ssl(socket=") "%p" _(", configuration=") "%p" _(")"),
             (void *) socket, (const void *) socket_configuration);
 
         avs_error_t err = initialize_ssl_socket(
                 ssl_sock, backend_type,
                 (const avs_net_ssl_configuration_t *) socket_configuration);
         if (avs_is_err(err)) {
-            LOG(ERROR, "socket initialization error");
+            LOG(ERROR, _("socket initialization error"));
             avs_net_socket_cleanup(socket);
             return err;
         } else {
             return AVS_OK;
         }
     } else {
-        LOG(ERROR, "memory allocation error");
+        LOG(ERROR, _("Out of memory"));
         return avs_errno(AVS_ENOMEM);
     }
 }
@@ -136,11 +137,13 @@ bind_ssl(avs_net_socket_t *socket_, const char *localaddr, const char *port) {
 static avs_error_t
 connect_ssl(avs_net_socket_t *socket_, const char *host, const char *port) {
     ssl_socket_t *socket = (ssl_socket_t *) socket_;
-    LOG(TRACE, "connect_ssl(socket=%p, host=%s, port=%s)", (void *) socket,
-        host, port);
+    LOG(TRACE,
+        _("connect_ssl(socket=") "%p" _(", host=") "%s" _(", port=") "%s" _(
+                ")"),
+        (void *) socket, host, port);
 
     if (is_ssl_started(socket)) {
-        LOG(ERROR, "SSL socket already connected");
+        LOG(ERROR, _("SSL socket already connected"));
         return avs_errno(AVS_EISCONN);
     }
     avs_error_t err = ensure_have_backend_socket(socket);
@@ -149,7 +152,7 @@ connect_ssl(avs_net_socket_t *socket_, const char *host, const char *port) {
     }
     if (avs_is_err((err = avs_net_socket_connect(socket->backend_socket, host,
                                                  port)))) {
-        LOG(ERROR, "avs_net_socket_connect() on backend socket failed");
+        LOG(ERROR, _("avs_net_socket_connect() on backend socket failed"));
         return err;
     }
 
@@ -162,11 +165,12 @@ connect_ssl(avs_net_socket_t *socket_, const char *host, const char *port) {
 static avs_error_t decorate_ssl(avs_net_socket_t *socket_,
                                 avs_net_socket_t *backend_socket) {
     ssl_socket_t *socket = (ssl_socket_t *) socket_;
-    LOG(TRACE, "decorate_ssl(socket=%p, backend_socket=%p)", (void *) socket,
-        (void *) backend_socket);
+    LOG(TRACE,
+        _("decorate_ssl(socket=") "%p" _(", backend_socket=") "%p" _(")"),
+        (void *) socket, (void *) backend_socket);
 
     if (is_ssl_started(socket)) {
-        LOG(ERROR, "SSL socket already connected");
+        LOG(ERROR, _("SSL socket already connected"));
         return avs_errno(AVS_EISCONN);
     }
     avs_net_socket_opt_value_t backend_state;
@@ -174,7 +178,7 @@ static avs_error_t decorate_ssl(avs_net_socket_t *socket_,
             avs_net_socket_get_opt(backend_socket, AVS_NET_SOCKET_OPT_STATE,
                                    &backend_state);
     if (avs_is_err(err)) {
-        LOG(ERROR, "Could not get backend socket state");
+        LOG(ERROR, _("Could not get backend socket state"));
         return err;
     }
 
@@ -212,14 +216,14 @@ static const void *system_socket_ssl(avs_net_socket_t *socket_) {
 }
 
 static avs_error_t shutdown_ssl(avs_net_socket_t *socket_) {
-    LOG(TRACE, "shutdown_ssl(socket=%p)", (void *) socket_);
+    LOG(TRACE, _("shutdown_ssl(socket=") "%p" _(")"), (void *) socket_);
     ssl_socket_t *socket = (ssl_socket_t *) socket_;
     return avs_net_socket_shutdown(socket->backend_socket);
 }
 
 static avs_error_t close_ssl(avs_net_socket_t *socket_) {
     ssl_socket_t *socket = (ssl_socket_t *) socket_;
-    LOG(TRACE, "close_ssl(socket=%p)", (void *) socket);
+    LOG(TRACE, _("close_ssl(socket=") "%p" _(")"), (void *) socket);
     close_ssl_raw(socket);
     return AVS_OK;
 }
@@ -361,7 +365,7 @@ static inline void _avs_net_psk_cleanup(avs_net_owned_psk_t *psk) {
 static inline avs_error_t _avs_net_psk_copy(avs_net_owned_psk_t *dst,
                                             const avs_net_psk_info_t *src) {
     if (!src->psk_size) {
-        LOG(ERROR, "PSK cannot be empty");
+        LOG(ERROR, _("PSK cannot be empty"));
         return avs_errno(AVS_EINVAL);
     }
     avs_net_owned_psk_t out_psk;
@@ -369,7 +373,7 @@ static inline avs_error_t _avs_net_psk_copy(avs_net_owned_psk_t *dst,
     out_psk.psk_size = src->psk_size;
     out_psk.psk = avs_malloc(src->psk_size);
     if (!out_psk.psk) {
-        LOG(ERROR, "out of memory");
+        LOG(ERROR, _("Out of memory"));
         return avs_errno(AVS_ENOMEM);
     }
 
@@ -378,7 +382,7 @@ static inline avs_error_t _avs_net_psk_copy(avs_net_owned_psk_t *dst,
         out_psk.identity = avs_malloc(src->identity_size);
         if (!out_psk.identity) {
             avs_free(out_psk.psk);
-            LOG(ERROR, "out of memory");
+            LOG(ERROR, _("Out of memory"));
             return avs_errno(AVS_ENOMEM);
         }
         memcpy(out_psk.identity, src->identity, src->identity_size);

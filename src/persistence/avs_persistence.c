@@ -537,7 +537,7 @@ typedef struct {
             if (element && !*element) {                                      \
                 *element = ElementType##_NEW_BUFFER(state->element_size);    \
                 if (!element) {                                              \
-                    LOG(ERROR, "Out of memory");                             \
+                    LOG(ERROR, _("Out of memory"));                             \
                     return avs_errno(AVS_ENOMEM);                            \
                 }                                                            \
             }                                                                \

@@ -758,7 +758,7 @@ avs_net_dtls_socket_create(avs_net_socket_t **socket,
                            const avs_net_ssl_configuration_t *config) {
 #    ifndef WITHOUT_SSL
     if (!config->prng_ctx) {
-        LOG(ERROR, "PRNG ctx MUST be not NULL");
+        LOG(ERROR, _("PRNG ctx MUST NOT be NULL"));
         return avs_errno(AVS_EINVAL);
     }
     avs_error_t err =
@@ -775,7 +775,7 @@ avs_net_ssl_socket_create(avs_net_socket_t **socket,
                           const avs_net_ssl_configuration_t *config) {
 #    ifndef WITHOUT_SSL
     if (!config->prng_ctx) {
-        LOG(ERROR, "PRNG ctx MUST be not NULL");
+        LOG(ERROR, _("PRNG ctx MUST NOT be NULL"));
         return avs_errno(AVS_EINVAL);
     }
     avs_error_t err =

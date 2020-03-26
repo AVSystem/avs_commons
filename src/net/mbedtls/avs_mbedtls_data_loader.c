@@ -40,7 +40,7 @@ VISIBILITY_SOURCE_BEGIN
             avs_free(*ptr);                               \
             *ptr = (type *) avs_calloc(1, sizeof(**ptr)); \
             if (!*ptr) {                                  \
-                LOG(ERROR, "memory allocation error");    \
+                LOG(ERROR, _("Out of memory"));    \
                 return avs_errno(AVS_ENOMEM);             \
             }                                             \
         } while (0)

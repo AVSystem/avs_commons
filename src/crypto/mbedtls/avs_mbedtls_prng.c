@@ -44,8 +44,8 @@ entropy_callback(void *ctx_, unsigned char *out_buf, size_t out_buf_size) {
     return ctx->seed_callback(out_buf, out_buf_size, ctx->user_ptr);
 }
 
-avs_crypto_prng_ctx_t *
-avs_crypto_prng_new(avs_prng_entropy_callback_t seed_cb, void *user_ptr) {
+avs_crypto_prng_ctx_t *avs_crypto_prng_new(avs_prng_entropy_callback_t seed_cb,
+                                           void *user_ptr) {
     avs_crypto_prng_ctx_t *ctx = NULL;
     if (seed_cb) {
         ctx = (avs_crypto_prng_ctx_t *) avs_calloc(
@@ -77,8 +77,8 @@ avs_crypto_prng_new(avs_prng_entropy_callback_t seed_cb, void *user_ptr) {
     }
 
     if (result) {
+        LOG(ERROR, _("mbedtls_ctr_drbg_seed() failed"));
         avs_crypto_prng_free(&ctx);
-        LOG(ERROR, "mbedtls_ctr_drbg_seed() failed");
     }
 
     return ctx;

@@ -350,7 +350,7 @@ avs_url_t *avs_url_parse_lenient(const char *raw_url) {
     avs_url_t *out =
             (avs_url_t *) avs_malloc(offsetof(avs_url_t, data) + data_length);
     if (!out) {
-        LOG(ERROR, _("out of memory"));
+        LOG(ERROR, _("Out of memory"));
         return NULL;
     }
     *out = (avs_url_t) {
@@ -494,7 +494,7 @@ avs_url_t *avs_url_copy(const avs_url_t *url) {
     assert(alloc_size > 0 && (size_t) alloc_size > offsetof(avs_url_t, data));
     avs_url_t *out = (avs_url_t *) avs_malloc((size_t) alloc_size);
     if (!out) {
-        LOG(ERROR, _("out of memory"));
+        LOG(ERROR, _("Out of memory"));
         return NULL;
     }
     memcpy(out, url, (size_t) alloc_size);
