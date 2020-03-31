@@ -49,12 +49,6 @@ extern "C" {
 #    endif
 #endif // IF_NAMESIZE
 
-#ifdef AVS_COMMONS_HAVE_SYS_TYPES_H
-#    include <sys/types.h>
-#else
-typedef long ssize_t;
-#endif
-
 /**
  * Internal definitions used by the library to implement the functionality.
  */
@@ -248,6 +242,8 @@ extern "C" {
     struct AVS_CONCAT(static_assert_, message) { \
         char message[(condition) ? 1 : -1];      \
     }
+
+AVS_STATIC_ASSERT(sizeof(ptrdiff_t) == sizeof(size_t), ptrdiff_t_sane);
 
 typedef long avs_off_t;
 

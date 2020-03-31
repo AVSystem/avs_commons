@@ -129,21 +129,21 @@ int avs_base64_encode_custom(char *out,
     return 0;
 }
 
-ssize_t avs_base64_decode_custom(uint8_t *out,
-                                 size_t out_size,
-                                 const char *b64_data,
-                                 avs_base64_config_t config) {
+ptrdiff_t avs_base64_decode_custom(uint8_t *out,
+                                   size_t out_size,
+                                   const char *b64_data,
+                                   avs_base64_config_t config) {
 
     uint32_t accumulator = 0;
     uint8_t bits = 0;
     const uint8_t *current = (const uint8_t *) b64_data;
-    ssize_t out_length = 0;
-    ssize_t padding = 0;
+    size_t out_length = 0;
+    size_t padding = 0;
 
     while (*current) {
         int ch = *current++;
 
-        if ((size_t) out_length >= out_size) {
+        if (out_length >= out_size) {
             return -1;
         }
         if (isspace(ch)) {
@@ -182,7 +182,7 @@ ssize_t avs_base64_decode_custom(uint8_t *out,
         return -1;
     }
 
-    return out_length;
+    return (ptrdiff_t) out_length;
 }
 
 #    ifdef AVS_UNIT_TESTING

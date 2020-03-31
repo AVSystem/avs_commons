@@ -298,10 +298,10 @@ void avs_consume_quotable_token(const char **src,
  * @returns either a number of input bytes that were successfully hexlified, or
  * a negative value if even the NULL-terminator could not be written.
  */
-ssize_t avs_hexlify(char *out_hex,
-                    size_t out_size,
-                    const void *input,
-                    size_t input_size);
+ptrdiff_t avs_hexlify(char *out_hex,
+                      size_t out_size,
+                      const void *input,
+                      size_t input_size);
 
 /**
  * Converts hexadecimal representation of bytes to binary data.
@@ -318,10 +318,10 @@ ssize_t avs_hexlify(char *out_hex,
  *          called again with @p input pointer increased by return value
  *          multiplied by 2, to convert remaining data.
  */
-ssize_t avs_unhexlify(uint8_t *output,
-                      size_t out_size,
-                      const char *input,
-                      size_t in_size);
+ptrdiff_t avs_unhexlify(uint8_t *output,
+                        size_t out_size,
+                        const char *input,
+                        size_t in_size);
 
 /**
  * Utility macros for accessing unaligned data.

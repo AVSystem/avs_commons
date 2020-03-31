@@ -184,10 +184,10 @@ static inline int avs_base64_encode(char *out,
  *
  * @returns length of decoded data in bytes, negative value in case of error.
  */
-ssize_t avs_base64_decode_custom(uint8_t *out,
-                                 size_t out_length,
-                                 const char *input,
-                                 avs_base64_config_t config);
+ptrdiff_t avs_base64_decode_custom(uint8_t *out,
+                                   size_t out_length,
+                                   const char *input,
+                                   avs_base64_config_t config);
 
 /**
  * Decodes specified base64 input.
@@ -211,7 +211,7 @@ ssize_t avs_base64_decode_custom(uint8_t *out,
  *
  * @returns length of decoded data in bytes, negative value in case of error.
  */
-static inline ssize_t
+static inline ptrdiff_t
 avs_base64_decode_strict(uint8_t *out, size_t out_length, const char *input) {
     return avs_base64_decode_custom(out, out_length, input,
                                     AVS_BASE64_DEFAULT_STRICT_CONFIG);
@@ -231,7 +231,7 @@ avs_base64_decode_strict(uint8_t *out, size_t out_length, const char *input) {
  *
  * @returns length of decoded data in bytes, negative value in case of error.
  */
-static inline ssize_t
+static inline ptrdiff_t
 avs_base64_decode(uint8_t *out, size_t out_length, const char *input) {
     return avs_base64_decode_custom(out, out_length, input,
                                     AVS_BASE64_DEFAULT_LOOSE_CONFIG);

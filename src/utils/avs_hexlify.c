@@ -25,10 +25,10 @@
 
 VISIBILITY_SOURCE_BEGIN
 
-ssize_t avs_hexlify(char *out_hex,
-                    size_t out_size,
-                    const void *input,
-                    size_t input_size) {
+ptrdiff_t avs_hexlify(char *out_hex,
+                      size_t out_size,
+                      const void *input,
+                      size_t input_size) {
     static const char HEX[] = "0123456789abcdef";
     if (!out_hex || !out_size) {
         return -1;
@@ -44,7 +44,7 @@ ssize_t avs_hexlify(char *out_hex,
         out_hex[2 * i + 1] = HEX[((const uint8_t *) input)[i] % 16];
     }
     out_hex[2 * bytes_to_hexlify] = '\0';
-    return (ssize_t) bytes_to_hexlify;
+    return (ptrdiff_t) bytes_to_hexlify;
 }
 
 static int8_t char_to_value(char c) {
@@ -70,10 +70,10 @@ static int hex_to_uint8(const char *hex, uint8_t *out_value) {
     return 0;
 }
 
-ssize_t avs_unhexlify(uint8_t *output,
-                      size_t out_size,
-                      const char *input,
-                      size_t in_size) {
+ptrdiff_t avs_unhexlify(uint8_t *output,
+                        size_t out_size,
+                        const char *input,
+                        size_t in_size) {
     if (in_size % 2) {
         return -1;
     }
@@ -88,7 +88,7 @@ ssize_t avs_unhexlify(uint8_t *output,
         }
         ++bytes_written;
     }
-    return (ssize_t) bytes_written;
+    return (ptrdiff_t) bytes_written;
 }
 
 #    ifdef AVS_UNIT_TESTING

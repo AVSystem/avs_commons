@@ -19,7 +19,6 @@ if(NOT APPLE)
 endif()
 
 include(CheckIncludeFiles)
-check_include_files("sys/types.h" AVS_COMMONS_HAVE_SYS_TYPES_H)
 check_include_files("net/if.h" AVS_COMMONS_HAVE_NET_IF_H)
 
 include(CheckFunctionExists)
