@@ -243,8 +243,6 @@ extern "C" {
         char message[(condition) ? 1 : -1];      \
     }
 
-AVS_STATIC_ASSERT(sizeof(ptrdiff_t) == sizeof(size_t), ptrdiff_t_sane);
-
 typedef long avs_off_t;
 
 #ifdef __cplusplus

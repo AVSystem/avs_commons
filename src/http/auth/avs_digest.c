@@ -51,8 +51,10 @@ static avs_error_t http_auth_ha1(avs_stream_t *md5,
                                                           sizeof(bytebuf))))) {
         return err;
     }
-    if (avs_hexlify(*hexbuf, sizeof(*hexbuf), bytebuf, sizeof(bytebuf))
-            != sizeof(bytebuf)) {
+    size_t bytes_hexlified;
+    if (avs_hexlify(*hexbuf, sizeof(*hexbuf), &bytes_hexlified, bytebuf,
+                    sizeof(bytebuf))
+            || bytes_hexlified != sizeof(bytebuf)) {
         return avs_errno(AVS_EPROTO);
     }
 
@@ -64,8 +66,9 @@ static avs_error_t http_auth_ha1(avs_stream_t *md5,
                                        md5, bytebuf, sizeof(bytebuf))))) {
             return err;
         }
-        if (avs_hexlify(*hexbuf, sizeof(*hexbuf), bytebuf, sizeof(bytebuf))
-                != sizeof(bytebuf)) {
+        if (avs_hexlify(*hexbuf, sizeof(*hexbuf), &bytes_hexlified, bytebuf,
+                        sizeof(bytebuf))
+                || bytes_hexlified != sizeof(bytebuf)) {
             return avs_errno(AVS_EPROTO);
         }
     }
@@ -88,8 +91,10 @@ static avs_error_t http_auth_ha2(avs_stream_t *md5,
                                                           sizeof(bytebuf))))) {
         return err;
     }
-    if (avs_hexlify(*hexbuf, sizeof(*hexbuf), bytebuf, sizeof(bytebuf))
-            != sizeof(bytebuf)) {
+    size_t bytes_hexlified;
+    if (avs_hexlify(*hexbuf, sizeof(*hexbuf), &bytes_hexlified, bytebuf,
+                    sizeof(bytebuf))
+            || bytes_hexlified != sizeof(bytebuf)) {
         return avs_errno(AVS_EPROTO);
     }
 
@@ -117,8 +122,10 @@ static avs_error_t http_auth_response(avs_stream_t *md5,
                                                           sizeof(bytebuf))))) {
         return err;
     }
-    if (avs_hexlify(*hexbuf, sizeof(*hexbuf), bytebuf, sizeof(bytebuf))
-            != sizeof(bytebuf)) {
+    size_t bytes_hexlified;
+    if (avs_hexlify(*hexbuf, sizeof(*hexbuf), &bytes_hexlified, bytebuf,
+                    sizeof(bytebuf))
+            || bytes_hexlified != sizeof(bytebuf)) {
         return avs_errno(AVS_EPROTO);
     }
 

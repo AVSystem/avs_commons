@@ -288,40 +288,50 @@ void avs_consume_quotable_token(const char **src,
  * The hexlified buffer (if at least 1 byte long) is guaranteed to be
  * NULL-terminated after the function returns.
  *
- * @param out_hex    Buffer where hexlified string shall be written.
- * @param out_size   Size of the @p out_hex buffer in bytes. To hexlify the
- *                   entire @p input, it should be at least 2*input_size + 1
- *                   bytes long.
- * @param input      Input to hexlify.
- * @param input_size Length of the input to hexlify.
+ * @param out_hex             Buffer where hexlified string shall be written.
+ * @param out_size            Size of the @p out_hex buffer in bytes. To hexlify
+ *                            the entire @p input, it should be at least
+ *                            2*input_size + 1 bytes long.
+ * @param out_bytes_hexlified Pointer to a variable that, on successful exit,
+ *                            will be set to number of input bytes that were
+ *                            successfully hexlified. May be NULL if not needed.
+ * @param input               Input to hexlify.
+ * @param input_size          Length of the input to hexlify.
  *
- * @returns either a number of input bytes that were successfully hexlified, or
- * a negative value if even the NULL-terminator could not be written.
+ * @returns 0 if at least some part of the input has been successfully
+ *          hexlified; a negative value if even the NULL-terminator could not be
+ *          written.
  */
-ptrdiff_t avs_hexlify(char *out_hex,
-                      size_t out_size,
-                      const void *input,
-                      size_t input_size);
+int avs_hexlify(char *out_hex,
+                size_t out_size,
+                size_t *out_bytes_hexlified,
+                const void *input,
+                size_t input_size);
 
 /**
  * Converts hexadecimal representation of bytes to binary data.
  *
- * @param output   Buffer to write decoded bytes to.
- * @param out_size Size of the @p output buffer.
- * @param input    Buffer containing NULL-terminated hexadecimal representation
- *                 without any prefixes.
- * @param in_size  Length of @p input . MUST be divisible by 2.
+ * @param out_bytes_written Pointer to a variable than, on successful exit, will
+ *                          be set to number of bytes saved to @p output .
+ *                          May be NULL if not needed.
+ * @param output            Buffer to write decoded bytes to.
+ * @param out_size          Size of the @p output buffer.
+ * @param input             Buffer containing NULL-terminated hexadecimal
+ *                          representation without any prefixes.
+ * @param in_size           Length of @p input . MUST be divisible by 2.
  *
- * @returns Number of bytes saved to @p output buffer or a negative value if
- *          input data is invalid. If not all bytes were converted (return value
- *          is smaller than @p in_size divided by 2), this function may be
- *          called again with @p input pointer increased by return value
- *          multiplied by 2, to convert remaining data.
+ * @returns 0 if some data has been successfully unhexlified or a negative value
+ *          if input data is invalid. If not all bytes were converted
+ *          (<c>*out_bytes_written</c>  is smaller than @p in_size divided by
+ *          2), this function may be called again with @p input pointer
+ *          increased by <c>*out_bytes_written * 2</c>, to convert remaining
+ *          data.
  */
-ptrdiff_t avs_unhexlify(uint8_t *output,
-                        size_t out_size,
-                        const char *input,
-                        size_t in_size);
+int avs_unhexlify(size_t *out_bytes_written,
+                  uint8_t *output,
+                  size_t out_size,
+                  const char *input,
+                  size_t in_size);
 
 /**
  * Utility macros for accessing unaligned data.

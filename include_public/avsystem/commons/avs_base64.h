@@ -176,18 +176,22 @@ static inline int avs_base64_encode(char *out,
  * Note that this function fails if @p out_length is too small. To predict
  * buffer requirements use @ref avs_base64_estimate_decoded_size .
  *
- * @param out        Pointer to user-allocated array where decoded data will be
- *                   stored.
- * @param out_length Length of user-allocated array.
- * @param input      Null terminated input to decode.
- * @param config     Configuration of the base64 variant to use.
+ * @param out_bytes_decoded Pointer to a variable that, on successful exit, will
+ *                          be set to the number of decoded bytes. May be NULL
+ *                          if not needed.
+ * @param out               Pointer to user-allocated array where decoded data
+ *                          will be stored.
+ * @param out_length        Length of user-allocated array.
+ * @param input             Null terminated input to decode.
+ * @param config            Configuration of the base64 variant to use.
  *
- * @returns length of decoded data in bytes, negative value in case of error.
+ * @returns 0 on success, negative value in case of error.
  */
-ptrdiff_t avs_base64_decode_custom(uint8_t *out,
-                                   size_t out_length,
-                                   const char *input,
-                                   avs_base64_config_t config);
+int avs_base64_decode_custom(size_t *out_bytes_decoded,
+                             uint8_t *out,
+                             size_t out_length,
+                             const char *input,
+                             avs_base64_config_t config);
 
 /**
  * Decodes specified base64 input.
@@ -204,16 +208,21 @@ ptrdiff_t avs_base64_decode_custom(uint8_t *out,
  * inputs accepted by this function will return the exact amount of bytes
  * needed).
  *
- * @param out           Pointer to user-allocated array where decoded data
- *                      will be stored.
- * @param out_length    Length of user-allocated array.
- * @param input         Null terminated input to decode.
+ * @param out_bytes_decoded Pointer to a variable that, on successful exit, will
+ *                          be set to the number of decoded bytes. May be NULL
+ *                          if not needed.
+ * @param out               Pointer to user-allocated array where decoded data
+ *                          will be stored.
+ * @param out_length        Length of user-allocated array.
+ * @param input             Null terminated input to decode.
  *
- * @returns length of decoded data in bytes, negative value in case of error.
+ * @returns 0 on success, negative value in case of error.
  */
-static inline ptrdiff_t
-avs_base64_decode_strict(uint8_t *out, size_t out_length, const char *input) {
-    return avs_base64_decode_custom(out, out_length, input,
+static inline int avs_base64_decode_strict(size_t *out_bytes_decoded,
+                                           uint8_t *out,
+                                           size_t out_length,
+                                           const char *input) {
+    return avs_base64_decode_custom(out_bytes_decoded, out, out_length, input,
                                     AVS_BASE64_DEFAULT_STRICT_CONFIG);
 }
 
@@ -224,16 +233,21 @@ avs_base64_decode_strict(uint8_t *out, size_t out_length, const char *input) {
  * Note that this function fails if @p out_length is too small. To predict
  * buffer requirements use @ref avs_base64_estimate_decoded_size .
  *
- * @param out           Pointer to user-allocated array where decoded data will
- *                      be stored.
- * @param out_length    Length of user-allocated array.
- * @param input         Null terminated input to decode.
+ * @param out_bytes_decoded Pointer to a variable that, on successful exit, will
+ *                          be set to the number of decoded bytes. May be NULL
+ *                          if not needed.
+ * @param out               Pointer to user-allocated array where decoded data
+ *                          will be stored.
+ * @param out_length        Length of user-allocated array.
+ * @param input             Null terminated input to decode.
  *
- * @returns length of decoded data in bytes, negative value in case of error.
+ * @returns 0 on success, negative value in case of error.
  */
-static inline ptrdiff_t
-avs_base64_decode(uint8_t *out, size_t out_length, const char *input) {
-    return avs_base64_decode_custom(out, out_length, input,
+static inline int avs_base64_decode(size_t *out_bytes_decoded,
+                                    uint8_t *out,
+                                    size_t out_length,
+                                    const char *input) {
+    return avs_base64_decode_custom(out_bytes_decoded, out, out_length, input,
                                     AVS_BASE64_DEFAULT_LOOSE_CONFIG);
 }
 

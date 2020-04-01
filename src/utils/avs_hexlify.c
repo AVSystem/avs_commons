@@ -25,26 +25,30 @@
 
 VISIBILITY_SOURCE_BEGIN
 
-ptrdiff_t avs_hexlify(char *out_hex,
-                      size_t out_size,
-                      const void *input,
-                      size_t input_size) {
+int avs_hexlify(char *out_hex,
+                size_t out_size,
+                size_t *out_bytes_hexlified,
+                const void *input,
+                size_t input_size) {
     static const char HEX[] = "0123456789abcdef";
     if (!out_hex || !out_size) {
         return -1;
     }
     *out_hex = '\0';
-    if (!input || !input_size) {
-        return 0;
+    size_t bytes_to_hexlify = 0;
+    if (input && input_size) {
+        bytes_to_hexlify = AVS_MIN(input_size, (out_size - 1) / 2);
+        assert(bytes_to_hexlify < SIZE_MAX / 2u);
+        for (size_t i = 0; i < bytes_to_hexlify; ++i) {
+            out_hex[2 * i + 0] = HEX[((const uint8_t *) input)[i] / 16];
+            out_hex[2 * i + 1] = HEX[((const uint8_t *) input)[i] % 16];
+        }
+        out_hex[2 * bytes_to_hexlify] = '\0';
     }
-    const size_t bytes_to_hexlify = AVS_MIN(input_size, (out_size - 1) / 2);
-    assert(bytes_to_hexlify < SIZE_MAX / 2u);
-    for (size_t i = 0; i < bytes_to_hexlify; ++i) {
-        out_hex[2 * i + 0] = HEX[((const uint8_t *) input)[i] / 16];
-        out_hex[2 * i + 1] = HEX[((const uint8_t *) input)[i] % 16];
+    if (out_bytes_hexlified) {
+        *out_bytes_hexlified = bytes_to_hexlify;
     }
-    out_hex[2 * bytes_to_hexlify] = '\0';
-    return (ptrdiff_t) bytes_to_hexlify;
+    return 0;
 }
 
 static int8_t char_to_value(char c) {
@@ -70,10 +74,11 @@ static int hex_to_uint8(const char *hex, uint8_t *out_value) {
     return 0;
 }
 
-ptrdiff_t avs_unhexlify(uint8_t *output,
-                        size_t out_size,
-                        const char *input,
-                        size_t in_size) {
+int avs_unhexlify(size_t *out_bytes_written,
+                  uint8_t *output,
+                  size_t out_size,
+                  const char *input,
+                  size_t in_size) {
     if (in_size % 2) {
         return -1;
     }
@@ -88,7 +93,10 @@ ptrdiff_t avs_unhexlify(uint8_t *output,
         }
         ++bytes_written;
     }
-    return (ptrdiff_t) bytes_written;
+    if (out_bytes_written) {
+        *out_bytes_written = bytes_written;
+    }
+    return 0;
 }
 
 #    ifdef AVS_UNIT_TESTING

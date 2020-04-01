@@ -129,10 +129,11 @@ int avs_base64_encode_custom(char *out,
     return 0;
 }
 
-ptrdiff_t avs_base64_decode_custom(uint8_t *out,
-                                   size_t out_size,
-                                   const char *b64_data,
-                                   avs_base64_config_t config) {
+int avs_base64_decode_custom(size_t *out_bytes_decoded,
+                             uint8_t *out,
+                             size_t out_size,
+                             const char *b64_data,
+                             avs_base64_config_t config) {
 
     uint32_t accumulator = 0;
     uint8_t bits = 0;
@@ -182,7 +183,10 @@ ptrdiff_t avs_base64_decode_custom(uint8_t *out,
         return -1;
     }
 
-    return (ptrdiff_t) out_length;
+    if (out_bytes_decoded) {
+        *out_bytes_decoded = out_length;
+    }
+    return 0;
 }
 
 #    ifdef AVS_UNIT_TESTING
