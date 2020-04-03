@@ -17,7 +17,7 @@
 #define AVS_STREAM_STREAM_FILE_C
 #include <avs_commons_init.h>
 
-#ifdef AVS_COMMONS_WITH_AVS_STREAM
+#ifdef AVS_COMMONS_STREAM_WITH_FILE
 
 #    include <assert.h>
 #    include <errno.h>
@@ -252,4 +252,4 @@ error:
 #        include "tests/stream/test_stream_file.c"
 #    endif
 
-#endif // AVS_COMMONS_WITH_AVS_STREAM
+#endif // AVS_COMMONS_STREAM_WITH_FILE

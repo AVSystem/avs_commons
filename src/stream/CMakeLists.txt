@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+option(WITH_AVS_STREAM_FILE "Enable support for file I/O in avs_stream" ON)
+
 set(AVS_STREAM_PUBLIC_HEADERS
     "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/avs_stream_buffered.h"
     "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/avs_stream_file.h"

@@ -488,7 +488,7 @@
 #cmakedefine AVS_COMMONS_NET_POSIX_AVS_SOCKET_HAVE_POLL
 
 /**
- * Is the <c>recvmsg() function available?
+ * Is the <c>recvmsg()</c> function available?
  *
  * Disabling this flag will cause <c>recvfrom()</c> to be used instead. Note
  * that for UDP sockets, this will cause false positives for datagram truncation
@@ -505,6 +505,14 @@
  * requiring avs_compat_threading to be enabled, and higher resource usage.
  */
 #cmakedefine AVS_COMMONS_SCHED_THREAD_SAFE
+
+/**
+ * Enable support for file I/O in avs_stream.
+ *
+ * Disabling this flag will cause the functions declared in
+ * <c>avs_stream_file.h</c> to not be defined.
+ */
+#cmakedefine AVS_COMMONS_STREAM_WITH_FILE
 
 /**
  * Enable usage of <c>backtrace()</c> and <c>backtrace_symbols()</c> when
