@@ -285,6 +285,14 @@
 #cmakedefine AVS_COMMONS_LOG_USE_GLOBAL_BUFFER
 
 /**
+ * Provides a default avs_log handler that prints log messages on stderr.
+ *
+ * Disabling this option will cause logs to be discarded by default, until a
+ * custom log handler is set using <c>avs_log_set_handler()</c>.
+ */
+#cmakedefine AVS_COMMONS_LOG_WITH_DEFAULT_HANDLER
+
+/**
  * Enables the "micro logs" feature.
  *
  * Replaces all occurrences of the <c>AVS_DISPOSABLE_LOG()</c> macro with single

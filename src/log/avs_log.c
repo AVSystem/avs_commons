@@ -38,7 +38,11 @@ static void default_log_handler(avs_log_level_t level,
                                 const char *message) {
     (void) level;
     (void) module;
+#ifdef AVS_COMMONS_LOG_WITH_DEFAULT_HANDLER
     fprintf(stderr, "%s\n", message ? message : "(null)");
+#else // AVS_COMMONS_LOG_WITH_DEFAULT_HANDLER
+    (void) message;
+#endif // AVS_COMMONS_LOG_WITH_DEFAULT_HANDLER
 }
 
 typedef struct {
@@ -108,7 +112,7 @@ static int _log_lock(const char *init_fail_msg, const char *lock_fail_msg) {
 #    endif // AVS_COMMONS_WITH_AVS_COMPAT_THREADING
 
 static inline void set_log_handler_unlocked(avs_log_handler_t *log_handler) {
-    g_log.handler = log_handler;
+    g_log.handler = (log_handler ? log_handler : default_log_handler);
 }
 
 void avs_log_set_handler(avs_log_handler_t *log_handler) {

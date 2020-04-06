@@ -146,6 +146,8 @@ if(WITH_AVS_LOG)
                            "Use global log message buffer instead of allocating one on stack. Reduces stack usage of threads that use avs_log() at the cost of synchronized access to the buffer."
                            OFF WITH_AVS_COMPAT_THREADING OFF)
     set(AVS_COMMONS_LOG_USE_GLOBAL_BUFFER ${AVS_LOG_USE_GLOBAL_BUFFER})
+    option(WITH_AVS_LOG_DEFAULT_HANDLER "Provide a default avs_log handler that prints log messages on stderr." ON)
+    set(AVS_COMMONS_LOG_WITH_DEFAULT_HANDLER ${WITH_AVS_LOG_DEFAULT_HANDLER})
 endif()
 
 cmake_dependent_option(WITH_TEST "Enable unit tests of AVSystem Commons library itself" OFF WITH_AVS_UNIT OFF)
