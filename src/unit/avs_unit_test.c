@@ -123,9 +123,8 @@ static void test_fail_print_hex_diff(const uint8_t *actual,
 #    define MIN(a, b) ((a) < (b) ? (a) : (b))
 #    define MAX(a, b) ((a) > (b) ? (a) : (b))
 
-    size_t start =
-            (size_t) MAX((ssize_t) diff_start_offset - (ssize_t) context_size,
-                         0);
+    size_t start = (size_t) MAX(
+            (ptrdiff_t) diff_start_offset - (ptrdiff_t) context_size, 0);
     size_t end =
             MIN(diff_start_offset + diff_bytes + context_size, buffer_size);
 
@@ -627,8 +626,8 @@ static int parse_log_level_definition(const char **def,
         end = strchr(eq, '\0');
     }
 
-    if (eq - *def < (ssize_t) module_size
-            && end - (eq + 1) < (ssize_t) level_str_size) {
+    if (eq - *def < (ptrdiff_t) module_size
+            && end - (eq + 1) < (ptrdiff_t) level_str_size) {
         memcpy(out_module, *def, (size_t) (eq - *def));
         memcpy(out_level_str, eq + 1, (size_t) (end - (eq + 1)));
 

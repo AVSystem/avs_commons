@@ -49,12 +49,6 @@ extern "C" {
 #    endif
 #endif // IF_NAMESIZE
 
-#ifdef AVS_COMMONS_HAVE_SYS_TYPES_H
-#    include <sys/types.h>
-#else
-typedef long ssize_t;
-#endif
-
 /**
  * Internal definitions used by the library to implement the functionality.
  */

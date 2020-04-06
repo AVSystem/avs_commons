@@ -33,7 +33,7 @@ static int test_entropy_callback(unsigned char *out_buf,
     return 0;
 }
 
-void test_impl(avs_prng_entropy_callback_t entropy_cb) {
+static void test_impl(avs_prng_entropy_callback_t entropy_cb) {
     const size_t random_data_size = 64;
     avs_crypto_prng_ctx_t *ctx = avs_crypto_prng_new(entropy_cb, test_user_arg);
     ASSERT_NOT_NULL(ctx);

@@ -90,15 +90,6 @@
 #cmakedefine AVS_COMMONS_HAVE_NET_IF_H
 
 /**
- * Is sys/types.h available in the system?
- *
- * NOTE: If the header is indeed available, but this option is not defined, the
- * <c>ssize_t</c> type will be defined <strong>publicly by avs_commons
- * headers</strong>, which may conflict with system definitions.
- */
-#cmakedefine AVS_COMMONS_HAVE_SYS_TYPES_H
-
-/**
  * Are GNU diagnostic pragmas (#pragma GCC diagnostic push/pop/ignored)
  * available?
  *

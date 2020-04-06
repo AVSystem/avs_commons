@@ -60,47 +60,58 @@ AVS_UNIT_TEST(base64, encode) {
 
 AVS_UNIT_TEST(base64, decode) {
     char result[5];
+    size_t result_length;
     char buf[5] = "AX==";
     const char *ch;
     for (ch = AVS_BASE64_CHARS; *ch; ++ch) {
         buf[1] = *ch;
-        AVS_UNIT_ASSERT_EQUAL(
-                (int) avs_base64_decode((uint8_t *) result, 5, buf), 1);
-        AVS_UNIT_ASSERT_EQUAL(
-                (int) avs_base64_decode_strict((uint8_t *) result, 5, buf), 1);
+        AVS_UNIT_ASSERT_SUCCESS(avs_base64_decode(
+                &result_length, (uint8_t *) result, sizeof(result), buf));
+        AVS_UNIT_ASSERT_EQUAL(result_length, 1);
+        AVS_UNIT_ASSERT_SUCCESS(avs_base64_decode_strict(
+                &result_length, (uint8_t *) result, sizeof(result), buf));
+        AVS_UNIT_ASSERT_EQUAL(result_length, 1);
     }
     /* terminating NULL byte is Base64 encoded */
-    AVS_UNIT_ASSERT_EQUAL(
-            avs_base64_decode((uint8_t *) result, sizeof(result), "AA=="), 1);
+    AVS_UNIT_ASSERT_SUCCESS(avs_base64_decode(
+            &result_length, (uint8_t *) result, sizeof(result), "AA=="));
+    AVS_UNIT_ASSERT_EQUAL(result_length, 1);
     AVS_UNIT_ASSERT_EQUAL_STRING(result, "");
-    AVS_UNIT_ASSERT_EQUAL(
-            avs_base64_decode((uint8_t *) result, sizeof(result), "YQA="), 2);
+    AVS_UNIT_ASSERT_SUCCESS(avs_base64_decode(
+            &result_length, (uint8_t *) result, sizeof(result), "YQA="));
+    AVS_UNIT_ASSERT_EQUAL(result_length, 2);
     AVS_UNIT_ASSERT_EQUAL_STRING(result, "a");
-    AVS_UNIT_ASSERT_EQUAL(
-            avs_base64_decode((uint8_t *) result, sizeof(result), "YWEA"), 3);
+    AVS_UNIT_ASSERT_SUCCESS(avs_base64_decode(
+            &result_length, (uint8_t *) result, sizeof(result), "YWEA"));
+    AVS_UNIT_ASSERT_EQUAL(result_length, 3);
     AVS_UNIT_ASSERT_EQUAL_STRING(result, "aa");
 
-    AVS_UNIT_ASSERT_EQUAL(
-            avs_base64_decode((uint8_t *) result, sizeof(result), ""), 0);
+    AVS_UNIT_ASSERT_SUCCESS(avs_base64_decode(
+            &result_length, (uint8_t *) result, sizeof(result), ""));
+    AVS_UNIT_ASSERT_EQUAL(result_length, 0);
 
-    AVS_UNIT_ASSERT_EQUAL(
-            avs_base64_decode((uint8_t *) result, sizeof(result), "A+=="), 1);
+    AVS_UNIT_ASSERT_SUCCESS(avs_base64_decode(
+            &result_length, (uint8_t *) result, sizeof(result), "A+=="));
+    AVS_UNIT_ASSERT_EQUAL(result_length, 1);
 
-    AVS_UNIT_ASSERT_FAILED((int) avs_base64_decode((uint8_t *) result,
-                                                   sizeof(result), "\x01"));
+    AVS_UNIT_ASSERT_FAILED(avs_base64_decode(&result_length, (uint8_t *) result,
+                                             sizeof(result), "\x01"));
 
     /* avs_base64_decode is not strict */
-    AVS_UNIT_ASSERT_EQUAL(avs_base64_decode((uint8_t *) result, sizeof(result),
-                                            "Y== ==\n\n\t\vWEA"),
-                          3);
+    AVS_UNIT_ASSERT_SUCCESS(
+            avs_base64_decode(&result_length, (uint8_t *) result,
+                              sizeof(result), "Y== ==\n\n\t\vWEA"));
+    AVS_UNIT_ASSERT_EQUAL(result_length, 3);
     AVS_UNIT_ASSERT_EQUAL_STRING(result, "aa");
 
-    AVS_UNIT_ASSERT_EQUAL(
-            avs_base64_decode((uint8_t *) result, sizeof(result), "YQA"), 2);
+    AVS_UNIT_ASSERT_SUCCESS(avs_base64_decode(
+            &result_length, (uint8_t *) result, sizeof(result), "YQA"));
+    AVS_UNIT_ASSERT_EQUAL(result_length, 2);
     AVS_UNIT_ASSERT_EQUAL_STRING(result, "a");
 
-    AVS_UNIT_ASSERT_EQUAL(
-            avs_base64_decode((uint8_t *) result, sizeof(result), "YQA=="), 2);
+    AVS_UNIT_ASSERT_SUCCESS(avs_base64_decode(
+            &result_length, (uint8_t *) result, sizeof(result), "YQA=="));
+    AVS_UNIT_ASSERT_EQUAL(result_length, 2);
     AVS_UNIT_ASSERT_EQUAL_STRING(result, "a");
 }
 
@@ -109,18 +120,18 @@ AVS_UNIT_TEST(base64, decode_fail) {
     char buf[5] = "AX==";
     char ch;
     AVS_UNIT_ASSERT_FAILED(
-            (int) avs_base64_decode((uint8_t *) result, 1, "AA=="));
-    AVS_UNIT_ASSERT_FAILED((int) avs_base64_decode((uint8_t *) result, 5, ","));
+            avs_base64_decode(NULL, (uint8_t *) result, 1, "AA=="));
+    AVS_UNIT_ASSERT_FAILED(avs_base64_decode(NULL, (uint8_t *) result, 5, ","));
 
     for (ch = 1; ch < CHAR_MAX; ++ch) {
         buf[1] = ch;
         if (!strchr(AVS_BASE64_CHARS, ch) && !isspace(ch) && ch != '=') {
             AVS_UNIT_ASSERT_FAILED(
-                    (int) avs_base64_decode((uint8_t *) result, 5, buf));
+                    avs_base64_decode(NULL, (uint8_t *) result, 5, buf));
         }
         if (!strchr(AVS_BASE64_CHARS, ch)) {
             AVS_UNIT_ASSERT_FAILED(
-                    (int) avs_base64_decode_strict((uint8_t *) result, 5, buf));
+                    avs_base64_decode_strict(NULL, (uint8_t *) result, 5, buf));
         }
     }
 }
@@ -128,68 +139,65 @@ AVS_UNIT_TEST(base64, decode_fail) {
 AVS_UNIT_TEST(base64, decode_strict) {
     char result[16];
     /* no data - no problem */
-    AVS_UNIT_ASSERT_EQUAL(avs_base64_decode_strict((uint8_t *) result,
-                                                   sizeof(result), ""),
-                          0);
+    size_t result_length;
+    AVS_UNIT_ASSERT_SUCCESS(avs_base64_decode_strict(
+            &result_length, (uint8_t *) result, sizeof(result), ""));
+    AVS_UNIT_ASSERT_EQUAL(result_length, 0);
 
     /* not a multiple of 4 */
-    AVS_UNIT_ASSERT_FAILED((int) avs_base64_decode_strict(
-            (uint8_t *) result, sizeof(result), "=="));
-    AVS_UNIT_ASSERT_FAILED((int) avs_base64_decode_strict((uint8_t *) result,
-                                                          sizeof(result), "="));
+    AVS_UNIT_ASSERT_FAILED(avs_base64_decode_strict(NULL, (uint8_t *) result,
+                                                    sizeof(result), "=="));
+    AVS_UNIT_ASSERT_FAILED(avs_base64_decode_strict(NULL, (uint8_t *) result,
+                                                    sizeof(result), "="));
 
     /* invalid characters in the middle */
-    AVS_UNIT_ASSERT_FAILED((int) avs_base64_decode_strict(
-            (uint8_t *) result, sizeof(result), "Zm9=v"));
-    AVS_UNIT_ASSERT_FAILED((int) avs_base64_decode_strict(
-            (uint8_t *) result, sizeof(result), "Zm9 v"));
-    AVS_UNIT_ASSERT_FAILED((int) avs_base64_decode_strict(
-            (uint8_t *) result, sizeof(result), "Zm9\0v"));
-    AVS_UNIT_ASSERT_FAILED((int) avs_base64_decode_strict(
-            (uint8_t *) result, sizeof(result), "Y== ==\n\n\t\vWEA"));
+    AVS_UNIT_ASSERT_FAILED(avs_base64_decode_strict(NULL, (uint8_t *) result,
+                                                    sizeof(result), "Zm9=v"));
+    AVS_UNIT_ASSERT_FAILED(avs_base64_decode_strict(NULL, (uint8_t *) result,
+                                                    sizeof(result), "Zm9 v"));
+    AVS_UNIT_ASSERT_FAILED(avs_base64_decode_strict(NULL, (uint8_t *) result,
+                                                    sizeof(result), "Zm9\0v"));
+    AVS_UNIT_ASSERT_FAILED(avs_base64_decode_strict(
+            NULL, (uint8_t *) result, sizeof(result), "Y== ==\n\n\t\vWEA"));
 
     /* invalid characters at the end */
-    AVS_UNIT_ASSERT_FAILED((int) avs_base64_decode_strict(
-            (uint8_t *) result, sizeof(result), "Zm9v "));
-    AVS_UNIT_ASSERT_FAILED((int) avs_base64_decode_strict(
-            (uint8_t *) result, sizeof(result), "Zm9v\0"));
-    AVS_UNIT_ASSERT_FAILED((int) avs_base64_decode_strict(
-            (uint8_t *) result, sizeof(result), "Zm9vYg== "));
-    AVS_UNIT_ASSERT_FAILED((int) avs_base64_decode_strict(
-            (uint8_t *) result, sizeof(result), "Zm9vYg==\0"));
+    AVS_UNIT_ASSERT_FAILED(avs_base64_decode_strict(NULL, (uint8_t *) result,
+                                                    sizeof(result), "Zm9v "));
+    AVS_UNIT_ASSERT_FAILED(avs_base64_decode_strict(
+            NULL, (uint8_t *) result, sizeof(result), "Zm9vYg== "));
 
     /* =-padded, invalid characters in the middle */
-    AVS_UNIT_ASSERT_FAILED((int) avs_base64_decode_strict(
-            (uint8_t *) result, sizeof(result), "Zm9=Yg=="));
-    AVS_UNIT_ASSERT_FAILED((int) avs_base64_decode_strict(
-            (uint8_t *) result, sizeof(result), "Zm9 Yg=="));
-    AVS_UNIT_ASSERT_FAILED((int) avs_base64_decode_strict(
-            (uint8_t *) result, sizeof(result), "Zm9\0Yg=="));
+    AVS_UNIT_ASSERT_FAILED(avs_base64_decode_strict(
+            NULL, (uint8_t *) result, sizeof(result), "Zm9=Yg=="));
+    AVS_UNIT_ASSERT_FAILED(avs_base64_decode_strict(
+            NULL, (uint8_t *) result, sizeof(result), "Zm9 Yg=="));
+    AVS_UNIT_ASSERT_FAILED(avs_base64_decode_strict(
+            NULL, (uint8_t *) result, sizeof(result), "Zm9\0Yg=="));
 
     /* not a multiple of 4 (missing padding) */
-    AVS_UNIT_ASSERT_FAILED((int) avs_base64_decode_strict(
-            (uint8_t *) result, sizeof(result), "Zm9vYg="));
+    AVS_UNIT_ASSERT_FAILED(avs_base64_decode_strict(NULL, (uint8_t *) result,
+                                                    sizeof(result), "Zm9vYg="));
 
     /* too much padding */
-    AVS_UNIT_ASSERT_FAILED((int) avs_base64_decode_strict(
-            (uint8_t *) result, sizeof(result), "Zm9vY==="));
-    AVS_UNIT_ASSERT_FAILED((int) avs_base64_decode_strict(
-            (uint8_t *) result, sizeof(result), "Zm9v===="));
+    AVS_UNIT_ASSERT_FAILED(avs_base64_decode_strict(
+            NULL, (uint8_t *) result, sizeof(result), "Zm9vY==="));
+    AVS_UNIT_ASSERT_FAILED(avs_base64_decode_strict(
+            NULL, (uint8_t *) result, sizeof(result), "Zm9v===="));
 
     /* too much padding + not a multiple of 4 */
-    AVS_UNIT_ASSERT_FAILED((int) avs_base64_decode_strict(
-            (uint8_t *) result, sizeof(result), "Zm9vY=="));
-    AVS_UNIT_ASSERT_FAILED((int) avs_base64_decode_strict(
-            (uint8_t *) result, sizeof(result), "Zm9vY="));
-    AVS_UNIT_ASSERT_FAILED((int) avs_base64_decode_strict(
-            (uint8_t *) result, sizeof(result), "Zm9v=="));
-    AVS_UNIT_ASSERT_FAILED((int) avs_base64_decode_strict(
-            (uint8_t *) result, sizeof(result), "Zm9v="));
+    AVS_UNIT_ASSERT_FAILED(avs_base64_decode_strict(NULL, (uint8_t *) result,
+                                                    sizeof(result), "Zm9vY=="));
+    AVS_UNIT_ASSERT_FAILED(avs_base64_decode_strict(NULL, (uint8_t *) result,
+                                                    sizeof(result), "Zm9vY="));
+    AVS_UNIT_ASSERT_FAILED(avs_base64_decode_strict(NULL, (uint8_t *) result,
+                                                    sizeof(result), "Zm9v=="));
+    AVS_UNIT_ASSERT_FAILED(avs_base64_decode_strict(NULL, (uint8_t *) result,
+                                                    sizeof(result), "Zm9v="));
 
     /* valid, with single padding byte */
-    AVS_UNIT_ASSERT_EQUAL(avs_base64_decode_strict((uint8_t *) result,
-                                                   sizeof(result), "YQA="),
-                          2);
+    AVS_UNIT_ASSERT_SUCCESS(avs_base64_decode_strict(
+            &result_length, (uint8_t *) result, sizeof(result), "YQA="));
+    AVS_UNIT_ASSERT_EQUAL(result_length, 2);
 }
 
 AVS_UNIT_TEST(base64, encoded_and_decoded_size) {
