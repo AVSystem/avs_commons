@@ -380,6 +380,11 @@ if(WITH_TEST)
     add_custom_target(avs_commons_headers_check COMMAND ${CMAKE_CTEST_COMMAND} -R "'^test_.*_headers$$'")
     add_dependencies(avs_commons_check avs_commons_headers_check)
 
+    add_custom_target(avs_commons_filename_check
+                      COMMAND ! find src include_public -name "'*.[ch]'" | sed -e "'s|^.*/||'" | grep -v "'^avs_'"
+                      WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
+    add_dependencies(avs_commons_check avs_commons_filename_check)
+
     add_custom_target(avs_install_test
                       COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/tests/test-install.sh"
                               "${CMAKE_CURRENT_SOURCE_DIR}/tests/install")
