@@ -549,7 +549,8 @@ static avs_error_t mock_receive_from(avs_net_socket_t *socket_,
     LOG(TRACE,
         _("mock_receive_from: recv ") "%zu" _("/") "%zu" _(" B, host <") "%s" _(
                 ">, port <") "%s" _(">"),
-        *out, buffer_length, out_host, out_port);
+        *out, buffer_length, out_host ? out_host : "(null)",
+        out_port ? out_port : "(null)");
     hexdump_data(buffer, *out);
     return err;
 }
