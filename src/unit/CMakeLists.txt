@@ -41,6 +41,6 @@ if(WITH_AVS_STREAM)
 endif()
 
 avs_install_export(avs_unit unit)
-install(FILES ${AVS_UTILS_PUBLIC_HEADERS}
-        COMPONENT utils
+install(FILES ${AVS_UNIT_PUBLIC_HEADERS}
+        COMPONENT unit
         DESTINATION ${INCLUDE_INSTALL_DIR}/avsystem/commons)
