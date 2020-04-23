@@ -219,7 +219,7 @@ static avs_error_t try_recv_nonblock(buffered_netstream_t *stream) {
 
     avs_error_t restore_err = avs_net_socket_set_opt(
             stream->socket, AVS_NET_SOCKET_OPT_RECV_TIMEOUT, old_recv_timeout);
-    if (avs_is_ok(restore_err)) {
+    if (avs_is_err(restore_err)) {
         LOG(ERROR, _("cannot restore socket timeout"));
         if (avs_is_ok(err)) {
             err = restore_err;
