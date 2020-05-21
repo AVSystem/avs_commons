@@ -206,14 +206,20 @@ endif()
 # Check for builtin GCC/Clang safe arithmetic functions
 # we need to use try_compile to attempt linking
 # as they might not work on Clang if -rtlib=compiler-rt is not set
-file(WRITE ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp/builtin_add_overflow.c "#include <stdint.h>\nint main() { int64_t a=0,b=0,c=0; return __builtin_add_overflow(a, b, &c); }\n")
-file(WRITE ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp/builtin_mul_overflow.c "#include <stdint.h>\nint main() { int64_t a=0,b=0,c=0; return __builtin_mul_overflow(a, b, &c); }\n")
-try_compile(AVS_COMMONS_HAVE_BUILTIN_ADD_OVERFLOW ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp/builtin_add_overflow.c)
-try_compile(AVS_COMMONS_HAVE_BUILTIN_MUL_OVERFLOW ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp/builtin_mul_overflow.c)
+if(NOT DEFINED AVS_COMMONS_HAVE_BUILTIN_ADD_OVERFLOW)
+    file(WRITE ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp/builtin_add_overflow.c "#include <stdint.h>\nint main() { int64_t a=0,b=0,c=0; return __builtin_add_overflow(a, b, &c); }\n")
+    try_compile(AVS_COMMONS_HAVE_BUILTIN_ADD_OVERFLOW ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp/builtin_add_overflow.c)
+endif()
+if(NOT DEFINED AVS_COMMONS_HAVE_BUILTIN_MUL_OVERFLOW)
+    file(WRITE ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp/builtin_mul_overflow.c "#include <stdint.h>\nint main() { int64_t a=0,b=0,c=0; return __builtin_mul_overflow(a, b, &c); }\n")
+    try_compile(AVS_COMMONS_HAVE_BUILTIN_MUL_OVERFLOW ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp/builtin_mul_overflow.c)
+endif()
 
 # C11 stdatomic
-file(WRITE ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp/c11_stdatomic.c "#include <stdatomic.h>\nint main() { volatile atomic_flag a = ATOMIC_FLAG_INIT; return atomic_flag_test_and_set(&a); }\n")
-try_compile(HAVE_C11_STDATOMIC ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp/c11_stdatomic.c)
+if(NOT DEFINED HAVE_C11_STDATOMIC)
+    file(WRITE ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp/c11_stdatomic.c "#include <stdatomic.h>\nint main() { volatile atomic_flag a = ATOMIC_FLAG_INIT; return atomic_flag_test_and_set(&a); }\n")
+    try_compile(HAVE_C11_STDATOMIC ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp/c11_stdatomic.c)
+endif()
 
 include(${CMAKE_CURRENT_LIST_DIR}/cmake/PosixFeatures.cmake)
 
