@@ -65,7 +65,7 @@
 if(MBEDTLS_ROOT_DIR)
     # Disable re-rooting paths in find_path/find_library.
     # This assumes MBEDTLS_ROOT_DIR is an absolute path.
-    set(_EXTRA_FIND_ARGS "NO_CMAKE_FIND_ROOT_PATH")
+    set(_EXTRA_FIND_ARGS "NO_DEFAULT_PATH")
 endif()
 
 find_path(MBEDTLS_INCLUDE_DIR
