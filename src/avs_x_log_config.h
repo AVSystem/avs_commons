@@ -23,6 +23,23 @@
 
 #ifdef AVS_COMMONS_WITH_INTERNAL_LOGS
 
+// these macros interfere with avs_log() macro implementation
+#    ifdef TRACE
+#        undef TRACE
+#    endif
+#    ifdef DEBUG
+#        undef DEBUG
+#    endif
+#    ifdef INFO
+#        undef INFO
+#    endif
+#    ifdef WARNING
+#        undef WARNING
+#    endif
+#    ifdef ERROR
+#        undef ERROR
+#    endif
+
 #    ifdef AVS_COMMONS_WITH_INTERNAL_TRACE
 #        define AVS_LOG_WITH_TRACE
 #    endif
