@@ -94,12 +94,15 @@ macro(avs_eval EXPR)
     file(REMOVE ${_fname})
 endmacro()
 
-macro(avs_find_library EXPR)
-    avs_eval(${EXPR})
-
+macro(avs_add_find_routine EXPR)
     set_property(GLOBAL APPEND_STRING PROPERTY AVS_LIBRARY_FIND_ROUTINES "
 
 ${EXPR}")
+endmacro()
+
+macro(avs_find_library EXPR)
+    avs_eval(${EXPR})
+    avs_add_find_routine(${EXPR})
 endmacro()
 
 if(${CMAKE_PROJECT_NAME} STREQUAL ${PROJECT_NAME})
@@ -442,10 +445,12 @@ find_package(OpenSSL)
 option(WITH_OPENSSL "Enable OpenSSL" ${OPENSSL_FOUND})
 set(AVS_COMMONS_WITH_OPENSSL ${WITH_OPENSSL})
 
+set(MBEDTLS_ROOT_DIR "" CACHE STRING "mbed TLS installation directory")
 find_package(MbedTLS)
 option(WITH_MBEDTLS "Enable mbed TLS" ${MBEDTLS_FOUND})
 set(AVS_COMMONS_WITH_MBEDTLS ${WITH_MBEDTLS})
 
+set(TINYDTLS_ROOT_DIR "/usr" CACHE STRING "TinyDTLS installation root directory")
 find_package(TinyDTLS)
 option(WITH_TINYDTLS "Enable tinyDTLS" ${TINYDTLS_FOUND})
 set(AVS_COMMONS_WITH_TINYDTLS ${WITH_TINYDTLS})
@@ -456,20 +461,26 @@ cmake_dependent_option(WITH_X509 "Enable X.509 certificate support" ON "WITH_OPE
 set(AVS_COMMONS_NET_WITH_X509 ${WITH_X509})
 
 if(WITH_OPENSSL)
-    avs_find_library("find_package(OpenSSL REQUIRED)")
+    avs_add_find_routine("find_package(OpenSSL REQUIRED)")
 endif()
 if(WITH_MBEDTLS)
-    avs_find_library("
+    set(INSTALLED_MBEDTLS_ROOT_DIR "")
+    if(MBEDTLS_ROOT_DIR)
+        # If mbed TLS has been imported from a non-standard location while
+        # compiling avs_commons, let's assume that both libraries are going to
+        # be installed into the same sysroot
+        set(INSTALLED_MBEDTLS_ROOT_DIR "\\\${CMAKE_CURRENT_LIST_DIR}/../..")
+    endif()
+    avs_add_find_routine("
         set(CMAKE_MODULE_PATH \\\${CMAKE_MODULE_PATH} \"\\\${CMAKE_CURRENT_LIST_DIR}/cmake\")
         # Assume mbed TLS is installed to the same root as avs_commons
-        set(MBEDTLS_ROOT_DIR \"\\\${CMAKE_CURRENT_LIST_DIR}/../..\" CACHE STRING \"mbed TLS installation directory\")
-        set(MBEDTLS_USE_STATIC_LIBS ${MBEDTLS_USE_STATIC_LIBS})
+        set(MBEDTLS_ROOT_DIR \"${INSTALLED_MBEDTLS_ROOT_DIR}\" CACHE STRING \"mbed TLS installation directory\")
+        set(MBEDTLS_USE_STATIC_LIBS ${MBEDTLS_USE_STATIC_LIBS} CACHE BOOL \"Force static versoin of mbed TLS\")
         find_package(MbedTLS REQUIRED)")
 endif()
 if(WITH_TINYDTLS)
-    set(TINYDTLS_ROOT_DIR "/usr" CACHE STRING "TinyDTLS installation root directory")
-    avs_find_library("
-        set(TINYDTLS_ROOT_DIR \"${TINYDTLS_ROOT_DIR}\")
+    avs_add_find_routine("
+        set(TINYDTLS_ROOT_DIR \"${TINYDTLS_ROOT_DIR}\" CACHE STRING \"TinyDTLS installation directory\")
         find_package(TinyDTLS REQUIRED)
     ")
 endif()
