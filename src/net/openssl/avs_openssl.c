@@ -45,12 +45,13 @@
 #    include <avsystem/commons/avs_time.h>
 
 #    include "../avs_global.h"
-#    include "../avs_net_impl.h"
 
 #    include "avs_common.h"
 #    ifdef AVS_COMMONS_NET_WITH_X509
 #        include "avs_openssl_data_loader.h"
 #    endif // AVS_COMMONS_NET_WITH_X509
+
+#    include "../avs_net_impl.h"
 
 VISIBILITY_SOURCE_BEGIN
 

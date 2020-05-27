@@ -25,8 +25,9 @@
 #    include <avsystem/commons/avs_utils.h>
 
 #    include "../avs_auth.h"
-#    include "../avs_http_log.h"
 #    include "../avs_http_stream.h"
+
+#    include "../avs_http_log.h"
 
 VISIBILITY_SOURCE_BEGIN
 

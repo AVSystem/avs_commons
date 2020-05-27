@@ -19,9 +19,6 @@
 #if defined(AVS_COMMONS_WITH_AVS_COMPAT_THREADING) \
         && defined(AVS_COMMONS_COMPAT_THREADING_WITH_PTHREAD)
 
-#    define MODULE_NAME mutex_pthread
-#    include <avs_x_log_config.h>
-
 #    include <avsystem/commons/avs_defs.h>
 #    include <avsystem/commons/avs_memory.h>
 #    include <avsystem/commons/avs_mutex.h>
@@ -29,6 +26,9 @@
 #    include <pthread.h>
 
 #    include "avs_pthread_structs.h"
+
+#    define MODULE_NAME mutex_pthread
+#    include <avs_x_log_config.h>
 
 VISIBILITY_SOURCE_BEGIN
 

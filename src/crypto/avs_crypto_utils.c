@@ -19,10 +19,10 @@
 #if defined(AVS_COMMONS_WITH_AVS_CRYPTO) \
         && defined(AVS_COMMONS_WITH_AVS_CRYPTO_ADVANCED_FEATURES)
 
+#    include "avs_crypto_utils.h"
+
 #    define MODULE_NAME avs_crypto
 #    include <avs_x_log_config.h>
-
-#    include "avs_crypto_utils.h"
 
 VISIBILITY_SOURCE_BEGIN
 

@@ -59,11 +59,12 @@
 #    include <avsystem/commons/avs_utils.h>
 
 #    include "../avs_global.h"
-#    include "../avs_net_impl.h"
 #    ifdef AVS_COMMONS_NET_WITH_X509
 #        include "avs_mbedtls_data_loader.h"
 #    endif // AVS_COMMONS_NET_WITH_X509
 #    include "avs_mbedtls_persistence.h"
+
+#    include "../avs_net_impl.h"
 
 VISIBILITY_SOURCE_BEGIN
 

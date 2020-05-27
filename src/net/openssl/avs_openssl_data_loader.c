@@ -27,9 +27,6 @@
 
 #    include <avs_commons_poison.h>
 
-#    define MODULE_NAME avs_net_data_loader
-#    include <avs_x_log_config.h>
-
 #    include "avs_common.h"
 #    include "avs_openssl_data_loader.h"
 
@@ -41,6 +38,9 @@
 #    include <string.h>
 
 #    include <avsystem/commons/avs_utils.h>
+
+#    define MODULE_NAME avs_net_data_loader
+#    include <avs_x_log_config.h>
 
 VISIBILITY_SOURCE_BEGIN
 

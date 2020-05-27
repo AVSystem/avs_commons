@@ -24,8 +24,9 @@
 
 #    include "avs_chunked.h"
 #    include "avs_headers.h"
-#    include "avs_http_log.h"
 #    include "avs_http_stream.h"
+
+#    include "avs_http_log.h"
 
 VISIBILITY_SOURCE_BEGIN
 

@@ -18,13 +18,13 @@
 
 #if defined(AVS_COMMONS_WITH_AVS_CRYPTO) && defined(AVS_COMMONS_WITH_OPENSSL)
 
-#    define MODULE_NAME avs_crypto_prng
-#    include <avs_x_log_config.h>
-
 #    include <avsystem/commons/avs_memory.h>
 #    include <avsystem/commons/avs_prng.h>
 
 #    include <openssl/rand.h>
+
+#    define MODULE_NAME avs_crypto_prng
+#    include <avs_x_log_config.h>
 
 VISIBILITY_SOURCE_BEGIN
 
