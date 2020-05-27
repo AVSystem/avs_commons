@@ -434,6 +434,35 @@ void avs_unit_assert_not_null__(const void *pointer,
     _avs_unit_assert(!!pointer, file, line, "expected not NULL\n");
 }
 
+#    ifdef AVS_COMMONS_WITH_AVS_LIST
+
+void avs_unit_assert_equal_list__(const void *actual,
+                                  const void *expected,
+                                  size_t element_size,
+                                  avs_list_comparator_func_t comparator,
+                                  const char *file,
+                                  int line) {
+    const size_t actual_size = AVS_LIST_SIZE(actual);
+    const size_t expected_size = AVS_LIST_SIZE(expected);
+    _avs_unit_assert(actual_size <= expected_size, file, line,
+                     "list is longer than expected by %zu elements\n",
+                     actual_size - expected_size);
+    _avs_unit_assert(actual_size >= expected_size, file, line,
+                     "list is shorter than expected by %zu elements\n",
+                     expected_size - actual_size);
+    int element_index = 0;
+    AVS_LIST_ITERATE(actual) {
+        _avs_unit_assert(!comparator(actual, expected, element_size), file,
+                         line,
+                         "element at index %d is different than expected\n",
+                         element_index);
+        expected = AVS_LIST_NEXT(expected);
+        element_index++;
+    }
+}
+
+#    endif // AVS_COMMONS_WITH_AVS_LIST
+
 /* </editor-fold> */
 
 static const char *string_status(int result) {

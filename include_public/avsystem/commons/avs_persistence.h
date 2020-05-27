@@ -263,6 +263,9 @@ avs_error_t avs_persistence_string(avs_persistence_context_t *ctx,
  * @p handler for each element. In this variant, @p handler is responsible for
  * allocating the elements during a restore operation.
  *
+ * If direction of @p ctx is @ref AVS_PERSISTENCE_RESTORE , @p list_ptr must be
+ * a pointer to an \b empty list.
+ *
  * If @p cleanup is NULL, the resulting list is NOT cleared in case of restore
  * error. Note that this may also mean that the last element is in a partially
  * restored, inconsistent state. If you want the list automatically cleared
@@ -296,6 +299,9 @@ avs_error_t avs_persistence_custom_allocated_list(
 /**
  * Performs a operation (depending on the @p ctx) on a @p list_ptr, using
  * @p handler for each element.
+ *
+ * If direction of @p ctx is @ref AVS_PERSISTENCE_RESTORE , @p list_ptr must be
+ * a pointer to an \b empty list.
  *
  * In this variant, the elements are allocated automatically. Note that this
  * function requires that all list elements have the same size; variable-length

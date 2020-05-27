@@ -172,3 +172,83 @@ AVS_UNIT_TEST(persistence, version) {
             restore_ctx, &version, SUPPORTED, AVS_ARRAY_SIZE(SUPPORTED)));
     AVS_UNIT_ASSERT_EQUAL(version, 42);
 }
+
+static avs_error_t persistence_list_element_handler(
+        avs_persistence_context_t *ctx, void *element, void *user_data) {
+    AVS_UNIT_ASSERT_NULL(user_data);
+    return avs_persistence_i32(ctx, (int32_t *) element);
+}
+
+static int
+int32_comparator(const void *a_, const void *b_, size_t element_size) {
+    (void) element_size;
+    const int32_t *a = (const int32_t *) a_;
+    const int32_t *b = (const int32_t *) b_;
+    return *a - *b;
+}
+
+AVS_UNIT_TEST(persistence, list_store_restore) {
+    SCOPED_PERSISTENCE_TEST_ENV(env);
+
+    avs_persistence_context_t *store_ctx =
+            persistence_create_context(env, CONTEXT_STORE);
+    avs_persistence_context_t *restore_ctx =
+            persistence_create_context(env, CONTEXT_RESTORE);
+
+    const int32_t integer_array[] = { 12, 34, 56 };
+    AVS_LIST(int32_t) integer_list = NULL;
+    for (size_t i = 0; i < AVS_ARRAY_SIZE(integer_array); i++) {
+        int32_t *new_element = AVS_LIST_APPEND_NEW(int32_t, &integer_list);
+        AVS_UNIT_ASSERT_NOT_NULL(new_element);
+        *new_element = integer_array[i];
+    }
+    AVS_UNIT_ASSERT_SUCCESS(avs_persistence_list(
+            store_ctx, (AVS_LIST(void) *) &integer_list, sizeof(*integer_list),
+            persistence_list_element_handler, NULL, NULL));
+
+    AVS_LIST(int32_t) restored_integer_list = NULL;
+    AVS_UNIT_ASSERT_SUCCESS(avs_persistence_list(
+            restore_ctx, (AVS_LIST(void) *) &restored_integer_list,
+            sizeof(*restored_integer_list), persistence_list_element_handler,
+            NULL, NULL));
+    AVS_UNIT_ASSERT_EQUAL_LIST(integer_list, restored_integer_list,
+                               sizeof(int32_t), int32_comparator);
+
+    AVS_LIST_CLEAR(&integer_list);
+    AVS_LIST_CLEAR(&restored_integer_list);
+}
+
+AVS_UNIT_TEST(persistence, restore_from_nonempty_list) {
+    SCOPED_PERSISTENCE_TEST_ENV(env);
+
+    avs_persistence_context_t *store_ctx =
+            persistence_create_context(env, CONTEXT_STORE);
+    avs_persistence_context_t *restore_ctx =
+            persistence_create_context(env, CONTEXT_RESTORE);
+
+    const int32_t integer_array[] = { 12, 34, 56 };
+    AVS_LIST(int32_t) integer_list = NULL;
+    for (size_t i = 0; i < AVS_ARRAY_SIZE(integer_array); i++) {
+        int32_t *new_element = AVS_LIST_APPEND_NEW(int32_t, &integer_list);
+        AVS_UNIT_ASSERT_NOT_NULL(new_element);
+        *new_element = integer_array[i];
+    }
+    AVS_UNIT_ASSERT_SUCCESS(avs_persistence_list(
+            store_ctx, (AVS_LIST(void) *) &integer_list, sizeof(*integer_list),
+            persistence_list_element_handler, NULL, NULL));
+
+    // Try to restore to the same, non-empty list
+    AVS_UNIT_ASSERT_FAILED(
+            avs_persistence_list(restore_ctx, (AVS_LIST(void) *) &integer_list,
+                                 sizeof(*integer_list),
+                                 persistence_list_element_handler, NULL, NULL));
+
+    // Restore again to the empty list
+    AVS_LIST_CLEAR(&integer_list);
+    AVS_UNIT_ASSERT_SUCCESS(
+            avs_persistence_list(restore_ctx, (AVS_LIST(void) *) &integer_list,
+                                 sizeof(*integer_list),
+                                 persistence_list_element_handler, NULL, NULL));
+
+    AVS_LIST_CLEAR(&integer_list);
+}

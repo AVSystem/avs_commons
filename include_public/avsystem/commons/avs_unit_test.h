@@ -28,6 +28,9 @@
 
 #include <avsystem/commons/avs_defs.h>
 #include <avsystem/commons/avs_errno.h>
+#ifdef AVS_COMMONS_WITH_AVS_LIST
+#    include <avsystem/commons/avs_list.h>
+#endif // AVS_COMMONS_WITH_AVS_LIST
 
 #ifdef __cplusplus
 extern "C" {
@@ -185,6 +188,15 @@ void avs_unit_assert_null__(const void *pointer, const char *file, int line);
 void avs_unit_assert_not_null__(const void *pointer,
                                 const char *file,
                                 int line);
+
+#ifdef AVS_COMMONS_WITH_AVS_LIST
+void avs_unit_assert_equal_list__(const void *actual,
+                                  const void *expected,
+                                  size_t element_size,
+                                  avs_list_comparator_func_t comparator,
+                                  const char *file,
+                                  int line);
+#endif // AVS_COMMONS_WITH_AVS_LIST
 
 typedef struct {
     char actual_str[64];
@@ -689,6 +701,34 @@ avs_unit_assert_failed__(avs_error_t err, const char *file, int line) {
 
 /**@}*/
 
+#ifdef AVS_COMMONS_WITH_AVS_LIST
+
+/**
+ * Asserts that two specified lists are equal. Must not be called on lists
+ * containing elements of different types!
+ *
+ * This macro shall be called from unit test cases defined in
+ * @ref AVS_UNIT_TEST.
+ *
+ * @param actual       The list returned from code under test.
+ *
+ * @param expected     The expected list to compare with.
+ *
+ * @param element_size The size in bytes of a single element.
+ *
+ * @param comparator   A function for comparing pair of two elements. Must
+ *                     return 0 for a pair of equal elements.
+ */
+#    define AVS_UNIT_ASSERT_EQUAL_LIST(                 \
+            actual, expected, element_size, comparator) \
+        avs_unit_assert_equal_list__(actual,            \
+                                     expected,          \
+                                     element_size,      \
+                                     comparator,        \
+                                     __FILE__,          \
+                                     __LINE__)
+#endif // AVS_COMMONS_WITH_AVS_LIST
+
 /**
  * Convenience aliases for assert macros.
  *
@@ -721,6 +761,11 @@ avs_unit_assert_failed__(avs_error_t err, const char *file, int line) {
 
 #    define ASSERT_NULL AVS_UNIT_ASSERT_NULL
 #    define ASSERT_NOT_NULL AVS_UNIT_ASSERT_NOT_NULL
+
+#    ifdef AVS_COMMONS_WITH_AVS_LIST
+#        define ASSERT_EQ_LIST AVS_UNIT_ASSERT_EQUAL_LIST
+#    endif // AVS_COMMONS_WITH_AVS_LIST
+
 #endif // AVS_UNIT_ENABLE_SHORT_ASSERTS
 /* @} */
 

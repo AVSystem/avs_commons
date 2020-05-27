@@ -503,8 +503,13 @@ avs_error_t avs_persistence_custom_allocated_list(
         avs_persistence_handler_custom_allocated_list_element_t *handler,
         void *handler_user_ptr,
         avs_persistence_cleanup_collection_element_t *cleanup) {
-    if (!ctx) {
+    if (!ctx || !list_ptr) {
         return avs_errno(AVS_EBADF);
+    }
+    if (avs_persistence_direction(ctx) == AVS_PERSISTENCE_RESTORE
+            && *list_ptr) {
+        LOG(ERROR, "Cannot restore to a non-empty list");
+        return avs_errno(AVS_EINVAL);
     }
     return ctx->vtable->handle_list(ctx, list_ptr, handler, handler_user_ptr,
                                     cleanup);
@@ -537,7 +542,7 @@ typedef struct {
             if (element && !*element) {                                      \
                 *element = ElementType##_NEW_BUFFER(state->element_size);    \
                 if (!element) {                                              \
-                    LOG(ERROR, _("Out of memory"));                             \
+                    LOG(ERROR, _("Out of memory"));                          \
                     return avs_errno(AVS_ENOMEM);                            \
                 }                                                            \
             }                                                                \
