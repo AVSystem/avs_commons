@@ -24,12 +24,12 @@
 
 #    include <avs_commons_poison.h>
 
-#    define MODULE_NAME avs_crypto_aead
-#    include <avs_x_log_config.h>
-
 #    include <avsystem/commons/avs_aead.h>
 
 #    include "../avs_crypto_utils.h"
+
+#    define MODULE_NAME avs_crypto_aead
+#    include <avs_x_log_config.h>
 
 VISIBILITY_SOURCE_BEGIN
 

@@ -20,14 +20,14 @@
         && defined(AVS_COMMONS_WITH_AVS_CRYPTO_ADVANCED_FEATURES) \
         && defined(AVS_COMMONS_WITH_MBEDTLS)
 
-#    define MODULE_NAME avs_crypto_aead
-#    include <avs_x_log_config.h>
-
 #    include <avsystem/commons/avs_aead.h>
 
 #    include <mbedtls/ccm.h>
 
 #    include "../avs_crypto_utils.h"
+
+#    define MODULE_NAME avs_crypto_aead
+#    include <avs_x_log_config.h>
 
 VISIBILITY_SOURCE_BEGIN
 

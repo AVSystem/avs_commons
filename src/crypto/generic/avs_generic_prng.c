@@ -19,13 +19,13 @@
 #if defined(AVS_COMMONS_WITH_AVS_CRYPTO) \
         && (defined(WITHOUT_SSL) || defined(AVS_COMMONS_WITH_TINYDTLS))
 
-#    define MODULE_NAME avs_crypto_prng
-#    include <avs_x_log_config.h>
-
 #    include <avsystem/commons/avs_memory.h>
 #    include <avsystem/commons/avs_prng.h>
 #    include <avsystem/commons/avs_time.h>
 #    include <avsystem/commons/avs_utils.h>
+
+#    define MODULE_NAME avs_crypto_prng
+#    include <avs_x_log_config.h>
 
 VISIBILITY_SOURCE_BEGIN
 

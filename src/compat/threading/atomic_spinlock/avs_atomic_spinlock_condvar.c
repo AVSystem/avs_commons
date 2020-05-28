@@ -21,14 +21,14 @@
 
 #    include <avs_commons_posix_init.h>
 
-#    define MODULE_NAME condvar_atomic_spinlock
-#    include <avs_x_log_config.h>
-
 #    include <avsystem/commons/avs_condvar.h>
 #    include <avsystem/commons/avs_defs.h>
 #    include <avsystem/commons/avs_memory.h>
 
 #    include "avs_atomic_spinlock_structs.h"
+
+#    define MODULE_NAME condvar_atomic_spinlock
+#    include <avs_x_log_config.h>
 
 VISIBILITY_SOURCE_BEGIN
 

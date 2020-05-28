@@ -18,14 +18,14 @@
 
 #if defined(AVS_COMMONS_WITH_AVS_CRYPTO) && defined(AVS_COMMONS_WITH_MBEDTLS)
 
-#    define MODULE_NAME avs_crypto_prng
-#    include <avs_x_log_config.h>
-
 #    include <avsystem/commons/avs_memory.h>
 #    include <avsystem/commons/avs_prng.h>
 
 #    include <mbedtls/ctr_drbg.h>
 #    include <mbedtls/entropy.h>
+
+#    define MODULE_NAME avs_crypto_prng
+#    include <avs_x_log_config.h>
 
 VISIBILITY_SOURCE_BEGIN
 

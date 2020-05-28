@@ -23,14 +23,14 @@
 #if defined(AVS_COMMONS_WITH_AVS_COMPAT_THREADING) \
         && defined(AVS_COMMONS_COMPAT_THREADING_WITH_PTHREAD)
 
-#    define MODULE_NAME init_once_pthread
-#    include <avs_x_log_config.h>
-
 #    include <avsystem/commons/avs_defs.h>
 #    include <avsystem/commons/avs_init_once.h>
 
 #    include <pthread.h>
 #    include <stdlib.h>
+
+#    define MODULE_NAME init_once_pthread
+#    include <avs_x_log_config.h>
 
 VISIBILITY_SOURCE_BEGIN
 

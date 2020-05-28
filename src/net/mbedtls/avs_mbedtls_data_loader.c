@@ -19,9 +19,6 @@
 #if defined(AVS_COMMONS_WITH_AVS_NET) && defined(AVS_COMMONS_WITH_MBEDTLS) \
         && defined(AVS_COMMONS_NET_WITH_X509)
 
-#    define MODULE_NAME avs_net_data_loader
-#    include <avs_x_log_config.h>
-
 #    include "../avs_api.h"
 #    include "avs_mbedtls_data_loader.h"
 
@@ -33,6 +30,9 @@
 #    include <avsystem/commons/avs_memory.h>
 #    include <avsystem/commons/avs_utils.h>
 
+#    define MODULE_NAME avs_net_data_loader
+#    include <avs_x_log_config.h>
+
 VISIBILITY_SOURCE_BEGIN
 
 #    define CREATE_OR_FAIL(type, ptr)                     \
@@ -40,7 +40,7 @@ VISIBILITY_SOURCE_BEGIN
             avs_free(*ptr);                               \
             *ptr = (type *) avs_calloc(1, sizeof(**ptr)); \
             if (!*ptr) {                                  \
-                LOG(ERROR, _("Out of memory"));    \
+                LOG(ERROR, _("Out of memory"));           \
                 return avs_errno(AVS_ENOMEM);             \
             }                                             \
         } while (0)

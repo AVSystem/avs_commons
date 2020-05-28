@@ -17,9 +17,6 @@
 #define _GNU_SOURCE // for RTLD_NEXT
 #include <avs_commons_posix_init.h>
 
-#define MODULE_NAME sched_test
-#include <avs_x_log_config.h>
-
 #include <time.h>
 
 #include <dlfcn.h>
@@ -27,6 +24,9 @@
 #include <avsystem/commons/avs_sched.h>
 #include <avsystem/commons/avs_time.h>
 #include <avsystem/commons/avs_unit_test.h>
+
+#define MODULE_NAME sched_test
+#include <avs_x_log_config.h>
 
 static avs_time_monotonic_t MOCK_CLOCK = { { 0, -1 } };
 

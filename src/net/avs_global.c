@@ -19,9 +19,10 @@
 #ifdef AVS_COMMONS_WITH_AVS_NET
 
 #    include "avs_global.h"
-#    include "avs_net_impl.h"
 
 #    include <avsystem/commons/avs_init_once.h>
+
+#    include "avs_net_impl.h"
 
 VISIBILITY_SOURCE_BEGIN
 

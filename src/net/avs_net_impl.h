@@ -21,9 +21,6 @@
 
 #include <avsystem/commons/avs_socket_v_table.h>
 
-#define MODULE_NAME avs_net
-#include <avs_x_log_config.h>
-
 #include "avs_api.h"
 
 VISIBILITY_PRIVATE_HEADER_BEGIN
@@ -35,6 +32,9 @@ VISIBILITY_PRIVATE_HEADER_BEGIN
 #if defined(AVS_COMMONS_NET_WITH_IPV4) && defined(AVS_COMMONS_NET_WITH_IPV6)
 #    define WITH_AVS_V4MAPPED
 #endif
+
+#define MODULE_NAME avs_net
+#include <avs_x_log_config.h>
 
 /**
  * An owned PSK/identity pair. avs_commons will avs_free()

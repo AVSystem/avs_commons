@@ -37,6 +37,7 @@
 #    include <avsystem/commons/avs_stream_v_table.h>
 
 #    include "avs_compression.h"
+
 #    include "avs_http_log.h"
 
 VISIBILITY_SOURCE_BEGIN
