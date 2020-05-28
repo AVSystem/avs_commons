@@ -18,6 +18,10 @@
 #    undef LOG
 #endif
 
+#ifndef MODULE_NAME
+#    error "You need to define MODULE_NAME before including this header"
+#endif
+
 // enable short _() macro
 #define _(Arg) AVS_DISPOSABLE_LOG(Arg)
 
