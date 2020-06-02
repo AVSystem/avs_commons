@@ -1333,8 +1333,8 @@ typedef struct {
     size_t bytes_received;
     void *buffer;
     size_t buffer_length;
-    sockaddr_union_t src_addr;
-    socklen_t src_addr_length;
+    sockaddr_union_t *src_addr;
+    socklen_t *src_addr_length;
 } recvfrom_internal_arg_t;
 
 #    ifndef AVS_COMMONS_NET_POSIX_AVS_SOCKET_HAVE_RECVMSG
@@ -1343,12 +1343,15 @@ typedef struct {
  * plain recv(), with a little hack to try to detect truncated packets. */
 static avs_error_t recvfrom_internal(sockfd_t sockfd, void *arg_) {
     recvfrom_internal_arg_t *arg = (recvfrom_internal_arg_t *) arg_;
-    arg->src_addr_length = (socklen_t) sizeof(arg->src_addr);
+    if (arg->src_addr_length && arg->src_addr) {
+        *arg->src_addr_length = (socklen_t) sizeof(*arg->src_addr);
+    }
 
     errno = 0;
     ssize_t recv_out =
             recvfrom(sockfd, arg->buffer, arg->buffer_length, MSG_NOSIGNAL,
-                     &arg->src_addr.addr, &arg->src_addr_length);
+                     arg->src_addr ? &arg->src_addr->addr : NULL,
+                     arg->src_addr_length);
 
     if (arg->socket_type == AVS_NET_UDP_SOCKET && recv_out > 0
             && (size_t) recv_out == arg->buffer_length) {
@@ -1379,15 +1382,20 @@ static avs_error_t recvfrom_internal(sockfd_t sockfd, void *arg_) {
     };
     struct msghdr msg = {
         .msg_iov = &iov,
-        .msg_iovlen = 1,
-        .msg_name = &arg->src_addr.addr,
-        .msg_namelen = (socklen_t) sizeof(arg->src_addr)
+        .msg_iovlen = 1
     };
+
+    if (arg->src_addr) {
+        msg.msg_name = &arg->src_addr->addr;
+        msg.msg_namelen = (socklen_t) sizeof(*arg->src_addr);
+    }
 
     errno = 0;
     recv_out = recvmsg(sockfd, &msg, 0);
 
-    arg->src_addr_length = msg.msg_namelen;
+    if (arg->src_addr_length) {
+        *arg->src_addr_length = msg.msg_namelen;
+    }
     if (msg.msg_flags & MSG_TRUNC) {
         /* message too long to fit in the buffer */
         arg->bytes_received = AVS_MIN((size_t) recv_out, arg->buffer_length);
@@ -1436,10 +1444,14 @@ static avs_error_t receive_from_net(avs_net_socket_t *net_socket_,
     host[0] = '\0';
     port[0] = '\0';
 
+    sockaddr_union_t src_addr;
+    socklen_t src_addr_length;
     recvfrom_internal_arg_t arg = {
         .socket_type = net_socket->type,
         .buffer = message_buffer,
-        .buffer_length = buffer_size
+        .buffer_length = buffer_size,
+        .src_addr = &src_addr,
+        .src_addr_length = &src_addr_length
     };
     avs_error_t err =
             call_when_ready(&net_socket->socket, net_socket->recv_timeout,
@@ -1450,8 +1462,8 @@ static avs_error_t receive_from_net(avs_net_socket_t *net_socket_,
             || (err.category == AVS_ERRNO_CATEGORY
                 && err.code == AVS_EMSGSIZE)) {
         avs_error_t sub_err =
-                host_port_to_string(&arg.src_addr.addr, arg.src_addr_length,
-                                    host, (socklen_t) host_size, port,
+                host_port_to_string(&src_addr.addr, src_addr_length, host,
+                                    (socklen_t) host_size, port,
                                     (socklen_t) port_size);
         if (avs_is_ok(err)) {
             err = sub_err;
