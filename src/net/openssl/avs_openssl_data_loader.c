@@ -27,7 +27,7 @@
 
 #    include <avs_commons_poison.h>
 
-#    include "avs_common.h"
+#    include "avs_openssl_common.h"
 #    include "avs_openssl_data_loader.h"
 
 #    include "../avs_api.h"

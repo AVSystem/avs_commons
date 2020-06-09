@@ -46,7 +46,7 @@
 
 #    include "../avs_global.h"
 
-#    include "avs_common.h"
+#    include "avs_openssl_common.h"
 #    ifdef AVS_COMMONS_NET_WITH_X509
 #        include "avs_openssl_data_loader.h"
 #    endif // AVS_COMMONS_NET_WITH_X509
