@@ -21,8 +21,6 @@
 #    error "This header is not meant to be included from outside"
 #endif
 
-#include "avs_api.h"
-
 #include <avsystem/commons/avs_memory.h>
 
 VISIBILITY_PRIVATE_HEADER_BEGIN

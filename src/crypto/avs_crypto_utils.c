@@ -16,8 +16,11 @@
 
 #include <avs_commons_init.h>
 
-#if defined(AVS_COMMONS_WITH_AVS_CRYPTO) \
-        && defined(AVS_COMMONS_WITH_AVS_CRYPTO_ADVANCED_FEATURES)
+#ifdef AVS_COMMONS_WITH_AVS_CRYPTO
+
+#    include <string.h>
+
+#    include <avsystem/commons/avs_crypto_pki.h>
 
 #    include "avs_crypto_utils.h"
 
@@ -25,6 +28,86 @@
 #    include <avs_x_log_config.h>
 
 VISIBILITY_SOURCE_BEGIN
+
+avs_crypto_trusted_cert_info_t
+avs_crypto_trusted_cert_info_from_file(const char *filename) {
+    avs_crypto_trusted_cert_info_t result;
+    memset(&result, 0, sizeof(result));
+    result.desc.type = AVS_NET_SECURITY_INFO_TRUSTED_CERT;
+    result.desc.source = AVS_NET_DATA_SOURCE_FILE;
+    result.desc.info.file.filename = filename;
+    return result;
+}
+
+avs_crypto_trusted_cert_info_t
+avs_crypto_trusted_cert_info_from_path(const char *path) {
+    avs_crypto_trusted_cert_info_t result;
+    memset(&result, 0, sizeof(result));
+    result.desc.type = AVS_NET_SECURITY_INFO_TRUSTED_CERT;
+    result.desc.source = AVS_NET_DATA_SOURCE_PATH;
+    result.desc.info.path.path = path;
+    return result;
+}
+
+avs_crypto_trusted_cert_info_t
+avs_crypto_trusted_cert_info_from_buffer(const void *buffer,
+                                         size_t buffer_size) {
+    avs_crypto_trusted_cert_info_t result;
+    memset(&result, 0, sizeof(result));
+    result.desc.type = AVS_NET_SECURITY_INFO_TRUSTED_CERT;
+    result.desc.source = AVS_NET_DATA_SOURCE_BUFFER;
+    result.desc.info.buffer.buffer = buffer;
+    result.desc.info.buffer.buffer_size = buffer_size;
+    return result;
+}
+
+avs_crypto_client_key_info_t
+avs_crypto_client_key_info_from_file(const char *filename,
+                                     const char *password) {
+    avs_crypto_client_key_info_t result;
+    memset(&result, 0, sizeof(result));
+    result.desc.type = AVS_NET_SECURITY_INFO_CLIENT_KEY;
+    result.desc.source = AVS_NET_DATA_SOURCE_FILE;
+    result.desc.info.file.filename = filename;
+    result.desc.info.file.password = password;
+    return result;
+}
+
+avs_crypto_client_key_info_t avs_crypto_client_key_info_from_buffer(
+        const void *buffer, size_t buffer_size, const char *password) {
+    avs_crypto_client_key_info_t result;
+    memset(&result, 0, sizeof(result));
+    result.desc.type = AVS_NET_SECURITY_INFO_CLIENT_KEY;
+    result.desc.source = AVS_NET_DATA_SOURCE_BUFFER;
+    result.desc.info.buffer.buffer = buffer;
+    result.desc.info.buffer.buffer_size = buffer_size;
+    result.desc.info.buffer.password = password;
+    return result;
+}
+
+avs_crypto_client_cert_info_t
+avs_crypto_client_cert_info_from_file(const char *filename) {
+    avs_crypto_client_cert_info_t result;
+    memset(&result, 0, sizeof(result));
+    result.desc.type = AVS_NET_SECURITY_INFO_CLIENT_CERT;
+    result.desc.source = AVS_NET_DATA_SOURCE_FILE;
+    result.desc.info.file.filename = filename;
+    return result;
+}
+
+avs_crypto_client_cert_info_t
+avs_crypto_client_cert_info_from_buffer(const void *buffer,
+                                        size_t buffer_size) {
+    avs_crypto_client_cert_info_t result;
+    memset(&result, 0, sizeof(result));
+    result.desc.type = AVS_NET_SECURITY_INFO_CLIENT_CERT;
+    result.desc.source = AVS_NET_DATA_SOURCE_BUFFER;
+    result.desc.info.buffer.buffer = buffer;
+    result.desc.info.buffer.buffer_size = buffer_size;
+    return result;
+}
+
+#    ifdef AVS_COMMONS_WITH_AVS_CRYPTO_ADVANCED_FEATURES
 
 bool _avs_crypto_aead_parameters_valid(size_t key_len,
                                        size_t iv_len,
@@ -44,5 +127,6 @@ bool _avs_crypto_aead_parameters_valid(size_t key_len,
     return true;
 }
 
-#endif // defined(AVS_COMMONS_WITH_AVS_CRYPTO) &&
-       // defined(AVS_COMMONS_WITH_AVS_CRYPTO_ADVANCED_FEATURES)
+#    endif // AVS_COMMONS_WITH_AVS_CRYPTO_ADVANCED_FEATURES
+
+#endif // AVS_COMMONS_WITH_AVS_CRYPTO

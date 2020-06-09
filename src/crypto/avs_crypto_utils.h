@@ -21,6 +21,20 @@
 
 VISIBILITY_PRIVATE_HEADER_BEGIN
 
+#warning "TODO: Rename"
+typedef enum {
+    AVS_NET_DATA_SOURCE_EMPTY,
+    AVS_NET_DATA_SOURCE_FILE,
+    AVS_NET_DATA_SOURCE_PATH,
+    AVS_NET_DATA_SOURCE_BUFFER
+} avs_net_data_source_t;
+
+typedef enum {
+    AVS_NET_SECURITY_INFO_TRUSTED_CERT,
+    AVS_NET_SECURITY_INFO_CLIENT_CERT,
+    AVS_NET_SECURITY_INFO_CLIENT_KEY
+} avs_net_security_info_tag_t;
+
 bool _avs_crypto_aead_parameters_valid(size_t key_len,
                                        size_t iv_len,
                                        size_t tag_len);

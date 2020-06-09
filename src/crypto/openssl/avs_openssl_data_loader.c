@@ -20,6 +20,7 @@
 #define AVS_SUPPRESS_POISONING
 #include <avs_commons_init.h>
 
+#warning "TODO: Sanitize ifdefs"
 #if defined(AVS_COMMONS_WITH_AVS_NET) && defined(AVS_COMMONS_WITH_OPENSSL) \
         && defined(AVS_COMMONS_NET_WITH_X509)
 
@@ -27,11 +28,8 @@
 
 #    include <avs_commons_poison.h>
 
+#    include "avs_openssl_common.h"
 #    include "avs_openssl_data_loader.h"
-
-#    include "../avs_api.h"
-
-#    include "crypto/openssl/avs_openssl_common.h"
 
 #    include <assert.h>
 #    include <stdio.h>
@@ -40,7 +38,7 @@
 
 #    include <avsystem/commons/avs_utils.h>
 
-#    define MODULE_NAME avs_net_data_loader
+#    define MODULE_NAME avs_crypto_data_loader
 #    include <avs_x_log_config.h>
 
 VISIBILITY_SOURCE_BEGIN
@@ -158,8 +156,8 @@ load_ca_cert_from_buffer(SSL_CTX *ctx, const void *buffer, const size_t len) {
 }
 
 avs_error_t
-_avs_net_openssl_load_ca_certs(SSL_CTX *ctx,
-                               const avs_net_trusted_cert_info_t *info) {
+_avs_crypto_openssl_load_ca_certs(SSL_CTX *ctx,
+                                  const avs_crypto_trusted_cert_info_t *info) {
     setup_password_callback(ctx, NULL);
     if (!SSL_CTX_set_default_verify_paths(ctx)) {
         LOG(WARNING, _("could not set default CA verify paths"));
@@ -226,9 +224,8 @@ load_client_cert_from_buffer(SSL_CTX *ctx, const void *buffer, size_t len) {
     return AVS_OK;
 }
 
-avs_error_t
-_avs_net_openssl_load_client_cert(SSL_CTX *ctx,
-                                  const avs_net_client_cert_info_t *info) {
+avs_error_t _avs_crypto_openssl_load_client_cert(
+        SSL_CTX *ctx, const avs_crypto_client_cert_info_t *info) {
     setup_password_callback(ctx, NULL);
 
     switch (info->desc.source) {
@@ -320,8 +317,8 @@ static avs_error_t load_client_key_from_buffer(SSL_CTX *ctx,
 }
 
 avs_error_t
-_avs_net_openssl_load_client_key(SSL_CTX *ctx,
-                                 const avs_net_client_key_info_t *info) {
+_avs_crypto_openssl_load_client_key(SSL_CTX *ctx,
+                                    const avs_crypto_client_key_info_t *info) {
     switch (info->desc.source) {
     case AVS_NET_DATA_SOURCE_FILE:
         if (!info->desc.info.file.filename) {

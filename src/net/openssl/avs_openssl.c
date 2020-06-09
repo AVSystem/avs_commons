@@ -47,7 +47,7 @@
 #    include "../avs_global.h"
 
 #    ifdef AVS_COMMONS_NET_WITH_X509
-#        include "avs_openssl_data_loader.h"
+#        include "crypto/openssl/avs_openssl_data_loader.h"
 #    endif // AVS_COMMONS_NET_WITH_X509
 
 #    include "../avs_net_impl.h"
@@ -919,8 +919,8 @@ configure_ssl_certs(ssl_socket_t *socket,
         SSL_CTX_set_verify_depth(socket->ctx, 1);
 #        endif
         avs_error_t err =
-                _avs_net_openssl_load_ca_certs(socket->ctx,
-                                               &cert_info->trusted_certs);
+                _avs_crypto_openssl_load_ca_certs(socket->ctx,
+                                                  &cert_info->trusted_certs);
         if (avs_is_err(err)) {
             LOG(ERROR, _("could not load CA chain"));
             return err;
@@ -932,13 +932,13 @@ configure_ssl_certs(ssl_socket_t *socket,
 
     if (cert_info->client_cert.desc.source != AVS_NET_DATA_SOURCE_EMPTY) {
         avs_error_t err =
-                _avs_net_openssl_load_client_cert(socket->ctx,
-                                                  &cert_info->client_cert);
+                _avs_crypto_openssl_load_client_cert(socket->ctx,
+                                                     &cert_info->client_cert);
         if (avs_is_err(err)) {
             LOG(ERROR, _("could not load client certificate"));
             return err;
         }
-        if (avs_is_err((err = _avs_net_openssl_load_client_key(
+        if (avs_is_err((err = _avs_crypto_openssl_load_client_key(
                                 socket->ctx, &cert_info->client_key)))) {
             LOG(ERROR, _("could not load client private key"));
             return err;

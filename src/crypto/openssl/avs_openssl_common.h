@@ -18,6 +18,18 @@
 
 #include <openssl/err.h>
 
+#ifdef AVS_COMMONS_NET_WITH_VALGRIND
+#    include <stdint.h>
+#    include <valgrind/helgrind.h>
+#    include <valgrind/memcheck.h>
+#    include <valgrind/valgrind.h>
+extern void *sbrk(intptr_t __delta);
+#else
+#    define RUNNING_ON_VALGRIND 0
+#    define VALGRIND_HG_DISABLE_CHECKING(addr, len) ((void) 0)
+#    define VALGRIND_MAKE_MEM_DEFINED_IF_ADDRESSABLE(addr, len) ((void) 0)
+#endif
+
 VISIBILITY_PRIVATE_HEADER_BEGIN
 
 #ifdef AVS_COMMONS_WITH_INTERNAL_LOGS

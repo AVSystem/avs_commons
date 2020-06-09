@@ -60,7 +60,7 @@
 
 #    include "../avs_global.h"
 #    ifdef AVS_COMMONS_NET_WITH_X509
-#        include "avs_mbedtls_data_loader.h"
+#        include "crypto/mbedtls/avs_mbedtls_data_loader.h"
 #    endif // AVS_COMMONS_NET_WITH_X509
 #    include "avs_mbedtls_persistence.h"
 
@@ -944,8 +944,8 @@ configure_ssl_certs(ssl_socket_certs_t *certs,
 
     if (cert_info->server_cert_validation) {
         avs_error_t err =
-                _avs_net_mbedtls_load_ca_certs(&certs->ca_cert,
-                                               &cert_info->trusted_certs);
+                _avs_crypto_mbedtls_load_ca_certs(&certs->ca_cert,
+                                                  &cert_info->trusted_certs);
         if (avs_is_err(err)) {
             LOG(ERROR, _("could not load CA chain"));
             return err;
@@ -957,12 +957,12 @@ configure_ssl_certs(ssl_socket_certs_t *certs,
     if (cert_info->client_cert.desc.source != AVS_NET_DATA_SOURCE_EMPTY) {
         avs_error_t err;
         if (avs_is_err(
-                    (err = _avs_net_mbedtls_load_client_cert(
+                    (err = _avs_crypto_mbedtls_load_client_cert(
                              &certs->client_cert, &cert_info->client_cert)))) {
             LOG(ERROR, _("could not load client certificate"));
             return err;
         }
-        if (avs_is_err((err = _avs_net_mbedtls_load_client_key(
+        if (avs_is_err((err = _avs_crypto_mbedtls_load_client_key(
                                 &certs->client_key, &cert_info->client_key)))) {
             LOG(ERROR, _("could not load client private key"));
             return err;

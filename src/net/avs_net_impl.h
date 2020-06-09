@@ -21,8 +21,6 @@
 
 #include <avsystem/commons/avs_socket_v_table.h>
 
-#include "avs_api.h"
-
 VISIBILITY_PRIVATE_HEADER_BEGIN
 
 #if !defined(AVS_COMMONS_NET_WITH_IPV4) && !defined(AVS_COMMONS_NET_WITH_IPV6)

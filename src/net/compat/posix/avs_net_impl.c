@@ -1801,9 +1801,6 @@ static avs_error_t create_net_socket(avs_net_socket_t **socket,
     net_socket->type = socket_type;
     net_socket->recv_timeout = AVS_NET_SOCKET_DEFAULT_RECV_TIMEOUT;
 
-    VALGRIND_HG_DISABLE_CHECKING(&net_socket->socket,
-                                 sizeof(net_socket->socket));
-
     *socket = (avs_net_socket_t *) net_socket;
 
     if (configuration) {

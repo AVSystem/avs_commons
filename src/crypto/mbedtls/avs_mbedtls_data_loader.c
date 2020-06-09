@@ -16,10 +16,10 @@
 
 #include <avs_commons_init.h>
 
+#warning "TODO: Sanitize ifdefs"
 #if defined(AVS_COMMONS_WITH_AVS_NET) && defined(AVS_COMMONS_WITH_MBEDTLS) \
         && defined(AVS_COMMONS_NET_WITH_X509)
 
-#    include "../avs_api.h"
 #    include "avs_mbedtls_data_loader.h"
 
 #    include <assert.h>
@@ -30,7 +30,7 @@
 #    include <avsystem/commons/avs_memory.h>
 #    include <avsystem/commons/avs_utils.h>
 
-#    define MODULE_NAME avs_net_data_loader
+#    define MODULE_NAME avs_crypto_data_loader
 #    include <avs_x_log_config.h>
 
 VISIBILITY_SOURCE_BEGIN
@@ -118,8 +118,8 @@ static avs_error_t load_ca_from_path(mbedtls_x509_crt *chain,
 }
 
 avs_error_t
-_avs_net_mbedtls_load_ca_certs(mbedtls_x509_crt **out,
-                               const avs_net_trusted_cert_info_t *info) {
+_avs_crypto_mbedtls_load_ca_certs(mbedtls_x509_crt **out,
+                                  const avs_crypto_trusted_cert_info_t *info) {
     CREATE_OR_FAIL(mbedtls_x509_crt, out);
     mbedtls_x509_crt_init(*out);
 
@@ -151,9 +151,8 @@ _avs_net_mbedtls_load_ca_certs(mbedtls_x509_crt **out,
     }
 }
 
-avs_error_t
-_avs_net_mbedtls_load_client_cert(mbedtls_x509_crt **out,
-                                  const avs_net_client_cert_info_t *info) {
+avs_error_t _avs_crypto_mbedtls_load_client_cert(
+        mbedtls_x509_crt **out, const avs_crypto_client_cert_info_t *info) {
     CREATE_OR_FAIL(mbedtls_x509_crt, out);
     mbedtls_x509_crt_init(*out);
 
@@ -223,8 +222,8 @@ static avs_error_t load_private_key_from_file(mbedtls_pk_context *client_key,
 }
 
 avs_error_t
-_avs_net_mbedtls_load_client_key(mbedtls_pk_context **client_key,
-                                 const avs_net_client_key_info_t *info) {
+_avs_crypto_mbedtls_load_client_key(mbedtls_pk_context **client_key,
+                                    const avs_crypto_client_key_info_t *info) {
     CREATE_OR_FAIL(mbedtls_pk_context, client_key);
     mbedtls_pk_init(*client_key);
 

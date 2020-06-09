@@ -24,7 +24,8 @@
 
 #include <unistd.h>
 
-#include "src/net/openssl/avs_openssl_data_loader.h"
+#include "src/crypto/openssl/avs_openssl_common.h"
+#include "src/crypto/openssl/avs_openssl_data_loader.h"
 
 __attribute__((constructor)) static void global_ssl_init(void) {
     SSL_library_init();
@@ -49,22 +50,22 @@ AVS_UNIT_TEST(backend_openssl, chain_loading_from_file) {
     SSL_CTX *ctx;
 
     WITH_OPENSSL_CONTEXT(ctx) {
-        const avs_net_trusted_cert_info_t pem =
-                avs_net_trusted_cert_info_from_file("../certs/root.crt");
-        AVS_UNIT_ASSERT_SUCCESS(_avs_net_openssl_load_ca_certs(ctx, &pem));
+        const avs_crypto_trusted_cert_info_t pem =
+                avs_crypto_trusted_cert_info_from_file("../certs/root.crt");
+        AVS_UNIT_ASSERT_SUCCESS(_avs_crypto_openssl_load_ca_certs(ctx, &pem));
     }
 
     WITH_OPENSSL_CONTEXT(ctx) {
-        const avs_net_trusted_cert_info_t der =
-                avs_net_trusted_cert_info_from_file("../certs/root.crt.der");
-        AVS_UNIT_ASSERT_SUCCESS(_avs_net_openssl_load_ca_certs(ctx, &der));
+        const avs_crypto_trusted_cert_info_t der =
+                avs_crypto_trusted_cert_info_from_file("../certs/root.crt.der");
+        AVS_UNIT_ASSERT_SUCCESS(_avs_crypto_openssl_load_ca_certs(ctx, &der));
     }
 
     WITH_OPENSSL_CONTEXT(ctx) {
         // Unsupported.
-        const avs_net_trusted_cert_info_t p12 =
-                avs_net_trusted_cert_info_from_file("../certs/server.p12");
-        AVS_UNIT_ASSERT_FAILED(_avs_net_openssl_load_ca_certs(ctx, &p12));
+        const avs_crypto_trusted_cert_info_t p12 =
+                avs_crypto_trusted_cert_info_from_file("../certs/server.p12");
+        AVS_UNIT_ASSERT_FAILED(_avs_crypto_openssl_load_ca_certs(ctx, &p12));
     }
 }
 
@@ -72,9 +73,9 @@ AVS_UNIT_TEST(backend_openssl, chain_loading_from_path) {
     SSL_CTX *ctx;
 
     WITH_OPENSSL_CONTEXT(ctx) {
-        const avs_net_trusted_cert_info_t path =
-                avs_net_trusted_cert_info_from_path("../certs");
-        AVS_UNIT_ASSERT_SUCCESS(_avs_net_openssl_load_ca_certs(ctx, &path));
+        const avs_crypto_trusted_cert_info_t path =
+                avs_crypto_trusted_cert_info_from_path("../certs");
+        AVS_UNIT_ASSERT_SUCCESS(_avs_crypto_openssl_load_ca_certs(ctx, &path));
     }
 
     // Empty directory case.
@@ -82,46 +83,47 @@ AVS_UNIT_TEST(backend_openssl, chain_loading_from_path) {
     (void) mkdtemp(name);
 
     WITH_OPENSSL_CONTEXT(ctx) {
-        const avs_net_trusted_cert_info_t empty_dir =
-                avs_net_trusted_cert_info_from_path(name);
-        avs_error_t err = _avs_net_openssl_load_ca_certs(ctx, &empty_dir);
+        const avs_crypto_trusted_cert_info_t empty_dir =
+                avs_crypto_trusted_cert_info_from_path(name);
+        avs_error_t err = _avs_crypto_openssl_load_ca_certs(ctx, &empty_dir);
         (void) rmdir(name);
         AVS_UNIT_ASSERT_SUCCESS(err);
     }
 
     WITH_OPENSSL_CONTEXT(ctx) {
         // Directory without permissions - OpenSSL doesn't care.
-        const avs_net_trusted_cert_info_t no_permissions_dir =
-                avs_net_trusted_cert_info_from_path("/root");
+        const avs_crypto_trusted_cert_info_t no_permissions_dir =
+                avs_crypto_trusted_cert_info_from_path("/root");
         AVS_UNIT_ASSERT_SUCCESS(
-                _avs_net_openssl_load_ca_certs(ctx, &no_permissions_dir));
+                _avs_crypto_openssl_load_ca_certs(ctx, &no_permissions_dir));
     }
 }
 
 AVS_UNIT_TEST(backend_openssl, chain_loading_from_null) {
     SSL_CTX *ctx;
     WITH_OPENSSL_CONTEXT(ctx) {
-        const avs_net_trusted_cert_info_t pem =
-                avs_net_trusted_cert_info_from_file(NULL);
-        AVS_UNIT_ASSERT_FAILED(_avs_net_openssl_load_ca_certs(ctx, &pem));
-        const avs_net_trusted_cert_info_t buffer =
-                avs_net_trusted_cert_info_from_buffer(NULL, 0);
-        AVS_UNIT_ASSERT_FAILED(_avs_net_openssl_load_ca_certs(ctx, &buffer));
-        const avs_net_trusted_cert_info_t path =
-                avs_net_trusted_cert_info_from_path(NULL);
-        AVS_UNIT_ASSERT_FAILED(_avs_net_openssl_load_ca_certs(ctx, &path));
+        const avs_crypto_trusted_cert_info_t pem =
+                avs_crypto_trusted_cert_info_from_file(NULL);
+        AVS_UNIT_ASSERT_FAILED(_avs_crypto_openssl_load_ca_certs(ctx, &pem));
+        const avs_crypto_trusted_cert_info_t buffer =
+                avs_crypto_trusted_cert_info_from_buffer(NULL, 0);
+        AVS_UNIT_ASSERT_FAILED(_avs_crypto_openssl_load_ca_certs(ctx, &buffer));
+        const avs_crypto_trusted_cert_info_t path =
+                avs_crypto_trusted_cert_info_from_path(NULL);
+        AVS_UNIT_ASSERT_FAILED(_avs_crypto_openssl_load_ca_certs(ctx, &path));
     }
 }
 
 AVS_UNIT_TEST(backend_openssl, cert_loading_from_null) {
     SSL_CTX *ctx;
     WITH_OPENSSL_CONTEXT(ctx) {
-        const avs_net_client_cert_info_t pem =
-                avs_net_client_cert_info_from_file(NULL);
-        AVS_UNIT_ASSERT_FAILED(_avs_net_openssl_load_client_cert(ctx, &pem));
-        const avs_net_client_cert_info_t buffer =
-                avs_net_client_cert_info_from_buffer(NULL, 0);
-        AVS_UNIT_ASSERT_FAILED(_avs_net_openssl_load_client_cert(ctx, &buffer));
+        const avs_crypto_client_cert_info_t pem =
+                avs_crypto_client_cert_info_from_file(NULL);
+        AVS_UNIT_ASSERT_FAILED(_avs_crypto_openssl_load_client_cert(ctx, &pem));
+        const avs_crypto_client_cert_info_t buffer =
+                avs_crypto_client_cert_info_from_buffer(NULL, 0);
+        AVS_UNIT_ASSERT_FAILED(
+                _avs_crypto_openssl_load_client_cert(ctx, &buffer));
     }
 }
 
@@ -129,23 +131,25 @@ AVS_UNIT_TEST(backend_openssl, key_loading) {
     SSL_CTX *ctx;
 
     WITH_OPENSSL_CONTEXT(ctx) {
-        const avs_net_client_key_info_t pem =
-                avs_net_client_key_info_from_file("../certs/client.key", NULL);
-        AVS_UNIT_ASSERT_SUCCESS(_avs_net_openssl_load_client_key(ctx, &pem));
+        const avs_crypto_client_key_info_t pem =
+                avs_crypto_client_key_info_from_file("../certs/client.key",
+                                                     NULL);
+        AVS_UNIT_ASSERT_SUCCESS(_avs_crypto_openssl_load_client_key(ctx, &pem));
     }
 
     WITH_OPENSSL_CONTEXT(ctx) {
-        const avs_net_client_key_info_t der =
-                avs_net_client_key_info_from_file("../certs/client.key.der",
-                                                  NULL);
-        AVS_UNIT_ASSERT_SUCCESS(_avs_net_openssl_load_client_key(ctx, &der));
+        const avs_crypto_client_key_info_t der =
+                avs_crypto_client_key_info_from_file("../certs/client.key.der",
+                                                     NULL);
+        AVS_UNIT_ASSERT_SUCCESS(_avs_crypto_openssl_load_client_key(ctx, &der));
     }
 
     WITH_OPENSSL_CONTEXT(ctx) {
         // Unsupported.
-        const avs_net_client_key_info_t p12 =
-                avs_net_client_key_info_from_file("../certs/client.p12", NULL);
-        AVS_UNIT_ASSERT_FAILED(_avs_net_openssl_load_client_key(ctx, &p12));
+        const avs_crypto_client_key_info_t p12 =
+                avs_crypto_client_key_info_from_file("../certs/client.p12",
+                                                     NULL);
+        AVS_UNIT_ASSERT_FAILED(_avs_crypto_openssl_load_client_key(ctx, &p12));
     }
 }
 
@@ -153,11 +157,12 @@ AVS_UNIT_TEST(backend_openssl, key_loading_from_null) {
     SSL_CTX *ctx;
 
     WITH_OPENSSL_CONTEXT(ctx) {
-        const avs_net_client_key_info_t pem =
-                avs_net_client_key_info_from_file(NULL, NULL);
-        AVS_UNIT_ASSERT_FAILED(_avs_net_openssl_load_client_key(ctx, &pem));
-        const avs_net_client_key_info_t buffer =
-                avs_net_client_key_info_from_buffer(NULL, 0, NULL);
-        AVS_UNIT_ASSERT_FAILED(_avs_net_openssl_load_client_key(ctx, &buffer));
+        const avs_crypto_client_key_info_t pem =
+                avs_crypto_client_key_info_from_file(NULL, NULL);
+        AVS_UNIT_ASSERT_FAILED(_avs_crypto_openssl_load_client_key(ctx, &pem));
+        const avs_crypto_client_key_info_t buffer =
+                avs_crypto_client_key_info_from_buffer(NULL, 0, NULL);
+        AVS_UNIT_ASSERT_FAILED(
+                _avs_crypto_openssl_load_client_key(ctx, &buffer));
     }
 }

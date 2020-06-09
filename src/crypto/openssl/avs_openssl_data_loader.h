@@ -16,24 +16,24 @@
 #ifndef NET_OPENSSL_DATA_LOADER_H
 #define NET_OPENSSL_DATA_LOADER_H
 
-#include <avsystem/commons/avs_socket.h>
+#include <avsystem/commons/avs_crypto_pki.h>
 
-#include "../avs_api.h"
+#include "../avs_crypto_utils.h"
 
 VISIBILITY_PRIVATE_HEADER_BEGIN
 
 // NOTE: <openssl/ssl.h> could not be included here. See the note about OpenSSL
-// in data_loader.c for details (and think about circular dependencies with
-// VISIBILITY_PRIVATE_HEADER_BEGIN macros).
+// in avs_openssl_data_loader.c for details (and think about circular
+// dependencies with VISIBILITY_PRIVATE_HEADER_BEGIN macros).
 avs_error_t
-_avs_net_openssl_load_ca_certs(SSL_CTX *ctx,
-                               const avs_net_trusted_cert_info_t *info);
+_avs_crypto_openssl_load_ca_certs(SSL_CTX *ctx,
+                                  const avs_crypto_trusted_cert_info_t *info);
 avs_error_t
-_avs_net_openssl_load_client_key(SSL_CTX *ctx,
-                                 const avs_net_client_key_info_t *info);
+_avs_crypto_openssl_load_client_key(SSL_CTX *ctx,
+                                    const avs_crypto_client_key_info_t *info);
 avs_error_t
-_avs_net_openssl_load_client_cert(SSL_CTX *ctx,
-                                  const avs_net_client_cert_info_t *info);
+_avs_crypto_openssl_load_client_cert(SSL_CTX *ctx,
+                                     const avs_crypto_client_cert_info_t *info);
 
 VISIBILITY_PRIVATE_HEADER_END
 #endif // NET_OPENSSL_DATA_LOADER_H
