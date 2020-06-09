@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef NET_OPENSSL_COMMON_H
-#define NET_OPENSSL_COMMON_H
+#ifndef AVS_COMMONS_CRYPTO_OPENSSL_COMMON_H
+#define AVS_COMMONS_CRYPTO_OPENSSL_COMMON_H
 
 #include <openssl/err.h>
 
@@ -36,4 +36,4 @@ VISIBILITY_PRIVATE_HEADER_BEGIN
 
 VISIBILITY_PRIVATE_HEADER_END
 
-#endif // NET_OPENSSL_COMMON_H
+#endif // AVS_COMMONS_CRYPTO_OPENSSL_COMMON_H

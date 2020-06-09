@@ -46,12 +46,13 @@
 
 #    include "../avs_global.h"
 
-#    include "avs_openssl_common.h"
 #    ifdef AVS_COMMONS_NET_WITH_X509
 #        include "avs_openssl_data_loader.h"
 #    endif // AVS_COMMONS_NET_WITH_X509
 
 #    include "../avs_net_impl.h"
+
+#    include "crypto/openssl/avs_openssl_common.h"
 
 VISIBILITY_SOURCE_BEGIN
 
