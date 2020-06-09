@@ -25,8 +25,10 @@
 #    include <string.h>
 
 #    include <mbedtls/ecp.h>
+#    include <mbedtls/md_internal.h>
 #    include <mbedtls/oid.h>
 #    include <mbedtls/pk.h>
+#    include <mbedtls/x509_csr.h>
 
 #    include <avsystem/commons/avs_crypto_pki.h>
 #    include <avsystem/commons/avs_errno.h>
@@ -125,6 +127,31 @@ avs_error_t avs_crypto_pki_ec_gen(avs_crypto_prng_ctx_t *prng_ctx,
     }
 
     mbedtls_pk_free(&pk_ctx);
+    return err;
+}
+
+avs_error_t avs_crypto_pki_csr_create(const char *md_name,
+                                      const char *subject_name) {
+    const mbedtls_md_info_t *md_info = mbedtls_md_info_from_string(md_name);
+    if (!md_info) {
+        LOG(ERROR, _("Mbed TLS does not have MD info for ") "%s", md_name);
+        return avs_errno(AVS_ENOTSUP);
+    }
+
+    mbedtls_x509write_csr csr_ctx;
+    mbedtls_x509write_csr_init(&csr_ctx);
+
+    mbedtls_x509write_csr_set_md_alg(&csr_ctx, mbedtls_md_get_type(md_info));
+
+    avs_error_t err = AVS_OK;
+    int result = mbedtls_x509write_csr_set_subject_name(&csr_ctx, subject_name);
+    if (result) {
+        LOG(ERROR, _("mbedtls_x509write_csr_set_subject_name() failed: ") "%d",
+            result);
+        err = avs_errno(AVS_EPROTO);
+    }
+
+    mbedtls_x509write_csr_free(&csr_ctx);
     return err;
 }
 
