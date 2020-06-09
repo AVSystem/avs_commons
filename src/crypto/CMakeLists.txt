@@ -52,6 +52,7 @@ if(WITH_OPENSSL)
         openssl/avs_openssl_aead.c
         openssl/avs_openssl_data_loader.c
         openssl/avs_openssl_hkdf.c
+        openssl/avs_openssl_pki.c
         openssl/avs_openssl_prng.c)
 
     set(AVS_CRYPTO_OPENSSL_TEST_SOURCES
