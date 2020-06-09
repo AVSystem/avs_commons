@@ -82,6 +82,7 @@ if(WITH_MBEDTLS)
         mbedtls/avs_mbedtls_aead.c
         mbedtls/avs_mbedtls_data_loader.c
         mbedtls/avs_mbedtls_hkdf.c
+        mbedtls/avs_mbedtls_pki.c
         mbedtls/avs_mbedtls_prng.c)
 
     set(AVS_CRYPTO_MBEDTLS_TEST_SOURCES
@@ -108,7 +109,7 @@ endif()
 
 # Contains only simple PRNG generator if OpenSSL and MbedTLS aren't available.
 add_library(avs_crypto_generic
-            ${AVS_CRYPTO_PUBLIC_HEADERS}
+            ${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/avs_prng.h
             generic/avs_generic_prng.c)
 target_compile_definitions(avs_crypto_generic PRIVATE -DWITHOUT_SSL)
 target_link_libraries(avs_crypto_generic PUBLIC avs_crypto_core)
