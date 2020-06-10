@@ -95,8 +95,7 @@ if(WITH_OPENSSL)
                  ${AVS_NET_OPENSSL_SOURCES}
                  ${AVS_COMMONS_SOURCE_DIR}/tests/net/socket_nosec.c
                  ${AVS_COMMONS_SOURCE_DIR}/tests/net/socket_tls.c
-                 $<$<BOOL:${WITH_DTLS}>:${AVS_COMMONS_SOURCE_DIR}/tests/net/socket_dtls.c>
-                 $<$<BOOL:${WITH_X509}>:${AVS_COMMONS_SOURCE_DIR}/tests/net/openssl/openssl_data_loader.c>)
+                 $<$<BOOL:${WITH_DTLS}>:${AVS_COMMONS_SOURCE_DIR}/tests/net/socket_dtls.c>)
     avs_install_export(avs_net_openssl net)
 endif()
 
@@ -120,8 +119,7 @@ if(WITH_MBEDTLS)
                  ${AVS_NET_MBEDTLS_SOURCES}
                  ${AVS_COMMONS_SOURCE_DIR}/tests/net/socket_nosec.c
                  ${AVS_COMMONS_SOURCE_DIR}/tests/net/socket_tls.c
-                 ${AVS_COMMONS_SOURCE_DIR}/tests/net/socket_dtls.c
-                 $<$<BOOL:${WITH_X509}>:${AVS_COMMONS_SOURCE_DIR}/tests/net/mbedtls/mbedtls_data_loader.c>)
+                 ${AVS_COMMONS_SOURCE_DIR}/tests/net/socket_dtls.c)
     avs_install_export(avs_net_mbedtls net)
 endif()
 

@@ -16,7 +16,6 @@
 
 #include <avs_commons_posix_init.h>
 
-#include <avsystem/commons/avs_socket.h>
 #include <avsystem/commons/avs_unit_test.h>
 
 #include <openssl/rand.h>
