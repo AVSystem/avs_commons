@@ -56,7 +56,7 @@ if(WITH_OPENSSL)
 
     set(AVS_CRYPTO_OPENSSL_TEST_SOURCES
         ${AVS_CRYPTO_TEST_SOURCES}
-        $<$<BOOL:${WITH_X509}>:${AVS_COMMONS_SOURCE_DIR}/tests/crypto/openssl/openssl_data_loader.c>)
+        $<$<BOOL:${WITH_PKI}>:${AVS_COMMONS_SOURCE_DIR}/tests/crypto/openssl/openssl_data_loader.c>)
 
     if(AVS_COMMONS_WITH_AVS_CRYPTO_ADVANCED_FEATURES)
         set(AVS_CRYPTO_OPENSSL_TEST_SOURCES
@@ -86,7 +86,7 @@ if(WITH_MBEDTLS)
 
     set(AVS_CRYPTO_MBEDTLS_TEST_SOURCES
         ${AVS_CRYPTO_TEST_SOURCES}
-        $<$<BOOL:${WITH_X509}>:${AVS_COMMONS_SOURCE_DIR}/tests/crypto/mbedtls/mbedtls_data_loader.c>)
+        $<$<BOOL:${WITH_PKI}>:${AVS_COMMONS_SOURCE_DIR}/tests/crypto/mbedtls/mbedtls_data_loader.c>)
 
     if(AVS_COMMONS_WITH_AVS_CRYPTO_ADVANCED_FEATURES)
         set(AVS_CRYPTO_MBEDTLS_TEST_SOURCES
@@ -97,7 +97,7 @@ if(WITH_MBEDTLS)
     add_library(avs_crypto_mbedtls
                 ${AVS_CRYPTO_PUBLIC_HEADERS}
                 ${AVS_CRYPTO_MBEDTLS_SOURCES})
-    target_link_libraries(avs_crypto_mbedtls PUBLIC avs_crypto_core mbedcrypto $<$<BOOL:${WITH_X509}>:mbedx509>)
+    target_link_libraries(avs_crypto_mbedtls PUBLIC avs_crypto_core mbedcrypto $<$<BOOL:${WITH_PKI}>:mbedx509>)
 
     avs_add_test(NAME avs_crypto_mbedtls
                  LIBS avs_crypto_mbedtls
