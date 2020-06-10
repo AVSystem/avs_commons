@@ -331,6 +331,14 @@ avs_error_t avs_crypto_pki_ec_gen(avs_crypto_prng_ctx_t *prng_ctx,
                                   void *out_der_secret_key,
                                   size_t *inout_der_secret_key_size);
 
+avs_error_t
+avs_crypto_pki_csr_create(avs_crypto_prng_ctx_t *prng_ctx,
+                          const avs_crypto_client_key_info_t *private_key_info,
+                          const char *md_name,
+                          const char *subject_name,
+                          void *out_der_csr,
+                          size_t *inout_der_csr_size);
+
 #endif // AVS_COMMONS_WITH_AVS_CRYPTO_ADVANCED_FEATURES
 
 #ifdef __cplusplus

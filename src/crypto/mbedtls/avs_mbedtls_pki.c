@@ -21,6 +21,7 @@
         && defined(AVS_COMMONS_WITH_AVS_CRYPTO_PKI)               \
         && defined(AVS_COMMONS_WITH_MBEDTLS)
 
+#    include <assert.h>
 #    include <inttypes.h>
 #    include <string.h>
 
@@ -32,7 +33,9 @@
 
 #    include <avsystem/commons/avs_crypto_pki.h>
 #    include <avsystem/commons/avs_errno.h>
+#    include <avsystem/commons/avs_memory.h>
 
+#    include "avs_mbedtls_data_loader.h"
 #    include "avs_mbedtls_prng.h"
 
 #    define MODULE_NAME avs_crypto_pki
@@ -61,6 +64,8 @@ avs_error_t avs_crypto_pki_ec_gen(avs_crypto_prng_ctx_t *prng_ctx,
                                   const avs_crypto_asn1_oid_t *ecp_group_oid,
                                   void *out_der_secret_key,
                                   size_t *inout_der_secret_key_size) {
+    assert(inout_der_secret_key_size);
+    assert(!*inout_der_secret_key_size || out_der_secret_key);
     if (!prng_ctx) {
         LOG(ERROR, _("PRNG context not specified"));
         return avs_errno(AVS_EINVAL);
@@ -130,8 +135,13 @@ avs_error_t avs_crypto_pki_ec_gen(avs_crypto_prng_ctx_t *prng_ctx,
     return err;
 }
 
-avs_error_t avs_crypto_pki_csr_create(const char *md_name,
-                                      const char *subject_name) {
+avs_error_t
+avs_crypto_pki_csr_create(avs_crypto_prng_ctx_t *prng_ctx,
+                          const avs_crypto_client_key_info_t *private_key_info,
+                          const char *md_name,
+                          const char *subject_name,
+                          void *out_der_csr,
+                          size_t *inout_der_csr_size) {
     const mbedtls_md_info_t *md_info = mbedtls_md_info_from_string(md_name);
     if (!md_info) {
         LOG(ERROR, _("Mbed TLS does not have MD info for ") "%s", md_name);
@@ -151,6 +161,32 @@ avs_error_t avs_crypto_pki_csr_create(const char *md_name,
         err = avs_errno(AVS_EPROTO);
     }
 
+    mbedtls_pk_context *private_key = NULL;
+
+    if (avs_is_ok(err)
+            && avs_is_ok((err = _avs_crypto_mbedtls_load_client_key(
+                                  &private_key, private_key_info)))) {
+        assert(private_key);
+        mbedtls_x509write_csr_set_key(&csr_ctx, private_key);
+
+        unsigned char *cast_buffer = (unsigned char *) out_der_csr;
+        size_t buffer_size = *inout_der_csr_size;
+        if ((result = mbedtls_x509write_csr_der(
+                     &csr_ctx, cast_buffer, buffer_size,
+                     mbedtls_ctr_drbg_random, &prng_ctx->mbedtls_prng_ctx))
+                < 0) {
+            LOG(ERROR, _("mbedtls_x509write_csr_der() failed: ") "%d", result);
+            err = avs_errno(AVS_EPROTO);
+        } else {
+            move_der_data_to_start(cast_buffer, inout_der_csr_size,
+                                   (size_t) result);
+        }
+    }
+
+    if (private_key) {
+        mbedtls_pk_free(private_key);
+        avs_free(private_key);
+    }
     mbedtls_x509write_csr_free(&csr_ctx);
     return err;
 }
