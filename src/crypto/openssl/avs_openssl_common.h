@@ -18,7 +18,7 @@
 
 #include <openssl/err.h>
 
-#ifdef AVS_COMMONS_NET_WITH_VALGRIND
+#ifdef AVS_COMMONS_WITH_AVS_CRYPTO_VALGRIND
 #    include <stdint.h>
 #    include <valgrind/helgrind.h>
 #    include <valgrind/memcheck.h>

@@ -273,7 +273,7 @@ find_program(VALGRIND_EXECUTABLE valgrind)
 # This is enabled in devconfig only, and should be disabled in CMakeLists.txt,
 # to avoid cross-compilation errors on stations with valgrind installed.
 cmake_dependent_option(WITH_VALGRIND "Enable usage of valgrind during unit tests" OFF VALGRIND_EXECUTABLE OFF)
-set(AVS_COMMONS_NET_WITH_VALGRIND ${WITH_VALGRIND})
+set(AVS_COMMONS_WITH_AVS_CRYPTO_VALGRIND ${WITH_VALGRIND})
 if(WITH_VALGRIND)
     execute_process(COMMAND ${VALGRIND_EXECUTABLE} --tool=helgrind --version
                     RESULT_VARIABLE HELGRIND_TEST_RESULT
