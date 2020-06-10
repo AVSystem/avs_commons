@@ -469,7 +469,7 @@ set(AVS_COMMONS_WITH_TINYDTLS ${WITH_TINYDTLS})
 cmake_dependent_option(WITH_PSK "Enable pre-shared key support" ON "WITH_OPENSSL OR WITH_MBEDTLS OR WITH_TINYDTLS" OFF)
 set(AVS_COMMONS_NET_WITH_PSK ${WITH_PSK})
 cmake_dependent_option(WITH_X509 "Enable X.509 certificate support" ON "WITH_OPENSSL OR WITH_MBEDTLS OR WITH_TINYDTLS" OFF)
-set(AVS_COMMONS_NET_WITH_X509 ${WITH_X509})
+set(AVS_COMMONS_WITH_AVS_CRYPTO_PKI ${WITH_X509})
 
 if(WITH_OPENSSL)
     avs_add_find_routine("find_package(OpenSSL REQUIRED)")

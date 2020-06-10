@@ -46,9 +46,9 @@
 
 #    include "../avs_global.h"
 
-#    ifdef AVS_COMMONS_NET_WITH_X509
+#    ifdef AVS_COMMONS_WITH_AVS_CRYPTO_PKI
 #        include "crypto/openssl/avs_openssl_data_loader.h"
-#    endif // AVS_COMMONS_NET_WITH_X509
+#    endif // AVS_COMMONS_WITH_AVS_CRYPTO_PKI
 
 #    include "../avs_net_impl.h"
 
@@ -835,7 +835,8 @@ static avs_error_t start_ssl(ssl_socket_t *socket, const char *host) {
         return avs_errno(AVS_ENOMEM);
     }
 
-#    if defined(AVS_COMMONS_NET_WITH_X509) && OPENSSL_VERSION_NUMBER_GE(1, 0, 2)
+#    if defined(AVS_COMMONS_WITH_AVS_CRYPTO_PKI) \
+            && OPENSSL_VERSION_NUMBER_GE(1, 0, 2)
     X509_VERIFY_PARAM *param = SSL_get0_param(socket->ssl);
     if (socket->verification) {
         if (!param) {
@@ -859,8 +860,8 @@ static avs_error_t start_ssl(ssl_socket_t *socket, const char *host) {
             host);
         return avs_errno(AVS_ENOMEM);
     }
-#    endif // defined(AVS_COMMONS_NET_WITH_X509) && OPENSSL_VERSION_NUMBER_GE(1,
-           // 0, 2)
+#    endif // defined(AVS_COMMONS_WITH_AVS_CRYPTO_PKI) &&
+           // OPENSSL_VERSION_NUMBER_GE(1, 0, 2)
 
     bio = avs_bio_spawn(socket);
     if (!bio) {
@@ -907,7 +908,7 @@ static bool is_session_resumed(ssl_socket_t *socket) {
     return false;
 }
 
-#    ifdef AVS_COMMONS_NET_WITH_X509
+#    ifdef AVS_COMMONS_WITH_AVS_CRYPTO_PKI
 static avs_error_t
 configure_ssl_certs(ssl_socket_t *socket,
                     const avs_net_certificate_info_t *cert_info) {
@@ -958,7 +959,7 @@ configure_ssl_certs(ssl_socket_t *socket,
     LOG(ERROR, _("X.509 support disabled"));
     return avs_errno(AVS_ENOTSUP);
 }
-#    endif // AVS_COMMONS_NET_WITH_X509
+#    endif // AVS_COMMONS_WITH_AVS_CRYPTO_PKI
 
 #    ifdef AVS_COMMONS_NET_WITH_PSK
 static unsigned int psk_client_cb(SSL *ssl,

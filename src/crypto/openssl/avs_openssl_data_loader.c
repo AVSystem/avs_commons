@@ -20,9 +20,8 @@
 #define AVS_SUPPRESS_POISONING
 #include <avs_commons_init.h>
 
-#warning "TODO: Sanitize ifdefs"
 #if defined(AVS_COMMONS_WITH_AVS_CRYPTO) && defined(AVS_COMMONS_WITH_OPENSSL) \
-        && defined(AVS_COMMONS_NET_WITH_X509)
+        && defined(AVS_COMMONS_WITH_AVS_CRYPTO_PKI)
 
 #    include <openssl/ssl.h>
 
@@ -345,4 +344,4 @@ _avs_crypto_openssl_load_client_key(SSL_CTX *ctx,
 
 #endif // defined(AVS_COMMONS_WITH_AVS_CRYPTO) &&
        // defined(AVS_COMMONS_WITH_OPENSSL) &&
-       // defined(AVS_COMMONS_NET_WITH_X509)
+       // defined(AVS_COMMONS_WITH_AVS_CRYPTO_PKI)

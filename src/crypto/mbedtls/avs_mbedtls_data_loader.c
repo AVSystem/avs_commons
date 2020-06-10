@@ -16,9 +16,8 @@
 
 #include <avs_commons_init.h>
 
-#warning "TODO: Sanitize ifdefs"
 #if defined(AVS_COMMONS_WITH_AVS_CRYPTO) && defined(AVS_COMMONS_WITH_MBEDTLS) \
-        && defined(AVS_COMMONS_NET_WITH_X509)
+        && defined(AVS_COMMONS_WITH_AVS_CRYPTO_PKI)
 
 #    include "avs_mbedtls_data_loader.h"
 
@@ -255,4 +254,4 @@ _avs_crypto_mbedtls_load_client_key(mbedtls_pk_context **client_key,
 
 #endif // defined(AVS_COMMONS_WITH_AVS_CRYPTO) &&
        // defined(AVS_COMMONS_WITH_MBEDTLS) &&
-       // defined(AVS_COMMONS_NET_WITH_X509)
+       // defined(AVS_COMMONS_WITH_AVS_CRYPTO_PKI)
