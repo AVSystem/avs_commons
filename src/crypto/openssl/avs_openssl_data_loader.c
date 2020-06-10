@@ -21,7 +21,7 @@
 #include <avs_commons_init.h>
 
 #warning "TODO: Sanitize ifdefs"
-#if defined(AVS_COMMONS_WITH_AVS_NET) && defined(AVS_COMMONS_WITH_OPENSSL) \
+#if defined(AVS_COMMONS_WITH_AVS_CRYPTO) && defined(AVS_COMMONS_WITH_OPENSSL) \
         && defined(AVS_COMMONS_NET_WITH_X509)
 
 #    include <openssl/ssl.h>
@@ -343,5 +343,6 @@ _avs_crypto_openssl_load_client_key(SSL_CTX *ctx,
     }
 }
 
-#endif // defined(AVS_COMMONS_WITH_AVS_NET) && defined(AVS_COMMONS_WITH_OPENSSL)
-       // && defined(AVS_COMMONS_NET_WITH_X509)
+#endif // defined(AVS_COMMONS_WITH_AVS_CRYPTO) &&
+       // defined(AVS_COMMONS_WITH_OPENSSL) &&
+       // defined(AVS_COMMONS_NET_WITH_X509)
