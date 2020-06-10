@@ -26,12 +26,19 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#include <avsystem/commons/avs_commons_config.h>
 #include <avsystem/commons/avs_crypto_pki.h>
 #include <avsystem/commons/avs_defs.h>
 #include <avsystem/commons/avs_errno.h>
 #include <avsystem/commons/avs_memory.h>
 #include <avsystem/commons/avs_prng.h>
 #include <avsystem/commons/avs_time.h>
+
+#ifdef AVS_COMMONS_NET_WITH_X509
+#    warning \
+            "Your avs_commons_config.h defines AVS_COMMONS_NET_WITH_X509, which is deprecated since avs_commons 4.2. Auto-including avs_net_pki_compat.h to provide backwards compatibility for legacy avs_net PKI APIs."
+#    include <avsystem/commons/avs_net_pki_compat.h>
+#endif // AVS_COMMONS_NET_WITH_X509
 
 #ifdef __cplusplus
 extern "C" {
