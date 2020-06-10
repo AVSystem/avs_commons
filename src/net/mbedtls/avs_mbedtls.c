@@ -954,7 +954,7 @@ configure_ssl_certs(ssl_socket_certs_t *certs,
         LOG(DEBUG, _("Server authentication disabled"));
     }
 
-    if (cert_info->client_cert.desc.source != AVS_NET_DATA_SOURCE_EMPTY) {
+    if (cert_info->client_cert.desc.source != AVS_CRYPTO_DATA_SOURCE_EMPTY) {
         avs_error_t err;
         if (avs_is_err(
                     (err = _avs_crypto_mbedtls_load_client_cert(

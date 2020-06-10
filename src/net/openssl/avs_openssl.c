@@ -930,7 +930,7 @@ configure_ssl_certs(ssl_socket_t *socket,
         SSL_CTX_set_verify(socket->ctx, SSL_VERIFY_NONE, NULL);
     }
 
-    if (cert_info->client_cert.desc.source != AVS_NET_DATA_SOURCE_EMPTY) {
+    if (cert_info->client_cert.desc.source != AVS_CRYPTO_DATA_SOURCE_EMPTY) {
         avs_error_t err =
                 _avs_crypto_openssl_load_client_cert(socket->ctx,
                                                      &cert_info->client_cert);
