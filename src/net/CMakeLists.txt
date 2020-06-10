@@ -146,9 +146,10 @@ if(WITH_TINYDTLS)
 endif()
 
 # alias avs_net to first available implementation
-foreach(target IN ITEMS avs_net_openssl avs_net_mbedtls avs_net_tinydtls avs_net_nosec)
+foreach(target IN ITEMS avs_net_mbedtls avs_net_openssl avs_net_tinydtls avs_net_nosec)
     if(TARGET "${target}")
         add_library(avs_net ALIAS "${target}")
+        avs_install_export(avs_net net)
         break()
     endif()
 endforeach()

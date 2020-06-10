@@ -36,8 +36,8 @@ if(NOT TARGET avs_compat_threading)
     # have something to link to
     add_library(avs_compat_threading INTERFACE)
     target_link_libraries(avs_compat_threading INTERFACE avs_commons_global_headers)
-    avs_install_export(avs_compat_threading compat_threading)
 endif()
+avs_install_export(avs_compat_threading compat_threading)
 
 install(FILES ${COMPAT_THREADING_PUBLIC_HEADERS}
         COMPONENT compat_threading

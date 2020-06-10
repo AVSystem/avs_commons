@@ -82,7 +82,18 @@ macro(avs_temp_name fname)
 endmacro()
 
 macro(avs_install_export TNAME CNAME)
-    install(TARGETS ${TNAME} COMPONENT ${CNAME} EXPORT avs_commons-targets DESTINATION ${LIB_INSTALL_DIR})
+    get_target_property(_ALIASED_TARGET ${TNAME} ALIASED_TARGET)
+    if(_ALIASED_TARGET)
+        # ALIAS targets cannot be exported, and non-global imported targets
+        # cannot be aliased. So let's create an INTERFACE target instead...
+        set_property(GLOBAL APPEND_STRING PROPERTY AVS_ALIASED_TARGETS "
+                     if(TARGET ${_ALIASED_TARGET})
+                         add_library(${TNAME} INTERFACE IMPORTED)
+                         target_link_libraries(${TNAME} INTERFACE ${_ALIASED_TARGET})
+                     endif()")
+    else()
+        install(TARGETS ${TNAME} COMPONENT ${CNAME} EXPORT avs_commons-targets DESTINATION ${LIB_INSTALL_DIR})
+    endif()
 endmacro()
 
 macro(avs_eval EXPR)
@@ -545,6 +556,7 @@ configure_file("include_public/avsystem/commons/avs_commons_config.h.in"
                "include_public/avsystem/commons/avs_commons_config.h")
 
 get_property(LIBRARY_FIND_ROUTINES GLOBAL PROPERTY AVS_LIBRARY_FIND_ROUTINES)
+get_property(ALIASED_TARGETS GLOBAL PROPERTY AVS_ALIASED_TARGETS)
 configure_file(avs_commons-config.cmake.in avs_commons-config.cmake @ONLY)
 configure_file(avs_commons-version.cmake.in avs_commons-version.cmake @ONLY)
 install(EXPORT avs_commons-targets DESTINATION ${LIB_INSTALL_DIR}/avs_commons)
