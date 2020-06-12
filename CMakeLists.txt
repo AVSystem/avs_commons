@@ -87,7 +87,7 @@ macro(avs_install_export TNAME CNAME)
         # ALIAS targets cannot be exported, and non-global imported targets
         # cannot be aliased. So let's create an INTERFACE target instead...
         set_property(GLOBAL APPEND_STRING PROPERTY AVS_ALIASED_TARGETS "
-                     if(TARGET ${_ALIASED_TARGET})
+                     if(NOT TARGET ${TNAME} AND TARGET ${_ALIASED_TARGET})
                          add_library(${TNAME} INTERFACE IMPORTED)
                          target_link_libraries(${TNAME} INTERFACE ${_ALIASED_TARGET})
                      endif()")
