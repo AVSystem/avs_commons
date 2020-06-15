@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef AVS_COMMONS_CRYPTO_MBEDTLS_PKI_H
-#define AVS_COMMONS_CRYPTO_MBEDTLS_PKI_H
+#ifndef AVS_COMMONS_CRYPTO_MBEDTLS_PRNG_H
+#define AVS_COMMONS_CRYPTO_MBEDTLS_PRNG_H
 
 #include <mbedtls/ctr_drbg.h>
 #include <mbedtls/entropy.h>
@@ -35,4 +35,4 @@ struct avs_crypto_prng_ctx_struct {
 
 VISIBILITY_PRIVATE_HEADER_END
 
-#endif /* AVS_COMMONS_CRYPTO_MBEDTLS_PKI_H */
+#endif /* AVS_COMMONS_CRYPTO_MBEDTLS_PRNG_H */
