@@ -20,16 +20,19 @@ add_library(avs_stream_md5 STATIC
             avs_md5_common.c
             avs_md5_common.h)
 
-if(WITH_OPENSSL)
-    target_sources(avs_stream_md5 PRIVATE avs_stream_openssl.c)
-elseif(WITH_MBEDTLS)
+if(WITH_MBEDTLS)
     target_sources(avs_stream_md5 PRIVATE avs_stream_mbedtls.c)
+    set(MD5_DEPENDENCY avs_crypto_mbedtls)
+elseif(WITH_OPENSSL)
+    target_sources(avs_stream_md5 PRIVATE avs_stream_openssl.c)
+    set(MD5_DEPENDENCY avs_crypto_openssl)
 else()
     target_sources(avs_stream_md5 PRIVATE avs_md5_impl.c)
+    set(MD5_DEPENDENCY)
 endif()
 
-# TODO: this should depend directly on OpenSSL/mbedtls rather than avs_net
-target_link_libraries(avs_stream_md5 PUBLIC avs_stream avs_net)
+# TODO: this should depend directly on OpenSSL/mbedtls rather than avs_crypto
+target_link_libraries(avs_stream_md5 PUBLIC avs_stream ${MD5_DEPENDENCY})
 
 avs_install_export(avs_stream_md5 stream)
 install(FILES ${AVS_STREAM_MD5_PUBLIC_HEADERS}
