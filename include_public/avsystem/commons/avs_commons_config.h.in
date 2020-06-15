@@ -253,7 +253,7 @@
  * If the TLS backend is either mbed TLS or OpenSSL, enables APIs related to
  * public-key cryptography.
  *
- * Publick-key cryptography is not currently supported with TinyDTLS.
+ * Public-key cryptography is not currently supported with TinyDTLS.
  *
  * It also enables support for X.509 certificates in avs_net, if that module is
  * also enabled.
