@@ -16,10 +16,9 @@
 
 #include <avs_commons_init.h>
 
-#if defined(AVS_COMMONS_WITH_AVS_NET) && defined(AVS_COMMONS_WITH_MBEDTLS) \
-        && defined(AVS_COMMONS_NET_WITH_X509)
+#if defined(AVS_COMMONS_WITH_AVS_CRYPTO) && defined(AVS_COMMONS_WITH_MBEDTLS) \
+        && defined(AVS_COMMONS_WITH_AVS_CRYPTO_PKI)
 
-#    include "../avs_api.h"
 #    include "avs_mbedtls_data_loader.h"
 
 #    include <assert.h>
@@ -30,7 +29,7 @@
 #    include <avsystem/commons/avs_memory.h>
 #    include <avsystem/commons/avs_utils.h>
 
-#    define MODULE_NAME avs_net_data_loader
+#    define MODULE_NAME avs_crypto_data_loader
 #    include <avs_x_log_config.h>
 
 VISIBILITY_SOURCE_BEGIN
@@ -118,26 +117,26 @@ static avs_error_t load_ca_from_path(mbedtls_x509_crt *chain,
 }
 
 avs_error_t
-_avs_net_mbedtls_load_ca_certs(mbedtls_x509_crt **out,
-                               const avs_net_trusted_cert_info_t *info) {
+_avs_crypto_mbedtls_load_ca_certs(mbedtls_x509_crt **out,
+                                  const avs_crypto_trusted_cert_info_t *info) {
     CREATE_OR_FAIL(mbedtls_x509_crt, out);
     mbedtls_x509_crt_init(*out);
 
     switch (info->desc.source) {
-    case AVS_NET_DATA_SOURCE_FILE:
+    case AVS_CRYPTO_DATA_SOURCE_FILE:
         if (!info->desc.info.file.filename) {
             LOG(ERROR,
                 _("attempt to load CA cert from file, but filename=NULL"));
             return avs_errno(AVS_EINVAL);
         }
         return load_cert_from_file(*out, info->desc.info.file.filename);
-    case AVS_NET_DATA_SOURCE_PATH:
+    case AVS_CRYPTO_DATA_SOURCE_PATH:
         if (!info->desc.info.path.path) {
             LOG(ERROR, _("attempt to load CA cert from path, but path=NULL"));
             return avs_errno(AVS_EINVAL);
         }
         return load_ca_from_path(*out, info->desc.info.path.path);
-    case AVS_NET_DATA_SOURCE_BUFFER:
+    case AVS_CRYPTO_DATA_SOURCE_BUFFER:
         if (!info->desc.info.buffer.buffer) {
             LOG(ERROR,
                 _("attempt to load CA cert from buffer, but buffer=NULL"));
@@ -151,21 +150,20 @@ _avs_net_mbedtls_load_ca_certs(mbedtls_x509_crt **out,
     }
 }
 
-avs_error_t
-_avs_net_mbedtls_load_client_cert(mbedtls_x509_crt **out,
-                                  const avs_net_client_cert_info_t *info) {
+avs_error_t _avs_crypto_mbedtls_load_client_cert(
+        mbedtls_x509_crt **out, const avs_crypto_client_cert_info_t *info) {
     CREATE_OR_FAIL(mbedtls_x509_crt, out);
     mbedtls_x509_crt_init(*out);
 
     switch (info->desc.source) {
-    case AVS_NET_DATA_SOURCE_FILE:
+    case AVS_CRYPTO_DATA_SOURCE_FILE:
         if (!info->desc.info.file.filename) {
             LOG(ERROR,
                 _("attempt to load client cert from file, but filename=NULL"));
             return avs_errno(AVS_EINVAL);
         }
         return load_cert_from_file(*out, info->desc.info.file.filename);
-    case AVS_NET_DATA_SOURCE_BUFFER:
+    case AVS_CRYPTO_DATA_SOURCE_BUFFER:
         if (!info->desc.info.buffer.buffer) {
             LOG(ERROR,
                 _("attempt to load client cert from buffer, but buffer=NULL"));
@@ -223,13 +221,13 @@ static avs_error_t load_private_key_from_file(mbedtls_pk_context *client_key,
 }
 
 avs_error_t
-_avs_net_mbedtls_load_client_key(mbedtls_pk_context **client_key,
-                                 const avs_net_client_key_info_t *info) {
+_avs_crypto_mbedtls_load_client_key(mbedtls_pk_context **client_key,
+                                    const avs_crypto_client_key_info_t *info) {
     CREATE_OR_FAIL(mbedtls_pk_context, client_key);
     mbedtls_pk_init(*client_key);
 
     switch (info->desc.source) {
-    case AVS_NET_DATA_SOURCE_FILE:
+    case AVS_CRYPTO_DATA_SOURCE_FILE:
         if (!info->desc.info.file.filename) {
             LOG(ERROR,
                 _("attempt to load client key from file, but filename=NULL"));
@@ -238,7 +236,7 @@ _avs_net_mbedtls_load_client_key(mbedtls_pk_context **client_key,
         return load_private_key_from_file(*client_key,
                                           info->desc.info.file.filename,
                                           info->desc.info.file.password);
-    case AVS_NET_DATA_SOURCE_BUFFER:
+    case AVS_CRYPTO_DATA_SOURCE_BUFFER:
         if (!info->desc.info.buffer.buffer) {
             LOG(ERROR,
                 _("attempt to load client key from buffer, but buffer=NULL"));
@@ -254,5 +252,6 @@ _avs_net_mbedtls_load_client_key(mbedtls_pk_context **client_key,
     }
 }
 
-#endif // defined(AVS_COMMONS_WITH_AVS_NET) && defined(AVS_COMMONS_WITH_MBEDTLS)
-       // && defined(AVS_COMMONS_NET_WITH_X509)
+#endif // defined(AVS_COMMONS_WITH_AVS_CRYPTO) &&
+       // defined(AVS_COMMONS_WITH_MBEDTLS) &&
+       // defined(AVS_COMMONS_WITH_AVS_CRYPTO_PKI)

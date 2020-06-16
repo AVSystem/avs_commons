@@ -27,6 +27,12 @@ set(AVS_NET_PUBLIC_HEADERS
     "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/avs_socket_v_table.h"
     "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/avs_url.h")
 
+if(WITH_PKI)
+    set(AVS_NET_PUBLIC_HEADERS
+        ${AVS_NET_PUBLIC_HEADERS}
+        "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/avs_net_pki_compat.h")
+endif()
+
 # Because of complex internal dependencies of avs_net source files, all of them
 # have to be recompiled for every single (D)TLS backend.
 #
@@ -35,7 +41,6 @@ set(AVS_NET_PUBLIC_HEADERS
 set(AVS_NET_SOURCES
     ${AVS_NET_PUBLIC_HEADERS}
 
-    avs_api.h
     avs_global.h
     avs_net_impl.h
 
@@ -62,7 +67,7 @@ if(WIN32)
     target_link_libraries(avs_net_core INTERFACE ws2_32)
 endif()
 
-target_link_libraries(avs_net_core INTERFACE avs_stream avs_utils avs_compat_threading avs_crypto)
+target_link_libraries(avs_net_core INTERFACE avs_stream avs_utils avs_compat_threading)
 
 avs_install_export(avs_net_core net)
 install(FILES ${AVS_NET_PUBLIC_HEADERS}
@@ -85,11 +90,10 @@ if(WITH_OPENSSL)
 
     set(AVS_NET_OPENSSL_SOURCES
         ${AVS_NET_SOURCES}
-        openssl/avs_openssl.c
-        openssl/avs_openssl_data_loader.c)
+        openssl/avs_openssl.c)
 
     add_library(avs_net_openssl ${AVS_NET_OPENSSL_SOURCES})
-    target_link_libraries(avs_net_openssl PUBLIC avs_net_core OpenSSL::SSL OpenSSL::Crypto)
+    target_link_libraries(avs_net_openssl PUBLIC avs_net_core avs_crypto_openssl OpenSSL::SSL OpenSSL::Crypto)
 
     avs_add_test(NAME avs_net_openssl
                  LIBS $<TARGET_PROPERTY:avs_net_openssl,LINK_LIBRARIES>
@@ -97,8 +101,7 @@ if(WITH_OPENSSL)
                  ${AVS_NET_OPENSSL_SOURCES}
                  ${AVS_COMMONS_SOURCE_DIR}/tests/net/socket_nosec.c
                  ${AVS_COMMONS_SOURCE_DIR}/tests/net/socket_tls.c
-                 $<$<BOOL:${WITH_DTLS}>:${AVS_COMMONS_SOURCE_DIR}/tests/net/socket_dtls.c>
-                 $<$<BOOL:${WITH_X509}>:${AVS_COMMONS_SOURCE_DIR}/tests/net/openssl/openssl_data_loader.c>)
+                 $<$<BOOL:${WITH_DTLS}>:${AVS_COMMONS_SOURCE_DIR}/tests/net/socket_dtls.c>)
     avs_install_export(avs_net_openssl net)
 endif()
 
@@ -106,12 +109,11 @@ if(WITH_MBEDTLS)
     set(AVS_NET_MBEDTLS_SOURCES
         ${AVS_NET_SOURCES}
         mbedtls/avs_mbedtls.c
-        mbedtls/avs_mbedtls_data_loader.c
         mbedtls/avs_mbedtls_persistence.c
         mbedtls/avs_mbedtls_persistence.h)
 
     add_library(avs_net_mbedtls ${AVS_NET_MBEDTLS_SOURCES})
-    target_link_libraries(avs_net_mbedtls PUBLIC avs_net_core mbedtls mbedcrypto mbedx509)
+    target_link_libraries(avs_net_mbedtls PUBLIC avs_net_core avs_crypto_mbedtls mbedtls mbedcrypto mbedx509)
 
     if(WITH_TLS_SESSION_PERSISTENCE)
         target_link_libraries(avs_net_mbedtls PUBLIC avs_persistence avs_rbtree)
@@ -123,8 +125,7 @@ if(WITH_MBEDTLS)
                  ${AVS_NET_MBEDTLS_SOURCES}
                  ${AVS_COMMONS_SOURCE_DIR}/tests/net/socket_nosec.c
                  ${AVS_COMMONS_SOURCE_DIR}/tests/net/socket_tls.c
-                 ${AVS_COMMONS_SOURCE_DIR}/tests/net/socket_dtls.c
-                 $<$<BOOL:${WITH_X509}>:${AVS_COMMONS_SOURCE_DIR}/tests/net/mbedtls/mbedtls_data_loader.c>)
+                 ${AVS_COMMONS_SOURCE_DIR}/tests/net/socket_dtls.c)
     avs_install_export(avs_net_mbedtls net)
 endif()
 

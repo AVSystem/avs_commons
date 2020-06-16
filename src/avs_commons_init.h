@@ -48,3 +48,16 @@
         && defined(AVS_COMMONS_STREAM_WITH_FILE)
 #    error "AVS_COMMONS_WITH_AVS_STREAM is required for AVS_COMMONS_STREAM_WITH_FILE"
 #endif
+
+// Backwards compatibility with configuration macros that are no longer current
+#ifdef AVS_COMMONS_NET_WITH_X509
+#    warning \
+            "AVS_COMMONS_NET_WITH_X509 is deprecated since avs_commons 4.2. Please update your avs_commons_config.h to use AVS_COMMONS_WITH_AVS_CRYPTO_PKI instead."
+#    define AVS_COMMONS_WITH_AVS_CRYPTO_PKI
+#endif // AVS_COMMONS_NET_WITH_X509
+
+#ifdef AVS_COMMONS_NET_WITH_VALGRIND
+#    warning \
+            "AVS_COMMONS_NET_WITH_VALGRIND is deprecated since avs_commons 4.2. Please update your avs_commons_config.h to use AVS_COMMONS_WITH_AVS_CRYPTO_VALGRIND instead."
+#    define AVS_COMMONS_WITH_AVS_CRYPTO_VALGRIND
+#endif // AVS_COMMONS_NET_WITH_VALGRIND

@@ -273,7 +273,7 @@ find_program(VALGRIND_EXECUTABLE valgrind)
 # This is enabled in devconfig only, and should be disabled in CMakeLists.txt,
 # to avoid cross-compilation errors on stations with valgrind installed.
 cmake_dependent_option(WITH_VALGRIND "Enable usage of valgrind during unit tests" OFF VALGRIND_EXECUTABLE OFF)
-set(AVS_COMMONS_NET_WITH_VALGRIND ${WITH_VALGRIND})
+set(AVS_COMMONS_WITH_AVS_CRYPTO_VALGRIND ${WITH_VALGRIND})
 if(WITH_VALGRIND)
     execute_process(COMMAND ${VALGRIND_EXECUTABLE} --tool=helgrind --version
                     RESULT_VARIABLE HELGRIND_TEST_RESULT
@@ -468,8 +468,15 @@ set(AVS_COMMONS_WITH_TINYDTLS ${WITH_TINYDTLS})
 
 cmake_dependent_option(WITH_PSK "Enable pre-shared key support" ON "WITH_OPENSSL OR WITH_MBEDTLS OR WITH_TINYDTLS" OFF)
 set(AVS_COMMONS_NET_WITH_PSK ${WITH_PSK})
-cmake_dependent_option(WITH_X509 "Enable X.509 certificate support" ON "WITH_OPENSSL OR WITH_MBEDTLS OR WITH_TINYDTLS" OFF)
-set(AVS_COMMONS_NET_WITH_X509 ${WITH_X509})
+
+set(WITH_PKI_DEFAULT_VALUE ON)
+if(DEFINED WITH_X509)
+    message(WARNING "WITH_X509 is deprecated since avs_commons 4.2. Please use WITH_PKI instead.")
+    set(WITH_PKI_DEFAULT_VALUE "${WITH_X509}")
+endif()
+
+cmake_dependent_option(WITH_PKI "Enable X.509 certificate support" "${WITH_PKI_DEFAULT_VALUE}" "WITH_OPENSSL OR WITH_MBEDTLS OR WITH_TINYDTLS" OFF)
+set(AVS_COMMONS_WITH_AVS_CRYPTO_PKI ${WITH_PKI})
 
 if(WITH_OPENSSL)
     avs_add_find_routine("find_package(OpenSSL REQUIRED)")

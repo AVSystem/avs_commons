@@ -13,10 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef NET_OPENSSL_COMMON_H
-#define NET_OPENSSL_COMMON_H
+#ifndef AVS_COMMONS_CRYPTO_OPENSSL_COMMON_H
+#define AVS_COMMONS_CRYPTO_OPENSSL_COMMON_H
 
 #include <openssl/err.h>
+
+#ifdef AVS_COMMONS_WITH_AVS_CRYPTO_VALGRIND
+#    include <stdint.h>
+#    include <valgrind/helgrind.h>
+#    include <valgrind/memcheck.h>
+#    include <valgrind/valgrind.h>
+extern void *sbrk(intptr_t __delta);
+#else
+#    define RUNNING_ON_VALGRIND 0
+#    define VALGRIND_HG_DISABLE_CHECKING(addr, len) ((void) 0)
+#    define VALGRIND_MAKE_MEM_DEFINED_IF_ADDRESSABLE(addr, len) ((void) 0)
+#endif
 
 VISIBILITY_PRIVATE_HEADER_BEGIN
 
@@ -36,4 +48,4 @@ VISIBILITY_PRIVATE_HEADER_BEGIN
 
 VISIBILITY_PRIVATE_HEADER_END
 
-#endif // NET_OPENSSL_COMMON_H
+#endif // AVS_COMMONS_CRYPTO_OPENSSL_COMMON_H

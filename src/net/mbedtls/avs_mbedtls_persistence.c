@@ -79,7 +79,7 @@ static const char PERSISTENCE_MAGIC[] = { 'M', 'S', 'P', '\0' };
  * to serious problems if we try to restore it on another platform and/or
  * another mbed TLS version.
  */
-#    ifdef AVS_COMMONS_NET_WITH_X509
+#    ifdef AVS_COMMONS_WITH_AVS_CRYPTO_PKI
 static avs_error_t handle_cert_persistence(avs_persistence_context_t *ctx,
                                            mbedtls_x509_crt **cert_ptr) {
     void *data = (*cert_ptr ? (*cert_ptr)->raw.p : NULL);
@@ -130,7 +130,7 @@ static avs_error_t handle_cert_persistence(avs_persistence_context_t *ctx,
     }
     return AVS_OK;
 }
-#    endif // AVS_COMMONS_NET_WITH_X509
+#    endif // AVS_COMMONS_WITH_AVS_CRYPTO_PKI
 
 static avs_error_t handle_session_persistence(avs_persistence_context_t *ctx,
                                               mbedtls_ssl_session *session) {
@@ -212,12 +212,13 @@ static avs_error_t handle_session_persistence(avs_persistence_context_t *ctx,
 #    endif // MBEDTLS_SSL_ENCRYPT_THEN_MAC
     }
 
-#    if defined(AVS_COMMONS_NET_WITH_X509) && !defined(MBEDTLS_X509_CRT_PARSE_C)
+#    if defined(AVS_COMMONS_WITH_AVS_CRYPTO_PKI) \
+            && !defined(MBEDTLS_X509_CRT_PARSE_C)
     if (*peer_cert_ptr) {
         mbedtls_x509_crt_free(*peer_cert_ptr);
         mbedtls_free(*peer_cert_ptr);
     }
-#    endif // AVS_COMMONS_NET_WITH_X509 && !MBEDTLS_X509_CRT_PARSE_C
+#    endif // AVS_COMMONS_WITH_AVS_CRYPTO_PKI && !MBEDTLS_X509_CRT_PARSE_C
     return err;
 }
 

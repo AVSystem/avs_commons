@@ -20,17 +20,15 @@
 #define AVS_SUPPRESS_POISONING
 #include <avs_commons_init.h>
 
-#if defined(AVS_COMMONS_WITH_AVS_NET) && defined(AVS_COMMONS_WITH_OPENSSL) \
-        && defined(AVS_COMMONS_NET_WITH_X509)
+#if defined(AVS_COMMONS_WITH_AVS_CRYPTO) && defined(AVS_COMMONS_WITH_OPENSSL) \
+        && defined(AVS_COMMONS_WITH_AVS_CRYPTO_PKI)
 
 #    include <openssl/ssl.h>
 
 #    include <avs_commons_poison.h>
 
-#    include "avs_common.h"
+#    include "avs_openssl_common.h"
 #    include "avs_openssl_data_loader.h"
-
-#    include "../avs_api.h"
 
 #    include <assert.h>
 #    include <stdio.h>
@@ -39,7 +37,7 @@
 
 #    include <avsystem/commons/avs_utils.h>
 
-#    define MODULE_NAME avs_net_data_loader
+#    define MODULE_NAME avs_crypto_data_loader
 #    include <avs_x_log_config.h>
 
 VISIBILITY_SOURCE_BEGIN
@@ -157,8 +155,8 @@ load_ca_cert_from_buffer(SSL_CTX *ctx, const void *buffer, const size_t len) {
 }
 
 avs_error_t
-_avs_net_openssl_load_ca_certs(SSL_CTX *ctx,
-                               const avs_net_trusted_cert_info_t *info) {
+_avs_crypto_openssl_load_ca_certs(SSL_CTX *ctx,
+                                  const avs_crypto_trusted_cert_info_t *info) {
     setup_password_callback(ctx, NULL);
     if (!SSL_CTX_set_default_verify_paths(ctx)) {
         LOG(WARNING, _("could not set default CA verify paths"));
@@ -166,7 +164,7 @@ _avs_net_openssl_load_ca_certs(SSL_CTX *ctx,
     }
 
     switch (info->desc.source) {
-    case AVS_NET_DATA_SOURCE_FILE:
+    case AVS_CRYPTO_DATA_SOURCE_FILE:
         if (!info->desc.info.file.filename) {
             LOG(ERROR,
                 _("attempt to load CA cert from file, but filename=NULL"));
@@ -174,13 +172,13 @@ _avs_net_openssl_load_ca_certs(SSL_CTX *ctx,
         }
         return load_ca_certs_from_paths(ctx, info->desc.info.file.filename,
                                         NULL);
-    case AVS_NET_DATA_SOURCE_PATH:
+    case AVS_CRYPTO_DATA_SOURCE_PATH:
         if (!info->desc.info.path.path) {
             LOG(ERROR, _("attempt to load CA cert from path, but path=NULL"));
             return avs_errno(AVS_EINVAL);
         }
         return load_ca_certs_from_paths(ctx, NULL, info->desc.info.path.path);
-    case AVS_NET_DATA_SOURCE_BUFFER:
+    case AVS_CRYPTO_DATA_SOURCE_BUFFER:
         if (!info->desc.info.buffer.buffer) {
             LOG(ERROR,
                 _("attempt to load CA cert from buffer, but buffer=NULL"));
@@ -225,20 +223,19 @@ load_client_cert_from_buffer(SSL_CTX *ctx, const void *buffer, size_t len) {
     return AVS_OK;
 }
 
-avs_error_t
-_avs_net_openssl_load_client_cert(SSL_CTX *ctx,
-                                  const avs_net_client_cert_info_t *info) {
+avs_error_t _avs_crypto_openssl_load_client_cert(
+        SSL_CTX *ctx, const avs_crypto_client_cert_info_t *info) {
     setup_password_callback(ctx, NULL);
 
     switch (info->desc.source) {
-    case AVS_NET_DATA_SOURCE_FILE:
+    case AVS_CRYPTO_DATA_SOURCE_FILE:
         if (!info->desc.info.file.filename) {
             LOG(ERROR,
                 _("attempt to load client cert from file, but filename=NULL"));
             return avs_errno(AVS_EINVAL);
         }
         return load_client_cert_from_file(ctx, info->desc.info.file.filename);
-    case AVS_NET_DATA_SOURCE_BUFFER:
+    case AVS_CRYPTO_DATA_SOURCE_BUFFER:
         if (!info->desc.info.buffer.buffer) {
             LOG(ERROR,
                 _("attempt to load client cert from buffer, but buffer=NULL"));
@@ -319,10 +316,10 @@ static avs_error_t load_client_key_from_buffer(SSL_CTX *ctx,
 }
 
 avs_error_t
-_avs_net_openssl_load_client_key(SSL_CTX *ctx,
-                                 const avs_net_client_key_info_t *info) {
+_avs_crypto_openssl_load_client_key(SSL_CTX *ctx,
+                                    const avs_crypto_client_key_info_t *info) {
     switch (info->desc.source) {
-    case AVS_NET_DATA_SOURCE_FILE:
+    case AVS_CRYPTO_DATA_SOURCE_FILE:
         if (!info->desc.info.file.filename) {
             LOG(ERROR,
                 _("attempt to load client key from file, but filename=NULL"));
@@ -330,7 +327,7 @@ _avs_net_openssl_load_client_key(SSL_CTX *ctx,
         }
         return load_client_key_from_file(ctx, info->desc.info.file.filename,
                                          info->desc.info.file.password);
-    case AVS_NET_DATA_SOURCE_BUFFER:
+    case AVS_CRYPTO_DATA_SOURCE_BUFFER:
         if (!info->desc.info.buffer.buffer) {
             LOG(ERROR,
                 _("attempt to load client key from buffer, but buffer=NULL"));
@@ -345,5 +342,6 @@ _avs_net_openssl_load_client_key(SSL_CTX *ctx,
     }
 }
 
-#endif // defined(AVS_COMMONS_WITH_AVS_NET) && defined(AVS_COMMONS_WITH_OPENSSL)
-       // && defined(AVS_COMMONS_NET_WITH_X509)
+#endif // defined(AVS_COMMONS_WITH_AVS_CRYPTO) &&
+       // defined(AVS_COMMONS_WITH_OPENSSL) &&
+       // defined(AVS_COMMONS_WITH_AVS_CRYPTO_PKI)

@@ -26,11 +26,19 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#include <avsystem/commons/avs_commons_config.h>
+#include <avsystem/commons/avs_crypto_pki.h>
 #include <avsystem/commons/avs_defs.h>
 #include <avsystem/commons/avs_errno.h>
 #include <avsystem/commons/avs_memory.h>
 #include <avsystem/commons/avs_prng.h>
 #include <avsystem/commons/avs_time.h>
+
+#ifdef AVS_COMMONS_NET_WITH_X509
+#    warning \
+            "Your avs_commons_config.h defines AVS_COMMONS_NET_WITH_X509, which is deprecated since avs_commons 4.2. Auto-including avs_net_pki_compat.h to provide backwards compatibility for legacy avs_net PKI APIs."
+#    include <avsystem/commons/avs_net_pki_compat.h>
+#endif // AVS_COMMONS_NET_WITH_X509
 
 #ifdef __cplusplus
 extern "C" {
@@ -250,148 +258,25 @@ typedef struct {
 } avs_net_psk_info_t;
 
 /**
- * This struct is for internal use only and should not be filled manually. One
- * should construct appropriate instances of:
- * - @ref avs_net_trusted_cert_info_t,
- * - @ref avs_net_client_cert_info_t,
- * - @ref avs_net_client_key_info_t
- * using methods declared below.
- */
-typedef struct {
-    int type;
-    int source;
-    union {
-        struct {
-            const char *filename;
-            const char *password;
-        } file;
-        struct {
-            const char *path;
-        } path;
-        struct {
-            const void *buffer;
-            const char *password;
-            size_t buffer_size;
-        } buffer;
-    } info;
-} avs_net_security_info_union_t;
-
-typedef struct {
-    avs_net_security_info_union_t desc;
-} avs_net_trusted_cert_info_t;
-
-/**
- * Creates CA chain descriptor used later on to load CA chain from file @p
- * filename.
- *
- * NOTE: File loading is conducted by using: fopen(), fread(), ftell() and
- * fclose(), thus the platform shall implement them. On embededd platforms it
- * may be preferable to use @ref avs_net_trusted_cert_info_from_buffer()
- * instead.
- *
- * @param filename  File from which the CA chain shall be loaded.
- */
-avs_net_trusted_cert_info_t
-avs_net_trusted_cert_info_from_file(const char *filename);
-
-/**
- * Creates CA chain descriptor used later on to load CA chain from specified @p
- * path. The loading procedure attempts to treat each file as CA certificate,
- * attempts to load, and fails only if no CA certificate could be loaded.
- *
- * NOTE: File loading and discovery is conducted by using: fopen(), fseek(),
- * fread(), ftell(), fclose(), opendir(), readdir(), closedir() and stat(), thus
- * the platform shall implement them. On embededd platforms it may be preferable
- * to use @ref avs_net_trusted_cert_info_from_buffer() instead.
- *
- * @param path  Path from which the CA chain shall be loaded.
- *
- * WARNING: accepted file formats are backend-specific.
- */
-avs_net_trusted_cert_info_t
-avs_net_trusted_cert_info_from_path(const char *path);
-
-/**
- * Creates CA chain descriptor used later on to load CA chain from memory
- * @p buffer.
- *
- * NOTE: Lifetime of the @p buffer must be as long as lifetime of any (D)TLS
- * sockets that used this descriptor to perform configuration.
- *
- * @param buffer        Buffer where loaded CA chain is stored.
- * @param buffer_size   Size in bytes of the buffer.
- */
-avs_net_trusted_cert_info_t
-avs_net_trusted_cert_info_from_buffer(const void *buffer, size_t buffer_size);
-
-typedef struct {
-    avs_net_security_info_union_t desc;
-} avs_net_client_key_info_t;
-
-/**
- * Creates private key descriptor used later on to load private key from
- * file @p filename.
- *
- * @param filename  Name of the file to be loaded.
- * @param password  Optional password if present, or NULL.
- */
-avs_net_client_key_info_t
-avs_net_client_key_info_from_file(const char *filename, const char *password);
-
-/**
- * Creates private key descriptor used later on to load private key from
- * @p buffer.
- *
- * @param buffer      Buffer in which private key is stored.
- * @param buffer_size Size of the buffer contents in bytes.
- * @param password    Optional password if present, or NULL.
- */
-avs_net_client_key_info_t avs_net_client_key_info_from_buffer(
-        const void *buffer, size_t buffer_size, const char *password);
-
-typedef struct {
-    avs_net_security_info_union_t desc;
-} avs_net_client_cert_info_t;
-
-/**
- * Creates client certificate descriptor used later on to load client
- * certificate from file @p filename.
- *
- * @param filename  Name of the file to be loaded.
- */
-avs_net_client_cert_info_t
-avs_net_client_cert_info_from_file(const char *filename);
-
-/**
- * Creates client certificate descriptor used later on to load client
- * certificate from buffer @p buffer.
- *
- * @param buffer      Buffer in which certificate is stored.
- * @param buffer_size Size of the buffer contents in bytes.
- */
-avs_net_client_cert_info_t
-avs_net_client_cert_info_from_buffer(const void *buffer, size_t buffer_size);
-
-/**
  * Certificate and key information may be read from files or passed as raw data.
  *
  * User should initialize:
- *  - @ref avs_net_certificate_info_t#client_cert,
- *  - @ref avs_net_certificate_info_t#client_key,
- *  - @ref avs_net_certificate_info_t#trusted_certs
+ *  - @ref avs_crypto_certificate_info_t#client_cert,
+ *  - @ref avs_crypto_certificate_info_t#client_key,
+ *  - @ref avs_crypto_certificate_info_t#trusted_certs
  * via helper functions:
- *  - @ref avs_net_client_cert_from_*
- *  - @ref avs_net_client_key_from_*
- *  - @ref avs_net_trusted_cert_source_from_*
+ *  - @ref avs_crypto_client_cert_from_*
+ *  - @ref avs_crypto_client_key_from_*
+ *  - @ref avs_crypto_trusted_cert_source_from_*
  *
  * Moreover, to enable CA chain validation one MUST set @ref
  * avs_net_certificate_info_t#server_cert_validation to true.
  */
 typedef struct {
     bool server_cert_validation;
-    avs_net_trusted_cert_info_t trusted_certs;
-    avs_net_client_cert_info_t client_cert;
-    avs_net_client_key_info_t client_key;
+    avs_crypto_trusted_cert_info_t trusted_certs;
+    avs_crypto_client_cert_info_t client_cert;
+    avs_crypto_client_key_info_t client_key;
 } avs_net_certificate_info_t;
 
 typedef struct {

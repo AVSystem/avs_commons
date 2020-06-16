@@ -59,22 +59,22 @@
 #    include <avsystem/commons/avs_utils.h>
 
 #    include "../avs_global.h"
-#    ifdef AVS_COMMONS_NET_WITH_X509
-#        include "avs_mbedtls_data_loader.h"
-#    endif // AVS_COMMONS_NET_WITH_X509
+#    ifdef AVS_COMMONS_WITH_AVS_CRYPTO_PKI
+#        include "crypto/mbedtls/avs_mbedtls_data_loader.h"
+#    endif // AVS_COMMONS_WITH_AVS_CRYPTO_PKI
 #    include "avs_mbedtls_persistence.h"
 
 #    include "../avs_net_impl.h"
 
 VISIBILITY_SOURCE_BEGIN
 
-#    ifdef AVS_COMMONS_NET_WITH_X509
+#    ifdef AVS_COMMONS_WITH_AVS_CRYPTO_PKI
 typedef struct {
     mbedtls_x509_crt *ca_cert;
     mbedtls_x509_crt *client_cert;
     mbedtls_pk_context *client_key;
 } ssl_socket_certs_t;
-#    endif // AVS_COMMONS_NET_WITH_X509
+#    endif // AVS_COMMONS_WITH_AVS_CRYPTO_PKI
 
 typedef struct {
     const avs_net_socket_v_table_t *const operations;
@@ -90,9 +90,9 @@ typedef struct {
 #    endif // AVS_COMMONS_NET_WITH_TLS_SESSION_PERSISTENCE
     avs_net_security_mode_t security_mode;
     union {
-#    ifdef AVS_COMMONS_NET_WITH_X509
+#    ifdef AVS_COMMONS_WITH_AVS_CRYPTO_PKI
         ssl_socket_certs_t cert;
-#    endif // AVS_COMMONS_NET_WITH_X509
+#    endif // AVS_COMMONS_WITH_AVS_CRYPTO_PKI
 #    ifdef AVS_COMMONS_NET_WITH_PSK
         avs_net_owned_psk_t psk;
 #    endif // AVS_COMMONS_NET_WITH_PSK
@@ -281,7 +281,8 @@ static int set_min_ssl_version(mbedtls_ssl_config *config,
     }
 }
 
-#    if defined(AVS_COMMONS_NET_WITH_X509) || defined(AVS_COMMONS_NET_WITH_PSK)
+#    if defined(AVS_COMMONS_WITH_AVS_CRYPTO_PKI) \
+            || defined(AVS_COMMONS_NET_WITH_PSK)
 static bool
 contains_cipher(const avs_net_socket_tls_ciphersuites_t *enabled_ciphers,
                 int cipher) {
@@ -296,10 +297,10 @@ contains_cipher(const avs_net_socket_tls_ciphersuites_t *enabled_ciphers,
         return false;
     }
 }
-#    endif // defined(AVS_COMMONS_NET_WITH_X509) ||
+#    endif // defined(AVS_COMMONS_WITH_AVS_CRYPTO_PKI) ||
            // defined(AVS_COMMONS_NET_WITH_PSK)
 
-#    ifdef AVS_COMMONS_NET_WITH_X509
+#    ifdef AVS_COMMONS_WITH_AVS_CRYPTO_PKI
 static int *init_cert_ciphersuites(
         const avs_net_socket_tls_ciphersuites_t *enabled_ciphers) {
     const int *all_ciphers = mbedtls_ssl_list_ciphersuites();
@@ -359,10 +360,10 @@ static avs_error_t initialize_cert_security(
                                   socket->effective_ciphersuites);
     return AVS_OK;
 }
-#    else // AVS_COMMONS_NET_WITH_X509
+#    else // AVS_COMMONS_WITH_AVS_CRYPTO_PKI
 #        define is_verification_enabled(...) 0
 #        define initialize_cert_security(...) avs_errno(AVS_ENOTSUP)
-#    endif // AVS_COMMONS_NET_WITH_X509
+#    endif // AVS_COMMONS_WITH_AVS_CRYPTO_PKI
 
 #    ifdef AVS_COMMONS_NET_WITH_PSK
 static int *init_psk_ciphersuites(
@@ -652,7 +653,7 @@ static avs_error_t start_ssl(ssl_socket_t *socket, const char *host) {
     }
 #    endif // MBEDTLS_SSL_DTLS_CONNECTION_ID
 
-#    ifdef AVS_COMMONS_NET_WITH_X509
+#    ifdef AVS_COMMONS_WITH_AVS_CRYPTO_PKI
     if ((result = mbedtls_ssl_set_hostname(
                  get_context(socket),
                  socket->server_name_indication[0]
@@ -665,7 +666,7 @@ static avs_error_t start_ssl(ssl_socket_t *socket, const char *host) {
     }
 #    else
     (void) host;
-#    endif // AVS_COMMONS_NET_WITH_X509
+#    endif // AVS_COMMONS_WITH_AVS_CRYPTO_PKI
 
 #    ifdef AVS_COMMONS_NET_WITH_TLS_SESSION_PERSISTENCE
     if (socket->session_resumption_buffer
@@ -880,7 +881,7 @@ static avs_error_t receive_ssl(avs_net_socket_t *socket_,
     return AVS_OK;
 }
 
-#    ifdef AVS_COMMONS_NET_WITH_X509
+#    ifdef AVS_COMMONS_WITH_AVS_CRYPTO_PKI
 static void cleanup_security_cert(ssl_socket_certs_t *certs) {
     if (certs->ca_cert) {
         mbedtls_x509_crt_free(certs->ca_cert);
@@ -895,9 +896,9 @@ static void cleanup_security_cert(ssl_socket_certs_t *certs) {
         avs_free(certs->client_key);
     }
 }
-#    else // AVS_COMMONS_NET_WITH_X509
+#    else // AVS_COMMONS_WITH_AVS_CRYPTO_PKI
 #        define cleanup_security_cert(...) (void) 0
-#    endif // AVS_COMMONS_NET_WITH_X509
+#    endif // AVS_COMMONS_WITH_AVS_CRYPTO_PKI
 
 #    ifdef AVS_COMMONS_NET_WITH_PSK
 #        define cleanup_security_psk _avs_net_psk_cleanup
@@ -936,7 +937,7 @@ static avs_error_t cleanup_ssl(avs_net_socket_t **socket_) {
     return AVS_OK;
 }
 
-#    ifdef AVS_COMMONS_NET_WITH_X509
+#    ifdef AVS_COMMONS_WITH_AVS_CRYPTO_PKI
 static avs_error_t
 configure_ssl_certs(ssl_socket_certs_t *certs,
                     const avs_net_certificate_info_t *cert_info) {
@@ -944,8 +945,8 @@ configure_ssl_certs(ssl_socket_certs_t *certs,
 
     if (cert_info->server_cert_validation) {
         avs_error_t err =
-                _avs_net_mbedtls_load_ca_certs(&certs->ca_cert,
-                                               &cert_info->trusted_certs);
+                _avs_crypto_mbedtls_load_ca_certs(&certs->ca_cert,
+                                                  &cert_info->trusted_certs);
         if (avs_is_err(err)) {
             LOG(ERROR, _("could not load CA chain"));
             return err;
@@ -954,15 +955,15 @@ configure_ssl_certs(ssl_socket_certs_t *certs,
         LOG(DEBUG, _("Server authentication disabled"));
     }
 
-    if (cert_info->client_cert.desc.source != AVS_NET_DATA_SOURCE_EMPTY) {
+    if (cert_info->client_cert.desc.source != AVS_CRYPTO_DATA_SOURCE_EMPTY) {
         avs_error_t err;
         if (avs_is_err(
-                    (err = _avs_net_mbedtls_load_client_cert(
+                    (err = _avs_crypto_mbedtls_load_client_cert(
                              &certs->client_cert, &cert_info->client_cert)))) {
             LOG(ERROR, _("could not load client certificate"));
             return err;
         }
-        if (avs_is_err((err = _avs_net_mbedtls_load_client_key(
+        if (avs_is_err((err = _avs_crypto_mbedtls_load_client_key(
                                 &certs->client_key, &cert_info->client_key)))) {
             LOG(ERROR, _("could not load client private key"));
             return err;
@@ -974,10 +975,10 @@ configure_ssl_certs(ssl_socket_certs_t *certs,
     return AVS_OK;
 }
 
-#    else // AVS_COMMONS_NET_WITH_X509
+#    else // AVS_COMMONS_WITH_AVS_CRYPTO_PKI
 #        define configure_ssl_certs(...) \
             (LOG(ERROR, _("X.509 support disabled")), avs_errno(AVS_ENOTSUP))
-#    endif // AVS_COMMONS_NET_WITH_X509
+#    endif // AVS_COMMONS_WITH_AVS_CRYPTO_PKI
 
 #    ifdef AVS_COMMONS_NET_WITH_PSK
 static avs_error_t configure_ssl_psk(ssl_socket_t *socket,

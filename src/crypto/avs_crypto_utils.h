@@ -21,6 +21,19 @@
 
 VISIBILITY_PRIVATE_HEADER_BEGIN
 
+typedef enum {
+    AVS_CRYPTO_DATA_SOURCE_EMPTY,
+    AVS_CRYPTO_DATA_SOURCE_FILE,
+    AVS_CRYPTO_DATA_SOURCE_PATH,
+    AVS_CRYPTO_DATA_SOURCE_BUFFER
+} avs_crypto_data_source_t;
+
+typedef enum {
+    AVS_CRYPTO_SECURITY_INFO_TRUSTED_CERT,
+    AVS_CRYPTO_SECURITY_INFO_CLIENT_CERT,
+    AVS_CRYPTO_SECURITY_INFO_CLIENT_KEY
+} avs_crypto_security_info_tag_t;
+
 bool _avs_crypto_aead_parameters_valid(size_t key_len,
                                        size_t iv_len,
                                        size_t tag_len);
