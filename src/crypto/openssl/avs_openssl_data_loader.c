@@ -252,26 +252,6 @@ avs_error_t _avs_crypto_openssl_load_client_cert(
     }
 }
 
-static avs_error_t load_client_key_from_file(SSL_CTX *ctx,
-                                             const char *filename,
-                                             const char *password) {
-    LOG(DEBUG, _("client key <") "%s" _(">: going to load"), filename);
-    setup_password_callback(ctx, password);
-
-    // Try PEM.
-    if (SSL_CTX_use_PrivateKey_file(ctx, filename, SSL_FILETYPE_PEM) == 1) {
-        return AVS_OK;
-    }
-    // Try DER.
-    if (SSL_CTX_use_PrivateKey_file(ctx, filename, SSL_FILETYPE_ASN1) == 1) {
-        return AVS_OK;
-    }
-    log_openssl_error();
-    return avs_errno(AVS_EPROTO);
-}
-
-// NOTE: This function exists only because OpenSSL does not seem to have a
-// method of loading in-buffer PEM encoded private keys.
 static avs_error_t
 parse_key(EVP_PKEY **out_key, BIO *bio, const char *password) {
     *out_key = NULL;
@@ -286,61 +266,70 @@ parse_key(EVP_PKEY **out_key, BIO *bio, const char *password) {
         break;
     }
     default:
-        LOG(ERROR, _("unknown in-memory certificate format"));
+        LOG(ERROR, _("unknown key format"));
         break;
     }
     return *out_key ? AVS_OK : avs_errno(AVS_EPROTO);
 }
 
-static avs_error_t load_client_key_from_buffer(SSL_CTX *ctx,
-                                               const void *buffer,
-                                               size_t len,
-                                               const char *password) {
-    BIO *bio = BIO_new_mem_buf((void *) (intptr_t) buffer, (int) len);
-    if (!bio) {
-        return avs_errno(AVS_ENOMEM);
+avs_error_t
+_avs_crypto_openssl_load_client_key(SSL_CTX *ctx,
+                                    const avs_crypto_client_key_info_t *info) {
+    BIO *bio = NULL;
+    avs_error_t err = AVS_OK;
+    switch (info->desc.source) {
+    case AVS_CRYPTO_DATA_SOURCE_FILE: {
+        if (!info->desc.info.file.filename) {
+            LOG(ERROR,
+                _("attempt to load client key from file, but filename=NULL"));
+            return avs_errno(AVS_EINVAL);
+        }
+        LOG(DEBUG, _("client key <") "%s" _(">: going to load"),
+            info->desc.info.file.filename);
+        if (!(bio = BIO_new_file(info->desc.info.file.filename, "rb"))) {
+            err = avs_errno(AVS_EIO);
+        }
+        break;
     }
-
-    setup_password_callback(ctx, password);
-
-    EVP_PKEY *key;
-    avs_error_t err = parse_key(&key, bio, password);
+    case AVS_CRYPTO_DATA_SOURCE_BUFFER: {
+        if (!info->desc.info.buffer.buffer) {
+            LOG(ERROR,
+                _("attempt to load client key from buffer, but buffer=NULL"));
+            return avs_errno(AVS_EINVAL);
+        }
+        if (!(bio = BIO_new_mem_buf(
+                      (void *) (intptr_t) info->desc.info.buffer.buffer,
+                      (int) info->desc.info.buffer.buffer_size))) {
+            err = avs_errno(AVS_ENOMEM);
+        }
+        break;
+    }
+    default:
+        AVS_UNREACHABLE("invalid data source");
+        err = avs_errno(AVS_EINVAL);
+    }
+    EVP_PKEY *key = NULL;
+    if (avs_is_ok(err)) {
+        AVS_STATIC_ASSERT(
+                offsetof(avs_crypto_security_info_union_internal_file_t,
+                         password)
+                        == offsetof(
+                                   avs_crypto_security_info_union_internal_buffer_t,
+                                   password),
+                password_offset_consistent);
+        assert(bio);
+        err = parse_key(&key, bio, info->desc.info.file.password);
+        BIO_free(bio);
+    }
     if (avs_is_ok(err)) {
         assert(key);
         if (SSL_CTX_use_PrivateKey(ctx, key) != 1) {
             log_openssl_error();
             err = avs_errno(AVS_EPROTO);
         }
+        EVP_PKEY_free(key);
     }
-    BIO_free(bio);
     return err;
-}
-
-avs_error_t
-_avs_crypto_openssl_load_client_key(SSL_CTX *ctx,
-                                    const avs_crypto_client_key_info_t *info) {
-    switch (info->desc.source) {
-    case AVS_CRYPTO_DATA_SOURCE_FILE:
-        if (!info->desc.info.file.filename) {
-            LOG(ERROR,
-                _("attempt to load client key from file, but filename=NULL"));
-            return avs_errno(AVS_EINVAL);
-        }
-        return load_client_key_from_file(ctx, info->desc.info.file.filename,
-                                         info->desc.info.file.password);
-    case AVS_CRYPTO_DATA_SOURCE_BUFFER:
-        if (!info->desc.info.buffer.buffer) {
-            LOG(ERROR,
-                _("attempt to load client key from buffer, but buffer=NULL"));
-            return avs_errno(AVS_EINVAL);
-        }
-        return load_client_key_from_buffer(ctx, info->desc.info.buffer.buffer,
-                                           info->desc.info.buffer.buffer_size,
-                                           info->desc.info.buffer.password);
-    default:
-        AVS_UNREACHABLE("invalid data source");
-        return avs_errno(AVS_EINVAL);
-    }
 }
 
 #endif // defined(AVS_COMMONS_WITH_AVS_CRYPTO) &&

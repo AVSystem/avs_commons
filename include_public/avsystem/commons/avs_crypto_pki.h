@@ -27,6 +27,21 @@
 extern "C" {
 #endif
 
+typedef struct {
+    const char *filename;
+    const char *password;
+} avs_crypto_security_info_union_internal_file_t;
+
+typedef struct {
+    const char *path;
+} avs_crypto_security_info_union_internal_path_t;
+
+typedef struct {
+    const void *buffer;
+    const char *password;
+    size_t buffer_size;
+} avs_crypto_security_info_union_internal_buffer_t;
+
 /**
  * This struct is for internal use only and should not be filled manually. One
  * should construct appropriate instances of:
@@ -39,18 +54,9 @@ typedef struct {
     int type;
     int source;
     union {
-        struct {
-            const char *filename;
-            const char *password;
-        } file;
-        struct {
-            const char *path;
-        } path;
-        struct {
-            const void *buffer;
-            const char *password;
-            size_t buffer_size;
-        } buffer;
+        avs_crypto_security_info_union_internal_file_t file;
+        avs_crypto_security_info_union_internal_path_t path;
+        avs_crypto_security_info_union_internal_buffer_t buffer;
     } info;
 } avs_crypto_security_info_union_t;
 
