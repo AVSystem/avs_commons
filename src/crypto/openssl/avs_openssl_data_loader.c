@@ -273,8 +273,9 @@ parse_key(EVP_PKEY **out_key, BIO *bio, const char *password) {
 }
 
 avs_error_t
-_avs_crypto_openssl_load_client_key(SSL_CTX *ctx,
+_avs_crypto_openssl_load_client_key(EVP_PKEY **out_key,
                                     const avs_crypto_client_key_info_t *info) {
+    assert(out_key && !*out_key);
     BIO *bio = NULL;
     avs_error_t err = AVS_OK;
     switch (info->desc.source) {
@@ -308,7 +309,6 @@ _avs_crypto_openssl_load_client_key(SSL_CTX *ctx,
         AVS_UNREACHABLE("invalid data source");
         err = avs_errno(AVS_EINVAL);
     }
-    EVP_PKEY *key = NULL;
     if (avs_is_ok(err)) {
         AVS_STATIC_ASSERT(
                 offsetof(avs_crypto_security_info_union_internal_file_t,
@@ -318,17 +318,10 @@ _avs_crypto_openssl_load_client_key(SSL_CTX *ctx,
                                    password),
                 password_offset_consistent);
         assert(bio);
-        err = parse_key(&key, bio, info->desc.info.file.password);
+        err = parse_key(out_key, bio, info->desc.info.file.password);
         BIO_free(bio);
     }
-    if (avs_is_ok(err)) {
-        assert(key);
-        if (SSL_CTX_use_PrivateKey(ctx, key) != 1) {
-            log_openssl_error();
-            err = avs_errno(AVS_EPROTO);
-        }
-        EVP_PKEY_free(key);
-    }
+    assert(!!*out_key == avs_is_ok(err));
     return err;
 }
 
