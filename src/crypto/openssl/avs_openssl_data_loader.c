@@ -272,15 +272,9 @@ static avs_error_t load_client_key_from_file(SSL_CTX *ctx,
 
 // NOTE: This function exists only because OpenSSL does not seem to have a
 // method of loading in-buffer PEM encoded private keys.
-static avs_error_t parse_key(EVP_PKEY **out_key,
-                             const void *buffer,
-                             const size_t len,
-                             const char *password) {
+static avs_error_t
+parse_key(EVP_PKEY **out_key, BIO *bio, const char *password) {
     *out_key = NULL;
-    BIO *bio = BIO_new_mem_buf((void *) (intptr_t) buffer, (int) len);
-    if (!bio) {
-        return avs_errno(AVS_ENOMEM);
-    }
     switch (detect_encoding(bio)) {
     case ENCODING_PEM: {
         *out_key = PEM_read_bio_PrivateKey(bio, NULL, password_cb,
@@ -295,7 +289,6 @@ static avs_error_t parse_key(EVP_PKEY **out_key,
         LOG(ERROR, _("unknown in-memory certificate format"));
         break;
     }
-    BIO_free(bio);
     return *out_key ? AVS_OK : avs_errno(AVS_EPROTO);
 }
 
@@ -303,19 +296,24 @@ static avs_error_t load_client_key_from_buffer(SSL_CTX *ctx,
                                                const void *buffer,
                                                size_t len,
                                                const char *password) {
+    BIO *bio = BIO_new_mem_buf((void *) (intptr_t) buffer, (int) len);
+    if (!bio) {
+        return avs_errno(AVS_ENOMEM);
+    }
+
     setup_password_callback(ctx, password);
 
     EVP_PKEY *key;
-    avs_error_t err = parse_key(&key, buffer, len, password);
-    if (avs_is_err(err)) {
-        return err;
+    avs_error_t err = parse_key(&key, bio, password);
+    if (avs_is_ok(err)) {
+        assert(key);
+        if (SSL_CTX_use_PrivateKey(ctx, key) != 1) {
+            log_openssl_error();
+            err = avs_errno(AVS_EPROTO);
+        }
     }
-    assert(key);
-    if (SSL_CTX_use_PrivateKey(ctx, key) != 1) {
-        log_openssl_error();
-        return avs_errno(AVS_EPROTO);
-    }
-    return AVS_OK;
+    BIO_free(bio);
+    return err;
 }
 
 avs_error_t
