@@ -58,7 +58,8 @@ if(WITH_OPENSSL)
         openssl/avs_openssl_data_loader.c
         openssl/avs_openssl_hkdf.c
         openssl/avs_openssl_pki.c
-        openssl/avs_openssl_prng.c)
+        openssl/avs_openssl_prng.c
+        openssl/avs_openssl_prng.h)
 
     set(AVS_CRYPTO_OPENSSL_TEST_SOURCES
         ${AVS_CRYPTO_TEST_SOURCES}
@@ -89,7 +90,8 @@ if(WITH_MBEDTLS)
         mbedtls/avs_mbedtls_data_loader.c
         mbedtls/avs_mbedtls_hkdf.c
         mbedtls/avs_mbedtls_pki.c
-        mbedtls/avs_mbedtls_prng.c)
+        mbedtls/avs_mbedtls_prng.c
+        mbedtls/avs_mbedtls_prng.h)
 
     set(AVS_CRYPTO_MBEDTLS_TEST_SOURCES
         ${AVS_CRYPTO_TEST_SOURCES}

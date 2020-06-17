@@ -34,6 +34,7 @@
 #    include <avsystem/commons/avs_crypto_pki.h>
 
 #    include "avs_openssl_common.h"
+#    include "avs_openssl_prng.h"
 
 #    define MODULE_NAME avs_crypto_pki
 #    include <avs_x_log_config.h>
@@ -44,6 +45,11 @@ avs_error_t avs_crypto_pki_ec_gen(avs_crypto_prng_ctx_t *prng_ctx,
                                   const void *ecp_group_asn1_oid,
                                   void *out_der_secret_key,
                                   size_t *inout_der_secret_key_size) {
+    if (!prng_ctx || _avs_crypto_prng_reseed_if_needed(prng_ctx)) {
+        LOG(ERROR, _("PRNG context not specified or invalid"));
+        return avs_errno(AVS_EINVAL);
+    }
+
     const unsigned char *cast_group_oid =
             (const unsigned char *) ecp_group_asn1_oid;
     // See http://luca.ntop.org/Teaching/Appunti/asn1.html

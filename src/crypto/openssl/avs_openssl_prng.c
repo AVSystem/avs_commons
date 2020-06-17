@@ -19,9 +19,10 @@
 #if defined(AVS_COMMONS_WITH_AVS_CRYPTO) && defined(AVS_COMMONS_WITH_OPENSSL)
 
 #    include <avsystem/commons/avs_memory.h>
-#    include <avsystem/commons/avs_prng.h>
 
 #    include <openssl/rand.h>
+
+#    include "avs_openssl_prng.h"
 
 #    define MODULE_NAME avs_crypto_prng
 #    include <avs_x_log_config.h>
@@ -48,6 +49,11 @@ static int reseed_if_needed(avs_prng_entropy_callback_t seed_cb,
         RAND_seed(data, sizeof(data));
     }
     return 0;
+}
+
+int _avs_crypto_prng_reseed_if_needed(avs_crypto_prng_ctx_t *ctx) {
+    assert(ctx);
+    return reseed_if_needed(ctx->seed_callback, ctx->user_ptr);
 }
 
 avs_crypto_prng_ctx_t *avs_crypto_prng_new(avs_prng_entropy_callback_t seed_cb,
@@ -81,7 +87,7 @@ int avs_crypto_prng_bytes(avs_crypto_prng_ctx_t *ctx,
         return -1;
     }
 
-    if (reseed_if_needed(ctx->seed_callback, ctx->user_ptr)) {
+    if (_avs_crypto_prng_reseed_if_needed(ctx)) {
         return -1;
     }
 
