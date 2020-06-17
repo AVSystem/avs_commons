@@ -154,7 +154,7 @@ avs_crypto_client_cert_info_from_buffer(const void *buffer, size_t buffer_size);
 
 #ifdef AVS_COMMONS_WITH_AVS_CRYPTO_ADVANCED_FEATURES
 avs_error_t avs_crypto_pki_ec_gen(avs_crypto_prng_ctx_t *prng_ctx,
-                                  uint16_t tls_curve_id,
+                                  const void *ecp_group_asn1_oid,
                                   void *out_der_secret_key,
                                   size_t *inout_der_secret_key_size,
                                   void *out_der_public_key,

@@ -25,6 +25,7 @@
 #    include <string.h>
 
 #    include <mbedtls/ecp.h>
+#    include <mbedtls/oid.h>
 #    include <mbedtls/pk.h>
 
 #    include <avsystem/commons/avs_crypto_pki.h>
@@ -71,7 +72,7 @@ static avs_error_t wrap_mbedtls_pk_write_der_impl(
                 (WriteFunc), AVS_QUOTE_MACRO(WriteFunc), __VA_ARGS__)
 
 avs_error_t avs_crypto_pki_ec_gen(avs_crypto_prng_ctx_t *prng_ctx,
-                                  uint16_t tls_curve_id,
+                                  const void *ecp_group_asn1_oid,
                                   void *out_der_secret_key,
                                   size_t *inout_der_secret_key_size,
                                   void *out_der_public_key,
@@ -83,11 +84,31 @@ avs_error_t avs_crypto_pki_ec_gen(avs_crypto_prng_ctx_t *prng_ctx,
         return avs_errno(AVS_ENOTSUP);
     }
 
-    const mbedtls_ecp_curve_info *curve_info =
-            mbedtls_ecp_curve_info_from_tls_id(tls_curve_id);
+    // "const-cast" due to non-const field in mbedtls_asn1_buf
+    unsigned char *cast_group_oid =
+            (unsigned char *) (intptr_t) ecp_group_asn1_oid;
+    // See http://luca.ntop.org/Teaching/Appunti/asn1.html
+    // Sections 2 and 3.1
+    // First byte (identifier octet) MUST be 0x06, OBJECT IDENTIFIER
+    // Second byte (length octect) MUST have bit 8 unset, indicating short form
+    if (!cast_group_oid || cast_group_oid[0] != MBEDTLS_ASN1_OID
+            || cast_group_oid[1] > 0x7f) {
+        LOG(ERROR, _("ecp_group_asn1_oid is not a syntactically valid OID"));
+        return avs_errno(AVS_EINVAL);
+    }
+
+    mbedtls_ecp_group_id group_id;
+    const mbedtls_ecp_curve_info *curve_info = NULL;
+    if (!mbedtls_oid_get_ec_grp(&(const mbedtls_asn1_buf) {
+                                    .tag = MBEDTLS_ASN1_OID,
+                                    .len = cast_group_oid[1],
+                                    .p = &cast_group_oid[2]
+                                },
+                                &group_id)) {
+        curve_info = mbedtls_ecp_curve_info_from_grp_id(group_id);
+    }
     if (!curve_info) {
-        LOG(ERROR, _("TLS group ") "%" PRIu16 _(" not supported"),
-            tls_curve_id);
+        LOG(ERROR, _("specified ECP group is not supported"));
         return avs_errno(AVS_ENOTSUP);
     }
 
