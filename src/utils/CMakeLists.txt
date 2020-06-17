@@ -51,7 +51,9 @@ if(WITH_INTERNAL_LOGS)
 endif()
 
 avs_add_test(NAME avs_utils
-             LIBS avs_utils $<$<BOOL:${WITH_AVS_SCHED}>:avs_sched>
+             LIBS avs_utils
+                  $<$<BOOL:${WITH_AVS_SCHED}>:avs_sched>
+                  $<$<BOOL:${WITH_AVS_NET}>:avs_net>
              SOURCES
              $<TARGET_PROPERTY:avs_utils,SOURCES>
              ${AVS_COMMONS_SOURCE_DIR}/tests/utils/memory.c

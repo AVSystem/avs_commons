@@ -125,7 +125,7 @@ endif()
 add_library(avs_crypto_generic
             ${AVS_CRYPTO_PUBLIC_HEADERS}
             generic/avs_generic_prng.c)
-target_compile_definitions(avs_crypto_generic PRIVATE -DWITHOUT_SSL)
+target_compile_definitions(avs_crypto_generic PRIVATE WITHOUT_SSL)
 target_link_libraries(avs_crypto_generic PUBLIC avs_crypto_core)
 
 avs_add_test(NAME avs_crypto_generic
