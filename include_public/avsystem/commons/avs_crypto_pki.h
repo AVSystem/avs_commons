@@ -153,10 +153,160 @@ avs_crypto_client_cert_info_t
 avs_crypto_client_cert_info_from_buffer(const void *buffer, size_t buffer_size);
 
 #ifdef AVS_COMMONS_WITH_AVS_CRYPTO_ADVANCED_FEATURES
+
+/**
+ * DER-encoded ASN.1 OBJECT IDENTIFIER for the secp192k1 curve group.
+ *
+ * IANA TLS group ID: 18
+ * IANA TLS group name: secp192k1
+ * ASN.1 OID: iso(1) identified-organization(3) certicom(132) curve(0)
+ *            ansip192k1(31)
+ */
+#    define AVS_CRYPTO_PKI_ECP_GROUP_SECP192K1 "\x06\x05\x2B\x81\x04\x00\x1F"
+
+/**
+ * DER-encoded ASN.1 OBJECT IDENTIFIER for the secp192r1 curve group.
+ *
+ * IANA TLS group ID: 19
+ * IANA TLS group name: secp192r1
+ * ASN.1 OID: iso(1) member-body(2) us(840) ansi-x962(10045) curves(3) prime(1)
+ *            prime192v1(1)
+ */
+#    define AVS_CRYPTO_PKI_ECP_GROUP_SECP192R1 \
+        "\x06\x08\x2A\x86\x48\xCE\x3D\x03\x01\x01"
+
+/**
+ * DER-encoded ASN.1 OBJECT IDENTIFIER for the secp224k1 curve group.
+ *
+ * IANA TLS group ID: 20
+ * IANA TLS group name: secp224k1
+ * ASN.1 OID: iso(1) identified-organization(3) certicom(132) curve(0)
+ *            ansip224k1(32)
+ */
+#    define AVS_CRYPTO_PKI_ECP_GROUP_SECP224K1 "\x06\x05\x2B\x81\x04\x00\x20"
+
+/**
+ * DER-encoded ASN.1 OBJECT IDENTIFIER for the secp224r1 curve group.
+ *
+ * IANA TLS group ID: 21
+ * IANA TLS group name: secp224r1
+ * ASN.1 OID: iso(1) identified-organization(3) certicom(132) curve(0)
+ *            ansip224r1(33)
+ */
+#    define AVS_CRYPTO_PKI_ECP_GROUP_SECP224R1 "\x06\x05\x2B\x81\x04\x00\x21"
+
+/**
+ * DER-encoded ASN.1 OBJECT IDENTIFIER for the secp256k1 curve group.
+ *
+ * IANA TLS group ID: 22
+ * IANA TLS group name: secp256k1
+ * ASN.1 OID: iso(1) identified-organization(3) certicom(132) curve(0)
+ *            ansip256k1(10)
+ */
+#    define AVS_CRYPTO_PKI_ECP_GROUP_SECP256K1 "\x06\x05\x2B\x81\x04\x00\x0A"
+
+/**
+ * DER-encoded ASN.1 OBJECT IDENTIFIER for the secp256r1 curve group.
+ *
+ * IANA TLS group ID: 23
+ * IANA TLS group name: secp256r1
+ * ASN.1 OID: iso(1) member-body(2) us(840) ansi-x962(10045) curves(3) prime(1)
+ *            prime256v1(7)
+ */
+#    define AVS_CRYPTO_PKI_ECP_GROUP_SECP256R1 \
+        "\x06\x08\x2A\x86\x48\xCE\x3D\x03\x01\x07"
+
+/**
+ * DER-encoded ASN.1 OBJECT IDENTIFIER for the secp384r1 curve group.
+ *
+ * IANA TLS group ID: 24
+ * IANA TLS group name: secp384r1
+ * ASN.1 OID: iso(1) identified-organization(3) certicom(132) curve(0)
+ *            ansip384r1(34)
+ */
+#    define AVS_CRYPTO_PKI_ECP_GROUP_SECP384R1 "\x06\x05\x2B\x81\x04\x00\x22"
+
+/**
+ * DER-encoded ASN.1 OBJECT IDENTIFIER for the secp521r1 curve group.
+ *
+ * IANA TLS group ID: 25
+ * IANA TLS group name: secp521r1
+ * ASN.1 OID: iso(1) identified-organization(3) certicom(132) curve(0)
+ *            ansip521r1(35)
+ */
+#    define AVS_CRYPTO_PKI_ECP_GROUP_SECP521R1 "\x06\x05\x2B\x81\x04\x00\x23"
+
+/**
+ * DER-encoded ASN.1 OBJECT IDENTIFIER for the brainpoolP256r1 curve group.
+ *
+ * IANA TLS group ID: 26
+ * IANA TLS group name: brainpoolP256r1
+ * ASN.1 OID: iso(1) identified-organization(3) teletrust(36) algorithm(3)
+ *            signatureAlgorithm(3) ecSign(2) ecStdCurvesAndGeneration(8)
+ *            ellipticCurve(1) versionOne(1) brainpoolP256r1(7)
+ */
+#    define AVS_CRYPTO_PKI_ECP_GROUP_BRAINPOOLP256R1 \
+        "\x06\x09\x2B\x24\x03\x03\x02\x08\x01\x01\x07"
+
+/**
+ * DER-encoded ASN.1 OBJECT IDENTIFIER for the brainpoolP384r1 curve group.
+ *
+ * IANA TLS group ID: 27
+ * IANA TLS group name: brainpoolP384r1
+ * ASN.1 OID: iso(1) identified-organization(3) teletrust(36) algorithm(3)
+ *            signatureAlgorithm(3) ecSign(2) ecStdCurvesAndGeneration(8)
+ *            ellipticCurve(1) versionOne(1) brainpoolP384r1(11)
+ */
+#    define AVS_CRYPTO_PKI_ECP_GROUP_BRAINPOOLP384R1 \
+        "\x06\x09\x2B\x24\x03\x03\x02\x08\x01\x01\x0B"
+
+/**
+ * DER-encoded ASN.1 OBJECT IDENTIFIER for the brainpoolP512r1 curve group.
+ *
+ * IANA TLS group ID: 28
+ * IANA TLS group name: brainpoolP512r1
+ * ASN.1 OID: iso(1) identified-organization(3) teletrust(36) algorithm(3)
+ *            signatureAlgorithm(3) ecSign(2) ecStdCurvesAndGeneration(8)
+ *            ellipticCurve(1) versionOne(1) brainpoolP512r1(13)
+ */
+#    define AVS_CRYPTO_PKI_ECP_GROUP_BRAINPOOLP512R1 \
+        "\x06\x09\x2B\x24\x03\x03\x02\x08\x01\x01\x0D"
+
+/**
+ * Generates a random private key (in a form that allows deriving the public key
+ * from it) suitable for use with elliptic curve cryptography.
+ *
+ * @param prng_ctx                  PRNG context to use for random number
+ *                                  generation.
+ *
+ * @param ecp_group_asn1_oid        Pointer to DER-encoded ASN.1 OBJECT
+ *                                  IDENTIFIER (including the leading identifier
+ *                                  and length octets) describing the ECP group
+ *                                  to use.
+ *
+ *                                  Values identifying common curves supported
+ *                                  by both OpenSSL and mbed TLS are defined as
+ *                                  the @c AVS_CRYPTO_PKI_ECP_GROUP_* macros.
+ *
+ *                                  NOTE: There is no separate length argument,
+ *                                  as it is derived from the length octet
+ *                                  within the encoded data.
+ *
+ * @param out_der_secret_key        Pointer to a buffer, at the beginning of
+ *                                  which the private key encoded as SEC1 DER
+ *                                  will be stored.
+ *
+ * @param inout_der_secret_key_size Pointer to a variable which, on input, shall
+ *                                  contain the number of bytes available in the
+ *                                  @p out_der_secret_key buffer. On successful
+ *                                  return, it will be set to the number of
+ *                                  bytes actually written.
+ */
 avs_error_t avs_crypto_pki_ec_gen(avs_crypto_prng_ctx_t *prng_ctx,
                                   const void *ecp_group_asn1_oid,
                                   void *out_der_secret_key,
                                   size_t *inout_der_secret_key_size);
+
 #endif // AVS_COMMONS_WITH_AVS_CRYPTO_ADVANCED_FEATURES
 
 #ifdef __cplusplus
