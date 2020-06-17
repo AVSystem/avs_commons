@@ -38,45 +38,27 @@
 
 VISIBILITY_SOURCE_BEGIN
 
-static avs_error_t wrap_mbedtls_pk_write_der_impl(
-        int (*write_func)(mbedtls_pk_context *, unsigned char *, size_t),
-        const char *write_func_name,
-        mbedtls_pk_context *pk_ctx,
-        void *out_buffer,
-        size_t *inout_buffer_size) {
-    unsigned char *cast_buffer = (unsigned char *) out_buffer;
+static void move_der_data_to_start(unsigned char *out_buffer,
+                                   size_t *inout_buffer_size,
+                                   size_t data_size) {
     size_t buffer_size = *inout_buffer_size;
-    int result = write_func(pk_ctx, cast_buffer, buffer_size);
-    if (result < 0) {
-        LOG(ERROR, "%s" _("() failed: ") "%d", write_func_name, result);
-        return avs_errno(AVS_EPROTO);
-    }
+    assert(data_size <= buffer_size);
 
-    size_t key_size = (size_t) result;
-    assert(key_size <= buffer_size);
-
-    // mbedtls_pk_write_*_der() weirdly puts the result at the end of the buffer
+    // mbedtls_*write_*_der() weirdly put the result at the end of the buffer
     // let's move it back to the front
-    memmove(cast_buffer, &cast_buffer[buffer_size - key_size], key_size);
+    memmove(out_buffer, &out_buffer[buffer_size - data_size], data_size);
 
     // zero out the rest of bufer to avoid keeping stray copies of
     // sensitive keys in memory
-    memset(&cast_buffer[key_size], 0, buffer_size - key_size);
+    memset(&out_buffer[data_size], 0, buffer_size - data_size);
 
-    *inout_buffer_size = key_size;
-    return AVS_OK;
+    *inout_buffer_size = data_size;
 }
-
-#    define wrap_mbedtls_pk_write_der(WriteFunc, ...) \
-        wrap_mbedtls_pk_write_der_impl(               \
-                (WriteFunc), AVS_QUOTE_MACRO(WriteFunc), __VA_ARGS__)
 
 avs_error_t avs_crypto_pki_ec_gen(avs_crypto_prng_ctx_t *prng_ctx,
                                   const void *ecp_group_asn1_oid,
                                   void *out_der_secret_key,
-                                  size_t *inout_der_secret_key_size,
-                                  void *out_der_public_key,
-                                  size_t *inout_der_public_key_size) {
+                                  size_t *inout_der_secret_key_size) {
     const mbedtls_pk_info_t *pk_info =
             mbedtls_pk_info_from_type(MBEDTLS_PK_ECKEY);
     if (!pk_info) {
@@ -120,21 +102,22 @@ avs_error_t avs_crypto_pki_ec_gen(avs_crypto_prng_ctx_t *prng_ctx,
         return avs_errno(AVS_ENOMEM);
     }
 
-    avs_error_t err = AVS_OK;
+    avs_error_t err = avs_errno(AVS_EPROTO);
     if ((result = mbedtls_ecp_gen_key(curve_info->grp_id, mbedtls_pk_ec(pk_ctx),
                                       mbedtls_ctr_drbg_random,
                                       &prng_ctx->mbedtls_prng_ctx))) {
         LOG(ERROR, _("mbedtls_ecp_gen_key() failed: ") "%d", result);
-        err = avs_errno(AVS_EPROTO);
     } else {
-        (void) (avs_is_err((err = wrap_mbedtls_pk_write_der(
-                                    mbedtls_pk_write_key_der, &pk_ctx,
-                                    out_der_secret_key,
-                                    inout_der_secret_key_size)))
-                || avs_is_err((err = wrap_mbedtls_pk_write_der(
-                                       mbedtls_pk_write_pubkey_der, &pk_ctx,
-                                       out_der_public_key,
-                                       inout_der_public_key_size))));
+        unsigned char *cast_buffer = (unsigned char *) out_der_secret_key;
+        if ((result = mbedtls_pk_write_key_der(&pk_ctx, cast_buffer,
+                                               *inout_der_secret_key_size))
+                < 0) {
+            LOG(ERROR, _("mbedtls_pk_write_key_der() failed: ") "%d", result);
+        } else {
+            move_der_data_to_start(cast_buffer, inout_der_secret_key_size,
+                                   (size_t) result);
+            err = AVS_OK;
+        }
     }
 
     mbedtls_pk_free(&pk_ctx);
