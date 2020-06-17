@@ -690,6 +690,8 @@ avs_net_dtls_socket_create(avs_net_socket_t **socket,
             create_bare_socket(socket, _avs_net_create_dtls_socket, config);
     return init_debug_socket_if_applicable(socket, err);
 #    else  // WITHOUT_SSL
+    (void) socket;
+    (void) config;
     LOG(ERROR, _("could not create secure socket: (D)TLS support is disabled"));
     return avs_errno(AVS_ENOTSUP);
 #    endif // WITHOUT_SSL
@@ -707,6 +709,8 @@ avs_net_ssl_socket_create(avs_net_socket_t **socket,
             create_bare_socket(socket, _avs_net_create_ssl_socket, config);
     return init_debug_socket_if_applicable(socket, err);
 #    else  // WITHOUT_SSL
+    (void) socket;
+    (void) config;
     LOG(ERROR, _("could not create secure socket: (D)TLS support is disabled"));
     return avs_errno(AVS_ENOTSUP);
 #    endif // WITHOUT_SSL

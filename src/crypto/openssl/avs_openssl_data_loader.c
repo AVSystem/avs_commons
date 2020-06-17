@@ -97,43 +97,46 @@ load_ca_certs_from_paths(SSL_CTX *ctx, const char *file, const char *path) {
 
 typedef enum { ENCODING_UNKNOWN, ENCODING_PEM, ENCODING_DER } encoding_t;
 
-static encoding_t detect_encoding(const char *buffer, size_t len) {
-    static const char *pem_prefix = "-----BEGIN ";
-    if (len < strlen(pem_prefix)) {
-        // clearly not PEM and too short to be DER
-        return ENCODING_UNKNOWN;
-    } else if (!strncmp(buffer, pem_prefix, strlen(pem_prefix))) {
-        return ENCODING_PEM;
-    } else {
-        return ENCODING_DER;
+static encoding_t detect_encoding(BIO *bio) {
+#    define PEM_PREFIX "-----BEGIN "
+    char buffer[sizeof(PEM_PREFIX) - 1];
+    encoding_t result = ENCODING_UNKNOWN;
+    if (BIO_read(bio, buffer, sizeof(buffer)) == sizeof(buffer)) {
+        if (!memcmp(buffer, PEM_PREFIX, sizeof(buffer))) {
+            result = ENCODING_PEM;
+        } else {
+            result = ENCODING_DER;
+        }
     }
+    BIO_reset(bio);
+    return result;
+#    undef PEM_PREFIX
 }
 
 // NOTE: This function exists only because OpenSSL does not seem to have a
 // method of loading in-buffer PEM encoded certificates.
 static avs_error_t
 parse_cert(X509 **out_cert, const void *buffer, const size_t len) {
+    BIO *bio = BIO_new_mem_buf((void *) (intptr_t) buffer, (int) len);
+    if (!bio) {
+        return avs_errno(AVS_ENOMEM);
+    }
     *out_cert = NULL;
-    switch (detect_encoding((const char *) buffer, len)) {
+    switch (detect_encoding(bio)) {
     case ENCODING_PEM: {
         // Convert PEM to DER.
-        BIO *bio = BIO_new_mem_buf((void *) (intptr_t) buffer, (int) len);
-        if (!bio) {
-            return avs_errno(AVS_ENOMEM);
-        }
         *out_cert = PEM_read_bio_X509(bio, NULL, NULL, NULL);
-        BIO_free(bio);
         break;
     }
     case ENCODING_DER: {
-        const unsigned char *data = (const unsigned char *) buffer;
-        *out_cert = d2i_X509(NULL, &data, (int) len);
+        *out_cert = d2i_X509_bio(bio, NULL);
         break;
     }
     default:
         LOG(ERROR, _("unknown in-memory certificate format"));
         break;
     }
+    BIO_free(bio);
     return *out_cert ? AVS_OK : avs_errno(AVS_EPROTO);
 }
 
@@ -278,7 +281,7 @@ static avs_error_t parse_key(EVP_PKEY **out_key,
     if (!bio) {
         return avs_errno(AVS_ENOMEM);
     }
-    switch (detect_encoding((const char *) buffer, len)) {
+    switch (detect_encoding(bio)) {
     case ENCODING_PEM: {
         *out_key = PEM_read_bio_PrivateKey(bio, NULL, password_cb,
                                            (void *) (intptr_t) password);
