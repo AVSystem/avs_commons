@@ -192,6 +192,8 @@ avs_crypto_pki_csr_create(avs_crypto_prng_ctx_t *prng_ctx,
                           const avs_crypto_pki_x509_name_entry_t subject[],
                           void *out_der_csr,
                           size_t *inout_der_csr_size) {
+    assert(inout_der_csr_size);
+    assert(!*inout_der_csr_size || out_der_csr);
     const mbedtls_md_info_t *md_info = mbedtls_md_info_from_string(md_name);
     if (!md_info) {
         LOG(ERROR, _("Mbed TLS does not have MD info for ") "%s", md_name);

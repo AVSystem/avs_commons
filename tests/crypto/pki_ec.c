@@ -51,10 +51,8 @@ AVS_UNIT_TEST(avs_crypto_pki_ec, test_ec_gen) {
             "\xA0\x0A\x06\x08\x2A\x86\x48\xCE\x3D\x03\x01\x07\xA1\x44\x03\x42");
 }
 
-#warning "TODO: FIXME: Enable when implemented for OpenSSL"
-#if 0
 AVS_UNIT_TEST(avs_crypto_pki_ec, test_csr_create) {
-#    define TEST_CN "avs_crypto_pki_ec_test_csr_create"
+#define TEST_CN "avs_crypto_pki_ec_test_csr_create"
     avs_crypto_prng_ctx_t *prng_ctx = avs_crypto_prng_new(NULL, NULL);
     AVS_UNIT_ASSERT_NOT_NULL(prng_ctx);
 
@@ -138,6 +136,5 @@ AVS_UNIT_TEST(avs_crypto_pki_ec, test_csr_create) {
             csr[signature_offset + 6]
                     + csr[signature_offset + 8 + csr[signature_offset + 6]],
             csr_size - signature_offset - 9);
-#    undef TEST_CN
+#undef TEST_CN
 }
-#endif
