@@ -56,7 +56,7 @@ static void move_der_data_to_start(unsigned char *out_buffer,
 }
 
 avs_error_t avs_crypto_pki_ec_gen(avs_crypto_prng_ctx_t *prng_ctx,
-                                  const void *ecp_group_asn1_oid,
+                                  const avs_crypto_asn1_oid_t *ecp_group_oid,
                                   void *out_der_secret_key,
                                   size_t *inout_der_secret_key_size) {
     if (!prng_ctx) {
@@ -72,8 +72,7 @@ avs_error_t avs_crypto_pki_ec_gen(avs_crypto_prng_ctx_t *prng_ctx,
     }
 
     // "const-cast" due to non-const field in mbedtls_asn1_buf
-    unsigned char *cast_group_oid =
-            (unsigned char *) (intptr_t) ecp_group_asn1_oid;
+    unsigned char *cast_group_oid = (unsigned char *) (intptr_t) ecp_group_oid;
     // See http://luca.ntop.org/Teaching/Appunti/asn1.html
     // Sections 2 and 3.1
     // First byte (identifier octet) MUST be 0x06, OBJECT IDENTIFIER

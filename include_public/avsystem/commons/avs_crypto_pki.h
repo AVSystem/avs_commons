@@ -155,6 +155,19 @@ avs_crypto_client_cert_info_from_buffer(const void *buffer, size_t buffer_size);
 #ifdef AVS_COMMONS_WITH_AVS_CRYPTO_ADVANCED_FEATURES
 
 /**
+ * Opaque type that represents a DER-encoded ASN.1 OBJECT IDENTIFIER, including
+ * the leading identifier and length octets (so it shall always start with
+ * '\x06' followed by a signel length octet.
+ *
+ * NOTE: This type is actually never defined. It is used as a marker to ensure
+ * type safety when operating on ASN.1 OBJECT IDENTIFIERs. If you need to use
+ * an OBJECT IDENTIFIER that is not defined as a constant within this file, you
+ * shall just cast pointer to a binary buffer holding it into a pointer to this
+ * type.
+ */
+typedef struct avs_crypto_asn1_oid_struct avs_crypto_asn1_oid_t;
+
+/**
  * DER-encoded ASN.1 OBJECT IDENTIFIER for the secp192k1 curve group.
  *
  * IANA TLS group ID: 18
@@ -162,7 +175,8 @@ avs_crypto_client_cert_info_from_buffer(const void *buffer, size_t buffer_size);
  * ASN.1 OID: iso(1) identified-organization(3) certicom(132) curve(0)
  *            ansip192k1(31)
  */
-#    define AVS_CRYPTO_PKI_ECP_GROUP_SECP192K1 "\x06\x05\x2B\x81\x04\x00\x1F"
+#    define AVS_CRYPTO_PKI_ECP_GROUP_SECP192K1 \
+        ((const avs_crypto_asn1_oid_t *) "\x06\x05\x2B\x81\x04\x00\x1F")
 
 /**
  * DER-encoded ASN.1 OBJECT IDENTIFIER for the secp192r1 curve group.
@@ -173,7 +187,8 @@ avs_crypto_client_cert_info_from_buffer(const void *buffer, size_t buffer_size);
  *            prime192v1(1)
  */
 #    define AVS_CRYPTO_PKI_ECP_GROUP_SECP192R1 \
-        "\x06\x08\x2A\x86\x48\xCE\x3D\x03\x01\x01"
+        ((const avs_crypto_asn1_oid_t          \
+                  *) "\x06\x08\x2A\x86\x48\xCE\x3D\x03\x01\x01")
 
 /**
  * DER-encoded ASN.1 OBJECT IDENTIFIER for the secp224k1 curve group.
@@ -183,7 +198,8 @@ avs_crypto_client_cert_info_from_buffer(const void *buffer, size_t buffer_size);
  * ASN.1 OID: iso(1) identified-organization(3) certicom(132) curve(0)
  *            ansip224k1(32)
  */
-#    define AVS_CRYPTO_PKI_ECP_GROUP_SECP224K1 "\x06\x05\x2B\x81\x04\x00\x20"
+#    define AVS_CRYPTO_PKI_ECP_GROUP_SECP224K1 \
+        ((const avs_crypto_asn1_oid_t *) "\x06\x05\x2B\x81\x04\x00\x20")
 
 /**
  * DER-encoded ASN.1 OBJECT IDENTIFIER for the secp224r1 curve group.
@@ -193,7 +209,8 @@ avs_crypto_client_cert_info_from_buffer(const void *buffer, size_t buffer_size);
  * ASN.1 OID: iso(1) identified-organization(3) certicom(132) curve(0)
  *            ansip224r1(33)
  */
-#    define AVS_CRYPTO_PKI_ECP_GROUP_SECP224R1 "\x06\x05\x2B\x81\x04\x00\x21"
+#    define AVS_CRYPTO_PKI_ECP_GROUP_SECP224R1 \
+        ((const avs_crypto_asn1_oid_t *) "\x06\x05\x2B\x81\x04\x00\x21")
 
 /**
  * DER-encoded ASN.1 OBJECT IDENTIFIER for the secp256k1 curve group.
@@ -203,7 +220,8 @@ avs_crypto_client_cert_info_from_buffer(const void *buffer, size_t buffer_size);
  * ASN.1 OID: iso(1) identified-organization(3) certicom(132) curve(0)
  *            ansip256k1(10)
  */
-#    define AVS_CRYPTO_PKI_ECP_GROUP_SECP256K1 "\x06\x05\x2B\x81\x04\x00\x0A"
+#    define AVS_CRYPTO_PKI_ECP_GROUP_SECP256K1 \
+        ((const avs_crypto_asn1_oid_t *) "\x06\x05\x2B\x81\x04\x00\x0A")
 
 /**
  * DER-encoded ASN.1 OBJECT IDENTIFIER for the secp256r1 curve group.
@@ -214,7 +232,8 @@ avs_crypto_client_cert_info_from_buffer(const void *buffer, size_t buffer_size);
  *            prime256v1(7)
  */
 #    define AVS_CRYPTO_PKI_ECP_GROUP_SECP256R1 \
-        "\x06\x08\x2A\x86\x48\xCE\x3D\x03\x01\x07"
+        ((const avs_crypto_asn1_oid_t          \
+                  *) "\x06\x08\x2A\x86\x48\xCE\x3D\x03\x01\x07")
 
 /**
  * DER-encoded ASN.1 OBJECT IDENTIFIER for the secp384r1 curve group.
@@ -224,7 +243,8 @@ avs_crypto_client_cert_info_from_buffer(const void *buffer, size_t buffer_size);
  * ASN.1 OID: iso(1) identified-organization(3) certicom(132) curve(0)
  *            ansip384r1(34)
  */
-#    define AVS_CRYPTO_PKI_ECP_GROUP_SECP384R1 "\x06\x05\x2B\x81\x04\x00\x22"
+#    define AVS_CRYPTO_PKI_ECP_GROUP_SECP384R1 \
+        ((const avs_crypto_asn1_oid_t *) "\x06\x05\x2B\x81\x04\x00\x22")
 
 /**
  * DER-encoded ASN.1 OBJECT IDENTIFIER for the secp521r1 curve group.
@@ -234,7 +254,8 @@ avs_crypto_client_cert_info_from_buffer(const void *buffer, size_t buffer_size);
  * ASN.1 OID: iso(1) identified-organization(3) certicom(132) curve(0)
  *            ansip521r1(35)
  */
-#    define AVS_CRYPTO_PKI_ECP_GROUP_SECP521R1 "\x06\x05\x2B\x81\x04\x00\x23"
+#    define AVS_CRYPTO_PKI_ECP_GROUP_SECP521R1 \
+        ((const avs_crypto_asn1_oid_t *) "\x06\x05\x2B\x81\x04\x00\x23")
 
 /**
  * DER-encoded ASN.1 OBJECT IDENTIFIER for the brainpoolP256r1 curve group.
@@ -246,7 +267,8 @@ avs_crypto_client_cert_info_from_buffer(const void *buffer, size_t buffer_size);
  *            ellipticCurve(1) versionOne(1) brainpoolP256r1(7)
  */
 #    define AVS_CRYPTO_PKI_ECP_GROUP_BRAINPOOLP256R1 \
-        "\x06\x09\x2B\x24\x03\x03\x02\x08\x01\x01\x07"
+        ((const avs_crypto_asn1_oid_t                \
+                  *) "\x06\x09\x2B\x24\x03\x03\x02\x08\x01\x01\x07")
 
 /**
  * DER-encoded ASN.1 OBJECT IDENTIFIER for the brainpoolP384r1 curve group.
@@ -258,7 +280,8 @@ avs_crypto_client_cert_info_from_buffer(const void *buffer, size_t buffer_size);
  *            ellipticCurve(1) versionOne(1) brainpoolP384r1(11)
  */
 #    define AVS_CRYPTO_PKI_ECP_GROUP_BRAINPOOLP384R1 \
-        "\x06\x09\x2B\x24\x03\x03\x02\x08\x01\x01\x0B"
+        ((const avs_crypto_asn1_oid_t                \
+                  *) "\x06\x09\x2B\x24\x03\x03\x02\x08\x01\x01\x0B")
 
 /**
  * DER-encoded ASN.1 OBJECT IDENTIFIER for the brainpoolP512r1 curve group.
@@ -270,7 +293,8 @@ avs_crypto_client_cert_info_from_buffer(const void *buffer, size_t buffer_size);
  *            ellipticCurve(1) versionOne(1) brainpoolP512r1(13)
  */
 #    define AVS_CRYPTO_PKI_ECP_GROUP_BRAINPOOLP512R1 \
-        "\x06\x09\x2B\x24\x03\x03\x02\x08\x01\x01\x0D"
+        ((const avs_crypto_asn1_oid_t                \
+                  *) "\x06\x09\x2B\x24\x03\x03\x02\x08\x01\x01\x0D")
 
 /**
  * Generates a random private key (in a form that allows deriving the public key
@@ -303,7 +327,7 @@ avs_crypto_client_cert_info_from_buffer(const void *buffer, size_t buffer_size);
  *                                  bytes actually written.
  */
 avs_error_t avs_crypto_pki_ec_gen(avs_crypto_prng_ctx_t *prng_ctx,
-                                  const void *ecp_group_asn1_oid,
+                                  const avs_crypto_asn1_oid_t *ecp_group_oid,
                                   void *out_der_secret_key,
                                   size_t *inout_der_secret_key_size);
 

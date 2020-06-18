@@ -46,7 +46,7 @@ AVS_UNIT_TEST(avs_crypto_pki_ec, test_ec_gen) {
 
     AVS_UNIT_ASSERT_EQUAL(secret_key_size, 121);
     AVS_UNIT_ASSERT_EQUAL_BYTES(secret_key, "\x30\x77\x02\x01\x01\x04\x20");
-    AVS_UNIT_ASSERT_EQUAL_BYTES(&secret_key[39],
-                                "\xA0\x0A" AVS_CRYPTO_PKI_ECP_GROUP_SECP256R1
-                                "\xA1\x44\x03\x42");
+    AVS_UNIT_ASSERT_EQUAL_BYTES(
+            &secret_key[39],
+            "\xA0\x0A\x06\x08\x2A\x86\x48\xCE\x3D\x03\x01\x07\xA1\x44\x03\x42");
 }
