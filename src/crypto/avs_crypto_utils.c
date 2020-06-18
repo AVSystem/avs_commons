@@ -109,6 +109,11 @@ avs_crypto_client_cert_info_from_buffer(const void *buffer,
 
 #    ifdef AVS_COMMONS_WITH_AVS_CRYPTO_ADVANCED_FEATURES
 
+const avs_crypto_pki_x509_name_key_t AVS_CRYPTO_PKI_X509_NAME_CN = {
+    .oid = (const avs_crypto_asn1_oid_t *) "\x06\x03\x55\x04\x03",
+    .value_id_octet = 0x0C // UTF8String
+};
+
 bool _avs_crypto_aead_parameters_valid(size_t key_len,
                                        size_t iv_len,
                                        size_t tag_len) {

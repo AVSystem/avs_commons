@@ -331,11 +331,34 @@ avs_error_t avs_crypto_pki_ec_gen(avs_crypto_prng_ctx_t *prng_ctx,
                                   void *out_der_secret_key,
                                   size_t *inout_der_secret_key_size);
 
+typedef struct {
+    const avs_crypto_asn1_oid_t *oid;
+    uint8_t value_id_octet;
+} avs_crypto_pki_x509_name_key_t;
+
+extern const avs_crypto_pki_x509_name_key_t AVS_CRYPTO_PKI_X509_NAME_CN;
+
+typedef struct {
+    avs_crypto_pki_x509_name_key_t key;
+    const char *value;
+} avs_crypto_pki_x509_name_entry_t;
+
+#    if defined(__cplusplus) && __cplusplus >= 201103L
+#        define AVS_CRYPTO_PKI_X509_NAME(...)                  \
+            (::std::vector<avs_crypto_pki_x509_name_entry_t>{  \
+                    __VA_ARGS__, { { nullptr, 0 }, nullptr } } \
+                     .data())
+#    else // defined(__cplusplus) && __cplusplus >= 201103L
+#        define AVS_CRYPTO_PKI_X509_NAME(...)              \
+            (&(const avs_crypto_pki_x509_name_entry_t[]) { \
+                    __VA_ARGS__, { { NULL, 0 }, NULL } }[0])
+#    endif // defined(__cplusplus) && __cplusplus >= 201103L
+
 avs_error_t
 avs_crypto_pki_csr_create(avs_crypto_prng_ctx_t *prng_ctx,
                           const avs_crypto_client_key_info_t *private_key_info,
                           const char *md_name,
-                          const char *subject_name,
+                          const avs_crypto_pki_x509_name_entry_t subject[],
                           void *out_der_csr,
                           size_t *inout_der_csr_size);
 

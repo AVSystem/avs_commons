@@ -25,6 +25,7 @@
 #    include <inttypes.h>
 #    include <string.h>
 
+#    include <mbedtls/asn1write.h>
 #    include <mbedtls/ecp.h>
 #    include <mbedtls/md_internal.h>
 #    include <mbedtls/oid.h>
@@ -42,6 +43,24 @@
 #    include <avs_x_log_config.h>
 
 VISIBILITY_SOURCE_BEGIN
+
+static avs_error_t validate_and_cast_asn1_oid(const avs_crypto_asn1_oid_t *oid,
+                                              unsigned char **out_ptr,
+                                              size_t *out_size) {
+    // "const-cast" due to non-const field in mbedtls_asn1_buf
+    unsigned char *cast_oid = (unsigned char *) (intptr_t) oid;
+    // See http://luca.ntop.org/Teaching/Appunti/asn1.html
+    // Sections 2 and 3.1
+    // First byte (identifier octet) MUST be 0x06, OBJECT IDENTIFIER
+    // Second byte (length octet) MUST have bit 8 unset, indicating short form
+    if (!cast_oid || cast_oid[0] != MBEDTLS_ASN1_OID || cast_oid[1] > 0x7f) {
+        LOG(ERROR, _("something that is not a syntactically valid OID passed"));
+        return avs_errno(AVS_EINVAL);
+    }
+    *out_ptr = &cast_oid[2];
+    *out_size = cast_oid[1];
+    return AVS_OK;
+}
 
 static void move_der_data_to_start(unsigned char *out_buffer,
                                    size_t *inout_buffer_size,
@@ -90,14 +109,19 @@ avs_error_t avs_crypto_pki_ec_gen(avs_crypto_prng_ctx_t *prng_ctx,
         return avs_errno(AVS_EINVAL);
     }
 
+    mbedtls_asn1_buf ecp_group_oid_buf = {
+        .tag = MBEDTLS_ASN1_OID
+    };
+    avs_error_t err =
+            validate_and_cast_asn1_oid(ecp_group_oid, &ecp_group_oid_buf.p,
+                                       &ecp_group_oid_buf.len);
+    if (avs_is_err(err)) {
+        return err;
+    }
+
     mbedtls_ecp_group_id group_id;
     const mbedtls_ecp_curve_info *curve_info = NULL;
-    if (!mbedtls_oid_get_ec_grp(&(const mbedtls_asn1_buf) {
-                                    .tag = MBEDTLS_ASN1_OID,
-                                    .len = cast_group_oid[1],
-                                    .p = &cast_group_oid[2]
-                                },
-                                &group_id)) {
+    if (!mbedtls_oid_get_ec_grp(&ecp_group_oid_buf, &group_id)) {
         curve_info = mbedtls_ecp_curve_info_from_grp_id(group_id);
     }
     if (!curve_info) {
@@ -113,21 +137,21 @@ avs_error_t avs_crypto_pki_ec_gen(avs_crypto_prng_ctx_t *prng_ctx,
         return avs_errno(AVS_ENOMEM);
     }
 
-    avs_error_t err = avs_errno(AVS_EPROTO);
     if ((result = mbedtls_ecp_gen_key(curve_info->grp_id, mbedtls_pk_ec(pk_ctx),
                                       mbedtls_ctr_drbg_random,
                                       &prng_ctx->mbedtls_prng_ctx))) {
         LOG(ERROR, _("mbedtls_ecp_gen_key() failed: ") "%d", result);
+        err = avs_errno(AVS_EPROTO);
     } else {
         unsigned char *cast_buffer = (unsigned char *) out_der_secret_key;
         if ((result = mbedtls_pk_write_key_der(&pk_ctx, cast_buffer,
                                                *inout_der_secret_key_size))
                 < 0) {
             LOG(ERROR, _("mbedtls_pk_write_key_der() failed: ") "%d", result);
+            err = avs_errno(AVS_EPROTO);
         } else {
             move_der_data_to_start(cast_buffer, inout_der_secret_key_size,
                                    (size_t) result);
-            err = AVS_OK;
         }
     }
 
@@ -139,7 +163,7 @@ avs_error_t
 avs_crypto_pki_csr_create(avs_crypto_prng_ctx_t *prng_ctx,
                           const avs_crypto_client_key_info_t *private_key_info,
                           const char *md_name,
-                          const char *subject_name,
+                          const avs_crypto_pki_x509_name_entry_t subject[],
                           void *out_der_csr,
                           size_t *inout_der_csr_size) {
     const mbedtls_md_info_t *md_info = mbedtls_md_info_from_string(md_name);
@@ -154,11 +178,24 @@ avs_crypto_pki_csr_create(avs_crypto_prng_ctx_t *prng_ctx,
     mbedtls_x509write_csr_set_md_alg(&csr_ctx, mbedtls_md_get_type(md_info));
 
     avs_error_t err = AVS_OK;
-    int result = mbedtls_x509write_csr_set_subject_name(&csr_ctx, subject_name);
-    if (result) {
-        LOG(ERROR, _("mbedtls_x509write_csr_set_subject_name() failed: ") "%d",
-            result);
-        err = avs_errno(AVS_EPROTO);
+    for (const avs_crypto_pki_x509_name_entry_t *subject_entry = subject;
+         avs_is_ok(err) && subject_entry && subject_entry->key.oid;
+         ++subject_entry) {
+        unsigned char *oid;
+        size_t oid_len;
+        if (avs_is_ok((err = validate_and_cast_asn1_oid(subject_entry->key.oid,
+                                                        &oid, &oid_len)))) {
+            mbedtls_asn1_named_data *entry = mbedtls_asn1_store_named_data(
+                    &csr_ctx.subject, (const char *) oid, oid_len,
+                    (const unsigned char *) subject_entry->value,
+                    subject_entry->value ? strlen(subject_entry->value) : 0);
+            if (!entry) {
+                LOG(ERROR, _("mbedtls_asn1_store_named_data() failed"));
+                err = avs_errno(AVS_ENOMEM);
+            } else {
+                entry->val.tag = subject_entry->key.value_id_octet;
+            }
+        }
     }
 
     mbedtls_pk_context *private_key = NULL;
@@ -171,10 +208,11 @@ avs_crypto_pki_csr_create(avs_crypto_prng_ctx_t *prng_ctx,
 
         unsigned char *cast_buffer = (unsigned char *) out_der_csr;
         size_t buffer_size = *inout_der_csr_size;
-        if ((result = mbedtls_x509write_csr_der(
-                     &csr_ctx, cast_buffer, buffer_size,
-                     mbedtls_ctr_drbg_random, &prng_ctx->mbedtls_prng_ctx))
-                < 0) {
+        int result =
+                mbedtls_x509write_csr_der(&csr_ctx, cast_buffer, buffer_size,
+                                          mbedtls_ctr_drbg_random,
+                                          &prng_ctx->mbedtls_prng_ctx);
+        if (result < 0) {
             LOG(ERROR, _("mbedtls_x509write_csr_der() failed: ") "%d", result);
             err = avs_errno(AVS_EPROTO);
         } else {
