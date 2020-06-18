@@ -159,6 +159,32 @@ avs_error_t avs_crypto_pki_ec_gen(avs_crypto_prng_ctx_t *prng_ctx,
     return err;
 }
 
+static avs_error_t
+convert_subject(mbedtls_asn1_named_data **out_mbedtls_subject,
+                const avs_crypto_pki_x509_name_entry_t subject[]) {
+    for (const avs_crypto_pki_x509_name_entry_t *subject_entry = subject;
+         subject_entry && subject_entry->key.oid;
+         ++subject_entry) {
+        unsigned char *oid;
+        size_t oid_len;
+        avs_error_t err = validate_and_cast_asn1_oid(subject_entry->key.oid,
+                                                     &oid, &oid_len);
+        if (avs_is_err(err)) {
+            return err;
+        }
+        mbedtls_asn1_named_data *entry = mbedtls_asn1_store_named_data(
+                out_mbedtls_subject, (const char *) oid, oid_len,
+                (const unsigned char *) subject_entry->value,
+                subject_entry->value ? strlen(subject_entry->value) : 0);
+        if (!entry) {
+            LOG(ERROR, _("mbedtls_asn1_store_named_data() failed"));
+            return avs_errno(AVS_ENOMEM);
+        }
+        entry->val.tag = subject_entry->key.value_id_octet;
+    }
+    return AVS_OK;
+}
+
 avs_error_t
 avs_crypto_pki_csr_create(avs_crypto_prng_ctx_t *prng_ctx,
                           const avs_crypto_client_key_info_t *private_key_info,
@@ -177,29 +203,9 @@ avs_crypto_pki_csr_create(avs_crypto_prng_ctx_t *prng_ctx,
 
     mbedtls_x509write_csr_set_md_alg(&csr_ctx, mbedtls_md_get_type(md_info));
 
-    avs_error_t err = AVS_OK;
-    for (const avs_crypto_pki_x509_name_entry_t *subject_entry = subject;
-         avs_is_ok(err) && subject_entry && subject_entry->key.oid;
-         ++subject_entry) {
-        unsigned char *oid;
-        size_t oid_len;
-        if (avs_is_ok((err = validate_and_cast_asn1_oid(subject_entry->key.oid,
-                                                        &oid, &oid_len)))) {
-            mbedtls_asn1_named_data *entry = mbedtls_asn1_store_named_data(
-                    &csr_ctx.subject, (const char *) oid, oid_len,
-                    (const unsigned char *) subject_entry->value,
-                    subject_entry->value ? strlen(subject_entry->value) : 0);
-            if (!entry) {
-                LOG(ERROR, _("mbedtls_asn1_store_named_data() failed"));
-                err = avs_errno(AVS_ENOMEM);
-            } else {
-                entry->val.tag = subject_entry->key.value_id_octet;
-            }
-        }
-    }
-
     mbedtls_pk_context *private_key = NULL;
 
+    avs_error_t err = convert_subject(&csr_ctx.subject, subject);
     if (avs_is_ok(err)
             && avs_is_ok((err = _avs_crypto_mbedtls_load_client_key(
                                   &private_key, private_key_info)))) {
