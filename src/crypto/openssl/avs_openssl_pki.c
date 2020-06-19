@@ -54,7 +54,7 @@ avs_error_t avs_crypto_pki_ec_gen(avs_crypto_prng_ctx_t *prng_ctx,
     // See http://luca.ntop.org/Teaching/Appunti/asn1.html
     // Sections 2 and 3.1
     // First byte (identifier octet) MUST be 0x06, OBJECT IDENTIFIER
-    // Second byte (length octect) MUST have bit 8 unset, indicating short form
+    // Second byte (length octet) MUST have bit 8 unset, indicating short form
     if (!cast_group_oid || cast_group_oid[0] != 0x06
             || cast_group_oid[1] > 0x7f) {
         LOG(ERROR, _("ecp_group_asn1_oid is not a syntactically valid OID"));

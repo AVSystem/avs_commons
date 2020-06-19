@@ -157,7 +157,7 @@ avs_crypto_client_cert_info_from_buffer(const void *buffer, size_t buffer_size);
 /**
  * Opaque type that represents a DER-encoded ASN.1 OBJECT IDENTIFIER, including
  * the leading identifier and length octets (so it shall always start with
- * '\x06' followed by a signel length octet.
+ * '\x06' followed by a single length octet.
  *
  * NOTE: This type is actually never defined. It is used as a marker to ensure
  * type safety when operating on ASN.1 OBJECT IDENTIFIERs. If you need to use
