@@ -24,6 +24,9 @@
 #include <avsystem/commons/avs_prng.h>
 
 #ifdef __cplusplus
+#    if __cplusplus >= 201103L
+#        include <vector> // used in AVS_CRYPTO_PKI_X509_NAME
+#    endif                // defined(__cplusplus) && __cplusplus >= 201103L
 extern "C" {
 #endif
 
@@ -337,15 +340,45 @@ avs_error_t avs_crypto_pki_ec_gen(avs_crypto_prng_ctx_t *prng_ctx,
                                   void *out_der_secret_key,
                                   size_t *inout_der_secret_key_size);
 
+/**
+ * Structure representing a type of a Distinguished Name attribute.
+ */
 typedef struct {
+    /**
+     * Pointer to DER-encoded ASN.1 OBJECT IDENTIFIER (including the leading
+     * identifier and length octets) describing the attribute.
+     */
     const avs_crypto_asn1_oid_t *oid;
+
+    /**
+     * Identifier octet that will identify the value type.
+     *
+     * Most common values:
+     * - <c>0x0C</c> - UTF8String
+     * - <c>0x13</c> - PrintableString
+     * - <c>0x16</c> - IA5String
+     */
     uint8_t value_id_octet;
 } avs_crypto_pki_x509_name_key_t;
 
+/**
+ * A predefined instance of @ref avs_crypto_pki_x509_name_key_t that identifies
+ * the Common Name attribute type.
+ */
 extern const avs_crypto_pki_x509_name_key_t AVS_CRYPTO_PKI_X509_NAME_CN;
 
+/**
+ * Structure representing a single attribute within a Distinguished Name.
+ */
 typedef struct {
+    /**
+     * Type of the attribute (e.g. Common Name, Organization Name, etc.).
+     */
     avs_crypto_pki_x509_name_key_t key;
+
+    /**
+     * Value of the attribute as a null-terminated string.
+     */
     const char *value;
 } avs_crypto_pki_x509_name_entry_t;
 
@@ -355,11 +388,75 @@ typedef struct {
                     __VA_ARGS__, { { nullptr, 0 }, nullptr } } \
                      .data())
 #    else // defined(__cplusplus) && __cplusplus >= 201103L
+/**
+ * Generates a temporary array of @ref avs_crypto_pki_x509_name_entry_t objects,
+ * suitable for use as the @c subject argument to the
+ * @ref avs_crypto_pki_csr_create function.
+ *
+ * Example usages:
+ *
+ * @code
+ * // Subject name with Common Name only
+ * AVS_CRYPTO_PKI_X509_NAME({ AVS_CRYPTO_PKI_X509_NAME_CN, "example.com" })
+ *
+ * // Subject name with Common Name and Organization defined as a custom key
+ * AVS_CRYPTO_PKI_X509_NAME(
+ *         { AVS_CRYPTO_PKI_X509_NAME_CN, "example.com" },
+ *         { { (const avs_crypto_asn1_oid_t *) "\x06\x03\x55\x04\x03", 0x0C },
+ *           "Example Corp." })
+ * @endcode
+ *
+ * A <c>{ { NULL, 0 }, NULL }</c> entry is implicitly added after the entries
+ * specified in the arguments.
+ *
+ * Notes:
+ * - When used <strong>from C code</strong>, this uses compound literals, which
+ *   means that the array will remain valid <strong>until the end of the current
+ *   block</strong>.
+ * - When used <strong>from C++ code</strong>, this calls <c>data()</c> on a
+ *   temporary <c>std::vector</c> object, which means that the array will remain
+ *   valid <strong>until the end of the current statement</strong> - in other
+ *   words, <strong>it's only suitable as an immediate function call argument
+ *   and cannot be safely assigned to a variable</strong>.
+ */
 #        define AVS_CRYPTO_PKI_X509_NAME(...)              \
             (&(const avs_crypto_pki_x509_name_entry_t[]) { \
                     __VA_ARGS__, { { NULL, 0 }, NULL } }[0])
 #    endif // defined(__cplusplus) && __cplusplus >= 201103L
 
+/**
+ * Creates a Certificate Signing Request.
+ *
+ * @param prng_ctx           PRNG context to use for random number generation.
+ *
+ * @param private_key_info   Private key for which the certificate shall be
+ *                           generated. A structure created using either
+ *                           @ref avs_crypto_client_key_info_from_file or
+ *                           @ref avs_crypto_client_key_info_from_buffer shall
+ *                           be passed.
+ *
+ * @param md_name            Name of the digest algorithm to be used when
+ *                           signing the request, e.g. <c>"SHA256"</c>.
+ *
+ * @param subject            Desired subject name of the certificate.
+ *                           This shall be a pointer to an array of
+ *                           @ref avs_crypto_pki_x509_name_entry_t objects,
+ *                           terminated by an entry with the <c>key.oid</c>
+ *                           field set to <c>NULL</c>.
+ *
+ *                           In typical cases, a call to the
+ *                           @ref AVS_CRYPTO_PKI_X509_NAME macro can be passed
+ *                           as this argument.
+ *
+ * @param out_der_csr        Pointer to a buffer, at the beginning of which the
+ *                           CSR encoded as PKCS#10 DER will be stored.
+ *
+ * @param inout_der_csr_size Pointer to a variable which, on input, shall
+ *                           contain the number of bytes available in the
+ *                           @p out_der_csr buffer. On successful return, it
+ *                           will be set to the number of bytes actually
+ *                           written.
+ */
 avs_error_t
 avs_crypto_pki_csr_create(avs_crypto_prng_ctx_t *prng_ctx,
                           const avs_crypto_client_key_info_t *private_key_info,
