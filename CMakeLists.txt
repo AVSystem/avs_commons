@@ -428,7 +428,7 @@ if(WITH_TEST)
         target_include_directories(${AAT_NAME}_test PRIVATE "${AVS_COMMONS_SOURCE_DIR}")
         add_dependencies(${AAT_NAME}_test dtls_echo_server)
 
-        set_property(TARGET ${AAT_NAME}_test APPEND PROPERTY COMPILE_DEFINITIONS AVS_UNIT_TESTING ${AAT_NAME}_COMPILE_DEFINITIONS)
+        set_property(TARGET ${AAT_NAME}_test APPEND PROPERTY COMPILE_DEFINITIONS AVS_UNIT_TESTING ${AAT_COMPILE_DEFINITIONS})
         set_property(TARGET ${AAT_NAME}_test APPEND PROPERTY COMPILE_FLAGS
                      "-Wno-clobbered -Wno-overlength-strings -Wno-sign-conversion -Wno-vla")
 

@@ -19,24 +19,13 @@
 #if defined(AVS_COMMONS_WITH_AVS_CRYPTO) && defined(AVS_COMMONS_WITH_MBEDTLS)
 
 #    include <avsystem/commons/avs_memory.h>
-#    include <avsystem/commons/avs_prng.h>
 
-#    include <mbedtls/ctr_drbg.h>
-#    include <mbedtls/entropy.h>
+#    include "avs_mbedtls_prng.h"
 
 #    define MODULE_NAME avs_crypto_prng
 #    include <avs_x_log_config.h>
 
 VISIBILITY_SOURCE_BEGIN
-
-struct avs_crypto_prng_ctx_struct {
-    mbedtls_ctr_drbg_context mbedtls_prng_ctx;
-    avs_prng_entropy_callback_t seed_callback;
-    void *user_ptr;
-    // FAM to avoid two allocations, but it's actually a single
-    // mbedtls_entropy_context
-    mbedtls_entropy_context mbedtls_entropy_ctx[];
-};
 
 static int
 entropy_callback(void *ctx_, unsigned char *out_buf, size_t out_buf_size) {

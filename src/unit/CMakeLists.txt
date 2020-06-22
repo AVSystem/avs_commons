@@ -32,7 +32,7 @@ endif()
 
 if(WITH_AVS_NET)
     target_sources(avs_unit PRIVATE avs_mocksock.c)
-    target_link_libraries(avs_unit PUBLIC avs_net)
+    target_link_libraries(avs_unit PUBLIC avs_net_core)
 endif()
 
 if(WITH_AVS_STREAM)

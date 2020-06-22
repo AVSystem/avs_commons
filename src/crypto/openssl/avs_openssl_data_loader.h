@@ -29,7 +29,7 @@ avs_error_t
 _avs_crypto_openssl_load_ca_certs(SSL_CTX *ctx,
                                   const avs_crypto_trusted_cert_info_t *info);
 avs_error_t
-_avs_crypto_openssl_load_client_key(SSL_CTX *ctx,
+_avs_crypto_openssl_load_client_key(EVP_PKEY **out_key,
                                     const avs_crypto_client_key_info_t *info);
 avs_error_t
 _avs_crypto_openssl_load_client_cert(SSL_CTX *ctx,

@@ -939,8 +939,17 @@ configure_ssl_certs(ssl_socket_t *socket,
             LOG(ERROR, _("could not load client certificate"));
             return err;
         }
-        if (avs_is_err((err = _avs_crypto_openssl_load_client_key(
-                                socket->ctx, &cert_info->client_key)))) {
+        EVP_PKEY *key = NULL;
+        if (avs_is_ok((err = _avs_crypto_openssl_load_client_key(
+                               &key, &cert_info->client_key)))) {
+            assert(key);
+            if (SSL_CTX_use_PrivateKey(socket->ctx, key) != 1) {
+                log_openssl_error();
+                err = avs_errno(AVS_EPROTO);
+            }
+            EVP_PKEY_free(key);
+        }
+        if (avs_is_err(err)) {
             LOG(ERROR, _("could not load client private key"));
             return err;
         }

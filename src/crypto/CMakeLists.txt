@@ -13,14 +13,13 @@
 # limitations under the License.
 
 set(AVS_CRYPTO_PUBLIC_HEADERS
-    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/avs_crypto_pki.h"
     "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/avs_prng.h")
 
 set(AVS_CRYPTO_COMMON_SOURCES
     avs_crypto_utils.c
     avs_crypto_utils.h)
 
-set(AVS_CRYPTO_TEST_SOURCES ${AVS_COMMONS_SOURCE_DIR}/tests/crypto/prng.c)
+set(AVS_CRYPTO_TEST_SOURCES "${AVS_COMMONS_SOURCE_DIR}/tests/crypto/prng.c")
 
 set(AVS_CRYPTO_ADVANCED_FEATURES_TEST_SOURCES
     ${AVS_COMMONS_SOURCE_DIR}/tests/crypto/aead.c
@@ -37,6 +36,12 @@ if(AVS_COMMONS_WITH_AVS_CRYPTO_ADVANCED_FEATURES)
         ${AVS_CRYPTO_PUBLIC_HEADERS}
         "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/avs_aead.h"
         "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/avs_hkdf.h")
+
+    if(WITH_PKI)
+        set(AVS_CRYPTO_ADVANCED_FEATURES_TEST_SOURCES
+            ${AVS_CRYPTO_ADVANCED_FEATURES_TEST_SOURCES}
+            "${AVS_COMMONS_SOURCE_DIR}/tests/crypto/pki_ec.c")
+    endif()
 endif()
 
 add_library(avs_crypto_core INTERFACE)
@@ -46,13 +51,21 @@ if(WITH_INTERNAL_LOGS)
     target_link_libraries(avs_crypto_core INTERFACE avs_log)
 endif()
 
+if(WITH_OPENSSL OR WITH_MBEDTLS)
+    set(AVS_CRYPTO_PUBLIC_HEADERS
+        ${AVS_CRYPTO_PUBLIC_HEADERS}
+        "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/avs_crypto_pki.h")
+endif()
+
 if(WITH_OPENSSL)
     set(AVS_CRYPTO_OPENSSL_SOURCES
         ${AVS_CRYPTO_COMMON_SOURCES}
         openssl/avs_openssl_aead.c
         openssl/avs_openssl_data_loader.c
         openssl/avs_openssl_hkdf.c
-        openssl/avs_openssl_prng.c)
+        openssl/avs_openssl_pki.c
+        openssl/avs_openssl_prng.c
+        openssl/avs_openssl_prng.h)
 
     set(AVS_CRYPTO_OPENSSL_TEST_SOURCES
         ${AVS_CRYPTO_TEST_SOURCES}
@@ -70,7 +83,7 @@ if(WITH_OPENSSL)
     target_link_libraries(avs_crypto_openssl PUBLIC avs_crypto_core OpenSSL::Crypto)
 
     avs_add_test(NAME avs_crypto_openssl
-                 LIBS avs_crypto_openssl
+                 LIBS avs_crypto_openssl OpenSSL::SSL
                  SOURCES
                  ${AVS_CRYPTO_OPENSSL_TEST_SOURCES})
     avs_install_export(avs_crypto_openssl crypto)
@@ -82,7 +95,9 @@ if(WITH_MBEDTLS)
         mbedtls/avs_mbedtls_aead.c
         mbedtls/avs_mbedtls_data_loader.c
         mbedtls/avs_mbedtls_hkdf.c
-        mbedtls/avs_mbedtls_prng.c)
+        mbedtls/avs_mbedtls_pki.c
+        mbedtls/avs_mbedtls_prng.c
+        mbedtls/avs_mbedtls_prng.h)
 
     set(AVS_CRYPTO_MBEDTLS_TEST_SOURCES
         ${AVS_CRYPTO_TEST_SOURCES}
@@ -110,7 +125,7 @@ endif()
 add_library(avs_crypto_generic
             ${AVS_CRYPTO_PUBLIC_HEADERS}
             generic/avs_generic_prng.c)
-target_compile_definitions(avs_crypto_generic PRIVATE -DWITHOUT_SSL)
+target_compile_definitions(avs_crypto_generic PRIVATE WITHOUT_SSL)
 target_link_libraries(avs_crypto_generic PUBLIC avs_crypto_core)
 
 avs_add_test(NAME avs_crypto_generic
