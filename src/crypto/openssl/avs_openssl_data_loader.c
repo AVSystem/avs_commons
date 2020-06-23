@@ -151,10 +151,10 @@ load_ca_cert_from_buffer(SSL_CTX *ctx, const void *buffer, const size_t len) {
     X509_STORE *store = SSL_CTX_get_cert_store(ctx);
     if (!store || !X509_STORE_add_cert(store, cert)) {
         log_openssl_error();
-        X509_free(cert);
-        return avs_errno(AVS_ENOMEM);
+        err = avs_errno(AVS_ENOMEM);
     }
-    return AVS_OK;
+    X509_free(cert);
+    return err;
 }
 
 avs_error_t
@@ -219,11 +219,11 @@ load_client_cert_from_buffer(SSL_CTX *ctx, const void *buffer, size_t len) {
     }
     assert(cert);
     if (SSL_CTX_use_certificate(ctx, cert) != 1) {
-        X509_free(cert);
         log_openssl_error();
-        return avs_errno(AVS_EPROTO);
+        err = avs_errno(AVS_EPROTO);
     }
-    return AVS_OK;
+    X509_free(cert);
+    return err;
 }
 
 avs_error_t _avs_crypto_openssl_load_client_cert(
