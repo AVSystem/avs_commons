@@ -88,7 +88,7 @@ macro(avs_install_export TNAME CNAME)
         # cannot be aliased. So let's create an INTERFACE target instead...
         set_property(GLOBAL APPEND_STRING PROPERTY AVS_ALIASED_TARGETS "
                      if(NOT TARGET ${TNAME} AND TARGET ${_ALIASED_TARGET})
-                         add_library(${TNAME} INTERFACE IMPORTED)
+                         add_library(${TNAME} INTERFACE)
                          target_link_libraries(${TNAME} INTERFACE ${_ALIASED_TARGET})
                      endif()")
     else()
