@@ -126,6 +126,7 @@ endif()
 
 # Contains only simple PRNG generator if OpenSSL and MbedTLS aren't available.
 add_library(avs_crypto_generic
+            ${AVS_CRYPTO_COMMON_SOURCES}
             ${AVS_CRYPTO_PUBLIC_HEADERS}
             generic/avs_generic_prng.c)
 target_compile_definitions(avs_crypto_generic PRIVATE WITHOUT_SSL)
