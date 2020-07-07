@@ -19,6 +19,7 @@
 #include <avsystem/commons/avs_memory.h>
 #include <avsystem/commons/avs_unit_test.h>
 
+#include <stdlib.h>
 #include <unistd.h>
 
 #include <sys/stat.h>
