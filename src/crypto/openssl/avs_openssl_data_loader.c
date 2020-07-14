@@ -42,23 +42,6 @@
 
 VISIBILITY_SOURCE_BEGIN
 
-static int password_cb(char *buf, int num, int rwflag, void *userdata) {
-    if (!userdata) {
-        buf[0] = '\0';
-        return 0;
-    }
-    int retval = snprintf(buf, (size_t) num, "%s", (const char *) userdata);
-    (void) rwflag;
-    return (retval < 0 || retval >= num) ? -1 : retval;
-}
-
-static inline void setup_password_callback(SSL_CTX *ctx, const char *password) {
-    SSL_CTX_set_default_passwd_cb_userdata(ctx,
-                                           /* const_cast */ (
-                                                   void *) (intptr_t) password);
-    SSL_CTX_set_default_passwd_cb(ctx, password_cb);
-}
-
 static avs_error_t
 load_ca_certs_from_paths(SSL_CTX *ctx, const char *file, const char *path) {
     AVS_ASSERT(!!file != !!path, "cannot use path and file at the same time");
@@ -160,8 +143,6 @@ load_ca_cert_from_buffer(SSL_CTX *ctx, const void *buffer, const size_t len) {
 avs_error_t
 _avs_crypto_openssl_load_ca_certs(SSL_CTX *ctx,
                                   const avs_crypto_trusted_cert_info_t *info) {
-    setup_password_callback(ctx, NULL);
-
     switch (info->desc.source) {
     case AVS_CRYPTO_DATA_SOURCE_FILE:
         if (!info->desc.info.file.filename) {
@@ -224,8 +205,6 @@ load_client_cert_from_buffer(SSL_CTX *ctx, const void *buffer, size_t len) {
 
 avs_error_t _avs_crypto_openssl_load_client_cert(
         SSL_CTX *ctx, const avs_crypto_client_cert_info_t *info) {
-    setup_password_callback(ctx, NULL);
-
     switch (info->desc.source) {
     case AVS_CRYPTO_DATA_SOURCE_FILE:
         if (!info->desc.info.file.filename) {
@@ -246,6 +225,16 @@ avs_error_t _avs_crypto_openssl_load_client_cert(
         AVS_UNREACHABLE("invalid data source");
         return avs_errno(AVS_EINVAL);
     }
+}
+
+static int password_cb(char *buf, int num, int rwflag, void *userdata) {
+    if (!userdata) {
+        buf[0] = '\0';
+        return 0;
+    }
+    int retval = snprintf(buf, (size_t) num, "%s", (const char *) userdata);
+    (void) rwflag;
+    return (retval < 0 || retval >= num) ? -1 : retval;
 }
 
 static avs_error_t
