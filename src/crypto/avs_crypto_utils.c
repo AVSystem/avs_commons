@@ -18,6 +18,7 @@
 
 #ifdef AVS_COMMONS_WITH_AVS_CRYPTO
 
+#    include <assert.h>
 #    include <string.h>
 
 #    include <avsystem/commons/avs_crypto_pki.h>
@@ -60,6 +61,40 @@ avs_crypto_trusted_cert_info_from_buffer(const void *buffer,
     result.desc.info.buffer.buffer_size = buffer_size;
     return result;
 }
+
+avs_crypto_trusted_cert_info_t avs_crypto_trusted_cert_info_from_array(
+        const avs_crypto_trusted_cert_info_t *array_ptr,
+        size_t array_element_count) {
+    avs_crypto_trusted_cert_info_t result;
+    memset(&result, 0, sizeof(result));
+    result.desc.type = AVS_CRYPTO_SECURITY_INFO_TRUSTED_CERT;
+    result.desc.source = AVS_CRYPTO_DATA_SOURCE_COMPOUND_ARRAY;
+    result.desc.info.compound_array.array_ptr = array_ptr;
+    result.desc.info.compound_array.element_count = array_element_count;
+#    ifndef NDEBUG
+    for (size_t i = 0; i < array_element_count; ++i) {
+        assert(array_ptr[i].desc.type == AVS_CRYPTO_SECURITY_INFO_TRUSTED_CERT);
+    }
+#    endif // NDEBUG
+    return result;
+}
+
+#    ifdef AVS_COMMONS_WITH_AVS_LIST
+avs_crypto_trusted_cert_info_t avs_crypto_trusted_cert_info_from_list(
+        AVS_LIST(avs_crypto_trusted_cert_info_t) list) {
+    avs_crypto_trusted_cert_info_t result;
+    memset(&result, 0, sizeof(result));
+    result.desc.type = AVS_CRYPTO_SECURITY_INFO_TRUSTED_CERT;
+    result.desc.source = AVS_CRYPTO_DATA_SOURCE_COMPOUND_LIST;
+    result.desc.info.compound_list.list_head = list;
+#        ifndef NDEBUG
+    AVS_LIST_ITERATE(list) {
+        assert(list->desc.type == AVS_CRYPTO_SECURITY_INFO_TRUSTED_CERT);
+    }
+#        endif // NDEBUG
+    return result;
+}
+#    endif // AVS_COMMONS_WITH_AVS_LIST
 
 avs_crypto_client_key_info_t
 avs_crypto_client_key_info_from_file(const char *filename,

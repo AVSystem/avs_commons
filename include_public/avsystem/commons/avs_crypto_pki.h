@@ -23,6 +23,10 @@
 #include <avsystem/commons/avs_errno.h>
 #include <avsystem/commons/avs_prng.h>
 
+#ifdef AVS_COMMONS_WITH_AVS_LIST
+#    include <avsystem/commons/avs_list.h>
+#endif // AVS_COMMONS_WITH_AVS_LIST
+
 #ifdef __cplusplus
 #    if __cplusplus >= 201103L
 #        include <vector> // used in AVS_CRYPTO_PKI_X509_NAME
@@ -45,6 +49,15 @@ typedef struct {
     size_t buffer_size;
 } avs_crypto_security_info_union_internal_buffer_t;
 
+typedef struct {
+    const void *array_ptr;
+    size_t element_count;
+} avs_crypto_security_info_union_internal_compound_array_t;
+
+typedef struct {
+    void *list_head;
+} avs_crypto_security_info_union_internal_compound_list_t;
+
 /**
  * This struct is for internal use only and should not be filled manually. One
  * should construct appropriate instances of:
@@ -60,6 +73,8 @@ typedef struct {
         avs_crypto_security_info_union_internal_file_t file;
         avs_crypto_security_info_union_internal_path_t path;
         avs_crypto_security_info_union_internal_buffer_t buffer;
+        avs_crypto_security_info_union_internal_compound_array_t compound_array;
+        avs_crypto_security_info_union_internal_compound_list_t compound_list;
     } info;
 } avs_crypto_security_info_union_t;
 
@@ -111,6 +126,15 @@ avs_crypto_trusted_cert_info_from_path(const char *path);
 avs_crypto_trusted_cert_info_t
 avs_crypto_trusted_cert_info_from_buffer(const void *buffer,
                                          size_t buffer_size);
+
+avs_crypto_trusted_cert_info_t avs_crypto_trusted_cert_info_from_array(
+        const avs_crypto_trusted_cert_info_t *array_ptr,
+        size_t array_element_count);
+
+#ifdef AVS_COMMONS_WITH_AVS_LIST
+avs_crypto_trusted_cert_info_t avs_crypto_trusted_cert_info_from_list(
+        AVS_LIST(avs_crypto_trusted_cert_info_t) list);
+#endif // AVS_COMMONS_WITH_AVS_LIST
 
 typedef struct {
     avs_crypto_security_info_union_t desc;
