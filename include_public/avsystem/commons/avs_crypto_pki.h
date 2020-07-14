@@ -127,11 +127,45 @@ avs_crypto_trusted_cert_info_t
 avs_crypto_trusted_cert_info_from_buffer(const void *buffer,
                                          size_t buffer_size);
 
+/**
+ * Creates CA chain descriptor used later on to load CA chain from an array of
+ * existing CA chains.
+ *
+ * NOTE: Lifetime of all elements of the array pointed to by @p array_ptr must
+ * be as long as lifetime of any (D)TLS sockets that used this descriptor to
+ * perform configuration.
+ *
+ * NOTE: There is no protection against defining cyclic structures. Attempting
+ * to do so is undefined behavior.
+ *
+ * NOTE: Modifying contents of the array while a socket configured to use it
+ * exists is undefined behavior.
+ *
+ * @param array_ptr           Pointer to an array of trusted certificate chains.
+ * @param array_element_count Number of elements in the @p array_ptr array.
+ */
 avs_crypto_trusted_cert_info_t avs_crypto_trusted_cert_info_from_array(
         const avs_crypto_trusted_cert_info_t *array_ptr,
         size_t array_element_count);
 
 #ifdef AVS_COMMONS_WITH_AVS_LIST
+/**
+ * Creates CA chain descriptor used later on to load CA chain from a list of
+ * existing CA chains.
+ *
+ * NOTE: Lifetime of all elements of the array pointed to by @p list must be as
+ * long as lifetime of any (D)TLS sockets that used this descriptor to
+ * perform configuration.
+ *
+ * NOTE: There is no protection against defining cyclic structures. Attempting
+ * to do so is undefined behavior.
+ *
+ * NOTE: Modifying contents of the listwhile a socket configured to use it
+ * exists is undefined behavior.
+ *
+ * @param array_ptr           Pointer to an array of trusted certificate chains.
+ * @param array_element_count Number of elements in the @p array_ptr array.
+ */
 avs_crypto_trusted_cert_info_t avs_crypto_trusted_cert_info_from_list(
         AVS_LIST(avs_crypto_trusted_cert_info_t) list);
 #endif // AVS_COMMONS_WITH_AVS_LIST
