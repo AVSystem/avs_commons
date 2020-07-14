@@ -161,10 +161,6 @@ avs_error_t
 _avs_crypto_openssl_load_ca_certs(SSL_CTX *ctx,
                                   const avs_crypto_trusted_cert_info_t *info) {
     setup_password_callback(ctx, NULL);
-    if (!SSL_CTX_set_default_verify_paths(ctx)) {
-        LOG(WARNING, _("could not set default CA verify paths"));
-        log_openssl_error();
-    }
 
     switch (info->desc.source) {
     case AVS_CRYPTO_DATA_SOURCE_FILE:

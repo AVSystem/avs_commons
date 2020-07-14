@@ -262,15 +262,23 @@ typedef struct {
  */
 typedef struct {
     /**
-     * Enables validation of peer certificate chain. If disabled, #trusted_certs
-     * is ignored.
+     * Enables validation of peer certificate chain. If disabled,
+     * #ignore_system_trust_store and #trusted_certs are ignored.
      */
     bool server_cert_validation;
 
     /**
+     * Setting this flag to true disables the usage of system-wide trust store
+     * (e.g. <c>/etc/ssl/certs</c> on most Unix-like systems).
+     *
+     * NOTE: System-wide trust store is currently supported only by the OpenSSL
+     * backend. This field is ignored by the Mbed TLS backend.
+     */
+    bool ignore_system_trust_store;
+
+    /**
      * Store of trust anchor certificates. This field is optional and can be
-     * left zero-initialized, unless #server_cert_validation is true. If used,
-     * it shall be initialized using one of the
+     * left zero-initialized. If used, it shall be initialized using one of the
      * <c>avs_crypto_trusted_cert_info_from_*</c> helper functions.
      */
     avs_crypto_trusted_cert_info_t trusted_certs;
