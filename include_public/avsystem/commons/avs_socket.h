@@ -277,6 +277,15 @@ typedef struct {
     bool ignore_system_trust_store;
 
     /**
+     * Enable use of DNS-based Authentication of Named Entities (DANE) if
+     * possible.
+     *
+     * If this field is set to true, but #server_cert_validation is disabled,
+     * "opportunistic DANE" is used.
+     */
+    bool dane;
+
+    /**
      * Store of trust anchor certificates. This field is optional and can be
      * left zero-initialized. If used, it shall be initialized using one of the
      * <c>avs_crypto_trusted_cert_info_from_*</c> helper functions.
@@ -446,6 +455,8 @@ typedef struct {
      * Server Name Indication value to be used for certificate validation during
      * TLS handshake, or NULL if a default value shall be used (i.e. hostname to
      * which the connection is performed).
+     *
+     * The same value will also be used as DANE base domain if DANE is enabled.
      */
     const char *server_name_indication;
 

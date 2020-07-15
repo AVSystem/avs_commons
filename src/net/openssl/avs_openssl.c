@@ -84,11 +84,18 @@ VISIBILITY_SOURCE_BEGIN
 #        undef AVS_COMMONS_NET_WITH_DTLS
 #    endif
 
+typedef enum {
+    SSL_VERIFY_DISABLED = 0,
+    SSL_VERIFY_TRUSTSTORE,
+    SSL_VERIFY_DANE_ENFORCED,
+    SSL_VERIFY_DANE_OPPORTUNISTIC
+} ssl_verify_mode_t;
+
 typedef struct {
     const avs_net_socket_v_table_t *const operations;
     SSL_CTX *ctx;
     SSL *ssl;
-    int verification;
+    ssl_verify_mode_t verify_mode;
     avs_error_t bio_error;
     avs_time_real_t next_deadline;
     avs_net_socket_type_t backend_type;
@@ -826,11 +833,22 @@ static avs_error_t start_ssl(ssl_socket_t *socket, const char *host) {
         host = socket->server_name_indication;
     }
 
-    if (SSL_set_tlsext_host_name(socket->ssl,
-                                 // NOTE: this ugly cast is required because
-                                 // openssl does drop const qualifiers...
-                                 (void *) (intptr_t) host)
-            == 0) {
+#    if OPENSSL_VERSION_NUMBER_GE(1, 1, 0)
+    if (socket->verify_mode == SSL_VERIFY_DANE_ENFORCED
+            || socket->verify_mode == SSL_VERIFY_DANE_OPPORTUNISTIC) {
+        // NOTE: SSL_dane_enable() calls SSL_set_tlsext_host_name() internally
+        if (SSL_dane_enable(socket->ssl, host) <= 0) {
+            LOG(ERROR, _("cannot setup DANE extension"));
+            return avs_errno(AVS_ENOMEM);
+        }
+    } else
+#    endif // OPENSSL_VERSION_NUMBER_GE(1, 1, 0)
+            if (SSL_set_tlsext_host_name(
+                        socket->ssl,
+                        // NOTE: this ugly cast is required because
+                        // openssl does drop const qualifiers...
+                        (void *) (intptr_t) host)
+                == 0) {
         LOG(ERROR, _("cannot setup SNI extension"));
         return avs_errno(AVS_ENOMEM);
     }
@@ -838,7 +856,9 @@ static avs_error_t start_ssl(ssl_socket_t *socket, const char *host) {
 #    if defined(AVS_COMMONS_WITH_AVS_CRYPTO_PKI) \
             && OPENSSL_VERSION_NUMBER_GE(1, 0, 2)
     X509_VERIFY_PARAM *param = SSL_get0_param(socket->ssl);
-    if (socket->verification) {
+#        warning "TODO: Fix for opportunistic DANE"
+#        warning "TODO: We need to call SSL_dane_tlsa_add() around here"
+    if (socket->verify_mode != SSL_VERIFY_DISABLED) {
         if (!param) {
             result = -1;
         } else if (!avs_net_validate_ip_address(AVS_NET_AF_UNSPEC, host)) {
@@ -914,8 +934,25 @@ configure_ssl_certs(ssl_socket_t *socket,
                     const avs_net_certificate_info_t *cert_info) {
     LOG(TRACE, _("configure_ssl_certs"));
 
+    if (cert_info->dane) {
+#        if OPENSSL_VERSION_NUMBER_LT(1, 1, 0)
+        LOG(ERROR, _("DANE not supported"));
+        return avs_errno(AVS_ENOTSUP);
+#        else  // OPENSSL_VERSION_NUMBER_LT(1, 1, 0)
+        if (SSL_CTX_dane_enable(socket->ctx) <= 0) {
+            LOG(ERROR, _("could not enable DANE"));
+            log_openssl_error();
+            return avs_errno(AVS_EPROTO);
+        }
+#        endif // OPENSSL_VERSION_NUMBER_LT(1, 1, 0)
+    }
+
     if (cert_info->server_cert_validation) {
-        socket->verification = 1;
+        if (cert_info->dane) {
+            socket->verify_mode = SSL_VERIFY_DANE_ENFORCED;
+        } else {
+            socket->verify_mode = SSL_VERIFY_TRUSTSTORE;
+        }
         if (!cert_info->ignore_system_trust_store
                 && !SSL_CTX_set_default_verify_paths(socket->ctx)) {
             LOG(WARNING, _("could not set default CA verify paths"));
@@ -929,6 +966,9 @@ configure_ssl_certs(ssl_socket_t *socket,
             return err;
         }
     } else {
+        if (cert_info->dane) {
+            socket->verify_mode = SSL_VERIFY_DANE_OPPORTUNISTIC;
+        }
         LOG(DEBUG, _("Server authentication disabled"));
         SSL_CTX_set_verify(socket->ctx, SSL_VERIFY_NONE, NULL);
     }
