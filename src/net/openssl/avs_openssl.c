@@ -88,6 +88,11 @@ VISIBILITY_SOURCE_BEGIN
 #        undef AVS_COMMONS_NET_WITH_DTLS
 #    endif
 
+#    if defined(AVS_COMMONS_WITH_AVS_CRYPTO_PKI) \
+            && OPENSSL_VERSION_NUMBER_GE(1, 1, 0)
+#        define WITH_DANE_SUPPORT
+#    endif
+
 typedef enum {
     SSL_VERIFY_DISABLED = 0,
     SSL_VERIFY_TRUSTSTORE,
@@ -125,7 +130,7 @@ typedef struct {
     /// Non empty, when custom server hostname shall be used.
     char server_name_indication[256];
 
-#    if OPENSSL_VERSION_NUMBER_GE(1, 1, 0)
+#    ifdef WITH_DANE_SUPPORT
 #        ifdef AVS_COMMONS_WITH_AVS_LIST
     bool dane_tlsa_use_list;
 #        endif // AVS_COMMONS_WITH_AVS_LIST
@@ -135,7 +140,7 @@ typedef struct {
         AVS_LIST(avs_net_socket_dane_tlsa_record_t) list;
 #        endif // AVS_COMMONS_WITH_AVS_LIST
     } dane_tlsa;
-#    endif // OPENSSL_VERSION_NUMBER_GE(1, 1, 0)
+#    endif // WITH_DANE_SUPPORT
 } ssl_socket_t;
 
 #    define NET_SSL_COMMON_INTERNALS
@@ -316,7 +321,7 @@ static avs_error_t get_dtls_overhead(ssl_socket_t *socket,
 static avs_error_t set_dane_tlsa(ssl_socket_t *socket,
                                  avs_net_socket_opt_key_t option_key,
                                  avs_net_socket_opt_value_t option_value) {
-#    if OPENSSL_VERSION_NUMBER_GE(1, 1, 0)
+#    ifdef WITH_DANE_SUPPORT
     if (socket->verify_mode == SSL_VERIFY_DANE_ENFORCED
             || socket->verify_mode == SSL_VERIFY_DANE_OPPORTUNISTIC) {
         switch (option_key) {
@@ -336,7 +341,7 @@ static avs_error_t set_dane_tlsa(ssl_socket_t *socket,
             AVS_UNREACHABLE("invalid option_key for set_dane_tlsa");
         }
     }
-#    endif // OPENSSL_VERSION_NUMBER_GE(1, 1, 0)
+#    endif // WITH_DANE_SUPPORT
     LOG(ERROR, _("Attempted to set DANE TLSA data on a socket that does not "
                  "use DANE"));
     return avs_errno(AVS_EBADF);
@@ -878,7 +883,7 @@ static avs_error_t start_ssl(ssl_socket_t *socket, const char *host) {
         host = socket->server_name_indication;
     }
 
-#    if OPENSSL_VERSION_NUMBER_GE(1, 1, 0)
+#    ifdef WITH_DANE_SUPPORT
     if (socket->verify_mode == SSL_VERIFY_DANE_ENFORCED
             || socket->verify_mode == SSL_VERIFY_DANE_OPPORTUNISTIC) {
         // NOTE: SSL_dane_enable() calls SSL_set_tlsext_host_name() internally
@@ -887,7 +892,7 @@ static avs_error_t start_ssl(ssl_socket_t *socket, const char *host) {
             return avs_errno(AVS_ENOMEM);
         }
     } else
-#    endif // OPENSSL_VERSION_NUMBER_GE(1, 1, 0)
+#    endif // WITH_DANE_SUPPORT
             if (SSL_set_tlsext_host_name(
                         socket->ssl,
                         // NOTE: this ugly cast is required because
@@ -980,16 +985,16 @@ configure_ssl_certs(ssl_socket_t *socket,
     LOG(TRACE, _("configure_ssl_certs"));
 
     if (cert_info->dane) {
-#        if OPENSSL_VERSION_NUMBER_LT(1, 1, 0)
-        LOG(ERROR, _("DANE not supported"));
-        return avs_errno(AVS_ENOTSUP);
-#        else  // OPENSSL_VERSION_NUMBER_LT(1, 1, 0)
+#        ifdef WITH_DANE_SUPPORT
         if (SSL_CTX_dane_enable(socket->ctx) <= 0) {
             LOG(ERROR, _("could not enable DANE"));
             log_openssl_error();
             return avs_errno(AVS_EPROTO);
         }
-#        endif // OPENSSL_VERSION_NUMBER_LT(1, 1, 0)
+#        else  // WITH_DANE_SUPPORT
+        LOG(ERROR, _("DANE not supported"));
+        return avs_errno(AVS_ENOTSUP);
+#        endif // WITH_DANE_SUPPORT
     }
 
     if (cert_info->server_cert_validation) {
