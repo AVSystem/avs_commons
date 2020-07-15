@@ -838,6 +838,33 @@ static unsigned int dtls_timer_cb(SSL *ssl, unsigned int timer_us) {
 #    endif // defined(AVS_COMMONS_NET_WITH_DTLS) && OPENSSL_VERSION_NUMBER_GE(1,
            // 1, 1)
 
+#    ifdef WITH_DANE_SUPPORT
+static const avs_net_socket_dane_tlsa_record_t *
+get_dane_tlsa_record(ssl_socket_t *socket,
+                     const avs_net_socket_dane_tlsa_record_t *prev_record) {
+#        ifdef AVS_COMMONS_WITH_AVS_LIST
+    if (socket->dane_tlsa_use_list) {
+        if (prev_record) {
+            AVS_LIST(avs_net_socket_dane_tlsa_record_t) element =
+                    (avs_net_socket_dane_tlsa_record_t *) (intptr_t)
+                            prev_record;
+            AVS_LIST_ADVANCE(&element);
+            return element;
+        } else {
+            return socket->dane_tlsa.list;
+        }
+    }
+#        endif // AVS_COMMONS_WITH_AVS_LIST
+    size_t index = 0;
+    if (prev_record) {
+        index = (size_t) (prev_record - socket->dane_tlsa.array.array_ptr) + 1;
+    }
+    return index < socket->dane_tlsa.array.array_element_count
+                   ? &socket->dane_tlsa.array.array_ptr[index]
+                   : NULL;
+}
+#    endif // WITH_DANE_SUPPORT
+
 static avs_error_t start_ssl(ssl_socket_t *socket, const char *host) {
     BIO *bio = NULL;
     LOG(TRACE, _("start_ssl(socket=") "%p" _(")"), (void *) socket);
@@ -883,6 +910,8 @@ static avs_error_t start_ssl(ssl_socket_t *socket, const char *host) {
         host = socket->server_name_indication;
     }
 
+    bool verification = (socket->verify_mode != SSL_VERIFY_DISABLED);
+
 #    ifdef WITH_DANE_SUPPORT
     if (socket->verify_mode == SSL_VERIFY_DANE_ENFORCED
             || socket->verify_mode == SSL_VERIFY_DANE_OPPORTUNISTIC) {
@@ -890,6 +919,41 @@ static avs_error_t start_ssl(ssl_socket_t *socket, const char *host) {
         if (SSL_dane_enable(socket->ssl, host) <= 0) {
             LOG(ERROR, _("cannot setup DANE extension"));
             return avs_errno(AVS_ENOMEM);
+        }
+
+        bool have_usable_tlsa_records = false;
+        for (const avs_net_socket_dane_tlsa_record_t *record =
+                     get_dane_tlsa_record(socket, NULL);
+             record;
+             record = get_dane_tlsa_record(socket, record)) {
+            if (socket->verify_mode == SSL_VERIFY_DANE_OPPORTUNISTIC
+                    && (record->certificate_usage
+                                == AVS_NET_SOCKET_DANE_CA_CONSTRAINT
+                        || record->certificate_usage
+                                   == AVS_NET_SOCKET_DANE_SERVICE_CERTIFICATE_CONSTRAINT)) {
+                // PKIX-TA and PKIX-EE constraints are unusable for
+                // opportunistic clients
+                continue;
+            }
+            result = SSL_dane_tlsa_add(
+                    socket->ssl, (uint8_t) record->certificate_usage,
+                    (uint8_t) record->selector, (uint8_t) record->matching_type,
+                    (unsigned const char *) record->association_data,
+                    record->association_data_size);
+            if (result <= 0) {
+                LOG(WARNING, _("SSL_dane_tlsa_add() failed"));
+                log_openssl_error();
+            } else {
+                have_usable_tlsa_records = true;
+            }
+        }
+
+        if (socket->verify_mode == SSL_VERIFY_DANE_OPPORTUNISTIC
+                && !have_usable_tlsa_records) {
+            // No usable TLSA records - no verification possible
+            // For opportunistic clients that means no verification
+            verification = false;
+            SSL_set_verify(socket->ssl, SSL_VERIFY_NONE, NULL);
         }
     } else
 #    endif // WITH_DANE_SUPPORT
@@ -906,9 +970,8 @@ static avs_error_t start_ssl(ssl_socket_t *socket, const char *host) {
 #    if defined(AVS_COMMONS_WITH_AVS_CRYPTO_PKI) \
             && OPENSSL_VERSION_NUMBER_GE(1, 0, 2)
     X509_VERIFY_PARAM *param = SSL_get0_param(socket->ssl);
-#        warning "TODO: Fix for opportunistic DANE"
-#        warning "TODO: We need to call SSL_dane_tlsa_add() around here"
-    if (socket->verify_mode != SSL_VERIFY_DISABLED) {
+    result = 0;
+    if (verification) {
         if (!param) {
             result = -1;
         } else if (!avs_net_validate_ip_address(AVS_NET_AF_UNSPEC, host)) {
@@ -958,7 +1021,7 @@ static avs_error_t start_ssl(ssl_socket_t *socket, const char *host) {
     }
 
 #    if OPENSSL_VERSION_NUMBER_LT(1, 0, 2)
-    if (socket->verification && verify_peer_subject_cn(socket, host) != 0) {
+    if (verification && verify_peer_subject_cn(socket, host) != 0) {
         LOG(ERROR, _("server certificate verification failure"));
         return avs_errno(AVS_EPROTO);
     }
