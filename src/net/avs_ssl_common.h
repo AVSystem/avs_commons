@@ -32,6 +32,9 @@ static avs_error_t start_ssl(ssl_socket_t *socket, const char *host);
 static void close_ssl_raw(ssl_socket_t *socket);
 static avs_error_t
 get_dtls_overhead(ssl_socket_t *socket, int *out_header, int *out_padding_size);
+static avs_error_t set_dane_tlsa(ssl_socket_t *socket,
+                                 avs_net_socket_opt_key_t option_key,
+                                 avs_net_socket_opt_value_t option_value);
 static avs_error_t
 initialize_ssl_socket(ssl_socket_t *socket,
                       avs_net_socket_type_t backend_type,
@@ -288,11 +291,20 @@ static avs_error_t set_opt_ssl(avs_net_socket_t *ssl_socket_,
                                avs_net_socket_opt_key_t option_key,
                                avs_net_socket_opt_value_t option_value) {
     ssl_socket_t *ssl_socket = (ssl_socket_t *) ssl_socket_;
-    if (!ssl_socket->backend_socket) {
-        return avs_errno(AVS_EBADF);
+    switch (option_key) {
+    case AVS_NET_SOCKET_OPT_DANE_TLSA_ARRAY:
+#ifdef AVS_COMMONS_WITH_AVS_LIST
+    case AVS_NET_SOCKET_OPT_DANE_TLSA_LIST:
+#endif // AVS_COMMONS_WITH_AVS_LIST
+        return set_dane_tlsa(ssl_socket, option_key, option_value);
+    default:
+        if (!ssl_socket->backend_socket) {
+            return avs_errno(AVS_EBADF);
+        } else {
+            return avs_net_socket_set_opt(ssl_socket->backend_socket,
+                                          option_key, option_value);
+        }
     }
-    return avs_net_socket_set_opt(ssl_socket->backend_socket, option_key,
-                                  option_value);
 }
 
 static avs_error_t get_opt_ssl(avs_net_socket_t *ssl_socket_,

@@ -481,23 +481,27 @@ typedef enum {
      * union.
      */
     AVS_NET_SOCKET_OPT_RECV_TIMEOUT,
+
     /**
      * Used to get the current state of the socket. The value is passed in the
      * <c>state</c> field of the @ref avs_net_socket_opt_value_t union.
      */
     AVS_NET_SOCKET_OPT_STATE,
+
     /**
      * Used to get the family of the communication addresses used by the socket.
      * The value is passed in the <c>addr_family</c> field of the
      * @ref avs_net_socket_opt_value_t union.
      */
     AVS_NET_SOCKET_OPT_ADDR_FAMILY,
+
     /**
      * Used to get the maximum size of a network-layer packet that can be
      * transmitted by the socket. The value is passed as bytes in the <c>mtu</c>
      * field of the @ref avs_net_socket_opt_value_t union.
      */
     AVS_NET_SOCKET_OPT_MTU,
+
     /**
      * Used to get the maximum size of a buffer that can be passed to
      * @ref avs_net_socket_send or @ref avs_net_socket_send_to and transmitted
@@ -505,6 +509,7 @@ typedef enum {
      * of the @ref avs_net_socket_opt_value_t union.
      */
     AVS_NET_SOCKET_OPT_INNER_MTU,
+
     /**
      * Used to check whether the last (D)TLS handshake was a successful session
      * resumption. The value is passed in the <c>flag</c> field of the
@@ -533,6 +538,47 @@ typedef enum {
      * overhead.
      */
     AVS_NET_SOCKET_OPT_BYTES_RECEIVED,
+
+    /**
+     * Used to set an array of DANE TLSA records. The value is write-only and
+     * passed in the <c>dane_tlsa_array</c> field of the
+     * @ref avs_net_socket_opt_value_t union.
+     *
+     * NOTE: Lifetime of all array elements and their <c>association_data</c>
+     * fields must be at least as long as lifetime of the socket to which it is
+     * associated, unless another DANE TLSA array or list is re-associated
+     * later.
+     *
+     * NOTE: This option is mutually exclusive with
+     * #AVS_NET_SOCKET_OPT_DANE_TLSA_LIST. Setting either of these will replace
+     * the other.
+     *
+     * NOTE: Attempting to set this option on a socket that is not a (D)TLS
+     * socket or is not configured to use DANE, will yield an error.
+     */
+    AVS_NET_SOCKET_OPT_DANE_TLSA_ARRAY,
+
+#ifdef AVS_COMMONS_WITH_AVS_LIST
+    /**
+     * Used to set a list of DANE TLSA records. The value is write-only and
+     * passed in the <c>dane_tlsa_list</c> field of the
+     * @ref avs_net_socket_opt_value_t union as an
+     * <c>AVS_LIST(avs_net_socket_dane_tlsa_record_t)</c> pointer.
+     *
+     * NOTE: Lifetime of the list, all of its elements and their
+     * <c>association_data</c> fields must be at least as long as lifetime of
+     * the socket to which it is associated, unless another DANE TLSA array or
+     * list is re-associated later.
+     *
+     * NOTE: This option is mutually exclusive with
+     * #AVS_NET_SOCKET_OPT_DANE_TLSA_ARRAY. Setting either of these will replace
+     * the other.
+     *
+     * NOTE: Attempting to set this option on a socket that is not a (D)TLS
+     * socket or is not configured to use DANE, will yield an error.
+     */
+    AVS_NET_SOCKET_OPT_DANE_TLSA_LIST,
+#endif // AVS_COMMONS_WITH_AVS_LIST
 } avs_net_socket_opt_key_t;
 
 typedef enum {
@@ -576,6 +622,37 @@ typedef enum {
     AVS_NET_SOCKET_STATE_CONNECTED
 } avs_net_socket_state_t;
 
+typedef enum {
+    AVS_NET_SOCKET_DANE_CA_CONSTRAINT = 0,
+    AVS_NET_SOCKET_DANE_SERVICE_CERTIFICATE_CONSTRAINT = 1,
+    AVS_NET_SOCKET_DANE_TRUST_ANCHOR_ASSERTION = 2,
+    AVS_NET_SOCKET_DANE_DOMAIN_ISSUED_CERTIFICATE = 3
+} avs_net_socket_dane_certificate_usage_t;
+
+typedef enum {
+    AVS_NET_SOCKET_DANE_CERTIFICATE = 0,
+    AVS_NET_SOCKET_DANE_PUBLIC_KEY = 1
+} avs_net_socket_dane_selector_t;
+
+typedef enum {
+    AVS_NET_SOCKET_DANE_MATCH_FULL = 0,
+    AVS_NET_SOCKET_DANE_MATCH_SHA256 = 1,
+    AVS_NET_SOCKET_DANE_MATCH_SHA512 = 2
+} avs_net_socket_dane_matching_type_t;
+
+typedef struct {
+    avs_net_socket_dane_certificate_usage_t certificate_usage;
+    avs_net_socket_dane_selector_t selector;
+    avs_net_socket_dane_matching_type_t matching_type;
+    const void *association_data;
+    size_t association_data_size;
+} avs_net_socket_dane_tlsa_record_t;
+
+typedef struct {
+    const avs_net_socket_dane_tlsa_record_t *array_ptr;
+    size_t array_element_count;
+} avs_net_socket_dane_tlsa_array_t;
+
 typedef union {
     avs_time_duration_t recv_timeout;
     avs_net_socket_state_t state;
@@ -584,6 +661,11 @@ typedef union {
     bool flag;
     uint64_t bytes_sent;
     uint64_t bytes_received;
+    avs_net_socket_dane_tlsa_array_t dane_tlsa_array;
+
+    // NOTE: This is semantically AVS_LIST(avs_net_socket_dane_tlsa_record_t)
+    // It's not declared as such to avoid hard dependency
+    avs_net_socket_dane_tlsa_record_t *dane_tlsa_list;
 } avs_net_socket_opt_value_t;
 
 int avs_net_socket_debug(int value);

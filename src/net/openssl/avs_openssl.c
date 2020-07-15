@@ -44,6 +44,10 @@
 #    include <avsystem/commons/avs_stream_membuf.h>
 #    include <avsystem/commons/avs_time.h>
 
+#    ifdef AVS_COMMONS_WITH_AVS_LIST
+#        include <avsystem/commons/avs_list.h>
+#    endif // AVS_COMMONS_WITH_AVS_LIST
+
 #    include "../avs_global.h"
 
 #    ifdef AVS_COMMONS_WITH_AVS_CRYPTO_PKI
@@ -120,6 +124,18 @@ typedef struct {
     avs_net_socket_tls_ciphersuites_t enabled_ciphersuites;
     /// Non empty, when custom server hostname shall be used.
     char server_name_indication[256];
+
+#    if OPENSSL_VERSION_NUMBER_GE(1, 1, 0)
+#        ifdef AVS_COMMONS_WITH_AVS_LIST
+    bool dane_tlsa_use_list;
+#        endif // AVS_COMMONS_WITH_AVS_LIST
+    union {
+        avs_net_socket_dane_tlsa_array_t array;
+#        ifdef AVS_COMMONS_WITH_AVS_LIST
+        AVS_LIST(avs_net_socket_dane_tlsa_record_t) list;
+#        endif // AVS_COMMONS_WITH_AVS_LIST
+    } dane_tlsa;
+#    endif // OPENSSL_VERSION_NUMBER_GE(1, 1, 0)
 } ssl_socket_t;
 
 #    define NET_SSL_COMMON_INTERNALS
@@ -296,6 +312,35 @@ static avs_error_t get_dtls_overhead(ssl_socket_t *socket,
     return avs_errno(AVS_ENOTSUP);
 }
 #    endif /* AVS_COMMONS_NET_WITH_DTLS */
+
+static avs_error_t set_dane_tlsa(ssl_socket_t *socket,
+                                 avs_net_socket_opt_key_t option_key,
+                                 avs_net_socket_opt_value_t option_value) {
+#    if OPENSSL_VERSION_NUMBER_GE(1, 1, 0)
+    if (socket->verify_mode == SSL_VERIFY_DANE_ENFORCED
+            || socket->verify_mode == SSL_VERIFY_DANE_OPPORTUNISTIC) {
+        switch (option_key) {
+        case AVS_NET_SOCKET_OPT_DANE_TLSA_ARRAY:
+#        ifdef AVS_COMMONS_WITH_AVS_LIST
+            socket->dane_tlsa_use_list = false;
+#        endif // AVS_COMMONS_WITH_AVS_LIST
+            socket->dane_tlsa.array = option_value.dane_tlsa_array;
+            return AVS_OK;
+#        ifdef AVS_COMMONS_WITH_AVS_LIST
+        case AVS_NET_SOCKET_OPT_DANE_TLSA_LIST:
+            socket->dane_tlsa_use_list = true;
+            socket->dane_tlsa.list = option_value.dane_tlsa_list;
+            return AVS_OK;
+#        endif // AVS_COMMONS_WITH_AVS_LIST
+        default:
+            AVS_UNREACHABLE("invalid option_key for set_dane_tlsa");
+        }
+    }
+#    endif // OPENSSL_VERSION_NUMBER_GE(1, 1, 0)
+    LOG(ERROR, _("Attempted to set DANE TLSA data on a socket that does not "
+                 "use DANE"));
+    return avs_errno(AVS_EBADF);
+}
 
 #    ifdef BIO_TYPE_SOURCE_SINK
 
