@@ -168,22 +168,21 @@ _avs_crypto_openssl_load_ca_certs(SSL_CTX *ctx,
         }
         return load_ca_cert_from_buffer(ctx, info->desc.info.buffer.buffer,
                                         info->desc.info.buffer.buffer_size);
-    case AVS_CRYPTO_DATA_SOURCE_COMPOUND_ARRAY: {
+    case AVS_CRYPTO_DATA_SOURCE_TRUSTED_CERT_ARRAY: {
         avs_error_t err = AVS_OK;
         for (size_t i = 0;
-             avs_is_ok(err) && i < info->desc.info.compound_array.element_count;
+             avs_is_ok(err)
+             && i < info->desc.info.trusted_cert_array.element_count;
              ++i) {
             err = _avs_crypto_openssl_load_ca_certs(
-                    ctx, &((const avs_crypto_trusted_cert_info_t *) info->desc
-                                   .info.compound_array.array_ptr)[i]);
+                    ctx, &info->desc.info.trusted_cert_array.array_ptr[i]);
         }
         return err;
     }
 #    ifdef AVS_COMMONS_WITH_AVS_LIST
-    case AVS_CRYPTO_DATA_SOURCE_COMPOUND_LIST: {
+    case AVS_CRYPTO_DATA_SOURCE_TRUSTED_CERT_LIST: {
         AVS_LIST(avs_crypto_trusted_cert_info_t) entry;
-        AVS_LIST_FOREACH(entry, (AVS_LIST(avs_crypto_trusted_cert_info_t)) info
-                                        ->desc.info.compound_list.list_head) {
+        AVS_LIST_FOREACH(entry, info->desc.info.trusted_cert_list.list_head) {
             avs_error_t err = _avs_crypto_openssl_load_ca_certs(ctx, entry);
             if (avs_is_err(err)) {
                 return err;

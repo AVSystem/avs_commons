@@ -49,14 +49,17 @@ typedef struct {
     size_t buffer_size;
 } avs_crypto_security_info_union_internal_buffer_t;
 
-typedef struct {
-    const void *array_ptr;
-    size_t element_count;
-} avs_crypto_security_info_union_internal_compound_array_t;
+typedef struct avs_crypto_trusted_cert_info_struct
+        avs_crypto_trusted_cert_info_t;
 
 typedef struct {
-    void *list_head;
-} avs_crypto_security_info_union_internal_compound_list_t;
+    const avs_crypto_trusted_cert_info_t *array_ptr;
+    size_t element_count;
+} avs_crypto_security_info_union_internal_trusted_cert_array_t;
+
+typedef struct {
+    avs_crypto_trusted_cert_info_t *list_head;
+} avs_crypto_security_info_union_internal_trusted_cert_list_t;
 
 /**
  * This struct is for internal use only and should not be filled manually. One
@@ -73,14 +76,16 @@ typedef struct {
         avs_crypto_security_info_union_internal_file_t file;
         avs_crypto_security_info_union_internal_path_t path;
         avs_crypto_security_info_union_internal_buffer_t buffer;
-        avs_crypto_security_info_union_internal_compound_array_t compound_array;
-        avs_crypto_security_info_union_internal_compound_list_t compound_list;
+        avs_crypto_security_info_union_internal_trusted_cert_array_t
+                trusted_cert_array;
+        avs_crypto_security_info_union_internal_trusted_cert_list_t
+                trusted_cert_list;
     } info;
 } avs_crypto_security_info_union_t;
 
-typedef struct {
+struct avs_crypto_trusted_cert_info_struct {
     avs_crypto_security_info_union_t desc;
-} avs_crypto_trusted_cert_info_t;
+};
 
 /**
  * Creates CA chain descriptor used later on to load CA chain from file @p
@@ -160,7 +165,7 @@ avs_crypto_trusted_cert_info_t avs_crypto_trusted_cert_info_from_array(
  * NOTE: There is no protection against defining cyclic structures. Attempting
  * to do so is undefined behavior.
  *
- * NOTE: Modifying contents of the listwhile a socket configured to use it
+ * NOTE: Modifying contents of the list while a socket configured to use it
  * exists is undefined behavior.
  *
  * @param array_ptr           Pointer to an array of trusted certificate chains.

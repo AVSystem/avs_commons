@@ -68,9 +68,9 @@ avs_crypto_trusted_cert_info_t avs_crypto_trusted_cert_info_from_array(
     avs_crypto_trusted_cert_info_t result;
     memset(&result, 0, sizeof(result));
     result.desc.type = AVS_CRYPTO_SECURITY_INFO_TRUSTED_CERT;
-    result.desc.source = AVS_CRYPTO_DATA_SOURCE_COMPOUND_ARRAY;
-    result.desc.info.compound_array.array_ptr = array_ptr;
-    result.desc.info.compound_array.element_count = array_element_count;
+    result.desc.source = AVS_CRYPTO_DATA_SOURCE_TRUSTED_CERT_ARRAY;
+    result.desc.info.trusted_cert_array.array_ptr = array_ptr;
+    result.desc.info.trusted_cert_array.element_count = array_element_count;
 #    ifndef NDEBUG
     for (size_t i = 0; i < array_element_count; ++i) {
         assert(array_ptr[i].desc.type == AVS_CRYPTO_SECURITY_INFO_TRUSTED_CERT);
@@ -85,8 +85,8 @@ avs_crypto_trusted_cert_info_t avs_crypto_trusted_cert_info_from_list(
     avs_crypto_trusted_cert_info_t result;
     memset(&result, 0, sizeof(result));
     result.desc.type = AVS_CRYPTO_SECURITY_INFO_TRUSTED_CERT;
-    result.desc.source = AVS_CRYPTO_DATA_SOURCE_COMPOUND_LIST;
-    result.desc.info.compound_list.list_head = list;
+    result.desc.source = AVS_CRYPTO_DATA_SOURCE_TRUSTED_CERT_LIST;
+    result.desc.info.trusted_cert_list.list_head = list;
 #        ifndef NDEBUG
     AVS_LIST_ITERATE(list) {
         assert(list->desc.type == AVS_CRYPTO_SECURITY_INFO_TRUSTED_CERT);
