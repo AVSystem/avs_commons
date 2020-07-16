@@ -17,6 +17,14 @@
 #include <stdio.h>
 #include <string.h>
 
+#include <dirent.h>
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
+
+#include <avsystem/commons/avs_utils.h>
+
 #include "socket_common.h"
 
 //// avs_net_socket_get_opt ////////////////////////////////////////////////////
@@ -132,36 +140,186 @@ static void assert_receive_smtp_status(avs_net_socket_t *socket, int status) {
     }
 }
 
-AVS_UNIT_TEST(starttls, starttls_smtp) {
-    static const char ehlo_msg[] = "EHLO [127.0.0.1]\r\n";
+#define EHLO_MSG "EHLO [127.0.0.1]\r\n"
+
+static avs_net_socket_t *initiate_smtp_starttls(void) {
     static const char starttls_msg[] = "STARTTLS\r\n";
     avs_net_socket_t *socket = NULL;
-    avs_net_ssl_configuration_t ssl_config;
 
-    avs_crypto_prng_ctx_t *prng_ctx = avs_crypto_prng_new(NULL, NULL);
-    AVS_UNIT_ASSERT_NOT_NULL(prng_ctx);
     AVS_UNIT_ASSERT_SUCCESS(avs_net_tcp_socket_create(&socket, NULL));
     AVS_UNIT_ASSERT_SUCCESS(avs_net_socket_connect(socket, SMTP_SERVER_HOSTNAME,
                                                    SMTP_SERVER_PORT));
 
     AVS_UNIT_ASSERT_SUCCESS(
-            avs_net_socket_send(socket, ehlo_msg, strlen(ehlo_msg)));
+            avs_net_socket_send(socket, EHLO_MSG, strlen(EHLO_MSG)));
     assert_receive_smtp_status(socket, 250);
     AVS_UNIT_ASSERT_SUCCESS(
             avs_net_socket_send(socket, starttls_msg, strlen(starttls_msg)));
     assert_receive_smtp_status(socket, 220);
 
-    memset(&ssl_config, 0, sizeof(ssl_config));
-    ssl_config.version = AVS_NET_SSL_VERSION_TLSv1;
-    ssl_config.prng_ctx = prng_ctx;
+    return socket;
+}
+
+AVS_UNIT_TEST(starttls, starttls_smtp) {
+    avs_net_socket_t *socket = initiate_smtp_starttls();
+
+    avs_crypto_prng_ctx_t *prng_ctx = avs_crypto_prng_new(NULL, NULL);
+    AVS_UNIT_ASSERT_NOT_NULL(prng_ctx);
+
+    avs_net_ssl_configuration_t ssl_config = {
+        .version = AVS_NET_SSL_VERSION_TLSv1,
+        .prng_ctx = prng_ctx
+    };
 
     AVS_UNIT_ASSERT_SUCCESS(
             avs_net_ssl_socket_decorate_in_place(&socket, &ssl_config));
 
     AVS_UNIT_ASSERT_SUCCESS(
-            avs_net_socket_send(socket, ehlo_msg, strlen(ehlo_msg)));
+            avs_net_socket_send(socket, EHLO_MSG, strlen(EHLO_MSG)));
     assert_receive_smtp_status(socket, 250);
 
     avs_net_socket_cleanup(&socket);
     avs_crypto_prng_free(&prng_ctx);
+}
+
+AVS_UNIT_TEST(starttls, starttls_smtp_verify_failure) {
+    avs_net_socket_t *socket = initiate_smtp_starttls();
+
+    avs_crypto_prng_ctx_t *prng_ctx = avs_crypto_prng_new(NULL, NULL);
+    AVS_UNIT_ASSERT_NOT_NULL(prng_ctx);
+
+    avs_net_ssl_configuration_t ssl_config = {
+        .version = AVS_NET_SSL_VERSION_TLSv1,
+        .security.data.cert = {
+            .server_cert_validation = true,
+            .ignore_system_trust_store = true
+        },
+        .prng_ctx = prng_ctx
+    };
+
+    AVS_UNIT_ASSERT_FAILED(
+            avs_net_ssl_socket_decorate_in_place(&socket, &ssl_config));
+
+    avs_net_socket_cleanup(&socket);
+    avs_crypto_prng_free(&prng_ctx);
+}
+
+static bool is_readable_regular_file(const char *path) {
+    struct stat statbuf;
+    return !stat(path, &statbuf) && S_ISREG(statbuf.st_mode)
+           && !access(path, R_OK);
+}
+
+static AVS_LIST(avs_crypto_trusted_cert_info_t) load_trusted_certs(void) {
+    // On *BSD, including macOS, all system-wide certs are in this one huge file
+    static const char *const bsd_cert_pem_path = "/etc/ssl/cert.pem";
+    AVS_LIST(avs_crypto_trusted_cert_info_t) result = NULL;
+    if (is_readable_regular_file(bsd_cert_pem_path)) {
+        AVS_LIST(avs_crypto_trusted_cert_info_t) entry =
+                AVS_LIST_APPEND_NEW(avs_crypto_trusted_cert_info_t, &result);
+        AVS_UNIT_ASSERT_NOT_NULL(entry);
+        *entry = avs_crypto_trusted_cert_info_from_file(bsd_cert_pem_path);
+    }
+
+    // On typical Linux distros, this directory is used instead.
+    // Or sometimes in addition to. There's no harm loading both.
+    static const char *const linux_certs_dir = "/etc/ssl/certs";
+    DIR *dir = opendir(linux_certs_dir);
+    if (dir) {
+        struct dirent *file_entry;
+        while ((file_entry = readdir(dir))) {
+            typedef struct {
+                avs_crypto_trusted_cert_info_t entry;
+                char path[256];
+            } entry_with_path_t;
+            AVS_LIST(entry_with_path_t) entry_with_path =
+                    AVS_LIST_NEW_ELEMENT(entry_with_path_t);
+            AVS_UNIT_ASSERT_NOT_NULL(entry_with_path);
+            if (avs_simple_snprintf(entry_with_path->path,
+                                    sizeof(entry_with_path->path), "%s/%s",
+                                    linux_certs_dir, file_entry->d_name)
+                            < 0
+                    || !is_readable_regular_file(entry_with_path->path)) {
+                AVS_LIST_DELETE(&entry_with_path);
+            } else {
+                entry_with_path->entry = avs_crypto_trusted_cert_info_from_file(
+                        entry_with_path->path);
+                AVS_LIST_APPEND(&result,
+                                (AVS_LIST(avs_crypto_trusted_cert_info_t))
+                                        entry_with_path);
+            }
+        }
+        closedir(dir);
+    }
+
+    return result;
+}
+
+AVS_UNIT_TEST(starttls, starttls_smtp_verify_list) {
+    AVS_LIST(avs_crypto_trusted_cert_info_t) trusted_certs =
+            load_trusted_certs();
+
+    avs_net_socket_t *socket = initiate_smtp_starttls();
+
+    avs_crypto_prng_ctx_t *prng_ctx = avs_crypto_prng_new(NULL, NULL);
+    AVS_UNIT_ASSERT_NOT_NULL(prng_ctx);
+
+    avs_net_ssl_configuration_t ssl_config = {
+        .version = AVS_NET_SSL_VERSION_TLSv1,
+        .security.data.cert = {
+            .server_cert_validation = true,
+            .ignore_system_trust_store = true,
+            .trusted_certs =
+                    avs_crypto_trusted_cert_info_from_list(trusted_certs)
+        },
+        .prng_ctx = prng_ctx
+    };
+
+    AVS_UNIT_ASSERT_SUCCESS(
+            avs_net_ssl_socket_decorate_in_place(&socket, &ssl_config));
+
+    AVS_UNIT_ASSERT_SUCCESS(
+            avs_net_socket_send(socket, EHLO_MSG, strlen(EHLO_MSG)));
+    assert_receive_smtp_status(socket, 250);
+
+    avs_net_socket_cleanup(&socket);
+    avs_crypto_prng_free(&prng_ctx);
+    AVS_LIST_CLEAR(&trusted_certs);
+}
+
+AVS_UNIT_TEST(starttls, starttls_smtp_verify_array) {
+    AVS_LIST(avs_crypto_trusted_cert_info_t) trusted_cert_list =
+            load_trusted_certs();
+    size_t trusted_cert_count = AVS_LIST_SIZE(trusted_cert_list);
+    avs_crypto_trusted_cert_info_t trusted_certs[trusted_cert_count];
+    for (size_t i = 0; i < trusted_cert_count; ++i) {
+        trusted_certs[i] = *AVS_LIST_NTH(trusted_cert_list, i);
+    }
+
+    avs_net_socket_t *socket = initiate_smtp_starttls();
+
+    avs_crypto_prng_ctx_t *prng_ctx = avs_crypto_prng_new(NULL, NULL);
+    AVS_UNIT_ASSERT_NOT_NULL(prng_ctx);
+
+    avs_net_ssl_configuration_t ssl_config = {
+        .version = AVS_NET_SSL_VERSION_TLSv1,
+        .security.data.cert = {
+            .server_cert_validation = true,
+            .ignore_system_trust_store = true,
+            .trusted_certs = avs_crypto_trusted_cert_info_from_array(
+                    trusted_certs, trusted_cert_count)
+        },
+        .prng_ctx = prng_ctx
+    };
+
+    AVS_UNIT_ASSERT_SUCCESS(
+            avs_net_ssl_socket_decorate_in_place(&socket, &ssl_config));
+
+    AVS_UNIT_ASSERT_SUCCESS(
+            avs_net_socket_send(socket, EHLO_MSG, strlen(EHLO_MSG)));
+    assert_receive_smtp_status(socket, 250);
+
+    avs_net_socket_cleanup(&socket);
+    avs_crypto_prng_free(&prng_ctx);
+    AVS_LIST_CLEAR(&trusted_cert_list);
 }

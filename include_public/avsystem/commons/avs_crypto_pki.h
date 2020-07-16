@@ -23,6 +23,10 @@
 #include <avsystem/commons/avs_errno.h>
 #include <avsystem/commons/avs_prng.h>
 
+#ifdef AVS_COMMONS_WITH_AVS_LIST
+#    include <avsystem/commons/avs_list.h>
+#endif // AVS_COMMONS_WITH_AVS_LIST
+
 #ifdef __cplusplus
 #    if __cplusplus >= 201103L
 #        include <vector> // used in AVS_CRYPTO_PKI_X509_NAME
@@ -45,6 +49,18 @@ typedef struct {
     size_t buffer_size;
 } avs_crypto_security_info_union_internal_buffer_t;
 
+typedef struct avs_crypto_trusted_cert_info_struct
+        avs_crypto_trusted_cert_info_t;
+
+typedef struct {
+    const avs_crypto_trusted_cert_info_t *array_ptr;
+    size_t element_count;
+} avs_crypto_security_info_union_internal_trusted_cert_array_t;
+
+typedef struct {
+    avs_crypto_trusted_cert_info_t *list_head;
+} avs_crypto_security_info_union_internal_trusted_cert_list_t;
+
 /**
  * This struct is for internal use only and should not be filled manually. One
  * should construct appropriate instances of:
@@ -60,12 +76,16 @@ typedef struct {
         avs_crypto_security_info_union_internal_file_t file;
         avs_crypto_security_info_union_internal_path_t path;
         avs_crypto_security_info_union_internal_buffer_t buffer;
+        avs_crypto_security_info_union_internal_trusted_cert_array_t
+                trusted_cert_array;
+        avs_crypto_security_info_union_internal_trusted_cert_list_t
+                trusted_cert_list;
     } info;
 } avs_crypto_security_info_union_t;
 
-typedef struct {
+struct avs_crypto_trusted_cert_info_struct {
     avs_crypto_security_info_union_t desc;
-} avs_crypto_trusted_cert_info_t;
+};
 
 /**
  * Creates CA chain descriptor used later on to load CA chain from file @p
@@ -111,6 +131,49 @@ avs_crypto_trusted_cert_info_from_path(const char *path);
 avs_crypto_trusted_cert_info_t
 avs_crypto_trusted_cert_info_from_buffer(const void *buffer,
                                          size_t buffer_size);
+
+/**
+ * Creates CA chain descriptor used later on to load CA chain from an array of
+ * existing CA chains.
+ *
+ * NOTE: Lifetime of all elements of the array pointed to by @p array_ptr must
+ * be as long as lifetime of any (D)TLS sockets that used this descriptor to
+ * perform configuration.
+ *
+ * NOTE: There is no protection against defining cyclic structures. Attempting
+ * to do so is undefined behavior.
+ *
+ * NOTE: Modifying contents of the array while a socket configured to use it
+ * exists is undefined behavior.
+ *
+ * @param array_ptr           Pointer to an array of trusted certificate chains.
+ * @param array_element_count Number of elements in the @p array_ptr array.
+ */
+avs_crypto_trusted_cert_info_t avs_crypto_trusted_cert_info_from_array(
+        const avs_crypto_trusted_cert_info_t *array_ptr,
+        size_t array_element_count);
+
+#ifdef AVS_COMMONS_WITH_AVS_LIST
+/**
+ * Creates CA chain descriptor used later on to load CA chain from a list of
+ * existing CA chains.
+ *
+ * NOTE: Lifetime of all elements of the array pointed to by @p list must be as
+ * long as lifetime of any (D)TLS sockets that used this descriptor to
+ * perform configuration.
+ *
+ * NOTE: There is no protection against defining cyclic structures. Attempting
+ * to do so is undefined behavior.
+ *
+ * NOTE: Modifying contents of the list while a socket configured to use it
+ * exists is undefined behavior.
+ *
+ * @param array_ptr           Pointer to an array of trusted certificate chains.
+ * @param array_element_count Number of elements in the @p array_ptr array.
+ */
+avs_crypto_trusted_cert_info_t avs_crypto_trusted_cert_info_from_list(
+        AVS_LIST(avs_crypto_trusted_cert_info_t) list);
+#endif // AVS_COMMONS_WITH_AVS_LIST
 
 typedef struct {
     avs_crypto_security_info_union_t desc;

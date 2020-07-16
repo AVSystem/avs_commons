@@ -258,24 +258,45 @@ typedef struct {
 } avs_net_psk_info_t;
 
 /**
- * Certificate and key information may be read from files or passed as raw data.
- *
- * User should initialize:
- *  - @ref avs_crypto_certificate_info_t#client_cert,
- *  - @ref avs_crypto_certificate_info_t#client_key,
- *  - @ref avs_crypto_certificate_info_t#trusted_certs
- * via helper functions:
- *  - @ref avs_crypto_client_cert_from_*
- *  - @ref avs_crypto_client_key_from_*
- *  - @ref avs_crypto_trusted_cert_source_from_*
- *
- * Moreover, to enable CA chain validation one MUST set @ref
- * avs_net_certificate_info_t#server_cert_validation to true.
+ * Configuration for certificate-mode (D)TLS connection.
  */
 typedef struct {
+    /**
+     * Enables validation of peer certificate chain. If disabled,
+     * #ignore_system_trust_store and #trusted_certs are ignored.
+     */
     bool server_cert_validation;
+
+    /**
+     * Setting this flag to true disables the usage of system-wide trust store
+     * (e.g. <c>/etc/ssl/certs</c> on most Unix-like systems).
+     *
+     * NOTE: System-wide trust store is currently supported only by the OpenSSL
+     * backend. This field is ignored by the Mbed TLS backend.
+     */
+    bool ignore_system_trust_store;
+
+    /**
+     * Store of trust anchor certificates. This field is optional and can be
+     * left zero-initialized. If used, it shall be initialized using one of the
+     * <c>avs_crypto_trusted_cert_info_from_*</c> helper functions.
+     */
     avs_crypto_trusted_cert_info_t trusted_certs;
+
+    /**
+     * Local certificate to use for authenticating with the peer. This field is
+     * optional and can be left zero-initialized. If used, it shall be
+     * initialized using one of the <c>avs_crypto_client_cert_info_from_*</c>
+     * helper functions.
+     */
     avs_crypto_client_cert_info_t client_cert;
+
+    /**
+     * Private key matching #client_cert to use for authenticating with the
+     * peer. This field is optional and can be left zero-initialized, unless
+     * #client_cert is also specified. If used, it shall be initialized using
+     * one of the <c>avs_crypto_client_key_info_from_*</c> helper functions.
+     */
     avs_crypto_client_key_info_t client_key;
 } avs_net_certificate_info_t;
 

@@ -916,9 +916,11 @@ configure_ssl_certs(ssl_socket_t *socket,
 
     if (cert_info->server_cert_validation) {
         socket->verification = 1;
-#        if OPENSSL_VERSION_NUMBER_LT(0, 9, 5)
-        SSL_CTX_set_verify_depth(socket->ctx, 1);
-#        endif
+        if (!cert_info->ignore_system_trust_store
+                && !SSL_CTX_set_default_verify_paths(socket->ctx)) {
+            LOG(WARNING, _("could not set default CA verify paths"));
+            log_openssl_error();
+        }
         avs_error_t err =
                 _avs_crypto_openssl_load_ca_certs(socket->ctx,
                                                   &cert_info->trusted_certs);

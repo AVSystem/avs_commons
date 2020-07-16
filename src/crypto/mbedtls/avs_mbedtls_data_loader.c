@@ -52,8 +52,8 @@ static avs_error_t append_cert_from_buffer(mbedtls_x509_crt *chain,
                    : AVS_OK;
 }
 
-static avs_error_t load_cert_from_file(mbedtls_x509_crt *chain,
-                                       const char *name) {
+static avs_error_t append_cert_from_file(mbedtls_x509_crt *chain,
+                                         const char *name) {
 #    ifdef MBEDTLS_FS_IO
     LOG(DEBUG, _("certificate <") "%s" _(">: going to load"), name);
 
@@ -80,8 +80,8 @@ static avs_error_t load_cert_from_file(mbedtls_x509_crt *chain,
 #    endif // MBEDTLS_FS_IO
 }
 
-static avs_error_t load_ca_from_path(mbedtls_x509_crt *chain,
-                                     const char *path) {
+static avs_error_t append_ca_from_path(mbedtls_x509_crt *chain,
+                                       const char *path) {
 #    ifdef MBEDTLS_FS_IO
     LOG(DEBUG, _("certificates from path <") "%s" _(">: going to load"), path);
 
@@ -116,38 +116,67 @@ static avs_error_t load_ca_from_path(mbedtls_x509_crt *chain,
 #    endif // MBEDTLS_FS_IO
 }
 
-avs_error_t
-_avs_crypto_mbedtls_load_ca_certs(mbedtls_x509_crt **out,
-                                  const avs_crypto_trusted_cert_info_t *info) {
-    CREATE_OR_FAIL(mbedtls_x509_crt, out);
-    mbedtls_x509_crt_init(*out);
-
+static avs_error_t append_ca_certs(mbedtls_x509_crt *out,
+                                   const avs_crypto_trusted_cert_info_t *info) {
     switch (info->desc.source) {
+    case AVS_CRYPTO_DATA_SOURCE_EMPTY:
+        return AVS_OK;
     case AVS_CRYPTO_DATA_SOURCE_FILE:
         if (!info->desc.info.file.filename) {
             LOG(ERROR,
                 _("attempt to load CA cert from file, but filename=NULL"));
             return avs_errno(AVS_EINVAL);
         }
-        return load_cert_from_file(*out, info->desc.info.file.filename);
+        return append_cert_from_file(out, info->desc.info.file.filename);
     case AVS_CRYPTO_DATA_SOURCE_PATH:
         if (!info->desc.info.path.path) {
             LOG(ERROR, _("attempt to load CA cert from path, but path=NULL"));
             return avs_errno(AVS_EINVAL);
         }
-        return load_ca_from_path(*out, info->desc.info.path.path);
+        return append_ca_from_path(out, info->desc.info.path.path);
     case AVS_CRYPTO_DATA_SOURCE_BUFFER:
         if (!info->desc.info.buffer.buffer) {
             LOG(ERROR,
                 _("attempt to load CA cert from buffer, but buffer=NULL"));
             return avs_errno(AVS_EINVAL);
         }
-        return append_cert_from_buffer(*out, info->desc.info.buffer.buffer,
+        return append_cert_from_buffer(out, info->desc.info.buffer.buffer,
                                        info->desc.info.buffer.buffer_size);
+    case AVS_CRYPTO_DATA_SOURCE_TRUSTED_CERT_ARRAY: {
+        avs_error_t err = AVS_OK;
+        for (size_t i = 0;
+             avs_is_ok(err)
+             && i < info->desc.info.trusted_cert_array.element_count;
+             ++i) {
+            err = append_ca_certs(
+                    out, &info->desc.info.trusted_cert_array.array_ptr[i]);
+        }
+        return err;
+    }
+#    ifdef AVS_COMMONS_WITH_AVS_LIST
+    case AVS_CRYPTO_DATA_SOURCE_TRUSTED_CERT_LIST: {
+        AVS_LIST(avs_crypto_trusted_cert_info_t) entry;
+        AVS_LIST_FOREACH(entry, info->desc.info.trusted_cert_list.list_head) {
+            avs_error_t err = append_ca_certs(out, entry);
+            if (avs_is_err(err)) {
+                return err;
+            }
+        }
+        return AVS_OK;
+    }
+#    endif // AVS_COMMONS_WITH_AVS_LIST
     default:
         AVS_UNREACHABLE("invalid data source");
         return avs_errno(AVS_EINVAL);
     }
+}
+
+avs_error_t
+_avs_crypto_mbedtls_load_ca_certs(mbedtls_x509_crt **out,
+                                  const avs_crypto_trusted_cert_info_t *info) {
+    CREATE_OR_FAIL(mbedtls_x509_crt, out);
+    mbedtls_x509_crt_init(*out);
+    return append_ca_certs(*out, info);
 }
 
 avs_error_t _avs_crypto_mbedtls_load_client_cert(
@@ -162,7 +191,7 @@ avs_error_t _avs_crypto_mbedtls_load_client_cert(
                 _("attempt to load client cert from file, but filename=NULL"));
             return avs_errno(AVS_EINVAL);
         }
-        return load_cert_from_file(*out, info->desc.info.file.filename);
+        return append_cert_from_file(*out, info->desc.info.file.filename);
     case AVS_CRYPTO_DATA_SOURCE_BUFFER:
         if (!info->desc.info.buffer.buffer) {
             LOG(ERROR,
