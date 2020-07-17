@@ -35,6 +35,9 @@ struct avs_http {
 
     char *user_agent;
 
+    avs_http_ssl_pre_connect_cb_t *ssl_pre_connect_cb;
+    void *ssl_pre_connect_cb_arg;
+
     const volatile avs_net_ssl_configuration_t *ssl_configuration;
     const volatile avs_net_socket_configuration_t *tcp_configuration;
 };

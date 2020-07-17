@@ -212,6 +212,15 @@ void avs_http_ssl_configuration(
         avs_http_t *http,
         const volatile avs_net_ssl_configuration_t *ssl_configuration);
 
+typedef avs_error_t avs_http_ssl_pre_connect_cb_t(avs_http_t *http,
+                                                  avs_net_socket_t *socket,
+                                                  const char *hostname,
+                                                  void *user_ptr);
+
+void avs_http_ssl_pre_connect_cb(avs_http_t *http,
+                                 avs_http_ssl_pre_connect_cb_t *cb,
+                                 void *user_ptr);
+
 /**
  * Sets TCP configuration for sockets created by the the HTTP client when
  * connecting to both HTTP and HTTPS addresses.

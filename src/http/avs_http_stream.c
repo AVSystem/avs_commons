@@ -110,7 +110,12 @@ avs_error_t _avs_http_socket_new(avs_net_socket_t **out,
         break;
     case HTTP_URI_PROTOCOL_HTTPS:
         LOG(TRACE, _("creating SSL socket"));
-        err = avs_net_ssl_socket_create(out, &ssl_config_full);
+        if (avs_is_ok((err = avs_net_ssl_socket_create(out, &ssl_config_full)))
+                && avs_is_err((err = client->ssl_pre_connect_cb(
+                                       client, *out, avs_url_host(url),
+                                       client->ssl_pre_connect_cb_arg)))) {
+            avs_net_socket_cleanup(out);
+        }
         break;
     case HTTP_URI_PROTOCOL_UNKNOWN:
         break;
