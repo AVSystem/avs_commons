@@ -131,15 +131,7 @@ typedef struct {
     char server_name_indication[256];
 
 #    ifdef WITH_DANE_SUPPORT
-#        ifdef AVS_COMMONS_WITH_AVS_LIST
-    bool dane_tlsa_use_list;
-#        endif // AVS_COMMONS_WITH_AVS_LIST
-    union {
-        avs_net_socket_dane_tlsa_array_t array;
-#        ifdef AVS_COMMONS_WITH_AVS_LIST
-        AVS_LIST(avs_net_socket_dane_tlsa_record_t) list;
-#        endif // AVS_COMMONS_WITH_AVS_LIST
-    } dane_tlsa;
+    avs_net_socket_dane_tlsa_array_t dane_tlsa;
 #    endif // WITH_DANE_SUPPORT
 } ssl_socket_t;
 
@@ -317,35 +309,6 @@ static avs_error_t get_dtls_overhead(ssl_socket_t *socket,
     return avs_errno(AVS_ENOTSUP);
 }
 #    endif /* AVS_COMMONS_NET_WITH_DTLS */
-
-static avs_error_t set_dane_tlsa(ssl_socket_t *socket,
-                                 avs_net_socket_opt_key_t option_key,
-                                 avs_net_socket_opt_value_t option_value) {
-#    ifdef WITH_DANE_SUPPORT
-    if (socket->verify_mode == SSL_VERIFY_DANE_ENFORCED
-            || socket->verify_mode == SSL_VERIFY_DANE_OPPORTUNISTIC) {
-        switch (option_key) {
-        case AVS_NET_SOCKET_OPT_DANE_TLSA_ARRAY:
-#        ifdef AVS_COMMONS_WITH_AVS_LIST
-            socket->dane_tlsa_use_list = false;
-#        endif // AVS_COMMONS_WITH_AVS_LIST
-            socket->dane_tlsa.array = option_value.dane_tlsa_array;
-            return AVS_OK;
-#        ifdef AVS_COMMONS_WITH_AVS_LIST
-        case AVS_NET_SOCKET_OPT_DANE_TLSA_LIST:
-            socket->dane_tlsa_use_list = true;
-            socket->dane_tlsa.list = option_value.dane_tlsa_list;
-            return AVS_OK;
-#        endif // AVS_COMMONS_WITH_AVS_LIST
-        default:
-            AVS_UNREACHABLE("invalid option_key for set_dane_tlsa");
-        }
-    }
-#    endif // WITH_DANE_SUPPORT
-    LOG(ERROR, _("Attempted to set DANE TLSA data on a socket that does not "
-                 "use DANE"));
-    return avs_errno(AVS_EBADF);
-}
 
 #    ifdef BIO_TYPE_SOURCE_SINK
 
@@ -838,33 +801,6 @@ static unsigned int dtls_timer_cb(SSL *ssl, unsigned int timer_us) {
 #    endif // defined(AVS_COMMONS_NET_WITH_DTLS) && OPENSSL_VERSION_NUMBER_GE(1,
            // 1, 1)
 
-#    ifdef WITH_DANE_SUPPORT
-static const avs_net_socket_dane_tlsa_record_t *
-get_dane_tlsa_record(ssl_socket_t *socket,
-                     const avs_net_socket_dane_tlsa_record_t *prev_record) {
-#        ifdef AVS_COMMONS_WITH_AVS_LIST
-    if (socket->dane_tlsa_use_list) {
-        if (prev_record) {
-            AVS_LIST(avs_net_socket_dane_tlsa_record_t) element =
-                    (avs_net_socket_dane_tlsa_record_t *) (intptr_t)
-                            prev_record;
-            AVS_LIST_ADVANCE(&element);
-            return element;
-        } else {
-            return socket->dane_tlsa.list;
-        }
-    }
-#        endif // AVS_COMMONS_WITH_AVS_LIST
-    size_t index = 0;
-    if (prev_record) {
-        index = (size_t) (prev_record - socket->dane_tlsa.array.array_ptr) + 1;
-    }
-    return index < socket->dane_tlsa.array.array_element_count
-                   ? &socket->dane_tlsa.array.array_ptr[index]
-                   : NULL;
-}
-#    endif // WITH_DANE_SUPPORT
-
 static avs_error_t start_ssl(ssl_socket_t *socket, const char *host) {
     BIO *bio = NULL;
     LOG(TRACE, _("start_ssl(socket=") "%p" _(")"), (void *) socket);
@@ -922,24 +858,24 @@ static avs_error_t start_ssl(ssl_socket_t *socket, const char *host) {
         }
 
         bool have_usable_tlsa_records = false;
-        for (const avs_net_socket_dane_tlsa_record_t *record =
-                     get_dane_tlsa_record(socket, NULL);
-             record;
-             record = get_dane_tlsa_record(socket, record)) {
+        for (size_t i = 0; i < socket->dane_tlsa.array_element_count; ++i) {
             if (socket->verify_mode == SSL_VERIFY_DANE_OPPORTUNISTIC
-                    && (record->certificate_usage
+                    && (socket->dane_tlsa.array_ptr[i].certificate_usage
                                 == AVS_NET_SOCKET_DANE_CA_CONSTRAINT
-                        || record->certificate_usage
+                        || socket->dane_tlsa.array_ptr[i].certificate_usage
                                    == AVS_NET_SOCKET_DANE_SERVICE_CERTIFICATE_CONSTRAINT)) {
                 // PKIX-TA and PKIX-EE constraints are unusable for
                 // opportunistic clients
                 continue;
             }
             result = SSL_dane_tlsa_add(
-                    socket->ssl, (uint8_t) record->certificate_usage,
-                    (uint8_t) record->selector, (uint8_t) record->matching_type,
-                    (unsigned const char *) record->association_data,
-                    record->association_data_size);
+                    socket->ssl,
+                    (uint8_t) socket->dane_tlsa.array_ptr[i].certificate_usage,
+                    (uint8_t) socket->dane_tlsa.array_ptr[i].selector,
+                    (uint8_t) socket->dane_tlsa.array_ptr[i].matching_type,
+                    (unsigned const char *) socket->dane_tlsa.array_ptr[i]
+                            .association_data,
+                    socket->dane_tlsa.array_ptr[i].association_data_size);
             if (result <= 0) {
                 LOG(WARNING, _("SSL_dane_tlsa_add() failed"));
                 log_openssl_error();
@@ -1363,6 +1299,9 @@ static avs_error_t cleanup_ssl(avs_net_socket_t **socket_) {
         (*socket)->ctx = NULL;
     }
     avs_free((*socket)->enabled_ciphersuites.ids);
+#    ifdef WITH_DANE_SUPPORT
+    avs_free((void *) (intptr_t) (const void *) (*socket)->dane_tlsa.array_ptr);
+#    endif // WITH_DANE_SUPPORT
     avs_free(*socket);
     *socket = NULL;
     return err;

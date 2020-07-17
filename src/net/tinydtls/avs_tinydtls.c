@@ -82,17 +82,6 @@ static avs_error_t get_dtls_overhead(ssl_socket_t *socket,
     return AVS_OK;
 }
 
-static avs_error_t set_dane_tlsa(ssl_socket_t *socket,
-                                 avs_net_socket_opt_key_t option_key,
-                                 avs_net_socket_opt_value_t option_value) {
-    (void) socket;
-    (void) option_key;
-    (void) option_value;
-    LOG(ERROR, _("Attempted to set DANE TLSA data on a socket that does not "
-                 "use DANE"));
-    return avs_errno(AVS_EBADF);
-}
-
 /**
  * tinyDTLS stores struct sockaddr inside the session_t. It is internally used
  * by tinyDTLS to distinguish between different peers using the same socket.
