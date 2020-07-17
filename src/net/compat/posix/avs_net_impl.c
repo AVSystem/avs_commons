@@ -1445,7 +1445,7 @@ static avs_error_t receive_from_net(avs_net_socket_t *net_socket_,
     port[0] = '\0';
 
     sockaddr_union_t src_addr;
-    socklen_t src_addr_length;
+    socklen_t src_addr_length = 0;
     recvfrom_internal_arg_t arg = {
         .socket_type = net_socket->type,
         .buffer = message_buffer,
