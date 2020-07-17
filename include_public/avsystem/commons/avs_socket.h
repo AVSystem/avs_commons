@@ -544,14 +544,8 @@ typedef enum {
      * passed in the <c>dane_tlsa_array</c> field of the
      * @ref avs_net_socket_opt_value_t union.
      *
-     * NOTE: Lifetime of all array elements and their <c>association_data</c>
-     * fields must be at least as long as lifetime of the socket to which it is
-     * associated, unless another DANE TLSA array or list is re-associated
-     * later.
-     *
-     * NOTE: This option is mutually exclusive with
-     * #AVS_NET_SOCKET_OPT_DANE_TLSA_LIST. Setting either of these will replace
-     * the other.
+     * The data is copied into the socket, and the value passed by the user may
+     * be freed after a successful call.
      *
      * NOTE: Attempting to set this option on a socket that is not a (D)TLS
      * socket or is not configured to use DANE, will yield an error.
@@ -565,14 +559,8 @@ typedef enum {
      * @ref avs_net_socket_opt_value_t union as an
      * <c>AVS_LIST(avs_net_socket_dane_tlsa_record_t)</c> pointer.
      *
-     * NOTE: Lifetime of the list, all of its elements and their
-     * <c>association_data</c> fields must be at least as long as lifetime of
-     * the socket to which it is associated, unless another DANE TLSA array or
-     * list is re-associated later.
-     *
-     * NOTE: This option is mutually exclusive with
-     * #AVS_NET_SOCKET_OPT_DANE_TLSA_ARRAY. Setting either of these will replace
-     * the other.
+     * The data is copied into the socket, and the value passed by the user may
+     * be freed after a successful call.
      *
      * NOTE: Attempting to set this option on a socket that is not a (D)TLS
      * socket or is not configured to use DANE, will yield an error.
