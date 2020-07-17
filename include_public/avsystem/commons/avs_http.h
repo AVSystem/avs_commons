@@ -212,11 +212,45 @@ void avs_http_ssl_configuration(
         avs_http_t *http,
         const volatile avs_net_ssl_configuration_t *ssl_configuration);
 
+/**
+ * Callback function type used by @ref avs_http_ssl_pre_connect_cb .
+ *
+ * @param http     HTTP client for which the function is called.
+ *
+ * @param socket   Freshly created SSL/TLS socket.
+ *
+ * @param hostname Name of the host to which the socket will be connected after
+ *                 successful return from this callback.
+ *
+ * @param port     Port to which the socket will be connected after successful
+ *                 return from this function.
+ *
+ * @param user_ptr Opaque pointer previously set using
+ *                 @ref avs_http_ssl_pre_connect_cb.
+ *
+ * @return Error code. If not AVS_OK, the exchange will be aborted and the error
+ *         will be forwarded through @ref avs_http_open_stream (or some stream
+ *         method in case of redirection attempt).
+ */
 typedef avs_error_t avs_http_ssl_pre_connect_cb_t(avs_http_t *http,
                                                   avs_net_socket_t *socket,
                                                   const char *hostname,
+                                                  const char *port,
                                                   void *user_ptr);
 
+/**
+ * Sets callback that will be executed before calling
+ * @ref avs_net_socket_connect on a newly created SSL/TLS socket.
+ *
+ * It can be used to e.g. support DANE.
+ *
+ * @param http     HTTP client to operate on.
+ *
+ * @param cb       Pointer to a callback function.
+ *
+ * @param user_ptr Opaque pointer that will be forwarded to the callback
+ *                 function on every call.
+ */
 void avs_http_ssl_pre_connect_cb(avs_http_t *http,
                                  avs_http_ssl_pre_connect_cb_t *cb,
                                  void *user_ptr);
