@@ -153,6 +153,11 @@ avs_crypto_trusted_cert_info_t avs_crypto_trusted_cert_info_from_array(
         const avs_crypto_trusted_cert_info_t *array_ptr,
         size_t array_element_count);
 
+avs_error_t avs_crypto_trusted_cert_info_copy_as_array(
+        avs_crypto_trusted_cert_info_t **out_array,
+        size_t *out_element_count,
+        avs_crypto_trusted_cert_info_t trusted_cert_info);
+
 #ifdef AVS_COMMONS_WITH_AVS_LIST
 /**
  * Creates CA chain descriptor used later on to load CA chain from a list of
@@ -173,6 +178,10 @@ avs_crypto_trusted_cert_info_t avs_crypto_trusted_cert_info_from_array(
  */
 avs_crypto_trusted_cert_info_t avs_crypto_trusted_cert_info_from_list(
         AVS_LIST(avs_crypto_trusted_cert_info_t) list);
+
+avs_error_t avs_crypto_trusted_cert_info_copy_as_list(
+        AVS_LIST(avs_crypto_trusted_cert_info_t) *out_list,
+        avs_crypto_trusted_cert_info_t trusted_cert_info);
 #endif // AVS_COMMONS_WITH_AVS_LIST
 
 typedef struct {
