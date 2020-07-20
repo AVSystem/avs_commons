@@ -218,7 +218,7 @@ avs_error_t avs_crypto_trusted_cert_info_copy_as_array(
         avs_crypto_trusted_cert_info_t **out_array,
         size_t *out_element_count,
         avs_crypto_trusted_cert_info_t trusted_cert_info) {
-    if (!out_array || *out_array) {
+    if (!out_array || !out_element_count || *out_array) {
         return avs_errno(AVS_EINVAL);
     }
     trusted_cert_stats_t stats = { 0 };
@@ -238,17 +238,19 @@ avs_error_t avs_crypto_trusted_cert_info_copy_as_array(
     size_t buffer_size =
             stats.element_count * sizeof(avs_crypto_trusted_cert_info_t)
             + stats.data_buffer_size;
-    if (!(*out_array =
-                  (avs_crypto_trusted_cert_info_t *) avs_malloc(buffer_size))) {
-        return avs_errno(AVS_ENOMEM);
+    if (buffer_size) {
+        if (!(*out_array = (avs_crypto_trusted_cert_info_t *) avs_malloc(
+                      buffer_size))) {
+            return avs_errno(AVS_ENOMEM);
+        }
+        array_copy_state_t state = {
+            .array_ptr = *out_array,
+            .data_buffer_ptr = (char *) &(*out_array)[stats.element_count]
+        };
+        err = trusted_cert_info_iterate(
+                &trusted_cert_info, copy_into_array, &state);
+        assert(avs_is_ok(err));
     }
-    array_copy_state_t state = {
-        .array_ptr = *out_array,
-        .data_buffer_ptr = (char *) &(*out_array)[stats.element_count]
-    };
-    err = trusted_cert_info_iterate(
-            &trusted_cert_info, copy_into_array, &state);
-    assert(avs_is_ok(err));
     return AVS_OK;
 }
 
