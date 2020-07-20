@@ -227,6 +227,10 @@ static const char *inet_ntop6(const u_char *src, char *dst, size_t size) {
 }
 #    endif /* AVS_COMMONS_NET_WITH_IPV6 */
 
+#else
+
+typedef int translation_unit_not_empty;
+
 #endif // defined(AVS_COMMONS_WITH_AVS_NET) &&
        // defined(AVS_COMMONS_NET_WITH_POSIX_AVS_SOCKET) &&
        // !defined(AVS_COMMONS_NET_POSIX_AVS_SOCKET_HAVE_INET_NTOP)
