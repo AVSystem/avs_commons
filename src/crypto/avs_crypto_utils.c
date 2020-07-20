@@ -167,6 +167,41 @@ calculate_cert_stats(const avs_crypto_trusted_cert_info_t *info, void *stats_) {
     return err;
 }
 
+static void copy_element(avs_crypto_trusted_cert_info_t *dest,
+                         char **data_buffer_ptr,
+                         const avs_crypto_trusted_cert_info_t *src) {
+    *dest = *src;
+    const void *source = NULL;
+    size_t size = 0;
+    switch (src->desc.source) {
+    case AVS_CRYPTO_DATA_SOURCE_FILE:
+        if (src->desc.info.file.filename) {
+            source = src->desc.info.file.filename;
+            size = strlen(src->desc.info.file.filename) + 1;
+            dest->desc.info.file.filename = *data_buffer_ptr;
+        }
+        break;
+    case AVS_CRYPTO_DATA_SOURCE_PATH:
+        if (src->desc.info.path.path) {
+            source = src->desc.info.path.path;
+            size = strlen(src->desc.info.path.path) + 1;
+            dest->desc.info.path.path = *data_buffer_ptr;
+        }
+        break;
+    case AVS_CRYPTO_DATA_SOURCE_BUFFER:
+        if (src->desc.info.buffer.buffer) {
+            source = src->desc.info.buffer.buffer;
+            size = src->desc.info.buffer.buffer_size;
+            dest->desc.info.buffer.buffer = *data_buffer_ptr;
+        }
+        break;
+    default:
+        AVS_UNREACHABLE("Invalid data source type");
+    }
+    memcpy(*data_buffer_ptr, source, size);
+    *data_buffer_ptr += size;
+}
+
 typedef struct {
     avs_crypto_trusted_cert_info_t *array_ptr;
     char *data_buffer_ptr;
@@ -175,37 +210,7 @@ typedef struct {
 static avs_error_t copy_into_array(const avs_crypto_trusted_cert_info_t *info,
                                    void *state_) {
     array_copy_state_t *state = (array_copy_state_t *) state_;
-    *state->array_ptr = *info;
-    const void *source = NULL;
-    size_t size = 0;
-    switch (info->desc.source) {
-    case AVS_CRYPTO_DATA_SOURCE_FILE:
-        if (info->desc.info.file.filename) {
-            source = info->desc.info.file.filename;
-            size = strlen(info->desc.info.file.filename) + 1;
-            state->array_ptr->desc.info.file.filename = state->data_buffer_ptr;
-        }
-        break;
-    case AVS_CRYPTO_DATA_SOURCE_PATH:
-        if (info->desc.info.path.path) {
-            source = info->desc.info.path.path;
-            size = strlen(info->desc.info.path.path) + 1;
-            state->array_ptr->desc.info.path.path = state->data_buffer_ptr;
-        }
-        break;
-    case AVS_CRYPTO_DATA_SOURCE_BUFFER:
-        if (info->desc.info.buffer.buffer) {
-            source = info->desc.info.buffer.buffer;
-            size = info->desc.info.buffer.buffer_size;
-            state->array_ptr->desc.info.buffer.buffer = state->data_buffer_ptr;
-        }
-        break;
-    default:
-        AVS_UNREACHABLE("Invalid data source type");
-    }
-    ++state->array_ptr;
-    memcpy(state->data_buffer_ptr, source, size);
-    state->data_buffer_ptr += size;
+    copy_element(state->array_ptr++, &state->data_buffer_ptr, info);
     return AVS_OK;
 }
 
@@ -261,6 +266,44 @@ avs_crypto_trusted_cert_info_t avs_crypto_trusted_cert_info_from_list(
     }
 #        endif // NDEBUG
     return result;
+}
+
+static avs_error_t copy_into_list(const avs_crypto_trusted_cert_info_t *info,
+                                  void *tail_ptr_ptr_) {
+    AVS_LIST(avs_crypto_trusted_cert_info_t) **tail_ptr_ptr =
+            (AVS_LIST(avs_crypto_trusted_cert_info_t) **) tail_ptr_ptr_;
+    size_t data_buffer_size;
+    avs_error_t err = calculate_data_buffer_size(&data_buffer_size, info);
+    if (avs_is_err(err)) {
+        return err;
+    }
+    assert(!**tail_ptr_ptr);
+    if (data_buffer_size > SIZE_MAX - sizeof(avs_crypto_trusted_cert_info_t)
+            || !(**tail_ptr_ptr = (AVS_LIST(avs_crypto_trusted_cert_info_t))
+                         AVS_LIST_NEW_BUFFER(
+                                 sizeof(avs_crypto_trusted_cert_info_t)
+                                 + data_buffer_size))) {
+        return avs_errno(AVS_ENOMEM);
+    }
+    copy_element(
+            **tail_ptr_ptr, &(char *) { (char *) &(**tail_ptr_ptr)[1] }, info);
+    AVS_LIST_ADVANCE_PTR(tail_ptr_ptr);
+    return AVS_OK;
+}
+
+avs_error_t avs_crypto_trusted_cert_info_copy_as_list(
+        AVS_LIST(avs_crypto_trusted_cert_info_t) *out_list,
+        avs_crypto_trusted_cert_info_t trusted_cert_info) {
+    if (!out_list || *out_list) {
+        return avs_errno(AVS_EINVAL);
+    }
+    AVS_LIST(avs_crypto_trusted_cert_info_t) *tail_ptr = out_list;
+    avs_error_t err = trusted_cert_info_iterate(
+            &trusted_cert_info, copy_into_list, &tail_ptr);
+    if (avs_is_err(err)) {
+        AVS_LIST_CLEAR(out_list);
+    }
+    return err;
 }
 #    endif // AVS_COMMONS_WITH_AVS_LIST
 
