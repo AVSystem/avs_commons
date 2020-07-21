@@ -269,6 +269,9 @@ option(WITH_IPV6 "Enable IPv6 support" ON)
 option(WITH_SOCKET_LOG "Enable socket communication logging" OFF)
 set(AVS_COMMONS_NET_WITH_SOCKET_LOG ${WITH_SOCKET_LOG})
 
+option(WITHOUT_64BIT_FORMAT_SPECIFIERS "Disable using 64-bit format specifiers in printf/scanf" OFF)
+set(AVS_COMMONS_WITHOUT_64BIT_FORMAT_SPECIFIERS ${WITHOUT_64BIT_FORMAT_SPECIFIERS})
+
 find_program(VALGRIND_EXECUTABLE valgrind)
 # This is enabled in devconfig only, and should be disabled in CMakeLists.txt,
 # to avoid cross-compilation errors on stations with valgrind installed.

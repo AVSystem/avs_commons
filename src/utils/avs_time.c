@@ -425,6 +425,8 @@ avs_time_duration_t avs_time_duration_div(avs_time_duration_t dividend,
     }
 }
 
+#    ifndef AVS_COMMONS_WITHOUT_64BIT_FORMAT_SPECIFIERS
+
 const char *avs_time_duration_as_string_impl__(
         char (*buf)[AVS_TIME_DURATION_AS_STRING_MAX_LENGTH],
         avs_time_duration_t time) {
@@ -449,6 +451,18 @@ const char *avs_time_duration_as_string_impl__(
 
     return *buf;
 }
+
+#    else  // AVS_COMMONS_WITHOUT_64BIT_FORMAT_SPECIFIERS
+
+const char *avs_time_duration_as_string_impl__(
+        char (*buf)[AVS_TIME_DURATION_AS_STRING_MAX_LENGTH],
+        avs_time_duration_t time) {
+    (void) buf;
+    (void) time;
+    return "(unsupported)";
+}
+
+#    endif // AVS_COMMONS_WITHOUT_64BIT_FORMAT_SPECIFIERS
 
 #    ifdef AVS_UNIT_TESTING
 #        include "tests/utils/time.c"

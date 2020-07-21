@@ -571,11 +571,8 @@ static avs_error_t get_opt_debug(avs_net_socket_t *debug_socket,
             ((avs_net_socket_debug_t *) debug_socket)->socket, option_key,
             out_option_value);
     if (avs_is_ok(err)) {
-        fprintf(communication_log,
-                "get opt: %d, value: "
-                "%" PRId64 ".%09" PRId32 "\n",
-                option_key, out_option_value->recv_timeout.seconds,
-                out_option_value->recv_timeout.nanoseconds);
+        fprintf(communication_log, "get opt: %d, value: %s\n", option_key,
+                AVS_TIME_DURATION_AS_STRING(out_option_value->recv_timeout));
     } else {
         fprintf(communication_log, "cannot get opt %d\n", option_key);
     }

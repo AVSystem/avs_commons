@@ -137,6 +137,11 @@
  * replaced with a path to such file.
  */
 #cmakedefine AVS_COMMONS_POSIX_COMPAT_HEADER "@AVS_COMMONS_POSIX_COMPAT_HEADER@"
+
+/**
+ * Set if printf/scanf implementations don't support 64-bit format specifiers.
+ */
+#cmakedefine AVS_COMMONS_WITHOUT_64BIT_FORMAT_SPECIFIERS
 /**@}*/
 
 /**
