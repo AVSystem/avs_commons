@@ -198,8 +198,11 @@ static void copy_element(avs_crypto_trusted_cert_info_t *dest,
     default:
         AVS_UNREACHABLE("Invalid data source type");
     }
-    memcpy(*data_buffer_ptr, source, size);
-    *data_buffer_ptr += size;
+    assert(!size || source);
+    if (size) {
+        memcpy(*data_buffer_ptr, source, size);
+        *data_buffer_ptr += size;
+    }
 }
 
 typedef struct {
@@ -274,7 +277,7 @@ static avs_error_t copy_into_list(const avs_crypto_trusted_cert_info_t *info,
                                   void *tail_ptr_ptr_) {
     AVS_LIST(avs_crypto_trusted_cert_info_t) **tail_ptr_ptr =
             (AVS_LIST(avs_crypto_trusted_cert_info_t) **) tail_ptr_ptr_;
-    size_t data_buffer_size;
+    size_t data_buffer_size = SIZE_MAX;
     avs_error_t err = calculate_data_buffer_size(&data_buffer_size, info);
     if (avs_is_err(err)) {
         return err;
