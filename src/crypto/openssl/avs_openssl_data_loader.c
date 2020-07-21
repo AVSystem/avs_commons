@@ -125,7 +125,7 @@ parse_cert(X509 **out_cert, const void *buffer, const size_t len) {
 
 static avs_error_t
 load_ca_cert_from_buffer(SSL_CTX *ctx, const void *buffer, const size_t len) {
-    X509 *cert;
+    X509 *cert = NULL;
     avs_error_t err = parse_cert(&cert, buffer, len);
     if (avs_is_err(err)) {
         return err;
