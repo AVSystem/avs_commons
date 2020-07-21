@@ -884,12 +884,14 @@ static avs_error_t start_ssl(ssl_socket_t *socket, const char *host) {
             }
         }
 
-        if (socket->verify_mode == SSL_VERIFY_DANE_OPPORTUNISTIC
-                && !have_usable_tlsa_records) {
-            // No usable TLSA records - no verification possible
-            // For opportunistic clients that means no verification
-            verification = false;
-            SSL_set_verify(socket->ssl, SSL_VERIFY_NONE, NULL);
+        if (socket->verify_mode == SSL_VERIFY_DANE_OPPORTUNISTIC) {
+            if (have_usable_tlsa_records) {
+                SSL_set_verify(socket->ssl, SSL_VERIFY_PEER, NULL);
+            } else {
+                // No usable TLSA records - no verification possible
+                // For opportunistic clients that means no verification
+                verification = false;
+            }
         }
     } else
 #    endif // WITH_DANE_SUPPORT
