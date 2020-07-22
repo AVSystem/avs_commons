@@ -551,22 +551,6 @@ typedef enum {
      * socket or is not configured to use DANE, will yield an error.
      */
     AVS_NET_SOCKET_OPT_DANE_TLSA_ARRAY,
-
-#ifdef AVS_COMMONS_WITH_AVS_LIST
-    /**
-     * Used to set a list of DANE TLSA records. The value is write-only and
-     * passed in the <c>dane_tlsa_list</c> field of the
-     * @ref avs_net_socket_opt_value_t union as an
-     * <c>AVS_LIST(avs_net_socket_dane_tlsa_record_t)</c> pointer.
-     *
-     * The data is copied into the socket, and the value passed by the user may
-     * be freed after a successful call.
-     *
-     * NOTE: Attempting to set this option on a socket that is not a (D)TLS
-     * socket or is not configured to use DANE, will yield an error.
-     */
-    AVS_NET_SOCKET_OPT_DANE_TLSA_LIST,
-#endif // AVS_COMMONS_WITH_AVS_LIST
 } avs_net_socket_opt_key_t;
 
 typedef enum {
@@ -650,10 +634,6 @@ typedef union {
     uint64_t bytes_sent;
     uint64_t bytes_received;
     avs_net_socket_dane_tlsa_array_t dane_tlsa_array;
-
-    // NOTE: This is semantically AVS_LIST(avs_net_socket_dane_tlsa_record_t)
-    // It's not declared as such to avoid hard dependency
-    avs_net_socket_dane_tlsa_record_t *dane_tlsa_list;
 } avs_net_socket_opt_value_t;
 
 int avs_net_socket_debug(int value);

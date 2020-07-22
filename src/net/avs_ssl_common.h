@@ -335,51 +335,7 @@ set_dane_tlsa_array(ssl_socket_t *socket,
     }
     return AVS_OK;
 }
-
-#    ifdef AVS_COMMONS_WITH_AVS_LIST
-static avs_error_t
-set_dane_tlsa_list(ssl_socket_t *socket,
-                   AVS_LIST(avs_net_socket_dane_tlsa_record_t) list) {
-    size_t array_buffer_size = 0;
-    size_t element_count = AVS_LIST_SIZE(list);
-    avs_error_t err =
-            calculate_copied_tlsa_array_size(&array_buffer_size, element_count);
-    size_t buffer_size = array_buffer_size;
-    AVS_LIST(avs_net_socket_dane_tlsa_record_t) it;
-    AVS_LIST_FOREACH(it, list) {
-        if (buffer_size > SIZE_MAX - it->association_data_size) {
-            err = avs_errno(AVS_ENOMEM);
-        } else {
-            buffer_size += it->association_data_size;
-        }
-    }
-    avs_net_socket_dane_tlsa_record_t *copied_array = NULL;
-    if (avs_is_ok(err)
-            && !(copied_array = (avs_net_socket_dane_tlsa_record_t *)
-                         avs_malloc(buffer_size))) {
-        err = avs_errno(AVS_ENOMEM);
-    }
-    if (avs_is_err(err)) {
-        LOG(ERROR, _("Out of memory"));
-        return err;
-    }
-    avs_free((void *) (intptr_t) (const void *) socket->dane_tlsa.array_ptr);
-    socket->dane_tlsa.array_ptr = copied_array;
-    socket->dane_tlsa.array_element_count = element_count;
-    char *data_buffer_ptr = (char *) &copied_array[element_count];
-    size_t i = 0;
-    AVS_LIST_FOREACH(it, list) {
-        copied_array[i] = *it;
-        copied_array[i].association_data = data_buffer_ptr;
-        memcpy(data_buffer_ptr, it->association_data,
-               it->association_data_size);
-        data_buffer_ptr += it->association_data_size;
-        ++i;
-    }
-    return AVS_OK;
-}
-#    endif // AVS_COMMONS_WITH_AVS_LIST
-#endif     // WITH_DANE_SUPPORT
+#endif // WITH_DANE_SUPPORT
 
 static avs_error_t set_opt_ssl(avs_net_socket_t *ssl_socket_,
                                avs_net_socket_opt_key_t option_key,
@@ -389,11 +345,7 @@ static avs_error_t set_opt_ssl(avs_net_socket_t *ssl_socket_,
 #ifdef WITH_DANE_SUPPORT
     case AVS_NET_SOCKET_OPT_DANE_TLSA_ARRAY:
         return set_dane_tlsa_array(ssl_socket, &option_value.dane_tlsa_array);
-#    ifdef AVS_COMMONS_WITH_AVS_LIST
-    case AVS_NET_SOCKET_OPT_DANE_TLSA_LIST:
-        return set_dane_tlsa_list(ssl_socket, option_value.dane_tlsa_list);
-#    endif // AVS_COMMONS_WITH_AVS_LIST
-#endif     // WITH_DANE_SUPPORT
+#endif // WITH_DANE_SUPPORT
     default:
         if (!ssl_socket->backend_socket) {
             return avs_errno(AVS_EBADF);
