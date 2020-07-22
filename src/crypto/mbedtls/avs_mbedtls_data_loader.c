@@ -14,10 +14,16 @@
  * limitations under the License.
  */
 
+#define AVS_SUPPRESS_POISONING
 #include <avs_commons_init.h>
 
 #if defined(AVS_COMMONS_WITH_AVS_CRYPTO) && defined(AVS_COMMONS_WITH_MBEDTLS) \
         && defined(AVS_COMMONS_WITH_AVS_CRYPTO_PKI)
+
+// this uses some symbols such as "printf" - include it before poisoning them
+#    include <mbedtls/platform.h>
+
+#    include <avs_commons_poison.h>
 
 #    include "avs_mbedtls_data_loader.h"
 
@@ -34,15 +40,21 @@
 
 VISIBILITY_SOURCE_BEGIN
 
-#    define CREATE_OR_FAIL(type, ptr)                     \
-        do {                                              \
-            avs_free(*ptr);                               \
-            *ptr = (type *) avs_calloc(1, sizeof(**ptr)); \
-            if (!*ptr) {                                  \
-                LOG(ERROR, _("Out of memory"));           \
-                return avs_errno(AVS_ENOMEM);             \
-            }                                             \
+#    define CREATE_OR_FAIL(allocator, type, ptr)         \
+        do {                                             \
+            avs_free(*ptr);                              \
+            *ptr = (type *) allocator(1, sizeof(**ptr)); \
+            if (!*ptr) {                                 \
+                LOG(ERROR, _("Out of memory"));          \
+                return avs_errno(AVS_ENOMEM);            \
+            }                                            \
         } while (0)
+
+#    define CREATE_X509_CRT_OR_FAIL(ptr) \
+        CREATE_OR_FAIL(mbedtls_calloc, mbedtls_x509_crt, ptr)
+
+#    define CREATE_PK_CONTEXT_OR_FAIL(ptr) \
+        CREATE_OR_FAIL(avs_calloc, mbedtls_pk_context, ptr)
 
 static avs_error_t append_cert_from_buffer(mbedtls_x509_crt *chain,
                                            const void *buffer,
@@ -174,14 +186,14 @@ static avs_error_t append_ca_certs(mbedtls_x509_crt *out,
 avs_error_t
 _avs_crypto_mbedtls_load_ca_certs(mbedtls_x509_crt **out,
                                   const avs_crypto_trusted_cert_info_t *info) {
-    CREATE_OR_FAIL(mbedtls_x509_crt, out);
+    CREATE_X509_CRT_OR_FAIL(out);
     mbedtls_x509_crt_init(*out);
     return append_ca_certs(*out, info);
 }
 
 avs_error_t _avs_crypto_mbedtls_load_client_cert(
         mbedtls_x509_crt **out, const avs_crypto_client_cert_info_t *info) {
-    CREATE_OR_FAIL(mbedtls_x509_crt, out);
+    CREATE_X509_CRT_OR_FAIL(out);
     mbedtls_x509_crt_init(*out);
 
     switch (info->desc.source) {
@@ -252,7 +264,7 @@ static avs_error_t load_private_key_from_file(mbedtls_pk_context *client_key,
 avs_error_t
 _avs_crypto_mbedtls_load_client_key(mbedtls_pk_context **client_key,
                                     const avs_crypto_client_key_info_t *info) {
-    CREATE_OR_FAIL(mbedtls_pk_context, client_key);
+    CREATE_PK_CONTEXT_OR_FAIL(client_key);
     mbedtls_pk_init(*client_key);
 
     switch (info->desc.source) {

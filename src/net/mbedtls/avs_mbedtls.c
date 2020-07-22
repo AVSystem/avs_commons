@@ -875,11 +875,11 @@ static avs_error_t receive_ssl(avs_net_socket_t *socket_,
 static void cleanup_security_cert(ssl_socket_certs_t *certs) {
     if (certs->ca_cert) {
         mbedtls_x509_crt_free(certs->ca_cert);
-        avs_free(certs->ca_cert);
+        mbedtls_free(certs->ca_cert);
     }
     if (certs->client_cert) {
         mbedtls_x509_crt_free(certs->client_cert);
-        avs_free(certs->client_cert);
+        mbedtls_free(certs->client_cert);
     }
     if (certs->client_key) {
         mbedtls_pk_free(certs->client_key);
