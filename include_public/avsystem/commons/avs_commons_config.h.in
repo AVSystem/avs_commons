@@ -139,7 +139,9 @@
 #cmakedefine AVS_COMMONS_POSIX_COMPAT_HEADER "@AVS_COMMONS_POSIX_COMPAT_HEADER@"
 
 /**
- * Set if printf/scanf implementations don't support 64-bit format specifiers.
+ * Set if printf implementation doesn't support 64-bit format specifiers.
+ * If defined, custom implementation of conversion is used in
+ * @c AVS_UINT_AS_STRING instead of using @c snprintf .
  */
 #cmakedefine AVS_COMMONS_WITHOUT_64BIT_FORMAT_SPECIFIERS
 /**@}*/

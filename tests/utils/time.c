@@ -494,3 +494,9 @@ AVS_UNIT_TEST(time, div_big_negative) {
     AVS_UNIT_ASSERT_EQUAL(value.seconds, -1);
     AVS_UNIT_ASSERT_EQUAL(value.nanoseconds, 1 * 1000 * 1000);
 }
+
+AVS_UNIT_TEST(time, time_as_string) {
+    avs_time_duration_t value = { 123, 456 };
+    AVS_UNIT_ASSERT_EQUAL_STRING(AVS_TIME_DURATION_AS_STRING(value),
+                                 "123.000000456");
+}
