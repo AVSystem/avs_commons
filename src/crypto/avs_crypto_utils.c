@@ -290,8 +290,11 @@ static avs_error_t copy_into_list(const avs_crypto_trusted_cert_info_t *info,
                                  + data_buffer_size))) {
         return avs_errno(AVS_ENOMEM);
     }
-    copy_element(
-            **tail_ptr_ptr, &(char *) { (char *) &(**tail_ptr_ptr)[1] }, info);
+    // We allocated more data than sizeof(avs_crypto_trusted_cert_info_t)
+    // so that the data buffer can be right after it in the same allocated
+    // element. Let's calculate a pointer to that data.
+    char *data_buffer_ptr = (char *) &(**tail_ptr_ptr)[1];
+    copy_element(**tail_ptr_ptr, &data_buffer_ptr, info);
     AVS_LIST_ADVANCE_PTR(tail_ptr_ptr);
     return AVS_OK;
 }
