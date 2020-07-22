@@ -79,9 +79,9 @@ typedef struct {
     mbedtls_x509_crt *client_cert;
     mbedtls_pk_context *client_key;
 
-    // dane_ta_certs is a pointer to the original last element of ca_cert chain;
+    // dane_ta_certs the original last element of ca_cert chain;
     // if NULL, it means that DANE is disabled
-    mbedtls_x509_crt **dane_ta_certs;
+    mbedtls_x509_crt *dane_ta_certs;
     avs_net_socket_dane_tlsa_array_t dane_tlsa;
 } ssl_socket_certs_t;
 #    endif // AVS_COMMONS_WITH_AVS_CRYPTO_PKI
@@ -900,6 +900,8 @@ static void cleanup_security_cert(ssl_socket_certs_t *certs) {
         mbedtls_pk_free(certs->client_key);
         avs_free(certs->client_key);
     }
+    // NOTE: Not freeing dane_ta_certs, as it is supposed to be on the
+    // ca_cert chain, so has been freed together with ca_cert
     avs_free((void *) (intptr_t) (const void *) certs->dane_tlsa.array_ptr);
 }
 #    else // AVS_COMMONS_WITH_AVS_CRYPTO_PKI
@@ -962,10 +964,17 @@ configure_ssl_certs(ssl_socket_certs_t *certs,
     }
 
     if (cert_info->dane) {
-        certs->dane_ta_certs = &certs->ca_cert;
-        while (*certs->dane_ta_certs) {
-            certs->dane_ta_certs = &(*certs->dane_ta_certs)->next;
+        mbedtls_x509_crt **insert_ptr = &certs->ca_cert;
+        while (*insert_ptr) {
+            insert_ptr = &(*insert_ptr)->next;
         }
+        if (!(*insert_ptr = (mbedtls_x509_crt *) mbedtls_calloc(
+                      1, sizeof(**insert_ptr)))) {
+            LOG(ERROR, _("Out of memory"));
+            return avs_errno(AVS_ENOMEM);
+        }
+        mbedtls_x509_crt_init(*insert_ptr);
+        certs->dane_ta_certs = *insert_ptr;
     }
 
     if (cert_info->client_cert.desc.source != AVS_CRYPTO_DATA_SOURCE_EMPTY) {
