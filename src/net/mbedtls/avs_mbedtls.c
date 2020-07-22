@@ -369,6 +369,32 @@ static avs_error_t update_cert_configuration(ssl_socket_t *socket) {
         return AVS_OK;
     }
 
+    if (socket->security.cert.dane_ta_certs) {
+        // 2 0 0 (DANE-TA / Entire certificate / Entire information) data
+        // shall be included as part of the trust store
+
+        // First, remove any previous entries
+        mbedtls_x509_crt_free(socket->security.cert.dane_ta_certs);
+        mbedtls_x509_crt_init(socket->security.cert.dane_ta_certs);
+        // And now, add the relevant entries
+        for (size_t i = 0;
+             i < socket->security.cert.dane_tlsa.array_element_count;
+             ++i) {
+            const avs_net_socket_dane_tlsa_record_t *const entry =
+                    &socket->security.cert.dane_tlsa.array_ptr[i];
+            if (entry->certificate_usage
+                            == AVS_NET_SOCKET_DANE_TRUST_ANCHOR_ASSERTION
+                    && entry->selector == AVS_NET_SOCKET_DANE_CERTIFICATE
+                    && entry->matching_type == AVS_NET_SOCKET_DANE_MATCH_FULL
+                    && mbedtls_x509_crt_parse_der(
+                               socket->security.cert.dane_ta_certs,
+                               (const unsigned char *) entry->association_data,
+                               entry->association_data_size)) {
+                return avs_errno(AVS_EPROTO);
+            }
+        }
+    }
+
     mbedtls_ssl_conf_ca_chain(&socket->config, socket->security.cert.ca_cert,
                               NULL);
     return AVS_OK;
