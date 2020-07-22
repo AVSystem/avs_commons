@@ -437,7 +437,7 @@ const char *avs_time_duration_as_string_impl__(
         }
         result = avs_simple_snprintf(
                 *buf, AVS_TIME_DURATION_AS_STRING_MAX_LENGTH, "%s.%09" PRId32,
-                AVS_UINT_AS_STRING(time.seconds), time.nanoseconds);
+                AVS_UINT64_AS_STRING(time.seconds), time.nanoseconds);
     } else {
         result = avs_simple_snprintf(
                 *buf, AVS_TIME_DURATION_AS_STRING_MAX_LENGTH, "TIME_INVALID");

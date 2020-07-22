@@ -141,7 +141,7 @@
 /**
  * Set if printf implementation doesn't support 64-bit format specifiers.
  * If defined, custom implementation of conversion is used in
- * @c AVS_UINT_AS_STRING instead of using @c snprintf .
+ * @c AVS_UINT64_AS_STRING instead of using @c snprintf .
  */
 #cmakedefine AVS_COMMONS_WITHOUT_64BIT_FORMAT_SPECIFIERS
 /**@}*/

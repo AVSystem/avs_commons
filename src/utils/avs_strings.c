@@ -117,8 +117,8 @@ void avs_memswap(void *memptr1, void *memptr2, size_t n) {
             || defined(AVS_UNIT_TESTING)
 
 static const char *
-uint_as_string_custom(char (*buf)[AVS_UINT_STR_BUF_SIZE(uint64_t)],
-                      uint64_t value) {
+uint64_as_string_custom(char (*buf)[AVS_UINT_STR_BUF_SIZE(uint64_t)],
+                        uint64_t value) {
     char *ptr = *buf + AVS_UINT_STR_BUF_SIZE(uint64_t) - 1;
     *ptr = '\0';
     do {
@@ -133,10 +133,10 @@ uint_as_string_custom(char (*buf)[AVS_UINT_STR_BUF_SIZE(uint64_t)],
            // defined(AVS_UNIT_TESTING)
 
 const char *
-avs_uint_as_string_impl__(char (*buf)[AVS_UINT_STR_BUF_SIZE(uint64_t)],
-                          uint64_t value) {
+avs_uint64_as_string_impl__(char (*buf)[AVS_UINT_STR_BUF_SIZE(uint64_t)],
+                            uint64_t value) {
 #    ifdef AVS_COMMONS_WITHOUT_64BIT_FORMAT_SPECIFIERS
-    return uint_as_string_custom(buf, value);
+    return uint64_as_string_custom(buf, value);
 #    else  // AVS_COMMONS_WITHOUT_64BIT_FORMAT_SPECIFIERS
     snprintf(*buf, AVS_UINT_STR_BUF_SIZE(uint64_t), "%" PRIu64, value);
     return *buf;

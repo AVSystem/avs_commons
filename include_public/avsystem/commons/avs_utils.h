@@ -354,11 +354,11 @@ bool avs_double_convertible_to_int64(double value);
 bool avs_double_convertible_to_uint64(double value);
 
 /**
- * Internal implementation for @ref AVS_UINT_AS_STRING.
+ * Internal implementation for @ref AVS_UINT64_AS_STRING.
  */
 const char *
-avs_uint_as_string_impl__(char (*buf)[AVS_UINT_STR_BUF_SIZE(uint64_t)],
-                          uint64_t value);
+avs_uint64_as_string_impl__(char (*buf)[AVS_UINT_STR_BUF_SIZE(uint64_t)],
+                            uint64_t value);
 
 /**
  * Converts an @c uint64_t value to string.
@@ -371,9 +371,9 @@ avs_uint_as_string_impl__(char (*buf)[AVS_UINT_STR_BUF_SIZE(uint64_t)],
  * @returns Pointer to a temporary (stack-allocated, valid until the end of the
  *          enclosing code block) string representation of @p Value .
  */
-#define AVS_UINT_AS_STRING(Value)                                             \
-    avs_uint_as_string_impl__(&(char[AVS_UINT_STR_BUF_SIZE(uint64_t)]){ "" }, \
-                              (Value))
+#define AVS_UINT64_AS_STRING(Value) \
+    avs_uint64_as_string_impl__(    \
+            &(char[AVS_UINT_STR_BUF_SIZE(uint64_t)]){ "" }, (Value))
 
 #ifdef __cplusplus
 }
