@@ -64,16 +64,31 @@
 #    endif // AVS_COMMONS_WITH_AVS_CRYPTO_PKI
 #    include "avs_mbedtls_persistence.h"
 
-#    ifdef AVS_COMMONS_WITH_AVS_CRYPTO_PKI
+#    if defined(AVS_COMMONS_WITH_AVS_CRYPTO_PKI) && defined(MBEDTLS_SHA256_C) \
+            && defined(MBEDTLS_SHA512_C)
+#        include <mbedtls/sha256.h>
+#        include <mbedtls/sha512.h>
 #        define WITH_DANE_SUPPORT
 #        define dane_tlsa_array_field security.cert.dane_tlsa
-#    endif // AVS_COMMONS_WITH_AVS_CRYPTO_PKI
+#    endif // defined(AVS_COMMONS_WITH_AVS_CRYPTO_PKI) &&
+           // defined(MBEDTLS_SHA256_C) && defined(MBEDTLS_SHA512_C)
 
 #    include "../avs_net_impl.h"
 
 VISIBILITY_SOURCE_BEGIN
 
 #    ifdef AVS_COMMONS_WITH_AVS_CRYPTO_PKI
+typedef struct {
+    int last_known_index;
+
+    // bitmask indexed by avs_net_socket_dane_certificate_usage_t
+    // i.e., (match_mask & (1 << 0)) - PKIX-TA matched
+    //       (match_mask & (1 << 1)) - PKIX-EE matched
+    //       (match_mask & (1 << 2)) - DANE-TA matched
+    //       (match_mask & (1 << 3)) - DANE-EE matched
+    uint8_t match_mask;
+} dane_verify_state_t;
+
 typedef struct {
     mbedtls_x509_crt *ca_cert;
     mbedtls_x509_crt *client_cert;
@@ -83,6 +98,7 @@ typedef struct {
     // if NULL, it means that DANE is disabled
     mbedtls_x509_crt *dane_ta_certs;
     avs_net_socket_dane_tlsa_array_t dane_tlsa;
+    dane_verify_state_t dane_verify_state;
 } ssl_socket_certs_t;
 #    endif // AVS_COMMONS_WITH_AVS_CRYPTO_PKI
 
@@ -338,6 +354,85 @@ static int *init_cert_ciphersuites(
     return ciphers;
 }
 
+static bool dane_match(const mbedtls_x509_crt *crt,
+                       const avs_net_socket_dane_tlsa_record_t *entry) {
+    const unsigned char *buf;
+    size_t buf_len;
+    switch (entry->selector) {
+    case AVS_NET_SOCKET_DANE_CERTIFICATE:
+        buf = crt->raw.p;
+        buf_len = crt->raw.len;
+        break;
+    case AVS_NET_SOCKET_DANE_PUBLIC_KEY:
+#        warning "TODO: Not supported yet"
+        return false;
+    }
+    switch (entry->matching_type) {
+    case AVS_NET_SOCKET_DANE_MATCH_FULL:
+        return entry->association_data_size == buf_len
+               && memcmp(entry->association_data, buf, buf_len) == 0;
+    case AVS_NET_SOCKET_DANE_MATCH_SHA256: {
+        unsigned char sha[32];
+        if (entry->association_data_size != sizeof(sha)) {
+            return false;
+        }
+        return !mbedtls_sha256_ret(buf, buf_len, sha, 0)
+               && memcmp(entry->association_data, sha, sizeof(sha)) == 0;
+    }
+    case AVS_NET_SOCKET_DANE_MATCH_SHA512: {
+        unsigned char sha[64];
+        if (entry->association_data_size != sizeof(sha)) {
+            return false;
+        }
+        return !mbedtls_sha512_ret(buf, buf_len, sha, 0)
+               && memcmp(entry->association_data, sha, sizeof(sha)) == 0;
+    }
+    }
+    AVS_UNREACHABLE("Invalid matching type");
+    return false;
+}
+
+static int verify_cert_cb(void *socket_,
+                          mbedtls_x509_crt *crt,
+                          int index,
+                          uint32_t *verify_result_flags) {
+    (void) verify_result_flags;
+    // This callback is called for each certificate in the chain
+    // Starting for the topmost (root) certificate, with highest index
+    // And then iterates down to index 0 (the actual peer certificate)
+    ssl_socket_t *socket = (ssl_socket_t *) socket_;
+    assert(socket->security_mode == AVS_NET_SECURITY_CERTIFICATE);
+    if (index != socket->security.cert.dane_verify_state.last_known_index - 1) {
+        // First entry (root certificate)
+        socket->security.cert.dane_verify_state.match_mask = 0;
+    }
+    socket->security.cert.dane_verify_state.last_known_index = index;
+
+    for (size_t i = 0; i < socket->security.cert.dane_tlsa.array_element_count;
+         ++i) {
+        const avs_net_socket_dane_tlsa_record_t *const entry =
+                &socket->security.cert.dane_tlsa.array_ptr[i];
+        if (socket->security.cert.dane_verify_state.match_mask
+                & (1 << entry->certificate_usage)) {
+            // Certificate usage already satisfied, no need to check again
+            continue;
+        }
+        if ((entry->certificate_usage
+                     == AVS_NET_SOCKET_DANE_SERVICE_CERTIFICATE_CONSTRAINT
+             || entry->certificate_usage
+                        == AVS_NET_SOCKET_DANE_DOMAIN_ISSUED_CERTIFICATE)
+                != (index == 0)) {
+            // TA/EE mismatch
+            continue;
+        }
+        if (dane_match(crt, entry)) {
+            socket->security.cert.dane_verify_state.match_mask |=
+                    (uint8_t) (1 << entry->certificate_usage);
+        }
+    }
+    return 0;
+}
+
 static avs_error_t initialize_cert_security(
         ssl_socket_t *socket,
         const avs_net_socket_tls_ciphersuites_t *tls_ciphersuites) {
@@ -349,6 +444,7 @@ static avs_error_t initialize_cert_security(
 
     if (socket->security.cert.ca_cert) {
         mbedtls_ssl_conf_authmode(&socket->config, MBEDTLS_SSL_VERIFY_REQUIRED);
+        mbedtls_ssl_conf_verify(&socket->config, verify_cert_cb, socket);
     } else {
         mbedtls_ssl_conf_authmode(&socket->config, MBEDTLS_SSL_VERIFY_NONE);
     }
