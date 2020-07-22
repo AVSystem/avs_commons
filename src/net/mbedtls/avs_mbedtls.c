@@ -358,19 +358,9 @@ static int *init_cert_ciphersuites(
 }
 
 #        ifdef WITH_DANE_SUPPORT
-static bool dane_match(const mbedtls_x509_crt *crt,
-                       const avs_net_socket_dane_tlsa_record_t *entry) {
-    const unsigned char *buf;
-    size_t buf_len;
-    switch (entry->selector) {
-    case AVS_NET_SOCKET_DANE_CERTIFICATE:
-        buf = crt->raw.p;
-        buf_len = crt->raw.len;
-        break;
-    case AVS_NET_SOCKET_DANE_PUBLIC_KEY:
-#            warning "TODO: Not supported yet"
-        return false;
-    }
+static bool dane_match_buffer(const unsigned char *buf,
+                              size_t buf_len,
+                              const avs_net_socket_dane_tlsa_record_t *entry) {
     switch (entry->matching_type) {
     case AVS_NET_SOCKET_DANE_MATCH_FULL:
         return entry->association_data_size == buf_len
@@ -393,6 +383,31 @@ static bool dane_match(const mbedtls_x509_crt *crt,
     }
     }
     AVS_UNREACHABLE("Invalid matching type");
+    return false;
+}
+
+static bool dane_match(mbedtls_x509_crt *crt,
+                       const avs_net_socket_dane_tlsa_record_t *entry) {
+    switch (entry->selector) {
+    case AVS_NET_SOCKET_DANE_CERTIFICATE:
+        return dane_match_buffer(crt->raw.p, crt->raw.len, entry);
+    case AVS_NET_SOCKET_DANE_PUBLIC_KEY: {
+        unsigned char *buf = (unsigned char *) avs_malloc(crt->raw.len);
+        if (!buf) {
+            LOG(ERROR, _("Out of memory"));
+            return false;
+        }
+        // Note: mbedtls_pk_write_pubkey_der() writes data at the end of buffer
+        int length = mbedtls_pk_write_pubkey_der(&crt->pk, buf, crt->raw.len);
+        bool result =
+                (length >= 0
+                 && dane_match_buffer(&buf[crt->raw.len - (size_t) length],
+                                      (size_t) length, entry));
+        avs_free(buf);
+        return result;
+    }
+    }
+    AVS_UNREACHABLE("Invalid selector");
     return false;
 }
 
