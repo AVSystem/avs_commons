@@ -64,6 +64,11 @@
 #    endif // AVS_COMMONS_WITH_AVS_CRYPTO_PKI
 #    include "avs_mbedtls_persistence.h"
 
+#    ifdef AVS_COMMONS_WITH_AVS_CRYPTO_PKI
+#        define WITH_DANE_SUPPORT
+#        define dane_tlsa_array_field security.cert.dane_tlsa
+#    endif // AVS_COMMONS_WITH_AVS_CRYPTO_PKI
+
 #    include "../avs_net_impl.h"
 
 VISIBILITY_SOURCE_BEGIN
@@ -73,6 +78,8 @@ typedef struct {
     mbedtls_x509_crt *ca_cert;
     mbedtls_x509_crt *client_cert;
     mbedtls_pk_context *client_key;
+    bool dane;
+    avs_net_socket_dane_tlsa_array_t dane_tlsa;
 } ssl_socket_certs_t;
 #    endif // AVS_COMMONS_WITH_AVS_CRYPTO_PKI
 
@@ -878,6 +885,7 @@ static void cleanup_security_cert(ssl_socket_certs_t *certs) {
         mbedtls_pk_free(certs->client_key);
         avs_free(certs->client_key);
     }
+    avs_free((void *) (intptr_t) (const void *) certs->dane_tlsa.array_ptr);
 }
 #    else // AVS_COMMONS_WITH_AVS_CRYPTO_PKI
 #        define cleanup_security_cert(...) (void) 0
@@ -926,6 +934,7 @@ configure_ssl_certs(ssl_socket_certs_t *certs,
                     const avs_net_certificate_info_t *cert_info) {
     LOG(TRACE, _("configure_ssl_certs"));
 
+    certs->dane = cert_info->dane;
     if (cert_info->server_cert_validation) {
         avs_error_t err =
                 _avs_crypto_mbedtls_load_ca_certs(&certs->ca_cert,

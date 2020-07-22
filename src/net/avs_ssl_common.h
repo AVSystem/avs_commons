@@ -320,9 +320,11 @@ set_dane_tlsa_array(ssl_socket_t *socket,
         LOG(ERROR, _("Out of memory"));
         return err;
     }
-    avs_free((void *) (intptr_t) (const void *) socket->dane_tlsa.array_ptr);
-    socket->dane_tlsa.array_ptr = copied_array;
-    socket->dane_tlsa.array_element_count = array->array_element_count;
+    avs_free((void *) (intptr_t) (const void *)
+                     socket->dane_tlsa_array_field.array_ptr);
+    socket->dane_tlsa_array_field.array_ptr = copied_array;
+    socket->dane_tlsa_array_field.array_element_count =
+            array->array_element_count;
     memcpy(copied_array, array->array_ptr,
            array->array_element_count
                    * sizeof(avs_net_socket_dane_tlsa_record_t));
