@@ -129,6 +129,21 @@ uint64_as_string_custom(char (*buf)[AVS_UINT_STR_BUF_SIZE(uint64_t)],
     return ptr;
 }
 
+static const char *
+int64_as_string_custom(char (*buf)[AVS_INT_STR_BUF_SIZE(int64_t)],
+                       int64_t value) {
+    if (value < 0) {
+        char *ptr =
+                (char *) (intptr_t) uint64_as_string_custom(buf,
+                                                            (uint64_t) -value);
+        ptr--;
+        *ptr = '-';
+        return ptr;
+    }
+
+    return uint64_as_string_custom(buf, (uint64_t) value);
+}
+
 #    endif // defined(AVS_COMMONS_WITHOUT_64BIT_FORMAT_SPECIFIERS) ||
            // defined(AVS_UNIT_TESTING)
 
@@ -139,6 +154,17 @@ avs_uint64_as_string_impl__(char (*buf)[AVS_UINT_STR_BUF_SIZE(uint64_t)],
     return uint64_as_string_custom(buf, value);
 #    else  // AVS_COMMONS_WITHOUT_64BIT_FORMAT_SPECIFIERS
     snprintf(*buf, AVS_UINT_STR_BUF_SIZE(uint64_t), "%" PRIu64, value);
+    return *buf;
+#    endif // AVS_COMMONS_WITHOUT_64BIT_FORMAT_SPECIFIERS
+}
+
+const char *
+avs_int64_as_string_impl__(char (*buf)[AVS_INT_STR_BUF_SIZE(int64_t)],
+                           int64_t value) {
+#    ifdef AVS_COMMONS_WITHOUT_64BIT_FORMAT_SPECIFIERS
+    return int64_as_string_custom(buf, value);
+#    else  // AVS_COMMONS_WITHOUT_64BIT_FORMAT_SPECIFIERS
+    snprintf(*buf, AVS_UINT_STR_BUF_SIZE(uint64_t), "%" PRId64, value);
     return *buf;
 #    endif // AVS_COMMONS_WITHOUT_64BIT_FORMAT_SPECIFIERS
 }
