@@ -328,11 +328,6 @@ static int *init_cert_ciphersuites(
     return ciphers;
 }
 
-static uint8_t is_verification_enabled(ssl_socket_t *socket) {
-    return socket->security_mode == AVS_NET_SECURITY_CERTIFICATE
-           && socket->security.cert.ca_cert != NULL;
-}
-
 static avs_error_t initialize_cert_security(
         ssl_socket_t *socket,
         const avs_net_socket_tls_ciphersuites_t *tls_ciphersuites) {
@@ -361,7 +356,6 @@ static avs_error_t initialize_cert_security(
     return AVS_OK;
 }
 #    else // AVS_COMMONS_WITH_AVS_CRYPTO_PKI
-#        define is_verification_enabled(...) 0
 #        define initialize_cert_security(...) avs_errno(AVS_ENOTSUP)
 #    endif // AVS_COMMONS_WITH_AVS_CRYPTO_PKI
 
@@ -740,17 +734,6 @@ static avs_error_t start_ssl(ssl_socket_t *socket, const char *host) {
         LOG(ERROR, _("handshake failed: ") "%d", result);
     }
 
-    if (avs_is_ok(err) && !socket->flags.session_restored
-            && is_verification_enabled(socket)) {
-        uint32_t verify_result =
-                mbedtls_ssl_get_verify_result(get_context(socket));
-        if (verify_result) {
-            LOG(ERROR,
-                _("server certificate verification failure: ") "%" PRIu32,
-                verify_result);
-            err = avs_errno(AVS_EPROTO);
-        }
-    }
 finish:
 #    ifdef AVS_COMMONS_NET_WITH_TLS_SESSION_PERSISTENCE
     mbedtls_ssl_session_free(&restored_session);
