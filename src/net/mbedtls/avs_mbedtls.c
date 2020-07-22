@@ -78,6 +78,7 @@
 VISIBILITY_SOURCE_BEGIN
 
 #    ifdef AVS_COMMONS_WITH_AVS_CRYPTO_PKI
+#        ifdef WITH_DANE_SUPPORT
 typedef struct {
     int last_known_index;
 
@@ -88,17 +89,19 @@ typedef struct {
     //       (match_mask & (1 << 3)) - DANE-EE matched
     uint8_t match_mask;
 } dane_verify_state_t;
+#        endif // WITH_DANE_SUPPORT
 
 typedef struct {
     mbedtls_x509_crt *ca_cert;
     mbedtls_x509_crt *client_cert;
     mbedtls_pk_context *client_key;
-
+#        ifdef WITH_DANE_SUPPORT
     // dane_ta_certs the original last element of ca_cert chain;
     // if NULL, it means that DANE is disabled
     mbedtls_x509_crt *dane_ta_certs;
     avs_net_socket_dane_tlsa_array_t dane_tlsa;
     dane_verify_state_t dane_verify_state;
+#        endif // WITH_DANE_SUPPORT
 } ssl_socket_certs_t;
 #    endif // AVS_COMMONS_WITH_AVS_CRYPTO_PKI
 
@@ -354,6 +357,7 @@ static int *init_cert_ciphersuites(
     return ciphers;
 }
 
+#        ifdef WITH_DANE_SUPPORT
 static bool dane_match(const mbedtls_x509_crt *crt,
                        const avs_net_socket_dane_tlsa_record_t *entry) {
     const unsigned char *buf;
@@ -364,7 +368,7 @@ static bool dane_match(const mbedtls_x509_crt *crt,
         buf_len = crt->raw.len;
         break;
     case AVS_NET_SOCKET_DANE_PUBLIC_KEY:
-#        warning "TODO: Not supported yet"
+#            warning "TODO: Not supported yet"
         return false;
     }
     switch (entry->matching_type) {
@@ -432,6 +436,7 @@ static int verify_cert_cb(void *socket_,
     }
     return 0;
 }
+#        endif // WITH_DANE_SUPPORT
 
 static avs_error_t initialize_cert_security(
         ssl_socket_t *socket,
@@ -444,7 +449,9 @@ static avs_error_t initialize_cert_security(
 
     if (socket->security.cert.ca_cert) {
         mbedtls_ssl_conf_authmode(&socket->config, MBEDTLS_SSL_VERIFY_REQUIRED);
+#        ifdef WITH_DANE_SUPPORT
         mbedtls_ssl_conf_verify(&socket->config, verify_cert_cb, socket);
+#        endif // WITH_DANE_SUPPORT
     } else {
         mbedtls_ssl_conf_authmode(&socket->config, MBEDTLS_SSL_VERIFY_NONE);
     }
@@ -465,6 +472,7 @@ static avs_error_t update_cert_configuration(ssl_socket_t *socket) {
         return AVS_OK;
     }
 
+#        ifdef WITH_DANE_SUPPORT
     if (socket->security.cert.dane_ta_certs) {
         // 2 0 0 (DANE-TA / Entire certificate / Entire information) data
         // shall be included as part of the trust store
@@ -490,6 +498,7 @@ static avs_error_t update_cert_configuration(ssl_socket_t *socket) {
             }
         }
     }
+#        endif // WITH_DANE_SUPPORT
 
     mbedtls_ssl_conf_ca_chain(&socket->config, socket->security.cert.ca_cert,
                               NULL);
@@ -1022,9 +1031,11 @@ static void cleanup_security_cert(ssl_socket_certs_t *certs) {
         mbedtls_pk_free(certs->client_key);
         avs_free(certs->client_key);
     }
+#        ifdef WITH_DANE_SUPPORT
     // NOTE: Not freeing dane_ta_certs, as it is supposed to be on the
     // ca_cert chain, so has been freed together with ca_cert
     avs_free((void *) (intptr_t) (const void *) certs->dane_tlsa.array_ptr);
+#        endif // WITH_DANE_SUPPORT
 }
 #    else // AVS_COMMONS_WITH_AVS_CRYPTO_PKI
 #        define cleanup_security_cert(...) (void) 0
@@ -1086,6 +1097,7 @@ configure_ssl_certs(ssl_socket_certs_t *certs,
     }
 
     if (cert_info->dane) {
+#        ifdef WITH_DANE_SUPPORT
         mbedtls_x509_crt **insert_ptr = &certs->ca_cert;
         while (*insert_ptr) {
             insert_ptr = &(*insert_ptr)->next;
@@ -1097,6 +1109,10 @@ configure_ssl_certs(ssl_socket_certs_t *certs,
         }
         mbedtls_x509_crt_init(*insert_ptr);
         certs->dane_ta_certs = *insert_ptr;
+#        else  // WITH_DANE_SUPPORT
+        LOG(ERROR, _("DANE not supported"));
+        return avs_errno(AVS_ENOTSUP);
+#        endif // WITH_DANE_SUPPORT
     }
 
     if (cert_info->client_cert.desc.source != AVS_CRYPTO_DATA_SOURCE_EMPTY) {
