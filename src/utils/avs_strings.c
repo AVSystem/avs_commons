@@ -164,7 +164,7 @@ avs_int64_as_string_impl__(char (*buf)[AVS_INT_STR_BUF_SIZE(int64_t)],
 #    ifdef AVS_COMMONS_WITHOUT_64BIT_FORMAT_SPECIFIERS
     return int64_as_string_custom(buf, value);
 #    else  // AVS_COMMONS_WITHOUT_64BIT_FORMAT_SPECIFIERS
-    snprintf(*buf, AVS_UINT_STR_BUF_SIZE(uint64_t), "%" PRId64, value);
+    snprintf(*buf, AVS_INT_STR_BUF_SIZE(uint64_t), "%" PRId64, value);
     return *buf;
 #    endif // AVS_COMMONS_WITHOUT_64BIT_FORMAT_SPECIFIERS
 }
