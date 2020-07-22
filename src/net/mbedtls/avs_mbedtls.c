@@ -78,7 +78,10 @@ typedef struct {
     mbedtls_x509_crt *ca_cert;
     mbedtls_x509_crt *client_cert;
     mbedtls_pk_context *client_key;
-    bool dane;
+
+    // dane_ta_certs is a pointer to the original last element of ca_cert chain;
+    // if NULL, it means that DANE is disabled
+    mbedtls_x509_crt **dane_ta_certs;
     avs_net_socket_dane_tlsa_array_t dane_tlsa;
 } ssl_socket_certs_t;
 #    endif // AVS_COMMONS_WITH_AVS_CRYPTO_PKI
@@ -346,8 +349,6 @@ static avs_error_t initialize_cert_security(
 
     if (socket->security.cert.ca_cert) {
         mbedtls_ssl_conf_authmode(&socket->config, MBEDTLS_SSL_VERIFY_REQUIRED);
-        mbedtls_ssl_conf_ca_chain(&socket->config,
-                                  socket->security.cert.ca_cert, NULL);
     } else {
         mbedtls_ssl_conf_authmode(&socket->config, MBEDTLS_SSL_VERIFY_NONE);
     }
@@ -362,8 +363,19 @@ static avs_error_t initialize_cert_security(
                                   socket->effective_ciphersuites);
     return AVS_OK;
 }
+
+static avs_error_t update_cert_configuration(ssl_socket_t *socket) {
+    if (socket->security_mode != AVS_NET_SECURITY_CERTIFICATE) {
+        return AVS_OK;
+    }
+
+    mbedtls_ssl_conf_ca_chain(&socket->config, socket->security.cert.ca_cert,
+                              NULL);
+    return AVS_OK;
+}
 #    else // AVS_COMMONS_WITH_AVS_CRYPTO_PKI
 #        define initialize_cert_security(...) avs_errno(AVS_ENOTSUP)
+#        define update_cert_configuration(...) AVS_OK
 #    endif // AVS_COMMONS_WITH_AVS_CRYPTO_PKI
 
 #    ifdef AVS_COMMONS_NET_WITH_PSK
@@ -627,6 +639,9 @@ static avs_error_t start_ssl(ssl_socket_t *socket, const char *host) {
     mbedtls_ssl_set_timer_cb(get_context(socket), &socket->timer,
                              mbedtls_timing_set_delay,
                              mbedtls_timing_get_delay);
+    if (avs_is_err((err = update_cert_configuration(socket)))) {
+        goto finish;
+    }
     if ((result = mbedtls_ssl_setup(get_context(socket), &socket->config))) {
         LOG(ERROR, _("mbedtls_ssl_setup() failed: ") "%d", result);
         err = avs_errno(AVS_ENOMEM);
@@ -934,7 +949,6 @@ configure_ssl_certs(ssl_socket_certs_t *certs,
                     const avs_net_certificate_info_t *cert_info) {
     LOG(TRACE, _("configure_ssl_certs"));
 
-    certs->dane = cert_info->dane;
     if (cert_info->server_cert_validation) {
         avs_error_t err =
                 _avs_crypto_mbedtls_load_ca_certs(&certs->ca_cert,
@@ -945,6 +959,13 @@ configure_ssl_certs(ssl_socket_certs_t *certs,
         }
     } else {
         LOG(DEBUG, _("Server authentication disabled"));
+    }
+
+    if (cert_info->dane) {
+        certs->dane_ta_certs = &certs->ca_cert;
+        while (*certs->dane_ta_certs) {
+            certs->dane_ta_certs = &(*certs->dane_ta_certs)->next;
+        }
     }
 
     if (cert_info->client_cert.desc.source != AVS_CRYPTO_DATA_SOURCE_EMPTY) {
