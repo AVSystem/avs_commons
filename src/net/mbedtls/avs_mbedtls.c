@@ -88,7 +88,18 @@ typedef struct {
     //       (match_mask & (1 << 2)) - DANE-TA matched
     //       (match_mask & (1 << 3)) - DANE-EE matched
     uint8_t match_mask;
+
+    uint32_t verify_result_flags;
 } dane_verify_state_t;
+
+#            define DANE_TA_OR_EE_MATCH_MASK                       \
+                ((1 << AVS_NET_SOCKET_DANE_TRUST_ANCHOR_ASSERTION) \
+                 | (1 << AVS_NET_SOCKET_DANE_DOMAIN_ISSUED_CERTIFICATE))
+
+#            define DANE_FULL_MATCH_MASK                    \
+                (DANE_TA_OR_EE_MATCH_MASK                   \
+                 | (1 << AVS_NET_SOCKET_DANE_CA_CONSTRAINT) \
+                 | (1 << AVS_NET_SOCKET_DANE_SERVICE_CERTIFICATE_CONSTRAINT))
 #        endif // WITH_DANE_SUPPORT
 
 typedef struct {
@@ -411,6 +422,21 @@ static bool dane_match(mbedtls_x509_crt *crt,
     return false;
 }
 
+static bool has_dane_ta_or_ee_entries(ssl_socket_t *socket) {
+    for (size_t i = 0; i < socket->security.cert.dane_tlsa.array_element_count;
+         ++i) {
+        const avs_net_socket_dane_tlsa_record_t *const entry =
+                &socket->security.cert.dane_tlsa.array_ptr[i];
+        if (entry->certificate_usage
+                        == AVS_NET_SOCKET_DANE_TRUST_ANCHOR_ASSERTION
+                || entry->certificate_usage
+                               == AVS_NET_SOCKET_DANE_DOMAIN_ISSUED_CERTIFICATE) {
+            return true;
+        }
+    }
+    return false;
+}
+
 static int verify_cert_cb(void *socket_,
                           mbedtls_x509_crt *crt,
                           int index,
@@ -421,11 +447,22 @@ static int verify_cert_cb(void *socket_,
     // And then iterates down to index 0 (the actual peer certificate)
     ssl_socket_t *socket = (ssl_socket_t *) socket_;
     assert(socket->security_mode == AVS_NET_SECURITY_CERTIFICATE);
+
+    if (socket->security.cert.ca_cert == socket->security.cert.dane_ta_certs
+            && !has_dane_ta_or_ee_entries(socket)) {
+        // No global trust store (opportunistic DANE) and no DANE-TA or DANE-EE
+        // entries; this is unusable, so fall back to no verification
+        return 0;
+    }
+
     if (index != socket->security.cert.dane_verify_state.last_known_index - 1) {
         // First entry (root certificate)
         socket->security.cert.dane_verify_state.match_mask = 0;
+        socket->security.cert.dane_verify_state.verify_result_flags = 0;
     }
     socket->security.cert.dane_verify_state.last_known_index = index;
+    socket->security.cert.dane_verify_state.verify_result_flags |=
+            *verify_result_flags;
 
     for (size_t i = 0; i < socket->security.cert.dane_tlsa.array_element_count;
          ++i) {
@@ -449,6 +486,49 @@ static int verify_cert_cb(void *socket_,
                     (uint8_t) (1 << entry->certificate_usage);
         }
     }
+
+    if (index != 0) {
+        return 0;
+    }
+
+    // index == 0, handle final verification
+
+    // If the only problem with the certificate is that it failed PKIX
+    // verification, but we are using DANE and have matched DANE-TA or
+    // DANE-EE entry, it's a success
+    if (socket->security.cert.dane_verify_state.verify_result_flags
+                    == MBEDTLS_X509_BADCERT_NOT_TRUSTED
+            && (socket->security.cert.dane_verify_state.match_mask
+                & DANE_TA_OR_EE_MATCH_MASK)) {
+        return 0;
+    }
+
+    uint8_t dane_valid_matches = (socket->security.cert.ca_cert
+                                  == socket->security.cert.dane_ta_certs)
+                                         ? DANE_TA_OR_EE_MATCH_MASK
+                                         : DANE_FULL_MATCH_MASK;
+    // If verification succeeded,
+    // check if DANE verification succeeded as well
+    if (!socket->security.cert.dane_verify_state.verify_result_flags
+            && socket->security.cert.dane_tlsa.array_element_count > 0
+            && !(socket->security.cert.dane_verify_state.match_mask
+                 & dane_valid_matches)) {
+        LOG(ERROR, _("DANE certificate verification failed"));
+        *verify_result_flags |= MBEDTLS_X509_BADCERT_NOT_TRUSTED;
+        return MBEDTLS_ERR_X509_FATAL_ERROR;
+    }
+
+    if (socket->security.cert.dane_verify_state.verify_result_flags) {
+        LOG(ERROR, _("server certificate verification failure: ") "%" PRIu32,
+            socket->security.cert.dane_verify_state.verify_result_flags);
+        if (socket->security.cert.dane_verify_state.verify_result_flags
+                == MBEDTLS_X509_BADCERT_MISSING) {
+            return MBEDTLS_ERR_SSL_NO_CLIENT_CERTIFICATE;
+        } else {
+            return MBEDTLS_ERR_X509_FATAL_ERROR;
+        }
+    }
+
     return 0;
 }
 #        endif // WITH_DANE_SUPPORT
@@ -463,10 +543,22 @@ static avs_error_t initialize_cert_security(
     }
 
     if (socket->security.cert.ca_cert) {
-        mbedtls_ssl_conf_authmode(&socket->config, MBEDTLS_SSL_VERIFY_REQUIRED);
 #        ifdef WITH_DANE_SUPPORT
-        mbedtls_ssl_conf_verify(&socket->config, verify_cert_cb, socket);
+        if (socket->security.cert.dane_ta_certs) {
+            // NOTE: When verify_cert_cb() fails, the whole verification routine
+            // fails as well, so this is effectively equivalent to modified
+            // MBEDTLS_SSL_VERIFY_REQUIRED.
+            mbedtls_ssl_conf_authmode(&socket->config,
+                                      MBEDTLS_SSL_VERIFY_OPTIONAL);
+            mbedtls_ssl_conf_verify(&socket->config, verify_cert_cb, socket);
+        } else
 #        endif // WITH_DANE_SUPPORT
+        {
+            mbedtls_ssl_conf_authmode(&socket->config,
+                                      MBEDTLS_SSL_VERIFY_REQUIRED);
+        }
+        mbedtls_ssl_conf_ca_chain(&socket->config,
+                                  socket->security.cert.ca_cert, NULL);
     } else {
         mbedtls_ssl_conf_authmode(&socket->config, MBEDTLS_SSL_VERIFY_NONE);
     }
