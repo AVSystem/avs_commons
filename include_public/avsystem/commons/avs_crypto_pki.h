@@ -153,6 +153,40 @@ avs_crypto_trusted_cert_info_t avs_crypto_trusted_cert_info_from_array(
         const avs_crypto_trusted_cert_info_t *array_ptr,
         size_t array_element_count);
 
+/**
+ * Copies any valid CA chain to a newly allocated array.
+ *
+ * Any arrays or lists in @p trusted_cert_info are flattened, and empty entries
+ * are skipped, so that the resulting array will contain only "from_file",
+ * "from_path" or "from_buffer" entries. Any resources used by the source
+ * (file paths and buffers) are copied as well, so the original entries can be
+ * freed - although filesystem-based entries are not loaded into memory, so the
+ * actual files need to stay in the filesystem.
+ *
+ * The resulting array is allocated in such a way that a single @ref avs_free
+ * call is sufficient to free the whole array and all associated resources.
+ *
+ * @param out_array         Pointer to a variable that, on entry, shall be a
+ *                          NULL pointer, and on exit will be set to a pointer
+ *                          to the newly allocated array.
+ *
+ * @param out_element_count Pointer to a variable that on success, will be
+ *                          populated with the number of elements in the array.
+ *
+ * @param trusted_cert_info CA chain information to copy.
+ *
+ * @returns AVS_OK for success, avs_errno(AVS_ENOMEM) for an out-of-memory
+ *          condition, or avs_errno(AVS_EINVAL) if invalid arguments have been
+ *          passed or invalid data has been encountered.
+ *
+ * NOTE: If the input contains no non-empty entries, <c>*out_array</c> will stay
+ * a NULL pointer. This is not an error.
+ */
+avs_error_t avs_crypto_trusted_cert_info_copy_as_array(
+        avs_crypto_trusted_cert_info_t **out_array,
+        size_t *out_element_count,
+        avs_crypto_trusted_cert_info_t trusted_cert_info);
+
 #ifdef AVS_COMMONS_WITH_AVS_LIST
 /**
  * Creates CA chain descriptor used later on to load CA chain from a list of
@@ -173,6 +207,38 @@ avs_crypto_trusted_cert_info_t avs_crypto_trusted_cert_info_from_array(
  */
 avs_crypto_trusted_cert_info_t avs_crypto_trusted_cert_info_from_list(
         AVS_LIST(avs_crypto_trusted_cert_info_t) list);
+
+/**
+ * Copies any valid CA chain to a newly allocated list.
+ *
+ * Any arrays or lists in @p trusted_cert_info are flattened, and empty entries
+ * are skipped, so that the resulting list will contain only "from_file",
+ * "from_path" or "from_buffer" entries. Any resources used by the source
+ * (file paths and buffers) are copied as well, so the original entries can be
+ * freed - although filesystem-based entries are not loaded into memory, so the
+ * actual files need to stay in the filesystem.
+ *
+ * The list entries are allocated in such a way that calling
+ * @ref AVS_LIST_DELETE also frees any associated buffers. To free the entire
+ * list with all the associated resources, an <c>AVS_LIST_CLEAR(out_list);</c>
+ * statement is sufficient.
+ *
+ * @param out_list          Pointer to a variable that, on entry, shall be a
+ *                          NULL pointer, and on exit will be set to a pointer
+ *                          to the head of the newly created list.
+ *
+ * @param trusted_cert_info CA chain information to copy.
+ *
+ * @returns AVS_OK for success, avs_errno(AVS_ENOMEM) for an out-of-memory
+ *          condition, or avs_errno(AVS_EINVAL) if invalid arguments have been
+ *          passed or invalid data has been encountered.
+ *
+ * NOTE: If the input contains no non-empty entries, <c>*out_list</c> will stay
+ * a NULL pointer. This is not an error.
+ */
+avs_error_t avs_crypto_trusted_cert_info_copy_as_list(
+        AVS_LIST(avs_crypto_trusted_cert_info_t) *out_list,
+        avs_crypto_trusted_cert_info_t trusted_cert_info);
 #endif // AVS_COMMONS_WITH_AVS_LIST
 
 typedef struct {
