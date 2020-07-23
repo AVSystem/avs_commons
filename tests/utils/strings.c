@@ -61,6 +61,17 @@ AVS_UNIT_TEST(int_as_string, zero) {
             "0");
 }
 
+AVS_UNIT_TEST(int_as_string, minus_one) {
+    AVS_UNIT_ASSERT_EQUAL_STRING(
+            int64_as_string_custom(
+                    &(char[AVS_UINT_STR_BUF_SIZE(uint64_t)]){ "" }, -1),
+            "-1");
+    AVS_UNIT_ASSERT_EQUAL_STRING(
+            avs_int64_as_string_impl__(
+                    &(char[AVS_UINT_STR_BUF_SIZE(uint64_t)]){ "" }, -1),
+            "-1");
+}
+
 AVS_UNIT_TEST(int_as_string, int64_min) {
     AVS_UNIT_ASSERT_EQUAL_STRING(
             int64_as_string_custom(

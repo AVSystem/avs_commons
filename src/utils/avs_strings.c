@@ -123,25 +123,36 @@ uint64_as_string_custom(char (*buf)[AVS_UINT_STR_BUF_SIZE(uint64_t)],
     *ptr = '\0';
     do {
         ptr--;
-        *ptr = value % 10 + '0';
+        *ptr = (char) (value % 10 + '0');
         value /= 10;
     } while (value);
+
+    assert(ptr >= *buf);
     return ptr;
 }
 
 static const char *
 int64_as_string_custom(char (*buf)[AVS_INT_STR_BUF_SIZE(int64_t)],
                        int64_t value) {
+    uint64_t absolute_value;
+    bool negative = false;
     if (value < 0) {
-        char *ptr =
-                (char *) (intptr_t) uint64_as_string_custom(buf,
-                                                            (uint64_t) -value);
-        ptr--;
-        *ptr = '-';
-        return ptr;
+        absolute_value = (uint64_t) - (value + 1) + 1;
+        negative = true;
+    } else {
+        absolute_value = (uint64_t) value;
     }
 
-    return uint64_as_string_custom(buf, (uint64_t) value);
+    char *ptr =
+            (char *) (intptr_t) uint64_as_string_custom(buf, absolute_value);
+
+    if (negative) {
+        ptr--;
+        *ptr = '-';
+    }
+
+    assert(ptr >= *buf);
+    return ptr;
 }
 
 #    endif // defined(AVS_COMMONS_WITHOUT_64BIT_FORMAT_SPECIFIERS) ||
