@@ -437,32 +437,17 @@ static bool has_dane_ta_or_ee_entries(ssl_socket_t *socket) {
     return false;
 }
 
-static int verify_cert_cb(void *socket_,
-                          mbedtls_x509_crt *crt,
-                          int index,
-                          uint32_t *verify_result_flags) {
-    (void) verify_result_flags;
-    // This callback is called for each certificate in the chain
-    // Starting for the topmost (root) certificate, with highest index
-    // And then iterates down to index 0 (the actual peer certificate)
-    ssl_socket_t *socket = (ssl_socket_t *) socket_;
-    assert(socket->security_mode == AVS_NET_SECURITY_CERTIFICATE);
+static void reset_dane_verify_state(ssl_socket_t *socket) {
+    socket->security.cert.dane_verify_state.match_mask = 0;
+    socket->security.cert.dane_verify_state.verify_result_flags = 0;
+}
 
-    if (socket->security.cert.ca_cert == socket->security.cert.dane_ta_certs
-            && !has_dane_ta_or_ee_entries(socket)) {
-        // No global trust store (opportunistic DANE) and no DANE-TA or DANE-EE
-        // entries; this is unusable, so fall back to no verification
-        return 0;
-    }
-
-    if (index != socket->security.cert.dane_verify_state.last_known_index - 1) {
-        // First entry (root certificate)
-        socket->security.cert.dane_verify_state.match_mask = 0;
-        socket->security.cert.dane_verify_state.verify_result_flags = 0;
-    }
-    socket->security.cert.dane_verify_state.last_known_index = index;
+static void update_dane_verify_state(ssl_socket_t *socket,
+                                     mbedtls_x509_crt *crt,
+                                     bool is_ee,
+                                     uint32_t verify_result_flags) {
     socket->security.cert.dane_verify_state.verify_result_flags |=
-            *verify_result_flags;
+            verify_result_flags;
 
     for (size_t i = 0; i < socket->security.cert.dane_tlsa.array_element_count;
          ++i) {
@@ -477,7 +462,7 @@ static int verify_cert_cb(void *socket_,
                      == AVS_NET_SOCKET_DANE_SERVICE_CERTIFICATE_CONSTRAINT
              || entry->certificate_usage
                         == AVS_NET_SOCKET_DANE_DOMAIN_ISSUED_CERTIFICATE)
-                != (index == 0)) {
+                != is_ee) {
             // TA/EE mismatch
             continue;
         }
@@ -486,13 +471,9 @@ static int verify_cert_cb(void *socket_,
                     (uint8_t) (1 << entry->certificate_usage);
         }
     }
+}
 
-    if (index != 0) {
-        return 0;
-    }
-
-    // index == 0, handle final verification
-
+static uint32_t perform_cert_verification(ssl_socket_t *socket) {
     // If the only problem with the certificate is that it failed PKIX
     // verification, but we are using DANE and have matched DANE-TA or
     // DANE-EE entry, it's a success
@@ -514,18 +495,55 @@ static int verify_cert_cb(void *socket_,
             && !(socket->security.cert.dane_verify_state.match_mask
                  & dane_valid_matches)) {
         LOG(ERROR, _("DANE certificate verification failed"));
-        *verify_result_flags |= MBEDTLS_X509_BADCERT_NOT_TRUSTED;
-        return MBEDTLS_ERR_X509_FATAL_ERROR;
+        return MBEDTLS_X509_BADCERT_NOT_TRUSTED;
     }
 
-    if (socket->security.cert.dane_verify_state.verify_result_flags) {
-        LOG(ERROR, _("server certificate verification failure: ") "%" PRIu32,
-            socket->security.cert.dane_verify_state.verify_result_flags);
-        if (socket->security.cert.dane_verify_state.verify_result_flags
-                == MBEDTLS_X509_BADCERT_MISSING) {
-            return MBEDTLS_ERR_SSL_NO_CLIENT_CERTIFICATE;
-        } else {
-            return MBEDTLS_ERR_X509_FATAL_ERROR;
+    return socket->security.cert.dane_verify_state.verify_result_flags;
+}
+
+static int verify_cert_cb(void *socket_,
+                          mbedtls_x509_crt *crt,
+                          int index,
+                          uint32_t *verify_result_flags) {
+    // This callback is called for each certificate in the chain
+    // Starting for the topmost (root) certificate, with highest index
+    // And then iterates down to index 0 (the actual peer certificate)
+    ssl_socket_t *socket = (ssl_socket_t *) socket_;
+    assert(socket->security_mode == AVS_NET_SECURITY_CERTIFICATE);
+    assert(socket->security.cert.dane_ta_certs);
+
+    if (socket->security.cert.ca_cert == socket->security.cert.dane_ta_certs
+            && !has_dane_ta_or_ee_entries(socket)) {
+        // No global trust store (opportunistic DANE) and no DANE-TA or DANE-EE
+        // entries; this is unusable, so fall back to no verification
+        return 0;
+    }
+
+    if (index != socket->security.cert.dane_verify_state.last_known_index - 1) {
+        // First entry (root certificate)
+        reset_dane_verify_state(socket);
+    }
+    socket->security.cert.dane_verify_state.last_known_index = index;
+    update_dane_verify_state(socket, crt, /* is_ee = */ index == 0,
+                             *verify_result_flags);
+
+    if (index == 0) {
+        // End of the chain, perform actual verification
+        uint32_t verify_result = perform_cert_verification(socket);
+        *verify_result_flags |= verify_result;
+
+        // We are configured to MBEDTLS_SSL_VERIFY_OPTIONAL, so verification
+        // flags would normally be ignored. Let's replicate the logic of
+        // MBEDTLS_SSL_VERIFY_REQUIRED instead.
+        if (verify_result) {
+            LOG(ERROR,
+                _("server certificate verification failure: ") "%" PRIu32,
+                verify_result);
+            if (verify_result == MBEDTLS_X509_BADCERT_MISSING) {
+                return MBEDTLS_ERR_SSL_NO_CLIENT_CERTIFICATE;
+            } else {
+                return MBEDTLS_ERR_X509_FATAL_ERROR;
+            }
         }
     }
 
