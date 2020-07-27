@@ -122,8 +122,9 @@ avs_crypto_trusted_cert_info_from_path(const char *path);
  * Creates CA chain descriptor used later on to load CA chain from memory
  * @p buffer.
  *
- * NOTE: Lifetime of the @p buffer must be as long as lifetime of any (D)TLS
- * sockets that used this descriptor to perform configuration.
+ * The data is copied during @ref avs_net_ssl_socket_create or
+ * @ref avs_net_dtls_socket_create, and the user-provided buffer may be freed
+ * afterwards.
  *
  * @param buffer        Buffer where loaded CA chain is stored.
  * @param buffer_size   Size in bytes of the buffer.
@@ -136,15 +137,8 @@ avs_crypto_trusted_cert_info_from_buffer(const void *buffer,
  * Creates CA chain descriptor used later on to load CA chain from an array of
  * existing CA chains.
  *
- * NOTE: Lifetime of all elements of the array pointed to by @p array_ptr must
- * be as long as lifetime of any (D)TLS sockets that used this descriptor to
- * perform configuration.
- *
- * NOTE: There is no protection against defining cyclic structures. Attempting
- * to do so is undefined behavior.
- *
- * NOTE: Modifying contents of the array while a socket configured to use it
- * exists is undefined behavior.
+ * The data is copied during @ref avs_net_ssl_socket_create or
+ * @ref avs_net_dtls_socket_create, and the array may be freed afterwards.
  *
  * @param array_ptr           Pointer to an array of trusted certificate chains.
  * @param array_element_count Number of elements in the @p array_ptr array.
@@ -192,15 +186,8 @@ avs_error_t avs_crypto_trusted_cert_info_copy_as_array(
  * Creates CA chain descriptor used later on to load CA chain from a list of
  * existing CA chains.
  *
- * NOTE: Lifetime of all elements of the array pointed to by @p list must be as
- * long as lifetime of any (D)TLS sockets that used this descriptor to
- * perform configuration.
- *
- * NOTE: There is no protection against defining cyclic structures. Attempting
- * to do so is undefined behavior.
- *
- * NOTE: Modifying contents of the list while a socket configured to use it
- * exists is undefined behavior.
+ * The data is copied during @ref avs_net_ssl_socket_create or
+ * @ref avs_net_dtls_socket_create, and the list may be freed afterwards.
  *
  * @param array_ptr           Pointer to an array of trusted certificate chains.
  * @param array_element_count Number of elements in the @p array_ptr array.

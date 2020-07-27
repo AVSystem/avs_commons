@@ -67,6 +67,13 @@ void avs_http_ssl_configuration(
     http->ssl_configuration = ssl_configuration;
 }
 
+void avs_http_ssl_pre_connect_cb(avs_http_t *http,
+                                 avs_http_ssl_pre_connect_cb_t *cb,
+                                 void *user_ptr) {
+    http->ssl_pre_connect_cb = cb;
+    http->ssl_pre_connect_cb_arg = user_ptr;
+}
+
 void avs_http_tcp_configuration(
         avs_http_t *http,
         const volatile avs_net_socket_configuration_t *tcp_configuration) {

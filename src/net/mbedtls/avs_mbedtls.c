@@ -64,15 +64,55 @@
 #    endif // AVS_COMMONS_WITH_AVS_CRYPTO_PKI
 #    include "avs_mbedtls_persistence.h"
 
+#    if defined(AVS_COMMONS_WITH_AVS_CRYPTO_PKI) && defined(MBEDTLS_SHA256_C) \
+            && defined(MBEDTLS_SHA512_C)
+#        include <mbedtls/sha256.h>
+#        include <mbedtls/sha512.h>
+#        define WITH_DANE_SUPPORT
+#        define dane_tlsa_array_field security.cert.dane_tlsa
+#    endif // defined(AVS_COMMONS_WITH_AVS_CRYPTO_PKI) &&
+           // defined(MBEDTLS_SHA256_C) && defined(MBEDTLS_SHA512_C)
+
 #    include "../avs_net_impl.h"
 
 VISIBILITY_SOURCE_BEGIN
 
 #    ifdef AVS_COMMONS_WITH_AVS_CRYPTO_PKI
+#        ifdef WITH_DANE_SUPPORT
+typedef struct {
+    int last_known_index;
+
+    // bitmask indexed by avs_net_socket_dane_certificate_usage_t
+    // i.e., (match_mask & (1 << 0)) - PKIX-TA matched
+    //       (match_mask & (1 << 1)) - PKIX-EE matched
+    //       (match_mask & (1 << 2)) - DANE-TA matched
+    //       (match_mask & (1 << 3)) - DANE-EE matched
+    uint8_t match_mask;
+
+    uint32_t verify_result_flags;
+} dane_verify_state_t;
+
+#            define DANE_TA_OR_EE_MATCH_MASK                       \
+                ((1 << AVS_NET_SOCKET_DANE_TRUST_ANCHOR_ASSERTION) \
+                 | (1 << AVS_NET_SOCKET_DANE_DOMAIN_ISSUED_CERTIFICATE))
+
+#            define DANE_FULL_MATCH_MASK                    \
+                (DANE_TA_OR_EE_MATCH_MASK                   \
+                 | (1 << AVS_NET_SOCKET_DANE_CA_CONSTRAINT) \
+                 | (1 << AVS_NET_SOCKET_DANE_SERVICE_CERTIFICATE_CONSTRAINT))
+#        endif // WITH_DANE_SUPPORT
+
 typedef struct {
     mbedtls_x509_crt *ca_cert;
     mbedtls_x509_crt *client_cert;
     mbedtls_pk_context *client_key;
+#        ifdef WITH_DANE_SUPPORT
+    // dane_ta_certs the original last element of ca_cert chain;
+    // if NULL, it means that DANE is disabled
+    mbedtls_x509_crt *dane_ta_certs;
+    avs_net_socket_dane_tlsa_array_t dane_tlsa;
+    dane_verify_state_t dane_verify_state;
+#        endif // WITH_DANE_SUPPORT
 } ssl_socket_certs_t;
 #    endif // AVS_COMMONS_WITH_AVS_CRYPTO_PKI
 
@@ -328,10 +368,188 @@ static int *init_cert_ciphersuites(
     return ciphers;
 }
 
-static uint8_t is_verification_enabled(ssl_socket_t *socket) {
-    return socket->security_mode == AVS_NET_SECURITY_CERTIFICATE
-           && socket->security.cert.ca_cert != NULL;
+#        ifdef WITH_DANE_SUPPORT
+static bool dane_match_buffer(const unsigned char *buf,
+                              size_t buf_len,
+                              const avs_net_socket_dane_tlsa_record_t *entry) {
+    switch (entry->matching_type) {
+    case AVS_NET_SOCKET_DANE_MATCH_FULL:
+        return entry->association_data_size == buf_len
+               && memcmp(entry->association_data, buf, buf_len) == 0;
+    case AVS_NET_SOCKET_DANE_MATCH_SHA256: {
+        unsigned char sha[32];
+        if (entry->association_data_size != sizeof(sha)) {
+            return false;
+        }
+        return !mbedtls_sha256_ret(buf, buf_len, sha, 0)
+               && memcmp(entry->association_data, sha, sizeof(sha)) == 0;
+    }
+    case AVS_NET_SOCKET_DANE_MATCH_SHA512: {
+        unsigned char sha[64];
+        if (entry->association_data_size != sizeof(sha)) {
+            return false;
+        }
+        return !mbedtls_sha512_ret(buf, buf_len, sha, 0)
+               && memcmp(entry->association_data, sha, sizeof(sha)) == 0;
+    }
+    }
+    AVS_UNREACHABLE("Invalid matching type");
+    return false;
 }
+
+static bool dane_match(mbedtls_x509_crt *crt,
+                       const avs_net_socket_dane_tlsa_record_t *entry) {
+    switch (entry->selector) {
+    case AVS_NET_SOCKET_DANE_CERTIFICATE:
+        return dane_match_buffer(crt->raw.p, crt->raw.len, entry);
+    case AVS_NET_SOCKET_DANE_PUBLIC_KEY: {
+        unsigned char *buf = (unsigned char *) avs_malloc(crt->raw.len);
+        if (!buf) {
+            LOG(ERROR, _("Out of memory"));
+            return false;
+        }
+        // Note: mbedtls_pk_write_pubkey_der() writes data at the end of buffer
+        int length = mbedtls_pk_write_pubkey_der(&crt->pk, buf, crt->raw.len);
+        bool result =
+                (length >= 0
+                 && dane_match_buffer(&buf[crt->raw.len - (size_t) length],
+                                      (size_t) length, entry));
+        avs_free(buf);
+        return result;
+    }
+    }
+    AVS_UNREACHABLE("Invalid selector");
+    return false;
+}
+
+static bool has_dane_ta_or_ee_entries(ssl_socket_t *socket) {
+    for (size_t i = 0; i < socket->security.cert.dane_tlsa.array_element_count;
+         ++i) {
+        const avs_net_socket_dane_tlsa_record_t *const entry =
+                &socket->security.cert.dane_tlsa.array_ptr[i];
+        if (entry->certificate_usage
+                        == AVS_NET_SOCKET_DANE_TRUST_ANCHOR_ASSERTION
+                || entry->certificate_usage
+                               == AVS_NET_SOCKET_DANE_DOMAIN_ISSUED_CERTIFICATE) {
+            return true;
+        }
+    }
+    return false;
+}
+
+static void reset_dane_verify_state(ssl_socket_t *socket) {
+    socket->security.cert.dane_verify_state.match_mask = 0;
+    socket->security.cert.dane_verify_state.verify_result_flags = 0;
+}
+
+static void update_dane_verify_state(ssl_socket_t *socket,
+                                     mbedtls_x509_crt *crt,
+                                     bool is_ee,
+                                     uint32_t verify_result_flags) {
+    socket->security.cert.dane_verify_state.verify_result_flags |=
+            verify_result_flags;
+
+    for (size_t i = 0; i < socket->security.cert.dane_tlsa.array_element_count;
+         ++i) {
+        const avs_net_socket_dane_tlsa_record_t *const entry =
+                &socket->security.cert.dane_tlsa.array_ptr[i];
+        if (socket->security.cert.dane_verify_state.match_mask
+                & (1 << entry->certificate_usage)) {
+            // Certificate usage already satisfied, no need to check again
+            continue;
+        }
+        if ((entry->certificate_usage
+                     == AVS_NET_SOCKET_DANE_SERVICE_CERTIFICATE_CONSTRAINT
+             || entry->certificate_usage
+                        == AVS_NET_SOCKET_DANE_DOMAIN_ISSUED_CERTIFICATE)
+                != is_ee) {
+            // TA/EE mismatch
+            continue;
+        }
+        if (dane_match(crt, entry)) {
+            socket->security.cert.dane_verify_state.match_mask |=
+                    (uint8_t) (1 << entry->certificate_usage);
+        }
+    }
+}
+
+static uint32_t perform_cert_verification(ssl_socket_t *socket) {
+    // If the only problem with the certificate is that it failed PKIX
+    // verification, but we are using DANE and have matched DANE-TA or
+    // DANE-EE entry, it's a success
+    if (socket->security.cert.dane_verify_state.verify_result_flags
+                    == MBEDTLS_X509_BADCERT_NOT_TRUSTED
+            && (socket->security.cert.dane_verify_state.match_mask
+                & DANE_TA_OR_EE_MATCH_MASK)) {
+        return 0;
+    }
+
+    uint8_t dane_valid_matches = (socket->security.cert.ca_cert
+                                  == socket->security.cert.dane_ta_certs)
+                                         ? DANE_TA_OR_EE_MATCH_MASK
+                                         : DANE_FULL_MATCH_MASK;
+    // If verification succeeded,
+    // check if DANE verification succeeded as well
+    if (!socket->security.cert.dane_verify_state.verify_result_flags
+            && socket->security.cert.dane_tlsa.array_element_count > 0
+            && !(socket->security.cert.dane_verify_state.match_mask
+                 & dane_valid_matches)) {
+        LOG(ERROR, _("DANE certificate verification failed"));
+        return MBEDTLS_X509_BADCERT_NOT_TRUSTED;
+    }
+
+    return socket->security.cert.dane_verify_state.verify_result_flags;
+}
+
+static int verify_cert_cb(void *socket_,
+                          mbedtls_x509_crt *crt,
+                          int index,
+                          uint32_t *verify_result_flags) {
+    // This callback is called for each certificate in the chain
+    // Starting for the topmost (root) certificate, with highest index
+    // And then iterates down to index 0 (the actual peer certificate)
+    ssl_socket_t *socket = (ssl_socket_t *) socket_;
+    assert(socket->security_mode == AVS_NET_SECURITY_CERTIFICATE);
+    assert(socket->security.cert.dane_ta_certs);
+
+    if (socket->security.cert.ca_cert == socket->security.cert.dane_ta_certs
+            && !has_dane_ta_or_ee_entries(socket)) {
+        // No global trust store (opportunistic DANE) and no DANE-TA or DANE-EE
+        // entries; this is unusable, so fall back to no verification
+        return 0;
+    }
+
+    if (index != socket->security.cert.dane_verify_state.last_known_index - 1) {
+        // First entry (root certificate)
+        reset_dane_verify_state(socket);
+    }
+    socket->security.cert.dane_verify_state.last_known_index = index;
+    update_dane_verify_state(socket, crt, /* is_ee = */ index == 0,
+                             *verify_result_flags);
+
+    if (index == 0) {
+        // End of the chain, perform actual verification
+        uint32_t verify_result = perform_cert_verification(socket);
+        *verify_result_flags |= verify_result;
+
+        // We are configured to MBEDTLS_SSL_VERIFY_OPTIONAL, so verification
+        // flags would normally be ignored. Let's replicate the logic of
+        // MBEDTLS_SSL_VERIFY_REQUIRED instead.
+        if (verify_result) {
+            LOG(ERROR,
+                _("server certificate verification failure: ") "%" PRIu32,
+                verify_result);
+            if (verify_result == MBEDTLS_X509_BADCERT_MISSING) {
+                return MBEDTLS_ERR_SSL_NO_CLIENT_CERTIFICATE;
+            } else {
+                return MBEDTLS_ERR_X509_FATAL_ERROR;
+            }
+        }
+    }
+
+    return 0;
+}
+#        endif // WITH_DANE_SUPPORT
 
 static avs_error_t initialize_cert_security(
         ssl_socket_t *socket,
@@ -343,7 +561,20 @@ static avs_error_t initialize_cert_security(
     }
 
     if (socket->security.cert.ca_cert) {
-        mbedtls_ssl_conf_authmode(&socket->config, MBEDTLS_SSL_VERIFY_REQUIRED);
+#        ifdef WITH_DANE_SUPPORT
+        if (socket->security.cert.dane_ta_certs) {
+            // NOTE: When verify_cert_cb() fails, the whole verification routine
+            // fails as well, so this is effectively equivalent to modified
+            // MBEDTLS_SSL_VERIFY_REQUIRED.
+            mbedtls_ssl_conf_authmode(&socket->config,
+                                      MBEDTLS_SSL_VERIFY_OPTIONAL);
+            mbedtls_ssl_conf_verify(&socket->config, verify_cert_cb, socket);
+        } else
+#        endif // WITH_DANE_SUPPORT
+        {
+            mbedtls_ssl_conf_authmode(&socket->config,
+                                      MBEDTLS_SSL_VERIFY_REQUIRED);
+        }
         mbedtls_ssl_conf_ca_chain(&socket->config,
                                   socket->security.cert.ca_cert, NULL);
     } else {
@@ -360,9 +591,47 @@ static avs_error_t initialize_cert_security(
                                   socket->effective_ciphersuites);
     return AVS_OK;
 }
+
+static avs_error_t update_cert_configuration(ssl_socket_t *socket) {
+    if (socket->security_mode != AVS_NET_SECURITY_CERTIFICATE) {
+        return AVS_OK;
+    }
+
+#        ifdef WITH_DANE_SUPPORT
+    if (socket->security.cert.dane_ta_certs) {
+        // 2 0 0 (DANE-TA / Entire certificate / Entire information) data
+        // shall be included as part of the trust store
+
+        // First, remove any previous entries
+        mbedtls_x509_crt_free(socket->security.cert.dane_ta_certs);
+        mbedtls_x509_crt_init(socket->security.cert.dane_ta_certs);
+        // And now, add the relevant entries
+        for (size_t i = 0;
+             i < socket->security.cert.dane_tlsa.array_element_count;
+             ++i) {
+            const avs_net_socket_dane_tlsa_record_t *const entry =
+                    &socket->security.cert.dane_tlsa.array_ptr[i];
+            if (entry->certificate_usage
+                            == AVS_NET_SOCKET_DANE_TRUST_ANCHOR_ASSERTION
+                    && entry->selector == AVS_NET_SOCKET_DANE_CERTIFICATE
+                    && entry->matching_type == AVS_NET_SOCKET_DANE_MATCH_FULL
+                    && mbedtls_x509_crt_parse_der(
+                               socket->security.cert.dane_ta_certs,
+                               (const unsigned char *) entry->association_data,
+                               entry->association_data_size)) {
+                return avs_errno(AVS_EPROTO);
+            }
+        }
+    }
+#        endif // WITH_DANE_SUPPORT
+
+    mbedtls_ssl_conf_ca_chain(&socket->config, socket->security.cert.ca_cert,
+                              NULL);
+    return AVS_OK;
+}
 #    else // AVS_COMMONS_WITH_AVS_CRYPTO_PKI
-#        define is_verification_enabled(...) 0
 #        define initialize_cert_security(...) avs_errno(AVS_ENOTSUP)
+#        define update_cert_configuration(...) AVS_OK
 #    endif // AVS_COMMONS_WITH_AVS_CRYPTO_PKI
 
 #    ifdef AVS_COMMONS_NET_WITH_PSK
@@ -626,6 +895,9 @@ static avs_error_t start_ssl(ssl_socket_t *socket, const char *host) {
     mbedtls_ssl_set_timer_cb(get_context(socket), &socket->timer,
                              mbedtls_timing_set_delay,
                              mbedtls_timing_get_delay);
+    if (avs_is_err((err = update_cert_configuration(socket)))) {
+        goto finish;
+    }
     if ((result = mbedtls_ssl_setup(get_context(socket), &socket->config))) {
         LOG(ERROR, _("mbedtls_ssl_setup() failed: ") "%d", result);
         err = avs_errno(AVS_ENOMEM);
@@ -740,17 +1012,6 @@ static avs_error_t start_ssl(ssl_socket_t *socket, const char *host) {
         LOG(ERROR, _("handshake failed: ") "%d", result);
     }
 
-    if (avs_is_ok(err) && !socket->flags.session_restored
-            && is_verification_enabled(socket)) {
-        uint32_t verify_result =
-                mbedtls_ssl_get_verify_result(get_context(socket));
-        if (verify_result) {
-            LOG(ERROR,
-                _("server certificate verification failure: ") "%" PRIu32,
-                verify_result);
-            err = avs_errno(AVS_EPROTO);
-        }
-    }
 finish:
 #    ifdef AVS_COMMONS_NET_WITH_TLS_SESSION_PERSISTENCE
     mbedtls_ssl_session_free(&restored_session);
@@ -885,16 +1146,21 @@ static avs_error_t receive_ssl(avs_net_socket_t *socket_,
 static void cleanup_security_cert(ssl_socket_certs_t *certs) {
     if (certs->ca_cert) {
         mbedtls_x509_crt_free(certs->ca_cert);
-        avs_free(certs->ca_cert);
+        mbedtls_free(certs->ca_cert);
     }
     if (certs->client_cert) {
         mbedtls_x509_crt_free(certs->client_cert);
-        avs_free(certs->client_cert);
+        mbedtls_free(certs->client_cert);
     }
     if (certs->client_key) {
         mbedtls_pk_free(certs->client_key);
         avs_free(certs->client_key);
     }
+#        ifdef WITH_DANE_SUPPORT
+    // NOTE: Not freeing dane_ta_certs, as it is supposed to be on the
+    // ca_cert chain, so has been freed together with ca_cert
+    avs_free((void *) (intptr_t) (const void *) certs->dane_tlsa.array_ptr);
+#        endif // WITH_DANE_SUPPORT
 }
 #    else // AVS_COMMONS_WITH_AVS_CRYPTO_PKI
 #        define cleanup_security_cert(...) (void) 0
@@ -953,6 +1219,25 @@ configure_ssl_certs(ssl_socket_certs_t *certs,
         }
     } else {
         LOG(DEBUG, _("Server authentication disabled"));
+    }
+
+    if (cert_info->dane) {
+#        ifdef WITH_DANE_SUPPORT
+        mbedtls_x509_crt **insert_ptr = &certs->ca_cert;
+        while (*insert_ptr) {
+            insert_ptr = &(*insert_ptr)->next;
+        }
+        if (!(*insert_ptr = (mbedtls_x509_crt *) mbedtls_calloc(
+                      1, sizeof(**insert_ptr)))) {
+            LOG(ERROR, _("Out of memory"));
+            return avs_errno(AVS_ENOMEM);
+        }
+        mbedtls_x509_crt_init(*insert_ptr);
+        certs->dane_ta_certs = *insert_ptr;
+#        else  // WITH_DANE_SUPPORT
+        LOG(ERROR, _("DANE not supported"));
+        return avs_errno(AVS_ENOTSUP);
+#        endif // WITH_DANE_SUPPORT
     }
 
     if (cert_info->client_cert.desc.source != AVS_CRYPTO_DATA_SOURCE_EMPTY) {

@@ -284,15 +284,78 @@ static int get_socket_inner_mtu_or_zero(avs_net_socket_t *sock) {
     }
 }
 
+#ifdef WITH_DANE_SUPPORT
+static avs_error_t calculate_copied_tlsa_array_size(size_t *out_size_bytes,
+                                                    size_t record_count) {
+    if (record_count > SIZE_MAX / sizeof(avs_net_socket_dane_tlsa_record_t)) {
+        return avs_errno(AVS_ENOMEM);
+    }
+    *out_size_bytes = record_count * sizeof(avs_net_socket_dane_tlsa_record_t);
+    return AVS_OK;
+}
+
+static avs_error_t
+set_dane_tlsa_array(ssl_socket_t *socket,
+                    const avs_net_socket_dane_tlsa_array_t *array) {
+    size_t array_buffer_size = 0;
+    avs_error_t err =
+            calculate_copied_tlsa_array_size(&array_buffer_size,
+                                             array->array_element_count);
+    size_t buffer_size = array_buffer_size;
+    for (size_t i = 0; avs_is_ok(err) && i < array->array_element_count; ++i) {
+        if (buffer_size
+                > SIZE_MAX - array->array_ptr[i].association_data_size) {
+            err = avs_errno(AVS_ENOMEM);
+        } else {
+            buffer_size += array->array_ptr[i].association_data_size;
+        }
+    }
+    avs_net_socket_dane_tlsa_record_t *copied_array = NULL;
+    if (avs_is_ok(err)
+            && !(copied_array = (avs_net_socket_dane_tlsa_record_t *)
+                         avs_malloc(buffer_size))) {
+        err = avs_errno(AVS_ENOMEM);
+    }
+    if (avs_is_err(err)) {
+        LOG(ERROR, _("Out of memory"));
+        return err;
+    }
+    avs_free((void *) (intptr_t) (const void *)
+                     socket->dane_tlsa_array_field.array_ptr);
+    socket->dane_tlsa_array_field.array_ptr = copied_array;
+    socket->dane_tlsa_array_field.array_element_count =
+            array->array_element_count;
+    memcpy(copied_array, array->array_ptr,
+           array->array_element_count
+                   * sizeof(avs_net_socket_dane_tlsa_record_t));
+    char *data_buffer_ptr = (char *) &copied_array[array->array_element_count];
+    for (size_t i = 0; avs_is_ok(err) && i < array->array_element_count; ++i) {
+        copied_array[i].association_data = data_buffer_ptr;
+        memcpy(data_buffer_ptr, array->array_ptr[i].association_data,
+               array->array_ptr[i].association_data_size);
+        data_buffer_ptr += array->array_ptr[i].association_data_size;
+    }
+    return AVS_OK;
+}
+#endif // WITH_DANE_SUPPORT
+
 static avs_error_t set_opt_ssl(avs_net_socket_t *ssl_socket_,
                                avs_net_socket_opt_key_t option_key,
                                avs_net_socket_opt_value_t option_value) {
     ssl_socket_t *ssl_socket = (ssl_socket_t *) ssl_socket_;
-    if (!ssl_socket->backend_socket) {
-        return avs_errno(AVS_EBADF);
+    switch (option_key) {
+#ifdef WITH_DANE_SUPPORT
+    case AVS_NET_SOCKET_OPT_DANE_TLSA_ARRAY:
+        return set_dane_tlsa_array(ssl_socket, &option_value.dane_tlsa_array);
+#endif // WITH_DANE_SUPPORT
+    default:
+        if (!ssl_socket->backend_socket) {
+            return avs_errno(AVS_EBADF);
+        } else {
+            return avs_net_socket_set_opt(ssl_socket->backend_socket,
+                                          option_key, option_value);
+        }
     }
-    return avs_net_socket_set_opt(ssl_socket->backend_socket, option_key,
-                                  option_value);
 }
 
 static avs_error_t get_opt_ssl(avs_net_socket_t *ssl_socket_,

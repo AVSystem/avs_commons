@@ -101,6 +101,8 @@ avs_error_t _avs_http_socket_new(avs_net_socket_t **out,
     if (client->tcp_configuration) {
         ssl_config_full.backend_configuration = *client->tcp_configuration;
     }
+    const char *host = avs_url_host(url);
+    const char *port = resolve_port(url);
     avs_error_t err = avs_errno(AVS_EINVAL);
     switch (check_protocol(avs_url_protocol(url))) {
     case HTTP_URI_PROTOCOL_HTTP:
@@ -110,7 +112,13 @@ avs_error_t _avs_http_socket_new(avs_net_socket_t **out,
         break;
     case HTTP_URI_PROTOCOL_HTTPS:
         LOG(TRACE, _("creating SSL socket"));
-        err = avs_net_ssl_socket_create(out, &ssl_config_full);
+        if (avs_is_ok((err = avs_net_ssl_socket_create(out, &ssl_config_full)))
+                && client->ssl_pre_connect_cb
+                && avs_is_err((err = client->ssl_pre_connect_cb(
+                                       client, *out, host, port,
+                                       client->ssl_pre_connect_cb_arg)))) {
+            avs_net_socket_cleanup(out);
+        }
         break;
     case HTTP_URI_PROTOCOL_UNKNOWN:
         break;
@@ -118,8 +126,7 @@ avs_error_t _avs_http_socket_new(avs_net_socket_t **out,
     if (avs_is_ok(err)) {
         assert(*out);
         LOG(TRACE, _("socket OK, connecting"));
-        err = avs_net_socket_connect(*out, avs_url_host(url),
-                                     resolve_port(url));
+        err = avs_net_socket_connect(*out, host, port);
     }
     if (avs_is_err(err)) {
         avs_net_socket_cleanup(out);
