@@ -130,6 +130,7 @@ static avs_error_t persist_sized_buffer(avs_persistence_context_t *ctx,
             _("Element too big to persist (") "%lu" _(
                     " is larger than ") "%" PRIu32 _(")"),
             (unsigned long) *size_ptr, UINT32_MAX);
+        return avs_errno(AVS_EOVERFLOW);
     }
     avs_error_t err = persist_u32(ctx, &size32);
     if (avs_is_ok(err) && size32 > 0) {
