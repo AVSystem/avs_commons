@@ -133,14 +133,19 @@ static avs_error_t http_auth_response(avs_stream_t *md5,
     return AVS_OK;
 }
 
-static void generate_random_nonce(char out[17], unsigned *random_seed) {
+typedef struct {
+    char data[2 * sizeof(uint64_t) + 1];
+} nonce_t;
+
+static void generate_random_nonce(nonce_t *nonce, unsigned *random_seed) {
     size_t i;
     uint64_t client_nonce;
     for (i = 0; i < sizeof(client_nonce); ++i) {
         ((unsigned char *) &client_nonce)[i] =
                 (unsigned char) (avs_rand_r(random_seed) & 0xFF);
     }
-    sprintf(out, "%016" PRIX64, client_nonce);
+    (void) avs_hexlify(nonce->data, sizeof(nonce->data), NULL, &client_nonce,
+                       sizeof(uint64_t));
 }
 
 avs_error_t _avs_http_auth_send_header_digest(http_stream_t *stream) {
@@ -148,7 +153,7 @@ avs_error_t _avs_http_auth_send_header_digest(http_stream_t *stream) {
     char nc[9];
     avs_error_t err = avs_errno(AVS_ENOMEM);
     avs_error_t stream_cleanup_err;
-    char client_nonce[17];
+    nonce_t client_nonce;
     avs_stream_t *md5 = avs_stream_md5_create();
 
     if (!md5) {
@@ -156,17 +161,17 @@ avs_error_t _avs_http_auth_send_header_digest(http_stream_t *stream) {
     }
 
     sprintf(nc, "%08" PRIx32, stream->auth.state.nc++);
-    generate_random_nonce(client_nonce, &stream->random_seed);
+    generate_random_nonce(&client_nonce, &stream->random_seed);
 
-    if (avs_is_err((
-                err = http_auth_ha1(md5, &stream->auth, client_nonce, &HA1hex)))
+    if (avs_is_err((err = http_auth_ha1(md5, &stream->auth, client_nonce.data,
+                                        &HA1hex)))
             || avs_is_err((err = http_auth_ha2(md5, stream->method,
                                                avs_url_path(stream->url),
                                                &HA2hex)))
             || avs_is_err((err = http_auth_response(
                                    md5, &stream->auth, HA1hex, HA2hex,
-                                   stream->auth.state.nonce, nc, client_nonce,
-                                   &hash)))) {
+                                   stream->auth.state.nonce, nc,
+                                   client_nonce.data, &hash)))) {
         goto auth_digest_error;
     }
 
@@ -202,7 +207,7 @@ avs_error_t _avs_http_auth_send_header_digest(http_stream_t *stream) {
                                                          ", qop=auth")))
                     || avs_is_err((err = avs_stream_write_f(stream->backend,
                                                             ", cnonce=\"%s\"",
-                                                            client_nonce)))
+                                                            client_nonce.data)))
                     || avs_is_err((err = avs_stream_write_f(stream->backend,
                                                             ", nc=%s", nc)))))
             || avs_is_err((err = avs_stream_write_f(stream->backend, "\r\n"))));

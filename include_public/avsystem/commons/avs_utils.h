@@ -353,6 +353,50 @@ bool avs_double_convertible_to_int64(double value);
  */
 bool avs_double_convertible_to_uint64(double value);
 
+/**
+ * Internal implementation for @ref AVS_UINT64_AS_STRING .
+ */
+const char *
+avs_uint64_as_string_impl__(char (*buf)[AVS_UINT_STR_BUF_SIZE(uint64_t)],
+                            uint64_t value);
+
+/**
+ * Converts an @c uint64_t value to string.
+ *
+ * If @c WITHOUT_64BIT_FORMAT_SPECIFIERS is defined, it uses custom
+ * implementation of conversion. Otherwise, @c snprintf() is used.
+ *
+ * @param Value Value to convert to string.
+ *
+ * @returns Pointer to a temporary (stack-allocated, valid until the end of the
+ *          enclosing code block) string representation of @p Value .
+ */
+#define AVS_UINT64_AS_STRING(Value) \
+    avs_uint64_as_string_impl__(    \
+            &(char[AVS_UINT_STR_BUF_SIZE(uint64_t)]){ "" }, (Value))
+
+/**
+ * Internal implementation for @ref AVS_INT64_AS_STRING .
+ */
+const char *
+avs_int64_as_string_impl__(char (*buf)[AVS_INT_STR_BUF_SIZE(uint64_t)],
+                           int64_t value);
+
+/**
+ * Converts an @c int64_t value to string.
+ *
+ * If @c WITHOUT_64BIT_FORMAT_SPECIFIERS is defined, it uses custom
+ * implementation of conversion. Otherwise, @c snprintf() is used.
+ *
+ * @param Value Value to convert to string.
+ *
+ * @returns Pointer to a temporary (stack-allocated, valid until the end of the
+ *          enclosing code block) string representation of @p Value .
+ */
+#define AVS_INT64_AS_STRING(Value)                                           \
+    avs_int64_as_string_impl__(&(char[AVS_INT_STR_BUF_SIZE(int64_t)]){ "" }, \
+                               (Value))
+
 #ifdef __cplusplus
 }
 #endif

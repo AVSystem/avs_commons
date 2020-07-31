@@ -339,7 +339,7 @@ void avs_sched_run(avs_sched_t *sched) {
     assert(sched);
     avs_time_monotonic_t now = avs_time_monotonic_now();
 
-    uint64_t tasks_executed = 0;
+    uint32_t tasks_executed = 0;
     AVS_LIST(avs_sched_job_t) job = NULL;
     while ((job = fetch_job(sched, now))) {
         assert(job->sched == sched);
@@ -347,7 +347,7 @@ void avs_sched_run(avs_sched_t *sched) {
         ++tasks_executed;
     }
 
-    SCHED_LOG(sched, TRACE, "%" PRIu64 _(" jobs executed"), tasks_executed);
+    SCHED_LOG(sched, TRACE, "%" PRIu32 _(" jobs executed"), tasks_executed);
 
 #    ifdef AVS_COMMONS_WITH_INTERNAL_TRACE
     avs_time_monotonic_t next = avs_sched_time_of_next(sched);

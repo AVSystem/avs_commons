@@ -20,6 +20,7 @@
 
 #    include <assert.h>
 #    include <ctype.h>
+#    include <inttypes.h>
 #    include <stdarg.h>
 #    include <stdio.h>
 #    include <stdlib.h>
@@ -111,5 +112,76 @@ void avs_memswap(void *memptr1, void *memptr2, size_t n) {
         ptr2[i] = tmp;
     }
 }
+
+#    if defined(AVS_COMMONS_WITHOUT_64BIT_FORMAT_SPECIFIERS) \
+            || defined(AVS_UNIT_TESTING)
+
+static const char *
+uint64_as_string_custom(char (*buf)[AVS_UINT_STR_BUF_SIZE(uint64_t)],
+                        uint64_t value) {
+    char *ptr = *buf + AVS_UINT_STR_BUF_SIZE(uint64_t) - 1;
+    *ptr = '\0';
+    do {
+        ptr--;
+        *ptr = (char) (value % 10 + '0');
+        value /= 10;
+    } while (value);
+
+    assert(ptr >= *buf);
+    return ptr;
+}
+
+static const char *
+int64_as_string_custom(char (*buf)[AVS_INT_STR_BUF_SIZE(int64_t)],
+                       int64_t value) {
+    uint64_t absolute_value;
+    bool negative = false;
+    if (value < 0) {
+        absolute_value = (uint64_t) - (value + 1) + 1;
+        negative = true;
+    } else {
+        absolute_value = (uint64_t) value;
+    }
+
+    char *ptr =
+            (char *) (intptr_t) uint64_as_string_custom(buf, absolute_value);
+
+    if (negative) {
+        ptr--;
+        *ptr = '-';
+    }
+
+    assert(ptr >= *buf);
+    return ptr;
+}
+
+#    endif // defined(AVS_COMMONS_WITHOUT_64BIT_FORMAT_SPECIFIERS) ||
+           // defined(AVS_UNIT_TESTING)
+
+const char *
+avs_uint64_as_string_impl__(char (*buf)[AVS_UINT_STR_BUF_SIZE(uint64_t)],
+                            uint64_t value) {
+#    ifdef AVS_COMMONS_WITHOUT_64BIT_FORMAT_SPECIFIERS
+    return uint64_as_string_custom(buf, value);
+#    else  // AVS_COMMONS_WITHOUT_64BIT_FORMAT_SPECIFIERS
+    snprintf(*buf, AVS_UINT_STR_BUF_SIZE(uint64_t), "%" PRIu64, value);
+    return *buf;
+#    endif // AVS_COMMONS_WITHOUT_64BIT_FORMAT_SPECIFIERS
+}
+
+const char *
+avs_int64_as_string_impl__(char (*buf)[AVS_INT_STR_BUF_SIZE(int64_t)],
+                           int64_t value) {
+#    ifdef AVS_COMMONS_WITHOUT_64BIT_FORMAT_SPECIFIERS
+    return int64_as_string_custom(buf, value);
+#    else  // AVS_COMMONS_WITHOUT_64BIT_FORMAT_SPECIFIERS
+    snprintf(*buf, AVS_INT_STR_BUF_SIZE(int64_t), "%" PRId64, value);
+    return *buf;
+#    endif // AVS_COMMONS_WITHOUT_64BIT_FORMAT_SPECIFIERS
+}
+
+#    ifdef AVS_UNIT_TESTING
+#        include "tests/utils/strings.c"
+#    endif // AVS_UNIT_TESTING
 
 #endif // AVS_COMMONS_WITH_AVS_UTILS
