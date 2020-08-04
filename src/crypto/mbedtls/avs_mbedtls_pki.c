@@ -229,10 +229,7 @@ avs_crypto_pki_csr_create(avs_crypto_prng_ctx_t *prng_ctx,
         }
     }
 
-    if (private_key) {
-        mbedtls_pk_free(private_key);
-        avs_free(private_key);
-    }
+    _avs_crypto_mbedtls_pk_context_cleanup(&private_key);
     mbedtls_x509write_csr_free(&csr_ctx);
     return err;
 }

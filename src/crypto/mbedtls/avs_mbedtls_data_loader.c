@@ -183,6 +183,14 @@ static avs_error_t append_ca_certs(mbedtls_x509_crt *out,
     }
 }
 
+void _avs_crypto_mbedtls_x509_crt_cleanup(mbedtls_x509_crt **crt) {
+    if (crt && *crt) {
+        mbedtls_x509_crt_free(*crt);
+        mbedtls_free(*crt);
+        *crt = NULL;
+    }
+}
+
 avs_error_t
 _avs_crypto_mbedtls_load_ca_certs(mbedtls_x509_crt **out,
                                   const avs_crypto_trusted_cert_info_t *info) {
@@ -190,9 +198,7 @@ _avs_crypto_mbedtls_load_ca_certs(mbedtls_x509_crt **out,
     mbedtls_x509_crt_init(*out);
     avs_error_t err = append_ca_certs(*out, info);
     if (avs_is_err(err)) {
-        mbedtls_x509_crt_free(*out);
-        mbedtls_free(*out);
-        *out = NULL;
+        _avs_crypto_mbedtls_x509_crt_cleanup(out);
     }
     return err;
 }
@@ -226,9 +232,7 @@ avs_error_t _avs_crypto_mbedtls_load_client_cert(
     }
 
     if (avs_is_err(err)) {
-        mbedtls_x509_crt_free(*out);
-        mbedtls_free(*out);
-        *out = NULL;
+        _avs_crypto_mbedtls_x509_crt_cleanup(out);
     }
     return err;
 }
@@ -276,6 +280,14 @@ static avs_error_t load_private_key_from_file(mbedtls_pk_context *client_key,
 #    endif // MBEDTLS_FS_IO
 }
 
+void _avs_crypto_mbedtls_pk_context_cleanup(mbedtls_pk_context **ctx) {
+    if (ctx && *ctx) {
+        mbedtls_pk_free(*ctx);
+        avs_free(*ctx);
+        *ctx = NULL;
+    }
+}
+
 avs_error_t
 _avs_crypto_mbedtls_load_client_key(mbedtls_pk_context **client_key,
                                     const avs_crypto_client_key_info_t *info) {
@@ -310,9 +322,7 @@ _avs_crypto_mbedtls_load_client_key(mbedtls_pk_context **client_key,
     }
 
     if (avs_is_err(err)) {
-        mbedtls_pk_free(*client_key);
-        avs_free(*client_key);
-        *client_key = NULL;
+        _avs_crypto_mbedtls_pk_context_cleanup(client_key);
     }
     return err;
 }

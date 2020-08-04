@@ -24,9 +24,14 @@
 
 VISIBILITY_PRIVATE_HEADER_BEGIN
 
+void _avs_crypto_mbedtls_x509_crt_cleanup(mbedtls_x509_crt **crt);
+
 avs_error_t
 _avs_crypto_mbedtls_load_ca_certs(mbedtls_x509_crt **out,
                                   const avs_crypto_trusted_cert_info_t *info);
+
+void _avs_crypto_mbedtls_pk_context_cleanup(mbedtls_pk_context **ctx);
+
 avs_error_t
 _avs_crypto_mbedtls_load_client_key(mbedtls_pk_context **pk,
                                     const avs_crypto_client_key_info_t *info);

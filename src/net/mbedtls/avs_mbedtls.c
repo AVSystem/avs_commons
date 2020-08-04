@@ -1144,18 +1144,9 @@ static avs_error_t receive_ssl(avs_net_socket_t *socket_,
 
 #    ifdef AVS_COMMONS_WITH_AVS_CRYPTO_PKI
 static void cleanup_security_cert(ssl_socket_certs_t *certs) {
-    if (certs->ca_cert) {
-        mbedtls_x509_crt_free(certs->ca_cert);
-        mbedtls_free(certs->ca_cert);
-    }
-    if (certs->client_cert) {
-        mbedtls_x509_crt_free(certs->client_cert);
-        mbedtls_free(certs->client_cert);
-    }
-    if (certs->client_key) {
-        mbedtls_pk_free(certs->client_key);
-        avs_free(certs->client_key);
-    }
+    _avs_crypto_mbedtls_x509_crt_cleanup(&certs->ca_cert);
+    _avs_crypto_mbedtls_x509_crt_cleanup(&certs->client_cert);
+    _avs_crypto_mbedtls_pk_context_cleanup(&certs->client_key);
 #        ifdef WITH_DANE_SUPPORT
     // NOTE: Not freeing dane_ta_certs, as it is supposed to be on the
     // ca_cert chain, so has been freed together with ca_cert
