@@ -22,6 +22,7 @@
 #include <avsystem/commons/avs_commons_config.h>
 #include <avsystem/commons/avs_errno.h>
 #include <avsystem/commons/avs_prng.h>
+#include <avsystem/commons/avs_time.h>
 
 #ifdef AVS_COMMONS_WITH_AVS_LIST
 #    include <avsystem/commons/avs_list.h>
@@ -580,6 +581,9 @@ avs_crypto_pki_csr_create(avs_crypto_prng_ctx_t *prng_ctx,
                           const avs_crypto_pki_x509_name_entry_t subject[],
                           void *out_der_csr,
                           size_t *inout_der_csr_size);
+
+avs_time_real_t avs_crypto_client_cert_expiration_date(
+        const avs_crypto_client_cert_info_t *cert_info);
 
 #endif // AVS_COMMONS_WITH_AVS_CRYPTO_ADVANCED_FEATURES
 
