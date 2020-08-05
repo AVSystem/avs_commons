@@ -43,7 +43,7 @@ if(WITH_AVS_CRYPTO_ADVANCED_FEATURES)
     if(WITH_PKI)
         set(AVS_CRYPTO_ADVANCED_FEATURES_TEST_SOURCES
             ${AVS_CRYPTO_ADVANCED_FEATURES_TEST_SOURCES}
-            "${AVS_COMMONS_SOURCE_DIR}/tests/crypto/pki_ec.c")
+            "${AVS_COMMONS_SOURCE_DIR}/tests/crypto/pki.c")
     endif()
 endif()
 
