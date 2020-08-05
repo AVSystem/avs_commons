@@ -14,6 +14,10 @@
  * limitations under the License.
  */
 
+#ifdef AVS_UNIT_TESTING
+#    define _GNU_SOURCE // for timegm() in tests
+#endif
+
 #include <avs_commons_init.h>
 
 #if defined(AVS_COMMONS_WITH_AVS_CRYPTO)                          \
@@ -312,6 +316,10 @@ avs_time_real_t avs_crypto_client_cert_expiration_date(
     _avs_crypto_mbedtls_x509_crt_cleanup(&cert);
     return result;
 }
+
+#    ifdef AVS_UNIT_TESTING
+#        include "tests/crypto/mbedtls/mbedtls_pki.c"
+#    endif // AVS_UNIT_TESTING
 
 #endif // defined(AVS_COMMONS_WITH_AVS_CRYPTO) &&
        // defined(AVS_COMMONS_WITH_AVS_CRYPTO_ADVANCED_FEATURES) &&
