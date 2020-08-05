@@ -248,6 +248,40 @@ avs_crypto_pki_csr_create(avs_crypto_prng_ctx_t *prng_ctx,
     return err;
 }
 
+avs_time_real_t avs_crypto_client_cert_expiration_date(
+        const avs_crypto_client_cert_info_t *cert_info) {
+    avs_time_real_t result = AVS_TIME_REAL_INVALID;
+    X509 *cert = NULL;
+    if (avs_is_err(_avs_crypto_openssl_load_client_cert(&cert, cert_info))) {
+        assert(!cert);
+    } else {
+        assert(cert);
+        ASN1_TIME *valid_until = X509_get0_notAfter(cert);
+        if (valid_until) {
+            static const struct tm EPOCH_TM = {
+                .tm_mday = 1,
+                .tm_mon = 0,
+                .tm_year = 70
+            };
+            struct tm valid_until_tm = { 0 };
+            int days, secs;
+            if (ASN1_TIME_to_tm(valid_until, &valid_until_tm) == 1
+                    && OPENSSL_gmtime_diff(&days, &secs, &EPOCH_TM,
+                                           &valid_until_tm)) {
+                result = (avs_time_real_t) {
+                    .since_real_epoch.seconds =
+                            86400 * (int64_t) days + (int64_t) secs
+                };
+            }
+        }
+        X509_free(cert);
+        if (!avs_time_real_valid(result)) {
+            LOG(ERROR, _("No valid NotAfter field in the certificate"));
+        }
+    }
+    return result;
+}
+
 #endif // defined(AVS_COMMONS_WITH_AVS_CRYPTO) &&
        // defined(AVS_COMMONS_WITH_AVS_CRYPTO_ADVANCED_FEATURES) &&
        // defined(AVS_COMMONS_WITH_AVS_CRYPTO_PKI) &&
