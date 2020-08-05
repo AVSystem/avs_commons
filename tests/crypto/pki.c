@@ -14,7 +14,13 @@
  * limitations under the License.
  */
 
+#include <avs_commons_posix_init.h> // for struct stat::st_mtim
+
 #include <inttypes.h>
+
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #include <avsystem/commons/avs_crypto_pki.h>
 #include <avsystem/commons/avs_unit_test.h>
@@ -137,4 +143,31 @@ AVS_UNIT_TEST(avs_crypto_pki_ec, test_csr_create) {
                     + csr[signature_offset + 8 + csr[signature_offset + 6]],
             csr_size - signature_offset - 9);
 #undef TEST_CN
+}
+
+AVS_UNIT_TEST(avs_crypto_pki, avs_crypto_client_cert_expiration_date) {
+    static const char CERT_PATH[] = "../certs/client.crt";
+
+    struct stat file_stat;
+    AVS_UNIT_ASSERT_SUCCESS(stat(CERT_PATH, &file_stat));
+    avs_time_real_t file_mtime = {
+        .since_real_epoch = {
+            .seconds = file_stat.st_mtim.tv_sec,
+            .nanoseconds = (int32_t) file_stat.st_mtim.tv_nsec
+        }
+    };
+
+    avs_crypto_client_cert_info_t cert_info =
+            avs_crypto_client_cert_info_from_file(CERT_PATH);
+    avs_time_real_t cert_validity =
+            avs_crypto_client_cert_expiration_date(&cert_info);
+
+    AVS_UNIT_ASSERT_TRUE(avs_time_real_valid(cert_validity));
+    double cert_relative_validity = avs_time_duration_to_fscalar(
+            avs_time_real_diff(cert_validity, file_mtime), AVS_TIME_S);
+
+    // the cert is supposed to be valid for 9999 days since generation
+    // test that it is, with up to 30 second difference allowed
+    AVS_UNIT_ASSERT_TRUE(cert_relative_validity >= 9999.0 * 86400.0 - 30.0);
+    AVS_UNIT_ASSERT_TRUE(cert_relative_validity <= 9999.0 * 86400.0 + 30.0);
 }
