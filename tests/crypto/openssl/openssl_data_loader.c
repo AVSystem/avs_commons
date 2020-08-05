@@ -36,95 +36,97 @@ __attribute__((constructor)) static void global_ssl_init(void) {
     VALGRIND_MAKE_MEM_DEFINED_IF_ADDRESSABLE(0, sbrk(0));
 }
 
-static SSL_CTX *make_ssl_context(void) {
-    SSL_CTX *ctx = SSL_CTX_new(DTLS_method());
-    AVS_UNIT_ASSERT_NOT_NULL(ctx);
-    return ctx;
+static X509_STORE *make_x509_store(void) {
+    X509_STORE *store = X509_STORE_new();
+    AVS_UNIT_ASSERT_NOT_NULL(store);
+    return store;
 }
 
-#define WITH_OPENSSL_CONTEXT(Context)                                  \
-    for (bool _exit = ((Context) = make_ssl_context(), false); !_exit; \
-         _exit = (SSL_CTX_free(Context), true))
+#define WITH_X509_STORE(Context)                                      \
+    for (bool _exit = ((Context) = make_x509_store(), false); !_exit; \
+         _exit = (X509_STORE_free(Context), true))
 
 AVS_UNIT_TEST(backend_openssl, chain_loading_from_file) {
-    SSL_CTX *ctx;
+    X509_STORE *store;
 
-    WITH_OPENSSL_CONTEXT(ctx) {
+    WITH_X509_STORE(store) {
         const avs_crypto_trusted_cert_info_t pem =
                 avs_crypto_trusted_cert_info_from_file("../certs/root.crt");
-        AVS_UNIT_ASSERT_SUCCESS(_avs_crypto_openssl_load_ca_certs(ctx, &pem));
+        AVS_UNIT_ASSERT_SUCCESS(_avs_crypto_openssl_load_ca_certs(store, &pem));
     }
 
-    WITH_OPENSSL_CONTEXT(ctx) {
+    WITH_X509_STORE(store) {
         const avs_crypto_trusted_cert_info_t der =
                 avs_crypto_trusted_cert_info_from_file("../certs/root.crt.der");
-        AVS_UNIT_ASSERT_SUCCESS(_avs_crypto_openssl_load_ca_certs(ctx, &der));
+        AVS_UNIT_ASSERT_SUCCESS(_avs_crypto_openssl_load_ca_certs(store, &der));
     }
 
-    WITH_OPENSSL_CONTEXT(ctx) {
+    WITH_X509_STORE(store) {
         // Unsupported.
         const avs_crypto_trusted_cert_info_t p12 =
                 avs_crypto_trusted_cert_info_from_file("../certs/server.p12");
-        AVS_UNIT_ASSERT_FAILED(_avs_crypto_openssl_load_ca_certs(ctx, &p12));
+        AVS_UNIT_ASSERT_FAILED(_avs_crypto_openssl_load_ca_certs(store, &p12));
     }
 }
 
 AVS_UNIT_TEST(backend_openssl, chain_loading_from_path) {
-    SSL_CTX *ctx;
+    X509_STORE *store;
 
-    WITH_OPENSSL_CONTEXT(ctx) {
+    WITH_X509_STORE(store) {
         const avs_crypto_trusted_cert_info_t path =
                 avs_crypto_trusted_cert_info_from_path("../certs");
-        AVS_UNIT_ASSERT_SUCCESS(_avs_crypto_openssl_load_ca_certs(ctx, &path));
+        AVS_UNIT_ASSERT_SUCCESS(
+                _avs_crypto_openssl_load_ca_certs(store, &path));
     }
 
     // Empty directory case.
     char name[] = "/tmp/empty-XXXXXX";
     (void) mkdtemp(name);
 
-    WITH_OPENSSL_CONTEXT(ctx) {
+    WITH_X509_STORE(store) {
         const avs_crypto_trusted_cert_info_t empty_dir =
                 avs_crypto_trusted_cert_info_from_path(name);
-        avs_error_t err = _avs_crypto_openssl_load_ca_certs(ctx, &empty_dir);
+        avs_error_t err = _avs_crypto_openssl_load_ca_certs(store, &empty_dir);
         (void) rmdir(name);
         AVS_UNIT_ASSERT_SUCCESS(err);
     }
 
-    WITH_OPENSSL_CONTEXT(ctx) {
+    WITH_X509_STORE(store) {
         // Directory without permissions - OpenSSL doesn't care.
         const avs_crypto_trusted_cert_info_t no_permissions_dir =
                 avs_crypto_trusted_cert_info_from_path("/root");
         AVS_UNIT_ASSERT_SUCCESS(
-                _avs_crypto_openssl_load_ca_certs(ctx, &no_permissions_dir));
+                _avs_crypto_openssl_load_ca_certs(store, &no_permissions_dir));
     }
 }
 
 AVS_UNIT_TEST(backend_openssl, chain_loading_from_null) {
-    SSL_CTX *ctx;
-    WITH_OPENSSL_CONTEXT(ctx) {
+    X509_STORE *store;
+    WITH_X509_STORE(store) {
         const avs_crypto_trusted_cert_info_t pem =
                 avs_crypto_trusted_cert_info_from_file(NULL);
-        AVS_UNIT_ASSERT_FAILED(_avs_crypto_openssl_load_ca_certs(ctx, &pem));
+        AVS_UNIT_ASSERT_FAILED(_avs_crypto_openssl_load_ca_certs(store, &pem));
         const avs_crypto_trusted_cert_info_t buffer =
                 avs_crypto_trusted_cert_info_from_buffer(NULL, 0);
-        AVS_UNIT_ASSERT_FAILED(_avs_crypto_openssl_load_ca_certs(ctx, &buffer));
+        AVS_UNIT_ASSERT_FAILED(
+                _avs_crypto_openssl_load_ca_certs(store, &buffer));
         const avs_crypto_trusted_cert_info_t path =
                 avs_crypto_trusted_cert_info_from_path(NULL);
-        AVS_UNIT_ASSERT_FAILED(_avs_crypto_openssl_load_ca_certs(ctx, &path));
+        AVS_UNIT_ASSERT_FAILED(_avs_crypto_openssl_load_ca_certs(store, &path));
     }
 }
 
 AVS_UNIT_TEST(backend_openssl, cert_loading_from_null) {
-    SSL_CTX *ctx;
-    WITH_OPENSSL_CONTEXT(ctx) {
-        const avs_crypto_client_cert_info_t pem =
-                avs_crypto_client_cert_info_from_file(NULL);
-        AVS_UNIT_ASSERT_FAILED(_avs_crypto_openssl_load_client_cert(ctx, &pem));
-        const avs_crypto_client_cert_info_t buffer =
-                avs_crypto_client_cert_info_from_buffer(NULL, 0);
-        AVS_UNIT_ASSERT_FAILED(
-                _avs_crypto_openssl_load_client_cert(ctx, &buffer));
-    }
+    X509 *cert = NULL;
+    const avs_crypto_client_cert_info_t pem =
+            avs_crypto_client_cert_info_from_file(NULL);
+    AVS_UNIT_ASSERT_FAILED(_avs_crypto_openssl_load_client_cert(&cert, &pem));
+    AVS_UNIT_ASSERT_NULL(cert);
+    const avs_crypto_client_cert_info_t buffer =
+            avs_crypto_client_cert_info_from_buffer(NULL, 0);
+    AVS_UNIT_ASSERT_FAILED(
+            _avs_crypto_openssl_load_client_cert(&cert, &buffer));
+    AVS_UNIT_ASSERT_NULL(cert);
 }
 
 AVS_UNIT_TEST(backend_openssl, key_loading) {

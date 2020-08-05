@@ -1018,8 +1018,9 @@ configure_ssl_certs(ssl_socket_t *socket,
             LOG(WARNING, _("could not set default CA verify paths"));
             log_openssl_error();
         }
+        X509_STORE *store = SSL_CTX_get_cert_store(socket->ctx);
         avs_error_t err =
-                _avs_crypto_openssl_load_ca_certs(socket->ctx,
+                _avs_crypto_openssl_load_ca_certs(store,
                                                   &cert_info->trusted_certs);
         if (avs_is_err(err)) {
             LOG(ERROR, _("could not load CA chain"));
@@ -1034,13 +1035,23 @@ configure_ssl_certs(ssl_socket_t *socket,
     }
 
     if (cert_info->client_cert.desc.source != AVS_CRYPTO_DATA_SOURCE_EMPTY) {
+        X509 *client_cert = NULL;
         avs_error_t err =
-                _avs_crypto_openssl_load_client_cert(socket->ctx,
+                _avs_crypto_openssl_load_client_cert(&client_cert,
                                                      &cert_info->client_cert);
+        if (avs_is_ok(err)) {
+            assert(client_cert);
+            if (SSL_CTX_use_certificate(socket->ctx, client_cert) != 1) {
+                log_openssl_error();
+                err = avs_errno(AVS_EPROTO);
+            }
+            X509_free(client_cert);
+        }
         if (avs_is_err(err)) {
             LOG(ERROR, _("could not load client certificate"));
             return err;
         }
+
         EVP_PKEY *key = NULL;
         if (avs_is_ok((err = _avs_crypto_openssl_load_client_key(
                                &key, &cert_info->client_key)))) {
