@@ -14,6 +14,10 @@
  * limitations under the License.
  */
 
+#ifdef AVS_UNIT_TESTING
+#    define _GNU_SOURCE // for timegm() in tests
+#endif
+
 #include <avs_commons_init.h>
 
 #if defined(AVS_COMMONS_WITH_AVS_CRYPTO)                          \
@@ -233,6 +237,89 @@ avs_crypto_pki_csr_create(avs_crypto_prng_ctx_t *prng_ctx,
     mbedtls_x509write_csr_free(&csr_ctx);
     return err;
 }
+
+static int64_t year_to_days(int year, bool *out_is_leap) {
+    // NOTE: Gregorian calendar rules are used proleptically here, which means
+    // that dates before 1583 will not align with historical documents. Negative
+    // dates handling might also be confusing (i.e. year == -1 means 2 BC).
+    //
+    // These rules are, however, consistent with the ISO 8601 convention that
+    // ASN.1 GeneralizedTime type references, not to mention that X.509
+    // certificates are generally not expected to contain dates before 1583 ;)
+
+    static const int64_t LEAP_YEARS_IN_CYCLE = 97;
+    static const int64_t LEAP_YEARS_UNTIL_1970 = 478;
+
+    *out_is_leap = ((year % 4 == 0 && year % 100 != 0) || year % 400 == 0);
+
+    int cycles = year / 400;
+    int years_since_cycle_start = year % 400;
+    if (years_since_cycle_start < 0) {
+        --cycles;
+        years_since_cycle_start += 400;
+    }
+
+    int leap_years_since_cycle_start = (*out_is_leap ? 0 : 1)
+                                       + years_since_cycle_start / 4
+                                       - years_since_cycle_start / 100;
+    int64_t leap_years_since_1970 = cycles * LEAP_YEARS_IN_CYCLE
+                                    + leap_years_since_cycle_start
+                                    - LEAP_YEARS_UNTIL_1970;
+    return (year - 1970) * 365 + leap_years_since_1970;
+}
+
+static int month_to_days(int month, bool is_leap) {
+    static const uint16_t MONTH_LENGTHS[] = {
+        31, 28 /* or 29 */, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31
+    };
+    int days = (is_leap && month > 2) ? 1 : 0;
+    for (int i = 0; i < month - 1; ++i) {
+        days += MONTH_LENGTHS[i];
+    }
+    return days;
+}
+
+static avs_time_real_t convert_x509_time(const mbedtls_x509_time *x509_time) {
+    if (x509_time->mon < 1 || x509_time->mon > 12 || x509_time->day < 1
+            || x509_time->day > 31 || x509_time->hour < 0
+            || x509_time->hour > 23 || x509_time->min < 0 || x509_time->min > 59
+            || x509_time->sec < 0
+            || x509_time->sec > 60 /* support leap seconds */) {
+        LOG(ERROR, _("Invalid X.509 time value"));
+        return AVS_TIME_REAL_INVALID;
+    }
+    bool is_leap;
+    int64_t days = year_to_days(x509_time->year, &is_leap)
+                   + month_to_days(x509_time->mon, is_leap) + x509_time->day
+                   - 1;
+    int64_t time =
+            60 * (60 * x509_time->hour + x509_time->min) + x509_time->sec;
+    return (avs_time_real_t) {
+        .since_real_epoch.seconds = days * 86400 + time
+    };
+}
+
+avs_time_real_t avs_crypto_client_cert_expiration_date(
+        const avs_crypto_client_cert_info_t *cert_info) {
+    mbedtls_x509_crt *cert = NULL;
+    if (avs_is_err(_avs_crypto_mbedtls_load_client_cert(&cert, cert_info))) {
+        assert(!cert);
+        return AVS_TIME_REAL_INVALID;
+    }
+
+    if (!cert || cert->next) {
+        LOG(ERROR, _("Wrong number of certificates loaded, expected 1"));
+        return AVS_TIME_REAL_INVALID;
+    }
+
+    avs_time_real_t result = convert_x509_time(&cert->valid_to);
+    _avs_crypto_mbedtls_x509_crt_cleanup(&cert);
+    return result;
+}
+
+#    ifdef AVS_UNIT_TESTING
+#        include "tests/crypto/mbedtls/mbedtls_pki.c"
+#    endif // AVS_UNIT_TESTING
 
 #endif // defined(AVS_COMMONS_WITH_AVS_CRYPTO) &&
        // defined(AVS_COMMONS_WITH_AVS_CRYPTO_ADVANCED_FEATURES) &&

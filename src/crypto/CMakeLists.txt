@@ -43,7 +43,7 @@ if(WITH_AVS_CRYPTO_ADVANCED_FEATURES)
     if(WITH_PKI)
         set(AVS_CRYPTO_ADVANCED_FEATURES_TEST_SOURCES
             ${AVS_CRYPTO_ADVANCED_FEATURES_TEST_SOURCES}
-            "${AVS_COMMONS_SOURCE_DIR}/tests/crypto/pki_ec.c")
+            "${AVS_COMMONS_SOURCE_DIR}/tests/crypto/pki.c")
     endif()
 endif()
 
@@ -103,6 +103,7 @@ if(WITH_MBEDTLS)
         mbedtls/avs_mbedtls_prng.h)
 
     set(AVS_CRYPTO_MBEDTLS_TEST_SOURCES
+        ${AVS_CRYPTO_MBEDTLS_SOURCES}
         ${AVS_CRYPTO_TEST_SOURCES}
         $<$<BOOL:${WITH_PKI}>:${AVS_COMMONS_SOURCE_DIR}/tests/crypto/mbedtls/mbedtls_data_loader.c>)
 
@@ -115,10 +116,13 @@ if(WITH_MBEDTLS)
     add_library(avs_crypto_mbedtls
                 ${AVS_CRYPTO_PUBLIC_HEADERS}
                 ${AVS_CRYPTO_MBEDTLS_SOURCES})
-    target_link_libraries(avs_crypto_mbedtls PUBLIC avs_crypto_core mbedcrypto $<$<BOOL:${WITH_PKI}>:mbedx509>)
+    target_link_libraries(avs_crypto_mbedtls PUBLIC avs_crypto_core mbedcrypto)
+    if(WITH_PKI)
+        target_link_libraries(avs_crypto_mbedtls PUBLIC mbedx509)
+    endif()
 
     avs_add_test(NAME avs_crypto_mbedtls
-                 LIBS avs_crypto_mbedtls
+                 LIBS $<TARGET_PROPERTY:avs_crypto_mbedtls,LINK_LIBRARIES>
                  SOURCES
                  ${AVS_CRYPTO_MBEDTLS_TEST_SOURCES})
     avs_install_export(avs_crypto_mbedtls crypto)
