@@ -42,8 +42,9 @@
 
 VISIBILITY_SOURCE_BEGIN
 
-static avs_error_t
-load_ca_certs_from_paths(SSL_CTX *ctx, const char *file, const char *path) {
+static avs_error_t load_ca_certs_from_paths(X509_STORE *store,
+                                            const char *file,
+                                            const char *path) {
     AVS_ASSERT(!!file != !!path, "cannot use path and file at the same time");
     LOG(DEBUG,
         _("CA certificate <file=") "%s" _(", path=") "%s" _(">: going to load"),
@@ -56,7 +57,6 @@ load_ca_certs_from_paths(SSL_CTX *ctx, const char *file, const char *path) {
          * to X509_FILETYPE_PEM, but it is also possible to use
          * X509_FILETYPE_ASN1.
          */
-        X509_STORE *store = SSL_CTX_get_cert_store(ctx);
         X509_LOOKUP *lookup = X509_STORE_add_lookup(store, X509_LOOKUP_file());
         if (lookup == NULL) {
             return avs_errno(AVS_ENOMEM);
@@ -70,7 +70,7 @@ load_ca_certs_from_paths(SSL_CTX *ctx, const char *file, const char *path) {
         log_openssl_error();
         return avs_errno(AVS_EPROTO);
     } else {
-        if (!SSL_CTX_load_verify_locations(ctx, NULL, path)) {
+        if (!X509_STORE_load_locations(store, NULL, path)) {
             log_openssl_error();
             return avs_errno(AVS_EPROTO);
         }
@@ -96,42 +96,47 @@ static encoding_t detect_encoding(BIO *bio) {
 #    undef PEM_PREFIX
 }
 
-// NOTE: This function exists only because OpenSSL does not seem to have a
-// method of loading in-buffer PEM encoded certificates.
+static X509 *parse_cert_from_bio(BIO *bio) {
+    assert(bio);
+    switch (detect_encoding(bio)) {
+    case ENCODING_PEM: {
+        // Convert PEM to DER.
+        return PEM_read_bio_X509(bio, NULL, NULL, NULL);
+    }
+    case ENCODING_DER: {
+        return d2i_X509_bio(bio, NULL);
+    }
+    default:
+        LOG(ERROR, _("unknown certificate format"));
+        return NULL;
+    }
+}
+
 static avs_error_t
 parse_cert(X509 **out_cert, const void *buffer, const size_t len) {
     BIO *bio = BIO_new_mem_buf((void *) (intptr_t) buffer, (int) len);
     if (!bio) {
+        log_openssl_error();
         return avs_errno(AVS_ENOMEM);
     }
-    *out_cert = NULL;
-    switch (detect_encoding(bio)) {
-    case ENCODING_PEM: {
-        // Convert PEM to DER.
-        *out_cert = PEM_read_bio_X509(bio, NULL, NULL, NULL);
-        break;
-    }
-    case ENCODING_DER: {
-        *out_cert = d2i_X509_bio(bio, NULL);
-        break;
-    }
-    default:
-        LOG(ERROR, _("unknown in-memory certificate format"));
-        break;
-    }
+    *out_cert = parse_cert_from_bio(bio);
     BIO_free(bio);
-    return *out_cert ? AVS_OK : avs_errno(AVS_EPROTO);
+    if (!*out_cert) {
+        log_openssl_error();
+        return avs_errno(AVS_EPROTO);
+    }
+    return AVS_OK;
 }
 
-static avs_error_t
-load_ca_cert_from_buffer(SSL_CTX *ctx, const void *buffer, const size_t len) {
+static avs_error_t load_ca_cert_from_buffer(X509_STORE *store,
+                                            const void *buffer,
+                                            const size_t len) {
     X509 *cert = NULL;
     avs_error_t err = parse_cert(&cert, buffer, len);
     if (avs_is_err(err)) {
         return err;
     }
     assert(cert);
-    X509_STORE *store = SSL_CTX_get_cert_store(ctx);
     if (!store || !X509_STORE_add_cert(store, cert)) {
         log_openssl_error();
         err = avs_errno(AVS_ENOMEM);
@@ -141,7 +146,7 @@ load_ca_cert_from_buffer(SSL_CTX *ctx, const void *buffer, const size_t len) {
 }
 
 avs_error_t
-_avs_crypto_openssl_load_ca_certs(SSL_CTX *ctx,
+_avs_crypto_openssl_load_ca_certs(X509_STORE *store,
                                   const avs_crypto_trusted_cert_info_t *info) {
     switch (info->desc.source) {
     case AVS_CRYPTO_DATA_SOURCE_EMPTY:
@@ -152,21 +157,21 @@ _avs_crypto_openssl_load_ca_certs(SSL_CTX *ctx,
                 _("attempt to load CA cert from file, but filename=NULL"));
             return avs_errno(AVS_EINVAL);
         }
-        return load_ca_certs_from_paths(ctx, info->desc.info.file.filename,
+        return load_ca_certs_from_paths(store, info->desc.info.file.filename,
                                         NULL);
     case AVS_CRYPTO_DATA_SOURCE_PATH:
         if (!info->desc.info.path.path) {
             LOG(ERROR, _("attempt to load CA cert from path, but path=NULL"));
             return avs_errno(AVS_EINVAL);
         }
-        return load_ca_certs_from_paths(ctx, NULL, info->desc.info.path.path);
+        return load_ca_certs_from_paths(store, NULL, info->desc.info.path.path);
     case AVS_CRYPTO_DATA_SOURCE_BUFFER:
         if (!info->desc.info.buffer.buffer) {
             LOG(ERROR,
                 _("attempt to load CA cert from buffer, but buffer=NULL"));
             return avs_errno(AVS_EINVAL);
         }
-        return load_ca_cert_from_buffer(ctx, info->desc.info.buffer.buffer,
+        return load_ca_cert_from_buffer(store, info->desc.info.buffer.buffer,
                                         info->desc.info.buffer.buffer_size);
     case AVS_CRYPTO_DATA_SOURCE_TRUSTED_CERT_ARRAY: {
         avs_error_t err = AVS_OK;
@@ -175,7 +180,7 @@ _avs_crypto_openssl_load_ca_certs(SSL_CTX *ctx,
              && i < info->desc.info.trusted_cert_array.element_count;
              ++i) {
             err = _avs_crypto_openssl_load_ca_certs(
-                    ctx, &info->desc.info.trusted_cert_array.array_ptr[i]);
+                    store, &info->desc.info.trusted_cert_array.array_ptr[i]);
         }
         return err;
     }
@@ -183,7 +188,7 @@ _avs_crypto_openssl_load_ca_certs(SSL_CTX *ctx,
     case AVS_CRYPTO_DATA_SOURCE_TRUSTED_CERT_LIST: {
         AVS_LIST(avs_crypto_trusted_cert_info_t) entry;
         AVS_LIST_FOREACH(entry, info->desc.info.trusted_cert_list.list_head) {
-            avs_error_t err = _avs_crypto_openssl_load_ca_certs(ctx, entry);
+            avs_error_t err = _avs_crypto_openssl_load_ca_certs(store, entry);
             if (avs_is_err(err)) {
                 return err;
             }
@@ -197,39 +202,25 @@ _avs_crypto_openssl_load_ca_certs(SSL_CTX *ctx,
     }
 }
 
-static avs_error_t load_client_cert_from_file(SSL_CTX *ctx,
+static avs_error_t load_client_cert_from_file(X509 **out_cert,
                                               const char *filename) {
     LOG(DEBUG, _("client certificate <") "%s" _(">: going to load"), filename);
-    // Try PEM.
-    if (SSL_CTX_use_certificate_file(ctx, filename, SSL_FILETYPE_PEM) == 1) {
-        return AVS_OK;
-    }
-    // Try DER.
-    if (SSL_CTX_use_certificate_file(ctx, filename, SSL_FILETYPE_ASN1) == 1) {
-        return AVS_OK;
-    }
-    log_openssl_error();
-    return avs_errno(AVS_EPROTO);
-}
-
-static avs_error_t
-load_client_cert_from_buffer(SSL_CTX *ctx, const void *buffer, size_t len) {
-    X509 *cert;
-    avs_error_t err = parse_cert(&cert, buffer, len);
-    if (avs_is_err(err)) {
-        return err;
-    }
-    assert(cert);
-    if (SSL_CTX_use_certificate(ctx, cert) != 1) {
+    BIO *bio = BIO_new_file(filename, "rb");
+    if (!bio) {
         log_openssl_error();
-        err = avs_errno(AVS_EPROTO);
+        return avs_errno(AVS_EIO);
     }
-    X509_free(cert);
-    return err;
+    *out_cert = parse_cert_from_bio(bio);
+    BIO_free(bio);
+    if (!*out_cert) {
+        log_openssl_error();
+        return avs_errno(AVS_EPROTO);
+    }
+    return AVS_OK;
 }
 
 avs_error_t _avs_crypto_openssl_load_client_cert(
-        SSL_CTX *ctx, const avs_crypto_client_cert_info_t *info) {
+        X509 **out_cert, const avs_crypto_client_cert_info_t *info) {
     switch (info->desc.source) {
     case AVS_CRYPTO_DATA_SOURCE_FILE:
         if (!info->desc.info.file.filename) {
@@ -237,15 +228,16 @@ avs_error_t _avs_crypto_openssl_load_client_cert(
                 _("attempt to load client cert from file, but filename=NULL"));
             return avs_errno(AVS_EINVAL);
         }
-        return load_client_cert_from_file(ctx, info->desc.info.file.filename);
+        return load_client_cert_from_file(out_cert,
+                                          info->desc.info.file.filename);
     case AVS_CRYPTO_DATA_SOURCE_BUFFER:
         if (!info->desc.info.buffer.buffer) {
             LOG(ERROR,
                 _("attempt to load client cert from buffer, but buffer=NULL"));
             return avs_errno(AVS_EINVAL);
         }
-        return load_client_cert_from_buffer(ctx, info->desc.info.buffer.buffer,
-                                            info->desc.info.buffer.buffer_size);
+        return parse_cert(out_cert, info->desc.info.buffer.buffer,
+                          info->desc.info.buffer.buffer_size);
     default:
         AVS_UNREACHABLE("invalid data source");
         return avs_errno(AVS_EINVAL);

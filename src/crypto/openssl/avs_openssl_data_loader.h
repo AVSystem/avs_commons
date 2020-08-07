@@ -26,13 +26,13 @@ VISIBILITY_PRIVATE_HEADER_BEGIN
 // in avs_openssl_data_loader.c for details (and think about circular
 // dependencies with VISIBILITY_PRIVATE_HEADER_BEGIN macros).
 avs_error_t
-_avs_crypto_openssl_load_ca_certs(SSL_CTX *ctx,
+_avs_crypto_openssl_load_ca_certs(X509_STORE *store,
                                   const avs_crypto_trusted_cert_info_t *info);
 avs_error_t
 _avs_crypto_openssl_load_client_key(EVP_PKEY **out_key,
                                     const avs_crypto_client_key_info_t *info);
 avs_error_t
-_avs_crypto_openssl_load_client_cert(SSL_CTX *ctx,
+_avs_crypto_openssl_load_client_cert(X509 **out_cert,
                                      const avs_crypto_client_cert_info_t *info);
 
 VISIBILITY_PRIVATE_HEADER_END
