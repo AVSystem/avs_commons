@@ -42,38 +42,39 @@
 
 VISIBILITY_SOURCE_BEGIN
 
-static avs_error_t load_ca_certs_from_paths(X509_STORE *store,
-                                            const char *file,
-                                            const char *path) {
-    AVS_ASSERT(!!file != !!path, "cannot use path and file at the same time");
-    LOG(DEBUG,
-        _("CA certificate <file=") "%s" _(", path=") "%s" _(">: going to load"),
-        file ? file : "(null)", path ? path : "(null)");
+static avs_error_t load_ca_certs_from_file(X509_STORE *store,
+                                           const char *file) {
+    assert(file);
+    LOG(DEBUG, _("CA certificate <file=") "%s" _(">: going to load"), file);
 
-    if (file) {
-        /**
-         * SSL_CTX_load_verify_locations() allows PEM certificates only to be
-         * loaded. Underneath it uses X509_LOOKUP_load_file with type hardcoded
-         * to X509_FILETYPE_PEM, but it is also possible to use
-         * X509_FILETYPE_ASN1.
-         */
-        X509_LOOKUP *lookup = X509_STORE_add_lookup(store, X509_LOOKUP_file());
-        if (lookup == NULL) {
-            return avs_errno(AVS_ENOMEM);
-        }
-        if (X509_LOOKUP_load_file(lookup, file, X509_FILETYPE_PEM) == 1) {
-            return AVS_OK;
-        }
-        if (X509_LOOKUP_load_file(lookup, file, X509_FILETYPE_ASN1) == 1) {
-            return AVS_OK;
-        }
+    /**
+     * SSL_CTX_load_verify_locations() allows PEM certificates only to be
+     * loaded. Underneath it uses X509_LOOKUP_load_file with type hardcoded
+     * to X509_FILETYPE_PEM, but it is also possible to use
+     * X509_FILETYPE_ASN1.
+     */
+    X509_LOOKUP *lookup = X509_STORE_add_lookup(store, X509_LOOKUP_file());
+    if (lookup == NULL) {
+        return avs_errno(AVS_ENOMEM);
+    }
+    if (X509_LOOKUP_load_file(lookup, file, X509_FILETYPE_PEM) == 1) {
+        return AVS_OK;
+    }
+    if (X509_LOOKUP_load_file(lookup, file, X509_FILETYPE_ASN1) == 1) {
+        return AVS_OK;
+    }
+    log_openssl_error();
+    return avs_errno(AVS_EPROTO);
+}
+
+static avs_error_t load_ca_certs_from_path(X509_STORE *store,
+                                           const char *path) {
+    assert(path);
+    LOG(DEBUG, _("CA certificate <path=") "%s" _(">: going to load"), path);
+
+    if (!X509_STORE_load_locations(store, NULL, path)) {
         log_openssl_error();
         return avs_errno(AVS_EPROTO);
-    } else {
-        if (!X509_STORE_load_locations(store, NULL, path)) {
-            log_openssl_error();
-            return avs_errno(AVS_EPROTO);
-        }
     }
     return AVS_OK;
 }
@@ -157,14 +158,13 @@ _avs_crypto_openssl_load_ca_certs(X509_STORE *store,
                 _("attempt to load CA cert from file, but filename=NULL"));
             return avs_errno(AVS_EINVAL);
         }
-        return load_ca_certs_from_paths(store, info->desc.info.file.filename,
-                                        NULL);
+        return load_ca_certs_from_file(store, info->desc.info.file.filename);
     case AVS_CRYPTO_DATA_SOURCE_PATH:
         if (!info->desc.info.path.path) {
             LOG(ERROR, _("attempt to load CA cert from path, but path=NULL"));
             return avs_errno(AVS_EINVAL);
         }
-        return load_ca_certs_from_paths(store, NULL, info->desc.info.path.path);
+        return load_ca_certs_from_path(store, info->desc.info.path.path);
     case AVS_CRYPTO_DATA_SOURCE_BUFFER:
         if (!info->desc.info.buffer.buffer) {
             LOG(ERROR,
