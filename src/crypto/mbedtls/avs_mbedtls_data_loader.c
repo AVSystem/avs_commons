@@ -40,22 +40,6 @@
 
 VISIBILITY_SOURCE_BEGIN
 
-#    define CREATE_OR_FAIL(allocator, type, ptr)         \
-        do {                                             \
-            avs_free(*ptr);                              \
-            *ptr = (type *) allocator(1, sizeof(**ptr)); \
-            if (!*ptr) {                                 \
-                LOG(ERROR, _("Out of memory"));          \
-                return avs_errno(AVS_ENOMEM);            \
-            }                                            \
-        } while (0)
-
-#    define CREATE_X509_CRT_OR_FAIL(ptr) \
-        CREATE_OR_FAIL(mbedtls_calloc, mbedtls_x509_crt, ptr)
-
-#    define CREATE_PK_CONTEXT_OR_FAIL(ptr) \
-        CREATE_OR_FAIL(avs_calloc, mbedtls_pk_context, ptr)
-
 static avs_error_t append_cert_from_buffer(mbedtls_x509_crt *chain,
                                            const void *buffer,
                                            size_t len) {
@@ -194,7 +178,12 @@ void _avs_crypto_mbedtls_x509_crt_cleanup(mbedtls_x509_crt **crt) {
 avs_error_t
 _avs_crypto_mbedtls_load_ca_certs(mbedtls_x509_crt **out,
                                   const avs_crypto_trusted_cert_info_t *info) {
-    CREATE_X509_CRT_OR_FAIL(out);
+    assert(!*out);
+    *out = (mbedtls_x509_crt *) mbedtls_calloc(1, sizeof(**out));
+    if (!*out) {
+        LOG(ERROR, _("Out of memory"));
+        return avs_errno(AVS_ENOMEM);
+    }
     mbedtls_x509_crt_init(*out);
     avs_error_t err = append_ca_certs(*out, info);
     if (avs_is_err(err)) {
@@ -205,7 +194,12 @@ _avs_crypto_mbedtls_load_ca_certs(mbedtls_x509_crt **out,
 
 avs_error_t _avs_crypto_mbedtls_load_client_cert(
         mbedtls_x509_crt **out, const avs_crypto_client_cert_info_t *info) {
-    CREATE_X509_CRT_OR_FAIL(out);
+    assert(!*out);
+    *out = (mbedtls_x509_crt *) mbedtls_calloc(1, sizeof(**out));
+    if (!*out) {
+        LOG(ERROR, _("Out of memory"));
+        return avs_errno(AVS_ENOMEM);
+    }
     mbedtls_x509_crt_init(*out);
 
     avs_error_t err = avs_errno(AVS_EINVAL);
@@ -291,7 +285,12 @@ void _avs_crypto_mbedtls_pk_context_cleanup(mbedtls_pk_context **ctx) {
 avs_error_t
 _avs_crypto_mbedtls_load_client_key(mbedtls_pk_context **client_key,
                                     const avs_crypto_client_key_info_t *info) {
-    CREATE_PK_CONTEXT_OR_FAIL(client_key);
+    assert(!*client_key);
+    *client_key = (mbedtls_pk_context *) avs_calloc(1, sizeof(**client_key));
+    if (!*client_key) {
+        LOG(ERROR, _("Out of memory"));
+        return avs_errno(AVS_ENOMEM);
+    }
     mbedtls_pk_init(*client_key);
 
     avs_error_t err = avs_errno(AVS_EINVAL);
