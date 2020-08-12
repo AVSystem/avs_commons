@@ -65,8 +65,8 @@ typedef void avs_log_handler_t(avs_log_level_t level,
  * For example on implementing a log handler, refer to <c>demo.c</c>, where a
  * handler using different colors for log levels is used.
  *
- * @param log_handler New log handler function to use. If @c NULL, log handler
-                      will be reset to the default one.
+ * @param log_handler New log handler function to use. If @c NULL , log handler
+ *                    will be reset to the default one.
  *
  * <example>
  * @code
