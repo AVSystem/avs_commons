@@ -736,6 +736,14 @@ avs_crypto_pki_csr_create(avs_crypto_prng_ctx_t *prng_ctx,
 avs_time_real_t avs_crypto_client_cert_expiration_date(
         const avs_crypto_client_cert_info_t *cert_info);
 
+#    ifdef AVS_COMMONS_WITH_AVS_LIST
+avs_error_t avs_crypto_parse_pkcs7_certs_only(
+        AVS_LIST(avs_crypto_trusted_cert_info_t) *out_certs,
+        AVS_LIST(avs_crypto_cert_revocation_list_info_t) *out_crls,
+        const void *buffer,
+        size_t buffer_size);
+#    endif // AVS_COMMONS_WITH_AVS_LIST
+
 #endif // AVS_COMMONS_WITH_AVS_CRYPTO_ADVANCED_FEATURES
 
 #ifdef __cplusplus

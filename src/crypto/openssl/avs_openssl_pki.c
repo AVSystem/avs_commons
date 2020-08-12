@@ -282,6 +282,124 @@ avs_time_real_t avs_crypto_client_cert_expiration_date(
     return result;
 }
 
+#    ifdef AVS_COMMONS_WITH_AVS_LIST
+static avs_error_t copy_cert(AVS_LIST(avs_crypto_trusted_cert_info_t) *out,
+                             X509 *cert) {
+    assert(out && !*out);
+    int result = i2d_X509(cert, NULL);
+    if (result > 0) {
+        if (!(*out = (AVS_LIST(avs_crypto_trusted_cert_info_t))
+                      AVS_LIST_NEW_BUFFER(sizeof(avs_crypto_trusted_cert_info_t)
+                                          + (size_t) result))) {
+            LOG(ERROR, _("Out of memory"));
+            return avs_errno(AVS_ENOMEM);
+        }
+        unsigned char *buf = ((unsigned char *) *out)
+                             + sizeof(avs_crypto_trusted_cert_info_t);
+        **out = avs_crypto_trusted_cert_info_from_buffer(buf, (size_t) result);
+        result = i2d_X509(cert, &(unsigned char *[]){ buf }[0]);
+    }
+    if (result <= 0) {
+        log_openssl_error();
+        AVS_LIST_CLEAR(out);
+        return avs_errno(AVS_EPROTO);
+    }
+    return AVS_OK;
+}
+
+static avs_error_t
+copy_crl(AVS_LIST(avs_crypto_cert_revocation_list_info_t) *out, X509_CRL *crl) {
+    assert(out && !*out);
+    int result = i2d_X509_CRL(crl, NULL);
+    if (result > 0) {
+        if (!(*out = (AVS_LIST(avs_crypto_cert_revocation_list_info_t))
+                      AVS_LIST_NEW_BUFFER(
+                              sizeof(avs_crypto_cert_revocation_list_info_t)
+                              + (size_t) result))) {
+            LOG(ERROR, _("Out of memory"));
+            return avs_errno(AVS_ENOMEM);
+        }
+        unsigned char *buf = ((unsigned char *) *out)
+                             + sizeof(avs_crypto_cert_revocation_list_info_t);
+        **out = avs_crypto_cert_revocation_list_info_from_buffer(
+                buf, (size_t) result);
+        result = i2d_X509_CRL(crl, &(unsigned char *[]){ buf }[0]);
+    }
+    if (result <= 0) {
+        log_openssl_error();
+        AVS_LIST_CLEAR(out);
+        return avs_errno(AVS_EPROTO);
+    }
+    return AVS_OK;
+}
+
+avs_error_t avs_crypto_parse_pkcs7_certs_only(
+        AVS_LIST(avs_crypto_trusted_cert_info_t) *out_certs,
+        AVS_LIST(avs_crypto_cert_revocation_list_info_t) *out_crls,
+        const void *buffer,
+        size_t buffer_size) {
+    if (!out_certs || *out_certs || !out_crls || *out_crls) {
+        return avs_errno(AVS_EINVAL);
+    }
+    BIO *bio = BIO_new_mem_buf((void *) (intptr_t) buffer, (int) buffer_size);
+    if (!bio) {
+        log_openssl_error();
+        return avs_errno(AVS_ENOMEM);
+    }
+    PKCS7 *p7 = d2i_PKCS7_bio(bio, NULL);
+    BIO_free(bio);
+    if (!p7) {
+        log_openssl_error();
+        return avs_errno(AVS_EPROTO);
+    }
+
+    avs_error_t err = avs_errno(AVS_EPROTO);
+    if (OBJ_obj2nid(p7->type) != NID_pkcs7_signed) {
+        LOG(ERROR, _("CMS Type for PKCS#7 certs-only MUST be SignedData"));
+        goto finish;
+    }
+    if (p7->d.sign) {
+        if (sk_PKCS7_SIGNER_INFO_num(p7->d.sign->signer_info) > 0) {
+            LOG(ERROR,
+                _("signerInfos field for PKCS#7 certs-only MUST be empty"));
+            goto finish;
+        }
+        if (p7->d.sign->contents
+                && (OBJ_obj2nid(p7->d.sign->contents->type) != NID_pkcs7_data
+                    || p7->d.sign->contents->length > 0)) {
+            LOG(ERROR,
+                _("Encapsulated content for PKCS#7 certs-only MUST be absent"));
+            goto finish;
+        }
+
+        AVS_LIST(avs_crypto_trusted_cert_info_t) *certs_tail_ptr = out_certs;
+        for (int i = 0; i < sk_X509_num(p7->d.sign->cert); ++i) {
+            X509 *cert = sk_X509_value(p7->d.sign->cert, i);
+            if (avs_is_err((err = copy_cert(certs_tail_ptr, cert)))) {
+                goto finish;
+            }
+            AVS_LIST_ADVANCE_PTR(&certs_tail_ptr);
+        }
+        AVS_LIST(avs_crypto_cert_revocation_list_info_t) *crls_tail_ptr =
+                out_crls;
+        for (int i = 0; i < sk_X509_CRL_num(p7->d.sign->crl); ++i) {
+            X509_CRL *crl = sk_X509_CRL_value(p7->d.sign->crl, i);
+            if (avs_is_err((err = copy_crl(crls_tail_ptr, crl)))) {
+                goto finish;
+            }
+            AVS_LIST_ADVANCE_PTR(&crls_tail_ptr);
+        }
+    }
+finish:
+    PKCS7_free(p7);
+    if (avs_is_err(err)) {
+        AVS_LIST_CLEAR(out_certs);
+        AVS_LIST_CLEAR(out_crls);
+    }
+    return err;
+}
+#    endif // AVS_COMMONS_WITH_AVS_LIST
+
 #endif // defined(AVS_COMMONS_WITH_AVS_CRYPTO) &&
        // defined(AVS_COMMONS_WITH_AVS_CRYPTO_ADVANCED_FEATURES) &&
        // defined(AVS_COMMONS_WITH_AVS_CRYPTO_PKI) &&
