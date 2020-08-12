@@ -317,6 +317,301 @@ avs_time_real_t avs_crypto_client_cert_expiration_date(
     return result;
 }
 
+#    ifdef AVS_COMMONS_WITH_AVS_LIST
+// NOTE: In the comments to functions below, we are using RFC 2315 definitions
+// for the PKCS#7 syntax elements. These are formally obsolete (the current
+// version is defined in RFC 5652), but we don't support any structures
+// supported in newer versions anyway, so it's simpler this way.
+
+static avs_error_t pkcs7_inner_content_info_verify(unsigned char **p,
+                                                   const unsigned char *end) {
+    // ContentInfo ::= SEQUENCE {
+    //   contentType ContentType,
+    //   content
+    //     [0] EXPLICIT ANY DEFINED BY contentType }
+    //
+    // ContentType ::= OBJECT IDENTIFIER
+    static const unsigned char ID_DATA_OID[] = { 0x06, 0x09, 0x2A, 0x86,
+                                                 0x48, 0x86, 0xF7, 0x0D,
+                                                 0x01, 0x07, 0x01 };
+
+    size_t len;
+    if (mbedtls_asn1_get_tag(p, end, &len,
+                             MBEDTLS_ASN1_CONSTRUCTED | MBEDTLS_ASN1_SEQUENCE)
+            || len != sizeof(ID_DATA_OID)
+            || memcmp(*p, ID_DATA_OID, sizeof(ID_DATA_OID)) != 0) {
+        LOG(ERROR,
+            _("Encapsulated content for PKCS#7 certs-only MUST be absent"));
+        return avs_errno(AVS_EPROTO);
+    }
+
+    *p += sizeof(ID_DATA_OID);
+    return AVS_OK;
+}
+
+static avs_error_t copy_cert(AVS_LIST(avs_crypto_trusted_cert_info_t) *out,
+                             const unsigned char *p,
+                             const unsigned char *end) {
+    assert(out && !*out);
+    size_t size = (size_t) (end - p);
+    if (!(*out = (AVS_LIST(avs_crypto_trusted_cert_info_t)) AVS_LIST_NEW_BUFFER(
+                  sizeof(avs_crypto_trusted_cert_info_t) + size))) {
+        LOG(ERROR, _("Out of memory"));
+        return avs_errno(AVS_ENOMEM);
+    }
+    unsigned char *buf =
+            ((unsigned char *) *out) + sizeof(avs_crypto_trusted_cert_info_t);
+    **out = avs_crypto_trusted_cert_info_from_buffer(buf, size);
+    memcpy(buf, p, size);
+    return AVS_OK;
+}
+
+static avs_error_t pkcs7_certificates_parse(
+        AVS_LIST(avs_crypto_trusted_cert_info_t) **tail_ptr_ptr,
+        unsigned char **p,
+        const unsigned char *end) {
+    // ExtendedCertificatesAndCertificates ::=
+    //   SET OF ExtendedCertificateOrCertificate
+    //
+    // ExtendedCertificateOrCertificate ::= CHOICE {
+    //   certificate Certificate, -- X.509
+    //
+    //   extendedCertificate [0] IMPLICIT ExtendedCertificate }
+    //
+    // Note: we are already inside an implicit SET
+    while (*p < end) {
+        unsigned char *len_ptr = *p + 1;
+        size_t len;
+        if (mbedtls_asn1_get_len(&len_ptr, end, &len)
+                || len > (size_t) (end - len_ptr)) {
+            LOG(ERROR, _("Malformed data when parsing PKCS#7 "
+                         "ExtendedCertificatesAndCertificates"));
+            return avs_errno(AVS_EPROTO);
+        }
+
+        avs_error_t err = copy_cert(*tail_ptr_ptr, *p, len_ptr + len);
+        if (avs_is_err(err)) {
+            return err;
+        }
+
+        *p = len_ptr + len;
+        AVS_LIST_ADVANCE_PTR(tail_ptr_ptr);
+    }
+    assert(*p == end);
+    return AVS_OK;
+}
+
+static avs_error_t
+copy_crl(AVS_LIST(avs_crypto_cert_revocation_list_info_t) *out,
+         const unsigned char *p,
+         const unsigned char *end) {
+    assert(out && !*out);
+    size_t size = (size_t) (end - p);
+    if (!(*out = (AVS_LIST(avs_crypto_cert_revocation_list_info_t))
+                  AVS_LIST_NEW_BUFFER(
+                          sizeof(avs_crypto_cert_revocation_list_info_t)
+                          + size))) {
+        LOG(ERROR, _("Out of memory"));
+        return avs_errno(AVS_ENOMEM);
+    }
+    unsigned char *buf = ((unsigned char *) *out)
+                         + sizeof(avs_crypto_cert_revocation_list_info_t);
+    **out = avs_crypto_cert_revocation_list_info_from_buffer(buf, size);
+    memcpy(buf, p, size);
+    return AVS_OK;
+}
+
+static avs_error_t pkcs7_crls_parse(
+        AVS_LIST(avs_crypto_cert_revocation_list_info_t) **tail_ptr_ptr,
+        unsigned char **p,
+        const unsigned char *end) {
+    // CertificateRevocationLists ::=
+    //   SET OF CertificateRevocationList
+    //
+    // Note: we are already inside an implicit SET
+    while (*p < end) {
+        unsigned char *len_ptr = *p + 1;
+        size_t len;
+        if (mbedtls_asn1_get_len(&len_ptr, end, &len)
+                || len > (size_t) (end - len_ptr)) {
+            LOG(ERROR, _("Malformed data when parsing PKCS#7 "
+                         "CertificateRevocationLists"));
+            return avs_errno(AVS_EPROTO);
+        }
+
+        avs_error_t err = copy_crl(*tail_ptr_ptr, *p, len_ptr + len);
+        if (avs_is_err(err)) {
+            return err;
+        }
+
+        *p = len_ptr + len;
+        AVS_LIST_ADVANCE_PTR(tail_ptr_ptr);
+    }
+    assert(*p == end);
+    return AVS_OK;
+}
+
+static avs_error_t pkcs7_signed_data_parse(
+        AVS_LIST(avs_crypto_trusted_cert_info_t) *out_certs,
+        AVS_LIST(avs_crypto_cert_revocation_list_info_t) *out_crls,
+        unsigned char **p,
+        const unsigned char *end) {
+    // SignedData ::= SEQUENCE {
+    //   version Version,
+    //   digestAlgorithms DigestAlgorithmIdentifiers,
+    //   contentInfo ContentInfo,
+    //   certificates
+    //      [0] IMPLICIT ExtendedCertificatesAndCertificates
+    //        OPTIONAL,
+    //   crls
+    //     [1] IMPLICIT CertificateRevocationLists OPTIONAL,
+    //   signerInfos SignerInfos }
+    //
+    // Version ::= INTEGER
+    //
+    // DigestAlgorithmIdentifiers ::=
+    //   SET OF DigestAlgorithmIdentifier
+    size_t len;
+    if (mbedtls_asn1_get_tag(p, end, &len,
+                             MBEDTLS_ASN1_CONSTRUCTED | MBEDTLS_ASN1_SEQUENCE)
+            || len != (size_t) (end - *p)) {
+        goto malformed;
+    }
+
+    int version;
+    if (mbedtls_asn1_get_int(p, end, &version)) {
+        goto malformed;
+    }
+    if (version != 1) {
+        LOG(ERROR, _("Only version 1 of SignedData is currently supported"));
+        return avs_errno(AVS_EPROTO);
+    }
+
+    // skip digestAlgorithms, we don't care about those
+    if (mbedtls_asn1_get_tag(p, end, &len,
+                             MBEDTLS_ASN1_CONSTRUCTED | MBEDTLS_ASN1_SET)
+            || len > (size_t) (end - *p)) {
+        goto malformed;
+    }
+    *p += len;
+
+    avs_error_t err = pkcs7_inner_content_info_verify(p, end);
+    if (avs_is_err(err)) {
+        return err;
+    }
+
+    static const unsigned char CERTIFICATES_TAG =
+            MBEDTLS_ASN1_CONSTRUCTED | MBEDTLS_ASN1_CONTEXT_SPECIFIC | 0;
+    if (*p < end && **p == CERTIFICATES_TAG) {
+        if (mbedtls_asn1_get_tag(p, end, &len, CERTIFICATES_TAG)
+                || len > (size_t) (end - *p)) {
+            goto malformed;
+        }
+        const unsigned char *certificates_end = *p + len;
+        if (avs_is_err((err = pkcs7_certificates_parse(&out_certs, p,
+                                                       certificates_end)))) {
+            return err;
+        }
+        if (*p != certificates_end) {
+            goto malformed;
+        }
+    }
+
+    static const unsigned char CRLS_TAG =
+            MBEDTLS_ASN1_CONSTRUCTED | MBEDTLS_ASN1_CONTEXT_SPECIFIC | 1;
+    if (*p < end && **p == CRLS_TAG) {
+        if (mbedtls_asn1_get_tag(p, end, &len, CRLS_TAG)
+                || len > (size_t) (end - *p)) {
+            goto malformed;
+        }
+        const unsigned char *crls_end = *p + len;
+        if (avs_is_err((err = pkcs7_crls_parse(&out_crls, p, crls_end)))) {
+            return err;
+        }
+        if (*p != crls_end) {
+            goto malformed;
+        }
+    }
+
+    if (mbedtls_asn1_get_tag(p, end, &len,
+                             MBEDTLS_ASN1_CONSTRUCTED | MBEDTLS_ASN1_SET)
+            || len != (size_t) (end - *p)) {
+        goto malformed;
+    }
+    if (*p != end) {
+        LOG(ERROR, _("signerInfos field for PKCS#7 certs-only MUST be empty"));
+        return avs_errno(AVS_EPROTO);
+    }
+    return AVS_OK;
+malformed:
+    LOG(ERROR, _("Malformed data when parsing PKCS#7 SignedData"));
+    return avs_errno(AVS_EPROTO);
+}
+
+static avs_error_t pkcs7_content_info_parse(
+        AVS_LIST(avs_crypto_trusted_cert_info_t) *out_certs,
+        AVS_LIST(avs_crypto_cert_revocation_list_info_t) *out_crls,
+        unsigned char **p,
+        const unsigned char *end) {
+    // ContentInfo ::= SEQUENCE {
+    //   contentType ContentType,
+    //   content
+    //     [0] EXPLICIT ANY DEFINED BY contentType }
+    //
+    // ContentType ::= OBJECT IDENTIFIER
+    static const unsigned char SIGNED_DATA_OID[] = { 0x06, 0x09, 0x2A, 0x86,
+                                                     0x48, 0x86, 0xF7, 0x0D,
+                                                     0x01, 0x07, 0x02 };
+
+    size_t len;
+    if (mbedtls_asn1_get_tag(p, end, &len,
+                             MBEDTLS_ASN1_CONSTRUCTED | MBEDTLS_ASN1_SEQUENCE)
+            || len != (size_t) (end - *p)) {
+        goto malformed;
+    }
+
+    if (len < sizeof(SIGNED_DATA_OID)
+            || memcmp(*p, SIGNED_DATA_OID, sizeof(SIGNED_DATA_OID)) != 0) {
+        LOG(ERROR, _("CMS Type for PKCS#7 certs-only MUST be SignedData"));
+        return avs_errno(AVS_EPROTO);
+    }
+
+    *p += sizeof(SIGNED_DATA_OID);
+    if (mbedtls_asn1_get_tag(p, end, &len,
+                             MBEDTLS_ASN1_CONSTRUCTED
+                                     | MBEDTLS_ASN1_CONTEXT_SPECIFIC | 0)
+            || len != (size_t) (end - *p)) {
+        goto malformed;
+    }
+
+    return pkcs7_signed_data_parse(out_certs, out_crls, p, end);
+malformed:
+    LOG(ERROR, _("Malformed data when parsing PKCS#7 ContentInfo"));
+    return avs_errno(AVS_EPROTO);
+}
+
+avs_error_t avs_crypto_parse_pkcs7_certs_only(
+        AVS_LIST(avs_crypto_trusted_cert_info_t) *out_certs,
+        AVS_LIST(avs_crypto_cert_revocation_list_info_t) *out_crls,
+        const void *buffer,
+        size_t buffer_size) {
+    if (!out_certs || *out_certs || !out_crls || *out_crls) {
+        return avs_errno(AVS_EINVAL);
+    }
+    avs_error_t err = pkcs7_content_info_parse(
+            out_certs, out_crls,
+            &(unsigned char *[]){
+                    (unsigned char *) (intptr_t) (const unsigned char *)
+                            buffer }[0],
+            (const unsigned char *) buffer + buffer_size);
+    if (avs_is_err(err)) {
+        AVS_LIST_CLEAR(out_certs);
+        AVS_LIST_CLEAR(out_crls);
+    }
+    return err;
+}
+#    endif // AVS_COMMONS_WITH_AVS_LIST
+
 #    ifdef AVS_UNIT_TESTING
 #        include "tests/crypto/mbedtls/mbedtls_pki.c"
 #    endif // AVS_UNIT_TESTING
