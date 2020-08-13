@@ -29,6 +29,8 @@
 #include <avsystem/commons/avs_unit_test.h>
 #include <avsystem/commons/avs_utils.h>
 
+#include "pki.h"
+
 #include "src/crypto/avs_crypto_utils.h"
 
 AVS_UNIT_TEST(avs_crypto_pki_ec, test_ec_gen) {
@@ -279,6 +281,13 @@ AVS_UNIT_TEST(avs_crypto_pki_pkcs7, pkcs7_parse_success) {
                           AVS_CRYPTO_SECURITY_INFO_CERT_REVOCATION_LIST);
     AVS_UNIT_ASSERT_EQUAL(crl2->desc.source, AVS_CRYPTO_DATA_SOURCE_BUFFER);
     AVS_UNIT_ASSERT_EQUAL(crl2->desc.info.buffer.buffer_size, 296);
+
+    // Now let's check if it's loadable
+    avs_crypto_trusted_cert_info_t cert_info =
+            avs_crypto_trusted_cert_info_from_list(certs);
+    avs_crypto_cert_revocation_list_info_t crl_info =
+            avs_crypto_cert_revocation_list_info_from_list(crls);
+    assert_trust_store_loadable(&cert_info, &crl_info);
 
     AVS_LIST_CLEAR(&certs);
     AVS_LIST_CLEAR(&crls);

@@ -24,8 +24,20 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+#include "../pki.h"
+
 #include "src/crypto/openssl/avs_openssl_common.h"
 #include "src/crypto/openssl/avs_openssl_data_loader.h"
+
+void assert_trust_store_loadable(
+        const avs_crypto_trusted_cert_info_t *certs,
+        const avs_crypto_cert_revocation_list_info_t *crls) {
+    X509_STORE *store = X509_STORE_new();
+    AVS_UNIT_ASSERT_NOT_NULL(store);
+    AVS_UNIT_ASSERT_SUCCESS(_avs_crypto_openssl_load_ca_certs(store, certs));
+    AVS_UNIT_ASSERT_SUCCESS(_avs_crypto_openssl_load_crls(store, crls));
+    X509_STORE_free(store);
+}
 
 __attribute__((constructor)) static void global_ssl_init(void) {
     SSL_library_init();

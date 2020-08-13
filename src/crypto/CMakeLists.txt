@@ -23,7 +23,8 @@ set(AVS_CRYPTO_TEST_SOURCES "${AVS_COMMONS_SOURCE_DIR}/tests/crypto/prng.c")
 
 set(AVS_CRYPTO_ADVANCED_FEATURES_TEST_SOURCES
     ${AVS_COMMONS_SOURCE_DIR}/tests/crypto/aead.c
-    ${AVS_COMMONS_SOURCE_DIR}/tests/crypto/hkdf.c)
+    ${AVS_COMMONS_SOURCE_DIR}/tests/crypto/hkdf.c
+    ${AVS_COMMONS_SOURCE_DIR}/tests/crypto/pki.h)
 
 option(WITH_AVS_CRYPTO_ADVANCED_FEATURES
        "Enables/disables advanced cryptographic features, such as AEAD/HKDF support" OFF)

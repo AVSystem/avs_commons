@@ -24,7 +24,21 @@
 
 #include <sys/stat.h>
 
+#include "../pki.h"
+
 #include "src/crypto/mbedtls/avs_mbedtls_data_loader.h"
+
+void assert_trust_store_loadable(
+        const avs_crypto_trusted_cert_info_t *certs,
+        const avs_crypto_cert_revocation_list_info_t *crls) {
+    mbedtls_x509_crt *crt = NULL;
+    AVS_UNIT_ASSERT_SUCCESS(_avs_crypto_mbedtls_load_ca_certs(&crt, certs));
+    _avs_crypto_mbedtls_x509_crt_cleanup(&crt);
+
+    mbedtls_x509_crl *crl = NULL;
+    AVS_UNIT_ASSERT_SUCCESS(_avs_crypto_mbedtls_load_crls(&crl, crls));
+    _avs_crypto_mbedtls_x509_crl_cleanup(&crl);
+}
 
 AVS_UNIT_TEST(backend_mbedtls, chain_loading_from_file) {
     mbedtls_x509_crt *chain = NULL;
