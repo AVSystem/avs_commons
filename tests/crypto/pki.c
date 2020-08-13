@@ -22,8 +22,14 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include <avsystem/commons/avs_base64.h>
 #include <avsystem/commons/avs_crypto_pki.h>
+#include <avsystem/commons/avs_http.h>
+#include <avsystem/commons/avs_stream_membuf.h>
 #include <avsystem/commons/avs_unit_test.h>
+#include <avsystem/commons/avs_utils.h>
+
+#include "src/crypto/avs_crypto_utils.h"
 
 AVS_UNIT_TEST(avs_crypto_pki_ec, test_ec_gen) {
     avs_crypto_prng_ctx_t *prng_ctx = avs_crypto_prng_new(NULL, NULL);
@@ -170,4 +176,110 @@ AVS_UNIT_TEST(avs_crypto_pki, avs_crypto_client_cert_expiration_date) {
     // test that it is, with up to 30 second difference allowed
     AVS_UNIT_ASSERT_TRUE(cert_relative_validity >= 9999.0 * 86400.0 - 30.0);
     AVS_UNIT_ASSERT_TRUE(cert_relative_validity <= 9999.0 * 86400.0 + 30.0);
+}
+
+static void
+load_pem_from_url(const char *raw_url, uint8_t **out_buf, size_t *out_size) {
+    assert(out_buf && !*out_buf && out_size);
+
+    avs_url_t *url = avs_url_parse(raw_url);
+    AVS_UNIT_ASSERT_NOT_NULL(url);
+
+    avs_http_t *http = avs_http_new(&AVS_HTTP_DEFAULT_BUFFER_SIZES);
+    AVS_UNIT_ASSERT_NOT_NULL(http);
+
+    avs_crypto_prng_ctx_t *prng_ctx = avs_crypto_prng_new(NULL, NULL);
+    AVS_UNIT_ASSERT_NOT_NULL(prng_ctx);
+
+    const avs_net_ssl_configuration_t SSL_CONFIG = {
+        .prng_ctx = prng_ctx
+    };
+    avs_http_ssl_configuration(http, &SSL_CONFIG);
+
+    avs_stream_t *stream = NULL;
+    AVS_UNIT_ASSERT_SUCCESS(avs_http_open_stream(&stream, http, AVS_HTTP_GET,
+                                                 AVS_HTTP_CONTENT_IDENTITY, url,
+                                                 NULL, NULL));
+    AVS_UNIT_ASSERT_SUCCESS(avs_stream_finish_message(stream));
+
+    avs_stream_t *membuf = avs_stream_membuf_create();
+    AVS_UNIT_ASSERT_NOT_NULL(membuf);
+
+    char buf[128];
+    bool finished = false;
+    while (!finished) {
+        AVS_UNIT_ASSERT_SUCCESS(
+                avs_stream_getline(stream, NULL, &finished, buf, sizeof(buf)));
+        // trim the line
+        const char *begin = buf + strspn(buf, AVS_SPACES);
+        size_t length = strcspn(begin, AVS_SPACES);
+        // ignore PEM begin/end lines
+        if (strncmp(begin, "-----", 5) != 0) {
+            AVS_UNIT_ASSERT_SUCCESS(avs_stream_write(membuf, begin, length));
+        }
+    }
+    avs_stream_cleanup(&stream);
+    avs_http_free(http);
+    avs_crypto_prng_free(&prng_ctx);
+    avs_url_free(url);
+
+    // terminating nullbyte
+    AVS_UNIT_ASSERT_SUCCESS(avs_stream_write(membuf, "", 1));
+    void *data = NULL;
+    size_t length;
+    AVS_UNIT_ASSERT_SUCCESS(
+            avs_stream_membuf_take_ownership(membuf, &data, &length));
+    avs_stream_cleanup(&membuf);
+
+    size_t estimate = avs_base64_estimate_decoded_size(length);
+    *out_buf = (uint8_t *) avs_malloc(estimate);
+    AVS_UNIT_ASSERT_NOT_NULL(*out_buf);
+    AVS_UNIT_ASSERT_SUCCESS(avs_base64_decode(out_size, *out_buf, estimate,
+                                              (const char *) data));
+    avs_free(data);
+}
+
+AVS_UNIT_TEST(avs_crypto_pki_pkcs7, pkcs7_parse_success) {
+    uint8_t *buf = NULL;
+    size_t buf_size;
+    load_pem_from_url("https://github.com/openssl/openssl/raw/"
+                      "dd0164e7565bb14fac193aea4c2c37714bf66d56/test/pkcs7.pem",
+                      &buf, &buf_size);
+
+    AVS_LIST(avs_crypto_trusted_cert_info_t) certs = NULL;
+    AVS_LIST(avs_crypto_cert_revocation_list_info_t) crls = NULL;
+    AVS_UNIT_ASSERT_SUCCESS(
+            avs_crypto_parse_pkcs7_certs_only(&certs, &crls, buf, buf_size));
+    avs_free(buf);
+
+    AVS_UNIT_ASSERT_EQUAL(AVS_LIST_SIZE(certs), 2);
+
+    avs_crypto_trusted_cert_info_t *cert1 = AVS_LIST_NTH(certs, 0);
+    AVS_UNIT_ASSERT_EQUAL(cert1->desc.type,
+                          AVS_CRYPTO_SECURITY_INFO_TRUSTED_CERT);
+    AVS_UNIT_ASSERT_EQUAL(cert1->desc.source, AVS_CRYPTO_DATA_SOURCE_BUFFER);
+    AVS_UNIT_ASSERT_EQUAL(cert1->desc.info.buffer.buffer_size, 1276);
+
+    avs_crypto_trusted_cert_info_t *cert2 = AVS_LIST_NTH(certs, 1);
+    AVS_UNIT_ASSERT_EQUAL(cert2->desc.type,
+                          AVS_CRYPTO_SECURITY_INFO_TRUSTED_CERT);
+    AVS_UNIT_ASSERT_EQUAL(cert2->desc.source, AVS_CRYPTO_DATA_SOURCE_BUFFER);
+    AVS_UNIT_ASSERT_EQUAL(cert2->desc.info.buffer.buffer_size, 637);
+
+    AVS_UNIT_ASSERT_EQUAL(AVS_LIST_SIZE(crls), 2);
+
+    avs_crypto_cert_revocation_list_info_t *crl1 = AVS_LIST_NTH(crls, 0);
+    AVS_UNIT_ASSERT_EQUAL(crl1->desc.type,
+                          AVS_CRYPTO_SECURITY_INFO_CERT_REVOCATION_LIST);
+    AVS_UNIT_ASSERT_EQUAL(crl1->desc.source, AVS_CRYPTO_DATA_SOURCE_BUFFER);
+    AVS_UNIT_ASSERT_EQUAL(crl1->desc.info.buffer.buffer_size, 299);
+
+    avs_crypto_cert_revocation_list_info_t *crl2 = AVS_LIST_NTH(crls, 1);
+    AVS_UNIT_ASSERT_EQUAL(crl2->desc.type,
+                          AVS_CRYPTO_SECURITY_INFO_CERT_REVOCATION_LIST);
+    AVS_UNIT_ASSERT_EQUAL(crl2->desc.source, AVS_CRYPTO_DATA_SOURCE_BUFFER);
+    AVS_UNIT_ASSERT_EQUAL(crl2->desc.info.buffer.buffer_size, 296);
+
+    AVS_LIST_CLEAR(&certs);
+    AVS_LIST_CLEAR(&crls);
 }
