@@ -516,6 +516,7 @@ static avs_error_t pkcs7_signed_data_parse(
     //
     // DigestAlgorithmIdentifiers ::=
     //   SET OF DigestAlgorithmIdentifier
+    avs_error_t err = AVS_OK;
     long signed_data_len;
     if (get_ber_tag(p, end, &signed_data_len,
                     MBEDTLS_ASN1_CONSTRUCTED | MBEDTLS_ASN1_SEQUENCE)
@@ -546,8 +547,7 @@ static avs_error_t pkcs7_signed_data_parse(
         goto malformed;
     }
 
-    avs_error_t err = pkcs7_inner_content_info_verify(p, end);
-    if (avs_is_err(err)) {
+    if (avs_is_err((err = pkcs7_inner_content_info_verify(p, end)))) {
         return err;
     }
 
@@ -628,6 +628,7 @@ static avs_error_t pkcs7_content_info_parse(
                                                      0x48, 0x86, 0xF7, 0x0D,
                                                      0x01, 0x07, 0x02 };
 
+    avs_error_t err = AVS_OK;
     long content_info_len;
     if (get_ber_tag(p, end, &content_info_len,
                     MBEDTLS_ASN1_CONSTRUCTED | MBEDTLS_ASN1_SEQUENCE)
@@ -654,8 +655,8 @@ static avs_error_t pkcs7_content_info_parse(
         goto malformed;
     }
 
-    avs_error_t err = pkcs7_signed_data_parse(out_certs, out_crls, p, end);
-    if (avs_is_err(err)) {
+    if (avs_is_err(
+                (err = pkcs7_signed_data_parse(out_certs, out_crls, p, end)))) {
         return err;
     }
 
