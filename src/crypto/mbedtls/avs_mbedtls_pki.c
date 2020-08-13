@@ -323,6 +323,37 @@ avs_time_real_t avs_crypto_client_cert_expiration_date(
 // version is defined in RFC 5652), but we don't support any structures
 // supported in newer versions anyway, so it's simpler this way.
 
+static int process_ber_length(unsigned char **p,
+                              const unsigned char *end,
+                              long *out_len,
+                              int result,
+                              size_t ulen) {
+    if (result == MBEDTLS_ERR_ASN1_INVALID_LENGTH && *p < end && **p == 0x80) {
+        // BER indefinite length
+        ++*p;
+        *out_len = -1;
+        return 0;
+    }
+    if (!result) {
+        if (ulen > LONG_MAX) {
+            return MBEDTLS_ERR_ASN1_INVALID_LENGTH;
+        }
+        *out_len = (long) ulen;
+    }
+    return result;
+}
+
+static int
+get_ber_tag(unsigned char **p, const unsigned char *end, long *len, int tag) {
+    // This is like mbedtls_asn1_get_tag() but allows BER indefinite length;
+    // that's why the len parameter is a signed type here.
+    size_t ulen;
+    int result = mbedtls_asn1_get_tag(p, end, &ulen, tag);
+    return process_ber_length(p, end, len, result, ulen);
+}
+
+#        define ASN1_BER_EOC_TAG 0x00
+
 static avs_error_t pkcs7_inner_content_info_verify(unsigned char **p,
                                                    const unsigned char *end) {
     // ContentInfo ::= SEQUENCE {
@@ -335,18 +366,26 @@ static avs_error_t pkcs7_inner_content_info_verify(unsigned char **p,
                                                  0x48, 0x86, 0xF7, 0x0D,
                                                  0x01, 0x07, 0x01 };
 
-    size_t len;
-    if (mbedtls_asn1_get_tag(p, end, &len,
-                             MBEDTLS_ASN1_CONSTRUCTED | MBEDTLS_ASN1_SEQUENCE)
-            || len != sizeof(ID_DATA_OID)
+    long len;
+    if (get_ber_tag(p, end, &len,
+                    MBEDTLS_ASN1_CONSTRUCTED | MBEDTLS_ASN1_SEQUENCE)
+            || (len >= 0 && len != sizeof(ID_DATA_OID))
+            || *p + sizeof(ID_DATA_OID) > end
             || memcmp(*p, ID_DATA_OID, sizeof(ID_DATA_OID)) != 0) {
-        LOG(ERROR,
-            _("Encapsulated content for PKCS#7 certs-only MUST be absent"));
-        return avs_errno(AVS_EPROTO);
+        goto malformed;
     }
 
     *p += sizeof(ID_DATA_OID);
+
+    // for indefinite-length encoding, we expect EOC here
+    if (len < 0 && (get_ber_tag(p, end, &len, ASN1_BER_EOC_TAG) || len != 0)) {
+        goto malformed;
+    }
+
     return AVS_OK;
+malformed:
+    LOG(ERROR, _("Encapsulated content for PKCS#7 certs-only MUST be absent"));
+    return avs_errno(AVS_EPROTO);
 }
 
 static avs_error_t copy_cert(AVS_LIST(avs_crypto_trusted_cert_info_t) *out,
@@ -369,7 +408,8 @@ static avs_error_t copy_cert(AVS_LIST(avs_crypto_trusted_cert_info_t) *out,
 static avs_error_t pkcs7_certificates_parse(
         AVS_LIST(avs_crypto_trusted_cert_info_t) **tail_ptr_ptr,
         unsigned char **p,
-        const unsigned char *end) {
+        const unsigned char *end,
+        long set_len) {
     // ExtendedCertificatesAndCertificates ::=
     //   SET OF ExtendedCertificateOrCertificate
     //
@@ -379,9 +419,11 @@ static avs_error_t pkcs7_certificates_parse(
     //   extendedCertificate [0] IMPLICIT ExtendedCertificate }
     //
     // Note: we are already inside an implicit SET
-    while (*p < end) {
+    while (*p < end && (set_len >= 0 || **p != ASN1_BER_EOC_TAG)) {
         unsigned char *len_ptr = *p + 1;
         size_t len;
+        // We don't support indefinite length here, because Mbed TLS would not
+        // be able to parse that anyway.
         if (mbedtls_asn1_get_len(&len_ptr, end, &len)
                 || len > (size_t) (end - len_ptr)) {
             LOG(ERROR, _("Malformed data when parsing PKCS#7 "
@@ -397,7 +439,7 @@ static avs_error_t pkcs7_certificates_parse(
         *p = len_ptr + len;
         AVS_LIST_ADVANCE_PTR(tail_ptr_ptr);
     }
-    assert(*p == end);
+    assert(set_len < 0 || *p == end);
     return AVS_OK;
 }
 
@@ -424,14 +466,17 @@ copy_crl(AVS_LIST(avs_crypto_cert_revocation_list_info_t) *out,
 static avs_error_t pkcs7_crls_parse(
         AVS_LIST(avs_crypto_cert_revocation_list_info_t) **tail_ptr_ptr,
         unsigned char **p,
-        const unsigned char *end) {
+        const unsigned char *end,
+        long set_len) {
     // CertificateRevocationLists ::=
     //   SET OF CertificateRevocationList
     //
     // Note: we are already inside an implicit SET
-    while (*p < end) {
+    while (*p < end && (set_len >= 0 || **p != ASN1_BER_EOC_TAG)) {
         unsigned char *len_ptr = *p + 1;
         size_t len;
+        // We don't support indefinite length here, because Mbed TLS would not
+        // be able to parse that anyway.
         if (mbedtls_asn1_get_len(&len_ptr, end, &len)
                 || len > (size_t) (end - len_ptr)) {
             LOG(ERROR, _("Malformed data when parsing PKCS#7 "
@@ -447,7 +492,7 @@ static avs_error_t pkcs7_crls_parse(
         *p = len_ptr + len;
         AVS_LIST_ADVANCE_PTR(tail_ptr_ptr);
     }
-    assert(*p == end);
+    assert(set_len < 0 || *p == end);
     return AVS_OK;
 }
 
@@ -471,10 +516,10 @@ static avs_error_t pkcs7_signed_data_parse(
     //
     // DigestAlgorithmIdentifiers ::=
     //   SET OF DigestAlgorithmIdentifier
-    size_t len;
-    if (mbedtls_asn1_get_tag(p, end, &len,
-                             MBEDTLS_ASN1_CONSTRUCTED | MBEDTLS_ASN1_SEQUENCE)
-            || len != (size_t) (end - *p)) {
+    long signed_data_len;
+    if (get_ber_tag(p, end, &signed_data_len,
+                    MBEDTLS_ASN1_CONSTRUCTED | MBEDTLS_ASN1_SEQUENCE)
+            || (signed_data_len >= 0 && signed_data_len != (long) (end - *p))) {
         goto malformed;
     }
 
@@ -488,12 +533,18 @@ static avs_error_t pkcs7_signed_data_parse(
     }
 
     // skip digestAlgorithms, we don't care about those
-    if (mbedtls_asn1_get_tag(p, end, &len,
-                             MBEDTLS_ASN1_CONSTRUCTED | MBEDTLS_ASN1_SET)
-            || len > (size_t) (end - *p)) {
+    long len;
+    if (get_ber_tag(p, end, &len, MBEDTLS_ASN1_CONSTRUCTED | MBEDTLS_ASN1_SET)
+            || len > (long) (end - *p)) {
         goto malformed;
     }
-    *p += len;
+    if (len >= 0) {
+        *p += len;
+    } else if (get_ber_tag(p, end, &len, ASN1_BER_EOC_TAG) || len != 0) {
+        // we don't support indefinite-length digestAlgorithms properly,
+        // but let's try to support zero-length case as best-effort
+        goto malformed;
+    }
 
     avs_error_t err = pkcs7_inner_content_info_verify(p, end);
     if (avs_is_err(err)) {
@@ -503,16 +554,19 @@ static avs_error_t pkcs7_signed_data_parse(
     static const unsigned char CERTIFICATES_TAG =
             MBEDTLS_ASN1_CONSTRUCTED | MBEDTLS_ASN1_CONTEXT_SPECIFIC | 0;
     if (*p < end && **p == CERTIFICATES_TAG) {
-        if (mbedtls_asn1_get_tag(p, end, &len, CERTIFICATES_TAG)
-                || len > (size_t) (end - *p)) {
+        if (get_ber_tag(p, end, &len, CERTIFICATES_TAG)
+                || len > (long) (end - *p)) {
             goto malformed;
         }
-        const unsigned char *certificates_end = *p + len;
-        if (avs_is_err((err = pkcs7_certificates_parse(&out_certs, p,
-                                                       certificates_end)))) {
+        const unsigned char *certificates_end = len >= 0 ? *p + len : end;
+        if (avs_is_err((err = pkcs7_certificates_parse(
+                                &out_certs, p, certificates_end, len)))) {
             return err;
         }
-        if (*p != certificates_end) {
+        if ((len >= 0 && *p != certificates_end)
+                || (len < 0
+                    && (get_ber_tag(p, end, &len, ASN1_BER_EOC_TAG)
+                        || len != 0))) {
             goto malformed;
         }
     }
@@ -520,28 +574,39 @@ static avs_error_t pkcs7_signed_data_parse(
     static const unsigned char CRLS_TAG =
             MBEDTLS_ASN1_CONSTRUCTED | MBEDTLS_ASN1_CONTEXT_SPECIFIC | 1;
     if (*p < end && **p == CRLS_TAG) {
-        if (mbedtls_asn1_get_tag(p, end, &len, CRLS_TAG)
-                || len > (size_t) (end - *p)) {
+        if (get_ber_tag(p, end, &len, CRLS_TAG) || len > (long) (end - *p)) {
             goto malformed;
         }
-        const unsigned char *crls_end = *p + len;
-        if (avs_is_err((err = pkcs7_crls_parse(&out_crls, p, crls_end)))) {
+        const unsigned char *crls_end = len >= 0 ? *p + len : end;
+        if (avs_is_err((err = pkcs7_crls_parse(&out_crls, p, crls_end, len)))) {
             return err;
         }
-        if (*p != crls_end) {
+        if ((len >= 0 && *p != crls_end)
+                || (len < 0
+                    && (get_ber_tag(p, end, &len, ASN1_BER_EOC_TAG)
+                        || len != 0))) {
             goto malformed;
         }
     }
 
-    if (mbedtls_asn1_get_tag(p, end, &len,
-                             MBEDTLS_ASN1_CONSTRUCTED | MBEDTLS_ASN1_SET)
-            || len != (size_t) (end - *p)) {
+    if (get_ber_tag(p, end, &len, MBEDTLS_ASN1_CONSTRUCTED | MBEDTLS_ASN1_SET)
+            || len > (long) (end - *p)) {
         goto malformed;
     }
-    if (*p != end) {
+    if (len > 0
+            || (len < 0
+                && (get_ber_tag(p, end, &len, ASN1_BER_EOC_TAG) || len != 0))) {
         LOG(ERROR, _("signerInfos field for PKCS#7 certs-only MUST be empty"));
         return avs_errno(AVS_EPROTO);
     }
+
+    // for indefinite-length encoding, we expect EOC here
+    if (signed_data_len < 0
+            && (get_ber_tag(p, end, &signed_data_len, ASN1_BER_EOC_TAG)
+                || signed_data_len != 0)) {
+        goto malformed;
+    }
+
     return AVS_OK;
 malformed:
     LOG(ERROR, _("Malformed data when parsing PKCS#7 SignedData"));
@@ -563,28 +628,48 @@ static avs_error_t pkcs7_content_info_parse(
                                                      0x48, 0x86, 0xF7, 0x0D,
                                                      0x01, 0x07, 0x02 };
 
-    size_t len;
-    if (mbedtls_asn1_get_tag(p, end, &len,
-                             MBEDTLS_ASN1_CONSTRUCTED | MBEDTLS_ASN1_SEQUENCE)
-            || len != (size_t) (end - *p)) {
+    long content_info_len;
+    if (get_ber_tag(p, end, &content_info_len,
+                    MBEDTLS_ASN1_CONSTRUCTED | MBEDTLS_ASN1_SEQUENCE)
+            || (content_info_len >= 0
+                && content_info_len != (long) (end - *p))) {
         goto malformed;
     }
 
-    if (len < sizeof(SIGNED_DATA_OID)
+    if ((content_info_len >= 0
+         && (size_t) content_info_len < sizeof(SIGNED_DATA_OID))
+            || *p + sizeof(SIGNED_DATA_OID) > end
             || memcmp(*p, SIGNED_DATA_OID, sizeof(SIGNED_DATA_OID)) != 0) {
         LOG(ERROR, _("CMS Type for PKCS#7 certs-only MUST be SignedData"));
         return avs_errno(AVS_EPROTO);
     }
 
     *p += sizeof(SIGNED_DATA_OID);
-    if (mbedtls_asn1_get_tag(p, end, &len,
-                             MBEDTLS_ASN1_CONSTRUCTED
-                                     | MBEDTLS_ASN1_CONTEXT_SPECIFIC | 0)
-            || len != (size_t) (end - *p)) {
+
+    long len;
+    if (get_ber_tag(p, end, &len,
+                    MBEDTLS_ASN1_CONSTRUCTED | MBEDTLS_ASN1_CONTEXT_SPECIFIC
+                            | 0)
+            || (len >= 0 && len != (long) (end - *p))) {
         goto malformed;
     }
 
-    return pkcs7_signed_data_parse(out_certs, out_crls, p, end);
+    avs_error_t err = pkcs7_signed_data_parse(out_certs, out_crls, p, end);
+    if (avs_is_err(err)) {
+        return err;
+    }
+
+    // EOCs for indefinite-length encodings
+    if (len < 0 && (get_ber_tag(p, end, &len, ASN1_BER_EOC_TAG) || len != 0)) {
+        goto malformed;
+    }
+    if ((content_info_len < 0
+         && (get_ber_tag(p, end, &content_info_len, ASN1_BER_EOC_TAG)
+             || content_info_len != 0))
+            || *p != end) {
+        goto malformed;
+    }
+    return AVS_OK;
 malformed:
     LOG(ERROR, _("Malformed data when parsing PKCS#7 ContentInfo"));
     return avs_errno(AVS_EPROTO);
