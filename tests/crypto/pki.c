@@ -283,3 +283,25 @@ AVS_UNIT_TEST(avs_crypto_pki_pkcs7, pkcs7_parse_success) {
     AVS_LIST_CLEAR(&certs);
     AVS_LIST_CLEAR(&crls);
 }
+
+AVS_UNIT_TEST(avs_crypto_pki_pkcs7, pkcs7_parse_failure) {
+    uint8_t *buf = NULL;
+    size_t buf_size;
+    // This file contains encapsulated data and signerInfos
+    load_pem_from_url(
+            "https://github.com/openssl/openssl/raw/"
+            "dd0164e7565bb14fac193aea4c2c37714bf66d56/test/pkcs7-1.pem",
+            &buf, &buf_size);
+    AVS_UNIT_ASSERT_EQUAL(buf_size, 597);
+
+    AVS_LIST(avs_crypto_trusted_cert_info_t) certs = NULL;
+    AVS_LIST(avs_crypto_cert_revocation_list_info_t) crls = NULL;
+    // this file has a superfluous byte in it
+    AVS_UNIT_ASSERT_FAILED(
+            avs_crypto_parse_pkcs7_certs_only(&certs, &crls, buf, buf_size));
+    // but also contains encapsulated data and signerInfos
+    AVS_UNIT_ASSERT_FAILED(avs_crypto_parse_pkcs7_certs_only(&certs, &crls, buf,
+                                                             buf_size - 1));
+
+    avs_free(buf);
+}
