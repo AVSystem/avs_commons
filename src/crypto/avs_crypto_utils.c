@@ -80,16 +80,12 @@ avs_crypto_trusted_cert_info_t avs_crypto_trusted_cert_info_from_array(
 }
 
 typedef avs_error_t
-trusted_cert_info_visit_t(const avs_crypto_security_info_union_t *desc,
-                          void *arg);
+security_info_visit_t(const avs_crypto_security_info_union_t *desc, void *arg);
 
 static avs_error_t
-trusted_cert_info_iterate(const avs_crypto_security_info_union_t *desc,
-                          trusted_cert_info_visit_t *visitor,
-                          void *visitor_arg) {
-    if (desc->type != AVS_CRYPTO_SECURITY_INFO_TRUSTED_CERT) {
-        return avs_errno(AVS_EINVAL);
-    }
+security_info_iterate(const avs_crypto_security_info_union_t *desc,
+                      security_info_visit_t *visitor,
+                      void *visitor_arg) {
     switch (desc->source) {
     case AVS_CRYPTO_DATA_SOURCE_EMPTY:
         return AVS_OK;
@@ -97,8 +93,8 @@ trusted_cert_info_iterate(const avs_crypto_security_info_union_t *desc,
         avs_error_t err = AVS_OK;
         for (size_t i = 0; avs_is_ok(err) && i < desc->info.array.element_count;
              ++i) {
-            err = trusted_cert_info_iterate(
-                    &desc->info.array.array_ptr[i], visitor, visitor_arg);
+            err = security_info_iterate(&desc->info.array.array_ptr[i], visitor,
+                                        visitor_arg);
         }
         return err;
     }
@@ -107,7 +103,7 @@ trusted_cert_info_iterate(const avs_crypto_security_info_union_t *desc,
         AVS_LIST(avs_crypto_security_info_union_t) entry;
         AVS_LIST_FOREACH(entry, desc->info.list.list_head) {
             avs_error_t err =
-                    trusted_cert_info_iterate(entry, visitor, visitor_arg);
+                    security_info_iterate(entry, visitor, visitor_arg);
             if (avs_is_err(err)) {
                 return err;
             }
@@ -142,14 +138,18 @@ calculate_data_buffer_size(size_t *out_buffer_size,
 }
 
 typedef struct {
+    const int expected_type;
     size_t element_count;
     size_t data_buffer_size;
-} trusted_cert_stats_t;
+} security_info_stats_t;
 
 static avs_error_t
-calculate_cert_stats(const avs_crypto_security_info_union_t *desc,
+calculate_info_stats(const avs_crypto_security_info_union_t *desc,
                      void *stats_) {
-    trusted_cert_stats_t *stats = (trusted_cert_stats_t *) stats_;
+    security_info_stats_t *stats = (security_info_stats_t *) stats_;
+    if (desc->type != stats->expected_type) {
+        return avs_errno(AVS_EINVAL);
+    }
     ++stats->element_count;
     size_t element_buffer_size = 0;
     avs_error_t err = calculate_data_buffer_size(&element_buffer_size, desc);
@@ -213,16 +213,17 @@ static avs_error_t copy_into_array(const avs_crypto_security_info_union_t *desc,
     return AVS_OK;
 }
 
-avs_error_t avs_crypto_trusted_cert_info_copy_as_array(
-        avs_crypto_trusted_cert_info_t **out_array,
-        size_t *out_element_count,
-        avs_crypto_trusted_cert_info_t trusted_cert_info) {
+static avs_error_t copy_as_array(avs_crypto_security_info_union_t **out_array,
+                                 size_t *out_element_count,
+                                 const avs_crypto_security_info_union_t *desc,
+                                 avs_crypto_security_info_tag_t tag) {
     if (!out_array || !out_element_count || *out_array) {
         return avs_errno(AVS_EINVAL);
     }
-    trusted_cert_stats_t stats = { 0 };
-    avs_error_t err = trusted_cert_info_iterate(
-            &trusted_cert_info.desc, calculate_cert_stats, &stats);
+    security_info_stats_t stats = {
+        .expected_type = tag
+    };
+    avs_error_t err = security_info_iterate(desc, calculate_info_stats, &stats);
     if (avs_is_err(err)) {
         return err;
     }
@@ -239,20 +240,27 @@ avs_error_t avs_crypto_trusted_cert_info_copy_as_array(
             stats.element_count * sizeof(avs_crypto_security_info_union_t)
             + stats.data_buffer_size;
     if (buffer_size) {
-        if (!(*out_array = (avs_crypto_trusted_cert_info_t *) avs_malloc(
+        if (!(*out_array = (avs_crypto_security_info_union_t *) avs_malloc(
                       buffer_size))) {
             return avs_errno(AVS_ENOMEM);
         }
         array_copy_state_t state = {
-            .array_ptr = &(*out_array)->desc,
-            .data_buffer_ptr =
-                    (char *) &(&(*out_array)->desc)[stats.element_count]
+            .array_ptr = *out_array,
+            .data_buffer_ptr = (char *) &(*out_array)[stats.element_count]
         };
-        err = trusted_cert_info_iterate(
-                &trusted_cert_info.desc, copy_into_array, &state);
+        err = security_info_iterate(desc, copy_into_array, &state);
         assert(avs_is_ok(err));
     }
     return AVS_OK;
+}
+
+avs_error_t avs_crypto_trusted_cert_info_copy_as_array(
+        avs_crypto_trusted_cert_info_t **out_array,
+        size_t *out_element_count,
+        avs_crypto_trusted_cert_info_t trusted_cert_info) {
+    return copy_as_array((avs_crypto_security_info_union_t **) out_array,
+                         out_element_count, &trusted_cert_info.desc,
+                         AVS_CRYPTO_SECURITY_INFO_TRUSTED_CERT);
 }
 
 #    ifdef AVS_COMMONS_WITH_AVS_LIST
@@ -271,18 +279,25 @@ avs_crypto_trusted_cert_info_t avs_crypto_trusted_cert_info_from_list(
     return result;
 }
 
+typedef struct {
+    const int expected_type;
+    AVS_LIST(avs_crypto_security_info_union_t) *tail_ptr;
+} copy_into_list_state_t;
+
 static avs_error_t copy_into_list(const avs_crypto_security_info_union_t *desc,
-                                  void *tail_ptr_ptr_) {
-    AVS_LIST(avs_crypto_security_info_union_t) **tail_ptr_ptr =
-            (AVS_LIST(avs_crypto_security_info_union_t) **) tail_ptr_ptr_;
+                                  void *state_) {
+    copy_into_list_state_t *state = (copy_into_list_state_t *) state_;
+    if (desc->type != state->expected_type) {
+        return avs_errno(AVS_EINVAL);
+    }
     size_t data_buffer_size = SIZE_MAX;
     avs_error_t err = calculate_data_buffer_size(&data_buffer_size, desc);
     if (avs_is_err(err)) {
         return err;
     }
-    assert(!**tail_ptr_ptr);
+    assert(!*state->tail_ptr);
     if (data_buffer_size > SIZE_MAX - sizeof(avs_crypto_security_info_union_t)
-            || !(**tail_ptr_ptr = (AVS_LIST(avs_crypto_security_info_union_t))
+            || !(*state->tail_ptr = (AVS_LIST(avs_crypto_security_info_union_t))
                          AVS_LIST_NEW_BUFFER(
                                  sizeof(avs_crypto_security_info_union_t)
                                  + data_buffer_size))) {
@@ -291,9 +306,9 @@ static avs_error_t copy_into_list(const avs_crypto_security_info_union_t *desc,
     // We allocated more data than sizeof(avs_crypto_trusted_cert_info_t)
     // so that the data buffer can be right after it in the same allocated
     // element. Let's calculate a pointer to that data.
-    char *data_buffer_ptr = (char *) &(**tail_ptr_ptr)[1];
-    copy_element(**tail_ptr_ptr, &data_buffer_ptr, desc);
-    AVS_LIST_ADVANCE_PTR(tail_ptr_ptr);
+    char *data_buffer_ptr = (char *) &(*state->tail_ptr)[1];
+    copy_element(*state->tail_ptr, &data_buffer_ptr, desc);
+    AVS_LIST_ADVANCE_PTR(&state->tail_ptr);
     return AVS_OK;
 }
 
@@ -303,10 +318,12 @@ avs_error_t avs_crypto_trusted_cert_info_copy_as_list(
     if (!out_list || *out_list) {
         return avs_errno(AVS_EINVAL);
     }
-    AVS_LIST(avs_crypto_security_info_union_t) *tail_ptr =
-            (AVS_LIST(avs_crypto_security_info_union_t) *) out_list;
-    avs_error_t err = trusted_cert_info_iterate(
-            &trusted_cert_info.desc, copy_into_list, &tail_ptr);
+    copy_into_list_state_t state = {
+        .expected_type = AVS_CRYPTO_SECURITY_INFO_TRUSTED_CERT,
+        .tail_ptr = (AVS_LIST(avs_crypto_security_info_union_t) *) out_list
+    };
+    avs_error_t err = security_info_iterate(&trusted_cert_info.desc,
+                                            copy_into_list, &state);
     if (avs_is_err(err)) {
         AVS_LIST_CLEAR(out_list);
     }
