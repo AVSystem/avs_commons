@@ -33,7 +33,8 @@ typedef enum {
 typedef enum {
     AVS_CRYPTO_SECURITY_INFO_TRUSTED_CERT,
     AVS_CRYPTO_SECURITY_INFO_CLIENT_CERT,
-    AVS_CRYPTO_SECURITY_INFO_CLIENT_KEY
+    AVS_CRYPTO_SECURITY_INFO_CLIENT_KEY,
+    AVS_CRYPTO_SECURITY_INFO_CERT_REVOCATION_LIST
 } avs_crypto_security_info_tag_t;
 
 bool _avs_crypto_aead_parameters_valid(size_t key_len,

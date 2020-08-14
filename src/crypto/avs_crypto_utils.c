@@ -62,6 +62,28 @@ avs_crypto_trusted_cert_info_from_buffer(const void *buffer,
     return result;
 }
 
+avs_crypto_cert_revocation_list_info_t
+avs_crypto_cert_revocation_list_info_from_file(const char *filename) {
+    avs_crypto_cert_revocation_list_info_t result;
+    memset(&result, 0, sizeof(result));
+    result.desc.type = AVS_CRYPTO_SECURITY_INFO_CERT_REVOCATION_LIST;
+    result.desc.source = AVS_CRYPTO_DATA_SOURCE_FILE;
+    result.desc.info.file.filename = filename;
+    return result;
+}
+
+avs_crypto_cert_revocation_list_info_t
+avs_crypto_cert_revocation_list_info_from_buffer(const void *buffer,
+                                                 size_t buffer_size) {
+    avs_crypto_cert_revocation_list_info_t result;
+    memset(&result, 0, sizeof(result));
+    result.desc.type = AVS_CRYPTO_SECURITY_INFO_CERT_REVOCATION_LIST;
+    result.desc.source = AVS_CRYPTO_DATA_SOURCE_BUFFER;
+    result.desc.info.buffer.buffer = buffer;
+    result.desc.info.buffer.buffer_size = buffer_size;
+    return result;
+}
+
 avs_crypto_trusted_cert_info_t avs_crypto_trusted_cert_info_from_array(
         const avs_crypto_trusted_cert_info_t *array_ptr,
         size_t array_element_count) {
@@ -74,6 +96,25 @@ avs_crypto_trusted_cert_info_t avs_crypto_trusted_cert_info_from_array(
 #    ifndef NDEBUG
     for (size_t i = 0; i < array_element_count; ++i) {
         assert(array_ptr[i].desc.type == AVS_CRYPTO_SECURITY_INFO_TRUSTED_CERT);
+    }
+#    endif // NDEBUG
+    return result;
+}
+
+avs_crypto_cert_revocation_list_info_t
+avs_crypto_cert_revocation_list_info_from_array(
+        const avs_crypto_cert_revocation_list_info_t *array_ptr,
+        size_t array_element_count) {
+    avs_crypto_cert_revocation_list_info_t result;
+    memset(&result, 0, sizeof(result));
+    result.desc.type = AVS_CRYPTO_SECURITY_INFO_CERT_REVOCATION_LIST;
+    result.desc.source = AVS_CRYPTO_DATA_SOURCE_ARRAY;
+    result.desc.info.array.array_ptr = &array_ptr->desc;
+    result.desc.info.array.element_count = array_element_count;
+#    ifndef NDEBUG
+    for (size_t i = 0; i < array_element_count; ++i) {
+        assert(array_ptr[i].desc.type
+               == AVS_CRYPTO_SECURITY_INFO_CERT_REVOCATION_LIST);
     }
 #    endif // NDEBUG
     return result;
@@ -263,6 +304,15 @@ avs_error_t avs_crypto_trusted_cert_info_copy_as_array(
                          AVS_CRYPTO_SECURITY_INFO_TRUSTED_CERT);
 }
 
+avs_error_t avs_crypto_cert_revocation_list_info_copy_as_array(
+        avs_crypto_cert_revocation_list_info_t **out_array,
+        size_t *out_element_count,
+        avs_crypto_cert_revocation_list_info_t crl_info) {
+    return copy_as_array((avs_crypto_security_info_union_t **) out_array,
+                         out_element_count, &crl_info.desc,
+                         AVS_CRYPTO_SECURITY_INFO_CERT_REVOCATION_LIST);
+}
+
 #    ifdef AVS_COMMONS_WITH_AVS_LIST
 avs_crypto_trusted_cert_info_t avs_crypto_trusted_cert_info_from_list(
         AVS_LIST(avs_crypto_trusted_cert_info_t) list) {
@@ -274,6 +324,23 @@ avs_crypto_trusted_cert_info_t avs_crypto_trusted_cert_info_from_list(
 #        ifndef NDEBUG
     AVS_LIST_ITERATE(list) {
         assert(list->desc.type == AVS_CRYPTO_SECURITY_INFO_TRUSTED_CERT);
+    }
+#        endif // NDEBUG
+    return result;
+}
+
+avs_crypto_cert_revocation_list_info_t
+avs_crypto_cert_revocation_list_info_from_list(
+        AVS_LIST(avs_crypto_cert_revocation_list_info_t) list) {
+    avs_crypto_cert_revocation_list_info_t result;
+    memset(&result, 0, sizeof(result));
+    result.desc.type = AVS_CRYPTO_SECURITY_INFO_CERT_REVOCATION_LIST;
+    result.desc.source = AVS_CRYPTO_DATA_SOURCE_LIST;
+    result.desc.info.list.list_head = &list->desc;
+#        ifndef NDEBUG
+    AVS_LIST_ITERATE(list) {
+        assert(list->desc.type
+               == AVS_CRYPTO_SECURITY_INFO_CERT_REVOCATION_LIST);
     }
 #        endif // NDEBUG
     return result;
@@ -324,6 +391,24 @@ avs_error_t avs_crypto_trusted_cert_info_copy_as_list(
     };
     avs_error_t err = security_info_iterate(&trusted_cert_info.desc,
                                             copy_into_list, &state);
+    if (avs_is_err(err)) {
+        AVS_LIST_CLEAR(out_list);
+    }
+    return err;
+}
+
+avs_error_t avs_crypto_cert_revocation_list_info_copy_as_list(
+        AVS_LIST(avs_crypto_cert_revocation_list_info_t) *out_list,
+        avs_crypto_cert_revocation_list_info_t crl_info) {
+    if (!out_list || *out_list) {
+        return avs_errno(AVS_EINVAL);
+    }
+    copy_into_list_state_t state = {
+        .expected_type = AVS_CRYPTO_SECURITY_INFO_CERT_REVOCATION_LIST,
+        .tail_ptr = (AVS_LIST(avs_crypto_security_info_union_t) *) out_list
+    };
+    avs_error_t err =
+            security_info_iterate(&crl_info.desc, copy_into_list, &state);
     if (avs_is_err(err)) {
         AVS_LIST_CLEAR(out_list);
     }

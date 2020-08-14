@@ -184,6 +184,96 @@ avs_error_t avs_crypto_trusted_cert_info_copy_as_array(
         size_t *out_element_count,
         avs_crypto_trusted_cert_info_t trusted_cert_info);
 
+typedef struct {
+    avs_crypto_security_info_union_t desc;
+} avs_crypto_cert_revocation_list_info_t;
+
+AVS_STATIC_ASSERT(sizeof(avs_crypto_cert_revocation_list_info_t)
+                          == sizeof(avs_crypto_security_info_union_t),
+                  cert_revocation_list_info_equivalent_to_union);
+
+/**
+ * Creates certificate revocation list descriptor used later on to load
+ * certificate revocation list from file @p filename.
+ *
+ * NOTE: File loading is conducted by using: fopen(), fread(), ftell() and
+ * fclose(), thus the platform shall implement them. On embededd platforms it
+ * may be preferable to use
+ * @ref avs_crypto_cert_revocation_list_info_from_buffer() instead.
+ *
+ * @param filename  File from which the certificate revocation list shall be
+ *                  loaded.
+ */
+avs_crypto_cert_revocation_list_info_t
+avs_crypto_cert_revocation_list_info_from_file(const char *filename);
+
+/**
+ * Creates certificate revocation list descriptor used later on to load
+ * certificate revocation list from memory @p buffer.
+ *
+ * The data is copied during @ref avs_net_ssl_socket_create or
+ * @ref avs_net_dtls_socket_create, and the user-provided buffer may be freed
+ * afterwards.
+ *
+ * @param buffer        Buffer where loaded certificate revocation list is
+ *                      stored.
+ * @param buffer_size   Size in bytes of the buffer.
+ */
+avs_crypto_cert_revocation_list_info_t
+avs_crypto_cert_revocation_list_info_from_buffer(const void *buffer,
+                                                 size_t buffer_size);
+
+/**
+ * Creates certificate revocation list descriptor used later on to load
+ * certificate revocation lists from an array of existing revocation lists.
+ *
+ * The data is copied during @ref avs_net_ssl_socket_create or
+ * @ref avs_net_dtls_socket_create, and the array may be freed afterwards.
+ *
+ * @param array_ptr           Pointer to an array of certificate revocation
+ *                            lists.
+ * @param array_element_count Number of elements in the @p array_ptr array.
+ */
+avs_crypto_cert_revocation_list_info_t
+avs_crypto_cert_revocation_list_info_from_array(
+        const avs_crypto_cert_revocation_list_info_t *array_ptr,
+        size_t array_element_count);
+
+/**
+ * Copies any valid set of certificate revocation lists to a newly allocated
+ * array.
+ *
+ * Any arrays or lists in @p crl_info are flattened, and empty entries are
+ * skipped, so that the resulting array will contain only "from_file",
+ * "from_path" or "from_buffer" entries. Any resources used by the source (file
+ * paths and buffers) are copied as well, so the original entries can be freed -
+ * although filesystem-based entries are not loaded into memory, so the actual
+ * files need to stay in the filesystem.
+ *
+ * The resulting array is allocated in such a way that a single @ref avs_free
+ * call is sufficient to free the whole array and all associated resources.
+ *
+ * @param out_array         Pointer to a variable that, on entry, shall be a
+ *                          NULL pointer, and on exit will be set to a pointer
+ *                          to the newly allocated array.
+ *
+ * @param out_element_count Pointer to a variable that on success, will be
+ *                          populated with the number of elements in the array.
+ *
+ * @param crl_info          Certificate revocation list information to copy.
+ *
+ * @returns AVS_OK for success, avs_errno(AVS_ENOMEM) for an out-of-memory
+ *          condition, or avs_errno(AVS_EINVAL) if invalid arguments have been
+ *          passed or invalid data has been encountered.
+ *
+ * NOTE: If the input contains no non-empty entries, <c>*out_array</c> will stay
+ * a NULL pointer. This is not an error.
+ */
+avs_error_t avs_crypto_cert_revocation_list_info_copy_as_array(
+        avs_crypto_cert_revocation_list_info_t **out_array,
+        size_t *out_element_count,
+        avs_crypto_cert_revocation_list_info_t crl_info);
+
 #ifdef AVS_COMMONS_WITH_AVS_LIST
 /**
  * Creates CA chain descriptor used later on to load CA chain from a list of
@@ -229,6 +319,54 @@ avs_crypto_trusted_cert_info_t avs_crypto_trusted_cert_info_from_list(
 avs_error_t avs_crypto_trusted_cert_info_copy_as_list(
         AVS_LIST(avs_crypto_trusted_cert_info_t) *out_list,
         avs_crypto_trusted_cert_info_t trusted_cert_info);
+
+/**
+ * Creates certificate revocation list descriptor used later on to load
+ * certificate revocation lists from a list of existing CA chains.
+ *
+ * The data is copied during @ref avs_net_ssl_socket_create or
+ * @ref avs_net_dtls_socket_create, and the list may be freed afterwards.
+ *
+ * @param array_ptr           Pointer to an array of certificate revocation
+ *                            lists.
+ * @param array_element_count Number of elements in the @p array_ptr array.
+ */
+avs_crypto_cert_revocation_list_info_t
+avs_crypto_cert_revocation_list_info_from_list(
+        AVS_LIST(avs_crypto_cert_revocation_list_info_t) list);
+
+/**
+ * Copies any valid set of certificate revocation lists to a newly allocated
+ * list.
+ *
+ * Any arrays or lists in @p crl_info are flattened, and empty entries are
+ * skipped, so that the resulting list will contain only "from_file",
+ * "from_path" or "from_buffer" entries. Any resources used by the source (file
+ * paths and buffers) are copied as well, so the original entries can be freed -
+ * although filesystem-based entries are not loaded into memory, so the actual
+ * files need to stay in the filesystem.
+ *
+ * The list entries are allocated in such a way that calling
+ * @ref AVS_LIST_DELETE also frees any associated buffers. To free the entire
+ * list with all the associated resources, an <c>AVS_LIST_CLEAR(out_list);</c>
+ * statement is sufficient.
+ *
+ * @param out_list          Pointer to a variable that, on entry, shall be a
+ *                          NULL pointer, and on exit will be set to a pointer
+ *                          to the head of the newly created list.
+ *
+ * @param crl_info          Certificate revocation list information to copy.
+ *
+ * @returns AVS_OK for success, avs_errno(AVS_ENOMEM) for an out-of-memory
+ *          condition, or avs_errno(AVS_EINVAL) if invalid arguments have been
+ *          passed or invalid data has been encountered.
+ *
+ * NOTE: If the input contains no non-empty entries, <c>*out_list</c> will stay
+ * a NULL pointer. This is not an error.
+ */
+avs_error_t avs_crypto_cert_revocation_list_info_copy_as_list(
+        AVS_LIST(avs_crypto_cert_revocation_list_info_t) *out_list,
+        avs_crypto_cert_revocation_list_info_t crl_info);
 #endif // AVS_COMMONS_WITH_AVS_LIST
 
 typedef struct {
