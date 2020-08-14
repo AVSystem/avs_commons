@@ -50,17 +50,17 @@ typedef struct {
     size_t buffer_size;
 } avs_crypto_security_info_union_internal_buffer_t;
 
-typedef struct avs_crypto_trusted_cert_info_struct
-        avs_crypto_trusted_cert_info_t;
+typedef struct avs_crypto_security_info_union_struct
+        avs_crypto_security_info_union_t;
 
 typedef struct {
-    const avs_crypto_trusted_cert_info_t *array_ptr;
+    const avs_crypto_security_info_union_t *array_ptr;
     size_t element_count;
-} avs_crypto_security_info_union_internal_trusted_cert_array_t;
+} avs_crypto_security_info_union_internal_array_t;
 
 typedef struct {
-    avs_crypto_trusted_cert_info_t *list_head;
-} avs_crypto_security_info_union_internal_trusted_cert_list_t;
+    avs_crypto_security_info_union_t *list_head;
+} avs_crypto_security_info_union_internal_list_t;
 
 /**
  * This struct is for internal use only and should not be filled manually. One
@@ -70,23 +70,25 @@ typedef struct {
  * - @ref avs_crypto_client_key_info_t
  * using methods declared below.
  */
-typedef struct {
+struct avs_crypto_security_info_union_struct {
     int type;
     int source;
     union {
         avs_crypto_security_info_union_internal_file_t file;
         avs_crypto_security_info_union_internal_path_t path;
         avs_crypto_security_info_union_internal_buffer_t buffer;
-        avs_crypto_security_info_union_internal_trusted_cert_array_t
-                trusted_cert_array;
-        avs_crypto_security_info_union_internal_trusted_cert_list_t
-                trusted_cert_list;
+        avs_crypto_security_info_union_internal_array_t array;
+        avs_crypto_security_info_union_internal_list_t list;
     } info;
-} avs_crypto_security_info_union_t;
-
-struct avs_crypto_trusted_cert_info_struct {
-    avs_crypto_security_info_union_t desc;
 };
+
+typedef struct avs_crypto_trusted_cert_info_struct {
+    avs_crypto_security_info_union_t desc;
+} avs_crypto_trusted_cert_info_t;
+
+AVS_STATIC_ASSERT(sizeof(avs_crypto_trusted_cert_info_t)
+                          == sizeof(avs_crypto_security_info_union_t),
+                  trusted_cert_info_equivalent_to_union);
 
 /**
  * Creates CA chain descriptor used later on to load CA chain from file @p
@@ -585,11 +587,11 @@ avs_crypto_pki_csr_create(avs_crypto_prng_ctx_t *prng_ctx,
 /**
  * Retrieves the expiration date (i.e., the value of the "NotAfter" field) of
  * an X.509 certificate given as @ref avs_crypto_client_cert_info_t.
- * 
+ *
  * @param cert_info Reference to a certificate to examine. Note that if the
  *                  given input contains more than one certificate, it is
  *                  treated as an error.
- * 
+ *
  * @returns Certificate expiration date, or @ref AVS_TIME_REAL_INVALID in case
  *          of any error.
  */

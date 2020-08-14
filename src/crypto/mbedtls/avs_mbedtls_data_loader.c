@@ -138,22 +138,26 @@ static avs_error_t append_ca_certs(mbedtls_x509_crt *out,
         }
         return append_cert_from_buffer(out, info->desc.info.buffer.buffer,
                                        info->desc.info.buffer.buffer_size);
-    case AVS_CRYPTO_DATA_SOURCE_TRUSTED_CERT_ARRAY: {
+    case AVS_CRYPTO_DATA_SOURCE_ARRAY: {
         avs_error_t err = AVS_OK;
         for (size_t i = 0;
-             avs_is_ok(err)
-             && i < info->desc.info.trusted_cert_array.element_count;
+             avs_is_ok(err) && i < info->desc.info.array.element_count;
              ++i) {
             err = append_ca_certs(
-                    out, &info->desc.info.trusted_cert_array.array_ptr[i]);
+                    out, AVS_CONTAINER_OF(&info->desc.info.array.array_ptr[i],
+                                          const avs_crypto_trusted_cert_info_t,
+                                          desc));
         }
         return err;
     }
 #    ifdef AVS_COMMONS_WITH_AVS_LIST
-    case AVS_CRYPTO_DATA_SOURCE_TRUSTED_CERT_LIST: {
-        AVS_LIST(avs_crypto_trusted_cert_info_t) entry;
-        AVS_LIST_FOREACH(entry, info->desc.info.trusted_cert_list.list_head) {
-            avs_error_t err = append_ca_certs(out, entry);
+    case AVS_CRYPTO_DATA_SOURCE_LIST: {
+        AVS_LIST(avs_crypto_security_info_union_t) entry;
+        AVS_LIST_FOREACH(entry, info->desc.info.list.list_head) {
+            avs_error_t err = append_ca_certs(
+                    out, AVS_CONTAINER_OF(entry,
+                                          const avs_crypto_trusted_cert_info_t,
+                                          desc));
             if (avs_is_err(err)) {
                 return err;
             }

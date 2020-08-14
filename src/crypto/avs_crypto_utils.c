@@ -68,9 +68,9 @@ avs_crypto_trusted_cert_info_t avs_crypto_trusted_cert_info_from_array(
     avs_crypto_trusted_cert_info_t result;
     memset(&result, 0, sizeof(result));
     result.desc.type = AVS_CRYPTO_SECURITY_INFO_TRUSTED_CERT;
-    result.desc.source = AVS_CRYPTO_DATA_SOURCE_TRUSTED_CERT_ARRAY;
-    result.desc.info.trusted_cert_array.array_ptr = array_ptr;
-    result.desc.info.trusted_cert_array.element_count = array_element_count;
+    result.desc.source = AVS_CRYPTO_DATA_SOURCE_ARRAY;
+    result.desc.info.array.array_ptr = &array_ptr->desc;
+    result.desc.info.array.element_count = array_element_count;
 #    ifndef NDEBUG
     for (size_t i = 0; i < array_element_count; ++i) {
         assert(array_ptr[i].desc.type == AVS_CRYPTO_SECURITY_INFO_TRUSTED_CERT);
@@ -80,36 +80,32 @@ avs_crypto_trusted_cert_info_t avs_crypto_trusted_cert_info_from_array(
 }
 
 typedef avs_error_t
-trusted_cert_info_visit_t(const avs_crypto_trusted_cert_info_t *info,
+trusted_cert_info_visit_t(const avs_crypto_security_info_union_t *desc,
                           void *arg);
 
 static avs_error_t
-trusted_cert_info_iterate(const avs_crypto_trusted_cert_info_t *info,
+trusted_cert_info_iterate(const avs_crypto_security_info_union_t *desc,
                           trusted_cert_info_visit_t *visitor,
                           void *visitor_arg) {
-    if (info->desc.type != AVS_CRYPTO_SECURITY_INFO_TRUSTED_CERT) {
+    if (desc->type != AVS_CRYPTO_SECURITY_INFO_TRUSTED_CERT) {
         return avs_errno(AVS_EINVAL);
     }
-    switch (info->desc.source) {
+    switch (desc->source) {
     case AVS_CRYPTO_DATA_SOURCE_EMPTY:
         return AVS_OK;
-    case AVS_CRYPTO_DATA_SOURCE_TRUSTED_CERT_ARRAY: {
+    case AVS_CRYPTO_DATA_SOURCE_ARRAY: {
         avs_error_t err = AVS_OK;
-        for (size_t i = 0;
-             avs_is_ok(err)
-             && i < info->desc.info.trusted_cert_array.element_count;
+        for (size_t i = 0; avs_is_ok(err) && i < desc->info.array.element_count;
              ++i) {
             err = trusted_cert_info_iterate(
-                    &info->desc.info.trusted_cert_array.array_ptr[i],
-                    visitor,
-                    visitor_arg);
+                    &desc->info.array.array_ptr[i], visitor, visitor_arg);
         }
         return err;
     }
 #    ifdef AVS_COMMONS_WITH_AVS_LIST
-    case AVS_CRYPTO_DATA_SOURCE_TRUSTED_CERT_LIST: {
-        AVS_LIST(avs_crypto_trusted_cert_info_t) entry;
-        AVS_LIST_FOREACH(entry, info->desc.info.trusted_cert_list.list_head) {
+    case AVS_CRYPTO_DATA_SOURCE_LIST: {
+        AVS_LIST(avs_crypto_security_info_union_t) entry;
+        AVS_LIST_FOREACH(entry, desc->info.list.list_head) {
             avs_error_t err =
                     trusted_cert_info_iterate(entry, visitor, visitor_arg);
             if (avs_is_err(err)) {
@@ -120,26 +116,25 @@ trusted_cert_info_iterate(const avs_crypto_trusted_cert_info_t *info,
     }
 #    endif // AVS_COMMONS_WITH_AVS_LIST
     default:
-        return visitor(info, visitor_arg);
+        return visitor(desc, visitor_arg);
     }
 }
 
 static avs_error_t
 calculate_data_buffer_size(size_t *out_buffer_size,
-                           const avs_crypto_trusted_cert_info_t *info) {
-    switch (info->desc.source) {
+                           const avs_crypto_security_info_union_t *desc) {
+    switch (desc->source) {
     case AVS_CRYPTO_DATA_SOURCE_FILE:
-        *out_buffer_size = info->desc.info.file.filename
-                                   ? strlen(info->desc.info.file.filename) + 1
+        *out_buffer_size = desc->info.file.filename
+                                   ? strlen(desc->info.file.filename) + 1
                                    : 0;
         return AVS_OK;
     case AVS_CRYPTO_DATA_SOURCE_PATH:
-        *out_buffer_size = info->desc.info.path.path
-                                   ? strlen(info->desc.info.path.path) + 1
-                                   : 0;
+        *out_buffer_size =
+                desc->info.path.path ? strlen(desc->info.path.path) + 1 : 0;
         return AVS_OK;
     case AVS_CRYPTO_DATA_SOURCE_BUFFER:
-        *out_buffer_size = info->desc.info.buffer.buffer_size;
+        *out_buffer_size = desc->info.buffer.buffer_size;
         return AVS_OK;
     default:
         return avs_errno(AVS_EINVAL);
@@ -152,11 +147,12 @@ typedef struct {
 } trusted_cert_stats_t;
 
 static avs_error_t
-calculate_cert_stats(const avs_crypto_trusted_cert_info_t *info, void *stats_) {
+calculate_cert_stats(const avs_crypto_security_info_union_t *desc,
+                     void *stats_) {
     trusted_cert_stats_t *stats = (trusted_cert_stats_t *) stats_;
     ++stats->element_count;
     size_t element_buffer_size = 0;
-    avs_error_t err = calculate_data_buffer_size(&element_buffer_size, info);
+    avs_error_t err = calculate_data_buffer_size(&element_buffer_size, desc);
     if (avs_is_ok(err)
             && element_buffer_size >= SIZE_MAX - stats->data_buffer_size) {
         err = avs_errno(AVS_ENOMEM);
@@ -167,32 +163,32 @@ calculate_cert_stats(const avs_crypto_trusted_cert_info_t *info, void *stats_) {
     return err;
 }
 
-static void copy_element(avs_crypto_trusted_cert_info_t *dest,
+static void copy_element(avs_crypto_security_info_union_t *dest,
                          char **data_buffer_ptr,
-                         const avs_crypto_trusted_cert_info_t *src) {
+                         const avs_crypto_security_info_union_t *src) {
     *dest = *src;
     const void *source = NULL;
     size_t size = 0;
-    switch (src->desc.source) {
+    switch (src->source) {
     case AVS_CRYPTO_DATA_SOURCE_FILE:
-        if (src->desc.info.file.filename) {
-            source = src->desc.info.file.filename;
-            size = strlen(src->desc.info.file.filename) + 1;
-            dest->desc.info.file.filename = *data_buffer_ptr;
+        if (src->info.file.filename) {
+            source = src->info.file.filename;
+            size = strlen(src->info.file.filename) + 1;
+            dest->info.file.filename = *data_buffer_ptr;
         }
         break;
     case AVS_CRYPTO_DATA_SOURCE_PATH:
-        if (src->desc.info.path.path) {
-            source = src->desc.info.path.path;
-            size = strlen(src->desc.info.path.path) + 1;
-            dest->desc.info.path.path = *data_buffer_ptr;
+        if (src->info.path.path) {
+            source = src->info.path.path;
+            size = strlen(src->info.path.path) + 1;
+            dest->info.path.path = *data_buffer_ptr;
         }
         break;
     case AVS_CRYPTO_DATA_SOURCE_BUFFER:
-        if (src->desc.info.buffer.buffer) {
-            source = src->desc.info.buffer.buffer;
-            size = src->desc.info.buffer.buffer_size;
-            dest->desc.info.buffer.buffer = *data_buffer_ptr;
+        if (src->info.buffer.buffer) {
+            source = src->info.buffer.buffer;
+            size = src->info.buffer.buffer_size;
+            dest->info.buffer.buffer = *data_buffer_ptr;
         }
         break;
     default:
@@ -206,14 +202,14 @@ static void copy_element(avs_crypto_trusted_cert_info_t *dest,
 }
 
 typedef struct {
-    avs_crypto_trusted_cert_info_t *array_ptr;
+    avs_crypto_security_info_union_t *array_ptr;
     char *data_buffer_ptr;
 } array_copy_state_t;
 
-static avs_error_t copy_into_array(const avs_crypto_trusted_cert_info_t *info,
+static avs_error_t copy_into_array(const avs_crypto_security_info_union_t *desc,
                                    void *state_) {
     array_copy_state_t *state = (array_copy_state_t *) state_;
-    copy_element(state->array_ptr++, &state->data_buffer_ptr, info);
+    copy_element(state->array_ptr++, &state->data_buffer_ptr, desc);
     return AVS_OK;
 }
 
@@ -226,20 +222,21 @@ avs_error_t avs_crypto_trusted_cert_info_copy_as_array(
     }
     trusted_cert_stats_t stats = { 0 };
     avs_error_t err = trusted_cert_info_iterate(
-            &trusted_cert_info, calculate_cert_stats, &stats);
+            &trusted_cert_info.desc, calculate_cert_stats, &stats);
     if (avs_is_err(err)) {
         return err;
     }
     *out_element_count = stats.element_count;
-    if (stats.element_count > SIZE_MAX / sizeof(avs_crypto_trusted_cert_info_t)
+    if (stats.element_count
+                    > SIZE_MAX / sizeof(avs_crypto_security_info_union_t)
             || stats.data_buffer_size
                            > SIZE_MAX
                                          - stats.element_count
-                                                       * sizeof(avs_crypto_trusted_cert_info_t)) {
+                                                       * sizeof(avs_crypto_security_info_union_t)) {
         return avs_errno(AVS_ENOMEM);
     }
     size_t buffer_size =
-            stats.element_count * sizeof(avs_crypto_trusted_cert_info_t)
+            stats.element_count * sizeof(avs_crypto_security_info_union_t)
             + stats.data_buffer_size;
     if (buffer_size) {
         if (!(*out_array = (avs_crypto_trusted_cert_info_t *) avs_malloc(
@@ -247,11 +244,12 @@ avs_error_t avs_crypto_trusted_cert_info_copy_as_array(
             return avs_errno(AVS_ENOMEM);
         }
         array_copy_state_t state = {
-            .array_ptr = *out_array,
-            .data_buffer_ptr = (char *) &(*out_array)[stats.element_count]
+            .array_ptr = &(*out_array)->desc,
+            .data_buffer_ptr =
+                    (char *) &(&(*out_array)->desc)[stats.element_count]
         };
         err = trusted_cert_info_iterate(
-                &trusted_cert_info, copy_into_array, &state);
+                &trusted_cert_info.desc, copy_into_array, &state);
         assert(avs_is_ok(err));
     }
     return AVS_OK;
@@ -263,8 +261,8 @@ avs_crypto_trusted_cert_info_t avs_crypto_trusted_cert_info_from_list(
     avs_crypto_trusted_cert_info_t result;
     memset(&result, 0, sizeof(result));
     result.desc.type = AVS_CRYPTO_SECURITY_INFO_TRUSTED_CERT;
-    result.desc.source = AVS_CRYPTO_DATA_SOURCE_TRUSTED_CERT_LIST;
-    result.desc.info.trusted_cert_list.list_head = list;
+    result.desc.source = AVS_CRYPTO_DATA_SOURCE_LIST;
+    result.desc.info.list.list_head = &list->desc;
 #        ifndef NDEBUG
     AVS_LIST_ITERATE(list) {
         assert(list->desc.type == AVS_CRYPTO_SECURITY_INFO_TRUSTED_CERT);
@@ -273,20 +271,20 @@ avs_crypto_trusted_cert_info_t avs_crypto_trusted_cert_info_from_list(
     return result;
 }
 
-static avs_error_t copy_into_list(const avs_crypto_trusted_cert_info_t *info,
+static avs_error_t copy_into_list(const avs_crypto_security_info_union_t *desc,
                                   void *tail_ptr_ptr_) {
-    AVS_LIST(avs_crypto_trusted_cert_info_t) **tail_ptr_ptr =
-            (AVS_LIST(avs_crypto_trusted_cert_info_t) **) tail_ptr_ptr_;
+    AVS_LIST(avs_crypto_security_info_union_t) **tail_ptr_ptr =
+            (AVS_LIST(avs_crypto_security_info_union_t) **) tail_ptr_ptr_;
     size_t data_buffer_size = SIZE_MAX;
-    avs_error_t err = calculate_data_buffer_size(&data_buffer_size, info);
+    avs_error_t err = calculate_data_buffer_size(&data_buffer_size, desc);
     if (avs_is_err(err)) {
         return err;
     }
     assert(!**tail_ptr_ptr);
-    if (data_buffer_size > SIZE_MAX - sizeof(avs_crypto_trusted_cert_info_t)
-            || !(**tail_ptr_ptr = (AVS_LIST(avs_crypto_trusted_cert_info_t))
+    if (data_buffer_size > SIZE_MAX - sizeof(avs_crypto_security_info_union_t)
+            || !(**tail_ptr_ptr = (AVS_LIST(avs_crypto_security_info_union_t))
                          AVS_LIST_NEW_BUFFER(
-                                 sizeof(avs_crypto_trusted_cert_info_t)
+                                 sizeof(avs_crypto_security_info_union_t)
                                  + data_buffer_size))) {
         return avs_errno(AVS_ENOMEM);
     }
@@ -294,7 +292,7 @@ static avs_error_t copy_into_list(const avs_crypto_trusted_cert_info_t *info,
     // so that the data buffer can be right after it in the same allocated
     // element. Let's calculate a pointer to that data.
     char *data_buffer_ptr = (char *) &(**tail_ptr_ptr)[1];
-    copy_element(**tail_ptr_ptr, &data_buffer_ptr, info);
+    copy_element(**tail_ptr_ptr, &data_buffer_ptr, desc);
     AVS_LIST_ADVANCE_PTR(tail_ptr_ptr);
     return AVS_OK;
 }
@@ -305,9 +303,10 @@ avs_error_t avs_crypto_trusted_cert_info_copy_as_list(
     if (!out_list || *out_list) {
         return avs_errno(AVS_EINVAL);
     }
-    AVS_LIST(avs_crypto_trusted_cert_info_t) *tail_ptr = out_list;
+    AVS_LIST(avs_crypto_security_info_union_t) *tail_ptr =
+            (AVS_LIST(avs_crypto_security_info_union_t) *) out_list;
     avs_error_t err = trusted_cert_info_iterate(
-            &trusted_cert_info, copy_into_list, &tail_ptr);
+            &trusted_cert_info.desc, copy_into_list, &tail_ptr);
     if (avs_is_err(err)) {
         AVS_LIST_CLEAR(out_list);
     }
