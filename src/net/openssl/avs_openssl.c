@@ -1019,11 +1019,15 @@ configure_ssl_certs(ssl_socket_t *socket,
             log_openssl_error();
         }
         X509_STORE *store = SSL_CTX_get_cert_store(socket->ctx);
-        avs_error_t err =
-                _avs_crypto_openssl_load_ca_certs(store,
-                                                  &cert_info->trusted_certs);
-        if (avs_is_err(err)) {
+        avs_error_t err;
+        if (avs_is_err((err = _avs_crypto_openssl_load_ca_certs(
+                                store, &cert_info->trusted_certs)))) {
             LOG(ERROR, _("could not load CA chain"));
+            return err;
+        }
+        if (avs_is_err((err = _avs_crypto_openssl_load_crls(
+                                store, &cert_info->cert_revocation_lists)))) {
+            LOG(ERROR, _("could not load CRLs"));
             return err;
         }
     } else {

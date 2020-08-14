@@ -47,20 +47,32 @@ static avs_error_t load_ca_certs_from_file(X509_STORE *store,
     assert(file);
     LOG(DEBUG, _("CA certificate <file=") "%s" _(">: going to load"), file);
 
-    /**
-     * SSL_CTX_load_verify_locations() allows PEM certificates only to be
-     * loaded. Underneath it uses X509_LOOKUP_load_file with type hardcoded
-     * to X509_FILETYPE_PEM, but it is also possible to use
-     * X509_FILETYPE_ASN1.
-     */
     X509_LOOKUP *lookup = X509_STORE_add_lookup(store, X509_LOOKUP_file());
     if (lookup == NULL) {
         return avs_errno(AVS_ENOMEM);
     }
-    if (X509_LOOKUP_load_file(lookup, file, X509_FILETYPE_PEM) == 1) {
+    if (X509_load_cert_file(lookup, file, X509_FILETYPE_PEM) > 0) {
         return AVS_OK;
     }
-    if (X509_LOOKUP_load_file(lookup, file, X509_FILETYPE_ASN1) == 1) {
+    if (X509_load_cert_file(lookup, file, X509_FILETYPE_ASN1) > 0) {
+        return AVS_OK;
+    }
+    log_openssl_error();
+    return avs_errno(AVS_EPROTO);
+}
+
+static avs_error_t load_crl_from_file(X509_STORE *store, const char *file) {
+    assert(file);
+    LOG(DEBUG, _("CRL <file=") "%s" _(">: going to load"), file);
+
+    X509_LOOKUP *lookup = X509_STORE_add_lookup(store, X509_LOOKUP_file());
+    if (lookup == NULL) {
+        return avs_errno(AVS_ENOMEM);
+    }
+    if (X509_load_crl_file(lookup, file, X509_FILETYPE_PEM) > 0) {
+        return AVS_OK;
+    }
+    if (X509_load_crl_file(lookup, file, X509_FILETYPE_ASN1) > 0) {
         return AVS_OK;
     }
     log_openssl_error();
@@ -146,6 +158,41 @@ static avs_error_t load_ca_cert_from_buffer(X509_STORE *store,
     return err;
 }
 
+static avs_error_t
+load_crl_from_buffer(X509_STORE *store, const void *buffer, const size_t len) {
+    BIO *bio = BIO_new_mem_buf((void *) (intptr_t) buffer, (int) len);
+    if (!bio) {
+        log_openssl_error();
+        return avs_errno(AVS_ENOMEM);
+    }
+
+    X509_CRL *crl = NULL;
+    switch (detect_encoding(bio)) {
+    case ENCODING_PEM:
+        // Convert PEM to DER.
+        crl = PEM_read_bio_X509_CRL(bio, NULL, NULL, NULL);
+        break;
+    case ENCODING_DER:
+        crl = d2i_X509_CRL_bio(bio, NULL);
+        break;
+    default:
+        LOG(ERROR, _("unknown CRL format"));
+    }
+
+    BIO_free(bio);
+    if (!crl) {
+        log_openssl_error();
+        return avs_errno(AVS_EPROTO);
+    }
+    avs_error_t err = AVS_OK;
+    if (!store || !X509_STORE_add_crl(store, crl)) {
+        log_openssl_error();
+        err = avs_errno(AVS_ENOMEM);
+    }
+    X509_CRL_free(crl);
+    return err;
+}
+
 avs_error_t
 _avs_crypto_openssl_load_ca_certs(X509_STORE *store,
                                   const avs_crypto_trusted_cert_info_t *info) {
@@ -193,6 +240,60 @@ _avs_crypto_openssl_load_ca_certs(X509_STORE *store,
                     store,
                     AVS_CONTAINER_OF(
                             entry, const avs_crypto_trusted_cert_info_t, desc));
+            if (avs_is_err(err)) {
+                return err;
+            }
+        }
+        return AVS_OK;
+    }
+#    endif // AVS_COMMONS_WITH_AVS_LIST
+    default:
+        AVS_UNREACHABLE("invalid data source");
+        return avs_errno(AVS_EINVAL);
+    }
+}
+
+avs_error_t _avs_crypto_openssl_load_crls(
+        X509_STORE *store, const avs_crypto_cert_revocation_list_info_t *info) {
+    switch (info->desc.source) {
+    case AVS_CRYPTO_DATA_SOURCE_EMPTY:
+        return AVS_OK;
+    case AVS_CRYPTO_DATA_SOURCE_FILE:
+        if (!info->desc.info.file.filename) {
+            LOG(ERROR, _("attempt to load CRL from file, but filename=NULL"));
+            return avs_errno(AVS_EINVAL);
+        }
+        return load_crl_from_file(store, info->desc.info.file.filename);
+    case AVS_CRYPTO_DATA_SOURCE_BUFFER:
+        if (!info->desc.info.buffer.buffer) {
+            LOG(ERROR,
+                _("attempt to load CA cert from buffer, but buffer=NULL"));
+            return avs_errno(AVS_EINVAL);
+        }
+        return load_crl_from_buffer(store, info->desc.info.buffer.buffer,
+                                    info->desc.info.buffer.buffer_size);
+    case AVS_CRYPTO_DATA_SOURCE_ARRAY: {
+        avs_error_t err = AVS_OK;
+        for (size_t i = 0;
+             avs_is_ok(err) && i < info->desc.info.array.element_count;
+             ++i) {
+            err = _avs_crypto_openssl_load_crls(
+                    store, AVS_CONTAINER_OF(
+                                   &info->desc.info.array.array_ptr[i],
+                                   const avs_crypto_cert_revocation_list_info_t,
+                                   desc));
+        }
+        return err;
+    }
+#    ifdef AVS_COMMONS_WITH_AVS_LIST
+    case AVS_CRYPTO_DATA_SOURCE_LIST: {
+        AVS_LIST(avs_crypto_security_info_union_t) entry;
+        AVS_LIST_FOREACH(entry, info->desc.info.list.list_head) {
+            avs_error_t err = _avs_crypto_openssl_load_crls(
+                    store,
+                    AVS_CONTAINER_OF(
+                            entry, const avs_crypto_cert_revocation_list_info_t,
+                            desc));
             if (avs_is_err(err)) {
                 return err;
             }
