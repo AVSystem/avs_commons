@@ -104,6 +104,7 @@ typedef struct {
 
 typedef struct {
     mbedtls_x509_crt *ca_cert;
+    mbedtls_x509_crl *ca_crl;
     mbedtls_x509_crt *client_cert;
     mbedtls_pk_context *client_key;
 #        ifdef WITH_DANE_SUPPORT
@@ -560,7 +561,7 @@ static avs_error_t initialize_cert_security(
         return avs_errno(AVS_ENOMEM);
     }
 
-    if (socket->security.cert.ca_cert) {
+    if (socket->security.cert.ca_cert || socket->security.cert.ca_crl) {
 #        ifdef WITH_DANE_SUPPORT
         if (socket->security.cert.dane_ta_certs) {
             // NOTE: When verify_cert_cb() fails, the whole verification routine
@@ -576,7 +577,8 @@ static avs_error_t initialize_cert_security(
                                       MBEDTLS_SSL_VERIFY_REQUIRED);
         }
         mbedtls_ssl_conf_ca_chain(&socket->config,
-                                  socket->security.cert.ca_cert, NULL);
+                                  socket->security.cert.ca_cert,
+                                  socket->security.cert.ca_crl);
     } else {
         mbedtls_ssl_conf_authmode(&socket->config, MBEDTLS_SSL_VERIFY_NONE);
     }
@@ -625,8 +627,9 @@ static avs_error_t update_cert_configuration(ssl_socket_t *socket) {
     }
 #        endif // WITH_DANE_SUPPORT
 
-    mbedtls_ssl_conf_ca_chain(&socket->config, socket->security.cert.ca_cert,
-                              NULL);
+    mbedtls_ssl_conf_ca_chain(&socket->config,
+                              socket->security.cert.ca_cert,
+                              socket->security.cert.ca_crl);
     return AVS_OK;
 }
 #    else // AVS_COMMONS_WITH_AVS_CRYPTO_PKI
@@ -1145,6 +1148,7 @@ static avs_error_t receive_ssl(avs_net_socket_t *socket_,
 #    ifdef AVS_COMMONS_WITH_AVS_CRYPTO_PKI
 static void cleanup_security_cert(ssl_socket_certs_t *certs) {
     _avs_crypto_mbedtls_x509_crt_cleanup(&certs->ca_cert);
+    _avs_crypto_mbedtls_x509_crl_cleanup(&certs->ca_crl);
     _avs_crypto_mbedtls_x509_crt_cleanup(&certs->client_cert);
     _avs_crypto_mbedtls_pk_context_cleanup(&certs->client_key);
 #        ifdef WITH_DANE_SUPPORT
@@ -1201,10 +1205,15 @@ configure_ssl_certs(ssl_socket_certs_t *certs,
     LOG(TRACE, _("configure_ssl_certs"));
 
     if (cert_info->server_cert_validation) {
-        avs_error_t err =
-                _avs_crypto_mbedtls_load_ca_certs(&certs->ca_cert,
-                                                  &cert_info->trusted_certs);
-        if (avs_is_err(err)) {
+        avs_error_t err;
+        if (avs_is_err((err = _avs_crypto_mbedtls_load_ca_certs(
+                                &certs->ca_cert, &cert_info->trusted_certs)))) {
+            LOG(ERROR, _("could not load CA chain"));
+            return err;
+        }
+        if (avs_is_err((err = _avs_crypto_mbedtls_load_crls(
+                                &certs->ca_crl,
+                                &cert_info->cert_revocation_lists)))) {
             LOG(ERROR, _("could not load CA chain"));
             return err;
         }

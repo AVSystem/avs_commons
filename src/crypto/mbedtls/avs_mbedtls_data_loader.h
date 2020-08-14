@@ -30,6 +30,12 @@ avs_error_t
 _avs_crypto_mbedtls_load_ca_certs(mbedtls_x509_crt **out,
                                   const avs_crypto_trusted_cert_info_t *info);
 
+void _avs_crypto_mbedtls_x509_crl_cleanup(mbedtls_x509_crl **crl);
+
+avs_error_t _avs_crypto_mbedtls_load_crls(
+        mbedtls_x509_crl **out,
+        const avs_crypto_cert_revocation_list_info_t *info);
+
 void _avs_crypto_mbedtls_pk_context_cleanup(mbedtls_pk_context **ctx);
 
 avs_error_t
