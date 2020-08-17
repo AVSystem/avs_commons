@@ -684,12 +684,10 @@ avs_error_t avs_crypto_parse_pkcs7_certs_only(
     if (!out_certs || *out_certs || !out_crls || *out_crls) {
         return avs_errno(AVS_EINVAL);
     }
-    avs_error_t err = pkcs7_content_info_parse(
-            out_certs, out_crls,
-            &(unsigned char *[]){
-                    (unsigned char *) (intptr_t) (const unsigned char *)
-                            buffer }[0],
-            (const unsigned char *) buffer + buffer_size);
+    unsigned char *bufptr =
+            (unsigned char *) (intptr_t) (const unsigned char *) buffer;
+    avs_error_t err = pkcs7_content_info_parse(out_certs, out_crls, &bufptr,
+                                               bufptr + buffer_size);
     if (avs_is_err(err)) {
         AVS_LIST_CLEAR(out_certs);
         AVS_LIST_CLEAR(out_crls);
