@@ -1214,7 +1214,7 @@ configure_ssl_certs(ssl_socket_certs_t *certs,
         if (avs_is_err((err = _avs_crypto_mbedtls_load_crls(
                                 &certs->ca_crl,
                                 &cert_info->cert_revocation_lists)))) {
-            LOG(ERROR, _("could not load CA chain"));
+            LOG(ERROR, _("could not load CRLs"));
             return err;
         }
     } else {
