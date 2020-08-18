@@ -32,19 +32,19 @@ AVS_UNIT_TEST(backend_mbedtls, chain_loading_from_file) {
     const avs_crypto_trusted_cert_info_t pem =
             avs_crypto_trusted_cert_info_from_file("../certs/root.crt");
     AVS_UNIT_ASSERT_SUCCESS(_avs_crypto_mbedtls_load_ca_certs(&chain, &pem));
-    mbedtls_x509_crt_free(chain);
+    _avs_crypto_mbedtls_x509_crt_cleanup(&chain);
 
     const avs_crypto_trusted_cert_info_t der =
             avs_crypto_trusted_cert_info_from_file("../certs/root.crt.der");
 
     AVS_UNIT_ASSERT_SUCCESS(_avs_crypto_mbedtls_load_ca_certs(&chain, &der));
-    mbedtls_x509_crt_free(chain);
+    _avs_crypto_mbedtls_x509_crt_cleanup(&chain);
 
     // Unsupported pkcs12. Loading should fail.
     const avs_crypto_trusted_cert_info_t p12 =
             avs_crypto_trusted_cert_info_from_file("../certs/server.p12");
     AVS_UNIT_ASSERT_FAILED(_avs_crypto_mbedtls_load_ca_certs(&chain, &p12));
-    avs_free(chain);
+    _avs_crypto_mbedtls_x509_crt_cleanup(&chain);
 }
 
 AVS_UNIT_TEST(backend_mbedtls, chain_loading_from_path) {
@@ -53,7 +53,7 @@ AVS_UNIT_TEST(backend_mbedtls, chain_loading_from_path) {
     const avs_crypto_trusted_cert_info_t path =
             avs_crypto_trusted_cert_info_from_path("../certs");
     AVS_UNIT_ASSERT_SUCCESS(_avs_crypto_mbedtls_load_ca_certs(&chain, &path));
-    mbedtls_x509_crt_free(chain);
+    _avs_crypto_mbedtls_x509_crt_cleanup(&chain);
 
     // Empty directory case.
     {
@@ -65,6 +65,7 @@ AVS_UNIT_TEST(backend_mbedtls, chain_loading_from_path) {
         (void) rmdir(name);
         AVS_UNIT_ASSERT_SUCCESS(err);
     }
+    _avs_crypto_mbedtls_x509_crt_cleanup(&chain);
 
     // Directory without permissions.
     {
@@ -98,7 +99,7 @@ AVS_UNIT_TEST(backend_mbedtls, chain_loading_from_path) {
         }
     }
 
-    avs_free(chain);
+    _avs_crypto_mbedtls_x509_crt_cleanup(&chain);
 }
 
 AVS_UNIT_TEST(backend_mbedtls, chain_loading_from_null) {
@@ -106,18 +107,17 @@ AVS_UNIT_TEST(backend_mbedtls, chain_loading_from_null) {
     const avs_crypto_trusted_cert_info_t pem =
             avs_crypto_trusted_cert_info_from_file(NULL);
     AVS_UNIT_ASSERT_FAILED(_avs_crypto_mbedtls_load_ca_certs(&chain, &pem));
-    mbedtls_x509_crt_free(chain);
+    _avs_crypto_mbedtls_x509_crt_cleanup(&chain);
 
     const avs_crypto_trusted_cert_info_t buffer =
             avs_crypto_trusted_cert_info_from_buffer(NULL, 0);
     AVS_UNIT_ASSERT_FAILED(_avs_crypto_mbedtls_load_ca_certs(&chain, &buffer));
-    mbedtls_x509_crt_free(chain);
+    _avs_crypto_mbedtls_x509_crt_cleanup(&chain);
 
     const avs_crypto_trusted_cert_info_t path =
             avs_crypto_trusted_cert_info_from_path(NULL);
     AVS_UNIT_ASSERT_FAILED(_avs_crypto_mbedtls_load_ca_certs(&chain, &path));
-    mbedtls_x509_crt_free(chain);
-    avs_free(chain);
+    _avs_crypto_mbedtls_x509_crt_cleanup(&chain);
 }
 
 AVS_UNIT_TEST(backend_mbedtls, cert_loading_from_null) {
@@ -125,14 +125,13 @@ AVS_UNIT_TEST(backend_mbedtls, cert_loading_from_null) {
     const avs_crypto_client_cert_info_t pem =
             avs_crypto_client_cert_info_from_file(NULL);
     AVS_UNIT_ASSERT_FAILED(_avs_crypto_mbedtls_load_client_cert(&chain, &pem));
-    mbedtls_x509_crt_free(chain);
+    _avs_crypto_mbedtls_x509_crt_cleanup(&chain);
 
     const avs_crypto_client_cert_info_t buffer =
             avs_crypto_client_cert_info_from_buffer(NULL, 0);
     AVS_UNIT_ASSERT_FAILED(
             _avs_crypto_mbedtls_load_client_cert(&chain, &buffer));
-    mbedtls_x509_crt_free(chain);
-    avs_free(chain);
+    _avs_crypto_mbedtls_x509_crt_cleanup(&chain);
 }
 
 AVS_UNIT_TEST(backend_mbedtls, cert_loading_from_file) {
@@ -140,19 +139,19 @@ AVS_UNIT_TEST(backend_mbedtls, cert_loading_from_file) {
     const avs_crypto_client_cert_info_t pem =
             avs_crypto_client_cert_info_from_file("../certs/client.crt");
     AVS_UNIT_ASSERT_SUCCESS(_avs_crypto_mbedtls_load_client_cert(&cert, &pem));
-    mbedtls_x509_crt_free(cert);
+    _avs_crypto_mbedtls_x509_crt_cleanup(&cert);
 
     const avs_crypto_client_cert_info_t der =
             avs_crypto_client_cert_info_from_file("../certs/client.crt.der");
 
     AVS_UNIT_ASSERT_SUCCESS(_avs_crypto_mbedtls_load_client_cert(&cert, &der));
-    mbedtls_x509_crt_free(cert);
+    _avs_crypto_mbedtls_x509_crt_cleanup(&cert);
 
     // Unsupported pkcs12. Loading should fail.
     const avs_crypto_client_cert_info_t p12 =
             avs_crypto_client_cert_info_from_file("../certs/client.p12");
     AVS_UNIT_ASSERT_FAILED(_avs_crypto_mbedtls_load_client_cert(&cert, &p12));
-    avs_free(cert);
+    _avs_crypto_mbedtls_x509_crt_cleanup(&cert);
 }
 
 AVS_UNIT_TEST(backend_mbedtls, key_loading) {
@@ -160,14 +159,13 @@ AVS_UNIT_TEST(backend_mbedtls, key_loading) {
     const avs_crypto_client_key_info_t pem =
             avs_crypto_client_key_info_from_file("../certs/client.key", NULL);
     AVS_UNIT_ASSERT_SUCCESS(_avs_crypto_mbedtls_load_client_key(&pk, &pem));
-    mbedtls_pk_free(pk);
+    _avs_crypto_mbedtls_pk_context_cleanup(&pk);
 
     const avs_crypto_client_key_info_t der =
             avs_crypto_client_key_info_from_file("../certs/client.key.der",
                                                  NULL);
     AVS_UNIT_ASSERT_SUCCESS(_avs_crypto_mbedtls_load_client_key(&pk, &der));
-    mbedtls_pk_free(pk);
-    avs_free(pk);
+    _avs_crypto_mbedtls_pk_context_cleanup(&pk);
 }
 
 AVS_UNIT_TEST(backend_mbedtls, key_loading_from_null) {
@@ -175,11 +173,10 @@ AVS_UNIT_TEST(backend_mbedtls, key_loading_from_null) {
     const avs_crypto_client_key_info_t pem =
             avs_crypto_client_key_info_from_file(NULL, NULL);
     AVS_UNIT_ASSERT_FAILED(_avs_crypto_mbedtls_load_client_key(&pk, &pem));
-    mbedtls_pk_free(pk);
+    _avs_crypto_mbedtls_pk_context_cleanup(&pk);
 
     const avs_crypto_client_key_info_t buffer =
             avs_crypto_client_key_info_from_buffer(NULL, 0, NULL);
     AVS_UNIT_ASSERT_FAILED(_avs_crypto_mbedtls_load_client_key(&pk, &buffer));
-    mbedtls_pk_free(pk);
-    avs_free(pk);
+    _avs_crypto_mbedtls_pk_context_cleanup(&pk);
 }

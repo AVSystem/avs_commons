@@ -256,7 +256,7 @@ avs_time_real_t avs_crypto_client_cert_expiration_date(
         assert(!cert);
     } else {
         assert(cert);
-        ASN1_TIME *valid_until = X509_get0_notAfter(cert);
+        const ASN1_TIME *valid_until = X509_get0_notAfter(cert);
         if (valid_until) {
             static const struct tm EPOCH_TM = {
                 .tm_mday = 1,

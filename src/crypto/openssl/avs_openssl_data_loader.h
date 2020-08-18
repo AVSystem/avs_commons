@@ -28,6 +28,8 @@ VISIBILITY_PRIVATE_HEADER_BEGIN
 avs_error_t
 _avs_crypto_openssl_load_ca_certs(X509_STORE *store,
                                   const avs_crypto_trusted_cert_info_t *info);
+avs_error_t _avs_crypto_openssl_load_crls(
+        X509_STORE *store, const avs_crypto_cert_revocation_list_info_t *info);
 avs_error_t
 _avs_crypto_openssl_load_client_key(EVP_PKEY **out_key,
                                     const avs_crypto_client_key_info_t *info);

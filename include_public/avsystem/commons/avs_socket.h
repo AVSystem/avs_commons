@@ -293,6 +293,13 @@ typedef struct {
     avs_crypto_trusted_cert_info_t trusted_certs;
 
     /**
+     * Store of certificate revocation lists. This field is optional and can be
+     * left zero-initialized. If used, it shall be initialized using one of the
+     * <c>avs_crypto_cert_revocation_list_info_from_*</c> helper functions.
+     */
+    avs_crypto_cert_revocation_list_info_t cert_revocation_lists;
+
+    /**
      * Local certificate to use for authenticating with the peer. This field is
      * optional and can be left zero-initialized. If used, it shall be
      * initialized using one of the <c>avs_crypto_client_cert_info_from_*</c>

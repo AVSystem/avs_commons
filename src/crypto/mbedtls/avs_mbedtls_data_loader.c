@@ -40,26 +40,17 @@
 
 VISIBILITY_SOURCE_BEGIN
 
-#    define CREATE_OR_FAIL(allocator, type, ptr)         \
-        do {                                             \
-            avs_free(*ptr);                              \
-            *ptr = (type *) allocator(1, sizeof(**ptr)); \
-            if (!*ptr) {                                 \
-                LOG(ERROR, _("Out of memory"));          \
-                return avs_errno(AVS_ENOMEM);            \
-            }                                            \
-        } while (0)
-
-#    define CREATE_X509_CRT_OR_FAIL(ptr) \
-        CREATE_OR_FAIL(mbedtls_calloc, mbedtls_x509_crt, ptr)
-
-#    define CREATE_PK_CONTEXT_OR_FAIL(ptr) \
-        CREATE_OR_FAIL(avs_calloc, mbedtls_pk_context, ptr)
-
 static avs_error_t append_cert_from_buffer(mbedtls_x509_crt *chain,
                                            const void *buffer,
                                            size_t len) {
     return mbedtls_x509_crt_parse(chain, (const unsigned char *) buffer, len)
+                   ? avs_errno(AVS_EPROTO)
+                   : AVS_OK;
+}
+
+static avs_error_t
+append_crl_from_buffer(mbedtls_x509_crl *crl, const void *buffer, size_t len) {
+    return mbedtls_x509_crl_parse(crl, (const unsigned char *) buffer, len)
                    ? avs_errno(AVS_EPROTO)
                    : AVS_OK;
 }
@@ -87,6 +78,33 @@ static avs_error_t append_cert_from_file(mbedtls_x509_crt *chain,
         _("certificate <") "%s" _(
                 ">: mbed TLS configured without file system support, ")
                 _("cannot load"),
+        name);
+    return avs_errno(AVS_ENOTSUP);
+#    endif // MBEDTLS_FS_IO
+}
+
+static avs_error_t append_crl_from_file(mbedtls_x509_crl *crl,
+                                        const char *name) {
+#    ifdef MBEDTLS_FS_IO
+    LOG(DEBUG, _("CRL <") "%s" _(">: going to load"), name);
+
+    int retval = -1;
+    avs_error_t err = ((retval = mbedtls_x509_crl_parse_file(crl, name))
+                               ? avs_errno(AVS_EPROTO)
+                               : AVS_OK);
+    if (avs_is_ok(err)) {
+        LOG(DEBUG, _("CRL <") "%s" _(">: loaded"), name);
+    } else {
+        LOG(ERROR, _("CRL <") "%s" _(">: failed to load, result ") "%d", name,
+            retval);
+    }
+    return err;
+#    else  // MBEDTLS_FS_IO
+    (void) chain;
+    (void) name;
+    LOG(DEBUG,
+        _("CRL <") "%s" _(">: mbed TLS configured without file system support, "
+                          "cannot load"),
         name);
     return avs_errno(AVS_ENOTSUP);
 #    endif // MBEDTLS_FS_IO
@@ -154,22 +172,26 @@ static avs_error_t append_ca_certs(mbedtls_x509_crt *out,
         }
         return append_cert_from_buffer(out, info->desc.info.buffer.buffer,
                                        info->desc.info.buffer.buffer_size);
-    case AVS_CRYPTO_DATA_SOURCE_TRUSTED_CERT_ARRAY: {
+    case AVS_CRYPTO_DATA_SOURCE_ARRAY: {
         avs_error_t err = AVS_OK;
         for (size_t i = 0;
-             avs_is_ok(err)
-             && i < info->desc.info.trusted_cert_array.element_count;
+             avs_is_ok(err) && i < info->desc.info.array.element_count;
              ++i) {
             err = append_ca_certs(
-                    out, &info->desc.info.trusted_cert_array.array_ptr[i]);
+                    out, AVS_CONTAINER_OF(&info->desc.info.array.array_ptr[i],
+                                          const avs_crypto_trusted_cert_info_t,
+                                          desc));
         }
         return err;
     }
 #    ifdef AVS_COMMONS_WITH_AVS_LIST
-    case AVS_CRYPTO_DATA_SOURCE_TRUSTED_CERT_LIST: {
-        AVS_LIST(avs_crypto_trusted_cert_info_t) entry;
-        AVS_LIST_FOREACH(entry, info->desc.info.trusted_cert_list.list_head) {
-            avs_error_t err = append_ca_certs(out, entry);
+    case AVS_CRYPTO_DATA_SOURCE_LIST: {
+        AVS_LIST(avs_crypto_security_info_union_t) entry;
+        AVS_LIST_FOREACH(entry, info->desc.info.list.list_head) {
+            avs_error_t err = append_ca_certs(
+                    out, AVS_CONTAINER_OF(entry,
+                                          const avs_crypto_trusted_cert_info_t,
+                                          desc));
             if (avs_is_err(err)) {
                 return err;
             }
@@ -194,7 +216,12 @@ void _avs_crypto_mbedtls_x509_crt_cleanup(mbedtls_x509_crt **crt) {
 avs_error_t
 _avs_crypto_mbedtls_load_ca_certs(mbedtls_x509_crt **out,
                                   const avs_crypto_trusted_cert_info_t *info) {
-    CREATE_X509_CRT_OR_FAIL(out);
+    assert(!*out);
+    *out = (mbedtls_x509_crt *) mbedtls_calloc(1, sizeof(**out));
+    if (!*out) {
+        LOG(ERROR, _("Out of memory"));
+        return avs_errno(AVS_ENOMEM);
+    }
     mbedtls_x509_crt_init(*out);
     avs_error_t err = append_ca_certs(*out, info);
     if (avs_is_err(err)) {
@@ -203,9 +230,93 @@ _avs_crypto_mbedtls_load_ca_certs(mbedtls_x509_crt **out,
     return err;
 }
 
+static avs_error_t
+append_crls(mbedtls_x509_crl *out,
+            const avs_crypto_cert_revocation_list_info_t *info) {
+    switch (info->desc.source) {
+    case AVS_CRYPTO_DATA_SOURCE_EMPTY:
+        return AVS_OK;
+    case AVS_CRYPTO_DATA_SOURCE_FILE:
+        if (!info->desc.info.file.filename) {
+            LOG(ERROR, _("attempt to load CRL from file, but filename=NULL"));
+            return avs_errno(AVS_EINVAL);
+        }
+        return append_crl_from_file(out, info->desc.info.file.filename);
+    case AVS_CRYPTO_DATA_SOURCE_BUFFER:
+        if (!info->desc.info.buffer.buffer) {
+            LOG(ERROR, _("attempt to load CRL from buffer, but buffer=NULL"));
+            return avs_errno(AVS_EINVAL);
+        }
+        return append_crl_from_buffer(out, info->desc.info.buffer.buffer,
+                                      info->desc.info.buffer.buffer_size);
+    case AVS_CRYPTO_DATA_SOURCE_ARRAY: {
+        avs_error_t err = AVS_OK;
+        for (size_t i = 0;
+             avs_is_ok(err) && i < info->desc.info.array.element_count;
+             ++i) {
+            err = append_crls(
+                    out, AVS_CONTAINER_OF(
+                                 &info->desc.info.array.array_ptr[i],
+                                 const avs_crypto_cert_revocation_list_info_t,
+                                 desc));
+        }
+        return err;
+    }
+#    ifdef AVS_COMMONS_WITH_AVS_LIST
+    case AVS_CRYPTO_DATA_SOURCE_LIST: {
+        AVS_LIST(avs_crypto_security_info_union_t) entry;
+        AVS_LIST_FOREACH(entry, info->desc.info.list.list_head) {
+            avs_error_t err = append_crls(
+                    out, AVS_CONTAINER_OF(
+                                 entry,
+                                 const avs_crypto_cert_revocation_list_info_t,
+                                 desc));
+            if (avs_is_err(err)) {
+                return err;
+            }
+        }
+        return AVS_OK;
+    }
+#    endif // AVS_COMMONS_WITH_AVS_LIST
+    default:
+        AVS_UNREACHABLE("invalid data source");
+        return avs_errno(AVS_EINVAL);
+    }
+}
+
+void _avs_crypto_mbedtls_x509_crl_cleanup(mbedtls_x509_crl **crl) {
+    if (crl && *crl) {
+        mbedtls_x509_crl_free(*crl);
+        mbedtls_free(*crl);
+        *crl = NULL;
+    }
+}
+
+avs_error_t _avs_crypto_mbedtls_load_crls(
+        mbedtls_x509_crl **out,
+        const avs_crypto_cert_revocation_list_info_t *info) {
+    assert(!*out);
+    *out = (mbedtls_x509_crl *) mbedtls_calloc(1, sizeof(**out));
+    if (!*out) {
+        LOG(ERROR, _("Out of memory"));
+        return avs_errno(AVS_ENOMEM);
+    }
+    mbedtls_x509_crl_init(*out);
+    avs_error_t err = append_crls(*out, info);
+    if (avs_is_err(err)) {
+        _avs_crypto_mbedtls_x509_crl_cleanup(out);
+    }
+    return err;
+}
+
 avs_error_t _avs_crypto_mbedtls_load_client_cert(
         mbedtls_x509_crt **out, const avs_crypto_client_cert_info_t *info) {
-    CREATE_X509_CRT_OR_FAIL(out);
+    assert(!*out);
+    *out = (mbedtls_x509_crt *) mbedtls_calloc(1, sizeof(**out));
+    if (!*out) {
+        LOG(ERROR, _("Out of memory"));
+        return avs_errno(AVS_ENOMEM);
+    }
     mbedtls_x509_crt_init(*out);
 
     avs_error_t err = avs_errno(AVS_EINVAL);
@@ -291,7 +402,12 @@ void _avs_crypto_mbedtls_pk_context_cleanup(mbedtls_pk_context **ctx) {
 avs_error_t
 _avs_crypto_mbedtls_load_client_key(mbedtls_pk_context **client_key,
                                     const avs_crypto_client_key_info_t *info) {
-    CREATE_PK_CONTEXT_OR_FAIL(client_key);
+    assert(!*client_key);
+    *client_key = (mbedtls_pk_context *) avs_calloc(1, sizeof(**client_key));
+    if (!*client_key) {
+        LOG(ERROR, _("Out of memory"));
+        return avs_errno(AVS_ENOMEM);
+    }
     mbedtls_pk_init(*client_key);
 
     avs_error_t err = avs_errno(AVS_EINVAL);
