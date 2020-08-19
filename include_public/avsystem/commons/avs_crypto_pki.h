@@ -736,6 +736,40 @@ avs_crypto_pki_csr_create(avs_crypto_prng_ctx_t *prng_ctx,
 avs_time_real_t avs_crypto_client_cert_expiration_date(
         const avs_crypto_client_cert_info_t *cert_info);
 
+#    ifdef AVS_COMMONS_WITH_AVS_LIST
+/**
+ * Parses a PKCS#7 "certs only" data encoded as BER or DER
+ * (application/pkcs7-mime;smime-type=certs-only).
+ *
+ * The data is parsed into the same kind of lists that @ref
+ * avs_crypto_trust_store_info_copy_as_list and @ref
+ * avs_crypto_cert_revocation_list_info_copy_as_list create, so that calling
+ * @ref AVS_LIST_DELETE also frees any buffers with a given element. To free the
+ * entire list with all the associated resources, an
+ * <c>AVS_LIST_CLEAR(out_certs);</c> and <c>AVS_LIST_CLEAR(out_crls);</c>
+ * statement, repectively is sufficient.
+ *
+ * @param out_certs   Pointer to a variable that, on entry, shall be a NULL
+ *                    pointer, and on exit will be set to a pointer to the head
+ *                    of the newly created list of trusted certificates.
+ *
+ * @param out_crls    Pointer to a variable that, on entry, shall be a NULL
+ *                    pointer, and on exit will be set to a pointer to the head
+ *                    of the newly created list of certificate revocation lists.
+ *
+ * @param buffer      Pointer to the buffer that contains a PKCS#7 file.
+ *
+ * @param buffer_size Size of the data pointed to by @p buffer.
+ *
+ * @returns AVS_OK on success, or an error code on error.
+ */
+avs_error_t avs_crypto_parse_pkcs7_certs_only(
+        AVS_LIST(avs_crypto_trusted_cert_info_t) *out_certs,
+        AVS_LIST(avs_crypto_cert_revocation_list_info_t) *out_crls,
+        const void *buffer,
+        size_t buffer_size);
+#    endif // AVS_COMMONS_WITH_AVS_LIST
+
 #endif // AVS_COMMONS_WITH_AVS_CRYPTO_ADVANCED_FEATURES
 
 #ifdef __cplusplus

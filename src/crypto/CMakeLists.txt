@@ -23,7 +23,8 @@ set(AVS_CRYPTO_TEST_SOURCES "${AVS_COMMONS_SOURCE_DIR}/tests/crypto/prng.c")
 
 set(AVS_CRYPTO_ADVANCED_FEATURES_TEST_SOURCES
     ${AVS_COMMONS_SOURCE_DIR}/tests/crypto/aead.c
-    ${AVS_COMMONS_SOURCE_DIR}/tests/crypto/hkdf.c)
+    ${AVS_COMMONS_SOURCE_DIR}/tests/crypto/hkdf.c
+    ${AVS_COMMONS_SOURCE_DIR}/tests/crypto/pki.h)
 
 option(WITH_AVS_CRYPTO_ADVANCED_FEATURES
        "Enables/disables advanced cryptographic features, such as AEAD/HKDF support" OFF)
@@ -86,7 +87,7 @@ if(WITH_OPENSSL)
     target_link_libraries(avs_crypto_openssl PUBLIC avs_crypto_core OpenSSL::Crypto)
 
     avs_add_test(NAME avs_crypto_openssl
-                 LIBS avs_crypto_openssl OpenSSL::SSL
+                 LIBS avs_crypto_openssl avs_http OpenSSL::SSL
                  SOURCES
                  ${AVS_CRYPTO_OPENSSL_TEST_SOURCES})
     avs_install_export(avs_crypto_openssl crypto)
@@ -122,7 +123,7 @@ if(WITH_MBEDTLS)
     endif()
 
     avs_add_test(NAME avs_crypto_mbedtls
-                 LIBS $<TARGET_PROPERTY:avs_crypto_mbedtls,LINK_LIBRARIES>
+                 LIBS $<TARGET_PROPERTY:avs_crypto_mbedtls,LINK_LIBRARIES> avs_http
                  SOURCES
                  ${AVS_CRYPTO_MBEDTLS_TEST_SOURCES})
     avs_install_export(avs_crypto_mbedtls crypto)
