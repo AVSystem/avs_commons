@@ -196,6 +196,7 @@ avs_http_t *avs_http_new(const avs_http_buffer_sizes_t *buffer_sizes);
  */
 void avs_http_free(avs_http_t *http);
 
+#ifdef AVS_COMMONS_WITH_AVS_CRYPTO
 /**
  * Sets SSL/TLS configuration for sockets created by the the HTTP client when
  * connecting to HTTPS addresses.
@@ -211,6 +212,7 @@ void avs_http_free(avs_http_t *http);
 void avs_http_ssl_configuration(
         avs_http_t *http,
         const volatile avs_net_ssl_configuration_t *ssl_configuration);
+#endif // AVS_COMMONS_WITH_AVS_CRYPTO
 
 /**
  * Callback function type used by @ref avs_http_ssl_pre_connect_cb .

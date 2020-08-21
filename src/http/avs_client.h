@@ -38,7 +38,9 @@ struct avs_http {
     avs_http_ssl_pre_connect_cb_t *ssl_pre_connect_cb;
     void *ssl_pre_connect_cb_arg;
 
+#ifdef AVS_COMMONS_WITH_AVS_CRYPTO
     const volatile avs_net_ssl_configuration_t *ssl_configuration;
+#endif // AVS_COMMONS_WITH_AVS_CRYPTO
     const volatile avs_net_socket_configuration_t *tcp_configuration;
 };
 

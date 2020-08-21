@@ -37,6 +37,7 @@ VISIBILITY_SOURCE_BEGIN
 
 const avs_time_duration_t AVS_NET_SOCKET_DEFAULT_RECV_TIMEOUT = { 30, 0 };
 
+#    ifdef AVS_COMMONS_WITH_AVS_CRYPTO
 avs_net_security_info_t avs_net_security_info_from_psk(avs_net_psk_info_t psk) {
     avs_net_security_info_t result;
     memset(&result, 0, sizeof(result));
@@ -53,6 +54,7 @@ avs_net_security_info_from_certificates(avs_net_certificate_info_t info) {
     result.data.cert = info;
     return result;
 }
+#    endif // AVS_COMMONS_WITH_AVS_CRYPTO
 
 #    ifdef AVS_COMMONS_NET_WITH_SOCKET_LOG
 static int _avs_net_socket_debug = 0;
@@ -283,6 +285,7 @@ static avs_error_t create_bare_socket(avs_net_socket_t **socket,
     return socket_constructor(socket, configuration);
 }
 
+#    ifdef AVS_COMMONS_WITH_AVS_CRYPTO
 static avs_error_t decorate_socket_in_place(
         avs_net_socket_t **socket,
         avs_error_t (*new_socket_constructor)(
@@ -311,6 +314,7 @@ avs_error_t avs_net_ssl_socket_decorate_in_place(
         avs_net_socket_t **socket, const avs_net_ssl_configuration_t *config) {
     return decorate_socket_in_place(socket, avs_net_ssl_socket_create, config);
 }
+#    endif // AVS_COMMONS_WITH_AVS_CRYPTO
 
 #    ifdef AVS_COMMONS_NET_WITH_SOCKET_LOG
 
@@ -675,10 +679,11 @@ avs_net_tcp_socket_create(avs_net_socket_t **socket,
     return init_debug_socket_if_applicable(socket, err);
 }
 
+#    ifdef AVS_COMMONS_WITH_AVS_CRYPTO
 avs_error_t
 avs_net_dtls_socket_create(avs_net_socket_t **socket,
                            const avs_net_ssl_configuration_t *config) {
-#    ifndef WITHOUT_SSL
+#        ifndef WITHOUT_SSL
     if (!config->prng_ctx) {
         LOG(ERROR, _("PRNG ctx MUST NOT be NULL"));
         return avs_errno(AVS_EINVAL);
@@ -686,18 +691,18 @@ avs_net_dtls_socket_create(avs_net_socket_t **socket,
     avs_error_t err =
             create_bare_socket(socket, _avs_net_create_dtls_socket, config);
     return init_debug_socket_if_applicable(socket, err);
-#    else  // WITHOUT_SSL
+#        else  // WITHOUT_SSL
     (void) socket;
     (void) config;
     LOG(ERROR, _("could not create secure socket: (D)TLS support is disabled"));
     return avs_errno(AVS_ENOTSUP);
-#    endif // WITHOUT_SSL
+#        endif // WITHOUT_SSL
 }
 
 avs_error_t
 avs_net_ssl_socket_create(avs_net_socket_t **socket,
                           const avs_net_ssl_configuration_t *config) {
-#    ifndef WITHOUT_SSL
+#        ifndef WITHOUT_SSL
     if (!config->prng_ctx) {
         LOG(ERROR, _("PRNG ctx MUST NOT be NULL"));
         return avs_errno(AVS_EINVAL);
@@ -705,12 +710,13 @@ avs_net_ssl_socket_create(avs_net_socket_t **socket,
     avs_error_t err =
             create_bare_socket(socket, _avs_net_create_ssl_socket, config);
     return init_debug_socket_if_applicable(socket, err);
-#    else  // WITHOUT_SSL
+#        else  // WITHOUT_SSL
     (void) socket;
     (void) config;
     LOG(ERROR, _("could not create secure socket: (D)TLS support is disabled"));
     return avs_errno(AVS_ENOTSUP);
-#    endif // WITHOUT_SSL
+#        endif // WITHOUT_SSL
 }
+#    endif // AVS_COMMONS_WITH_AVS_CRYPTO
 
 #endif // AVS_COMMONS_WITH_AVS_NET

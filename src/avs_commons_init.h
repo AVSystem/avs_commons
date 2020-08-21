@@ -34,7 +34,8 @@
 #endif
 
 #if !(defined(AVS_COMMONS_WITH_OPENSSL) || defined(AVS_COMMONS_WITH_MBEDTLS) \
-      || defined(AVS_COMMONS_WITH_TINYDTLS))
+      || defined(AVS_COMMONS_WITH_TINYDTLS))                                 \
+        && !defined(WITHOUT_SSL)
 #    define WITHOUT_SSL
 #endif
 
