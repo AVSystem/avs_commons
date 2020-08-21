@@ -13,6 +13,7 @@
 # limitations under the License.
 
 set(AVS_CRYPTO_PUBLIC_HEADERS
+    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/avs_crypto_pki.h"
     "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/avs_prng.h")
 
 set(AVS_CRYPTO_COMMON_SOURCES
@@ -53,12 +54,6 @@ target_link_libraries(avs_crypto_core INTERFACE avs_commons_global_headers avs_u
 
 if(WITH_INTERNAL_LOGS)
     target_link_libraries(avs_crypto_core INTERFACE avs_log)
-endif()
-
-if(WITH_OPENSSL OR WITH_MBEDTLS)
-    set(AVS_CRYPTO_PUBLIC_HEADERS
-        ${AVS_CRYPTO_PUBLIC_HEADERS}
-        "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/avs_crypto_pki.h")
 endif()
 
 if(WITH_OPENSSL)
