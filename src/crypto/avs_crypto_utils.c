@@ -22,6 +22,7 @@
 #    include <string.h>
 
 #    include <avsystem/commons/avs_crypto_pki.h>
+#    include <avsystem/commons/avs_memory.h>
 
 #    include "avs_crypto_utils.h"
 
