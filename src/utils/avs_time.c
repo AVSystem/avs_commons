@@ -83,10 +83,15 @@ static int safe_add_int64_t(int64_t *out, int64_t a, int64_t b) {
             return -1;
         }
         uint64_t result = ((uint64_t) -a) + ((uint64_t) -b);
-        if (result > (uint64_t) INT64_MIN) {
+        AVS_STATIC_ASSERT(-INT64_MAX - 1 == INT64_MIN,
+                          standard_enforces_u2_for_intN_t);
+        if (result > (uint64_t) INT64_MAX + 1) {
             return -1;
+        } else if (result == (uint64_t) INT64_MAX + 1) {
+            *out = INT64_MIN;
+        } else {
+            *out = -(int64_t) result;
         }
-        *out = -(int64_t) result;
     } else {
         *out = a + b;
     }
