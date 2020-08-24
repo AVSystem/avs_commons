@@ -24,7 +24,6 @@
 
 #include <avsystem/commons/avs_base64.h>
 #include <avsystem/commons/avs_crypto_pki.h>
-#include <avsystem/commons/avs_http.h>
 #include <avsystem/commons/avs_stream_membuf.h>
 #include <avsystem/commons/avs_unit_test.h>
 #include <avsystem/commons/avs_utils.h>
