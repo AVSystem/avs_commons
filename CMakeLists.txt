@@ -418,8 +418,6 @@ if(WITH_TEST)
 
     set(_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
 
-    add_subdirectory(tools)
-
     # NAME - test target name, without _test suffix
     # LIBS - libs to link to
     # SOURCES - test sources
@@ -433,7 +431,6 @@ if(WITH_TEST)
                        ${AAT_SOURCES})
         target_link_libraries(${AAT_NAME}_test PRIVATE avs_unit ${AAT_LIBS})
         target_include_directories(${AAT_NAME}_test PRIVATE "${AVS_COMMONS_SOURCE_DIR}")
-        add_dependencies(${AAT_NAME}_test dtls_echo_server)
 
         set_property(TARGET ${AAT_NAME}_test APPEND PROPERTY COMPILE_DEFINITIONS AVS_UNIT_TESTING ${AAT_COMPILE_DEFINITIONS})
         set_property(TARGET ${AAT_NAME}_test APPEND PROPERTY COMPILE_FLAGS
