@@ -64,13 +64,15 @@
 #    endif // AVS_COMMONS_WITH_AVS_CRYPTO_PKI
 #    include "avs_mbedtls_persistence.h"
 
-#    if defined(AVS_COMMONS_WITH_AVS_CRYPTO_PKI) && defined(MBEDTLS_SHA256_C) \
-            && defined(MBEDTLS_SHA512_C)
+#    if MBEDTLS_VERSION_NUMBER >= 0x02070000            \
+            && defined(AVS_COMMONS_WITH_AVS_CRYPTO_PKI) \
+            && defined(MBEDTLS_SHA256_C) && defined(MBEDTLS_SHA512_C)
 #        include <mbedtls/sha256.h>
 #        include <mbedtls/sha512.h>
 #        define WITH_DANE_SUPPORT
 #        define dane_tlsa_array_field security.cert.dane_tlsa
-#    endif // defined(AVS_COMMONS_WITH_AVS_CRYPTO_PKI) &&
+#    endif // MBEDTLS_VERSION_NUMBER >= 0x02070000 &&
+           // defined(AVS_COMMONS_WITH_AVS_CRYPTO_PKI) &&
            // defined(MBEDTLS_SHA256_C) && defined(MBEDTLS_SHA512_C)
 
 #    include "../avs_net_impl.h"
