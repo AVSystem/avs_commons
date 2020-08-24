@@ -14,11 +14,14 @@
  * limitations under the License.
  */
 
+#define _GNU_SOURCE // for memmem()
+
 #include <stdio.h>
 #include <string.h>
 
 #include <dirent.h>
 #include <fcntl.h>
+#include <sys/mman.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -204,17 +207,34 @@ AVS_UNIT_TEST(starttls, starttls_smtp_verify_failure) {
     avs_crypto_prng_free(&prng_ctx);
 }
 
-static bool is_readable_regular_file(const char *path) {
+static bool is_pem_crt_file(const char *path) {
     struct stat statbuf;
-    return !stat(path, &statbuf) && S_ISREG(statbuf.st_mode)
-           && !access(path, R_OK);
+    if (stat(path, &statbuf) || !S_ISREG(statbuf.st_mode)) {
+        return false;
+    }
+    int fd = open(path, O_RDONLY);
+    if (fd < 0) {
+        return false;
+    }
+    bool result = false;
+    static const char *needle = "-----BEGIN CERTIFICATE-----";
+    void *ptr =
+            mmap(NULL, (size_t) statbuf.st_size, PROT_READ, MAP_PRIVATE, fd, 0);
+    if (ptr) {
+        if (memmem(ptr, (size_t) statbuf.st_size, needle, strlen(needle))) {
+            result = true;
+        }
+        munmap(ptr, (size_t) statbuf.st_size);
+    }
+    close(fd);
+    return result;
 }
 
 static AVS_LIST(avs_crypto_trusted_cert_info_t) load_trusted_certs(void) {
     // On *BSD, including macOS, all system-wide certs are in this one huge file
     static const char *const bsd_cert_pem_path = "/etc/ssl/cert.pem";
     AVS_LIST(avs_crypto_trusted_cert_info_t) result = NULL;
-    if (is_readable_regular_file(bsd_cert_pem_path)) {
+    if (is_pem_crt_file(bsd_cert_pem_path)) {
         AVS_LIST(avs_crypto_trusted_cert_info_t) entry =
                 AVS_LIST_APPEND_NEW(avs_crypto_trusted_cert_info_t, &result);
         AVS_UNIT_ASSERT_NOT_NULL(entry);
@@ -239,7 +259,7 @@ static AVS_LIST(avs_crypto_trusted_cert_info_t) load_trusted_certs(void) {
                                     sizeof(entry_with_path->path), "%s/%s",
                                     linux_certs_dir, file_entry->d_name)
                             < 0
-                    || !is_readable_regular_file(entry_with_path->path)) {
+                    || !is_pem_crt_file(entry_with_path->path)) {
                 AVS_LIST_DELETE(&entry_with_path);
             } else {
                 entry_with_path->entry = avs_crypto_trusted_cert_info_from_file(
