@@ -45,7 +45,7 @@ run_socket_get_opt_test_cases(avs_net_socket_t *socket,
 }
 
 #define DEFAULT_ADDRESS "localhost"
-#define DEFAULT_PORT "5683"
+#define DEFAULT_PORT "0"
 #define DEFAULT_IDENTITY "sesame"
 #define DEFAULT_PSK "password"
 
