@@ -27,12 +27,15 @@
 #include <stdlib.h>
 
 #include <avsystem/commons/avs_commons_config.h>
-#include <avsystem/commons/avs_crypto_pki.h>
 #include <avsystem/commons/avs_defs.h>
 #include <avsystem/commons/avs_errno.h>
 #include <avsystem/commons/avs_memory.h>
-#include <avsystem/commons/avs_prng.h>
 #include <avsystem/commons/avs_time.h>
+
+#ifdef AVS_COMMONS_WITH_AVS_CRYPTO
+#    include <avsystem/commons/avs_crypto_pki.h>
+#    include <avsystem/commons/avs_prng.h>
+#endif // AVS_COMMONS_WITH_AVS_CRYPTO
 
 #ifdef AVS_COMMONS_NET_WITH_X509
 #    warning \
@@ -85,20 +88,6 @@ typedef struct avs_net_socket_struct avs_net_socket_t;
  * interface. For POSIX interfaces it is array of IF_NAMESIZE characters.
  */
 typedef char avs_net_socket_interface_name_t[IF_NAMESIZE];
-
-/**
- * Function type for callbacks to be executed for additional SSL configuration.
- *
- * Note that the @ref library_ssl_context parameter is a pointer to a native
- * SSL context object of the SSL library in use. It shall be cast to
- * <c>SSL_CTX *</c> for OpenSSL or <c>ssl_context *</c> for XySSL-derivatives.
- *
- * @param library_ssl_context pointer to a native SSL context object of the
- *                            SSL library in use
- *
- * @return 0 on success, negative value on failure
- */
-typedef int avs_ssl_additional_configuration_clb_t(void *library_ssl_context);
 
 /**
  * Structure that contains additional configuration options for creating TCP and
@@ -217,6 +206,21 @@ typedef struct {
     avs_net_af_t preferred_family;
 } avs_net_socket_configuration_t;
 
+#ifdef AVS_COMMONS_WITH_AVS_CRYPTO
+/**
+ * Function type for callbacks to be executed for additional SSL configuration.
+ *
+ * Note that the @ref library_ssl_context parameter is a pointer to a native
+ * SSL context object of the SSL library in use. It shall be cast to
+ * <c>SSL_CTX *</c> for OpenSSL or <c>ssl_context *</c> for XySSL-derivatives.
+ *
+ * @param library_ssl_context pointer to a native SSL context object of the
+ *                            SSL library in use
+ *
+ * @return 0 on success, negative value on failure
+ */
+typedef int avs_ssl_additional_configuration_clb_t(void *library_ssl_context);
+
 /**
  * Available SSL versions that can be used by SSL sockets.
  */
@@ -333,6 +337,7 @@ typedef struct {
     avs_time_duration_t min;
     avs_time_duration_t max;
 } avs_net_dtls_handshake_timeouts_t;
+#endif // AVS_COMMONS_WITH_AVS_CRYPTO
 
 /**
  * Category for @ref avs_error_t containing a (D)TLS Alert.
@@ -369,6 +374,7 @@ static inline uint8_t avs_net_ssl_alert_description(avs_error_t error) {
     return (uint8_t) error.code;
 }
 
+#ifdef AVS_COMMONS_WITH_AVS_CRYPTO
 typedef struct {
     /** Array of ciphersuite IDs, or NULL to enable all ciphers */
     uint32_t *ids;
@@ -480,6 +486,7 @@ typedef struct {
      */
     avs_crypto_prng_ctx_t *prng_ctx;
 } avs_net_ssl_configuration_t;
+#endif // AVS_COMMONS_WITH_AVS_CRYPTO
 
 typedef enum {
     /**
@@ -674,6 +681,7 @@ avs_error_t
 avs_net_tcp_socket_create(avs_net_socket_t **socket,
                           const avs_net_socket_configuration_t *config);
 
+#ifdef AVS_COMMONS_WITH_AVS_CRYPTO
 avs_error_t
 avs_net_dtls_socket_create(avs_net_socket_t **socket,
                            const avs_net_ssl_configuration_t *config);
@@ -681,7 +689,7 @@ avs_net_dtls_socket_create(avs_net_socket_t **socket,
 avs_error_t
 avs_net_ssl_socket_create(avs_net_socket_t **socket,
                           const avs_net_ssl_configuration_t *config);
-
+#endif // AVS_COMMONS_WITH_AVS_CRYPTO
 /**@}*/
 
 /**
@@ -739,6 +747,7 @@ avs_error_t avs_net_socket_connect(avs_net_socket_t *socket,
 avs_error_t avs_net_socket_decorate(avs_net_socket_t *socket,
                                     avs_net_socket_t *backend_socket);
 
+#ifdef AVS_COMMONS_WITH_AVS_CRYPTO
 /**
  * @name Sockets decorators
  *
@@ -768,6 +777,7 @@ avs_net_ssl_socket_decorate_in_place(avs_net_socket_t **socket,
                                      const avs_net_ssl_configuration_t *config);
 
 /**@}*/
+#endif // AVS_COMMONS_WITH_AVS_CRYPTO
 
 /**
  * Sends exactly @p buffer_length bytes from @p buffer to @p socket.

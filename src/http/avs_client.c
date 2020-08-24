@@ -61,11 +61,13 @@ void avs_http_free(avs_http_t *http) {
     }
 }
 
+#    ifdef AVS_COMMONS_WITH_AVS_CRYPTO
 void avs_http_ssl_configuration(
         avs_http_t *http,
         const volatile avs_net_ssl_configuration_t *ssl_configuration) {
     http->ssl_configuration = ssl_configuration;
 }
+#    endif // AVS_COMMONS_WITH_AVS_CRYPTO
 
 void avs_http_ssl_pre_connect_cb(avs_http_t *http,
                                  avs_http_ssl_pre_connect_cb_t *cb,

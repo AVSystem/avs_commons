@@ -89,10 +89,15 @@ static const char *resolve_port(const avs_url_t *parsed_url) {
 avs_error_t _avs_http_socket_new(avs_net_socket_t **out,
                                  avs_http_t *client,
                                  const avs_url_t *url) {
+#    ifdef AVS_COMMONS_WITH_AVS_CRYPTO
     avs_net_ssl_configuration_t ssl_config_full;
+#    else  // AVS_COMMONS_WITH_AVS_CRYPTO
+    avs_net_socket_configuration_t tcp_config_full;
+#    endif // AVS_COMMONS_WITH_AVS_CRYPTO
     LOG(TRACE, _("http_new_socket"));
     assert(out != NULL);
     *out = NULL;
+#    ifdef AVS_COMMONS_WITH_AVS_CRYPTO
     if (client->ssl_configuration) {
         ssl_config_full = *client->ssl_configuration;
     } else {
@@ -101,6 +106,13 @@ avs_error_t _avs_http_socket_new(avs_net_socket_t **out,
     if (client->tcp_configuration) {
         ssl_config_full.backend_configuration = *client->tcp_configuration;
     }
+#    else  // AVS_COMMONS_WITH_AVS_CRYPTO
+    if (client->tcp_configuration) {
+        tcp_config_full = *client->tcp_configuration;
+    } else {
+        memset(&tcp_config_full, 0, sizeof(tcp_config_full));
+    }
+#    endif // AVS_COMMONS_WITH_AVS_CRYPTO
     const char *host = avs_url_host(url);
     const char *port = resolve_port(url);
     avs_error_t err = avs_errno(AVS_EINVAL);
@@ -108,9 +120,15 @@ avs_error_t _avs_http_socket_new(avs_net_socket_t **out,
     case HTTP_URI_PROTOCOL_HTTP:
         LOG(TRACE, _("creating TCP socket"));
         err = avs_net_tcp_socket_create(out,
-                                        &ssl_config_full.backend_configuration);
+#    ifdef AVS_COMMONS_WITH_AVS_CRYPTO
+                                        &ssl_config_full.backend_configuration
+#    else  // AVS_COMMONS_WITH_AVS_CRYPTO
+                                        &tcp_config_full
+#    endif // AVS_COMMONS_WITH_AVS_CRYPTO
+        );
         break;
     case HTTP_URI_PROTOCOL_HTTPS:
+#    ifdef AVS_COMMONS_WITH_AVS_CRYPTO
         LOG(TRACE, _("creating SSL socket"));
         if (avs_is_ok((err = avs_net_ssl_socket_create(out, &ssl_config_full)))
                 && client->ssl_pre_connect_cb
@@ -120,6 +138,7 @@ avs_error_t _avs_http_socket_new(avs_net_socket_t **out,
             avs_net_socket_cleanup(out);
         }
         break;
+#    endif // AVS_COMMONS_WITH_AVS_CRYPTO
     case HTTP_URI_PROTOCOL_UNKNOWN:
         break;
     }

@@ -222,7 +222,7 @@ generate_cookie(SSL *ssl, unsigned char *cookie, unsigned int *cookie_len) {
 }
 
 static int
-verify_cookie(SSL *ssl, unsigned char *cookie, unsigned int cookie_len) {
+verify_cookie(SSL *ssl, const unsigned char *cookie, unsigned int cookie_len) {
     unsigned char *buffer, result[EVP_MAX_MD_SIZE];
     size_t length = 0;
     unsigned resultlength;
@@ -290,11 +290,8 @@ verify_cookie(SSL *ssl, unsigned char *cookie, unsigned int cookie_len) {
 }
 
 struct pass_info {
-    union {
-        struct sockaddr_storage ss;
-        struct sockaddr_in6 s6;
-        struct sockaddr_in s4;
-    } server_addr, client_addr;
+    const BIO_ADDR *server_addr;
+    const BIO_ADDR *client_addr;
     SSL *ssl;
     int fd;
 };
@@ -312,30 +309,17 @@ static int dtls_verify_callback(int ok, X509_STORE_CTX *ctx) {
 static void connection_handle(struct pass_info *pinfo) {
     int len;
     char buf[BUFFER_SIZE];
-    char addrbuf[INET6_ADDRSTRLEN];
     SSL *ssl = pinfo->ssl;
     int reading = 0, ret;
     int num_timeouts = 0, max_timeouts = 5;
 
-    OPENSSL_assert(pinfo->client_addr.ss.ss_family
-                   == pinfo->server_addr.ss.ss_family);
-    switch (pinfo->client_addr.ss.ss_family) {
-    case AF_INET:
-        connect(pinfo->fd, (struct sockaddr *) &pinfo->client_addr,
-                sizeof(struct sockaddr_in));
-        break;
-    case AF_INET6:
-        connect(pinfo->fd, (struct sockaddr *) &pinfo->client_addr,
-                sizeof(struct sockaddr_in6));
-        break;
-    default:
-        OPENSSL_assert(0);
-        break;
-    }
+    OPENSSL_assert(BIO_ADDR_family(pinfo->client_addr)
+                   == BIO_ADDR_family(pinfo->server_addr));
+    BIO_connect(pinfo->fd, pinfo->client_addr, 0);
 
     /* Set new fd and set BIO to connected */
     BIO_ctrl(SSL_get_rbio(ssl), BIO_CTRL_DGRAM_SET_CONNECTED, 0,
-             &pinfo->client_addr.ss);
+             (void *) (intptr_t) pinfo->client_addr);
 
     /* Finish handshake */
     do {
@@ -348,17 +332,11 @@ static void connection_handle(struct pass_info *pinfo) {
     }
 
     if (verbose) {
-        if (pinfo->client_addr.ss.ss_family == AF_INET) {
-            printf("\naccepted connection from %s:%d\n",
-                   inet_ntop(AF_INET, &pinfo->client_addr.s4.sin_addr, addrbuf,
-                             INET6_ADDRSTRLEN),
-                   ntohs(pinfo->client_addr.s4.sin_port));
-        } else {
-            printf("\naccepted connection from %s:%d\n",
-                   inet_ntop(AF_INET6, &pinfo->client_addr.s6.sin6_addr,
-                             addrbuf, INET6_ADDRSTRLEN),
-                   ntohs(pinfo->client_addr.s6.sin6_port));
-        }
+        char *hostname = BIO_ADDR_hostname_string(pinfo->client_addr, 0);
+        char *port = BIO_ADDR_service_string(pinfo->client_addr, 1);
+        printf("\naccepted connection from %s:%s\n", hostname, port);
+        OPENSSL_free(hostname);
+        OPENSSL_free(port);
     }
 
     if (veryverbose && SSL_get_peer_certificate(ssl)) {
@@ -463,53 +441,28 @@ cleanup:
     close(pinfo->fd);
 #endif
     SSL_free(ssl);
-    ERR_remove_state(0);
     if (verbose)
         printf("done, connection closed.\n");
 }
 
-static void start_server(uint16_t port,
-                         char *local_address,
+static void start_server(const char *port,
+                         const char *local_address,
                          const char *ca_file,
                          const char *pkey_file) {
     int fd;
-    union {
-        struct sockaddr_storage ss;
-        struct sockaddr_in s4;
-        struct sockaddr_in6 s6;
-    } server_addr, client_addr;
     SSL_CTX *ctx;
     SSL *ssl;
     BIO *bio;
     struct timeval timeout;
     struct pass_info info;
-    const int on = 1, off = 0;
+    const int on = 1;
 
-    memset(&server_addr, 0, sizeof(struct sockaddr_storage));
-    if (strlen(local_address) == 0) {
-        server_addr.s6.sin6_family = AF_INET6;
-#ifdef HAVE_SIN6_LEN
-        server_addr.s6.sin6_len = sizeof(struct sockaddr_in6);
-#endif
-        server_addr.s6.sin6_addr = in6addr_any;
-        server_addr.s6.sin6_port = htons(port);
-    } else {
-        if (inet_pton(AF_INET, local_address, &server_addr.s4.sin_addr) == 1) {
-            server_addr.s4.sin_family = AF_INET;
-#ifdef HAVE_SIN_LEN
-            server_addr.s4.sin_len = sizeof(struct sockaddr_in);
-#endif
-            server_addr.s4.sin_port = htons(port);
-        } else if (inet_pton(AF_INET6, local_address, &server_addr.s6.sin6_addr)
-                   == 1) {
-            server_addr.s6.sin6_family = AF_INET6;
-#ifdef HAVE_SIN6_LEN
-            server_addr.s6.sin6_len = sizeof(struct sockaddr_in6);
-#endif
-            server_addr.s6.sin6_port = htons(port);
-        } else {
-            return;
-        }
+    BIO_ADDRINFO *server_addrinfo = NULL;
+    BIO_lookup((local_address && *local_address) ? local_address : NULL,
+               (port && *port) ? port : NULL, BIO_LOOKUP_SERVER, AF_UNSPEC,
+               SOCK_DGRAM, &server_addrinfo);
+    if (!server_addrinfo) {
+        return;
     }
 
     OpenSSL_add_ssl_algorithms();
@@ -546,7 +499,8 @@ static void start_server(uint16_t port,
     WSAStartup(MAKEWORD(2, 2), &wsaData);
 #endif
 
-    fd = socket(server_addr.ss.ss_family, SOCK_DGRAM, 0);
+    fd = socket(BIO_ADDR_family(BIO_ADDRINFO_address(server_addrinfo)),
+                SOCK_DGRAM, 0);
     if (fd < 0) {
         perror("socket");
         exit(-1);
@@ -564,19 +518,15 @@ static void start_server(uint16_t port,
 #    endif
 #endif
 
-    if (server_addr.ss.ss_family == AF_INET) {
-        bind(fd, (const struct sockaddr *) &server_addr,
-             sizeof(struct sockaddr_in));
-    } else {
-        setsockopt(fd, IPPROTO_IPV6, IPV6_V6ONLY, (const char *) &off,
-                   sizeof(off));
-        bind(fd, (const struct sockaddr *) &server_addr,
-             sizeof(struct sockaddr_in6));
-    }
+    BIO_bind(fd, BIO_ADDRINFO_address(server_addrinfo), 0);
 
     kill(getppid(), SIGUSR1);
 
-    memset(&client_addr, 0, sizeof(struct sockaddr_storage));
+    BIO_ADDR *client_addr = BIO_ADDR_new();
+    if (!client_addr) {
+        perror("out of memory");
+        exit(-1);
+    }
 
     /* Create BIO */
     bio = BIO_new_dgram(fd, BIO_NOCLOSE);
@@ -592,15 +542,18 @@ static void start_server(uint16_t port,
     SSL_set_options(ssl, SSL_OP_COOKIE_EXCHANGE);
     SSL_set_accept_state(ssl);
 
-    while (DTLSv1_listen(ssl, &client_addr) <= 0)
+    while (DTLSv1_listen(ssl, client_addr) <= 0)
         ;
 
-    memcpy(&info.server_addr, &server_addr, sizeof(struct sockaddr_storage));
-    memcpy(&info.client_addr, &client_addr, sizeof(struct sockaddr_storage));
+    info.server_addr = BIO_ADDRINFO_address(server_addrinfo);
+    info.client_addr = client_addr;
     info.ssl = ssl;
     info.fd = fd;
 
     connection_handle(&info);
+
+    BIO_ADDRINFO_free(server_addrinfo);
+    BIO_ADDR_free(client_addr);
 
 #ifdef WIN32
     WSACleanup();
@@ -608,7 +561,7 @@ static void start_server(uint16_t port,
 }
 
 int main(int argc, char **argv) {
-    uint16_t port = 23232;
+    const char *port = "23232";
     int length = 100;
     char local_addr[INET6_ADDRSTRLEN + 1];
 
@@ -635,7 +588,7 @@ int main(int argc, char **argv) {
                 goto cmd_err;
             int port_int = atoi(*++argv);
             if (0 <= port_int && port_int < UINT16_MAX) {
-                port = (uint16_t) port_int;
+                port = *argv;
             } else {
                 goto cmd_err;
             }

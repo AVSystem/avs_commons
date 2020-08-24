@@ -102,6 +102,8 @@ run_socket_set_opt_test_cases(avs_net_socket_t *socket,
         case AVS_NET_SOCKET_OPT_BYTES_RECEIVED:
             opt_val.bytes_received = 321;
             break;
+        case AVS_NET_SOCKET_OPT_DANE_TLSA_ARRAY:
+            AVS_UNREACHABLE("unsupported case");
         }
 
         if (test_cases[i].expected_result == SUCCESS) {

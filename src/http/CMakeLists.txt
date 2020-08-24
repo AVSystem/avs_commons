@@ -44,7 +44,7 @@ add_library(avs_http STATIC
             avs_http_stream.c
             avs_stream_methods.c)
 
-target_link_libraries(avs_http PUBLIC avs_commons_global_headers avs_algorithm avs_net avs_stream avs_stream_md5 avs_stream_net avs_utils avs_list)
+target_link_libraries(avs_http PUBLIC avs_commons_global_headers avs_algorithm avs_net_core avs_stream avs_stream_md5 avs_stream_net avs_utils avs_list)
 
 if(WITH_AVS_HTTP_ZLIB)
     avs_find_library("find_package(ZLIB REQUIRED)")
@@ -57,7 +57,7 @@ install(FILES ${AVS_HTTP_PUBLIC_HEADERS}
         DESTINATION ${INCLUDE_INSTALL_DIR}/avsystem/commons)
 
 avs_add_test(NAME avs_http
-             LIBS avs_http
+             LIBS avs_http avs_net
              SOURCES
              $<TARGET_PROPERTY:avs_http,SOURCES>
              ${AVS_COMMONS_SOURCE_DIR}/tests/http/test_close.c
