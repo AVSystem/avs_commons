@@ -19,9 +19,11 @@
 #include <avsystem/commons/avs_unit_test.h>
 
 AVS_UNIT_TEST(convert_x509_time, year_to_days) {
-    // Let's start in 1583, the first full year after the introduction of the
-    // Gregorian calendar, and test more than two full 400-year cycles.
-    for (int year = 1583; year < 2400; ++year) {
+    // Let's start in 1900 and test more than two full 400-year cycles.
+    // NOTE: This initially used 1583 as the initial year, but it turns out that
+    // timegm() on macOS does not support years before 1900, so we have nothing
+    // to verify the calculation against.
+    for (int year = 1900; year < 2800; ++year) {
         bool is_leap;
         int64_t days = year_to_days(year, &is_leap);
         if (year % 4 == 0) {

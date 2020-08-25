@@ -15,7 +15,11 @@
 
 set -e
 
-SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
+canonicalize() {
+    echo "$(cd "$(dirname "$1")" && pwd -P)/$(basename "$1")"
+}
+
+SCRIPT_DIR="$(dirname "$(canonicalize "$0")")"
 ROOT_DIR="$(dirname "$SCRIPT_DIR")"
 
 list_targets() {

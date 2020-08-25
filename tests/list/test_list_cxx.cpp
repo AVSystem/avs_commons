@@ -16,6 +16,8 @@
 
 #include <avs_commons_init.h>
 
+#include <string>
+
 #include <stdlib.h>
 #include <string.h>
 

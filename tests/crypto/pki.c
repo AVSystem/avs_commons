@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include <avs_commons_posix_init.h> // for struct stat::st_mtim
+#include <avs_commons_init.h>
 
 #include <inttypes.h>
 
@@ -159,8 +159,7 @@ AVS_UNIT_TEST(avs_crypto_pki, avs_crypto_client_cert_expiration_date) {
     AVS_UNIT_ASSERT_SUCCESS(stat(CERT_PATH, &file_stat));
     avs_time_real_t file_mtime = {
         .since_real_epoch = {
-            .seconds = file_stat.st_mtim.tv_sec,
-            .nanoseconds = (int32_t) file_stat.st_mtim.tv_nsec
+            .seconds = file_stat.st_mtime
         }
     };
 
