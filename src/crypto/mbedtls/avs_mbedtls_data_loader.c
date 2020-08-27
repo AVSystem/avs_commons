@@ -48,13 +48,6 @@ static avs_error_t append_cert_from_buffer(mbedtls_x509_crt *chain,
                    : AVS_OK;
 }
 
-static avs_error_t
-append_crl_from_buffer(mbedtls_x509_crl *crl, const void *buffer, size_t len) {
-    return mbedtls_x509_crl_parse(crl, (const unsigned char *) buffer, len)
-                   ? avs_errno(AVS_EPROTO)
-                   : AVS_OK;
-}
-
 static avs_error_t append_cert_from_file(mbedtls_x509_crt *chain,
                                          const char *name) {
 #    ifdef MBEDTLS_FS_IO
@@ -83,9 +76,17 @@ static avs_error_t append_cert_from_file(mbedtls_x509_crt *chain,
 #    endif // MBEDTLS_FS_IO
 }
 
+#    ifdef MBEDTLS_X509_CRL_PARSE_C
+static avs_error_t
+append_crl_from_buffer(mbedtls_x509_crl *crl, const void *buffer, size_t len) {
+    return mbedtls_x509_crl_parse(crl, (const unsigned char *) buffer, len)
+                   ? avs_errno(AVS_EPROTO)
+                   : AVS_OK;
+}
+
 static avs_error_t append_crl_from_file(mbedtls_x509_crl *crl,
                                         const char *name) {
-#    ifdef MBEDTLS_FS_IO
+#        ifdef MBEDTLS_FS_IO
     LOG(DEBUG, _("CRL <") "%s" _(">: going to load"), name);
 
     int retval = -1;
@@ -99,16 +100,17 @@ static avs_error_t append_crl_from_file(mbedtls_x509_crl *crl,
             retval);
     }
     return err;
-#    else  // MBEDTLS_FS_IO
-    (void) chain;
+#        else  // MBEDTLS_FS_IO
+    (void) crl;
     (void) name;
     LOG(DEBUG,
         _("CRL <") "%s" _(">: mbed TLS configured without file system support, "
                           "cannot load"),
         name);
     return avs_errno(AVS_ENOTSUP);
-#    endif // MBEDTLS_FS_IO
+#        endif // MBEDTLS_FS_IO
 }
+#    endif // MBEDTLS_X509_CRL_PARSE_C
 
 static avs_error_t append_ca_from_path(mbedtls_x509_crt *chain,
                                        const char *path) {
@@ -236,19 +238,28 @@ append_crls(mbedtls_x509_crl *out,
     switch (info->desc.source) {
     case AVS_CRYPTO_DATA_SOURCE_EMPTY:
         return AVS_OK;
+#    ifdef MBEDTLS_X509_CRL_PARSE_C
     case AVS_CRYPTO_DATA_SOURCE_FILE:
+        assert(out);
         if (!info->desc.info.file.filename) {
             LOG(ERROR, _("attempt to load CRL from file, but filename=NULL"));
             return avs_errno(AVS_EINVAL);
         }
         return append_crl_from_file(out, info->desc.info.file.filename);
     case AVS_CRYPTO_DATA_SOURCE_BUFFER:
+        assert(out);
         if (!info->desc.info.buffer.buffer) {
             LOG(ERROR, _("attempt to load CRL from buffer, but buffer=NULL"));
             return avs_errno(AVS_EINVAL);
         }
         return append_crl_from_buffer(out, info->desc.info.buffer.buffer,
                                       info->desc.info.buffer.buffer_size);
+#    else  // MBEDTLS_X509_CRL_PARSE_C
+    case AVS_CRYPTO_DATA_SOURCE_FILE:
+    case AVS_CRYPTO_DATA_SOURCE_BUFFER:
+        LOG(DEBUG, _("Mbed TLS compiled without CRL support"));
+        return avs_errno(AVS_ENOTSUP);
+#    endif // MBEDTLS_X509_CRL_PARSE_C
     case AVS_CRYPTO_DATA_SOURCE_ARRAY: {
         avs_error_t err = AVS_OK;
         for (size_t i = 0;
@@ -286,9 +297,13 @@ append_crls(mbedtls_x509_crl *out,
 
 void _avs_crypto_mbedtls_x509_crl_cleanup(mbedtls_x509_crl **crl) {
     if (crl && *crl) {
+#    ifdef MBEDTLS_X509_CRL_PARSE_C
         mbedtls_x509_crl_free(*crl);
         mbedtls_free(*crl);
         *crl = NULL;
+#    else  // MBEDTLS_X509_CRL_PARSE_C
+        AVS_UNREACHABLE("Mbed TLS compiled without CRL support");
+#    endif // MBEDTLS_X509_CRL_PARSE_C
     }
 }
 
@@ -296,12 +311,14 @@ avs_error_t _avs_crypto_mbedtls_load_crls(
         mbedtls_x509_crl **out,
         const avs_crypto_cert_revocation_list_info_t *info) {
     assert(!*out);
+#    ifdef MBEDTLS_X509_CRL_PARSE_C
     *out = (mbedtls_x509_crl *) mbedtls_calloc(1, sizeof(**out));
     if (!*out) {
         LOG(ERROR, _("Out of memory"));
         return avs_errno(AVS_ENOMEM);
     }
     mbedtls_x509_crl_init(*out);
+#    endif // MBEDTLS_X509_CRL_PARSE_C
     avs_error_t err = append_crls(*out, info);
     if (avs_is_err(err)) {
         _avs_crypto_mbedtls_x509_crl_cleanup(out);
