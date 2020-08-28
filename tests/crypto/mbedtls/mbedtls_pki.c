@@ -23,7 +23,10 @@ AVS_UNIT_TEST(convert_x509_time, year_to_days) {
     // NOTE: This initially used 1583 as the initial year, but it turns out that
     // timegm() on macOS does not support years before 1900, so we have nothing
     // to verify the calculation against.
-    for (int year = 1900; year < 2800; ++year) {
+    static const int START_YEAR = sizeof(time_t) > 4 ? 1900 : 1902;
+    // On 32-bit architectures we unfortunately can't test beyond 2038
+    static const int END_YEAR = sizeof(time_t) > 4 ? 2800 : 2038;
+    for (int year = START_YEAR; year < END_YEAR; ++year) {
         bool is_leap;
         int64_t days = year_to_days(year, &is_leap);
         if (year % 4 == 0) {
