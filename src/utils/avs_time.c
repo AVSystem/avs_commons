@@ -66,7 +66,8 @@ bool avs_time_duration_valid(avs_time_duration_t t) {
 }
 
 #    ifdef AVS_COMMONS_HAVE_BUILTIN_ADD_OVERFLOW
-static inline int safe_add_int64_t(int64_t *out, int64_t a, int64_t b) {
+__attribute__((optimize("-fno-trapv"))) static inline int
+safe_add_int64_t(int64_t *out, int64_t a, int64_t b) {
     return __builtin_add_overflow(a, b, out) ? -1 : 0;
 }
 #    else  // AVS_COMMONS_HAVE_BUILTIN_ADD_OVERFLOW
@@ -105,7 +106,7 @@ static inline int safe_add_double(double *out, double a, double b) {
 }
 
 #    ifdef AVS_COMMONS_HAVE_BUILTIN_MUL_OVERFLOW
-static inline int
+__attribute__((optimize("-fno-trapv"))) static inline int
 safe_mul_int64_t(int64_t *out, int64_t input, int64_t multiplier) {
     return __builtin_mul_overflow(input, multiplier, out) ? -1 : 0;
 }
