@@ -353,7 +353,7 @@ function(add_module_with_include_dirs)
 
         if(TARGET avs_${AMWID_NAME}_check)
             add_test(NAME test_avs_${AMWID_NAME}_symbols
-                     COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/test_symbols.sh $<TARGET_FILE:avs_${AMWID_NAME}> avs_ AVS_ _avs _AVS_)
+                     COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/test_symbols.sh $<TARGET_FILE:avs_${AMWID_NAME}> avs_ AVS_ _avs _AVS_ "__odr_asan[.]")
             add_dependencies(avs_commons_symbols_check avs_${AMWID_NAME})
         endif()
         file(GLOB_RECURSE MODULE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/${AMWID_PATH}/*.c
