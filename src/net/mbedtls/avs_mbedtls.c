@@ -64,15 +64,13 @@
 #    endif // AVS_COMMONS_WITH_AVS_CRYPTO_PKI
 #    include "avs_mbedtls_persistence.h"
 
-#    if MBEDTLS_VERSION_NUMBER >= 0x02070000            \
-            && defined(AVS_COMMONS_WITH_AVS_CRYPTO_PKI) \
-            && defined(MBEDTLS_SHA256_C) && defined(MBEDTLS_SHA512_C)
+#    if defined(AVS_COMMONS_WITH_AVS_CRYPTO_PKI) && defined(MBEDTLS_SHA256_C) \
+            && defined(MBEDTLS_SHA512_C)
 #        include <mbedtls/sha256.h>
 #        include <mbedtls/sha512.h>
 #        define WITH_DANE_SUPPORT
 #        define dane_tlsa_array_field security.cert.dane_tlsa
-#    endif // MBEDTLS_VERSION_NUMBER >= 0x02070000 &&
-           // defined(AVS_COMMONS_WITH_AVS_CRYPTO_PKI) &&
+#    endif // defined(AVS_COMMONS_WITH_AVS_CRYPTO_PKI) &&
            // defined(MBEDTLS_SHA256_C) && defined(MBEDTLS_SHA512_C)
 
 #    include "../avs_net_impl.h"
@@ -92,6 +90,8 @@ typedef struct {
     uint8_t match_mask;
 
     uint32_t verify_result_flags;
+
+    int verify_result;
 } dane_verify_state_t;
 
 #            define DANE_TA_OR_EE_MATCH_MASK                       \
@@ -372,6 +372,28 @@ static int *init_cert_ciphersuites(
 }
 
 #        ifdef WITH_DANE_SUPPORT
+
+#            if MBEDTLS_VERSION_NUMBER < 0x02070000
+// the _ret variants were introduced in mbed TLS 2.7.0,
+// emulate them on older versions
+
+static inline int mbedtls_sha256_ret(const unsigned char *input,
+                                     size_t ilen,
+                                     unsigned char output[32],
+                                     int is224) {
+    mbedtls_sha256(input, ilen, output, is224);
+    return 0;
+}
+
+static inline int mbedtls_sha512_ret(const unsigned char *input,
+                                     size_t ilen,
+                                     unsigned char output[64],
+                                     int is384) {
+    mbedtls_sha512(input, ilen, output, is384);
+    return 0;
+}
+#            endif // MBEDTLS_VERSION_NUMBER
+
 static bool dane_match_buffer(const unsigned char *buf,
                               size_t buf_len,
                               const avs_net_socket_dane_tlsa_record_t *entry) {
@@ -443,6 +465,7 @@ static bool has_dane_ta_or_ee_entries(ssl_socket_t *socket) {
 static void reset_dane_verify_state(ssl_socket_t *socket) {
     socket->security.cert.dane_verify_state.match_mask = 0;
     socket->security.cert.dane_verify_state.verify_result_flags = 0;
+    socket->security.cert.dane_verify_state.verify_result = 0;
 }
 
 static void update_dane_verify_state(ssl_socket_t *socket,
@@ -542,6 +565,8 @@ static int verify_cert_cb(void *socket_,
             LOG(ERROR,
                 _("server certificate verification failure: ") "%" PRIu32,
                 verify_result);
+            socket->security.cert.dane_verify_state.verify_result =
+                    MBEDTLS_ERR_X509_CERT_VERIFY_FAILED;
             if (verify_result == MBEDTLS_X509_BADCERT_MISSING) {
                 return MBEDTLS_ERR_SSL_NO_CLIENT_CERTIFICATE;
             } else {
@@ -551,6 +576,20 @@ static int verify_cert_cb(void *socket_,
     }
 
     return 0;
+}
+
+static int wrap_handshake_result(ssl_socket_t *socket, int result) {
+    if (result >= 0 && socket->security_mode == AVS_NET_SECURITY_CERTIFICATE
+            && socket->security.cert.dane_ta_certs
+            && socket->security.cert.dane_verify_state.verify_result) {
+        return socket->security.cert.dane_verify_state.verify_result;
+    }
+    return result;
+}
+#        else  // WITH_DANE_SUPPORT
+static int wrap_handshake_result(ssl_socket_t *socket, int result) {
+    (void) socket;
+    return result;
 }
 #        endif // WITH_DANE_SUPPORT
 
@@ -970,6 +1009,7 @@ static avs_error_t start_ssl(ssl_socket_t *socket, const char *host) {
         result = mbedtls_ssl_handshake(get_context(socket));
     } while (result == MBEDTLS_ERR_SSL_WANT_READ
              || result == MBEDTLS_ERR_SSL_WANT_WRITE);
+    result = wrap_handshake_result(socket, result);
 
     if (result == 0) {
 #    if defined(MBEDTLS_SSL_DTLS_CONNECTION_ID)
@@ -1051,6 +1091,7 @@ send_ssl(avs_net_socket_t *socket_, const void *buffer, size_t buffer_length) {
                                        (size_t) (buffer_length - bytes_sent));
         } while (result == MBEDTLS_ERR_SSL_WANT_WRITE
                  || result == MBEDTLS_ERR_SSL_WANT_READ);
+        result = wrap_handshake_result(socket, result);
         if (result <= 0) {
             break;
         }
@@ -1117,6 +1158,7 @@ static avs_error_t receive_ssl(avs_net_socket_t *socket_,
         } while (result == MBEDTLS_ERR_SSL_WANT_READ
                  || result == MBEDTLS_ERR_SSL_WANT_WRITE);
     }
+    result = wrap_handshake_result(socket, result);
 
     if (result < 0) {
         *out_bytes_received = 0;
