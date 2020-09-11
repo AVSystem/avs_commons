@@ -40,7 +40,7 @@ void _avs_crypto_mbedtls_pk_context_cleanup(mbedtls_pk_context **ctx);
 
 avs_error_t
 _avs_crypto_mbedtls_load_client_key(mbedtls_pk_context **pk,
-                                    const avs_crypto_client_key_info_t *info);
+                                    const avs_crypto_private_key_info_t *info);
 avs_error_t
 _avs_crypto_mbedtls_load_client_cert(mbedtls_x509_crt **out,
                                      const avs_crypto_client_cert_info_t *info);

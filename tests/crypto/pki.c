@@ -78,9 +78,9 @@ AVS_UNIT_TEST(avs_crypto_pki_ec, test_csr_create) {
     uint8_t csr[512];
     size_t csr_size = sizeof(csr);
 
-    avs_crypto_client_key_info_t key_info =
-            avs_crypto_client_key_info_from_buffer(secret_key, secret_key_size,
-                                                   NULL);
+    avs_crypto_private_key_info_t key_info =
+            avs_crypto_private_key_info_from_buffer(secret_key, secret_key_size,
+                                                    NULL);
     AVS_UNIT_ASSERT_SUCCESS(avs_crypto_pki_csr_create(
             prng_ctx, &key_info, "SHA256",
             AVS_CRYPTO_PKI_X509_NAME({ AVS_CRYPTO_PKI_X509_NAME_CN, TEST_CN }),

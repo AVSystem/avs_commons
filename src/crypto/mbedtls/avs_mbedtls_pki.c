@@ -191,7 +191,7 @@ convert_subject(mbedtls_asn1_named_data **out_mbedtls_subject,
 
 avs_error_t
 avs_crypto_pki_csr_create(avs_crypto_prng_ctx_t *prng_ctx,
-                          const avs_crypto_client_key_info_t *private_key_info,
+                          const avs_crypto_private_key_info_t *private_key_info,
                           const char *md_name,
                           const avs_crypto_pki_x509_name_entry_t subject[],
                           void *out_der_csr,

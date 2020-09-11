@@ -35,7 +35,7 @@ avs_error_t _avs_crypto_openssl_load_crls(
 
 avs_error_t
 _avs_crypto_openssl_load_client_key(EVP_PKEY **out_key,
-                                    const avs_crypto_client_key_info_t *info);
+                                    const avs_crypto_private_key_info_t *info);
 
 typedef avs_error_t avs_crypto_openssl_load_certs_cb_t(void *arg, X509 *cert);
 

@@ -143,36 +143,36 @@ AVS_UNIT_TEST(backend_openssl, cert_loading_from_null) {
 
 AVS_UNIT_TEST(backend_openssl, key_loading) {
     EVP_PKEY *key = NULL;
-    const avs_crypto_client_key_info_t pem =
-            avs_crypto_client_key_info_from_file("../certs/client.key", NULL);
+    const avs_crypto_private_key_info_t pem =
+            avs_crypto_private_key_info_from_file("../certs/client.key", NULL);
     AVS_UNIT_ASSERT_SUCCESS(_avs_crypto_openssl_load_client_key(&key, &pem));
     AVS_UNIT_ASSERT_NOT_NULL(key);
     EVP_PKEY_free(key);
 
     key = NULL;
-    const avs_crypto_client_key_info_t der =
-            avs_crypto_client_key_info_from_file("../certs/client.key.der",
-                                                 NULL);
+    const avs_crypto_private_key_info_t der =
+            avs_crypto_private_key_info_from_file("../certs/client.key.der",
+                                                  NULL);
     AVS_UNIT_ASSERT_SUCCESS(_avs_crypto_openssl_load_client_key(&key, &der));
     AVS_UNIT_ASSERT_NOT_NULL(key);
     EVP_PKEY_free(key);
 
     key = NULL;
     // Unsupported.
-    const avs_crypto_client_key_info_t p12 =
-            avs_crypto_client_key_info_from_file("../certs/client.p12", NULL);
+    const avs_crypto_private_key_info_t p12 =
+            avs_crypto_private_key_info_from_file("../certs/client.p12", NULL);
     AVS_UNIT_ASSERT_FAILED(_avs_crypto_openssl_load_client_key(&key, &p12));
     AVS_UNIT_ASSERT_NULL(key);
 }
 
 AVS_UNIT_TEST(backend_openssl, key_loading_from_null) {
     EVP_PKEY *key = NULL;
-    const avs_crypto_client_key_info_t pem =
-            avs_crypto_client_key_info_from_file(NULL, NULL);
+    const avs_crypto_private_key_info_t pem =
+            avs_crypto_private_key_info_from_file(NULL, NULL);
     AVS_UNIT_ASSERT_FAILED(_avs_crypto_openssl_load_client_key(&key, &pem));
     AVS_UNIT_ASSERT_NULL(key);
-    const avs_crypto_client_key_info_t buffer =
-            avs_crypto_client_key_info_from_buffer(NULL, 0, NULL);
+    const avs_crypto_private_key_info_t buffer =
+            avs_crypto_private_key_info_from_buffer(NULL, 0, NULL);
     AVS_UNIT_ASSERT_FAILED(_avs_crypto_openssl_load_client_key(&key, &buffer));
     AVS_UNIT_ASSERT_NULL(key);
 }

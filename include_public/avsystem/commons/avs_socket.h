@@ -315,9 +315,9 @@ typedef struct {
      * Private key matching #client_cert to use for authenticating with the
      * peer. This field is optional and can be left zero-initialized, unless
      * #client_cert is also specified. If used, it shall be initialized using
-     * one of the <c>avs_crypto_client_key_info_from_*</c> helper functions.
+     * one of the <c>avs_crypto_private_key_info_from_*</c> helper functions.
      */
-    avs_crypto_client_key_info_t client_key;
+    avs_crypto_private_key_info_t client_key;
 } avs_net_certificate_info_t;
 
 typedef struct {

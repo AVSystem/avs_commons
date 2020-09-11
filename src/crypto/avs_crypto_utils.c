@@ -417,23 +417,23 @@ avs_error_t avs_crypto_cert_revocation_list_info_copy_as_list(
 }
 #    endif // AVS_COMMONS_WITH_AVS_LIST
 
-avs_crypto_client_key_info_t
-avs_crypto_client_key_info_from_file(const char *filename,
-                                     const char *password) {
-    avs_crypto_client_key_info_t result;
+avs_crypto_private_key_info_t
+avs_crypto_private_key_info_from_file(const char *filename,
+                                      const char *password) {
+    avs_crypto_private_key_info_t result;
     memset(&result, 0, sizeof(result));
-    result.desc.type = AVS_CRYPTO_SECURITY_INFO_CLIENT_KEY;
+    result.desc.type = AVS_CRYPTO_SECURITY_INFO_PRIVATE_KEY;
     result.desc.source = AVS_CRYPTO_DATA_SOURCE_FILE;
     result.desc.info.file.filename = filename;
     result.desc.info.file.password = password;
     return result;
 }
 
-avs_crypto_client_key_info_t avs_crypto_client_key_info_from_buffer(
+avs_crypto_private_key_info_t avs_crypto_private_key_info_from_buffer(
         const void *buffer, size_t buffer_size, const char *password) {
-    avs_crypto_client_key_info_t result;
+    avs_crypto_private_key_info_t result;
     memset(&result, 0, sizeof(result));
-    result.desc.type = AVS_CRYPTO_SECURITY_INFO_CLIENT_KEY;
+    result.desc.type = AVS_CRYPTO_SECURITY_INFO_PRIVATE_KEY;
     result.desc.source = AVS_CRYPTO_DATA_SOURCE_BUFFER;
     result.desc.info.buffer.buffer = buffer;
     result.desc.info.buffer.buffer_size = buffer_size;

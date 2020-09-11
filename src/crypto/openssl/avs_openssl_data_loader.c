@@ -511,7 +511,7 @@ parse_key(EVP_PKEY **out_key, BIO *bio, const char *password) {
 
 avs_error_t
 _avs_crypto_openssl_load_client_key(EVP_PKEY **out_key,
-                                    const avs_crypto_client_key_info_t *info) {
+                                    const avs_crypto_private_key_info_t *info) {
     assert(out_key && !*out_key);
     BIO *bio = NULL;
     avs_error_t err = AVS_OK;

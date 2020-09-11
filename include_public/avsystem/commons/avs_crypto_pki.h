@@ -67,7 +67,7 @@ typedef struct {
  * should construct appropriate instances of:
  * - @ref avs_crypto_trusted_cert_info_t,
  * - @ref avs_crypto_client_cert_info_t,
- * - @ref avs_crypto_client_key_info_t
+ * - @ref avs_crypto_private_key_info_t
  * using methods declared below.
  */
 struct avs_crypto_security_info_union_struct {
@@ -371,7 +371,7 @@ avs_error_t avs_crypto_cert_revocation_list_info_copy_as_list(
 
 typedef struct {
     avs_crypto_security_info_union_t desc;
-} avs_crypto_client_key_info_t;
+} avs_crypto_private_key_info_t;
 
 /**
  * Creates private key descriptor used later on to load private key from
@@ -380,9 +380,9 @@ typedef struct {
  * @param filename  Name of the file to be loaded.
  * @param password  Optional password if present, or NULL.
  */
-avs_crypto_client_key_info_t
-avs_crypto_client_key_info_from_file(const char *filename,
-                                     const char *password);
+avs_crypto_private_key_info_t
+avs_crypto_private_key_info_from_file(const char *filename,
+                                      const char *password);
 
 /**
  * Creates private key descriptor used later on to load private key from
@@ -392,7 +392,7 @@ avs_crypto_client_key_info_from_file(const char *filename,
  * @param buffer_size Size of the buffer contents in bytes.
  * @param password    Optional password if present, or NULL.
  */
-avs_crypto_client_key_info_t avs_crypto_client_key_info_from_buffer(
+avs_crypto_private_key_info_t avs_crypto_private_key_info_from_buffer(
         const void *buffer, size_t buffer_size, const char *password);
 
 typedef struct {
@@ -688,8 +688,8 @@ typedef struct {
  *
  * @param private_key_info   Private key for which the certificate shall be
  *                           generated. A structure created using either
- *                           @ref avs_crypto_client_key_info_from_file or
- *                           @ref avs_crypto_client_key_info_from_buffer shall
+ *                           @ref avs_crypto_private_key_info_from_file or
+ *                           @ref avs_crypto_private_key_info_from_buffer shall
  *                           be passed.
  *
  * @param md_name            Name of the digest algorithm to be used when
@@ -716,7 +716,7 @@ typedef struct {
  */
 avs_error_t
 avs_crypto_pki_csr_create(avs_crypto_prng_ctx_t *prng_ctx,
-                          const avs_crypto_client_key_info_t *private_key_info,
+                          const avs_crypto_private_key_info_t *private_key_info,
                           const char *md_name,
                           const avs_crypto_pki_x509_name_entry_t subject[],
                           void *out_der_csr,
