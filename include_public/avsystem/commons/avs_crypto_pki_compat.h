@@ -29,12 +29,37 @@
 extern "C" {
 #endif
 
+typedef avs_crypto_certificate_chain_info_t avs_crypto_trusted_cert_info_t;
 typedef avs_crypto_private_key_info_t avs_crypto_client_key_info_t;
+typedef avs_crypto_certificate_chain_info_t avs_crypto_client_cert_info_t;
+
+#define avs_crypto_trusted_cert_info_from_file \
+    avs_crypto_certificate_chain_info_from_file
+#define avs_crypto_trusted_cert_info_from_path \
+    avs_crypto_certificate_chain_info_from_path
+#define avs_crypto_trusted_cert_info_from_buffer \
+    avs_crypto_certificate_chain_info_from_buffer
+#define avs_crypto_trusted_cert_info_from_array \
+    avs_crypto_certificate_chain_info_from_array
+#define avs_crypto_trusted_cert_info_copy_as_array \
+    avs_crypto_certificate_chain_info_copy_as_array
+#define avs_crypto_trusted_cert_info_from_list \
+    avs_crypto_certificate_chain_info_from_list
+#define avs_crypto_trusted_cert_info_copy_as_list \
+    avs_crypto_certificate_chain_info_copy_as_list
 
 #define avs_crypto_client_key_info_from_file \
     avs_crypto_private_key_info_from_file
 #define avs_crypto_client_key_info_from_buffer \
     avs_crypto_private_key_info_from_buffer
+
+#define avs_crypto_client_cert_info_from_file \
+    avs_crypto_certificate_chain_info_from_file
+#define avs_crypto_client_cert_info_from_buffer \
+    avs_crypto_certificate_chain_info_from_buffer
+
+#define avs_crypto_client_cert_expiration_date \
+    avs_crypto_certificate_expiration_date
 
 #ifdef __cplusplus
 }
