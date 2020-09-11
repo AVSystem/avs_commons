@@ -36,6 +36,8 @@
 
 VISIBILITY_SOURCE_BEGIN
 
+#    define AVS_STREAM_STACK_BUFFER_SIZE 512
+
 struct avs_stream_struct {
     const avs_stream_v_table_t *const vtable;
 };
@@ -134,7 +136,7 @@ static avs_error_t try_stack_write_fv(avs_stream_t *stream,
                                       const char *msg,
                                       va_list args,
                                       size_t *out_required_size) {
-    char buf[512];
+    char buf[AVS_STREAM_STACK_BUFFER_SIZE];
     *out_required_size = sizeof(buf);
     return try_write_fv(stream, msg, args, buf, out_required_size);
 }
@@ -402,6 +404,28 @@ avs_error_t avs_stream_peekline(avs_stream_t *stream,
         *out_next_offset = provider.offset;
     }
     return err;
+}
+
+avs_error_t avs_stream_copy(avs_stream_t *output_stream,
+                            avs_stream_t *input_stream) {
+    char buf[AVS_STREAM_STACK_BUFFER_SIZE];
+    size_t bytes_read;
+    bool message_finished = false;
+    while (!message_finished) {
+        avs_error_t err;
+        if (avs_is_err((err = avs_stream_read(input_stream, &bytes_read,
+                                              &message_finished, buf,
+                                              sizeof(buf))))
+                || (bytes_read
+                    && avs_is_err((err = avs_stream_write(output_stream, buf,
+                                                          bytes_read))))) {
+            return err;
+        }
+        if (!bytes_read && !message_finished) {
+            return avs_errno(AVS_EINVAL);
+        }
+    }
+    return AVS_OK;
 }
 
 const void *avs_stream_v_table_find_extension(avs_stream_t *stream,

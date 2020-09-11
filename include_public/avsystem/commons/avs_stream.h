@@ -365,6 +365,24 @@ avs_error_t avs_stream_peekline(avs_stream_t *stream,
                                 size_t *out_next_offset,
                                 char *buffer,
                                 size_t buffer_length);
+
+/**
+ * Copies a message from one stream to another.
+ *
+ * This repeatedly calls @ref avs_stream_read to read a chunk of data from
+ * @p input_stream, then @ref avs_stream_write to write that chunk into
+ * @p output_stream, until <c>*out_message_finished</c> is true on the input
+ * stream or an error occurs.
+ *
+ * NOTE: @ref avs_stream_finish_message is NOT called on the output stream, so
+ * you need to call it manually if needed.
+ *
+ * @returns @ref AVS_OK for success, or an error condition for which either the
+ *          read or the write operation failed.
+ */
+avs_error_t avs_stream_copy(avs_stream_t *output_stream,
+                            avs_stream_t *input_stream);
+
 /**
  * Resets stream state (which is something highly dependend on the stream
  * implementation) by calling @ref avs_stream_v_table#reset method .
