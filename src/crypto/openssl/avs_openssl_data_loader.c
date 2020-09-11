@@ -37,6 +37,11 @@
 
 #    include <avsystem/commons/avs_utils.h>
 
+#    ifdef AVS_COMMONS_STREAM_WITH_FILE
+#        include <avsystem/commons/avs_stream_file.h>
+#        include <avsystem/commons/avs_stream_membuf.h>
+#    endif // AVS_COMMONS_STREAM_WITH_FILE
+
 #    define MODULE_NAME avs_crypto_data_loader
 #    include <avs_x_log_config.h>
 
@@ -93,25 +98,33 @@ static avs_error_t load_ca_certs_from_path(X509_STORE *store,
 
 typedef enum { ENCODING_UNKNOWN, ENCODING_PEM, ENCODING_DER } encoding_t;
 
-static encoding_t detect_encoding(BIO *bio) {
 #    define PEM_PREFIX "-----BEGIN "
+
+static encoding_t detect_encoding(const void *buffer, int len) {
+    assert(len >= 0);
+    assert(buffer || !len);
+    if (!memcmp(buffer, PEM_PREFIX, (size_t) len)) {
+        return ENCODING_PEM;
+    } else {
+        return ENCODING_DER;
+    }
+}
+
+static encoding_t detect_encoding_in_bio(BIO *bio) {
     char buffer[sizeof(PEM_PREFIX) - 1];
     encoding_t result = ENCODING_UNKNOWN;
     if (BIO_read(bio, buffer, sizeof(buffer)) == sizeof(buffer)) {
-        if (!memcmp(buffer, PEM_PREFIX, sizeof(buffer))) {
-            result = ENCODING_PEM;
-        } else {
-            result = ENCODING_DER;
-        }
+        result = detect_encoding(buffer, sizeof(buffer));
     }
     BIO_reset(bio);
     return result;
-#    undef PEM_PREFIX
 }
+
+#    undef PEM_PREFIX
 
 static X509 *parse_cert_from_bio(BIO *bio) {
     assert(bio);
-    switch (detect_encoding(bio)) {
+    switch (detect_encoding_in_bio(bio)) {
     case ENCODING_PEM: {
         // Convert PEM to DER.
         return PEM_read_bio_X509(bio, NULL, NULL, NULL);
@@ -167,7 +180,7 @@ load_crl_from_buffer(X509_STORE *store, const void *buffer, const size_t len) {
     }
 
     X509_CRL *crl = NULL;
-    switch (detect_encoding(bio)) {
+    switch (detect_encoding_in_bio(bio)) {
     case ENCODING_PEM:
         // Convert PEM to DER.
         crl = PEM_read_bio_X509_CRL(bio, NULL, NULL, NULL);
@@ -307,25 +320,136 @@ avs_error_t _avs_crypto_openssl_load_crls(
     }
 }
 
-static avs_error_t load_client_cert_from_file(X509 **out_cert,
-                                              const char *filename) {
-    LOG(DEBUG, _("client certificate <") "%s" _(">: going to load"), filename);
-    BIO *bio = BIO_new_file(filename, "rb");
-    if (!bio) {
-        log_openssl_error();
-        return avs_errno(AVS_EIO);
+static avs_error_t
+load_file_into_buffer(void **out_buf, int *out_buf_size, const char *filename) {
+#    ifdef AVS_COMMONS_STREAM_WITH_FILE
+    avs_stream_t *membuf = avs_stream_membuf_create();
+    if (!membuf) {
+        LOG(ERROR, _("Out of memory"));
+        return avs_errno(AVS_ENOMEM);
     }
-    *out_cert = parse_cert_from_bio(bio);
-    BIO_free(bio);
-    if (!*out_cert) {
-        log_openssl_error();
-        return avs_errno(AVS_EPROTO);
+
+    avs_error_t err = AVS_OK;
+    avs_stream_t *file_stream =
+            avs_stream_file_create(filename, AVS_STREAM_FILE_READ);
+    if (!file_stream) {
+        LOG(ERROR, _("Cannot open file: ") "%s", filename);
+        err = avs_errno(AVS_EIO);
     }
-    return AVS_OK;
+
+    void *buf = NULL;
+    size_t buf_size;
+    (void) (avs_is_err(err)
+            || avs_is_err((err = avs_stream_copy(membuf, file_stream)))
+            || avs_is_err((err = avs_stream_membuf_take_ownership(membuf, &buf,
+                                                                  &buf_size))));
+    avs_stream_cleanup(&file_stream);
+    avs_stream_cleanup(&membuf);
+    if (avs_is_ok(err)) {
+        *out_buf_size = (int) buf_size;
+        if (*out_buf_size < 0 || (size_t) *out_buf_size != buf_size) {
+            avs_free(buf);
+            LOG(ERROR, _("Buffer too big"));
+            return avs_errno(AVS_E2BIG);
+        }
+        *out_buf = buf;
+    }
+    return err;
+#    else  // AVS_COMMONS_STREAM_WITH_FILE
+    (void) out_buf;
+    (void) out_buf_size;
+    (void) filename;
+    LOG(ERROR,
+        _("Not opening file <") "%s" _(
+                "> because file stream support is disabled"),
+        filename);
+    return avs_errno(AVS_ENOTSUP);
+#    endif // AVS_COMMONS_STREAM_WITH_FILE
 }
 
-avs_error_t _avs_crypto_openssl_load_client_cert(
-        X509 **out_cert, const avs_crypto_client_cert_info_t *info) {
+static avs_error_t
+load_certs_from_buffer(const void *buffer,
+                       int len,
+                       avs_crypto_openssl_load_certs_cb_t *cb,
+                       void *cb_arg) {
+    assert(buffer || !len);
+    assert(cb);
+    switch (detect_encoding(buffer, len)) {
+    case ENCODING_PEM: {
+        BIO *bio = BIO_new_mem_buf((void *) (intptr_t) buffer, len);
+        if (!bio) {
+            log_openssl_error();
+            return avs_errno(AVS_ENOMEM);
+        }
+        avs_error_t err = AVS_OK;
+        X509 *cert = PEM_read_bio_X509_AUX(bio, NULL, NULL, NULL);
+        if (!cert) {
+            log_openssl_error();
+            err = avs_errno(AVS_EPROTO);
+        } else {
+            err = cb(cb_arg, cert);
+            X509_free(cert);
+        }
+        while (avs_is_ok(err)) {
+            if (!(cert = PEM_read_bio_X509_AUX(bio, NULL, NULL, NULL))) {
+                if (ERR_GET_REASON(ERR_peek_last_error())
+                        == PEM_R_NO_START_LINE) {
+                    ERR_clear_error();
+                    break;
+                } else {
+                    log_openssl_error();
+                    err = avs_errno(AVS_EPROTO);
+                }
+            } else {
+                err = cb(cb_arg, cert);
+                X509_free(cert);
+            }
+        }
+        return err;
+    }
+    case ENCODING_DER: {
+        const unsigned char *ptr = (const unsigned char *) buffer;
+        X509 *cert = d2i_X509_AUX(NULL, &ptr, len);
+        if (!cert) {
+            log_openssl_error();
+            return avs_errno(AVS_EPROTO);
+        }
+        avs_error_t err;
+        if (ptr - (const unsigned char *) buffer != len) {
+            LOG(ERROR, _("Garbage data after DER-encoded certificate"));
+            err = avs_errno(AVS_EPROTO);
+        } else {
+            err = cb(cb_arg, cert);
+        }
+        X509_free(cert);
+        return err;
+    }
+    default:
+        LOG(ERROR, _("unknown certificate format"));
+        return avs_errno(AVS_EIO);
+    }
+}
+
+static avs_error_t load_certs_from_file(const char *filename,
+                                        avs_crypto_openssl_load_certs_cb_t *cb,
+                                        void *cb_arg) {
+    assert(filename);
+    LOG(DEBUG, _("CA certificate <file=") "%s" _(">: going to load"), filename);
+    void *buffer = NULL;
+    int buffer_size = 0;
+    avs_error_t err;
+    (void) (avs_is_err((err = load_file_into_buffer(&buffer, &buffer_size,
+                                                    filename)))
+            || avs_is_err((err = load_certs_from_buffer(buffer, buffer_size, cb,
+                                                        cb_arg))));
+    avs_free(buffer);
+    return err;
+}
+
+avs_error_t
+_avs_crypto_openssl_load_client_cert(const avs_crypto_client_cert_info_t *info,
+                                     avs_crypto_openssl_load_certs_cb_t *cb,
+                                     void *cb_arg) {
     switch (info->desc.source) {
     case AVS_CRYPTO_DATA_SOURCE_FILE:
         if (!info->desc.info.file.filename) {
@@ -333,16 +457,22 @@ avs_error_t _avs_crypto_openssl_load_client_cert(
                 _("attempt to load client cert from file, but filename=NULL"));
             return avs_errno(AVS_EINVAL);
         }
-        return load_client_cert_from_file(out_cert,
-                                          info->desc.info.file.filename);
-    case AVS_CRYPTO_DATA_SOURCE_BUFFER:
+        return load_certs_from_file(info->desc.info.file.filename, cb, cb_arg);
+    case AVS_CRYPTO_DATA_SOURCE_BUFFER: {
         if (!info->desc.info.buffer.buffer) {
             LOG(ERROR,
                 _("attempt to load client cert from buffer, but buffer=NULL"));
             return avs_errno(AVS_EINVAL);
         }
-        return parse_cert(out_cert, info->desc.info.buffer.buffer,
-                          info->desc.info.buffer.buffer_size);
+        int buffer_size = (int) info->desc.info.buffer.buffer_size;
+        if (buffer_size < 0
+                || (size_t) buffer_size != info->desc.info.buffer.buffer_size) {
+            LOG(ERROR, _("Buffer too big"));
+            return avs_errno(AVS_E2BIG);
+        }
+        return load_certs_from_buffer(info->desc.info.buffer.buffer,
+                                      buffer_size, cb, cb_arg);
+    }
     default:
         AVS_UNREACHABLE("invalid data source");
         return avs_errno(AVS_EINVAL);
@@ -362,7 +492,7 @@ static int password_cb(char *buf, int num, int rwflag, void *userdata) {
 static avs_error_t
 parse_key(EVP_PKEY **out_key, BIO *bio, const char *password) {
     *out_key = NULL;
-    switch (detect_encoding(bio)) {
+    switch (detect_encoding_in_bio(bio)) {
     case ENCODING_PEM: {
         *out_key = PEM_read_bio_PrivateKey(bio, NULL, password_cb,
                                            (void *) (intptr_t) password);

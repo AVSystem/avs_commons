@@ -248,11 +248,24 @@ avs_crypto_pki_csr_create(avs_crypto_prng_ctx_t *prng_ctx,
     return err;
 }
 
+static avs_error_t load_first_cert(void *out_cert_ptr_, X509 *cert) {
+    X509 **out_cert_ptr = (X509 **) out_cert_ptr_;
+    if (!*out_cert_ptr) {
+        if (!X509_up_ref(cert)) {
+            log_openssl_error();
+            return avs_errno(AVS_ENOMEM);
+        }
+        *out_cert_ptr = cert;
+    }
+    return AVS_OK;
+}
+
 avs_time_real_t avs_crypto_client_cert_expiration_date(
         const avs_crypto_client_cert_info_t *cert_info) {
     avs_time_real_t result = AVS_TIME_REAL_INVALID;
     X509 *cert = NULL;
-    if (avs_is_err(_avs_crypto_openssl_load_client_cert(&cert, cert_info))) {
+    if (avs_is_err(_avs_crypto_openssl_load_client_cert(
+                cert_info, load_first_cert, &cert))) {
         assert(!cert);
     } else {
         assert(cert);
