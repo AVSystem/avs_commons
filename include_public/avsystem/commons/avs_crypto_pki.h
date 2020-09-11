@@ -115,6 +115,9 @@ avs_crypto_certificate_chain_info_from_file(const char *filename);
  * the platform shall implement them. On embededd platforms it may be preferable
  * to use @ref avs_crypto_certificate_chain_info_from_buffer() instead.
  *
+ * NOTE: Loading client certificates (as opposed to trust stores) from paths is
+ * not supported for the OpenSSL backend.
+ *
  * @param path  Path from which the certificate chain shall be loaded.
  *
  * WARNING: accepted file formats are backend-specific.

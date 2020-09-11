@@ -262,6 +262,50 @@ _avs_crypto_openssl_load_client_key(EVP_PKEY **out_key,
     return err;
 }
 
+typedef avs_error_t
+load_cert_cb_t(void *arg, const avs_crypto_certificate_chain_info_t *leaf_info);
+
+static avs_error_t
+load_cert_tree(const avs_crypto_certificate_chain_info_t *info,
+               load_cert_cb_t *cb,
+               void *cb_arg) {
+    switch (info->desc.source) {
+    case AVS_CRYPTO_DATA_SOURCE_EMPTY:
+        return AVS_OK;
+    case AVS_CRYPTO_DATA_SOURCE_ARRAY: {
+        avs_error_t err = AVS_OK;
+        for (size_t i = 0;
+             avs_is_ok(err) && i < info->desc.info.array.element_count;
+             ++i) {
+            err = load_cert_tree(
+                    AVS_CONTAINER_OF(&info->desc.info.array.array_ptr[i],
+                                     const avs_crypto_certificate_chain_info_t,
+                                     desc),
+                    cb, cb_arg);
+        }
+        return err;
+    }
+#    ifdef AVS_COMMONS_WITH_AVS_LIST
+    case AVS_CRYPTO_DATA_SOURCE_LIST: {
+        AVS_LIST(avs_crypto_security_info_union_t) entry;
+        AVS_LIST_FOREACH(entry, info->desc.info.list.list_head) {
+            avs_error_t err = load_cert_tree(
+                    AVS_CONTAINER_OF(entry,
+                                     const avs_crypto_certificate_chain_info_t,
+                                     desc),
+                    cb, cb_arg);
+            if (avs_is_err(err)) {
+                return err;
+            }
+        }
+        return AVS_OK;
+    }
+#    endif // AVS_COMMONS_WITH_AVS_LIST
+    default:
+        return cb(cb_arg, info);
+    }
+}
+
 static avs_error_t
 load_file_into_buffer(void **out_buf, int *out_buf_size, const char *filename) {
 #    ifdef AVS_COMMONS_STREAM_WITH_FILE
@@ -309,63 +353,77 @@ load_file_into_buffer(void **out_buf, int *out_buf_size, const char *filename) {
 #    endif // AVS_COMMONS_STREAM_WITH_FILE
 }
 
+static avs_error_t load_pem_certs(const void *buffer,
+                                  int len,
+                                  avs_crypto_openssl_load_certs_cb_t *cb,
+                                  void *cb_arg) {
+    assert(buffer || !len);
+    assert(cb);
+    BIO *bio = BIO_new_mem_buf((void *) (intptr_t) buffer, len);
+    if (!bio) {
+        log_openssl_error();
+        return avs_errno(AVS_ENOMEM);
+    }
+    avs_error_t err = AVS_OK;
+    X509 *cert = PEM_read_bio_X509_AUX(bio, NULL, NULL, NULL);
+    if (!cert) {
+        log_openssl_error();
+        err = avs_errno(AVS_EPROTO);
+    } else {
+        err = cb(cb_arg, cert);
+        X509_free(cert);
+    }
+    while (avs_is_ok(err)) {
+        if (!(cert = PEM_read_bio_X509_AUX(bio, NULL, NULL, NULL))) {
+            if (ERR_GET_REASON(ERR_peek_last_error()) == PEM_R_NO_START_LINE) {
+                ERR_clear_error();
+                break;
+            } else {
+                log_openssl_error();
+                err = avs_errno(AVS_EPROTO);
+            }
+        } else {
+            err = cb(cb_arg, cert);
+            X509_free(cert);
+        }
+    }
+    return err;
+}
+
+static avs_error_t load_der_cert(const void *buffer,
+                                 int len,
+                                 avs_crypto_openssl_load_certs_cb_t *cb,
+                                 void *cb_arg) {
+    assert(buffer || !len);
+    assert(cb);
+    const unsigned char *ptr = (const unsigned char *) buffer;
+    X509 *cert = d2i_X509_AUX(NULL, &ptr, len);
+    if (!cert) {
+        log_openssl_error();
+        return avs_errno(AVS_EPROTO);
+    }
+    avs_error_t err;
+    if (ptr - (const unsigned char *) buffer != len) {
+        LOG(ERROR, _("Garbage data after DER-encoded certificate"));
+        err = avs_errno(AVS_EPROTO);
+    } else {
+        err = cb(cb_arg, cert);
+    }
+    X509_free(cert);
+    return err;
+}
+
 static avs_error_t
 load_certs_from_buffer(const void *buffer,
                        int len,
                        avs_crypto_openssl_load_certs_cb_t *cb,
                        void *cb_arg) {
     assert(buffer || !len);
-    assert(cb);
     switch (detect_encoding(buffer, len)) {
-    case ENCODING_PEM: {
-        BIO *bio = BIO_new_mem_buf((void *) (intptr_t) buffer, len);
-        if (!bio) {
-            log_openssl_error();
-            return avs_errno(AVS_ENOMEM);
-        }
-        avs_error_t err = AVS_OK;
-        X509 *cert = PEM_read_bio_X509_AUX(bio, NULL, NULL, NULL);
-        if (!cert) {
-            log_openssl_error();
-            err = avs_errno(AVS_EPROTO);
-        } else {
-            err = cb(cb_arg, cert);
-            X509_free(cert);
-        }
-        while (avs_is_ok(err)) {
-            if (!(cert = PEM_read_bio_X509_AUX(bio, NULL, NULL, NULL))) {
-                if (ERR_GET_REASON(ERR_peek_last_error())
-                        == PEM_R_NO_START_LINE) {
-                    ERR_clear_error();
-                    break;
-                } else {
-                    log_openssl_error();
-                    err = avs_errno(AVS_EPROTO);
-                }
-            } else {
-                err = cb(cb_arg, cert);
-                X509_free(cert);
-            }
-        }
-        return err;
-    }
-    case ENCODING_DER: {
-        const unsigned char *ptr = (const unsigned char *) buffer;
-        X509 *cert = d2i_X509_AUX(NULL, &ptr, len);
-        if (!cert) {
-            log_openssl_error();
-            return avs_errno(AVS_EPROTO);
-        }
-        avs_error_t err;
-        if (ptr - (const unsigned char *) buffer != len) {
-            LOG(ERROR, _("Garbage data after DER-encoded certificate"));
-            err = avs_errno(AVS_EPROTO);
-        } else {
-            err = cb(cb_arg, cert);
-        }
-        X509_free(cert);
-        return err;
-    }
+    case ENCODING_PEM:
+        return load_pem_certs(buffer, len, cb, cb_arg);
+    case ENCODING_DER:
+        return load_der_cert(buffer, len, cb, cb_arg);
     default:
         LOG(ERROR, _("unknown certificate format"));
         return avs_errno(AVS_EIO);
@@ -388,20 +446,24 @@ static avs_error_t load_certs_from_file(const char *filename,
     return err;
 }
 
-avs_error_t _avs_crypto_openssl_load_client_certs(
-        const avs_crypto_certificate_chain_info_t *info,
-        avs_crypto_openssl_load_certs_cb_t *cb,
-        void *cb_arg) {
+typedef struct {
+    avs_crypto_openssl_load_certs_cb_t *cb;
+    void *cb_arg;
+} load_certs_cb_info_t;
+
+static avs_error_t
+pass_cert_to_cb(void *cb_info_,
+                const avs_crypto_certificate_chain_info_t *info) {
+    load_certs_cb_info_t *cb_info = (load_certs_cb_info_t *) cb_info_;
     switch (info->desc.source) {
-    case AVS_CRYPTO_DATA_SOURCE_EMPTY:
-        return AVS_OK;
     case AVS_CRYPTO_DATA_SOURCE_FILE:
         if (!info->desc.info.file.filename) {
             LOG(ERROR, _("attempt to load certificate chain from file, but "
                          "filename=NULL"));
             return avs_errno(AVS_EINVAL);
         }
-        return load_certs_from_file(info->desc.info.file.filename, cb, cb_arg);
+        return load_certs_from_file(info->desc.info.file.filename, cb_info->cb,
+                                    cb_info->cb_arg);
     case AVS_CRYPTO_DATA_SOURCE_PATH:
         LOG(ERROR, _("Certificate path sources cannot be used as client "
                      "certificate chains"));
@@ -419,44 +481,27 @@ avs_error_t _avs_crypto_openssl_load_client_certs(
             return avs_errno(AVS_E2BIG);
         }
         return load_certs_from_buffer(info->desc.info.buffer.buffer,
-                                      buffer_size, cb, cb_arg);
+                                      buffer_size, cb_info->cb,
+                                      cb_info->cb_arg);
     }
-    case AVS_CRYPTO_DATA_SOURCE_ARRAY: {
-        avs_error_t err = AVS_OK;
-        for (size_t i = 0;
-             avs_is_ok(err) && i < info->desc.info.array.element_count;
-             ++i) {
-            err = _avs_crypto_openssl_load_client_certs(
-                    AVS_CONTAINER_OF(&info->desc.info.array.array_ptr[i],
-                                     const avs_crypto_certificate_chain_info_t,
-                                     desc),
-                    cb, cb_arg);
-        }
-        return err;
-    }
-#    ifdef AVS_COMMONS_WITH_AVS_LIST
-    case AVS_CRYPTO_DATA_SOURCE_LIST: {
-        AVS_LIST(avs_crypto_security_info_union_t) entry;
-        AVS_LIST_FOREACH(entry, info->desc.info.list.list_head) {
-            avs_error_t err = _avs_crypto_openssl_load_client_certs(
-                    AVS_CONTAINER_OF(entry,
-                                     const avs_crypto_certificate_chain_info_t,
-                                     desc),
-                    cb, cb_arg);
-            if (avs_is_err(err)) {
-                return err;
-            }
-        }
-        return AVS_OK;
-    }
-#    endif // AVS_COMMONS_WITH_AVS_LIST
     default:
         AVS_UNREACHABLE("invalid data source");
         return avs_errno(AVS_EINVAL);
     }
 }
 
-static avs_error_t load_into_store(void *store_, X509 *cert) {
+avs_error_t _avs_crypto_openssl_load_client_certs(
+        const avs_crypto_certificate_chain_info_t *info,
+        avs_crypto_openssl_load_certs_cb_t *cb,
+        void *cb_arg) {
+    return load_cert_tree(info, pass_cert_to_cb,
+                          &(load_certs_cb_info_t) {
+                              .cb = cb,
+                              .cb_arg = cb_arg
+                          });
+}
+
+static avs_error_t load_single_cert_to_store(void *store_, X509 *cert) {
     X509_STORE *store = (X509_STORE *) store_;
     if (!X509_STORE_add_cert(store, cert)) {
         log_openssl_error();
@@ -465,8 +510,10 @@ static avs_error_t load_into_store(void *store_, X509 *cert) {
     return AVS_OK;
 }
 
-avs_error_t _avs_crypto_openssl_load_ca_certs(
-        X509_STORE *store, const avs_crypto_certificate_chain_info_t *info) {
+static avs_error_t
+load_certs_to_store(void *store_,
+                    const avs_crypto_certificate_chain_info_t *info) {
+    X509_STORE *store = (X509_STORE *) store_;
     switch (info->desc.source) {
     case AVS_CRYPTO_DATA_SOURCE_PATH:
         if (!info->desc.info.path.path) {
@@ -482,40 +529,18 @@ avs_error_t _avs_crypto_openssl_load_ca_certs(
             return avs_errno(AVS_EPROTO);
         }
         return AVS_OK;
-#    warning "TODO: deduplicate compound handling"
-    case AVS_CRYPTO_DATA_SOURCE_ARRAY: {
-        avs_error_t err = AVS_OK;
-        for (size_t i = 0;
-             avs_is_ok(err) && i < info->desc.info.array.element_count;
-             ++i) {
-            err = _avs_crypto_openssl_load_ca_certs(
-                    store,
-                    AVS_CONTAINER_OF(&info->desc.info.array.array_ptr[i],
-                                     const avs_crypto_certificate_chain_info_t,
-                                     desc));
-        }
-        return err;
-    }
-#    ifdef AVS_COMMONS_WITH_AVS_LIST
-    case AVS_CRYPTO_DATA_SOURCE_LIST: {
-        AVS_LIST(avs_crypto_security_info_union_t) entry;
-        AVS_LIST_FOREACH(entry, info->desc.info.list.list_head) {
-            avs_error_t err = _avs_crypto_openssl_load_ca_certs(
-                    store,
-                    AVS_CONTAINER_OF(entry,
-                                     const avs_crypto_certificate_chain_info_t,
-                                     desc));
-            if (avs_is_err(err)) {
-                return err;
-            }
-        }
-        return AVS_OK;
-    }
-#    endif // AVS_COMMONS_WITH_AVS_LIST
     default:
-        return _avs_crypto_openssl_load_client_certs(info, load_into_store,
-                                                     store);
+        return pass_cert_to_cb(&(load_certs_cb_info_t) {
+                                   .cb = load_single_cert_to_store,
+                                   .cb_arg = store
+                               },
+                               info);
     }
+}
+
+avs_error_t _avs_crypto_openssl_load_ca_certs(
+        X509_STORE *store, const avs_crypto_certificate_chain_info_t *info) {
+    return load_cert_tree(info, load_certs_to_store, store);
 }
 
 #endif // defined(AVS_COMMONS_WITH_AVS_CRYPTO) &&
