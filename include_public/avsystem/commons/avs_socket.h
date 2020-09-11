@@ -294,7 +294,7 @@ typedef struct {
      * left zero-initialized. If used, it shall be initialized using one of the
      * <c>avs_crypto_trusted_cert_info_from_*</c> helper functions.
      */
-    avs_crypto_trusted_cert_info_t trusted_certs;
+    avs_crypto_certificate_chain_info_t trusted_certs;
 
     /**
      * Store of certificate revocation lists. This field is optional and can be
@@ -309,7 +309,7 @@ typedef struct {
      * initialized using one of the <c>avs_crypto_client_cert_info_from_*</c>
      * helper functions.
      */
-    avs_crypto_client_cert_info_t client_cert;
+    avs_crypto_certificate_chain_info_t client_cert;
 
     /**
      * Private key matching #client_cert to use for authenticating with the

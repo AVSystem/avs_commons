@@ -230,15 +230,16 @@ static bool is_pem_crt_file(const char *path) {
     return result;
 }
 
-static AVS_LIST(avs_crypto_trusted_cert_info_t) load_trusted_certs(void) {
+static AVS_LIST(avs_crypto_certificate_chain_info_t) load_trusted_certs(void) {
     // On *BSD, including macOS, all system-wide certs are in this one huge file
     static const char *const bsd_cert_pem_path = "/etc/ssl/cert.pem";
-    AVS_LIST(avs_crypto_trusted_cert_info_t) result = NULL;
+    AVS_LIST(avs_crypto_certificate_chain_info_t) result = NULL;
     if (is_pem_crt_file(bsd_cert_pem_path)) {
-        AVS_LIST(avs_crypto_trusted_cert_info_t) entry =
-                AVS_LIST_APPEND_NEW(avs_crypto_trusted_cert_info_t, &result);
+        AVS_LIST(avs_crypto_certificate_chain_info_t) entry =
+                AVS_LIST_APPEND_NEW(avs_crypto_certificate_chain_info_t,
+                                    &result);
         AVS_UNIT_ASSERT_NOT_NULL(entry);
-        *entry = avs_crypto_trusted_cert_info_from_file(bsd_cert_pem_path);
+        *entry = avs_crypto_certificate_chain_info_from_file(bsd_cert_pem_path);
     }
 
     // On typical Linux distros, this directory is used instead.
@@ -249,7 +250,7 @@ static AVS_LIST(avs_crypto_trusted_cert_info_t) load_trusted_certs(void) {
         struct dirent *file_entry;
         while ((file_entry = readdir(dir))) {
             typedef struct {
-                avs_crypto_trusted_cert_info_t entry;
+                avs_crypto_certificate_chain_info_t entry;
                 char path[256];
             } entry_with_path_t;
             AVS_LIST(entry_with_path_t) entry_with_path =
@@ -262,10 +263,11 @@ static AVS_LIST(avs_crypto_trusted_cert_info_t) load_trusted_certs(void) {
                     || !is_pem_crt_file(entry_with_path->path)) {
                 AVS_LIST_DELETE(&entry_with_path);
             } else {
-                entry_with_path->entry = avs_crypto_trusted_cert_info_from_file(
-                        entry_with_path->path);
+                entry_with_path->entry =
+                        avs_crypto_certificate_chain_info_from_file(
+                                entry_with_path->path);
                 AVS_LIST_APPEND(&result,
-                                (AVS_LIST(avs_crypto_trusted_cert_info_t))
+                                (AVS_LIST(avs_crypto_certificate_chain_info_t))
                                         entry_with_path);
             }
         }
@@ -276,7 +278,7 @@ static AVS_LIST(avs_crypto_trusted_cert_info_t) load_trusted_certs(void) {
 }
 
 AVS_UNIT_TEST(starttls, starttls_smtp_verify_list) {
-    AVS_LIST(avs_crypto_trusted_cert_info_t) trusted_certs =
+    AVS_LIST(avs_crypto_certificate_chain_info_t) trusted_certs =
             load_trusted_certs();
 
     avs_net_socket_t *socket = initiate_smtp_starttls();
@@ -290,7 +292,7 @@ AVS_UNIT_TEST(starttls, starttls_smtp_verify_list) {
             .server_cert_validation = true,
             .ignore_system_trust_store = true,
             .trusted_certs =
-                    avs_crypto_trusted_cert_info_from_list(trusted_certs)
+                    avs_crypto_certificate_chain_info_from_list(trusted_certs)
         },
         .prng_ctx = prng_ctx
     };
@@ -308,10 +310,10 @@ AVS_UNIT_TEST(starttls, starttls_smtp_verify_list) {
 }
 
 AVS_UNIT_TEST(starttls, starttls_smtp_verify_array) {
-    AVS_LIST(avs_crypto_trusted_cert_info_t) trusted_cert_list =
+    AVS_LIST(avs_crypto_certificate_chain_info_t) trusted_cert_list =
             load_trusted_certs();
     size_t trusted_cert_count = AVS_LIST_SIZE(trusted_cert_list);
-    avs_crypto_trusted_cert_info_t trusted_certs[trusted_cert_count];
+    avs_crypto_certificate_chain_info_t trusted_certs[trusted_cert_count];
     for (size_t i = 0; i < trusted_cert_count; ++i) {
         trusted_certs[i] = *AVS_LIST_NTH(trusted_cert_list, i);
     }
@@ -326,7 +328,7 @@ AVS_UNIT_TEST(starttls, starttls_smtp_verify_array) {
         .security.data.cert = {
             .server_cert_validation = true,
             .ignore_system_trust_store = true,
-            .trusted_certs = avs_crypto_trusted_cert_info_from_array(
+            .trusted_certs = avs_crypto_certificate_chain_info_from_array(
                     trusted_certs, trusted_cert_count)
         },
         .prng_ctx = prng_ctx

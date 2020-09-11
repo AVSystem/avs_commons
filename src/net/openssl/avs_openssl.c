@@ -1006,6 +1006,7 @@ static avs_error_t load_cert(void *ctx_, X509 *cert) {
         log_openssl_error();
         return avs_errno(AVS_EPROTO);
     }
+    ctx->client_cert_loaded = true;
     return AVS_OK;
 }
 
@@ -1060,11 +1061,11 @@ configure_ssl_certs(ssl_socket_t *socket,
 
     if (cert_info->client_cert.desc.source != AVS_CRYPTO_DATA_SOURCE_EMPTY) {
         avs_error_t err =
-                _avs_crypto_openssl_load_client_cert(&cert_info->client_cert,
-                                                     load_cert,
-                                                     &(load_cert_ctx_t) {
-                                                         .ctx = socket->ctx
-                                                     });
+                _avs_crypto_openssl_load_client_certs(&cert_info->client_cert,
+                                                      load_cert,
+                                                      &(load_cert_ctx_t) {
+                                                          .ctx = socket->ctx
+                                                      });
         if (avs_is_err(err)) {
             LOG(ERROR, _("could not load client certificate"));
             return err;
