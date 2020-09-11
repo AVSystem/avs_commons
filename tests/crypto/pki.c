@@ -163,10 +163,10 @@ AVS_UNIT_TEST(avs_crypto_pki, avs_crypto_client_cert_expiration_date) {
         }
     };
 
-    avs_crypto_client_cert_info_t cert_info =
-            avs_crypto_client_cert_info_from_file(CERT_PATH);
+    avs_crypto_certificate_chain_info_t cert_info =
+            avs_crypto_certificate_chain_info_from_file(CERT_PATH);
     avs_time_real_t cert_validity =
-            avs_crypto_client_cert_expiration_date(&cert_info);
+            avs_crypto_certificate_expiration_date(&cert_info);
 
     AVS_UNIT_ASSERT_TRUE(avs_time_real_valid(cert_validity));
     double cert_relative_validity = avs_time_duration_to_fscalar(
@@ -471,13 +471,13 @@ AVS_UNIT_TEST(avs_crypto_pki_pkcs7, pkcs7_parse_success) {
 
     avs_crypto_certificate_chain_info_t *cert1 = AVS_LIST_NTH(certs, 0);
     AVS_UNIT_ASSERT_EQUAL(cert1->desc.type,
-                          AVS_CRYPTO_SECURITY_INFO_TRUSTED_CERT);
+                          AVS_CRYPTO_SECURITY_INFO_CERTIFICATE_CHAIN);
     AVS_UNIT_ASSERT_EQUAL(cert1->desc.source, AVS_CRYPTO_DATA_SOURCE_BUFFER);
     AVS_UNIT_ASSERT_EQUAL(cert1->desc.info.buffer.buffer_size, 996);
 
     avs_crypto_certificate_chain_info_t *cert2 = AVS_LIST_NTH(certs, 1);
     AVS_UNIT_ASSERT_EQUAL(cert2->desc.type,
-                          AVS_CRYPTO_SECURITY_INFO_TRUSTED_CERT);
+                          AVS_CRYPTO_SECURITY_INFO_CERTIFICATE_CHAIN);
     AVS_UNIT_ASSERT_EQUAL(cert2->desc.source, AVS_CRYPTO_DATA_SOURCE_BUFFER);
     AVS_UNIT_ASSERT_EQUAL(cert2->desc.info.buffer.buffer_size, 1997);
 

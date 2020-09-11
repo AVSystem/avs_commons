@@ -131,17 +131,22 @@ AVS_UNIT_TEST(backend_openssl, chain_loading_from_null) {
     }
 }
 
+static avs_error_t fail_loading_cert(void *dummy, X509 *cert) {
+    (void) dummy;
+    (void) cert;
+    AVS_UNIT_ASSERT_NULL("Shall never be called");
+    return avs_errno(AVS_UNKNOWN_ERROR);
+}
+
 AVS_UNIT_TEST(backend_openssl, cert_loading_from_null) {
-    X509 *cert = NULL;
-    const avs_crypto_client_cert_info_t pem =
-            avs_crypto_client_cert_info_from_file(NULL);
-    AVS_UNIT_ASSERT_FAILED(_avs_crypto_openssl_load_client_cert(&cert, &pem));
-    AVS_UNIT_ASSERT_NULL(cert);
-    const avs_crypto_client_cert_info_t buffer =
-            avs_crypto_client_cert_info_from_buffer(NULL, 0);
-    AVS_UNIT_ASSERT_FAILED(
-            _avs_crypto_openssl_load_client_cert(&cert, &buffer));
-    AVS_UNIT_ASSERT_NULL(cert);
+    const avs_crypto_certificate_chain_info_t pem =
+            avs_crypto_certificate_chain_info_from_file(NULL);
+    AVS_UNIT_ASSERT_FAILED(_avs_crypto_openssl_load_client_certs(
+            &pem, fail_loading_cert, NULL));
+    const avs_crypto_certificate_chain_info_t buffer =
+            avs_crypto_certificate_chain_info_from_buffer(NULL, 0);
+    AVS_UNIT_ASSERT_FAILED(_avs_crypto_openssl_load_client_certs(
+            &buffer, fail_loading_cert, NULL));
 }
 
 AVS_UNIT_TEST(backend_openssl, key_loading) {
