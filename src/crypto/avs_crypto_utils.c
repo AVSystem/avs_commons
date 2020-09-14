@@ -233,6 +233,8 @@ static void copy_element(avs_crypto_security_info_union_t *dest,
     const void *source = NULL;
     size_t size = 0;
     switch (src->source) {
+    case AVS_CRYPTO_DATA_SOURCE_EMPTY:
+        break;
 #    ifdef AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
     case AVS_CRYPTO_DATA_SOURCE_ENGINE:
         if (src->info.engine.query) {
@@ -480,6 +482,35 @@ avs_crypto_private_key_info_t avs_crypto_private_key_info_from_buffer(
     result.desc.info.buffer.buffer_size = buffer_size;
     result.desc.info.buffer.password = password;
     return result;
+}
+
+avs_error_t avs_crypto_private_key_info_copy(
+        avs_crypto_private_key_info_t **out_ptr,
+        avs_crypto_private_key_info_t private_key_info) {
+    if (!out_ptr || *out_ptr
+            || private_key_info.desc.source == AVS_CRYPTO_DATA_SOURCE_ARRAY
+            || private_key_info.desc.source == AVS_CRYPTO_DATA_SOURCE_LIST) {
+        return avs_errno(AVS_EINVAL);
+    }
+    security_info_stats_t stats = {
+        .expected_type = AVS_CRYPTO_SECURITY_INFO_PRIVATE_KEY
+    };
+    avs_error_t err = security_info_iterate(&private_key_info.desc,
+                                            calculate_info_stats, &stats);
+    if (avs_is_err(err)) {
+        return err;
+    }
+    assert(stats.element_count == 0 || stats.element_count == 1);
+    if (!(*out_ptr = (avs_crypto_private_key_info_t *) avs_malloc(
+                  sizeof(avs_crypto_private_key_info_t)
+                  + stats.data_buffer_size))) {
+        return avs_errno(AVS_ENOMEM);
+    }
+    char *buffer_ptr = (char *) &(*out_ptr)[1];
+    copy_element(&(*out_ptr)->desc, &buffer_ptr, &private_key_info.desc);
+    assert(buffer_ptr == ((char *) &(*out_ptr)[1]) + stats.data_buffer_size);
+    assert((*out_ptr)->desc.type == AVS_CRYPTO_SECURITY_INFO_PRIVATE_KEY);
+    return AVS_OK;
 }
 
 #    ifdef AVS_COMMONS_WITH_AVS_CRYPTO_ADVANCED_FEATURES

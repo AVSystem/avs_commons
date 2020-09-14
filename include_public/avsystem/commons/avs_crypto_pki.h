@@ -420,6 +420,10 @@ typedef struct {
     avs_crypto_security_info_union_t desc;
 } avs_crypto_private_key_info_t;
 
+AVS_STATIC_ASSERT(sizeof(avs_crypto_private_key_info_t)
+                          == sizeof(avs_crypto_security_info_union_t),
+                  private_key_info_equivalent_to_union);
+
 #ifdef AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
 /**
  * Creates private key descriptor used later on to load private key from the
@@ -454,6 +458,31 @@ avs_crypto_private_key_info_from_file(const char *filename,
  */
 avs_crypto_private_key_info_t avs_crypto_private_key_info_from_buffer(
         const void *buffer, size_t buffer_size, const char *password);
+
+/**
+ * Copies any valid private key info structure.
+ *
+ * Any resources used by the source (file paths and buffers) are copied as well,
+ * so the original entries can be freed - although filesystem-based entries are
+ * not loaded into memory, so the actual files need to stay in the filesystem.
+ *
+ * The resulting key info structure is allocated in such a way that a single
+ * @ref avs_free call is sufficient to free the key and all associated
+ * resources.
+ *
+ * @param out_ptr          Pointer to a variable that, on entry, shall be a NULL
+ *                         pointer, and on exit will be set to a pointer to the
+ *                         newly allocated structure.
+ *
+ * @param private_key_info Private key information to copy.
+ *
+ * @returns AVS_OK for success, avs_errno(AVS_ENOMEM) for an out-of-memory
+ *          condition, or avs_errno(AVS_EINVAL) if invalid arguments have been
+ *          passed or invalid data has been encountered.
+ */
+avs_error_t avs_crypto_private_key_info_copy(
+        avs_crypto_private_key_info_t **out_ptr,
+        avs_crypto_private_key_info_t private_key_info);
 
 #ifdef AVS_COMMONS_WITH_AVS_CRYPTO_ADVANCED_FEATURES
 
