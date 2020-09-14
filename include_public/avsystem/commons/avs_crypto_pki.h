@@ -62,6 +62,21 @@ typedef struct {
     avs_crypto_security_info_union_t *list_head;
 } avs_crypto_security_info_union_internal_list_t;
 
+typedef enum {
+    AVS_CRYPTO_SECURITY_INFO_CERTIFICATE_CHAIN,
+    AVS_CRYPTO_SECURITY_INFO_PRIVATE_KEY,
+    AVS_CRYPTO_SECURITY_INFO_CERT_REVOCATION_LIST
+} avs_crypto_security_info_tag_t;
+
+typedef enum {
+    AVS_CRYPTO_DATA_SOURCE_EMPTY,
+    AVS_CRYPTO_DATA_SOURCE_FILE,
+    AVS_CRYPTO_DATA_SOURCE_PATH,
+    AVS_CRYPTO_DATA_SOURCE_BUFFER,
+    AVS_CRYPTO_DATA_SOURCE_ARRAY,
+    AVS_CRYPTO_DATA_SOURCE_LIST
+} avs_crypto_data_source_t;
+
 /**
  * This struct is for internal use only and should not be filled manually. One
  * should construct appropriate instances of:
@@ -71,8 +86,8 @@ typedef struct {
  * using methods declared below.
  */
 struct avs_crypto_security_info_union_struct {
-    int type;
-    int source;
+    avs_crypto_security_info_tag_t type;
+    avs_crypto_data_source_t source;
     union {
         avs_crypto_security_info_union_internal_file_t file;
         avs_crypto_security_info_union_internal_path_t path;

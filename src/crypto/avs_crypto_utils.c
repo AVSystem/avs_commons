@@ -182,7 +182,7 @@ calculate_data_buffer_size(size_t *out_buffer_size,
 }
 
 typedef struct {
-    const int expected_type;
+    const avs_crypto_security_info_tag_t expected_type;
     size_t element_count;
     size_t data_buffer_size;
 } security_info_stats_t;
@@ -350,7 +350,7 @@ avs_crypto_cert_revocation_list_info_from_list(
 }
 
 typedef struct {
-    const int expected_type;
+    const avs_crypto_security_info_tag_t expected_type;
     AVS_LIST(avs_crypto_security_info_union_t) *tail_ptr;
 } copy_into_list_state_t;
 
