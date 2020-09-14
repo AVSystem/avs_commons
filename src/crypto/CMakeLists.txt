@@ -81,6 +81,9 @@ if(WITH_OPENSSL)
                 ${AVS_CRYPTO_PUBLIC_HEADERS}
                 ${AVS_CRYPTO_OPENSSL_SOURCES})
     target_link_libraries(avs_crypto_openssl PUBLIC avs_crypto_core OpenSSL::Crypto)
+    if(WITH_PKI AND WITH_AVS_STREAM_FILE)
+        target_link_libraries(avs_crypto_openssl PUBLIC avs_stream)
+    endif()
 
     avs_add_test(NAME avs_crypto_openssl
                  LIBS avs_crypto_openssl OpenSSL::SSL
