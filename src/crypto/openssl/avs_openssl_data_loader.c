@@ -47,7 +47,7 @@
 
 VISIBILITY_SOURCE_BEGIN
 
-typedef enum { ENCODING_UNKNOWN, ENCODING_PEM, ENCODING_DER } encoding_t;
+typedef enum { ENCODING_PEM, ENCODING_DER } encoding_t;
 
 static encoding_t detect_encoding(const void *buffer, size_t len) {
     static const char PEM_PREFIX[] = "-----BEGIN ";
@@ -73,12 +73,12 @@ static int password_cb(char *buf, int num, int rwflag, void *userdata) {
 #    define LOAD_PEM_OBJECTS(VarType, IoTag, ObjVarName, ErrVarName, Buffer,  \
                              Len, Password, ...)                              \
         do {                                                                  \
-            err = AVS_OK;                                                     \
+            ErrVarName = AVS_OK;                                              \
             BIO *bio = BIO_new_mem_buf((void *) (intptr_t) (Buffer),          \
                                        (int) (Len));                          \
             if (!bio) {                                                       \
                 log_openssl_error();                                          \
-                err = avs_errno(AVS_ENOMEM);                                  \
+                ErrVarName = avs_errno(AVS_ENOMEM);                           \
             } else {                                                          \
                 ErrVarName = AVS_OK;                                          \
                 VarType *ObjVarName =                                         \
@@ -125,7 +125,7 @@ static int password_cb(char *buf, int num, int rwflag, void *userdata) {
                 if (!ObjVarName) {                                          \
                     log_openssl_error();                                    \
                     ErrVarName = avs_errno(AVS_EPROTO);                     \
-                } else if (ptr - (const unsigned char *) buffer             \
+                } else if (ptr - (const unsigned char *) (Buffer)           \
                            != len_as_int) {                                 \
                     LOG(ERROR, _("Garbage data after DER-encoded data"));   \
                     ErrVarName = avs_errno(AVS_EIO);                        \
@@ -149,7 +149,7 @@ static int password_cb(char *buf, int num, int rwflag, void *userdata) {
                                 Buffer, Len, __VA_ARGS__);                   \
                 break;                                                       \
             default:                                                         \
-                LOG(ERROR, _("unknown encoding"));                           \
+                AVS_UNREACHABLE("invalid encoding");                         \
                 ErrVarName = avs_errno(AVS_EIO);                             \
             }                                                                \
         } while (false)
