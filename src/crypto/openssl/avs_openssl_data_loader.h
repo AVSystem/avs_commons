@@ -33,11 +33,11 @@ avs_error_t
 _avs_crypto_openssl_load_client_key(EVP_PKEY **out_key,
                                     const avs_crypto_private_key_info_t *info);
 
-typedef avs_error_t avs_crypto_openssl_load_certs_cb_t(void *arg, X509 *cert);
+typedef avs_error_t avs_crypto_ossl_object_load_t(void *obj, void *arg);
 
 avs_error_t _avs_crypto_openssl_load_client_certs(
         const avs_crypto_certificate_chain_info_t *info,
-        avs_crypto_openssl_load_certs_cb_t *cb,
+        avs_crypto_ossl_object_load_t *load_cb,
         void *cb_arg);
 
 avs_error_t _avs_crypto_openssl_load_ca_certs(

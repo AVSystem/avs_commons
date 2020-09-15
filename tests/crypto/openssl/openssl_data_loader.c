@@ -131,9 +131,9 @@ AVS_UNIT_TEST(backend_openssl, chain_loading_from_null) {
     }
 }
 
-static avs_error_t fail_loading_cert(void *dummy, X509 *cert) {
-    (void) dummy;
+static avs_error_t fail_loading_cert(void *cert, void *dummy) {
     (void) cert;
+    (void) dummy;
     AVS_UNIT_ASSERT_NULL("Shall never be called");
     return avs_errno(AVS_UNKNOWN_ERROR);
 }

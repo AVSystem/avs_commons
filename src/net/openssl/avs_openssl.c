@@ -994,7 +994,8 @@ typedef struct {
     bool client_cert_loaded;
 } load_cert_ctx_t;
 
-static avs_error_t load_cert(void *ctx_, X509 *cert) {
+static avs_error_t load_cert(void *cert_, void *ctx_) {
+    X509 *cert = (X509 *) cert_;
     load_cert_ctx_t *ctx = (load_cert_ctx_t *) ctx_;
     long result;
     if (!ctx->client_cert_loaded) {

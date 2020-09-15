@@ -248,7 +248,8 @@ avs_crypto_pki_csr_create(avs_crypto_prng_ctx_t *prng_ctx,
     return err;
 }
 
-static avs_error_t load_first_cert(void *out_cert_ptr_, X509 *cert) {
+static avs_error_t load_first_cert(void *cert_, void *out_cert_ptr_) {
+    X509 *cert = (X509 *) cert_;
     X509 **out_cert_ptr = (X509 **) out_cert_ptr_;
     if (!*out_cert_ptr) {
         if (!X509_up_ref(cert)) {
