@@ -509,6 +509,11 @@ avs_error_t avs_crypto_private_key_info_copy(
     char *buffer_ptr = (char *) &(*out_ptr)[1];
     copy_element(&(*out_ptr)->desc, &buffer_ptr, &private_key_info.desc);
     assert(buffer_ptr == ((char *) &(*out_ptr)[1]) + stats.data_buffer_size);
+    if ((*out_ptr)->desc.source == AVS_CRYPTO_DATA_SOURCE_EMPTY) {
+        // EMPTY entries are allowed to have uninitialized type,
+        // to support zero-initialization
+        (*out_ptr)->desc.type = AVS_CRYPTO_SECURITY_INFO_PRIVATE_KEY;
+    }
     assert((*out_ptr)->desc.type == AVS_CRYPTO_SECURITY_INFO_PRIVATE_KEY);
     return AVS_OK;
 }
