@@ -67,7 +67,7 @@ static inline bool avs_is_err(avs_error_t error) {
 /**
  * Errno constants are sometimes used in the Commons library, most notably in
  * the <c>avs_net</c> and <c>avs_stream</c> modules as error codes that may be
- * reported through @ref avs_net_socket_error and @ref avs_stream_error.
+ * reported through socket and stream methods.
  *
  * The problem with errno, however, is that it is very poorly defined. In fact,
  * the C standard only specifies <c>EDOM</c>, <c>EILSEQ</c> and <c>ERANGE</c>
@@ -86,8 +86,8 @@ static inline bool avs_is_err(avs_error_t error) {
  * errno to an appropriate <c>avs_errno_t</c> constant.
  *
  * To avoid boring errno remapping logic, we implemented a header only
- * @ref avs_map_errno() function (see <c>errno_map.h</c>), which, depending on
- * the context in which it is included is able to translate specific errno
+ * @ref avs_map_errno() function (see <c>avs_errno_map.h</c>), which, depending
+ * on the context in which it is included is able to translate specific errno
  * values to and consistent set of <c>avs_errno_t</c> values.
  */
 typedef enum avs_errno {

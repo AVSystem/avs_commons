@@ -40,8 +40,7 @@ typedef struct {
 
 /**
  * Computes length of the file the stream operates on and writes it to
- * @p out_length. On error @p out_length remains unchanged, and more information
- * can be obtained by calling @ref avs_stream_error.
+ * @p out_length. On error @p out_length remains unchanged.
  *
  * @param stream        file stream pointer
  * @param out_length    length of the file, must not be NULL
@@ -52,8 +51,7 @@ avs_error_t avs_stream_file_length(avs_stream_t *stream, avs_off_t *out_length);
 
 /**
  * Writes stream cursor absolute position to @p out_offset. On error
- * @p out_offset remains unchanged, and more information can be obtained by
- * calling @ref avs_stream_error.
+ * @p out_offset remains unchanged.
  *
  * @param stream        file stream pointer
  * @param out_offset    stream cursor position, must not be NULL
@@ -63,8 +61,7 @@ avs_error_t avs_stream_file_length(avs_stream_t *stream, avs_off_t *out_length);
 avs_error_t avs_stream_file_offset(avs_stream_t *stream, avs_off_t *out_offset);
 
 /**
- * Moves stream cursor to absolute position @p offset_from_start, on error
- * more information can be obtained by calling @ref avs_stream_error.
+ * Moves stream cursor to absolute position @p offset_from_start.
  *
  * @param stream            file stream pointer
  * @param offset_from_start absolute offset, must nonnegative

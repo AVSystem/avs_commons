@@ -313,13 +313,6 @@ avs_error_t avs_stream_getch(avs_stream_t *stream,
  * always be appropriately updated. @p out_bytes_read first bytes of @p buffer
  * will be filled with any data read before the error, and the null byte will
  * always be written after those (or at the beginning).
- *
- * In case of a negative return value, @ref avs_stream_error can be used to
- * check for detailed error case encountered. While the exact semantics of
- * @ref avs_stream_error vary between different streams - if this function
- * returns a negative value, while @p out_message_finished is set to true and
- * @ref avs_stream_error returns 0, it is most likely caused by lack of line
- * terminator characters at the end of stream.
  */
 avs_error_t avs_stream_getline(avs_stream_t *stream,
                                size_t *out_bytes_read,

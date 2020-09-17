@@ -830,8 +830,7 @@ avs_error_t avs_net_socket_send_to(avs_net_socket_t *socket,
  * For UDP datagrams whose length exceeds @p buffer_length :
  * - @p buffer is filled with @p buffer_length initial bytes of data,
  * - @p buffer_length is returned via @p out_bytes_received ,
- * - the function returns a negative value,
- * - @p socket errno is set to AVS_EMSGSIZE. See @ref avs_net_socket_error .
+ * - the function returns <c>avs_errno(AVS_EMSGSIZE)</c>.
  * That means, one can still access the truncated message if required. Note
  * that the actual length of received datagram is lost.
  *
@@ -860,8 +859,7 @@ avs_error_t avs_net_socket_receive(avs_net_socket_t *socket,
  * For UDP datagrams whose length exceeds @p buffer_length :
  * - @p buffer is filled with @p buffer_length initial bytes of data,
  * - @p buffer_length is returned via @p out_bytes_received ,
- * - the function returns a negative value,
- * - @p socket errno is set to AVS_EMSGSIZE. See @ref avs_net_socket_error .
+ * - the function returns <c>avs_errno(AVS_EMSGSIZE)</c>.
  * That means, one can still access the truncated message if required. Note
  * that the actual length of received datagram is lost.
  *

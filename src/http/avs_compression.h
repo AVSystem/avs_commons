@@ -84,10 +84,6 @@ typedef enum {
  *
  * - <c>avs_stream_reset</c> - clears the buffers and the state of the
  *   compression algorithm, allowing to compress a new stream.
- *
- * - <c>avs_stream_error</c> - returns the error code returned by the last zlib
- *   call if it's anything else than <c>Z_OK</c>, <c>Z_STREAM_END</c> or
- *   <c>Z_ERRNO</c>. In case of <c>Z_ERRNO</c>, <c>errno</c> is returned.
  */
 avs_stream_t *_avs_http_create_compressor(http_compression_format_t format,
                                           int level,
