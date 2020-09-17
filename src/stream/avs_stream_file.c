@@ -53,18 +53,6 @@ avs_error_t avs_stream_file_length(avs_stream_t *stream,
     return avs_errno(AVS_ENOTSUP);
 }
 
-avs_error_t avs_stream_file_offset(avs_stream_t *stream,
-                                   avs_off_t *out_offset) {
-    const avs_stream_v_table_extension_file_t *ext =
-            (const avs_stream_v_table_extension_file_t *)
-                    avs_stream_v_table_find_extension(
-                            stream, AVS_STREAM_V_TABLE_EXTENSION_FILE);
-    if (ext) {
-        return ext->offset(stream, out_offset);
-    }
-    return avs_errno(AVS_ENOTSUP);
-}
-
 avs_error_t avs_stream_file_seek(avs_stream_t *stream,
                                  avs_off_t offset_from_start) {
     const avs_stream_v_table_extension_file_t *ext =
@@ -212,10 +200,12 @@ static const avs_stream_v_table_t file_stream_vtable = {
     .close = stream_file_close,
     .extension_list =
             (const avs_stream_v_table_extension_t[]) {
+                    { AVS_STREAM_V_TABLE_EXTENSION_OFFSET,
+                      &(const avs_stream_v_table_extension_offset_t) {
+                              stream_file_offset } },
                     { AVS_STREAM_V_TABLE_EXTENSION_FILE,
                       &(const avs_stream_v_table_extension_file_t) {
-                              stream_file_length, stream_file_offset,
-                              stream_file_seek } },
+                              stream_file_length, stream_file_seek } },
                     AVS_STREAM_V_TABLE_EXTENSION_NULL }
 };
 

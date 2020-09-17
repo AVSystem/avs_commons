@@ -426,6 +426,20 @@ bool avs_stream_nonblock_read_ready(avs_stream_t *stream);
  */
 size_t avs_stream_nonblock_write_ready(avs_stream_t *stream);
 
+/**
+ * Optional method on streams that support the OFFSET extension. Writes stream
+ * cursor absolute position to @p out_offset. On error @p out_offset remains
+ * unchanged.
+ *
+ * @param stream     Stream to operate on
+ *
+ * @param out_offset Stream cursor position, must not be NULL
+ *
+ * @returns @ref AVS_OK for success, or an error condition for which the
+ *          operation failed.
+ */
+avs_error_t avs_stream_offset(avs_stream_t *stream, avs_off_t *out_offset);
+
 #ifdef __cplusplus
 }
 #endif

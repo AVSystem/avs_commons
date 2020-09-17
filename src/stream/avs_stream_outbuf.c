@@ -60,6 +60,7 @@ static const avs_stream_v_table_t outbuf_stream_vtable = {
     .reset = outbuf_stream_reset,
     .write_some = outbuf_stream_write_some,
     .finish_message = outbuf_stream_finish,
+#    warning "TODO"
     .extension_list = AVS_STREAM_V_TABLE_NO_EXTENSIONS
 };
 

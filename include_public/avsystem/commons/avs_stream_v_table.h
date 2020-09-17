@@ -200,6 +200,28 @@ typedef struct {
     avs_stream_nonblock_write_ready_t write_ready;
 } avs_stream_v_table_extension_nonblock_t;
 
+#define AVS_STREAM_V_TABLE_EXTENSION_OFFSET 0x4F464653UL /* "OFFS" */
+
+/**
+ * @ref avs_stream_offset implementation callback type.
+ *
+ * Writes stream cursor absolute position to @p out_offset. On error
+ * @p out_offset remains unchanged.
+ *
+ * @param stream     Stream to operate on
+ *
+ * @param out_offset Stream cursor position, must not be NULL
+ *
+ * @returns @ref AVS_OK for success, or an error condition for which the
+ *          operation failed.
+ */
+typedef avs_error_t (*avs_stream_offset_t)(avs_stream_t *stream,
+                                           avs_off_t *out_offset);
+
+typedef struct {
+    avs_stream_offset_t offset;
+} avs_stream_v_table_extension_offset_t;
+
 #ifdef __cplusplus
 }
 #endif

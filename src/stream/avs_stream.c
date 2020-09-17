@@ -466,4 +466,15 @@ size_t avs_stream_nonblock_write_ready(avs_stream_t *stream) {
     }
 }
 
+avs_error_t avs_stream_offset(avs_stream_t *stream, avs_off_t *out_offset) {
+    const avs_stream_v_table_extension_offset_t *ext =
+            (const avs_stream_v_table_extension_offset_t *)
+                    avs_stream_v_table_find_extension(
+                            stream, AVS_STREAM_V_TABLE_EXTENSION_OFFSET);
+    if (ext) {
+        return ext->offset(stream, out_offset);
+    }
+    return avs_errno(AVS_ENOTSUP);
+}
+
 #endif // AVS_COMMONS_WITH_AVS_STREAM
