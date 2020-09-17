@@ -61,13 +61,13 @@ static encoding_t detect_encoding(const void *buffer, size_t len) {
 }
 
 static int password_cb(char *buf, int num, int rwflag, void *userdata) {
+    (void) rwflag;
     if (!userdata) {
         buf[0] = '\0';
         return 0;
     }
-    int retval = snprintf(buf, (size_t) num, "%s", (const char *) userdata);
-    (void) rwflag;
-    return (retval < 0 || retval >= num) ? -1 : retval;
+    return avs_simple_snprintf(buf, (size_t) num, "%s",
+                               (const char *) userdata);
 }
 
 typedef enum {
@@ -172,11 +172,11 @@ static avs_error_t load_der_object(const void *buffer,
                                    avs_crypto_ossl_object_load_t *load_cb,
                                    void *load_cb_arg) {
     const unsigned char *ptr = (const unsigned char *) buffer;
-    int len_as_int = (int) len;
-    if (len_as_int < 0 || (size_t) len_as_int != len) {
+    if (len > INT_MAX) {
         LOG(ERROR, _("Buffer too big"));
         return avs_errno(AVS_E2BIG);
     }
+    int len_as_int = (int) len;
 
     void *obj = avs_ossl_object_der_read(&ptr, len_as_int, type);
     if (!obj) {
