@@ -78,9 +78,9 @@ AVS_UNIT_TEST(avs_crypto_pki_ec, test_csr_create) {
     uint8_t csr[512];
     size_t csr_size = sizeof(csr);
 
-    avs_crypto_client_key_info_t key_info =
-            avs_crypto_client_key_info_from_buffer(secret_key, secret_key_size,
-                                                   NULL);
+    avs_crypto_private_key_info_t key_info =
+            avs_crypto_private_key_info_from_buffer(secret_key, secret_key_size,
+                                                    NULL);
     AVS_UNIT_ASSERT_SUCCESS(avs_crypto_pki_csr_create(
             prng_ctx, &key_info, "SHA256",
             AVS_CRYPTO_PKI_X509_NAME({ AVS_CRYPTO_PKI_X509_NAME_CN, TEST_CN }),
@@ -163,10 +163,10 @@ AVS_UNIT_TEST(avs_crypto_pki, avs_crypto_client_cert_expiration_date) {
         }
     };
 
-    avs_crypto_client_cert_info_t cert_info =
-            avs_crypto_client_cert_info_from_file(CERT_PATH);
+    avs_crypto_certificate_chain_info_t cert_info =
+            avs_crypto_certificate_chain_info_from_file(CERT_PATH);
     avs_time_real_t cert_validity =
-            avs_crypto_client_cert_expiration_date(&cert_info);
+            avs_crypto_certificate_expiration_date(&cert_info);
 
     AVS_UNIT_ASSERT_TRUE(avs_time_real_valid(cert_validity));
     double cert_relative_validity = avs_time_duration_to_fscalar(
@@ -462,22 +462,22 @@ AVS_UNIT_TEST(avs_crypto_pki_pkcs7, pkcs7_parse_success) {
             "\x31\xc4\xa1\xbb\x22\x37\xa9\xf4\xfc\x6c\x55\xb2\x52\xdb\x93\xef"
             "\x00\x00\x31\x80\x00\x00\x00\x00\x00\x00\x00\x00";
 
-    AVS_LIST(avs_crypto_trusted_cert_info_t) certs = NULL;
+    AVS_LIST(avs_crypto_certificate_chain_info_t) certs = NULL;
     AVS_LIST(avs_crypto_cert_revocation_list_info_t) crls = NULL;
     AVS_UNIT_ASSERT_SUCCESS(avs_crypto_parse_pkcs7_certs_only(
             &certs, &crls, PKCS7_DATA, sizeof(PKCS7_DATA) - 1));
 
     AVS_UNIT_ASSERT_EQUAL(AVS_LIST_SIZE(certs), 2);
 
-    avs_crypto_trusted_cert_info_t *cert1 = AVS_LIST_NTH(certs, 0);
+    avs_crypto_certificate_chain_info_t *cert1 = AVS_LIST_NTH(certs, 0);
     AVS_UNIT_ASSERT_EQUAL(cert1->desc.type,
-                          AVS_CRYPTO_SECURITY_INFO_TRUSTED_CERT);
+                          AVS_CRYPTO_SECURITY_INFO_CERTIFICATE_CHAIN);
     AVS_UNIT_ASSERT_EQUAL(cert1->desc.source, AVS_CRYPTO_DATA_SOURCE_BUFFER);
     AVS_UNIT_ASSERT_EQUAL(cert1->desc.info.buffer.buffer_size, 996);
 
-    avs_crypto_trusted_cert_info_t *cert2 = AVS_LIST_NTH(certs, 1);
+    avs_crypto_certificate_chain_info_t *cert2 = AVS_LIST_NTH(certs, 1);
     AVS_UNIT_ASSERT_EQUAL(cert2->desc.type,
-                          AVS_CRYPTO_SECURITY_INFO_TRUSTED_CERT);
+                          AVS_CRYPTO_SECURITY_INFO_CERTIFICATE_CHAIN);
     AVS_UNIT_ASSERT_EQUAL(cert2->desc.source, AVS_CRYPTO_DATA_SOURCE_BUFFER);
     AVS_UNIT_ASSERT_EQUAL(cert2->desc.info.buffer.buffer_size, 1997);
 
@@ -496,8 +496,8 @@ AVS_UNIT_TEST(avs_crypto_pki_pkcs7, pkcs7_parse_success) {
     AVS_UNIT_ASSERT_EQUAL(crl2->desc.info.buffer.buffer_size, 554);
 
     // Now let's check if it's loadable
-    avs_crypto_trusted_cert_info_t cert_info =
-            avs_crypto_trusted_cert_info_from_list(certs);
+    avs_crypto_certificate_chain_info_t cert_info =
+            avs_crypto_certificate_chain_info_from_list(certs);
     avs_crypto_cert_revocation_list_info_t crl_info =
             avs_crypto_cert_revocation_list_info_from_list(crls);
     assert_trust_store_loadable(&cert_info, &crl_info);
@@ -550,7 +550,7 @@ AVS_UNIT_TEST(avs_crypto_pki_pkcs7, pkcs7_parse_failure) {
             "\x8f\xb2\xa2\x7b\x5c\x77\xdf\xd9\xb1\x5b\xfc\x3d\x55\x93\x53\x50"
             "\x34\x10\xc1\xe1\xe1";
 
-    AVS_LIST(avs_crypto_trusted_cert_info_t) certs = NULL;
+    AVS_LIST(avs_crypto_certificate_chain_info_t) certs = NULL;
     AVS_LIST(avs_crypto_cert_revocation_list_info_t) crls = NULL;
     // this file has a superfluous byte in it
     AVS_UNIT_ASSERT_FAILED(avs_crypto_parse_pkcs7_certs_only(

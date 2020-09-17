@@ -163,7 +163,7 @@ convert_subject(X509_NAME **out_x509_name,
 
 avs_error_t
 avs_crypto_pki_csr_create(avs_crypto_prng_ctx_t *prng_ctx,
-                          const avs_crypto_client_key_info_t *private_key_info,
+                          const avs_crypto_private_key_info_t *private_key_info,
                           const char *md_name,
                           const avs_crypto_pki_x509_name_entry_t subject[],
                           void *out_der_csr,
@@ -248,11 +248,25 @@ avs_crypto_pki_csr_create(avs_crypto_prng_ctx_t *prng_ctx,
     return err;
 }
 
-avs_time_real_t avs_crypto_client_cert_expiration_date(
-        const avs_crypto_client_cert_info_t *cert_info) {
+static avs_error_t load_first_cert(void *cert_, void *out_cert_ptr_) {
+    X509 *cert = (X509 *) cert_;
+    X509 **out_cert_ptr = (X509 **) out_cert_ptr_;
+    if (!*out_cert_ptr) {
+        if (!X509_up_ref(cert)) {
+            log_openssl_error();
+            return avs_errno(AVS_ENOMEM);
+        }
+        *out_cert_ptr = cert;
+    }
+    return AVS_OK;
+}
+
+avs_time_real_t avs_crypto_certificate_expiration_date(
+        const avs_crypto_certificate_chain_info_t *cert_info) {
     avs_time_real_t result = AVS_TIME_REAL_INVALID;
     X509 *cert = NULL;
-    if (avs_is_err(_avs_crypto_openssl_load_client_cert(&cert, cert_info))) {
+    if (avs_is_err(_avs_crypto_openssl_load_client_certs(
+                cert_info, load_first_cert, &cert))) {
         assert(!cert);
     } else {
         assert(cert);
@@ -283,20 +297,22 @@ avs_time_real_t avs_crypto_client_cert_expiration_date(
 }
 
 #    ifdef AVS_COMMONS_WITH_AVS_LIST
-static avs_error_t copy_cert(AVS_LIST(avs_crypto_trusted_cert_info_t) *out,
+static avs_error_t copy_cert(AVS_LIST(avs_crypto_certificate_chain_info_t) *out,
                              X509 *cert) {
     assert(out && !*out);
     int result = i2d_X509(cert, NULL);
     if (result > 0) {
-        if (!(*out = (AVS_LIST(avs_crypto_trusted_cert_info_t))
-                      AVS_LIST_NEW_BUFFER(sizeof(avs_crypto_trusted_cert_info_t)
-                                          + (size_t) result))) {
+        if (!(*out = (AVS_LIST(avs_crypto_certificate_chain_info_t))
+                      AVS_LIST_NEW_BUFFER(
+                              sizeof(avs_crypto_certificate_chain_info_t)
+                              + (size_t) result))) {
             LOG(ERROR, _("Out of memory"));
             return avs_errno(AVS_ENOMEM);
         }
         unsigned char *buf = ((unsigned char *) *out)
-                             + sizeof(avs_crypto_trusted_cert_info_t);
-        **out = avs_crypto_trusted_cert_info_from_buffer(buf, (size_t) result);
+                             + sizeof(avs_crypto_certificate_chain_info_t);
+        **out = avs_crypto_certificate_chain_info_from_buffer(buf,
+                                                              (size_t) result);
         result = i2d_X509(cert, &(unsigned char *[]){ buf }[0]);
     }
     if (result <= 0) {
@@ -334,7 +350,7 @@ copy_crl(AVS_LIST(avs_crypto_cert_revocation_list_info_t) *out, X509_CRL *crl) {
 }
 
 avs_error_t avs_crypto_parse_pkcs7_certs_only(
-        AVS_LIST(avs_crypto_trusted_cert_info_t) *out_certs,
+        AVS_LIST(avs_crypto_certificate_chain_info_t) *out_certs,
         AVS_LIST(avs_crypto_cert_revocation_list_info_t) *out_crls,
         const void *buffer,
         size_t buffer_size) {
@@ -372,7 +388,8 @@ avs_error_t avs_crypto_parse_pkcs7_certs_only(
             goto finish;
         }
 
-        AVS_LIST(avs_crypto_trusted_cert_info_t) *certs_tail_ptr = out_certs;
+        AVS_LIST(avs_crypto_certificate_chain_info_t) *certs_tail_ptr =
+                out_certs;
         for (int i = 0; i < sk_X509_num(p7->d.sign->cert); ++i) {
             X509 *cert = sk_X509_value(p7->d.sign->cert, i);
             if (avs_is_err((err = copy_cert(certs_tail_ptr, cert)))) {

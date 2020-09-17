@@ -148,28 +148,31 @@ static avs_error_t append_ca_from_path(mbedtls_x509_crt *chain,
 #    endif // MBEDTLS_FS_IO
 }
 
-static avs_error_t append_ca_certs(mbedtls_x509_crt *out,
-                                   const avs_crypto_trusted_cert_info_t *info) {
+static avs_error_t
+append_certs(mbedtls_x509_crt *out,
+             const avs_crypto_certificate_chain_info_t *info) {
     switch (info->desc.source) {
     case AVS_CRYPTO_DATA_SOURCE_EMPTY:
         return AVS_OK;
     case AVS_CRYPTO_DATA_SOURCE_FILE:
         if (!info->desc.info.file.filename) {
-            LOG(ERROR,
-                _("attempt to load CA cert from file, but filename=NULL"));
+            LOG(ERROR, _("attempt to load certificate chain from file, but "
+                         "filename=NULL"));
             return avs_errno(AVS_EINVAL);
         }
         return append_cert_from_file(out, info->desc.info.file.filename);
     case AVS_CRYPTO_DATA_SOURCE_PATH:
         if (!info->desc.info.path.path) {
-            LOG(ERROR, _("attempt to load CA cert from path, but path=NULL"));
+            LOG(ERROR, _("attempt to load certificate chain from path, but "
+                         "path=NULL"));
             return avs_errno(AVS_EINVAL);
         }
         return append_ca_from_path(out, info->desc.info.path.path);
     case AVS_CRYPTO_DATA_SOURCE_BUFFER:
         if (!info->desc.info.buffer.buffer) {
             LOG(ERROR,
-                _("attempt to load CA cert from buffer, but buffer=NULL"));
+                _("attempt to load certificate chain from buffer, but "
+                  "buffer=NULL"));
             return avs_errno(AVS_EINVAL);
         }
         return append_cert_from_buffer(out, info->desc.info.buffer.buffer,
@@ -179,10 +182,11 @@ static avs_error_t append_ca_certs(mbedtls_x509_crt *out,
         for (size_t i = 0;
              avs_is_ok(err) && i < info->desc.info.array.element_count;
              ++i) {
-            err = append_ca_certs(
-                    out, AVS_CONTAINER_OF(&info->desc.info.array.array_ptr[i],
-                                          const avs_crypto_trusted_cert_info_t,
-                                          desc));
+            err = append_certs(
+                    out,
+                    AVS_CONTAINER_OF(&info->desc.info.array.array_ptr[i],
+                                     const avs_crypto_certificate_chain_info_t,
+                                     desc));
         }
         return err;
     }
@@ -190,10 +194,11 @@ static avs_error_t append_ca_certs(mbedtls_x509_crt *out,
     case AVS_CRYPTO_DATA_SOURCE_LIST: {
         AVS_LIST(avs_crypto_security_info_union_t) entry;
         AVS_LIST_FOREACH(entry, info->desc.info.list.list_head) {
-            avs_error_t err = append_ca_certs(
-                    out, AVS_CONTAINER_OF(entry,
-                                          const avs_crypto_trusted_cert_info_t,
-                                          desc));
+            avs_error_t err = append_certs(
+                    out,
+                    AVS_CONTAINER_OF(entry,
+                                     const avs_crypto_certificate_chain_info_t,
+                                     desc));
             if (avs_is_err(err)) {
                 return err;
             }
@@ -215,9 +220,9 @@ void _avs_crypto_mbedtls_x509_crt_cleanup(mbedtls_x509_crt **crt) {
     }
 }
 
-avs_error_t
-_avs_crypto_mbedtls_load_ca_certs(mbedtls_x509_crt **out,
-                                  const avs_crypto_trusted_cert_info_t *info) {
+avs_error_t _avs_crypto_mbedtls_load_certs(
+        mbedtls_x509_crt **out,
+        const avs_crypto_certificate_chain_info_t *info) {
     assert(!*out);
     *out = (mbedtls_x509_crt *) mbedtls_calloc(1, sizeof(**out));
     if (!*out) {
@@ -225,7 +230,7 @@ _avs_crypto_mbedtls_load_ca_certs(mbedtls_x509_crt **out,
         return avs_errno(AVS_ENOMEM);
     }
     mbedtls_x509_crt_init(*out);
-    avs_error_t err = append_ca_certs(*out, info);
+    avs_error_t err = append_certs(*out, info);
     if (avs_is_err(err)) {
         _avs_crypto_mbedtls_x509_crt_cleanup(out);
     }
@@ -326,45 +331,6 @@ avs_error_t _avs_crypto_mbedtls_load_crls(
     return err;
 }
 
-avs_error_t _avs_crypto_mbedtls_load_client_cert(
-        mbedtls_x509_crt **out, const avs_crypto_client_cert_info_t *info) {
-    assert(!*out);
-    *out = (mbedtls_x509_crt *) mbedtls_calloc(1, sizeof(**out));
-    if (!*out) {
-        LOG(ERROR, _("Out of memory"));
-        return avs_errno(AVS_ENOMEM);
-    }
-    mbedtls_x509_crt_init(*out);
-
-    avs_error_t err = avs_errno(AVS_EINVAL);
-    switch (info->desc.source) {
-    case AVS_CRYPTO_DATA_SOURCE_FILE:
-        if (!info->desc.info.file.filename) {
-            LOG(ERROR,
-                _("attempt to load client cert from file, but filename=NULL"));
-        } else {
-            err = append_cert_from_file(*out, info->desc.info.file.filename);
-        }
-        break;
-    case AVS_CRYPTO_DATA_SOURCE_BUFFER:
-        if (!info->desc.info.buffer.buffer) {
-            LOG(ERROR,
-                _("attempt to load client cert from buffer, but buffer=NULL"));
-        } else {
-            err = append_cert_from_buffer(*out, info->desc.info.buffer.buffer,
-                                          info->desc.info.buffer.buffer_size);
-        }
-        break;
-    default:
-        AVS_UNREACHABLE("invalid data source");
-    }
-
-    if (avs_is_err(err)) {
-        _avs_crypto_mbedtls_x509_crt_cleanup(out);
-    }
-    return err;
-}
-
 static avs_error_t load_private_key_from_buffer(mbedtls_pk_context *client_key,
                                                 const void *buffer,
                                                 size_t len,
@@ -418,7 +384,7 @@ void _avs_crypto_mbedtls_pk_context_cleanup(mbedtls_pk_context **ctx) {
 
 avs_error_t
 _avs_crypto_mbedtls_load_client_key(mbedtls_pk_context **client_key,
-                                    const avs_crypto_client_key_info_t *info) {
+                                    const avs_crypto_private_key_info_t *info) {
     assert(!*client_key);
     *client_key = (mbedtls_pk_context *) avs_calloc(1, sizeof(**client_key));
     if (!*client_key) {

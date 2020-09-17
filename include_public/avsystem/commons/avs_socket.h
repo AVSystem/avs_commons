@@ -292,9 +292,9 @@ typedef struct {
     /**
      * Store of trust anchor certificates. This field is optional and can be
      * left zero-initialized. If used, it shall be initialized using one of the
-     * <c>avs_crypto_trusted_cert_info_from_*</c> helper functions.
+     * <c>avs_crypto_certificate_chain_info_from_*</c> helper functions.
      */
-    avs_crypto_trusted_cert_info_t trusted_certs;
+    avs_crypto_certificate_chain_info_t trusted_certs;
 
     /**
      * Store of certificate revocation lists. This field is optional and can be
@@ -306,18 +306,18 @@ typedef struct {
     /**
      * Local certificate to use for authenticating with the peer. This field is
      * optional and can be left zero-initialized. If used, it shall be
-     * initialized using one of the <c>avs_crypto_client_cert_info_from_*</c>
-     * helper functions.
+     * initialized using one of the
+     * <c>avs_crypto_certificate_chain_info_from_*</c> helper functions.
      */
-    avs_crypto_client_cert_info_t client_cert;
+    avs_crypto_certificate_chain_info_t client_cert;
 
     /**
      * Private key matching #client_cert to use for authenticating with the
      * peer. This field is optional and can be left zero-initialized, unless
      * #client_cert is also specified. If used, it shall be initialized using
-     * one of the <c>avs_crypto_client_key_info_from_*</c> helper functions.
+     * one of the <c>avs_crypto_private_key_info_from_*</c> helper functions.
      */
-    avs_crypto_client_key_info_t client_key;
+    avs_crypto_private_key_info_t client_key;
 } avs_net_certificate_info_t;
 
 typedef struct {

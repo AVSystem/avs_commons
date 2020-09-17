@@ -25,17 +25,23 @@ VISIBILITY_PRIVATE_HEADER_BEGIN
 // NOTE: <openssl/ssl.h> could not be included here. See the note about OpenSSL
 // in avs_openssl_data_loader.c for details (and think about circular
 // dependencies with VISIBILITY_PRIVATE_HEADER_BEGIN macros).
-avs_error_t
-_avs_crypto_openssl_load_ca_certs(X509_STORE *store,
-                                  const avs_crypto_trusted_cert_info_t *info);
+
 avs_error_t _avs_crypto_openssl_load_crls(
         X509_STORE *store, const avs_crypto_cert_revocation_list_info_t *info);
+
 avs_error_t
 _avs_crypto_openssl_load_client_key(EVP_PKEY **out_key,
-                                    const avs_crypto_client_key_info_t *info);
-avs_error_t
-_avs_crypto_openssl_load_client_cert(X509 **out_cert,
-                                     const avs_crypto_client_cert_info_t *info);
+                                    const avs_crypto_private_key_info_t *info);
+
+typedef avs_error_t avs_crypto_ossl_object_load_t(void *obj, void *arg);
+
+avs_error_t _avs_crypto_openssl_load_client_certs(
+        const avs_crypto_certificate_chain_info_t *info,
+        avs_crypto_ossl_object_load_t *load_cb,
+        void *cb_arg);
+
+avs_error_t _avs_crypto_openssl_load_ca_certs(
+        X509_STORE *store, const avs_crypto_certificate_chain_info_t *info);
 
 VISIBILITY_PRIVATE_HEADER_END
 #endif // NET_OPENSSL_DATA_LOADER_H

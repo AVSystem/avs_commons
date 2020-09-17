@@ -191,7 +191,7 @@ convert_subject(mbedtls_asn1_named_data **out_mbedtls_subject,
 
 avs_error_t
 avs_crypto_pki_csr_create(avs_crypto_prng_ctx_t *prng_ctx,
-                          const avs_crypto_client_key_info_t *private_key_info,
+                          const avs_crypto_private_key_info_t *private_key_info,
                           const char *md_name,
                           const avs_crypto_pki_x509_name_entry_t subject[],
                           void *out_der_csr,
@@ -299,16 +299,17 @@ static avs_time_real_t convert_x509_time(const mbedtls_x509_time *x509_time) {
     };
 }
 
-avs_time_real_t avs_crypto_client_cert_expiration_date(
-        const avs_crypto_client_cert_info_t *cert_info) {
+avs_time_real_t avs_crypto_certificate_expiration_date(
+        const avs_crypto_certificate_chain_info_t *cert_info) {
     mbedtls_x509_crt *cert = NULL;
-    if (avs_is_err(_avs_crypto_mbedtls_load_client_cert(&cert, cert_info))) {
+    if (avs_is_err(_avs_crypto_mbedtls_load_certs(&cert, cert_info))) {
         assert(!cert);
         return AVS_TIME_REAL_INVALID;
     }
 
-    if (!cert || cert->next) {
-        LOG(ERROR, _("Wrong number of certificates loaded, expected 1"));
+    assert(cert);
+    if (!cert->version) {
+        LOG(ERROR, _("No valid certificate loaded"));
         return AVS_TIME_REAL_INVALID;
     }
 
@@ -445,7 +446,7 @@ pkcs7_x509_set_parse(AVS_LIST(avs_crypto_security_info_union_t) **tail_ptr_ptr,
 }
 
 static avs_error_t pkcs7_signed_data_parse(
-        AVS_LIST(avs_crypto_trusted_cert_info_t) *out_certs,
+        AVS_LIST(avs_crypto_certificate_chain_info_t) *out_certs,
         AVS_LIST(avs_crypto_cert_revocation_list_info_t) *out_crls,
         unsigned char **p,
         const unsigned char *end) {
@@ -522,7 +523,7 @@ static avs_error_t pkcs7_signed_data_parse(
                                 (AVS_LIST(avs_crypto_security_info_union_t) *
                                          *) &out_certs,
                                 p, certificates_end, len,
-                                AVS_CRYPTO_SECURITY_INFO_TRUSTED_CERT)))) {
+                                AVS_CRYPTO_SECURITY_INFO_CERTIFICATE_CHAIN)))) {
             return err;
         }
         if ((len >= 0 && *p != certificates_end)
@@ -581,7 +582,7 @@ malformed:
 }
 
 static avs_error_t pkcs7_content_info_parse(
-        AVS_LIST(avs_crypto_trusted_cert_info_t) *out_certs,
+        AVS_LIST(avs_crypto_certificate_chain_info_t) *out_certs,
         AVS_LIST(avs_crypto_cert_revocation_list_info_t) *out_crls,
         unsigned char **p,
         const unsigned char *end) {
@@ -644,7 +645,7 @@ malformed:
 }
 
 avs_error_t avs_crypto_parse_pkcs7_certs_only(
-        AVS_LIST(avs_crypto_trusted_cert_info_t) *out_certs,
+        AVS_LIST(avs_crypto_certificate_chain_info_t) *out_certs,
         AVS_LIST(avs_crypto_cert_revocation_list_info_t) *out_crls,
         const void *buffer,
         size_t buffer_size) {

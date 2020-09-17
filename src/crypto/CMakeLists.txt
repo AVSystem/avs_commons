@@ -14,6 +14,7 @@
 
 set(AVS_CRYPTO_PUBLIC_HEADERS
     "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/avs_crypto_pki.h"
+    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/avs_crypto_pki_compat.h"
     "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/avs_prng.h")
 
 set(AVS_CRYPTO_COMMON_SOURCES
@@ -80,6 +81,9 @@ if(WITH_OPENSSL)
                 ${AVS_CRYPTO_PUBLIC_HEADERS}
                 ${AVS_CRYPTO_OPENSSL_SOURCES})
     target_link_libraries(avs_crypto_openssl PUBLIC avs_crypto_core OpenSSL::Crypto)
+    if(WITH_PKI AND WITH_AVS_STREAM_FILE)
+        target_link_libraries(avs_crypto_openssl PUBLIC avs_stream)
+    endif()
 
     avs_add_test(NAME avs_crypto_openssl
                  LIBS avs_crypto_openssl OpenSSL::SSL

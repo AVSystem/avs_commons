@@ -65,9 +65,9 @@ typedef struct {
 /**
  * This struct is for internal use only and should not be filled manually. One
  * should construct appropriate instances of:
- * - @ref avs_crypto_trusted_cert_info_t,
- * - @ref avs_crypto_client_cert_info_t,
- * - @ref avs_crypto_client_key_info_t
+ * - @ref avs_crypto_certificate_chain_info_t,
+ * - @ref avs_crypto_private_key_info_t
+ * - @ref avs_crypto_cert_revocation_list_info_t
  * using methods declared below.
  */
 struct avs_crypto_security_info_union_struct {
@@ -82,95 +82,101 @@ struct avs_crypto_security_info_union_struct {
     } info;
 };
 
-typedef struct avs_crypto_trusted_cert_info_struct {
+typedef struct avs_crypto_certificate_chain_info_struct {
     avs_crypto_security_info_union_t desc;
-} avs_crypto_trusted_cert_info_t;
+} avs_crypto_certificate_chain_info_t;
 
-AVS_STATIC_ASSERT(sizeof(avs_crypto_trusted_cert_info_t)
+AVS_STATIC_ASSERT(sizeof(avs_crypto_certificate_chain_info_t)
                           == sizeof(avs_crypto_security_info_union_t),
-                  trusted_cert_info_equivalent_to_union);
+                  certificate_chain_info_equivalent_to_union);
 
 /**
- * Creates CA chain descriptor used later on to load CA chain from file @p
- * filename.
+ * Creates a certificate chain descriptor used later on to load a certificate
+ * chain from file @p filename.
  *
  * NOTE: File loading is conducted by using: fopen(), fread(), ftell() and
  * fclose(), thus the platform shall implement them. On embededd platforms it
- * may be preferable to use @ref avs_crypto_trusted_cert_info_from_buffer()
+ * may be preferable to use @ref avs_crypto_certificate_chain_info_from_buffer()
  * instead.
  *
- * @param filename  File from which the CA chain shall be loaded.
+ * @param filename  File from which the certificate chain shall be loaded.
  */
-avs_crypto_trusted_cert_info_t
-avs_crypto_trusted_cert_info_from_file(const char *filename);
+avs_crypto_certificate_chain_info_t
+avs_crypto_certificate_chain_info_from_file(const char *filename);
 
 /**
- * Creates CA chain descriptor used later on to load CA chain from specified @p
- * path. The loading procedure attempts to treat each file as CA certificate,
- * attempts to load, and fails only if no CA certificate could be loaded.
+ * Creates a certificate chain descriptor used later on to load a certificate
+ * chain from specified @p path. The loading procedure attempts to treat each
+ * file as a certificate, attempts to load, and fails only if no certificates
+ * could be loaded.
  *
  * NOTE: File loading and discovery is conducted by using: fopen(), fseek(),
  * fread(), ftell(), fclose(), opendir(), readdir(), closedir() and stat(), thus
  * the platform shall implement them. On embededd platforms it may be preferable
- * to use @ref avs_crypto_trusted_cert_info_from_buffer() instead.
+ * to use @ref avs_crypto_certificate_chain_info_from_buffer() instead.
  *
- * @param path  Path from which the CA chain shall be loaded.
+ * NOTE: Loading client certificates (as opposed to trust stores) from paths is
+ * not supported for the OpenSSL backend.
+ *
+ * @param path  Path from which the certificate chain shall be loaded.
  *
  * WARNING: accepted file formats are backend-specific.
  */
-avs_crypto_trusted_cert_info_t
-avs_crypto_trusted_cert_info_from_path(const char *path);
+avs_crypto_certificate_chain_info_t
+avs_crypto_certificate_chain_info_from_path(const char *path);
 
 /**
- * Creates CA chain descriptor used later on to load CA chain from memory
- * @p buffer.
+ * Creates a certificate chain descriptor used later on to load a certificate
+ * chain from memory @p buffer.
  *
  * The data is copied during @ref avs_net_ssl_socket_create or
  * @ref avs_net_dtls_socket_create, and the user-provided buffer may be freed
  * afterwards.
  *
- * @param buffer        Buffer where loaded CA chain is stored.
+ * @param buffer        Buffer where loaded certificate chain is stored.
  * @param buffer_size   Size in bytes of the buffer.
  */
-avs_crypto_trusted_cert_info_t
-avs_crypto_trusted_cert_info_from_buffer(const void *buffer,
-                                         size_t buffer_size);
+avs_crypto_certificate_chain_info_t
+avs_crypto_certificate_chain_info_from_buffer(const void *buffer,
+                                              size_t buffer_size);
 
 /**
- * Creates CA chain descriptor used later on to load CA chain from an array of
- * existing CA chains.
+ * Creates a certificate chain descriptor used later on to load a certificate
+ * chain from an array of existing certificate chains.
  *
  * The data is copied during @ref avs_net_ssl_socket_create or
  * @ref avs_net_dtls_socket_create, and the array may be freed afterwards.
  *
- * @param array_ptr           Pointer to an array of trusted certificate chains.
+ * @param array_ptr           Pointer to an array of certificate chains.
  * @param array_element_count Number of elements in the @p array_ptr array.
  */
-avs_crypto_trusted_cert_info_t avs_crypto_trusted_cert_info_from_array(
-        const avs_crypto_trusted_cert_info_t *array_ptr,
+avs_crypto_certificate_chain_info_t
+avs_crypto_certificate_chain_info_from_array(
+        const avs_crypto_certificate_chain_info_t *array_ptr,
         size_t array_element_count);
 
 /**
- * Copies any valid CA chain to a newly allocated array.
+ * Copies any valid certificate chain to a newly allocated array.
  *
- * Any arrays or lists in @p trusted_cert_info are flattened, and empty entries
- * are skipped, so that the resulting array will contain only "from_file",
- * "from_path" or "from_buffer" entries. Any resources used by the source
- * (file paths and buffers) are copied as well, so the original entries can be
- * freed - although filesystem-based entries are not loaded into memory, so the
- * actual files need to stay in the filesystem.
+ * Any arrays or lists in @p certificate_chain_info are flattened, and empty
+ * entries are skipped, so that the resulting array will contain only
+ * "from_file", "from_path" or "from_buffer" entries. Any resources used by the
+ * source (file paths and buffers) are copied as well, so the original entries
+ * can be freed - although filesystem-based entries are not loaded into memory,
+ * so the actual files need to stay in the filesystem.
  *
  * The resulting array is allocated in such a way that a single @ref avs_free
  * call is sufficient to free the whole array and all associated resources.
  *
- * @param out_array         Pointer to a variable that, on entry, shall be a
- *                          NULL pointer, and on exit will be set to a pointer
- *                          to the newly allocated array.
+ * @param out_array              Pointer to a variable that, on entry, shall be
+ *                               a NULL pointer, and on exit will be set to a
+ *                               pointer to the newly allocated array.
  *
- * @param out_element_count Pointer to a variable that on success, will be
- *                          populated with the number of elements in the array.
+ * @param out_element_count      Pointer to a variable that on success, will be
+ *                               populated with the number of elements in the
+ *                               array.
  *
- * @param trusted_cert_info CA chain information to copy.
+ * @param certificate_chain_info Certificate chain information to copy.
  *
  * @returns AVS_OK for success, avs_errno(AVS_ENOMEM) for an out-of-memory
  *          condition, or avs_errno(AVS_EINVAL) if invalid arguments have been
@@ -179,10 +185,10 @@ avs_crypto_trusted_cert_info_t avs_crypto_trusted_cert_info_from_array(
  * NOTE: If the input contains no non-empty entries, <c>*out_array</c> will stay
  * a NULL pointer. This is not an error.
  */
-avs_error_t avs_crypto_trusted_cert_info_copy_as_array(
-        avs_crypto_trusted_cert_info_t **out_array,
+avs_error_t avs_crypto_certificate_chain_info_copy_as_array(
+        avs_crypto_certificate_chain_info_t **out_array,
         size_t *out_element_count,
-        avs_crypto_trusted_cert_info_t trusted_cert_info);
+        avs_crypto_certificate_chain_info_t certificate_chain_info);
 
 typedef struct {
     avs_crypto_security_info_union_t desc;
@@ -276,38 +282,38 @@ avs_error_t avs_crypto_cert_revocation_list_info_copy_as_array(
 
 #ifdef AVS_COMMONS_WITH_AVS_LIST
 /**
- * Creates CA chain descriptor used later on to load CA chain from a list of
- * existing CA chains.
+ * Creates a certificate chain descriptor used later on to load a certificate
+ * chain from a list of existing certificate chains.
  *
  * The data is copied during @ref avs_net_ssl_socket_create or
  * @ref avs_net_dtls_socket_create, and the list may be freed afterwards.
  *
- * @param array_ptr           Pointer to an array of trusted certificate chains.
+ * @param array_ptr           Pointer to an array of certificate chains.
  * @param array_element_count Number of elements in the @p array_ptr array.
  */
-avs_crypto_trusted_cert_info_t avs_crypto_trusted_cert_info_from_list(
-        AVS_LIST(avs_crypto_trusted_cert_info_t) list);
+avs_crypto_certificate_chain_info_t avs_crypto_certificate_chain_info_from_list(
+        AVS_LIST(avs_crypto_certificate_chain_info_t) list);
 
 /**
- * Copies any valid CA chain to a newly allocated list.
+ * Copies any valid certificate chain to a newly allocated list.
  *
- * Any arrays or lists in @p trusted_cert_info are flattened, and empty entries
- * are skipped, so that the resulting list will contain only "from_file",
- * "from_path" or "from_buffer" entries. Any resources used by the source
- * (file paths and buffers) are copied as well, so the original entries can be
- * freed - although filesystem-based entries are not loaded into memory, so the
- * actual files need to stay in the filesystem.
+ * Any arrays or lists in @p certificate_chain_info are flattened, and empty
+ * entries are skipped, so that the resulting list will contain only
+ * "from_file", "from_path" or "from_buffer" entries. Any resources used by the
+ * source (file paths and buffers) are copied as well, so the original entries
+ * can be freed - although filesystem-based entries are not loaded into memory,
+ * so the actual files need to stay in the filesystem.
  *
  * The list entries are allocated in such a way that calling
  * @ref AVS_LIST_DELETE also frees any associated buffers. To free the entire
  * list with all the associated resources, an <c>AVS_LIST_CLEAR(out_list);</c>
  * statement is sufficient.
  *
- * @param out_list          Pointer to a variable that, on entry, shall be a
- *                          NULL pointer, and on exit will be set to a pointer
- *                          to the head of the newly created list.
+ * @param out_list               Pointer to a variable that, on entry, shall be
+ *                               a NULL pointer, and on exit will be set to a
+ *                               pointer to the head of the newly created list.
  *
- * @param trusted_cert_info CA chain information to copy.
+ * @param certificate_chain_info Certificate chain information to copy.
  *
  * @returns AVS_OK for success, avs_errno(AVS_ENOMEM) for an out-of-memory
  *          condition, or avs_errno(AVS_EINVAL) if invalid arguments have been
@@ -316,13 +322,13 @@ avs_crypto_trusted_cert_info_t avs_crypto_trusted_cert_info_from_list(
  * NOTE: If the input contains no non-empty entries, <c>*out_list</c> will stay
  * a NULL pointer. This is not an error.
  */
-avs_error_t avs_crypto_trusted_cert_info_copy_as_list(
-        AVS_LIST(avs_crypto_trusted_cert_info_t) *out_list,
-        avs_crypto_trusted_cert_info_t trusted_cert_info);
+avs_error_t avs_crypto_certificate_chain_info_copy_as_list(
+        AVS_LIST(avs_crypto_certificate_chain_info_t) *out_list,
+        avs_crypto_certificate_chain_info_t certificate_chain_info);
 
 /**
  * Creates certificate revocation list descriptor used later on to load
- * certificate revocation lists from a list of existing CA chains.
+ * certificate revocation lists from a list of existing certificate chains.
  *
  * The data is copied during @ref avs_net_ssl_socket_create or
  * @ref avs_net_dtls_socket_create, and the list may be freed afterwards.
@@ -371,7 +377,7 @@ avs_error_t avs_crypto_cert_revocation_list_info_copy_as_list(
 
 typedef struct {
     avs_crypto_security_info_union_t desc;
-} avs_crypto_client_key_info_t;
+} avs_crypto_private_key_info_t;
 
 /**
  * Creates private key descriptor used later on to load private key from
@@ -380,9 +386,9 @@ typedef struct {
  * @param filename  Name of the file to be loaded.
  * @param password  Optional password if present, or NULL.
  */
-avs_crypto_client_key_info_t
-avs_crypto_client_key_info_from_file(const char *filename,
-                                     const char *password);
+avs_crypto_private_key_info_t
+avs_crypto_private_key_info_from_file(const char *filename,
+                                      const char *password);
 
 /**
  * Creates private key descriptor used later on to load private key from
@@ -392,31 +398,8 @@ avs_crypto_client_key_info_from_file(const char *filename,
  * @param buffer_size Size of the buffer contents in bytes.
  * @param password    Optional password if present, or NULL.
  */
-avs_crypto_client_key_info_t avs_crypto_client_key_info_from_buffer(
+avs_crypto_private_key_info_t avs_crypto_private_key_info_from_buffer(
         const void *buffer, size_t buffer_size, const char *password);
-
-typedef struct {
-    avs_crypto_security_info_union_t desc;
-} avs_crypto_client_cert_info_t;
-
-/**
- * Creates client certificate descriptor used later on to load client
- * certificate from file @p filename.
- *
- * @param filename  Name of the file to be loaded.
- */
-avs_crypto_client_cert_info_t
-avs_crypto_client_cert_info_from_file(const char *filename);
-
-/**
- * Creates client certificate descriptor used later on to load client
- * certificate from buffer @p buffer.
- *
- * @param buffer      Buffer in which certificate is stored.
- * @param buffer_size Size of the buffer contents in bytes.
- */
-avs_crypto_client_cert_info_t
-avs_crypto_client_cert_info_from_buffer(const void *buffer, size_t buffer_size);
 
 #ifdef AVS_COMMONS_WITH_AVS_CRYPTO_ADVANCED_FEATURES
 
@@ -688,8 +671,8 @@ typedef struct {
  *
  * @param private_key_info   Private key for which the certificate shall be
  *                           generated. A structure created using either
- *                           @ref avs_crypto_client_key_info_from_file or
- *                           @ref avs_crypto_client_key_info_from_buffer shall
+ *                           @ref avs_crypto_private_key_info_from_file or
+ *                           @ref avs_crypto_private_key_info_from_buffer shall
  *                           be passed.
  *
  * @param md_name            Name of the digest algorithm to be used when
@@ -716,7 +699,7 @@ typedef struct {
  */
 avs_error_t
 avs_crypto_pki_csr_create(avs_crypto_prng_ctx_t *prng_ctx,
-                          const avs_crypto_client_key_info_t *private_key_info,
+                          const avs_crypto_private_key_info_t *private_key_info,
                           const char *md_name,
                           const avs_crypto_pki_x509_name_entry_t subject[],
                           void *out_der_csr,
@@ -724,17 +707,17 @@ avs_crypto_pki_csr_create(avs_crypto_prng_ctx_t *prng_ctx,
 
 /**
  * Retrieves the expiration date (i.e., the value of the "NotAfter" field) of
- * an X.509 certificate given as @ref avs_crypto_client_cert_info_t.
+ * an X.509 certificate given as @ref avs_crypto_certificate_chain_info_t.
  *
  * @param cert_info Reference to a certificate to examine. Note that if the
- *                  given input contains more than one certificate, it is
- *                  treated as an error.
+ *                  given input contains more than one certificate, only the
+ *                  first one is examined.
  *
  * @returns Certificate expiration date, or @ref AVS_TIME_REAL_INVALID in case
  *          of any error.
  */
-avs_time_real_t avs_crypto_client_cert_expiration_date(
-        const avs_crypto_client_cert_info_t *cert_info);
+avs_time_real_t avs_crypto_certificate_expiration_date(
+        const avs_crypto_certificate_chain_info_t *cert_info);
 
 #    ifdef AVS_COMMONS_WITH_AVS_LIST
 /**
@@ -751,7 +734,7 @@ avs_time_real_t avs_crypto_client_cert_expiration_date(
  *
  * @param out_certs   Pointer to a variable that, on entry, shall be a NULL
  *                    pointer, and on exit will be set to a pointer to the head
- *                    of the newly created list of trusted certificates.
+ *                    of the newly created list of certificates.
  *
  * @param out_crls    Pointer to a variable that, on entry, shall be a NULL
  *                    pointer, and on exit will be set to a pointer to the head
@@ -764,7 +747,7 @@ avs_time_real_t avs_crypto_client_cert_expiration_date(
  * @returns AVS_OK on success, or an error code on error.
  */
 avs_error_t avs_crypto_parse_pkcs7_certs_only(
-        AVS_LIST(avs_crypto_trusted_cert_info_t) *out_certs,
+        AVS_LIST(avs_crypto_certificate_chain_info_t) *out_certs,
         AVS_LIST(avs_crypto_cert_revocation_list_info_t) *out_crls,
         const void *buffer,
         size_t buffer_size);

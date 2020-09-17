@@ -1250,7 +1250,7 @@ configure_ssl_certs(ssl_socket_certs_t *certs,
 
     if (cert_info->server_cert_validation) {
         avs_error_t err;
-        if (avs_is_err((err = _avs_crypto_mbedtls_load_ca_certs(
+        if (avs_is_err((err = _avs_crypto_mbedtls_load_certs(
                                 &certs->ca_cert, &cert_info->trusted_certs)))) {
             LOG(ERROR, _("could not load CA chain"));
             return err;
@@ -1287,7 +1287,7 @@ configure_ssl_certs(ssl_socket_certs_t *certs,
     if (cert_info->client_cert.desc.source != AVS_CRYPTO_DATA_SOURCE_EMPTY) {
         avs_error_t err;
         if (avs_is_err(
-                    (err = _avs_crypto_mbedtls_load_client_cert(
+                    (err = _avs_crypto_mbedtls_load_certs(
                              &certs->client_cert, &cert_info->client_cert)))) {
             LOG(ERROR, _("could not load client certificate"));
             return err;

@@ -20,7 +20,7 @@
 #include <avsystem/commons/avs_crypto_pki.h>
 
 void assert_trust_store_loadable(
-        const avs_crypto_trusted_cert_info_t *certs,
+        const avs_crypto_certificate_chain_info_t *certs,
         const avs_crypto_cert_revocation_list_info_t *crls);
 
 #endif // AVS_COMMONS_CRYPTO_TEST_PKI_H

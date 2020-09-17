@@ -14,6 +14,12 @@
  * limitations under the License.
  */
 
+/**
+ * @file avs_net_pki_compat.h
+ *
+ * Aliases for compatibility with avs_commons 4.2 and earlier.
+ */
+
 #ifndef AVS_COMMONS_NET_PKI_COMPAT_H
 #define AVS_COMMONS_NET_PKI_COMPAT_H
 
@@ -23,23 +29,24 @@
 extern "C" {
 #endif
 
-typedef avs_crypto_client_cert_info_t avs_net_client_cert_info_t;
-typedef avs_crypto_client_key_info_t avs_net_client_key_info_t;
+typedef avs_crypto_certificate_chain_info_t avs_net_client_cert_info_t;
+typedef avs_crypto_private_key_info_t avs_net_client_key_info_t;
 typedef avs_crypto_security_info_union_t avs_net_security_info_union_t;
-typedef avs_crypto_trusted_cert_info_t avs_net_trusted_cert_info_t;
+typedef avs_crypto_certificate_chain_info_t avs_net_trusted_cert_info_t;
 
 #define avs_net_client_cert_info_from_buffer \
-    avs_crypto_client_cert_info_from_buffer
-#define avs_net_client_cert_info_from_file avs_crypto_client_cert_info_from_file
+    avs_crypto_certificate_chain_info_from_buffer
+#define avs_net_client_cert_info_from_file \
+    avs_crypto_certificate_chain_info_from_file
 #define avs_net_client_key_info_from_buffer \
-    avs_crypto_client_key_info_from_buffer
-#define avs_net_client_key_info_from_file avs_crypto_client_key_info_from_file
+    avs_crypto_private_key_info_from_buffer
+#define avs_net_client_key_info_from_file avs_crypto_private_key_info_from_file
 #define avs_net_trusted_cert_info_from_buffer \
-    avs_crypto_trusted_cert_info_from_buffer
+    avs_crypto_certificate_chain_info_from_buffer
 #define avs_net_trusted_cert_info_from_file \
-    avs_crypto_trusted_cert_info_from_file
+    avs_crypto_certificate_chain_info_from_file
 #define avs_net_trusted_cert_info_from_path \
-    avs_crypto_trusted_cert_info_from_path
+    avs_crypto_certificate_chain_info_from_path
 
 #ifdef __cplusplus
 }

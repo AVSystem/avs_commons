@@ -989,6 +989,28 @@ static bool is_session_resumed(ssl_socket_t *socket) {
 }
 
 #    ifdef AVS_COMMONS_WITH_AVS_CRYPTO_PKI
+typedef struct {
+    SSL_CTX *ctx;
+    bool client_cert_loaded;
+} load_cert_ctx_t;
+
+static avs_error_t load_cert(void *cert_, void *ctx_) {
+    X509 *cert = (X509 *) cert_;
+    load_cert_ctx_t *ctx = (load_cert_ctx_t *) ctx_;
+    long result;
+    if (!ctx->client_cert_loaded) {
+        result = SSL_CTX_use_certificate(ctx->ctx, cert);
+    } else {
+        result = SSL_CTX_add1_chain_cert(ctx->ctx, cert);
+    }
+    if (result != 1) {
+        log_openssl_error();
+        return avs_errno(AVS_EPROTO);
+    }
+    ctx->client_cert_loaded = true;
+    return AVS_OK;
+}
+
 static avs_error_t
 configure_ssl_certs(ssl_socket_t *socket,
                     const avs_net_certificate_info_t *cert_info) {
@@ -1039,18 +1061,12 @@ configure_ssl_certs(ssl_socket_t *socket,
     }
 
     if (cert_info->client_cert.desc.source != AVS_CRYPTO_DATA_SOURCE_EMPTY) {
-        X509 *client_cert = NULL;
         avs_error_t err =
-                _avs_crypto_openssl_load_client_cert(&client_cert,
-                                                     &cert_info->client_cert);
-        if (avs_is_ok(err)) {
-            assert(client_cert);
-            if (SSL_CTX_use_certificate(socket->ctx, client_cert) != 1) {
-                log_openssl_error();
-                err = avs_errno(AVS_EPROTO);
-            }
-            X509_free(client_cert);
-        }
+                _avs_crypto_openssl_load_client_certs(&cert_info->client_cert,
+                                                      load_cert,
+                                                      &(load_cert_ctx_t) {
+                                                          .ctx = socket->ctx
+                                                      });
         if (avs_is_err(err)) {
             LOG(ERROR, _("could not load client certificate"));
             return err;
