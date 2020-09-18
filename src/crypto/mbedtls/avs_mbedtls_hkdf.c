@@ -20,7 +20,10 @@
         && defined(AVS_COMMONS_WITH_AVS_CRYPTO_ADVANCED_FEATURES) \
         && defined(AVS_COMMONS_WITH_MBEDTLS)
 
+#    include <avsystem/commons/avs_errno.h>
 #    include <avsystem/commons/avs_hkdf.h>
+
+#    include "../avs_global.h"
 
 #    include <mbedtls/hkdf.h>
 
@@ -41,6 +44,10 @@ int avs_crypto_hkdf_sha_256(const unsigned char *salt,
     assert(ikm && ikm_len);
     assert(!info_len || info);
     assert(out_okm && inout_okm_len);
+
+    if (avs_is_err(_avs_crypto_ensure_global_state())) {
+        return -1;
+    }
 
     const mbedtls_md_info_t *md = mbedtls_md_info_from_type(MBEDTLS_MD_SHA256);
     if (!md) {

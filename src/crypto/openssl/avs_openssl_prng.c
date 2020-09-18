@@ -18,11 +18,14 @@
 
 #if defined(AVS_COMMONS_WITH_AVS_CRYPTO) && defined(AVS_COMMONS_WITH_OPENSSL)
 
+#    include <avsystem/commons/avs_errno.h>
 #    include <avsystem/commons/avs_memory.h>
 
 #    include <openssl/rand.h>
 
 #    include "avs_openssl_prng.h"
+
+#    include "../avs_global.h"
 
 #    define MODULE_NAME avs_crypto_prng
 #    include <avs_x_log_config.h>
@@ -58,7 +61,8 @@ int _avs_crypto_prng_reseed_if_needed(avs_crypto_prng_ctx_t *ctx) {
 
 avs_crypto_prng_ctx_t *avs_crypto_prng_new(avs_prng_entropy_callback_t seed_cb,
                                            void *user_ptr) {
-    if (reseed_if_needed(seed_cb, user_ptr)) {
+    if (avs_is_err(_avs_crypto_ensure_global_state())
+            || reseed_if_needed(seed_cb, user_ptr)) {
         return NULL;
     }
 

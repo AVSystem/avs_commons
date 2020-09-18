@@ -30,11 +30,14 @@
 #    include "avs_openssl_common.h"
 #    include "avs_openssl_data_loader.h"
 
+#    include "../avs_global.h"
+
 #    include <assert.h>
 #    include <stdio.h>
 #    include <stdlib.h>
 #    include <string.h>
 
+#    include <avsystem/commons/avs_errno.h>
 #    include <avsystem/commons/avs_utils.h>
 
 #    ifdef AVS_COMMONS_STREAM_WITH_FILE

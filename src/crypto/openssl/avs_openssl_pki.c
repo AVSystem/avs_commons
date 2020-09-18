@@ -34,10 +34,13 @@
 #    include <avs_commons_poison.h>
 
 #    include <avsystem/commons/avs_crypto_pki.h>
+#    include <avsystem/commons/avs_errno.h>
 
 #    include "avs_openssl_common.h"
 #    include "avs_openssl_data_loader.h"
 #    include "avs_openssl_prng.h"
+
+#    include "../avs_global.h"
 
 #    define MODULE_NAME avs_crypto_pki
 #    include <avs_x_log_config.h>
@@ -73,6 +76,12 @@ avs_error_t avs_crypto_pki_ec_gen(avs_crypto_prng_ctx_t *prng_ctx,
                                   size_t *inout_der_secret_key_size) {
     assert(inout_der_secret_key_size);
     assert(!*inout_der_secret_key_size || out_der_secret_key);
+
+    avs_error_t err = _avs_crypto_ensure_global_state();
+    if (avs_is_err(err)) {
+        return err;
+    }
+
     if (!prng_ctx || _avs_crypto_prng_reseed_if_needed(prng_ctx)) {
         LOG(ERROR, _("PRNG context not specified or invalid"));
         return avs_errno(AVS_EINVAL);
@@ -84,8 +93,6 @@ avs_error_t avs_crypto_pki_ec_gen(avs_crypto_prng_ctx_t *prng_ctx,
         LOG(ERROR, _("specified ECP group is invalid or not supported"));
         return avs_errno(AVS_ENOTSUP);
     }
-
-    avs_error_t err = AVS_OK;
 
     EC_KEY *ec_key = EC_KEY_new();
     if (!ec_key) {
@@ -170,6 +177,11 @@ avs_crypto_pki_csr_create(avs_crypto_prng_ctx_t *prng_ctx,
                           size_t *inout_der_csr_size) {
     (void) prng_ctx;
 
+    avs_error_t err = _avs_crypto_ensure_global_state();
+    if (avs_is_err(err)) {
+        return err;
+    }
+
     X509_REQ *req = X509_REQ_new();
     if (!req) {
         LOG(ERROR, _("X509_REQ_new() failed"));
@@ -177,7 +189,7 @@ avs_crypto_pki_csr_create(avs_crypto_prng_ctx_t *prng_ctx,
     }
 
     X509_NAME *x509_name = NULL;
-    avs_error_t err = convert_subject(&x509_name, subject);
+    err = convert_subject(&x509_name, subject);
     if (avs_is_ok(err)) {
         if (!X509_REQ_set_subject_name(req, x509_name)) {
             log_openssl_error();
@@ -263,6 +275,9 @@ static avs_error_t load_first_cert(void *cert_, void *out_cert_ptr_) {
 
 avs_time_real_t avs_crypto_certificate_expiration_date(
         const avs_crypto_certificate_chain_info_t *cert_info) {
+    if (avs_is_err(_avs_crypto_ensure_global_state())) {
+        return AVS_TIME_REAL_INVALID;
+    }
     avs_time_real_t result = AVS_TIME_REAL_INVALID;
     X509 *cert = NULL;
     if (avs_is_err(_avs_crypto_openssl_load_client_certs(
@@ -354,6 +369,11 @@ avs_error_t avs_crypto_parse_pkcs7_certs_only(
         AVS_LIST(avs_crypto_cert_revocation_list_info_t) *out_crls,
         const void *buffer,
         size_t buffer_size) {
+    avs_error_t err = _avs_crypto_ensure_global_state();
+    if (avs_is_err(err)) {
+        return err;
+    }
+
     if (!out_certs || *out_certs || !out_crls || *out_crls) {
         return avs_errno(AVS_EINVAL);
     }
@@ -369,7 +389,7 @@ avs_error_t avs_crypto_parse_pkcs7_certs_only(
         return avs_errno(AVS_EPROTO);
     }
 
-    avs_error_t err = avs_errno(AVS_EPROTO);
+    err = avs_errno(AVS_EPROTO);
     if (OBJ_obj2nid(p7->type) != NID_pkcs7_signed) {
         LOG(ERROR, _("CMS Type for PKCS#7 certs-only MUST be SignedData"));
         goto finish;

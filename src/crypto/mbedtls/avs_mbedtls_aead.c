@@ -21,10 +21,12 @@
         && defined(AVS_COMMONS_WITH_MBEDTLS)
 
 #    include <avsystem/commons/avs_aead.h>
+#    include <avsystem/commons/avs_errno.h>
 
 #    include <mbedtls/ccm.h>
 
 #    include "../avs_crypto_utils.h"
+#    include "../avs_global.h"
 
 #    define MODULE_NAME avs_crypto_aead
 #    include <avs_x_log_config.h>
@@ -49,7 +51,8 @@ int avs_crypto_aead_aes_ccm_encrypt(const unsigned char *key,
     assert(tag);
     assert(!input_len || output);
 
-    if (!_avs_crypto_aead_parameters_valid(key_len, iv_len, tag_len)) {
+    if (avs_is_err(_avs_crypto_ensure_global_state())
+            || !_avs_crypto_aead_parameters_valid(key_len, iv_len, tag_len)) {
         return -1;
     }
 
@@ -87,7 +90,8 @@ int avs_crypto_aead_aes_ccm_decrypt(const unsigned char *key,
     assert(tag);
     assert(!input_len || output);
 
-    if (!_avs_crypto_aead_parameters_valid(key_len, iv_len, tag_len)) {
+    if (avs_is_err(_avs_crypto_ensure_global_state())
+            || !_avs_crypto_aead_parameters_valid(key_len, iv_len, tag_len)) {
         return -1;
     }
 

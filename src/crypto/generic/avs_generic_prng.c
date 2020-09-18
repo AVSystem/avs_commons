@@ -19,10 +19,13 @@
 #if defined(AVS_COMMONS_WITH_AVS_CRYPTO) \
         && (defined(WITHOUT_SSL) || defined(AVS_COMMONS_WITH_TINYDTLS))
 
+#    include <avsystem/commons/avs_errno.h>
 #    include <avsystem/commons/avs_memory.h>
 #    include <avsystem/commons/avs_prng.h>
 #    include <avsystem/commons/avs_time.h>
 #    include <avsystem/commons/avs_utils.h>
+
+#    include "../avs_global.h"
 
 #    define MODULE_NAME avs_crypto_prng
 #    include <avs_x_log_config.h>
@@ -48,6 +51,11 @@ seed_callback(unsigned char *out_buf, size_t out_buf_len, void *user_ptr) {
 
 avs_crypto_prng_ctx_t *avs_crypto_prng_new(avs_prng_entropy_callback_t seed_cb,
                                            void *user_ptr) {
+    avs_error_t err = _avs_crypto_ensure_global_state();
+    if (avs_is_err(err)) {
+        return NULL;
+    }
+
     avs_crypto_prng_ctx_t *ctx =
             (avs_crypto_prng_ctx_t *) avs_malloc(sizeof(avs_crypto_prng_ctx_t));
 

@@ -18,6 +18,8 @@ set(AVS_CRYPTO_PUBLIC_HEADERS
     "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/avs_prng.h")
 
 set(AVS_CRYPTO_COMMON_SOURCES
+    avs_global.c
+    avs_global.h
     avs_crypto_utils.c
     avs_crypto_utils.h)
 
@@ -65,7 +67,8 @@ if(WITH_OPENSSL)
         openssl/avs_openssl_hkdf.c
         openssl/avs_openssl_pki.c
         openssl/avs_openssl_prng.c
-        openssl/avs_openssl_prng.h)
+        openssl/avs_openssl_prng.h
+        openssl/avs_openssl.c)
 
     set(AVS_CRYPTO_OPENSSL_TEST_SOURCES
         ${AVS_CRYPTO_TEST_SOURCES}
@@ -100,7 +103,8 @@ if(WITH_MBEDTLS)
         mbedtls/avs_mbedtls_hkdf.c
         mbedtls/avs_mbedtls_pki.c
         mbedtls/avs_mbedtls_prng.c
-        mbedtls/avs_mbedtls_prng.h)
+        mbedtls/avs_mbedtls_prng.h
+        mbedtls/avs_mbedtls.c)
 
     set(AVS_CRYPTO_MBEDTLS_TEST_SOURCES
         ${AVS_CRYPTO_MBEDTLS_SOURCES}
