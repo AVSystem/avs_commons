@@ -1355,13 +1355,6 @@ void _avs_net_cleanup_global_ssl_state(void) {
 }
 
 avs_error_t _avs_net_initialize_global_ssl_state(void) {
-    LOG(TRACE, _("OpenSSL initialization"));
-
-    SSL_library_init();
-#    ifdef AVS_LOG_WITH_TRACE
-    SSL_load_error_strings();
-#    endif
-    OpenSSL_add_all_algorithms();
     if (avs_bio_init()) {
         LOG(WARNING, _("avs_bio_init error"));
         return avs_errno(AVS_ENOMEM);

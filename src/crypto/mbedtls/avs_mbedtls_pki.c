@@ -43,6 +43,8 @@
 #    include "avs_mbedtls_data_loader.h"
 #    include "avs_mbedtls_prng.h"
 
+#    include "../avs_global.h"
+
 #    define MODULE_NAME avs_crypto_pki
 #    include <avs_x_log_config.h>
 
@@ -89,6 +91,12 @@ avs_error_t avs_crypto_pki_ec_gen(avs_crypto_prng_ctx_t *prng_ctx,
                                   size_t *inout_der_secret_key_size) {
     assert(inout_der_secret_key_size);
     assert(!*inout_der_secret_key_size || out_der_secret_key);
+
+    avs_error_t err = _avs_crypto_ensure_global_state();
+    if (avs_is_err(err)) {
+        return err;
+    }
+
     if (!prng_ctx) {
         LOG(ERROR, _("PRNG context not specified"));
         return avs_errno(AVS_EINVAL);
@@ -116,9 +124,8 @@ avs_error_t avs_crypto_pki_ec_gen(avs_crypto_prng_ctx_t *prng_ctx,
     mbedtls_asn1_buf ecp_group_oid_buf = {
         .tag = MBEDTLS_ASN1_OID
     };
-    avs_error_t err =
-            validate_and_cast_asn1_oid(ecp_group_oid, &ecp_group_oid_buf.p,
-                                       &ecp_group_oid_buf.len);
+    err = validate_and_cast_asn1_oid(ecp_group_oid, &ecp_group_oid_buf.p,
+                                     &ecp_group_oid_buf.len);
     if (avs_is_err(err)) {
         return err;
     }
@@ -198,6 +205,12 @@ avs_crypto_pki_csr_create(avs_crypto_prng_ctx_t *prng_ctx,
                           size_t *inout_der_csr_size) {
     assert(inout_der_csr_size);
     assert(!*inout_der_csr_size || out_der_csr);
+
+    avs_error_t err = _avs_crypto_ensure_global_state();
+    if (avs_is_err(err)) {
+        return err;
+    }
+
     const mbedtls_md_info_t *md_info = mbedtls_md_info_from_string(md_name);
     if (!md_info) {
         LOG(ERROR, _("Mbed TLS does not have MD info for ") "%s", md_name);
@@ -211,7 +224,7 @@ avs_crypto_pki_csr_create(avs_crypto_prng_ctx_t *prng_ctx,
 
     mbedtls_pk_context *private_key = NULL;
 
-    avs_error_t err = convert_subject(&csr_ctx.subject, subject);
+    err = convert_subject(&csr_ctx.subject, subject);
     if (avs_is_ok(err)
             && avs_is_ok((err = _avs_crypto_mbedtls_load_client_key(
                                   &private_key, private_key_info)))) {
@@ -301,6 +314,10 @@ static avs_time_real_t convert_x509_time(const mbedtls_x509_time *x509_time) {
 
 avs_time_real_t avs_crypto_certificate_expiration_date(
         const avs_crypto_certificate_chain_info_t *cert_info) {
+    if (avs_is_err(_avs_crypto_ensure_global_state())) {
+        return AVS_TIME_REAL_INVALID;
+    }
+
     mbedtls_x509_crt *cert = NULL;
     if (avs_is_err(_avs_crypto_mbedtls_load_certs(&cert, cert_info))) {
         assert(!cert);
@@ -649,13 +666,18 @@ avs_error_t avs_crypto_parse_pkcs7_certs_only(
         AVS_LIST(avs_crypto_cert_revocation_list_info_t) *out_crls,
         const void *buffer,
         size_t buffer_size) {
+    avs_error_t err = _avs_crypto_ensure_global_state();
+    if (avs_is_err(err)) {
+        return err;
+    }
+
     if (!out_certs || *out_certs || !out_crls || *out_crls) {
         return avs_errno(AVS_EINVAL);
     }
     unsigned char *bufptr =
             (unsigned char *) (intptr_t) (const unsigned char *) buffer;
-    avs_error_t err = pkcs7_content_info_parse(out_certs, out_crls, &bufptr,
-                                               bufptr + buffer_size);
+    err = pkcs7_content_info_parse(out_certs, out_crls, &bufptr,
+                                   bufptr + buffer_size);
     if (avs_is_err(err)) {
         AVS_LIST_CLEAR(out_certs);
         AVS_LIST_CLEAR(out_crls);

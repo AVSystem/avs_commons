@@ -24,13 +24,16 @@
         && defined(AVS_COMMONS_WITH_AVS_CRYPTO_ADVANCED_FEATURES) \
         && defined(AVS_COMMONS_WITH_OPENSSL)
 
-
 #    include <openssl/evp.h>
 #    include <openssl/kdf.h>
 
 #    include <avs_commons_poison.h>
 
+#    include <avsystem/commons/avs_errno.h>
 #    include <avsystem/commons/avs_hkdf.h>
+#    include <avsystem/commons/avs_log.h>
+
+#    include "../avs_global.h"
 
 VISIBILITY_SOURCE_BEGIN
 
@@ -48,6 +51,10 @@ int avs_crypto_hkdf_sha_256(const unsigned char *salt,
     assert(ikm && ikm_len);
     assert(!info_len || info);
     assert(out_okm && inout_okm_len);
+
+    if (avs_is_err(_avs_crypto_ensure_global_state())) {
+        return -1;
+    }
 
     EVP_PKEY_CTX *pctx = EVP_PKEY_CTX_new_id(EVP_PKEY_HKDF, NULL);
     if (!pctx) {
