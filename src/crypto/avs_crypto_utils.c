@@ -184,16 +184,26 @@ calculate_data_buffer_size(size_t *out_buffer_size,
         return AVS_OK;
 #    endif // AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
     case AVS_CRYPTO_DATA_SOURCE_FILE:
-        *out_buffer_size = desc->info.file.filename
-                                   ? strlen(desc->info.file.filename) + 1
-                                   : 0;
+        *out_buffer_size = 0;
+        if (desc->info.file.filename) {
+            *out_buffer_size += strlen(desc->info.file.filename) + 1;
+        }
+        if (desc->info.file.password) {
+            *out_buffer_size += strlen(desc->info.file.password) + 1;
+        }
         return AVS_OK;
     case AVS_CRYPTO_DATA_SOURCE_PATH:
         *out_buffer_size =
                 desc->info.path.path ? strlen(desc->info.path.path) + 1 : 0;
         return AVS_OK;
     case AVS_CRYPTO_DATA_SOURCE_BUFFER:
-        *out_buffer_size = desc->info.buffer.buffer_size;
+        *out_buffer_size = 0;
+        if (desc->info.buffer.buffer) {
+            *out_buffer_size += desc->info.buffer.buffer_size;
+        }
+        if (desc->info.buffer.password) {
+            *out_buffer_size += strlen(desc->info.buffer.password) + 1;
+        }
         return AVS_OK;
     default:
         return avs_errno(AVS_EINVAL);
@@ -230,48 +240,57 @@ static void copy_element(avs_crypto_security_info_union_t *dest,
                          char **data_buffer_ptr,
                          const avs_crypto_security_info_union_t *src) {
     *dest = *src;
-    const void *source = NULL;
-    size_t size = 0;
     switch (src->source) {
     case AVS_CRYPTO_DATA_SOURCE_EMPTY:
         break;
 #    ifdef AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
     case AVS_CRYPTO_DATA_SOURCE_ENGINE:
         if (src->info.engine.query) {
-            source = src->info.engine.query;
-            size = strlen(src->info.engine.query);
+            size_t size = strlen(src->info.engine.query) + 1;
             dest->info.engine.query = *data_buffer_ptr;
+            memcpy(*data_buffer_ptr, src->info.engine.query, size);
+            *data_buffer_ptr += size;
         }
         break;
 #    endif // AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
     case AVS_CRYPTO_DATA_SOURCE_FILE:
         if (src->info.file.filename) {
-            source = src->info.file.filename;
-            size = strlen(src->info.file.filename) + 1;
+            size_t size = strlen(src->info.file.filename) + 1;
             dest->info.file.filename = *data_buffer_ptr;
+            memcpy(*data_buffer_ptr, src->info.file.filename, size);
+            *data_buffer_ptr += size;
+        }
+        if (src->info.file.password) {
+            size_t size = strlen(src->info.file.password) + 1;
+            dest->info.file.password = *data_buffer_ptr;
+            memcpy(*data_buffer_ptr, src->info.file.password, size);
+            *data_buffer_ptr += size;
         }
         break;
     case AVS_CRYPTO_DATA_SOURCE_PATH:
         if (src->info.path.path) {
-            source = src->info.path.path;
-            size = strlen(src->info.path.path) + 1;
+            size_t size = strlen(src->info.path.path) + 1;
             dest->info.path.path = *data_buffer_ptr;
+            memcpy(*data_buffer_ptr, src->info.path.path, size);
+            *data_buffer_ptr += size;
         }
         break;
     case AVS_CRYPTO_DATA_SOURCE_BUFFER:
         if (src->info.buffer.buffer) {
-            source = src->info.buffer.buffer;
-            size = src->info.buffer.buffer_size;
+            size_t size = src->info.buffer.buffer_size;
             dest->info.buffer.buffer = *data_buffer_ptr;
+            memcpy(*data_buffer_ptr, src->info.buffer.buffer, size);
+            *data_buffer_ptr += size;
+        }
+        if (src->info.buffer.password) {
+            size_t size = strlen(src->info.buffer.password) + 1;
+            dest->info.buffer.password = *data_buffer_ptr;
+            memcpy(*data_buffer_ptr, src->info.buffer.password, size);
+            *data_buffer_ptr += size;
         }
         break;
     default:
         AVS_UNREACHABLE("Invalid data source type");
-    }
-    assert(!size || source);
-    if (size) {
-        memcpy(*data_buffer_ptr, source, size);
-        *data_buffer_ptr += size;
     }
 }
 
