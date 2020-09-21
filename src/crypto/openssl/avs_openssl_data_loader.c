@@ -253,15 +253,7 @@ static avs_error_t load_crl_from_file(X509_STORE *store, const char *file) {
 static avs_error_t load_crls_from_engine(X509_STORE *store, const char *query) {
     (void) store;
     (void) query;
-    LOG(ERROR, _("Loading CRLs from engine not supported"));
-    return avs_errno(AVS_ENOTSUP);
-}
-
-static avs_error_t load_certs_from_engine(X509_STORE *store,
-                                          const char *query) {
-    (void) store;
-    (void) query;
-    LOG(ERROR, _("Loading certs from engine not supported"));
+    LOG(ERROR, "Loading CRLs from HSM not supported");
     return avs_errno(AVS_ENOTSUP);
 }
 #    endif // AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
@@ -415,6 +407,23 @@ static EVP_PKEY *load_private_key_from_engine(const char *query) {
 }
 #    endif // AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
 
+static avs_error_t load_certs_from_file(const char *filename,
+                                        avs_crypto_ossl_object_load_t *load_cb,
+                                        void *cb_arg) {
+    assert(filename);
+    LOG(DEBUG, _("certificate <file=") "%s" _(">: going to load"), filename);
+    void *buffer = NULL;
+    size_t buffer_size = 0;
+    avs_error_t err;
+    (void) (avs_is_err((err = load_file_into_buffer(&buffer, &buffer_size,
+                                                    filename)))
+            || avs_is_err((err = load_pem_or_der_objects(
+                                   buffer, buffer_size, NULL,
+                                   AVS_OSSL_OBJECT_X509, load_cb, cb_arg))));
+    avs_free(buffer);
+    return err;
+}
+
 static avs_error_t load_key_from_file(EVP_PKEY **out_key,
                                       const char *filename,
                                       const char *password) {
@@ -517,22 +526,35 @@ load_cert_tree(const avs_crypto_certificate_chain_info_t *info,
     }
 }
 
-static avs_error_t load_certs_from_file(const char *filename,
-                                        avs_crypto_ossl_object_load_t *load_cb,
-                                        void *cb_arg) {
-    assert(filename);
-    LOG(DEBUG, _("certificate <file=") "%s" _(">: going to load"), filename);
-    void *buffer = NULL;
-    size_t buffer_size = 0;
-    avs_error_t err;
-    (void) (avs_is_err((err = load_file_into_buffer(&buffer, &buffer_size,
-                                                    filename)))
-            || avs_is_err((err = load_pem_or_der_objects(
-                                   buffer, buffer_size, NULL,
-                                   AVS_OSSL_OBJECT_X509, load_cb, cb_arg))));
-    avs_free(buffer);
+#    ifdef AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
+static avs_error_t
+load_certs_from_engine(const char *cert_id,
+                       avs_crypto_ossl_object_load_t *load_cb,
+                       void *cb_arg) {
+    assert(cert_id);
+
+    LOG(ERROR, _("certificate <cert_id=") "%s" _(">: going to load"), cert_id);
+
+    struct {
+        const char *cert_id;
+        X509 *cert;
+    } params = {
+        .cert_id = cert_id,
+        .cert = NULL
+    };
+
+    if (!ENGINE_ctrl_cmd(_avs_global_engine, "LOAD_CERT_CTRL", 0, &params, NULL,
+                         1)
+            || params.cert == NULL) {
+        return avs_errno(AVS_EIO);
+    }
+
+    avs_error_t err = load_cb((void *) params.cert, cb_arg);
+    X509_free(params.cert);
+
     return err;
 }
+#    endif // AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
 
 typedef struct {
     avs_crypto_ossl_object_load_t *cb;
@@ -544,6 +566,16 @@ pass_cert_to_cb(void *cb_info_,
                 const avs_crypto_certificate_chain_info_t *info) {
     load_certs_cb_info_t *cb_info = (load_certs_cb_info_t *) cb_info_;
     switch (info->desc.source) {
+#    ifdef AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
+    case AVS_CRYPTO_DATA_SOURCE_ENGINE:
+        if (!info->desc.info.engine.query) {
+            LOG(ERROR, _("attempt to load certificate chain from engine, but "
+                         "query=NULL"));
+            return avs_errno(AVS_EINVAL);
+        }
+        return load_certs_from_engine(info->desc.info.engine.query, cb_info->cb,
+                                      cb_info->cb_arg);
+#    endif // AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
     case AVS_CRYPTO_DATA_SOURCE_FILE:
         if (!info->desc.info.file.filename) {
             LOG(ERROR, _("attempt to load certificate chain from file, but "
@@ -597,16 +629,6 @@ static avs_error_t
 load_certs_to_store(void *store,
                     const avs_crypto_certificate_chain_info_t *info) {
     switch (info->desc.source) {
-#    ifdef AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
-    case AVS_CRYPTO_DATA_SOURCE_ENGINE:
-        if (!info->desc.info.engine.query) {
-            LOG(ERROR, _("attempt to load certificate chain from engine, but "
-                         "query=NULL"));
-            return avs_errno(AVS_EINVAL);
-        }
-        return load_certs_from_engine((X509_STORE *) store,
-                                      info->desc.info.engine.query);
-#    endif // AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
     case AVS_CRYPTO_DATA_SOURCE_PATH:
         if (!info->desc.info.path.path) {
             LOG(ERROR, _("attempt to load certificate chain from path, but "
