@@ -56,6 +56,40 @@ avs_net_security_info_from_certificates(avs_net_certificate_info_t info) {
 }
 #    endif // AVS_COMMONS_WITH_AVS_CRYPTO
 
+avs_net_socket_dane_tlsa_record_t *
+avs_net_socket_dane_tlsa_array_copy(avs_net_socket_dane_tlsa_array_t in_array) {
+    if (!in_array.array_element_count) {
+        return NULL;
+    }
+    size_t association_data_size = 0;
+    for (size_t i = 0; i < in_array.array_element_count; ++i) {
+        association_data_size += in_array.array_ptr[i].association_data_size;
+    }
+    avs_net_socket_dane_tlsa_record_t *result =
+            (avs_net_socket_dane_tlsa_record_t *) avs_malloc(
+                    in_array.array_element_count * sizeof(*result)
+                    + association_data_size);
+    if (!result) {
+        LOG(ERROR, _("out of memory"));
+        return NULL;
+    }
+    char *association_data_buf = (char *) &result[in_array.array_element_count];
+    const char *const association_data_buf_end =
+            association_data_buf + association_data_size;
+    for (size_t i = 0; i < in_array.array_element_count; ++i) {
+        result[i] = in_array.array_ptr[i];
+        if (in_array.array_ptr[i].association_data_size) {
+            memcpy(association_data_buf, in_array.array_ptr[i].association_data,
+                   in_array.array_ptr[i].association_data_size);
+            result[i].association_data = association_data_buf;
+            association_data_buf += in_array.array_ptr[i].association_data_size;
+            assert(association_data_buf <= association_data_buf_end);
+            (void) association_data_buf_end;
+        }
+    }
+    return result;
+}
+
 #    ifdef AVS_COMMONS_NET_WITH_SOCKET_LOG
 static int _avs_net_socket_debug = 0;
 

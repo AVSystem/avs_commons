@@ -639,6 +639,27 @@ typedef struct {
     size_t array_element_count;
 } avs_net_socket_dane_tlsa_array_t;
 
+/**
+ * Copies a DANE TLSA record array.
+ *
+ * Association data buffers are copied as well, so the original entries can be
+ * freed.
+ *
+ * The resulting array is allocated in such a way that a single @ref avs_free
+ * call is sufficient to free the whole array and all associated resources.
+ *
+ * The element count is not returned, as it will always be equal to
+ * <c>input.array_element_count</c>.
+ *
+ * @param in_array DANE TLSA record array to copy.
+ *
+ * @returns Pointer to the copied array for success, or <c>NULL</c> if the input
+ *          array has zero elements (NOTE: this is not an error) or if an
+ *          out-of-memory condition occurred.
+ */
+avs_net_socket_dane_tlsa_record_t *
+avs_net_socket_dane_tlsa_array_copy(avs_net_socket_dane_tlsa_array_t in_array);
+
 typedef union {
     avs_time_duration_t recv_timeout;
     avs_net_socket_state_t state;
