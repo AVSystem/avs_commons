@@ -84,9 +84,10 @@ avs_net_socket_dane_tlsa_array_copy(avs_net_socket_dane_tlsa_array_t in_array) {
             result[i].association_data = association_data_buf;
             association_data_buf += in_array.array_ptr[i].association_data_size;
             assert(association_data_buf <= association_data_buf_end);
-            (void) association_data_buf_end;
         }
     }
+    assert(association_data_buf == association_data_buf_end);
+    (void) association_data_buf_end;
     return result;
 }
 
