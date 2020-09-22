@@ -56,11 +56,26 @@ static avs_error_t outbuf_stream_reset(avs_stream_t *stream) {
     return AVS_OK;
 }
 
+static avs_error_t outbuf_stream_offset(avs_stream_t *stream,
+                                        avs_off_t *out_offset) {
+    size_t offset = avs_stream_outbuf_offset((avs_stream_outbuf_t *) stream);
+    if (offset > LONG_MAX) {
+        return avs_errno(AVS_E2BIG);
+    }
+    *out_offset = (avs_off_t) offset;
+    return AVS_OK;
+}
+
 static const avs_stream_v_table_t outbuf_stream_vtable = {
     .reset = outbuf_stream_reset,
     .write_some = outbuf_stream_write_some,
     .finish_message = outbuf_stream_finish,
-    .extension_list = AVS_STREAM_V_TABLE_NO_EXTENSIONS
+    .extension_list =
+            (const avs_stream_v_table_extension_t[]) {
+                    { AVS_STREAM_V_TABLE_EXTENSION_OFFSET,
+                      &(const avs_stream_v_table_extension_offset_t) {
+                              outbuf_stream_offset } },
+                    AVS_STREAM_V_TABLE_EXTENSION_NULL }
 };
 
 const avs_stream_outbuf_t AVS_STREAM_OUTBUF_STATIC_INITIALIZER = {

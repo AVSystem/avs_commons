@@ -184,6 +184,18 @@ static avs_error_t stream_membuf_close(avs_stream_t *stream_) {
     return AVS_OK;
 }
 
+static avs_error_t stream_membuf_offset(avs_stream_t *stream_,
+                                        avs_off_t *out_offset) {
+    avs_stream_membuf_t *stream = (avs_stream_membuf_t *) stream_;
+    assert(stream->index_read <= stream->index_write);
+    size_t offset = stream->index_write - stream->index_read;
+    if (offset > LONG_MAX) {
+        return avs_errno(AVS_E2BIG);
+    }
+    *out_offset = (avs_off_t) offset;
+    return AVS_OK;
+}
+
 static avs_error_t stream_membuf_ensure_free_bytes(avs_stream_t *stream_,
                                                    size_t additional_size) {
     avs_stream_membuf_t *stream = (avs_stream_membuf_t *) stream_;
@@ -230,6 +242,9 @@ static const avs_stream_v_table_t membuf_stream_vtable = {
     .close = stream_membuf_close,
     .extension_list =
             (const avs_stream_v_table_extension_t[]) {
+                    { AVS_STREAM_V_TABLE_EXTENSION_OFFSET,
+                      &(const avs_stream_v_table_extension_offset_t) {
+                              stream_membuf_offset } },
                     { AVS_STREAM_V_TABLE_EXTENSION_MEMBUF,
                       &(const avs_stream_v_table_extension_membuf_t) {
                               stream_membuf_ensure_free_bytes,
