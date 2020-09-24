@@ -289,28 +289,35 @@ calculate_data_buffer_size(size_t *out_buffer_size,
 
 typedef struct {
     const avs_crypto_security_info_tag_t expected_type;
-    size_t element_count;
-    size_t data_buffer_size;
-} security_info_stats_t;
+    size_t *out_element_count;
+    size_t *out_data_buffer_size;
+} calculate_info_stats_args_t;
 
 static avs_error_t
 calculate_info_stats(const avs_crypto_security_info_union_t *desc,
-                     void *stats_) {
-    security_info_stats_t *stats = (security_info_stats_t *) stats_;
-    if (desc->type != stats->expected_type) {
+                     void *args_) {
+    calculate_info_stats_args_t *args = (calculate_info_stats_args_t *) args_;
+    if (desc->type != args->expected_type) {
         return avs_errno(AVS_EINVAL);
     }
-    ++stats->element_count;
-    size_t element_buffer_size = 0;
-    avs_error_t err = calculate_data_buffer_size(&element_buffer_size, desc);
-    if (avs_is_ok(err)
-            && element_buffer_size >= SIZE_MAX - stats->data_buffer_size) {
-        err = avs_errno(AVS_ENOMEM);
+    if (args->out_element_count) {
+        ++*args->out_element_count;
     }
-    if (avs_is_ok(err)) {
-        stats->data_buffer_size += element_buffer_size;
+    if (args->out_data_buffer_size) {
+        size_t element_buffer_size = 0;
+        avs_error_t err =
+                calculate_data_buffer_size(&element_buffer_size, desc);
+        if (avs_is_ok(err)
+                && element_buffer_size
+                               >= SIZE_MAX - *args->out_data_buffer_size) {
+            err = avs_errno(AVS_ENOMEM);
+        }
+        if (avs_is_err(err)) {
+            return err;
+        }
+        *args->out_data_buffer_size += element_buffer_size;
     }
-    return err;
+    return AVS_OK;
 }
 
 static void copy_element(avs_crypto_security_info_union_t *dest,
@@ -377,25 +384,28 @@ static avs_error_t copy_as_array(avs_crypto_security_info_union_t **out_array,
     if (!out_array || !out_element_count || *out_array) {
         return avs_errno(AVS_EINVAL);
     }
-    security_info_stats_t stats = {
-        .expected_type = tag
-    };
-    avs_error_t err = security_info_iterate(desc, calculate_info_stats, &stats);
+    size_t data_buffer_size = 0;
+    *out_element_count = 0;
+    avs_error_t err =
+            security_info_iterate(desc, calculate_info_stats,
+                                  &(calculate_info_stats_args_t) {
+                                      .expected_type = tag,
+                                      .out_element_count = out_element_count,
+                                      .out_data_buffer_size = &data_buffer_size
+                                  });
     if (avs_is_err(err)) {
         return err;
     }
-    *out_element_count = stats.element_count;
-    if (stats.element_count
-                    > SIZE_MAX / sizeof(avs_crypto_security_info_union_t)
-            || stats.data_buffer_size
+    if (*out_element_count > SIZE_MAX / sizeof(avs_crypto_security_info_union_t)
+            || data_buffer_size
                            > SIZE_MAX
-                                         - stats.element_count
+                                         - *out_element_count
                                                        * sizeof(avs_crypto_security_info_union_t)) {
         return avs_errno(AVS_ENOMEM);
     }
     size_t buffer_size =
-            stats.element_count * sizeof(avs_crypto_security_info_union_t)
-            + stats.data_buffer_size;
+            *out_element_count * sizeof(avs_crypto_security_info_union_t)
+            + data_buffer_size;
     if (buffer_size) {
         if (!(*out_array = (avs_crypto_security_info_union_t *) avs_malloc(
                       buffer_size))) {
@@ -403,7 +413,7 @@ static avs_error_t copy_as_array(avs_crypto_security_info_union_t **out_array,
         }
         array_copy_state_t state = {
             .array_ptr = *out_array,
-            .data_buffer_ptr = (char *) &(*out_array)[stats.element_count]
+            .data_buffer_ptr = (char *) &(*out_array)[*out_element_count]
         };
         err = security_info_iterate(desc, copy_into_array, &state);
         assert(avs_is_ok(err));
@@ -575,23 +585,26 @@ avs_error_t avs_crypto_private_key_info_copy(
             || private_key_info.desc.source == AVS_CRYPTO_DATA_SOURCE_LIST) {
         return avs_errno(AVS_EINVAL);
     }
-    security_info_stats_t stats = {
-        .expected_type = AVS_CRYPTO_SECURITY_INFO_PRIVATE_KEY
-    };
-    avs_error_t err = security_info_iterate(&private_key_info.desc,
-                                            calculate_info_stats, &stats);
+    size_t element_count = 0;
+    size_t data_buffer_size = 0;
+    avs_error_t err = security_info_iterate(
+            &private_key_info.desc, calculate_info_stats,
+            &(calculate_info_stats_args_t) {
+                .expected_type = AVS_CRYPTO_SECURITY_INFO_PRIVATE_KEY,
+                .out_element_count = &element_count,
+                .out_data_buffer_size = &data_buffer_size
+            });
     if (avs_is_err(err)) {
         return err;
     }
-    assert(stats.element_count == 0 || stats.element_count == 1);
+    assert(element_count == 0 || element_count == 1);
     if (!(*out_ptr = (avs_crypto_private_key_info_t *) avs_malloc(
-                  sizeof(avs_crypto_private_key_info_t)
-                  + stats.data_buffer_size))) {
+                  sizeof(avs_crypto_private_key_info_t) + data_buffer_size))) {
         return avs_errno(AVS_ENOMEM);
     }
     char *buffer_ptr = (char *) &(*out_ptr)[1];
     copy_element(&(*out_ptr)->desc, &buffer_ptr, &private_key_info.desc);
-    assert(buffer_ptr == ((char *) &(*out_ptr)[1]) + stats.data_buffer_size);
+    assert(buffer_ptr == ((char *) &(*out_ptr)[1]) + data_buffer_size);
     if ((*out_ptr)->desc.source == AVS_CRYPTO_DATA_SOURCE_EMPTY) {
         // EMPTY entries are allowed to have uninitialized type,
         // to support zero-initialization
