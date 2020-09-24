@@ -172,42 +172,119 @@ security_info_iterate(const avs_crypto_security_info_union_t *desc,
     }
 }
 
+typedef enum {
+    DATA_SOURCE_ELEMENT_END = 0,
+    DATA_SOURCE_ELEMENT_STRING,
+    DATA_SOURCE_ELEMENT_BUFFER
+} avs_crypto_data_source_element_type_t;
+
+typedef struct {
+    avs_crypto_data_source_element_type_t type;
+    size_t offset;
+    size_t size_offset;
+} avs_crypto_data_source_element_t;
+
+const avs_crypto_data_source_element_t *const DATA_SOURCE_DEFINITIONS[] = {
+    [AVS_CRYPTO_DATA_SOURCE_EMPTY] =
+            &(const avs_crypto_data_source_element_t[]) {
+                {
+                    .type = DATA_SOURCE_ELEMENT_END
+                }
+            }[0],
+    [AVS_CRYPTO_DATA_SOURCE_FILE] =
+            &(const avs_crypto_data_source_element_t[]) {
+                {
+                    .type = DATA_SOURCE_ELEMENT_STRING,
+                    .offset = offsetof(avs_crypto_security_info_union_t,
+                                       info.file.filename)
+                },
+                {
+                    .type = DATA_SOURCE_ELEMENT_STRING,
+                    .offset = offsetof(avs_crypto_security_info_union_t,
+                                       info.file.password)
+                },
+                {
+                    .type = DATA_SOURCE_ELEMENT_END
+                }
+            }[0],
+    [AVS_CRYPTO_DATA_SOURCE_PATH] =
+            &(const avs_crypto_data_source_element_t[]) {
+                {
+                    .type = DATA_SOURCE_ELEMENT_STRING,
+                    .offset = offsetof(avs_crypto_security_info_union_t,
+                                       info.path.path)
+                },
+                {
+                    .type = DATA_SOURCE_ELEMENT_END
+                }
+            }[0],
+    [AVS_CRYPTO_DATA_SOURCE_BUFFER] =
+            &(const avs_crypto_data_source_element_t[]) {
+                {
+                    .type = DATA_SOURCE_ELEMENT_BUFFER,
+                    .offset = offsetof(avs_crypto_security_info_union_t,
+                                       info.buffer.buffer),
+                    .size_offset = offsetof(avs_crypto_security_info_union_t,
+                                            info.buffer.buffer_size)
+                },
+                {
+                    .type = DATA_SOURCE_ELEMENT_STRING,
+                    .offset = offsetof(avs_crypto_security_info_union_t,
+                                       info.buffer.password)
+                },
+                {
+                    .type = DATA_SOURCE_ELEMENT_END
+                }
+            }[0]
+#    ifdef AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
+    ,
+    [AVS_CRYPTO_DATA_SOURCE_ENGINE] =
+            &(const avs_crypto_data_source_element_t[]) {
+                {
+                    .type = DATA_SOURCE_ELEMENT_STRING,
+                    .offset = offsetof(avs_crypto_security_info_union_t,
+                                       info.engine.query)
+                },
+                {
+                    .type = DATA_SOURCE_ELEMENT_END
+                }
+            }[0]
+#    endif // AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
+};
+
 static avs_error_t
 calculate_data_buffer_size(size_t *out_buffer_size,
                            const avs_crypto_security_info_union_t *desc) {
-    switch (desc->source) {
-#    ifdef AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
-    case AVS_CRYPTO_DATA_SOURCE_ENGINE:
-        *out_buffer_size = desc->info.engine.query
-                                   ? strlen(desc->info.engine.query) + 1
-                                   : 0;
-        return AVS_OK;
-#    endif // AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
-    case AVS_CRYPTO_DATA_SOURCE_FILE:
-        *out_buffer_size = 0;
-        if (desc->info.file.filename) {
-            *out_buffer_size += strlen(desc->info.file.filename) + 1;
-        }
-        if (desc->info.file.password) {
-            *out_buffer_size += strlen(desc->info.file.password) + 1;
-        }
-        return AVS_OK;
-    case AVS_CRYPTO_DATA_SOURCE_PATH:
-        *out_buffer_size =
-                desc->info.path.path ? strlen(desc->info.path.path) + 1 : 0;
-        return AVS_OK;
-    case AVS_CRYPTO_DATA_SOURCE_BUFFER:
-        *out_buffer_size = 0;
-        if (desc->info.buffer.buffer) {
-            *out_buffer_size += desc->info.buffer.buffer_size;
-        }
-        if (desc->info.buffer.password) {
-            *out_buffer_size += strlen(desc->info.buffer.password) + 1;
-        }
-        return AVS_OK;
-    default:
+    if ((int) desc->source < 0
+            || (size_t) desc->source > AVS_ARRAY_SIZE(DATA_SOURCE_DEFINITIONS)
+            || !DATA_SOURCE_DEFINITIONS[desc->source]) {
         return avs_errno(AVS_EINVAL);
     }
+    *out_buffer_size = 0;
+    for (const avs_crypto_data_source_element_t *element =
+                 DATA_SOURCE_DEFINITIONS[desc->source];
+         element->type != DATA_SOURCE_ELEMENT_END;
+         ++element) {
+        switch (element->type) {
+        case DATA_SOURCE_ELEMENT_STRING: {
+            const char *str =
+                    *AVS_APPLY_OFFSET(const char *const, desc, element->offset);
+            if (str) {
+                *out_buffer_size += strlen(str) + 1;
+            }
+            break;
+        }
+        case DATA_SOURCE_ELEMENT_BUFFER:
+            if (*AVS_APPLY_OFFSET(const void *const, desc, element->offset)) {
+                *out_buffer_size += *AVS_APPLY_OFFSET(const size_t, desc,
+                                                      element->size_offset);
+            }
+            break;
+        default:
+            AVS_UNREACHABLE("Invalid data source element type");
+        }
+    }
+    return AVS_OK;
 }
 
 typedef struct {
@@ -239,58 +316,45 @@ calculate_info_stats(const avs_crypto_security_info_union_t *desc,
 static void copy_element(avs_crypto_security_info_union_t *dest,
                          char **data_buffer_ptr,
                          const avs_crypto_security_info_union_t *src) {
+    assert(src->source >= 0);
+    assert(src->source < AVS_ARRAY_SIZE(DATA_SOURCE_DEFINITIONS));
+    assert(DATA_SOURCE_DEFINITIONS[src->source]);
+
     *dest = *src;
-    switch (src->source) {
-    case AVS_CRYPTO_DATA_SOURCE_EMPTY:
-        break;
-#    ifdef AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
-    case AVS_CRYPTO_DATA_SOURCE_ENGINE:
-        if (src->info.engine.query) {
-            size_t size = strlen(src->info.engine.query) + 1;
-            dest->info.engine.query = *data_buffer_ptr;
-            memcpy(*data_buffer_ptr, src->info.engine.query, size);
-            *data_buffer_ptr += size;
+    for (const avs_crypto_data_source_element_t *element =
+                 DATA_SOURCE_DEFINITIONS[src->source];
+         element->type != DATA_SOURCE_ELEMENT_END;
+         ++element) {
+        switch (element->type) {
+        case DATA_SOURCE_ELEMENT_STRING: {
+            const char *str =
+                    *AVS_APPLY_OFFSET(const char *const, src, element->offset);
+            if (str) {
+                size_t size = strlen(str) + 1;
+                *AVS_APPLY_OFFSET(const char *, dest, element->offset) =
+                        *data_buffer_ptr;
+                memcpy(*data_buffer_ptr, str, size);
+                *data_buffer_ptr += size;
+            }
+            break;
         }
-        break;
-#    endif // AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
-    case AVS_CRYPTO_DATA_SOURCE_FILE:
-        if (src->info.file.filename) {
-            size_t size = strlen(src->info.file.filename) + 1;
-            dest->info.file.filename = *data_buffer_ptr;
-            memcpy(*data_buffer_ptr, src->info.file.filename, size);
-            *data_buffer_ptr += size;
+        case DATA_SOURCE_ELEMENT_BUFFER: {
+            const void *buffer =
+                    *AVS_APPLY_OFFSET(const void *const, src, element->offset);
+            if (buffer) {
+                size_t size = *AVS_APPLY_OFFSET(const size_t, src,
+                                                element->size_offset);
+                *AVS_APPLY_OFFSET(const void *, dest, element->offset) =
+                        *data_buffer_ptr;
+                memcpy(*data_buffer_ptr, buffer, size);
+                *AVS_APPLY_OFFSET(size_t, dest, element->size_offset) = size;
+                *data_buffer_ptr += size;
+            }
+            break;
         }
-        if (src->info.file.password) {
-            size_t size = strlen(src->info.file.password) + 1;
-            dest->info.file.password = *data_buffer_ptr;
-            memcpy(*data_buffer_ptr, src->info.file.password, size);
-            *data_buffer_ptr += size;
+        default:
+            AVS_UNREACHABLE("Invalid data source element type");
         }
-        break;
-    case AVS_CRYPTO_DATA_SOURCE_PATH:
-        if (src->info.path.path) {
-            size_t size = strlen(src->info.path.path) + 1;
-            dest->info.path.path = *data_buffer_ptr;
-            memcpy(*data_buffer_ptr, src->info.path.path, size);
-            *data_buffer_ptr += size;
-        }
-        break;
-    case AVS_CRYPTO_DATA_SOURCE_BUFFER:
-        if (src->info.buffer.buffer) {
-            size_t size = src->info.buffer.buffer_size;
-            dest->info.buffer.buffer = *data_buffer_ptr;
-            memcpy(*data_buffer_ptr, src->info.buffer.buffer, size);
-            *data_buffer_ptr += size;
-        }
-        if (src->info.buffer.password) {
-            size_t size = strlen(src->info.buffer.password) + 1;
-            dest->info.buffer.password = *data_buffer_ptr;
-            memcpy(*data_buffer_ptr, src->info.buffer.password, size);
-            *data_buffer_ptr += size;
-        }
-        break;
-    default:
-        AVS_UNREACHABLE("Invalid data source type");
     }
 }
 
