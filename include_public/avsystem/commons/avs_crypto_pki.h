@@ -28,6 +28,10 @@
 #    include <avsystem/commons/avs_list.h>
 #endif // AVS_COMMONS_WITH_AVS_LIST
 
+#ifdef AVS_COMMONS_WITH_AVS_PERSISTENCE
+#    include <avsystem/commons/avs_persistence.h>
+#endif // AVS_COMMONS_WITH_AVS_PERSISTENCE
+
 #ifdef __cplusplus
 #    if __cplusplus >= 201103L
 #        include <vector> // used in AVS_CRYPTO_PKI_X509_NAME
@@ -483,6 +487,38 @@ avs_crypto_private_key_info_t avs_crypto_private_key_info_from_buffer(
 avs_error_t avs_crypto_private_key_info_copy(
         avs_crypto_private_key_info_t **out_ptr,
         avs_crypto_private_key_info_t private_key_info);
+
+#ifdef AVS_COMMONS_WITH_AVS_PERSISTENCE
+avs_error_t avs_crypto_certificate_chain_info_persist(
+        avs_persistence_context_t *ctx,
+        avs_crypto_certificate_chain_info_t certificate_chain_info);
+
+avs_error_t avs_crypto_certificate_chain_info_array_persistence(
+        avs_persistence_context_t *ctx,
+        const avs_crypto_certificate_chain_info_t **array_ptr,
+        size_t *element_count_ptr);
+
+avs_error_t avs_crypto_certificate_chain_info_list_persistence(
+        avs_persistence_context_t *ctx,
+        AVS_LIST(avs_crypto_certificate_chain_info_t) *list_ptr);
+
+avs_error_t avs_crypto_cert_revocation_list_info_persist(
+        avs_persistence_context_t *ctx,
+        avs_crypto_cert_revocation_list_info_t crl_info);
+
+avs_error_t avs_crypto_cert_revocation_list_info_array_persistence(
+        avs_persistence_context_t *ctx,
+        const avs_crypto_cert_revocation_list_info_t **array_ptr,
+        size_t *element_count_ptr);
+
+avs_error_t avs_crypto_cert_revocation_list_info_list_persistence(
+        avs_persistence_context_t *ctx,
+        AVS_LIST(avs_crypto_cert_revocation_list_info_t) *list_ptr);
+
+avs_error_t avs_crypto_private_key_info_persistence(
+        avs_persistence_context_t *ctx,
+        avs_crypto_private_key_info_t **private_key_ptr);
+#endif // AVS_COMMONS_WITH_AVS_PERSISTENCE
 
 #ifdef AVS_COMMONS_WITH_AVS_CRYPTO_ADVANCED_FEATURES
 
