@@ -30,8 +30,8 @@ avs_error_t _avs_crypto_openssl_load_crls(
         X509_STORE *store, const avs_crypto_cert_revocation_list_info_t *info);
 
 avs_error_t
-_avs_crypto_openssl_load_client_key(EVP_PKEY **out_key,
-                                    const avs_crypto_private_key_info_t *info);
+_avs_crypto_openssl_load_private_key(EVP_PKEY **out_key,
+                                     const avs_crypto_private_key_info_t *info);
 
 typedef avs_error_t avs_crypto_ossl_object_load_t(void *obj, void *arg);
 

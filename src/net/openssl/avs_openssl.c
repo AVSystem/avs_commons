@@ -1073,7 +1073,7 @@ configure_ssl_certs(ssl_socket_t *socket,
         }
 
         EVP_PKEY *key = NULL;
-        if (avs_is_ok((err = _avs_crypto_openssl_load_client_key(
+        if (avs_is_ok((err = _avs_crypto_openssl_load_private_key(
                                &key, &cert_info->client_key)))) {
             assert(key);
             if (SSL_CTX_use_PrivateKey(socket->ctx, key) != 1) {

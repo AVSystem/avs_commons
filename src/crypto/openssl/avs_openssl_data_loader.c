@@ -29,6 +29,7 @@
 
 #    include "avs_openssl_common.h"
 #    include "avs_openssl_data_loader.h"
+#    include "avs_openssl_global.h"
 
 #    include "../avs_global.h"
 
@@ -248,11 +249,35 @@ static avs_error_t load_crl_from_file(X509_STORE *store, const char *file) {
     return avs_errno(AVS_EPROTO);
 }
 
+#    ifdef AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
+static avs_error_t load_crls_from_engine(X509_STORE *store, const char *query) {
+    (void) store;
+    (void) query;
+    LOG(ERROR, _("Loading CRLs from engine not supported"));
+    return avs_errno(AVS_ENOTSUP);
+}
+
+static avs_error_t load_certs_from_engine(X509 *store, const char *query) {
+    (void) store;
+    (void) query;
+    LOG(ERROR, _("Loading certs from engine not supported"));
+    return avs_errno(AVS_ENOTSUP);
+}
+#    endif // AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
+
 avs_error_t _avs_crypto_openssl_load_crls(
         X509_STORE *store, const avs_crypto_cert_revocation_list_info_t *info) {
     switch (info->desc.source) {
     case AVS_CRYPTO_DATA_SOURCE_EMPTY:
         return AVS_OK;
+#    ifdef AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
+    case AVS_CRYPTO_DATA_SOURCE_ENGINE:
+        if (!info->desc.info.engine.query) {
+            LOG(ERROR, _("attempt to load CRL from engine, but query=NULL"));
+            return avs_errno(AVS_EINVAL);
+        }
+        return load_crls_from_engine(store, info->desc.info.engine.query);
+#    endif // AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
     case AVS_CRYPTO_DATA_SOURCE_FILE:
         if (!info->desc.info.file.filename) {
             LOG(ERROR, _("attempt to load CRL from file, but filename=NULL"));
@@ -369,6 +394,23 @@ static avs_error_t load_key_from_buffer(EVP_PKEY **out_key,
     return err;
 }
 
+#    ifdef AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
+static EVP_PKEY *load_private_key_from_engine(const char *query) {
+    if (!_avs_global_engine || !query || !ENGINE_init(_avs_global_engine)) {
+        LOG(ERROR,
+            _("Cannot load key from the engine - engine uninitialized."));
+        return NULL;
+    }
+
+    EVP_PKEY *pkey =
+            ENGINE_load_private_key(_avs_global_engine, query, NULL, NULL);
+
+    ENGINE_finish(_avs_global_engine);
+
+    return pkey;
+}
+#    endif // AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
+
 static avs_error_t load_key_from_file(EVP_PKEY **out_key,
                                       const char *filename,
                                       const char *password) {
@@ -385,16 +427,24 @@ static avs_error_t load_key_from_file(EVP_PKEY **out_key,
     return err;
 }
 
-avs_error_t
-_avs_crypto_openssl_load_client_key(EVP_PKEY **out_key,
-                                    const avs_crypto_private_key_info_t *info) {
+avs_error_t _avs_crypto_openssl_load_private_key(
+        EVP_PKEY **out_key, const avs_crypto_private_key_info_t *info) {
     assert(out_key && !*out_key);
     switch (info->desc.source) {
+#    ifdef AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
+    case AVS_CRYPTO_DATA_SOURCE_ENGINE:
+        if (!info->desc.info.engine.query) {
+            LOG(ERROR,
+                _("attempt to load private key from engine, but query=NULL"));
+            return avs_errno(AVS_EINVAL);
+        }
+        *out_key = load_private_key_from_engine(info->desc.info.engine.query);
+        return AVS_OK;
+#    endif // AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
     case AVS_CRYPTO_DATA_SOURCE_FILE: {
         if (!info->desc.info.file.filename) {
             LOG(ERROR,
-                _("attempt to load client key from file, but "
-                  "filename=NULL"));
+                _("attempt to load private key from file, but filename=NULL"));
             return avs_errno(AVS_EINVAL);
         }
         return load_key_from_file(out_key, info->desc.info.file.filename,
@@ -403,8 +453,7 @@ _avs_crypto_openssl_load_client_key(EVP_PKEY **out_key,
     case AVS_CRYPTO_DATA_SOURCE_BUFFER: {
         if (!info->desc.info.buffer.buffer) {
             LOG(ERROR,
-                _("attempt to load client key from buffer, but "
-                  "buffer=NULL"));
+                _("attempt to load private key from buffer, but buffer=NULL"));
             return avs_errno(AVS_EINVAL);
         }
         return load_key_from_buffer(out_key, info->desc.info.buffer.buffer,
@@ -541,6 +590,16 @@ static avs_error_t
 load_certs_to_store(void *store,
                     const avs_crypto_certificate_chain_info_t *info) {
     switch (info->desc.source) {
+#    ifdef AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
+    case AVS_CRYPTO_DATA_SOURCE_ENGINE:
+        if (!info->desc.info.engine.query) {
+            LOG(ERROR, _("attempt to load certificate chain from engine, but "
+                         "query=NULL"));
+            return avs_errno(AVS_EINVAL);
+        }
+        return load_certs_from_engine((X509_STORE *) store,
+                                      info->desc.info.engine.query);
+#    endif // AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
     case AVS_CRYPTO_DATA_SOURCE_PATH:
         if (!info->desc.info.path.path) {
             LOG(ERROR, _("attempt to load certificate chain from path, but "

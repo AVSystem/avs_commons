@@ -200,7 +200,7 @@ avs_crypto_pki_csr_create(avs_crypto_prng_ctx_t *prng_ctx,
 
     EVP_PKEY *key = NULL;
     if (avs_is_ok(err)
-            && avs_is_ok((err = _avs_crypto_openssl_load_client_key(
+            && avs_is_ok((err = _avs_crypto_openssl_load_private_key(
                                   &key, private_key_info)))) {
         assert(key);
         if (!X509_REQ_set_pubkey(req, key)) {
