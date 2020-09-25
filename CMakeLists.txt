@@ -460,7 +460,7 @@ find_package(OpenSSL)
 option(WITH_OPENSSL "Enable OpenSSL" ${OPENSSL_FOUND})
 set(AVS_COMMONS_WITH_OPENSSL ${WITH_OPENSSL})
 
-option(WITH_OPENSSL_PKCS11_ENGINE "Enable OpenSSL engine" ${OPENSSL_FOUND})
+cmake_dependent_option(WITH_OPENSSL_PKCS11_ENGINE "Enable support for OpenSSL pkcs11 engine" OFF WITH_OPENSSL OFF)
 set(AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE ${WITH_OPENSSL_PKCS11_ENGINE})
 
 set(MBEDTLS_ROOT_DIR "" CACHE STRING "mbed TLS installation directory")

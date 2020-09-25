@@ -257,7 +257,8 @@ static avs_error_t load_crls_from_engine(X509_STORE *store, const char *query) {
     return avs_errno(AVS_ENOTSUP);
 }
 
-static avs_error_t load_certs_from_engine(X509 *store, const char *query) {
+static avs_error_t load_certs_from_engine(X509_STORE *store,
+                                          const char *query) {
     (void) store;
     (void) query;
     LOG(ERROR, _("Loading certs from engine not supported"));
