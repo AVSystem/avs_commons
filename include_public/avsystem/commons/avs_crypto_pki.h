@@ -495,7 +495,7 @@ avs_error_t avs_crypto_certificate_chain_info_persist(
 
 avs_error_t avs_crypto_certificate_chain_info_array_persistence(
         avs_persistence_context_t *ctx,
-        const avs_crypto_certificate_chain_info_t **array_ptr,
+        avs_crypto_certificate_chain_info_t **array_ptr,
         size_t *element_count_ptr);
 
 avs_error_t avs_crypto_certificate_chain_info_list_persistence(
@@ -508,7 +508,7 @@ avs_error_t avs_crypto_cert_revocation_list_info_persist(
 
 avs_error_t avs_crypto_cert_revocation_list_info_array_persistence(
         avs_persistence_context_t *ctx,
-        const avs_crypto_cert_revocation_list_info_t **array_ptr,
+        avs_crypto_cert_revocation_list_info_t **array_ptr,
         size_t *element_count_ptr);
 
 avs_error_t avs_crypto_cert_revocation_list_info_list_persistence(

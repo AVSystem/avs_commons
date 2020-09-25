@@ -998,11 +998,11 @@ security_info_array_allocator(avs_crypto_security_info_union_t **out_desc_ptr,
     return AVS_OK;
 }
 
-static avs_error_t security_info_array_persistence(
-        avs_persistence_context_t *ctx,
-        const avs_crypto_security_info_union_t **array_ptr,
-        size_t *element_count_ptr,
-        avs_crypto_security_info_tag_t tag) {
+static avs_error_t
+security_info_array_persistence(avs_persistence_context_t *ctx,
+                                avs_crypto_security_info_union_t **array_ptr,
+                                size_t *element_count_ptr,
+                                avs_crypto_security_info_tag_t tag) {
     if (avs_persistence_direction(ctx) == AVS_PERSISTENCE_STORE) {
         return security_info_persist(
                 ctx,
@@ -1110,10 +1110,10 @@ avs_error_t avs_crypto_certificate_chain_info_persist(
 
 avs_error_t avs_crypto_certificate_chain_info_array_persistence(
         avs_persistence_context_t *ctx,
-        const avs_crypto_certificate_chain_info_t **array_ptr,
+        avs_crypto_certificate_chain_info_t **array_ptr,
         size_t *element_count_ptr) {
     return security_info_array_persistence(
-            ctx, (const avs_crypto_security_info_union_t **) array_ptr,
+            ctx, (avs_crypto_security_info_union_t **) array_ptr,
             element_count_ptr, AVS_CRYPTO_SECURITY_INFO_CERTIFICATE_CHAIN);
 }
 
@@ -1134,10 +1134,10 @@ avs_error_t avs_crypto_cert_revocation_list_info_persist(
 
 avs_error_t avs_crypto_cert_revocation_list_info_array_persistence(
         avs_persistence_context_t *ctx,
-        const avs_crypto_cert_revocation_list_info_t **array_ptr,
+        avs_crypto_cert_revocation_list_info_t **array_ptr,
         size_t *element_count_ptr) {
     return security_info_array_persistence(
-            ctx, (const avs_crypto_security_info_union_t **) array_ptr,
+            ctx, (avs_crypto_security_info_union_t **) array_ptr,
             element_count_ptr, AVS_CRYPTO_SECURITY_INFO_CERT_REVOCATION_LIST);
 }
 
@@ -1166,9 +1166,27 @@ private_key_allocator(avs_crypto_security_info_union_t **out_desc_ptr,
 avs_error_t avs_crypto_private_key_info_persistence(
         avs_persistence_context_t *ctx,
         avs_crypto_private_key_info_t **private_key_ptr) {
-    return security_info_persistence(
-            ctx, (avs_crypto_security_info_union_t **) private_key_ptr,
-            AVS_CRYPTO_SECURITY_INFO_PRIVATE_KEY, private_key_allocator, NULL);
+    avs_persistence_direction_t direction = avs_persistence_direction(ctx);
+    avs_crypto_security_info_union_t *private_key = NULL;
+    if (direction == AVS_PERSISTENCE_STORE) {
+        private_key = &(*private_key_ptr)->desc;
+    }
+    avs_error_t err =
+            security_info_persistence(ctx, &private_key,
+                                      AVS_CRYPTO_SECURITY_INFO_PRIVATE_KEY,
+                                      private_key_allocator, NULL);
+    if (direction == AVS_PERSISTENCE_RESTORE) {
+        if (avs_is_ok(err)) {
+            assert(private_key);
+            *private_key_ptr =
+                    AVS_CONTAINER_OF(private_key, avs_crypto_private_key_info_t,
+                                     desc);
+            assert((void *) private_key == (void *) *private_key_ptr);
+        } else {
+            avs_free(private_key);
+        }
+    }
+    return err;
 }
 #    endif // AVS_COMMONS_WITH_AVS_PERSISTENCE
 
