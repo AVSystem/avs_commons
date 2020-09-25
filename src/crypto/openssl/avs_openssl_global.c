@@ -14,21 +14,22 @@
  * limitations under the License.
  */
 
-#define AVS_SUPPRESS_POISONING
-#include <avs_commons_init.h>
+#ifdef AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
+#    include <openssl/engine.h>
+#endif // AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
 
-#include <openssl/ssl.h>
+#include "avs_openssl_global.h"
 
-#include <avs_commons_poison.h>
-
-#include "../avs_global.h"
+#define MODULE_NAME avs_crypto
+#include <avs_x_log_config.h>
 
 VISIBILITY_SOURCE_BEGIN
 
 #ifdef AVS_COMMONS_WITH_OPENSSL
 
-#    define MODULE_NAME avs_crypto
-#    include <avs_x_log_config.h>
+#    ifdef AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
+ENGINE *_avs_global_engine = NULL;
+#    endif // AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
 
 avs_error_t _avs_crypto_initialize_global_state() {
     LOG(TRACE, _("OpenSSL initialization"));
@@ -39,11 +40,19 @@ avs_error_t _avs_crypto_initialize_global_state() {
 #    endif
     OpenSSL_add_all_algorithms();
 
+#    ifdef AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
+    _avs_global_engine = ENGINE_by_id("pkcs11");
+    if (_avs_global_engine == NULL) {
+        return avs_errno(AVS_ENOTSUP);
+    }
+#    endif // AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
     return AVS_OK;
 }
 
 void _avs_crypto_cleanup_global_state() {
-    return;
+#    ifdef AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
+    ENGINE_free(_avs_global_engine);
+#    endif // AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
 }
 
 #endif // AVS_COMMONS_WITH_OPENSSL

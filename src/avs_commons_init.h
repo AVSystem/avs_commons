@@ -29,7 +29,7 @@
 #    define VISIBILITY_PRIVATE_HEADER_END
 #endif
 
-#if !defined(AVS_UNIT_TESTING) && !defined(AVS_SUPPRESS_POISONING)
+#if !defined(AVS_SUPPRESS_POISONING)
 #    include "avs_commons_poison.h"
 #endif
 

@@ -35,6 +35,12 @@
 extern "C" {
 #endif
 
+#ifdef AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
+typedef struct {
+    const char *query;
+} avs_crypto_security_info_union_internal_engine_t;
+#endif // AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
+
 typedef struct {
     const char *filename;
     const char *password;
@@ -74,7 +80,10 @@ typedef enum {
     AVS_CRYPTO_DATA_SOURCE_PATH,
     AVS_CRYPTO_DATA_SOURCE_BUFFER,
     AVS_CRYPTO_DATA_SOURCE_ARRAY,
-    AVS_CRYPTO_DATA_SOURCE_LIST
+    AVS_CRYPTO_DATA_SOURCE_LIST,
+#ifdef AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
+    AVS_CRYPTO_DATA_SOURCE_ENGINE
+#endif // AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
 } avs_crypto_data_source_t;
 
 /**
@@ -94,6 +103,9 @@ struct avs_crypto_security_info_union_struct {
         avs_crypto_security_info_union_internal_buffer_t buffer;
         avs_crypto_security_info_union_internal_array_t array;
         avs_crypto_security_info_union_internal_list_t list;
+#ifdef AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
+        avs_crypto_security_info_union_internal_engine_t engine;
+#endif // AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
     } info;
 };
 
@@ -105,16 +117,30 @@ AVS_STATIC_ASSERT(sizeof(avs_crypto_certificate_chain_info_t)
                           == sizeof(avs_crypto_security_info_union_t),
                   certificate_chain_info_equivalent_to_union);
 
+#ifdef AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
 /**
- * Creates a certificate chain descriptor used later on to load a certificate
- * chain from file @p filename.
+ * Creates certificate chain descriptor used later on to load certificate from
+ * the engine.
  *
- * NOTE: File loading is conducted by using: fopen(), fread(), ftell() and
- * fclose(), thus the platform shall implement them. On embededd platforms it
- * may be preferable to use @ref avs_crypto_certificate_chain_info_from_buffer()
- * instead.
+ * @param query  A query passed to the engine to get the certs
  *
- * @param filename  File from which the certificate chain shall be loaded.
+ * @returns A config needed to load certificate chain from the engine.
+ */
+avs_crypto_certificate_chain_info_t
+avs_crypto_certificate_chain_info_from_engine(const char *query);
+#endif // AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
+
+/**
+ * Creates a certificate chain descriptor used later on to load a
+ * certificate chain from file @p filename.
+ *
+ * NOTE: File loading is conducted by using: fopen(), fread(), ftell()
+ * and fclose(), thus the platform shall implement them. On embededd
+ * platforms it may be preferable to use @ref
+ * avs_crypto_certificate_chain_info_from_buffer() instead.
+ *
+ * @param filename  File from which the certificate chain shall be
+ * loaded.
  */
 avs_crypto_certificate_chain_info_t
 avs_crypto_certificate_chain_info_from_file(const char *filename);
@@ -393,6 +419,19 @@ avs_error_t avs_crypto_cert_revocation_list_info_copy_as_list(
 typedef struct {
     avs_crypto_security_info_union_t desc;
 } avs_crypto_private_key_info_t;
+
+#ifdef AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
+/**
+ * Creates private key descriptor used later on to load private key from the
+ * engine.
+ *
+ * @param query  A query passed to the engine to get the key
+ *
+ * @returns A config needed to load the client key with from the engine.
+ */
+avs_crypto_private_key_info_t
+avs_crypto_private_key_info_from_engine(const char *query);
+#endif // AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
 
 /**
  * Creates private key descriptor used later on to load private key from

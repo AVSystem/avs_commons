@@ -31,6 +31,18 @@
 
 VISIBILITY_SOURCE_BEGIN
 
+#    ifdef AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
+avs_crypto_certificate_chain_info_t
+avs_crypto_certificate_chain_info_from_engine(const char *query) {
+    avs_crypto_certificate_chain_info_t result;
+    memset(&result, 0, sizeof(result));
+    result.desc.type = AVS_CRYPTO_SECURITY_INFO_CERTIFICATE_CHAIN;
+    result.desc.source = AVS_CRYPTO_DATA_SOURCE_ENGINE;
+    result.desc.info.engine.query = query;
+    return result;
+}
+#    endif // AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
+
 avs_crypto_certificate_chain_info_t
 avs_crypto_certificate_chain_info_from_file(const char *filename) {
     avs_crypto_certificate_chain_info_t result;
@@ -164,6 +176,13 @@ static avs_error_t
 calculate_data_buffer_size(size_t *out_buffer_size,
                            const avs_crypto_security_info_union_t *desc) {
     switch (desc->source) {
+#    ifdef AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
+    case AVS_CRYPTO_DATA_SOURCE_ENGINE:
+        *out_buffer_size = desc->info.engine.query
+                                   ? strlen(desc->info.engine.query) + 1
+                                   : 0;
+        return AVS_OK;
+#    endif // AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
     case AVS_CRYPTO_DATA_SOURCE_FILE:
         *out_buffer_size = desc->info.file.filename
                                    ? strlen(desc->info.file.filename) + 1
@@ -214,6 +233,15 @@ static void copy_element(avs_crypto_security_info_union_t *dest,
     const void *source = NULL;
     size_t size = 0;
     switch (src->source) {
+#    ifdef AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
+    case AVS_CRYPTO_DATA_SOURCE_ENGINE:
+        if (src->info.engine.query) {
+            source = src->info.engine.query;
+            size = strlen(src->info.engine.query);
+            dest->info.engine.query = *data_buffer_ptr;
+        }
+        break;
+#    endif // AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
     case AVS_CRYPTO_DATA_SOURCE_FILE:
         if (src->info.file.filename) {
             source = src->info.file.filename;
@@ -418,6 +446,17 @@ avs_error_t avs_crypto_cert_revocation_list_info_copy_as_list(
     return err;
 }
 #    endif // AVS_COMMONS_WITH_AVS_LIST
+
+#    ifdef AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
+avs_crypto_private_key_info_t
+avs_crypto_private_key_info_from_engine(const char *query) {
+    avs_crypto_private_key_info_t result;
+    result.desc.type = AVS_CRYPTO_SECURITY_INFO_PRIVATE_KEY;
+    result.desc.source = AVS_CRYPTO_DATA_SOURCE_ENGINE;
+    result.desc.info.engine.query = query;
+    return result;
+}
+#    endif // AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
 
 avs_crypto_private_key_info_t
 avs_crypto_private_key_info_from_file(const char *filename,
