@@ -828,6 +828,23 @@ avs_error_t avs_crypto_pki_ec_gen(avs_crypto_prng_ctx_t *prng_ctx,
                                   void *out_der_secret_key,
                                   size_t *inout_der_secret_key_size);
 
+#    ifdef AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
+/**
+ * Generates a random private key (in a form that allows deriving the public key
+ * from it) suitable for use with elliptic curve cryptography, using PKCS11
+ * engine.
+ *
+ * @param token                     Token on which the keys will be generated.
+ *
+ * @param label                     Label for the generated keys.
+ *
+ * @param pin                       Password to the token.
+ */
+avs_error_t avs_crypto_pki_ec_gen_pkcs11(const char *token,
+                                         const char *label,
+                                         const char *pin);
+#    endif // AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
+
 /**
  * Structure representing a type of a Distinguished Name attribute.
  */

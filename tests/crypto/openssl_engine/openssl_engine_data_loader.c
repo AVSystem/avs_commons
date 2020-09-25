@@ -17,8 +17,11 @@
 #define AVS_STREAM_STREAM_FILE_C
 #define _GNU_SOURCE // for mkstemps()
 
+#include <avs_commons_init.h>
+
 #include <avs_commons_posix_init.h>
 
+#include <avsystem/commons/avs_crypto_pki.h>
 #include <avsystem/commons/avs_unit_test.h>
 #include <avsystem/commons/avs_utils.h>
 
@@ -33,6 +36,8 @@
 
 #include "../pki.h"
 
+#include "libp11.h"
+
 #include "src/crypto/avs_global.h"
 #include "src/crypto/openssl/avs_openssl_common.h"
 #include "src/crypto/openssl/avs_openssl_data_loader.h"
@@ -42,11 +47,12 @@
 #include <avs_x_log_config.h>
 
 static char TOKEN[] = "XXXXXX";
-static const char PIN[] = "0001password";
+static char PIN[] = "0001password";
 static char PUBLIC_KEY_PATH[] = "/tmp/public_key_XXXXXX.der";
 static const char *KEY_PAIR_LABEL = "my_key";
 static char OPENSSL_ENGINE_CONF_FILE[] = "/tmp/openssl_engine_XXXXXX.conf";
-static const char *OPENSSL_ENGINE_CONF_STR =
+static char *PKCS11_MODULE_PATH = NULL;
+static const char *OPENSSL_ENGINE_CONF_TEMPLATE =
         "openssl_conf = openssl_init\n"
         ".include /etc/ssl/openssl.cnf\n\n"
         "[openssl_init]\n"
@@ -55,8 +61,9 @@ static const char *OPENSSL_ENGINE_CONF_STR =
         "pkcs11 = pkcs11_section\n\n"
         "[pkcs11_section]\n"
         "engine_id = pkcs11\n"
-        "MODULE_PATH = /usr/lib/softhsm/libsofthsm2.so\n"
+        "MODULE_PATH = %s\n"
         "init = 0;\n";
+static char OPENSSL_ENGINE_CONF_STR[300];
 
 static void system_cleanup(void) {
     char delete_token_command[50];
@@ -73,7 +80,13 @@ static void system_cleanup(void) {
 AVS_UNIT_SUITE_INIT(backend_openssl_engine, verbose) {
     (void) verbose;
 
-    AVS_UNIT_ASSERT_SUCCESS(_avs_crypto_ensure_global_state());
+    PKCS11_MODULE_PATH = getenv("PKCS11_MODULE_PATH");
+    AVS_UNIT_ASSERT_NOT_NULL(PKCS11_MODULE_PATH);
+
+    AVS_UNIT_ASSERT_TRUE(
+            snprintf(OPENSSL_ENGINE_CONF_STR, sizeof(OPENSSL_ENGINE_CONF_STR),
+                     OPENSSL_ENGINE_CONF_TEMPLATE, PKCS11_MODULE_PATH)
+            > 0);
 
     AVS_UNIT_ASSERT_NOT_EQUAL(mkstemps(OPENSSL_ENGINE_CONF_FILE, 5), -1);
     FILE *f = fopen(OPENSSL_ENGINE_CONF_FILE, "w");
@@ -90,9 +103,6 @@ AVS_UNIT_SUITE_INIT(backend_openssl_engine, verbose) {
     AVS_UNIT_ASSERT_TRUE(mkstemp(TOKEN) >= 0);
     unlink(TOKEN);
 
-    printf("%s\n", TOKEN);
-    fflush(NULL);
-
     AVS_UNIT_ASSERT_TRUE(
             avs_simple_snprintf(soft_hsm_command, sizeof(soft_hsm_command),
                                 "softhsm2-util --init-token --free --label %s "
@@ -101,23 +111,24 @@ AVS_UNIT_SUITE_INIT(backend_openssl_engine, verbose) {
             > 0);
     AVS_UNIT_ASSERT_TRUE(
             avs_simple_snprintf(pkcs11_command_1, sizeof(pkcs11_command_1),
-                                "pkcs11-tool --module "
-                                "/usr/lib/softhsm/libsofthsm2.so --token %s "
+                                "pkcs11-tool --module %s --token %s "
                                 "--login --pin %s --keypairgen "
                                 "--key-type rsa:2048 --label %s",
-                                TOKEN, PIN, KEY_PAIR_LABEL)
+                                PKCS11_MODULE_PATH, TOKEN, PIN, KEY_PAIR_LABEL)
             > 0);
     AVS_UNIT_ASSERT_TRUE(
             avs_simple_snprintf(pkcs11_command_2, sizeof(pkcs11_command_2),
-                                "pkcs11-tool --module "
-                                "/usr/lib/softhsm/libsofthsm2.so -r --type "
+                                "pkcs11-tool --module %s -r --type "
                                 "pubkey --token %s --label %s -o %s",
-                                TOKEN, KEY_PAIR_LABEL, PUBLIC_KEY_PATH)
+                                PKCS11_MODULE_PATH, TOKEN, KEY_PAIR_LABEL,
+                                PUBLIC_KEY_PATH)
             > 0);
 
     AVS_UNIT_ASSERT_SUCCESS(system(soft_hsm_command));
     AVS_UNIT_ASSERT_SUCCESS(system(pkcs11_command_1));
     AVS_UNIT_ASSERT_SUCCESS(system(pkcs11_command_2));
+
+    AVS_UNIT_ASSERT_SUCCESS(_avs_crypto_ensure_global_state());
 
     AVS_UNIT_ASSERT_SUCCESS(atexit(system_cleanup));
 }
@@ -141,7 +152,7 @@ static EVP_PKEY *load_pubkey() {
     return public_key;
 }
 
-AVS_UNIT_TEST(backend_openssl_engine, key_loading_from_pkcs11) {
+static void test_engine_key_pair(EVP_PKEY *private_key, EVP_PKEY *public_key) {
     // Text preparation
     unsigned char original_text[256] = "Text to be encrypted.";
     int original_text_len = (int) strlen((const char *) original_text);
@@ -151,7 +162,6 @@ AVS_UNIT_TEST(backend_openssl_engine, key_loading_from_pkcs11) {
     original_text_len = 256;
 
     // Encryption
-    EVP_PKEY *public_key = load_pubkey();
     EVP_PKEY_CTX *encrypt_ctx = EVP_PKEY_CTX_new(public_key, NULL);
     AVS_UNIT_ASSERT_NOT_NULL(encrypt_ctx);
     AVS_UNIT_ASSERT_EQUAL(EVP_PKEY_encrypt_init(encrypt_ctx), 1);
@@ -169,27 +179,6 @@ AVS_UNIT_TEST(backend_openssl_engine, key_loading_from_pkcs11) {
                                            original_text_len),
                           1);
     EVP_PKEY_CTX_free(encrypt_ctx);
-    EVP_PKEY_free(public_key);
-
-    // Loading private key from engine
-    const char *query_template = "pkcs11:token=%s;object=%s;pin-value=%s";
-    size_t query_buffer_size = strlen(query_template) + strlen(KEY_PAIR_LABEL)
-                               + strlen(PIN) + strlen(TOKEN)
-                               - (3 * strlen("%s")) + 1;
-    char *query = (char *) avs_malloc(query_buffer_size);
-    AVS_UNIT_ASSERT_NOT_NULL(query);
-
-    AVS_UNIT_ASSERT_TRUE(avs_simple_snprintf(query, query_buffer_size,
-                                             query_template, TOKEN,
-                                             KEY_PAIR_LABEL, PIN)
-                         >= 0);
-    const avs_crypto_private_key_info_t private_key_info =
-            avs_crypto_private_key_info_from_engine(query);
-    EVP_PKEY *private_key = NULL;
-    AVS_UNIT_ASSERT_SUCCESS(_avs_crypto_openssl_load_private_key(
-            &private_key, &private_key_info));
-    avs_free(query);
-    AVS_UNIT_ASSERT_NOT_NULL(private_key);
 
     // Decryption
     //
@@ -213,7 +202,6 @@ AVS_UNIT_TEST(backend_openssl_engine, key_loading_from_pkcs11) {
                                            encrypted_text_len),
                           1);
     EVP_PKEY_CTX_free(decrypt_ctx);
-    EVP_PKEY_free(private_key);
     OPENSSL_free(encrypted_text);
     AVS_UNIT_ASSERT_EQUAL(ENGINE_finish(_avs_global_engine), 1);
 
@@ -223,6 +211,42 @@ AVS_UNIT_TEST(backend_openssl_engine, key_loading_from_pkcs11) {
                                   (const char *) decrypted_text,
                                   original_text_len),
                           0);
+}
+
+static char *make_query(const char *token, const char *label, const char *pin) {
+    const char *query_template = "pkcs11:token=%s;object=%s;pin-value=%s";
+    size_t query_buffer_size = strlen(query_template) + strlen(label)
+                               + strlen(PIN) + strlen(TOKEN)
+                               - (3 * strlen("%s")) + 1;
+    char *query = (char *) avs_malloc(query_buffer_size);
+    AVS_UNIT_ASSERT_NOT_NULL(query);
+
+    AVS_UNIT_ASSERT_TRUE(avs_simple_snprintf(query, query_buffer_size,
+                                             query_template, token, label, pin)
+                         >= 0);
+
+    return query;
+}
+
+AVS_UNIT_TEST(backend_openssl_engine, key_loading_from_pkcs11) {
+    // Load public key
+    EVP_PKEY *public_key = load_pubkey();
+
+    // Load private key from engine
+    char *query = make_query(TOKEN, KEY_PAIR_LABEL, PIN);
+    const avs_crypto_private_key_info_t private_key_info =
+            avs_crypto_private_key_info_from_engine(query);
+    EVP_PKEY *private_key = NULL;
+    AVS_UNIT_ASSERT_SUCCESS(_avs_crypto_openssl_load_private_key(
+            &private_key, &private_key_info));
+    avs_free(query);
+
+    // Check
+    test_engine_key_pair(private_key, public_key);
+
+    // Cleanup
+    EVP_PKEY_free(public_key);
+    EVP_PKEY_free(private_key);
 }
 
 static avs_error_t load_first_cert(void *cert_, void *out_cert_ptr_) {
@@ -261,9 +285,9 @@ AVS_UNIT_TEST(backend_openssl_engine, cert_loading_from_pkcs11) {
     AVS_UNIT_ASSERT_TRUE(
             avs_simple_snprintf(
                     pkcs11_command, sizeof(pkcs11_command),
-                    "pkcs11-tool --module /usr/lib/softhsm/libsofthsm2.so "
+                    "pkcs11-tool --module %s "
                     "--pin %s -w %s --type cert --label %s --token %s",
-                    PIN, cert_path, cert_label, TOKEN)
+                    PKCS11_MODULE_PATH, PIN, cert_path, cert_label, TOKEN)
             > 0);
 
     AVS_UNIT_ASSERT_SUCCESS(system(openssl_cli_command));
@@ -299,4 +323,44 @@ AVS_UNIT_TEST(backend_openssl_engine, cert_loading_from_pkcs11) {
 
     // System cleanup
     AVS_UNIT_ASSERT_SUCCESS(unlink(cert_path));
+}
+
+AVS_UNIT_TEST(backend_openssl_engine, pkcs11_key_pair_generation) {
+    char *label = "label1";
+
+    AVS_UNIT_ASSERT_SUCCESS(avs_crypto_pki_ec_gen_pkcs11(TOKEN, label, PIN));
+
+    char list_command[300];
+    AVS_UNIT_ASSERT_TRUE(
+            avs_simple_snprintf(
+                    list_command, sizeof(list_command),
+                    "pkcs11-tool --module %s --token %s "
+                    "--login --pin %s --list-objects | grep %s | wc -l",
+                    PKCS11_MODULE_PATH, TOKEN, PIN, label)
+            > 0);
+    FILE *list_pipe = popen(list_command, "r");
+    AVS_UNIT_ASSERT_NOT_NULL(list_pipe);
+    int result;
+    AVS_UNIT_ASSERT_EQUAL(fscanf(list_pipe, "%d", &result), 1);
+    AVS_UNIT_ASSERT_SUCCESS(pclose(list_pipe));
+    AVS_UNIT_ASSERT_EQUAL(result, 2);
+
+    // Load private key from engine
+    char *query = make_query(TOKEN, label, PIN);
+    AVS_UNIT_ASSERT_EQUAL(ENGINE_init(_avs_global_engine), 1);
+    EVP_PKEY *private_key =
+            ENGINE_load_private_key(_avs_global_engine, query, NULL, NULL);
+    ENGINE_finish(_avs_global_engine);
+
+    // Load public key from engine
+    AVS_UNIT_ASSERT_EQUAL(ENGINE_init(_avs_global_engine), 1);
+    EVP_PKEY *public_key =
+            ENGINE_load_public_key(_avs_global_engine, query, NULL, NULL);
+    ENGINE_finish(_avs_global_engine);
+    avs_free(query);
+
+    test_engine_key_pair(private_key, public_key);
+
+    EVP_PKEY_free(public_key);
+    EVP_PKEY_free(private_key);
 }
