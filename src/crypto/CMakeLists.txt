@@ -62,6 +62,10 @@ endif()
 
 if(WITH_AVS_PERSISTENCE)
     target_link_libraries(avs_crypto_core INTERFACE avs_persistence)
+
+    set(AVS_CRYPTO_ADVANCED_FEATURES_TEST_SOURCES
+        ${AVS_CRYPTO_ADVANCED_FEATURES_TEST_SOURCES}
+        "${AVS_COMMONS_SOURCE_DIR}/tests/crypto/pki_persistence.c")
 endif()
 
 if(WITH_OPENSSL)
