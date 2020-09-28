@@ -440,8 +440,9 @@ security_info_array_persistence(avs_persistence_context_t *ctx,
         };
         state.allocated_size =
                 element_count32 * sizeof(avs_crypto_security_info_union_t);
-        if (!(state.array = (avs_crypto_security_info_union_t *) avs_calloc(
-                      1, state.allocated_size))) {
+        if (state.allocated_size
+                && !(state.array = (avs_crypto_security_info_union_t *)
+                             avs_calloc(1, state.allocated_size))) {
             return avs_errno(AVS_ENOMEM);
         }
 
