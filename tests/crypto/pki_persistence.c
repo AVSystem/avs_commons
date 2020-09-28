@@ -19,6 +19,7 @@
 #include <avsystem/commons/avs_crypto_pki.h>
 #include <avsystem/commons/avs_stream_inbuf.h>
 #include <avsystem/commons/avs_stream_membuf.h>
+#include <avsystem/commons/avs_stream_outbuf.h>
 #include <avsystem/commons/avs_unit_test.h>
 
 const char CERTIFICATE_CHAIN_DATA[] =
@@ -88,8 +89,8 @@ AVS_UNIT_TEST(avs_crypto_pki_persistence, certificate_chain_persist) {
 
 AVS_UNIT_TEST(avs_crypto_pki_persistence, certificate_chain_array_persistence) {
     avs_stream_inbuf_t inbuf = AVS_STREAM_INBUF_STATIC_INITIALIZER;
-    avs_stream_inbuf_set_buffer(
-            &inbuf, CERTIFICATE_CHAIN_DATA, sizeof(CERTIFICATE_CHAIN_DATA) - 1);
+    avs_stream_inbuf_set_buffer(&inbuf, CERTIFICATE_CHAIN_DATA,
+                                sizeof(CERTIFICATE_CHAIN_DATA) - 1);
     avs_persistence_context_t restore_ctx =
             avs_persistence_restore_context_create((avs_stream_t *) &inbuf);
 
@@ -115,8 +116,8 @@ AVS_UNIT_TEST(avs_crypto_pki_persistence, certificate_chain_array_persistence) {
                           AVS_CRYPTO_SECURITY_INFO_CERTIFICATE_CHAIN);
     AVS_UNIT_ASSERT_EQUAL(array[2].desc.source, AVS_CRYPTO_DATA_SOURCE_BUFFER);
     AVS_UNIT_ASSERT_EQUAL(array[2].desc.info.buffer.buffer_size, 10);
-    AVS_UNIT_ASSERT_EQUAL_BYTES_SIZED(
-            array[2].desc.info.buffer.buffer, "dummy_cert", 10);
+    AVS_UNIT_ASSERT_EQUAL_BYTES_SIZED(array[2].desc.info.buffer.buffer,
+                                      "dummy_cert", 10);
     AVS_UNIT_ASSERT_NULL(array[2].desc.info.buffer.password);
 
     avs_stream_t *membuf = avs_stream_membuf_create();
@@ -141,8 +142,8 @@ AVS_UNIT_TEST(avs_crypto_pki_persistence, certificate_chain_array_persistence) {
 
 AVS_UNIT_TEST(avs_crypto_pki_persistence, certificate_chain_list_persistence) {
     avs_stream_inbuf_t inbuf = AVS_STREAM_INBUF_STATIC_INITIALIZER;
-    avs_stream_inbuf_set_buffer(
-            &inbuf, CERTIFICATE_CHAIN_DATA, sizeof(CERTIFICATE_CHAIN_DATA) - 1);
+    avs_stream_inbuf_set_buffer(&inbuf, CERTIFICATE_CHAIN_DATA,
+                                sizeof(CERTIFICATE_CHAIN_DATA) - 1);
     avs_persistence_context_t restore_ctx =
             avs_persistence_restore_context_create((avs_stream_t *) &inbuf);
 
@@ -169,8 +170,8 @@ AVS_UNIT_TEST(avs_crypto_pki_persistence, certificate_chain_list_persistence) {
                           AVS_CRYPTO_SECURITY_INFO_CERTIFICATE_CHAIN);
     AVS_UNIT_ASSERT_EQUAL(entry->desc.source, AVS_CRYPTO_DATA_SOURCE_BUFFER);
     AVS_UNIT_ASSERT_EQUAL(entry->desc.info.buffer.buffer_size, 10);
-    AVS_UNIT_ASSERT_EQUAL_BYTES_SIZED(
-            entry->desc.info.buffer.buffer, "dummy_cert", 10);
+    AVS_UNIT_ASSERT_EQUAL_BYTES_SIZED(entry->desc.info.buffer.buffer,
+                                      "dummy_cert", 10);
     AVS_UNIT_ASSERT_NULL(entry->desc.info.buffer.password);
 
     avs_stream_t *membuf = avs_stream_membuf_create();
@@ -267,8 +268,8 @@ AVS_UNIT_TEST(avs_crypto_pki_persistence,
                           AVS_CRYPTO_SECURITY_INFO_CERT_REVOCATION_LIST);
     AVS_UNIT_ASSERT_EQUAL(array[1].desc.source, AVS_CRYPTO_DATA_SOURCE_BUFFER);
     AVS_UNIT_ASSERT_EQUAL(array[1].desc.info.buffer.buffer_size, 8);
-    AVS_UNIT_ASSERT_EQUAL_BYTES_SIZED(
-            array[1].desc.info.buffer.buffer, "fake_crl", 8);
+    AVS_UNIT_ASSERT_EQUAL_BYTES_SIZED(array[1].desc.info.buffer.buffer,
+                                      "fake_crl", 8);
     AVS_UNIT_ASSERT_NULL(array[1].desc.info.buffer.password);
 
     avs_stream_t *membuf = avs_stream_membuf_create();
@@ -319,8 +320,8 @@ AVS_UNIT_TEST(avs_crypto_pki_persistence,
                           AVS_CRYPTO_SECURITY_INFO_CERT_REVOCATION_LIST);
     AVS_UNIT_ASSERT_EQUAL(entry->desc.source, AVS_CRYPTO_DATA_SOURCE_BUFFER);
     AVS_UNIT_ASSERT_EQUAL(entry->desc.info.buffer.buffer_size, 8);
-    AVS_UNIT_ASSERT_EQUAL_BYTES_SIZED(
-            entry->desc.info.buffer.buffer, "fake_crl", 8);
+    AVS_UNIT_ASSERT_EQUAL_BYTES_SIZED(entry->desc.info.buffer.buffer,
+                                      "fake_crl", 8);
     AVS_UNIT_ASSERT_NULL(entry->desc.info.buffer.password);
 
     avs_stream_t *membuf = avs_stream_membuf_create();
@@ -370,8 +371,8 @@ AVS_UNIT_TEST(avs_crypto_pki_persistence, private_key_empty_persistence) {
     avs_stream_cleanup(&membuf);
 
     avs_stream_inbuf_t inbuf = AVS_STREAM_INBUF_STATIC_INITIALIZER;
-    avs_stream_inbuf_set_buffer(
-            &inbuf, EXPECTED_DATA, sizeof(EXPECTED_DATA) - 1);
+    avs_stream_inbuf_set_buffer(&inbuf, EXPECTED_DATA,
+                                sizeof(EXPECTED_DATA) - 1);
     avs_persistence_context_t restore_ctx =
             avs_persistence_restore_context_create((avs_stream_t *) &inbuf);
 
@@ -417,8 +418,8 @@ AVS_UNIT_TEST(avs_crypto_pki_persistence, private_key_engine_persistence) {
     avs_stream_cleanup(&membuf);
 
     avs_stream_inbuf_t inbuf = AVS_STREAM_INBUF_STATIC_INITIALIZER;
-    avs_stream_inbuf_set_buffer(
-            &inbuf, EXPECTED_DATA, sizeof(EXPECTED_DATA) - 1);
+    avs_stream_inbuf_set_buffer(&inbuf, EXPECTED_DATA,
+                                sizeof(EXPECTED_DATA) - 1);
     avs_persistence_context_t restore_ctx =
             avs_persistence_restore_context_create((avs_stream_t *) &inbuf);
 
@@ -466,8 +467,8 @@ AVS_UNIT_TEST(avs_crypto_pki_persistence, private_key_file_persistence) {
     avs_stream_cleanup(&membuf);
 
     avs_stream_inbuf_t inbuf = AVS_STREAM_INBUF_STATIC_INITIALIZER;
-    avs_stream_inbuf_set_buffer(
-            &inbuf, EXPECTED_DATA, sizeof(EXPECTED_DATA) - 1);
+    avs_stream_inbuf_set_buffer(&inbuf, EXPECTED_DATA,
+                                sizeof(EXPECTED_DATA) - 1);
     avs_persistence_context_t restore_ctx =
             avs_persistence_restore_context_create((avs_stream_t *) &inbuf);
 
@@ -515,8 +516,8 @@ AVS_UNIT_TEST(avs_crypto_pki_persistence, private_key_buffer_persistence) {
     avs_stream_cleanup(&membuf);
 
     avs_stream_inbuf_t inbuf = AVS_STREAM_INBUF_STATIC_INITIALIZER;
-    avs_stream_inbuf_set_buffer(
-            &inbuf, EXPECTED_DATA, sizeof(EXPECTED_DATA) - 1);
+    avs_stream_inbuf_set_buffer(&inbuf, EXPECTED_DATA,
+                                sizeof(EXPECTED_DATA) - 1);
     avs_persistence_context_t restore_ctx =
             avs_persistence_restore_context_create((avs_stream_t *) &inbuf);
 
@@ -528,10 +529,192 @@ AVS_UNIT_TEST(avs_crypto_pki_persistence, private_key_buffer_persistence) {
                           AVS_CRYPTO_SECURITY_INFO_PRIVATE_KEY);
     AVS_UNIT_ASSERT_EQUAL(restored->desc.source, AVS_CRYPTO_DATA_SOURCE_BUFFER);
     AVS_UNIT_ASSERT_EQUAL(restored->desc.info.buffer.buffer_size, 9);
-    AVS_UNIT_ASSERT_EQUAL_BYTES_SIZED(
-            restored->desc.info.buffer.buffer, "5ecr3tK3y", 9);
+    AVS_UNIT_ASSERT_EQUAL_BYTES_SIZED(restored->desc.info.buffer.buffer,
+                                      "5ecr3tK3y", 9);
     AVS_UNIT_ASSERT_EQUAL_STRING(restored->desc.info.buffer.password,
                                  "P4s5WoRd");
 
     avs_free(restored);
+}
+
+AVS_UNIT_TEST(avs_crypto_pki_persistence, invalid_data_source) {
+    avs_crypto_private_key_info_t info = {
+        .desc = {
+            .type = AVS_CRYPTO_SECURITY_INFO_PRIVATE_KEY,
+            .source = (avs_crypto_data_source_t) -1
+        }
+    };
+
+    avs_stream_t *membuf = avs_stream_membuf_create();
+    AVS_UNIT_ASSERT_NOT_NULL(membuf);
+    avs_persistence_context_t persist_ctx =
+            avs_persistence_store_context_create(membuf);
+    avs_error_t err;
+    AVS_UNIT_ASSERT_FAILED(
+            (err = avs_crypto_private_key_info_persistence(
+                     &persist_ctx,
+                     &(avs_crypto_private_key_info_t *) { &info })));
+    AVS_UNIT_ASSERT_EQUAL(err.category, AVS_ERRNO_CATEGORY);
+    AVS_UNIT_ASSERT_EQUAL(err.code, AVS_EINVAL);
+
+    avs_off_t offset;
+    AVS_UNIT_ASSERT_SUCCESS(avs_stream_offset(membuf, &offset));
+    AVS_UNIT_ASSERT_EQUAL(offset, 0);
+
+    avs_stream_cleanup(&membuf);
+
+    avs_stream_inbuf_t inbuf = AVS_STREAM_INBUF_STATIC_INITIALIZER;
+    avs_persistence_context_t restore_ctx =
+            avs_persistence_restore_context_create((avs_stream_t *) &inbuf);
+    avs_crypto_private_key_info_t *restored = NULL;
+    AVS_UNIT_ASSERT_FAILED((err = avs_crypto_private_key_info_persistence(
+                                    &restore_ctx, &restored)));
+    AVS_UNIT_ASSERT_EQUAL(err.category, AVS_EOF_CATEGORY);
+
+    avs_stream_inbuf_set_buffer(&inbuf, "\xFF", 1);
+    AVS_UNIT_ASSERT_FAILED((err = avs_crypto_private_key_info_persistence(
+                                    &restore_ctx, &restored)));
+    AVS_UNIT_ASSERT_EQUAL(err.category, AVS_ERRNO_CATEGORY);
+    AVS_UNIT_ASSERT_EQUAL(err.code, AVS_EIO);
+}
+
+AVS_UNIT_TEST(avs_crypto_pki_persistence, buffer_persist_error) {
+    char buf[8];
+    avs_stream_outbuf_t outbuf = AVS_STREAM_OUTBUF_STATIC_INITIALIZER;
+    avs_stream_outbuf_set_buffer(&outbuf, buf, sizeof(buf));
+    avs_persistence_context_t persist_ctx =
+            avs_persistence_store_context_create((avs_stream_t *) &outbuf);
+    avs_error_t err;
+    AVS_UNIT_ASSERT_FAILED(
+            (err = avs_crypto_private_key_info_persistence(
+                     &persist_ctx,
+                     &(avs_crypto_private_key_info_t *) {
+                             &(avs_crypto_private_key_info_t[]){
+                                     avs_crypto_private_key_info_from_file(
+                                             "1", NULL) }[0] })));
+    AVS_UNIT_ASSERT_EQUAL(err.category, AVS_ERRNO_CATEGORY);
+    AVS_UNIT_ASSERT_EQUAL(err.code, AVS_EMSGSIZE);
+
+    avs_stream_outbuf_set_offset(&outbuf, 0);
+    AVS_UNIT_ASSERT_FAILED(
+            (err = avs_crypto_private_key_info_persistence(
+                     &persist_ctx,
+                     &(avs_crypto_private_key_info_t *) {
+                             &(avs_crypto_private_key_info_t[]){
+                                     avs_crypto_private_key_info_from_file(
+                                             "this_will_not_fit_in_outbuf.der",
+                                             NULL) }[0] })));
+    AVS_UNIT_ASSERT_EQUAL(err.category, AVS_ERRNO_CATEGORY);
+    AVS_UNIT_ASSERT_EQUAL(err.code, AVS_EMSGSIZE);
+
+    avs_stream_outbuf_set_offset(&outbuf, 0);
+    AVS_UNIT_ASSERT_FAILED(
+            (err = avs_crypto_private_key_info_persistence(
+                     &persist_ctx,
+                     &(avs_crypto_private_key_info_t *) {
+                             &(avs_crypto_private_key_info_t[]){
+                                     avs_crypto_private_key_info_from_buffer(
+                                             "1", 1, NULL) }[0] })));
+    AVS_UNIT_ASSERT_EQUAL(err.category, AVS_ERRNO_CATEGORY);
+    AVS_UNIT_ASSERT_EQUAL(err.code, AVS_EMSGSIZE);
+
+    avs_stream_outbuf_set_offset(&outbuf, 0);
+    AVS_UNIT_ASSERT_FAILED(
+            (err = avs_crypto_private_key_info_persistence(
+                     &persist_ctx,
+                     &(avs_crypto_private_key_info_t *) {
+                             &(avs_crypto_private_key_info_t[]){
+                                     avs_crypto_private_key_info_from_buffer(
+                                             "this will not fit in outbuf", 27,
+                                             NULL) }[0] })));
+    AVS_UNIT_ASSERT_EQUAL(err.category, AVS_ERRNO_CATEGORY);
+    AVS_UNIT_ASSERT_EQUAL(err.code, AVS_EMSGSIZE);
+}
+
+AVS_UNIT_TEST(avs_crypto_pki_persistence, invalid_offsets) {
+    static const char INVALID_STRING_LENGTH_DATA[] =
+            "F"                 // file source
+            "\x00"              // version 0
+            "\x00\x00\x00\x0f"  // buffer size
+            "secret_key.pem\0"  // buffer
+            "\x00\x00\x00\x0f"  // INVALID filename length
+            "\xff\xff\xff\xff"; // password length
+
+    avs_stream_inbuf_t inbuf = AVS_STREAM_INBUF_STATIC_INITIALIZER;
+    avs_stream_inbuf_set_buffer(&inbuf, INVALID_STRING_LENGTH_DATA,
+                                sizeof(INVALID_STRING_LENGTH_DATA) - 1);
+    avs_persistence_context_t restore_ctx =
+            avs_persistence_restore_context_create((avs_stream_t *) &inbuf);
+
+    avs_crypto_private_key_info_t *restored = NULL;
+    avs_error_t err;
+    AVS_UNIT_ASSERT_FAILED((err = avs_crypto_private_key_info_persistence(
+                                    &restore_ctx, &restored)));
+    AVS_UNIT_ASSERT_NULL(restored);
+    AVS_UNIT_ASSERT_EQUAL(err.category, AVS_ERRNO_CATEGORY);
+    AVS_UNIT_ASSERT_EQUAL(err.code, AVS_EINVAL);
+
+    static const char NO_NULL_TERMINATOR_DATA[] =
+            "F"                 // file source
+            "\x00"              // version 0
+            "\x00\x00\x00\x0e"  // buffer size
+            "secret_key.pem"    // INVALID buffer
+            "\x00\x00\x00\x0d"  // filename length
+            "\xff\xff\xff\xff"; // password length
+
+    avs_stream_inbuf_set_buffer(&inbuf, NO_NULL_TERMINATOR_DATA,
+                                sizeof(NO_NULL_TERMINATOR_DATA) - 1);
+    AVS_UNIT_ASSERT_FAILED((err = avs_crypto_private_key_info_persistence(
+                                    &restore_ctx, &restored)));
+    AVS_UNIT_ASSERT_NULL(restored);
+    AVS_UNIT_ASSERT_EQUAL(err.category, AVS_ERRNO_CATEGORY);
+    AVS_UNIT_ASSERT_EQUAL(err.code, AVS_EINVAL);
+
+    static const char EXCESSIVE_BUFFER_DATA[] =
+            "F"                        // file source
+            "\x00"                     // version 0
+            "\x00\x00\x00\x17"         // buffer size
+            "secret_key.pem\0hurrdurr" // INVALID buffer
+            "\x00\x00\x00\x0e"         // filename length
+            "\xff\xff\xff\xff";        // password length
+
+    avs_stream_inbuf_set_buffer(&inbuf, EXCESSIVE_BUFFER_DATA,
+                                sizeof(EXCESSIVE_BUFFER_DATA) - 1);
+    AVS_UNIT_ASSERT_FAILED((err = avs_crypto_private_key_info_persistence(
+                                    &restore_ctx, &restored)));
+    AVS_UNIT_ASSERT_NULL(restored);
+    AVS_UNIT_ASSERT_EQUAL(err.category, AVS_ERRNO_CATEGORY);
+    AVS_UNIT_ASSERT_EQUAL(err.code, AVS_EINVAL);
+
+    static const char NULL_TERMINATOR_IN_THE_MIDDLE_DATA[] =
+            "F"                 // file source
+            "\x00"              // version 0
+            "\x00\x00\x00\x0f"  // buffer size
+            "secret\0key.pem\0" // INVALID buffer
+            "\x00\x00\x00\x0e"  // filename length
+            "\xff\xff\xff\xff"; // password length
+
+    avs_stream_inbuf_set_buffer(&inbuf, NULL_TERMINATOR_IN_THE_MIDDLE_DATA,
+                                sizeof(NULL_TERMINATOR_IN_THE_MIDDLE_DATA) - 1);
+    AVS_UNIT_ASSERT_FAILED((err = avs_crypto_private_key_info_persistence(
+                                    &restore_ctx, &restored)));
+    AVS_UNIT_ASSERT_NULL(restored);
+    AVS_UNIT_ASSERT_EQUAL(err.category, AVS_ERRNO_CATEGORY);
+    AVS_UNIT_ASSERT_EQUAL(err.code, AVS_EINVAL);
+
+    static const char INVALID_BUFFER_LENGTH_DATA[] =
+            "B"                 // file source
+            "\x00"              // version 0
+            "\x00\x00\x00\x0a"  // buffer size
+            "dummy_data"        // INVALID buffer
+            "\x00\x00\x15\x25"  // filename length
+            "\xff\xff\xff\xff"; // password length
+
+    avs_stream_inbuf_set_buffer(&inbuf, INVALID_BUFFER_LENGTH_DATA,
+                                sizeof(INVALID_BUFFER_LENGTH_DATA) - 1);
+    AVS_UNIT_ASSERT_FAILED((err = avs_crypto_private_key_info_persistence(
+                                    &restore_ctx, &restored)));
+    AVS_UNIT_ASSERT_NULL(restored);
+    AVS_UNIT_ASSERT_EQUAL(err.category, AVS_ERRNO_CATEGORY);
+    AVS_UNIT_ASSERT_EQUAL(err.code, AVS_EINVAL);
 }

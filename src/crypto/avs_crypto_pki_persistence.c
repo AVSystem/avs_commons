@@ -171,7 +171,9 @@ static avs_error_t security_info_buffer_offsets_persistence(
                     return avs_errno(AVS_EINVAL);
                 }
                 if (direction == AVS_PERSISTENCE_RESTORE) {
-                    if (data_buffer[offset + size32] != '\0') {
+                    if (data_buffer[offset + size32] != '\0'
+                            || strlen(&data_buffer[offset])
+                                           != (size_t) size32) {
                         return avs_errno(AVS_EINVAL);
                     }
                     *str_ptr = &data_buffer[offset];
