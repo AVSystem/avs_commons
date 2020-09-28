@@ -233,8 +233,10 @@ security_info_persistence(avs_persistence_context_t *ctx,
     avs_persistence_direction_t direction = avs_persistence_direction(ctx);
     avs_crypto_data_source_t source;
     if (direction == AVS_PERSISTENCE_STORE) {
-        assert((*desc_ptr)->type == tag);
         source = (*desc_ptr)->source;
+        if (source != AVS_CRYPTO_DATA_SOURCE_EMPTY) {
+            assert((*desc_ptr)->type == tag);
+        }
     }
     avs_error_t err = data_source_persistence(ctx, &source);
     if (avs_is_err(err)) {
