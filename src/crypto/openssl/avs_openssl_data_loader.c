@@ -285,6 +285,9 @@ avs_error_t _avs_crypto_openssl_load_crls(
             return avs_errno(AVS_EINVAL);
         }
         return load_crl_from_file(store, info->desc.info.file.filename);
+    case AVS_CRYPTO_DATA_SOURCE_PATH:
+        LOG(ERROR, _("CRL cannot be loaded from path"));
+        return avs_errno(AVS_EINVAL);
     case AVS_CRYPTO_DATA_SOURCE_BUFFER:
         if (!info->desc.info.buffer.buffer) {
             LOG(ERROR, _("attempt to load CRL from buffer, but buffer=NULL"));
@@ -451,6 +454,9 @@ avs_error_t _avs_crypto_openssl_load_private_key(
         return load_key_from_file(out_key, info->desc.info.file.filename,
                                   info->desc.info.file.password);
     }
+    case AVS_CRYPTO_DATA_SOURCE_PATH:
+        LOG(ERROR, _("private key cannot be loaded from path"));
+        return avs_errno(AVS_EINVAL);
     case AVS_CRYPTO_DATA_SOURCE_BUFFER: {
         if (!info->desc.info.buffer.buffer) {
             LOG(ERROR,

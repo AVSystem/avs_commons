@@ -248,6 +248,11 @@ append_crls(mbedtls_x509_crl *out,
     switch (info->desc.source) {
     case AVS_CRYPTO_DATA_SOURCE_EMPTY:
         return AVS_OK;
+#    ifdef AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
+    case AVS_CRYPTO_DATA_SOURCE_ENGINE:
+        LOG(ERROR, "PKSC11 with mbedtls not supported");
+        return avs_errno(AVS_ENOTSUP);
+#    endif // AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
 #    ifdef MBEDTLS_X509_CRL_PARSE_C
     case AVS_CRYPTO_DATA_SOURCE_FILE:
         assert(out);
@@ -256,6 +261,9 @@ append_crls(mbedtls_x509_crl *out,
             return avs_errno(AVS_EINVAL);
         }
         return append_crl_from_file(out, info->desc.info.file.filename);
+    case AVS_CRYPTO_DATA_SOURCE_PATH:
+        LOG(ERROR, _("CRL cannot be loaded from path"));
+        return avs_errno(AVS_EINVAL);
     case AVS_CRYPTO_DATA_SOURCE_BUFFER:
         assert(out);
         if (!info->desc.info.buffer.buffer) {
@@ -266,6 +274,7 @@ append_crls(mbedtls_x509_crl *out,
                                       info->desc.info.buffer.buffer_size);
 #    else  // MBEDTLS_X509_CRL_PARSE_C
     case AVS_CRYPTO_DATA_SOURCE_FILE:
+    case AVS_CRYPTO_DATA_SOURCE_PATH:
     case AVS_CRYPTO_DATA_SOURCE_BUFFER:
         LOG(DEBUG, _("Mbed TLS compiled without CRL support"));
         return avs_errno(AVS_ENOTSUP);
@@ -414,6 +423,9 @@ _avs_crypto_mbedtls_load_client_key(mbedtls_pk_context **client_key,
                                              info->desc.info.file.filename,
                                              info->desc.info.file.password);
         }
+        break;
+    case AVS_CRYPTO_DATA_SOURCE_PATH:
+        LOG(ERROR, _("client key cannot be loaded from path"));
         break;
     case AVS_CRYPTO_DATA_SOURCE_BUFFER:
         if (!info->desc.info.buffer.buffer) {
