@@ -413,6 +413,7 @@ security_info_array_persistence(avs_persistence_context_t *ctx,
                                 size_t *element_count_ptr,
                                 avs_crypto_security_info_tag_t tag) {
     if (avs_persistence_direction(ctx) == AVS_PERSISTENCE_STORE) {
+        assert(array_ptr);
         return security_info_persist(
                 ctx,
                 &(avs_crypto_security_info_union_t) {
@@ -427,6 +428,7 @@ security_info_array_persistence(avs_persistence_context_t *ctx,
                 },
                 tag);
     } else {
+        assert(array_ptr && !*array_ptr);
         uint32_t element_count32;
         avs_error_t err = avs_persistence_u32(ctx, &element_count32);
         if (avs_is_err(err)) {
@@ -492,6 +494,7 @@ static avs_error_t security_info_list_persistence(
         AVS_LIST(avs_crypto_security_info_union_t) *list_ptr,
         avs_crypto_security_info_tag_t tag) {
     if (avs_persistence_direction(ctx) == AVS_PERSISTENCE_STORE) {
+        assert(list_ptr);
         return security_info_persist(ctx,
                                      &(avs_crypto_security_info_union_t) {
                                          .type = tag,
@@ -585,6 +588,7 @@ avs_error_t avs_crypto_private_key_info_persistence(
                                       AVS_CRYPTO_SECURITY_INFO_PRIVATE_KEY,
                                       private_key_allocator, NULL);
     if (direction == AVS_PERSISTENCE_RESTORE) {
+        assert(private_key_ptr && !*private_key_ptr);
         if (avs_is_ok(err)) {
             assert(private_key);
             *private_key_ptr =
