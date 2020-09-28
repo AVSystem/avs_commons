@@ -36,5 +36,5 @@ cmake -D WITH_EXTRA_WARNINGS=ON \
       -D CMAKE_C_FLAGS=-g \
       -D CMAKE_INSTALL_PREFIX:PATH=/tmp \
       "${EXTRA_FLAGS[@]}" \
-      "$@" "$(dirname "$0")" &&
+      "$@" -H"$(dirname "$0")" -B. &&
 make clean
