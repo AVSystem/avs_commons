@@ -87,6 +87,23 @@ AVS_UNIT_TEST(avs_crypto_pki_persistence, certificate_chain_persist) {
     AVS_LIST_CLEAR(&list123);
 }
 
+AVS_UNIT_TEST(avs_crypto_pki_persistence,
+              certificate_chain_persist_on_restore_ctx) {
+    avs_crypto_certificate_chain_info_t entry =
+            avs_crypto_certificate_chain_info_from_file("cert.der");
+
+    avs_stream_inbuf_t inbuf = AVS_STREAM_INBUF_STATIC_INITIALIZER;
+    avs_stream_inbuf_set_buffer(&inbuf, CERTIFICATE_CHAIN_DATA,
+                                sizeof(CERTIFICATE_CHAIN_DATA) - 1);
+    avs_persistence_context_t ctx =
+            avs_persistence_restore_context_create((avs_stream_t *) &inbuf);
+    avs_error_t err;
+    AVS_UNIT_ASSERT_FAILED(
+            (err = avs_crypto_certificate_chain_info_persist(&ctx, entry)));
+    AVS_UNIT_ASSERT_EQUAL(err.category, AVS_ERRNO_CATEGORY);
+    AVS_UNIT_ASSERT_EQUAL(err.code, AVS_EINVAL);
+}
+
 AVS_UNIT_TEST(avs_crypto_pki_persistence, certificate_chain_array_persistence) {
     avs_stream_inbuf_t inbuf = AVS_STREAM_INBUF_STATIC_INITIALIZER;
     avs_stream_inbuf_set_buffer(&inbuf, CERTIFICATE_CHAIN_DATA,
@@ -138,6 +155,23 @@ AVS_UNIT_TEST(avs_crypto_pki_persistence, certificate_chain_array_persistence) {
     avs_free(buf);
     avs_stream_cleanup(&membuf);
     avs_free(array);
+}
+
+AVS_UNIT_TEST(avs_crypto_pki_persistence, array_persistence_truncated) {
+    avs_stream_inbuf_t inbuf = AVS_STREAM_INBUF_STATIC_INITIALIZER;
+    avs_stream_inbuf_set_buffer(&inbuf, CERTIFICATE_CHAIN_DATA,
+                                sizeof(CERTIFICATE_CHAIN_DATA) - 2);
+    avs_persistence_context_t restore_ctx =
+            avs_persistence_restore_context_create((avs_stream_t *) &inbuf);
+
+    avs_crypto_certificate_chain_info_t *array = NULL;
+    size_t element_count;
+    avs_error_t err;
+    AVS_UNIT_ASSERT_FAILED(
+            (err = avs_crypto_certificate_chain_info_array_persistence(
+                     &restore_ctx, &array, &element_count)));
+    AVS_UNIT_ASSERT_NULL(array);
+    AVS_UNIT_ASSERT_EQUAL(err.category, AVS_EOF_CATEGORY);
 }
 
 AVS_UNIT_TEST(avs_crypto_pki_persistence, certificate_chain_list_persistence) {
@@ -194,6 +228,22 @@ AVS_UNIT_TEST(avs_crypto_pki_persistence, certificate_chain_list_persistence) {
     AVS_LIST_CLEAR(&list);
 }
 
+AVS_UNIT_TEST(avs_crypto_pki_persistence, list_persistence_truncated) {
+    avs_stream_inbuf_t inbuf = AVS_STREAM_INBUF_STATIC_INITIALIZER;
+    avs_stream_inbuf_set_buffer(&inbuf, CERTIFICATE_CHAIN_DATA,
+                                sizeof(CERTIFICATE_CHAIN_DATA) - 2);
+    avs_persistence_context_t restore_ctx =
+            avs_persistence_restore_context_create((avs_stream_t *) &inbuf);
+
+    AVS_LIST(avs_crypto_certificate_chain_info_t) list = NULL;
+    avs_error_t err;
+    AVS_UNIT_ASSERT_FAILED(
+            (err = avs_crypto_certificate_chain_info_list_persistence(
+                     &restore_ctx, &list)));
+    AVS_UNIT_ASSERT_NULL(list);
+    AVS_UNIT_ASSERT_EQUAL(err.category, AVS_EOF_CATEGORY);
+}
+
 const char CERT_REVOCATION_LIST_DATA[] =
         "\x00\x00\x00\x02" // number of entries
         // entry 1:
@@ -239,6 +289,23 @@ AVS_UNIT_TEST(avs_crypto_pki_persistence, cert_revocation_list_persist) {
 
     avs_free(buf);
     avs_stream_cleanup(&membuf);
+}
+
+AVS_UNIT_TEST(avs_crypto_pki_persistence,
+              cert_revocation_list_persist_on_restore_ctx) {
+    avs_crypto_cert_revocation_list_info_t entry =
+            avs_crypto_cert_revocation_list_info_from_file("crl.pem");
+
+    avs_stream_inbuf_t inbuf = AVS_STREAM_INBUF_STATIC_INITIALIZER;
+    avs_stream_inbuf_set_buffer(&inbuf, CERT_REVOCATION_LIST_DATA,
+                                sizeof(CERT_REVOCATION_LIST_DATA) - 1);
+    avs_persistence_context_t ctx =
+            avs_persistence_restore_context_create((avs_stream_t *) &inbuf);
+    avs_error_t err;
+    AVS_UNIT_ASSERT_FAILED(
+            (err = avs_crypto_cert_revocation_list_info_persist(&ctx, entry)));
+    AVS_UNIT_ASSERT_EQUAL(err.category, AVS_ERRNO_CATEGORY);
+    AVS_UNIT_ASSERT_EQUAL(err.code, AVS_EINVAL);
 }
 
 AVS_UNIT_TEST(avs_crypto_pki_persistence,
@@ -561,6 +628,14 @@ AVS_UNIT_TEST(avs_crypto_pki_persistence, invalid_data_source) {
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_offset(membuf, &offset));
     AVS_UNIT_ASSERT_EQUAL(offset, 0);
 
+    info.desc.source = AVS_CRYPTO_DATA_SOURCE_ARRAY;
+    AVS_UNIT_ASSERT_FAILED(
+            (err = avs_crypto_private_key_info_persistence(
+                     &persist_ctx,
+                     &(avs_crypto_private_key_info_t *) { &info })));
+    AVS_UNIT_ASSERT_EQUAL(err.category, AVS_ERRNO_CATEGORY);
+    AVS_UNIT_ASSERT_EQUAL(err.code, AVS_EINVAL);
+
     avs_stream_cleanup(&membuf);
 
     avs_stream_inbuf_t inbuf = AVS_STREAM_INBUF_STATIC_INITIALIZER;
@@ -576,6 +651,63 @@ AVS_UNIT_TEST(avs_crypto_pki_persistence, invalid_data_source) {
                                     &restore_ctx, &restored)));
     AVS_UNIT_ASSERT_EQUAL(err.category, AVS_ERRNO_CATEGORY);
     AVS_UNIT_ASSERT_EQUAL(err.code, AVS_EIO);
+}
+
+AVS_UNIT_TEST(avs_crypto_pki_persistence, version_persist_error) {
+    char buf[1];
+    avs_stream_outbuf_t outbuf = AVS_STREAM_OUTBUF_STATIC_INITIALIZER;
+    avs_stream_outbuf_set_buffer(&outbuf, buf, sizeof(buf));
+    avs_persistence_context_t persist_ctx =
+            avs_persistence_store_context_create((avs_stream_t *) &outbuf);
+    avs_error_t err;
+    AVS_UNIT_ASSERT_FAILED(
+            (err = avs_crypto_private_key_info_persistence(
+                     &persist_ctx,
+                     &(avs_crypto_private_key_info_t *) {
+                             &(avs_crypto_private_key_info_t[]){
+                                     avs_crypto_private_key_info_from_file(
+                                             "1", NULL) }[0] })));
+    AVS_UNIT_ASSERT_EQUAL(err.category, AVS_ERRNO_CATEGORY);
+    AVS_UNIT_ASSERT_EQUAL(err.code, AVS_EMSGSIZE);
+}
+
+#if SIZE_MAX > UINT32_MAX
+AVS_UNIT_TEST(avs_crypto_pki_persistence, excessive_size_error) {
+    char buf[256];
+    avs_stream_outbuf_t outbuf = AVS_STREAM_OUTBUF_STATIC_INITIALIZER;
+    avs_stream_outbuf_set_buffer(&outbuf, buf, sizeof(buf));
+    avs_persistence_context_t persist_ctx =
+            avs_persistence_store_context_create((avs_stream_t *) &outbuf);
+    avs_error_t err;
+    AVS_UNIT_ASSERT_FAILED(
+            (err = avs_crypto_private_key_info_persistence(
+                     &persist_ctx,
+                     &(avs_crypto_private_key_info_t *) {
+                             &(avs_crypto_private_key_info_t[]){
+                                     avs_crypto_private_key_info_from_buffer(
+                                             "", (size_t) UINT32_MAX + 1,
+                                             NULL) }[0] })));
+    AVS_UNIT_ASSERT_EQUAL(err.category, AVS_ERRNO_CATEGORY);
+    AVS_UNIT_ASSERT_EQUAL(err.code, AVS_E2BIG);
+}
+#endif // SIZE_MAX > UINT32_MAX
+
+AVS_UNIT_TEST(avs_crypto_pki_persistence, size_persist_error) {
+    char buf[4];
+    avs_stream_outbuf_t outbuf = AVS_STREAM_OUTBUF_STATIC_INITIALIZER;
+    avs_stream_outbuf_set_buffer(&outbuf, buf, sizeof(buf));
+    avs_persistence_context_t persist_ctx =
+            avs_persistence_store_context_create((avs_stream_t *) &outbuf);
+    avs_error_t err;
+    AVS_UNIT_ASSERT_FAILED(
+            (err = avs_crypto_private_key_info_persistence(
+                     &persist_ctx,
+                     &(avs_crypto_private_key_info_t *) {
+                             &(avs_crypto_private_key_info_t[]){
+                                     avs_crypto_private_key_info_from_file(
+                                             "1", NULL) }[0] })));
+    AVS_UNIT_ASSERT_EQUAL(err.category, AVS_ERRNO_CATEGORY);
+    AVS_UNIT_ASSERT_EQUAL(err.code, AVS_EMSGSIZE);
 }
 
 AVS_UNIT_TEST(avs_crypto_pki_persistence, buffer_persist_error) {
@@ -629,6 +761,26 @@ AVS_UNIT_TEST(avs_crypto_pki_persistence, buffer_persist_error) {
                                              NULL) }[0] })));
     AVS_UNIT_ASSERT_EQUAL(err.category, AVS_ERRNO_CATEGORY);
     AVS_UNIT_ASSERT_EQUAL(err.code, AVS_EMSGSIZE);
+}
+
+AVS_UNIT_TEST(avs_crypto_pki_persistence, buffer_restore_error) {
+    static const char UNEXPECTED_EOF_DATA[] = "B"    // buffer source
+                                              "\x00" // version 0
+                                              "\x00\x00\x00\x12" // buffer size
+                                              "secretkey"; // INVALID buffer
+
+    avs_stream_inbuf_t inbuf = AVS_STREAM_INBUF_STATIC_INITIALIZER;
+    avs_stream_inbuf_set_buffer(&inbuf, UNEXPECTED_EOF_DATA,
+                                sizeof(UNEXPECTED_EOF_DATA) - 1);
+    avs_persistence_context_t restore_ctx =
+            avs_persistence_restore_context_create((avs_stream_t *) &inbuf);
+
+    avs_crypto_private_key_info_t *restored = NULL;
+    avs_error_t err;
+    AVS_UNIT_ASSERT_FAILED((err = avs_crypto_private_key_info_persistence(
+                                    &restore_ctx, &restored)));
+    AVS_UNIT_ASSERT_NULL(restored);
+    AVS_UNIT_ASSERT_EQUAL(err.category, AVS_EOF_CATEGORY);
 }
 
 AVS_UNIT_TEST(avs_crypto_pki_persistence, invalid_offsets) {
