@@ -60,6 +60,10 @@ if(WITH_INTERNAL_LOGS)
     target_link_libraries(avs_crypto_core INTERFACE avs_log)
 endif()
 
+if(WITH_AVS_PERSISTENCE)
+    target_link_libraries(avs_crypto_core INTERFACE avs_persistence)
+endif()
+
 if(WITH_OPENSSL)
     set(AVS_CRYPTO_OPENSSL_SOURCES
         ${AVS_CRYPTO_COMMON_SOURCES}
