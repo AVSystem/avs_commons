@@ -4,6 +4,7 @@
 *.so
 *.so.*
 
+/build/
 /output/
 
 # NetBeans Project
