@@ -489,32 +489,161 @@ avs_error_t avs_crypto_private_key_info_copy(
         avs_crypto_private_key_info_t private_key_info);
 
 #ifdef AVS_COMMONS_WITH_AVS_PERSISTENCE
+/**
+ * Persists any certificate chain info object.
+ *
+ * NOTE: The serialized information can be subsequently restored using either
+ * @ref avs_crypto_certificate_chain_info_array_persistence or
+ * @ref avs_crypto_certificate_chain_info_list_persistence.
+ *
+ * @param ctx                    Writing persistence context. Attempting to pass
+ *                               a restoring context will result in an error.
+ *
+ * @param certificate_chain_info Certificate chain information to persist.
+ *
+ * @returns AVS_OK for success, or an error value.
+ */
 avs_error_t avs_crypto_certificate_chain_info_persist(
         avs_persistence_context_t *ctx,
         avs_crypto_certificate_chain_info_t certificate_chain_info);
 
+/**
+ * Persists or restores an array of certificate chain info objects.
+ *
+ * NOTE: The serialized format is fully compatible between
+ * @ref avs_crypto_certificate_chain_info_persist,
+ * @ref avs_crypto_certificate_chain_info_array_persistence and
+ * @ref avs_crypto_certificate_chain_info_list_persistence.
+ *
+ * NOTE: When restoring, the resulting array will be allocated in the same way
+ * as when using @ref avs_crypto_certificate_chain_info_copy_as_array.
+ *
+ * @param ctx               Persistence context to use.
+ *
+ * @param array_ptr         Pointer to a variable containing the pointer to the
+ *                          head of the array. If restoring, <c>*array_ptr</c>
+ *                          MUST be NULL on entry.
+ *
+ * @param element_count_ptr Pointer to a variable containing the number of
+ *                          elements in the array.
+ *
+ * @returns AVS_OK for success, or an error value. If restoring,
+ *          <c>*array_ptr</c> is guaranteed to be NULL on exit.
+ */
 avs_error_t avs_crypto_certificate_chain_info_array_persistence(
         avs_persistence_context_t *ctx,
         avs_crypto_certificate_chain_info_t **array_ptr,
         size_t *element_count_ptr);
 
+/**
+ * Persists or restores a list of certificate chain info objects.
+ *
+ * NOTE: The serialized format is fully compatible between
+ * @ref avs_crypto_certificate_chain_info_persist,
+ * @ref avs_crypto_certificate_chain_info_array_persistence and
+ * @ref avs_crypto_certificate_chain_info_list_persistence.
+ *
+ * NOTE: When restoring, the resulting list will be allocated in the same way as
+ * when using @ref avs_crypto_certificate_chain_info_copy_as_list.
+ *
+ * @param ctx      Persistence context to use.
+ *
+ * @param list_ptr Pointer to a variable containing the pointer to the head of
+ *                 the list. If restoring, <c>*list_ptr</c> MUST be NULL on
+ *                 entry.
+ *
+ * @returns AVS_OK for success, or an error value. If restoring,
+ *          <c>*list_ptr</c> is guaranteed to be NULL on exit.
+ */
 avs_error_t avs_crypto_certificate_chain_info_list_persistence(
         avs_persistence_context_t *ctx,
         AVS_LIST(avs_crypto_certificate_chain_info_t) *list_ptr);
 
+/**
+ * Persists any certificate revocation list info object.
+ *
+ * NOTE: The serialized information can be subsequently restored using either
+ * @ref avs_crypto_cert_revocation_list_info_array_persistence or
+ * @ref avs_crypto_cert_revocation_list_info_list_persistence.
+ *
+ * @param ctx      Writing persistence context. Attempting to pass a restoring
+ *                 context will result in an error.
+ *
+ * @param crl_info CRL information to persist.
+ *
+ * @returns AVS_OK for success, or an error value.
+ */
 avs_error_t avs_crypto_cert_revocation_list_info_persist(
         avs_persistence_context_t *ctx,
         avs_crypto_cert_revocation_list_info_t crl_info);
 
+/**
+ * Persists or restores an array of certificate revocation list info objects.
+ *
+ * NOTE: The serialized format is fully compatible between
+ * @ref avs_crypto_cert_revocation_list_info_persist,
+ * @ref avs_crypto_cert_revocation_list_info_array_persistence and
+ * @ref avs_crypto_cert_revocation_list_info_list_persistence.
+ *
+ * NOTE: When restoring, the resulting array will be allocated in the same way
+ * as when using @ref avs_crypto_cert_revocation_list_info_copy_as_array.
+ *
+ * @param ctx               Persistence context to use.
+ *
+ * @param array_ptr         Pointer to a variable containing the pointer to the
+ *                          head of the array. If restoring, <c>*array_ptr</c>
+ *                          MUST be NULL on entry.
+ *
+ * @param element_count_ptr Pointer to a variable containing the number of
+ *                          elements in the array.
+ *
+ * @returns AVS_OK for success, or an error value. If restoring,
+ *          <c>*array_ptr</c> is guaranteed to be NULL on exit.
+ */
 avs_error_t avs_crypto_cert_revocation_list_info_array_persistence(
         avs_persistence_context_t *ctx,
         avs_crypto_cert_revocation_list_info_t **array_ptr,
         size_t *element_count_ptr);
 
+/**
+ * Persists or restores a list of certificate revocation list objects.
+ *
+ * NOTE: The serialized format is fully compatible between
+ * @ref avs_crypto_cert_revocation_list_info_persist,
+ * @ref avs_crypto_cert_revocation_list_info_array_persistence and
+ * @ref avs_crypto_cert_revocation_list_info_list_persistence.
+ *
+ * NOTE: When restoring, the resulting list will be allocated in the same way as
+ * when using @ref avs_crypto_cert_revocation_list_info_copy_as_list.
+ *
+ * @param ctx      Persistence context to use.
+ *
+ * @param list_ptr Pointer to a variable containing the pointer to the head of
+ *                 the list. If restoring, <c>*list_ptr</c> MUST be NULL on
+ *                 entry.
+ *
+ * @returns AVS_OK for success, or an error value. If restoring,
+ *          <c>*list_ptr</c> is guaranteed to be NULL on exit.
+ */
 avs_error_t avs_crypto_cert_revocation_list_info_list_persistence(
         avs_persistence_context_t *ctx,
         AVS_LIST(avs_crypto_cert_revocation_list_info_t) *list_ptr);
 
+/**
+ * Persists or restores a private key info object.
+ *
+ * NOTE: When restoring, the resulting object will be allocated in the same way
+ * as when using @ref avs_crypto_private_key_info_copy.
+ *
+ * @param ctx             Persistence context to use.
+ *
+ * @param private_key_ptr Pointer to a variable containing the pointer to the
+ *                        private key info object. If restoring,
+ *                        <c>*private_key_ptr</c> MUST be NULL on entry.
+ *
+ * @returns AVS_OK for success, or an error value. If restoring,
+ *          <c>*private_key_ptr</c> is guaranteed to be NULL on exit.
+ */
 avs_error_t avs_crypto_private_key_info_persistence(
         avs_persistence_context_t *ctx,
         avs_crypto_private_key_info_t **private_key_ptr);
