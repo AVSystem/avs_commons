@@ -167,7 +167,7 @@ static avs_error_t security_info_buffer_offsets_persistence(
                 return err;
             }
             if (size32 != UINT32_MAX) {
-                if (offset + size32 >= buffer_size) {
+                if (size32 >= buffer_size - offset) {
                     return avs_errno(AVS_EINVAL);
                 }
                 if (direction == AVS_PERSISTENCE_RESTORE) {
@@ -199,7 +199,7 @@ static avs_error_t security_info_buffer_offsets_persistence(
                 return err;
             }
             if (size != UINT32_MAX) {
-                if (offset + size > buffer_size) {
+                if (size > buffer_size - offset) {
                     return avs_errno(AVS_EINVAL);
                 }
                 if (direction == AVS_PERSISTENCE_RESTORE) {
@@ -219,6 +219,11 @@ static avs_error_t security_info_buffer_offsets_persistence(
     }
     return AVS_OK;
 }
+
+// NOTE: Version hardcoded to 0 for now.
+// This will need to be updated if incompatible changes to
+// DATA_SOURCE_DEFINITIONS are made.
+static const uint8_t SECURITY_INFO_PERSISTENCE_VERSION = 0;
 
 typedef avs_error_t security_info_persistence_allocator_t(
         avs_crypto_security_info_union_t **out_desc_ptr,
@@ -250,12 +255,10 @@ security_info_persistence(avs_persistence_context_t *ctx,
         return avs_errno(AVS_EINVAL);
     }
 
-    // NOTE: Version hardcoded to 0 for now.
-    // This will need to be updated if incompatible changes to
-    // DATA_SOURCE_DEFINITIONS are made.
-    if (avs_is_err((err = avs_persistence_version(ctx, &(uint8_t) { 0 },
-                                                  &(const uint8_t[]) { 0 }[0],
-                                                  1)))) {
+    if (avs_is_err(
+                (err = avs_persistence_version(
+                         ctx, &(uint8_t) { SECURITY_INFO_PERSISTENCE_VERSION },
+                         &SECURITY_INFO_PERSISTENCE_VERSION, 1)))) {
         return err;
     }
 
