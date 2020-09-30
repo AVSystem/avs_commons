@@ -20,6 +20,7 @@ set(AVS_CRYPTO_PUBLIC_HEADERS
 set(AVS_CRYPTO_COMMON_SOURCES
     avs_global.c
     avs_global.h
+    avs_crypto_pki_persistence.c
     avs_crypto_utils.c
     avs_crypto_utils.h)
 
@@ -57,6 +58,14 @@ target_link_libraries(avs_crypto_core INTERFACE avs_commons_global_headers avs_u
 
 if(WITH_INTERNAL_LOGS)
     target_link_libraries(avs_crypto_core INTERFACE avs_log)
+endif()
+
+if(WITH_AVS_PERSISTENCE)
+    target_link_libraries(avs_crypto_core INTERFACE avs_persistence)
+
+    set(AVS_CRYPTO_ADVANCED_FEATURES_TEST_SOURCES
+        ${AVS_CRYPTO_ADVANCED_FEATURES_TEST_SOURCES}
+        "${AVS_COMMONS_SOURCE_DIR}/tests/crypto/pki_persistence.c")
 endif()
 
 if(WITH_OPENSSL)

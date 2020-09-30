@@ -19,7 +19,38 @@
 
 #include <stddef.h>
 
+#include <avsystem/commons/avs_crypto_pki.h>
+
 VISIBILITY_PRIVATE_HEADER_BEGIN
+
+typedef enum {
+    DATA_SOURCE_ELEMENT_END = 0,
+    DATA_SOURCE_ELEMENT_STRING,
+    DATA_SOURCE_ELEMENT_BUFFER
+} avs_crypto_data_source_element_type_t;
+
+typedef struct {
+    avs_crypto_data_source_element_type_t type;
+    size_t offset;
+    size_t size_offset;
+} avs_crypto_data_source_element_t;
+
+typedef avs_error_t avs_crypto_security_info_iterate_cb_t(
+        const avs_crypto_security_info_union_t *desc, void *arg);
+
+avs_error_t
+_avs_crypto_security_info_iterate(const avs_crypto_security_info_union_t *desc,
+                                  avs_crypto_security_info_iterate_cb_t *cb,
+                                  void *cb_arg);
+
+const avs_crypto_data_source_element_t *
+_avs_crypto_get_data_source_definition(avs_crypto_data_source_t source);
+
+avs_error_t
+_avs_crypto_calculate_info_stats(const avs_crypto_security_info_union_t *desc,
+                                 avs_crypto_security_info_tag_t expected_type,
+                                 size_t *out_element_count,
+                                 size_t *out_data_buffer_size);
 
 bool _avs_crypto_aead_parameters_valid(size_t key_len,
                                        size_t iv_len,

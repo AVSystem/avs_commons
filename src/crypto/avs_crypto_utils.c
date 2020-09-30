@@ -135,13 +135,10 @@ avs_crypto_cert_revocation_list_info_from_array(
     return result;
 }
 
-typedef avs_error_t
-security_info_visit_t(const avs_crypto_security_info_union_t *desc, void *arg);
-
-static avs_error_t
-security_info_iterate(const avs_crypto_security_info_union_t *desc,
-                      security_info_visit_t *visitor,
-                      void *visitor_arg) {
+avs_error_t
+_avs_crypto_security_info_iterate(const avs_crypto_security_info_union_t *desc,
+                                  avs_crypto_security_info_iterate_cb_t *cb,
+                                  void *cb_arg) {
     switch (desc->source) {
     case AVS_CRYPTO_DATA_SOURCE_EMPTY:
         return AVS_OK;
@@ -149,8 +146,8 @@ security_info_iterate(const avs_crypto_security_info_union_t *desc,
         avs_error_t err = AVS_OK;
         for (size_t i = 0; avs_is_ok(err) && i < desc->info.array.element_count;
              ++i) {
-            err = security_info_iterate(&desc->info.array.array_ptr[i], visitor,
-                                        visitor_arg);
+            err = _avs_crypto_security_info_iterate(
+                    &desc->info.array.array_ptr[i], cb, cb_arg);
         }
         return err;
     }
@@ -159,7 +156,7 @@ security_info_iterate(const avs_crypto_security_info_union_t *desc,
         AVS_LIST(avs_crypto_security_info_union_t) entry;
         AVS_LIST_FOREACH(entry, desc->info.list.list_head) {
             avs_error_t err =
-                    security_info_iterate(entry, visitor, visitor_arg);
+                    _avs_crypto_security_info_iterate(entry, cb, cb_arg);
             if (avs_is_err(err)) {
                 return err;
             }
@@ -168,101 +165,102 @@ security_info_iterate(const avs_crypto_security_info_union_t *desc,
     }
 #    endif // AVS_COMMONS_WITH_AVS_LIST
     default:
-        return visitor(desc, visitor_arg);
+        return cb(desc, cb_arg);
     }
 }
 
-typedef enum {
-    DATA_SOURCE_ELEMENT_END = 0,
-    DATA_SOURCE_ELEMENT_STRING,
-    DATA_SOURCE_ELEMENT_BUFFER
-} avs_crypto_data_source_element_type_t;
-
-typedef struct {
-    avs_crypto_data_source_element_type_t type;
-    size_t offset;
-    size_t size_offset;
-} avs_crypto_data_source_element_t;
-
-const avs_crypto_data_source_element_t *const DATA_SOURCE_DEFINITIONS[] = {
-    [AVS_CRYPTO_DATA_SOURCE_EMPTY] =
-            &(const avs_crypto_data_source_element_t[]) {
-                {
-                    .type = DATA_SOURCE_ELEMENT_END
-                }
-            }[0],
-    [AVS_CRYPTO_DATA_SOURCE_FILE] =
-            &(const avs_crypto_data_source_element_t[]) {
-                {
-                    .type = DATA_SOURCE_ELEMENT_STRING,
-                    .offset = offsetof(avs_crypto_security_info_union_t,
-                                       info.file.filename)
-                },
-                {
-                    .type = DATA_SOURCE_ELEMENT_STRING,
-                    .offset = offsetof(avs_crypto_security_info_union_t,
-                                       info.file.password)
-                },
-                {
-                    .type = DATA_SOURCE_ELEMENT_END
-                }
-            }[0],
-    [AVS_CRYPTO_DATA_SOURCE_PATH] =
-            &(const avs_crypto_data_source_element_t[]) {
-                {
-                    .type = DATA_SOURCE_ELEMENT_STRING,
-                    .offset = offsetof(avs_crypto_security_info_union_t,
-                                       info.path.path)
-                },
-                {
-                    .type = DATA_SOURCE_ELEMENT_END
-                }
-            }[0],
-    [AVS_CRYPTO_DATA_SOURCE_BUFFER] =
-            &(const avs_crypto_data_source_element_t[]) {
-                {
-                    .type = DATA_SOURCE_ELEMENT_BUFFER,
-                    .offset = offsetof(avs_crypto_security_info_union_t,
-                                       info.buffer.buffer),
-                    .size_offset = offsetof(avs_crypto_security_info_union_t,
-                                            info.buffer.buffer_size)
-                },
-                {
-                    .type = DATA_SOURCE_ELEMENT_STRING,
-                    .offset = offsetof(avs_crypto_security_info_union_t,
-                                       info.buffer.password)
-                },
-                {
-                    .type = DATA_SOURCE_ELEMENT_END
-                }
-            }[0]
+// NOTE: If the layout of any of the existing types changes (i.e., list of types
+// and their semantics), proper persistence version number handling will need to
+// be introduced; see also security_info_persistence().
+static const avs_crypto_data_source_element_t
+        *const DATA_SOURCE_DEFINITIONS[] = {
+            [AVS_CRYPTO_DATA_SOURCE_EMPTY] =
+                    &(const avs_crypto_data_source_element_t[]) {
+                        {
+                            .type = DATA_SOURCE_ELEMENT_END
+                        }
+                    }[0],
+            [AVS_CRYPTO_DATA_SOURCE_FILE] =
+                    &(const avs_crypto_data_source_element_t[]) {
+                        {
+                            .type = DATA_SOURCE_ELEMENT_STRING,
+                            .offset = offsetof(avs_crypto_security_info_union_t,
+                                               info.file.filename)
+                        },
+                        {
+                            .type = DATA_SOURCE_ELEMENT_STRING,
+                            .offset = offsetof(avs_crypto_security_info_union_t,
+                                               info.file.password)
+                        },
+                        {
+                            .type = DATA_SOURCE_ELEMENT_END
+                        }
+                    }[0],
+            [AVS_CRYPTO_DATA_SOURCE_PATH] =
+                    &(const avs_crypto_data_source_element_t[]) {
+                        {
+                            .type = DATA_SOURCE_ELEMENT_STRING,
+                            .offset = offsetof(avs_crypto_security_info_union_t,
+                                               info.path.path)
+                        },
+                        {
+                            .type = DATA_SOURCE_ELEMENT_END
+                        }
+                    }[0],
+            [AVS_CRYPTO_DATA_SOURCE_BUFFER] =
+                    &(const avs_crypto_data_source_element_t[]) {
+                        {
+                            .type = DATA_SOURCE_ELEMENT_BUFFER,
+                            .offset = offsetof(avs_crypto_security_info_union_t,
+                                               info.buffer.buffer),
+                            .size_offset =
+                                    offsetof(avs_crypto_security_info_union_t,
+                                             info.buffer.buffer_size)
+                        },
+                        {
+                            .type = DATA_SOURCE_ELEMENT_STRING,
+                            .offset = offsetof(avs_crypto_security_info_union_t,
+                                               info.buffer.password)
+                        },
+                        {
+                            .type = DATA_SOURCE_ELEMENT_END
+                        }
+                    }[0]
 #    ifdef AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
-    ,
-    [AVS_CRYPTO_DATA_SOURCE_ENGINE] =
-            &(const avs_crypto_data_source_element_t[]) {
-                {
-                    .type = DATA_SOURCE_ELEMENT_STRING,
-                    .offset = offsetof(avs_crypto_security_info_union_t,
-                                       info.engine.query)
-                },
-                {
-                    .type = DATA_SOURCE_ELEMENT_END
-                }
-            }[0]
+            ,
+            [AVS_CRYPTO_DATA_SOURCE_ENGINE] =
+                    &(const avs_crypto_data_source_element_t[]) {
+                        {
+                            .type = DATA_SOURCE_ELEMENT_STRING,
+                            .offset = offsetof(avs_crypto_security_info_union_t,
+                                               info.engine.query)
+                        },
+                        {
+                            .type = DATA_SOURCE_ELEMENT_END
+                        }
+                    }[0]
 #    endif // AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
-};
+        };
+
+const avs_crypto_data_source_element_t *
+_avs_crypto_get_data_source_definition(avs_crypto_data_source_t source) {
+    if ((int) source < 0
+            || (size_t) source > AVS_ARRAY_SIZE(DATA_SOURCE_DEFINITIONS)) {
+        return NULL;
+    }
+    return DATA_SOURCE_DEFINITIONS[source];
+}
 
 static avs_error_t
 calculate_data_buffer_size(size_t *out_buffer_size,
                            const avs_crypto_security_info_union_t *desc) {
-    if ((int) desc->source < 0
-            || (size_t) desc->source > AVS_ARRAY_SIZE(DATA_SOURCE_DEFINITIONS)
-            || !DATA_SOURCE_DEFINITIONS[desc->source]) {
+    const avs_crypto_data_source_element_t *source_def =
+            _avs_crypto_get_data_source_definition(desc->source);
+    if (!source_def) {
         return avs_errno(AVS_EINVAL);
     }
     *out_buffer_size = 0;
-    for (const avs_crypto_data_source_element_t *element =
-                 DATA_SOURCE_DEFINITIONS[desc->source];
+    for (const avs_crypto_data_source_element_t *element = source_def;
          element->type != DATA_SOURCE_ELEMENT_END;
          ++element) {
         switch (element->type) {
@@ -289,40 +287,63 @@ calculate_data_buffer_size(size_t *out_buffer_size,
 
 typedef struct {
     const avs_crypto_security_info_tag_t expected_type;
-    size_t element_count;
-    size_t data_buffer_size;
-} security_info_stats_t;
+    size_t *out_element_count;
+    size_t *out_data_buffer_size;
+} calculate_info_stats_args_t;
 
 static avs_error_t
-calculate_info_stats(const avs_crypto_security_info_union_t *desc,
-                     void *stats_) {
-    security_info_stats_t *stats = (security_info_stats_t *) stats_;
-    if (desc->type != stats->expected_type) {
+calculate_info_stats_cb(const avs_crypto_security_info_union_t *desc,
+                        void *args_) {
+    calculate_info_stats_args_t *args = (calculate_info_stats_args_t *) args_;
+    if (desc->type != args->expected_type) {
         return avs_errno(AVS_EINVAL);
     }
-    ++stats->element_count;
-    size_t element_buffer_size = 0;
-    avs_error_t err = calculate_data_buffer_size(&element_buffer_size, desc);
-    if (avs_is_ok(err)
-            && element_buffer_size >= SIZE_MAX - stats->data_buffer_size) {
-        err = avs_errno(AVS_ENOMEM);
+    if (args->out_element_count) {
+        ++*args->out_element_count;
     }
-    if (avs_is_ok(err)) {
-        stats->data_buffer_size += element_buffer_size;
+    if (args->out_data_buffer_size) {
+        size_t element_buffer_size = 0;
+        avs_error_t err =
+                calculate_data_buffer_size(&element_buffer_size, desc);
+        if (avs_is_ok(err)
+                && element_buffer_size
+                               >= SIZE_MAX - *args->out_data_buffer_size) {
+            err = avs_errno(AVS_ENOMEM);
+        }
+        if (avs_is_err(err)) {
+            return err;
+        }
+        *args->out_data_buffer_size += element_buffer_size;
     }
-    return err;
+    return AVS_OK;
+}
+
+avs_error_t
+_avs_crypto_calculate_info_stats(const avs_crypto_security_info_union_t *desc,
+                                 avs_crypto_security_info_tag_t expected_type,
+                                 size_t *out_element_count,
+                                 size_t *out_data_buffer_size) {
+    if (out_element_count) {
+        *out_element_count = 0;
+    }
+    if (out_data_buffer_size) {
+        *out_data_buffer_size = 0;
+    }
+    return _avs_crypto_security_info_iterate(
+            desc, calculate_info_stats_cb,
+            &(calculate_info_stats_args_t) {
+                .expected_type = expected_type,
+                .out_element_count = out_element_count,
+                .out_data_buffer_size = out_data_buffer_size
+            });
 }
 
 static void copy_element(avs_crypto_security_info_union_t *dest,
                          char **data_buffer_ptr,
                          const avs_crypto_security_info_union_t *src) {
-    assert(src->source >= 0);
-    assert(src->source < AVS_ARRAY_SIZE(DATA_SOURCE_DEFINITIONS));
-    assert(DATA_SOURCE_DEFINITIONS[src->source]);
-
     *dest = *src;
     for (const avs_crypto_data_source_element_t *element =
-                 DATA_SOURCE_DEFINITIONS[src->source];
+                 _avs_crypto_get_data_source_definition(src->source);
          element->type != DATA_SOURCE_ELEMENT_END;
          ++element) {
         switch (element->type) {
@@ -377,25 +398,23 @@ static avs_error_t copy_as_array(avs_crypto_security_info_union_t **out_array,
     if (!out_array || !out_element_count || *out_array) {
         return avs_errno(AVS_EINVAL);
     }
-    security_info_stats_t stats = {
-        .expected_type = tag
-    };
-    avs_error_t err = security_info_iterate(desc, calculate_info_stats, &stats);
+    size_t data_buffer_size = 0;
+    avs_error_t err =
+            _avs_crypto_calculate_info_stats(desc, tag, out_element_count,
+                                             &data_buffer_size);
     if (avs_is_err(err)) {
         return err;
     }
-    *out_element_count = stats.element_count;
-    if (stats.element_count
-                    > SIZE_MAX / sizeof(avs_crypto_security_info_union_t)
-            || stats.data_buffer_size
+    if (*out_element_count > SIZE_MAX / sizeof(avs_crypto_security_info_union_t)
+            || data_buffer_size
                            > SIZE_MAX
-                                         - stats.element_count
+                                         - *out_element_count
                                                        * sizeof(avs_crypto_security_info_union_t)) {
         return avs_errno(AVS_ENOMEM);
     }
     size_t buffer_size =
-            stats.element_count * sizeof(avs_crypto_security_info_union_t)
-            + stats.data_buffer_size;
+            *out_element_count * sizeof(avs_crypto_security_info_union_t)
+            + data_buffer_size;
     if (buffer_size) {
         if (!(*out_array = (avs_crypto_security_info_union_t *) avs_malloc(
                       buffer_size))) {
@@ -403,9 +422,9 @@ static avs_error_t copy_as_array(avs_crypto_security_info_union_t **out_array,
         }
         array_copy_state_t state = {
             .array_ptr = *out_array,
-            .data_buffer_ptr = (char *) &(*out_array)[stats.element_count]
+            .data_buffer_ptr = (char *) &(*out_array)[*out_element_count]
         };
-        err = security_info_iterate(desc, copy_into_array, &state);
+        err = _avs_crypto_security_info_iterate(desc, copy_into_array, &state);
         assert(avs_is_ok(err));
     }
     return AVS_OK;
@@ -505,8 +524,8 @@ avs_error_t avs_crypto_certificate_chain_info_copy_as_list(
         .expected_type = AVS_CRYPTO_SECURITY_INFO_CERTIFICATE_CHAIN,
         .tail_ptr = (AVS_LIST(avs_crypto_security_info_union_t) *) out_list
     };
-    avs_error_t err = security_info_iterate(&trusted_cert_info.desc,
-                                            copy_into_list, &state);
+    avs_error_t err = _avs_crypto_security_info_iterate(&trusted_cert_info.desc,
+                                                        copy_into_list, &state);
     if (avs_is_err(err)) {
         AVS_LIST_CLEAR(out_list);
     }
@@ -523,8 +542,8 @@ avs_error_t avs_crypto_cert_revocation_list_info_copy_as_list(
         .expected_type = AVS_CRYPTO_SECURITY_INFO_CERT_REVOCATION_LIST,
         .tail_ptr = (AVS_LIST(avs_crypto_security_info_union_t) *) out_list
     };
-    avs_error_t err =
-            security_info_iterate(&crl_info.desc, copy_into_list, &state);
+    avs_error_t err = _avs_crypto_security_info_iterate(&crl_info.desc,
+                                                        copy_into_list, &state);
     if (avs_is_err(err)) {
         AVS_LIST_CLEAR(out_list);
     }
@@ -575,23 +594,22 @@ avs_error_t avs_crypto_private_key_info_copy(
             || private_key_info.desc.source == AVS_CRYPTO_DATA_SOURCE_LIST) {
         return avs_errno(AVS_EINVAL);
     }
-    security_info_stats_t stats = {
-        .expected_type = AVS_CRYPTO_SECURITY_INFO_PRIVATE_KEY
-    };
-    avs_error_t err = security_info_iterate(&private_key_info.desc,
-                                            calculate_info_stats, &stats);
+    size_t element_count = 0;
+    size_t data_buffer_size = 0;
+    avs_error_t err = _avs_crypto_calculate_info_stats(
+            &private_key_info.desc, AVS_CRYPTO_SECURITY_INFO_PRIVATE_KEY,
+            &element_count, &data_buffer_size);
     if (avs_is_err(err)) {
         return err;
     }
-    assert(stats.element_count == 0 || stats.element_count == 1);
+    assert(element_count == 0 || element_count == 1);
     if (!(*out_ptr = (avs_crypto_private_key_info_t *) avs_malloc(
-                  sizeof(avs_crypto_private_key_info_t)
-                  + stats.data_buffer_size))) {
+                  sizeof(avs_crypto_private_key_info_t) + data_buffer_size))) {
         return avs_errno(AVS_ENOMEM);
     }
     char *buffer_ptr = (char *) &(*out_ptr)[1];
     copy_element(&(*out_ptr)->desc, &buffer_ptr, &private_key_info.desc);
-    assert(buffer_ptr == ((char *) &(*out_ptr)[1]) + stats.data_buffer_size);
+    assert(buffer_ptr == ((char *) &(*out_ptr)[1]) + data_buffer_size);
     if ((*out_ptr)->desc.source == AVS_CRYPTO_DATA_SOURCE_EMPTY) {
         // EMPTY entries are allowed to have uninitialized type,
         // to support zero-initialization
