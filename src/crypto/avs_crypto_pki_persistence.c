@@ -239,7 +239,9 @@ security_info_persistence(avs_persistence_context_t *ctx,
                           void *allocator_arg) {
     avs_persistence_direction_t direction = avs_persistence_direction(ctx);
     avs_crypto_data_source_t source;
+    assert(desc_ptr);
     if (direction == AVS_PERSISTENCE_STORE) {
+        assert(*desc_ptr);
         source = (*desc_ptr)->source;
         if (source != AVS_CRYPTO_DATA_SOURCE_EMPTY) {
             assert((*desc_ptr)->type == tag);
@@ -288,7 +290,7 @@ security_info_persistence(avs_persistence_context_t *ctx,
             return err;
         }
     } else {
-        assert(desc_ptr && !*desc_ptr);
+        assert(!*desc_ptr);
         assert(allocator);
         if (avs_is_err((err = allocator(desc_ptr, &data_buffer, buffer_size32,
                                         allocator_arg)))) {
@@ -340,7 +342,10 @@ security_info_persist(avs_persistence_context_t *ctx,
     if (element_count > UINT32_MAX) {
         return avs_errno(AVS_E2BIG);
     }
-    err = avs_persistence_u32(ctx, &(uint32_t) { (uint32_t) element_count });
+    if (avs_is_err((err = avs_persistence_u32(
+                            ctx, &(uint32_t) { (uint32_t) element_count })))) {
+        return err;
+    }
     return _avs_crypto_security_info_iterate(desc,
                                              security_info_persist_entry_clb,
                                              &(security_info_persist_args_t) {
