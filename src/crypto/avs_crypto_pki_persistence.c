@@ -238,7 +238,7 @@ security_info_persistence(avs_persistence_context_t *ctx,
                           security_info_persistence_allocator_t *allocator,
                           void *allocator_arg) {
     avs_persistence_direction_t direction = avs_persistence_direction(ctx);
-    avs_crypto_data_source_t source;
+    avs_crypto_data_source_t source = AVS_CRYPTO_DATA_SOURCE_EMPTY;
     assert(desc_ptr);
     if (direction == AVS_PERSISTENCE_STORE) {
         assert(*desc_ptr);
