@@ -90,3 +90,12 @@
     ...
     obj:*/pkcs11.so
 }
+{
+    pkcs11-engine-verify
+    Memcheck:Leak
+    ...
+    fun:BN_MONT_CTX_new
+    fun:BN_MONT_CTX_set_locked
+    ...
+    fun:RSA_verify
+}

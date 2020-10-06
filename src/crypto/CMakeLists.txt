@@ -105,7 +105,7 @@ if(WITH_OPENSSL)
     avs_install_export(avs_crypto_openssl crypto)
 
     if (WITH_OPENSSL_PKCS11_ENGINE)
-        set(AVS_CRYPTO_OPENSSL_ENGINE_TEST_SOURCES
+        set(AVS_CRYPTO_OPENSSL_PKCS11_ENGINE_TEST_SOURCES
             $<$<BOOL:${WITH_PKI}>:${AVS_COMMONS_SOURCE_DIR}/tests/crypto/openssl_engine/openssl_engine_data_loader.c>)
 
         add_library(avs_crypto_openssl_engine
@@ -116,7 +116,7 @@ if(WITH_OPENSSL)
         avs_add_test(NAME avs_crypto_openssl_engine
                     LIBS avs_crypto_openssl_engine OpenSSL::SSL
                     SOURCES
-                    ${AVS_CRYPTO_OPENSSL_ENGINE_TEST_SOURCES})
+                    ${AVS_CRYPTO_OPENSSL_PKCS11_ENGINE_TEST_SOURCES})
         avs_install_export(avs_crypto_openssl_engine crypto)
     endif()
 endif()
