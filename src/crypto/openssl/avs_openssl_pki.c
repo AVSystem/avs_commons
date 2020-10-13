@@ -173,6 +173,46 @@ avs_error_t avs_crypto_pki_ec_gen_pkcs11(const char *token,
 
     return err;
 }
+
+static int remove_pkcs11_keys_with_label(PKCS11_KEY *keys,
+                                         unsigned int key_num,
+                                         const char *label) {
+    for (unsigned int k = 0; k < key_num; k++) {
+        if (strcmp(keys[k].label, label) == 0) {
+            if (PKCS11_remove_key(&keys[k])) {
+                return -1;
+            }
+        }
+    }
+    return 0;
+}
+
+avs_error_t avs_crypto_pki_ec_rm_pkcs11(const char *token,
+                                        const char *label,
+                                        const char *pin) {
+    assert(token && label && pin);
+
+    PKCS11_SLOT *slot = NULL;
+    avs_error_t err = avs_errno(AVS_UNKNOWN_ERROR);
+
+    PKCS11_KEY *keys;
+    unsigned int key_num;
+
+    if ((slot = get_pkcs11_slot(token)) && !PKCS11_open_session(slot, 1)
+            && !PKCS11_login(slot, 0, pin)
+            && !PKCS11_enumerate_keys(slot->token, &keys, &key_num)
+            && !remove_pkcs11_keys_with_label(keys, key_num, label)
+            && !PKCS11_enumerate_public_keys(slot->token, &keys, &key_num)
+            && !remove_pkcs11_keys_with_label(keys, key_num, label)) {
+        err = AVS_OK;
+    }
+
+    if (avs_is_err(err)) {
+        LOG(ERROR, "%s", ERR_error_string(ERR_get_error(), NULL));
+    }
+
+    return err;
+}
 #    endif // AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
 
 static avs_error_t
