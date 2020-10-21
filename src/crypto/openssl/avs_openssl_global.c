@@ -40,11 +40,17 @@ avs_error_t _avs_crypto_initialize_global_state() {
 #    endif
     OpenSSL_add_all_algorithms();
 
-    return _avs_crypto_engine_initialize_global_state();
+    avs_error_t err = AVS_OK;
+#    ifdef AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
+    err = _avs_crypto_openssl_engine_initialize_global_state();
+#    endif // AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
+    return err;
 }
 
 void _avs_crypto_cleanup_global_state() {
-    _avs_crypto_engine_cleanup_global_state();
+#    ifdef AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
+    _avs_crypto_openssl_engine_cleanup_global_state();
+#    endif // AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
 }
 
 #endif // AVS_COMMONS_WITH_OPENSSL

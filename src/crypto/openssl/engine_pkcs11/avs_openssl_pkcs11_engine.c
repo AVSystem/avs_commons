@@ -16,15 +16,18 @@
 
 #define AVS_GLOBAL_SOURCE
 
+#ifdef AVS_COMMONS_OPENSSL_PKCS11_ENGINE_UNIT_TESTING
+#    define _GNU_SOURCE // for mkstemps()
+#endif                  // AVS_COMMONS_OPENSSL_PKCS11_ENGINE_UNIT_TESTING
+
 // NOTE: libp11 headers contain some of the symbols poisoned via inclusion of
 // avs_commons_init.h. Therefore they must be included before poison.
 #define AVS_SUPPRESS_POISONING
 #include <avs_commons_init.h>
 
-#if defined(AVS_COMMONS_WITH_AVS_CRYPTO)                          \
-        && defined(AVS_COMMONS_WITH_AVS_CRYPTO_ADVANCED_FEATURES) \
-        && defined(AVS_COMMONS_WITH_AVS_CRYPTO_PKI)               \
-        && defined(AVS_COMMONS_WITH_OPENSSL)                      \
+#if defined(AVS_COMMONS_WITH_AVS_CRYPTO)            \
+        && defined(AVS_COMMONS_WITH_AVS_CRYPTO_PKI) \
+        && defined(AVS_COMMONS_WITH_OPENSSL)        \
         && defined(AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE)
 
 #    include <string.h>
@@ -43,12 +46,12 @@
 
 VISIBILITY_SOURCE_BEGIN
 
-ENGINE *_avs_global_engine;
+static ENGINE *global_engine;
 static PKCS11_CTX *global_pkcs11_ctx;
 static PKCS11_SLOT *global_pkcs11_slots;
 static unsigned int global_pkcs11_slot_num;
 
-avs_error_t _avs_crypto_engine_initialize_global_state(void) {
+avs_error_t _avs_crypto_openssl_engine_initialize_global_state(void) {
     const char *pkcs11_path = getenv("PKCS11_MODULE_PATH");
     if (pkcs11_path) {
         if (!(global_pkcs11_ctx = PKCS11_CTX_new())
@@ -56,7 +59,7 @@ avs_error_t _avs_crypto_engine_initialize_global_state(void) {
                 || PKCS11_enumerate_slots(global_pkcs11_ctx,
                                           &global_pkcs11_slots,
                                           &global_pkcs11_slot_num)
-                || !(_avs_global_engine = ENGINE_by_id("pkcs11"))) {
+                || !(global_engine = ENGINE_by_id("pkcs11"))) {
             log_openssl_error();
             return avs_errno(AVS_ENOTSUP);
         }
@@ -67,18 +70,68 @@ avs_error_t _avs_crypto_engine_initialize_global_state(void) {
     return AVS_OK;
 }
 
-void _avs_crypto_engine_cleanup_global_state(void) {
-    ENGINE_free(_avs_global_engine);
+void _avs_crypto_openssl_engine_cleanup_global_state(void) {
+    ENGINE_free(global_engine);
     PKCS11_release_all_slots(global_pkcs11_ctx, global_pkcs11_slots,
                              global_pkcs11_slot_num);
     PKCS11_CTX_unload(global_pkcs11_ctx);
     PKCS11_CTX_free(global_pkcs11_ctx);
-    _avs_global_engine = NULL;
+    global_engine = NULL;
     global_pkcs11_ctx = NULL;
     global_pkcs11_slots = NULL;
     global_pkcs11_slot_num = 0;
 }
 
+avs_error_t _avs_crypto_openssl_engine_load_crls(X509_STORE *store,
+                                                 const char *query) {
+    (void) store;
+    (void) query;
+    LOG(ERROR, "Loading CRLs from HSM not supported");
+    return avs_errno(AVS_ENOTSUP);
+}
+
+EVP_PKEY *_avs_crypto_openssl_engine_load_private_key(const char *query) {
+    if (!global_engine || !query || !ENGINE_init(global_engine)) {
+        LOG(ERROR,
+            _("Cannot load key from the engine - engine uninitialized."));
+        return NULL;
+    }
+
+    EVP_PKEY *pkey = ENGINE_load_private_key(global_engine, query, NULL, NULL);
+
+    ENGINE_finish(global_engine);
+
+    return pkey;
+}
+
+avs_error_t
+_avs_crypto_openssl_engine_load_certs(const char *cert_id,
+                                      avs_crypto_ossl_object_load_t *load_cb,
+                                      void *cb_arg) {
+    assert(cert_id);
+
+    LOG(ERROR, _("certificate <cert_id=") "%s" _(">: going to load"), cert_id);
+
+    struct {
+        const char *cert_id;
+        X509 *cert;
+    } params = {
+        .cert_id = cert_id,
+        .cert = NULL
+    };
+
+    if (!ENGINE_ctrl_cmd(global_engine, "LOAD_CERT_CTRL", 0, &params, NULL, 1)
+            || params.cert == NULL) {
+        return avs_errno(AVS_EIO);
+    }
+
+    avs_error_t err = load_cb((void *) params.cert, cb_arg);
+    X509_free(params.cert);
+
+    return err;
+}
+
+#    ifdef AVS_COMMONS_WITH_AVS_CRYPTO_ADVANCED_FEATURES
 static PKCS11_SLOT *get_pkcs11_slot(const char *token_label) {
     PKCS11_SLOT *current_slot =
             PKCS11_find_token(global_pkcs11_ctx, global_pkcs11_slots,
@@ -103,10 +156,10 @@ avs_error_t avs_crypto_pki_ec_gen_pkcs11(const char *token,
     PKCS11_SLOT *slot = NULL;
     avs_error_t err = avs_errno(AVS_UNKNOWN_ERROR);
 
-#    ifdef AVS_COMMONS_HAVE_PRAGMA_DIAGNOSTIC
-#        pragma GCC diagnostic push
-#        pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-#    endif // AVS_COMMONS_HAVE_PRAGMA_DIAGNOSTIC
+#        ifdef AVS_COMMONS_HAVE_PRAGMA_DIAGNOSTIC
+#            pragma GCC diagnostic push
+#            pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#        endif // AVS_COMMONS_HAVE_PRAGMA_DIAGNOSTIC
     if ((slot = get_pkcs11_slot(token)) && !PKCS11_open_session(slot, 1)
             && !PKCS11_login(slot, 0, pin)
             && !PKCS11_generate_key(
@@ -114,9 +167,9 @@ avs_error_t avs_crypto_pki_ec_gen_pkcs11(const char *token,
                        (unsigned char *) (intptr_t) label, strlen(label))) {
         err = AVS_OK;
     }
-#    ifdef AVS_COMMONS_HAVE_PRAGMA_DIAGNOSTIC
-#        pragma GCC diagnostic pop
-#    endif // AVS_COMMONS_HAVE_PRAGMA_DIAGNOSTIC
+#        ifdef AVS_COMMONS_HAVE_PRAGMA_DIAGNOSTIC
+#            pragma GCC diagnostic pop
+#        endif // AVS_COMMONS_HAVE_PRAGMA_DIAGNOSTIC
 
     if (avs_is_err(err)) {
         LOG(ERROR, "%s", ERR_error_string(ERR_get_error(), NULL));
@@ -164,9 +217,13 @@ avs_error_t avs_crypto_pki_ec_rm_pkcs11(const char *token,
 
     return err;
 }
+#    endif // AVS_COMMONS_WITH_AVS_CRYPTO_ADVANCED_FEATURES
+
+#    ifdef AVS_COMMONS_OPENSSL_PKCS11_ENGINE_UNIT_TESTING
+#        include "tests/crypto/openssl_engine/openssl_engine_data_loader.c"
+#    endif // AVS_COMMONS_OPENSSL_PKCS11_ENGINE_UNIT_TESTING
 
 #endif // defined(AVS_COMMONS_WITH_AVS_CRYPTO) &&
-       // defined(AVS_COMMONS_WITH_AVS_CRYPTO_ADVANCED_FEATURES) &&
        // defined(AVS_COMMONS_WITH_AVS_CRYPTO_PKI) &&
        // defined(AVS_COMMONS_WITH_OPENSSL) &&
        // defined(AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE)

@@ -16,23 +16,27 @@
 #ifndef CRYPTO_OPENSSL_GLOBAL_H
 #define CRYPTO_OPENSSL_GLOBAL_H
 
+#include "../avs_global.h"
+
 #ifdef AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
 #    include <openssl/engine.h>
 
-#    include "../avs_global.h"
+#    include "avs_openssl_data_loader.h"
 
 VISIBILITY_PRIVATE_HEADER_BEGIN
 
-extern ENGINE *_avs_global_engine;
-avs_error_t _avs_crypto_engine_initialize_global_state(void);
-void _avs_crypto_engine_cleanup_global_state(void);
+avs_error_t _avs_crypto_openssl_engine_load_crls(X509_STORE *store,
+                                                 const char *query);
+EVP_PKEY *_avs_crypto_openssl_engine_load_private_key(const char *query);
+avs_error_t
+_avs_crypto_openssl_engine_load_certs(const char *cert_id,
+                                      avs_crypto_ossl_object_load_t *load_cb,
+                                      void *cb_arg);
+
+avs_error_t _avs_crypto_openssl_engine_initialize_global_state(void);
+void _avs_crypto_openssl_engine_cleanup_global_state(void);
 
 VISIBILITY_PRIVATE_HEADER_END
-
-#else // AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
-
-#    define _avs_crypto_engine_initialize_global_state(...) AVS_OK
-#    define _avs_crypto_engine_cleanup_global_state(...) ((void) 0)
 
 #endif // AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
 
