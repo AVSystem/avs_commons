@@ -16,28 +16,24 @@
 #ifndef CRYPTO_OPENSSL_GLOBAL_H
 #define CRYPTO_OPENSSL_GLOBAL_H
 
-#define AVS_SUPPRESS_POISONING
-#include <avs_commons_init.h>
-
-#include <openssl/ssl.h>
 #ifdef AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
-#    include <libp11.h>
 #    include <openssl/engine.h>
-#endif // AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
 
-#include <avs_commons_poison.h>
-
-#include "../avs_global.h"
+#    include "../avs_global.h"
 
 VISIBILITY_PRIVATE_HEADER_BEGIN
 
-#ifdef AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
 extern ENGINE *_avs_global_engine;
-extern PKCS11_CTX *_avs_global_pkcs11_ctx;
-extern PKCS11_SLOT *_avs_global_pkcs11_slots;
-extern unsigned int _avs_global_pkcs11_slot_num;
-#endif // AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
+avs_error_t _avs_crypto_engine_initialize_global_state(void);
+void _avs_crypto_engine_cleanup_global_state(void);
 
 VISIBILITY_PRIVATE_HEADER_END
+
+#else // AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
+
+#    define _avs_crypto_engine_initialize_global_state(...) AVS_OK
+#    define _avs_crypto_engine_cleanup_global_state(...) ((void) 0)
+
+#endif // AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
 
 #endif // CRYPTO_OPENSSL_GLOBAL_H

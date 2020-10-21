@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+#define AVS_GLOBAL_SOURCE
+
 // NOTE: libp11 headers contain some of the symbols poisoned via inclusion of
 // avs_commons_init.h. Therefore they must be included before poison.
 #define AVS_SUPPRESS_POISONING
@@ -33,23 +35,61 @@
 
 #    include <avsystem/commons/avs_crypto_pki.h>
 
+#    include "../avs_openssl_common.h"
 #    include "../avs_openssl_global.h"
 
 #    define MODULE_NAME avs_crypto_engine
 #    include <avs_x_log_config.h>
 
+VISIBILITY_SOURCE_BEGIN
+
+ENGINE *_avs_global_engine;
+static PKCS11_CTX *global_pkcs11_ctx;
+static PKCS11_SLOT *global_pkcs11_slots;
+static unsigned int global_pkcs11_slot_num;
+
+avs_error_t _avs_crypto_engine_initialize_global_state(void) {
+    const char *pkcs11_path = getenv("PKCS11_MODULE_PATH");
+    if (pkcs11_path) {
+        if (!(global_pkcs11_ctx = PKCS11_CTX_new())
+                || PKCS11_CTX_load(global_pkcs11_ctx, pkcs11_path)
+                || PKCS11_enumerate_slots(global_pkcs11_ctx,
+                                          &global_pkcs11_slots,
+                                          &global_pkcs11_slot_num)
+                || !(_avs_global_engine = ENGINE_by_id("pkcs11"))) {
+            log_openssl_error();
+            return avs_errno(AVS_ENOTSUP);
+        }
+    } else {
+        LOG(WARNING,
+            "PKCS11_MODULE_PATH not set, not loading the PKCS11 engine.");
+    }
+    return AVS_OK;
+}
+
+void _avs_crypto_engine_cleanup_global_state(void) {
+    ENGINE_free(_avs_global_engine);
+    PKCS11_release_all_slots(global_pkcs11_ctx, global_pkcs11_slots,
+                             global_pkcs11_slot_num);
+    PKCS11_CTX_unload(global_pkcs11_ctx);
+    PKCS11_CTX_free(global_pkcs11_ctx);
+    _avs_global_engine = NULL;
+    global_pkcs11_ctx = NULL;
+    global_pkcs11_slots = NULL;
+    global_pkcs11_slot_num = 0;
+}
+
 static PKCS11_SLOT *get_pkcs11_slot(const char *token_label) {
     PKCS11_SLOT *current_slot =
-            PKCS11_find_token(_avs_global_pkcs11_ctx, _avs_global_pkcs11_slots,
-                              _avs_global_pkcs11_slot_num);
+            PKCS11_find_token(global_pkcs11_ctx, global_pkcs11_slots,
+                              global_pkcs11_slot_num);
     while (current_slot != NULL) {
         if (strcmp(token_label, current_slot->token->label) == 0) {
             return current_slot;
         }
-        current_slot = PKCS11_find_next_token(_avs_global_pkcs11_ctx,
-                                              _avs_global_pkcs11_slots,
-                                              _avs_global_pkcs11_slot_num,
-                                              current_slot);
+        current_slot =
+                PKCS11_find_next_token(global_pkcs11_ctx, global_pkcs11_slots,
+                                       global_pkcs11_slot_num, current_slot);
     }
 
     return NULL;
