@@ -78,7 +78,8 @@ if(WITH_OPENSSL)
         openssl/avs_openssl_prng.c
         openssl/avs_openssl_prng.h
         openssl/avs_openssl_global.c
-        openssl/avs_openssl_global.h)
+        openssl/avs_openssl_global.h
+        openssl/engine_pkcs11/avs_openssl_pkcs11_engine.c)
 
     set(AVS_CRYPTO_OPENSSL_TEST_SOURCES
         ${AVS_CRYPTO_TEST_SOURCES}

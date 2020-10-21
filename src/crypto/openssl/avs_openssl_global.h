@@ -21,8 +21,8 @@
 
 #include <openssl/ssl.h>
 #ifdef AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
-#    include <openssl/engine.h>
 #    include <libp11.h>
+#    include <openssl/engine.h>
 #endif // AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
 
 #include <avs_commons_poison.h>
