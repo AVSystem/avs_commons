@@ -321,6 +321,7 @@ AVS_UNIT_TEST(backend_openssl_engine, cert_loading_from_pkcs11) {
     AVS_UNIT_ASSERT_SUCCESS(unlink(cert_path));
 }
 
+#ifdef AVS_COMMONS_WITH_AVS_CRYPTO_ADVANCED_FEATURES
 static int check_matching_pkcs11_objects_qty(const char *label) {
     char pkcs11_command[300];
     AVS_UNIT_ASSERT_TRUE(
@@ -370,3 +371,4 @@ AVS_UNIT_TEST(backend_openssl_engine, pkcs11_key_pair_generation_and_removal) {
 
     AVS_UNIT_ASSERT_EQUAL(check_matching_pkcs11_objects_qty(label), 0);
 }
+#endif // AVS_COMMONS_WITH_AVS_CRYPTO_ADVANCED_FEATURES
