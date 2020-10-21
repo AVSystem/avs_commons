@@ -33,13 +33,14 @@
 #    include <string.h>
 
 #    include <libp11.h>
+#    include <openssl/engine.h>
 
 #    include <avs_commons_poison.h>
 
 #    include <avsystem/commons/avs_crypto_pki.h>
 
 #    include "../avs_openssl_common.h"
-#    include "../avs_openssl_global.h"
+#    include "../avs_openssl_engine.h"
 
 #    define MODULE_NAME avs_crypto_engine
 #    include <avs_x_log_config.h>

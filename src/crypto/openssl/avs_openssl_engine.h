@@ -13,13 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef CRYPTO_OPENSSL_GLOBAL_H
-#define CRYPTO_OPENSSL_GLOBAL_H
-
-#include "../avs_global.h"
+#ifndef CRYPTO_OPENSSL_ENGINE_H
+#define CRYPTO_OPENSSL_ENGINE_H
 
 #ifdef AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
-#    include <openssl/engine.h>
+#    include <openssl/x509.h>
 
 #    include "avs_openssl_data_loader.h"
 
@@ -40,4 +38,4 @@ VISIBILITY_PRIVATE_HEADER_END
 
 #endif // AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
 
-#endif // CRYPTO_OPENSSL_GLOBAL_H
+#endif // CRYPTO_OPENSSL_ENGINE_H

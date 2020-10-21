@@ -29,7 +29,7 @@
 
 #    include "avs_openssl_common.h"
 #    include "avs_openssl_data_loader.h"
-#    include "avs_openssl_global.h"
+#    include "avs_openssl_engine.h"
 
 #    include "../avs_global.h"
 

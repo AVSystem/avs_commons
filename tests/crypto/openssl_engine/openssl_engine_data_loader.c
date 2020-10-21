@@ -36,7 +36,7 @@
 #include "src/crypto/avs_global.h"
 #include "src/crypto/openssl/avs_openssl_common.h"
 #include "src/crypto/openssl/avs_openssl_data_loader.h"
-#include "src/crypto/openssl/avs_openssl_global.h"
+#include "src/crypto/openssl/avs_openssl_engine.h"
 
 #ifdef MODULE_NAME
 #    undef MODULE_NAME

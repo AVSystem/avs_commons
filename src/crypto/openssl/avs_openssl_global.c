@@ -20,7 +20,9 @@
 #include <openssl/ssl.h>
 
 #include "avs_openssl_common.h"
-#include "avs_openssl_global.h"
+#include "avs_openssl_engine.h"
+
+#include "../avs_global.h"
 
 #include <avs_commons_poison.h>
 

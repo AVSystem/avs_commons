@@ -73,12 +73,12 @@ if(WITH_OPENSSL)
         ${AVS_CRYPTO_COMMON_SOURCES}
         openssl/avs_openssl_aead.c
         openssl/avs_openssl_data_loader.c
+        openssl/avs_openssl_engine.h
         openssl/avs_openssl_hkdf.c
         openssl/avs_openssl_pki.c
         openssl/avs_openssl_prng.c
         openssl/avs_openssl_prng.h
         openssl/avs_openssl_global.c
-        openssl/avs_openssl_global.h
         openssl/engine_pkcs11/avs_openssl_pkcs11_engine.c)
 
     set(AVS_CRYPTO_OPENSSL_TEST_SOURCES
