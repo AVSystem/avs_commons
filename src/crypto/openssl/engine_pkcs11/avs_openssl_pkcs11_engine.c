@@ -111,7 +111,7 @@ _avs_crypto_openssl_engine_load_certs(const char *cert_id,
                                       void *cb_arg) {
     assert(cert_id);
 
-    LOG(ERROR, _("certificate <cert_id=") "%s" _(">: going to load"), cert_id);
+    LOG(DEBUG, _("certificate <cert_id=") "%s" _(">: going to load"), cert_id);
 
     struct {
         const char *cert_id;

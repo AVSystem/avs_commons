@@ -94,7 +94,7 @@ if(WITH_OPENSSL)
     add_library(avs_crypto_openssl
                 ${AVS_CRYPTO_PUBLIC_HEADERS}
                 ${AVS_CRYPTO_OPENSSL_SOURCES})
-    target_link_libraries(avs_crypto_openssl PUBLIC avs_crypto_core OpenSSL::Crypto p11)
+    target_link_libraries(avs_crypto_openssl PUBLIC avs_crypto_core OpenSSL::Crypto)
     if(WITH_PKI AND WITH_AVS_STREAM_FILE)
         target_link_libraries(avs_crypto_openssl PUBLIC avs_stream)
     endif()
@@ -103,10 +103,10 @@ if(WITH_OPENSSL)
                  LIBS avs_crypto_openssl OpenSSL::SSL
                  SOURCES
                  ${AVS_CRYPTO_OPENSSL_TEST_SOURCES})
-    avs_install_export(avs_crypto_openssl crypto)
 
-    if (WITH_OPENSSL_PKCS11_ENGINE AND WITH_PKI)
-        target_link_libraries(avs_crypto_openssl PUBLIC OpenSSL::SSL p11)
+    if (WITH_OPENSSL_PKCS11_ENGINE)
+        target_link_libraries(avs_crypto_openssl PUBLIC OpenSSL::SSL ${LIBP11_LIBRARIES})
+        target_include_directories(avs_crypto_openssl PRIVATE ${LIBP11_INCLUDE_DIRS})
 
         avs_add_test(NAME avs_crypto_openssl_engine
                      LIBS $<TARGET_PROPERTY:avs_crypto_openssl,LINK_LIBRARIES>
@@ -118,6 +118,8 @@ if(WITH_OPENSSL)
                              ENVIRONMENT "PKCS11_MODULE_PATH=${SOFTHSM2_LIB}")
         endif()
     endif()
+
+    avs_install_export(avs_crypto_openssl crypto)
 endif()
 
 if(WITH_MBEDTLS)
