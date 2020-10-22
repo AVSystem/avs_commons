@@ -424,7 +424,7 @@ if(WITH_TEST)
     function(avs_add_test)
         set(options)
         set(one_value_args NAME)
-        set(multi_value_args LIBS SOURCES VALGRIND_ARGS COMPILE_DEFINITIONS)
+        set(multi_value_args LIBS SOURCES VALGRIND_ARGS COMPILE_DEFINITIONS ENVIRONMENT)
         cmake_parse_arguments(AAT "${options}" "${one_value_args}" "${multi_value_args}" ${ARGN})
 
         add_executable(${AAT_NAME}_test EXCLUDE_FROM_ALL
@@ -446,6 +446,7 @@ if(WITH_TEST)
         add_test(NAME ${AAT_NAME}_test
                  COMMAND ${VALGRIND_CMD} $<TARGET_FILE:${AAT_NAME}_test>
                  WORKING_DIRECTORY $<TARGET_FILE_DIR:${AAT_NAME}_test>)
+        set_property(TEST ${AAT_NAME}_test APPEND PROPERTY ENVIRONMENT ${AAT_ENVIRONMENT})
 
         add_custom_target(${AAT_NAME}_check COMMAND ${CMAKE_CTEST_COMMAND} -V -R "^${AAT_NAME}_test$" DEPENDS ${AAT_NAME}_test)
         add_dependencies(avs_commons_check ${AAT_NAME}_check)

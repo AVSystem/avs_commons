@@ -111,12 +111,8 @@ if(WITH_OPENSSL)
         avs_add_test(NAME avs_crypto_openssl_engine
                      LIBS $<TARGET_PROPERTY:avs_crypto_openssl,LINK_LIBRARIES>
                      COMPILE_DEFINITIONS AVS_COMMONS_OPENSSL_PKCS11_ENGINE_UNIT_TESTING
-                     SOURCES $<TARGET_PROPERTY:avs_crypto_openssl,SOURCES>)
-        if(WITH_TEST)
-            set_property(TEST avs_crypto_openssl_engine_test
-                         APPEND PROPERTY
-                             ENVIRONMENT "PKCS11_MODULE_PATH=${SOFTHSM2_LIB}")
-        endif()
+                     SOURCES $<TARGET_PROPERTY:avs_crypto_openssl,SOURCES>
+                     ENVIRONMENT "PKCS11_MODULE_PATH=${SOFTHSM2_LIB}")
     endif()
 
     avs_install_export(avs_crypto_openssl crypto)
