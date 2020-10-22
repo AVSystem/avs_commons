@@ -159,8 +159,8 @@
 #        pragma GCC poison free
 #    endif // AVS_UTILS_COMPAT_STDLIB_MEMORY_C
 
-#    ifndef AVS_UNIT_SOURCE
-// used in unit testing framework
+#    if !defined(AVS_UNIT_SOURCE) && !defined(AVS_GLOBAL_SOURCE)
+// used in unit testing framework and some global settings
 #        pragma GCC poison atexit
 #        pragma GCC poison exit
 #        pragma GCC poison getenv
