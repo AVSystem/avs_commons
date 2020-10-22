@@ -16,7 +16,7 @@
 #ifndef CRYPTO_OPENSSL_ENGINE_H
 #define CRYPTO_OPENSSL_ENGINE_H
 
-#ifdef AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
+#ifdef AVS_COMMONS_WITH_AVS_CRYPTO_ENGINE
 #    include <openssl/x509.h>
 
 #    include "avs_openssl_data_loader.h"
@@ -36,6 +36,6 @@ void _avs_crypto_openssl_engine_cleanup_global_state(void);
 
 VISIBILITY_PRIVATE_HEADER_END
 
-#endif // AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
+#endif // AVS_COMMONS_WITH_AVS_CRYPTO_ENGINE
 
 #endif // CRYPTO_OPENSSL_ENGINE_H

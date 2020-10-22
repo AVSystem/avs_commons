@@ -46,11 +46,11 @@ static avs_error_t data_source_persistence(avs_persistence_context_t *ctx,
         case AVS_CRYPTO_DATA_SOURCE_BUFFER:
             source_ch = 'B';
             break;
-#    ifdef AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
+#    ifdef AVS_COMMONS_WITH_AVS_CRYPTO_ENGINE
         case AVS_CRYPTO_DATA_SOURCE_ENGINE:
             source_ch = 'E';
             break;
-#    endif // AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
+#    endif // AVS_COMMONS_WITH_AVS_CRYPTO_ENGINE
         default:
             return avs_errno(AVS_EINVAL);
         }
@@ -75,11 +75,11 @@ static avs_error_t data_source_persistence(avs_persistence_context_t *ctx,
         case 'B':
             *source = AVS_CRYPTO_DATA_SOURCE_BUFFER;
             break;
-#    ifdef AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
+#    ifdef AVS_COMMONS_WITH_AVS_CRYPTO_ENGINE
         case 'E':
             *source = AVS_CRYPTO_DATA_SOURCE_ENGINE;
             break;
-#    endif // AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
+#    endif // AVS_COMMONS_WITH_AVS_CRYPTO_ENGINE
         default:
             return avs_errno(AVS_EIO);
         }

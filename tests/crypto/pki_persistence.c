@@ -454,7 +454,7 @@ AVS_UNIT_TEST(avs_crypto_pki_persistence, private_key_empty_persistence) {
     avs_free(restored);
 }
 
-#ifdef AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
+#ifdef AVS_COMMONS_WITH_AVS_CRYPTO_ENGINE
 AVS_UNIT_TEST(avs_crypto_pki_persistence, private_key_engine_persistence) {
     avs_crypto_private_key_info_t info =
             avs_crypto_private_key_info_from_engine(
@@ -502,7 +502,7 @@ AVS_UNIT_TEST(avs_crypto_pki_persistence, private_key_engine_persistence) {
 
     avs_free(restored);
 }
-#endif // AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
+#endif // AVS_COMMONS_WITH_AVS_CRYPTO_ENGINE
 
 AVS_UNIT_TEST(avs_crypto_pki_persistence, private_key_file_persistence) {
     avs_crypto_private_key_info_t info =

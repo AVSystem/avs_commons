@@ -39,11 +39,11 @@
 extern "C" {
 #endif
 
-#ifdef AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
+#ifdef AVS_COMMONS_WITH_AVS_CRYPTO_ENGINE
 typedef struct {
     const char *query;
 } avs_crypto_security_info_union_internal_engine_t;
-#endif // AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
+#endif // AVS_COMMONS_WITH_AVS_CRYPTO_ENGINE
 
 typedef struct {
     const char *filename;
@@ -85,9 +85,9 @@ typedef enum {
     AVS_CRYPTO_DATA_SOURCE_BUFFER,
     AVS_CRYPTO_DATA_SOURCE_ARRAY,
     AVS_CRYPTO_DATA_SOURCE_LIST,
-#ifdef AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
+#ifdef AVS_COMMONS_WITH_AVS_CRYPTO_ENGINE
     AVS_CRYPTO_DATA_SOURCE_ENGINE
-#endif // AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
+#endif // AVS_COMMONS_WITH_AVS_CRYPTO_ENGINE
 } avs_crypto_data_source_t;
 
 /**
@@ -107,9 +107,9 @@ struct avs_crypto_security_info_union_struct {
         avs_crypto_security_info_union_internal_buffer_t buffer;
         avs_crypto_security_info_union_internal_array_t array;
         avs_crypto_security_info_union_internal_list_t list;
-#ifdef AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
+#ifdef AVS_COMMONS_WITH_AVS_CRYPTO_ENGINE
         avs_crypto_security_info_union_internal_engine_t engine;
-#endif // AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
+#endif // AVS_COMMONS_WITH_AVS_CRYPTO_ENGINE
     } info;
 };
 
@@ -121,7 +121,7 @@ AVS_STATIC_ASSERT(sizeof(avs_crypto_certificate_chain_info_t)
                           == sizeof(avs_crypto_security_info_union_t),
                   certificate_chain_info_equivalent_to_union);
 
-#ifdef AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
+#ifdef AVS_COMMONS_WITH_AVS_CRYPTO_ENGINE
 /**
  * Creates certificate chain descriptor used later on to load certificate from
  * the engine.
@@ -132,7 +132,7 @@ AVS_STATIC_ASSERT(sizeof(avs_crypto_certificate_chain_info_t)
  */
 avs_crypto_certificate_chain_info_t
 avs_crypto_certificate_chain_info_from_engine(const char *query);
-#endif // AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
+#endif // AVS_COMMONS_WITH_AVS_CRYPTO_ENGINE
 
 /**
  * Creates a certificate chain descriptor used later on to load a
@@ -428,7 +428,7 @@ AVS_STATIC_ASSERT(sizeof(avs_crypto_private_key_info_t)
                           == sizeof(avs_crypto_security_info_union_t),
                   private_key_info_equivalent_to_union);
 
-#ifdef AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
+#ifdef AVS_COMMONS_WITH_AVS_CRYPTO_ENGINE
 /**
  * Creates private key descriptor used later on to load private key from the
  * engine.
@@ -439,7 +439,7 @@ AVS_STATIC_ASSERT(sizeof(avs_crypto_private_key_info_t)
  */
 avs_crypto_private_key_info_t
 avs_crypto_private_key_info_from_engine(const char *query);
-#endif // AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
+#endif // AVS_COMMONS_WITH_AVS_CRYPTO_ENGINE
 
 /**
  * Creates private key descriptor used later on to load private key from
@@ -828,7 +828,7 @@ avs_error_t avs_crypto_pki_ec_gen(avs_crypto_prng_ctx_t *prng_ctx,
                                   void *out_der_secret_key,
                                   size_t *inout_der_secret_key_size);
 
-#    ifdef AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
+#    ifdef AVS_COMMONS_WITH_AVS_CRYPTO_ENGINE
 /**
  * Generates a random private key (in a form that allows deriving the public key
  * from it) suitable for use with elliptic curve cryptography, using PKCS11
@@ -856,7 +856,7 @@ avs_error_t avs_crypto_pki_ec_gen_pkcs11(const char *token,
 avs_error_t avs_crypto_pki_ec_rm_pkcs11(const char *token,
                                         const char *label,
                                         const char *pin);
-#    endif // AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
+#    endif // AVS_COMMONS_WITH_AVS_CRYPTO_ENGINE
 
 /**
  * Structure representing a type of a Distinguished Name attribute.

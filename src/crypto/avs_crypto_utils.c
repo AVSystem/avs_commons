@@ -31,7 +31,7 @@
 
 VISIBILITY_SOURCE_BEGIN
 
-#    ifdef AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
+#    ifdef AVS_COMMONS_WITH_AVS_CRYPTO_ENGINE
 avs_crypto_certificate_chain_info_t
 avs_crypto_certificate_chain_info_from_engine(const char *query) {
     avs_crypto_certificate_chain_info_t result;
@@ -41,7 +41,7 @@ avs_crypto_certificate_chain_info_from_engine(const char *query) {
     result.desc.info.engine.query = query;
     return result;
 }
-#    endif // AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
+#    endif // AVS_COMMONS_WITH_AVS_CRYPTO_ENGINE
 
 avs_crypto_certificate_chain_info_t
 avs_crypto_certificate_chain_info_from_file(const char *filename) {
@@ -226,7 +226,7 @@ static const avs_crypto_data_source_element_t
                             .type = DATA_SOURCE_ELEMENT_END
                         }
                     }[0]
-#    ifdef AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
+#    ifdef AVS_COMMONS_WITH_AVS_CRYPTO_ENGINE
             ,
             [AVS_CRYPTO_DATA_SOURCE_ENGINE] =
                     &(const avs_crypto_data_source_element_t[]) {
@@ -239,7 +239,7 @@ static const avs_crypto_data_source_element_t
                             .type = DATA_SOURCE_ELEMENT_END
                         }
                     }[0]
-#    endif // AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
+#    endif // AVS_COMMONS_WITH_AVS_CRYPTO_ENGINE
         };
 
 const avs_crypto_data_source_element_t *
@@ -551,7 +551,7 @@ avs_error_t avs_crypto_cert_revocation_list_info_copy_as_list(
 }
 #    endif // AVS_COMMONS_WITH_AVS_LIST
 
-#    ifdef AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
+#    ifdef AVS_COMMONS_WITH_AVS_CRYPTO_ENGINE
 avs_crypto_private_key_info_t
 avs_crypto_private_key_info_from_engine(const char *query) {
     avs_crypto_private_key_info_t result;
@@ -560,7 +560,7 @@ avs_crypto_private_key_info_from_engine(const char *query) {
     result.desc.info.engine.query = query;
     return result;
 }
-#    endif // AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
+#    endif // AVS_COMMONS_WITH_AVS_CRYPTO_ENGINE
 
 avs_crypto_private_key_info_t
 avs_crypto_private_key_info_from_file(const char *filename,

@@ -254,7 +254,7 @@ avs_error_t _avs_crypto_openssl_load_crls(
     switch (info->desc.source) {
     case AVS_CRYPTO_DATA_SOURCE_EMPTY:
         return AVS_OK;
-#    ifdef AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
+#    ifdef AVS_COMMONS_WITH_AVS_CRYPTO_ENGINE
     case AVS_CRYPTO_DATA_SOURCE_ENGINE:
         if (!info->desc.info.engine.query) {
             LOG(ERROR, _("attempt to load CRL from engine, but query=NULL"));
@@ -262,7 +262,7 @@ avs_error_t _avs_crypto_openssl_load_crls(
         }
         return _avs_crypto_openssl_engine_load_crls(
                 store, info->desc.info.engine.query);
-#    endif // AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
+#    endif // AVS_COMMONS_WITH_AVS_CRYPTO_ENGINE
     case AVS_CRYPTO_DATA_SOURCE_FILE:
         if (!info->desc.info.file.filename) {
             LOG(ERROR, _("attempt to load CRL from file, but filename=NULL"));
@@ -419,7 +419,7 @@ avs_error_t _avs_crypto_openssl_load_private_key(
         EVP_PKEY **out_key, const avs_crypto_private_key_info_t *info) {
     assert(out_key && !*out_key);
     switch (info->desc.source) {
-#    ifdef AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
+#    ifdef AVS_COMMONS_WITH_AVS_CRYPTO_ENGINE
     case AVS_CRYPTO_DATA_SOURCE_ENGINE:
         if (!info->desc.info.engine.query) {
             LOG(ERROR,
@@ -429,7 +429,7 @@ avs_error_t _avs_crypto_openssl_load_private_key(
         *out_key = _avs_crypto_openssl_engine_load_private_key(
                 info->desc.info.engine.query);
         return AVS_OK;
-#    endif // AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
+#    endif // AVS_COMMONS_WITH_AVS_CRYPTO_ENGINE
     case AVS_CRYPTO_DATA_SOURCE_FILE: {
         if (!info->desc.info.file.filename) {
             LOG(ERROR,
@@ -512,7 +512,7 @@ pass_cert_to_cb(void *cb_info_,
                 const avs_crypto_certificate_chain_info_t *info) {
     load_certs_cb_info_t *cb_info = (load_certs_cb_info_t *) cb_info_;
     switch (info->desc.source) {
-#    ifdef AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
+#    ifdef AVS_COMMONS_WITH_AVS_CRYPTO_ENGINE
     case AVS_CRYPTO_DATA_SOURCE_ENGINE:
         if (!info->desc.info.engine.query) {
             LOG(ERROR, _("attempt to load certificate chain from engine, but "
@@ -521,7 +521,7 @@ pass_cert_to_cb(void *cb_info_,
         }
         return _avs_crypto_openssl_engine_load_certs(
                 info->desc.info.engine.query, cb_info->cb, cb_info->cb_arg);
-#    endif // AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
+#    endif // AVS_COMMONS_WITH_AVS_CRYPTO_ENGINE
     case AVS_CRYPTO_DATA_SOURCE_FILE:
         if (!info->desc.info.file.filename) {
             LOG(ERROR, _("attempt to load certificate chain from file, but "
