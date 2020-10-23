@@ -31,6 +31,7 @@ add_library(avs_utils STATIC
             avs_strerror.c
             avs_time.c
             avs_token.c
+            avs_url_common.c
 
             compat/posix/avs_compat_time.c
             compat/stdlib/avs_memory.c)

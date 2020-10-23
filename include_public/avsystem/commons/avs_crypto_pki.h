@@ -834,62 +834,38 @@ avs_error_t avs_crypto_pki_ec_gen(avs_crypto_prng_ctx_t *prng_ctx,
  * from it) suitable for use with elliptic curve cryptography, using PKCS11
  * engine.
  *
- * @param token Token on which the keys will be generated.
- *
- * @param label Label for the generated keys.
- *
- * @param pin   Password to the token.
+ * @param query PCKS11 URI of the keys.
  */
-avs_error_t avs_crypto_pki_ec_gen_pkcs11(const char *token,
-                                         const char *label,
-                                         const char *pin);
+avs_error_t avs_crypto_pki_engine_key_gen(const char *query);
 
 /**
  * Removes a private key and the corresponding public key from HSM using PKCS11.
  *
- * @param token Token from which the key will be removed.
- *
- * @param label Label of the key to remove.
- *
- * @param pin   Password to the token.
+ * @param query PCKS11 URI of the keys.
  */
-avs_error_t avs_crypto_pki_ec_rm_pkcs11(const char *token,
-                                        const char *label,
-                                        const char *pin);
+avs_error_t avs_crypto_pki_engine_key_rm(const char *query);
 
 /**
  * Stores an X.509 certificate given as @ref avs_crypto_certificate_chain_info_t
  * in a HSM using PKCS11.
  *
- * @param token     Token on which the certificate will be stored.
- *
- * @param label     Label for the stored certificate.
- *
- * @param pin       Password to the token.
+ * @param query PCKS11 URI of the cert.
  *
  * @param cert_info Reference to a certificate to store. Note that if the
  *                  given input contains more than one certificate, only the
  *                  first one is stored.
  */
-avs_error_t avs_crypto_pki_certificate_store_pkcs11(
-        const char *token,
-        const char *label,
-        const char *pin,
+avs_error_t avs_crypto_pki_engine_certificate_store(
+        const char *query,
         const avs_crypto_certificate_chain_info_t *cert_info);
 
 /**
  * Removes an X.509 certificate from HSM using PKCS11.
  *
- * @param token Token from which the certificate will be removed.
- *
- * @param label Label of the certificate to remove.
- *
- * @param pin   Password to the token.
+ * @param query PCKS11 URI of the cert.
  */
-avs_error_t avs_crypto_pki_certificate_rm_pkcs11(const char *token,
-                                                 const char *label,
-                                                 const char *pin);
-#    endif // AVS_COMMONS_WITH_AVS_CRYPTO_ENGINE
+avs_error_t avs_crypto_pki_engine_certificate_rm(const char *query);
+#    endif // AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
 
 /**
  * Structure representing a type of a Distinguished Name attribute.

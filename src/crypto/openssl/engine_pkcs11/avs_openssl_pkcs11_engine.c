@@ -38,6 +38,7 @@
 #    include <avs_commons_poison.h>
 
 #    include <avsystem/commons/avs_crypto_pki.h>
+#    include <avsystem/commons/avs_url.h>
 
 #    include "../avs_openssl_common.h"
 #    include "../avs_openssl_engine.h"
@@ -81,6 +82,70 @@ void _avs_crypto_openssl_engine_cleanup_global_state(void) {
     global_pkcs11_ctx = NULL;
     global_pkcs11_slots = NULL;
     global_pkcs11_slot_num = 0;
+}
+
+static int
+parse_uri(const char *uri, char **token, char **pin, char **label, char **id) {
+    assert(uri);
+    const char *uri_end = uri + strlen(uri);
+
+    const char prefix[] = "pkcs11:";
+    const size_t uri_len = strlen(prefix);
+    if (!strncmp(prefix, uri, uri_len)) {
+        uri += uri_len;
+    } else {
+        return -1;
+    }
+
+    typedef struct _pkcs11_uri_entry {
+        const char *string;
+        char **value;
+    } pkcs11_uri_entry;
+
+    pkcs11_uri_entry available_fields[] = {
+        { "model=", NULL },     { "manufacturer=", NULL }, { "token=", token },
+        { "serial=", NULL },    { "object=", label },      { "id=", id },
+        { "pin-value=", pin },  { "pin-source=", NULL },   { "type=", NULL },
+        { "object-type", NULL }
+    };
+    const int available_field_num =
+            sizeof(available_fields) / sizeof(pkcs11_uri_entry);
+
+    const char delimiters[] = ";&?";
+
+outer_loop:
+    while (uri != uri_end) {
+        for (int field = 0; field < available_field_num; field++) {
+            if (!strncmp(available_fields[field].string, uri,
+                         strlen(available_fields[field].string))) {
+                uri += strlen(available_fields[field].string);
+
+                const char *delimiter_pos = strpbrk(uri, delimiters);
+                size_t length = delimiter_pos ? (size_t) (delimiter_pos - uri)
+                                              : strlen(uri);
+
+                if (available_fields[field].value != NULL) {
+                    *(available_fields[field].value) =
+                            (char *) avs_malloc(length + 1);
+                    strncpy(*(available_fields[field].value), uri, length);
+                    (*(available_fields[field].value))[length] = '\0';
+                    size_t new_length;
+                    if (avs_url_percent_decode(*(available_fields[field].value),
+                                               &new_length)) {
+                        return -1;
+                    }
+                }
+
+                uri += length + (delimiter_pos != NULL);
+                goto outer_loop;
+            }
+        }
+
+        // Malformed URI
+        return -1;
+    }
+
+    return 0;
 }
 
 avs_error_t _avs_crypto_openssl_engine_load_crls(X509_STORE *store,
@@ -141,21 +206,31 @@ static PKCS11_SLOT *get_pkcs11_slot(const char *token_label) {
         if (strcmp(token_label, current_slot->token->label) == 0) {
             return current_slot;
         }
-        current_slot =
-                PKCS11_find_next_token(global_pkcs11_ctx, global_pkcs11_slots,
-                                       global_pkcs11_slot_num, current_slot);
+        current_slot = PKCS11_find_next_token(global_pkcs11_ctx,
+                                              global_pkcs11_slots,
+                                              global_pkcs11_slot_num,
+                                              current_slot);
     }
 
     return NULL;
 }
 
-avs_error_t avs_crypto_pki_ec_gen_pkcs11(const char *token,
-                                         const char *label,
-                                         const char *pin) {
-    assert(token && label && pin);
+avs_error_t avs_crypto_pki_engine_key_gen(const char *query) {
+    assert(query);
+
+    avs_error_t err = avs_errno(AVS_UNKNOWN_ERROR);
+
+    char *token = NULL;
+    char *pin = NULL;
+    char *label = NULL;
+    char *id = NULL;
 
     PKCS11_SLOT *slot = NULL;
-    avs_error_t err = avs_errno(AVS_UNKNOWN_ERROR);
+
+    if (parse_uri(query, &token, &pin, &label, &id) || !token || !pin
+            || !label) {
+        goto cleanup;
+    }
 
 #        ifdef AVS_COMMONS_HAVE_PRAGMA_DIAGNOSTIC
 #            pragma GCC diagnostic push
@@ -165,7 +240,8 @@ avs_error_t avs_crypto_pki_ec_gen_pkcs11(const char *token,
             && !PKCS11_login(slot, 0, pin)
             && !PKCS11_generate_key(
                        slot->token, 0, 2048, (char *) (intptr_t) label,
-                       (unsigned char *) (intptr_t) label, strlen(label))) {
+                       (unsigned char *) (intptr_t) (id == NULL ? label : id),
+                       strlen(id == NULL ? label : id))) {
         err = AVS_OK;
     }
 #        ifdef AVS_COMMONS_HAVE_PRAGMA_DIAGNOSTIC
@@ -176,14 +252,24 @@ avs_error_t avs_crypto_pki_ec_gen_pkcs11(const char *token,
         LOG(ERROR, "%s", ERR_error_string(ERR_get_error(), NULL));
     }
 
+cleanup:
+    avs_free(token);
+    avs_free(pin);
+    avs_free(id);
+    avs_free(label);
+
     return err;
 }
 
-static int remove_pkcs11_keys_with_label(PKCS11_KEY *keys,
-                                         unsigned int key_num,
-                                         const char *label) {
+static int remove_pkcs11_keys_with_label_or_id(PKCS11_KEY *keys,
+                                               unsigned int key_num,
+                                               const char *label,
+                                               const unsigned char *id) {
+    assert(label != NULL || id != NULL);
+
     for (unsigned int k = 0; k < key_num; k++) {
-        if (strcmp(keys[k].label, label) == 0) {
+        if ((label == NULL || strcmp(keys[k].label, label) == 0)
+                && (id == NULL || strcmp(keys[k].id, id) == 0)) {
             if (PKCS11_remove_key(&keys[k])) {
                 return -1;
             }
@@ -192,13 +278,22 @@ static int remove_pkcs11_keys_with_label(PKCS11_KEY *keys,
     return 0;
 }
 
-avs_error_t avs_crypto_pki_ec_rm_pkcs11(const char *token,
-                                        const char *label,
-                                        const char *pin) {
-    assert(token && label && pin);
+avs_error_t avs_crypto_pki_engine_key_rm(const char *query) {
+    assert(query);
+
+    avs_error_t err = avs_errno(AVS_UNKNOWN_ERROR);
+
+    char *token = NULL;
+    char *pin = NULL;
+    char *label = NULL;
+    char *id = NULL;
 
     PKCS11_SLOT *slot = NULL;
-    avs_error_t err = avs_errno(AVS_UNKNOWN_ERROR);
+
+    if (parse_uri(query, &token, &pin, &label, &id) || !token || !pin
+            || !label) {
+        goto cleanup;
+    }
 
     PKCS11_KEY *keys;
     unsigned int key_num;
@@ -206,9 +301,9 @@ avs_error_t avs_crypto_pki_ec_rm_pkcs11(const char *token,
     if ((slot = get_pkcs11_slot(token)) && !PKCS11_open_session(slot, 1)
             && !PKCS11_login(slot, 0, pin)
             && !PKCS11_enumerate_keys(slot->token, &keys, &key_num)
-            && !remove_pkcs11_keys_with_label(keys, key_num, label)
+            && !remove_pkcs11_keys_with_label_or_id(keys, key_num, label, id)
             && !PKCS11_enumerate_public_keys(slot->token, &keys, &key_num)
-            && !remove_pkcs11_keys_with_label(keys, key_num, label)) {
+            && !remove_pkcs11_keys_with_label_or_id(keys, key_num, label, id)) {
         err = AVS_OK;
     }
 
@@ -216,15 +311,19 @@ avs_error_t avs_crypto_pki_ec_rm_pkcs11(const char *token,
         LOG(ERROR, "%s", ERR_error_string(ERR_get_error(), NULL));
     }
 
+cleanup:
+    avs_free(token);
+    avs_free(pin);
+    avs_free(id);
+    avs_free(label);
+
     return err;
 }
 
-avs_error_t avs_crypto_pki_certificate_store_pkcs11(
-        const char *token,
-        const char *label,
-        const char *pin,
+avs_error_t avs_crypto_pki_engine_certificate_store(
+        const char *query,
         const avs_crypto_certificate_chain_info_t *cert_info) {
-    assert(token && label && pin);
+    assert(query);
 
     X509 *cert = NULL;
     avs_error_t err =
@@ -232,15 +331,27 @@ avs_error_t avs_crypto_pki_certificate_store_pkcs11(
     if (avs_is_err(err)) {
         return err;
     }
-
     assert(cert);
+
+    char *token = NULL;
+    char *pin = NULL;
+    char *label = NULL;
+    char *id = NULL;
+
     PKCS11_SLOT *slot = NULL;
+
+    if (parse_uri(query, &token, &pin, &label, &id) || !token || !pin
+            || !label) {
+        err = avs_errno(AVS_UNKNOWN_ERROR);
+        goto cleanup;
+    }
+
     if (!(slot = get_pkcs11_slot(token)) || PKCS11_open_session(slot, 1)
             || PKCS11_login(slot, 0, pin)
-            || PKCS11_store_certificate(slot->token, cert,
-                                        (char *) (intptr_t) label,
-                                        (unsigned char *) (intptr_t) label,
-                                        strlen(label), NULL)) {
+            || PKCS11_store_certificate(
+                       slot->token, cert, (char *) (intptr_t) label,
+                       (unsigned char *) (intptr_t) (id == NULL ? label : id),
+                       strlen(id == NULL ? label : id), NULL)) {
         err = avs_errno(AVS_UNKNOWN_ERROR);
     }
 
@@ -248,15 +359,26 @@ avs_error_t avs_crypto_pki_certificate_store_pkcs11(
         LOG(ERROR, "%s", ERR_error_string(ERR_get_error(), NULL));
     }
 
+cleanup:
+    avs_free(token);
+    avs_free(pin);
+    avs_free(id);
+    avs_free(label);
+
     X509_free(cert);
+
     return err;
 }
 
-static int remove_pkcs11_certs_with_label(PKCS11_CERT *certs,
-                                          unsigned int cert_num,
-                                          const char *label) {
+static int remove_pkcs11_certs_with_label_or_id(PKCS11_CERT *certs,
+                                                unsigned int cert_num,
+                                                const char *label,
+                                                const unsigned char *id) {
+    assert(label != NULL || id != NULL);
+
     for (unsigned int k = 0; k < cert_num; k++) {
-        if (strcmp(certs[k].label, label) == 0) {
+        if ((label == NULL || strcmp(certs[k].label, label) == 0)
+                && (id == NULL || strcmp(certs[k].id, id) == 0)) {
             if (PKCS11_remove_certificate(&certs[k])) {
                 return -1;
             }
@@ -265,13 +387,22 @@ static int remove_pkcs11_certs_with_label(PKCS11_CERT *certs,
     return 0;
 }
 
-avs_error_t avs_crypto_pki_certificate_rm_pkcs11(const char *token,
-                                                 const char *label,
-                                                 const char *pin) {
-    assert(token && label && pin);
+avs_error_t avs_crypto_pki_engine_certificate_rm(const char *query) {
+    assert(query);
+
+    avs_error_t err = avs_errno(AVS_UNKNOWN_ERROR);
+
+    char *token = NULL;
+    char *pin = NULL;
+    char *label = NULL;
+    char *id = NULL;
 
     PKCS11_SLOT *slot = NULL;
-    avs_error_t err = avs_errno(AVS_UNKNOWN_ERROR);
+
+    if (parse_uri(query, &token, &pin, &label, &id) || !token || !pin
+            || !label) {
+        goto cleanup;
+    }
 
     PKCS11_CERT *certs;
     unsigned int cert_num;
@@ -279,13 +410,20 @@ avs_error_t avs_crypto_pki_certificate_rm_pkcs11(const char *token,
     if ((slot = get_pkcs11_slot(token)) && !PKCS11_open_session(slot, 1)
             && !PKCS11_login(slot, 0, pin)
             && !PKCS11_enumerate_certs(slot->token, &certs, &cert_num)
-            && !remove_pkcs11_certs_with_label(certs, cert_num, label)) {
+            && !remove_pkcs11_certs_with_label_or_id(certs, cert_num, label,
+                                                     id)) {
         err = AVS_OK;
     }
 
     if (avs_is_err(err)) {
         LOG(ERROR, "%s", ERR_error_string(ERR_get_error(), NULL));
     }
+
+cleanup:
+    avs_free(token);
+    avs_free(pin);
+    avs_free(id);
+    avs_free(label);
 
     return err;
 }
