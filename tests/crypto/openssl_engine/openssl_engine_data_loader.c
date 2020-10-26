@@ -325,25 +325,31 @@ AVS_UNIT_TEST(backend_openssl_engine, cert_loading_from_pkcs11) {
     AVS_UNIT_ASSERT_SUCCESS(unlink(cert_path));
 }
 
-AVS_UNIT_TEST(backend_openssl_engine, pkcs11_key_pair_generation) {
-    char *label = "label1";
-
-    AVS_UNIT_ASSERT_SUCCESS(avs_crypto_pki_ec_gen_pkcs11(TOKEN, label, PIN));
-
-    char list_command[300];
+static int check_matching_pkcs11_objects_qty(const char *label) {
+    char pkcs11_command[300];
     AVS_UNIT_ASSERT_TRUE(
             avs_simple_snprintf(
-                    list_command, sizeof(list_command),
+                    pkcs11_command, sizeof(pkcs11_command),
                     "pkcs11-tool --module %s --token %s "
                     "--login --pin %s --list-objects | grep %s | wc -l",
                     PKCS11_MODULE_PATH, TOKEN, PIN, label)
             > 0);
-    FILE *list_pipe = popen(list_command, "r");
-    AVS_UNIT_ASSERT_NOT_NULL(list_pipe);
+    FILE *result_pipe = popen(pkcs11_command, "r");
+    AVS_UNIT_ASSERT_NOT_NULL(result_pipe);
     int result;
-    AVS_UNIT_ASSERT_EQUAL(fscanf(list_pipe, "%d", &result), 1);
-    AVS_UNIT_ASSERT_SUCCESS(pclose(list_pipe));
-    AVS_UNIT_ASSERT_EQUAL(result, 2);
+    AVS_UNIT_ASSERT_EQUAL(fscanf(result_pipe, "%d", &result), 1);
+    AVS_UNIT_ASSERT_SUCCESS(pclose(result_pipe));
+
+    return result;
+}
+
+AVS_UNIT_TEST(backend_openssl_engine, pkcs11_key_pair_generation_and_removal) {
+    char *label = "label1";
+
+    AVS_UNIT_ASSERT_EQUAL(check_matching_pkcs11_objects_qty(label), 0);
+    AVS_UNIT_ASSERT_SUCCESS(avs_crypto_pki_ec_gen_pkcs11(TOKEN, label, PIN));
+
+    AVS_UNIT_ASSERT_EQUAL(check_matching_pkcs11_objects_qty(label), 2);
 
     // Load private key from engine
     char *query = make_query(TOKEN, label, PIN);
@@ -363,4 +369,8 @@ AVS_UNIT_TEST(backend_openssl_engine, pkcs11_key_pair_generation) {
 
     EVP_PKEY_free(public_key);
     EVP_PKEY_free(private_key);
+
+    AVS_UNIT_ASSERT_SUCCESS(avs_crypto_pki_ec_rm_pkcs11(TOKEN, label, PIN));
+
+    AVS_UNIT_ASSERT_EQUAL(check_matching_pkcs11_objects_qty(label), 0);
 }

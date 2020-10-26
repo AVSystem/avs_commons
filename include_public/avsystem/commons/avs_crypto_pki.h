@@ -834,15 +834,28 @@ avs_error_t avs_crypto_pki_ec_gen(avs_crypto_prng_ctx_t *prng_ctx,
  * from it) suitable for use with elliptic curve cryptography, using PKCS11
  * engine.
  *
- * @param token                     Token on which the keys will be generated.
+ * @param token Token on which the keys will be generated.
  *
- * @param label                     Label for the generated keys.
+ * @param label Label for the generated keys.
  *
- * @param pin                       Password to the token.
+ * @param pin   Password to the token.
  */
 avs_error_t avs_crypto_pki_ec_gen_pkcs11(const char *token,
                                          const char *label,
                                          const char *pin);
+
+/**
+ * Removes a private key and the corresponding public key from HSM using PKCS11.
+ *
+ * @param token Token on which the keys will be generated.
+ *
+ * @param label Label for the generated keys.
+ *
+ * @param pin   Password to the token.
+ */
+avs_error_t avs_crypto_pki_ec_rm_pkcs11(const char *token,
+                                        const char *label,
+                                        const char *pin);
 #    endif // AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
 
 /**
