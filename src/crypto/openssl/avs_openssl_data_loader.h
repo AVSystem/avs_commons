@@ -43,5 +43,8 @@ avs_error_t _avs_crypto_openssl_load_client_certs(
 avs_error_t _avs_crypto_openssl_load_ca_certs(
         X509_STORE *store, const avs_crypto_certificate_chain_info_t *info);
 
+avs_error_t _avs_crypto_openssl_load_first_client_cert(
+        X509 **out_cert, const avs_crypto_certificate_chain_info_t *info);
+
 VISIBILITY_PRIVATE_HEADER_END
 #endif // NET_OPENSSL_DATA_LOADER_H

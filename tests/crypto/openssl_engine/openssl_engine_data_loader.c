@@ -245,19 +245,6 @@ AVS_UNIT_TEST(backend_openssl_engine, key_loading_from_pkcs11) {
     EVP_PKEY_free(private_key);
 }
 
-static avs_error_t load_first_cert(void *cert_, void *out_cert_ptr_) {
-    X509 *cert = (X509 *) cert_;
-    X509 **out_cert_ptr = (X509 **) out_cert_ptr_;
-    if (!*out_cert_ptr) {
-        if (!X509_up_ref(cert)) {
-            log_openssl_error();
-            return avs_errno(AVS_ENOMEM);
-        }
-        *out_cert_ptr = cert;
-    }
-    return AVS_OK;
-}
-
 AVS_UNIT_TEST(backend_openssl_engine, cert_loading_from_pkcs11) {
     // System preparation
     char openssl_cli_command[300];
@@ -304,8 +291,8 @@ AVS_UNIT_TEST(backend_openssl_engine, cert_loading_from_pkcs11) {
     const avs_crypto_certificate_chain_info_t cert_info =
             avs_crypto_certificate_chain_info_from_engine(query);
     X509 *cert = NULL;
-    AVS_UNIT_ASSERT_SUCCESS(_avs_crypto_openssl_load_client_certs(
-            &cert_info, load_first_cert, &cert));
+    AVS_UNIT_ASSERT_SUCCESS(
+            _avs_crypto_openssl_load_first_client_cert(&cert, &cert_info));
     AVS_UNIT_ASSERT_NOT_NULL(cert);
 
     // Verifying certificate
