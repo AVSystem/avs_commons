@@ -218,6 +218,77 @@ avs_error_t avs_crypto_pki_ec_rm_pkcs11(const char *token,
 
     return err;
 }
+
+avs_error_t avs_crypto_pki_certificate_store_pkcs11(
+        const char *token,
+        const char *label,
+        const char *pin,
+        const avs_crypto_certificate_chain_info_t *cert_info) {
+    assert(token && label && pin);
+
+    X509 *cert = NULL;
+    avs_error_t err =
+            _avs_crypto_openssl_load_first_client_cert(&cert, cert_info);
+    if (avs_is_err(err)) {
+        return err;
+    }
+
+    assert(cert);
+    PKCS11_SLOT *slot = NULL;
+    if (!(slot = get_pkcs11_slot(token)) || PKCS11_open_session(slot, 1)
+            || PKCS11_login(slot, 0, pin)
+            || PKCS11_store_certificate(slot->token, cert,
+                                        (char *) (intptr_t) label,
+                                        (unsigned char *) (intptr_t) label,
+                                        strlen(label), NULL)) {
+        err = avs_errno(AVS_UNKNOWN_ERROR);
+    }
+
+    if (avs_is_err(err)) {
+        LOG(ERROR, "%s", ERR_error_string(ERR_get_error(), NULL));
+    }
+
+    X509_free(cert);
+    return err;
+}
+
+static int remove_pkcs11_certs_with_label(PKCS11_CERT *certs,
+                                          unsigned int cert_num,
+                                          const char *label) {
+    for (unsigned int k = 0; k < cert_num; k++) {
+        if (strcmp(certs[k].label, label) == 0) {
+            if (PKCS11_remove_certificate(&certs[k])) {
+                return -1;
+            }
+        }
+    }
+    return 0;
+}
+
+avs_error_t avs_crypto_pki_certificate_rm_pkcs11(const char *token,
+                                                 const char *label,
+                                                 const char *pin) {
+    assert(token && label && pin);
+
+    PKCS11_SLOT *slot = NULL;
+    avs_error_t err = avs_errno(AVS_UNKNOWN_ERROR);
+
+    PKCS11_CERT *certs;
+    unsigned int cert_num;
+
+    if ((slot = get_pkcs11_slot(token)) && !PKCS11_open_session(slot, 1)
+            && !PKCS11_login(slot, 0, pin)
+            && !PKCS11_enumerate_certs(slot->token, &certs, &cert_num)
+            && !remove_pkcs11_certs_with_label(certs, cert_num, label)) {
+        err = AVS_OK;
+    }
+
+    if (avs_is_err(err)) {
+        LOG(ERROR, "%s", ERR_error_string(ERR_get_error(), NULL));
+    }
+
+    return err;
+}
 #    endif // AVS_COMMONS_WITH_AVS_CRYPTO_ADVANCED_FEATURES
 
 #    ifdef AVS_COMMONS_OPENSSL_PKCS11_ENGINE_UNIT_TESTING
