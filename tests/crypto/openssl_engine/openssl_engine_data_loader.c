@@ -358,4 +358,40 @@ AVS_UNIT_TEST(backend_openssl_engine, pkcs11_key_pair_generation_and_removal) {
 
     AVS_UNIT_ASSERT_EQUAL(check_matching_pkcs11_objects_qty(label), 0);
 }
+
+AVS_UNIT_TEST(backend_openssl_engine, pkcs11_cert_storage_and_removal) {
+    AVS_LIST(avs_crypto_certificate_chain_info_t) certs = NULL;
+    AVS_LIST(avs_crypto_cert_revocation_list_info_t) crls = NULL;
+    AVS_UNIT_ASSERT_SUCCESS(avs_crypto_parse_pkcs7_certs_only(
+            &certs, &crls, EXAMPLE_CORRECT_PKCS7_DATA,
+            sizeof(EXAMPLE_CORRECT_PKCS7_DATA) - 1));
+    AVS_UNIT_ASSERT_NOT_NULL(certs);
+    AVS_UNIT_ASSERT_TRUE(
+            avs_time_real_valid(avs_crypto_certificate_expiration_date(certs)));
+
+    char *label = "label2";
+
+    AVS_UNIT_ASSERT_EQUAL(check_matching_pkcs11_objects_qty(label), 0);
+    AVS_UNIT_ASSERT_SUCCESS(
+            avs_crypto_pki_certificate_store_pkcs11(TOKEN, label, PIN, certs));
+
+    AVS_UNIT_ASSERT_EQUAL(check_matching_pkcs11_objects_qty(label), 1);
+
+    // Check certificate stored in engine
+    char *query = make_query(TOKEN, label, PIN);
+    avs_crypto_certificate_chain_info_t engine_cert =
+            avs_crypto_certificate_chain_info_from_engine(query);
+    AVS_UNIT_ASSERT_TRUE(avs_time_real_equal(
+            avs_crypto_certificate_expiration_date(certs),
+            avs_crypto_certificate_expiration_date(&engine_cert)));
+    avs_free(query);
+
+    AVS_UNIT_ASSERT_SUCCESS(
+            avs_crypto_pki_certificate_rm_pkcs11(TOKEN, label, PIN));
+
+    AVS_UNIT_ASSERT_EQUAL(check_matching_pkcs11_objects_qty(label), 0);
+
+    AVS_LIST_CLEAR(&certs);
+    AVS_LIST_CLEAR(&crls);
+}
 #endif // AVS_COMMONS_WITH_AVS_CRYPTO_ADVANCED_FEATURES
