@@ -847,15 +847,48 @@ avs_error_t avs_crypto_pki_ec_gen_pkcs11(const char *token,
 /**
  * Removes a private key and the corresponding public key from HSM using PKCS11.
  *
- * @param token Token on which the keys will be generated.
+ * @param token Token from which the key will be removed.
  *
- * @param label Label for the generated keys.
+ * @param label Label of the key to remove.
  *
  * @param pin   Password to the token.
  */
 avs_error_t avs_crypto_pki_ec_rm_pkcs11(const char *token,
                                         const char *label,
                                         const char *pin);
+
+/**
+ * Stores an X.509 certificate given as @ref avs_crypto_certificate_chain_info_t
+ * in a HSM using PKCS11.
+ *
+ * @param token     Token on which the certificate will be stored.
+ *
+ * @param label     Label for the stored certificate.
+ *
+ * @param pin       Password to the token.
+ *
+ * @param cert_info Reference to a certificate to store. Note that if the
+ *                  given input contains more than one certificate, only the
+ *                  first one is stored.
+ */
+avs_error_t avs_crypto_pki_certificate_store_pkcs11(
+        const char *token,
+        const char *label,
+        const char *pin,
+        const avs_crypto_certificate_chain_info_t *cert_info);
+
+/**
+ * Removes an X.509 certificate from HSM using PKCS11.
+ *
+ * @param token Token from which the certificate will be removed.
+ *
+ * @param label Label of the certificate to remove.
+ *
+ * @param pin   Password to the token.
+ */
+avs_error_t avs_crypto_pki_certificate_rm_pkcs11(const char *token,
+                                                 const char *label,
+                                                 const char *pin);
 #    endif // AVS_COMMONS_WITH_AVS_CRYPTO_ENGINE
 
 /**
