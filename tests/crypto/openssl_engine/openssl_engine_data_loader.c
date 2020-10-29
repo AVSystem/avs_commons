@@ -14,11 +14,6 @@
  * limitations under the License.
  */
 
-#define AVS_STREAM_STREAM_FILE_C
-#define _GNU_SOURCE // for mkstemps()
-
-#include <avs_commons_init.h>
-
 #include <avs_commons_posix_init.h>
 
 #include <avsystem/commons/avs_crypto_pki.h>
@@ -41,8 +36,11 @@
 #include "src/crypto/avs_global.h"
 #include "src/crypto/openssl/avs_openssl_common.h"
 #include "src/crypto/openssl/avs_openssl_data_loader.h"
-#include "src/crypto/openssl/avs_openssl_global.h"
+#include "src/crypto/openssl/avs_openssl_engine.h"
 
+#ifdef MODULE_NAME
+#    undef MODULE_NAME
+#endif // MODULE_NAME
 #define MODULE_NAME openssl_engine_test
 #include <avs_x_log_config.h>
 
@@ -184,12 +182,10 @@ static void test_engine_key_pair(EVP_PKEY *private_key, EVP_PKEY *public_key) {
     //
     // Without this, a memory leak is triggered in the pkcs11 engine's key URL
     // parsing function...
-    AVS_UNIT_ASSERT_EQUAL(ENGINE_ctrl_cmd(_avs_global_engine, "FORCE_LOGIN", 0,
-                                          NULL, NULL, 0),
-                          1);
-    AVS_UNIT_ASSERT_EQUAL(ENGINE_init(_avs_global_engine), 1);
-    EVP_PKEY_CTX *decrypt_ctx =
-            EVP_PKEY_CTX_new(private_key, _avs_global_engine);
+    AVS_UNIT_ASSERT_EQUAL(
+            ENGINE_ctrl_cmd(global_engine, "FORCE_LOGIN", 0, NULL, NULL, 0), 1);
+    AVS_UNIT_ASSERT_EQUAL(ENGINE_init(global_engine), 1);
+    EVP_PKEY_CTX *decrypt_ctx = EVP_PKEY_CTX_new(private_key, global_engine);
     AVS_UNIT_ASSERT_NOT_NULL(decrypt_ctx);
     AVS_UNIT_ASSERT_EQUAL(EVP_PKEY_decrypt_init(decrypt_ctx), 1);
     AVS_UNIT_ASSERT_EQUAL(
@@ -203,7 +199,7 @@ static void test_engine_key_pair(EVP_PKEY *private_key, EVP_PKEY *public_key) {
                           1);
     EVP_PKEY_CTX_free(decrypt_ctx);
     OPENSSL_free(encrypted_text);
-    AVS_UNIT_ASSERT_EQUAL(ENGINE_finish(_avs_global_engine), 1);
+    AVS_UNIT_ASSERT_EQUAL(ENGINE_finish(global_engine), 1);
 
     // Check
     AVS_UNIT_ASSERT_EQUAL(decrypted_text_len, original_text_len);
@@ -325,6 +321,7 @@ AVS_UNIT_TEST(backend_openssl_engine, cert_loading_from_pkcs11) {
     AVS_UNIT_ASSERT_SUCCESS(unlink(cert_path));
 }
 
+#ifdef AVS_COMMONS_WITH_AVS_CRYPTO_ADVANCED_FEATURES
 static int check_matching_pkcs11_objects_qty(const char *label) {
     char pkcs11_command[300];
     AVS_UNIT_ASSERT_TRUE(
@@ -353,16 +350,16 @@ AVS_UNIT_TEST(backend_openssl_engine, pkcs11_key_pair_generation_and_removal) {
 
     // Load private key from engine
     char *query = make_query(TOKEN, label, PIN);
-    AVS_UNIT_ASSERT_EQUAL(ENGINE_init(_avs_global_engine), 1);
+    AVS_UNIT_ASSERT_EQUAL(ENGINE_init(global_engine), 1);
     EVP_PKEY *private_key =
-            ENGINE_load_private_key(_avs_global_engine, query, NULL, NULL);
-    ENGINE_finish(_avs_global_engine);
+            ENGINE_load_private_key(global_engine, query, NULL, NULL);
+    ENGINE_finish(global_engine);
 
     // Load public key from engine
-    AVS_UNIT_ASSERT_EQUAL(ENGINE_init(_avs_global_engine), 1);
+    AVS_UNIT_ASSERT_EQUAL(ENGINE_init(global_engine), 1);
     EVP_PKEY *public_key =
-            ENGINE_load_public_key(_avs_global_engine, query, NULL, NULL);
-    ENGINE_finish(_avs_global_engine);
+            ENGINE_load_public_key(global_engine, query, NULL, NULL);
+    ENGINE_finish(global_engine);
     avs_free(query);
 
     test_engine_key_pair(private_key, public_key);
@@ -374,3 +371,4 @@ AVS_UNIT_TEST(backend_openssl_engine, pkcs11_key_pair_generation_and_removal) {
 
     AVS_UNIT_ASSERT_EQUAL(check_matching_pkcs11_objects_qty(label), 0);
 }
+#endif // AVS_COMMONS_WITH_AVS_CRYPTO_ADVANCED_FEATURES

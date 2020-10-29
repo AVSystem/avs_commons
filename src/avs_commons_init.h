@@ -50,6 +50,11 @@
 #    error "AVS_COMMONS_WITH_AVS_STREAM is required for AVS_COMMONS_STREAM_WITH_FILE"
 #endif
 
+#if !defined(AVS_COMMONS_WITH_AVS_CRYPTO_ENGINE) \
+        && defined(AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE)
+#    error "AVS_COMMONS_WITH_AVS_CRYPTO_ENGINE is required for AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE"
+#endif
+
 // Backwards compatibility with configuration macros that are no longer current
 #ifdef AVS_COMMONS_NET_WITH_X509
 #    warning \

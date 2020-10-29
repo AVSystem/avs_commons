@@ -154,11 +154,11 @@ append_certs(mbedtls_x509_crt *out,
     switch (info->desc.source) {
     case AVS_CRYPTO_DATA_SOURCE_EMPTY:
         return AVS_OK;
-#    ifdef AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
+#    ifdef AVS_COMMONS_WITH_AVS_CRYPTO_ENGINE
     case AVS_CRYPTO_DATA_SOURCE_ENGINE:
         LOG(ERROR, "PKSC11 with mbedtls not supported");
         return avs_errno(AVS_ENOTSUP);
-#    endif // AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
+#    endif // AVS_COMMONS_WITH_AVS_CRYPTO_ENGINE
     case AVS_CRYPTO_DATA_SOURCE_FILE:
         if (!info->desc.info.file.filename) {
             LOG(ERROR, _("attempt to load certificate chain from file, but "
@@ -248,11 +248,11 @@ append_crls(mbedtls_x509_crl *out,
     switch (info->desc.source) {
     case AVS_CRYPTO_DATA_SOURCE_EMPTY:
         return AVS_OK;
-#    ifdef AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
+#    ifdef AVS_COMMONS_WITH_AVS_CRYPTO_ENGINE
     case AVS_CRYPTO_DATA_SOURCE_ENGINE:
         LOG(ERROR, "PKSC11 with mbedtls not supported");
         return avs_errno(AVS_ENOTSUP);
-#    endif // AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
+#    endif // AVS_COMMONS_WITH_AVS_CRYPTO_ENGINE
 #    ifdef MBEDTLS_X509_CRL_PARSE_C
     case AVS_CRYPTO_DATA_SOURCE_FILE:
         assert(out);
@@ -409,11 +409,11 @@ _avs_crypto_mbedtls_load_client_key(mbedtls_pk_context **client_key,
 
     avs_error_t err = avs_errno(AVS_EINVAL);
     switch (info->desc.source) {
-#    ifdef AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
+#    ifdef AVS_COMMONS_WITH_AVS_CRYPTO_ENGINE
     case AVS_CRYPTO_DATA_SOURCE_ENGINE:
         LOG(ERROR, "PKSC11 with mbedtls not supported");
         return avs_errno(AVS_ENOTSUP);
-#    endif // AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
+#    endif // AVS_COMMONS_WITH_AVS_CRYPTO_ENGINE
     case AVS_CRYPTO_DATA_SOURCE_FILE:
         if (!info->desc.info.file.filename) {
             LOG(ERROR,

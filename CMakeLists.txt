@@ -424,7 +424,7 @@ if(WITH_TEST)
     function(avs_add_test)
         set(options)
         set(one_value_args NAME)
-        set(multi_value_args LIBS SOURCES VALGRIND_ARGS COMPILE_DEFINITIONS)
+        set(multi_value_args LIBS SOURCES VALGRIND_ARGS COMPILE_DEFINITIONS ENVIRONMENT)
         cmake_parse_arguments(AAT "${options}" "${one_value_args}" "${multi_value_args}" ${ARGN})
 
         add_executable(${AAT_NAME}_test EXCLUDE_FROM_ALL
@@ -446,6 +446,7 @@ if(WITH_TEST)
         add_test(NAME ${AAT_NAME}_test
                  COMMAND ${VALGRIND_CMD} $<TARGET_FILE:${AAT_NAME}_test>
                  WORKING_DIRECTORY $<TARGET_FILE_DIR:${AAT_NAME}_test>)
+        set_property(TEST ${AAT_NAME}_test APPEND PROPERTY ENVIRONMENT ${AAT_ENVIRONMENT})
 
         add_custom_target(${AAT_NAME}_check COMMAND ${CMAKE_CTEST_COMMAND} -V -R "^${AAT_NAME}_test$" DEPENDS ${AAT_NAME}_test)
         add_dependencies(avs_commons_check ${AAT_NAME}_check)
@@ -459,16 +460,6 @@ endif(WITH_TEST)
 find_package(OpenSSL)
 option(WITH_OPENSSL "Enable OpenSSL" ${OPENSSL_FOUND})
 set(AVS_COMMONS_WITH_OPENSSL ${WITH_OPENSSL})
-
-# SoftHSM module
-# Used only in tests
-find_library(SOFTHSM2_LIB NAMES softhsm2 PATHS /usr/lib/softhsm)
-
-# PKCS11
-find_package(PkgConfig)
-pkg_search_module(LIBP11 libp11)
-cmake_dependent_option(WITH_OPENSSL_PKCS11_ENGINE "Enable OpenSSL pkcs11 support" ON "WITH_OPENSSL;LIBP11_FOUND" OFF)
-set(AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE ${WITH_OPENSSL_PKCS11_ENGINE})
 
 set(MBEDTLS_ROOT_DIR "" CACHE STRING "mbed TLS installation directory")
 find_package(MbedTLS)
@@ -491,6 +482,25 @@ endif()
 
 cmake_dependent_option(WITH_PKI "Enable X.509 certificate support" "${WITH_PKI_DEFAULT_VALUE}" "WITH_OPENSSL OR WITH_MBEDTLS OR WITH_TINYDTLS" OFF)
 set(AVS_COMMONS_WITH_AVS_CRYPTO_PKI ${WITH_PKI})
+
+# Hardware security engines
+cmake_dependent_option(WITH_AVS_CRYPTO_ENGINE "Enable hardware-based security engine support" OFF WITH_OPENSSL OFF)
+set(AVS_COMMONS_WITH_AVS_CRYPTO_ENGINE ${WITH_AVS_CRYPTO_ENGINE})
+
+# SoftHSM module
+# Used only in tests
+find_library(SOFTHSM2_LIB NAMES softhsm2 PATHS /usr/lib/softhsm)
+
+# PKCS11
+find_package(PkgConfig)
+pkg_search_module(LIBP11 libp11)
+cmake_dependent_option(WITH_OPENSSL_PKCS11_ENGINE "Enable OpenSSL pkcs11 support" ON "WITH_AVS_CRYPTO_ENGINE;LIBP11_FOUND;WITH_PKI" OFF)
+set(AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE ${WITH_OPENSSL_PKCS11_ENGINE})
+if(WITH_OPENSSL_PKCS11_ENGINE)
+    avs_add_find_routine("
+        find_package(PkgConfig REQUIRED)
+        pkg_search_module(LIBP11 REQUIRED libp11)")
+endif()
 
 if(WITH_OPENSSL)
     avs_add_find_routine("find_package(OpenSSL REQUIRED)")

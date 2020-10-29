@@ -31,10 +31,6 @@
 #    include <openssl/objects.h>
 #    include <openssl/x509.h>
 
-#    ifdef AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
-#        include <libp11.h>
-#    endif // AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
-
 #    include <avs_commons_poison.h>
 
 #    include <avsystem/commons/avs_crypto_pki.h>
@@ -42,7 +38,7 @@
 
 #    include "avs_openssl_common.h"
 #    include "avs_openssl_data_loader.h"
-#    include "avs_openssl_global.h"
+#    include "avs_openssl_engine.h"
 #    include "avs_openssl_prng.h"
 
 #    include "../avs_global.h"
@@ -133,87 +129,6 @@ avs_error_t avs_crypto_pki_ec_gen(avs_crypto_prng_ctx_t *prng_ctx,
     EC_GROUP_free(group);
     return err;
 }
-
-#    ifdef AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
-static PKCS11_SLOT *get_pkcs11_slot(const char *token_label) {
-    PKCS11_SLOT *current_slot =
-            PKCS11_find_token(_avs_global_pkcs11_ctx, _avs_global_pkcs11_slots,
-                              _avs_global_pkcs11_slot_num);
-    while (current_slot != NULL) {
-        if (strcmp(token_label, current_slot->token->label) == 0) {
-            return current_slot;
-        }
-        current_slot = PKCS11_find_next_token(_avs_global_pkcs11_ctx,
-                                              _avs_global_pkcs11_slots,
-                                              _avs_global_pkcs11_slot_num,
-                                              current_slot);
-    }
-
-    return NULL;
-}
-
-avs_error_t avs_crypto_pki_ec_gen_pkcs11(const char *token,
-                                         const char *label,
-                                         const char *pin) {
-    assert(token && label && pin);
-
-    PKCS11_SLOT *slot = NULL;
-    avs_error_t err = avs_errno(AVS_UNKNOWN_ERROR);
-
-    if ((slot = get_pkcs11_slot(token)) && !PKCS11_open_session(slot, 1)
-            && !PKCS11_login(slot, 0, pin)
-            && !PKCS11_generate_key(slot->token, 0, 2048, (char *) label,
-                                    (unsigned char *) label, strlen(label))) {
-        err = AVS_OK;
-    }
-
-    if (avs_is_err(err)) {
-        LOG(ERROR, "%s", ERR_error_string(ERR_get_error(), NULL));
-    }
-
-    return err;
-}
-
-static int remove_pkcs11_keys_with_label(PKCS11_KEY *keys,
-                                         unsigned int key_num,
-                                         const char *label) {
-    for (unsigned int k = 0; k < key_num; k++) {
-        if (strcmp(keys[k].label, label) == 0) {
-            if (PKCS11_remove_key(&keys[k])) {
-                return -1;
-            }
-        }
-    }
-    return 0;
-}
-
-avs_error_t avs_crypto_pki_ec_rm_pkcs11(const char *token,
-                                        const char *label,
-                                        const char *pin) {
-    assert(token && label && pin);
-
-    PKCS11_SLOT *slot = NULL;
-    avs_error_t err = avs_errno(AVS_UNKNOWN_ERROR);
-
-    PKCS11_KEY *keys;
-    unsigned int key_num;
-
-    if ((slot = get_pkcs11_slot(token)) && !PKCS11_open_session(slot, 1)
-            && !PKCS11_login(slot, 0, pin)
-            && !PKCS11_enumerate_keys(slot->token, &keys, &key_num)
-            && !remove_pkcs11_keys_with_label(keys, key_num, label)
-            && !PKCS11_enumerate_public_keys(slot->token, &keys, &key_num)
-            && !remove_pkcs11_keys_with_label(keys, key_num, label)) {
-        err = AVS_OK;
-    }
-
-    if (avs_is_err(err)) {
-        LOG(ERROR, "%s", ERR_error_string(ERR_get_error(), NULL));
-    }
-
-    return err;
-}
-#    endif // AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
 
 static avs_error_t
 convert_subject(X509_NAME **out_x509_name,

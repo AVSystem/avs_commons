@@ -183,10 +183,10 @@ AVS_UNIT_TEST(backend_openssl, key_loading_from_null) {
             avs_crypto_private_key_info_from_buffer(NULL, 0, NULL);
     AVS_UNIT_ASSERT_FAILED(_avs_crypto_openssl_load_private_key(&key, &buffer));
     AVS_UNIT_ASSERT_NULL(key);
-#ifdef AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
+#ifdef AVS_COMMONS_WITH_AVS_CRYPTO_ENGINE
     const avs_crypto_private_key_info_t engine =
             avs_crypto_private_key_info_from_engine(NULL);
     AVS_UNIT_ASSERT_FAILED(_avs_crypto_openssl_load_private_key(&key, &engine));
     AVS_UNIT_ASSERT_NULL(key);
-#endif // AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
+#endif // AVS_COMMONS_WITH_AVS_CRYPTO_ENGINE
 }
