@@ -628,7 +628,7 @@ static avs_error_t initialize_cert_security(
         mbedtls_ssl_conf_own_cert(&socket->config,
                                   socket->security.cert.client_cert,
                                   socket->security.cert.client_key);
-#warning "TODO: Support rebuild_client_cert_chain"
+#        warning "TODO: Support rebuild_client_cert_chain"
     }
 
     mbedtls_ssl_conf_ciphersuites(&socket->config,

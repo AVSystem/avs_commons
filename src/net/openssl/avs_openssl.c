@@ -991,14 +991,14 @@ static bool is_session_resumed(ssl_socket_t *socket) {
 #    ifdef AVS_COMMONS_WITH_AVS_CRYPTO_PKI
 typedef struct {
     SSL_CTX *ctx;
-    bool client_cert_loaded;
+    X509 *last_cert_loaded;
 } load_cert_ctx_t;
 
 static avs_error_t load_cert(void *cert_, void *ctx_) {
     X509 *cert = (X509 *) cert_;
     load_cert_ctx_t *ctx = (load_cert_ctx_t *) ctx_;
     long result;
-    if (!ctx->client_cert_loaded) {
+    if (!ctx->last_cert_loaded) {
         result = SSL_CTX_use_certificate(ctx->ctx, cert);
     } else {
         result = SSL_CTX_add1_chain_cert(ctx->ctx, cert);
@@ -1007,7 +1007,12 @@ static avs_error_t load_cert(void *cert_, void *ctx_) {
         log_openssl_error();
         return avs_errno(AVS_EPROTO);
     }
-    ctx->client_cert_loaded = true;
+    if (!X509_up_ref(cert)) {
+        log_openssl_error();
+        return avs_errno(AVS_ENOMEM);
+    }
+    X509_free(ctx->last_cert_loaded);
+    ctx->last_cert_loaded = cert;
     return AVS_OK;
 }
 
@@ -1061,36 +1066,34 @@ configure_ssl_certs(ssl_socket_t *socket,
     }
 
     if (cert_info->client_cert.desc.source != AVS_CRYPTO_DATA_SOURCE_EMPTY) {
-        avs_error_t err =
-                _avs_crypto_openssl_load_client_certs(&cert_info->client_cert,
-                                                      load_cert,
-                                                      &(load_cert_ctx_t) {
-                                                          .ctx = socket->ctx
-                                                      });
+        load_cert_ctx_t load_cert_ctx = {
+            .ctx = socket->ctx
+        };
+        avs_error_t err = _avs_crypto_openssl_load_client_certs(
+                &cert_info->client_cert, load_cert, &load_cert_ctx);
+        X509_free(load_cert_ctx.last_cert_loaded);
         if (avs_is_err(err)) {
             LOG(ERROR, _("could not load client certificate"));
-            return err;
-        }
-
-        EVP_PKEY *key = NULL;
-        if (avs_is_ok((err = _avs_crypto_openssl_load_private_key(
-                               &key, &cert_info->client_key)))) {
-            assert(key);
-            if (SSL_CTX_use_PrivateKey(socket->ctx, key) != 1) {
-                log_openssl_error();
-                err = avs_errno(AVS_EPROTO);
+        } else {
+            EVP_PKEY *key = NULL;
+            if (avs_is_ok((err = _avs_crypto_openssl_load_private_key(
+                                   &key, &cert_info->client_key)))) {
+                assert(key);
+                if (SSL_CTX_use_PrivateKey(socket->ctx, key) != 1) {
+                    log_openssl_error();
+                    err = avs_errno(AVS_EPROTO);
+                }
+                EVP_PKEY_free(key);
             }
-            EVP_PKEY_free(key);
+            if (avs_is_err(err)) {
+                LOG(ERROR, _("could not load client private key"));
+            }
+#        warning "TODO: Support rebuild_client_cert_chain"
         }
-        if (avs_is_err(err)) {
-            LOG(ERROR, _("could not load client private key"));
-            return err;
-        }
-#warning "TODO: Support rebuild_client_cert_chain"
-    } else {
-        LOG(TRACE, _("client certificate not specified"));
+        return err;
     }
 
+    LOG(TRACE, _("client certificate not specified"));
     return AVS_OK;
 }
 #    else
