@@ -1016,6 +1016,44 @@ static avs_error_t load_cert(void *cert_, void *ctx_) {
     return AVS_OK;
 }
 
+static avs_error_t rebuild_client_cert_chain(SSL_CTX *ctx, X509 *last_cert) {
+    assert(last_cert);
+    if (!X509_up_ref(last_cert)) {
+        log_openssl_error();
+        return avs_errno(AVS_ENOMEM);
+    }
+
+    avs_error_t err = AVS_OK;
+    X509_STORE_CTX *store_ctx = X509_STORE_CTX_new();
+    if (!store_ctx
+            || !X509_STORE_CTX_init(store_ctx, SSL_CTX_get_cert_store(ctx),
+                                    NULL, NULL)) {
+        log_openssl_error();
+        err = avs_errno(AVS_ENOMEM);
+    }
+
+    while (avs_is_ok(err) && last_cert) {
+        X509 *next_cert = NULL;
+        if (X509_STORE_CTX_get1_issuer(&next_cert, store_ctx, last_cert) < 0) {
+            log_openssl_error();
+            assert(!next_cert);
+            err = avs_errno(AVS_EPROTO);
+        }
+        if (next_cert) {
+            if (SSL_CTX_add1_chain_cert(ctx, next_cert) != 1) {
+                log_openssl_error();
+                err = avs_errno(AVS_EPROTO);
+            }
+        }
+        X509_free(last_cert);
+        last_cert = next_cert;
+    }
+
+    X509_STORE_CTX_free(store_ctx);
+    X509_free(last_cert);
+    return err;
+}
+
 static avs_error_t
 configure_ssl_certs(ssl_socket_t *socket,
                     const avs_net_certificate_info_t *cert_info) {
@@ -1071,7 +1109,6 @@ configure_ssl_certs(ssl_socket_t *socket,
         };
         avs_error_t err = _avs_crypto_openssl_load_client_certs(
                 &cert_info->client_cert, load_cert, &load_cert_ctx);
-        X509_free(load_cert_ctx.last_cert_loaded);
         if (avs_is_err(err)) {
             LOG(ERROR, _("could not load client certificate"));
         } else {
@@ -1087,9 +1124,16 @@ configure_ssl_certs(ssl_socket_t *socket,
             }
             if (avs_is_err(err)) {
                 LOG(ERROR, _("could not load client private key"));
+            } else if (load_cert_ctx.last_cert_loaded
+                       && cert_info->rebuild_client_cert_chain
+                       && avs_is_err(
+                                  (err = rebuild_client_cert_chain(
+                                           socket->ctx,
+                                           load_cert_ctx.last_cert_loaded)))) {
+                LOG(ERROR, _("could not rebuild client certificate chain"));
             }
-#        warning "TODO: Support rebuild_client_cert_chain"
         }
+        X509_free(load_cert_ctx.last_cert_loaded);
         return err;
     }
 
