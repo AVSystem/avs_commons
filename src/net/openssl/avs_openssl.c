@@ -1086,6 +1086,7 @@ configure_ssl_certs(ssl_socket_t *socket,
             LOG(ERROR, _("could not load client private key"));
             return err;
         }
+#warning "TODO: Support rebuild_client_cert_chain"
     } else {
         LOG(TRACE, _("client certificate not specified"));
     }
