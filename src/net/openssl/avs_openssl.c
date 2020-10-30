@@ -1039,8 +1039,13 @@ static avs_error_t rebuild_client_cert_chain(SSL_CTX *ctx, X509 *last_cert) {
             assert(!next_cert);
             err = avs_errno(AVS_EPROTO);
         }
+
         if (next_cert) {
-            if (SSL_CTX_add1_chain_cert(ctx, next_cert) != 1) {
+            if (next_cert == last_cert || X509_cmp(next_cert, last_cert) == 0) {
+                // root / self-signed certificate; let's stop here
+                X509_free(next_cert);
+                next_cert = NULL;
+            } else if (SSL_CTX_add1_chain_cert(ctx, next_cert) != 1) {
                 log_openssl_error();
                 err = avs_errno(AVS_EPROTO);
             }
@@ -1072,12 +1077,8 @@ configure_ssl_certs(ssl_socket_t *socket,
 #        endif // WITH_DANE_SUPPORT
     }
 
-    if (cert_info->server_cert_validation) {
-        if (cert_info->dane) {
-            socket->verify_mode = SSL_VERIFY_DANE_ENFORCED;
-        } else {
-            socket->verify_mode = SSL_VERIFY_TRUSTSTORE;
-        }
+    if (cert_info->server_cert_validation
+            || cert_info->rebuild_client_cert_chain) {
         if (!cert_info->ignore_system_trust_store
                 && !SSL_CTX_set_default_verify_paths(socket->ctx)) {
             LOG(WARNING, _("could not set default CA verify paths"));
@@ -1094,6 +1095,14 @@ configure_ssl_certs(ssl_socket_t *socket,
                                 store, &cert_info->cert_revocation_lists)))) {
             LOG(ERROR, _("could not load CRLs"));
             return err;
+        }
+    }
+
+    if (cert_info->server_cert_validation) {
+        if (cert_info->dane) {
+            socket->verify_mode = SSL_VERIFY_DANE_ENFORCED;
+        } else {
+            socket->verify_mode = SSL_VERIFY_TRUSTSTORE;
         }
     } else {
         if (cert_info->dane) {
