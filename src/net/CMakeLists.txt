@@ -46,7 +46,7 @@ set(AVS_NET_SOURCES
 
     avs_addrinfo.c
     avs_api.c
-    avs_global.c
+    avs_net_global.c
     avs_url.c
 
     compat/posix/avs_compat.h

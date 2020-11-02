@@ -18,7 +18,7 @@ set(AVS_CRYPTO_PUBLIC_HEADERS
     "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/avs_prng.h")
 
 set(AVS_CRYPTO_COMMON_SOURCES
-    avs_global.c
+    avs_crypto_global.c
     avs_crypto_global.h
     avs_crypto_pki_persistence.c
     avs_crypto_utils.c
