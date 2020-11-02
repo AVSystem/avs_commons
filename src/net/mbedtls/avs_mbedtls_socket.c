@@ -58,7 +58,7 @@
 #    include <avsystem/commons/avs_prng.h>
 #    include <avsystem/commons/avs_utils.h>
 
-#    include "../avs_global.h"
+#    include "../avs_net_global.h"
 #    ifdef AVS_COMMONS_WITH_AVS_CRYPTO_PKI
 #        include "crypto/mbedtls/avs_mbedtls_data_loader.h"
 #    endif // AVS_COMMONS_WITH_AVS_CRYPTO_PKI

@@ -23,7 +23,7 @@
 #    include <avsystem/commons/avs_errno.h>
 #    include <avsystem/commons/avs_hkdf.h>
 
-#    include "../avs_global.h"
+#    include "../avs_crypto_global.h"
 
 #    include <mbedtls/hkdf.h>
 

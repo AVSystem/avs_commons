@@ -48,7 +48,7 @@
 #        include <avsystem/commons/avs_list.h>
 #    endif // AVS_COMMONS_WITH_AVS_LIST
 
-#    include "../avs_global.h"
+#    include "../avs_net_global.h"
 
 #    ifdef AVS_COMMONS_WITH_AVS_CRYPTO_PKI
 #        include "crypto/openssl/avs_openssl_data_loader.h"

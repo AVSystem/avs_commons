@@ -16,7 +16,7 @@
 
 #include <avs_commons_init.h>
 
-#include "../avs_global.h"
+#include "../avs_crypto_global.h"
 
 VISIBILITY_SOURCE_BEGIN
 

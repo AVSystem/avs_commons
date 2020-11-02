@@ -17,7 +17,7 @@
 #ifndef AVS_COMMONS_NET_COMPAT_H
 #define AVS_COMMONS_NET_COMPAT_H
 
-#include "../../avs_global.h"
+#include "../../avs_net_global.h"
 
 #include "../../avs_net_impl.h"
 

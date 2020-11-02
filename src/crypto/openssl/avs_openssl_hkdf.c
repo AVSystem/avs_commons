@@ -33,7 +33,7 @@
 #    include <avsystem/commons/avs_hkdf.h>
 #    include <avsystem/commons/avs_log.h>
 
-#    include "../avs_global.h"
+#    include "../avs_crypto_global.h"
 
 VISIBILITY_SOURCE_BEGIN
 
