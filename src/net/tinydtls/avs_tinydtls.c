@@ -30,7 +30,7 @@
 
 #    include <tinydtls/dtls.h>
 
-#    include "../avs_global.h"
+#    include "../avs_net_global.h"
 
 #    include "../avs_net_impl.h"
 

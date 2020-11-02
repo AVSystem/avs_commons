@@ -26,8 +26,8 @@
 
 #    include <avsystem/commons/avs_aead.h>
 
+#    include "../avs_crypto_global.h"
 #    include "../avs_crypto_utils.h"
-#    include "../avs_global.h"
 
 #    define MODULE_NAME avs_crypto_aead
 #    include <avs_x_log_config.h>

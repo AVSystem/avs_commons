@@ -25,7 +25,7 @@
 #    include <avsystem/commons/avs_time.h>
 #    include <avsystem/commons/avs_utils.h>
 
-#    include "../avs_global.h"
+#    include "../avs_crypto_global.h"
 
 #    define MODULE_NAME avs_crypto_prng
 #    include <avs_x_log_config.h>

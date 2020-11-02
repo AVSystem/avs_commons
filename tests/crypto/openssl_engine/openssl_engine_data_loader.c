@@ -33,7 +33,7 @@
 
 #include "libp11.h"
 
-#include "src/crypto/avs_global.h"
+#include "src/crypto/avs_crypto_global.h"
 #include "src/crypto/openssl/avs_openssl_common.h"
 #include "src/crypto/openssl/avs_openssl_data_loader.h"
 #include "src/crypto/openssl/avs_openssl_engine.h"

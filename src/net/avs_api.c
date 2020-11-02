@@ -29,7 +29,7 @@
 #    include <avsystem/commons/avs_socket.h>
 #    include <avsystem/commons/avs_socket_v_table.h>
 
-#    include "avs_global.h"
+#    include "avs_net_global.h"
 
 #    include "avs_net_impl.h"
 

@@ -43,7 +43,7 @@
 #    include "avs_mbedtls_data_loader.h"
 #    include "avs_mbedtls_prng.h"
 
-#    include "../avs_global.h"
+#    include "../avs_crypto_global.h"
 
 #    define MODULE_NAME avs_crypto_pki
 #    include <avs_x_log_config.h>

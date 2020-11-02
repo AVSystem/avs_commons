@@ -22,7 +22,7 @@
 #include "avs_openssl_common.h"
 #include "avs_openssl_engine.h"
 
-#include "../avs_global.h"
+#include "../avs_crypto_global.h"
 
 #include <avs_commons_poison.h>
 

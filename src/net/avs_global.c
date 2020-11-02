@@ -18,9 +18,9 @@
 
 #ifdef AVS_COMMONS_WITH_AVS_NET
 
-#    include "avs_global.h"
+#    include "avs_net_global.h"
 
-#    include "crypto/avs_global.h"
+#    include "crypto/avs_crypto_global.h"
 
 #    include <avsystem/commons/avs_init_once.h>
 

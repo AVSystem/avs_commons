@@ -19,7 +19,7 @@ set(AVS_CRYPTO_PUBLIC_HEADERS
 
 set(AVS_CRYPTO_COMMON_SOURCES
     avs_global.c
-    avs_global.h
+    avs_crypto_global.h
     avs_crypto_pki_persistence.c
     avs_crypto_utils.c
     avs_crypto_utils.h)

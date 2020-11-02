@@ -41,7 +41,7 @@ endif()
 set(AVS_NET_SOURCES
     ${AVS_NET_PUBLIC_HEADERS}
 
-    avs_global.h
+    avs_net_global.h
     avs_net_impl.h
 
     avs_addrinfo.c
