@@ -409,6 +409,7 @@ if(WITH_TEST)
 
     add_custom_target(avs_commons_filename_check
                       COMMAND ! find src include_public -name "'*.[ch]'" | sed -e "'s|^.*/||'" | grep -v "'^avs_'"
+                      COMMAND ! find src include_public -name "'*.[ch]'" | sed -e "'s|^.*/||'" | sort | uniq -c | grep -v "'^ *1 '"
                       WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
     add_dependencies(avs_commons_check avs_commons_filename_check)
 
