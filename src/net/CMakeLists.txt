@@ -109,9 +109,9 @@ endif()
 if(WITH_MBEDTLS)
     set(AVS_NET_MBEDTLS_SOURCES
         ${AVS_NET_SOURCES}
-        mbedtls/avs_mbedtls.c
         mbedtls/avs_mbedtls_persistence.c
-        mbedtls/avs_mbedtls_persistence.h)
+        mbedtls/avs_mbedtls_persistence.h
+        mbedtls/avs_mbedtls_socket.c)
 
     add_library(avs_net_mbedtls ${AVS_NET_MBEDTLS_SOURCES})
     target_link_libraries(avs_net_mbedtls PUBLIC avs_net_core avs_crypto_mbedtls mbedtls mbedcrypto mbedx509)

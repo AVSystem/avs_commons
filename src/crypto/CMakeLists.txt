@@ -123,11 +123,11 @@ if(WITH_MBEDTLS)
         ${AVS_CRYPTO_COMMON_SOURCES}
         mbedtls/avs_mbedtls_aead.c
         mbedtls/avs_mbedtls_data_loader.c
+        mbedtls/avs_mbedtls_global.c
         mbedtls/avs_mbedtls_hkdf.c
         mbedtls/avs_mbedtls_pki.c
         mbedtls/avs_mbedtls_prng.c
-        mbedtls/avs_mbedtls_prng.h
-        mbedtls/avs_mbedtls.c)
+        mbedtls/avs_mbedtls_prng.h)
 
     set(AVS_CRYPTO_MBEDTLS_TEST_SOURCES
         ${AVS_CRYPTO_MBEDTLS_SOURCES}
