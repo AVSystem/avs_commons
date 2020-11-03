@@ -991,15 +991,21 @@ static bool is_session_resumed(ssl_socket_t *socket) {
 #    ifdef AVS_COMMONS_WITH_AVS_CRYPTO_PKI
 typedef struct {
     SSL_CTX *ctx;
-    X509 *last_cert_loaded;
+    X509 *first_cert_loaded;
 } load_cert_ctx_t;
 
 static avs_error_t load_cert(void *cert_, void *ctx_) {
     X509 *cert = (X509 *) cert_;
     load_cert_ctx_t *ctx = (load_cert_ctx_t *) ctx_;
     long result;
-    if (!ctx->last_cert_loaded) {
-        result = SSL_CTX_use_certificate(ctx->ctx, cert);
+    if (!ctx->first_cert_loaded) {
+        if ((result = SSL_CTX_use_certificate(ctx->ctx, cert)) == 1) {
+            if (!X509_up_ref(cert)) {
+                log_openssl_error();
+                return avs_errno(AVS_ENOMEM);
+            }
+            ctx->first_cert_loaded = cert;
+        }
     } else {
         result = SSL_CTX_add1_chain_cert(ctx->ctx, cert);
     }
@@ -1007,16 +1013,40 @@ static avs_error_t load_cert(void *cert_, void *ctx_) {
         log_openssl_error();
         return avs_errno(AVS_EPROTO);
     }
-    if (!X509_up_ref(cert)) {
-        log_openssl_error();
-        return avs_errno(AVS_ENOMEM);
-    }
-    X509_free(ctx->last_cert_loaded);
-    ctx->last_cert_loaded = cert;
     return AVS_OK;
 }
 
-static avs_error_t rebuild_client_cert_chain(SSL_CTX *ctx, X509 *last_cert) {
+static bool cert_is_in_chain(STACK_OF(X509) * chain, X509 *cert) {
+    assert(cert);
+    if (!chain) {
+        return false;
+    }
+    // This attempts comparing by reference
+    if (sk_X509_find(chain, cert) >= 0) {
+        return true;
+    }
+    // Now try comparing by value
+    for (int i = 0, size = sk_X509_num(chain); i < size; ++i) {
+        X509 *candidate = sk_X509_value(chain, i);
+        if (candidate && X509_cmp(cert, candidate) == 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
+static avs_error_t rebuild_client_cert_chain(SSL_CTX *ctx, X509 *first_cert) {
+    assert(first_cert);
+    X509 *last_cert = NULL;
+
+    STACK_OF(X509) *chain = NULL;
+    SSL_CTX_get0_chain_certs(ctx, &chain);
+    if (!chain || sk_X509_num(chain) <= 0) {
+        last_cert = first_cert;
+    } else {
+        last_cert = sk_X509_value(chain, sk_X509_num(chain) - 1);
+    }
+
     assert(last_cert);
     if (!X509_up_ref(last_cert)) {
         log_openssl_error();
@@ -1041,13 +1071,19 @@ static avs_error_t rebuild_client_cert_chain(SSL_CTX *ctx, X509 *last_cert) {
         }
 
         if (next_cert) {
-            if (next_cert == last_cert || X509_cmp(next_cert, last_cert) == 0) {
-                // root / self-signed certificate; let's stop here
+            if (next_cert == first_cert || X509_cmp(next_cert, first_cert) == 0
+                    || cert_is_in_chain(chain, next_cert)) {
+                // certificate is already in chain - self-signed or cross-signed
+                // let's stop here
                 X509_free(next_cert);
                 next_cert = NULL;
             } else if (SSL_CTX_add1_chain_cert(ctx, next_cert) != 1) {
                 log_openssl_error();
                 err = avs_errno(AVS_EPROTO);
+            } else if (!chain) {
+                // first cert added to chain, now it should be non-NULL
+                SSL_CTX_get0_chain_certs(ctx, &chain);
+                assert(chain);
             }
         }
         X509_free(last_cert);
@@ -1133,16 +1169,16 @@ configure_ssl_certs(ssl_socket_t *socket,
             }
             if (avs_is_err(err)) {
                 LOG(ERROR, _("could not load client private key"));
-            } else if (load_cert_ctx.last_cert_loaded
+            } else if (load_cert_ctx.first_cert_loaded
                        && cert_info->rebuild_client_cert_chain
                        && avs_is_err(
                                   (err = rebuild_client_cert_chain(
                                            socket->ctx,
-                                           load_cert_ctx.last_cert_loaded)))) {
+                                           load_cert_ctx.first_cert_loaded)))) {
                 LOG(ERROR, _("could not rebuild client certificate chain"));
             }
         }
-        X509_free(load_cert_ctx.last_cert_loaded);
+        X509_free(load_cert_ctx.first_cert_loaded);
         return err;
     }
 
