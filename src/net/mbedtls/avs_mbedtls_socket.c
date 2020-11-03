@@ -1289,18 +1289,36 @@ static int rebuild_client_cert_chain_verify_cb(void *last_configured_cert_,
     return 0;
 }
 
-static avs_error_t rebuild_client_cert_chain(mbedtls_x509_crt *trust_store,
-                                             mbedtls_x509_crt *last_cert) {
-    assert(trust_store);
-    assert(last_cert);
-    assert(last_cert->version != 0);
-    assert(!last_cert->next);
-    do {
-        // Mbed TLS' cert verification stops at the first cert found in trust
-        // store, so we repeat the procedure until no new certs are added
-        while (last_cert->version != 0 && last_cert->next) {
-            last_cert = last_cert->next;
+static bool cert_makes_cycle_in_chain(const mbedtls_x509_crt *first_cert,
+                                      const mbedtls_x509_crt *checked_cert) {
+    const mbedtls_x509_crt *cert = first_cert;
+    while (cert && cert->version != 0) {
+        if (cert == checked_cert) {
+            return false;
         }
+        if (cert->raw.len == checked_cert->raw.len
+                && memcmp(cert->raw.p, checked_cert->raw.p, cert->raw.len)
+                               == 0) {
+            return true;
+        }
+        cert = cert->next;
+    }
+    AVS_UNREACHABLE("checked_cert pointer not found in chain");
+    return false;
+}
+
+static avs_error_t rebuild_client_cert_chain(mbedtls_x509_crt *trust_store,
+                                             mbedtls_x509_crt *first_cert) {
+    assert(trust_store);
+    assert(first_cert);
+    assert(first_cert->version != 0);
+    mbedtls_x509_crt *last_cert = first_cert;
+    while (last_cert->version != 0 && last_cert->next) {
+        last_cert = last_cert->next;
+    }
+    // Mbed TLS' cert verification stops at the first cert found in trust store,
+    // so we repeat the procedure until no new certs are added
+    while (true) {
         int result = mbedtls_x509_crt_verify(
                 last_cert, trust_store, NULL, NULL, &(uint32_t) { 0 },
                 rebuild_client_cert_chain_verify_cb, last_cert);
@@ -1308,9 +1326,22 @@ static avs_error_t rebuild_client_cert_chain(mbedtls_x509_crt *trust_store,
             return avs_errno(AVS_ENOMEM);
         } else if (result) {
             return avs_errno(AVS_EPROTO);
+        } else if (last_cert->version == 0 || !last_cert->next) {
+            // No new certificates added - stop here
+            return AVS_OK;
         }
-    } while (last_cert->version != 0 && last_cert->next);
-    return AVS_OK;
+        // New certificates added - check for cycles
+        // and update the last_cert pointer
+        while (last_cert->version != 0 && last_cert->next) {
+            if (last_cert->next->version != 0
+                    && cert_makes_cycle_in_chain(first_cert, last_cert->next)) {
+                // Cycle found - let's remove it and finish
+                _avs_crypto_mbedtls_x509_crt_cleanup(&last_cert->next);
+                return AVS_OK;
+            }
+            last_cert = last_cert->next;
+        }
+    }
 }
 
 static avs_error_t
@@ -1335,17 +1366,11 @@ configure_ssl_certs(ssl_socket_certs_t *certs,
                                     &certs->client_cert,
                                     &cert_info->client_cert)))) {
                 LOG(ERROR, _("could not load client certificate"));
-            } else if (cert_info->rebuild_client_cert_chain && ca_certs) {
-                mbedtls_x509_crt *last_cert = certs->client_cert;
-                while (last_cert && last_cert->version != 0
-                       && last_cert->next) {
-                    last_cert = last_cert->next;
-                }
-                if (last_cert && last_cert->version != 0
-                        && avs_is_err((err = rebuild_client_cert_chain(
-                                               ca_certs, last_cert)))) {
-                    LOG(ERROR, _("could not rebuild client certificate chain"));
-                }
+            } else if (cert_info->rebuild_client_cert_chain && ca_certs
+                       && certs->client_cert && certs->client_cert->version != 0
+                       && avs_is_err((err = rebuild_client_cert_chain(
+                                              ca_certs, certs->client_cert)))) {
+                LOG(ERROR, _("could not rebuild client certificate chain"));
             }
             if (avs_is_ok(err)
                     && avs_is_err((err = _avs_crypto_mbedtls_load_client_key(
