@@ -209,19 +209,19 @@ static void test_engine_key_pair(EVP_PKEY *private_key, EVP_PKEY *public_key) {
                           0);
 }
 
-static char *make_query(const char *token, const char *label, const char *pin) {
-    const char *query_template = "pkcs11:token=%s;object=%s;pin-value=%s";
-    size_t query_buffer_size = strlen(query_template) + strlen(label)
-                               + strlen(PIN) + strlen(TOKEN)
-                               - (3 * strlen("%s")) + 1;
-    char *query = (char *) avs_malloc(query_buffer_size);
-    AVS_UNIT_ASSERT_NOT_NULL(query);
+static char *
+make_pkcs11_uri(const char *token, const char *label, const char *pin) {
+    const char *uri_template = "pkcs11:token=%s;object=%s?pin-value=%s";
+    size_t uri_buffer_size = strlen(uri_template) + strlen(label) + strlen(PIN)
+                             + strlen(TOKEN) - (3 * strlen("%s")) + 1;
+    char *uri = (char *) avs_malloc(uri_buffer_size);
+    AVS_UNIT_ASSERT_NOT_NULL(uri);
 
-    AVS_UNIT_ASSERT_TRUE(avs_simple_snprintf(query, query_buffer_size,
-                                             query_template, token, label, pin)
+    AVS_UNIT_ASSERT_TRUE(avs_simple_snprintf(uri, uri_buffer_size, uri_template,
+                                             token, label, pin)
                          >= 0);
 
-    return query;
+    return uri;
 }
 
 AVS_UNIT_TEST(backend_openssl_engine, key_loading_from_pkcs11) {
@@ -229,13 +229,13 @@ AVS_UNIT_TEST(backend_openssl_engine, key_loading_from_pkcs11) {
     EVP_PKEY *public_key = load_pubkey();
 
     // Load private key from engine
-    char *query = make_query(TOKEN, KEY_PAIR_LABEL, PIN);
+    char *key_uri = make_pkcs11_uri(TOKEN, KEY_PAIR_LABEL, PIN);
     const avs_crypto_private_key_info_t private_key_info =
-            avs_crypto_private_key_info_from_engine(query);
+            avs_crypto_private_key_info_from_engine(key_uri);
     EVP_PKEY *private_key = NULL;
     AVS_UNIT_ASSERT_SUCCESS(_avs_crypto_openssl_load_private_key(
             &private_key, &private_key_info));
-    avs_free(query);
+    avs_free(key_uri);
 
     // Check
     test_engine_key_pair(private_key, public_key);
@@ -261,7 +261,7 @@ AVS_UNIT_TEST(backend_openssl_engine, cert_loading_from_pkcs11) {
                     "OPENSSL_CONF=%s openssl req -new -x509 "
                     "-days 365 -subj '/CN=%s' -sha256 -engine pkcs11 "
                     "-keyform engine -key 'pkcs11:token=%s;object=%s"
-                    ";pin-value=%s' -outform der -out %s",
+                    "?pin-value=%s' -outform der -out %s",
                     OPENSSL_ENGINE_CONF_FILE, KEY_PAIR_LABEL, TOKEN,
                     KEY_PAIR_LABEL, PIN, cert_path)
             > 0);
@@ -277,19 +277,9 @@ AVS_UNIT_TEST(backend_openssl_engine, cert_loading_from_pkcs11) {
     AVS_UNIT_ASSERT_SUCCESS(system(pkcs11_command));
 
     // Loading certificate
-    const char *query_template =
-            "pkcs11:type=cert;token=%s;object=%s;pin-value=%s";
-    size_t query_buffer_size = strlen(query_template) + strlen(cert_label)
-                               + strlen(PIN) + strlen(TOKEN)
-                               - (3 * strlen("%s")) + 1;
-    char *query = (char *) avs_malloc(query_buffer_size);
-    AVS_UNIT_ASSERT_NOT_NULL(query);
-    AVS_UNIT_ASSERT_TRUE(avs_simple_snprintf(query, query_buffer_size,
-                                             query_template, TOKEN, cert_label,
-                                             PIN)
-                         >= 0);
+    const char *cert_uri = make_pkcs11_uri(TOKEN, cert_label, PIN);
     const avs_crypto_certificate_chain_info_t cert_info =
-            avs_crypto_certificate_chain_info_from_engine(query);
+            avs_crypto_certificate_chain_info_from_engine(cert_uri);
     X509 *cert = NULL;
     AVS_UNIT_ASSERT_SUCCESS(
             _avs_crypto_openssl_load_first_client_cert(&cert, &cert_info));
@@ -302,7 +292,7 @@ AVS_UNIT_TEST(backend_openssl_engine, cert_loading_from_pkcs11) {
     // Memory cleanup
     X509_free(cert);
     EVP_PKEY_free(public_key);
-    avs_free(query);
+    avs_free(cert_uri);
 
     // System cleanup
     AVS_UNIT_ASSERT_SUCCESS(unlink(cert_path));
@@ -329,34 +319,35 @@ static int check_matching_pkcs11_objects_qty(const char *label) {
 
 AVS_UNIT_TEST(backend_openssl_engine, pkcs11_key_pair_generation_and_removal) {
     char *label = "label1";
+    char *key_uri = make_pkcs11_uri(TOKEN, label, PIN);
 
     AVS_UNIT_ASSERT_EQUAL(check_matching_pkcs11_objects_qty(label), 0);
-    AVS_UNIT_ASSERT_SUCCESS(avs_crypto_pki_ec_gen_pkcs11(TOKEN, label, PIN));
+    AVS_UNIT_ASSERT_SUCCESS(avs_crypto_pki_engine_key_gen(key_uri));
 
     AVS_UNIT_ASSERT_EQUAL(check_matching_pkcs11_objects_qty(label), 2);
 
     // Load private key from engine
-    char *query = make_query(TOKEN, label, PIN);
     AVS_UNIT_ASSERT_EQUAL(ENGINE_init(global_engine), 1);
     EVP_PKEY *private_key =
-            ENGINE_load_private_key(global_engine, query, NULL, NULL);
+            ENGINE_load_private_key(global_engine, key_uri, NULL, NULL);
     ENGINE_finish(global_engine);
 
     // Load public key from engine
     AVS_UNIT_ASSERT_EQUAL(ENGINE_init(global_engine), 1);
     EVP_PKEY *public_key =
-            ENGINE_load_public_key(global_engine, query, NULL, NULL);
+            ENGINE_load_public_key(global_engine, key_uri, NULL, NULL);
     ENGINE_finish(global_engine);
-    avs_free(query);
 
     test_engine_key_pair(private_key, public_key);
 
     EVP_PKEY_free(public_key);
     EVP_PKEY_free(private_key);
 
-    AVS_UNIT_ASSERT_SUCCESS(avs_crypto_pki_ec_rm_pkcs11(TOKEN, label, PIN));
+    AVS_UNIT_ASSERT_SUCCESS(avs_crypto_pki_engine_key_rm(key_uri));
 
     AVS_UNIT_ASSERT_EQUAL(check_matching_pkcs11_objects_qty(label), 0);
+
+    avs_free(key_uri);
 }
 
 AVS_UNIT_TEST(backend_openssl_engine, pkcs11_cert_storage_and_removal) {
@@ -370,28 +361,27 @@ AVS_UNIT_TEST(backend_openssl_engine, pkcs11_cert_storage_and_removal) {
             avs_time_real_valid(avs_crypto_certificate_expiration_date(certs)));
 
     char *label = "label2";
+    char *cert_uri = make_pkcs11_uri(TOKEN, label, PIN);
 
     AVS_UNIT_ASSERT_EQUAL(check_matching_pkcs11_objects_qty(label), 0);
     AVS_UNIT_ASSERT_SUCCESS(
-            avs_crypto_pki_certificate_store_pkcs11(TOKEN, label, PIN, certs));
+            avs_crypto_pki_engine_certificate_store(cert_uri, certs));
 
     AVS_UNIT_ASSERT_EQUAL(check_matching_pkcs11_objects_qty(label), 1);
 
-    // Check certificate stored in engine
-    char *query = make_query(TOKEN, label, PIN);
     avs_crypto_certificate_chain_info_t engine_cert =
-            avs_crypto_certificate_chain_info_from_engine(query);
+            avs_crypto_certificate_chain_info_from_engine(cert_uri);
     AVS_UNIT_ASSERT_TRUE(avs_time_real_equal(
             avs_crypto_certificate_expiration_date(certs),
             avs_crypto_certificate_expiration_date(&engine_cert)));
-    avs_free(query);
 
-    AVS_UNIT_ASSERT_SUCCESS(
-            avs_crypto_pki_certificate_rm_pkcs11(TOKEN, label, PIN));
+    AVS_UNIT_ASSERT_SUCCESS(avs_crypto_pki_engine_certificate_rm(cert_uri));
 
     AVS_UNIT_ASSERT_EQUAL(check_matching_pkcs11_objects_qty(label), 0);
 
     AVS_LIST_CLEAR(&certs);
     AVS_LIST_CLEAR(&crls);
+
+    avs_free(cert_uri);
 }
 #endif // AVS_COMMONS_WITH_AVS_CRYPTO_ADVANCED_FEATURES
