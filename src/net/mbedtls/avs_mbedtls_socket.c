@@ -1243,27 +1243,162 @@ static avs_error_t cleanup_ssl(avs_net_socket_t **socket_) {
 }
 
 #    ifdef AVS_COMMONS_WITH_AVS_CRYPTO_PKI
+static int rebuild_client_cert_chain_verify_cb(void *last_configured_cert_,
+                                               mbedtls_x509_crt *crt,
+                                               int index,
+                                               uint32_t *verify_result_flags) {
+    // This callback is called for each certificate in the chain
+    // Starting for the topmost (root) certificate, with highest index
+    // And then iterates down to index 0 (the actual peer certificate)
+
+    // We (ab)use it to rebuild the client certificate chain
+
+    (void) verify_result_flags;
+    mbedtls_x509_crt *last_configured_cert =
+            (mbedtls_x509_crt *) last_configured_cert_;
+    if (index == 0) {
+        assert(crt == last_configured_cert
+               || (crt->raw.len == last_configured_cert->raw.len
+                   && memcmp(crt->raw.p, last_configured_cert->raw.p,
+                             crt->raw.len)
+                              == 0));
+        return 0;
+    }
+
+    // Copy the certificate
+    mbedtls_x509_crt *crt_copy =
+            (mbedtls_x509_crt *) mbedtls_calloc(1, sizeof(*crt_copy));
+    if (!crt_copy) {
+        LOG(ERROR, _("Out of memory"));
+        return MBEDTLS_ERR_X509_ALLOC_FAILED;
+    }
+    mbedtls_x509_crt_init(crt_copy);
+    int result = mbedtls_x509_crt_parse_der(crt_copy, crt->raw.p, crt->raw.len);
+    if (result) {
+        mbedtls_x509_crt_free(crt_copy);
+        mbedtls_free(crt_copy);
+        return result;
+    }
+    assert(crt_copy->version != 0);
+    assert(!crt_copy->next);
+
+    // Insert it after the last configured one
+    crt_copy->next = last_configured_cert->next;
+    last_configured_cert->next = crt_copy;
+
+    return 0;
+}
+
+static bool cert_makes_cycle_in_chain(const mbedtls_x509_crt *first_cert,
+                                      const mbedtls_x509_crt *checked_cert) {
+    const mbedtls_x509_crt *cert = first_cert;
+    while (cert && cert->version != 0) {
+        if (cert == checked_cert) {
+            return false;
+        }
+        if (cert->raw.len == checked_cert->raw.len
+                && memcmp(cert->raw.p, checked_cert->raw.p, cert->raw.len)
+                               == 0) {
+            return true;
+        }
+        cert = cert->next;
+    }
+    AVS_UNREACHABLE("checked_cert pointer not found in chain");
+    return false;
+}
+
+static avs_error_t rebuild_client_cert_chain(mbedtls_x509_crt *trust_store,
+                                             mbedtls_x509_crt *first_cert) {
+    assert(trust_store);
+    assert(first_cert);
+    assert(first_cert->version != 0);
+    mbedtls_x509_crt *last_cert = first_cert;
+    while (last_cert->version != 0 && last_cert->next) {
+        last_cert = last_cert->next;
+    }
+    // Mbed TLS' cert verification stops at the first cert found in trust store,
+    // so we repeat the procedure until no new certs are added
+    while (true) {
+        int result = mbedtls_x509_crt_verify(
+                last_cert, trust_store, NULL, NULL, &(uint32_t) { 0 },
+                rebuild_client_cert_chain_verify_cb, last_cert);
+        if (result == MBEDTLS_ERR_X509_ALLOC_FAILED) {
+            return avs_errno(AVS_ENOMEM);
+        } else if (result) {
+            return avs_errno(AVS_EPROTO);
+        } else if (last_cert->version == 0 || !last_cert->next) {
+            // No new certificates added - stop here
+            return AVS_OK;
+        }
+        // New certificates added - check for cycles
+        // and update the last_cert pointer
+        while (last_cert->version != 0 && last_cert->next) {
+            if (last_cert->next->version != 0
+                    && cert_makes_cycle_in_chain(first_cert, last_cert->next)) {
+                // Cycle found - let's remove it and finish
+                _avs_crypto_mbedtls_x509_crt_cleanup(&last_cert->next);
+                return AVS_OK;
+            }
+            last_cert = last_cert->next;
+        }
+    }
+}
+
 static avs_error_t
 configure_ssl_certs(ssl_socket_certs_t *certs,
                     const avs_net_certificate_info_t *cert_info) {
     LOG(TRACE, _("configure_ssl_certs"));
 
-    if (cert_info->server_cert_validation) {
-        avs_error_t err;
-        if (avs_is_err((err = _avs_crypto_mbedtls_load_certs(
-                                &certs->ca_cert, &cert_info->trusted_certs)))) {
-            LOG(ERROR, _("could not load CA chain"));
-            return err;
-        }
-        if (avs_is_err((err = _avs_crypto_mbedtls_load_crls(
-                                &certs->ca_crl,
-                                &cert_info->cert_revocation_lists)))) {
-            LOG(ERROR, _("could not load CRLs"));
-            return err;
-        }
-    } else {
-        LOG(DEBUG, _("Server authentication disabled"));
+    avs_error_t err = AVS_OK;
+
+    mbedtls_x509_crt *ca_certs = NULL;
+    if ((cert_info->server_cert_validation
+         || cert_info->rebuild_client_cert_chain)
+            && avs_is_err((err = _avs_crypto_mbedtls_load_certs(
+                                   &ca_certs, &cert_info->trusted_certs)))) {
+        LOG(ERROR, _("could not load CA chain"));
     }
+
+    if (avs_is_ok(err)) {
+        if (cert_info->client_cert.desc.source
+                != AVS_CRYPTO_DATA_SOURCE_EMPTY) {
+            if (avs_is_err((err = _avs_crypto_mbedtls_load_certs(
+                                    &certs->client_cert,
+                                    &cert_info->client_cert)))) {
+                LOG(ERROR, _("could not load client certificate"));
+            } else if (cert_info->rebuild_client_cert_chain && ca_certs
+                       && certs->client_cert && certs->client_cert->version != 0
+                       && avs_is_err((err = rebuild_client_cert_chain(
+                                              ca_certs, certs->client_cert)))) {
+                LOG(ERROR, _("could not rebuild client certificate chain"));
+            }
+            if (avs_is_ok(err)
+                    && avs_is_err((err = _avs_crypto_mbedtls_load_client_key(
+                                           &certs->client_key,
+                                           &cert_info->client_key)))) {
+                LOG(ERROR, _("could not load client private key"));
+            }
+        } else {
+            LOG(TRACE, _("client certificate not specified"));
+        }
+    }
+
+    if (avs_is_ok(err)) {
+        if (cert_info->server_cert_validation) {
+            assert(!certs->ca_cert);
+            certs->ca_cert = ca_certs;
+            ca_certs = NULL;
+            if (avs_is_err((err = _avs_crypto_mbedtls_load_crls(
+                                    &certs->ca_crl,
+                                    &cert_info->cert_revocation_lists)))) {
+                LOG(ERROR, _("could not load CRLs"));
+            }
+        } else {
+            LOG(DEBUG, _("Server authentication disabled"));
+        }
+    }
+
+    _avs_crypto_mbedtls_x509_crt_cleanup(&ca_certs);
 
     if (cert_info->dane) {
 #        ifdef WITH_DANE_SUPPORT
@@ -1274,34 +1409,18 @@ configure_ssl_certs(ssl_socket_certs_t *certs,
         if (!(*insert_ptr = (mbedtls_x509_crt *) mbedtls_calloc(
                       1, sizeof(**insert_ptr)))) {
             LOG(ERROR, _("Out of memory"));
-            return avs_errno(AVS_ENOMEM);
+            err = avs_errno(AVS_ENOMEM);
+        } else {
+            mbedtls_x509_crt_init(*insert_ptr);
+            certs->dane_ta_certs = *insert_ptr;
         }
-        mbedtls_x509_crt_init(*insert_ptr);
-        certs->dane_ta_certs = *insert_ptr;
 #        else  // WITH_DANE_SUPPORT
         LOG(ERROR, _("DANE not supported"));
-        return avs_errno(AVS_ENOTSUP);
+        err = avs_errno(AVS_ENOTSUP);
 #        endif // WITH_DANE_SUPPORT
     }
 
-    if (cert_info->client_cert.desc.source != AVS_CRYPTO_DATA_SOURCE_EMPTY) {
-        avs_error_t err;
-        if (avs_is_err(
-                    (err = _avs_crypto_mbedtls_load_certs(
-                             &certs->client_cert, &cert_info->client_cert)))) {
-            LOG(ERROR, _("could not load client certificate"));
-            return err;
-        }
-        if (avs_is_err((err = _avs_crypto_mbedtls_load_client_key(
-                                &certs->client_key, &cert_info->client_key)))) {
-            LOG(ERROR, _("could not load client private key"));
-            return err;
-        }
-    } else {
-        LOG(TRACE, _("client certificate not specified"));
-    }
-
-    return AVS_OK;
+    return err;
 }
 
 #    else // AVS_COMMONS_WITH_AVS_CRYPTO_PKI

@@ -991,15 +991,21 @@ static bool is_session_resumed(ssl_socket_t *socket) {
 #    ifdef AVS_COMMONS_WITH_AVS_CRYPTO_PKI
 typedef struct {
     SSL_CTX *ctx;
-    bool client_cert_loaded;
+    X509 *first_cert_loaded;
 } load_cert_ctx_t;
 
 static avs_error_t load_cert(void *cert_, void *ctx_) {
     X509 *cert = (X509 *) cert_;
     load_cert_ctx_t *ctx = (load_cert_ctx_t *) ctx_;
     long result;
-    if (!ctx->client_cert_loaded) {
-        result = SSL_CTX_use_certificate(ctx->ctx, cert);
+    if (!ctx->first_cert_loaded) {
+        if ((result = SSL_CTX_use_certificate(ctx->ctx, cert)) == 1) {
+            if (!X509_up_ref(cert)) {
+                log_openssl_error();
+                return avs_errno(AVS_ENOMEM);
+            }
+            ctx->first_cert_loaded = cert;
+        }
     } else {
         result = SSL_CTX_add1_chain_cert(ctx->ctx, cert);
     }
@@ -1007,8 +1013,86 @@ static avs_error_t load_cert(void *cert_, void *ctx_) {
         log_openssl_error();
         return avs_errno(AVS_EPROTO);
     }
-    ctx->client_cert_loaded = true;
     return AVS_OK;
+}
+
+static bool cert_is_in_chain(STACK_OF(X509) * chain, X509 *cert) {
+    assert(cert);
+    if (!chain) {
+        return false;
+    }
+    // This attempts comparing by reference
+    if (sk_X509_find(chain, cert) >= 0) {
+        return true;
+    }
+    // Now try comparing by value
+    for (int i = 0, size = sk_X509_num(chain); i < size; ++i) {
+        X509 *candidate = sk_X509_value(chain, i);
+        if (candidate && X509_cmp(cert, candidate) == 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
+static avs_error_t rebuild_client_cert_chain(SSL_CTX *ctx, X509 *first_cert) {
+    assert(first_cert);
+    X509 *last_cert = NULL;
+
+    STACK_OF(X509) *chain = NULL;
+    SSL_CTX_get0_chain_certs(ctx, &chain);
+    if (!chain || sk_X509_num(chain) <= 0) {
+        last_cert = first_cert;
+    } else {
+        last_cert = sk_X509_value(chain, sk_X509_num(chain) - 1);
+    }
+
+    assert(last_cert);
+    if (!X509_up_ref(last_cert)) {
+        log_openssl_error();
+        return avs_errno(AVS_ENOMEM);
+    }
+
+    avs_error_t err = AVS_OK;
+    X509_STORE_CTX *store_ctx = X509_STORE_CTX_new();
+    if (!store_ctx
+            || !X509_STORE_CTX_init(store_ctx, SSL_CTX_get_cert_store(ctx),
+                                    NULL, NULL)) {
+        log_openssl_error();
+        err = avs_errno(AVS_ENOMEM);
+    }
+
+    while (avs_is_ok(err) && last_cert) {
+        X509 *next_cert = NULL;
+        if (X509_STORE_CTX_get1_issuer(&next_cert, store_ctx, last_cert) < 0) {
+            log_openssl_error();
+            assert(!next_cert);
+            err = avs_errno(AVS_EPROTO);
+        }
+
+        if (next_cert) {
+            if (next_cert == first_cert || X509_cmp(next_cert, first_cert) == 0
+                    || cert_is_in_chain(chain, next_cert)) {
+                // certificate is already in chain - self-signed or cross-signed
+                // let's stop here
+                X509_free(next_cert);
+                next_cert = NULL;
+            } else if (SSL_CTX_add1_chain_cert(ctx, next_cert) != 1) {
+                log_openssl_error();
+                err = avs_errno(AVS_EPROTO);
+            } else if (!chain) {
+                // first cert added to chain, now it should be non-NULL
+                SSL_CTX_get0_chain_certs(ctx, &chain);
+                assert(chain);
+            }
+        }
+        X509_free(last_cert);
+        last_cert = next_cert;
+    }
+
+    X509_STORE_CTX_free(store_ctx);
+    X509_free(last_cert);
+    return err;
 }
 
 static avs_error_t
@@ -1029,12 +1113,8 @@ configure_ssl_certs(ssl_socket_t *socket,
 #        endif // WITH_DANE_SUPPORT
     }
 
-    if (cert_info->server_cert_validation) {
-        if (cert_info->dane) {
-            socket->verify_mode = SSL_VERIFY_DANE_ENFORCED;
-        } else {
-            socket->verify_mode = SSL_VERIFY_TRUSTSTORE;
-        }
+    if (cert_info->server_cert_validation
+            || cert_info->rebuild_client_cert_chain) {
         if (!cert_info->ignore_system_trust_store
                 && !SSL_CTX_set_default_verify_paths(socket->ctx)) {
             LOG(WARNING, _("could not set default CA verify paths"));
@@ -1052,6 +1132,14 @@ configure_ssl_certs(ssl_socket_t *socket,
             LOG(ERROR, _("could not load CRLs"));
             return err;
         }
+    }
+
+    if (cert_info->server_cert_validation) {
+        if (cert_info->dane) {
+            socket->verify_mode = SSL_VERIFY_DANE_ENFORCED;
+        } else {
+            socket->verify_mode = SSL_VERIFY_TRUSTSTORE;
+        }
     } else {
         if (cert_info->dane) {
             socket->verify_mode = SSL_VERIFY_DANE_OPPORTUNISTIC;
@@ -1061,35 +1149,40 @@ configure_ssl_certs(ssl_socket_t *socket,
     }
 
     if (cert_info->client_cert.desc.source != AVS_CRYPTO_DATA_SOURCE_EMPTY) {
-        avs_error_t err =
-                _avs_crypto_openssl_load_client_certs(&cert_info->client_cert,
-                                                      load_cert,
-                                                      &(load_cert_ctx_t) {
-                                                          .ctx = socket->ctx
-                                                      });
+        load_cert_ctx_t load_cert_ctx = {
+            .ctx = socket->ctx
+        };
+        avs_error_t err = _avs_crypto_openssl_load_client_certs(
+                &cert_info->client_cert, load_cert, &load_cert_ctx);
         if (avs_is_err(err)) {
             LOG(ERROR, _("could not load client certificate"));
-            return err;
-        }
-
-        EVP_PKEY *key = NULL;
-        if (avs_is_ok((err = _avs_crypto_openssl_load_private_key(
-                               &key, &cert_info->client_key)))) {
-            assert(key);
-            if (SSL_CTX_use_PrivateKey(socket->ctx, key) != 1) {
-                log_openssl_error();
-                err = avs_errno(AVS_EPROTO);
+        } else {
+            EVP_PKEY *key = NULL;
+            if (avs_is_ok((err = _avs_crypto_openssl_load_private_key(
+                                   &key, &cert_info->client_key)))) {
+                assert(key);
+                if (SSL_CTX_use_PrivateKey(socket->ctx, key) != 1) {
+                    log_openssl_error();
+                    err = avs_errno(AVS_EPROTO);
+                }
+                EVP_PKEY_free(key);
             }
-            EVP_PKEY_free(key);
+            if (avs_is_err(err)) {
+                LOG(ERROR, _("could not load client private key"));
+            } else if (load_cert_ctx.first_cert_loaded
+                       && cert_info->rebuild_client_cert_chain
+                       && avs_is_err(
+                                  (err = rebuild_client_cert_chain(
+                                           socket->ctx,
+                                           load_cert_ctx.first_cert_loaded)))) {
+                LOG(ERROR, _("could not rebuild client certificate chain"));
+            }
         }
-        if (avs_is_err(err)) {
-            LOG(ERROR, _("could not load client private key"));
-            return err;
-        }
-    } else {
-        LOG(TRACE, _("client certificate not specified"));
+        X509_free(load_cert_ctx.first_cert_loaded);
+        return err;
     }
 
+    LOG(TRACE, _("client certificate not specified"));
     return AVS_OK;
 }
 #    else
