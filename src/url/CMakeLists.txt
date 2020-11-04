@@ -29,3 +29,7 @@ install(FILES ${AVS_URL_PUBLIC_HEADERS}
 if(WITH_INTERNAL_LOGS)
     target_link_libraries(avs_url PUBLIC avs_log)
 endif()
+
+avs_add_test(NAME avs_url
+             LIBS $<TARGET_PROPERTY:avs_url,LINK_LIBRARIES>
+             SOURCES $<TARGET_PROPERTY:avs_url,SOURCES>)
