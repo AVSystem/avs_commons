@@ -264,12 +264,12 @@ cleanup:
 static int remove_pkcs11_keys_with_label_or_id(PKCS11_KEY *keys,
                                                unsigned int key_num,
                                                const char *label,
-                                               const unsigned char *id) {
+                                               const char *id) {
     assert(label != NULL || id != NULL);
 
     for (unsigned int k = 0; k < key_num; k++) {
         if ((label == NULL || strcmp(keys[k].label, label) == 0)
-                && (id == NULL || strcmp(keys[k].id, id) == 0)) {
+                && (id == NULL || strcmp((const char *) keys[k].id, id) == 0)) {
             if (PKCS11_remove_key(&keys[k])) {
                 return -1;
             }
@@ -373,12 +373,13 @@ cleanup:
 static int remove_pkcs11_certs_with_label_or_id(PKCS11_CERT *certs,
                                                 unsigned int cert_num,
                                                 const char *label,
-                                                const unsigned char *id) {
+                                                const char *id) {
     assert(label != NULL || id != NULL);
 
     for (unsigned int k = 0; k < cert_num; k++) {
         if ((label == NULL || strcmp(certs[k].label, label) == 0)
-                && (id == NULL || strcmp(certs[k].id, id) == 0)) {
+                && (id == NULL
+                    || strcmp((const char *) certs[k].id, id) == 0)) {
             if (PKCS11_remove_certificate(&certs[k])) {
                 return -1;
             }

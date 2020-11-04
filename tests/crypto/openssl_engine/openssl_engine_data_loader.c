@@ -292,7 +292,7 @@ AVS_UNIT_TEST(backend_openssl_engine, cert_loading_from_pkcs11) {
     // Memory cleanup
     X509_free(cert);
     EVP_PKEY_free(public_key);
-    avs_free(cert_uri);
+    avs_free((char *) (intptr_t) cert_uri);
 
     // System cleanup
     AVS_UNIT_ASSERT_SUCCESS(unlink(cert_path));
