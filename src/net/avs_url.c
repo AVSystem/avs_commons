@@ -347,56 +347,37 @@ error:
     return NULL;
 }
 
-static int is_valid_url_domain_char(char c) {
-    /* Assumes english locale.
-     * According to RFC 1783, domains may not contain non-alphanumeric
-     * characters beside dot and hyphen. The dot may only be used as
-     * domain segment separator. */
-    return c == '-' || isalnum((unsigned char) c);
+static bool is_valid_hostname_char(char c) {
+    /* These should be enough to satisfy both "IPv6address" and "IPvFuture"
+     * forms described in RFC 3986. It also encompasses all cases that we
+     * previously handled for domain names. */
+    return isalnum((unsigned char) c)
+           || strchr("!$&'()*+,-.:;_=~", (unsigned char) c);
 }
 
-static int is_valid_domain(const char *str) {
-    const char *last_segment = str;
-    char prev_c = '\0';
-
-    while (*str) {
-        char c = *str++;
-
-        if (c == '.') {
-            if (prev_c == '.') {
-                LOG(ERROR, _("consecutive dots in domain name"));
-                return 0;
-            }
-
-            last_segment = str;
-        } else if (!is_valid_url_domain_char(c)) {
-            LOG(ERROR, _("invalid character in domain name: ") "%c", c);
-            return 0;
+static bool is_valid_looking_hostname(const char *str) {
+    assert(str);
+    assert(*str);
+    for (const char *chr = str; *chr; ++chr) {
+        if (!is_valid_hostname_char(*chr)) {
+            LOG(ERROR, _("invalid character in IPv6+ address: ") "%c", *chr);
+            return false;
         }
-
-        prev_c = c;
     }
-
-    /* Last segment MUST start with a letter */
-    if (!isalpha((unsigned char) last_segment[0])) {
-        LOG(ERROR, _("top-level domain does not start with a letter: ") "%s",
-            last_segment);
-        return 0;
-    }
-
-    return 1;
+    return true;
 }
 
 int avs_url_validate_host(const char *str) {
-    if (!str) {
+    if (!str || !*str) {
         LOG(ERROR, _("host part cannot be empty"));
         return -1;
     }
-    return (avs_net_validate_ip_address(AVS_NET_AF_INET4, str) == 0
-            || avs_net_validate_ip_address(AVS_NET_AF_INET6, str) == 0
-            || is_valid_domain(str))
-                   ? 0
-                   : -1;
+    /* NOTE: This is intentionally lenient. The intention is to have the least
+     * amount of code that actually rejects URLs that are obviously invalid, but
+     * without wasting space to check all possible corner cases, or depending
+     * on external functions such as inet_ntop(). Stricter validation will be
+     * performed at connect time, anyway. */
+    return is_valid_looking_hostname(str) ? 0 : -1;
 }
 
 static int is_valid_url_path_char(char c) {
