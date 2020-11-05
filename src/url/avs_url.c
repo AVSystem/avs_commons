@@ -16,7 +16,7 @@
 
 #include <avs_commons_init.h>
 
-#ifdef AVS_COMMONS_WITH_AVS_NET
+#ifdef AVS_COMMONS_WITH_AVS_URL
 
 #    include <assert.h>
 #    include <ctype.h>
@@ -521,4 +521,4 @@ void avs_url_free(avs_url_t *url) {
 #        include "tests/url/url.c"
 #    endif // AVS_UNIT_TESTING
 
-#endif // AVS_COMMONS_WITH_AVS_NET
+#endif // AVS_COMMONS_WITH_AVS_URL
