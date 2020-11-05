@@ -251,6 +251,11 @@ static avs_error_t load_crl_from_file(X509_STORE *store, const char *file) {
 
 avs_error_t _avs_crypto_openssl_load_crls(
         X509_STORE *store, const avs_crypto_cert_revocation_list_info_t *info) {
+    if (info == NULL) {
+        LOG(ERROR, "Given CRL info is empty.");
+        return avs_errno(AVS_EINVAL);
+    }
+
     switch (info->desc.source) {
     case AVS_CRYPTO_DATA_SOURCE_EMPTY:
         return AVS_OK;
@@ -417,6 +422,11 @@ static avs_error_t load_key_from_file(EVP_PKEY **out_key,
 
 avs_error_t _avs_crypto_openssl_load_private_key(
         EVP_PKEY **out_key, const avs_crypto_private_key_info_t *info) {
+    if (info == NULL) {
+        LOG(ERROR, "Given key info is empty.");
+        return avs_errno(AVS_EINVAL);
+    }
+
     assert(out_key && !*out_key);
     switch (info->desc.source) {
 #    ifdef AVS_COMMONS_WITH_AVS_CRYPTO_ENGINE
@@ -556,6 +566,11 @@ avs_error_t _avs_crypto_openssl_load_client_certs(
         const avs_crypto_certificate_chain_info_t *info,
         avs_crypto_ossl_object_load_t *load_cb,
         void *cb_arg) {
+    if (info == NULL) {
+        LOG(ERROR, "Given cert info is empty.");
+        return avs_errno(AVS_EINVAL);
+    }
+
     return load_cert_tree(info, pass_cert_to_cb,
                           &(load_certs_cb_info_t) {
                               .cb = load_cb,
@@ -600,6 +615,11 @@ load_certs_to_store(void *store,
 
 avs_error_t _avs_crypto_openssl_load_ca_certs(
         X509_STORE *store, const avs_crypto_certificate_chain_info_t *info) {
+    if (info == NULL) {
+        LOG(ERROR, "Given cert info is empty.");
+        return avs_errno(AVS_EINVAL);
+    }
+
     return load_cert_tree(info, load_certs_to_store, store);
 }
 

@@ -228,6 +228,11 @@ void _avs_crypto_mbedtls_x509_crt_cleanup(mbedtls_x509_crt **crt) {
 avs_error_t _avs_crypto_mbedtls_load_certs(
         mbedtls_x509_crt **out,
         const avs_crypto_certificate_chain_info_t *info) {
+    if (info == NULL) {
+        LOG(ERROR, "Given cert info is empty.");
+        return avs_errno(AVS_EINVAL);
+    }
+
     assert(!*out);
     *out = (mbedtls_x509_crt *) mbedtls_calloc(1, sizeof(**out));
     if (!*out) {
@@ -329,6 +334,11 @@ void _avs_crypto_mbedtls_x509_crl_cleanup(mbedtls_x509_crl **crl) {
 avs_error_t _avs_crypto_mbedtls_load_crls(
         mbedtls_x509_crl **out,
         const avs_crypto_cert_revocation_list_info_t *info) {
+    if (info == NULL) {
+        LOG(ERROR, "Given CRL info is empty.");
+        return avs_errno(AVS_EINVAL);
+    }
+
     assert(!*out);
 #    ifdef MBEDTLS_X509_CRL_PARSE_C
     *out = (mbedtls_x509_crl *) mbedtls_calloc(1, sizeof(**out));
@@ -399,6 +409,11 @@ void _avs_crypto_mbedtls_pk_context_cleanup(mbedtls_pk_context **ctx) {
 avs_error_t
 _avs_crypto_mbedtls_load_client_key(mbedtls_pk_context **client_key,
                                     const avs_crypto_private_key_info_t *info) {
+    if (info == NULL) {
+        LOG(ERROR, "Given key info is empty.");
+        return avs_errno(AVS_EINVAL);
+    }
+
     assert(!*client_key);
     *client_key = (mbedtls_pk_context *) avs_calloc(1, sizeof(**client_key));
     if (!*client_key) {
