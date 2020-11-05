@@ -277,7 +277,7 @@ AVS_UNIT_TEST(backend_openssl_engine, cert_loading_from_pkcs11) {
     AVS_UNIT_ASSERT_SUCCESS(system(pkcs11_command));
 
     // Loading certificate
-    const char *cert_uri = make_pkcs11_uri(TOKEN, cert_label, PIN);
+    char *cert_uri = make_pkcs11_uri(TOKEN, cert_label, PIN);
     const avs_crypto_certificate_chain_info_t cert_info =
             avs_crypto_certificate_chain_info_from_engine(cert_uri);
     X509 *cert = NULL;

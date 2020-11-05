@@ -138,32 +138,94 @@ AVS_UNIT_TEST(backend_mbedtls, chain_loading_from_null) {
     _avs_crypto_mbedtls_x509_crt_cleanup(&chain);
 }
 
-AVS_UNIT_TEST(backend_mbedtls, key_loading) {
+AVS_UNIT_TEST(backend_mbedtls, key_loading_from_file) {
     mbedtls_pk_context *pk = NULL;
     const avs_crypto_private_key_info_t pem =
             avs_crypto_private_key_info_from_file("../certs/client.key", NULL);
-    AVS_UNIT_ASSERT_SUCCESS(_avs_crypto_mbedtls_load_client_key(&pk, &pem));
+    AVS_UNIT_ASSERT_SUCCESS(_avs_crypto_mbedtls_load_private_key(&pk, &pem));
     _avs_crypto_mbedtls_pk_context_cleanup(&pk);
 
     const avs_crypto_private_key_info_t der =
             avs_crypto_private_key_info_from_file("../certs/client.key.der",
                                                   NULL);
-    AVS_UNIT_ASSERT_SUCCESS(_avs_crypto_mbedtls_load_client_key(&pk, &der));
+    AVS_UNIT_ASSERT_SUCCESS(_avs_crypto_mbedtls_load_private_key(&pk, &der));
     _avs_crypto_mbedtls_pk_context_cleanup(&pk);
+
+    // Unsupported
+    const avs_crypto_private_key_info_t p12 =
+            avs_crypto_private_key_info_from_file("../certs/client.p12", NULL);
+    AVS_UNIT_ASSERT_FAILED(_avs_crypto_mbedtls_load_private_key(&pk, &p12));
+    _avs_crypto_mbedtls_pk_context_cleanup(&pk);
+}
+
+static size_t load_file_into_buffer(const char *filename, char **buffer) {
+    FILE *file = fopen(filename, "rb");
+
+    fseek(file, 0l, SEEK_END);
+    size_t bytes_loaded = ftell(file);
+
+    *buffer = (char *) avs_malloc(bytes_loaded);
+    fseek(file, 0l, SEEK_SET);
+    fread(*buffer, sizeof(char), bytes_loaded, file);
+
+    fclose(file);
+
+    return bytes_loaded;
+}
+
+AVS_UNIT_TEST(backend_mbedtls, key_loading_from_buffer) {
+    mbedtls_pk_context *pk = NULL;
+    char *pem_buffer = NULL;
+    size_t pem_buffer_size =
+            load_file_into_buffer("../certs/client.key", &pem_buffer);
+    const avs_crypto_private_key_info_t pem_info =
+            avs_crypto_private_key_info_from_buffer(pem_buffer, pem_buffer_size,
+                                                    NULL);
+    AVS_UNIT_ASSERT_SUCCESS(
+            _avs_crypto_mbedtls_load_private_key(&pk, &pem_info));
+    AVS_UNIT_ASSERT_NOT_NULL(pk);
+    _avs_crypto_mbedtls_pk_context_cleanup(&pk);
+    avs_free(pem_buffer);
+
+    pk = NULL;
+    char *der_buffer = NULL;
+    size_t der_buffer_size =
+            load_file_into_buffer("../certs/client.key.der", &der_buffer);
+    const avs_crypto_private_key_info_t der_info =
+            avs_crypto_private_key_info_from_buffer(der_buffer, der_buffer_size,
+                                                    NULL);
+    AVS_UNIT_ASSERT_SUCCESS(
+            _avs_crypto_mbedtls_load_private_key(&pk, &der_info));
+    AVS_UNIT_ASSERT_NOT_NULL(pk);
+    _avs_crypto_mbedtls_pk_context_cleanup(&pk);
+    avs_free(der_buffer);
+
+    // Unsupported.
+    pk = NULL;
+    char *p12_buffer = NULL;
+    size_t p12_buffer_size =
+            load_file_into_buffer("../certs/client.p12", &p12_buffer);
+    const avs_crypto_private_key_info_t p12_info =
+            avs_crypto_private_key_info_from_buffer(p12_buffer, p12_buffer_size,
+                                                    NULL);
+    AVS_UNIT_ASSERT_FAILED(
+            _avs_crypto_mbedtls_load_private_key(&pk, &p12_info));
+    AVS_UNIT_ASSERT_NULL(pk);
+    avs_free(p12_buffer);
 }
 
 AVS_UNIT_TEST(backend_mbedtls, key_loading_from_null) {
     mbedtls_pk_context *pk = NULL;
     const avs_crypto_private_key_info_t pem =
             avs_crypto_private_key_info_from_file(NULL, NULL);
-    AVS_UNIT_ASSERT_FAILED(_avs_crypto_mbedtls_load_client_key(&pk, &pem));
+    AVS_UNIT_ASSERT_FAILED(_avs_crypto_mbedtls_load_private_key(&pk, &pem));
     _avs_crypto_mbedtls_pk_context_cleanup(&pk);
 
     const avs_crypto_private_key_info_t buffer =
             avs_crypto_private_key_info_from_buffer(NULL, 0, NULL);
-    AVS_UNIT_ASSERT_FAILED(_avs_crypto_mbedtls_load_client_key(&pk, &buffer));
+    AVS_UNIT_ASSERT_FAILED(_avs_crypto_mbedtls_load_private_key(&pk, &buffer));
     _avs_crypto_mbedtls_pk_context_cleanup(&pk);
 
-    AVS_UNIT_ASSERT_FAILED(_avs_crypto_mbedtls_load_client_key(&pk, NULL));
+    AVS_UNIT_ASSERT_FAILED(_avs_crypto_mbedtls_load_private_key(&pk, NULL));
     _avs_crypto_mbedtls_pk_context_cleanup(&pk);
 }

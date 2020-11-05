@@ -51,19 +51,6 @@
 
 VISIBILITY_SOURCE_BEGIN
 
-typedef enum { ENCODING_PEM, ENCODING_DER } encoding_t;
-
-static encoding_t detect_encoding(const void *buffer, size_t len) {
-    static const char PEM_PREFIX[] = "-----BEGIN ";
-    assert(buffer || !len);
-    if (len >= strlen(PEM_PREFIX)
-            && !memcmp(buffer, PEM_PREFIX, strlen(PEM_PREFIX))) {
-        return ENCODING_PEM;
-    } else {
-        return ENCODING_DER;
-    }
-}
-
 static int password_cb(char *buf, int num, int rwflag, void *userdata) {
     (void) rwflag;
     if (!userdata) {
@@ -207,7 +194,7 @@ load_pem_or_der_objects(const void *buffer,
                         avs_crypto_ossl_object_load_t *load_cb,
                         void *load_cb_arg) {
     assert(buffer || !len);
-    switch (detect_encoding(buffer, len)) {
+    switch (_avs_crypto_detect_cert_encoding(buffer, len)) {
     case ENCODING_PEM:
         return load_pem_objects(buffer, len, password, type, load_cb,
                                 load_cb_arg);

@@ -226,7 +226,7 @@ avs_crypto_pki_csr_create(avs_crypto_prng_ctx_t *prng_ctx,
 
     err = convert_subject(&csr_ctx.subject, subject);
     if (avs_is_ok(err)
-            && avs_is_ok((err = _avs_crypto_mbedtls_load_client_key(
+            && avs_is_ok((err = _avs_crypto_mbedtls_load_private_key(
                                   &private_key, private_key_info)))) {
         assert(private_key);
         mbedtls_x509write_csr_set_key(&csr_ctx, private_key);
