@@ -133,6 +133,9 @@ AVS_UNIT_TEST(backend_mbedtls, chain_loading_from_null) {
             avs_crypto_certificate_chain_info_from_path(NULL);
     AVS_UNIT_ASSERT_FAILED(_avs_crypto_mbedtls_load_certs(&chain, &path));
     _avs_crypto_mbedtls_x509_crt_cleanup(&chain);
+
+    AVS_UNIT_ASSERT_FAILED(_avs_crypto_mbedtls_load_certs(&chain, NULL));
+    _avs_crypto_mbedtls_x509_crt_cleanup(&chain);
 }
 
 AVS_UNIT_TEST(backend_mbedtls, key_loading) {
@@ -159,5 +162,8 @@ AVS_UNIT_TEST(backend_mbedtls, key_loading_from_null) {
     const avs_crypto_private_key_info_t buffer =
             avs_crypto_private_key_info_from_buffer(NULL, 0, NULL);
     AVS_UNIT_ASSERT_FAILED(_avs_crypto_mbedtls_load_client_key(&pk, &buffer));
+    _avs_crypto_mbedtls_pk_context_cleanup(&pk);
+
+    AVS_UNIT_ASSERT_FAILED(_avs_crypto_mbedtls_load_client_key(&pk, NULL));
     _avs_crypto_mbedtls_pk_context_cleanup(&pk);
 }

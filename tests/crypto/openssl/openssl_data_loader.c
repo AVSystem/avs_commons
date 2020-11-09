@@ -128,6 +128,8 @@ AVS_UNIT_TEST(backend_openssl, chain_loading_from_null) {
         const avs_crypto_certificate_chain_info_t path =
                 avs_crypto_certificate_chain_info_from_path(NULL);
         AVS_UNIT_ASSERT_FAILED(_avs_crypto_openssl_load_ca_certs(store, &path));
+
+        AVS_UNIT_ASSERT_FAILED(_avs_crypto_openssl_load_ca_certs(store, NULL));
     }
 }
 
@@ -147,6 +149,9 @@ AVS_UNIT_TEST(backend_openssl, cert_loading_from_null) {
             avs_crypto_certificate_chain_info_from_buffer(NULL, 0);
     AVS_UNIT_ASSERT_FAILED(_avs_crypto_openssl_load_client_certs(
             &buffer, fail_loading_cert, NULL));
+
+    AVS_UNIT_ASSERT_FAILED(_avs_crypto_openssl_load_client_certs(
+            NULL, fail_loading_cert, NULL));
 }
 
 AVS_UNIT_TEST(backend_openssl, key_loading) {
@@ -182,6 +187,9 @@ AVS_UNIT_TEST(backend_openssl, key_loading_from_null) {
     const avs_crypto_private_key_info_t buffer =
             avs_crypto_private_key_info_from_buffer(NULL, 0, NULL);
     AVS_UNIT_ASSERT_FAILED(_avs_crypto_openssl_load_private_key(&key, &buffer));
+    AVS_UNIT_ASSERT_NULL(key);
+
+    AVS_UNIT_ASSERT_FAILED(_avs_crypto_openssl_load_private_key(&key, NULL));
     AVS_UNIT_ASSERT_NULL(key);
 #ifdef AVS_COMMONS_WITH_AVS_CRYPTO_ENGINE
     const avs_crypto_private_key_info_t engine =
