@@ -921,13 +921,13 @@ static avs_error_t start_ssl(ssl_socket_t *socket, const char *host) {
     if (verification) {
         if (!param) {
             result = -1;
-        } else if (!avs_net_validate_ip_address(AVS_NET_AF_UNSPEC, host)) {
-            if (!X509_VERIFY_PARAM_set1_host(param, NULL, 0)
-                    || !X509_VERIFY_PARAM_set1_ip_asc(param, host)) {
+        } else if (X509_VERIFY_PARAM_set1_ip_asc(param, host)) {
+            // host is a valid numeric IP address
+            if (!X509_VERIFY_PARAM_set1_host(param, NULL, 0)) {
                 result = -1;
             }
-        } else if (!X509_VERIFY_PARAM_set1_host(param, host, 0)
-                   || !X509_VERIFY_PARAM_set1_ip(param, NULL, 0)) {
+        } else if (!X509_VERIFY_PARAM_set1_ip(param, NULL, 0)
+                   || !X509_VERIFY_PARAM_set1_host(param, host, 0)) {
             result = -1;
         }
     } else if (!X509_VERIFY_PARAM_set1_host(param, NULL, 0)
