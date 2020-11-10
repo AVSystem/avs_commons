@@ -36,8 +36,6 @@ avs_error_t avs_net_local_address_for_target_host(const char *target_host,
                                                   char *address_buffer,
                                                   size_t buffer_size);
 
-int avs_net_validate_ip_address(avs_net_af_t family, const char *ip_address);
-
 #ifdef __cplusplus
 }
 #endif

@@ -155,6 +155,24 @@ void avs_net_addrinfo_delete(avs_net_addrinfo_t **ctx) {
     }
 }
 
+static int get_native_af(avs_net_af_t addr_family) {
+    switch (addr_family) {
+#    ifdef AVS_COMMONS_NET_WITH_IPV4
+    case AVS_NET_AF_INET4:
+        return AF_INET;
+#    endif /* AVS_COMMONS_NET_WITH_IPV4 */
+
+#    ifdef AVS_COMMONS_NET_WITH_IPV6
+    case AVS_NET_AF_INET6:
+        return AF_INET6;
+#    endif /* AVS_COMMONS_NET_WITH_IPV6 */
+
+    case AVS_NET_AF_UNSPEC:
+    default:
+        return AF_UNSPEC;
+    }
+}
+
 avs_net_addrinfo_t *avs_net_addrinfo_resolve_ex(
         avs_net_socket_type_t socket_type,
         avs_net_af_t family,
@@ -169,7 +187,7 @@ avs_net_addrinfo_t *avs_net_addrinfo_resolve_ex(
 
     struct addrinfo hint;
     memset((void *) &hint, 0, sizeof(hint));
-    hint.ai_family = _avs_net_get_af(family);
+    hint.ai_family = get_native_af(family);
     if (family != AVS_NET_AF_UNSPEC && hint.ai_family == AF_UNSPEC) {
         LOG(DEBUG, _("Unsupported avs_net_af_t: ") "%d", (int) family);
         return NULL;

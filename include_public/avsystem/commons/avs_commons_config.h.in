@@ -511,14 +511,6 @@
 #cmakedefine AVS_COMMONS_NET_POSIX_AVS_SOCKET_HAVE_INET_NTOP
 
 /**
- * Is the <c>inet_pton()</c> function available?
- *
- * Disabling this flag will cause an internal implementation of this function
- * adapted from BIND 4.9.4 to be used instead.
- */
-#cmakedefine AVS_COMMONS_NET_POSIX_AVS_SOCKET_HAVE_INET_PTON
-
-/**
  * Is the <c>poll()</c> function available?
  *
  * Disabling this flag will cause a less robust code based on <c>select()</c> to
