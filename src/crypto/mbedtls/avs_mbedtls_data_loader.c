@@ -359,12 +359,25 @@ static avs_error_t load_private_key_from_buffer(mbedtls_pk_context *client_key,
                                                 const void *buffer,
                                                 size_t len,
                                                 const char *password) {
+    unsigned char *refined_buffer = (unsigned char *) (intptr_t) buffer;
+    if (refined_buffer[len - 1] != '\0'
+            && _avs_crypto_detect_cert_encoding(buffer, len) == ENCODING_PEM) {
+        refined_buffer = (unsigned char *) avs_malloc(len + 1);
+        memcpy(refined_buffer, buffer, len);
+        refined_buffer[len] = '\0';
+        len++;
+    }
+
     const unsigned char *pwd = (const unsigned char *) password;
     const size_t pwd_len = password ? strlen(password) : 0;
-    return mbedtls_pk_parse_key(client_key, (const unsigned char *) buffer, len,
-                                pwd, pwd_len)
-                   ? avs_errno(AVS_EPROTO)
-                   : AVS_OK;
+    avs_error_t err =
+            mbedtls_pk_parse_key(client_key, refined_buffer, len, pwd, pwd_len)
+                    ? avs_errno(AVS_EPROTO)
+                    : AVS_OK;
+    if (refined_buffer != buffer) {
+        avs_free(refined_buffer);
+    }
+    return err;
 }
 
 static avs_error_t load_private_key_from_file(mbedtls_pk_context *client_key,
@@ -406,9 +419,9 @@ void _avs_crypto_mbedtls_pk_context_cleanup(mbedtls_pk_context **ctx) {
     }
 }
 
-avs_error_t
-_avs_crypto_mbedtls_load_client_key(mbedtls_pk_context **client_key,
-                                    const avs_crypto_private_key_info_t *info) {
+avs_error_t _avs_crypto_mbedtls_load_private_key(
+        mbedtls_pk_context **client_key,
+        const avs_crypto_private_key_info_t *info) {
     if (info == NULL) {
         LOG(ERROR, "Given key info is empty.");
         return avs_errno(AVS_EINVAL);

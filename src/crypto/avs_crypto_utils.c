@@ -644,6 +644,18 @@ bool _avs_crypto_aead_parameters_valid(size_t key_len,
     return true;
 }
 
+_avs_crypto_cert_encoding_t _avs_crypto_detect_cert_encoding(const void *buffer,
+                                                             size_t len) {
+    static const char PEM_PREFIX[] = "-----BEGIN ";
+    assert(buffer || !len);
+    if (len >= strlen(PEM_PREFIX)
+            && !memcmp(buffer, PEM_PREFIX, strlen(PEM_PREFIX))) {
+        return ENCODING_PEM;
+    } else {
+        return ENCODING_DER;
+    }
+}
+
 #    endif // AVS_COMMONS_WITH_AVS_CRYPTO_ADVANCED_FEATURES
 
 #endif // AVS_COMMONS_WITH_AVS_CRYPTO

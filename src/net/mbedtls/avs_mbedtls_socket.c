@@ -1373,7 +1373,7 @@ configure_ssl_certs(ssl_socket_certs_t *certs,
                 LOG(ERROR, _("could not rebuild client certificate chain"));
             }
             if (avs_is_ok(err)
-                    && avs_is_err((err = _avs_crypto_mbedtls_load_client_key(
+                    && avs_is_err((err = _avs_crypto_mbedtls_load_private_key(
                                            &certs->client_key,
                                            &cert_info->client_key)))) {
                 LOG(ERROR, _("could not load client private key"));
