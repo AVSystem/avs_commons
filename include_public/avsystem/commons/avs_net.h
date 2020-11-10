@@ -36,6 +36,22 @@ avs_error_t avs_net_local_address_for_target_host(const char *target_host,
                                                   char *address_buffer,
                                                   size_t buffer_size);
 
+static inline int avs_net_validate_ip_address(avs_net_af_t family,
+                                              const char *ip_address) {
+    int result = -1;
+    avs_net_resolved_endpoint_t address;
+    avs_net_addrinfo_t *info = avs_net_addrinfo_resolve_ex(
+            AVS_NET_TCP_SOCKET, family, ip_address, NULL,
+            AVS_NET_ADDRINFO_RESOLVE_F_PASSIVE
+                    | AVS_NET_ADDRINFO_RESOLVE_F_NOADDRCONFIG,
+            NULL);
+    if (info && avs_net_addrinfo_next(info, &address)) {
+        result = 0;
+    }
+    avs_net_addrinfo_delete(&info);
+    return result;
+}
+
 #ifdef __cplusplus
 }
 #endif
