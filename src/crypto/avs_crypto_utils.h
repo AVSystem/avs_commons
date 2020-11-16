@@ -58,7 +58,8 @@ bool _avs_crypto_aead_parameters_valid(size_t key_len,
 
 typedef enum { ENCODING_PEM, ENCODING_DER } _avs_crypto_cert_encoding_t;
 
-_avs_crypto_cert_encoding_t _avs_crypto_detect_cert_encoding(const void *buffer, size_t len);
+_avs_crypto_cert_encoding_t _avs_crypto_detect_cert_encoding(const void *buffer,
+                                                             size_t len);
 
 VISIBILITY_PRIVATE_HEADER_END
 

@@ -619,6 +619,22 @@ avs_error_t avs_crypto_private_key_info_copy(
     return AVS_OK;
 }
 
+#    ifdef AVS_COMMONS_WITH_AVS_CRYPTO_PKI
+
+_avs_crypto_cert_encoding_t _avs_crypto_detect_cert_encoding(const void *buffer,
+                                                             size_t len) {
+    static const char PEM_PREFIX[] = "-----BEGIN ";
+    assert(buffer || !len);
+    if (len >= strlen(PEM_PREFIX)
+            && !memcmp(buffer, PEM_PREFIX, strlen(PEM_PREFIX))) {
+        return ENCODING_PEM;
+    } else {
+        return ENCODING_DER;
+    }
+}
+
+#    endif // AVS_COMMONS_WITH_AVS_CRYPTO_PKI
+
 #    ifdef AVS_COMMONS_WITH_AVS_CRYPTO_ADVANCED_FEATURES
 
 const avs_crypto_pki_x509_name_key_t AVS_CRYPTO_PKI_X509_NAME_CN = {
@@ -642,18 +658,6 @@ bool _avs_crypto_aead_parameters_valid(size_t key_len,
         return false;
     }
     return true;
-}
-
-_avs_crypto_cert_encoding_t _avs_crypto_detect_cert_encoding(const void *buffer,
-                                                             size_t len) {
-    static const char PEM_PREFIX[] = "-----BEGIN ";
-    assert(buffer || !len);
-    if (len >= strlen(PEM_PREFIX)
-            && !memcmp(buffer, PEM_PREFIX, strlen(PEM_PREFIX))) {
-        return ENCODING_PEM;
-    } else {
-        return ENCODING_DER;
-    }
 }
 
 #    endif // AVS_COMMONS_WITH_AVS_CRYPTO_ADVANCED_FEATURES
