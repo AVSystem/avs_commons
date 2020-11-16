@@ -16,7 +16,7 @@
 
 #include <avs_commons_init.h>
 
-#ifdef AVS_COMMONS_WITH_AVS_NET
+#ifdef AVS_COMMONS_WITH_AVS_URL
 
 #    include <assert.h>
 #    include <ctype.h>
@@ -27,7 +27,8 @@
 #    include <avsystem/commons/avs_url.h>
 #    include <avsystem/commons/avs_utils.h>
 
-#    include "avs_net_impl.h"
+#    define MODULE_NAME avs_url
+#    include <avs_x_log_config.h>
 
 VISIBILITY_SOURCE_BEGIN
 
@@ -102,6 +103,40 @@ avs_error_t avs_url_percent_encode(avs_stream_t *stream,
         return avs_stream_write(stream, start, (size_t) (input - start));
     }
     return AVS_OK;
+}
+
+int avs_url_percent_decode(char *data, size_t *unescaped_length) {
+    char *src = data, *dst = data;
+
+    if (!strchr(data, '%')) {
+        /* nothing to unescape */
+        *unescaped_length = strlen(data);
+        return 0;
+    }
+
+    while (*src) {
+        if (*src == '%') {
+            if (isxdigit((unsigned char) src[1])
+                    && isxdigit((unsigned char) src[2])) {
+                char ascii[3];
+                ascii[0] = src[1];
+                ascii[1] = src[2];
+                ascii[2] = '\0';
+                *dst = (char) strtoul(ascii, NULL, 16);
+                src += 3;
+                dst += 1;
+            } else {
+                LOG(ERROR, _("bad escape format (%%XX) "));
+                return -1;
+            }
+        } else {
+            *dst++ = *src++;
+        }
+    }
+    *dst = '\0';
+
+    *unescaped_length = (size_t) (dst - data);
+    return 0;
 }
 
 static int prepare_string(char *data) {
@@ -483,7 +518,7 @@ void avs_url_free(avs_url_t *url) {
 }
 
 #    ifdef AVS_UNIT_TESTING
-#        include "tests/net/url.c"
+#        include "tests/url/url.c"
 #    endif // AVS_UNIT_TESTING
 
-#endif // AVS_COMMONS_WITH_AVS_NET
+#endif // AVS_COMMONS_WITH_AVS_URL

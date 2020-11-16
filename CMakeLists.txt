@@ -141,6 +141,7 @@ option(WITH_AVS_RBTREE "AVSystem generic red-black tree implementation" ${MODULE
 option(WITH_AVS_HTTP "AVSystem HTTP client" ${MODULES_ENABLED})
 option(WITH_AVS_PERSISTENCE "AVSystem persistence framework" ${MODULES_ENABLED})
 option(WITH_AVS_SCHED "AVSystem job scheduler" ${MODULES_ENABLED})
+option(WITH_AVS_URL "AVSystem URL handling library" ${MODULES_ENABLED})
 option(WITH_AVS_COMPAT_THREADING "Use multithreading utility compatibility layer" ${MODULES_ENABLED})
 option(WITH_AVS_CRYPTO "Cryptogaphic functions abstraction layer" ${MODULES_ENABLED})
 option(WITH_AVS_MICRO_LOGS "Replaces all invocations of AVS_DISPOSABLE_LOG() with single space. This saves a lot on binary size in applications that log a lot." OFF)
@@ -538,6 +539,7 @@ add_module_with_include_dirs(NAME stream)
 add_module_with_include_dirs(NAME log)
 add_module_with_include_dirs(NAME rbtree)
 add_module_with_include_dirs(NAME sched)
+add_module_with_include_dirs(NAME url)
 
 cmake_dependent_option(WITH_AVS_HTTP_ZLIB
                        "Enable support for HTTP compression using zlib"

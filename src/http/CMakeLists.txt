@@ -44,7 +44,7 @@ add_library(avs_http STATIC
             avs_http_stream.c
             avs_stream_methods.c)
 
-target_link_libraries(avs_http PUBLIC avs_commons_global_headers avs_algorithm avs_net_core avs_stream avs_stream_md5 avs_stream_net avs_utils avs_list)
+target_link_libraries(avs_http PUBLIC avs_commons_global_headers avs_algorithm avs_net_core avs_stream avs_stream_md5 avs_stream_net avs_utils avs_list avs_url)
 
 if(WITH_AVS_HTTP_ZLIB)
     avs_find_library("find_package(ZLIB REQUIRED)")

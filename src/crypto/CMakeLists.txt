@@ -105,7 +105,7 @@ if(WITH_OPENSSL)
                  ${AVS_CRYPTO_OPENSSL_TEST_SOURCES})
 
     if (WITH_OPENSSL_PKCS11_ENGINE)
-        target_link_libraries(avs_crypto_openssl PUBLIC OpenSSL::SSL ${LIBP11_LIBRARIES})
+        target_link_libraries(avs_crypto_openssl PUBLIC OpenSSL::SSL ${LIBP11_LIBRARIES} avs_url)
         target_include_directories(avs_crypto_openssl PRIVATE ${LIBP11_INCLUDE_DIRS})
 
         avs_add_test(NAME avs_crypto_openssl_engine

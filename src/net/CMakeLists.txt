@@ -24,8 +24,7 @@ set(AVS_NET_PUBLIC_HEADERS
     "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/avs_addrinfo.h"
     "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/avs_net.h"
     "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/avs_socket.h"
-    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/avs_socket_v_table.h"
-    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/avs_url.h")
+    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/avs_socket_v_table.h")
 
 if(WITH_PKI)
     set(AVS_NET_PUBLIC_HEADERS
@@ -47,7 +46,6 @@ set(AVS_NET_SOURCES
     avs_addrinfo.c
     avs_api.c
     avs_net_global.c
-    avs_url.c
 
     compat/posix/avs_compat.h
 
