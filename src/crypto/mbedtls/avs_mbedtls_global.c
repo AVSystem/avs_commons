@@ -16,11 +16,11 @@
 
 #include <avs_commons_init.h>
 
-#include "../avs_crypto_global.h"
+#if defined(AVS_COMMONS_WITH_AVS_CRYPTO) && defined(AVS_COMMONS_WITH_MBEDTLS)
+
+#    include "../avs_crypto_global.h"
 
 VISIBILITY_SOURCE_BEGIN
-
-#ifdef AVS_COMMONS_WITH_MBEDTLS
 
 avs_error_t _avs_crypto_initialize_global_state() {
     return AVS_OK;
@@ -30,4 +30,5 @@ void _avs_crypto_cleanup_global_state() {
     return;
 }
 
-#endif // AVS_COMMONS_WITH_MBEDTLS
+#endif // defined(AVS_COMMONS_WITH_AVS_CRYPTO) &&
+       // defined(AVS_COMMONS_WITH_MBEDTLS)

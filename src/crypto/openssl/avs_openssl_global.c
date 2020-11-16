@@ -17,21 +17,21 @@
 #define AVS_SUPPRESS_POISONING
 #include <avs_commons_init.h>
 
-#include <openssl/ssl.h>
+#if defined(AVS_COMMONS_WITH_AVS_CRYPTO) && defined(AVS_COMMONS_WITH_OPENSSL)
 
-#include "avs_openssl_common.h"
-#include "avs_openssl_engine.h"
+#    include <openssl/ssl.h>
 
-#include "../avs_crypto_global.h"
+#    include "avs_openssl_common.h"
+#    include "avs_openssl_engine.h"
 
-#include <avs_commons_poison.h>
+#    include "../avs_crypto_global.h"
 
-#define MODULE_NAME avs_crypto
-#include <avs_x_log_config.h>
+#    include <avs_commons_poison.h>
+
+#    define MODULE_NAME avs_crypto
+#    include <avs_x_log_config.h>
 
 VISIBILITY_SOURCE_BEGIN
-
-#ifdef AVS_COMMONS_WITH_OPENSSL
 
 avs_error_t _avs_crypto_initialize_global_state() {
     LOG(TRACE, _("OpenSSL initialization"));
@@ -55,4 +55,5 @@ void _avs_crypto_cleanup_global_state() {
 #    endif // AVS_COMMONS_WITH_AVS_CRYPTO_ENGINE
 }
 
-#endif // AVS_COMMONS_WITH_OPENSSL
+#endif // defined(AVS_COMMONS_WITH_AVS_CRYPTO) &&
+       // defined(AVS_COMMONS_WITH_OPENSSL)
