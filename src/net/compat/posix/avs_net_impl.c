@@ -73,12 +73,6 @@ static const avs_time_duration_t NET_ACCEPT_TIMEOUT = { 5, 0 };
 const char *_avs_inet_ntop(int af, const void *src, char *dst, socklen_t size);
 #    endif
 
-#    ifdef AVS_COMMONS_NET_POSIX_AVS_SOCKET_HAVE_INET_PTON
-#        define _avs_inet_pton inet_pton
-#    else
-int _avs_inet_pton(int af, const char *src, void *dst);
-#    endif
-
 typedef union {
     struct sockaddr addr;
     struct sockaddr_storage addr_storage;
@@ -240,24 +234,6 @@ typedef struct {
 
     avs_time_duration_t recv_timeout;
 } net_socket_impl_t;
-
-int _avs_net_get_af(avs_net_af_t addr_family) {
-    switch (addr_family) {
-#    ifdef AVS_COMMONS_NET_WITH_IPV4
-    case AVS_NET_AF_INET4:
-        return AF_INET;
-#    endif /* AVS_COMMONS_NET_WITH_IPV4 */
-
-#    ifdef AVS_COMMONS_NET_WITH_IPV6
-    case AVS_NET_AF_INET6:
-        return AF_INET6;
-#    endif /* AVS_COMMONS_NET_WITH_IPV6 */
-
-    case AVS_NET_AF_UNSPEC:
-    default:
-        return AF_UNSPEC;
-    }
-}
 
 #    if defined(AVS_COMMONS_NET_WITH_IPV4) && defined(AVS_COMMONS_NET_WITH_IPV6)
 static bool is_v4mapped(const struct sockaddr_in6 *addr) {
@@ -2183,37 +2159,6 @@ interface_name_net(avs_net_socket_t *socket_,
         }
     }
     return AVS_OK;
-}
-
-static int validate_ip_address(avs_net_af_t family, const char *ip_address) {
-    union {
-#    ifdef AVS_COMMONS_NET_WITH_IPV4
-        struct in_addr sa4;
-#    endif /* AVS_COMMONS_NET_WITH_IPV4 */
-
-#    ifdef AVS_COMMONS_NET_WITH_IPV6
-        struct in6_addr sa6;
-#    endif /* AVS_COMMONS_NET_WITH_IPV6 */
-    } sa;
-    if (_avs_inet_pton(_avs_net_get_af(family), ip_address, &sa) < 1) {
-        return -1;
-    }
-    return 0;
-}
-
-int avs_net_validate_ip_address(avs_net_af_t family, const char *ip_address) {
-    if ((IPV4_AVAILABLE && (family == AVS_NET_AF_INET4))
-            || ((IPV6_AVAILABLE && (family == AVS_NET_AF_INET6)))) {
-        return validate_ip_address(family, ip_address);
-    } else {
-        return ((IPV4_AVAILABLE
-                 && (validate_ip_address(AVS_NET_AF_INET4, ip_address) == 0))
-                || (IPV6_AVAILABLE
-                    && (validate_ip_address(AVS_NET_AF_INET6, ip_address)
-                        == 0)))
-                       ? 0
-                       : -1;
-    }
 }
 
 avs_error_t

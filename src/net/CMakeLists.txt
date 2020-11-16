@@ -51,7 +51,6 @@ set(AVS_NET_SOURCES
 
     compat/posix/avs_compat_addrinfo.c
     compat/posix/avs_inet_ntop.c
-    compat/posix/avs_inet_pton.c
     compat/posix/avs_net_impl.c)
 
 add_library(avs_net_core INTERFACE)

@@ -28,7 +28,6 @@ include(CheckSymbolExists)
 check_symbol_exists("gai_strerror" "netdb.h" AVS_COMMONS_NET_POSIX_AVS_SOCKET_HAVE_GAI_STRERROR)
 check_symbol_exists("getnameinfo" "netdb.h" AVS_COMMONS_NET_POSIX_AVS_SOCKET_HAVE_GETNAMEINFO)
 check_symbol_exists("inet_ntop" "arpa/inet.h" AVS_COMMONS_NET_POSIX_AVS_SOCKET_HAVE_INET_NTOP)
-check_symbol_exists("inet_pton" "arpa/inet.h" AVS_COMMONS_NET_POSIX_AVS_SOCKET_HAVE_INET_PTON)
 check_symbol_exists("poll" "poll.h" AVS_COMMONS_NET_POSIX_AVS_SOCKET_HAVE_POLL)
 check_symbol_exists("recvmsg" "sys/socket.h" AVS_COMMONS_NET_POSIX_AVS_SOCKET_HAVE_RECVMSG)
 
