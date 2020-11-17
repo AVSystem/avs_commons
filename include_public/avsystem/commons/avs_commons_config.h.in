@@ -362,6 +362,8 @@
 /**
  * Enables logging inside avs_commons.
  *
+ * Requires @ref AVS_COMMONS_WITH_AVS_LOG to be enabled.
+ *
  * If this macro is not defined at avs_commons compile time, calls to avs_log
  * will not be generated inside avs_commons components.
  */

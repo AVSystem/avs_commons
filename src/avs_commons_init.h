@@ -39,6 +39,11 @@
 #    define WITHOUT_SSL
 #endif
 
+#if defined(AVS_COMMONS_WITH_INTERNAL_LOGS) \
+        && !defined(AVS_COMMONS_WITH_AVS_LOG)
+#    error "AVS_COMMONS_WITH_AVS_LOG is required for AVS_COMMONS_WITH_INTERNAL_LOGS"
+#endif
+
 #if defined(AVS_COMMONS_WITH_AVS_NET)                            \
         && defined(AVS_COMMONS_NET_WITH_TLS_SESSION_PERSISTENCE) \
         && !defined(AVS_COMMONS_WITH_AVS_PERSISTENCE)
