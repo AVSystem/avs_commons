@@ -28,6 +28,7 @@
 
 #    if defined(AVS_COMMONS_WITHOUT_FLOAT_FORMAT_SPECIFIERS) \
             || defined(AVS_UNIT_TESTING)
+#        include <float.h>
 #        include <math.h>
 #    endif // defined(AVS_COMMONS_WITHOUT_FLOAT_FORMAT_SPECIFIERS) ||
            // defined(AVS_UNIT_TESTING)
@@ -198,17 +199,22 @@ static int double_as_string_custom_impl(char *buf,
     assert(buf_size >= AVS_UINT_STR_BUF_SIZE(uint64_t));
     assert(precision >= 1);
     assert(precision <= 18);
-    // tmp shall be in the [0, 10^precision] range
-    // although usually it'll be in [10^(precision-1), 10^precision - 1]
-    // NOTE: The "+ 0.5" term ensures proper rounding.
-    uint64_t tmp =
-            (uint64_t) (value * pow(10.0, (int16_t) precision - actual_e10 - 1)
-                        + 0.5);
-    if (tmp == 0) {
-        return avs_simple_snprintf(buf, buf_size, "0");
+    int multiplier_e10 = precision - actual_e10 - 1;
+    // For very small values there might be a need to do the multiplication in
+    // multiple stages to avoid overflow of the multiplier.
+    while (multiplier_e10 != 0) {
+        int stage_multiplier_e10 =
+                AVS_MIN(AVS_MAX(multiplier_e10, DBL_MIN_10_EXP),
+                        DBL_MAX_10_EXP);
+        value *= pow(10.0, stage_multiplier_e10);
+        multiplier_e10 -= stage_multiplier_e10;
     }
+    // value shall now be in the [0, 10^precision] range
+    // although usually it'll be in [10^(precision-1), 10^precision)
+    // NOTE: The "+ 0.5" term ensures proper rounding.
     char *decimal = (char *) (intptr_t) avs_uint64_as_string_impl__(
-            (char(*)[AVS_UINT_STR_BUF_SIZE(uint64_t)]) buf, tmp);
+            (char(*)[AVS_UINT_STR_BUF_SIZE(uint64_t)]) buf,
+            (uint64_t) (value + 0.5));
     assert(decimal >= buf && decimal < buf + buf_size);
     int16_t decimal_len = (int16_t) strlen(decimal);
     assert((size_t) decimal_len + 1 < buf_size);
@@ -220,8 +226,10 @@ static int double_as_string_custom_impl(char *buf,
            && decimal[decimal_len - 1 - trailing_zeros] == '0') {
         ++trailing_zeros;
     }
-    assert(trailing_zeros < decimal_len);
-    if (decimal_point_pos <= 0) {
+    assert(trailing_zeros <= decimal_len);
+    if (trailing_zeros == decimal_len) {
+        return avs_simple_snprintf(buf, buf_size, "0");
+    } else if (decimal_point_pos <= 0) {
         assert((size_t) (decimal_len - trailing_zeros - decimal_point_pos + 2)
                < buf_size);
         memmove(buf + 2 - decimal_point_pos, decimal,
