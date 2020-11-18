@@ -144,6 +144,19 @@
  * @c AVS_UINT64_AS_STRING instead of using @c snprintf .
  */
 #cmakedefine AVS_COMMONS_WITHOUT_64BIT_FORMAT_SPECIFIERS
+
+/**
+ * Set if printf implementation doesn't support floating-point numbers.
+ * If defined, custom implementation of conversion is used in
+ * @c AVS_DOUBLE_AS_STRING instead of using @c snprintf . This might increase
+ * compatibility with some embedded libc implementations that do not provide
+ * this functionality.
+ *
+ * NOTE: In order to keep the custom implementation small in code size, it is
+ * not intended to be 100% accurate. Rounding errors may occur - according to
+ * empirical checks, they show up around the 16th significant decimal digit.
+ */
+#cmakedefine AVS_COMMONS_WITHOUT_FLOAT_FORMAT_SPECIFIERS
 /**@}*/
 
 /**

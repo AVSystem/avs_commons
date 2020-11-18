@@ -26,6 +26,12 @@
 #    include <stdlib.h>
 #    include <string.h>
 
+#    if defined(AVS_COMMONS_WITHOUT_FLOAT_FORMAT_SPECIFIERS) \
+            || defined(AVS_UNIT_TESTING)
+#        include <math.h>
+#    endif // defined(AVS_COMMONS_WITHOUT_FLOAT_FORMAT_SPECIFIERS) ||
+           // defined(AVS_UNIT_TESTING)
+
 #    include <avsystem/commons/avs_memory.h>
 #    include <avsystem/commons/avs_utils.h>
 
@@ -178,6 +184,131 @@ avs_int64_as_string_impl__(char (*buf)[AVS_INT_STR_BUF_SIZE(int64_t)],
     snprintf(*buf, AVS_INT_STR_BUF_SIZE(int64_t), "%" PRId64, value);
     return *buf;
 #    endif // AVS_COMMONS_WITHOUT_64BIT_FORMAT_SPECIFIERS
+}
+
+#    if defined(AVS_COMMONS_WITHOUT_FLOAT_FORMAT_SPECIFIERS) \
+            || defined(AVS_UNIT_TESTING)
+
+static int double_as_string_custom_impl(char *buf,
+                                        size_t buf_size,
+                                        double value,
+                                        int16_t actual_e10,
+                                        int16_t target_e10,
+                                        uint8_t precision) {
+    assert(buf_size >= AVS_UINT_STR_BUF_SIZE(uint64_t));
+    assert(precision >= 1);
+    assert(precision <= 18);
+    // tmp shall be in the [0, 10^precision] range
+    // although usually it'll be in [10^(precision-1), 10^precision - 1]
+    // NOTE: The "+ 0.5" term ensures proper rounding.
+    uint64_t tmp =
+            (uint64_t) (value * pow(10.0, (int16_t) precision - actual_e10 - 1)
+                        + 0.5);
+    if (tmp == 0) {
+        return avs_simple_snprintf(buf, buf_size, "0");
+    }
+    char *decimal = (char *) (intptr_t) avs_uint64_as_string_impl__(
+            (char(*)[AVS_UINT_STR_BUF_SIZE(uint64_t)]) buf, tmp);
+    assert(decimal >= buf && decimal < buf + buf_size);
+    int16_t decimal_len = (int16_t) strlen(decimal);
+    assert((size_t) decimal_len + 1 < buf_size);
+    int16_t decimal_point_pos =
+            (int16_t) (1 + actual_e10 + decimal_len - target_e10 - precision);
+    assert(decimal_point_pos <= decimal_len);
+    int16_t trailing_zeros = 0;
+    while (trailing_zeros < decimal_len
+           && decimal[decimal_len - 1 - trailing_zeros] == '0') {
+        ++trailing_zeros;
+    }
+    assert(trailing_zeros < decimal_len);
+    if (decimal_point_pos <= 0) {
+        assert((size_t) (decimal_len - trailing_zeros - decimal_point_pos + 2)
+               < buf_size);
+        memmove(buf + 2 - decimal_point_pos, decimal,
+                (size_t) (decimal_len - trailing_zeros));
+        buf[0] = '0';
+        buf[1] = '.';
+        for (int i = 2; i < 2 - decimal_point_pos; ++i) {
+            buf[i] = '0';
+        }
+        buf[decimal_len - trailing_zeros - decimal_point_pos + 2] = '\0';
+        return decimal_len - trailing_zeros - decimal_point_pos + 2;
+    } else {
+        memmove(buf, decimal, (size_t) decimal_point_pos);
+        if (decimal_point_pos >= decimal_len - trailing_zeros) {
+            buf[decimal_point_pos] = '\0';
+            return decimal_point_pos;
+        } else {
+            memmove(buf + decimal_point_pos + 1, decimal + decimal_point_pos,
+                    (size_t) (decimal_len - decimal_point_pos
+                              - trailing_zeros));
+            buf[decimal_point_pos] = '.';
+            buf[decimal_len + 1 - trailing_zeros] = '\0';
+            return decimal_len + 1 - trailing_zeros;
+        }
+    }
+}
+
+static int double_as_string_custom(char *buf,
+                                   size_t buf_size,
+                                   double value,
+                                   uint8_t precision) {
+    assert(precision >= 1);
+    assert(precision <= 18);
+    if (isnan(value)) {
+        return avs_simple_snprintf(buf, buf_size, "nan");
+    } else if (value == 0.0) {
+        return avs_simple_snprintf(buf, buf_size, "0");
+    } else if (value < 0.0) {
+        assert(buf_size >= 2);
+        buf[0] = '-';
+        int result = double_as_string_custom(buf + 1, buf_size - 1, -value,
+                                             precision);
+        return result >= 0 ? result + 1 : result;
+    } else if (isinf(value)) {
+        // NOTE: With conjunction with the above case, this covers -inf as well
+        return avs_simple_snprintf(buf, buf_size, "inf");
+    } else {
+        assert(value > 0.0);
+        assert(isfinite(value));
+        // For IEEE 754-compliant double, this shall be in the [-308, 308] range
+        int16_t e10 = (int16_t) floor(log10(value));
+        if (value <= 0.0001 || e10 >= precision) {
+            int result = double_as_string_custom_impl(buf, buf_size, value, e10,
+                                                      e10, precision);
+            if (result < 0) {
+                return result;
+            }
+            int result2 = avs_simple_snprintf(buf + result,
+                                              buf_size - (size_t) result,
+                                              "e%+" PRId16, e10);
+            if (result2 < 0) {
+                return result2;
+            }
+            return result + result2;
+        } else {
+            return double_as_string_custom_impl(buf, buf_size, value, e10, 0,
+                                                precision);
+        }
+    }
+}
+
+#    endif // defined(AVS_COMMONS_WITHOUT_FLOAT_FORMAT_SPECIFIERS) ||
+           // defined(AVS_UNIT_TESTING)
+
+const char *
+avs_double_as_string_impl__(char (*buf)[32], double value, uint8_t precision) {
+    assert(precision >= 1);
+    assert(precision <= 18);
+    int result =
+#    ifdef AVS_COMMONS_WITHOUT_FLOAT_FORMAT_SPECIFIERS
+            double_as_string_custom(*buf, sizeof(*buf), value, precision);
+#    else  // AVS_COMMONS_WITHOUT_FLOAT_FORMAT_SPECIFIERS
+            avs_simple_snprintf(*buf, sizeof(*buf), "%.*g", precision, value);
+#    endif // AVS_COMMONS_WITHOUT_FLOAT_FORMAT_SPECIFIERS
+    assert(result >= 0);
+    (void) result;
+    return *buf;
 }
 
 #    ifdef AVS_UNIT_TESTING
