@@ -397,6 +397,37 @@ avs_int64_as_string_impl__(char (*buf)[AVS_INT_STR_BUF_SIZE(uint64_t)],
     avs_int64_as_string_impl__(&(char[AVS_INT_STR_BUF_SIZE(int64_t)]){ "" }, \
                                (Value))
 
+/**
+ * Internal implementation for @ref AVS_DOUBLE_AS_STRING .
+ */
+const char *
+avs_double_as_string_impl__(char (*buf)[32], double value, uint8_t precision);
+
+/**
+ * Converts a @c double value to string.
+ *
+ * If @c AVS_COMMONS_WITHOUT_FLOAT_FORMAT_SPECIFIERS is not defined,
+ * <c>snprintf(..., "%.*g", Precision, Value)</c> is used. Otherwise, a custom
+ * implementation intended to have the same output format is used.
+ *
+ * NOTE: In order to keep the custom implementation small in code size, it is
+ * not intended to be 100% accurate. Rounding errors may occur - according to
+ * empirical checks, they show up around the 16th significant decimal digit.
+ *
+ * @param Value     Value to convert to string.
+ *
+ * @param Precision Maximum number of significant decimal digits to include in
+ *                  the output. This number MUST be between 1 and 18, inclusive.
+ *                  Attempting to use other values will result in assertion
+ *                  failure if adequate debug flags are enabled, or undefined
+ *                  behavior otherwise.
+ *
+ * @returns Pointer to a temporary (stack-allocated, valid until the end of the
+ *          enclosing code block) string representation of @p Value .
+ */
+#define AVS_DOUBLE_AS_STRING(Value, Precision) \
+    avs_double_as_string_impl__(&(char[32]){ "" }, (Value), (Precision))
+
 #ifdef __cplusplus
 }
 #endif

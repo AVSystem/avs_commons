@@ -58,7 +58,8 @@ CONDITIONAL_WHITELIST = {
     (r'openssl', r'sys/time\.h'),
     (r'tinydtls', r'tinydtls/.*'),
     (r'compression', r'zlib\.h'),
-    (r'avs_openssl_common\.h', r'valgrind/.*')
+    (r'avs_openssl_common\.h', r'valgrind/.*'),
+    (r'avs_strings\.c', r'float\.h')
 }
 
 if __name__ == '__main__':
