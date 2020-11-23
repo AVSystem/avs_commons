@@ -64,19 +64,6 @@ VISIBILITY_SOURCE_BEGIN
 
 #    define TRUNCATION_BUFFER_SIZE 128
 
-#    ifdef OPENSSL_VERSION_NUMBER
-#        define MAKE_OPENSSL_VER(Major, Minor, Fix) \
-            (((Major) << 28) | ((Minor) << 20) | ((Fix) << 12))
-
-#        define OPENSSL_VERSION_NUMBER_GE(Major, Minor, Fix) \
-            (OPENSSL_VERSION_NUMBER >= MAKE_OPENSSL_VER(Major, Minor, Fix))
-#    else
-#        define OPENSSL_VERSION_NUMBER_GE(Major, Minor, Fix) 0
-#    endif
-
-#    define OPENSSL_VERSION_NUMBER_LT(Major, Minor, Fix) \
-        (!OPENSSL_VERSION_NUMBER_GE(Major, Minor, Fix))
-
 #    if (OPENSSL_VERSION_NUMBER_LT(1, 0, 0) || defined(OPENSSL_NO_PSK)) \
             && defined(AVS_COMMONS_NET_WITH_PSK)
 #        warning "Detected OpenSSL version does not support PSK - disabling"

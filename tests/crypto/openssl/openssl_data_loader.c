@@ -180,6 +180,10 @@ AVS_UNIT_TEST(backend_openssl, key_loading_from_file) {
 
 static size_t load_file_into_buffer(const char *filename, char **buffer) {
     FILE *file = fopen(filename, "rb");
+    if (!file) {
+        // Old version of OpenSSL, file was not created
+        return (size_t) -1;
+    }
 
     fseek(file, 0l, SEEK_END);
     size_t bytes_loaded = ftell(file);
@@ -225,13 +229,15 @@ AVS_UNIT_TEST(backend_openssl, key_loading_from_buffer) {
     char *p12_buffer = NULL;
     size_t p12_buffer_size =
             load_file_into_buffer("../certs/client.p12", &p12_buffer);
-    const avs_crypto_private_key_info_t p12_info =
-            avs_crypto_private_key_info_from_buffer(p12_buffer, p12_buffer_size,
-                                                    NULL);
-    AVS_UNIT_ASSERT_FAILED(
-            _avs_crypto_openssl_load_private_key(&key, &p12_info));
-    AVS_UNIT_ASSERT_NULL(key);
-    avs_free(p12_buffer);
+    if (p12_buffer_size != (size_t) -1) {
+        const avs_crypto_private_key_info_t p12_info =
+                avs_crypto_private_key_info_from_buffer(p12_buffer,
+                                                        p12_buffer_size, NULL);
+        AVS_UNIT_ASSERT_FAILED(
+                _avs_crypto_openssl_load_private_key(&key, &p12_info));
+        AVS_UNIT_ASSERT_NULL(key);
+        avs_free(p12_buffer);
+    }
 }
 
 AVS_UNIT_TEST(backend_openssl, key_loading_from_null) {

@@ -17,6 +17,7 @@
 #define AVS_COMMONS_CRYPTO_OPENSSL_COMMON_H
 
 #include <openssl/err.h>
+#include <openssl/opensslv.h>
 
 #ifdef AVS_COMMONS_WITH_AVS_CRYPTO_VALGRIND
 #    include <stdint.h>
@@ -32,6 +33,19 @@ extern void *sbrk(intptr_t __delta);
 
 VISIBILITY_PRIVATE_HEADER_BEGIN
 
+#ifdef OPENSSL_VERSION_NUMBER
+#    define MAKE_OPENSSL_VER(Major, Minor, Fix) \
+        (((Major) << 28) | ((Minor) << 20) | ((Fix) << 12))
+
+#    define OPENSSL_VERSION_NUMBER_GE(Major, Minor, Fix) \
+        (OPENSSL_VERSION_NUMBER >= MAKE_OPENSSL_VER(Major, Minor, Fix))
+#else
+#    define OPENSSL_VERSION_NUMBER_GE(Major, Minor, Fix) 0
+#endif
+
+#define OPENSSL_VERSION_NUMBER_LT(Major, Minor, Fix) \
+    (!OPENSSL_VERSION_NUMBER_GE(Major, Minor, Fix))
+
 #ifdef AVS_COMMONS_WITH_INTERNAL_LOGS
 
 #    define log_openssl_error()                                                \
@@ -42,9 +56,16 @@ VISIBILITY_PRIVATE_HEADER_BEGIN
 
 #else // AVS_COMMONS_WITH_INTERNAL_LOGS
 
-#    define log_openssl_error() ((void) 0)
+#    define log_openssl_error() ((void) ERR_get_error())
 
 #endif // AVS_COMMONS_WITH_INTERNAL_LOGS
+
+#if OPENSSL_VERSION_NUMBER_LT(1, 1, 0)
+#    define EVP_PKEY_up_ref(Key) \
+        CRYPTO_add(&(Key)->references, 1, CRYPTO_LOCK_EVP_PKEY)
+#    define X509_up_ref(Cert) \
+        CRYPTO_add(&(Cert)->references, 1, CRYPTO_LOCK_X509)
+#endif
 
 VISIBILITY_PRIVATE_HEADER_END
 

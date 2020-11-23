@@ -566,11 +566,16 @@ avs_error_t _avs_crypto_openssl_load_client_certs(
 }
 
 static avs_error_t load_single_cert_to_store(void *cert, void *store) {
-    if (!X509_STORE_add_cert((X509_STORE *) store, (X509 *) cert)) {
-        log_openssl_error();
-        return avs_errno(AVS_ENOMEM);
+    if (X509_STORE_add_cert((X509_STORE *) store, (X509 *) cert)) {
+        return AVS_OK;
     }
-    return AVS_OK;
+    unsigned long err = ERR_peek_error();
+    if (ERR_GET_REASON(err) == X509_R_CERT_ALREADY_IN_HASH_TABLE) {
+        ERR_get_error();
+        return AVS_OK;
+    }
+    log_openssl_error();
+    return avs_errno(AVS_ENOMEM);
 }
 
 static avs_error_t
