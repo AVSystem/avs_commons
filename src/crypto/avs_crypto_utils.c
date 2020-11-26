@@ -245,7 +245,7 @@ static const avs_crypto_data_source_element_t
 const avs_crypto_data_source_element_t *
 _avs_crypto_get_data_source_definition(avs_crypto_data_source_t source) {
     if ((int) source < 0
-            || (size_t) source > AVS_ARRAY_SIZE(DATA_SOURCE_DEFINITIONS)) {
+            || (size_t) source >= AVS_ARRAY_SIZE(DATA_SOURCE_DEFINITIONS)) {
         return NULL;
     }
     return DATA_SOURCE_DEFINITIONS[source];
