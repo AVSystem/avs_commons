@@ -477,4 +477,8 @@ avs_error_t avs_stream_offset(avs_stream_t *stream, avs_off_t *out_offset) {
     return avs_errno(AVS_ENOTSUP);
 }
 
+#    ifdef AVS_UNIT_TESTING
+#        include "tests/stream/test_stream_generic.c"
+#    endif
+
 #endif // AVS_COMMONS_WITH_AVS_STREAM

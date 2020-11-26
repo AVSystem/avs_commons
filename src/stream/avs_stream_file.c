@@ -30,6 +30,8 @@
 #    include <avsystem/commons/avs_stream_file.h>
 #    include <avsystem/commons/avs_stream_v_table.h>
 
+#    include "avs_stream_common.h"
+
 #    define MODULE_NAME avs_stream
 #    include <avs_x_log_config.h>
 
@@ -198,6 +200,7 @@ static const avs_stream_v_table_t file_stream_vtable = {
     .peek = stream_file_peek,
     .reset = stream_file_reset,
     .close = stream_file_close,
+    .finish_message = _avs_stream_empty_finish_message,
     .extension_list =
             (const avs_stream_v_table_extension_t[]) {
                     { AVS_STREAM_V_TABLE_EXTENSION_OFFSET,
