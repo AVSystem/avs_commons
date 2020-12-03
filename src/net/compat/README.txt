@@ -30,8 +30,3 @@ avs_net_resolved_endpoint_get_host_port(const avs_net_resolved_endpoint_t *endp,
                                         size_t hostlen,
                                         char *serv,
                                         size_t servlen);
-
-avs_error_t avs_net_local_address_for_target_host(const char *target_host,
-                                                  avs_net_af_t addr_family,
-                                                  char *address_buffer,
-                                                  size_t buffer_size);

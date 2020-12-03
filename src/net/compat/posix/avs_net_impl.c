@@ -1803,52 +1803,6 @@ avs_error_t _avs_net_create_udp_socket(avs_net_socket_t **socket,
     return create_net_socket(socket, AVS_NET_UDP_SOCKET, socket_configuration);
 }
 
-avs_error_t avs_net_local_address_for_target_host(const char *target_host,
-                                                  avs_net_af_t addr_family,
-                                                  char *address_buffer,
-                                                  size_t buffer_size) {
-    avs_error_t err = avs_errno(AVS_EADDRNOTAVAIL);
-    sockaddr_endpoint_union_t address;
-    avs_net_addrinfo_t *info =
-            avs_net_addrinfo_resolve_ex(AVS_NET_UDP_SOCKET, addr_family,
-                                        target_host, AVS_NET_RESOLVE_DUMMY_PORT,
-                                        AVS_NET_ADDRINFO_RESOLVE_F_NOADDRCONFIG,
-                                        NULL);
-    if (!info) {
-        return err;
-    }
-    while (!avs_net_addrinfo_next(info, &address.api_ep)) {
-        sockfd_t test_socket = socket(address.sockaddr_ep.addr.sa_family,
-                                      SOCK_DGRAM, IPPROTO_UDP);
-
-        if (test_socket == INVALID_SOCKET) {
-            err = failure_from_errno();
-        } else {
-            if (fcntl(test_socket, F_SETFL, O_NONBLOCK) == -1) {
-                err = failure_from_errno();
-            } else if (avs_is_ok((err = connect_with_timeout(&test_socket,
-                                                             &address)))) {
-                sockaddr_union_t addr;
-                socklen_t addrlen = sizeof(addr);
-
-                if (getsockname(test_socket, &addr.addr, &addrlen)) {
-                    err = failure_from_errno();
-                } else {
-                    err = get_string_ip(&addr, address_buffer, buffer_size);
-                }
-            }
-
-            close(test_socket);
-        }
-
-        if (avs_is_ok(err)) {
-            break;
-        }
-    }
-    avs_net_addrinfo_delete(&info);
-    return err;
-}
-
 static avs_error_t local_host_net(avs_net_socket_t *socket,
                                   char *out_buffer,
                                   size_t out_buffer_size) {
