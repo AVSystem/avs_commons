@@ -28,6 +28,7 @@ add_library(avs_stream STATIC
             ${AVS_STREAM_PUBLIC_HEADERS}
             avs_stream.c
             avs_stream_buffered.c
+            avs_stream_common.c
             avs_stream_file.c
             avs_stream_inbuf.c
             avs_stream_membuf.c

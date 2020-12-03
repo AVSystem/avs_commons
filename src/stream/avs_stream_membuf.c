@@ -29,6 +29,8 @@
 #    include <avsystem/commons/avs_stream_membuf.h>
 #    include <avsystem/commons/avs_stream_v_table.h>
 
+#    include "avs_stream_common.h"
+
 #    define MODULE_NAME avs_stream
 #    include <avs_x_log_config.h>
 
@@ -239,6 +241,7 @@ static const avs_stream_v_table_t membuf_stream_vtable = {
     .read = stream_membuf_read,
     .peek = stream_membuf_peek,
     .reset = stream_membuf_reset,
+    .finish_message = _avs_stream_empty_finish_message,
     .close = stream_membuf_close,
     .extension_list =
             (const avs_stream_v_table_extension_t[]) {

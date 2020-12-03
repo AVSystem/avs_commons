@@ -24,6 +24,8 @@
 #    include <avsystem/commons/avs_stream_simple_io.h>
 #    include <avsystem/commons/avs_stream_v_table.h>
 
+#    include "avs_stream_common.h"
+
 VISIBILITY_SOURCE_BEGIN
 
 typedef struct {
@@ -103,15 +105,10 @@ static avs_error_t stream_simple_io_read(avs_stream_t *stream_,
     return AVS_OK;
 }
 
-static avs_error_t stream_simple_finish_message(avs_stream_t *stream) {
-    (void) stream;
-    return AVS_OK;
-}
-
 static const avs_stream_v_table_t simple_io_stream_vtable = {
     .write_some = stream_simple_io_write_some,
     .read = stream_simple_io_read,
-    .finish_message = stream_simple_finish_message
+    .finish_message = _avs_stream_empty_finish_message
 };
 
 static avs_stream_t *
