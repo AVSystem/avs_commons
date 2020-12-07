@@ -21,6 +21,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include <avsystem/commons/avs_defs.h>
 
@@ -37,12 +38,12 @@ avs_net_local_address_for_target_host(const char *target_host,
                                       char *address_buffer,
                                       size_t buffer_size) {
     avs_error_t err = AVS_OK;
+    avs_net_socket_configuration_t config;
+    memset(&config, 0, sizeof(config));
+    config.address_family = addr_family;
     avs_net_socket_t *dummy_socket = NULL;
-    (void) (avs_is_err((err = avs_net_udp_socket_create(
-                                &dummy_socket,
-                                &(const avs_net_socket_configuration_t) {
-                                    .address_family = addr_family
-                                })))
+    (void) (avs_is_err(
+                    (err = avs_net_udp_socket_create(&dummy_socket, &config)))
             // NOTE: We need some port to "connect" to;
             // 1337 is just a random one without any particular meaning
             || avs_is_err((err = avs_net_socket_connect(dummy_socket,
