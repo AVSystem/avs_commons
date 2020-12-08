@@ -21,6 +21,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include <avsystem/commons/avs_defs.h>
 
@@ -31,10 +32,28 @@
 extern "C" {
 #endif
 
-avs_error_t avs_net_local_address_for_target_host(const char *target_host,
-                                                  avs_net_af_t addr_family,
-                                                  char *address_buffer,
-                                                  size_t buffer_size);
+static inline avs_error_t
+avs_net_local_address_for_target_host(const char *target_host,
+                                      avs_net_af_t addr_family,
+                                      char *address_buffer,
+                                      size_t buffer_size) {
+    avs_error_t err = AVS_OK;
+    avs_net_socket_configuration_t config;
+    memset(&config, 0, sizeof(config));
+    config.address_family = addr_family;
+    avs_net_socket_t *dummy_socket = NULL;
+    (void) (avs_is_err(
+                    (err = avs_net_udp_socket_create(&dummy_socket, &config)))
+            // NOTE: We need some port to "connect" to;
+            // 1337 is just a random one without any particular meaning
+            || avs_is_err((err = avs_net_socket_connect(dummy_socket,
+                                                        target_host, "1337")))
+            || avs_is_err((err = avs_net_socket_get_local_host(dummy_socket,
+                                                               address_buffer,
+                                                               buffer_size))));
+    avs_net_socket_cleanup(&dummy_socket);
+    return err;
+}
 
 static inline int avs_net_validate_ip_address(avs_net_af_t family,
                                               const char *ip_address) {
