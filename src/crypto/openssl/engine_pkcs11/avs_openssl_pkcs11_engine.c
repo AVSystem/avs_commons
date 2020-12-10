@@ -262,19 +262,35 @@ cleanup:
 }
 
 static int remove_pkcs11_keys_with_label_or_id(
-        PKCS11_TOKEN *token,
+        PKCS11_SLOT *slot,
         int (*enumerate_func)(PKCS11_TOKEN *, PKCS11_KEY **, unsigned int *),
         const char *label,
         const char *id) {
-    assert(token);
+    assert(slot);
+    assert(slot->token);
     assert(enumerate_func);
     assert(label != NULL || id != NULL);
     bool key_removed;
     do {
+        // Oh libp11. PKCS11_enumerate_{keys,public_keys,certs} cache their
+        // results in private structures - and data from there is almost never
+        // removed. Well, it's removed when a cleanup-ish operation such as
+        // PKCS11_logout() is performed - but we cannot do that, as that would
+        // create a conflict between our instance of PKCS11_CTX and the one used
+        // by OpenSSL engine. But for some whatever reason, token structure is
+        // also rebuilt after every call to PKCS11_generate_random(). So that's
+        // why we call it here - to flush token information in libp11. We don't
+        // actually need any random data, so we set ulRandomLen to zero, but
+        // pRandomData must not be NULL, as at least some implementations
+        // (including SoftHSM) check that. So we pass a pointer to any variable.
+        // key_removed will be assigned to a couple of lines below, so even if
+        // it somehow gets changed, it won't matter anyway.
+        PKCS11_generate_random(slot, (unsigned char *) &key_removed, 0);
+
         PKCS11_KEY *keys = NULL;
         unsigned int key_num = 0;
 
-        int result = enumerate_func(token, &keys, &key_num);
+        int result = enumerate_func(slot->token, &keys, &key_num);
         if (result) {
             return result;
         }
@@ -320,10 +336,9 @@ avs_error_t avs_crypto_pki_engine_key_rm(const char *query) {
             // Note the single '|' - we want to try removing the public key
             // even if removing the private key failed.
             && !(remove_pkcs11_keys_with_label_or_id(
-                         slot->token, PKCS11_enumerate_keys, label, id)
+                         slot, PKCS11_enumerate_keys, label, id)
                  | remove_pkcs11_keys_with_label_or_id(
-                           slot->token, PKCS11_enumerate_public_keys, label,
-                           id))) {
+                           slot, PKCS11_enumerate_public_keys, label, id))) {
         err = AVS_OK;
     }
 
@@ -390,17 +405,22 @@ cleanup:
     return err;
 }
 
-static int remove_pkcs11_certs_with_label_or_id(PKCS11_TOKEN *token,
+static int remove_pkcs11_certs_with_label_or_id(PKCS11_SLOT *slot,
                                                 const char *label,
                                                 const char *id) {
-    assert(token);
+    assert(slot);
+    assert(slot->token);
     assert(label != NULL || id != NULL);
     bool cert_removed;
     do {
+        // see comment in remove_pkcs11_keys_with_label_or_id()
+        // for explanation of this madness
+        PKCS11_generate_random(slot, (unsigned char *) &cert_removed, 0);
+
         PKCS11_CERT *certs = NULL;
         unsigned int cert_num = 0;
 
-        int result = PKCS11_enumerate_certs(token, &certs, &cert_num);
+        int result = PKCS11_enumerate_certs(slot->token, &certs, &cert_num);
         if (result) {
             return result;
         }
@@ -443,7 +463,7 @@ avs_error_t avs_crypto_pki_engine_certificate_rm(const char *query) {
 
     if ((slot = get_pkcs11_slot(token)) && !PKCS11_open_session(slot, 1)
             && !PKCS11_login(slot, 0, pin)
-            && !remove_pkcs11_certs_with_label_or_id(slot->token, label, id)) {
+            && !remove_pkcs11_certs_with_label_or_id(slot, label, id)) {
         err = AVS_OK;
     }
 
