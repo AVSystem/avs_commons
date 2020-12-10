@@ -261,11 +261,22 @@ cleanup:
     return err;
 }
 
-static int remove_pkcs11_keys_with_label_or_id(PKCS11_KEY *keys,
-                                               unsigned int key_num,
-                                               const char *label,
-                                               const char *id) {
+static int remove_pkcs11_keys_with_label_or_id(
+        PKCS11_TOKEN *token,
+        int (*enumerate_func)(PKCS11_TOKEN *, PKCS11_KEY **, unsigned int *),
+        const char *label,
+        const char *id) {
+    assert(token);
+    assert(enumerate_func);
     assert(label != NULL || id != NULL);
+
+    PKCS11_KEY *keys = NULL;
+    unsigned int key_num = 0;
+
+    int result = enumerate_func(token, &keys, &key_num);
+    if (result) {
+        return result;
+    }
 
     for (unsigned int k = 0; k < key_num; k++) {
         if ((label == NULL || strcmp(keys[k].label, label) == 0)
@@ -295,15 +306,12 @@ avs_error_t avs_crypto_pki_engine_key_rm(const char *query) {
         goto cleanup;
     }
 
-    PKCS11_KEY *keys;
-    unsigned int key_num;
-
     if ((slot = get_pkcs11_slot(token)) && !PKCS11_open_session(slot, 1)
             && !PKCS11_login(slot, 0, pin)
-            && !PKCS11_enumerate_keys(slot->token, &keys, &key_num)
-            && !remove_pkcs11_keys_with_label_or_id(keys, key_num, label, id)
-            && !PKCS11_enumerate_public_keys(slot->token, &keys, &key_num)
-            && !remove_pkcs11_keys_with_label_or_id(keys, key_num, label, id)) {
+            && !remove_pkcs11_keys_with_label_or_id(
+                       slot->token, PKCS11_enumerate_keys, label, id)
+            && !remove_pkcs11_keys_with_label_or_id(
+                       slot->token, PKCS11_enumerate_public_keys, label, id)) {
         err = AVS_OK;
     }
 
@@ -370,11 +378,19 @@ cleanup:
     return err;
 }
 
-static int remove_pkcs11_certs_with_label_or_id(PKCS11_CERT *certs,
-                                                unsigned int cert_num,
+static int remove_pkcs11_certs_with_label_or_id(PKCS11_TOKEN *token,
                                                 const char *label,
                                                 const char *id) {
+    assert(token);
     assert(label != NULL || id != NULL);
+
+    PKCS11_CERT *certs = NULL;
+    unsigned int cert_num = 0;
+
+    int result = PKCS11_enumerate_certs(token, &certs, &cert_num);
+    if (result) {
+        return result;
+    }
 
     for (unsigned int k = 0; k < cert_num; k++) {
         if ((label == NULL || strcmp(certs[k].label, label) == 0)
@@ -405,14 +421,9 @@ avs_error_t avs_crypto_pki_engine_certificate_rm(const char *query) {
         goto cleanup;
     }
 
-    PKCS11_CERT *certs;
-    unsigned int cert_num;
-
     if ((slot = get_pkcs11_slot(token)) && !PKCS11_open_session(slot, 1)
             && !PKCS11_login(slot, 0, pin)
-            && !PKCS11_enumerate_certs(slot->token, &certs, &cert_num)
-            && !remove_pkcs11_certs_with_label_or_id(certs, cert_num, label,
-                                                     id)) {
+            && !remove_pkcs11_certs_with_label_or_id(slot->token, label, id)) {
         err = AVS_OK;
     }
 
