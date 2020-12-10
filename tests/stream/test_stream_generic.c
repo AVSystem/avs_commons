@@ -99,8 +99,8 @@ static avs_stream_t **setup_output_streams(stream_ctx_t ***ctx,
 
 #ifdef AVS_COMMONS_STREAM_WITH_FILE
     // Add filestream
-    char *path = (char *) avs_malloc(sizeof(FILENAME_TEMPLATE) + 1);
-    memcpy(path, FILENAME_TEMPLATE, sizeof(FILENAME_TEMPLATE) + 1);
+    char *path = (char *) avs_malloc(sizeof(FILENAME_TEMPLATE));
+    memcpy(path, FILENAME_TEMPLATE, sizeof(FILENAME_TEMPLATE));
     mkstemp(path);
     streams[3] = avs_stream_file_create(path, AVS_STREAM_FILE_WRITE);
     unlink(path);
