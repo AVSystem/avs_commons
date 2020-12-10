@@ -14,7 +14,7 @@
 
 ################# DEFINITION ###################################################
 
-cmake_minimum_required(VERSION 3.4.0)
+cmake_minimum_required(VERSION 3.6.0)
 project(avs_commons C)
 set(AVS_COMMONS_VERSION SNAPSHOT)
 
@@ -498,13 +498,13 @@ find_library(SOFTHSM2_LIB NAMES softhsm2 PATHS /usr/lib/softhsm)
 
 # PKCS11
 find_package(PkgConfig)
-pkg_search_module(LIBP11 libp11)
+pkg_search_module(LIBP11 libp11 IMPORTED_TARGET)
 cmake_dependent_option(WITH_OPENSSL_PKCS11_ENGINE "Enable OpenSSL pkcs11 support" ON "WITH_AVS_CRYPTO_ENGINE;LIBP11_FOUND;WITH_PKI" OFF)
 set(AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE ${WITH_OPENSSL_PKCS11_ENGINE})
 if(WITH_OPENSSL_PKCS11_ENGINE)
     avs_add_find_routine("
         find_package(PkgConfig REQUIRED)
-        pkg_search_module(LIBP11 REQUIRED libp11)")
+        pkg_search_module(LIBP11 REQUIRED libp11 IMPORTED_TARGET)")
 endif()
 
 if(WITH_OPENSSL)
