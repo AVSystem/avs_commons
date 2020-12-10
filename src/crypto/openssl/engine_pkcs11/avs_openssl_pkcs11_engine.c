@@ -269,23 +269,32 @@ static int remove_pkcs11_keys_with_label_or_id(
     assert(token);
     assert(enumerate_func);
     assert(label != NULL || id != NULL);
+    bool key_removed;
+    do {
+        PKCS11_KEY *keys = NULL;
+        unsigned int key_num = 0;
 
-    PKCS11_KEY *keys = NULL;
-    unsigned int key_num = 0;
+        int result = enumerate_func(token, &keys, &key_num);
+        if (result) {
+            return result;
+        }
 
-    int result = enumerate_func(token, &keys, &key_num);
-    if (result) {
-        return result;
-    }
-
-    for (unsigned int k = 0; k < key_num; k++) {
-        if ((label == NULL || strcmp(keys[k].label, label) == 0)
-                && (id == NULL || strcmp((const char *) keys[k].id, id) == 0)) {
-            if (PKCS11_remove_key(&keys[k])) {
-                return -1;
+        key_removed = false;
+        for (unsigned int k = 0; k < key_num; k++) {
+            if ((label == NULL || strcmp(keys[k].label, label) == 0)
+                    && (id == NULL
+                        || strcmp((const char *) keys[k].id, id) == 0)) {
+                if (PKCS11_remove_key(&keys[k])) {
+                    return -1;
+                } else {
+                    // It seems that removal invalidates the list,
+                    // so we need to rebuild it.
+                    key_removed = true;
+                    break;
+                }
             }
         }
-    }
+    } while (key_removed);
     return 0;
 }
 
@@ -383,24 +392,32 @@ static int remove_pkcs11_certs_with_label_or_id(PKCS11_TOKEN *token,
                                                 const char *id) {
     assert(token);
     assert(label != NULL || id != NULL);
+    bool cert_removed;
+    do {
+        PKCS11_CERT *certs = NULL;
+        unsigned int cert_num = 0;
 
-    PKCS11_CERT *certs = NULL;
-    unsigned int cert_num = 0;
+        int result = PKCS11_enumerate_certs(token, &certs, &cert_num);
+        if (result) {
+            return result;
+        }
 
-    int result = PKCS11_enumerate_certs(token, &certs, &cert_num);
-    if (result) {
-        return result;
-    }
-
-    for (unsigned int k = 0; k < cert_num; k++) {
-        if ((label == NULL || strcmp(certs[k].label, label) == 0)
-                && (id == NULL
-                    || strcmp((const char *) certs[k].id, id) == 0)) {
-            if (PKCS11_remove_certificate(&certs[k])) {
-                return -1;
+        cert_removed = false;
+        for (unsigned int k = 0; k < cert_num; k++) {
+            if ((label == NULL || strcmp(certs[k].label, label) == 0)
+                    && (id == NULL
+                        || strcmp((const char *) certs[k].id, id) == 0)) {
+                if (PKCS11_remove_certificate(&certs[k])) {
+                    return -1;
+                } else {
+                    // It seems that removal invalidates the list,
+                    // so we need to rebuild it.
+                    cert_removed = true;
+                    break;
+                }
             }
         }
-    }
+    } while (cert_removed);
     return 0;
 }
 
