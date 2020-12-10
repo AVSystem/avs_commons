@@ -317,10 +317,13 @@ avs_error_t avs_crypto_pki_engine_key_rm(const char *query) {
 
     if ((slot = get_pkcs11_slot(token)) && !PKCS11_open_session(slot, 1)
             && !PKCS11_login(slot, 0, pin)
-            && !remove_pkcs11_keys_with_label_or_id(
-                       slot->token, PKCS11_enumerate_keys, label, id)
-            && !remove_pkcs11_keys_with_label_or_id(
-                       slot->token, PKCS11_enumerate_public_keys, label, id)) {
+            // Note the single '|' - we want to try removing the public key
+            // even if removing the private key failed.
+            && !(remove_pkcs11_keys_with_label_or_id(
+                         slot->token, PKCS11_enumerate_keys, label, id)
+                 | remove_pkcs11_keys_with_label_or_id(
+                           slot->token, PKCS11_enumerate_public_keys, label,
+                           id))) {
         err = AVS_OK;
     }
 
