@@ -16,53 +16,9 @@
 
 #include <avsystem/commons/avs_unit_test.h>
 
-/* Amount of memory in stream in bytes */
-#define STREAM_SIZE 128
-
-/* 256 bytes with null-byte */
-static const char TEST_DATA[] =
-        "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vestibulum "
-        "iaculis nec est a accumsan. Morbi eros augue, maximus id hendrerit ut,"
-        " sodales a orci. Suspendisse cursus pulvinar arcu, et faucibus nulla "
-        "tincidunt et. Nunc vehicula nunc vel ni cwiercz.";
+#include "test_stream_common.h"
 
 AVS_STATIC_ASSERT(sizeof(TEST_DATA) > STREAM_SIZE, test_string_too_small);
-
-/* Example data holding structure */
-typedef struct {
-    char *data;
-    size_t curr_offset;
-} stream_ctx_t;
-
-/**
- * Example reader implementation, reading as much data as possible and never
- * failing.
- */
-static int reader(void *context_, void *buffer, size_t *inout_size) {
-    stream_ctx_t *context = (stream_ctx_t *) context_;
-    size_t curr_offset = context->curr_offset;
-
-    size_t bytes_to_read = AVS_MIN(STREAM_SIZE - curr_offset, *inout_size);
-    memcpy(buffer, context->data + curr_offset, bytes_to_read);
-    context->curr_offset += bytes_to_read;
-    *inout_size = bytes_to_read;
-    return 0;
-}
-
-/**
- * Example writer implementation, writing as much data as possible and never
- * failing.
- */
-static int writer(void *context_, const void *buffer, size_t *inout_size) {
-    stream_ctx_t *context = (stream_ctx_t *) context_;
-    size_t curr_offset = context->curr_offset;
-
-    size_t bytes_to_write = AVS_MIN(*inout_size, STREAM_SIZE - curr_offset);
-    memcpy(context->data + curr_offset, buffer, bytes_to_write);
-    context->curr_offset += bytes_to_write;
-    *inout_size = bytes_to_write;
-    return 0;
-}
 
 static avs_stream_t *setup_output_stream(stream_ctx_t *ctx) {
     avs_stream_t *stream = avs_stream_simple_output_create(writer, ctx);
