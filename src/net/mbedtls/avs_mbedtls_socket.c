@@ -1324,10 +1324,11 @@ static avs_error_t rebuild_client_cert_chain(mbedtls_x509_crt *trust_store,
                 rebuild_client_cert_chain_verify_cb, last_cert);
         if (result == MBEDTLS_ERR_X509_ALLOC_FAILED) {
             return avs_errno(AVS_ENOMEM);
-        } else if (result) {
-            return avs_errno(AVS_EPROTO);
         } else if (last_cert->version == 0 || !last_cert->next) {
             // No new certificates added - stop here
+            // NOTE: mbedtls_x509_crt_verify() may have failed; we ignore that
+            // condition - if certificate validation failed we just won't add
+            // more certs, but it shouldn't stop us from sending what we have
             return AVS_OK;
         }
         // New certificates added - check for cycles
