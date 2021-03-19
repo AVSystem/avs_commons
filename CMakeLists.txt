@@ -1,4 +1,4 @@
-# Copyright 2017-2020 AVSystem <avsystem@avsystem.com>
+# Copyright 2021 AVSystem <avsystem@avsystem.com>
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,12 +16,20 @@
 
 cmake_minimum_required(VERSION 3.6.0)
 project(avs_commons C)
-set(AVS_COMMONS_VERSION SNAPSHOT)
+
+set(AVS_COMMONS_VERSION "4.7")
 
 ################# DISTRIBUTION #################################################
 
 set(AVS_COMMONS_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
 set(AVS_COMMONS_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/output")
+
+if(NOT "${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_SOURCE_DIR}")
+    set(AVS_COMMONS_VERSION "${AVS_COMMONS_VERSION}" PARENT_SCOPE)
+    set(AVS_COMMONS_SOURCE_DIR "${AVS_COMMONS_SOURCE_DIR}" PARENT_SCOPE)
+    set(AVS_COMMONS_BINARY_DIR "${AVS_COMMONS_BINARY_DIR}" PARENT_SCOPE)
+endif()
+
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${AVS_COMMONS_BINARY_DIR}/bin")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${AVS_COMMONS_BINARY_DIR}/lib")
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${AVS_COMMONS_BINARY_DIR}/lib")
@@ -268,6 +276,30 @@ if(NOT HAVE_MATH_LIBRARY)
     endif()
 endif()
 
+if(NOT DEFINED AVS_COMMONS_HAVE_DLSYM)
+    # On Linux, one needs to link libdl to use dlsym(). On BSD, it is not necessary,
+    # and even harmful, since libdl does not exist.
+    set(DETECTED_DLSYM_LIBRARY "" CACHE STRING "" FORCE)
+    set(CMAKE_REQUIRED_INCLUDES "dlfcn.h")
+    foreach(lib "" dl)
+        message(STATUS "Looking for dlsym() in library: ${lib}")
+        set(CMAKE_REQUIRED_LIBRARIES ${lib})
+
+        # check_function_exists caches its result; make sure the check is
+        # actually repeated for each lib
+        unset(AVS_COMMONS_HAVE_DLSYM CACHE)
+        check_function_exists(dlsym AVS_COMMONS_HAVE_DLSYM)
+        set(CMAKE_REQUIRED_LIBRARIES)
+
+        if(AVS_COMMONS_HAVE_DLSYM)
+            set(DETECTED_DLSYM_LIBRARY "${lib}" CACHE STRING "" FORCE)
+            break()
+        endif()
+    endforeach()
+    set(CMAKE_REQUIRED_INCLUDES)
+endif()
+set(DLSYM_LIBRARY "${DETECTED_DLSYM_LIBRARY}" CACHE STRING "Name of the library containing dlsym() symbol")
+
 option(WITH_IPV4 "Enable IPv4 support" ON)
 option(WITH_IPV6 "Enable IPv6 support" ON)
 
@@ -363,8 +395,10 @@ function(add_module_with_include_dirs)
         file(GLOB_RECURSE MODULE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/${AMWID_PATH}/*.c
                                        ${CMAKE_CURRENT_SOURCE_DIR}/${AMWID_PATH}/*.h)
         foreach(F ${MODULE_FILES})
-            add_test(NAME test_${F}_visibility COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/test_visibility.py ${F})
-            add_test(NAME test_${F}_headers COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/test_headers.py ${F})
+                add_test(NAME test_${F}_visibility COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/test_visibility.py ${F})
+                add_test(NAME test_${F}_headers
+                         COMMAND ./test_headers.py ${F} conditional_headers_whitelist.json
+                         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
         endforeach()
     endif()
 endfunction()
@@ -395,11 +429,11 @@ if(WITH_TEST)
 
     # license check is only possible if running in a Git working tree
     if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/.git")
-        add_custom_target(license_check COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/tools/check-license-headers.py" --root "${CMAKE_CURRENT_SOURCE_DIR}")
+        add_custom_target(license_check COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/tools/check_license_headers.py" --root "${CMAKE_CURRENT_SOURCE_DIR}")
         add_dependencies(avs_commons_check license_check)
     endif()
 
-    add_custom_target(avs_commons_extern_c_check COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/tools/check-extern-c.py")
+    add_custom_target(avs_commons_extern_c_check COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/tools/check_extern_c.py")
     add_dependencies(avs_commons_check avs_commons_extern_c_check)
 
     add_custom_target(avs_commons_symbols_check COMMAND ${CMAKE_CTEST_COMMAND} -R "'^test_.*_symbols$$'" --output-on-failure)
@@ -412,7 +446,7 @@ if(WITH_TEST)
     add_dependencies(avs_commons_check avs_commons_headers_check)
 
     add_custom_target(avs_commons_filename_check
-                      COMMAND ! find src include_public -name "'*.[ch]'" | sed -e "'s|^.*/||'" | grep -v "'^avs_'"
+                      COMMAND ! find src include_public -name "'*.[ch]'" | sed -e "'s|^.*/||'" | grep -v "'^avs_'" | grep -v "'^pkcs11.\\?\\.h'"
                       COMMAND ! find src include_public -name "'*.[ch]'" | sed -e "'s|^.*/||'" | sort | uniq -c | grep -v "'^ *1 '"
                       WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
     add_dependencies(avs_commons_check avs_commons_filename_check)
@@ -489,23 +523,8 @@ cmake_dependent_option(WITH_PKI "Enable X.509 certificate support" "${WITH_PKI_D
 set(AVS_COMMONS_WITH_AVS_CRYPTO_PKI ${WITH_PKI})
 
 # Hardware security engines
-cmake_dependent_option(WITH_AVS_CRYPTO_ENGINE "Enable hardware-based security engine support" OFF WITH_OPENSSL OFF)
+cmake_dependent_option(WITH_AVS_CRYPTO_ENGINE "Enable hardware-based security engine support" OFF "WITH_OPENSSL OR WITH_MBEDTLS" OFF)
 set(AVS_COMMONS_WITH_AVS_CRYPTO_ENGINE ${WITH_AVS_CRYPTO_ENGINE})
-
-# SoftHSM module
-# Used only in tests
-find_library(SOFTHSM2_LIB NAMES softhsm2 PATHS /usr/lib/softhsm)
-
-# PKCS11
-find_package(PkgConfig)
-pkg_search_module(LIBP11 libp11 IMPORTED_TARGET)
-cmake_dependent_option(WITH_OPENSSL_PKCS11_ENGINE "Enable OpenSSL pkcs11 support" ON "WITH_AVS_CRYPTO_ENGINE;LIBP11_FOUND;WITH_PKI" OFF)
-set(AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE ${WITH_OPENSSL_PKCS11_ENGINE})
-if(WITH_OPENSSL_PKCS11_ENGINE)
-    avs_add_find_routine("
-        find_package(PkgConfig REQUIRED)
-        pkg_search_module(LIBP11 REQUIRED libp11 IMPORTED_TARGET)")
-endif()
 
 if(WITH_OPENSSL)
     avs_add_find_routine("find_package(OpenSSL REQUIRED)")

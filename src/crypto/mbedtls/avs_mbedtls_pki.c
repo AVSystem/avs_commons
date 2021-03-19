@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 AVSystem <avsystem@avsystem.com>
+ * Copyright 2021 AVSystem <avsystem@avsystem.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,9 +14,11 @@
  * limitations under the License.
  */
 
-#ifdef AVS_UNIT_TESTING
+#if defined(AVS_UNIT_TESTING) \
+        && !defined(AVS_COMMONS_MBEDTLS_PKCS11_ENGINE_UNIT_TESTING)
 #    define _GNU_SOURCE // for timegm() in tests
-#endif
+#endif                  // defined(AVS_UNIT_TESTING) &&
+// !defined(AVS_COMMONS_MBEDTLS_PKCS11_ENGINE_UNIT_TESTING)
 
 #include <avs_commons_init.h>
 
@@ -686,9 +688,11 @@ avs_error_t avs_crypto_parse_pkcs7_certs_only(
 }
 #    endif // AVS_COMMONS_WITH_AVS_LIST
 
-#    ifdef AVS_UNIT_TESTING
+#    if defined(AVS_UNIT_TESTING) \
+            && !defined(AVS_COMMONS_MBEDTLS_PKCS11_ENGINE_UNIT_TESTING)
 #        include "tests/crypto/mbedtls/mbedtls_pki.c"
-#    endif // AVS_UNIT_TESTING
+#    endif // defined(AVS_UNIT_TESTING) &&
+           // !defined(AVS_COMMONS_MBEDTLS_PKCS11_ENGINE_UNIT_TESTING)
 
 #endif // defined(AVS_COMMONS_WITH_AVS_CRYPTO) &&
        // defined(AVS_COMMONS_WITH_AVS_CRYPTO_ADVANCED_FEATURES) &&

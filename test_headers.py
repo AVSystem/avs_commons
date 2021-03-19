@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# Copyright 2017-2020 AVSystem <avsystem@avsystem.com>
+# Copyright 2021 AVSystem <avsystem@avsystem.com>
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,12 +13,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import json
 import re
 import sys
 
 # Verifies that the project is only using plain standard C99 headers.
 
-INCLUDE_WHITELIST = {
+GLOBAL_WHITELIST = {
     r'assert\.h',
     # r'complex\.h',
     r'ctype\.h',
@@ -42,24 +43,7 @@ INCLUDE_WHITELIST = {
     # r'tgmath\.h',
     # r'time\.h',
     # r'wchar\.h',
-    # r'wctype\.h',
-    r'avs_commons_init\.h',
-    r'avs_commons_poison\.h',
-    r'avs_x_log_config\.h',
-    r'avsystem/commons/[^.]*\.h'
-}
-
-CONDITIONAL_WHITELIST = {
-    (r'global', r'signal\.h'),
-    (r'global', r'stdatomic\.h'),
-    (r'mbedtls', r'mbedtls/.*'),
-    (r'openssl', r'libp11.h'),
-    (r'openssl', r'openssl/.*'),
-    (r'openssl', r'sys/time\.h'),
-    (r'tinydtls', r'tinydtls/.*'),
-    (r'compression', r'zlib\.h'),
-    (r'avs_openssl_common\.h', r'valgrind/.*'),
-    (r'avs_strings\.c', r'float\.h')
+    # r'wctype\.h'
 }
 
 if __name__ == '__main__':
@@ -69,15 +53,27 @@ if __name__ == '__main__':
 
     filename = sys.argv[1]
 
-    if any(w in filename for w in ('/test/', '/tests/', '/compat/', '/unit/')):
-        sys.exit(0)
-
     with open(filename, 'r') as fp:
         contents = fp.readlines()
 
+    conditional_whitelist = {}
+    if len(sys.argv) > 2:
+        with open(sys.argv[2], 'r') as fp:
+            conditional_whitelist = json.load(fp)
+
     for line in contents:
+        valid = False
         m = re.match(r'^\s*#\s*include\s*<([^>]*)>', line)
-        if m and not any(re.match(pattern, m.group(1)) for pattern in INCLUDE_WHITELIST) and not any(
-                (re.search(condition, filename) and re.match(pattern, m.group(1))) for condition, pattern in
-                CONDITIONAL_WHITELIST):
+        if not m:
+            valid = True
+        elif any(re.match(pattern, m.group(1)) for pattern in GLOBAL_WHITELIST):
+            valid = True
+        else:
+            for condition, whitelist in conditional_whitelist.items():
+                if re.search(condition, filename) and any(
+                        re.match(pattern, m.group(1)) for pattern in whitelist):
+                    valid = True
+                    break
+
+        if not valid:
             raise ValueError('Invalid include: %s\n' % (m.group(0),))

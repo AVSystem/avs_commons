@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 AVSystem <avsystem@avsystem.com>
+ * Copyright 2021 AVSystem <avsystem@avsystem.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -586,11 +586,6 @@ static int wrap_handshake_result(ssl_socket_t *socket, int result) {
     }
     return result;
 }
-#        else  // WITH_DANE_SUPPORT
-static int wrap_handshake_result(ssl_socket_t *socket, int result) {
-    (void) socket;
-    return result;
-}
 #        endif // WITH_DANE_SUPPORT
 
 static avs_error_t initialize_cert_security(
@@ -677,6 +672,14 @@ static avs_error_t update_cert_configuration(ssl_socket_t *socket) {
 #        define initialize_cert_security(...) avs_errno(AVS_ENOTSUP)
 #        define update_cert_configuration(...) AVS_OK
 #    endif // AVS_COMMONS_WITH_AVS_CRYPTO_PKI
+
+#    if !defined(WITH_DANE_SUPPORT) || !defined(AVS_COMMONS_WITH_AVS_CRYPTO_PKI)
+static int wrap_handshake_result(ssl_socket_t *socket, int result) {
+    (void) socket;
+    return result;
+}
+#    endif // !defined(WITH_DANE_SUPPORT) ||
+           // !defined(AVS_COMMONS_WITH_AVS_CRYPTO_PKI)
 
 #    ifdef AVS_COMMONS_NET_WITH_PSK
 static int *init_psk_ciphersuites(

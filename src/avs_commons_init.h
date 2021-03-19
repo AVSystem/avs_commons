@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 AVSystem <avsystem@avsystem.com>
+ * Copyright 2021 AVSystem <avsystem@avsystem.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,11 +53,6 @@
 #if !defined(AVS_COMMONS_WITH_AVS_STREAM) \
         && defined(AVS_COMMONS_STREAM_WITH_FILE)
 #    error "AVS_COMMONS_WITH_AVS_STREAM is required for AVS_COMMONS_STREAM_WITH_FILE"
-#endif
-
-#if !defined(AVS_COMMONS_WITH_AVS_CRYPTO_ENGINE) \
-        && defined(AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE)
-#    error "AVS_COMMONS_WITH_AVS_CRYPTO_ENGINE is required for AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE"
 #endif
 
 // Backwards compatibility with configuration macros that are no longer current

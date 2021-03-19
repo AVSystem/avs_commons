@@ -1,0 +1,51 @@
+{
+    "": [
+        "avs_commons_init\\.h",
+        "avs_commons_poison\\.h",
+        "avs_x_log_config\\.h",
+        "avsystem/commons/[^.]*\\.h"
+    ],
+    "global": [
+        "signal\\.h",
+        "stdatomic\\.h"
+    ],
+    "mbedtls": [
+        "mbedtls/.*"
+    ],
+    "openssl": [
+        "openssl/.*",
+        "sys/time\\.h"
+    ],
+    "tinydtls": [
+        "tinydtls/.*"
+    ],
+    "compression": [
+        "zlib\\.h"
+    ],
+    "avs_openssl_common\\.h": [
+        "valgrind/.*"
+    ],
+    "avs_strings\\.c": [
+        "float\\.h"
+    ],
+    "/compat/posix/": [
+        "avs_commons_posix_init\\.h",
+        "time\\.h"
+    ],
+    "/compat/threading/atomic_spinlock/": [
+        "stdatomic\\.h"
+    ],
+    "/compat/threading/pthread/": [
+        "avs_commons_posix_init\\.h",
+        "pthread\\.h"
+    ],
+    "/net/compat/posix/": [
+        "ifaddrs\\.h"
+    ],
+    "/unit/": [
+        "avs_commons_posix_init\\.h",
+        "execinfo\\.h",
+        "getopt\\.h",
+        "signal\\.h"
+    ]
+}

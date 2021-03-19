@@ -1,4 +1,4 @@
-# Copyright 2017-2020 AVSystem <avsystem@avsystem.com>
+# Copyright 2021 AVSystem <avsystem@avsystem.com>
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -74,12 +74,11 @@ if(WITH_OPENSSL)
         openssl/avs_openssl_aead.c
         openssl/avs_openssl_data_loader.c
         openssl/avs_openssl_engine.h
+        openssl/avs_openssl_global.c
         openssl/avs_openssl_hkdf.c
         openssl/avs_openssl_pki.c
         openssl/avs_openssl_prng.c
-        openssl/avs_openssl_prng.h
-        openssl/avs_openssl_global.c
-        openssl/engine_pkcs11/avs_openssl_pkcs11_engine.c)
+        openssl/avs_openssl_prng.h)
 
     set(AVS_CRYPTO_OPENSSL_TEST_SOURCES
         ${AVS_CRYPTO_TEST_SOURCES}
@@ -104,16 +103,6 @@ if(WITH_OPENSSL)
                  SOURCES
                  ${AVS_CRYPTO_OPENSSL_TEST_SOURCES})
 
-    if (WITH_OPENSSL_PKCS11_ENGINE)
-        target_link_libraries(avs_crypto_openssl PUBLIC OpenSSL::SSL PkgConfig::LIBP11 avs_url)
-
-        avs_add_test(NAME avs_crypto_openssl_engine
-                     LIBS $<TARGET_PROPERTY:avs_crypto_openssl,LINK_LIBRARIES>
-                     COMPILE_DEFINITIONS AVS_COMMONS_OPENSSL_PKCS11_ENGINE_UNIT_TESTING
-                     SOURCES $<TARGET_PROPERTY:avs_crypto_openssl,SOURCES>
-                     ENVIRONMENT "PKCS11_MODULE_PATH=${SOFTHSM2_LIB}")
-    endif()
-
     avs_install_export(avs_crypto_openssl crypto)
 endif()
 
@@ -122,6 +111,7 @@ if(WITH_MBEDTLS)
         ${AVS_CRYPTO_COMMON_SOURCES}
         mbedtls/avs_mbedtls_aead.c
         mbedtls/avs_mbedtls_data_loader.c
+        mbedtls/avs_mbedtls_engine.h
         mbedtls/avs_mbedtls_global.c
         mbedtls/avs_mbedtls_hkdf.c
         mbedtls/avs_mbedtls_pki.c

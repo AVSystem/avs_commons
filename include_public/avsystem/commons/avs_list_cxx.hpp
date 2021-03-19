@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 AVSystem <avsystem@avsystem.com>
+ * Copyright 2021 AVSystem <avsystem@avsystem.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,8 +50,8 @@
  *    }
  *
  *    // print the contents
- *    for (avs::ListIterator<MyStruct> it = list.begin(); it != list.end(); it++) {
- *        printf("%d -- %s\n", it->index, it->string.c_str());
+ *    for (avs::ListIterator<MyStruct> it = list.begin(); it != list.end();
+ * it++) { printf("%d -- %s\n", it->index, it->string.c_str());
  *    }
  * }
  * @endcode

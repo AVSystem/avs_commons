@@ -40,3 +40,5 @@ Testing/
 *.tar.gz
 *.tgz
 *.deb
+
+__pycache__

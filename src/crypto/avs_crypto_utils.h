@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 AVSystem <avsystem@avsystem.com>
+ * Copyright 2021 AVSystem <avsystem@avsystem.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -55,11 +55,6 @@ _avs_crypto_calculate_info_stats(const avs_crypto_security_info_union_t *desc,
 bool _avs_crypto_aead_parameters_valid(size_t key_len,
                                        size_t iv_len,
                                        size_t tag_len);
-
-typedef enum { ENCODING_PEM, ENCODING_DER } _avs_crypto_cert_encoding_t;
-
-_avs_crypto_cert_encoding_t _avs_crypto_detect_cert_encoding(const void *buffer,
-                                                             size_t len);
 
 VISIBILITY_PRIVATE_HEADER_END
 

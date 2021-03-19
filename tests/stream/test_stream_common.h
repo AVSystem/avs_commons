@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 AVSystem <avsystem@avsystem.com>
+ * Copyright 2021 AVSystem <avsystem@avsystem.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,7 +42,7 @@ static const char FOURTH_LINE[] =
         "swine brisket shank bresaola pastrami sirloin lambada";
 
 #define STREAM_BUFFER_SIZE 32
-#define STREAM_SIZE (sizeof(TEST_DATA)-1)
+#define STREAM_SIZE (sizeof(TEST_DATA) - 1)
 
 /* Example data holding structure */
 typedef struct {

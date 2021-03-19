@@ -14,29 +14,30 @@
  * limitations under the License.
  */
 
-#ifndef CRYPTO_OPENSSL_ENGINE_H
-#define CRYPTO_OPENSSL_ENGINE_H
+#ifndef CRYPTO_MBEDTLS_ENGINE_H
+#define CRYPTO_MBEDTLS_ENGINE_H
 
 #ifdef AVS_COMMONS_WITH_AVS_CRYPTO_ENGINE
-#    include <openssl/x509.h>
 
-#    include "avs_openssl_data_loader.h"
+#    include "avs_mbedtls_data_loader.h"
 
 VISIBILITY_PRIVATE_HEADER_BEGIN
 
-avs_error_t _avs_crypto_openssl_engine_load_crls(X509_STORE *store,
-                                                 const char *query);
-EVP_PKEY *_avs_crypto_openssl_engine_load_private_key(const char *query);
-avs_error_t
-_avs_crypto_openssl_engine_load_certs(const char *cert_id,
-                                      avs_crypto_ossl_object_load_t *load_cb,
-                                      void *cb_arg);
+avs_error_t _avs_crypto_mbedtls_engine_append_cert(mbedtls_x509_crt *chain,
+                                                   const char *query);
 
-avs_error_t _avs_crypto_openssl_engine_initialize_global_state(void);
-void _avs_crypto_openssl_engine_cleanup_global_state(void);
+avs_error_t _avs_crypto_mbedtls_engine_append_crl(mbedtls_x509_crl *crl,
+                                                  const char *query);
+
+avs_error_t
+_avs_crypto_mbedtls_engine_load_private_key(mbedtls_pk_context *client_key,
+                                            const char *query);
+
+avs_error_t _avs_crypto_mbedtls_engine_initialize_global_state(void);
+void _avs_crypto_mbedtls_engine_cleanup_global_state(void);
 
 VISIBILITY_PRIVATE_HEADER_END
 
 #endif // AVS_COMMONS_WITH_AVS_CRYPTO_ENGINE
 
-#endif // CRYPTO_OPENSSL_ENGINE_H
+#endif // CRYPTO_MBEDTLS_ENGINE_H

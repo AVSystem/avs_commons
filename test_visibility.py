@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# Copyright 2017-2020 AVSystem <avsystem@avsystem.com>
+# Copyright 2021 AVSystem <avsystem@avsystem.com>
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,17 +13,16 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import sys
-import re
 import collections
+import os
+import os.path
+import re
+import sys
 from enum import Enum
 
-FileType = Enum('FileType', 'PUBLIC_HEADER PRIVATE_HEADER PRIVATE_SOURCE IGNORED')
+FileType = Enum('FileType', 'PUBLIC_HEADER PRIVATE_HEADER PRIVATE_SOURCE')
 
 def classify_file(filename) -> FileType:
-    if any(re.search(w, filename) is not None for w in ('/test/', '/tests/', '/compat/.*-compat[.]h$', '.*_config[.]h')):
-        return FileType.IGNORED
-
     if filename.endswith('.h'):
         if '/include_public/' in filename:
             return FileType.PUBLIC_HEADER
@@ -56,14 +55,11 @@ replacements = [
 
 if __name__ == '__main__':
     if len(sys.argv) < 2:
-        print('Error: you must provide absolute path to the file to check')
+        print('Error: you must provide path to the file to check')
         sys.exit(1)
 
-    filename = sys.argv[1]
+    filename = os.path.realpath(sys.argv[1])
     filetype = classify_file(filename)
-
-    if filetype == FileType.IGNORED:
-        sys.exit(0)
 
     with open(filename, 'r') as fp:
         contents = fp.read()
@@ -73,12 +69,14 @@ if __name__ == '__main__':
 
     lines = contents.split()
     valid = False
-    if filetype == FileType.PRIVATE_HEADER:
+    if len(lines) == 0:
+        valid = True
+    elif filetype == FileType.PRIVATE_HEADER:
         valid = all((lines[0] == 'VISIBILITY_PRIVATE_HEADER_BEGIN',
                      lines[-1] == 'VISIBILITY_PRIVATE_HEADER_END'))
     elif filetype == FileType.PUBLIC_HEADER:
-        valid = len(lines) == 0 or all((re.match(r'^VISIBILITY', lines[0]) is None,
-                                        re.match(r'^VISIBILITY', lines[-1]) is None))
+        valid = all((re.match(r'^VISIBILITY', lines[0]) is None,
+                     re.match(r'^VISIBILITY', lines[-1]) is None))
     elif filetype == FileType.PRIVATE_SOURCE:
         valid = lines[0] == 'VISIBILITY_SOURCE_BEGIN'
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 AVSystem <avsystem@avsystem.com>
+ * Copyright 2021 AVSystem <avsystem@avsystem.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -831,25 +831,27 @@ avs_error_t avs_crypto_pki_ec_gen(avs_crypto_prng_ctx_t *prng_ctx,
 #    ifdef AVS_COMMONS_WITH_AVS_CRYPTO_ENGINE
 /**
  * Generates a random private key (in a form that allows deriving the public key
- * from it) suitable for use with elliptic curve cryptography, using PKCS11
- * engine.
+ * from it) suitable for use with elliptic curve cryptography, using a hardware
+ * security engine.
  *
- * @param query PCKS11 URI of the keys.
+ * @param query Engine-specific query string (e.g. a PKCS#11 URI) of the keys.
  */
 avs_error_t avs_crypto_pki_engine_key_gen(const char *query);
 
 /**
- * Removes a private key and the corresponding public key from HSM using PKCS11.
+ * Removes a private key and the corresponding public key from a hardware
+ * security engine.
  *
- * @param query PCKS11 URI of the keys.
+ * @param query Engine-specific query string (e.g. a PKCS#11 URI) of the keys.
  */
 avs_error_t avs_crypto_pki_engine_key_rm(const char *query);
 
 /**
  * Stores an X.509 certificate given as @ref avs_crypto_certificate_chain_info_t
- * in a HSM using PKCS11.
+ * in a hardware security engine.
  *
- * @param query PCKS11 URI of the cert.
+ * @param query     Engine-specific query string (e.g. a PKCS#11 URI) of the
+ *                  certificate.
  *
  * @param cert_info Reference to a certificate to store. Note that if the
  *                  given input contains more than one certificate, only the
@@ -860,12 +862,13 @@ avs_error_t avs_crypto_pki_engine_certificate_store(
         const avs_crypto_certificate_chain_info_t *cert_info);
 
 /**
- * Removes an X.509 certificate from HSM using PKCS11.
+ * Removes an X.509 certificate from a hardware security engine.
  *
- * @param query PCKS11 URI of the cert.
+ * @param query Engine-specific query string (e.g. a PKCS#11 URI) of the
+ *              certificate.
  */
 avs_error_t avs_crypto_pki_engine_certificate_rm(const char *query);
-#    endif // AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
+#    endif // AVS_COMMONS_WITH_AVS_CRYPTO_ENGINE
 
 /**
  * Structure representing a type of a Distinguished Name attribute.

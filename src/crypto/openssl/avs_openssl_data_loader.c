@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 AVSystem <avsystem@avsystem.com>
+ * Copyright 2021 AVSystem <avsystem@avsystem.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -132,25 +132,27 @@ static avs_error_t load_pem_objects(const void *buffer,
 
     avs_error_t err;
     void *obj = avs_ossl_object_pem_read(bio, password, type);
-    if (!obj) {
-        log_openssl_error();
-        err = avs_errno(AVS_EPROTO);
-    } else {
+    if (obj) {
         err = load_cb(obj, load_cb_arg);
         avs_ossl_object_free(obj, type);
+    } else if (ERR_GET_REASON(ERR_peek_last_error()) == PEM_R_NO_START_LINE) {
+        ERR_clear_error();
+        err = avs_errno(AVS_EIO);
+    } else {
+        log_openssl_error();
+        err = avs_errno(AVS_EPROTO);
     }
     while (avs_is_ok(err)) {
-        if (!(obj = avs_ossl_object_pem_read(bio, password, type))) {
-            if (ERR_GET_REASON(ERR_peek_last_error()) == PEM_R_NO_START_LINE) {
-                ERR_clear_error();
-                break;
-            } else {
-                log_openssl_error();
-                err = avs_errno(AVS_EPROTO);
-            }
-        } else {
+        if ((obj = avs_ossl_object_pem_read(bio, password, type))) {
             err = load_cb(obj, load_cb_arg);
             avs_ossl_object_free(obj, type);
+        } else if (ERR_GET_REASON(ERR_peek_last_error())
+                   == PEM_R_NO_START_LINE) {
+            ERR_clear_error();
+            break;
+        } else {
+            log_openssl_error();
+            err = avs_errno(AVS_EPROTO);
         }
     }
     BIO_free(bio);
@@ -194,16 +196,13 @@ load_pem_or_der_objects(const void *buffer,
                         avs_crypto_ossl_object_load_t *load_cb,
                         void *load_cb_arg) {
     assert(buffer || !len);
-    switch (_avs_crypto_detect_cert_encoding(buffer, len)) {
-    case ENCODING_PEM:
-        return load_pem_objects(buffer, len, password, type, load_cb,
-                                load_cb_arg);
-    case ENCODING_DER:
-        return load_der_object(buffer, len, type, load_cb, load_cb_arg);
-    default:
-        AVS_UNREACHABLE("invalid encoding");
-        return avs_errno(AVS_EIO);
+    avs_error_t err =
+            load_pem_objects(buffer, len, password, type, load_cb, load_cb_arg);
+    if (err.category == AVS_ERRNO_CATEGORY && err.code == AVS_EIO) {
+        // not a PEM file, let's try DER
+        err = load_der_object(buffer, len, type, load_cb, load_cb_arg);
     }
+    return err;
 }
 
 static avs_error_t load_crl_cb(void *crl, void *store) {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 AVSystem <avsystem@avsystem.com>
+ * Copyright 2021 AVSystem <avsystem@avsystem.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@
 #    include <avs_commons_poison.h>
 
 #    include "avs_mbedtls_data_loader.h"
+#    include "avs_mbedtls_engine.h"
 
 #    include <assert.h>
 #    include <stdio.h>
@@ -156,8 +157,13 @@ append_certs(mbedtls_x509_crt *out,
         return AVS_OK;
 #    ifdef AVS_COMMONS_WITH_AVS_CRYPTO_ENGINE
     case AVS_CRYPTO_DATA_SOURCE_ENGINE:
-        LOG(ERROR, "PKSC11 with mbedtls not supported");
-        return avs_errno(AVS_ENOTSUP);
+        if (!info->desc.info.engine.query) {
+            LOG(ERROR, _("attempt to load certificate chain from engine, but "
+                         "query=NULL"));
+            return avs_errno(AVS_EINVAL);
+        }
+        return _avs_crypto_mbedtls_engine_append_cert(
+                out, info->desc.info.engine.query);
 #    endif // AVS_COMMONS_WITH_AVS_CRYPTO_ENGINE
     case AVS_CRYPTO_DATA_SOURCE_FILE:
         if (!info->desc.info.file.filename) {
@@ -255,8 +261,12 @@ append_crls(mbedtls_x509_crl *out,
         return AVS_OK;
 #    ifdef AVS_COMMONS_WITH_AVS_CRYPTO_ENGINE
     case AVS_CRYPTO_DATA_SOURCE_ENGINE:
-        LOG(ERROR, "PKSC11 with mbedtls not supported");
-        return avs_errno(AVS_ENOTSUP);
+        if (!info->desc.info.engine.query) {
+            LOG(ERROR, _("attempt to load CRL from engine, but query=NULL"));
+            return avs_errno(AVS_EINVAL);
+        }
+        return _avs_crypto_mbedtls_engine_append_crl(
+                out, info->desc.info.engine.query);
 #    endif // AVS_COMMONS_WITH_AVS_CRYPTO_ENGINE
 #    ifdef MBEDTLS_X509_CRL_PARSE_C
     case AVS_CRYPTO_DATA_SOURCE_FILE:
@@ -359,25 +369,28 @@ static avs_error_t load_private_key_from_buffer(mbedtls_pk_context *client_key,
                                                 const void *buffer,
                                                 size_t len,
                                                 const char *password) {
-    unsigned char *refined_buffer = (unsigned char *) (intptr_t) buffer;
-    if (refined_buffer[len - 1] != '\0'
-            && _avs_crypto_detect_cert_encoding(buffer, len) == ENCODING_PEM) {
-        refined_buffer = (unsigned char *) avs_malloc(len + 1);
+    const unsigned char *pwd = (const unsigned char *) password;
+    const size_t pwd_len = password ? strlen(password) : 0;
+    int result =
+            mbedtls_pk_parse_key(client_key, (const unsigned char *) buffer,
+                                 len, pwd, pwd_len);
+    if (result == MBEDTLS_ERR_PK_KEY_INVALID_FORMAT && len > 0
+            && ((const char *) buffer)[len - 1] != '\0') {
+        // Maybe it's a PEM format without a terminating '\0' that
+        // mbedtls_pk_parse_key() requires for some reason - let's try that.
+        unsigned char *refined_buffer = (unsigned char *) avs_malloc(len + 1);
+        if (!refined_buffer) {
+            return avs_errno(AVS_ENOMEM);
+        }
         memcpy(refined_buffer, buffer, len);
         refined_buffer[len] = '\0';
         len++;
-    }
 
-    const unsigned char *pwd = (const unsigned char *) password;
-    const size_t pwd_len = password ? strlen(password) : 0;
-    avs_error_t err =
-            mbedtls_pk_parse_key(client_key, refined_buffer, len, pwd, pwd_len)
-                    ? avs_errno(AVS_EPROTO)
-                    : AVS_OK;
-    if (refined_buffer != buffer) {
+        result = mbedtls_pk_parse_key(client_key, refined_buffer, len, pwd,
+                                      pwd_len);
         avs_free(refined_buffer);
     }
-    return err;
+    return result ? avs_errno(AVS_EPROTO) : AVS_OK;
 }
 
 static avs_error_t load_private_key_from_file(mbedtls_pk_context *client_key,
@@ -439,8 +452,15 @@ avs_error_t _avs_crypto_mbedtls_load_private_key(
     switch (info->desc.source) {
 #    ifdef AVS_COMMONS_WITH_AVS_CRYPTO_ENGINE
     case AVS_CRYPTO_DATA_SOURCE_ENGINE:
-        LOG(ERROR, "PKSC11 with mbedtls not supported");
-        return avs_errno(AVS_ENOTSUP);
+        if (!info->desc.info.engine.query) {
+            LOG(ERROR,
+                _("attempt to load private key from engine, but query=NULL"));
+            return avs_errno(AVS_EINVAL);
+        } else {
+            err = _avs_crypto_mbedtls_engine_load_private_key(
+                    *client_key, info->desc.info.engine.query);
+        }
+        break;
 #    endif // AVS_COMMONS_WITH_AVS_CRYPTO_ENGINE
     case AVS_CRYPTO_DATA_SOURCE_FILE:
         if (!info->desc.info.file.filename) {

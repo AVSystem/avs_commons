@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 AVSystem <avsystem@avsystem.com>
+ * Copyright 2021 AVSystem <avsystem@avsystem.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@
 #if defined(AVS_COMMONS_WITH_AVS_COMPAT_THREADING) \
         && defined(AVS_COMMONS_COMPAT_THREADING_WITH_ATOMIC_SPINLOCK)
 
-#    include <avs_commons_posix_init.h>
+#    include <avs_commons_init.h>
 
 #    include <avsystem/commons/avs_condvar.h>
 #    include <avsystem/commons/avs_defs.h>
@@ -93,8 +93,10 @@ static void remove_waiter(avs_condvar_t *condvar,
     }
     AVS_ASSERT(*waiter_node_ptr == waiter,
                "waiter node inexplicably disappeared from condition variable");
-    // detach it
-    *waiter_node_ptr = (*waiter_node_ptr)->next;
+    if (*waiter_node_ptr == waiter) {
+        // detach it
+        *waiter_node_ptr = (*waiter_node_ptr)->next;
+    }
 
     avs_mutex_unlock(&condvar->waiters_mutex);
 }

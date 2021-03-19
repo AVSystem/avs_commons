@@ -1,4 +1,4 @@
-# Copyright 2017-2020 AVSystem <avsystem@avsystem.com>
+# Copyright 2021 AVSystem <avsystem@avsystem.com>
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -27,27 +27,6 @@ avs_install_export(avs_sched sched)
 install(FILES ${AVS_SCHED_PUBLIC_HEADERS}
         COMPONENT sched
         DESTINATION ${INCLUDE_INSTALL_DIR}/avsystem/commons)
-
-# On Linux, one needs to link libdl to use dlsym(). On BSD, it is not necessary,
-# and even harmful, since libdl does not exist.
-set(CMAKE_REQUIRED_INCLUDES "dlfcn.h")
-foreach(lib "" dl)
-    message(STATUS "Looking for dlsym() in library: ${lib}")
-    set(CMAKE_REQUIRED_LIBRARIES ${lib})
-
-    # check_function_exists caches its result; make sure the check is
-    # actually repeated for each lib
-    unset(HAVE_DLSYM CACHE)
-    check_function_exists(dlsym HAVE_DLSYM)
-    set(CMAKE_REQUIRED_LIBRARIES)
-
-    if(HAVE_DLSYM)
-        set(DETECTED_DLSYM_LIBRARY "${lib}" CACHE STRING "" FORCE)
-        break()
-    endif()
-endforeach()
-set(CMAKE_REQUIRED_INCLUDES)
-set(DLSYM_LIBRARY "${DETECTED_DLSYM_LIBRARY}" CACHE STRING "Name of the library containing dlsym() symbol")
 
 avs_add_test(NAME avs_sched
              LIBS avs_sched "${DLSYM_LIBRARY}"

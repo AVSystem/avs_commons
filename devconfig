@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Copyright 2017-2020 AVSystem <avsystem@avsystem.com>
+# Copyright 2021 AVSystem <avsystem@avsystem.com>
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -27,8 +27,6 @@ cmake -D WITH_EXTRA_WARNINGS=ON \
       -D WITH_SOCKET_LOG=ON \
       -D WITH_INTERNAL_TRACE=ON \
       -D WITH_OPENSSL=ON \
-      -D WITH_AVS_CRYPTO_ENGINE=ON \
-      -D WITH_OPENSSL_PKCS11_ENGINE=ON \
       -D WITH_MBEDTLS=ON \
       -D WITH_TINYDTLS=ON \
       -D WITH_TEST=ON \

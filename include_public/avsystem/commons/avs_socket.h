@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 AVSystem <avsystem@avsystem.com>
+ * Copyright 2021 AVSystem <avsystem@avsystem.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -212,7 +212,8 @@ typedef struct {
  *
  * Note that the @ref library_ssl_context parameter is a pointer to a native
  * SSL context object of the SSL library in use. It shall be cast to
- * <c>SSL_CTX *</c> for OpenSSL or <c>ssl_context *</c> for XySSL-derivatives.
+ * <c>SSL_CTX *</c> for OpenSSL, <c>mbedtls_ssl_config *</c> for Mbed TLS, or
+ * <c>dtls_context_t *</c> for tinyDTLS.
  *
  * @param library_ssl_context pointer to a native SSL context object of the
  *                            SSL library in use

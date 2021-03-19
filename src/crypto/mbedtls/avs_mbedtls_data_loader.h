@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 AVSystem <avsystem@avsystem.com>
+ * Copyright 2021 AVSystem <avsystem@avsystem.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 #ifndef NET_MBEDTLS_DATA_LOADER_H
 #define NET_MBEDTLS_DATA_LOADER_H
 
@@ -40,7 +41,7 @@ void _avs_crypto_mbedtls_pk_context_cleanup(mbedtls_pk_context **ctx);
 
 avs_error_t
 _avs_crypto_mbedtls_load_private_key(mbedtls_pk_context **pk,
-                                    const avs_crypto_private_key_info_t *info);
+                                     const avs_crypto_private_key_info_t *info);
 
 VISIBILITY_PRIVATE_HEADER_END
 #endif // NET_MBEDTLS_DATA_LOADER_H

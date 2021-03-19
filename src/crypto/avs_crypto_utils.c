@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 AVSystem <avsystem@avsystem.com>
+ * Copyright 2021 AVSystem <avsystem@avsystem.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -618,22 +618,6 @@ avs_error_t avs_crypto_private_key_info_copy(
     assert((*out_ptr)->desc.type == AVS_CRYPTO_SECURITY_INFO_PRIVATE_KEY);
     return AVS_OK;
 }
-
-#    ifdef AVS_COMMONS_WITH_AVS_CRYPTO_PKI
-
-_avs_crypto_cert_encoding_t _avs_crypto_detect_cert_encoding(const void *buffer,
-                                                             size_t len) {
-    static const char PEM_PREFIX[] = "-----BEGIN ";
-    assert(buffer || !len);
-    if (len >= strlen(PEM_PREFIX)
-            && !memcmp(buffer, PEM_PREFIX, strlen(PEM_PREFIX))) {
-        return ENCODING_PEM;
-    } else {
-        return ENCODING_DER;
-    }
-}
-
-#    endif // AVS_COMMONS_WITH_AVS_CRYPTO_PKI
 
 #    ifdef AVS_COMMONS_WITH_AVS_CRYPTO_ADVANCED_FEATURES
 

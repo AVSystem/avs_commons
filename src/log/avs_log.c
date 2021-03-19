@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 AVSystem <avsystem@avsystem.com>
+ * Copyright 2021 AVSystem <avsystem@avsystem.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,11 +38,11 @@ static void default_log_handler(avs_log_level_t level,
                                 const char *message) {
     (void) level;
     (void) module;
-#ifdef AVS_COMMONS_LOG_WITH_DEFAULT_HANDLER
+#    ifdef AVS_COMMONS_LOG_WITH_DEFAULT_HANDLER
     fprintf(stderr, "%s\n", message ? message : "(null)");
-#else // AVS_COMMONS_LOG_WITH_DEFAULT_HANDLER
+#    else  // AVS_COMMONS_LOG_WITH_DEFAULT_HANDLER
     (void) message;
-#endif // AVS_COMMONS_LOG_WITH_DEFAULT_HANDLER
+#    endif // AVS_COMMONS_LOG_WITH_DEFAULT_HANDLER
 }
 
 typedef struct {

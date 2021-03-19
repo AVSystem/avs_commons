@@ -66,36 +66,3 @@
     fun:avs_net_socket_send
     fun:avs_bio_write
 }
-{
-    # AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-    #
-    # The pkcs11 engine from OpenSC is kind of insane and initializes various
-    # OpenSSL primitives, keeping references to them in... static variables
-    # inside functions. So there's absolutely no way to uninitialize them. And
-    # some of them even keep circular references to the engine itself. So we're
-    # effectively unable to uninitialize the engine. Ever.
-    #
-    # This shall not be a problem in practice, because engine tends to be
-    # necessary for the entire lifetime of the application. But it makes
-    # verifying memory correctness with Valgrind a hot mess.
-
-    engine-circular-references
-    Memcheck:Leak
-    ...
-    fun:ENGINE_new
-}
-{
-    pkcs11-engine-allocations
-    Memcheck:Leak
-    ...
-    obj:*/pkcs11.so
-}
-{
-    pkcs11-engine-verify
-    Memcheck:Leak
-    ...
-    fun:BN_MONT_CTX_new
-    fun:BN_MONT_CTX_set_locked
-    ...
-    fun:RSA_verify
-}
