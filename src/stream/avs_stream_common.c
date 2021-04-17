@@ -16,9 +16,13 @@
 
 #include "avs_stream_common.h"
 
+#ifdef AVS_COMMONS_WITH_AVS_STREAM
+
 VISIBILITY_SOURCE_BEGIN
 
 avs_error_t _avs_stream_empty_finish_message(avs_stream_t *stream) {
     (void) stream;
     return AVS_OK;
 }
+
+#endif // AVS_COMMONS_WITH_AVS_STREAM
