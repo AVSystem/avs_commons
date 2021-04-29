@@ -91,6 +91,14 @@ static avs_error_t decoding_read(avs_stream_t *stream_,
                                  size_t buffer_length) {
     decoding_stream_t *stream = (decoding_stream_t *) stream_;
     bool no_more_data = false;
+    size_t bytes_read = 0;
+    bool message_finished = false;
+    if (!out_bytes_read) {
+        out_bytes_read = &bytes_read;
+    }
+    if (!out_message_finished) {
+        out_message_finished = &message_finished;
+    }
     while (true) {
         /* try reading remaining data from decoder */
         avs_error_t err =

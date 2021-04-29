@@ -17,7 +17,7 @@
 cmake_minimum_required(VERSION 3.6.0)
 project(avs_commons C)
 
-set(AVS_COMMONS_VERSION "4.7")
+set(AVS_COMMONS_VERSION "4.7.1")
 
 ################# DISTRIBUTION #################################################
 
@@ -329,7 +329,7 @@ if(WITH_VALGRIND)
     else()
         set(VALGRIND_ARGS --leak-check=full --track-origins=yes --errors-for-leak-kinds=definite)
     endif()
-    set(VALGRIND ${VALGRIND_EXECUTABLE} ${VALGRIND_ARGS} -q --error-exitcode=63 --suppressions=${CMAKE_CURRENT_SOURCE_DIR}/avs_commons_test.supp)
+    set(VALGRIND ${VALGRIND_EXECUTABLE} ${VALGRIND_ARGS} -q --error-exitcode=63 --suppressions=${CMAKE_CURRENT_SOURCE_DIR}/avs_commons_test.valgrind.supp)
 endif()
 
 enable_testing()
@@ -485,7 +485,7 @@ if(WITH_TEST)
         add_test(NAME ${AAT_NAME}_test
                  COMMAND ${VALGRIND_CMD} $<TARGET_FILE:${AAT_NAME}_test>
                  WORKING_DIRECTORY $<TARGET_FILE_DIR:${AAT_NAME}_test>)
-        set_property(TEST ${AAT_NAME}_test APPEND PROPERTY ENVIRONMENT ${AAT_ENVIRONMENT})
+        set_property(TEST ${AAT_NAME}_test APPEND PROPERTY ENVIRONMENT "LSAN_OPTIONS=suppressions=${AVS_COMMONS_SOURCE_DIR}/avs_commons_test.lsan.supp" ${AAT_ENVIRONMENT})
 
         add_custom_target(${AAT_NAME}_check COMMAND ${CMAKE_CTEST_COMMAND} -V -R "^${AAT_NAME}_test$" DEPENDS ${AAT_NAME}_test)
         add_dependencies(avs_commons_check ${AAT_NAME}_check)

@@ -174,8 +174,10 @@ static avs_error_t zlib_stream_read(avs_stream_t *stream_,
     size_t ready_bytes =
             AVS_MIN(buffer_length,
                     stream->output_buffer_size - stream->zlib.avail_out);
-    *out_bytes_read = 0;
-    *out_message_finished = false;
+    size_t bytes_read = 0;
+    if (out_message_finished) {
+        *out_message_finished = false;
+    }
     if (ready_bytes) {
         memcpy(buffer, GET_OUTPUT_BUFFER(stream), ready_bytes);
         memmove(GET_OUTPUT_BUFFER(stream),
@@ -183,21 +185,25 @@ static avs_error_t zlib_stream_read(avs_stream_t *stream_,
                 (stream->output_buffer_size - stream->zlib.avail_out)
                         - ready_bytes);
         stream->zlib.avail_out += (unsigned) ready_bytes;
-        *out_bytes_read += ready_bytes;
+        bytes_read += ready_bytes;
     }
-    if (*out_bytes_read < buffer_length && stream->error != Z_STREAM_END) {
+    if (bytes_read < buffer_length && stream->error != Z_STREAM_END) {
         unsigned avail_out_orig = stream->zlib.avail_out;
-        stream->zlib.next_out = ((uint8_t *) buffer) + *out_bytes_read;
-        stream->zlib.avail_out = (unsigned) (buffer_length - *out_bytes_read);
+        stream->zlib.next_out = ((uint8_t *) buffer) + bytes_read;
+        stream->zlib.avail_out = (unsigned) (buffer_length - bytes_read);
         zlib_stream_flush(stream);
-        *out_bytes_read = buffer_length - stream->zlib.avail_out;
+        bytes_read = buffer_length - stream->zlib.avail_out;
         stream->zlib.avail_out = avail_out_orig;
+    }
+    if (out_bytes_read) {
+        *out_bytes_read = bytes_read;
     }
     stream->zlib.next_out =
             GET_OUTPUT_BUFFER(stream)
             + (stream->output_buffer_size - stream->zlib.avail_out);
     if (stream->error == Z_STREAM_END) {
-        if (stream->zlib.avail_out >= stream->output_buffer_size) {
+        if (out_message_finished
+                && stream->zlib.avail_out >= stream->output_buffer_size) {
             *out_message_finished = true;
         }
     } else if (stream->error != Z_OK) {

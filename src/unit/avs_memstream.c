@@ -68,8 +68,12 @@ static avs_error_t memstream_read(avs_stream_t *_stream,
                                   void *buffer,
                                   size_t buffer_length) {
     memstream_t *stream = (memstream_t *) _stream;
+    size_t bytes_read_placeholder;
     bool message_finished_placeholder;
 
+    if (!out_bytes_read) {
+        out_bytes_read = &bytes_read_placeholder;
+    }
     if (!out_message_finished) {
         out_message_finished = &message_finished_placeholder;
     }
