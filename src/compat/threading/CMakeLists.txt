@@ -25,8 +25,8 @@ set(COMPAT_THREADING_TEST_SOURCES
 option(WITH_CUSTOM_AVS_THREADING "Do not provide any default implementations of avs_threading" OFF)
 if(NOT WITH_CUSTOM_AVS_THREADING)
 # NOTE: first available implementation defines default avs_compat_threading targets
-    add_subdirectory(atomic_spinlock)
     add_subdirectory(pthread)
+    add_subdirectory(atomic_spinlock)
 endif()
 
 if(NOT TARGET avs_compat_threading)

@@ -350,7 +350,9 @@ static int *init_cert_ciphersuites(
 
     size_t ciphers_count = 0;
     for (const int *cipher = all_ciphers; cipher && *cipher; ++cipher) {
-        if (contains_cipher(enabled_ciphers, *cipher)) {
+        if (!mbedtls_ssl_ciphersuite_uses_psk(
+                    mbedtls_ssl_ciphersuite_from_id(*cipher))
+                && contains_cipher(enabled_ciphers, *cipher)) {
             ++ciphers_count;
         }
     }
@@ -363,7 +365,9 @@ static int *init_cert_ciphersuites(
 
     int *cipher_it = ciphers;
     for (const int *cipher = all_ciphers; cipher && *cipher; ++cipher) {
-        if (contains_cipher(enabled_ciphers, *cipher)) {
+        if (!mbedtls_ssl_ciphersuite_uses_psk(
+                    mbedtls_ssl_ciphersuite_from_id(*cipher))
+                && contains_cipher(enabled_ciphers, *cipher)) {
             *cipher_it++ = *cipher;
         }
     }
@@ -1470,5 +1474,9 @@ initialize_ssl_socket(ssl_socket_t *socket,
 
     return avs_is_ok(err) ? configure_ssl(socket, configuration) : err;
 }
+
+#    ifdef AVS_UNIT_TESTING
+#        include "tests/net/mbedtls/socket.c"
+#    endif // AVS_UNIT_TESTING
 
 #endif // defined(AVS_COMMONS_WITH_AVS_NET) && defined(AVS_COMMONS_WITH_MBEDTLS)

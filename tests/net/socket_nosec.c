@@ -16,7 +16,7 @@
 
 #include <string.h>
 
-#include "socket_common.h"
+#include "socket_common_testcases.h"
 
 //// avs_net_socket_get_opt ////////////////////////////////////////////////////
 

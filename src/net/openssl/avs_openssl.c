@@ -651,16 +651,16 @@ static avs_error_t ssl_handshake(ssl_socket_t *socket) {
 #        define SSL_get_app_data @ @ @ @ @
 #    endif
 
-static int configure_cipher_list(ssl_socket_t *socket,
-                                 const char *cipher_list) {
+static avs_error_t configure_cipher_list(ssl_socket_t *socket,
+                                         const char *cipher_list) {
     LOG(DEBUG, _("cipher list: ") "%s", cipher_list);
-    if (SSL_CTX_set_cipher_list(socket->ctx, cipher_list)) {
-        return 0;
+    if (SSL_set_cipher_list(socket->ssl, cipher_list)) {
+        return AVS_OK;
     }
 
     LOG(WARNING, _("could not set cipher list to ") "%s", cipher_list);
     log_openssl_error();
-    return -1;
+    return avs_errno(AVS_EPROTO);
 }
 
 static avs_error_t
@@ -676,8 +676,10 @@ ids_to_cipher_list(ssl_socket_t *socket,
         return avs_errno(AVS_ENOMEM);
     }
 
-    bool first = true;
-    avs_error_t err = AVS_OK;
+    avs_error_t err = avs_stream_write(stream, "-ALL", sizeof("-ALL") - 1);
+    if (avs_is_err(err)) {
+        return err;
+    }
 
     for (size_t i = 0; i < suites->num_ids; ++i) {
         if (suites->ids[i] > UINT16_MAX) {
@@ -698,17 +700,20 @@ ids_to_cipher_list(ssl_socket_t *socket,
 
         const char *name = SSL_CIPHER_get_name(cipher);
 #    ifdef AVS_COMMONS_NET_WITH_PSK
-        if (socket->psk.psk && !strstr(name, "PSK")) {
-            LOG(DEBUG, _("ignoring non-PSK cipher ID: 0x") "%04x",
-                suites->ids[i]);
+        if (socket->psk.psk) {
+            if (!strstr(name, "PSK")) {
+                LOG(DEBUG, _("ignoring non-PSK cipher ID: 0x") "%04x",
+                    suites->ids[i]);
+                continue;
+            }
+        } else
+#    endif // AVS_COMMONS_NET_WITH_PSK
+                if (strstr(name, "PSK")) {
+            LOG(DEBUG, _("ignoring PSK cipher ID: 0x") "%04x", suites->ids[i]);
             continue;
         }
-#    endif // AVS_COMMONS_NET_WITH_PSK
-        if (first) {
-            first = false;
-        } else {
-            err = avs_stream_write(stream, ":", 1);
-        }
+
+        err = avs_stream_write(stream, ":", 1);
         if (avs_is_ok(err)) {
             err = avs_stream_write(stream, name, strlen(name));
         }
@@ -788,6 +793,32 @@ static unsigned int dtls_timer_cb(SSL *ssl, unsigned int timer_us) {
 #    endif // defined(AVS_COMMONS_NET_WITH_DTLS) && OPENSSL_VERSION_NUMBER_GE(1,
            // 1, 1)
 
+static avs_error_t fix_socket_ciphersuites(ssl_socket_t *socket) {
+    avs_error_t err = AVS_OK;
+    if (socket->enabled_ciphersuites.num_ids > 0) {
+        char *ciphersuites_string = NULL;
+        err = ids_to_cipher_list(socket, &socket->enabled_ciphersuites,
+                                 &ciphersuites_string);
+        if (avs_is_err(err)) {
+            assert(!ciphersuites_string);
+            return err;
+        }
+
+        err = configure_cipher_list(socket, ciphersuites_string);
+        avs_free(ciphersuites_string);
+    }
+#    ifdef AVS_COMMONS_NET_WITH_PSK
+    else if (socket->psk.psk) {
+        err = configure_cipher_list(socket, "PSK");
+    }
+#    endif // AVS_COMMONS_NET_WITH_PSK
+    else {
+        err = configure_cipher_list(socket, "!PSK ALL");
+    }
+
+    return err;
+}
+
 static avs_error_t start_ssl(ssl_socket_t *socket, const char *host) {
     BIO *bio = NULL;
     LOG(TRACE, _("start_ssl(socket=") "%p" _(")"), (void *) socket);
@@ -802,27 +833,9 @@ static avs_error_t start_ssl(ssl_socket_t *socket, const char *host) {
     }
     SSL_set_app_data(socket->ssl, socket);
 
-    int result = 0;
-    if (socket->enabled_ciphersuites.num_ids > 0) {
-        char *ciphersuites_string = NULL;
-        avs_error_t err =
-                ids_to_cipher_list(socket, &socket->enabled_ciphersuites,
-                                   &ciphersuites_string);
-        if (avs_is_err(err)) {
-            assert(!ciphersuites_string);
-            return err;
-        }
-
-        result = configure_cipher_list(socket, ciphersuites_string);
-        avs_free(ciphersuites_string);
-    }
-#    ifdef AVS_COMMONS_NET_WITH_PSK
-    else if (socket->psk.psk) {
-        result = configure_cipher_list(socket, "PSK");
-    }
-#    endif // AVS_COMMONS_NET_WITH_PSK
-    if (result) {
-        return avs_errno(AVS_EINVAL);
+    avs_error_t err;
+    if (avs_is_err((err = fix_socket_ciphersuites(socket)))) {
+        return err;
     }
 
 #    ifdef SSL_MODE_AUTO_RETRY
@@ -835,6 +848,7 @@ static avs_error_t start_ssl(ssl_socket_t *socket, const char *host) {
 
     bool verification = (socket->verify_mode != SSL_VERIFY_DISABLED);
 
+    int result = 0;
 #    ifdef WITH_DANE_SUPPORT
     if (socket->verify_mode == SSL_VERIFY_DANE_ENFORCED
             || socket->verify_mode == SSL_VERIFY_DANE_OPPORTUNISTIC) {
@@ -945,7 +959,7 @@ static avs_error_t start_ssl(ssl_socket_t *socket, const char *host) {
            // 1, 1)
 
     avs_net_socket_t *backend_socket = socket->backend_socket;
-    avs_error_t err = ssl_handshake(socket);
+    err = ssl_handshake(socket);
     // Restore backend socket that might have been disabled by dtls_timer_cb()
     socket->backend_socket = backend_socket;
     if (avs_is_err(err)) {
@@ -1621,5 +1635,9 @@ initialize_ssl_socket(ssl_socket_t *socket,
 
     return err;
 }
+
+#    ifdef AVS_UNIT_TESTING
+#        include "tests/net/openssl/socket.c"
+#    endif // AVS_UNIT_TESTING
 
 #endif // defined(AVS_COMMONS_WITH_AVS_NET) && defined(AVS_COMMONS_WITH_OPENSSL)
