@@ -21,18 +21,24 @@
 
 static avs_log_level_t EXPECTED_LEVEL;
 static char EXPECTED_MODULE[64];
+static char EXPECTED_FILE[256];
+static int EXPECTED_LINE;
 static char EXPECTED_MESSAGE[512];
 
 static void reset_expected(void) {
     EXPECTED_LEVEL = AVS_LOG_QUIET;
     EXPECTED_MODULE[0] = '\0';
     EXPECTED_MESSAGE[0] = '\0';
+    EXPECTED_FILE[0] = '\0';
+    EXPECTED_LINE = 0;
 }
 
 #define ASSERT_LOG_CLEAN                                      \
     do {                                                      \
         AVS_UNIT_ASSERT_EQUAL(EXPECTED_LEVEL, AVS_LOG_QUIET); \
         AVS_UNIT_ASSERT_EQUAL_STRING(EXPECTED_MODULE, "");    \
+        AVS_UNIT_ASSERT_EQUAL_STRING(EXPECTED_FILE, "");      \
+        AVS_UNIT_ASSERT_EQUAL(EXPECTED_LINE, 0);              \
         AVS_UNIT_ASSERT_EQUAL_STRING(EXPECTED_MESSAGE, "");   \
     } while (0)
 
@@ -44,10 +50,33 @@ static void reset_expected(void) {
         snprintf(EXPECTED_MESSAGE, sizeof(EXPECTED_MESSAGE), __VA_ARGS__); \
     } while (0)
 
+#define ASSERT_EXTENDED_LOG(Module, Level, File, Line, ...)                \
+    do {                                                                   \
+        ASSERT_LOG_CLEAN;                                                  \
+        EXPECTED_LEVEL = AVS_LOG_##Level;                                  \
+        strcpy(EXPECTED_MODULE, #Module);                                  \
+        strcpy(EXPECTED_FILE, File);                                       \
+        EXPECTED_LINE = Line;                                              \
+        snprintf(EXPECTED_MESSAGE, sizeof(EXPECTED_MESSAGE), __VA_ARGS__); \
+    } while (0)
+
 static void
 mock_handler(avs_log_level_t level, const char *module, const char *message) {
     AVS_UNIT_ASSERT_EQUAL(level, EXPECTED_LEVEL);
     AVS_UNIT_ASSERT_EQUAL_STRING(module, EXPECTED_MODULE);
+    AVS_UNIT_ASSERT_EQUAL_STRING(message, EXPECTED_MESSAGE);
+    reset_expected();
+}
+
+static void mock_extended_handler(avs_log_level_t level,
+                                  const char *module,
+                                  const char *file,
+                                  unsigned line,
+                                  const char *message) {
+    AVS_UNIT_ASSERT_EQUAL(level, EXPECTED_LEVEL);
+    AVS_UNIT_ASSERT_EQUAL_STRING(module, EXPECTED_MODULE);
+    AVS_UNIT_ASSERT_EQUAL_STRING(file, EXPECTED_FILE);
+    AVS_UNIT_ASSERT_EQUAL(line, EXPECTED_LINE);
     AVS_UNIT_ASSERT_EQUAL_STRING(message, EXPECTED_MESSAGE);
     reset_expected();
 }
@@ -60,7 +89,8 @@ static void reset_everything(void) {
 
 AVS_UNIT_GLOBAL_INIT(verbose) {
     (void) verbose;
-    AVS_UNIT_ASSERT_TRUE(g_log.handler == default_log_handler);
+    AVS_UNIT_ASSERT_TRUE(g_log.handler.normal == default_log_handler);
+    AVS_UNIT_ASSERT_FALSE(g_log.is_extended_handler);
     AVS_UNIT_ASSERT_EQUAL(g_log.default_level, AVS_LOG_INFO);
     AVS_UNIT_ASSERT_TRUE(g_log.module_levels == NULL);
     reset_everything();
@@ -323,4 +353,30 @@ AVS_UNIT_TEST(log, truncated) {
     free(buf);
 
 #undef LOG_MSG
+}
+
+AVS_UNIT_TEST(log, extended) {
+    avs_log_set_extended_handler(mock_extended_handler);
+    ASSERT_EXTENDED_LOG(test, INFO, __FILE__, __LINE__ + 1, "test");
+    avs_log(test, INFO, "test");
+
+    ASSERT_EXTENDED_LOG(test, ERROR, __FILE__, __LINE__ + 1, "test 2");
+    avs_log(test, ERROR, "test %d", 2);
+
+    ASSERT_EXTENDED_LOG(test, INFO, __FILE__, __LINE__ + 1, "test 3 4");
+    avs_log(test, INFO, "test %d %d", 3, 4);
+
+    avs_log_set_handler(mock_handler);
+    ASSERT_LOG(test,
+               INFO,
+               "INFO [test] [" __FILE__ ":%d]: Hello, world!",
+               __LINE__ + 1);
+    avs_log(test, INFO, "Hello, world!");
+
+    avs_log_set_extended_handler(mock_extended_handler);
+    ASSERT_EXTENDED_LOG(test, WARNING, __FILE__, __LINE__ + 1, "test 5");
+    avs_log(test, WARNING, "test %d", 5);
+
+    ASSERT_LOG_CLEAN;
+    reset_everything();
 }

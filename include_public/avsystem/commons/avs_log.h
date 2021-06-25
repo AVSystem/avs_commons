@@ -57,6 +57,29 @@ typedef void avs_log_handler_t(avs_log_level_t level,
                                const char *message);
 
 /**
+ * User-defined extended handler for logging.
+ *
+ * The messages sent to the extended log handler only contain formatted string
+ * with parameters. Additional information such as log level, module or line
+ * number can be added by extended log handler.
+ *
+ * @param level   Log level of the logged message.
+ *
+ * @param module  Name of the module that generated the message.
+ *
+ * @param file    File where message was generated.
+ *
+ * @param line    Line where message was generated.
+ *
+ * @param message A pre-formatted message to log.
+ */
+typedef void avs_log_extended_handler_t(avs_log_level_t level,
+                                        const char *module,
+                                        const char *file,
+                                        unsigned line,
+                                        const char *message);
+
+/**
  * Sets the handler for the library's logging system. There may be only one
  * handler registered at a time.
  *
@@ -108,6 +131,18 @@ typedef void avs_log_handler_t(avs_log_level_t level,
  * </example>
  */
 void avs_log_set_handler(avs_log_handler_t *log_handler);
+
+/**
+ * Sets the extended handler for the library's logging system.
+ *
+ * For example on implementing a log handler, refer to <c>demo.c</c>, where an
+ * alternative log handler is implemented using extended log handler. While
+ * running the demo use option <c>--alternative-logger</c>.
+ *
+ * @param log_handler New extended log handler function to use. If @c NULL ,
+ *                    log handler will be reset to the default one.
+ */
+void avs_log_set_extended_handler(avs_log_extended_handler_t *log_handler);
 
 /**
  * Resets the logging system to default settings and frees all resources that

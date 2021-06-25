@@ -51,7 +51,11 @@ typedef struct {
 } module_level_t;
 
 static struct {
-    avs_log_handler_t *handler;
+    union {
+        avs_log_handler_t *normal;
+        avs_log_extended_handler_t *extended;
+    } handler;
+    bool is_extended_handler;
     avs_log_level_t default_level;
     AVS_LIST(module_level_t) module_levels;
 
@@ -59,7 +63,7 @@ static struct {
     char buffer[AVS_COMMONS_LOG_MAX_LINE_LENGTH];
 #    endif // AVS_COMMONS_LOG_USE_GLOBAL_BUFFER
 } g_log = {
-    .handler = default_log_handler,
+    .handler.normal = default_log_handler,
     .default_level = AVS_LOG_INFO,
     .module_levels = NULL
 };
@@ -80,28 +84,38 @@ static int initialize_global_state(void *unused) {
     return avs_mutex_create(&g_log_mutex);
 }
 
-static int _log_lock(const char *init_fail_msg, const char *lock_fail_msg) {
+static void log_with_buffer_unlocked_v(char *log_buf,
+                                       size_t log_buf_size,
+                                       avs_log_level_t level,
+                                       const char *module,
+                                       const char *file,
+                                       unsigned line,
+                                       const char *msg,
+                                       va_list ap);
+
+static int _log_lock(const char *file, unsigned line, ...) {
+
+    const char *out_msg = NULL;
     if (avs_init_once(&g_log_init_handle, initialize_global_state, NULL)) {
-        g_log.handler(AVS_LOG_ERROR, "avs_log", init_fail_msg);
-        return -1;
+        out_msg = "could not initialize global log state";
     }
-    if (avs_mutex_lock(g_log_mutex)) {
-        g_log.handler(AVS_LOG_ERROR, "avs_log", lock_fail_msg);
+    if (avs_mutex_lock(g_log_mutex) && !out_msg) {
+        out_msg = "could not lock log mutex";
+    }
+    if (out_msg) {
+        char log_buf[AVS_COMMONS_LOG_MAX_LINE_LENGTH];
+        va_list ap;
+        va_start(ap, line);
+        log_with_buffer_unlocked_v(log_buf, sizeof(log_buf), AVS_LOG_ERROR,
+                                   "avs_log", file, line, out_msg, ap);
+        va_end(ap);
         return -1;
     }
     return 0;
 }
 
-#        define LOG_LOCK()                                                     \
-            _log_lock(                                                         \
-                    "ERROR [avs_log] "                                         \
-                    "[" __FILE__ ":" AVS_QUOTE_MACRO(                          \
-                            __LINE__) "]: "                                    \
-                                      "could not initialize global log state", \
-                    "ERROR [avs_log] "                                         \
-                    "[" __FILE__                                               \
-                    ":" AVS_QUOTE_MACRO(__LINE__) "]: "                        \
-                                                  "could not lock log mutex")
+#        define LOG_LOCK() _log_lock(__FILE__, __LINE__)
+
 #        define LOG_UNLOCK() avs_mutex_unlock(g_log_mutex)
 
 #    else // AVS_COMMONS_WITH_AVS_COMPAT_THREADING
@@ -112,7 +126,8 @@ static int _log_lock(const char *init_fail_msg, const char *lock_fail_msg) {
 #    endif // AVS_COMMONS_WITH_AVS_COMPAT_THREADING
 
 static inline void set_log_handler_unlocked(avs_log_handler_t *log_handler) {
-    g_log.handler = (log_handler ? log_handler : default_log_handler);
+    g_log.handler.normal = (log_handler ? log_handler : default_log_handler);
+    g_log.is_extended_handler = false;
 }
 
 void avs_log_set_handler(avs_log_handler_t *log_handler) {
@@ -120,6 +135,25 @@ void avs_log_set_handler(avs_log_handler_t *log_handler) {
         return;
     }
     set_log_handler_unlocked(log_handler);
+    LOG_UNLOCK();
+}
+
+static inline void
+set_log_extended_handler_unlocked(avs_log_extended_handler_t *log_handler) {
+    if (log_handler) {
+        g_log.handler.extended = log_handler;
+        g_log.is_extended_handler = true;
+    } else {
+        g_log.handler.normal = default_log_handler;
+        g_log.is_extended_handler = false;
+    }
+}
+
+void avs_log_set_extended_handler(avs_log_extended_handler_t *log_handler) {
+    if (LOG_LOCK()) {
+        return;
+    }
+    set_log_extended_handler_unlocked(log_handler);
     LOG_UNLOCK();
 }
 
@@ -225,19 +259,24 @@ static void log_with_buffer_unlocked_v(char *log_buf,
                                        va_list ap) {
     char *log_buf_ptr = log_buf;
     size_t log_buf_left = log_buf_size;
-    int pfresult = snprintf(log_buf_ptr, log_buf_left,
+    int pfresult;
+
+    if (!g_log.is_extended_handler) {
+        pfresult = snprintf(log_buf_ptr, log_buf_left,
                             "%s [%s] [%s:%u]: ", level_as_string(level), module,
                             file, line);
-    if (pfresult < 0) {
-        // it's hard to imagine why snprintf() above might fail,
-        // but well, let's be compliant and check it
-        return;
+        if (pfresult < 0) {
+            // it's hard to imagine why snprintf() above might fail,
+            // but well, let's be compliant and check it
+            return;
+        }
+        if ((size_t) pfresult > log_buf_left) {
+            pfresult = (int) log_buf_left;
+        }
+        log_buf_ptr += pfresult;
+        log_buf_left -= (size_t) pfresult;
     }
-    if ((size_t) pfresult > log_buf_left) {
-        pfresult = (int) log_buf_left;
-    }
-    log_buf_ptr += pfresult;
-    log_buf_left -= (size_t) pfresult;
+
     if (log_buf_left) {
         pfresult = vsnprintf(log_buf_ptr, log_buf_left, msg, ap);
         if (pfresult < 0) {
@@ -253,7 +292,12 @@ static void log_with_buffer_unlocked_v(char *log_buf,
             }
         }
     }
-    g_log.handler(level, module, log_buf);
+
+    if (g_log.is_extended_handler) {
+        g_log.handler.extended(level, module, file, line, log_buf);
+    } else {
+        g_log.handler.normal(level, module, log_buf);
+    }
 }
 
 void avs_log_internal_forced_v__(avs_log_level_t level,
