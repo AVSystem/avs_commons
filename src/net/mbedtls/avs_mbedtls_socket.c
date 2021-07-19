@@ -1028,8 +1028,8 @@ static avs_error_t start_ssl(ssl_socket_t *socket, const char *host) {
                                             peer_cid, &peer_cid_len);
             if (enabled) {
                 char peer_cid_hex[2 * sizeof(peer_cid) + 1] = "";
-                (void) avs_hexlify(peer_cid_hex, sizeof(peer_cid_hex), peer_cid,
-                                   peer_cid_len);
+                (void) avs_hexlify(peer_cid_hex, sizeof(peer_cid_hex), NULL,
+                                   peer_cid, peer_cid_len);
                 LOG(DEBUG, _("negotiated CID = ") "%s", peer_cid_hex);
             }
         }

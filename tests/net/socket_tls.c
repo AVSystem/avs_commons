@@ -112,8 +112,10 @@ AVS_UNIT_TEST(socket, ssl_set_opt) {
     cleanup_default_ssl_config(&config);
 }
 
-#define SMTP_SERVER_HOSTNAME "smtp.gmail.com"
-#define SMTP_SERVER_PORT "587"
+#warning "FIXME: Test cases that connect to smtp.gmail.com are unreliable"
+#if 0
+#    define SMTP_SERVER_HOSTNAME "smtp.gmail.com"
+#    define SMTP_SERVER_PORT "587"
 
 static void assert_receive_smtp_status(avs_net_socket_t *socket, int status) {
     char line_beginning[16];
@@ -143,7 +145,7 @@ static void assert_receive_smtp_status(avs_net_socket_t *socket, int status) {
     }
 }
 
-#define EHLO_MSG "EHLO [127.0.0.1]\r\n"
+#    define EHLO_MSG "EHLO [127.0.0.1]\r\n"
 
 static avs_net_socket_t *initiate_smtp_starttls(void) {
     static const char starttls_msg[] = "STARTTLS\r\n";
@@ -345,3 +347,4 @@ AVS_UNIT_TEST(starttls, starttls_smtp_verify_array) {
     avs_crypto_prng_free(&prng_ctx);
     AVS_LIST_CLEAR(&trusted_cert_list);
 }
+#endif

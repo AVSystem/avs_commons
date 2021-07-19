@@ -142,11 +142,15 @@ static avs_error_t handle_session_persistence(avs_persistence_context_t *ctx,
     // As you can see, mbedtls_ssl_session structure is crazy with a ton of
     // #ifdefs we need to replicate...
     mbedtls_x509_crt **peer_cert_ptr =
-#    ifdef MBEDTLS_X509_CRT_PARSE_C
+#    if defined(MBEDTLS_X509_CRT_PARSE_C)           \
+            && (MBEDTLS_VERSION_NUMBER < 0x02110000 \
+                || defined(MBEDTLS_SSL_KEEP_PEER_CERTIFICATE))
             &session->peer_cert;
-#    else  // MBEDTLS_X509_CRT_PARSE_C
+#    else  // defined(MBEDTLS_X509_CRT_PARSE_C) && (MBEDTLS_VERSION_NUMBER <
+           // 0x02110000 || defined(MBEDTLS_SSL_KEEP_PEER_CERTIFICATE))
             &(mbedtls_x509_crt *[]){ NULL }[0];
-#    endif // MBEDTLS_X509_CRT_PARSE_C
+#    endif // defined(MBEDTLS_X509_CRT_PARSE_C) && (MBEDTLS_VERSION_NUMBER <
+           // 0x02110000 || defined(MBEDTLS_SSL_KEEP_PEER_CERTIFICATE))
     uint8_t *mfl_code_ptr =
 #    ifdef MBEDTLS_SSL_MAX_FRAGMENT_LENGTH
             &session->mfl_code;
