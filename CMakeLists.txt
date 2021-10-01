@@ -17,7 +17,7 @@
 cmake_minimum_required(VERSION 3.6.0)
 project(avs_commons C)
 
-set(AVS_COMMONS_VERSION "4.8.1")
+set(AVS_COMMONS_VERSION "4.9.0")
 
 ################# DISTRIBUTION #################################################
 
@@ -171,6 +171,9 @@ if(WITH_AVS_LOG)
     set(AVS_COMMONS_LOG_USE_GLOBAL_BUFFER ${AVS_LOG_USE_GLOBAL_BUFFER})
     option(WITH_AVS_LOG_DEFAULT_HANDLER "Provide a default avs_log handler that prints log messages on stderr." ON)
     set(AVS_COMMONS_LOG_WITH_DEFAULT_HANDLER ${WITH_AVS_LOG_DEFAULT_HANDLER})
+    set(EXTERNAL_LOG_HEADER_DEFAULT "")
+    set(EXTERNAL_LOG_HEADER ${EXTERNAL_LOG_HEADER_DEFAULT} CACHE STRING "External log header path, if required")
+    set(AVS_COMMONS_WITH_EXTERNAL_LOGGER_HEADER "${EXTERNAL_LOG_HEADER}")
 endif()
 
 cmake_dependent_option(WITH_TEST "Enable unit tests of AVSystem Commons library itself" OFF WITH_AVS_UNIT OFF)
@@ -510,7 +513,10 @@ find_package(TinyDTLS)
 option(WITH_TINYDTLS "Enable tinyDTLS" ${TINYDTLS_FOUND})
 set(AVS_COMMONS_WITH_TINYDTLS ${WITH_TINYDTLS})
 
-cmake_dependent_option(WITH_PSK "Enable pre-shared key support" ON "WITH_OPENSSL OR WITH_MBEDTLS OR WITH_TINYDTLS" OFF)
+option(WITH_CUSTOM_TLS "Enable support for custom TLS socket implementation" OFF)
+set(AVS_COMMONS_WITH_CUSTOM_TLS ${WITH_CUSTOM_TLS})
+
+cmake_dependent_option(WITH_PSK "Enable pre-shared key support" ON "WITH_OPENSSL OR WITH_MBEDTLS OR WITH_TINYDTLS OR WITH_CUSTOM_TLS" OFF)
 set(AVS_COMMONS_NET_WITH_PSK ${WITH_PSK})
 
 set(WITH_PKI_DEFAULT_VALUE ON)
@@ -519,11 +525,11 @@ if(DEFINED WITH_X509)
     set(WITH_PKI_DEFAULT_VALUE "${WITH_X509}")
 endif()
 
-cmake_dependent_option(WITH_PKI "Enable X.509 certificate support" "${WITH_PKI_DEFAULT_VALUE}" "WITH_OPENSSL OR WITH_MBEDTLS OR WITH_TINYDTLS" OFF)
+cmake_dependent_option(WITH_PKI "Enable X.509 certificate support" "${WITH_PKI_DEFAULT_VALUE}" "WITH_OPENSSL OR WITH_MBEDTLS OR WITH_TINYDTLS OR WITH_CUSTOM_TLS" OFF)
 set(AVS_COMMONS_WITH_AVS_CRYPTO_PKI ${WITH_PKI})
 
 # Hardware security engines
-cmake_dependent_option(WITH_AVS_CRYPTO_ENGINE "Enable hardware-based security engine support" OFF "WITH_OPENSSL OR WITH_MBEDTLS" OFF)
+cmake_dependent_option(WITH_AVS_CRYPTO_ENGINE "Enable hardware-based security engine support" OFF "WITH_OPENSSL OR WITH_MBEDTLS OR WITH_CUSTOM_TLS" OFF)
 set(AVS_COMMONS_WITH_AVS_CRYPTO_ENGINE ${WITH_AVS_CRYPTO_ENGINE})
 
 if(WITH_OPENSSL)

@@ -19,7 +19,7 @@ add_library(avs_url STATIC
             ${AVS_URL_PUBLIC_HEADERS}
             avs_url.c)
 
-target_link_libraries(avs_url PUBLIC avs_commons_global_headers avs_utils)
+target_link_libraries(avs_url PUBLIC avs_commons_global_headers avs_stream avs_utils)
 
 avs_install_export(avs_url url)
 install(FILES ${AVS_URL_PUBLIC_HEADERS}

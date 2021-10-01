@@ -1,2 +1,3 @@
 leak:libcrypto.so
 leak:pkcs11.so
+leak:libnss_resolve.so.2*

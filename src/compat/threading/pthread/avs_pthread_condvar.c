@@ -35,7 +35,7 @@
 
 VISIBILITY_SOURCE_BEGIN
 
-#    if defined(CLOCK_MONOTONIC) \
+#    if !defined(_WIN32) && defined(CLOCK_MONOTONIC) \
             && defined(AVS_COMMONS_COMPAT_THREADING_PTHREAD_HAVE_PTHREAD_CONDATTR_SETCLOCK)
 #        define USE_CLOCK_MONOTONIC
 #    endif

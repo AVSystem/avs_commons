@@ -17,7 +17,8 @@
 #define AVS_LOG_LOG_C
 #include <avs_commons_init.h>
 
-#ifdef AVS_COMMONS_WITH_AVS_LOG
+#if defined(AVS_COMMONS_WITH_AVS_LOG) \
+        && !defined(AVS_COMMONS_WITH_EXTERNAL_LOGGER_HEADER)
 
 #    include <stdarg.h>
 #    include <stdio.h>
@@ -361,4 +362,5 @@ void avs_log_internal_l__(avs_log_level_t level,
 #        include "tests/log/test_log.c"
 #    endif
 
-#endif // AVS_COMMONS_WITH_AVS_LOG
+#endif // defined(AVS_COMMONS_WITH_AVS_LOG) &&
+       // !defined(AVS_COMMONS_WITH_EXTERNAL_LOGGER_HEADER)

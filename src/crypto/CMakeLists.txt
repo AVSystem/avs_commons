@@ -34,7 +34,7 @@ set(AVS_CRYPTO_ADVANCED_FEATURES_TEST_SOURCES
 option(WITH_AVS_CRYPTO_ADVANCED_FEATURES
        "Enables/disables advanced cryptographic features, such as AEAD/HKDF support" OFF)
 
-if(WITH_AVS_CRYPTO_ADVANCED_FEATURES AND (NOT WITH_OPENSSL OR OPENSSL_VERSION VERSION_LESS 1.1.0) AND (NOT WITH_MBEDTLS OR MBEDTLS_VERSION VERSION_LESS 2.14.0))
+if(WITH_AVS_CRYPTO_ADVANCED_FEATURES AND (NOT WITH_OPENSSL OR OPENSSL_VERSION VERSION_LESS 1.1.0) AND (NOT WITH_MBEDTLS OR MBEDTLS_VERSION VERSION_LESS 2.14.0) AND NOT WITH_CUSTOM_TLS)
     message(FATAL_ERROR "WITH_AVS_CRYPTO_ADVANCED_FEATURES requires either OpenSSL>=1.1.0 or mbed TLS>=2.14.0")
 endif()
 
@@ -115,6 +115,8 @@ if(WITH_MBEDTLS)
         mbedtls/avs_mbedtls_global.c
         mbedtls/avs_mbedtls_hkdf.c
         mbedtls/avs_mbedtls_pki.c
+        mbedtls/avs_mbedtls_private.c
+        mbedtls/avs_mbedtls_private.h
         mbedtls/avs_mbedtls_prng.c
         mbedtls/avs_mbedtls_prng.h)
 

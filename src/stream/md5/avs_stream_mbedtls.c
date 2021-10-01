@@ -31,27 +31,16 @@
 VISIBILITY_SOURCE_BEGIN
 
 #    if MBEDTLS_VERSION_NUMBER < 0x02070000
-// the _ret variants were introduced in mbed TLS 2.7.0,
-// emulate them on older versions
-
-static inline int mbedtls_md5_starts_ret(mbedtls_md5_context *ctx) {
-    mbedtls_md5_starts(ctx);
-    return 0;
-}
-
-static inline int mbedtls_md5_update_ret(mbedtls_md5_context *ctx,
-                                         const unsigned char *input,
-                                         size_t ilen) {
-    mbedtls_md5_update(ctx, input, ilen);
-    return 0;
-}
-
-static inline int mbedtls_md5_finish_ret(mbedtls_md5_context *ctx,
-                                         unsigned char *output) {
-    mbedtls_md5_finish(ctx, output);
-    return 0;
-}
-#    endif
+// Mbed TLS <2.7.0 do not have int-returning variants at all, emulate them
+#        define mbedtls_md5_starts(...) (mbedtls_md5_starts(__VA_ARGS__), 0)
+#        define mbedtls_md5_update(...) (mbedtls_md5_update(__VA_ARGS__), 0)
+#        define mbedtls_md5_finish(...) (mbedtls_md5_finish(__VA_ARGS__), 0)
+#    elif MBEDTLS_VERSION_NUMBER < 0x03000000
+// Since Mbed TLS 2.7 until 3.0, these functions were called mbedtls_*_ret
+#        define mbedtls_md5_starts mbedtls_md5_starts_ret
+#        define mbedtls_md5_update mbedtls_md5_update_ret
+#        define mbedtls_md5_finish mbedtls_md5_finish_ret
+#    endif // MBEDTLS_VERSION_NUMBER
 
 typedef struct {
     avs_stream_md5_common_t common;
@@ -61,7 +50,7 @@ typedef struct {
 static avs_error_t avs_md5_finish(avs_stream_t *stream) {
     mbedtls_md5_stream_t *str = (mbedtls_md5_stream_t *) stream;
 
-    int result = mbedtls_md5_finish_ret(&str->ctx, str->common.result);
+    int result = mbedtls_md5_finish(&str->ctx, str->common.result);
     _avs_stream_md5_common_finalize(&str->common);
 
     return avs_errno(result ? AVS_ENOBUFS : AVS_NO_ERROR);
@@ -73,7 +62,7 @@ static avs_error_t avs_md5_reset(avs_stream_t *stream) {
     if (!_avs_stream_md5_common_is_finalized(&str->common)) {
         avs_md5_finish(stream);
     }
-    int result = mbedtls_md5_starts_ret(&str->ctx);
+    int result = mbedtls_md5_starts(&str->ctx);
     _avs_stream_md5_common_reset(&str->common);
     return avs_errno(result ? AVS_ENOBUFS : AVS_NO_ERROR);
 }
@@ -87,7 +76,7 @@ avs_md5_update(avs_stream_t *stream, const void *buf, size_t *len) {
     }
 
     return avs_errno(
-            mbedtls_md5_update_ret(&str->ctx, (const unsigned char *) buf, *len)
+            mbedtls_md5_update(&str->ctx, (const unsigned char *) buf, *len)
                     ? AVS_ENOBUFS
                     : AVS_NO_ERROR);
 }
@@ -107,7 +96,7 @@ avs_stream_t *avs_stream_md5_create(void) {
     if (retval) {
         _avs_stream_md5_common_init(&retval->common, &md5_vtable);
         mbedtls_md5_init(&retval->ctx);
-        if (mbedtls_md5_starts_ret(&retval->ctx)) {
+        if (mbedtls_md5_starts(&retval->ctx)) {
             avs_free(retval);
             retval = NULL;
         }

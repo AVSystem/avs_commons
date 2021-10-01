@@ -75,11 +75,22 @@ find_path(MBEDTLS_INCLUDE_DIR
           ${_EXTRA_FIND_ARGS})
 
 # based on https://github.com/ARMmbed/mbedtls/issues/298
-if(MBEDTLS_INCLUDE_DIR AND EXISTS "${MBEDTLS_INCLUDE_DIR}/mbedtls/version.h")
-    file(STRINGS "${MBEDTLS_INCLUDE_DIR}/mbedtls/version.h" VERSION_STRING_LINE REGEX "^#define MBEDTLS_VERSION_STRING[ \\t\\n\\r]+\"[^\"]*\"$")
-    file(STRINGS "${MBEDTLS_INCLUDE_DIR}/mbedtls/version.h" VERSION_MAJOR_LINE REGEX "^#define MBEDTLS_VERSION_MAJOR[ \\t\\n\\r]+[0-9]+$")
-    file(STRINGS "${MBEDTLS_INCLUDE_DIR}/mbedtls/version.h" VERSION_MINOR_LINE REGEX "^#define MBEDTLS_VERSION_MINOR[ \\t\\n\\r]+[0-9]+$")
-    file(STRINGS "${MBEDTLS_INCLUDE_DIR}/mbedtls/version.h" VERSION_PATCH_LINE REGEX "^#define MBEDTLS_VERSION_PATCH[ \\t\\n\\r]+[0-9]+$")
+set(MBEDTLS_BUILD_INFO_FILE)
+if(MBEDTLS_INCLUDE_DIR)
+    if(EXISTS "${MBEDTLS_INCLUDE_DIR}/mbedtls/build_info.h")
+        # Mbed TLS 3.x
+        set(MBEDTLS_BUILD_INFO_FILE "${MBEDTLS_INCLUDE_DIR}/mbedtls/build_info.h")
+    elseif(EXISTS "${MBEDTLS_INCLUDE_DIR}/mbedtls/version.h")
+        # Mbed TLS 2.x
+        set(MBEDTLS_BUILD_INFO_FILE "${MBEDTLS_INCLUDE_DIR}/mbedtls/version.h")
+    endif()
+endif()
+
+if(MBEDTLS_BUILD_INFO_FILE)
+    file(STRINGS "${MBEDTLS_BUILD_INFO_FILE}" VERSION_STRING_LINE REGEX "^#define MBEDTLS_VERSION_STRING[ \\t\\n\\r]+\"[^\"]*\"$")
+    file(STRINGS "${MBEDTLS_BUILD_INFO_FILE}" VERSION_MAJOR_LINE REGEX "^#define MBEDTLS_VERSION_MAJOR[ \\t\\n\\r]+[0-9]+$")
+    file(STRINGS "${MBEDTLS_BUILD_INFO_FILE}" VERSION_MINOR_LINE REGEX "^#define MBEDTLS_VERSION_MINOR[ \\t\\n\\r]+[0-9]+$")
+    file(STRINGS "${MBEDTLS_BUILD_INFO_FILE}" VERSION_PATCH_LINE REGEX "^#define MBEDTLS_VERSION_PATCH[ \\t\\n\\r]+[0-9]+$")
 
     string(REGEX REPLACE "^#define MBEDTLS_VERSION_STRING[ \\t\\n\\r]+\"([^\"]*)\"$" "\\1" MBEDTLS_VERSION "${VERSION_STRING_LINE}")
     string(REGEX REPLACE "^#define MBEDTLS_VERSION_MAJOR[ \\t\\n\\r]+([0-9]+)$" "\\1" MBEDTLS_VERSION_MAJOR "${VERSION_MAJOR_LINE}")

@@ -365,15 +365,31 @@ avs_error_t _avs_crypto_mbedtls_load_crls(
     return err;
 }
 
-static avs_error_t load_private_key_from_buffer(mbedtls_pk_context *client_key,
-                                                const void *buffer,
-                                                size_t len,
-                                                const char *password) {
+#    if MBEDTLS_VERSION_NUMBER >= 0x03000000
+static int
+rng_function(void *ctx, unsigned char *out_buf, size_t out_buf_size) {
+    return avs_crypto_prng_bytes((avs_crypto_prng_ctx_t *) ctx, out_buf,
+                                 out_buf_size);
+}
+#    endif // MBEDTLS_VERSION_NUMBER >= 0x03000000
+
+static avs_error_t
+load_private_key_from_buffer(mbedtls_pk_context *client_key,
+                             const void *buffer,
+                             size_t len,
+                             const char *password,
+                             avs_crypto_prng_ctx_t *prng_ctx) {
+    (void) prng_ctx;
     const unsigned char *pwd = (const unsigned char *) password;
     const size_t pwd_len = password ? strlen(password) : 0;
     int result =
             mbedtls_pk_parse_key(client_key, (const unsigned char *) buffer,
-                                 len, pwd, pwd_len);
+                                 len, pwd, pwd_len
+#    if MBEDTLS_VERSION_NUMBER >= 0x03000000 // mbed TLS 3.0 added RNG arguments
+                                 ,
+                                 rng_function, prng_ctx
+#    endif // MBEDTLS_VERSION_NUMBER >= 0x03000000
+            );
     if (result == MBEDTLS_ERR_PK_KEY_INVALID_FORMAT && len > 0
             && ((const char *) buffer)[len - 1] != '\0') {
         // Maybe it's a PEM format without a terminating '\0' that
@@ -387,7 +403,12 @@ static avs_error_t load_private_key_from_buffer(mbedtls_pk_context *client_key,
         len++;
 
         result = mbedtls_pk_parse_key(client_key, refined_buffer, len, pwd,
-                                      pwd_len);
+                                      pwd_len
+#    if MBEDTLS_VERSION_NUMBER >= 0x03000000 // mbed TLS 3.0 added RNG arguments
+                                      ,
+                                      rng_function, prng_ctx
+#    endif // MBEDTLS_VERSION_NUMBER >= 0x03000000
+        );
         avs_free(refined_buffer);
     }
     return result ? avs_errno(AVS_EPROTO) : AVS_OK;
@@ -395,13 +416,21 @@ static avs_error_t load_private_key_from_buffer(mbedtls_pk_context *client_key,
 
 static avs_error_t load_private_key_from_file(mbedtls_pk_context *client_key,
                                               const char *filename,
-                                              const char *password) {
+                                              const char *password,
+                                              avs_crypto_prng_ctx_t *prng_ctx) {
+    (void) prng_ctx;
 #    ifdef MBEDTLS_FS_IO
     LOG(DEBUG, _("private key <") "%s" _(">: going to load"), filename);
 
     int retval = -1;
     avs_error_t err =
-            ((retval = mbedtls_pk_parse_keyfile(client_key, filename, password))
+            ((retval = mbedtls_pk_parse_keyfile(client_key, filename, password
+#        if MBEDTLS_VERSION_NUMBER \
+                >= 0x03000000 // mbed TLS 3.0 added RNG arguments
+                                                ,
+                                                rng_function, prng_ctx
+#        endif // MBEDTLS_VERSION_NUMBER >= 0x03000000
+                                                ))
                      ? avs_errno(AVS_EPROTO)
                      : AVS_OK);
     if (avs_is_ok(err)) {
@@ -432,9 +461,10 @@ void _avs_crypto_mbedtls_pk_context_cleanup(mbedtls_pk_context **ctx) {
     }
 }
 
-avs_error_t _avs_crypto_mbedtls_load_private_key(
-        mbedtls_pk_context **client_key,
-        const avs_crypto_private_key_info_t *info) {
+avs_error_t
+_avs_crypto_mbedtls_load_private_key(mbedtls_pk_context **client_key,
+                                     const avs_crypto_private_key_info_t *info,
+                                     avs_crypto_prng_ctx_t *prng_ctx) {
     if (info == NULL) {
         LOG(ERROR, "Given key info is empty.");
         return avs_errno(AVS_EINVAL);
@@ -469,7 +499,8 @@ avs_error_t _avs_crypto_mbedtls_load_private_key(
         } else {
             err = load_private_key_from_file(*client_key,
                                              info->desc.info.file.filename,
-                                             info->desc.info.file.password);
+                                             info->desc.info.file.password,
+                                             prng_ctx);
         }
         break;
     case AVS_CRYPTO_DATA_SOURCE_PATH:
@@ -483,7 +514,7 @@ avs_error_t _avs_crypto_mbedtls_load_private_key(
             err = load_private_key_from_buffer(
                     *client_key, info->desc.info.buffer.buffer,
                     info->desc.info.buffer.buffer_size,
-                    info->desc.info.buffer.password);
+                    info->desc.info.buffer.password, prng_ctx);
         }
         break;
     default:

@@ -22,6 +22,14 @@
 // this uses some symbols such as "printf" - include it before poisoning them
 #    include <mbedtls/platform.h>
 
+#    ifdef AVS_COMMONS_NET_WITH_MBEDTLS_LOGS
+#        ifndef AVS_COMMONS_WITH_INTERNAL_LOGS
+#            error "AVS_COMMONS_NET_WITH_MBEDTLS_LOGS requires AVS_COMMONS_WITH_INTERNAL_LOGS to be enabled"
+#        endif // AVS_COMMONS_WITH_INTERNAL_LOGS
+
+#        include <mbedtls/debug.h>
+#    endif // AVS_COMMONS_NET_WITH_MBEDTLS_LOGS
+
 #    include <avs_commons_poison.h>
 
 #    include <assert.h>
@@ -45,14 +53,6 @@
 #    include <mbedtls/ssl.h>
 #    include <mbedtls/timing.h>
 
-#    ifdef AVS_COMMONS_NET_WITH_MBEDTLS_LOGS
-#        ifndef AVS_COMMONS_WITH_INTERNAL_LOGS
-#            error "AVS_COMMONS_NET_WITH_MBEDTLS_LOGS requires AVS_COMMONS_WITH_INTERNAL_LOGS to be enabled"
-#        endif // AVS_COMMONS_WITH_INTERNAL_LOGS
-
-#        include <mbedtls/debug.h>
-#    endif // AVS_COMMONS_NET_WITH_MBEDTLS_LOGS
-
 #    include <avsystem/commons/avs_errno_map.h>
 #    include <avsystem/commons/avs_memory.h>
 #    include <avsystem/commons/avs_prng.h>
@@ -69,11 +69,13 @@
 #        include <mbedtls/sha256.h>
 #        include <mbedtls/sha512.h>
 #        define WITH_DANE_SUPPORT
-#        define dane_tlsa_array_field security.cert.dane_tlsa
+#        define dane_tlsa_array_field cert_security.dane_tlsa
 #    endif // defined(AVS_COMMONS_WITH_AVS_CRYPTO_PKI) &&
            // defined(MBEDTLS_SHA256_C) && defined(MBEDTLS_SHA512_C)
 
 #    include "../avs_net_impl.h"
+
+#    include "crypto/mbedtls/avs_mbedtls_private.h"
 
 VISIBILITY_SOURCE_BEGIN
 
@@ -123,7 +125,7 @@ typedef struct {
     const avs_net_socket_v_table_t *const operations;
     struct {
         bool context_valid : 1;
-        bool session_restored : 1;
+        bool session_fresh : 1;
     } flags;
     mbedtls_ssl_context context;
     mbedtls_ssl_config config;
@@ -132,14 +134,9 @@ typedef struct {
     size_t session_resumption_buffer_size;
 #    endif // AVS_COMMONS_NET_WITH_TLS_SESSION_PERSISTENCE
     avs_net_security_mode_t security_mode;
-    union {
 #    ifdef AVS_COMMONS_WITH_AVS_CRYPTO_PKI
-        ssl_socket_certs_t cert;
+    ssl_socket_certs_t cert_security;
 #    endif // AVS_COMMONS_WITH_AVS_CRYPTO_PKI
-#    ifdef AVS_COMMONS_NET_WITH_PSK
-        avs_net_owned_psk_t psk;
-#    endif // AVS_COMMONS_NET_WITH_PSK
-    } security;
     mbedtls_timing_delay_context timer;
     avs_net_socket_type_t backend_type;
     avs_net_socket_t *backend_socket;
@@ -158,7 +155,7 @@ static bool is_ssl_started(ssl_socket_t *socket) {
 }
 
 static bool is_session_resumed(ssl_socket_t *socket) {
-    return socket->flags.session_restored;
+    return !socket->flags.session_fresh;
 }
 
 static mbedtls_ssl_context *get_context(ssl_socket_t *socket) {
@@ -188,13 +185,15 @@ static void debug_mbedtls(
 #    include "../avs_ssl_common.h"
 
 static avs_error_t return_alert_if_any(ssl_socket_t *socket) {
-    mbedtls_ssl_context *context = get_context(socket);
-    if (context->in_msgtype == AVS_TLS_MESSAGE_TYPE_ALERT) {
-        LOG(DEBUG, _("alert_level = ") "%u" _(", alert_description = ") "%u",
-            context->in_msg[0], context->in_msg[1]);
-        return avs_net_ssl_alert(context->in_msg[0], context->in_msg[1]);
+    uint8_t level;
+    uint8_t description;
+    if (_avs_crypto_mbedtls_ssl_context_get_current_alert(
+                get_context(socket), &level, &description)) {
+        return AVS_OK;
     }
-    return AVS_OK;
+    LOG(DEBUG, _("alert_level = ") "%u" _(", alert_description = ") "%u", level,
+        description);
+    return avs_net_ssl_alert(level, description);
 }
 
 void _avs_net_cleanup_global_ssl_state(void) {
@@ -272,14 +271,15 @@ static avs_error_t get_dtls_overhead(ssl_socket_t *socket,
     }
 
     const mbedtls_cipher_info_t *cipher =
-            mbedtls_cipher_info_from_type(ciphersuite->cipher);
+            _avs_crypto_mbedtls_cipher_info_from_ciphersuite(ciphersuite);
 
     *out_padding_size = 0;
-    if (cipher->mode == MBEDTLS_MODE_CBC) {
-        *out_padding_size = (int) cipher->block_size;
+    if (_avs_crypto_mbedtls_cipher_info_get_mode(cipher) == MBEDTLS_MODE_CBC) {
+        *out_padding_size =
+                (int) _avs_crypto_mbedtls_cipher_get_block_size(cipher);
         /* Looking at the mbedtls_ssl_get_record_expansion it adds size
          * of the block to the record size, and we don't want that */
-        result -= (int) cipher->block_size;
+        result -= *out_padding_size;
     }
 
     *out_header = result;
@@ -303,17 +303,25 @@ static int set_min_ssl_version(mbedtls_ssl_config *config,
     case AVS_NET_SSL_VERSION_DEFAULT:
     case AVS_NET_SSL_VERSION_SSLv2_OR_3:
     case AVS_NET_SSL_VERSION_SSLv3:
+        // NOTE: In Mbed TLS >=3.0, TLS 1.2 is the lowest supported version
+        // anyway.
+#    if MBEDTLS_VERSION_NUMBER < 0x03000000
         mbedtls_ssl_conf_min_version(config, MBEDTLS_SSL_MAJOR_VERSION_3,
                                      MBEDTLS_SSL_MINOR_VERSION_0);
         return 0;
+#    endif // MBEDTLS_VERSION_NUMBER < 0x03000000
     case AVS_NET_SSL_VERSION_TLSv1:
+#    if MBEDTLS_VERSION_NUMBER < 0x03000000
         mbedtls_ssl_conf_min_version(config, MBEDTLS_SSL_MAJOR_VERSION_3,
                                      MBEDTLS_SSL_MINOR_VERSION_1);
         return 0;
+#    endif // MBEDTLS_VERSION_NUMBER < 0x03000000
     case AVS_NET_SSL_VERSION_TLSv1_1:
+#    if MBEDTLS_VERSION_NUMBER < 0x03000000
         mbedtls_ssl_conf_min_version(config, MBEDTLS_SSL_MAJOR_VERSION_3,
                                      MBEDTLS_SSL_MINOR_VERSION_2);
         return 0;
+#    endif // MBEDTLS_VERSION_NUMBER < 0x03000000
     case AVS_NET_SSL_VERSION_TLSv1_2:
         mbedtls_ssl_conf_min_version(config, MBEDTLS_SSL_MAJOR_VERSION_3,
                                      MBEDTLS_SSL_MINOR_VERSION_3);
@@ -378,24 +386,13 @@ static int *init_cert_ciphersuites(
 #        ifdef WITH_DANE_SUPPORT
 
 #            if MBEDTLS_VERSION_NUMBER < 0x02070000
-// the _ret variants were introduced in mbed TLS 2.7.0,
-// emulate them on older versions
-
-static inline int mbedtls_sha256_ret(const unsigned char *input,
-                                     size_t ilen,
-                                     unsigned char output[32],
-                                     int is224) {
-    mbedtls_sha256(input, ilen, output, is224);
-    return 0;
-}
-
-static inline int mbedtls_sha512_ret(const unsigned char *input,
-                                     size_t ilen,
-                                     unsigned char output[64],
-                                     int is384) {
-    mbedtls_sha512(input, ilen, output, is384);
-    return 0;
-}
+// Mbed TLS <2.7.0 do not have int-returning variants at all, emulate them
+#                define mbedtls_sha256(...) (mbedtls_sha256(__VA_ARGS__), 0)
+#                define mbedtls_sha512(...) (mbedtls_sha512(__VA_ARGS__), 0)
+#            elif MBEDTLS_VERSION_NUMBER < 0x03000000
+// Since Mbed TLS 2.7 until 3.0, these functions were called mbedtls_*_ret
+#                define mbedtls_sha256 mbedtls_sha256_ret
+#                define mbedtls_sha512 mbedtls_sha512_ret
 #            endif // MBEDTLS_VERSION_NUMBER
 
 static bool dane_match_buffer(const unsigned char *buf,
@@ -410,7 +407,7 @@ static bool dane_match_buffer(const unsigned char *buf,
         if (entry->association_data_size != sizeof(sha)) {
             return false;
         }
-        return !mbedtls_sha256_ret(buf, buf_len, sha, 0)
+        return !mbedtls_sha256(buf, buf_len, sha, 0)
                && memcmp(entry->association_data, sha, sizeof(sha)) == 0;
     }
     case AVS_NET_SOCKET_DANE_MATCH_SHA512: {
@@ -418,7 +415,7 @@ static bool dane_match_buffer(const unsigned char *buf,
         if (entry->association_data_size != sizeof(sha)) {
             return false;
         }
-        return !mbedtls_sha512_ret(buf, buf_len, sha, 0)
+        return !mbedtls_sha512(buf, buf_len, sha, 0)
                && memcmp(entry->association_data, sha, sizeof(sha)) == 0;
     }
     }
@@ -428,20 +425,24 @@ static bool dane_match_buffer(const unsigned char *buf,
 
 static bool dane_match(mbedtls_x509_crt *crt,
                        const avs_net_socket_dane_tlsa_record_t *entry) {
+    const unsigned char *raw_crt;
+    size_t raw_crt_size;
+    _avs_crypto_mbedtls_x509_crt_get_raw(crt, &raw_crt, &raw_crt_size);
     switch (entry->selector) {
     case AVS_NET_SOCKET_DANE_CERTIFICATE:
-        return dane_match_buffer(crt->raw.p, crt->raw.len, entry);
+        return dane_match_buffer(raw_crt, raw_crt_size, entry);
     case AVS_NET_SOCKET_DANE_PUBLIC_KEY: {
-        unsigned char *buf = (unsigned char *) avs_malloc(crt->raw.len);
+        unsigned char *buf = (unsigned char *) avs_malloc(raw_crt_size);
         if (!buf) {
             LOG(ERROR, _("Out of memory"));
             return false;
         }
         // Note: mbedtls_pk_write_pubkey_der() writes data at the end of buffer
-        int length = mbedtls_pk_write_pubkey_der(&crt->pk, buf, crt->raw.len);
+        int length = mbedtls_pk_write_pubkey_der(
+                _avs_crypto_mbedtls_x509_crt_get_pk(crt), buf, raw_crt_size);
         bool result =
                 (length >= 0
-                 && dane_match_buffer(&buf[crt->raw.len - (size_t) length],
+                 && dane_match_buffer(&buf[raw_crt_size - (size_t) length],
                                       (size_t) length, entry));
         avs_free(buf);
         return result;
@@ -452,10 +453,10 @@ static bool dane_match(mbedtls_x509_crt *crt,
 }
 
 static bool has_dane_ta_or_ee_entries(ssl_socket_t *socket) {
-    for (size_t i = 0; i < socket->security.cert.dane_tlsa.array_element_count;
+    for (size_t i = 0; i < socket->cert_security.dane_tlsa.array_element_count;
          ++i) {
         const avs_net_socket_dane_tlsa_record_t *const entry =
-                &socket->security.cert.dane_tlsa.array_ptr[i];
+                &socket->cert_security.dane_tlsa.array_ptr[i];
         if (entry->certificate_usage
                         == AVS_NET_SOCKET_DANE_TRUST_ANCHOR_ASSERTION
                 || entry->certificate_usage
@@ -467,23 +468,23 @@ static bool has_dane_ta_or_ee_entries(ssl_socket_t *socket) {
 }
 
 static void reset_dane_verify_state(ssl_socket_t *socket) {
-    socket->security.cert.dane_verify_state.match_mask = 0;
-    socket->security.cert.dane_verify_state.verify_result_flags = 0;
-    socket->security.cert.dane_verify_state.verify_result = 0;
+    socket->cert_security.dane_verify_state.match_mask = 0;
+    socket->cert_security.dane_verify_state.verify_result_flags = 0;
+    socket->cert_security.dane_verify_state.verify_result = 0;
 }
 
 static void update_dane_verify_state(ssl_socket_t *socket,
                                      mbedtls_x509_crt *crt,
                                      bool is_ee,
                                      uint32_t verify_result_flags) {
-    socket->security.cert.dane_verify_state.verify_result_flags |=
+    socket->cert_security.dane_verify_state.verify_result_flags |=
             verify_result_flags;
 
-    for (size_t i = 0; i < socket->security.cert.dane_tlsa.array_element_count;
+    for (size_t i = 0; i < socket->cert_security.dane_tlsa.array_element_count;
          ++i) {
         const avs_net_socket_dane_tlsa_record_t *const entry =
-                &socket->security.cert.dane_tlsa.array_ptr[i];
-        if (socket->security.cert.dane_verify_state.match_mask
+                &socket->cert_security.dane_tlsa.array_ptr[i];
+        if (socket->cert_security.dane_verify_state.match_mask
                 & (1 << entry->certificate_usage)) {
             // Certificate usage already satisfied, no need to check again
             continue;
@@ -497,7 +498,7 @@ static void update_dane_verify_state(ssl_socket_t *socket,
             continue;
         }
         if (dane_match(crt, entry)) {
-            socket->security.cert.dane_verify_state.match_mask |=
+            socket->cert_security.dane_verify_state.match_mask |=
                     (uint8_t) (1 << entry->certificate_usage);
         }
     }
@@ -507,28 +508,28 @@ static uint32_t perform_cert_verification(ssl_socket_t *socket) {
     // If the only problem with the certificate is that it failed PKIX
     // verification, but we are using DANE and have matched DANE-TA or
     // DANE-EE entry, it's a success
-    if (socket->security.cert.dane_verify_state.verify_result_flags
+    if (socket->cert_security.dane_verify_state.verify_result_flags
                     == MBEDTLS_X509_BADCERT_NOT_TRUSTED
-            && (socket->security.cert.dane_verify_state.match_mask
+            && (socket->cert_security.dane_verify_state.match_mask
                 & DANE_TA_OR_EE_MATCH_MASK)) {
         return 0;
     }
 
-    uint8_t dane_valid_matches = (socket->security.cert.ca_cert
-                                  == socket->security.cert.dane_ta_certs)
+    uint8_t dane_valid_matches = (socket->cert_security.ca_cert
+                                  == socket->cert_security.dane_ta_certs)
                                          ? DANE_TA_OR_EE_MATCH_MASK
                                          : DANE_FULL_MATCH_MASK;
     // If verification succeeded,
     // check if DANE verification succeeded as well
-    if (!socket->security.cert.dane_verify_state.verify_result_flags
-            && socket->security.cert.dane_tlsa.array_element_count > 0
-            && !(socket->security.cert.dane_verify_state.match_mask
+    if (!socket->cert_security.dane_verify_state.verify_result_flags
+            && socket->cert_security.dane_tlsa.array_element_count > 0
+            && !(socket->cert_security.dane_verify_state.match_mask
                  & dane_valid_matches)) {
         LOG(ERROR, _("DANE certificate verification failed"));
         return MBEDTLS_X509_BADCERT_NOT_TRUSTED;
     }
 
-    return socket->security.cert.dane_verify_state.verify_result_flags;
+    return socket->cert_security.dane_verify_state.verify_result_flags;
 }
 
 static int verify_cert_cb(void *socket_,
@@ -540,20 +541,20 @@ static int verify_cert_cb(void *socket_,
     // And then iterates down to index 0 (the actual peer certificate)
     ssl_socket_t *socket = (ssl_socket_t *) socket_;
     assert(socket->security_mode == AVS_NET_SECURITY_CERTIFICATE);
-    assert(socket->security.cert.dane_ta_certs);
+    assert(socket->cert_security.dane_ta_certs);
 
-    if (socket->security.cert.ca_cert == socket->security.cert.dane_ta_certs
+    if (socket->cert_security.ca_cert == socket->cert_security.dane_ta_certs
             && !has_dane_ta_or_ee_entries(socket)) {
         // No global trust store (opportunistic DANE) and no DANE-TA or DANE-EE
         // entries; this is unusable, so fall back to no verification
         return 0;
     }
 
-    if (index != socket->security.cert.dane_verify_state.last_known_index - 1) {
+    if (index != socket->cert_security.dane_verify_state.last_known_index - 1) {
         // First entry (root certificate)
         reset_dane_verify_state(socket);
     }
-    socket->security.cert.dane_verify_state.last_known_index = index;
+    socket->cert_security.dane_verify_state.last_known_index = index;
     update_dane_verify_state(socket, crt, /* is_ee = */ index == 0,
                              *verify_result_flags);
 
@@ -569,7 +570,7 @@ static int verify_cert_cb(void *socket_,
             LOG(ERROR,
                 _("server certificate verification failure: ") "%" PRIu32,
                 verify_result);
-            socket->security.cert.dane_verify_state.verify_result =
+            socket->cert_security.dane_verify_state.verify_result =
                     MBEDTLS_ERR_X509_CERT_VERIFY_FAILED;
             if (verify_result == MBEDTLS_X509_BADCERT_MISSING) {
                 return MBEDTLS_ERR_SSL_NO_CLIENT_CERTIFICATE;
@@ -584,9 +585,9 @@ static int verify_cert_cb(void *socket_,
 
 static int wrap_handshake_result(ssl_socket_t *socket, int result) {
     if (result >= 0 && socket->security_mode == AVS_NET_SECURITY_CERTIFICATE
-            && socket->security.cert.dane_ta_certs
-            && socket->security.cert.dane_verify_state.verify_result) {
-        return socket->security.cert.dane_verify_state.verify_result;
+            && socket->cert_security.dane_ta_certs
+            && socket->cert_security.dane_verify_state.verify_result) {
+        return socket->cert_security.dane_verify_state.verify_result;
     }
     return result;
 }
@@ -601,9 +602,9 @@ static avs_error_t initialize_cert_security(
         return avs_errno(AVS_ENOMEM);
     }
 
-    if (socket->security.cert.ca_cert || socket->security.cert.ca_crl) {
+    if (socket->cert_security.ca_cert || socket->cert_security.ca_crl) {
 #        ifdef WITH_DANE_SUPPORT
-        if (socket->security.cert.dane_ta_certs) {
+        if (socket->cert_security.dane_ta_certs) {
             // NOTE: When verify_cert_cb() fails, the whole verification routine
             // fails as well, so this is effectively equivalent to modified
             // MBEDTLS_SSL_VERIFY_REQUIRED.
@@ -617,16 +618,16 @@ static avs_error_t initialize_cert_security(
                                       MBEDTLS_SSL_VERIFY_REQUIRED);
         }
         mbedtls_ssl_conf_ca_chain(&socket->config,
-                                  socket->security.cert.ca_cert,
-                                  socket->security.cert.ca_crl);
+                                  socket->cert_security.ca_cert,
+                                  socket->cert_security.ca_crl);
     } else {
         mbedtls_ssl_conf_authmode(&socket->config, MBEDTLS_SSL_VERIFY_NONE);
     }
 
-    if (socket->security.cert.client_cert && socket->security.cert.client_key) {
+    if (socket->cert_security.client_cert && socket->cert_security.client_key) {
         mbedtls_ssl_conf_own_cert(&socket->config,
-                                  socket->security.cert.client_cert,
-                                  socket->security.cert.client_key);
+                                  socket->cert_security.client_cert,
+                                  socket->cert_security.client_key);
     }
 
     mbedtls_ssl_conf_ciphersuites(&socket->config,
@@ -640,25 +641,25 @@ static avs_error_t update_cert_configuration(ssl_socket_t *socket) {
     }
 
 #        ifdef WITH_DANE_SUPPORT
-    if (socket->security.cert.dane_ta_certs) {
+    if (socket->cert_security.dane_ta_certs) {
         // 2 0 0 (DANE-TA / Entire certificate / Entire information) data
         // shall be included as part of the trust store
 
         // First, remove any previous entries
-        mbedtls_x509_crt_free(socket->security.cert.dane_ta_certs);
-        mbedtls_x509_crt_init(socket->security.cert.dane_ta_certs);
+        mbedtls_x509_crt_free(socket->cert_security.dane_ta_certs);
+        mbedtls_x509_crt_init(socket->cert_security.dane_ta_certs);
         // And now, add the relevant entries
         for (size_t i = 0;
-             i < socket->security.cert.dane_tlsa.array_element_count;
+             i < socket->cert_security.dane_tlsa.array_element_count;
              ++i) {
             const avs_net_socket_dane_tlsa_record_t *const entry =
-                    &socket->security.cert.dane_tlsa.array_ptr[i];
+                    &socket->cert_security.dane_tlsa.array_ptr[i];
             if (entry->certificate_usage
                             == AVS_NET_SOCKET_DANE_TRUST_ANCHOR_ASSERTION
                     && entry->selector == AVS_NET_SOCKET_DANE_CERTIFICATE
                     && entry->matching_type == AVS_NET_SOCKET_DANE_MATCH_FULL
                     && mbedtls_x509_crt_parse_der(
-                               socket->security.cert.dane_ta_certs,
+                               socket->cert_security.dane_ta_certs,
                                (const unsigned char *) entry->association_data,
                                entry->association_data_size)) {
                 return avs_errno(AVS_EPROTO);
@@ -668,8 +669,8 @@ static avs_error_t update_cert_configuration(ssl_socket_t *socket) {
 #        endif // WITH_DANE_SUPPORT
 
     mbedtls_ssl_conf_ca_chain(&socket->config,
-                              socket->security.cert.ca_cert,
-                              socket->security.cert.ca_crl);
+                              socket->cert_security.ca_cert,
+                              socket->cert_security.ca_crl);
     return AVS_OK;
 }
 #    else // AVS_COMMONS_WITH_AVS_CRYPTO_PKI
@@ -721,20 +722,26 @@ static int *init_psk_ciphersuites(
 
 static avs_error_t initialize_psk_security(
         ssl_socket_t *socket,
-        const avs_net_socket_tls_ciphersuites_t *tls_ciphersuites) {
+        const avs_net_socket_tls_ciphersuites_t *tls_ciphersuites,
+        const avs_net_psk_info_t *psk_info) {
     avs_free(socket->effective_ciphersuites);
     if (!(socket->effective_ciphersuites =
                   init_psk_ciphersuites(tls_ciphersuites))) {
         return avs_errno(AVS_ENOMEM);
     }
 
-    /* mbedtls_ssl_conf_psk() makes copies of the buffers */
-    /* We set the values directly instead, to avoid that. */
-    socket->config.psk = (unsigned char *) socket->security.psk.psk;
-    socket->config.psk_len = socket->security.psk.psk_size;
-    socket->config.psk_identity =
-            (unsigned char *) socket->security.psk.identity;
-    socket->config.psk_identity_len = socket->security.psk.identity_size;
+    switch (mbedtls_ssl_conf_psk(
+            &socket->config, (const unsigned char *) psk_info->psk,
+            psk_info->psk_size, (const unsigned char *) psk_info->identity,
+            psk_info->identity_size)) {
+    case MBEDTLS_ERR_SSL_ALLOC_FAILED:
+        LOG(ERROR, _("mbedtls_ssl_conf_psk() failed: out of memory"));
+        return avs_errno(AVS_ENOMEM);
+    case 0:
+        break;
+    default:
+        LOG(ERROR, _("mbedtls_ssl_conf_psk() failed: unknown error"));
+    }
 
     mbedtls_ssl_conf_ciphersuites(&socket->config,
                                   socket->effective_ciphersuites);
@@ -764,6 +771,45 @@ rng_function(void *ctx, unsigned char *out_buf, size_t out_buf_size) {
     return avs_crypto_prng_bytes((avs_crypto_prng_ctx_t *) ctx, out_buf,
                                  out_buf_size);
 }
+
+#    ifdef AVS_COMMONS_NET_WITH_TLS_SESSION_PERSISTENCE
+#        ifdef MBEDTLS_SSL_SRV_C
+static int fake_session_cache_set(void *socket_,
+#            if MBEDTLS_VERSION_NUMBER >= 0x03000000
+                                  unsigned char const *session_id,
+                                  size_t session_id_len,
+#            endif // MBEDTLS_VERSION_NUMBER >= 0x03000000
+                                  const mbedtls_ssl_session *session) {
+    ssl_socket_t *socket = (ssl_socket_t *) socket_;
+#            if MBEDTLS_VERSION_NUMBER >= 0x03000000
+    (void) session_id;
+    (void) session_id_len;
+#            endif // MBEDTLS_VERSION_NUMBER >= 0x03000000
+    (void) session;
+    // This will be called only if a new session has been established;
+    // not if one has been resumed.
+    socket->flags.session_fresh = true;
+    return 0;
+}
+#        else // MBEDTLS_SSL_SRV_C
+#            if MBEDTLS_VERSION_NUMBER >= 0x03000000
+#                error "TLS session persistence is only supported with Mbed TLS >=3.0 if MBEDTLS_SSL_SRV_C is enabled"
+#            endif // MBEDTLS_VERSION_NUMBER >= 0x03000000
+static bool sessions_equal(const mbedtls_ssl_session *left,
+                           const mbedtls_ssl_session *right) {
+    if (!left && !right) {
+        return true;
+    }
+    return left && right && left->ciphersuite == right->ciphersuite
+           && left->compression == right->compression
+#            ifdef MBEDTLS_HAVE_TIME
+           && left->start == right->start
+#            endif // MBEDTLS_HAVE_TIME
+           && left->id_len == right->id_len
+           && memcmp(left->id, right->id, left->id_len) == 0;
+}
+#        endif     // MBEDTLS_SSL_SRV_C
+#    endif         // AVS_COMMONS_NET_WITH_TLS_SESSION_PERSISTENCE
 
 static avs_error_t
 configure_ssl(ssl_socket_t *socket,
@@ -851,10 +897,20 @@ configure_ssl(ssl_socket_t *socket,
     }
 #    endif // MBEDTLS_SSL_DTLS_CONNECTION_ID
 
+#    ifdef MBEDTLS_SSL_SRV_C
+    // This is a hack. Session cache is normally used only for server-side TLS.
+    // We (ab)use this mechanism on the client side, taking advantage of the
+    // fact that Mbed TLS calls it if, and only if, a fresh session has been
+    // established, to determine session freshness if resuption is attempted.
+    mbedtls_ssl_conf_session_cache(&socket->config, socket, NULL,
+                                   fake_session_cache_set);
+#    endif // MBEDTLS_SSL_SRV_C
+
     avs_error_t err;
     switch (socket->security_mode) {
     case AVS_NET_SECURITY_PSK:
-        err = initialize_psk_security(socket, &configuration->ciphersuites);
+        err = initialize_psk_security(socket, &configuration->ciphersuites,
+                                      &configuration->security.data.psk);
         break;
     case AVS_NET_SECURITY_CERTIFICATE:
         err = initialize_cert_security(socket, &configuration->ciphersuites);
@@ -876,7 +932,8 @@ configure_ssl(ssl_socket_t *socket,
     return AVS_OK;
 }
 
-static avs_error_t update_ssl_endpoint_config(ssl_socket_t *socket) {
+static avs_error_t update_ssl_endpoint_config(ssl_socket_t *socket,
+                                              int *out_endpoint) {
     avs_net_socket_opt_value_t state_opt;
     avs_error_t err =
             avs_net_socket_get_opt((avs_net_socket_t *) socket,
@@ -886,12 +943,14 @@ static avs_error_t update_ssl_endpoint_config(ssl_socket_t *socket) {
         return err;
     }
     if (state_opt.state == AVS_NET_SOCKET_STATE_CONNECTED) {
+        *out_endpoint = MBEDTLS_SSL_IS_CLIENT;
         mbedtls_ssl_conf_endpoint(&socket->config, MBEDTLS_SSL_IS_CLIENT);
 #    ifdef MBEDTLS_SSL_SESSION_TICKETS
         mbedtls_ssl_conf_session_tickets(&socket->config,
                                          MBEDTLS_SSL_SESSION_TICKETS_ENABLED);
 #    endif // MBEDTLS_SSL_SESSION_TICKETS
     } else if (state_opt.state == AVS_NET_SOCKET_STATE_ACCEPTED) {
+        *out_endpoint = MBEDTLS_SSL_IS_SERVER;
         mbedtls_ssl_conf_endpoint(&socket->config, MBEDTLS_SSL_IS_SERVER);
 #    ifdef MBEDTLS_SSL_SESSION_TICKETS
         mbedtls_ssl_conf_session_tickets(&socket->config,
@@ -905,28 +964,11 @@ static avs_error_t update_ssl_endpoint_config(ssl_socket_t *socket) {
     return AVS_OK;
 }
 
-#    ifdef AVS_COMMONS_NET_WITH_TLS_SESSION_PERSISTENCE
-static bool sessions_equal(const mbedtls_ssl_session *left,
-                           const mbedtls_ssl_session *right) {
-    if (!left && !right) {
-        return true;
-    }
-    return left && right && left->ciphersuite == right->ciphersuite
-           && left->compression == right->compression
-#        ifdef MBEDTLS_HAVE_TIME
-           && left->start == right->start
-#        endif // MBEDTLS_HAVE_TIME
-           && left->id_len == right->id_len
-           && memcmp(left->id, right->id, left->id_len) == 0;
-}
-#    else // AVS_COMMONS_NET_WITH_TLS_SESSION_PERSISTENCE
-#        define sessions_equal(left, right) false
-#    endif // AVS_COMMONS_NET_WITH_TLS_SESSION_PERSISTENCE
-
 static avs_error_t start_ssl(ssl_socket_t *socket, const char *host) {
     int result;
+    int endpoint = 0;
     avs_error_t err;
-    if (avs_is_err((err = update_ssl_endpoint_config(socket)))) {
+    if (avs_is_err((err = update_ssl_endpoint_config(socket, &endpoint)))) {
         LOG(ERROR, _("could not initialize ssl context"));
         return err;
     }
@@ -993,7 +1035,7 @@ static avs_error_t start_ssl(ssl_socket_t *socket, const char *host) {
 
 #    ifdef AVS_COMMONS_NET_WITH_TLS_SESSION_PERSISTENCE
     if (socket->session_resumption_buffer
-            && socket->config.endpoint == MBEDTLS_SSL_IS_CLIENT) {
+            && endpoint == MBEDTLS_SSL_IS_CLIENT) {
         if (avs_is_err(_avs_net_mbedtls_session_restore(
                     &restored_session, socket->session_resumption_buffer,
                     socket->session_resumption_buffer_size))) {
@@ -1009,6 +1051,7 @@ static avs_error_t start_ssl(ssl_socket_t *socket, const char *host) {
             restore_session = true;
         }
     }
+    socket->flags.session_fresh = !restore_session;
 #    endif // AVS_COMMONS_NET_WITH_TLS_SESSION_PERSISTENCE
 
     socket->bio_error = AVS_OK;
@@ -1035,23 +1078,33 @@ static avs_error_t start_ssl(ssl_socket_t *socket, const char *host) {
         }
 #    endif // MBEDTLS_SSL_DTLS_CONNECTION_ID
 #    ifdef AVS_COMMONS_NET_WITH_TLS_SESSION_PERSISTENCE
-        if (socket->session_resumption_buffer
-                && socket->config.endpoint == MBEDTLS_SSL_IS_CLIENT) {
+#        ifndef MBEDTLS_SSL_SRV_C
+        if (!socket->flags.session_fresh
+                && !sessions_equal(get_context(socket)->session,
+                                   &restored_session)) {
+            socket->flags.session_fresh = true;
+        }
+#        endif // MBEDTLS_SSL_SRV_C
+        if (socket->session_resumption_buffer && socket->flags.session_fresh
+                && endpoint == MBEDTLS_SSL_IS_CLIENT) {
             // We rely on session renegotation being disabled in
             // configuration.
-            _avs_net_mbedtls_session_save(
-                    get_context(socket)->session,
-                    socket->session_resumption_buffer,
-                    socket->session_resumption_buffer_size);
+            mbedtls_ssl_session session;
+            mbedtls_ssl_session_init(&session);
+            if (!mbedtls_ssl_get_session(get_context(socket), &session)) {
+                _avs_net_mbedtls_session_save(
+                        &session, socket->session_resumption_buffer,
+                        socket->session_resumption_buffer_size);
+            }
+            mbedtls_ssl_session_free(&session);
         }
+#    else  // AVS_COMMONS_NET_WITH_TLS_SESSION_PERSISTENCE
+        socket->flags.session_fresh = true;
 #    endif // AVS_COMMONS_NET_WITH_TLS_SESSION_PERSISTENCE
-        if ((socket->flags.session_restored =
-                     (restore_session
-                      && sessions_equal(get_context(socket)->session,
-                                        &restored_session)))) {
-            LOG(TRACE, _("handshake success: session restored"));
-        } else {
+        if (socket->flags.session_fresh) {
             LOG(TRACE, _("handshake success: new session started"));
+        } else {
+            LOG(TRACE, _("handshake success: session restored"));
         }
     } else {
         if (avs_is_ok((err = return_alert_if_any(socket)))) {
@@ -1212,12 +1265,6 @@ static void cleanup_security_cert(ssl_socket_certs_t *certs) {
 #        define cleanup_security_cert(...) (void) 0
 #    endif // AVS_COMMONS_WITH_AVS_CRYPTO_PKI
 
-#    ifdef AVS_COMMONS_NET_WITH_PSK
-#        define cleanup_security_psk _avs_net_psk_cleanup
-#    else // AVS_COMMONS_NET_WITH_PSK
-#        define cleanup_security_psk(...) (void) 0
-#    endif // AVS_COMMONS_NET_WITH_PSK
-
 static avs_error_t cleanup_ssl(avs_net_socket_t **socket_) {
     ssl_socket_t **socket = (ssl_socket_t **) socket_;
     LOG(TRACE, _("cleanup_ssl(*socket=") "%p" _(")"), (void *) *socket);
@@ -1225,23 +1272,11 @@ static avs_error_t cleanup_ssl(avs_net_socket_t **socket_) {
     avs_error_t err = close_ssl(*socket_);
     add_err(&err, avs_net_socket_cleanup(&(*socket)->backend_socket));
 
-    switch ((*socket)->security_mode) {
-    case AVS_NET_SECURITY_PSK:
-        cleanup_security_psk(&(*socket)->security.psk);
-        break;
-    case AVS_NET_SECURITY_CERTIFICATE:
-        cleanup_security_cert(&(*socket)->security.cert);
-        break;
+    if ((*socket)->security_mode == AVS_NET_SECURITY_CERTIFICATE) {
+        cleanup_security_cert(&(*socket)->cert_security);
     }
     avs_free((*socket)->effective_ciphersuites);
 
-#    ifdef AVS_COMMONS_NET_WITH_PSK
-    /* Detach the uncopied PSK values */
-    (*socket)->config.psk = NULL;
-    (*socket)->config.psk_len = 0;
-    (*socket)->config.psk_identity = NULL;
-    (*socket)->config.psk_identity_len = 0;
-#    endif // AVS_COMMONS_NET_WITH_PSK
     mbedtls_ssl_config_free(&(*socket)->config);
 
     avs_free(*socket);
@@ -1260,15 +1295,23 @@ static int rebuild_client_cert_chain_verify_cb(void *last_configured_cert_,
 
     // We (ab)use it to rebuild the client certificate chain
 
+    const unsigned char *raw_crt = NULL;
+    size_t raw_crt_size = 0;
+    _avs_crypto_mbedtls_x509_crt_get_raw(crt, &raw_crt, &raw_crt_size);
+
     (void) verify_result_flags;
     mbedtls_x509_crt *last_configured_cert =
             (mbedtls_x509_crt *) last_configured_cert_;
     if (index == 0) {
+#        ifndef NDEBUG
+        const unsigned char *last_raw_crt = NULL;
+        size_t last_raw_crt_size = 0;
+        _avs_crypto_mbedtls_x509_crt_get_raw(last_configured_cert,
+                                             &last_raw_crt, &last_raw_crt_size);
         assert(crt == last_configured_cert
-               || (crt->raw.len == last_configured_cert->raw.len
-                   && memcmp(crt->raw.p, last_configured_cert->raw.p,
-                             crt->raw.len)
-                              == 0));
+               || (raw_crt_size == last_raw_crt_size
+                   && memcmp(raw_crt, last_raw_crt, raw_crt_size) == 0));
+#        endif // NDEBUG
         return 0;
     }
 
@@ -1280,35 +1323,42 @@ static int rebuild_client_cert_chain_verify_cb(void *last_configured_cert_,
         return MBEDTLS_ERR_X509_ALLOC_FAILED;
     }
     mbedtls_x509_crt_init(crt_copy);
-    int result = mbedtls_x509_crt_parse_der(crt_copy, crt->raw.p, crt->raw.len);
+    int result = mbedtls_x509_crt_parse_der(crt_copy, raw_crt, raw_crt_size);
     if (result) {
         mbedtls_x509_crt_free(crt_copy);
         mbedtls_free(crt_copy);
         return result;
     }
-    assert(crt_copy->version != 0);
-    assert(!crt_copy->next);
+    assert(_avs_crypto_mbedtls_x509_crt_present(crt_copy));
+    assert(!*_avs_crypto_mbedtls_x509_crt_next_ptr(crt_copy));
 
     // Insert it after the last configured one
-    crt_copy->next = last_configured_cert->next;
-    last_configured_cert->next = crt_copy;
+    *_avs_crypto_mbedtls_x509_crt_next_ptr(crt_copy) =
+            *_avs_crypto_mbedtls_x509_crt_next_ptr(last_configured_cert);
+    *_avs_crypto_mbedtls_x509_crt_next_ptr(last_configured_cert) = crt_copy;
 
     return 0;
 }
 
-static bool cert_makes_cycle_in_chain(const mbedtls_x509_crt *first_cert,
+static bool cert_makes_cycle_in_chain(mbedtls_x509_crt *first_cert,
                                       const mbedtls_x509_crt *checked_cert) {
-    const mbedtls_x509_crt *cert = first_cert;
-    while (cert && cert->version != 0) {
+    const unsigned char *raw_checked_cert = NULL;
+    size_t raw_checked_cert_size = 0;
+    _avs_crypto_mbedtls_x509_crt_get_raw(checked_cert, &raw_checked_cert,
+                                         &raw_checked_cert_size);
+    mbedtls_x509_crt *cert = first_cert;
+    while (cert && _avs_crypto_mbedtls_x509_crt_present(cert)) {
         if (cert == checked_cert) {
             return false;
         }
-        if (cert->raw.len == checked_cert->raw.len
-                && memcmp(cert->raw.p, checked_cert->raw.p, cert->raw.len)
-                               == 0) {
+        const unsigned char *raw_cert = NULL;
+        size_t raw_cert_size = 0;
+        _avs_crypto_mbedtls_x509_crt_get_raw(cert, &raw_cert, &raw_cert_size);
+        if (raw_cert_size == raw_checked_cert_size
+                && memcmp(raw_cert, raw_checked_cert, raw_cert_size) == 0) {
             return true;
         }
-        cert = cert->next;
+        cert = *_avs_crypto_mbedtls_x509_crt_next_ptr(cert);
     }
     AVS_UNREACHABLE("checked_cert pointer not found in chain");
     return false;
@@ -1318,10 +1368,11 @@ static avs_error_t rebuild_client_cert_chain(mbedtls_x509_crt *trust_store,
                                              mbedtls_x509_crt *first_cert) {
     assert(trust_store);
     assert(first_cert);
-    assert(first_cert->version != 0);
+    assert(_avs_crypto_mbedtls_x509_crt_present(first_cert));
     mbedtls_x509_crt *last_cert = first_cert;
-    while (last_cert->version != 0 && last_cert->next) {
-        last_cert = last_cert->next;
+    while (_avs_crypto_mbedtls_x509_crt_present(last_cert)
+           && *_avs_crypto_mbedtls_x509_crt_next_ptr(last_cert)) {
+        last_cert = *_avs_crypto_mbedtls_x509_crt_next_ptr(last_cert);
     }
     // Mbed TLS' cert verification stops at the first cert found in trust store,
     // so we repeat the procedure until no new certs are added
@@ -1331,7 +1382,8 @@ static avs_error_t rebuild_client_cert_chain(mbedtls_x509_crt *trust_store,
                 rebuild_client_cert_chain_verify_cb, last_cert);
         if (result == MBEDTLS_ERR_X509_ALLOC_FAILED) {
             return avs_errno(AVS_ENOMEM);
-        } else if (last_cert->version == 0 || !last_cert->next) {
+        } else if (!_avs_crypto_mbedtls_x509_crt_present(last_cert)
+                   || !*_avs_crypto_mbedtls_x509_crt_next_ptr(last_cert)) {
             // No new certificates added - stop here
             // NOTE: mbedtls_x509_crt_verify() may have failed; we ignore that
             // condition - if certificate validation failed we just won't add
@@ -1340,21 +1392,28 @@ static avs_error_t rebuild_client_cert_chain(mbedtls_x509_crt *trust_store,
         }
         // New certificates added - check for cycles
         // and update the last_cert pointer
-        while (last_cert->version != 0 && last_cert->next) {
-            if (last_cert->next->version != 0
-                    && cert_makes_cycle_in_chain(first_cert, last_cert->next)) {
+        while (_avs_crypto_mbedtls_x509_crt_present(last_cert)
+               && *_avs_crypto_mbedtls_x509_crt_next_ptr(last_cert)) {
+            if (_avs_crypto_mbedtls_x509_crt_present(
+                        *_avs_crypto_mbedtls_x509_crt_next_ptr(last_cert))
+                    && cert_makes_cycle_in_chain(
+                               first_cert,
+                               *_avs_crypto_mbedtls_x509_crt_next_ptr(
+                                       last_cert))) {
                 // Cycle found - let's remove it and finish
-                _avs_crypto_mbedtls_x509_crt_cleanup(&last_cert->next);
+                _avs_crypto_mbedtls_x509_crt_cleanup(
+                        _avs_crypto_mbedtls_x509_crt_next_ptr(last_cert));
                 return AVS_OK;
             }
-            last_cert = last_cert->next;
+            last_cert = *_avs_crypto_mbedtls_x509_crt_next_ptr(last_cert);
         }
     }
 }
 
 static avs_error_t
 configure_ssl_certs(ssl_socket_certs_t *certs,
-                    const avs_net_certificate_info_t *cert_info) {
+                    const avs_net_certificate_info_t *cert_info,
+                    avs_crypto_prng_ctx_t *prng_ctx) {
     LOG(TRACE, _("configure_ssl_certs"));
 
     avs_error_t err = AVS_OK;
@@ -1375,15 +1434,18 @@ configure_ssl_certs(ssl_socket_certs_t *certs,
                                     &cert_info->client_cert)))) {
                 LOG(ERROR, _("could not load client certificate"));
             } else if (cert_info->rebuild_client_cert_chain && ca_certs
-                       && certs->client_cert && certs->client_cert->version != 0
+                       && certs->client_cert
+                       && _avs_crypto_mbedtls_x509_crt_present(
+                                  certs->client_cert)
                        && avs_is_err((err = rebuild_client_cert_chain(
                                               ca_certs, certs->client_cert)))) {
                 LOG(ERROR, _("could not rebuild client certificate chain"));
             }
             if (avs_is_ok(err)
-                    && avs_is_err((err = _avs_crypto_mbedtls_load_private_key(
-                                           &certs->client_key,
-                                           &cert_info->client_key)))) {
+                    && avs_is_err(
+                               (err = _avs_crypto_mbedtls_load_private_key(
+                                        &certs->client_key,
+                                        &cert_info->client_key, prng_ctx)))) {
                 LOG(ERROR, _("could not load client private key"));
             }
         } else {
@@ -1412,7 +1474,7 @@ configure_ssl_certs(ssl_socket_certs_t *certs,
 #        ifdef WITH_DANE_SUPPORT
         mbedtls_x509_crt **insert_ptr = &certs->ca_cert;
         while (*insert_ptr) {
-            insert_ptr = &(*insert_ptr)->next;
+            insert_ptr = _avs_crypto_mbedtls_x509_crt_next_ptr(*insert_ptr);
         }
         if (!(*insert_ptr = (mbedtls_x509_crt *) mbedtls_calloc(
                       1, sizeof(**insert_ptr)))) {
@@ -1436,36 +1498,27 @@ configure_ssl_certs(ssl_socket_certs_t *certs,
             (LOG(ERROR, _("X.509 support disabled")), avs_errno(AVS_ENOTSUP))
 #    endif // AVS_COMMONS_WITH_AVS_CRYPTO_PKI
 
-#    ifdef AVS_COMMONS_NET_WITH_PSK
-static avs_error_t configure_ssl_psk(ssl_socket_t *socket,
-                                     const avs_net_psk_info_t *psk) {
-    LOG(TRACE, _("configure_ssl_psk"));
-    return _avs_net_psk_copy(&socket->security.psk, psk);
-}
-#    else // AVS_COMMONS_NET_WITH_PSK
-#        define configure_ssl_psk(...) \
-            (LOG(ERROR, _("PSK support disabled")), avs_errno(AVS_ENOTSUP))
-#    endif // AVS_COMMONS_NET_WITH_PSK
-
 static avs_error_t
 initialize_ssl_socket(ssl_socket_t *socket,
                       avs_net_socket_type_t backend_type,
                       const avs_net_ssl_configuration_t *configuration) {
-    avs_error_t err;
+    avs_error_t err = AVS_OK;
     *(const avs_net_socket_v_table_t **) (intptr_t) &socket->operations =
             &ssl_vtable;
 
+    socket->flags.session_fresh = true;
     socket->backend_type = backend_type;
     socket->backend_configuration = configuration->backend_configuration;
 
     socket->security_mode = configuration->security.mode;
     switch (configuration->security.mode) {
     case AVS_NET_SECURITY_PSK:
-        err = configure_ssl_psk(socket, &configuration->security.data.psk);
+        // do nothing right here
         break;
     case AVS_NET_SECURITY_CERTIFICATE:
-        err = configure_ssl_certs(&socket->security.cert,
-                                  &configuration->security.data.cert);
+        err = configure_ssl_certs(&socket->cert_security,
+                                  &configuration->security.data.cert,
+                                  configuration->prng_ctx);
         break;
     default:
         AVS_UNREACHABLE("invalid enum value");

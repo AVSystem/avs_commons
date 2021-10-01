@@ -36,6 +36,7 @@
 #    include <avsystem/commons/avs_stream.h>
 #    include <avsystem/commons/avs_stream_inbuf.h>
 #    include <avsystem/commons/avs_stream_outbuf.h>
+#    include <avsystem/commons/avs_utils.h>
 
 #    include "avs_mbedtls_persistence.h"
 
@@ -43,9 +44,22 @@
 
 VISIBILITY_SOURCE_BEGIN
 
-#    if MBEDTLS_VERSION_NUMBER < 0x02030000
+static bool is_all_zeros(const void *buf, size_t buf_size) {
+    for (size_t i = 0; i < buf_size; ++i) {
+        if (((const char *) buf)[i]) {
+            return false;
+        }
+    }
+    return true;
+}
+
+#    if MBEDTLS_VERSION_NUMBER < 0x02130000
+
+// Mbed TLS <2.19 - use custom persistence format
+
+#        if MBEDTLS_VERSION_NUMBER < 0x02030000
 typedef time_t mbedtls_time_t; // mbed TLS < 2.3 does not have mbedtls_time_t
-#    endif
+#        endif
 
 /**
  * Persistence format summary
@@ -79,7 +93,7 @@ static const char PERSISTENCE_MAGIC[] = { 'M', 'S', 'P', '\0' };
  * to serious problems if we try to restore it on another platform and/or
  * another mbed TLS version.
  */
-#    ifdef AVS_COMMONS_WITH_AVS_CRYPTO_PKI
+#        ifdef AVS_COMMONS_WITH_AVS_CRYPTO_PKI
 static avs_error_t handle_cert_persistence(avs_persistence_context_t *ctx,
                                            mbedtls_x509_crt **cert_ptr) {
     void *data = (*cert_ptr ? (*cert_ptr)->raw.p : NULL);
@@ -110,7 +124,7 @@ static avs_error_t handle_cert_persistence(avs_persistence_context_t *ctx,
     }
     return err;
 }
-#    else
+#        else
 static avs_error_t handle_cert_persistence(avs_persistence_context_t *ctx,
                                            mbedtls_x509_crt **cert_ptr) {
     (void) cert_ptr;
@@ -130,7 +144,7 @@ static avs_error_t handle_cert_persistence(avs_persistence_context_t *ctx,
     }
     return AVS_OK;
 }
-#    endif // AVS_COMMONS_WITH_AVS_CRYPTO_PKI
+#        endif // AVS_COMMONS_WITH_AVS_CRYPTO_PKI
 
 static avs_error_t handle_session_persistence(avs_persistence_context_t *ctx,
                                               mbedtls_ssl_session *session) {
@@ -142,39 +156,39 @@ static avs_error_t handle_session_persistence(avs_persistence_context_t *ctx,
     // As you can see, mbedtls_ssl_session structure is crazy with a ton of
     // #ifdefs we need to replicate...
     mbedtls_x509_crt **peer_cert_ptr =
-#    if defined(MBEDTLS_X509_CRT_PARSE_C)           \
-            && (MBEDTLS_VERSION_NUMBER < 0x02110000 \
-                || defined(MBEDTLS_SSL_KEEP_PEER_CERTIFICATE))
+#        if defined(MBEDTLS_X509_CRT_PARSE_C)           \
+                && (MBEDTLS_VERSION_NUMBER < 0x02110000 \
+                    || defined(MBEDTLS_SSL_KEEP_PEER_CERTIFICATE))
             &session->peer_cert;
-#    else  // defined(MBEDTLS_X509_CRT_PARSE_C) && (MBEDTLS_VERSION_NUMBER <
-           // 0x02110000 || defined(MBEDTLS_SSL_KEEP_PEER_CERTIFICATE))
+#        else  // defined(MBEDTLS_X509_CRT_PARSE_C) && (MBEDTLS_VERSION_NUMBER <
+            // 0x02110000 || defined(MBEDTLS_SSL_KEEP_PEER_CERTIFICATE))
             &(mbedtls_x509_crt *[]){ NULL }[0];
-#    endif // defined(MBEDTLS_X509_CRT_PARSE_C) && (MBEDTLS_VERSION_NUMBER <
-           // 0x02110000 || defined(MBEDTLS_SSL_KEEP_PEER_CERTIFICATE))
+#        endif // defined(MBEDTLS_X509_CRT_PARSE_C) && (MBEDTLS_VERSION_NUMBER <
+               // 0x02110000 || defined(MBEDTLS_SSL_KEEP_PEER_CERTIFICATE))
     uint8_t *mfl_code_ptr =
-#    ifdef MBEDTLS_SSL_MAX_FRAGMENT_LENGTH
+#        ifdef MBEDTLS_SSL_MAX_FRAGMENT_LENGTH
             &session->mfl_code;
-#    else  // MBEDTLS_SSL_MAX_FRAGMENT_LENGTH
+#        else  // MBEDTLS_SSL_MAX_FRAGMENT_LENGTH
             &(uint8_t[]){ 0 }[0];
-#    endif // MBEDTLS_SSL_MAX_FRAGMENT_LENGTH
+#        endif // MBEDTLS_SSL_MAX_FRAGMENT_LENGTH
     bool trunc_hmac = false;
     bool encrypt_then_mac = false;
 
     if (avs_persistence_direction(ctx) == AVS_PERSISTENCE_STORE) {
-#    ifdef MBEDTLS_HAVE_TIME
+#        ifdef MBEDTLS_HAVE_TIME
         session_start = avs_time_real_from_scalar(session->start, AVS_TIME_S);
-#    else  // MBEDTLS_HAVE_TIME
+#        else  // MBEDTLS_HAVE_TIME
         session_start = avs_time_real_now();
-#    endif // MBEDTLS_HAVE_TIME
+#        endif // MBEDTLS_HAVE_TIME
         ciphersuite = (int32_t) session->ciphersuite;
         compression = (int32_t) session->compression;
         id_len = (uint8_t) session->id_len;
-#    ifdef MBEDTLS_SSL_TRUNCATED_HMAC
+#        ifdef MBEDTLS_SSL_TRUNCATED_HMAC
         trunc_hmac = !!session->trunc_hmac;
-#    endif // MBEDTLS_SSL_TRUNCATED_HMAC
-#    ifdef MBEDTLS_SSL_ENCRYPT_THEN_MAC
+#        endif // MBEDTLS_SSL_TRUNCATED_HMAC
+#        ifdef MBEDTLS_SSL_ENCRYPT_THEN_MAC
         encrypt_then_mac = !!session->encrypt_then_mac;
-#    endif // MBEDTLS_SSL_ENCRYPT_THEN_MAC
+#        endif // MBEDTLS_SSL_ENCRYPT_THEN_MAC
     }
 
     AVS_STATIC_ASSERT(sizeof(session->id) == 32, session_id_is_32bytes);
@@ -201,48 +215,44 @@ static avs_error_t handle_session_persistence(avs_persistence_context_t *ctx,
 
     if (avs_is_ok(err)
             && avs_persistence_direction(ctx) == AVS_PERSISTENCE_RESTORE) {
-#    ifdef MBEDTLS_HAVE_TIME
+#        ifdef MBEDTLS_HAVE_TIME
         session->start =
                 (mbedtls_time_t) session_start.since_real_epoch.seconds;
-#    endif // MBEDTLS_HAVE_TIME
+#        endif // MBEDTLS_HAVE_TIME
         session->ciphersuite = (int) ciphersuite;
         session->compression = (int) compression;
         session->id_len = (size_t) id_len;
-#    ifdef MBEDTLS_SSL_TRUNCATED_HMAC
+#        ifdef MBEDTLS_SSL_TRUNCATED_HMAC
         session->trunc_hmac = trunc_hmac;
-#    endif // MBEDTLS_SSL_TRUNCATED_HMAC
-#    ifdef MBEDTLS_SSL_ENCRYPT_THEN_MAC
+#        endif // MBEDTLS_SSL_TRUNCATED_HMAC
+#        ifdef MBEDTLS_SSL_ENCRYPT_THEN_MAC
         session->encrypt_then_mac = encrypt_then_mac;
-#    endif // MBEDTLS_SSL_ENCRYPT_THEN_MAC
+#        endif // MBEDTLS_SSL_ENCRYPT_THEN_MAC
     }
 
-#    if defined(AVS_COMMONS_WITH_AVS_CRYPTO_PKI) \
-            && !defined(MBEDTLS_X509_CRT_PARSE_C)
+#        if defined(AVS_COMMONS_WITH_AVS_CRYPTO_PKI) \
+                && !defined(MBEDTLS_X509_CRT_PARSE_C)
     if (*peer_cert_ptr) {
         mbedtls_x509_crt_free(*peer_cert_ptr);
         mbedtls_free(*peer_cert_ptr);
     }
-#    endif // AVS_COMMONS_WITH_AVS_CRYPTO_PKI && !MBEDTLS_X509_CRT_PARSE_C
+#        endif // AVS_COMMONS_WITH_AVS_CRYPTO_PKI && !MBEDTLS_X509_CRT_PARSE_C
     return err;
 }
 
 avs_error_t _avs_net_mbedtls_session_save(mbedtls_ssl_session *session,
                                           void *out_buf,
                                           size_t out_buf_size) {
-    avs_persistence_context_t ctx;
     avs_stream_outbuf_t out_buf_stream = AVS_STREAM_OUTBUF_STATIC_INITIALIZER;
     avs_stream_outbuf_set_buffer(&out_buf_stream, out_buf, out_buf_size);
-    avs_error_t err =
-            avs_stream_write((avs_stream_t *) &out_buf_stream,
-                             PERSISTENCE_MAGIC, sizeof(PERSISTENCE_MAGIC));
-    if (avs_is_err(err)) {
+    avs_persistence_context_t ctx = avs_persistence_store_context_create(
+            (avs_stream_t *) &out_buf_stream);
+    avs_error_t err;
+    if (avs_is_err((err = avs_persistence_magic(&ctx, PERSISTENCE_MAGIC,
+                                                sizeof(PERSISTENCE_MAGIC))))) {
         LOG(ERROR, _("Could not write session magic"));
-    } else {
-        ctx = avs_persistence_store_context_create(
-                (avs_stream_t *) &out_buf_stream);
-        if (avs_is_err((err = handle_session_persistence(&ctx, session)))) {
-            LOG(ERROR, _("Could not persist session data"));
-        }
+    } else if (avs_is_err((err = handle_session_persistence(&ctx, session)))) {
+        LOG(ERROR, _("Could not persist session data"));
     }
     // ensure that everything after the persisted data is zeroes, to make
     // "compression" of persistent storage possible; see docs for
@@ -252,15 +262,6 @@ avs_error_t _avs_net_mbedtls_session_save(mbedtls_ssl_session *session,
     assert(clear_start <= out_buf_size);
     memset((char *) out_buf + clear_start, 0, out_buf_size - clear_start);
     return err;
-}
-
-static bool is_all_zeros(const void *buf, size_t buf_size) {
-    for (size_t i = 0; i < buf_size; ++i) {
-        if (((const char *) buf)[i]) {
-            return false;
-        }
-    }
-    return true;
 }
 
 avs_error_t _avs_net_mbedtls_session_restore(mbedtls_ssl_session *out_session,
@@ -284,6 +285,82 @@ avs_error_t _avs_net_mbedtls_session_restore(mbedtls_ssl_session *out_session,
     }
     return err;
 }
+
+#    else // MBEDTLS_VERSION_NUMBER < 0x02130000
+
+// Mbed TLS >=2.19 - wrap native Mbed TLS session persistence routines
+
+static const char PERSISTENCE_MAGIC[] = { 'M', 'S', 'P', '\1' };
+static const size_t PERSISTENCE_HEADER_SIZE =
+        sizeof(PERSISTENCE_MAGIC) + sizeof(uint32_t);
+
+avs_error_t _avs_net_mbedtls_session_save(mbedtls_ssl_session *session,
+                                          void *out_buf,
+                                          size_t out_buf_size) {
+    int result;
+    size_t bytes_written = 0;
+    if (out_buf_size < PERSISTENCE_HEADER_SIZE
+            || (result = mbedtls_ssl_session_save(
+                        session,
+                        (unsigned char *) out_buf + PERSISTENCE_HEADER_SIZE,
+                        AVS_MIN(out_buf_size - PERSISTENCE_HEADER_SIZE,
+                                UINT32_MAX),
+                        &bytes_written))
+                           == MBEDTLS_ERR_SSL_BUFFER_TOO_SMALL) {
+        LOG(ERROR, _("Could not persist session: buffer too small"));
+        return avs_errno(AVS_EMSGSIZE);
+    }
+    if (result) {
+        LOG(ERROR, _("Could not persist session: unknown error"));
+        return avs_errno(AVS_EIO);
+    }
+    uint32_t bytes_written32 = (uint32_t) bytes_written;
+    assert(bytes_written == bytes_written32);
+    memcpy(out_buf, PERSISTENCE_MAGIC, sizeof(PERSISTENCE_MAGIC));
+    bytes_written32 = avs_convert_be32(bytes_written32);
+    memcpy((char *) out_buf + sizeof(PERSISTENCE_MAGIC),
+           &bytes_written32,
+           sizeof(bytes_written32));
+    return AVS_OK;
+}
+
+avs_error_t _avs_net_mbedtls_session_restore(mbedtls_ssl_session *out_session,
+                                             const void *buf,
+                                             size_t buf_size) {
+    if (is_all_zeros(buf, buf_size)) {
+        LOG(TRACE, _("Session data empty, not attempting restore"));
+        return avs_errno(AVS_EBADMSG);
+    }
+    if (buf_size < PERSISTENCE_HEADER_SIZE
+            || memcmp(buf, PERSISTENCE_MAGIC, sizeof(PERSISTENCE_MAGIC))) {
+        LOG(ERROR, _("Could not restore session: invalid magic"));
+        return avs_errno(AVS_EBADMSG);
+    }
+    uint32_t bytes_used;
+    memcpy(&bytes_used,
+           (const char *) buf + sizeof(PERSISTENCE_MAGIC),
+           sizeof(bytes_used));
+    bytes_used = avs_convert_be32(bytes_used);
+    if (bytes_used + PERSISTENCE_HEADER_SIZE > buf_size) {
+        LOG(ERROR, _("Could not restore session: malformed header"));
+        return avs_errno(AVS_EBADMSG);
+    }
+    switch (mbedtls_ssl_session_load(out_session,
+                                     (const unsigned char *) buf
+                                             + PERSISTENCE_HEADER_SIZE,
+                                     bytes_used)) {
+    case MBEDTLS_ERR_SSL_ALLOC_FAILED:
+        LOG(ERROR, _("Could not restore session: out of memory"));
+        return avs_errno(AVS_ENOMEM);
+    case 0:
+        return AVS_OK;
+    default:
+        LOG(ERROR, _("Could not restore session: invalid data"));
+        return avs_errno(AVS_EBADMSG);
+    }
+}
+
+#    endif // MBEDTLS_VERSION_NUMBER < 0x02130000
 
 #endif // defined(AVS_COMMONS_WITH_AVS_NET) && defined(AVS_COMMONS_WITH_MBEDTLS)
        // && defined(AVS_COMMONS_NET_WITH_TLS_SESSION_PERSISTENCE)

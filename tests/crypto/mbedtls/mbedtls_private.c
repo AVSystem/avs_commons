@@ -88,14 +88,15 @@ AVS_UNIT_TEST(convert_x509_time, example_date) {
     // year_to_days() and month_to_days() are tested thoroughly above;
     // let's test a single complete date and time
     // to check that their results are combined properly
-    avs_time_real_t result = convert_x509_time(&(const mbedtls_x509_time) {
-        .year = 2005,
-        .mon = 4,
-        .day = 2,
-        .hour = 19,
-        .min = 37,
-        .sec = 1
-    });
+    avs_time_real_t result = _avs_crypto_mbedtls_x509_time_to_avs_time(
+            &(const mbedtls_x509_time) {
+                .MBEDTLS_PRIVATE(year) = 2005,
+                .MBEDTLS_PRIVATE(mon) = 4,
+                .MBEDTLS_PRIVATE(day) = 2,
+                .MBEDTLS_PRIVATE(hour) = 19,
+                .MBEDTLS_PRIVATE(min) = 37,
+                .MBEDTLS_PRIVATE(sec) = 1
+            });
 
     // $ env LC_ALL=C date '+%s' -d '2005-04-02 21:37:01 CEST'
     // 1112470621

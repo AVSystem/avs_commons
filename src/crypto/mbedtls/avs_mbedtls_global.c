@@ -18,14 +18,28 @@
 
 #if defined(AVS_COMMONS_WITH_AVS_CRYPTO) && defined(AVS_COMMONS_WITH_MBEDTLS)
 
+#    include <inttypes.h>
+
 #    include "avs_mbedtls_engine.h"
 
 #    include "../avs_crypto_global.h"
+
+#    define MODULE_NAME avs_crypto_global
+#    include <avs_x_log_config.h>
 
 VISIBILITY_SOURCE_BEGIN
 
 avs_error_t _avs_crypto_initialize_global_state() {
     avs_error_t err = AVS_OK;
+#    ifdef MBEDTLS_USE_PSA_CRYPTO
+    // NOTE: When MBEDTLS_USE_PSA_CRYPTO is enabled, psa_crypto_init() is
+    // required even when only using the regular Mbed TLS API.
+    psa_status_t status = psa_crypto_init();
+    if (status != PSA_SUCCESS) {
+        LOG(ERROR, _("psa_crypto_init() failed: ") "%" PRId32, status);
+        return avs_errno(AVS_EPROTO);
+    }
+#    endif // MBEDTLS_USE_PSA_CRYPTO
 #    ifdef AVS_COMMONS_WITH_AVS_CRYPTO_ENGINE
     err = _avs_crypto_mbedtls_engine_initialize_global_state();
 #    endif // AVS_COMMONS_WITH_AVS_CRYPTO_ENGINE

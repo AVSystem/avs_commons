@@ -150,91 +150,7 @@ void avs_log_set_extended_handler(avs_log_extended_handler_t *log_handler);
  */
 void avs_log_reset(void);
 
-/**
- * @name Logging subsystem internals
- */
-/**@{*/
-int avs_log_should_log__(avs_log_level_t level, const char *module);
-
-void avs_log_internal_forced_v__(avs_log_level_t level,
-                                 const char *module,
-                                 const char *file,
-                                 unsigned line,
-                                 const char *msg,
-                                 va_list ap);
-
-void avs_log_internal_v__(avs_log_level_t level,
-                          const char *module,
-                          const char *file,
-                          unsigned line,
-                          const char *msg,
-                          va_list ap);
-
-void avs_log_internal_forced_l__(avs_log_level_t level,
-                                 const char *module,
-                                 const char *file,
-                                 unsigned line,
-                                 const char *msg,
-                                 ...) AVS_F_PRINTF(5, 6);
-
-void avs_log_internal_l__(avs_log_level_t level,
-                          const char *module,
-                          const char *file,
-                          unsigned line,
-                          const char *msg,
-                          ...) AVS_F_PRINTF(5, 6);
-
-#ifndef AVS_COMMONS_WITH_MICRO_LOGS
-#    define AVS_DISPOSABLE_LOG(Arg) Arg
-#else
-#    define AVS_DISPOSABLE_LOG(Arg) " "
-#endif // AVS_COMMONS_WITH_MICRO_LOGS
-
-#define AVS_LOG_IMPL__(Level, Variant, ModuleStr, ...) \
-    avs_log_internal_##Variant##__(                    \
-            Level, ModuleStr, __FILE__, __LINE__, __VA_ARGS__)
-
-#define AVS_LOG_LAZY_IMPL__(Level, Variant, ModuleStr, ...)               \
-    (avs_log_should_log__(Level, ModuleStr)                               \
-             ? avs_log_internal_forced_##Variant##__(                     \
-                       Level, ModuleStr, __FILE__, __LINE__, __VA_ARGS__) \
-             : (void) 0)
-
-#define AVS_LOG__TRACE(...) AVS_LOG_IMPL__(AVS_LOG_TRACE, __VA_ARGS__)
-#define AVS_LOG__DEBUG(...) AVS_LOG_IMPL__(AVS_LOG_DEBUG, __VA_ARGS__)
-#define AVS_LOG__INFO(...) AVS_LOG_IMPL__(AVS_LOG_INFO, __VA_ARGS__)
-#define AVS_LOG__WARNING(...) AVS_LOG_IMPL__(AVS_LOG_WARNING, __VA_ARGS__)
-#define AVS_LOG__ERROR(...) AVS_LOG_IMPL__(AVS_LOG_ERROR, __VA_ARGS__)
-
-#define AVS_LOG__LAZY_TRACE(...) AVS_LOG_LAZY_IMPL__(AVS_LOG_TRACE, __VA_ARGS__)
-#define AVS_LOG__LAZY_DEBUG(...) AVS_LOG_LAZY_IMPL__(AVS_LOG_DEBUG, __VA_ARGS__)
-#define AVS_LOG__LAZY_INFO(...) AVS_LOG_LAZY_IMPL__(AVS_LOG_INFO, __VA_ARGS__)
-#define AVS_LOG__LAZY_WARNING(...) \
-    AVS_LOG_LAZY_IMPL__(AVS_LOG_WARNING, __VA_ARGS__)
-#define AVS_LOG__LAZY_ERROR(...) AVS_LOG_LAZY_IMPL__(AVS_LOG_ERROR, __VA_ARGS__)
-
-/* enable compiling-in TRACE messages */
-#ifndef AVS_LOG_WITH_TRACE
-#    undef AVS_LOG__TRACE
-#    define AVS_LOG__TRACE(...) \
-        ((void) sizeof(AVS_LOG_IMPL__(AVS_LOG_TRACE, __VA_ARGS__), 0))
-#    undef AVS_LOG__LAZY_TRACE
-#    define AVS_LOG__LAZY_TRACE(...) \
-        ((void) sizeof(AVS_LOG_LAZY_IMPL__(AVS_LOG_TRACE, __VA_ARGS__), 0))
-#endif
-
-/* disable compiling-in DEBUG messages */
-#ifdef AVS_LOG_WITHOUT_DEBUG
-#    undef AVS_LOG__DEBUG
-#    define AVS_LOG__DEBUG(...) \
-        ((void) sizeof(AVS_LOG_IMPL__(AVS_LOG_DEBUG, __VA_ARGS__), 0))
-#    undef AVS_LOG__LAZY_DEBUG
-#    define AVS_LOG__LAZY_DEBUG(...) \
-        ((void) sizeof(AVS_LOG_LAZY_IMPL__(AVS_LOG_DEBUG, __VA_ARGS__), 0))
-#endif
-
 int avs_log_set_level__(const char *module, avs_log_level_t level);
-/**@}*/
 
 /**
  * Creates a log message and displays it on a specified error output. Message
@@ -344,6 +260,16 @@ int avs_log_set_level__(const char *module, avs_log_level_t level);
  */
 #define avs_log_set_default_level(Level) \
     ((void) avs_log_set_level__(NULL, Level))
+
+#ifndef AVS_COMMONS_WITH_MICRO_LOGS
+#    define AVS_DISPOSABLE_LOG(Arg) Arg
+#else
+#    define AVS_DISPOSABLE_LOG(Arg) " "
+#endif // AVS_COMMONS_WITH_MICRO_LOGS
+
+#define AVS_COMMONS_LOG_IMPL_INCLUDE_GUARD
+#include "avs_log_impl.h"
+#undef AVS_COMMONS_LOG_IMPL_INCLUDE_GUARD
 
 #ifdef __cplusplus
 }

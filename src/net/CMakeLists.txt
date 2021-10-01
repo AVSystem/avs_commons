@@ -144,8 +144,15 @@ if(WITH_TINYDTLS)
     avs_install_export(avs_net_tinydtls net)
 endif()
 
+if(WITH_CUSTOM_TLS)
+    add_library(avs_net_custom_tls ${AVS_NET_SOURCES})
+    target_link_libraries(avs_net_custom_tls PUBLIC avs_net_core avs_crypto_generic)
+
+    avs_install_export(avs_net_custom_tls net)
+endif()
+
 # alias avs_net to first available implementation
-foreach(target IN ITEMS avs_net_mbedtls avs_net_openssl avs_net_tinydtls avs_net_nosec)
+foreach(target IN ITEMS avs_net_custom_tls avs_net_mbedtls avs_net_openssl avs_net_tinydtls avs_net_nosec)
     if(TARGET "${target}")
         add_library(avs_net ALIAS "${target}")
         avs_install_export(avs_net net)

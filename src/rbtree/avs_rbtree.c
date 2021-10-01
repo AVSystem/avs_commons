@@ -115,6 +115,7 @@ static int rb_is_node_owner(AVS_RBTREE(void) tree, AVS_RBTREE_ELEM(void) elem) {
 }
 #    else
 #        define rb_is_cleanup_in_progress(_) 0
+#        define rb_is_node_detached(...) 1
 #        define rb_is_node_owner(...) 1
 #    endif
 

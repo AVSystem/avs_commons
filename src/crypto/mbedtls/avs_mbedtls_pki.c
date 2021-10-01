@@ -14,12 +14,6 @@
  * limitations under the License.
  */
 
-#if defined(AVS_UNIT_TESTING) \
-        && !defined(AVS_COMMONS_MBEDTLS_PKCS11_ENGINE_UNIT_TESTING)
-#    define _GNU_SOURCE // for timegm() in tests
-#endif                  // defined(AVS_UNIT_TESTING) &&
-// !defined(AVS_COMMONS_MBEDTLS_PKCS11_ENGINE_UNIT_TESTING)
-
 #include <avs_commons_init.h>
 
 #if defined(AVS_COMMONS_WITH_AVS_CRYPTO)                          \
@@ -33,10 +27,13 @@
 
 #    include <mbedtls/asn1write.h>
 #    include <mbedtls/ecp.h>
-#    include <mbedtls/md_internal.h>
 #    include <mbedtls/oid.h>
 #    include <mbedtls/pk.h>
 #    include <mbedtls/x509_csr.h>
+
+#    if MBEDTLS_VERSION_NUMBER < 0x03000000
+#        include <mbedtls/md_internal.h>
+#    endif // MBEDTLS_VERSION_NUMBER < 0x03000000
 
 #    include <avsystem/commons/avs_crypto_pki.h>
 #    include <avsystem/commons/avs_errno.h>
@@ -46,6 +43,8 @@
 #    include "avs_mbedtls_prng.h"
 
 #    include "../avs_crypto_global.h"
+
+#    include "avs_mbedtls_private.h"
 
 #    define MODULE_NAME avs_crypto_pki
 #    include <avs_x_log_config.h>
@@ -123,14 +122,18 @@ avs_error_t avs_crypto_pki_ec_gen(avs_crypto_prng_ctx_t *prng_ctx,
         return avs_errno(AVS_EINVAL);
     }
 
-    mbedtls_asn1_buf ecp_group_oid_buf = {
-        .tag = MBEDTLS_ASN1_OID
-    };
-    err = validate_and_cast_asn1_oid(ecp_group_oid, &ecp_group_oid_buf.p,
-                                     &ecp_group_oid_buf.len);
+    unsigned char *ecp_group_oid_buf_ptr = NULL;
+    size_t ecp_group_oid_buf_len = 0;
+    err = validate_and_cast_asn1_oid(ecp_group_oid, &ecp_group_oid_buf_ptr,
+                                     &ecp_group_oid_buf_len);
     if (avs_is_err(err)) {
         return err;
     }
+
+    mbedtls_asn1_buf ecp_group_oid_buf;
+    _avs_crypto_mbedtls_asn1_buf_init(&ecp_group_oid_buf, MBEDTLS_ASN1_OID,
+                                      ecp_group_oid_buf_ptr,
+                                      ecp_group_oid_buf_len);
 
     mbedtls_ecp_group_id group_id;
     const mbedtls_ecp_curve_info *curve_info = NULL;
@@ -150,7 +153,7 @@ avs_error_t avs_crypto_pki_ec_gen(avs_crypto_prng_ctx_t *prng_ctx,
         return avs_errno(AVS_ENOMEM);
     }
 
-    if ((result = mbedtls_ecp_gen_key(curve_info->grp_id, mbedtls_pk_ec(pk_ctx),
+    if ((result = mbedtls_ecp_gen_key(group_id, mbedtls_pk_ec(pk_ctx),
                                       mbedtls_ctr_drbg_random,
                                       &prng_ctx->mbedtls_prng_ctx))) {
         LOG(ERROR, _("mbedtls_ecp_gen_key() failed: ") "%d", result);
@@ -193,7 +196,8 @@ convert_subject(mbedtls_asn1_named_data **out_mbedtls_subject,
             LOG(ERROR, _("mbedtls_asn1_store_named_data() failed"));
             return avs_errno(AVS_ENOMEM);
         }
-        entry->val.tag = subject_entry->key.value_id_octet;
+        _avs_crypto_mbedtls_asn1_named_data_set_tag(
+                entry, subject_entry->key.value_id_octet);
     }
     return AVS_OK;
 }
@@ -226,10 +230,12 @@ avs_crypto_pki_csr_create(avs_crypto_prng_ctx_t *prng_ctx,
 
     mbedtls_pk_context *private_key = NULL;
 
-    err = convert_subject(&csr_ctx.subject, subject);
+    mbedtls_asn1_named_data *mbedtls_subject = NULL;
+    err = convert_subject(&mbedtls_subject, subject);
+    _avs_crypto_mbedtls_x509write_csr_set_subject(&csr_ctx, mbedtls_subject);
     if (avs_is_ok(err)
             && avs_is_ok((err = _avs_crypto_mbedtls_load_private_key(
-                                  &private_key, private_key_info)))) {
+                                  &private_key, private_key_info, prng_ctx)))) {
         assert(private_key);
         mbedtls_x509write_csr_set_key(&csr_ctx, private_key);
 
@@ -253,67 +259,6 @@ avs_crypto_pki_csr_create(avs_crypto_prng_ctx_t *prng_ctx,
     return err;
 }
 
-static int64_t year_to_days(int year, bool *out_is_leap) {
-    // NOTE: Gregorian calendar rules are used proleptically here, which means
-    // that dates before 1583 will not align with historical documents. Negative
-    // dates handling might also be confusing (i.e. year == -1 means 2 BC).
-    //
-    // These rules are, however, consistent with the ISO 8601 convention that
-    // ASN.1 GeneralizedTime type references, not to mention that X.509
-    // certificates are generally not expected to contain dates before 1583 ;)
-
-    static const int64_t LEAP_YEARS_IN_CYCLE = 97;
-    static const int64_t LEAP_YEARS_UNTIL_1970 = 478;
-
-    *out_is_leap = ((year % 4 == 0 && year % 100 != 0) || year % 400 == 0);
-
-    int cycles = year / 400;
-    int years_since_cycle_start = year % 400;
-    if (years_since_cycle_start < 0) {
-        --cycles;
-        years_since_cycle_start += 400;
-    }
-
-    int leap_years_since_cycle_start = (*out_is_leap ? 0 : 1)
-                                       + years_since_cycle_start / 4
-                                       - years_since_cycle_start / 100;
-    int64_t leap_years_since_1970 = cycles * LEAP_YEARS_IN_CYCLE
-                                    + leap_years_since_cycle_start
-                                    - LEAP_YEARS_UNTIL_1970;
-    return (year - 1970) * 365 + leap_years_since_1970;
-}
-
-static int month_to_days(int month, bool is_leap) {
-    static const uint16_t MONTH_LENGTHS[] = {
-        31, 28 /* or 29 */, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31
-    };
-    int days = (is_leap && month > 2) ? 1 : 0;
-    for (int i = 0; i < month - 1; ++i) {
-        days += MONTH_LENGTHS[i];
-    }
-    return days;
-}
-
-static avs_time_real_t convert_x509_time(const mbedtls_x509_time *x509_time) {
-    if (x509_time->mon < 1 || x509_time->mon > 12 || x509_time->day < 1
-            || x509_time->day > 31 || x509_time->hour < 0
-            || x509_time->hour > 23 || x509_time->min < 0 || x509_time->min > 59
-            || x509_time->sec < 0
-            || x509_time->sec > 60 /* support leap seconds */) {
-        LOG(ERROR, _("Invalid X.509 time value"));
-        return AVS_TIME_REAL_INVALID;
-    }
-    bool is_leap;
-    int64_t days = year_to_days(x509_time->year, &is_leap)
-                   + month_to_days(x509_time->mon, is_leap) + x509_time->day
-                   - 1;
-    int64_t time =
-            60 * (60 * x509_time->hour + x509_time->min) + x509_time->sec;
-    return (avs_time_real_t) {
-        .since_real_epoch.seconds = days * 86400 + time
-    };
-}
-
 avs_time_real_t avs_crypto_certificate_expiration_date(
         const avs_crypto_certificate_chain_info_t *cert_info) {
     if (avs_is_err(_avs_crypto_ensure_global_state())) {
@@ -327,12 +272,18 @@ avs_time_real_t avs_crypto_certificate_expiration_date(
     }
 
     assert(cert);
-    if (!cert->version) {
+    if (!_avs_crypto_mbedtls_x509_crt_present(cert)) {
         LOG(ERROR, _("No valid certificate loaded"));
         return AVS_TIME_REAL_INVALID;
     }
 
-    avs_time_real_t result = convert_x509_time(&cert->valid_to);
+    // NOTE: In Mbed TLS 3.0, there is no public API to examine the validity
+    // time of a certificate.
+    avs_time_real_t result = _avs_crypto_mbedtls_x509_time_to_avs_time(
+            _avs_crypto_mbedtls_x509_crt_get_valid_to(cert));
+    if (!avs_time_real_valid(result)) {
+        LOG(ERROR, _("Invalid X.509 time value"));
+    }
     _avs_crypto_mbedtls_x509_crt_cleanup(&cert);
     return result;
 }
@@ -687,12 +638,6 @@ avs_error_t avs_crypto_parse_pkcs7_certs_only(
     return err;
 }
 #    endif // AVS_COMMONS_WITH_AVS_LIST
-
-#    if defined(AVS_UNIT_TESTING) \
-            && !defined(AVS_COMMONS_MBEDTLS_PKCS11_ENGINE_UNIT_TESTING)
-#        include "tests/crypto/mbedtls/mbedtls_pki.c"
-#    endif // defined(AVS_UNIT_TESTING) &&
-           // !defined(AVS_COMMONS_MBEDTLS_PKCS11_ENGINE_UNIT_TESTING)
 
 #endif // defined(AVS_COMMONS_WITH_AVS_CRYPTO) &&
        // defined(AVS_COMMONS_WITH_AVS_CRYPTO_ADVANCED_FEATURES) &&

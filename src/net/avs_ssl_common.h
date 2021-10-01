@@ -480,9 +480,6 @@ static const avs_net_dtls_handshake_timeouts_t
             .max = { 60, 0 }
         };
 
-// https://tools.ietf.org/html/rfc5246#section-6.2.1
-#define AVS_TLS_MESSAGE_TYPE_ALERT 21
-
 static inline void add_err(avs_error_t *output, avs_error_t err) {
     if (avs_is_ok(*output)) {
         *output = err;

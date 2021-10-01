@@ -41,7 +41,8 @@ void _avs_crypto_mbedtls_pk_context_cleanup(mbedtls_pk_context **ctx);
 
 avs_error_t
 _avs_crypto_mbedtls_load_private_key(mbedtls_pk_context **pk,
-                                     const avs_crypto_private_key_info_t *info);
+                                     const avs_crypto_private_key_info_t *info,
+                                     avs_crypto_prng_ctx_t *prng_ctx);
 
 VISIBILITY_PRIVATE_HEADER_END
 #endif // NET_MBEDTLS_DATA_LOADER_H
