@@ -29,9 +29,7 @@ int avs_match_token(const char **src, const char *token, const char *delims) {
     size_t len = strlen(token);
     int result;
     /* skip leading whitespace, if any */
-    while (**src && strchr(AVS_SPACES, (unsigned char) **src)) {
-        ++*src;
-    }
+    *src += strspn(*src, AVS_SPACES);
     result = avs_strncasecmp(*src, token, len);
     if (result == 0) {
         if ((*src)[len] && !strchr(delims, (unsigned char) (*src)[len])) {
