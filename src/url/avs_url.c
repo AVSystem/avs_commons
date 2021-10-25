@@ -108,12 +108,14 @@ avs_error_t avs_url_percent_encode(avs_stream_t *stream,
 int avs_url_percent_decode(char *data, size_t *unescaped_length) {
     char *src = data, *dst = data;
 
-    if (!strchr(data, '%')) {
+    src = strchr(data, '%');
+    if (!src) {
         /* nothing to unescape */
         *unescaped_length = strlen(data);
         return 0;
     }
 
+    dst = src;
     while (*src) {
         if (*src == '%') {
             if (isxdigit((unsigned char) src[1])
