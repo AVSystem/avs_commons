@@ -214,7 +214,9 @@ static avs_error_t http_receive_headers_internal(header_parser_state_t *state) {
             memcpy((char *) (intptr_t) element->value, value, value_len + 1);
             element->handled = header_handled;
             *state->header_storage_end_ptr = element;
-            AVS_LIST_ADVANCE_PTR(&state->header_storage_end_ptr);
+            AVS_LIST_ADVANCE_PTR(
+                    (AVS_LIST(avs_http_header_t) **) (intptr_t) &state
+                            ->header_storage_end_ptr);
         }
     }
 }

@@ -250,7 +250,7 @@ typedef long avs_off_t;
 #endif
 
 #if !defined(AVS_CONFIG_TYPEOF) && !defined(AVS_CONFIG_NO_TYPEOF) \
-        && !defined(__cplusplus) && __GNUC__
+        && !defined(__cplusplus) && defined(__GNUC__)
 /**
  * Alias to the <c>typeof</c> keyword, if available.
  *
@@ -339,7 +339,7 @@ struct AvsCallWithCast__ {
                          intptr_t) __VA_ARGS__))
 #endif
 
-#if (__GNUC__ >= 4)
+#if defined(__GNUC__) && (__GNUC__ >= 4)
 #    define AVS_F_SENTINEL __attribute__((sentinel(0)))
 #endif
 #if !defined(AVS_F_PRINTF) && defined(__GNUC__) \
@@ -355,9 +355,11 @@ struct AvsCallWithCast__ {
 #    define AVS_F_PRINTF(...)
 #endif
 
-#if (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 5))
+#if defined(__GNUC__) \
+        && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 5))
 #    define AVS_DEPRECATED(Message) __attribute__((deprecated(Message)))
-#elif (__GNUC__ > 3 || (__GNUC__ == 3 && __GNUC_MINOR__ >= 1))
+#elif defined(__GNUC__) \
+        && (__GNUC__ > 3 || (__GNUC__ == 3 && __GNUC_MINOR__ >= 1))
 #    define AVS_DEPRECATED(Message) __attribute__((deprecated))
 #else
 #    define AVS_DEPRECATED(Message)

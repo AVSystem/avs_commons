@@ -16,8 +16,9 @@
 
 #include <avs_commons_init.h>
 
-#if defined(AVS_COMMONS_WITH_AVS_CRYPTO) \
-        && (defined(WITHOUT_SSL) || defined(AVS_COMMONS_WITH_TINYDTLS))
+#if defined(AVS_COMMONS_WITH_AVS_CRYPTO)                               \
+        && (defined(WITHOUT_SSL) || defined(AVS_COMMONS_WITH_TINYDTLS) \
+            || defined(AVS_COMMONS_WITH_CUSTOM_TLS))
 
 #    include <avsystem/commons/avs_errno.h>
 #    include <avsystem/commons/avs_memory.h>
@@ -104,4 +105,5 @@ int avs_crypto_prng_bytes(avs_crypto_prng_ctx_t *ctx,
 }
 
 #endif // defined(AVS_COMMONS_WITH_AVS_CRYPTO) && (defined(WITHOUT_SSL) ||
-       // defined(AVS_COMMONS_WITH_TINYDTLS))
+       // defined(AVS_COMMONS_WITH_TINYDTLS) ||
+       // defined(AVS_COMMONS_WITH_CUSTOM_TLS))
