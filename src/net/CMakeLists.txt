@@ -1,4 +1,4 @@
-# Copyright 2021 AVSystem <avsystem@avsystem.com>
+# Copyright 2022 AVSystem <avsystem@avsystem.com>
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -72,12 +72,12 @@ install(FILES ${AVS_NET_PUBLIC_HEADERS}
         DESTINATION ${INCLUDE_INSTALL_DIR}/avsystem/commons)
 
 add_library(avs_net_nosec ${AVS_NET_SOURCES})
-target_compile_definitions(avs_net_nosec PRIVATE WITHOUT_SSL)
+target_compile_definitions(avs_net_nosec PRIVATE AVS_COMMONS_WITHOUT_TLS)
 target_link_libraries(avs_net_nosec PUBLIC avs_net_core)
 
 avs_add_test(NAME avs_net_nosec
              LIBS $<TARGET_PROPERTY:avs_net_nosec,LINK_LIBRARIES>
-             COMPILE_DEFINITIONS WITHOUT_SSL
+             COMPILE_DEFINITIONS AVS_COMMONS_WITHOUT_TLS
              SOURCES
              ${AVS_NET_SOURCES}
              ${AVS_COMMONS_SOURCE_DIR}/tests/net/socket_nosec.c)

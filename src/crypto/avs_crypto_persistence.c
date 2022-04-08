@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 AVSystem <avsystem@avsystem.com>
+ * Copyright 2022 AVSystem <avsystem@avsystem.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@
         && defined(AVS_COMMONS_WITH_AVS_PERSISTENCE)
 
 #    include <avsystem/commons/avs_crypto_pki.h>
+#    include <avsystem/commons/avs_crypto_psk.h>
 
 #    include "avs_crypto_utils.h"
 
@@ -46,11 +47,13 @@ static avs_error_t data_source_persistence(avs_persistence_context_t *ctx,
         case AVS_CRYPTO_DATA_SOURCE_BUFFER:
             source_ch = 'B';
             break;
-#    ifdef AVS_COMMONS_WITH_AVS_CRYPTO_ENGINE
+#    if defined(AVS_COMMONS_WITH_AVS_CRYPTO_PKI_ENGINE) \
+            || defined(AVS_COMMONS_WITH_AVS_CRYPTO_PSK_ENGINE)
         case AVS_CRYPTO_DATA_SOURCE_ENGINE:
             source_ch = 'E';
             break;
-#    endif // AVS_COMMONS_WITH_AVS_CRYPTO_ENGINE
+#    endif // defined(AVS_COMMONS_WITH_AVS_CRYPTO_PKI_ENGINE) ||
+           // defined(AVS_COMMONS_WITH_AVS_CRYPTO_PSK_ENGINE)
         default:
             return avs_errno(AVS_EINVAL);
         }
@@ -75,11 +78,13 @@ static avs_error_t data_source_persistence(avs_persistence_context_t *ctx,
         case 'B':
             *source = AVS_CRYPTO_DATA_SOURCE_BUFFER;
             break;
-#    ifdef AVS_COMMONS_WITH_AVS_CRYPTO_ENGINE
+#    if defined(AVS_COMMONS_WITH_AVS_CRYPTO_PKI_ENGINE) \
+            || defined(AVS_COMMONS_WITH_AVS_CRYPTO_PSK_ENGINE)
         case 'E':
             *source = AVS_CRYPTO_DATA_SOURCE_ENGINE;
             break;
-#    endif // AVS_COMMONS_WITH_AVS_CRYPTO_ENGINE
+#    endif // defined(AVS_COMMONS_WITH_AVS_CRYPTO_PKI_ENGINE) ||
+           // defined(AVS_COMMONS_WITH_AVS_CRYPTO_PSK_ENGINE)
         default:
             return avs_errno(AVS_EIO);
         }
@@ -226,25 +231,25 @@ static avs_error_t security_info_buffer_offsets_persistence(
 static const uint8_t SECURITY_INFO_PERSISTENCE_VERSION = 0;
 
 typedef avs_error_t security_info_persistence_allocator_t(
-        avs_crypto_security_info_union_t **out_desc_ptr,
+        avs_crypto_security_info_union_t **out_info_ptr,
         void **out_buffer_ptr,
         size_t buffer_size,
         void *arg);
 
 static avs_error_t
 security_info_persistence(avs_persistence_context_t *ctx,
-                          avs_crypto_security_info_union_t **desc_ptr,
+                          avs_crypto_security_info_union_t **info_ptr,
                           avs_crypto_security_info_tag_t tag,
                           security_info_persistence_allocator_t *allocator,
                           void *allocator_arg) {
     avs_persistence_direction_t direction = avs_persistence_direction(ctx);
     avs_crypto_data_source_t source = AVS_CRYPTO_DATA_SOURCE_EMPTY;
-    assert(desc_ptr);
+    assert(info_ptr);
     if (direction == AVS_PERSISTENCE_STORE) {
-        assert(*desc_ptr);
-        source = (*desc_ptr)->source;
+        assert(*info_ptr);
+        source = (*info_ptr)->source;
         if (source != AVS_CRYPTO_DATA_SOURCE_EMPTY) {
-            assert((*desc_ptr)->type == tag);
+            assert((*info_ptr)->type == tag);
         }
     }
     avs_error_t err = data_source_persistence(ctx, &source);
@@ -269,7 +274,7 @@ security_info_persistence(avs_persistence_context_t *ctx,
         if (direction == AVS_PERSISTENCE_STORE) {
             size_t buffer_size;
             if (avs_is_ok((err = _avs_crypto_calculate_info_stats(
-                                   *desc_ptr, tag, NULL, &buffer_size)))
+                                   *info_ptr, tag, NULL, &buffer_size)))
                     && buffer_size > UINT32_MAX) {
                 err = avs_errno(AVS_E2BIG);
             }
@@ -286,20 +291,20 @@ security_info_persistence(avs_persistence_context_t *ctx,
     void *data_buffer = NULL;
     if (direction == AVS_PERSISTENCE_STORE) {
         if (avs_is_err((err = security_info_buffer_contents_persist(
-                                ctx, *desc_ptr, buffer_size32)))) {
+                                ctx, *info_ptr, buffer_size32)))) {
             return err;
         }
     } else {
-        assert(!*desc_ptr);
+        assert(!*info_ptr);
         assert(allocator);
-        if (avs_is_err((err = allocator(desc_ptr, &data_buffer, buffer_size32,
+        if (avs_is_err((err = allocator(info_ptr, &data_buffer, buffer_size32,
                                         allocator_arg)))) {
             return err;
         }
-        assert(*desc_ptr);
+        assert(*info_ptr);
         assert(data_buffer);
-        (*desc_ptr)->type = tag;
-        (*desc_ptr)->source = source;
+        (*info_ptr)->type = tag;
+        (*info_ptr)->source = source;
         if (avs_is_err((err = avs_persistence_bytes(ctx, data_buffer,
                                                     buffer_size32)))) {
             return err;
@@ -307,7 +312,7 @@ security_info_persistence(avs_persistence_context_t *ctx,
     }
 
     return security_info_buffer_offsets_persistence(ctx, (char *) data_buffer,
-                                                    buffer_size32, *desc_ptr);
+                                                    buffer_size32, *info_ptr);
 }
 
 typedef struct {
@@ -362,7 +367,7 @@ typedef struct {
 } security_info_array_allocator_state_t;
 
 static avs_error_t
-security_info_array_allocator(avs_crypto_security_info_union_t **out_desc_ptr,
+security_info_array_allocator(avs_crypto_security_info_union_t **out_info_ptr,
                               void **out_buffer_ptr,
                               size_t buffer_size,
                               void *state_) {
@@ -412,7 +417,7 @@ security_info_array_allocator(avs_crypto_security_info_union_t **out_desc_ptr,
             }
         }
     }
-    *out_desc_ptr = &reallocated[state->next_index++];
+    *out_info_ptr = &reallocated[state->next_index++];
     *out_buffer_ptr = (char *) reallocated + state->allocated_size;
     state->array = reallocated;
     state->allocated_size += buffer_size;
@@ -474,17 +479,17 @@ security_info_array_persistence(avs_persistence_context_t *ctx,
 }
 
 static avs_error_t
-security_info_list_allocator(avs_crypto_security_info_union_t **out_desc_ptr,
+security_info_list_allocator(avs_crypto_security_info_union_t **out_info_ptr,
                              void **out_buffer_ptr,
                              size_t buffer_size,
                              void *arg) {
     (void) arg;
-    if (!(*out_desc_ptr = (AVS_LIST(avs_crypto_security_info_union_t))
+    if (!(*out_info_ptr = (AVS_LIST(avs_crypto_security_info_union_t))
                   AVS_LIST_NEW_BUFFER(sizeof(avs_crypto_security_info_union_t)
                                       + buffer_size))) {
         return avs_errno(AVS_ENOMEM);
     }
-    *out_buffer_ptr = *out_desc_ptr + 1;
+    *out_buffer_ptr = *out_info_ptr + 1;
     return AVS_OK;
 }
 
@@ -574,45 +579,66 @@ avs_error_t avs_crypto_cert_revocation_list_info_list_persistence(
             AVS_CRYPTO_SECURITY_INFO_CERT_REVOCATION_LIST);
 }
 
-static avs_error_t
-private_key_allocator(avs_crypto_security_info_union_t **out_desc_ptr,
-                      void **out_buffer_ptr,
-                      size_t buffer_size,
-                      void *arg) {
+static avs_error_t singleton_security_info_allocator(
+        avs_crypto_security_info_union_t **out_info_ptr,
+        void **out_buffer_ptr,
+        size_t buffer_size,
+        void *arg) {
     (void) arg;
-    if (!(*out_desc_ptr = (avs_crypto_security_info_union_t *) avs_calloc(
+    if (!(*out_info_ptr = (avs_crypto_security_info_union_t *) avs_calloc(
                   1, sizeof(avs_crypto_security_info_union_t) + buffer_size))) {
         return avs_errno(AVS_ENOMEM);
     }
-    *out_buffer_ptr = *out_desc_ptr + 1;
+    *out_buffer_ptr = *out_info_ptr + 1;
     return AVS_OK;
+}
+
+static avs_error_t
+singleton_security_info_persistence(avs_persistence_context_t *ctx,
+                                    avs_crypto_security_info_union_t **info_ptr,
+                                    avs_crypto_security_info_tag_t tag) {
+    avs_persistence_direction_t direction = avs_persistence_direction(ctx);
+    avs_crypto_security_info_union_t *desc = NULL;
+    if (direction == AVS_PERSISTENCE_STORE) {
+        desc = *info_ptr;
+    }
+    avs_error_t err =
+            security_info_persistence(ctx, &desc, tag,
+                                      singleton_security_info_allocator, NULL);
+    if (direction == AVS_PERSISTENCE_RESTORE) {
+        assert(info_ptr && !*info_ptr);
+        if (avs_is_ok(err)) {
+            assert(desc);
+            *info_ptr = desc;
+        } else {
+            avs_free(desc);
+        }
+    }
+    return err;
 }
 
 avs_error_t avs_crypto_private_key_info_persistence(
         avs_persistence_context_t *ctx,
         avs_crypto_private_key_info_t **private_key_ptr) {
-    avs_persistence_direction_t direction = avs_persistence_direction(ctx);
-    avs_crypto_security_info_union_t *private_key = NULL;
-    if (direction == AVS_PERSISTENCE_STORE) {
-        private_key = &(*private_key_ptr)->desc;
-    }
-    avs_error_t err =
-            security_info_persistence(ctx, &private_key,
-                                      AVS_CRYPTO_SECURITY_INFO_PRIVATE_KEY,
-                                      private_key_allocator, NULL);
-    if (direction == AVS_PERSISTENCE_RESTORE) {
-        assert(private_key_ptr && !*private_key_ptr);
-        if (avs_is_ok(err)) {
-            assert(private_key);
-            *private_key_ptr =
-                    AVS_CONTAINER_OF(private_key, avs_crypto_private_key_info_t,
-                                     desc);
-            assert((void *) private_key == (void *) *private_key_ptr);
-        } else {
-            avs_free(private_key);
-        }
-    }
-    return err;
+    return singleton_security_info_persistence(
+            ctx, (avs_crypto_security_info_union_t **) private_key_ptr,
+            AVS_CRYPTO_SECURITY_INFO_PRIVATE_KEY);
+}
+
+avs_error_t avs_crypto_psk_identity_info_persistence(
+        avs_persistence_context_t *ctx,
+        avs_crypto_psk_identity_info_t **psk_identity_ptr) {
+    return singleton_security_info_persistence(
+            ctx, (avs_crypto_security_info_union_t **) psk_identity_ptr,
+            AVS_CRYPTO_SECURITY_INFO_PSK_IDENTITY);
+}
+
+avs_error_t
+avs_crypto_psk_key_info_persistence(avs_persistence_context_t *ctx,
+                                    avs_crypto_psk_key_info_t **psk_key_ptr) {
+    return singleton_security_info_persistence(
+            ctx, (avs_crypto_security_info_union_t **) psk_key_ptr,
+            AVS_CRYPTO_SECURITY_INFO_PSK_KEY);
 }
 
 #endif // defined(AVS_COMMONS_WITH_AVS_CRYPTO) &&

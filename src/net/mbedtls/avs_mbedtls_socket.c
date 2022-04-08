@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 AVSystem <avsystem@avsystem.com>
+ * Copyright 2022 AVSystem <avsystem@avsystem.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -59,10 +59,8 @@
 #    include <avsystem/commons/avs_utils.h>
 
 #    include "../avs_net_global.h"
-#    ifdef AVS_COMMONS_WITH_AVS_CRYPTO_PKI
-#        include "crypto/mbedtls/avs_mbedtls_data_loader.h"
-#    endif // AVS_COMMONS_WITH_AVS_CRYPTO_PKI
 #    include "avs_mbedtls_persistence.h"
+#    include "crypto/mbedtls/avs_mbedtls_data_loader.h"
 
 #    if defined(AVS_COMMONS_WITH_AVS_CRYPTO_PKI) && defined(MBEDTLS_SHA256_C) \
             && defined(MBEDTLS_SHA512_C)
@@ -333,7 +331,7 @@ static int set_min_ssl_version(mbedtls_ssl_config *config,
 }
 
 #    if defined(AVS_COMMONS_WITH_AVS_CRYPTO_PKI) \
-            || defined(AVS_COMMONS_NET_WITH_PSK)
+            || defined(AVS_COMMONS_WITH_AVS_CRYPTO_PSK)
 static bool
 contains_cipher(const avs_net_socket_tls_ciphersuites_t *enabled_ciphers,
                 int cipher) {
@@ -349,7 +347,7 @@ contains_cipher(const avs_net_socket_tls_ciphersuites_t *enabled_ciphers,
     }
 }
 #    endif // defined(AVS_COMMONS_WITH_AVS_CRYPTO_PKI) ||
-           // defined(AVS_COMMONS_NET_WITH_PSK)
+           // defined(AVS_COMMONS_WITH_AVS_CRYPTO_PSK)
 
 #    ifdef AVS_COMMONS_WITH_AVS_CRYPTO_PKI
 static int *init_cert_ciphersuites(
@@ -686,7 +684,7 @@ static int wrap_handshake_result(ssl_socket_t *socket, int result) {
 #    endif // !defined(WITH_DANE_SUPPORT) ||
            // !defined(AVS_COMMONS_WITH_AVS_CRYPTO_PKI)
 
-#    ifdef AVS_COMMONS_NET_WITH_PSK
+#    ifdef AVS_COMMONS_WITH_AVS_CRYPTO_PSK
 static int *init_psk_ciphersuites(
         const avs_net_socket_tls_ciphersuites_t *enabled_ciphers) {
     const int *all_ciphers = mbedtls_ssl_list_ciphersuites();
@@ -723,34 +721,36 @@ static int *init_psk_ciphersuites(
 static avs_error_t initialize_psk_security(
         ssl_socket_t *socket,
         const avs_net_socket_tls_ciphersuites_t *tls_ciphersuites,
-        const avs_net_psk_info_t *psk_info) {
+        const avs_net_generic_psk_info_t *psk_info) {
     avs_free(socket->effective_ciphersuites);
     if (!(socket->effective_ciphersuites =
                   init_psk_ciphersuites(tls_ciphersuites))) {
         return avs_errno(AVS_ENOMEM);
     }
 
-    switch (mbedtls_ssl_conf_psk(
-            &socket->config, (const unsigned char *) psk_info->psk,
-            psk_info->psk_size, (const unsigned char *) psk_info->identity,
-            psk_info->identity_size)) {
-    case MBEDTLS_ERR_SSL_ALLOC_FAILED:
-        LOG(ERROR, _("mbedtls_ssl_conf_psk() failed: out of memory"));
-        return avs_errno(AVS_ENOMEM);
-    case 0:
-        break;
-    default:
-        LOG(ERROR, _("mbedtls_ssl_conf_psk() failed: unknown error"));
+    avs_error_t err =
+            _avs_crypto_mbedtls_load_psk(&socket->config, &psk_info->key,
+                                         &psk_info->identity);
+    if (avs_is_err(err)) {
+        return err;
     }
 
     mbedtls_ssl_conf_ciphersuites(&socket->config,
                                   socket->effective_ciphersuites);
     return AVS_OK;
 }
-#    else // AVS_COMMONS_NET_WITH_PSK
-#        define initialize_psk_security(...) \
-            (LOG(ERROR, _("PSK support disabled")), avs_errno(AVS_ENOTSUP))
-#    endif // AVS_COMMONS_NET_WITH_PSK
+#    else  // AVS_COMMONS_WITH_AVS_CRYPTO_PSK
+static inline avs_error_t initialize_psk_security(
+        ssl_socket_t *socket,
+        const avs_net_socket_tls_ciphersuites_t *tls_ciphersuites,
+        const avs_net_psk_info_t *psk_info) {
+    (void) socket;
+    (void) tls_ciphersuites;
+    (void) psk_info;
+    LOG(ERROR, _("PSK support disabled"));
+    return avs_errno(AVS_ENOTSUP);
+}
+#    endif // AVS_COMMONS_WITH_AVS_CRYPTO_PSK
 
 static int transport_for_socket_type(avs_net_socket_type_t backend_type) {
     switch (backend_type) {
@@ -1494,8 +1494,12 @@ configure_ssl_certs(ssl_socket_certs_t *certs,
 }
 
 #    else // AVS_COMMONS_WITH_AVS_CRYPTO_PKI
-#        define configure_ssl_certs(...) \
-            (LOG(ERROR, _("X.509 support disabled")), avs_errno(AVS_ENOTSUP))
+static inline avs_error_t configure_ssl_certs_impl(void) {
+    LOG(ERROR, _("X.509 support disabled"));
+    return avs_errno(AVS_ENOTSUP);
+}
+
+#        define configure_ssl_certs(...) configure_ssl_certs_impl()
 #    endif // AVS_COMMONS_WITH_AVS_CRYPTO_PKI
 
 static avs_error_t

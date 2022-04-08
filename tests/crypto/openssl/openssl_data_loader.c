@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 AVSystem <avsystem@avsystem.com>
+ * Copyright 2022 AVSystem <avsystem@avsystem.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -253,10 +253,10 @@ AVS_UNIT_TEST(backend_openssl, key_loading_from_null) {
 
     AVS_UNIT_ASSERT_FAILED(_avs_crypto_openssl_load_private_key(&key, NULL));
     AVS_UNIT_ASSERT_NULL(key);
-#ifdef AVS_COMMONS_WITH_AVS_CRYPTO_ENGINE
+#ifdef AVS_COMMONS_WITH_AVS_CRYPTO_PKI_ENGINE
     const avs_crypto_private_key_info_t engine =
             avs_crypto_private_key_info_from_engine(NULL);
     AVS_UNIT_ASSERT_FAILED(_avs_crypto_openssl_load_private_key(&key, &engine));
     AVS_UNIT_ASSERT_NULL(key);
-#endif // AVS_COMMONS_WITH_AVS_CRYPTO_ENGINE
+#endif // AVS_COMMONS_WITH_AVS_CRYPTO_PKI_ENGINE
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 AVSystem <avsystem@avsystem.com>
+ * Copyright 2022 AVSystem <avsystem@avsystem.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,6 +34,7 @@
 
 #ifdef AVS_COMMONS_WITH_AVS_CRYPTO
 #    include <avsystem/commons/avs_crypto_pki.h>
+#    include <avsystem/commons/avs_crypto_psk.h>
 #    include <avsystem/commons/avs_prng.h>
 #endif // AVS_COMMONS_WITH_AVS_CRYPTO
 
@@ -252,15 +253,12 @@ typedef enum {
 } avs_net_security_mode_t;
 
 /**
- * A PSK/identity pair with borrowed pointers. avs_commons will never attempt
- * to modify these values.
+ * A PSK/identity pair. avs_commons will never attempt to modify these values.
  */
 typedef struct {
-    const void *psk;
-    size_t psk_size;
-    const void *identity;
-    size_t identity_size;
-} avs_net_psk_info_t;
+    avs_crypto_psk_key_info_t key;
+    avs_crypto_psk_identity_info_t identity;
+} avs_net_generic_psk_info_t;
 
 /**
  * Configuration for certificate-mode (D)TLS connection.
@@ -335,15 +333,39 @@ typedef struct {
 typedef struct {
     avs_net_security_mode_t mode;
     union {
-        avs_net_psk_info_t psk;
+        avs_net_generic_psk_info_t psk;
         avs_net_certificate_info_t cert;
     } data;
 } avs_net_security_info_t;
 
-avs_net_security_info_t avs_net_security_info_from_psk(avs_net_psk_info_t psk);
+avs_net_security_info_t
+avs_net_security_info_from_generic_psk(avs_net_generic_psk_info_t psk);
 
 avs_net_security_info_t
 avs_net_security_info_from_certificates(avs_net_certificate_info_t info);
+
+/**
+ * A PSK/identity pair with borrowed pointers. avs_commons will never attempt
+ * to modify these values.
+ *
+ * DEPRECATED, please use @ref avs_net_generic_psk_info_t instead.
+ */
+typedef struct {
+    const void *psk;
+    size_t psk_size;
+    const void *identity;
+    size_t identity_size;
+} avs_net_psk_info_t;
+
+static inline avs_net_security_info_t
+avs_net_security_info_from_psk(avs_net_psk_info_t psk) {
+    avs_net_generic_psk_info_t generic_psk = {
+        avs_crypto_psk_key_info_from_buffer(psk.psk, psk.psk_size),
+        avs_crypto_psk_identity_info_from_buffer(psk.identity,
+                                                 psk.identity_size)
+    };
+    return avs_net_security_info_from_generic_psk(generic_psk);
+}
 
 typedef struct {
     avs_time_duration_t min;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 AVSystem <avsystem@avsystem.com>
+ * Copyright 2022 AVSystem <avsystem@avsystem.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@
 #    include <string.h>
 
 #    include <avsystem/commons/avs_crypto_pki.h>
+#    include <avsystem/commons/avs_crypto_psk.h>
 #    include <avsystem/commons/avs_memory.h>
 
 #    include "avs_crypto_utils.h"
@@ -31,7 +32,7 @@
 
 VISIBILITY_SOURCE_BEGIN
 
-#    ifdef AVS_COMMONS_WITH_AVS_CRYPTO_ENGINE
+#    ifdef AVS_COMMONS_WITH_AVS_CRYPTO_PKI_ENGINE
 avs_crypto_certificate_chain_info_t
 avs_crypto_certificate_chain_info_from_engine(const char *query) {
     avs_crypto_certificate_chain_info_t result;
@@ -41,7 +42,7 @@ avs_crypto_certificate_chain_info_from_engine(const char *query) {
     result.desc.info.engine.query = query;
     return result;
 }
-#    endif // AVS_COMMONS_WITH_AVS_CRYPTO_ENGINE
+#    endif // AVS_COMMONS_WITH_AVS_CRYPTO_PKI_ENGINE
 
 avs_crypto_certificate_chain_info_t
 avs_crypto_certificate_chain_info_from_file(const char *filename) {
@@ -226,7 +227,8 @@ static const avs_crypto_data_source_element_t
                             .type = DATA_SOURCE_ELEMENT_END
                         }
                     }[0]
-#    ifdef AVS_COMMONS_WITH_AVS_CRYPTO_ENGINE
+#    if defined(AVS_COMMONS_WITH_AVS_CRYPTO_PKI_ENGINE) \
+            || defined(AVS_COMMONS_WITH_AVS_CRYPTO_PSK_ENGINE)
             ,
             [AVS_CRYPTO_DATA_SOURCE_ENGINE] =
                     &(const avs_crypto_data_source_element_t[]) {
@@ -239,7 +241,8 @@ static const avs_crypto_data_source_element_t
                             .type = DATA_SOURCE_ELEMENT_END
                         }
                     }[0]
-#    endif // AVS_COMMONS_WITH_AVS_CRYPTO_ENGINE
+#    endif // defined(AVS_COMMONS_WITH_AVS_CRYPTO_PKI_ENGINE) ||
+           // defined(AVS_COMMONS_WITH_AVS_CRYPTO_PSK_ENGINE)
         };
 
 const avs_crypto_data_source_element_t *
@@ -551,7 +554,7 @@ avs_error_t avs_crypto_cert_revocation_list_info_copy_as_list(
 }
 #    endif // AVS_COMMONS_WITH_AVS_LIST
 
-#    ifdef AVS_COMMONS_WITH_AVS_CRYPTO_ENGINE
+#    ifdef AVS_COMMONS_WITH_AVS_CRYPTO_PKI_ENGINE
 avs_crypto_private_key_info_t
 avs_crypto_private_key_info_from_engine(const char *query) {
     avs_crypto_private_key_info_t result;
@@ -560,7 +563,7 @@ avs_crypto_private_key_info_from_engine(const char *query) {
     result.desc.info.engine.query = query;
     return result;
 }
-#    endif // AVS_COMMONS_WITH_AVS_CRYPTO_ENGINE
+#    endif // AVS_COMMONS_WITH_AVS_CRYPTO_PKI_ENGINE
 
 avs_crypto_private_key_info_t
 avs_crypto_private_key_info_from_file(const char *filename,
@@ -586,37 +589,109 @@ avs_crypto_private_key_info_t avs_crypto_private_key_info_from_buffer(
     return result;
 }
 
-avs_error_t avs_crypto_private_key_info_copy(
-        avs_crypto_private_key_info_t **out_ptr,
-        avs_crypto_private_key_info_t private_key_info) {
-    if (!out_ptr || *out_ptr
-            || private_key_info.desc.source == AVS_CRYPTO_DATA_SOURCE_ARRAY
-            || private_key_info.desc.source == AVS_CRYPTO_DATA_SOURCE_LIST) {
+static avs_error_t
+single_info_copy(avs_crypto_security_info_union_t **out_ptr,
+                 avs_crypto_security_info_union_t desc,
+                 avs_crypto_security_info_tag_t expected_type) {
+    if (!out_ptr || *out_ptr || desc.source == AVS_CRYPTO_DATA_SOURCE_ARRAY
+            || desc.source == AVS_CRYPTO_DATA_SOURCE_LIST) {
         return avs_errno(AVS_EINVAL);
     }
     size_t element_count = 0;
     size_t data_buffer_size = 0;
-    avs_error_t err = _avs_crypto_calculate_info_stats(
-            &private_key_info.desc, AVS_CRYPTO_SECURITY_INFO_PRIVATE_KEY,
-            &element_count, &data_buffer_size);
+    avs_error_t err =
+            _avs_crypto_calculate_info_stats(&desc, expected_type,
+                                             &element_count, &data_buffer_size);
     if (avs_is_err(err)) {
         return err;
     }
     assert(element_count == 0 || element_count == 1);
-    if (!(*out_ptr = (avs_crypto_private_key_info_t *) avs_malloc(
-                  sizeof(avs_crypto_private_key_info_t) + data_buffer_size))) {
+    if (!(*out_ptr = (avs_crypto_security_info_union_t *) avs_malloc(
+                  sizeof(avs_crypto_security_info_union_t)
+                  + data_buffer_size))) {
         return avs_errno(AVS_ENOMEM);
     }
     char *buffer_ptr = (char *) &(*out_ptr)[1];
-    copy_element(&(*out_ptr)->desc, &buffer_ptr, &private_key_info.desc);
+    copy_element(*out_ptr, &buffer_ptr, &desc);
     assert(buffer_ptr == ((char *) &(*out_ptr)[1]) + data_buffer_size);
-    if ((*out_ptr)->desc.source == AVS_CRYPTO_DATA_SOURCE_EMPTY) {
+    if ((*out_ptr)->source == AVS_CRYPTO_DATA_SOURCE_EMPTY) {
         // EMPTY entries are allowed to have uninitialized type,
         // to support zero-initialization
-        (*out_ptr)->desc.type = AVS_CRYPTO_SECURITY_INFO_PRIVATE_KEY;
+        (*out_ptr)->type = expected_type;
     }
-    assert((*out_ptr)->desc.type == AVS_CRYPTO_SECURITY_INFO_PRIVATE_KEY);
+    assert((*out_ptr)->type == expected_type);
     return AVS_OK;
+}
+
+avs_error_t avs_crypto_private_key_info_copy(
+        avs_crypto_private_key_info_t **out_ptr,
+        avs_crypto_private_key_info_t private_key_info) {
+    return single_info_copy((avs_crypto_security_info_union_t **) out_ptr,
+                            private_key_info.desc,
+                            AVS_CRYPTO_SECURITY_INFO_PRIVATE_KEY);
+}
+
+avs_crypto_psk_identity_info_t
+avs_crypto_psk_identity_info_from_buffer(const void *buffer,
+                                         size_t buffer_size) {
+    avs_crypto_psk_identity_info_t result;
+    memset(&result, 0, sizeof(result));
+    result.desc.type = AVS_CRYPTO_SECURITY_INFO_PSK_IDENTITY;
+    result.desc.source = AVS_CRYPTO_DATA_SOURCE_BUFFER;
+    result.desc.info.buffer.buffer = buffer;
+    result.desc.info.buffer.buffer_size = buffer_size;
+    return result;
+}
+
+#    ifdef AVS_COMMONS_WITH_AVS_CRYPTO_PSK_ENGINE
+avs_crypto_psk_identity_info_t
+avs_crypto_psk_identity_info_from_engine(const char *query) {
+    avs_crypto_psk_identity_info_t result;
+    memset(&result, 0, sizeof(result));
+    result.desc.type = AVS_CRYPTO_SECURITY_INFO_PSK_IDENTITY;
+    result.desc.source = AVS_CRYPTO_DATA_SOURCE_ENGINE;
+    result.desc.info.engine.query = query;
+    return result;
+}
+#    endif // AVS_COMMONS_WITH_AVS_CRYPTO_PSK_ENGINE
+
+avs_error_t avs_crypto_psk_identity_info_copy(
+        avs_crypto_psk_identity_info_t **out_ptr,
+        avs_crypto_psk_identity_info_t psk_identity_info) {
+    return single_info_copy((avs_crypto_security_info_union_t **) out_ptr,
+                            psk_identity_info.desc,
+                            AVS_CRYPTO_SECURITY_INFO_PSK_IDENTITY);
+}
+
+avs_crypto_psk_key_info_t
+avs_crypto_psk_key_info_from_buffer(const void *buffer, size_t buffer_size) {
+    avs_crypto_psk_key_info_t result;
+    memset(&result, 0, sizeof(result));
+    result.desc.type = AVS_CRYPTO_SECURITY_INFO_PSK_KEY;
+    result.desc.source = AVS_CRYPTO_DATA_SOURCE_BUFFER;
+    result.desc.info.buffer.buffer = buffer;
+    result.desc.info.buffer.buffer_size = buffer_size;
+    return result;
+}
+
+#    ifdef AVS_COMMONS_WITH_AVS_CRYPTO_PSK_ENGINE
+avs_crypto_psk_key_info_t
+avs_crypto_psk_key_info_from_engine(const char *query) {
+    avs_crypto_psk_key_info_t result;
+    memset(&result, 0, sizeof(result));
+    result.desc.type = AVS_CRYPTO_SECURITY_INFO_PSK_KEY;
+    result.desc.source = AVS_CRYPTO_DATA_SOURCE_ENGINE;
+    result.desc.info.engine.query = query;
+    return result;
+}
+#    endif // AVS_COMMONS_WITH_AVS_CRYPTO_PSK_ENGINE
+
+avs_error_t
+avs_crypto_psk_key_info_copy(avs_crypto_psk_key_info_t **out_ptr,
+                             avs_crypto_psk_key_info_t psk_key_info) {
+    return single_info_copy((avs_crypto_security_info_union_t **) out_ptr,
+                            psk_key_info.desc,
+                            AVS_CRYPTO_SECURITY_INFO_PSK_KEY);
 }
 
 #    ifdef AVS_COMMONS_WITH_AVS_CRYPTO_ADVANCED_FEATURES

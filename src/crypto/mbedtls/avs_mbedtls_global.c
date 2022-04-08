@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 AVSystem <avsystem@avsystem.com>
+ * Copyright 2022 AVSystem <avsystem@avsystem.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,16 +40,20 @@ avs_error_t _avs_crypto_initialize_global_state() {
         return avs_errno(AVS_EPROTO);
     }
 #    endif // MBEDTLS_USE_PSA_CRYPTO
-#    ifdef AVS_COMMONS_WITH_AVS_CRYPTO_ENGINE
+#    if defined(AVS_COMMONS_WITH_AVS_CRYPTO_PKI_ENGINE) \
+            || defined(AVS_COMMONS_WITH_AVS_CRYPTO_PSK_ENGINE)
     err = _avs_crypto_mbedtls_engine_initialize_global_state();
-#    endif // AVS_COMMONS_WITH_AVS_CRYPTO_ENGINE
+#    endif // defined(AVS_COMMONS_WITH_AVS_CRYPTO_PKI_ENGINE) ||
+           // defined(AVS_COMMONS_WITH_AVS_CRYPTO_PSK_ENGINE)
     return err;
 }
 
 void _avs_crypto_cleanup_global_state() {
-#    ifdef AVS_COMMONS_WITH_AVS_CRYPTO_ENGINE
+#    if defined(AVS_COMMONS_WITH_AVS_CRYPTO_PKI_ENGINE) \
+            || defined(AVS_COMMONS_WITH_AVS_CRYPTO_PSK_ENGINE)
     _avs_crypto_mbedtls_engine_cleanup_global_state();
-#    endif // AVS_COMMONS_WITH_AVS_CRYPTO_ENGINE
+#    endif // defined(AVS_COMMONS_WITH_AVS_CRYPTO_PKI_ENGINE) ||
+           // defined(AVS_COMMONS_WITH_AVS_CRYPTO_PSK_ENGINE)
 }
 
 #endif // defined(AVS_COMMONS_WITH_AVS_CRYPTO) &&

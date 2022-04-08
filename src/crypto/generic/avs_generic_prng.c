@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 AVSystem <avsystem@avsystem.com>
+ * Copyright 2022 AVSystem <avsystem@avsystem.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,9 @@
 
 #include <avs_commons_init.h>
 
-#if defined(AVS_COMMONS_WITH_AVS_CRYPTO)                               \
-        && (defined(WITHOUT_SSL) || defined(AVS_COMMONS_WITH_TINYDTLS) \
+#if defined(AVS_COMMONS_WITH_AVS_CRYPTO)          \
+        && (defined(AVS_COMMONS_WITHOUT_TLS)      \
+            || defined(AVS_COMMONS_WITH_TINYDTLS) \
             || defined(AVS_COMMONS_WITH_CUSTOM_TLS))
 
 #    include <avsystem/commons/avs_errno.h>
@@ -104,6 +105,7 @@ int avs_crypto_prng_bytes(avs_crypto_prng_ctx_t *ctx,
     return 0;
 }
 
-#endif // defined(AVS_COMMONS_WITH_AVS_CRYPTO) && (defined(WITHOUT_SSL) ||
+#endif // defined(AVS_COMMONS_WITH_AVS_CRYPTO) &&
+       // (defined(AVS_COMMONS_WITHOUT_TLS) ||
        // defined(AVS_COMMONS_WITH_TINYDTLS) ||
        // defined(AVS_COMMONS_WITH_CUSTOM_TLS))

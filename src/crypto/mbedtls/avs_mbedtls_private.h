@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 AVSystem <avsystem@avsystem.com>
+ * Copyright 2022 AVSystem <avsystem@avsystem.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,8 +46,14 @@ VISIBILITY_PRIVATE_HEADER_BEGIN
 
 #if MBEDTLS_VERSION_NUMBER >= 0x03000000
 #    include <mbedtls/private_access.h>
-#else // MBEDTLS_VERSION_NUMBER >= 0x03000000
+#    if MBEDTLS_VERSION_NUMBER >= 0x03010000
+#        define MBEDTLS_PRIVATE_BETWEEN_30_31(Member) Member
+#    else // MBEDTLS_VERSION_NUMBER >= 0x03010000
+#        define MBEDTLS_PRIVATE_BETWEEN_30_31(Member) MBEDTLS_PRIVATE(Member)
+#    endif // MBEDTLS_VERSION_NUMBER >= 0x03010000
+#else      // MBEDTLS_VERSION_NUMBER >= 0x03000000
 #    define MBEDTLS_PRIVATE(Member) Member
+#    define MBEDTLS_PRIVATE_BETWEEN_30_31(Member) Member
 #endif // MBEDTLS_VERSION_NUMBER >= 0x03000000
 
 // NOTE: This files encapsulates accesses to MBEDTLS_PRIVATE(). These are
@@ -60,15 +66,16 @@ static inline void _avs_crypto_mbedtls_asn1_buf_init(mbedtls_asn1_buf *buf,
                                                      unsigned char *p,
                                                      size_t len) {
     memset(buf, 0, sizeof(*buf));
-    buf->MBEDTLS_PRIVATE(tag) = tag;
-    buf->MBEDTLS_PRIVATE(len) = len;
-    buf->MBEDTLS_PRIVATE(p) = p;
+    buf->MBEDTLS_PRIVATE_BETWEEN_30_31(tag) = tag;
+    buf->MBEDTLS_PRIVATE_BETWEEN_30_31(len) = len;
+    buf->MBEDTLS_PRIVATE_BETWEEN_30_31(p) = p;
 }
 
 static inline void
 _avs_crypto_mbedtls_asn1_named_data_set_tag(mbedtls_asn1_named_data *data,
                                             int tag) {
-    data->MBEDTLS_PRIVATE(val).MBEDTLS_PRIVATE(tag) = tag;
+    data->MBEDTLS_PRIVATE_BETWEEN_30_31(val).MBEDTLS_PRIVATE_BETWEEN_30_31(
+            tag) = tag;
 }
 
 static inline void _avs_crypto_mbedtls_x509write_csr_set_subject(
@@ -78,11 +85,12 @@ static inline void _avs_crypto_mbedtls_x509write_csr_set_subject(
 
 static inline const mbedtls_x509_time *
 _avs_crypto_mbedtls_x509_crt_get_valid_to(const mbedtls_x509_crt *crt) {
-    return &crt->MBEDTLS_PRIVATE(valid_to);
+    return &crt->MBEDTLS_PRIVATE_BETWEEN_30_31(valid_to);
 }
 
 avs_time_real_t
 _avs_crypto_mbedtls_x509_time_to_avs_time(const mbedtls_x509_time *x509_time);
+
 #endif // defined(AVS_COMMONS_WITH_AVS_CRYPTO_ADVANCED_FEATURES) &&
        // defined(AVS_COMMONS_WITH_AVS_CRYPTO_PKI)
 
@@ -91,7 +99,7 @@ _avs_crypto_mbedtls_x509_time_to_avs_time(const mbedtls_x509_time *x509_time);
         && defined(AVS_COMMONS_WITH_AVS_CRYPTO_PKI)
 static inline bool
 _avs_crypto_mbedtls_x509_crt_present(const mbedtls_x509_crt *crt) {
-    return crt->MBEDTLS_PRIVATE(version) != 0;
+    return crt->MBEDTLS_PRIVATE_BETWEEN_30_31(version) != 0;
 }
 #endif // (defined(AVS_COMMONS_WITH_AVS_CRYPTO_ADVANCED_FEATURES) ||
        // defined(AVS_COMMONS_WITH_AVS_NET)) &&
@@ -101,19 +109,21 @@ _avs_crypto_mbedtls_x509_crt_present(const mbedtls_x509_crt *crt) {
         && defined(AVS_COMMONS_WITH_AVS_CRYPTO_PKI)
 static inline mbedtls_x509_crt **
 _avs_crypto_mbedtls_x509_crt_next_ptr(mbedtls_x509_crt *crt) {
-    return &crt->MBEDTLS_PRIVATE(next);
+    return &crt->MBEDTLS_PRIVATE_BETWEEN_30_31(next);
 }
 static inline void
 _avs_crypto_mbedtls_x509_crt_get_raw(const mbedtls_x509_crt *crt,
                                      const unsigned char **out_buf,
                                      size_t *out_len) {
-    *out_buf = crt->MBEDTLS_PRIVATE(raw).MBEDTLS_PRIVATE(p);
-    *out_len = crt->MBEDTLS_PRIVATE(raw).MBEDTLS_PRIVATE(len);
+    *out_buf = crt->MBEDTLS_PRIVATE_BETWEEN_30_31(raw)
+                       .MBEDTLS_PRIVATE_BETWEEN_30_31(p);
+    *out_len = crt->MBEDTLS_PRIVATE_BETWEEN_30_31(raw)
+                       .MBEDTLS_PRIVATE_BETWEEN_30_31(len);
 }
 
 static inline mbedtls_pk_context *
 _avs_crypto_mbedtls_x509_crt_get_pk(mbedtls_x509_crt *crt) {
-    return &crt->MBEDTLS_PRIVATE(pk);
+    return &crt->MBEDTLS_PRIVATE_BETWEEN_30_31(pk);
 }
 #endif // defined(AVS_COMMONS_WITH_AVS_NET) &&
        // defined(AVS_COMMONS_WITH_AVS_CRYPTO_PKI)
@@ -151,6 +161,7 @@ _avs_crypto_mbedtls_cipher_get_block_size(const mbedtls_cipher_info_t *cipher) {
 
 #if !defined(AVS_COMMONS_CRYPTO_MBEDTLS_PRIVATE_C) && !defined(AVS_UNIT_TESTING)
 // Make it impossible to use MBEDTLS_PRIVATE outside of this file
+#    undef MBEDTLS_PRIVATE_BETWEEN_30_31
 #    undef MBEDTLS_PRIVATE
 #endif // !defined(AVS_COMMONS_CRYPTO_MBEDTLS_PRIVATE_C) &&
        // !defined(AVS_UNIT_TESTING)

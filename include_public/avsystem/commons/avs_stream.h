@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 AVSystem <avsystem@avsystem.com>
+ * Copyright 2022 AVSystem <avsystem@avsystem.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -59,7 +59,7 @@ static inline bool avs_is_eof(avs_error_t error) {
  * All functions declared in this file operate on @ref avs_stream_t which
  * internally stores pointers to the implementations of the interface methods
  * (via @ref avs_stream_v_table_t). You can find sample stream implementations
- * in stream/src folder of the avs_commons source directory.
+ * in src/stream folder of the avs_commons source directory.
  *
  * Different kind of streams may have different functionality, and using some
  * methods may not make sense for every stream (for example writing to a
@@ -68,7 +68,7 @@ static inline bool avs_is_eof(avs_error_t error) {
  *
  * Moreover, the interface may be extended with additional methods by using
  * @ref avs_stream_v_table_extension_t . Again, for sample implementation of
- * this technique see @file stream/src/stream_file.c .
+ * this technique see @file src/stream/avs_stream_file.c .
  */
 struct avs_stream_struct;
 typedef struct avs_stream_struct avs_stream_t;

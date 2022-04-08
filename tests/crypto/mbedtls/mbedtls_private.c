@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 AVSystem <avsystem@avsystem.com>
+ * Copyright 2022 AVSystem <avsystem@avsystem.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -90,12 +90,12 @@ AVS_UNIT_TEST(convert_x509_time, example_date) {
     // to check that their results are combined properly
     avs_time_real_t result = _avs_crypto_mbedtls_x509_time_to_avs_time(
             &(const mbedtls_x509_time) {
-                .MBEDTLS_PRIVATE(year) = 2005,
-                .MBEDTLS_PRIVATE(mon) = 4,
-                .MBEDTLS_PRIVATE(day) = 2,
-                .MBEDTLS_PRIVATE(hour) = 19,
-                .MBEDTLS_PRIVATE(min) = 37,
-                .MBEDTLS_PRIVATE(sec) = 1
+                .MBEDTLS_PRIVATE_BETWEEN_30_31(year) = 2005,
+                .MBEDTLS_PRIVATE_BETWEEN_30_31(mon) = 4,
+                .MBEDTLS_PRIVATE_BETWEEN_30_31(day) = 2,
+                .MBEDTLS_PRIVATE_BETWEEN_30_31(hour) = 19,
+                .MBEDTLS_PRIVATE_BETWEEN_30_31(min) = 37,
+                .MBEDTLS_PRIVATE_BETWEEN_30_31(sec) = 1
             });
 
     // $ env LC_ALL=C date '+%s' -d '2005-04-02 21:37:01 CEST'

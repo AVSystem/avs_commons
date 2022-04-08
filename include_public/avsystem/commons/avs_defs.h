@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 AVSystem <avsystem@avsystem.com>
+ * Copyright 2022 AVSystem <avsystem@avsystem.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,6 +33,13 @@ extern "C" {
  *
  * Global common definitions.
  */
+
+#if !(defined(AVS_COMMONS_WITH_OPENSSL) || defined(AVS_COMMONS_WITH_MBEDTLS) \
+      || defined(AVS_COMMONS_WITH_TINYDTLS)                                  \
+      || defined(AVS_COMMONS_WITH_CUSTOM_TLS))                               \
+        && !defined(AVS_COMMONS_WITHOUT_TLS)
+#    define AVS_COMMONS_WITHOUT_TLS
+#endif
 
 #ifdef AVS_COMMONS_NET_WITH_IPV6
 #    define AVS_ADDRSTRLEN \

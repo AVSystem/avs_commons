@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 AVSystem <avsystem@avsystem.com>
+ * Copyright 2022 AVSystem <avsystem@avsystem.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@
 
 #include <stdint.h>
 
-#include <avsystem/commons/avs_commons_config.h>
+#include <avsystem/commons/avs_crypto_common.h>
 #include <avsystem/commons/avs_errno.h>
 #include <avsystem/commons/avs_prng.h>
 #include <avsystem/commons/avs_time.h>
@@ -39,80 +39,6 @@
 extern "C" {
 #endif
 
-#ifdef AVS_COMMONS_WITH_AVS_CRYPTO_ENGINE
-typedef struct {
-    const char *query;
-} avs_crypto_security_info_union_internal_engine_t;
-#endif // AVS_COMMONS_WITH_AVS_CRYPTO_ENGINE
-
-typedef struct {
-    const char *filename;
-    const char *password;
-} avs_crypto_security_info_union_internal_file_t;
-
-typedef struct {
-    const char *path;
-} avs_crypto_security_info_union_internal_path_t;
-
-typedef struct {
-    const void *buffer;
-    const char *password;
-    size_t buffer_size;
-} avs_crypto_security_info_union_internal_buffer_t;
-
-typedef struct avs_crypto_security_info_union_struct
-        avs_crypto_security_info_union_t;
-
-typedef struct {
-    const avs_crypto_security_info_union_t *array_ptr;
-    size_t element_count;
-} avs_crypto_security_info_union_internal_array_t;
-
-typedef struct {
-    avs_crypto_security_info_union_t *list_head;
-} avs_crypto_security_info_union_internal_list_t;
-
-typedef enum {
-    AVS_CRYPTO_SECURITY_INFO_CERTIFICATE_CHAIN,
-    AVS_CRYPTO_SECURITY_INFO_PRIVATE_KEY,
-    AVS_CRYPTO_SECURITY_INFO_CERT_REVOCATION_LIST
-} avs_crypto_security_info_tag_t;
-
-typedef enum {
-    AVS_CRYPTO_DATA_SOURCE_EMPTY,
-    AVS_CRYPTO_DATA_SOURCE_FILE,
-    AVS_CRYPTO_DATA_SOURCE_PATH,
-    AVS_CRYPTO_DATA_SOURCE_BUFFER,
-    AVS_CRYPTO_DATA_SOURCE_ARRAY,
-    AVS_CRYPTO_DATA_SOURCE_LIST,
-#ifdef AVS_COMMONS_WITH_AVS_CRYPTO_ENGINE
-    AVS_CRYPTO_DATA_SOURCE_ENGINE
-#endif // AVS_COMMONS_WITH_AVS_CRYPTO_ENGINE
-} avs_crypto_data_source_t;
-
-/**
- * This struct is for internal use only and should not be filled manually. One
- * should construct appropriate instances of:
- * - @ref avs_crypto_certificate_chain_info_t,
- * - @ref avs_crypto_private_key_info_t
- * - @ref avs_crypto_cert_revocation_list_info_t
- * using methods declared below.
- */
-struct avs_crypto_security_info_union_struct {
-    avs_crypto_security_info_tag_t type;
-    avs_crypto_data_source_t source;
-    union {
-        avs_crypto_security_info_union_internal_file_t file;
-        avs_crypto_security_info_union_internal_path_t path;
-        avs_crypto_security_info_union_internal_buffer_t buffer;
-        avs_crypto_security_info_union_internal_array_t array;
-        avs_crypto_security_info_union_internal_list_t list;
-#ifdef AVS_COMMONS_WITH_AVS_CRYPTO_ENGINE
-        avs_crypto_security_info_union_internal_engine_t engine;
-#endif // AVS_COMMONS_WITH_AVS_CRYPTO_ENGINE
-    } info;
-};
-
 typedef struct avs_crypto_certificate_chain_info_struct {
     avs_crypto_security_info_union_t desc;
 } avs_crypto_certificate_chain_info_t;
@@ -121,7 +47,7 @@ AVS_STATIC_ASSERT(sizeof(avs_crypto_certificate_chain_info_t)
                           == sizeof(avs_crypto_security_info_union_t),
                   certificate_chain_info_equivalent_to_union);
 
-#ifdef AVS_COMMONS_WITH_AVS_CRYPTO_ENGINE
+#ifdef AVS_COMMONS_WITH_AVS_CRYPTO_PKI_ENGINE
 /**
  * Creates certificate chain descriptor used later on to load certificate from
  * the engine.
@@ -132,7 +58,7 @@ AVS_STATIC_ASSERT(sizeof(avs_crypto_certificate_chain_info_t)
  */
 avs_crypto_certificate_chain_info_t
 avs_crypto_certificate_chain_info_from_engine(const char *query);
-#endif // AVS_COMMONS_WITH_AVS_CRYPTO_ENGINE
+#endif // AVS_COMMONS_WITH_AVS_CRYPTO_PKI_ENGINE
 
 /**
  * Creates a certificate chain descriptor used later on to load a
@@ -428,7 +354,7 @@ AVS_STATIC_ASSERT(sizeof(avs_crypto_private_key_info_t)
                           == sizeof(avs_crypto_security_info_union_t),
                   private_key_info_equivalent_to_union);
 
-#ifdef AVS_COMMONS_WITH_AVS_CRYPTO_ENGINE
+#ifdef AVS_COMMONS_WITH_AVS_CRYPTO_PKI_ENGINE
 /**
  * Creates private key descriptor used later on to load private key from the
  * engine.
@@ -439,7 +365,7 @@ AVS_STATIC_ASSERT(sizeof(avs_crypto_private_key_info_t)
  */
 avs_crypto_private_key_info_t
 avs_crypto_private_key_info_from_engine(const char *query);
-#endif // AVS_COMMONS_WITH_AVS_CRYPTO_ENGINE
+#endif // AVS_COMMONS_WITH_AVS_CRYPTO_PKI_ENGINE
 
 /**
  * Creates private key descriptor used later on to load private key from
@@ -828,7 +754,7 @@ avs_error_t avs_crypto_pki_ec_gen(avs_crypto_prng_ctx_t *prng_ctx,
                                   void *out_der_secret_key,
                                   size_t *inout_der_secret_key_size);
 
-#    ifdef AVS_COMMONS_WITH_AVS_CRYPTO_ENGINE
+#    ifdef AVS_COMMONS_WITH_AVS_CRYPTO_PKI_ENGINE
 /**
  * Generates a random private key (in a form that allows deriving the public key
  * from it) suitable for use with elliptic curve cryptography, using a hardware
@@ -837,6 +763,22 @@ avs_error_t avs_crypto_pki_ec_gen(avs_crypto_prng_ctx_t *prng_ctx,
  * @param query Engine-specific query string (e.g. a PKCS#11 URI) of the keys.
  */
 avs_error_t avs_crypto_pki_engine_key_gen(const char *query);
+
+/**
+ * Stores a private key (in a form that allows deriving the public key from it)
+ * given as @ref avs_crypto_private_key_info_t in a hardware security engine.
+ *
+ * @param query    Engine-specific query string (e.g. a PKCS#11 URI) of the
+ *                 keys.
+ *
+ * @param key_info Reference to a key to store.
+ *
+ * @param prng_ctx PRNG context to use for random number generation.
+ */
+avs_error_t
+avs_crypto_pki_engine_key_store(const char *query,
+                                const avs_crypto_private_key_info_t *key_info,
+                                avs_crypto_prng_ctx_t *prng_ctx);
 
 /**
  * Removes a private key and the corresponding public key from a hardware
@@ -868,7 +810,7 @@ avs_error_t avs_crypto_pki_engine_certificate_store(
  *              certificate.
  */
 avs_error_t avs_crypto_pki_engine_certificate_rm(const char *query);
-#    endif // AVS_COMMONS_WITH_AVS_CRYPTO_ENGINE
+#    endif // AVS_COMMONS_WITH_AVS_CRYPTO_PKI_ENGINE
 
 /**
  * Structure representing a type of a Distinguished Name attribute.

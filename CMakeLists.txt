@@ -1,4 +1,4 @@
-# Copyright 2021 AVSystem <avsystem@avsystem.com>
+# Copyright 2022 AVSystem <avsystem@avsystem.com>
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 cmake_minimum_required(VERSION 3.6.0)
 project(avs_commons C)
 
-set(AVS_COMMONS_VERSION "4.9.1")
+set(AVS_COMMONS_VERSION "4.10.0")
 
 ################# DISTRIBUTION #################################################
 
@@ -517,7 +517,7 @@ option(WITH_CUSTOM_TLS "Enable support for custom TLS socket implementation" OFF
 set(AVS_COMMONS_WITH_CUSTOM_TLS ${WITH_CUSTOM_TLS})
 
 cmake_dependent_option(WITH_PSK "Enable pre-shared key support" ON "WITH_OPENSSL OR WITH_MBEDTLS OR WITH_TINYDTLS OR WITH_CUSTOM_TLS" OFF)
-set(AVS_COMMONS_NET_WITH_PSK ${WITH_PSK})
+set(AVS_COMMONS_WITH_AVS_CRYPTO_PSK ${WITH_PSK})
 
 set(WITH_PKI_DEFAULT_VALUE ON)
 if(DEFINED WITH_X509)
@@ -529,8 +529,18 @@ cmake_dependent_option(WITH_PKI "Enable X.509 certificate support" "${WITH_PKI_D
 set(AVS_COMMONS_WITH_AVS_CRYPTO_PKI ${WITH_PKI})
 
 # Hardware security engines
-cmake_dependent_option(WITH_AVS_CRYPTO_ENGINE "Enable hardware-based security engine support" OFF "WITH_OPENSSL OR WITH_MBEDTLS OR WITH_CUSTOM_TLS" OFF)
-set(AVS_COMMONS_WITH_AVS_CRYPTO_ENGINE ${WITH_AVS_CRYPTO_ENGINE})
+set(WITH_AVS_CRYPTO_PKI_ENGINE_DEFAULT_VALUE OFF)
+if(DEFINED WITH_AVS_CRYPTO_ENGINE)
+    message(WARNING "WITH_AVS_CRYPTO_ENGINE is deprecated since avs_commons 4.10. Please use WITH_AVS_CRYPTO_PKI_ENGINE instead.")
+    set(WITH_AVS_CRYPTO_PKI_ENGINE_DEFAULT_VALUE "${WITH_AVS_CRYPTO_ENGINE}")
+endif()
+
+cmake_dependent_option(WITH_AVS_CRYPTO_PKI_ENGINE "Enable hardware-based PKI engine support" "${WITH_AVS_CRYPTO_PKI_ENGINE_DEFAULT_VALUE}"
+                       "WITH_OPENSSL OR WITH_MBEDTLS OR WITH_CUSTOM_TLS;WITH_PKI" OFF)
+set(AVS_COMMONS_WITH_AVS_CRYPTO_PKI_ENGINE ${WITH_AVS_CRYPTO_PKI_ENGINE})
+
+cmake_dependent_option(WITH_AVS_CRYPTO_PSK_ENGINE "Enable hardware-based PSK engine support" OFF "WITH_MBEDTLS OR WITH_CUSTOM_TLS;WITH_PSK" OFF)
+set(AVS_COMMONS_WITH_AVS_CRYPTO_PSK_ENGINE ${WITH_AVS_CRYPTO_PSK_ENGINE})
 
 if(WITH_OPENSSL)
     avs_add_find_routine("find_package(OpenSSL REQUIRED)")

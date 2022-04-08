@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 AVSystem <avsystem@avsystem.com>
+ * Copyright 2022 AVSystem <avsystem@avsystem.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,13 +33,32 @@
 #    include "avs_commons_poison.h"
 #endif
 
-#if !(defined(AVS_COMMONS_WITH_OPENSSL) || defined(AVS_COMMONS_WITH_MBEDTLS) \
-      || defined(AVS_COMMONS_WITH_TINYDTLS)                                  \
-      || defined(AVS_COMMONS_WITH_CUSTOM_TLS))                               \
-        && !defined(WITHOUT_SSL)
-#    define WITHOUT_SSL
-#endif
+// Backwards compatibility with configuration macros that are no longer current
+#ifdef AVS_COMMONS_NET_WITH_X509
+#    warning \
+            "AVS_COMMONS_NET_WITH_X509 is deprecated since avs_commons 4.2. Please update your avs_commons_config.h to use AVS_COMMONS_WITH_AVS_CRYPTO_PKI instead."
+#    define AVS_COMMONS_WITH_AVS_CRYPTO_PKI
+#endif // AVS_COMMONS_NET_WITH_X509
 
+#ifdef AVS_COMMONS_NET_WITH_VALGRIND
+#    warning \
+            "AVS_COMMONS_NET_WITH_VALGRIND is deprecated since avs_commons 4.2. Please update your avs_commons_config.h to use AVS_COMMONS_WITH_AVS_CRYPTO_VALGRIND instead."
+#    define AVS_COMMONS_WITH_AVS_CRYPTO_VALGRIND
+#endif // AVS_COMMONS_NET_WITH_VALGRIND
+
+#ifdef AVS_COMMONS_NET_WITH_PSK
+#    warning \
+            "AVS_COMMONS_NET_WITH_PSK is deprecated since avs_commons 4.10. Please update your avs_commons_config.h to use AVS_COMMONS_WITH_AVS_CRYPTO_PSK instead."
+#    define AVS_COMMONS_WITH_AVS_CRYPTO_PSK
+#endif // AVS_COMMONS_NET_WITH_PSK
+
+#ifdef AVS_COMMONS_WITH_AVS_CRYPTO_ENGINE
+#    warning \
+            "AVS_COMMONS_WITH_AVS_CRYPTO_ENGINE is deprecated since avs_commons 4.10. Please update your avs_commons_config.h to use AVS_COMMONS_WITH_AVS_CRYPTO_PKI_ENGINE instead."
+#    define AVS_COMMONS_WITH_AVS_CRYPTO_PKI_ENGINE
+#endif // AVS_COMMONS_WITH_AVS_CRYPTO_ENGINE
+
+// Config validation
 #if defined(AVS_COMMONS_WITH_INTERNAL_LOGS) \
         && !defined(AVS_COMMONS_WITH_AVS_LOG)
 #    error "AVS_COMMONS_WITH_AVS_LOG is required for AVS_COMMONS_WITH_INTERNAL_LOGS"
@@ -56,15 +75,12 @@
 #    error "AVS_COMMONS_WITH_AVS_STREAM is required for AVS_COMMONS_STREAM_WITH_FILE"
 #endif
 
-// Backwards compatibility with configuration macros that are no longer current
-#ifdef AVS_COMMONS_NET_WITH_X509
-#    warning \
-            "AVS_COMMONS_NET_WITH_X509 is deprecated since avs_commons 4.2. Please update your avs_commons_config.h to use AVS_COMMONS_WITH_AVS_CRYPTO_PKI instead."
-#    define AVS_COMMONS_WITH_AVS_CRYPTO_PKI
-#endif // AVS_COMMONS_NET_WITH_X509
+#if !defined(AVS_COMMONS_WITH_AVS_CRYPTO_PKI) \
+        && defined(AVS_COMMONS_WITH_AVS_CRYPTO_PKI_ENGINE)
+#    error "AVS_COMMONS_WITH_AVS_CRYPTO_PKI is required for AVS_COMMONS_WITH_AVS_CRYPTO_PKI_ENGINE"
+#endif
 
-#ifdef AVS_COMMONS_NET_WITH_VALGRIND
-#    warning \
-            "AVS_COMMONS_NET_WITH_VALGRIND is deprecated since avs_commons 4.2. Please update your avs_commons_config.h to use AVS_COMMONS_WITH_AVS_CRYPTO_VALGRIND instead."
-#    define AVS_COMMONS_WITH_AVS_CRYPTO_VALGRIND
-#endif // AVS_COMMONS_NET_WITH_VALGRIND
+#if !defined(AVS_COMMONS_WITH_AVS_CRYPTO_PSK) \
+        && defined(AVS_COMMONS_WITH_AVS_CRYPTO_PSK_ENGINE)
+#    error "AVS_COMMONS_WITH_AVS_CRYPTO_PSK is required for AVS_COMMONS_WITH_AVS_CRYPTO_PSK_ENGINE"
+#endif

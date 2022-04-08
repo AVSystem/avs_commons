@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 AVSystem <avsystem@avsystem.com>
+ * Copyright 2022 AVSystem <avsystem@avsystem.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,11 +19,18 @@
 
 #include <mbedtls/ssl.h>
 
-#include <avsystem/commons/avs_crypto_pki.h>
+#ifdef AVS_COMMONS_WITH_AVS_CRYPTO_PKI
+#    include <avsystem/commons/avs_crypto_pki.h>
+#endif // AVS_COMMONS_WITH_AVS_CRYPTO_PKI
+#ifdef AVS_COMMONS_WITH_AVS_CRYPTO_PSK
+#    include <avsystem/commons/avs_crypto_psk.h>
+#endif // AVS_COMMONS_WITH_AVS_CRYPTO_PSK
 
 #include "../avs_crypto_utils.h"
 
 VISIBILITY_PRIVATE_HEADER_BEGIN
+
+#ifdef AVS_COMMONS_WITH_AVS_CRYPTO_PKI
 
 void _avs_crypto_mbedtls_x509_crt_cleanup(mbedtls_x509_crt **crt);
 
@@ -43,6 +50,26 @@ avs_error_t
 _avs_crypto_mbedtls_load_private_key(mbedtls_pk_context **pk,
                                      const avs_crypto_private_key_info_t *info,
                                      avs_crypto_prng_ctx_t *prng_ctx);
+
+#endif // AVS_COMMONS_WITH_AVS_CRYPTO_PKI
+
+#ifdef AVS_COMMONS_WITH_AVS_CRYPTO_PSK
+
+typedef avs_error_t avs_crypto_mbedtls_identity_cb_t(const uint8_t *identity,
+                                                     size_t identity_size,
+                                                     void *arg);
+
+avs_error_t _avs_crypto_mbedtls_call_with_identity_loaded(
+        const avs_crypto_psk_identity_info_t *info,
+        avs_crypto_mbedtls_identity_cb_t *cb,
+        void *cb_arg);
+
+avs_error_t
+_avs_crypto_mbedtls_load_psk(mbedtls_ssl_config *config,
+                             const avs_crypto_psk_key_info_t *key,
+                             const avs_crypto_psk_identity_info_t *identity);
+
+#endif // AVS_COMMONS_WITH_AVS_CRYPTO_PSK
 
 VISIBILITY_PRIVATE_HEADER_END
 #endif // NET_MBEDTLS_DATA_LOADER_H

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 AVSystem <avsystem@avsystem.com>
+ * Copyright 2022 AVSystem <avsystem@avsystem.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,18 +35,6 @@ VISIBILITY_PRIVATE_HEADER_BEGIN
 #include <avs_x_log_config.h>
 
 /**
- * An owned PSK/identity pair. avs_commons will avs_free()
- * @ref avs_net_owned_psk_t#psk and @ref avs_net_owned_psk_t#identity pointers
- * when they are no longer needed.
- */
-typedef struct {
-    void *psk;
-    size_t psk_size;
-    void *identity;
-    size_t identity_size;
-} avs_net_owned_psk_t;
-
-/**
  * Note: the _actual_ maximum hostname length is not precisely defined.
  * NI_MAXHOST on Linux is actually a very generous 1025 (incl. nullbyte). DNS
  * frame format allows for up to 253 (excl. nullbyte), and also each segment
@@ -67,12 +55,12 @@ avs_error_t _avs_net_create_tcp_socket(avs_net_socket_t **socket,
 avs_error_t _avs_net_create_udp_socket(avs_net_socket_t **socket,
                                        const void *socket_configuration);
 
-#ifndef WITHOUT_SSL
+#ifndef AVS_COMMONS_WITHOUT_TLS
 avs_error_t _avs_net_create_ssl_socket(avs_net_socket_t **socket,
                                        const void *socket_configuration);
 avs_error_t _avs_net_create_dtls_socket(avs_net_socket_t **socket,
                                         const void *socket_configuration);
-#endif // WITHOUT_SSL
+#endif // AVS_COMMONS_WITHOUT_TLS
 
 VISIBILITY_PRIVATE_HEADER_END
 

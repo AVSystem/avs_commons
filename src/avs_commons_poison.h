@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 AVSystem <avsystem@avsystem.com>
+ * Copyright 2022 AVSystem <avsystem@avsystem.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,7 +36,7 @@
         __attribute__((format(printf, fmt_idx, ellipsis_idx)))
 
 #    ifndef AVS_STREAM_STREAM_FILE_C
-// File handling funcitons used in stream/src/stream_file.c
+// File handling functions used in src/stream/avs_stream_file.c
 #        pragma GCC poison clearerr
 #        pragma GCC poison feof
 #        pragma GCC poison ferror
@@ -63,7 +63,7 @@
 #        endif // AVS_LOG_LOG_C
 
 #        ifndef AVS_STREAM_STREAM_FILE_C
-// fclose is used in unit test framework and stream/src/stream_file.c
+// fclose is used in unit test framework and src/stream/avs_stream_file.c
 #            pragma GCC poison fclose
 #        endif // AVS_STREAM_STREAM_FILE_C
 
@@ -81,7 +81,8 @@
 
 #    if !defined(AVS_STREAM_STREAM_FILE_C) && !defined(AVS_NET_API_C)
 
-// fopen and fwrite are used in stream/src/stream_file.c and network debug log
+// fopen and fwrite are used in src/stream/avs_stream_file.c and network debug
+// log
 #        pragma GCC poison fopen
 #        pragma GCC poison fwrite
 

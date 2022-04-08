@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 AVSystem <avsystem@avsystem.com>
+ * Copyright 2022 AVSystem <avsystem@avsystem.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,7 +38,8 @@ VISIBILITY_SOURCE_BEGIN
 const avs_time_duration_t AVS_NET_SOCKET_DEFAULT_RECV_TIMEOUT = { 30, 0 };
 
 #    ifdef AVS_COMMONS_WITH_AVS_CRYPTO
-avs_net_security_info_t avs_net_security_info_from_psk(avs_net_psk_info_t psk) {
+avs_net_security_info_t
+avs_net_security_info_from_generic_psk(avs_net_generic_psk_info_t psk) {
     avs_net_security_info_t result;
     memset(&result, 0, sizeof(result));
     result.mode = AVS_NET_SECURITY_PSK;
@@ -718,7 +719,7 @@ avs_net_tcp_socket_create(avs_net_socket_t **socket,
 avs_error_t
 avs_net_dtls_socket_create(avs_net_socket_t **socket,
                            const avs_net_ssl_configuration_t *config) {
-#        ifndef WITHOUT_SSL
+#        ifndef AVS_COMMONS_WITHOUT_TLS
     if (!config->prng_ctx) {
         LOG(ERROR, _("PRNG ctx MUST NOT be NULL"));
         return avs_errno(AVS_EINVAL);
@@ -726,18 +727,18 @@ avs_net_dtls_socket_create(avs_net_socket_t **socket,
     avs_error_t err =
             create_bare_socket(socket, _avs_net_create_dtls_socket, config);
     return init_debug_socket_if_applicable(socket, err);
-#        else  // WITHOUT_SSL
+#        else  // AVS_COMMONS_WITHOUT_TLS
     (void) socket;
     (void) config;
     LOG(ERROR, _("could not create secure socket: (D)TLS support is disabled"));
     return avs_errno(AVS_ENOTSUP);
-#        endif // WITHOUT_SSL
+#        endif // AVS_COMMONS_WITHOUT_TLS
 }
 
 avs_error_t
 avs_net_ssl_socket_create(avs_net_socket_t **socket,
                           const avs_net_ssl_configuration_t *config) {
-#        ifndef WITHOUT_SSL
+#        ifndef AVS_COMMONS_WITHOUT_TLS
     if (!config->prng_ctx) {
         LOG(ERROR, _("PRNG ctx MUST NOT be NULL"));
         return avs_errno(AVS_EINVAL);
@@ -745,12 +746,12 @@ avs_net_ssl_socket_create(avs_net_socket_t **socket,
     avs_error_t err =
             create_bare_socket(socket, _avs_net_create_ssl_socket, config);
     return init_debug_socket_if_applicable(socket, err);
-#        else  // WITHOUT_SSL
+#        else  // AVS_COMMONS_WITHOUT_TLS
     (void) socket;
     (void) config;
     LOG(ERROR, _("could not create secure socket: (D)TLS support is disabled"));
     return avs_errno(AVS_ENOTSUP);
-#        endif // WITHOUT_SSL
+#        endif // AVS_COMMONS_WITHOUT_TLS
 }
 #    endif // AVS_COMMONS_WITH_AVS_CRYPTO
 

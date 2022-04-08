@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 AVSystem <avsystem@avsystem.com>
+ * Copyright 2022 AVSystem <avsystem@avsystem.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -65,9 +65,9 @@ VISIBILITY_SOURCE_BEGIN
 #    define TRUNCATION_BUFFER_SIZE 128
 
 #    if (OPENSSL_VERSION_NUMBER_LT(1, 0, 0) || defined(OPENSSL_NO_PSK)) \
-            && defined(AVS_COMMONS_NET_WITH_PSK)
+            && defined(AVS_COMMONS_WITH_AVS_CRYPTO_PSK)
 #        warning "Detected OpenSSL version does not support PSK - disabling"
-#        undef AVS_COMMONS_NET_WITH_PSK
+#        undef AVS_COMMONS_WITH_AVS_CRYPTO_PSK
 #    endif
 
 #    if OPENSSL_VERSION_NUMBER_LT(1, 0, 1) && defined(AVS_COMMONS_NET_WITH_DTLS)
@@ -103,8 +103,9 @@ typedef struct {
     avs_net_socket_configuration_t backend_configuration;
     avs_net_resolved_endpoint_t endpoint_buffer;
 
-#    ifdef AVS_COMMONS_NET_WITH_PSK
-    avs_net_owned_psk_t psk;
+#    ifdef AVS_COMMONS_WITH_AVS_CRYPTO_PSK
+    avs_crypto_psk_key_info_t *psk_key;
+    avs_crypto_psk_identity_info_t *psk_identity;
 #    endif
 
 #    ifdef AVS_COMMONS_NET_WITH_TLS_SESSION_PERSISTENCE
@@ -638,7 +639,7 @@ static avs_error_t ssl_handshake(ssl_socket_t *socket) {
     return AVS_OK;
 }
 
-#    if !defined(AVS_COMMONS_NET_WITH_PSK) && !defined(SSL_set_app_data)
+#    if !defined(AVS_COMMONS_WITH_AVS_CRYPTO_PSK) && !defined(SSL_set_app_data)
 /*
  * SSL_set_app_data is not available in some versions, but also not used
  * anywhere if PSK is not used.
@@ -699,15 +700,15 @@ ids_to_cipher_list(ssl_socket_t *socket,
         }
 
         const char *name = SSL_CIPHER_get_name(cipher);
-#    ifdef AVS_COMMONS_NET_WITH_PSK
-        if (socket->psk.psk) {
+#    ifdef AVS_COMMONS_WITH_AVS_CRYPTO_PSK
+        if (socket->psk_key) {
             if (!strstr(name, "PSK")) {
                 LOG(DEBUG, _("ignoring non-PSK cipher ID: 0x") "%04x",
                     suites->ids[i]);
                 continue;
             }
         } else
-#    endif // AVS_COMMONS_NET_WITH_PSK
+#    endif // AVS_COMMONS_WITH_AVS_CRYPTO_PSK
                 if (strstr(name, "PSK")) {
             LOG(DEBUG, _("ignoring PSK cipher ID: 0x") "%04x", suites->ids[i]);
             continue;
@@ -807,11 +808,11 @@ static avs_error_t fix_socket_ciphersuites(ssl_socket_t *socket) {
         err = configure_cipher_list(socket, ciphersuites_string);
         avs_free(ciphersuites_string);
     }
-#    ifdef AVS_COMMONS_NET_WITH_PSK
-    else if (socket->psk.psk) {
+#    ifdef AVS_COMMONS_WITH_AVS_CRYPTO_PSK
+    else if (socket->psk_key) {
         err = configure_cipher_list(socket, "PSK");
     }
-#    endif // AVS_COMMONS_NET_WITH_PSK
+#    endif // AVS_COMMONS_WITH_AVS_CRYPTO_PSK
     else {
         err = configure_cipher_list(socket, "!PSK ALL");
     }
@@ -902,6 +903,11 @@ static avs_error_t start_ssl(ssl_socket_t *socket, const char *host) {
                 // For opportunistic clients that means no verification
                 verification = false;
             }
+        } else if (socket->dane_tlsa_array_field.array_element_count > 0
+                   && !have_usable_tlsa_records) {
+            LOG(ERROR,
+                _("DANE is enforced but could not setup any TLSA record"));
+            return avs_errno(AVS_EPROTO);
         }
     } else
 #    endif // WITH_DANE_SUPPORT
@@ -1197,7 +1203,7 @@ configure_ssl_certs(ssl_socket_t *socket,
 }
 #    endif // AVS_COMMONS_WITH_AVS_CRYPTO_PKI
 
-#    ifdef AVS_COMMONS_NET_WITH_PSK
+#    ifdef AVS_COMMONS_WITH_AVS_CRYPTO_PSK
 static unsigned int psk_client_cb(SSL *ssl,
                                   const char *hint,
                                   char *identity,
@@ -1208,25 +1214,36 @@ static unsigned int psk_client_cb(SSL *ssl,
 
     (void) hint;
 
-    if (!socket || !socket->psk.psk || max_psk_len < socket->psk.psk_size
-            || !socket->psk.identity
-            || max_identity_len < socket->psk.identity_size + 1) {
+    if (!socket || !socket->psk_key
+            || socket->psk_key->desc.source != AVS_CRYPTO_DATA_SOURCE_BUFFER
+            || max_psk_len < socket->psk_key->desc.info.buffer.buffer_size
+            || !socket->psk_identity
+            || socket->psk_identity->desc.source
+                           != AVS_CRYPTO_DATA_SOURCE_BUFFER
+            || max_identity_len
+                           < socket->psk_identity->desc.info.buffer.buffer_size
+                                         + 1) {
         return 0;
     }
 
-    memcpy(psk, socket->psk.psk, socket->psk.psk_size);
-    memcpy(identity, socket->psk.identity, socket->psk.identity_size);
-    identity[socket->psk.identity_size] = '\0';
+    memcpy(psk, socket->psk_key->desc.info.buffer.buffer,
+           socket->psk_key->desc.info.buffer.buffer_size);
+    memcpy(identity, socket->psk_identity->desc.info.buffer.buffer,
+           socket->psk_identity->desc.info.buffer.buffer_size);
+    identity[socket->psk_identity->desc.info.buffer.buffer_size] = '\0';
 
-    return (unsigned int) socket->psk.psk_size;
+    return (unsigned int) socket->psk_key->desc.info.buffer.buffer_size;
 }
 
 static avs_error_t configure_ssl_psk(ssl_socket_t *socket,
-                                     const avs_net_psk_info_t *psk) {
+                                     const avs_net_generic_psk_info_t *psk) {
     LOG(TRACE, _("configure_ssl_psk"));
 
-    avs_error_t err = _avs_net_psk_copy(&socket->psk, psk);
-    if (avs_is_ok(err)) {
+    avs_error_t err;
+    if (avs_is_ok((
+                err = avs_crypto_psk_key_info_copy(&socket->psk_key, psk->key)))
+            && avs_is_ok((err = avs_crypto_psk_identity_info_copy(
+                                  &socket->psk_identity, psk->identity)))) {
         SSL_CTX_set_psk_client_callback(socket->ctx, psk_client_cb);
     }
     return err;
@@ -1424,8 +1441,11 @@ static avs_error_t cleanup_ssl(avs_net_socket_t **socket_) {
     ssl_socket_t **socket = (ssl_socket_t **) socket_;
     LOG(TRACE, _("cleanup_ssl(*socket=") "%p" _(")"), (void *) *socket);
 
-#    ifdef AVS_COMMONS_NET_WITH_PSK
-    _avs_net_psk_cleanup(&(*socket)->psk);
+#    ifdef AVS_COMMONS_WITH_AVS_CRYPTO_PSK
+    avs_free((*socket)->psk_key);
+    (*socket)->psk_key = NULL;
+    avs_free((*socket)->psk_identity);
+    (*socket)->psk_identity = NULL;
 #    endif
 
     avs_error_t err = close_ssl(*socket_);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 AVSystem <avsystem@avsystem.com>
+ * Copyright 2022 AVSystem <avsystem@avsystem.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -141,7 +141,8 @@ void _avs_sched_cleanup_global_state(void) {
 
 #    define SCHED_LOG(Sched, Level, ...)                          \
         LOG(Level, "Scheduler \"%s\": " AVS_VARARG0(__VA_ARGS__), \
-            (Sched)->name AVS_VARARG_REST(__VA_ARGS__))
+            ((Sched)->name ? (Sched)->name                        \
+                           : "(unknown)") AVS_VARARG_REST(__VA_ARGS__))
 
 #    ifdef AVS_COMMONS_WITH_INTERNAL_LOGS
 
@@ -389,7 +390,7 @@ static int sched_at_locked(avs_sched_t *sched,
     assert(clb);
     assert(avs_time_monotonic_valid(instant));
     if (sched->shutting_down) {
-        SCHED_LOG(sched, ERROR,
+        SCHED_LOG(sched, DEBUG,
                   _("scheduler already shut down when attempting ")
                           _("to schedule") "%s",
                   JOB_LOG_ID_EXPLICIT(log_file, log_line, log_name));

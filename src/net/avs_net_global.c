@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 AVSystem <avsystem@avsystem.com>
+ * Copyright 2022 AVSystem <avsystem@avsystem.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,14 +49,14 @@ void _avs_net_cleanup_global_state(void) {
 }
 
 avs_error_t _avs_net_ensure_global_state(void) {
-#    ifndef WITHOUT_SSL
+#    ifndef AVS_COMMONS_WITHOUT_TLS
     avs_error_t err = _avs_crypto_ensure_global_state();
     if (avs_is_err(err)) {
         return err;
     }
-#    else  // WITHOUT_SSL
+#    else  // AVS_COMMONS_WITHOUT_TLS
     avs_error_t err = avs_errno(AVS_UNKNOWN_ERROR);
-#    endif // WITHOUT_SSL
+#    endif // AVS_COMMONS_WITHOUT_TLS
 
     if (avs_init_once(&g_net_init_handle, initialize_global, &err)) {
         assert(avs_is_err(err));

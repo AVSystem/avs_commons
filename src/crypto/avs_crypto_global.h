@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 AVSystem <avsystem@avsystem.com>
+ * Copyright 2022 AVSystem <avsystem@avsystem.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,13 +21,13 @@
 
 VISIBILITY_PRIVATE_HEADER_BEGIN
 
-#ifndef WITHOUT_SSL
+#ifndef AVS_COMMONS_WITHOUT_TLS
 avs_error_t _avs_crypto_initialize_global_state(void);
 void _avs_crypto_cleanup_global_state(void);
-#else // WITHOUT_SSL
+#else // AVS_COMMONS_WITHOUT_TLS
 #    define _avs_crypto_initialize_global_state(...) AVS_OK
 #    define _avs_crypto_cleanup_global_state(...) ((void) 0)
-#endif // WITHOUT_SSL
+#endif // AVS_COMMONS_WITHOUT_TLS
 
 avs_error_t _avs_crypto_ensure_global_state(void);
 

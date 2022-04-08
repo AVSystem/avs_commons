@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 AVSystem <avsystem@avsystem.com>
+ * Copyright 2022 AVSystem <avsystem@avsystem.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -79,27 +79,31 @@ _avs_crypto_mbedtls_x509_time_to_avs_time(const mbedtls_x509_time *x509_time) {
     // Since Mbed TLS 3.0, mbedtls_x509_time is totally private, but there are
     // no public APIs to examine it in any other way than checking whether it's
     // in the future or in the past, so...
-    if (x509_time->MBEDTLS_PRIVATE(mon) < 1
-            || x509_time->MBEDTLS_PRIVATE(mon) > 12
-            || x509_time->MBEDTLS_PRIVATE(day) < 1
-            || x509_time->MBEDTLS_PRIVATE(day) > 31
-            || x509_time->MBEDTLS_PRIVATE(hour) < 0
-            || x509_time->MBEDTLS_PRIVATE(hour) > 23
-            || x509_time->MBEDTLS_PRIVATE(min) < 0
-            || x509_time->MBEDTLS_PRIVATE(min) > 59
-            || x509_time->MBEDTLS_PRIVATE(sec) < 0
-            || x509_time->MBEDTLS_PRIVATE(sec)
+    if (x509_time->MBEDTLS_PRIVATE_BETWEEN_30_31(mon) < 1
+            || x509_time->MBEDTLS_PRIVATE_BETWEEN_30_31(mon) > 12
+            || x509_time->MBEDTLS_PRIVATE_BETWEEN_30_31(day) < 1
+            || x509_time->MBEDTLS_PRIVATE_BETWEEN_30_31(day) > 31
+            || x509_time->MBEDTLS_PRIVATE_BETWEEN_30_31(hour) < 0
+            || x509_time->MBEDTLS_PRIVATE_BETWEEN_30_31(hour) > 23
+            || x509_time->MBEDTLS_PRIVATE_BETWEEN_30_31(min) < 0
+            || x509_time->MBEDTLS_PRIVATE_BETWEEN_30_31(min) > 59
+            || x509_time->MBEDTLS_PRIVATE_BETWEEN_30_31(sec) < 0
+            || x509_time->MBEDTLS_PRIVATE_BETWEEN_30_31(sec)
                            > 60 /* support leap seconds */) {
         return AVS_TIME_REAL_INVALID;
     }
     bool is_leap;
-    int64_t days = year_to_days(x509_time->MBEDTLS_PRIVATE(year), &is_leap)
-                   + month_to_days(x509_time->MBEDTLS_PRIVATE(mon), is_leap)
-                   + x509_time->MBEDTLS_PRIVATE(day) - 1;
-    int64_t time = 60
-                           * (60 * x509_time->MBEDTLS_PRIVATE(hour)
-                              + x509_time->MBEDTLS_PRIVATE(min))
-                   + x509_time->MBEDTLS_PRIVATE(sec);
+    int64_t days =
+            year_to_days(x509_time->MBEDTLS_PRIVATE_BETWEEN_30_31(year),
+                         &is_leap)
+            + month_to_days(x509_time->MBEDTLS_PRIVATE_BETWEEN_30_31(mon),
+                            is_leap)
+            + x509_time->MBEDTLS_PRIVATE_BETWEEN_30_31(day) - 1;
+    int64_t time =
+            60
+                    * (60 * x509_time->MBEDTLS_PRIVATE_BETWEEN_30_31(hour)
+                       + x509_time->MBEDTLS_PRIVATE_BETWEEN_30_31(min))
+            + x509_time->MBEDTLS_PRIVATE_BETWEEN_30_31(sec);
     return (avs_time_real_t) {
         .since_real_epoch.seconds = days * 86400 + time
     };

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 AVSystem <avsystem@avsystem.com>
+ * Copyright 2022 AVSystem <avsystem@avsystem.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -401,8 +401,8 @@ avs_time_monotonic_t avs_sched_time(avs_sched_handle_t *handle_ptr);
  *
  * @param handle_ptr Pointer to a job handle variable (as passed earlier as
  *                   <c>OutHandle</c> to @ref AVS_SCHED_AT,
- *                   @ref AVS_SCHED_DELAYED or @ref AVS_SCHED_NOW) to check the
- *                   scheduled time of.
+ *                   @ref AVS_SCHED_DELAYED or @ref AVS_SCHED_NOW) to
+ *                   unschedule.
  *
  * NOTE: On return from this function, <c>*handle_ptr</c> will be set to
  * <c>NULL</c>.
@@ -417,8 +417,8 @@ void avs_sched_del(avs_sched_handle_t *handle_ptr);
  *
  * @param handle_ptr Pointer to a job handle variable (as passed earlier as
  *                   <c>OutHandle</c> to @ref AVS_SCHED_AT,
- *                   @ref AVS_SCHED_DELAYED or @ref AVS_SCHED_NOW) to check the
- *                   scheduled time of.
+ *                   @ref AVS_SCHED_DELAYED or @ref AVS_SCHED_NOW) to detach
+ *                   from a job it refers to.
  *
  * NOTE: On return from this function, <c>*handle_ptr</c> will be set to
  * <c>NULL</c>.

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 AVSystem <avsystem@avsystem.com>
+ * Copyright 2022 AVSystem <avsystem@avsystem.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -238,14 +238,14 @@ static avs_error_t load_crl_from_file(X509_STORE *store, const char *file) {
 avs_error_t _avs_crypto_openssl_load_crls(
         X509_STORE *store, const avs_crypto_cert_revocation_list_info_t *info) {
     if (info == NULL) {
-        LOG(ERROR, "Given CRL info is empty.");
+        LOG(ERROR, _("Given CRL info is empty."));
         return avs_errno(AVS_EINVAL);
     }
 
     switch (info->desc.source) {
     case AVS_CRYPTO_DATA_SOURCE_EMPTY:
         return AVS_OK;
-#    ifdef AVS_COMMONS_WITH_AVS_CRYPTO_ENGINE
+#    if defined(AVS_COMMONS_WITH_AVS_CRYPTO_PKI_ENGINE)
     case AVS_CRYPTO_DATA_SOURCE_ENGINE:
         if (!info->desc.info.engine.query) {
             LOG(ERROR, _("attempt to load CRL from engine, but query=NULL"));
@@ -253,7 +253,11 @@ avs_error_t _avs_crypto_openssl_load_crls(
         }
         return _avs_crypto_openssl_engine_load_crls(
                 store, info->desc.info.engine.query);
-#    endif // AVS_COMMONS_WITH_AVS_CRYPTO_ENGINE
+#    elif defined(AVS_COMMONS_WITH_AVS_CRYPTO_PSK_ENGINE)
+    case AVS_CRYPTO_DATA_SOURCE_ENGINE:
+        LOG(ERROR, _("CRL cannot be loaded from engine"));
+        return avs_errno(AVS_EINVAL);
+#    endif // AVS_COMMONS_WITH_AVS_CRYPTO_*_ENGINE
     case AVS_CRYPTO_DATA_SOURCE_FILE:
         if (!info->desc.info.file.filename) {
             LOG(ERROR, _("attempt to load CRL from file, but filename=NULL"));
@@ -347,7 +351,7 @@ static avs_error_t load_file_into_buffer(void **out_buf,
 static avs_error_t load_key_cb(void *key_, void *out_key_ptr) {
     EVP_PKEY **out_key = (EVP_PKEY **) out_key_ptr;
     if (*out_key) {
-        LOG(ERROR, "More than one private key specified");
+        LOG(ERROR, _("More than one private key specified"));
         EVP_PKEY_free(*out_key);
         *out_key = NULL;
         return avs_errno(AVS_EIO);
@@ -409,13 +413,13 @@ static avs_error_t load_key_from_file(EVP_PKEY **out_key,
 avs_error_t _avs_crypto_openssl_load_private_key(
         EVP_PKEY **out_key, const avs_crypto_private_key_info_t *info) {
     if (info == NULL) {
-        LOG(ERROR, "Given key info is empty.");
+        LOG(ERROR, _("Given key info is empty."));
         return avs_errno(AVS_EINVAL);
     }
 
     assert(out_key && !*out_key);
     switch (info->desc.source) {
-#    ifdef AVS_COMMONS_WITH_AVS_CRYPTO_ENGINE
+#    if defined(AVS_COMMONS_WITH_AVS_CRYPTO_PKI_ENGINE)
     case AVS_CRYPTO_DATA_SOURCE_ENGINE:
         if (!info->desc.info.engine.query) {
             LOG(ERROR,
@@ -425,7 +429,11 @@ avs_error_t _avs_crypto_openssl_load_private_key(
         *out_key = _avs_crypto_openssl_engine_load_private_key(
                 info->desc.info.engine.query);
         return AVS_OK;
-#    endif // AVS_COMMONS_WITH_AVS_CRYPTO_ENGINE
+#    elif defined(AVS_COMMONS_WITH_AVS_CRYPTO_PSK_ENGINE)
+    case AVS_CRYPTO_DATA_SOURCE_ENGINE:
+        LOG(ERROR, _("private key cannot be loaded from engine"));
+        return avs_errno(AVS_EINVAL);
+#    endif // AVS_COMMONS_WITH_AVS_CRYPTO_*_ENGINE
     case AVS_CRYPTO_DATA_SOURCE_FILE: {
         if (!info->desc.info.file.filename) {
             LOG(ERROR,
@@ -508,7 +516,7 @@ pass_cert_to_cb(void *cb_info_,
                 const avs_crypto_certificate_chain_info_t *info) {
     load_certs_cb_info_t *cb_info = (load_certs_cb_info_t *) cb_info_;
     switch (info->desc.source) {
-#    ifdef AVS_COMMONS_WITH_AVS_CRYPTO_ENGINE
+#    if defined(AVS_COMMONS_WITH_AVS_CRYPTO_PKI_ENGINE)
     case AVS_CRYPTO_DATA_SOURCE_ENGINE:
         if (!info->desc.info.engine.query) {
             LOG(ERROR, _("attempt to load certificate chain from engine, but "
@@ -517,7 +525,11 @@ pass_cert_to_cb(void *cb_info_,
         }
         return _avs_crypto_openssl_engine_load_certs(
                 info->desc.info.engine.query, cb_info->cb, cb_info->cb_arg);
-#    endif // AVS_COMMONS_WITH_AVS_CRYPTO_ENGINE
+#    elif defined(AVS_COMMONS_WITH_AVS_CRYPTO_PSK_ENGINE)
+    case AVS_CRYPTO_DATA_SOURCE_ENGINE:
+        LOG(ERROR, _("certificate chain cannot be loaded from engine"));
+        return avs_errno(AVS_EINVAL);
+#    endif // AVS_COMMONS_WITH_AVS_CRYPTO_*_ENGINE
     case AVS_CRYPTO_DATA_SOURCE_FILE:
         if (!info->desc.info.file.filename) {
             LOG(ERROR, _("attempt to load certificate chain from file, but "
@@ -553,7 +565,7 @@ avs_error_t _avs_crypto_openssl_load_client_certs(
         avs_crypto_ossl_object_load_t *load_cb,
         void *cb_arg) {
     if (info == NULL) {
-        LOG(ERROR, "Given cert info is empty.");
+        LOG(ERROR, _("Given cert info is empty."));
         return avs_errno(AVS_EINVAL);
     }
 
@@ -607,7 +619,7 @@ load_certs_to_store(void *store,
 avs_error_t _avs_crypto_openssl_load_ca_certs(
         X509_STORE *store, const avs_crypto_certificate_chain_info_t *info) {
     if (info == NULL) {
-        LOG(ERROR, "Given cert info is empty.");
+        LOG(ERROR, _("Given cert info is empty."));
         return avs_errno(AVS_EINVAL);
     }
 

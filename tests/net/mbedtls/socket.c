@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 AVSystem <avsystem@avsystem.com>
+ * Copyright 2022 AVSystem <avsystem@avsystem.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,7 +39,8 @@ AVS_UNIT_TEST(socket, ciphersuites_psk) {
 AVS_UNIT_TEST(socket, ciphersuites_cert) {
     avs_net_socket_t *socket = NULL;
     avs_net_ssl_configuration_t config = create_default_cert_ssl_config();
-    config.security.data.psk.psk = NULL;
+    memset(&config.security.data.psk.key, 0,
+           sizeof(config.security.data.psk.key));
     AVS_UNIT_ASSERT_SUCCESS(avs_net_ssl_socket_create(&socket, &config));
 
     ssl_socket_t *ssl_socket = (ssl_socket_t *) socket;

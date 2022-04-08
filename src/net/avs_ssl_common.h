@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 AVSystem <avsystem@avsystem.com>
+ * Copyright 2022 AVSystem <avsystem@avsystem.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -414,44 +414,6 @@ avs_error_t _avs_net_create_ssl_socket(avs_net_socket_t **socket,
 avs_error_t _avs_net_create_dtls_socket(avs_net_socket_t **socket,
                                         const void *socket_configuration) {
     return create_ssl_socket(socket, AVS_NET_UDP_SOCKET, socket_configuration);
-}
-
-static inline void _avs_net_psk_cleanup(avs_net_owned_psk_t *psk) {
-    avs_free(psk->psk);
-    psk->psk = NULL;
-    avs_free(psk->identity);
-    psk->identity = NULL;
-}
-
-static inline avs_error_t _avs_net_psk_copy(avs_net_owned_psk_t *dst,
-                                            const avs_net_psk_info_t *src) {
-    if (!src->psk_size) {
-        LOG(ERROR, _("PSK cannot be empty"));
-        return avs_errno(AVS_EINVAL);
-    }
-    avs_net_owned_psk_t out_psk;
-    memset(&out_psk, 0, sizeof(out_psk));
-    out_psk.psk_size = src->psk_size;
-    out_psk.psk = avs_malloc(src->psk_size);
-    if (!out_psk.psk) {
-        LOG(ERROR, _("Out of memory"));
-        return avs_errno(AVS_ENOMEM);
-    }
-
-    out_psk.identity_size = src->identity_size;
-    if (out_psk.identity_size) {
-        out_psk.identity = avs_malloc(src->identity_size);
-        if (!out_psk.identity) {
-            avs_free(out_psk.psk);
-            LOG(ERROR, _("Out of memory"));
-            return avs_errno(AVS_ENOMEM);
-        }
-        memcpy(out_psk.identity, src->identity, src->identity_size);
-    }
-    _avs_net_psk_cleanup(dst);
-    memcpy(out_psk.psk, src->psk, src->psk_size);
-    *dst = out_psk;
-    return AVS_OK;
 }
 
 static const avs_net_socket_v_table_t ssl_vtable = {

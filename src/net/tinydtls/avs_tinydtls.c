@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 AVSystem <avsystem@avsystem.com>
+ * Copyright 2022 AVSystem <avsystem@avsystem.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,7 +53,8 @@ typedef struct {
 
     ssl_read_context_t *read_ctx;
 
-    avs_net_owned_psk_t psk;
+    avs_crypto_psk_key_info_t *psk_key;
+    avs_crypto_psk_identity_info_t *psk_identity;
 } ssl_socket_t;
 
 #    define NET_SSL_COMMON_INTERNALS
@@ -175,7 +176,10 @@ static avs_error_t cleanup_ssl(avs_net_socket_t **socket_) {
     LOG(TRACE, _("cleanup_ssl(*socket=") "%p" _(")"), (void *) socket);
 
 #    ifdef DTLS_PSK
-    _avs_net_psk_cleanup(&socket->psk);
+    avs_free(socket->psk_key);
+    socket->psk_key = NULL;
+    avs_free(socket->psk_identity);
+    socket->psk_identity = NULL;
 #    endif
     avs_error_t err = close_ssl(*socket_);
     add_err(&err, avs_net_socket_cleanup(&socket->backend_socket));
@@ -268,14 +272,19 @@ static avs_error_t start_ssl(ssl_socket_t *socket, const char *host) {
 }
 
 static avs_error_t configure_ssl_psk(ssl_socket_t *socket,
-                                     const avs_net_psk_info_t *psk) {
+                                     const avs_net_generic_psk_info_t *psk) {
     LOG(TRACE, _("configure_ssl_psk"));
 
 #    ifndef DTLS_PSK
     LOG(ERROR, _("support for psk is disabled"));
     return avs_errno(AVS_ENOTSUP);
 #    else
-    return _avs_net_psk_copy(&socket->psk, psk);
+    avs_error_t err;
+    (void) (avs_is_err((err = avs_crypto_psk_key_info_copy(&socket->psk_key,
+                                                           psk->key)))
+            || avs_is_err((err = avs_crypto_psk_identity_info_copy(
+                                   &socket->psk_identity, psk->identity))));
+    return err;
 #    endif /* DTLS_PSK */
 }
 
@@ -359,8 +368,8 @@ static int dtls_get_psk_info_handler(dtls_context_t *ctx,
     (void) session;
 
     ssl_socket_t *socket = (ssl_socket_t *) dtls_get_app_data(ctx);
-    assert(socket->psk.psk);
-    assert(socket->psk.identity);
+    assert(socket->psk_key);
+    assert(socket->psk_identity);
 
     switch (type) {
     case DTLS_PSK_HINT:
@@ -371,26 +380,39 @@ static int dtls_get_psk_info_handler(dtls_context_t *ctx,
          */
         (void) id;
 
-        if (size < socket->psk.identity_size) {
+        if (socket->psk_identity->desc.source
+                != AVS_CRYPTO_DATA_SOURCE_BUFFER) {
+            LOG(WARNING, _("unsupported source of PSK identity"));
+            return dtls_alert_fatal_create(DTLS_ALERT_INTERNAL_ERROR);
+        }
+        if (size < socket->psk_identity->desc.info.buffer.buffer_size) {
             LOG(WARNING, _("tinyDTLS buffer for PSK identity is too small"));
             return dtls_alert_fatal_create(DTLS_ALERT_INTERNAL_ERROR);
         }
-        assert(socket->psk.identity_size <= INT_MAX);
-        memcpy(out_buffer, socket->psk.identity, socket->psk.identity_size);
-        return (int) socket->psk.identity_size;
+        assert(socket->psk_identity->desc.info.buffer.buffer_size <= INT_MAX);
+        memcpy(out_buffer, socket->psk_identity->desc.info.buffer.buffer,
+               socket->psk_identity->desc.info.buffer.buffer_size);
+        return (int) socket->psk_identity->desc.info.buffer.buffer_size;
     case DTLS_PSK_KEY:
-        if (socket->psk.identity_size != id_size
-                || memcmp(socket->psk.identity, id, id_size)) {
+        if (socket->psk_identity->desc.source != AVS_CRYPTO_DATA_SOURCE_BUFFER
+                || socket->psk_identity->desc.info.buffer.buffer_size != id_size
+                || memcmp(socket->psk_identity->desc.info.buffer.buffer, id,
+                          id_size)) {
             return dtls_alert_fatal_create(DTLS_ALERT_DECRYPT_ERROR);
         }
 
-        if (size < socket->psk.psk_size) {
+        if (socket->psk_key->desc.source != AVS_CRYPTO_DATA_SOURCE_BUFFER) {
+            LOG(WARNING, _("unsupported source of PSK key"));
+            return dtls_alert_fatal_create(DTLS_ALERT_INTERNAL_ERROR);
+        }
+        if (size < socket->psk_key->desc.info.buffer.buffer_size) {
             LOG(WARNING, _("tinyDTLS buffer for PSK key is too small"));
             return dtls_alert_fatal_create(DTLS_ALERT_INTERNAL_ERROR);
         }
-        assert(socket->psk.psk_size <= INT_MAX);
-        memcpy(out_buffer, socket->psk.psk, socket->psk.psk_size);
-        return (int) socket->psk.psk_size;
+        assert(socket->psk_key->desc.info.buffer.buffer_size <= INT_MAX);
+        memcpy(out_buffer, socket->psk_key->desc.info.buffer.buffer,
+               socket->psk_key->desc.info.buffer.buffer_size);
+        return (int) socket->psk_key->desc.info.buffer.buffer_size;
     default:
         LOG(ERROR, _("unsupported request type ") "%d", (int) type);
         break;

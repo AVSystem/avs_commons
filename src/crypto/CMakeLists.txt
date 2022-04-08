@@ -1,4 +1,4 @@
-# Copyright 2021 AVSystem <avsystem@avsystem.com>
+# Copyright 2022 AVSystem <avsystem@avsystem.com>
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,14 +13,16 @@
 # limitations under the License.
 
 set(AVS_CRYPTO_PUBLIC_HEADERS
+    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/avs_crypto_common.h"
     "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/avs_crypto_pki.h"
     "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/avs_crypto_pki_compat.h"
+    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/avs_crypto_psk.h"
     "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/avs_prng.h")
 
 set(AVS_CRYPTO_COMMON_SOURCES
     avs_crypto_global.c
     avs_crypto_global.h
-    avs_crypto_pki_persistence.c
+    avs_crypto_persistence.c
     avs_crypto_utils.c
     avs_crypto_utils.h)
 
@@ -134,7 +136,7 @@ if(WITH_MBEDTLS)
     add_library(avs_crypto_mbedtls
                 ${AVS_CRYPTO_PUBLIC_HEADERS}
                 ${AVS_CRYPTO_MBEDTLS_SOURCES})
-    target_link_libraries(avs_crypto_mbedtls PUBLIC avs_crypto_core mbedcrypto)
+    target_link_libraries(avs_crypto_mbedtls PUBLIC avs_crypto_core mbedtls mbedcrypto)
     if(WITH_PKI)
         target_link_libraries(avs_crypto_mbedtls PUBLIC mbedx509)
     endif()
@@ -151,7 +153,7 @@ add_library(avs_crypto_generic
             ${AVS_CRYPTO_COMMON_SOURCES}
             ${AVS_CRYPTO_PUBLIC_HEADERS}
             generic/avs_generic_prng.c)
-target_compile_definitions(avs_crypto_generic PRIVATE WITHOUT_SSL)
+target_compile_definitions(avs_crypto_generic PRIVATE AVS_COMMONS_WITHOUT_TLS)
 target_link_libraries(avs_crypto_generic PUBLIC avs_crypto_core)
 
 avs_add_test(NAME avs_crypto_generic
