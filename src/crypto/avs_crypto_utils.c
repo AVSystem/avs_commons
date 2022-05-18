@@ -241,8 +241,8 @@ static const avs_crypto_data_source_element_t
                             .type = DATA_SOURCE_ELEMENT_END
                         }
                     }[0]
-#    endif // defined(AVS_COMMONS_WITH_AVS_CRYPTO_PKI_ENGINE) ||
-           // defined(AVS_COMMONS_WITH_AVS_CRYPTO_PSK_ENGINE)
+#    endif /* defined(AVS_COMMONS_WITH_AVS_CRYPTO_PKI_ENGINE) \
+            || defined(AVS_COMMONS_WITH_AVS_CRYPTO_PSK_ENGINE) */
         };
 
 const avs_crypto_data_source_element_t *

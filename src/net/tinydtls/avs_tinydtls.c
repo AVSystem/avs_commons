@@ -213,6 +213,11 @@ static bool is_session_resumed(ssl_socket_t *socket) {
     return false;
 }
 
+static bool has_buffered_data(ssl_socket_t *socket) {
+    (void) socket;
+    return false;
+}
+
 static avs_error_t ssl_handshake(ssl_socket_t *socket) {
     const dtls_peer_t *peer = dtls_get_peer(socket->ctx, get_dtls_session());
     /* Arbitrary constant limiting the number of packet exchanges between our
@@ -272,7 +277,7 @@ static avs_error_t start_ssl(ssl_socket_t *socket, const char *host) {
 }
 
 static avs_error_t configure_ssl_psk(ssl_socket_t *socket,
-                                     const avs_net_generic_psk_info_t *psk) {
+                                     const avs_net_psk_info_t *psk) {
     LOG(TRACE, _("configure_ssl_psk"));
 
 #    ifndef DTLS_PSK

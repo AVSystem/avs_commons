@@ -38,12 +38,6 @@
 #    include <avsystem/commons/avs_prng.h>
 #endif // AVS_COMMONS_WITH_AVS_CRYPTO
 
-#ifdef AVS_COMMONS_NET_WITH_X509
-#    warning \
-            "Your avs_commons_config.h defines AVS_COMMONS_NET_WITH_X509, which is deprecated since avs_commons 4.2. Auto-including avs_net_pki_compat.h to provide backwards compatibility for legacy avs_net PKI APIs."
-#    include <avsystem/commons/avs_net_pki_compat.h>
-#endif // AVS_COMMONS_NET_WITH_X509
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -258,7 +252,7 @@ typedef enum {
 typedef struct {
     avs_crypto_psk_key_info_t key;
     avs_crypto_psk_identity_info_t identity;
-} avs_net_generic_psk_info_t;
+} avs_net_psk_info_t;
 
 /**
  * Configuration for certificate-mode (D)TLS connection.
@@ -333,39 +327,15 @@ typedef struct {
 typedef struct {
     avs_net_security_mode_t mode;
     union {
-        avs_net_generic_psk_info_t psk;
+        avs_net_psk_info_t psk;
         avs_net_certificate_info_t cert;
     } data;
 } avs_net_security_info_t;
 
-avs_net_security_info_t
-avs_net_security_info_from_generic_psk(avs_net_generic_psk_info_t psk);
+avs_net_security_info_t avs_net_security_info_from_psk(avs_net_psk_info_t psk);
 
 avs_net_security_info_t
 avs_net_security_info_from_certificates(avs_net_certificate_info_t info);
-
-/**
- * A PSK/identity pair with borrowed pointers. avs_commons will never attempt
- * to modify these values.
- *
- * DEPRECATED, please use @ref avs_net_generic_psk_info_t instead.
- */
-typedef struct {
-    const void *psk;
-    size_t psk_size;
-    const void *identity;
-    size_t identity_size;
-} avs_net_psk_info_t;
-
-static inline avs_net_security_info_t
-avs_net_security_info_from_psk(avs_net_psk_info_t psk) {
-    avs_net_generic_psk_info_t generic_psk = {
-        avs_crypto_psk_key_info_from_buffer(psk.psk, psk.psk_size),
-        avs_crypto_psk_identity_info_from_buffer(psk.identity,
-                                                 psk.identity_size)
-    };
-    return avs_net_security_info_from_generic_psk(generic_psk);
-}
 
 typedef struct {
     avs_time_duration_t min;
@@ -599,6 +569,22 @@ typedef enum {
      * socket or is not configured to use DANE, will yield an error.
      */
     AVS_NET_SOCKET_OPT_DANE_TLSA_ARRAY,
+
+    /**
+     * Used to check whether there is some data that has been received from the
+     * underlying system socket, but has not been processed yet.
+     *
+     * The typical case is the TLS layer receiving more data than has been asked
+     * through the @ref avs_net_socket_receive function. In that case, the
+     * function will return, but user logic calling e.g. <c>poll()</c> would not
+     * be notified about the fact that there is more data to receive - because
+     * all data outstanding on the system layer has been already consumed.
+     *
+     * This option is intended as a supplement for the <c>poll()</c> logic, so
+     * that the application can process any outstanding data without
+     * unnecessarily starving the <c>poll()</c> loop.
+     */
+    AVS_NET_SOCKET_HAS_BUFFERED_DATA,
 } avs_net_socket_opt_key_t;
 
 typedef enum {

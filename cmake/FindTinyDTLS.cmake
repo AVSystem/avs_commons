@@ -86,7 +86,7 @@ if (TINYDTLS_LIBRARIES)
 endif()
 
 include(FindPackageHandleStandardArgs)
-find_package_handle_standard_args(tinyDTLS
+find_package_handle_standard_args(TinyDTLS
                                   FOUND_VAR TINYDTLS_FOUND
                                   REQUIRED_VARS
                                         TINYDTLS_INCLUDE_DIR

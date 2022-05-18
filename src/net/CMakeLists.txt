@@ -26,12 +26,6 @@ set(AVS_NET_PUBLIC_HEADERS
     "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/avs_socket.h"
     "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/avs_socket_v_table.h")
 
-if(WITH_PKI)
-    set(AVS_NET_PUBLIC_HEADERS
-        ${AVS_NET_PUBLIC_HEADERS}
-        "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/avs_net_pki_compat.h")
-endif()
-
 # Because of complex internal dependencies of avs_net source files, all of them
 # have to be recompiled for every single (D)TLS backend.
 #

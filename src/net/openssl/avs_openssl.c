@@ -995,6 +995,13 @@ static bool is_session_resumed(ssl_socket_t *socket) {
     return false;
 }
 
+static bool has_buffered_data(ssl_socket_t *socket) {
+    // NOTE: We're always returning false for DTLS, because this buffer is
+    // always exhausted for DTLS, see the code in receive_ssl().
+    return is_session_resumed(socket) && !socket_is_datagram(socket)
+           && SSL_pending(socket->ssl) > 0;
+}
+
 #    ifdef AVS_COMMONS_WITH_AVS_CRYPTO_PKI
 typedef struct {
     SSL_CTX *ctx;
@@ -1236,7 +1243,7 @@ static unsigned int psk_client_cb(SSL *ssl,
 }
 
 static avs_error_t configure_ssl_psk(ssl_socket_t *socket,
-                                     const avs_net_generic_psk_info_t *psk) {
+                                     const avs_net_psk_info_t *psk) {
     LOG(TRACE, _("configure_ssl_psk"));
 
     avs_error_t err;

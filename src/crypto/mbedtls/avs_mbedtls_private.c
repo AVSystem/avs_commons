@@ -14,11 +14,9 @@
  * limitations under the License.
  */
 
-#if defined(AVS_UNIT_TESTING) \
-        && !defined(AVS_COMMONS_MBEDTLS_ENGINE_UNIT_TESTING)
+#ifdef AVS_UNIT_TESTING
 #    define _GNU_SOURCE // for timegm() in tests
-#endif                  // defined(AVS_UNIT_TESTING) &&
-                        // !defined(AVS_COMMONS_MBEDTLS_ENGINE_UNIT_TESTING)
+#endif                  // AVS_UNIT_TESTING
 
 #include <avs_commons_init.h>
 
@@ -109,11 +107,9 @@ _avs_crypto_mbedtls_x509_time_to_avs_time(const mbedtls_x509_time *x509_time) {
     };
 }
 
-#    if defined(AVS_UNIT_TESTING) \
-            && !defined(AVS_COMMONS_MBEDTLS_ENGINE_UNIT_TESTING)
+#    ifdef AVS_UNIT_TESTING
 #        include "tests/crypto/mbedtls/mbedtls_private.c"
-#    endif // defined(AVS_UNIT_TESTING) &&
-           // !defined(AVS_COMMONS_MBEDTLS_ENGINE_UNIT_TESTING)
+#    endif // AVS_UNIT_TESTING
 
 #endif // defined(AVS_COMMONS_WITH_AVS_CRYPTO) &&
        // defined(AVS_COMMONS_WITH_AVS_CRYPTO_ADVANCED_FEATURES) &&

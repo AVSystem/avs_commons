@@ -22,43 +22,44 @@ import sys
 from argparse import ArgumentParser
 from io import StringIO
 
+import avs_common
 
 EXPECTED_COPYRIGHT_HEADER = 'Copyright 2022 AVSystem <avsystem@avsystem.com>'
 
-ALLOWED_LICENSES = {
-    (
-        '',
-        'Licensed under the Apache License, Version 2.0 (the "License");',
-        'you may not use this file except in compliance with the License.',
-        'You may obtain a copy of the License at',
-        '',
-        '    http://www.apache.org/licenses/LICENSE-2.0',
-        '',
-        'Unless required by applicable law or agreed to in writing, software',
-        'distributed under the License is distributed on an "AS IS" BASIS,',
-        'WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.',
-        'See the License for the specific language governing permissions and',
-        'limitations under the License.'
-    )
-}
+LICENSE = (
+    '',
+    'Licensed under the Apache License, Version 2.0 (the "License");',
+    'you may not use this file except in compliance with the License.',
+    'You may obtain a copy of the License at',
+    '',
+    '    http://www.apache.org/licenses/LICENSE-2.0',
+    '',
+    'Unless required by applicable law or agreed to in writing, software',
+    'distributed under the License is distributed on an "AS IS" BASIS,',
+    'WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.',
+    'See the License for the specific language governing permissions and',
+    'limitations under the License.'
+)
 
 IGNORE_PATTERNS = list(map(re.compile, [
-    '^\.git',
-    '^doc/Doxyfile\.in$',
+    '/fuzz/input/',
+    'README',
     '^LICENSE$',
     '^NOTICE$',
-    'README',
+    '^\.git',
     '^avs_commons_test\.lsan\.supp$',
     '^avs_commons_test\.valgrind\.supp$',
     '^conditional_headers_whitelist\.json$',
-    '/fuzz/input/',
+    '^doc/Doxyfile\.in$',
+    '__pycache__',
 ]))
+
+SUBMODULES = []
 
 
 def show_license():
     print(EXPECTED_COPYRIGHT_HEADER)
-    license = next(iter(ALLOWED_LICENSES))
-    for line in license:
+    for line in LICENSE:
         print(line)
 
 
@@ -88,7 +89,7 @@ def get_file_list(repo='.'):
 def check_license(filename):
     prefix = None
     expected_line = 0
-    license_candidates = ALLOWED_LICENSES.copy()
+
     with open(filename, mode='r', encoding='utf-8', errors='surrogateescape') as f:
         for line in f:
             trimmed = line.strip()
@@ -96,16 +97,33 @@ def check_license(filename):
                 found = trimmed.split(EXPECTED_COPYRIGHT_HEADER)
                 if len(found) > 1:
                     prefix = found[0]
-            else:
-                license_candidates = {candidate for candidate in license_candidates if
-                                      trimmed == (prefix + candidate[expected_line]).strip()}
-                if len(license_candidates) == 0:
-                    break
+            elif trimmed == (prefix + LICENSE[expected_line]).strip():
                 expected_line += 1
-                for license_candidate in license_candidates:
-                    if expected_line == len(license_candidate):
-                        return True
+                if expected_line == len(LICENSE):
+                    return True
+            else:
+                break
     return False
+
+
+def _check_submodule(submodule, root='.'):
+    '''
+    Runs the license check for the given submodule.
+
+    :param submodule: The relative path to the considered submodule.
+
+    :param root: The main repo dir.
+    '''
+
+    submodule_path = os.path.join(root, submodule)
+    script_path = os.path.join(submodule_path, 'tools/license_headers.py')
+
+    if not os.path.exists(script_path):
+        print('Submodule %s has no license check script on path %s' %
+              (submodule, script_path))
+        return
+
+    subprocess.run([script_path, '-r', submodule_path], check=True)
 
 
 def _main():
@@ -128,7 +146,7 @@ def _main():
     args = parser.parse_args()
 
     if args.show_license:
-        show_license()
+        show_license(args.commercial)
         return 0
 
     if args.show_ignores:
@@ -144,6 +162,12 @@ def _main():
                 and (args.no_ignores or not is_ignored(f))
                 and not check_license(f)):
             print(f)
+            result = 1
+
+    for submodule in SUBMODULES:
+        try:
+            _check_submodule(submodule)
+        except Exception:
             result = 1
 
     return result

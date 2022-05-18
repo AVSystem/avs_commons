@@ -161,6 +161,13 @@ static mbedtls_ssl_context *get_context(ssl_socket_t *socket) {
     return &socket->context;
 }
 
+static bool has_buffered_data(ssl_socket_t *socket) {
+    if (!is_ssl_started(socket)) {
+        return false;
+    }
+    return mbedtls_ssl_get_bytes_avail(get_context(socket)) > 0;
+}
+
 #    ifdef AVS_COMMONS_NET_WITH_MBEDTLS_LOGS
 static void debug_mbedtls(
         void *ctx, int level, const char *file, int line, const char *str) {
@@ -721,7 +728,7 @@ static int *init_psk_ciphersuites(
 static avs_error_t initialize_psk_security(
         ssl_socket_t *socket,
         const avs_net_socket_tls_ciphersuites_t *tls_ciphersuites,
-        const avs_net_generic_psk_info_t *psk_info) {
+        const avs_net_psk_info_t *psk_info) {
     avs_free(socket->effective_ciphersuites);
     if (!(socket->effective_ciphersuites =
                   init_psk_ciphersuites(tls_ciphersuites))) {

@@ -17,7 +17,7 @@
 cmake_minimum_required(VERSION 3.6.0)
 project(avs_commons C)
 
-set(AVS_COMMONS_VERSION "4.10.0")
+set(AVS_COMMONS_VERSION "5.0.0")
 
 ################# DISTRIBUTION #################################################
 
@@ -432,7 +432,8 @@ if(WITH_TEST)
 
     # license check is only possible if running in a Git working tree
     if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/.git")
-        add_custom_target(license_check COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/tools/check_license_headers.py" --root "${CMAKE_CURRENT_SOURCE_DIR}")
+        add_custom_target(license_check COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/tools/license_headers.py"
+                                                --root "${CMAKE_CURRENT_SOURCE_DIR}")
         add_dependencies(avs_commons_check license_check)
     endif()
 
@@ -519,23 +520,19 @@ set(AVS_COMMONS_WITH_CUSTOM_TLS ${WITH_CUSTOM_TLS})
 cmake_dependent_option(WITH_PSK "Enable pre-shared key support" ON "WITH_OPENSSL OR WITH_MBEDTLS OR WITH_TINYDTLS OR WITH_CUSTOM_TLS" OFF)
 set(AVS_COMMONS_WITH_AVS_CRYPTO_PSK ${WITH_PSK})
 
-set(WITH_PKI_DEFAULT_VALUE ON)
 if(DEFINED WITH_X509)
-    message(WARNING "WITH_X509 is deprecated since avs_commons 4.2. Please use WITH_PKI instead.")
-    set(WITH_PKI_DEFAULT_VALUE "${WITH_X509}")
+    message(FATAL_ERROR "WITH_X509 has been removed since avs_commons 5.0. Please use WITH_PKI instead.")
 endif()
 
-cmake_dependent_option(WITH_PKI "Enable X.509 certificate support" "${WITH_PKI_DEFAULT_VALUE}" "WITH_OPENSSL OR WITH_MBEDTLS OR WITH_TINYDTLS OR WITH_CUSTOM_TLS" OFF)
+cmake_dependent_option(WITH_PKI "Enable X.509 certificate support" ON "WITH_OPENSSL OR WITH_MBEDTLS OR WITH_TINYDTLS OR WITH_CUSTOM_TLS" OFF)
 set(AVS_COMMONS_WITH_AVS_CRYPTO_PKI ${WITH_PKI})
 
 # Hardware security engines
-set(WITH_AVS_CRYPTO_PKI_ENGINE_DEFAULT_VALUE OFF)
 if(DEFINED WITH_AVS_CRYPTO_ENGINE)
-    message(WARNING "WITH_AVS_CRYPTO_ENGINE is deprecated since avs_commons 4.10. Please use WITH_AVS_CRYPTO_PKI_ENGINE instead.")
-    set(WITH_AVS_CRYPTO_PKI_ENGINE_DEFAULT_VALUE "${WITH_AVS_CRYPTO_ENGINE}")
+    message(FATAL_ERROR "WITH_AVS_CRYPTO_ENGINE has been removed since avs_commons 5.0. Please use WITH_AVS_CRYPTO_PKI_ENGINE instead.")
 endif()
 
-cmake_dependent_option(WITH_AVS_CRYPTO_PKI_ENGINE "Enable hardware-based PKI engine support" "${WITH_AVS_CRYPTO_PKI_ENGINE_DEFAULT_VALUE}"
+cmake_dependent_option(WITH_AVS_CRYPTO_PKI_ENGINE "Enable hardware-based PKI engine support" OFF
                        "WITH_OPENSSL OR WITH_MBEDTLS OR WITH_CUSTOM_TLS;WITH_PKI" OFF)
 set(AVS_COMMONS_WITH_AVS_CRYPTO_PKI_ENGINE ${WITH_AVS_CRYPTO_PKI_ENGINE})
 

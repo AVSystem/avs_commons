@@ -30,8 +30,8 @@ extern "C" {
 typedef struct {
     const char *query;
 } avs_crypto_security_info_union_internal_engine_t;
-#endif // defined(AVS_COMMONS_WITH_AVS_CRYPTO_PKI_ENGINE) ||
-       // defined(AVS_COMMONS_WITH_AVS_CRYPTO_PSK_ENGINE)
+#endif /* defined(AVS_COMMONS_WITH_AVS_CRYPTO_PKI_ENGINE) || \
+          defined(AVS_COMMONS_WITH_AVS_CRYPTO_PSK_ENGINE) */
 
 typedef struct {
     const char *filename;
@@ -78,8 +78,8 @@ typedef enum {
 #if defined(AVS_COMMONS_WITH_AVS_CRYPTO_PKI_ENGINE) \
         || defined(AVS_COMMONS_WITH_AVS_CRYPTO_PSK_ENGINE)
     AVS_CRYPTO_DATA_SOURCE_ENGINE
-#endif // defined(AVS_COMMONS_WITH_AVS_CRYPTO_PKI_ENGINE) ||
-       // defined(AVS_COMMONS_WITH_AVS_CRYPTO_PSK_ENGINE)
+#endif /* defined(AVS_COMMONS_WITH_AVS_CRYPTO_PKI_ENGINE) || \
+          defined(AVS_COMMONS_WITH_AVS_CRYPTO_PSK_ENGINE) */
 } avs_crypto_data_source_t;
 
 /**
@@ -104,8 +104,8 @@ struct avs_crypto_security_info_union_struct {
 #if defined(AVS_COMMONS_WITH_AVS_CRYPTO_PKI_ENGINE) \
         || defined(AVS_COMMONS_WITH_AVS_CRYPTO_PSK_ENGINE)
         avs_crypto_security_info_union_internal_engine_t engine;
-#endif // defined(AVS_COMMONS_WITH_AVS_CRYPTO_PKI_ENGINE) ||
-       // defined(AVS_COMMONS_WITH_AVS_CRYPTO_PSK_ENGINE)
+#endif /* defined(AVS_COMMONS_WITH_AVS_CRYPTO_PKI_ENGINE) || \
+          defined(AVS_COMMONS_WITH_AVS_CRYPTO_PSK_ENGINE) */
     } info;
 };
 

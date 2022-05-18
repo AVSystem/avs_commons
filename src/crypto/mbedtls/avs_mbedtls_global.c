@@ -20,7 +20,11 @@
 
 #    include <inttypes.h>
 
-#    include "avs_mbedtls_engine.h"
+#    if defined(AVS_COMMONS_WITH_AVS_CRYPTO_PKI_ENGINE) \
+            || defined(AVS_COMMONS_WITH_AVS_CRYPTO_PSK_ENGINE)
+#        include "avs_mbedtls_engine.h"
+#    endif /* defined(AVS_COMMONS_WITH_AVS_CRYPTO_PKI_ENGINE) || \
+              defined(AVS_COMMONS_WITH_AVS_CRYPTO_PSK_ENGINE) */
 
 #    include "../avs_crypto_global.h"
 
@@ -43,8 +47,8 @@ avs_error_t _avs_crypto_initialize_global_state() {
 #    if defined(AVS_COMMONS_WITH_AVS_CRYPTO_PKI_ENGINE) \
             || defined(AVS_COMMONS_WITH_AVS_CRYPTO_PSK_ENGINE)
     err = _avs_crypto_mbedtls_engine_initialize_global_state();
-#    endif // defined(AVS_COMMONS_WITH_AVS_CRYPTO_PKI_ENGINE) ||
-           // defined(AVS_COMMONS_WITH_AVS_CRYPTO_PSK_ENGINE)
+#    endif /* defined(AVS_COMMONS_WITH_AVS_CRYPTO_PKI_ENGINE) || \
+              defined(AVS_COMMONS_WITH_AVS_CRYPTO_PSK_ENGINE) */
     return err;
 }
 
@@ -52,8 +56,8 @@ void _avs_crypto_cleanup_global_state() {
 #    if defined(AVS_COMMONS_WITH_AVS_CRYPTO_PKI_ENGINE) \
             || defined(AVS_COMMONS_WITH_AVS_CRYPTO_PSK_ENGINE)
     _avs_crypto_mbedtls_engine_cleanup_global_state();
-#    endif // defined(AVS_COMMONS_WITH_AVS_CRYPTO_PKI_ENGINE) ||
-           // defined(AVS_COMMONS_WITH_AVS_CRYPTO_PSK_ENGINE)
+#    endif /* defined(AVS_COMMONS_WITH_AVS_CRYPTO_PKI_ENGINE) || \
+              defined(AVS_COMMONS_WITH_AVS_CRYPTO_PSK_ENGINE) */
 }
 
 #endif // defined(AVS_COMMONS_WITH_AVS_CRYPTO) &&

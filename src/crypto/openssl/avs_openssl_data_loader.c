@@ -29,7 +29,9 @@
 
 #    include "avs_openssl_common.h"
 #    include "avs_openssl_data_loader.h"
-#    include "avs_openssl_engine.h"
+#    ifdef AVS_COMMONS_WITH_AVS_CRYPTO_PKI_ENGINE
+#        include "avs_openssl_engine.h"
+#    endif // AVS_COMMONS_WITH_AVS_CRYPTO_PKI_ENGINE
 
 #    include "../avs_crypto_global.h"
 
@@ -118,6 +120,15 @@ static void avs_ossl_object_free(void *obj, avs_ossl_object_type_t type) {
     }
 }
 
+static inline bool is_err_invalid_pem(void) {
+    int reason = ERR_GET_REASON(ERR_peek_last_error());
+    return
+#    if OPENSSL_VERSION_NUMBER_GE(3, 0, 0)
+            reason == ERR_R_UNSUPPORTED ||
+#    endif // OPENSSL_VERSION_NUMBER_GE(3, 0, 0)
+            reason == PEM_R_NO_START_LINE;
+}
+
 static avs_error_t load_pem_objects(const void *buffer,
                                     size_t len,
                                     const char *password,
@@ -135,7 +146,7 @@ static avs_error_t load_pem_objects(const void *buffer,
     if (obj) {
         err = load_cb(obj, load_cb_arg);
         avs_ossl_object_free(obj, type);
-    } else if (ERR_GET_REASON(ERR_peek_last_error()) == PEM_R_NO_START_LINE) {
+    } else if (is_err_invalid_pem()) {
         ERR_clear_error();
         err = avs_errno(AVS_EIO);
     } else {
@@ -146,8 +157,7 @@ static avs_error_t load_pem_objects(const void *buffer,
         if ((obj = avs_ossl_object_pem_read(bio, password, type))) {
             err = load_cb(obj, load_cb_arg);
             avs_ossl_object_free(obj, type);
-        } else if (ERR_GET_REASON(ERR_peek_last_error())
-                   == PEM_R_NO_START_LINE) {
+        } else if (is_err_invalid_pem()) {
             ERR_clear_error();
             break;
         } else {

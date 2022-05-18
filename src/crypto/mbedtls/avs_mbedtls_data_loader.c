@@ -25,7 +25,11 @@
 #    include <avs_commons_poison.h>
 
 #    include "avs_mbedtls_data_loader.h"
-#    include "avs_mbedtls_engine.h"
+#    if defined(AVS_COMMONS_WITH_AVS_CRYPTO_PKI_ENGINE) \
+            || defined(AVS_COMMONS_WITH_AVS_CRYPTO_PSK_ENGINE)
+#        include "avs_mbedtls_engine.h"
+#    endif /* defined(AVS_COMMONS_WITH_AVS_CRYPTO_PKI_ENGINE) || \
+              defined(AVS_COMMONS_WITH_AVS_CRYPTO_PSK_ENGINE) */
 
 #    include <assert.h>
 #    include <stdio.h>

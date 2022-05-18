@@ -235,15 +235,23 @@ static bool buffered_netstream_nonblock_read_ready(avs_stream_t *stream_) {
         return true;
     }
 
-    /*
-     * NOTE: if the underlying socket is a TLS socket, there may be some
-     * data in TLS backend internal buffers that will never be reported by
-     * select/poll on these sockets.
-     *
-     * To make sure we don't keep ignoring that data, attempt to read
-     * something from the socket with timeout set to 0 before telling the
-     * caller nonblock read is not possible.
-     */
+    // NOTE: if the underlying socket is a TLS socket, there may be some
+    // data in TLS backend internal buffers that will never be reported by
+    // select/poll on these sockets.
+    avs_net_socket_opt_value_t has_buffered_data;
+    if (avs_is_ok(avs_net_socket_get_opt(stream->socket,
+                                         AVS_NET_SOCKET_HAS_BUFFERED_DATA,
+                                         &has_buffered_data))
+            && !has_buffered_data.flag) {
+        // We can conclusively say that the socket is already exhausted,
+        // so report that any further read would need to be blocking.
+        return false;
+    }
+
+    // If the socket has some buffered data (or it does not support the
+    // AVS_NET_SOCKET_HAS_BUFFERED_DATA option), attempt to read something from
+    // the socket with timeout set to 0 before telling the caller nonblock read
+    // is not possible.
     return avs_is_ok(try_recv_nonblock(stream))
            && avs_buffer_data_size(stream->in_buffer) > 0;
 }

@@ -22,7 +22,9 @@
 #    include <openssl/ssl.h>
 
 #    include "avs_openssl_common.h"
-#    include "avs_openssl_engine.h"
+#    ifdef AVS_COMMONS_WITH_AVS_CRYPTO_PKI_ENGINE
+#        include "avs_openssl_engine.h"
+#    endif // AVS_COMMONS_WITH_AVS_CRYPTO_PKI_ENGINE
 
 #    include "../avs_crypto_global.h"
 

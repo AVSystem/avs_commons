@@ -1962,6 +1962,9 @@ static avs_error_t get_opt_net(avs_net_socket_t *net_socket_,
     case AVS_NET_SOCKET_OPT_BYTES_SENT:
         out_option_value->bytes_sent = net_socket->bytes_sent;
         return AVS_OK;
+    case AVS_NET_SOCKET_HAS_BUFFERED_DATA:
+        out_option_value->flag = false;
+        return AVS_OK;
     default:
         LOG(DEBUG,
             _("get_opt_net: unknown or unsupported option key: ")

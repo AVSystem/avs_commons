@@ -56,7 +56,7 @@ void _avs_crypto_mbedtls_engine_cleanup_global_state(void);
 
 VISIBILITY_PRIVATE_HEADER_END
 
-#endif // defined(AVS_COMMONS_WITH_AVS_CRYPTO_PKI_ENGINE) ||
-       // defined(AVS_COMMONS_WITH_AVS_CRYPTO_PSK_ENGINE)
+#endif /* defined(AVS_COMMONS_WITH_AVS_CRYPTO_PKI_ENGINE) || \
+          defined(AVS_COMMONS_WITH_AVS_CRYPTO_PSK_ENGINE) */
 
 #endif // CRYPTO_MBEDTLS_ENGINE_H

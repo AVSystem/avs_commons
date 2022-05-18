@@ -38,8 +38,7 @@ VISIBILITY_SOURCE_BEGIN
 const avs_time_duration_t AVS_NET_SOCKET_DEFAULT_RECV_TIMEOUT = { 30, 0 };
 
 #    ifdef AVS_COMMONS_WITH_AVS_CRYPTO
-avs_net_security_info_t
-avs_net_security_info_from_generic_psk(avs_net_generic_psk_info_t psk) {
+avs_net_security_info_t avs_net_security_info_from_psk(avs_net_psk_info_t psk) {
     avs_net_security_info_t result;
     memset(&result, 0, sizeof(result));
     result.mode = AVS_NET_SECURITY_PSK;

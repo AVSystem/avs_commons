@@ -15,7 +15,6 @@
 set(AVS_CRYPTO_PUBLIC_HEADERS
     "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/avs_crypto_common.h"
     "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/avs_crypto_pki.h"
-    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/avs_crypto_pki_compat.h"
     "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/avs_crypto_psk.h"
     "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/avs_prng.h")
 

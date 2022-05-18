@@ -33,29 +33,21 @@
 #    include "avs_commons_poison.h"
 #endif
 
-// Backwards compatibility with configuration macros that are no longer current
+// Check for usages of removed configuration macros
 #ifdef AVS_COMMONS_NET_WITH_X509
-#    warning \
-            "AVS_COMMONS_NET_WITH_X509 is deprecated since avs_commons 4.2. Please update your avs_commons_config.h to use AVS_COMMONS_WITH_AVS_CRYPTO_PKI instead."
-#    define AVS_COMMONS_WITH_AVS_CRYPTO_PKI
+#    error "AVS_COMMONS_NET_WITH_X509 has been removed since avs_commons 5.0. Please update your avs_commons_config.h to use AVS_COMMONS_WITH_AVS_CRYPTO_PKI instead."
 #endif // AVS_COMMONS_NET_WITH_X509
 
 #ifdef AVS_COMMONS_NET_WITH_VALGRIND
-#    warning \
-            "AVS_COMMONS_NET_WITH_VALGRIND is deprecated since avs_commons 4.2. Please update your avs_commons_config.h to use AVS_COMMONS_WITH_AVS_CRYPTO_VALGRIND instead."
-#    define AVS_COMMONS_WITH_AVS_CRYPTO_VALGRIND
+#    error "AVS_COMMONS_NET_WITH_VALGRIND has been removed since avs_commons 5.0. Please update your avs_commons_config.h to use AVS_COMMONS_WITH_AVS_CRYPTO_VALGRIND instead."
 #endif // AVS_COMMONS_NET_WITH_VALGRIND
 
 #ifdef AVS_COMMONS_NET_WITH_PSK
-#    warning \
-            "AVS_COMMONS_NET_WITH_PSK is deprecated since avs_commons 4.10. Please update your avs_commons_config.h to use AVS_COMMONS_WITH_AVS_CRYPTO_PSK instead."
-#    define AVS_COMMONS_WITH_AVS_CRYPTO_PSK
+#    error "AVS_COMMONS_NET_WITH_PSK has been removed since avs_commons 5.0. Please update your avs_commons_config.h to use AVS_COMMONS_WITH_AVS_CRYPTO_PSK instead."
 #endif // AVS_COMMONS_NET_WITH_PSK
 
 #ifdef AVS_COMMONS_WITH_AVS_CRYPTO_ENGINE
-#    warning \
-            "AVS_COMMONS_WITH_AVS_CRYPTO_ENGINE is deprecated since avs_commons 4.10. Please update your avs_commons_config.h to use AVS_COMMONS_WITH_AVS_CRYPTO_PKI_ENGINE instead."
-#    define AVS_COMMONS_WITH_AVS_CRYPTO_PKI_ENGINE
+#    error "AVS_COMMONS_WITH_AVS_CRYPTO_ENGINE has been removed since avs_commons 5.0. Please update your avs_commons_config.h to use AVS_COMMONS_WITH_AVS_CRYPTO_PKI_ENGINE instead."
 #endif // AVS_COMMONS_WITH_AVS_CRYPTO_ENGINE
 
 // Config validation

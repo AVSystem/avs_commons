@@ -14,14 +14,18 @@
  * limitations under the License.
  */
 
+#define AVS_SUPPRESS_POISONING
 #include <avs_commons_init.h>
 
 #if defined(AVS_COMMONS_WITH_AVS_CRYPTO) && defined(AVS_COMMONS_WITH_OPENSSL)
 
+// this uses some symbols such as "printf" - include it before poisoning them
+#    include <openssl/rand.h>
+
+#    include <avs_commons_poison.h>
+
 #    include <avsystem/commons/avs_errno.h>
 #    include <avsystem/commons/avs_memory.h>
-
-#    include <openssl/rand.h>
 
 #    include "avs_openssl_prng.h"
 

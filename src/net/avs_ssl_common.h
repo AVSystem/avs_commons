@@ -28,6 +28,7 @@ VISIBILITY_PRIVATE_HEADER_BEGIN
 /* Required non-common static method implementations */
 static bool is_ssl_started(ssl_socket_t *socket);
 static bool is_session_resumed(ssl_socket_t *socket);
+static bool has_buffered_data(ssl_socket_t *socket);
 static avs_error_t start_ssl(ssl_socket_t *socket, const char *host);
 static void close_ssl_raw(ssl_socket_t *socket);
 static avs_error_t
@@ -390,6 +391,15 @@ static avs_error_t get_opt_ssl(avs_net_socket_t *ssl_socket_,
     case AVS_NET_SOCKET_OPT_SESSION_RESUMED:
         out_option_value->flag = is_session_resumed(ssl_socket);
         return AVS_OK;
+    case AVS_NET_SOCKET_HAS_BUFFERED_DATA:
+        if (has_buffered_data(ssl_socket)) {
+            out_option_value->flag = true;
+            return AVS_OK;
+        } else {
+            return avs_net_socket_get_opt(ssl_socket->backend_socket,
+                                          AVS_NET_SOCKET_HAS_BUFFERED_DATA,
+                                          out_option_value);
+        }
     case AVS_NET_SOCKET_OPT_STATE:
         if (!ssl_socket->backend_socket) {
             out_option_value->state = AVS_NET_SOCKET_STATE_CLOSED;

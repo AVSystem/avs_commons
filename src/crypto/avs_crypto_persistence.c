@@ -52,8 +52,8 @@ static avs_error_t data_source_persistence(avs_persistence_context_t *ctx,
         case AVS_CRYPTO_DATA_SOURCE_ENGINE:
             source_ch = 'E';
             break;
-#    endif // defined(AVS_COMMONS_WITH_AVS_CRYPTO_PKI_ENGINE) ||
-           // defined(AVS_COMMONS_WITH_AVS_CRYPTO_PSK_ENGINE)
+#    endif /* defined(AVS_COMMONS_WITH_AVS_CRYPTO_PKI_ENGINE) || \
+              defined(AVS_COMMONS_WITH_AVS_CRYPTO_PSK_ENGINE) */
         default:
             return avs_errno(AVS_EINVAL);
         }
@@ -83,8 +83,8 @@ static avs_error_t data_source_persistence(avs_persistence_context_t *ctx,
         case 'E':
             *source = AVS_CRYPTO_DATA_SOURCE_ENGINE;
             break;
-#    endif // defined(AVS_COMMONS_WITH_AVS_CRYPTO_PKI_ENGINE) ||
-           // defined(AVS_COMMONS_WITH_AVS_CRYPTO_PSK_ENGINE)
+#    endif /* defined(AVS_COMMONS_WITH_AVS_CRYPTO_PKI_ENGINE) || \
+              defined(AVS_COMMONS_WITH_AVS_CRYPTO_PSK_ENGINE) */
         default:
             return avs_errno(AVS_EIO);
         }

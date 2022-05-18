@@ -68,6 +68,7 @@ run_socket_set_opt_test_cases(avs_net_socket_t *socket,
             opt_val.mtu = 5;
             break;
         case AVS_NET_SOCKET_OPT_SESSION_RESUMED:
+        case AVS_NET_SOCKET_HAS_BUFFERED_DATA:
             opt_val.flag = true;
             break;
         case AVS_NET_SOCKET_OPT_BYTES_SENT:

@@ -316,11 +316,11 @@
  *
  * Requires @ref AVS_COMMONS_WITH_AVS_CRYPTO_PKI to be enabled.
  *
- * An actual implementation is required to use this feature. In the commercial
- * version, you may use one of the default ones (see
- * @ref AVS_COMMONS_WITH_MBEDTLS_PKCS11_ENGINE,
+ * An actual implementation is required to use this feature. You may provide
+ * your own, or use one of the default ones that come with the HSM engine
+ * commercial feature (see @ref AVS_COMMONS_WITH_MBEDTLS_PKCS11_ENGINE,
  * @ref AVS_COMMONS_WITH_MBEDTLS_PSA_ENGINE and
- * @ref AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE) or provide your own.
+ * @ref AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE).
  *
  * The functions that need to be provided in case of a custom implementation:
  * - <c>avs_crypto_pki_engine_certificate_rm()</c>
@@ -351,9 +351,9 @@
  *
  * Requires @ref AVS_COMMONS_WITH_AVS_CRYPTO_PKI to be enabled.
  *
- * An actual implementation is required to use this feature. In the commercial
- * version, you may use the default PSA-based one (see
- * @ref AVS_COMMONS_WITH_MBEDTLS_PSA_ENGINE) or provide your own.
+ * An actual implementation is required to use this feature. You may provide
+ * your own, or use the default PSA-based one that comes with the HSM engine
+ * commercial feature (see @ref AVS_COMMONS_WITH_MBEDTLS_PSA_ENGINE).
  *
  * The functions that need to be provided in case of a custom implementation:
  * - <c>avs_crypto_psk_engine_identity_store()</c>
@@ -382,8 +382,8 @@
  * NOTE: The unit tests for this feature depend on SoftHSM and pkcs11-tool.
  * These must be installed for the tests to pass.
  *
- * IMPORTANT: Only available in the commercial version. Ignored in the open
- * source version.
+ * IMPORTANT: Only available as part of the HSM support commercial feature.
+ * Ignored in the open source version.
  */
 #cmakedefine AVS_COMMONS_WITH_MBEDTLS_PKCS11_ENGINE
 
@@ -412,8 +412,8 @@
  * @ref AVS_COMMONS_WITH_MBEDTLS_PSA_ENGINE_PROTECTED_STORAGE is enabled, by
  * using the <c>uid=...</c> syntax.
  *
- * IMPORTANT: Only available in the commercial version. Ignored in the open
- * source version.
+ * IMPORTANT: Only available as part of the HSM support commercial feature.
+ * Ignored in the open source version.
  */
 #cmakedefine AVS_COMMONS_WITH_MBEDTLS_PSA_ENGINE
 
@@ -423,8 +423,8 @@
  *
  * Requires @ref AVS_COMMONS_WITH_MBEDTLS_PSA_ENGINE to be enabled.
  *
- * IMPORTANT: Only available in the commercial version. Ignored in the open
- * source version.
+ * IMPORTANT: Only available as part of the HSM support commercial feature.
+ * Ignored in the open source version.
  */
 #cmakedefine AVS_COMMONS_WITH_MBEDTLS_PSA_ENGINE_PROTECTED_STORAGE
 
@@ -456,8 +456,8 @@
  * NOTE: The unit tests for this feature depend on SoftHSM and pkcs11-tool.
  * These must be installed for the tests to pass.
  *
- * IMPORTANT: Only available in the commercial version. Ignored in the open
- * source version.
+ * IMPORTANT: Only available as part of the HSM support commercial feature.
+ * Ignored in the open source version.
  */
 #cmakedefine AVS_COMMONS_WITH_OPENSSL_PKCS11_ENGINE
 /**@}*/

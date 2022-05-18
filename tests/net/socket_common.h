@@ -34,8 +34,7 @@ static uint32_t default_ciphersuites_num =
 static inline avs_net_ssl_configuration_t create_default_ssl_config() {
     avs_net_ssl_configuration_t config = {
         .version = AVS_NET_SSL_VERSION_DEFAULT,
-        .security = avs_net_security_info_from_generic_psk((
-                avs_net_generic_psk_info_t) {
+        .security = avs_net_security_info_from_psk((avs_net_psk_info_t) {
             .key = avs_crypto_psk_key_info_from_buffer(DEFAULT_PSK,
                                                        sizeof(DEFAULT_PSK) - 1),
             .identity = avs_crypto_psk_identity_info_from_buffer(

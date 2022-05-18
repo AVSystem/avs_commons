@@ -35,7 +35,8 @@ AVS_UNIT_TEST(socket, udp_get_opt) {
         { SUCCESS, AVS_NET_SOCKET_OPT_INNER_MTU },
         { FAIL, AVS_NET_SOCKET_OPT_SESSION_RESUMED },
         { SUCCESS, AVS_NET_SOCKET_OPT_BYTES_SENT },
-        { SUCCESS, AVS_NET_SOCKET_OPT_BYTES_RECEIVED }
+        { SUCCESS, AVS_NET_SOCKET_OPT_BYTES_RECEIVED },
+        { SUCCESS, AVS_NET_SOCKET_HAS_BUFFERED_DATA }
     };
     run_socket_get_opt_test_cases(socket, test_cases,
                                   AVS_ARRAY_SIZE(test_cases));
@@ -58,7 +59,8 @@ AVS_UNIT_TEST(socket, tcp_get_opt) {
         { FAIL, AVS_NET_SOCKET_OPT_INNER_MTU },
         { FAIL, AVS_NET_SOCKET_OPT_SESSION_RESUMED },
         { SUCCESS, AVS_NET_SOCKET_OPT_BYTES_SENT },
-        { SUCCESS, AVS_NET_SOCKET_OPT_BYTES_RECEIVED }
+        { SUCCESS, AVS_NET_SOCKET_OPT_BYTES_RECEIVED },
+        { SUCCESS, AVS_NET_SOCKET_HAS_BUFFERED_DATA }
     };
     run_socket_get_opt_test_cases(socket, test_cases,
                                   AVS_ARRAY_SIZE(test_cases));
@@ -84,7 +86,8 @@ AVS_UNIT_TEST(socket, udp_get_opt_after_close) {
         { FAIL, AVS_NET_SOCKET_OPT_INNER_MTU },
         { FAIL, AVS_NET_SOCKET_OPT_SESSION_RESUMED },
         { SUCCESS, AVS_NET_SOCKET_OPT_BYTES_SENT },
-        { SUCCESS, AVS_NET_SOCKET_OPT_BYTES_RECEIVED }
+        { SUCCESS, AVS_NET_SOCKET_OPT_BYTES_RECEIVED },
+        { SUCCESS, AVS_NET_SOCKET_HAS_BUFFERED_DATA }
     };
     run_socket_get_opt_test_cases(socket, test_cases,
                                   AVS_ARRAY_SIZE(test_cases));
@@ -108,7 +111,8 @@ AVS_UNIT_TEST(socket, tcp_get_opt_after_close) {
         { FAIL, AVS_NET_SOCKET_OPT_INNER_MTU },
         { FAIL, AVS_NET_SOCKET_OPT_SESSION_RESUMED },
         { SUCCESS, AVS_NET_SOCKET_OPT_BYTES_SENT },
-        { SUCCESS, AVS_NET_SOCKET_OPT_BYTES_RECEIVED }
+        { SUCCESS, AVS_NET_SOCKET_OPT_BYTES_RECEIVED },
+        { SUCCESS, AVS_NET_SOCKET_HAS_BUFFERED_DATA }
     };
     run_socket_get_opt_test_cases(socket, test_cases,
                                   AVS_ARRAY_SIZE(test_cases));
@@ -133,7 +137,8 @@ AVS_UNIT_TEST(socket, udp_set_opt) {
         { FAIL, AVS_NET_SOCKET_OPT_INNER_MTU },
         { FAIL, AVS_NET_SOCKET_OPT_SESSION_RESUMED },
         { FAIL, AVS_NET_SOCKET_OPT_BYTES_SENT },
-        { FAIL, AVS_NET_SOCKET_OPT_BYTES_RECEIVED }
+        { FAIL, AVS_NET_SOCKET_OPT_BYTES_RECEIVED },
+        { FAIL, AVS_NET_SOCKET_HAS_BUFFERED_DATA }
     };
     run_socket_set_opt_test_cases(socket, test_cases,
                                   AVS_ARRAY_SIZE(test_cases));
@@ -156,7 +161,8 @@ AVS_UNIT_TEST(socket, tcp_set_opt) {
         { FAIL, AVS_NET_SOCKET_OPT_INNER_MTU },
         { FAIL, AVS_NET_SOCKET_OPT_SESSION_RESUMED },
         { FAIL, AVS_NET_SOCKET_OPT_BYTES_SENT },
-        { FAIL, AVS_NET_SOCKET_OPT_BYTES_RECEIVED }
+        { FAIL, AVS_NET_SOCKET_OPT_BYTES_RECEIVED },
+        { FAIL, AVS_NET_SOCKET_HAS_BUFFERED_DATA }
     };
     run_socket_set_opt_test_cases(socket, test_cases,
                                   AVS_ARRAY_SIZE(test_cases));
@@ -182,7 +188,8 @@ AVS_UNIT_TEST(socket, udp_set_opt_after_close) {
         { FAIL, AVS_NET_SOCKET_OPT_INNER_MTU },
         { FAIL, AVS_NET_SOCKET_OPT_SESSION_RESUMED },
         { FAIL, AVS_NET_SOCKET_OPT_BYTES_SENT },
-        { FAIL, AVS_NET_SOCKET_OPT_BYTES_RECEIVED }
+        { FAIL, AVS_NET_SOCKET_OPT_BYTES_RECEIVED },
+        { FAIL, AVS_NET_SOCKET_HAS_BUFFERED_DATA }
     };
     run_socket_set_opt_test_cases(socket, test_cases,
                                   AVS_ARRAY_SIZE(test_cases));
@@ -206,7 +213,8 @@ AVS_UNIT_TEST(socket, tcp_set_opt_after_close) {
         { FAIL, AVS_NET_SOCKET_OPT_INNER_MTU },
         { FAIL, AVS_NET_SOCKET_OPT_SESSION_RESUMED },
         { FAIL, AVS_NET_SOCKET_OPT_BYTES_SENT },
-        { FAIL, AVS_NET_SOCKET_OPT_BYTES_RECEIVED }
+        { FAIL, AVS_NET_SOCKET_OPT_BYTES_RECEIVED },
+        { FAIL, AVS_NET_SOCKET_HAS_BUFFERED_DATA }
     };
     run_socket_set_opt_test_cases(socket, test_cases,
                                   AVS_ARRAY_SIZE(test_cases));
