@@ -55,12 +55,24 @@ typedef avs_error_t persistence_handler_list_t(
         avs_persistence_handler_custom_allocated_list_element_t *handler,
         void *handler_user_ptr,
         avs_persistence_cleanup_collection_element_t *cleanup);
+#    ifdef AVS_COMMONS_WITH_AVS_RBTREE
 typedef avs_error_t persistence_handler_tree_t(
         avs_persistence_context_t *ctx,
         AVS_RBTREE(void) tree,
         avs_persistence_handler_custom_allocated_tree_element_t *handler,
         void *handler_user_ptr,
         avs_persistence_cleanup_collection_element_t *cleanup);
+#    endif // AVS_COMMONS_WITH_AVS_RBTREE
+#    if defined(AVS_COMMONS_WITH_AVS_SORTED_SET) \
+            || defined(AVS_COMMONS_WITH_AVS_RBTREE)
+typedef avs_error_t persistence_handler_sorted_set_t(
+        avs_persistence_context_t *ctx,
+        AVS_SORTED_SET(void) sorted_set,
+        avs_persistence_handler_custom_allocated_sorted_set_element_t *handler,
+        void *handler_user_ptr,
+        avs_persistence_cleanup_collection_element_t *cleanup);
+#    endif /* defined(AVS_COMMONS_WITH_AVS_SORTED_SET) || \
+              defined(AVS_COMMONS_WITH_AVS_RBTREE) */
 
 struct avs_persistence_context_vtable_struct {
     avs_persistence_direction_t direction;
@@ -74,7 +86,14 @@ struct avs_persistence_context_vtable_struct {
     persistence_handler_sized_buffer_t *handle_sized_buffer;
     persistence_handler_string_t *handle_string;
     persistence_handler_list_t *handle_list;
+#    ifdef AVS_COMMONS_WITH_AVS_RBTREE
     persistence_handler_tree_t *handle_tree;
+#    endif // AVS_COMMONS_WITH_AVS_RBTREE
+#    if defined(AVS_COMMONS_WITH_AVS_SORTED_SET) \
+            || defined(AVS_COMMONS_WITH_AVS_RBTREE)
+    persistence_handler_sorted_set_t *handle_sorted_set;
+#    endif /* defined(AVS_COMMONS_WITH_AVS_SORTED_SET) || \
+              defined(AVS_COMMONS_WITH_AVS_RBTREE) */
 };
 
 //// PERSIST ///////////////////////////////////////////////////////////////////
@@ -170,6 +189,7 @@ persist_list(avs_persistence_context_t *ctx,
     return err;
 }
 
+#    ifdef AVS_COMMONS_WITH_AVS_RBTREE
 static avs_error_t
 persist_tree(avs_persistence_context_t *ctx,
              AVS_RBTREE(void) tree,
@@ -193,11 +213,37 @@ persist_tree(avs_persistence_context_t *ctx,
     }
     return err;
 }
+#    endif // AVS_COMMONS_WITH_AVS_RBTREE
+
+#    if defined(AVS_COMMONS_WITH_AVS_SORTED_SET) \
+            || defined(AVS_COMMONS_WITH_AVS_RBTREE)
+static avs_error_t persist_sorted_set(
+        avs_persistence_context_t *ctx,
+        AVS_SORTED_SET(void) sorted_set,
+        avs_persistence_handler_custom_allocated_sorted_set_element_t *handler,
+        void *handler_user_ptr,
+        avs_persistence_cleanup_collection_element_t *cleanup) {
+#        ifdef AVS_COMMONS_WITH_AVS_RBTREE
+    return persist_tree(ctx, sorted_set, handler, handler_user_ptr, cleanup);
+#        else  // AVS_COMMONS_WITH_AVS_RBTREE
+    return persist_list(ctx, sorted_set, handler, handler_user_ptr, cleanup);
+#        endif // AVS_COMMONS_WITH_AVS_RBTREE
+}
+#    endif /* defined(AVS_COMMONS_WITH_AVS_SORTED_SET) || \
+              defined(AVS_COMMONS_WITH_AVS_RBTREE) */
 
 static const struct avs_persistence_context_vtable_struct STORE_VTABLE = {
     AVS_PERSISTENCE_STORE, persist_u16,    persist_u32,   persist_u64,
     persist_bool,          persist_bytes,  persist_float, persist_double,
-    persist_sized_buffer,  persist_string, persist_list,  persist_tree
+    persist_sized_buffer,  persist_string, persist_list,
+#    ifdef AVS_COMMONS_WITH_AVS_RBTREE
+    persist_tree,
+#    endif // AVS_COMMONS_WITH_AVS_RBTREE
+#    if defined(AVS_COMMONS_WITH_AVS_SORTED_SET) \
+            || defined(AVS_COMMONS_WITH_AVS_RBTREE)
+    persist_sorted_set
+#    endif /* defined(AVS_COMMONS_WITH_AVS_SORTED_SET) || \
+              defined(AVS_COMMONS_WITH_AVS_RBTREE) */
 };
 
 //// RESTORE ///////////////////////////////////////////////////////////////////
@@ -328,6 +374,7 @@ restore_list(avs_persistence_context_t *ctx,
     return err;
 }
 
+#    ifdef AVS_COMMONS_WITH_AVS_RBTREE
 static avs_error_t
 restore_tree(avs_persistence_context_t *ctx,
              AVS_RBTREE(void) tree,
@@ -356,6 +403,45 @@ restore_tree(avs_persistence_context_t *ctx,
     }
     return err;
 }
+#    endif // AVS_COMMONS_WITH_AVS_RBTREE
+
+#    if defined(AVS_COMMONS_WITH_AVS_SORTED_SET) \
+            || defined(AVS_COMMONS_WITH_AVS_RBTREE)
+static avs_error_t restore_sorted_set(
+        avs_persistence_context_t *ctx,
+        AVS_SORTED_SET(void) sorted_set,
+        avs_persistence_handler_custom_allocated_sorted_set_element_t *handler,
+        void *handler_user_ptr,
+        avs_persistence_cleanup_collection_element_t *cleanup) {
+#        ifdef AVS_COMMONS_WITH_AVS_RBTREE
+    return restore_tree(ctx, sorted_set, handler, handler_user_ptr, cleanup);
+#        else  // AVS_COMMONS_WITH_AVS_RBTREE
+    assert(AVS_SORTED_SET_SIZE(sorted_set) == 0);
+    assert(cleanup);
+    uint32_t count;
+    avs_error_t err = restore_u32(ctx, &count);
+    while (avs_is_ok(err) && count--) {
+        AVS_SORTED_SET_ELEM(void) element = NULL;
+        if (avs_is_ok((err = handler(ctx, &element, handler_user_ptr)))
+                && element
+                && AVS_SORTED_SET_INSERT(sorted_set, element) != element) {
+            err = avs_errno(AVS_EBADMSG);
+        }
+        if (avs_is_err(err) && element) {
+            cleanup(element);
+            AVS_SORTED_SET_ELEM_DELETE_DETACHED(&element);
+        }
+    }
+    if (avs_is_err(err)) {
+        AVS_SORTED_SET_CLEAR(sorted_set) {
+            cleanup(*sorted_set);
+        }
+    }
+    return err;
+#        endif // AVS_COMMONS_WITH_AVS_RBTREE
+}
+#    endif /* defined(AVS_COMMONS_WITH_AVS_SORTED_SET) || \
+              defined(AVS_COMMONS_WITH_AVS_RBTREE) */
 
 static const struct avs_persistence_context_vtable_struct RESTORE_VTABLE = {
     AVS_PERSISTENCE_RESTORE,
@@ -369,7 +455,14 @@ static const struct avs_persistence_context_vtable_struct RESTORE_VTABLE = {
     restore_sized_buffer,
     restore_string,
     restore_list,
-    restore_tree
+#    ifdef AVS_COMMONS_WITH_AVS_RBTREE
+    restore_tree,
+#    endif // AVS_COMMONS_WITH_AVS_RBTREE
+#    if defined(AVS_COMMONS_WITH_AVS_SORTED_SET) \
+            || defined(AVS_COMMONS_WITH_AVS_RBTREE)
+    restore_sorted_set
+#    endif /* defined(AVS_COMMONS_WITH_AVS_SORTED_SET) || \
+              defined(AVS_COMMONS_WITH_AVS_RBTREE) */
 };
 
 avs_persistence_context_t
@@ -516,6 +609,7 @@ avs_error_t avs_persistence_custom_allocated_list(
                                     cleanup);
 }
 
+#    ifdef AVS_COMMONS_WITH_AVS_RBTREE
 avs_error_t avs_persistence_custom_allocated_tree(
         avs_persistence_context_t *ctx,
         AVS_RBTREE(void) tree,
@@ -528,6 +622,26 @@ avs_error_t avs_persistence_custom_allocated_tree(
     return ctx->vtable->handle_tree(ctx, tree, handler, handler_user_ptr,
                                     cleanup);
 }
+#    endif // AVS_COMMONS_WITH_AVS_RBTREE
+
+#    if defined(AVS_COMMONS_WITH_AVS_SORTED_SET) \
+            || defined(AVS_COMMONS_WITH_AVS_RBTREE)
+avs_error_t avs_persistence_custom_allocated_sorted_set(
+        avs_persistence_context_t *ctx,
+        AVS_SORTED_SET(void) sorted_set,
+        avs_persistence_handler_custom_allocated_sorted_set_element_t *handler,
+        void *handler_user_ptr,
+        avs_persistence_cleanup_collection_element_t *cleanup) {
+#        ifdef AVS_COMMONS_WITH_AVS_RBTREE
+    return avs_persistence_custom_allocated_tree(ctx, sorted_set, handler,
+                                                 handler_user_ptr, cleanup);
+#        else  // AVS_COMMONS_WITH_AVS_RBTREE
+    return avs_persistence_custom_allocated_list(ctx, sorted_set, handler,
+                                                 handler_user_ptr, cleanup);
+#        endif // AVS_COMMONS_WITH_AVS_RBTREE
+}
+#    endif /* defined(AVS_COMMONS_WITH_AVS_SORTED_SET) || \
+              defined(AVS_COMMONS_WITH_AVS_RBTREE) */
 
 typedef struct {
     size_t element_size;
@@ -569,6 +683,7 @@ avs_persistence_list(avs_persistence_context_t *ctx,
             ctx, list_ptr, persistence_list_handler, &state, cleanup);
 }
 
+#    ifdef AVS_COMMONS_WITH_AVS_RBTREE
 DEFINE_PERSISTENCE_COLLECTION_HANDLER(persistence_tree_handler, AVS_RBTREE_ELEM)
 
 avs_error_t
@@ -586,6 +701,28 @@ avs_persistence_tree(avs_persistence_context_t *ctx,
     return avs_persistence_custom_allocated_tree(
             ctx, tree, persistence_tree_handler, &state, cleanup);
 }
+#    endif // AVS_COMMONS_WITH_AVS_RBTREE
+
+#    if defined(AVS_COMMONS_WITH_AVS_SORTED_SET) \
+            || defined(AVS_COMMONS_WITH_AVS_RBTREE)
+
+avs_error_t avs_persistence_sorted_set(
+        avs_persistence_context_t *ctx,
+        AVS_SORTED_SET(void) sorted_set,
+        size_t element_size,
+        avs_persistence_handler_collection_element_t *handler,
+        void *handler_user_ptr,
+        avs_persistence_cleanup_collection_element_t *cleanup) {
+#        ifdef AVS_COMMONS_WITH_AVS_RBTREE
+    return avs_persistence_tree(ctx, sorted_set, element_size, handler,
+                                handler_user_ptr, cleanup);
+#        else  // AVS_COMMONS_WITH_AVS_RBTREE
+    return avs_persistence_list(ctx, sorted_set, element_size, handler,
+                                handler_user_ptr, cleanup);
+#        endif // AVS_COMMONS_WITH_AVS_RBTREE
+}
+#    endif /* defined(AVS_COMMONS_WITH_AVS_SORTED_SET) || \
+              defined(AVS_COMMONS_WITH_AVS_RBTREE) */
 
 avs_error_t avs_persistence_magic(avs_persistence_context_t *ctx,
                                   const void *magic,

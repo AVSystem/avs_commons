@@ -145,7 +145,8 @@ _avs_crypto_mbedtls_ssl_context_get_current_alert(mbedtls_ssl_context *ctx,
 static inline const mbedtls_cipher_info_t *
 _avs_crypto_mbedtls_cipher_info_from_ciphersuite(
         const mbedtls_ssl_ciphersuite_t *ciphersuite) {
-    return mbedtls_cipher_info_from_type(ciphersuite->MBEDTLS_PRIVATE(cipher));
+    return mbedtls_cipher_info_from_type(
+            (mbedtls_cipher_type_t) ciphersuite->MBEDTLS_PRIVATE(cipher));
 }
 
 static inline mbedtls_cipher_mode_t
@@ -158,6 +159,17 @@ _avs_crypto_mbedtls_cipher_get_block_size(const mbedtls_cipher_info_t *cipher) {
     return cipher->MBEDTLS_PRIVATE(block_size);
 }
 #endif // AVS_COMMONS_WITH_AVS_NET
+
+#if defined(AVS_COMMONS_WITH_AVS_NET) \
+        && defined(MBEDTLS_ERR_SSL_RECEIVED_NEW_SESSION_TICKET)
+static inline void
+_avs_crypto_mbedtls_ssl_session_unexport(mbedtls_ssl_context *ctx) {
+    assert(ctx);
+    assert(ctx->MBEDTLS_PRIVATE(session));
+    ctx->MBEDTLS_PRIVATE(session)->MBEDTLS_PRIVATE(exported) = false;
+}
+#endif // defined(AVS_COMMONS_WITH_AVS_NET) &&
+       // defined(MBEDTLS_ERR_SSL_RECEIVED_NEW_SESSION_TICKET)
 
 #if !defined(AVS_COMMONS_CRYPTO_MBEDTLS_PRIVATE_C) && !defined(AVS_UNIT_TESTING)
 // Make it impossible to use MBEDTLS_PRIVATE outside of this file

@@ -79,6 +79,14 @@ run_socket_set_opt_test_cases(avs_net_socket_t *socket,
             break;
         case AVS_NET_SOCKET_OPT_DANE_TLSA_ARRAY:
             AVS_UNREACHABLE("unsupported case");
+            break;
+        case AVS_NET_SOCKET_OPT_DTLS_HANDSHAKE_TIMEOUTS:
+            opt_val.dtls_handshake_timeouts =
+                    (avs_net_dtls_handshake_timeouts_t) {
+                        .min = avs_time_duration_from_scalar(5, AVS_TIME_S),
+                        .max = avs_time_duration_from_scalar(10, AVS_TIME_S)
+                    };
+            break;
         }
 
         if (test_cases[i].expected_result == SUCCESS) {

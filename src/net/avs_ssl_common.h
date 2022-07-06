@@ -340,6 +340,12 @@ set_dane_tlsa_array(ssl_socket_t *socket,
 }
 #endif // WITH_DANE_SUPPORT
 
+static int socket_set_dtls_handshake_timeouts(
+        ssl_socket_t *socket,
+        const avs_net_dtls_handshake_timeouts_t *dtls_handshake_timeouts);
+
+static bool socket_is_datagram(ssl_socket_t *);
+
 static avs_error_t set_opt_ssl(avs_net_socket_t *ssl_socket_,
                                avs_net_socket_opt_key_t option_key,
                                avs_net_socket_opt_value_t option_value) {
@@ -349,6 +355,14 @@ static avs_error_t set_opt_ssl(avs_net_socket_t *ssl_socket_,
     case AVS_NET_SOCKET_OPT_DANE_TLSA_ARRAY:
         return set_dane_tlsa_array(ssl_socket, &option_value.dane_tlsa_array);
 #endif // WITH_DANE_SUPPORT
+    case AVS_NET_SOCKET_OPT_DTLS_HANDSHAKE_TIMEOUTS:
+        if (!socket_is_datagram(ssl_socket)
+                || socket_set_dtls_handshake_timeouts(
+                           ssl_socket, &option_value.dtls_handshake_timeouts)) {
+            return avs_errno(AVS_EBADF);
+        } else {
+            return AVS_OK;
+        }
     default:
         if (!ssl_socket->backend_socket) {
             return avs_errno(AVS_EBADF);
@@ -446,8 +460,8 @@ static const avs_net_socket_v_table_t ssl_vtable = {
     .set_opt = set_opt_ssl
 };
 
-static const avs_net_dtls_handshake_timeouts_t
-        DEFAULT_DTLS_HANDSHAKE_TIMEOUTS = {
+const avs_net_dtls_handshake_timeouts_t
+        AVS_NET_SOCKET_DEFAULT_DTLS_HANDSHAKE_TIMEOUTS = {
             .min = { 1, 0 },
             .max = { 60, 0 }
         };

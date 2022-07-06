@@ -16,7 +16,14 @@
 
 #include <string.h>
 
+#include <avsystem/commons/avs_log.h>
+
 #include "socket_common_testcases.h"
+
+AVS_UNIT_GLOBAL_INIT(verbose) {
+    avs_log_set_default_level((
+            avs_log_level_t) (AVS_LOG_QUIET - AVS_MIN(verbose, AVS_LOG_QUIET)));
+}
 
 //// avs_net_socket_get_opt ////////////////////////////////////////////////////
 
@@ -36,7 +43,8 @@ AVS_UNIT_TEST(socket, udp_get_opt) {
         { FAIL, AVS_NET_SOCKET_OPT_SESSION_RESUMED },
         { SUCCESS, AVS_NET_SOCKET_OPT_BYTES_SENT },
         { SUCCESS, AVS_NET_SOCKET_OPT_BYTES_RECEIVED },
-        { SUCCESS, AVS_NET_SOCKET_HAS_BUFFERED_DATA }
+        { SUCCESS, AVS_NET_SOCKET_HAS_BUFFERED_DATA },
+        { FAIL, AVS_NET_SOCKET_OPT_DTLS_HANDSHAKE_TIMEOUTS }
     };
     run_socket_get_opt_test_cases(socket, test_cases,
                                   AVS_ARRAY_SIZE(test_cases));
@@ -60,7 +68,8 @@ AVS_UNIT_TEST(socket, tcp_get_opt) {
         { FAIL, AVS_NET_SOCKET_OPT_SESSION_RESUMED },
         { SUCCESS, AVS_NET_SOCKET_OPT_BYTES_SENT },
         { SUCCESS, AVS_NET_SOCKET_OPT_BYTES_RECEIVED },
-        { SUCCESS, AVS_NET_SOCKET_HAS_BUFFERED_DATA }
+        { SUCCESS, AVS_NET_SOCKET_HAS_BUFFERED_DATA },
+        { FAIL, AVS_NET_SOCKET_OPT_DTLS_HANDSHAKE_TIMEOUTS }
     };
     run_socket_get_opt_test_cases(socket, test_cases,
                                   AVS_ARRAY_SIZE(test_cases));
@@ -87,7 +96,8 @@ AVS_UNIT_TEST(socket, udp_get_opt_after_close) {
         { FAIL, AVS_NET_SOCKET_OPT_SESSION_RESUMED },
         { SUCCESS, AVS_NET_SOCKET_OPT_BYTES_SENT },
         { SUCCESS, AVS_NET_SOCKET_OPT_BYTES_RECEIVED },
-        { SUCCESS, AVS_NET_SOCKET_HAS_BUFFERED_DATA }
+        { SUCCESS, AVS_NET_SOCKET_HAS_BUFFERED_DATA },
+        { FAIL, AVS_NET_SOCKET_OPT_DTLS_HANDSHAKE_TIMEOUTS }
     };
     run_socket_get_opt_test_cases(socket, test_cases,
                                   AVS_ARRAY_SIZE(test_cases));
@@ -112,7 +122,8 @@ AVS_UNIT_TEST(socket, tcp_get_opt_after_close) {
         { FAIL, AVS_NET_SOCKET_OPT_SESSION_RESUMED },
         { SUCCESS, AVS_NET_SOCKET_OPT_BYTES_SENT },
         { SUCCESS, AVS_NET_SOCKET_OPT_BYTES_RECEIVED },
-        { SUCCESS, AVS_NET_SOCKET_HAS_BUFFERED_DATA }
+        { SUCCESS, AVS_NET_SOCKET_HAS_BUFFERED_DATA },
+        { FAIL, AVS_NET_SOCKET_OPT_DTLS_HANDSHAKE_TIMEOUTS }
     };
     run_socket_get_opt_test_cases(socket, test_cases,
                                   AVS_ARRAY_SIZE(test_cases));
@@ -138,7 +149,8 @@ AVS_UNIT_TEST(socket, udp_set_opt) {
         { FAIL, AVS_NET_SOCKET_OPT_SESSION_RESUMED },
         { FAIL, AVS_NET_SOCKET_OPT_BYTES_SENT },
         { FAIL, AVS_NET_SOCKET_OPT_BYTES_RECEIVED },
-        { FAIL, AVS_NET_SOCKET_HAS_BUFFERED_DATA }
+        { FAIL, AVS_NET_SOCKET_HAS_BUFFERED_DATA },
+        { FAIL, AVS_NET_SOCKET_OPT_DTLS_HANDSHAKE_TIMEOUTS }
     };
     run_socket_set_opt_test_cases(socket, test_cases,
                                   AVS_ARRAY_SIZE(test_cases));
@@ -162,7 +174,8 @@ AVS_UNIT_TEST(socket, tcp_set_opt) {
         { FAIL, AVS_NET_SOCKET_OPT_SESSION_RESUMED },
         { FAIL, AVS_NET_SOCKET_OPT_BYTES_SENT },
         { FAIL, AVS_NET_SOCKET_OPT_BYTES_RECEIVED },
-        { FAIL, AVS_NET_SOCKET_HAS_BUFFERED_DATA }
+        { FAIL, AVS_NET_SOCKET_HAS_BUFFERED_DATA },
+        { FAIL, AVS_NET_SOCKET_OPT_DTLS_HANDSHAKE_TIMEOUTS }
     };
     run_socket_set_opt_test_cases(socket, test_cases,
                                   AVS_ARRAY_SIZE(test_cases));
@@ -189,7 +202,8 @@ AVS_UNIT_TEST(socket, udp_set_opt_after_close) {
         { FAIL, AVS_NET_SOCKET_OPT_SESSION_RESUMED },
         { FAIL, AVS_NET_SOCKET_OPT_BYTES_SENT },
         { FAIL, AVS_NET_SOCKET_OPT_BYTES_RECEIVED },
-        { FAIL, AVS_NET_SOCKET_HAS_BUFFERED_DATA }
+        { FAIL, AVS_NET_SOCKET_HAS_BUFFERED_DATA },
+        { FAIL, AVS_NET_SOCKET_OPT_DTLS_HANDSHAKE_TIMEOUTS }
     };
     run_socket_set_opt_test_cases(socket, test_cases,
                                   AVS_ARRAY_SIZE(test_cases));
@@ -214,7 +228,8 @@ AVS_UNIT_TEST(socket, tcp_set_opt_after_close) {
         { FAIL, AVS_NET_SOCKET_OPT_SESSION_RESUMED },
         { FAIL, AVS_NET_SOCKET_OPT_BYTES_SENT },
         { FAIL, AVS_NET_SOCKET_OPT_BYTES_RECEIVED },
-        { FAIL, AVS_NET_SOCKET_HAS_BUFFERED_DATA }
+        { FAIL, AVS_NET_SOCKET_HAS_BUFFERED_DATA },
+        { FAIL, AVS_NET_SOCKET_OPT_DTLS_HANDSHAKE_TIMEOUTS }
     };
     run_socket_set_opt_test_cases(socket, test_cases,
                                   AVS_ARRAY_SIZE(test_cases));

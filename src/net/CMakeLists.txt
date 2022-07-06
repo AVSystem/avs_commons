@@ -94,6 +94,12 @@ if(WITH_OPENSSL)
                  ${AVS_COMMONS_SOURCE_DIR}/tests/net/socket_nosec.c
                  ${AVS_COMMONS_SOURCE_DIR}/tests/net/socket_tls.c
                  $<$<BOOL:${WITH_DTLS}>:${AVS_COMMONS_SOURCE_DIR}/tests/net/socket_dtls.c>)
+    if(TARGET avs_net_openssl_test AND NOT OPENSSL_VERSION VERSION_LESS 1.1.1)
+        target_sources(avs_net_openssl_test PRIVATE
+                       ${AVS_COMMONS_SOURCE_DIR}/tests/net/socket_tls13_basic.c
+                       ${AVS_COMMONS_SOURCE_DIR}/tests/net/socket_tls13_default_version.c
+                       ${AVS_COMMONS_SOURCE_DIR}/tests/net/socket_tls13_advanced.c)
+    endif()
     avs_install_export(avs_net_openssl net)
 endif()
 
@@ -108,7 +114,7 @@ if(WITH_MBEDTLS)
     target_link_libraries(avs_net_mbedtls PUBLIC avs_net_core avs_crypto_mbedtls mbedtls mbedcrypto mbedx509)
 
     if(WITH_TLS_SESSION_PERSISTENCE)
-        target_link_libraries(avs_net_mbedtls PUBLIC avs_persistence avs_rbtree)
+        target_link_libraries(avs_net_mbedtls PUBLIC avs_persistence)
     endif()
 
     avs_add_test(NAME avs_net_mbedtls
@@ -118,6 +124,27 @@ if(WITH_MBEDTLS)
                  ${AVS_COMMONS_SOURCE_DIR}/tests/net/socket_nosec.c
                  ${AVS_COMMONS_SOURCE_DIR}/tests/net/socket_tls.c
                  ${AVS_COMMONS_SOURCE_DIR}/tests/net/socket_dtls.c)
+    if(TARGET avs_net_mbedtls_test AND OPENSSL_FOUND AND NOT OPENSSL_VERSION VERSION_LESS 1.1.1)
+        include(CheckSymbolExists)
+        set(CMAKE_REQUIRED_LIBRARIES mbedtls mbedcrypto mbedx509)
+        check_symbol_exists("MBEDTLS_SSL_PROTO_TLS1_3" "mbedtls/version.h" MBEDTLS_SUPPORTS_TLS13)
+        check_symbol_exists("MBEDTLS_SSL_PROTO_TLS1_3_EXPERIMENTAL" "mbedtls/version.h" MBEDTLS_SUPPORTS_TLS13_EXPERIMENTAL)
+        check_symbol_exists("MBEDTLS_SSL_NEW_SESSION_TICKET" "mbedtls/version.h" MBEDTLS_SUPPORTS_SESSION_TICKETS)
+        set(CMAKE_REQUIRED_LIBRARIES)
+        if(MBEDTLS_SUPPORTS_TLS13 OR MBEDTLS_SUPPORTS_TLS13_EXPERIMENTAL)
+            target_sources(avs_net_mbedtls_test PRIVATE
+                           ${AVS_COMMONS_SOURCE_DIR}/tests/net/socket_tls13_basic.c)
+            # NOTE: The advanced tests below require the experimental branch of
+            # Mbed TLS from https://github.com/hannestschofenig/mbedtls.
+            if(MBEDTLS_SUPPORTS_SESSION_TICKETS)
+                # NOTE: Mbed TLS' dual-stack (1.2+1.3) implementation, even on
+                # the experimental branch, is incompatible with OpenSSL server,
+                # so socket_tls13_default_version.c is never enabled.
+                target_sources(avs_net_mbedtls_test PRIVATE
+                               ${AVS_COMMONS_SOURCE_DIR}/tests/net/socket_tls13_advanced.c)
+            endif()
+        endif()
+    endif()
     avs_install_export(avs_net_mbedtls net)
 endif()
 
@@ -134,7 +161,8 @@ if(WITH_TINYDTLS)
                  SOURCES
                  ${AVS_NET_TINYDTLS_SOURCES}
                  ${AVS_COMMONS_SOURCE_DIR}/tests/net/socket_nosec.c
-                 ${AVS_COMMONS_SOURCE_DIR}/tests/net/socket_dtls.c)
+                 ${AVS_COMMONS_SOURCE_DIR}/tests/net/socket_dtls.c
+                 COMPILE_DEFINITIONS AVS_COMMONS_TINYDTLS_TEST)
     avs_install_export(avs_net_tinydtls net)
 endif()
 

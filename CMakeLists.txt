@@ -17,7 +17,7 @@
 cmake_minimum_required(VERSION 3.6.0)
 project(avs_commons C)
 
-set(AVS_COMMONS_VERSION "5.0.0")
+set(AVS_COMMONS_VERSION "5.1.0")
 
 ################# DISTRIBUTION #################################################
 
@@ -153,6 +153,7 @@ option(WITH_AVS_URL "AVSystem URL handling library" ${MODULES_ENABLED})
 option(WITH_AVS_COMPAT_THREADING "Use multithreading utility compatibility layer" ${MODULES_ENABLED})
 option(WITH_AVS_CRYPTO "Cryptogaphic functions abstraction layer" ${MODULES_ENABLED})
 option(WITH_AVS_MICRO_LOGS "Replaces all invocations of AVS_DISPOSABLE_LOG() with single space. This saves a lot on binary size in applications that log a lot." OFF)
+option(WITH_AVS_SORTED_SET "AVSystem wrapper for list and red-black tree implementation" OFF)
 
 include(CMakeDependentOption)
 cmake_dependent_option(WITH_INTERNAL_LOGS "Enable logging from inside AVSystem Commons libraries" ON WITH_AVS_LOG OFF)
@@ -573,6 +574,7 @@ add_module_with_include_dirs(NAME net)
 add_module_with_include_dirs(NAME stream)
 add_module_with_include_dirs(NAME log)
 add_module_with_include_dirs(NAME rbtree)
+add_module_with_include_dirs(NAME sorted_set)
 add_module_with_include_dirs(NAME sched)
 add_module_with_include_dirs(NAME url)
 
@@ -642,4 +644,5 @@ install(FILES
         "${CMAKE_CURRENT_SOURCE_DIR}/include_public/avsystem/commons/avs_defs.h"
         "${CMAKE_CURRENT_SOURCE_DIR}/include_public/avsystem/commons/avs_errno.h"
         "${CMAKE_CURRENT_SOURCE_DIR}/include_public/avsystem/commons/avs_errno_map.h"
+        "${CMAKE_CURRENT_SOURCE_DIR}/include_public/avsystem/commons/avs_sorted_set.h"
         DESTINATION "${INCLUDE_INSTALL_DIR}/avsystem/commons")

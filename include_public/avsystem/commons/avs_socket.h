@@ -227,7 +227,8 @@ typedef enum {
     AVS_NET_SSL_VERSION_SSLv3,
     AVS_NET_SSL_VERSION_TLSv1,
     AVS_NET_SSL_VERSION_TLSv1_1,
-    AVS_NET_SSL_VERSION_TLSv1_2
+    AVS_NET_SSL_VERSION_TLSv1_2,
+    AVS_NET_SSL_VERSION_TLSv1_3
 } avs_net_ssl_version_t;
 
 /**
@@ -341,6 +342,9 @@ typedef struct {
     avs_time_duration_t min;
     avs_time_duration_t max;
 } avs_net_dtls_handshake_timeouts_t;
+
+extern const avs_net_dtls_handshake_timeouts_t
+        AVS_NET_SOCKET_DEFAULT_DTLS_HANDSHAKE_TIMEOUTS;
 #endif // AVS_COMMONS_WITH_AVS_CRYPTO
 
 /**
@@ -585,6 +589,11 @@ typedef enum {
      * unnecessarily starving the <c>poll()</c> loop.
      */
     AVS_NET_SOCKET_HAS_BUFFERED_DATA,
+
+    /**
+     * Used to set the timeouts for the DTLS handshake.
+     */
+    AVS_NET_SOCKET_OPT_DTLS_HANDSHAKE_TIMEOUTS,
 } avs_net_socket_opt_key_t;
 
 typedef enum {
@@ -689,6 +698,7 @@ typedef union {
     uint64_t bytes_sent;
     uint64_t bytes_received;
     avs_net_socket_dane_tlsa_array_t dane_tlsa_array;
+    avs_net_dtls_handshake_timeouts_t dtls_handshake_timeouts;
 } avs_net_socket_opt_value_t;
 
 int avs_net_socket_debug(int value);

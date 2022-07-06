@@ -164,6 +164,10 @@ static const EVP_MD *get_evp_md(SSL *ssl) {
 #            define SSL3_RT_MAX_COMPRESSED_OVERHEAD 1024
 #        endif
 
+#        ifndef TLS_DEFAULT_CIPHERSUITES
+#            define TLS_DEFAULT_CIPHERSUITES ""
+#        endif // TLS_DEFAULT_CIPHERSUITES
+
 static int get_explicit_iv_length(const EVP_CIPHER *cipher) {
     /* adapted from do_dtls1_write() in OpenSSL */
     int mode = EVP_CIPHER_mode(cipher);
@@ -652,34 +656,97 @@ static avs_error_t ssl_handshake(ssl_socket_t *socket) {
 #        define SSL_get_app_data @ @ @ @ @
 #    endif
 
-static avs_error_t configure_cipher_list(ssl_socket_t *socket,
-                                         const char *cipher_list) {
-    LOG(DEBUG, _("cipher list: ") "%s", cipher_list);
-    if (SSL_set_cipher_list(socket->ssl, cipher_list)) {
-        return AVS_OK;
-    }
-
-    LOG(WARNING, _("could not set cipher list to ") "%s", cipher_list);
-    log_openssl_error();
-    return avs_errno(AVS_EPROTO);
-}
+// NOTE: The code below uses the term "legacy ciphersuite" for ciphersuites as
+// defined by TLS 1.2 and below (which include the key exchange algorithm and
+// authentication mechanism - e.g. TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256), and
+// "session ciphersuite" for ciphersuites as defined by TLS 1.3 (and presumably
+// above; those only include session encryption algorithms, e.g.
+// TLS_AES_128_GCM_SHA256 - note that the first two parts of the legacy
+// definition are removed).
+//
+// These terms are not necessarily widely adopted. They are used to avoid
+// directly specifying "TLS 1.2" or "TLS 1.3" as they are not specifically tied
+// to any single particular version. These are two "eras" of TLS ciphersuites.
 
 static avs_error_t
-ids_to_cipher_list(ssl_socket_t *socket,
-                   const avs_net_socket_tls_ciphersuites_t *suites,
-                   char **out_cipher_list) {
+configure_ciphersuite_lists(ssl_socket_t *socket,
+                            const char *legacy_ciphersuite_list,
+                            const char *session_ciphersuite_list) {
+    bool error = false;
+
+    LOG(DEBUG, _("TLS <=1.2 cipher list: ") "%s", legacy_ciphersuite_list);
+    if (!SSL_set_cipher_list(socket->ssl, legacy_ciphersuite_list)) {
+        if (session_ciphersuite_list && *session_ciphersuite_list
+                && ERR_GET_REASON(ERR_peek_last_error())
+                               == SSL_R_NO_CIPHER_MATCH) {
+            // Empty TLS <=1.2 cipher list is not an error if 1.3 is used
+            ERR_clear_error();
+        } else {
+            LOG(WARNING, _("could not set TLS <=1.2 cipher list to ") "%s",
+                legacy_ciphersuite_list);
+            log_openssl_error();
+            error = true;
+        }
+    }
+
+    LOG(DEBUG, _("TLS 1.3 cipher list: ") "%s", session_ciphersuite_list);
+    if (
+#    if OPENSSL_VERSION_NUMBER_GE(1, 1, 1)
+                !SSL_set_ciphersuites(socket->ssl, session_ciphersuite_list)
+#    else  // OPENSSL_VERSION_NUMBER_GE(1, 1, 1)
+                session_ciphersuite_list && *session_ciphersuite_list
+                    && strcmp(session_ciphersuite_list,
+                              TLS_DEFAULT_CIPHERSUITES)
+#    endif // OPENSSL_VERSION_NUMBER_GE(1, 1, 1)
+    ) {
+        LOG(WARNING, _("could not set TLS 1.3 cipher list to ") "%s",
+            session_ciphersuite_list);
+#    if OPENSSL_VERSION_NUMBER_GE(1, 1, 1)
+        log_openssl_error();
+#    endif // OPENSSL_VERSION_NUMBER_GE(1, 1, 1)
+        error = true;
+    }
+
+    return error ? avs_errno(AVS_EPROTO) : AVS_OK;
+}
+
+#    if OPENSSL_VERSION_NUMBER_GE(1, 1, 1)
+static bool is_session_ciphersuite(const SSL_CIPHER *cipher) {
+    const char *version = SSL_CIPHER_get_version(cipher);
+    unsigned tls_version_major;
+    unsigned tls_version_minor;
+    return version
+           && sscanf(version, "TLSv%u.%u", &tls_version_major,
+                     &tls_version_minor)
+                      == 2
+           && (tls_version_major > 1
+               || (tls_version_major == 1 && tls_version_minor >= 3));
+}
+#    endif // OPENSSL_VERSION_NUMBER_GE(1, 1, 1)
+
+static avs_error_t
+ids_to_ciphersuite_lists(ssl_socket_t *socket,
+                         const avs_net_socket_tls_ciphersuites_t *suites,
+                         char **out_legacy_ciphersuite_list,
+                         char **out_session_ciphersuite_list) {
     if (!suites) {
         return avs_errno(AVS_EINVAL);
     }
 
-    avs_stream_t *stream = avs_stream_membuf_create();
-    if (!stream) {
-        return avs_errno(AVS_ENOMEM);
-    }
+    avs_error_t err = avs_errno(AVS_ENOMEM);
+    avs_stream_t *legacy_ciphersuites_stream = avs_stream_membuf_create();
+#    if OPENSSL_VERSION_NUMBER_GE(1, 1, 1)
+    avs_stream_t *session_ciphersuites_stream = avs_stream_membuf_create();
+#    endif // OPENSSL_VERSION_NUMBER_GE(1, 1, 1)
 
-    avs_error_t err = avs_stream_write(stream, "-ALL", sizeof("-ALL") - 1);
-    if (avs_is_err(err)) {
-        return err;
+    if (!legacy_ciphersuites_stream
+#    if OPENSSL_VERSION_NUMBER_GE(1, 1, 1)
+            || !session_ciphersuites_stream
+#    endif // OPENSSL_VERSION_NUMBER_GE(1, 1, 1)
+            || avs_is_err(
+                       (err = avs_stream_write(legacy_ciphersuites_stream,
+                                               "-ALL", sizeof("-ALL") - 1)))) {
+        goto finish;
     }
 
     for (size_t i = 0; i < suites->num_ids; ++i) {
@@ -700,8 +767,14 @@ ids_to_cipher_list(ssl_socket_t *socket,
         }
 
         const char *name = SSL_CIPHER_get_name(cipher);
+        avs_stream_t *target_stream = legacy_ciphersuites_stream;
+#    if OPENSSL_VERSION_NUMBER_GE(1, 1, 1)
+        if (is_session_ciphersuite(cipher)) {
+            target_stream = session_ciphersuites_stream;
+        } else
+#    endif // OPENSSL_VERSION_NUMBER_GE(1, 1, 1)
 #    ifdef AVS_COMMONS_WITH_AVS_CRYPTO_PSK
-        if (socket->psk_key) {
+                if (socket->psk_key) {
             if (!strstr(name, "PSK")) {
                 LOG(DEBUG, _("ignoring non-PSK cipher ID: 0x") "%04x",
                     suites->ids[i]);
@@ -714,17 +787,43 @@ ids_to_cipher_list(ssl_socket_t *socket,
             continue;
         }
 
-        err = avs_stream_write(stream, ":", 1);
-        if (avs_is_ok(err)) {
-            err = avs_stream_write(stream, name, strlen(name));
+        if (avs_is_err((err = avs_stream_write(target_stream, ":", 1)))
+                || avs_is_err((err = avs_stream_write(target_stream, name,
+                                                      strlen(name))))) {
+            goto finish;
         }
     }
 
-    (void) (avs_is_err(err)
-            || avs_is_err((err = avs_stream_write(stream, "", 1)))
+#    if OPENSSL_VERSION_NUMBER_GE(1, 1, 1)
+    // Consume the superfluous initial ":"
+    err = avs_stream_getch(session_ciphersuites_stream, &(char) { 0 }, NULL);
+    if ((avs_is_err(err) && !avs_is_eof(err))
+            || avs_is_err((err = avs_stream_write(session_ciphersuites_stream,
+                                                  "", 1)))
             || avs_is_err((err = avs_stream_membuf_take_ownership(
-                                   stream, (void **) out_cipher_list, NULL))));
-    avs_stream_cleanup(&stream);
+                                   session_ciphersuites_stream,
+                                   (void **) out_session_ciphersuite_list,
+                                   NULL)))) {
+        goto finish;
+    }
+#    endif // OPENSSL_VERSION_NUMBER_GE(1, 1, 1)
+
+    (void) (avs_is_err(
+                    (err = avs_stream_write(legacy_ciphersuites_stream, "", 1)))
+            || avs_is_err(
+                       (err = avs_stream_membuf_take_ownership(
+                                legacy_ciphersuites_stream,
+                                (void **) out_legacy_ciphersuite_list, NULL))));
+finish:
+#    if OPENSSL_VERSION_NUMBER_GE(1, 1, 1)
+    avs_stream_cleanup(&session_ciphersuites_stream);
+    if (avs_is_err(err)) {
+        avs_free(*out_session_ciphersuite_list);
+        *out_session_ciphersuite_list = NULL;
+    }
+#    endif // OPENSSL_VERSION_NUMBER_GE(1, 1, 1)
+    avs_stream_cleanup(&legacy_ciphersuites_stream);
+    // no need to clean up out_legacy_ciphersuite_list as it is set last
     return err;
 }
 
@@ -797,24 +896,31 @@ static unsigned int dtls_timer_cb(SSL *ssl, unsigned int timer_us) {
 static avs_error_t fix_socket_ciphersuites(ssl_socket_t *socket) {
     avs_error_t err = AVS_OK;
     if (socket->enabled_ciphersuites.num_ids > 0) {
-        char *ciphersuites_string = NULL;
-        err = ids_to_cipher_list(socket, &socket->enabled_ciphersuites,
-                                 &ciphersuites_string);
+        char *legacy_ciphersuites_string = NULL;
+        char *session_ciphersuites_string = NULL;
+        err = ids_to_ciphersuite_lists(socket, &socket->enabled_ciphersuites,
+                                       &legacy_ciphersuites_string,
+                                       &session_ciphersuites_string);
         if (avs_is_err(err)) {
-            assert(!ciphersuites_string);
+            assert(!legacy_ciphersuites_string);
+            assert(!session_ciphersuites_string);
             return err;
         }
 
-        err = configure_cipher_list(socket, ciphersuites_string);
-        avs_free(ciphersuites_string);
+        err = configure_ciphersuite_lists(socket, legacy_ciphersuites_string,
+                                          session_ciphersuites_string);
+        avs_free(legacy_ciphersuites_string);
+        avs_free(session_ciphersuites_string);
     }
 #    ifdef AVS_COMMONS_WITH_AVS_CRYPTO_PSK
     else if (socket->psk_key) {
-        err = configure_cipher_list(socket, "PSK");
+        err = configure_ciphersuite_lists(socket, "PSK",
+                                          TLS_DEFAULT_CIPHERSUITES);
     }
 #    endif // AVS_COMMONS_WITH_AVS_CRYPTO_PSK
     else {
-        err = configure_cipher_list(socket, "!PSK ALL");
+        err = configure_ciphersuite_lists(socket, "!PSK ALL",
+                                          TLS_DEFAULT_CIPHERSUITES);
     }
 
     return err;
@@ -1275,6 +1381,23 @@ static int duration_to_uint_us(unsigned *out, avs_time_duration_t in) {
     return 0;
 }
 
+static int socket_set_dtls_handshake_timeouts(
+        ssl_socket_t *socket,
+        const avs_net_dtls_handshake_timeouts_t *dtls_handshake_timeouts) {
+    const avs_net_dtls_handshake_timeouts_t *timeouts =
+            (dtls_handshake_timeouts
+                     ? dtls_handshake_timeouts
+                     : &AVS_NET_SOCKET_DEFAULT_DTLS_HANDSHAKE_TIMEOUTS);
+    if (duration_to_uint_us(&socket->dtls_handshake_timeouts.min_us,
+                            timeouts->min)
+            || duration_to_uint_us(&socket->dtls_handshake_timeouts.max_us,
+                                   timeouts->max)) {
+        return -1;
+    }
+
+    return 0;
+}
+
 static avs_error_t
 configure_ssl(ssl_socket_t *socket,
               const avs_net_ssl_configuration_t *configuration) {
@@ -1313,14 +1436,8 @@ configure_ssl(ssl_socket_t *socket,
         return err;
     }
 
-    const avs_net_dtls_handshake_timeouts_t *dtls_handshake_timeouts =
-            (configuration->dtls_handshake_timeouts
-                     ? configuration->dtls_handshake_timeouts
-                     : &DEFAULT_DTLS_HANDSHAKE_TIMEOUTS);
-    if (duration_to_uint_us(&socket->dtls_handshake_timeouts.min_us,
-                            dtls_handshake_timeouts->min)
-            || duration_to_uint_us(&socket->dtls_handshake_timeouts.max_us,
-                                   dtls_handshake_timeouts->max)) {
+    if (socket_set_dtls_handshake_timeouts(
+                socket, configuration->dtls_handshake_timeouts)) {
         LOG(ERROR, _("Invalid DTLS handshake timeouts passed"));
         return avs_errno(AVS_EINVAL);
     }
@@ -1581,6 +1698,10 @@ static int stream_proto_version(avs_net_ssl_version_t version) {
         return TLS1_1_VERSION;
     case AVS_NET_SSL_VERSION_TLSv1_2:
         return TLS1_2_VERSION;
+#        if OPENSSL_VERSION_NUMBER_GE(1, 1, 1)
+    case AVS_NET_SSL_VERSION_TLSv1_3:
+        return TLS1_3_VERSION;
+#        endif // OPENSSL_VERSION_NUMBER_GE(1, 1, 1)
     default:
         return -1;
     }

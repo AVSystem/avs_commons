@@ -512,5 +512,21 @@ initialize_ssl_socket(ssl_socket_t *socket,
     return AVS_OK;
 }
 
+static int socket_set_dtls_handshake_timeouts(
+        ssl_socket_t *socket,
+        const avs_net_dtls_handshake_timeouts_t *dtls_handshake_timeouts) {
+    (void) socket;
+    (void) dtls_handshake_timeouts;
+
+    LOG(ERROR, _("tinyDTLS does not support changing DTLS handshake timeouts"));
+    return -1;
+}
+
+static bool socket_is_datagram(ssl_socket_t *sock) {
+    (void) sock;
+
+    return true;
+}
+
 #endif // defined(AVS_COMMONS_WITH_AVS_NET) &&
        // defined(AVS_COMMONS_WITH_TINYDTLS)

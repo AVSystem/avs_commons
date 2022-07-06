@@ -22,7 +22,14 @@
 #include <string.h>
 
 #include <avsystem/commons/avs_list.h>
-#include <avsystem/commons/avs_rbtree.h>
+#ifdef AVS_COMMONS_WITH_AVS_RBTREE
+#    include <avsystem/commons/avs_rbtree.h>
+#endif // AVS_COMMONS_WITH_AVS_RBTREE
+#if defined(AVS_COMMONS_WITH_AVS_SORTED_SET) \
+        || defined(AVS_COMMONS_WITH_AVS_RBTREE)
+#    include <avsystem/commons/avs_sorted_set.h>
+#endif /* defined(AVS_COMMONS_WITH_AVS_SORTED_SET) || \
+          defined(AVS_COMMONS_WITH_AVS_RBTREE) */
 #include <avsystem/commons/avs_stream.h>
 
 #ifdef __cplusplus
@@ -50,10 +57,22 @@ typedef avs_error_t avs_persistence_handler_custom_allocated_list_element_t(
         AVS_LIST(void) *element,
         void *user_data);
 
+#ifdef AVS_COMMONS_WITH_AVS_RBTREE
 typedef avs_error_t avs_persistence_handler_custom_allocated_tree_element_t(
         avs_persistence_context_t *ctx,
         AVS_RBTREE_ELEM(void) *element,
         void *user_data);
+#endif // AVS_COMMONS_WITH_AVS_RBTREE
+
+#if defined(AVS_COMMONS_WITH_AVS_SORTED_SET) \
+        || defined(AVS_COMMONS_WITH_AVS_RBTREE)
+typedef avs_error_t
+avs_persistence_handler_custom_allocated_sorted_set_element_t(
+        avs_persistence_context_t *ctx,
+        AVS_SORTED_SET_ELEM(void) *element,
+        void *user_data);
+#endif /* defined(AVS_COMMONS_WITH_AVS_SORTED_SET) || \
+          defined(AVS_COMMONS_WITH_AVS_RBTREE) */
 
 typedef void avs_persistence_cleanup_collection_element_t(void *element);
 
@@ -330,6 +349,7 @@ avs_persistence_list(avs_persistence_context_t *ctx,
                      void *handler_user_ptr,
                      avs_persistence_cleanup_collection_element_t *cleanup);
 
+#ifdef AVS_COMMONS_WITH_AVS_RBTREE
 /**
  * Performs a operation (depending on the @p ctx) on a @p tree, using
  * @p handler for each element. In this variant, @p handler is responsible for
@@ -393,7 +413,26 @@ avs_persistence_tree(avs_persistence_context_t *ctx,
                      avs_persistence_handler_collection_element_t *handler,
                      void *handler_user_ptr,
                      avs_persistence_cleanup_collection_element_t *cleanup);
+#endif // AVS_COMMONS_WITH_AVS_RBTREE
 
+#if defined(AVS_COMMONS_WITH_AVS_SORTED_SET) \
+        || defined(AVS_COMMONS_WITH_AVS_RBTREE)
+avs_error_t avs_persistence_custom_allocated_sorted_set(
+        avs_persistence_context_t *ctx,
+        AVS_SORTED_SET(void) sorted_set,
+        avs_persistence_handler_custom_allocated_sorted_set_element_t *handler,
+        void *handler_user_ptr,
+        avs_persistence_cleanup_collection_element_t *cleanup);
+
+avs_error_t avs_persistence_sorted_set(
+        avs_persistence_context_t *ctx,
+        AVS_SORTED_SET(void) sorted_set,
+        size_t element_size,
+        avs_persistence_handler_collection_element_t *handler,
+        void *handler_user_ptr,
+        avs_persistence_cleanup_collection_element_t *cleanup);
+#endif /* defined(AVS_COMMONS_WITH_AVS_SORTED_SET) || \
+          defined(AVS_COMMONS_WITH_AVS_RBTREE) */
 /**
  * Persists or restores (depending on the @p ctx) a magic marker.
  *

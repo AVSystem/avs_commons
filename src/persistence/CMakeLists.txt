@@ -19,7 +19,14 @@ add_library(avs_persistence STATIC
             ${AVS_PERSISTENCE_PUBLIC_HEADERS}
             avs_persistence.c)
 
-target_link_libraries(avs_persistence PUBLIC avs_commons_global_headers avs_rbtree avs_stream avs_utils avs_list)
+set(AVS_PERSISTENCE_DEP avs_commons_global_headers avs_stream avs_utils avs_list)
+if(AVS_COMMONS_WITH_AVS_RBTREE)
+    list(APPEND AVS_PERSISTENCE_DEP avs_rbtree)
+endif()
+if(AVS_COMMONS_WITH_AVS_SORTED_SET)
+    list(APPEND AVS_PERSISTENCE_DEP avs_sorted_set)
+endif()
+target_link_libraries(avs_persistence PUBLIC ${AVS_PERSISTENCE_DEP})
 
 avs_install_export(avs_persistence persistence)
 install(FILES ${AVS_PERSISTENCE_PUBLIC_HEADERS}

@@ -37,7 +37,8 @@ AVS_UNIT_TEST(socket, dtls_get_opt) {
         { SUCCESS, AVS_NET_SOCKET_OPT_SESSION_RESUMED },
         { SUCCESS, AVS_NET_SOCKET_OPT_BYTES_SENT },
         { SUCCESS, AVS_NET_SOCKET_OPT_BYTES_RECEIVED },
-        { SUCCESS, AVS_NET_SOCKET_HAS_BUFFERED_DATA }
+        { SUCCESS, AVS_NET_SOCKET_HAS_BUFFERED_DATA },
+        { FAIL, AVS_NET_SOCKET_OPT_DTLS_HANDSHAKE_TIMEOUTS }
     };
     run_socket_get_opt_test_cases(socket, test_cases,
                                   AVS_ARRAY_SIZE(test_cases));
@@ -66,7 +67,8 @@ AVS_UNIT_TEST(socket, dtls_get_opt_after_close) {
         { SUCCESS, AVS_NET_SOCKET_OPT_SESSION_RESUMED },
         { SUCCESS, AVS_NET_SOCKET_OPT_BYTES_SENT },
         { SUCCESS, AVS_NET_SOCKET_OPT_BYTES_RECEIVED },
-        { SUCCESS, AVS_NET_SOCKET_HAS_BUFFERED_DATA }
+        { SUCCESS, AVS_NET_SOCKET_HAS_BUFFERED_DATA },
+        { FAIL, AVS_NET_SOCKET_OPT_DTLS_HANDSHAKE_TIMEOUTS }
     };
     run_socket_get_opt_test_cases(socket, test_cases,
                                   AVS_ARRAY_SIZE(test_cases));
@@ -94,7 +96,12 @@ AVS_UNIT_TEST(socket, dtls_set_opt) {
         { FAIL, AVS_NET_SOCKET_OPT_SESSION_RESUMED },
         { FAIL, AVS_NET_SOCKET_OPT_BYTES_SENT },
         { FAIL, AVS_NET_SOCKET_OPT_BYTES_RECEIVED },
-        { FAIL, AVS_NET_SOCKET_HAS_BUFFERED_DATA }
+        { FAIL, AVS_NET_SOCKET_HAS_BUFFERED_DATA },
+#ifndef AVS_COMMONS_TINYDTLS_TEST
+        { SUCCESS, AVS_NET_SOCKET_OPT_DTLS_HANDSHAKE_TIMEOUTS }
+#else  // AVS_COMMONS_TINYDTLS_TEST
+        { FAIL, AVS_NET_SOCKET_OPT_DTLS_HANDSHAKE_TIMEOUTS }
+#endif // AVS_COMMONS_TINYDTLS_TEST
     };
     run_socket_set_opt_test_cases(socket, test_cases,
                                   AVS_ARRAY_SIZE(test_cases));
@@ -123,7 +130,12 @@ AVS_UNIT_TEST(socket, dtls_set_opt_after_close) {
         { FAIL, AVS_NET_SOCKET_OPT_SESSION_RESUMED },
         { FAIL, AVS_NET_SOCKET_OPT_BYTES_SENT },
         { FAIL, AVS_NET_SOCKET_OPT_BYTES_RECEIVED },
-        { FAIL, AVS_NET_SOCKET_HAS_BUFFERED_DATA }
+        { FAIL, AVS_NET_SOCKET_HAS_BUFFERED_DATA },
+#ifndef AVS_COMMONS_TINYDTLS_TEST
+        { SUCCESS, AVS_NET_SOCKET_OPT_DTLS_HANDSHAKE_TIMEOUTS }
+#else  // AVS_COMMONS_TINYDTLS_TEST
+        { FAIL, AVS_NET_SOCKET_OPT_DTLS_HANDSHAKE_TIMEOUTS }
+#endif // AVS_COMMONS_TINYDTLS_TEST
     };
     run_socket_set_opt_test_cases(socket, test_cases,
                                   AVS_ARRAY_SIZE(test_cases));
