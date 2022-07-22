@@ -550,6 +550,10 @@ static uint32_t perform_cert_verification(ssl_socket_t *socket) {
     return socket->cert_security.dane_verify_state.verify_result_flags;
 }
 
+#            ifndef MBEDTLS_ERR_X509_FATAL_ERROR // Mbed TLS <2.6 ?
+#                define MBEDTLS_ERR_X509_FATAL_ERROR -0x3000
+#            endif // MBEDTLS_ERR_X509_FATAL_ERROR
+
 static int verify_cert_cb(void *socket_,
                           mbedtls_x509_crt *crt,
                           int index,
