@@ -105,6 +105,9 @@ vector_reverse_range_internal(avs_vector_desc_t *desc, size_t beg, size_t end) {
 
 /* API methods implementation */
 void **avs_vector_new__(size_t elem_size) {
+    if (!elem_size) {
+        return NULL;
+    }
     avs_vector_desc_t *desc =
             (avs_vector_desc_t *) avs_calloc(1, sizeof(avs_vector_desc_t));
     if (!desc) {
@@ -231,6 +234,9 @@ int avs_vector_fit__(void ***ptr) {
 }
 
 static int ensure_capacity(avs_vector_desc_t *desc, size_t num_elements) {
+    if (num_elements <= desc->capacity) {
+        return 0;
+    }
     uint64_t new_capacity = (uint64_t) num_elements * desc->elem_size;
     void *new_data;
     if (new_capacity != (size_t) new_capacity) {

@@ -27,7 +27,7 @@ extern "C" {
  * Allocates @p size bytes and returns a pointer to the allocated memory aligned
  * for storage of any type. The returned memory is not initialized.
  *
- * If @p size is 0, the avs_malloc() returns a pointer hat can later be
+ * If @p size is 0, the avs_malloc() returns a pointer that can later be
  * successfully passed to @ref avs_free(), which, depending on the
  * implementation, may be NULL or not.
  *
@@ -78,14 +78,24 @@ void *avs_calloc(size_t nmemb, size_t size);
  *   initialized.
  * - If the new size is smaller than the old size, the memory area
  *   will be reduced.
- * - If the @p size is 0, the call is equivalent to avs_free(ptr).
  * - If the @p ptr is NULL, the call is equivalent to avs_malloc(size).
+ * - If the @p size is 0, the resulting pointer MAY be NULL (consistent with
+ *   @ref avs_malloc), in which case the old memory block SHOULD be freed. The
+ *   specific behavior is implementation-defined, so the calling code SHOULD NOT
+ *   call avs_realloc with @p size equal to 0.
  *
  * Also note that, if the block pointed to by @p ptr could not be extended
  * in place, the function allocates a new block of memory, copies data from
  * an old block to a new block, and finally it avs_free()s the old block.
  *
  * NOTE: If in doubt, refer to standard C realloc() documentation.
+ *
+ * NOTE: Older versions of avs_commons stated that "if the @p size is 0, the
+ * call is equivalent to avs_free(ptr)", which was contrary to how standard C
+ * realloc() is defined. The default implementation of avs_realloc() makes sure
+ * to behave as avs_free() in this case to maintain compatibility, but to also
+ * facilitate implementing avs_realloc() as a wrapper over standard C realloc(),
+ * calling code SHOULD NOT rely on this behavior.
  *
  * @param ptr   Pointer to operate on.
  * @param size  New size.

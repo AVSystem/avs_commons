@@ -39,6 +39,10 @@ void *avs_calloc(size_t nmemb, size_t size) {
 }
 
 void *avs_realloc(void *ptr, size_t size) {
+    if (!size) {
+        free(ptr);
+        return NULL;
+    }
     return realloc(ptr, size);
 }
 

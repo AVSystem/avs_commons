@@ -93,8 +93,13 @@ static avs_error_t realloc_membuf(avs_stream_membuf_t *stream,
                                   size_t new_size) {
     assert(stream->index_read == 0);         // stream is defragmented
     assert(stream->index_write <= new_size); // we're not losing data
-    char *new_buffer = (char *) avs_realloc(stream->buffer, new_size);
-    if (!new_buffer && new_size) {
+    char *new_buffer = NULL;
+    if (!new_size) {
+        // avs_realloc() is defined to behave as avs_free() when size==0, but
+        // this is different to how standard C realloc() is defined - so let's
+        // not rely on this behavior in case a custom implementation is broken
+        avs_free(stream->buffer);
+    } else if (!(new_buffer = (char *) avs_realloc(stream->buffer, new_size))) {
         return avs_errno(AVS_ENOMEM);
     }
     stream->buffer = new_buffer;
