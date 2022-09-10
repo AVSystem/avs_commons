@@ -250,7 +250,7 @@ AVS_UNIT_TEST(double_as_string, pi_precision) {
 }
 
 AVS_UNIT_TEST(double_as_string, pi_exp_positive) {
-    // NOTE: representations in this function are innacurate
+    // NOTE: representations in this function are inaccurate
     AVS_UNIT_ASSERT_EQUAL_STRING(
             DOUBLE_AS_STRING_CUSTOM(3.14159265358979323846e+1, 18),
             "31.4159265358979328");

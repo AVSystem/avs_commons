@@ -17,7 +17,7 @@
 cmake_minimum_required(VERSION 3.6.0)
 project(avs_commons C)
 
-set(AVS_COMMONS_VERSION "5.1.2")
+set(AVS_COMMONS_VERSION "5.1.3")
 
 ################# DISTRIBUTION #################################################
 
@@ -490,7 +490,10 @@ if(WITH_TEST)
         add_test(NAME ${AAT_NAME}_test
                  COMMAND ${VALGRIND_CMD} $<TARGET_FILE:${AAT_NAME}_test>
                  WORKING_DIRECTORY $<TARGET_FILE_DIR:${AAT_NAME}_test>)
-        set_property(TEST ${AAT_NAME}_test APPEND PROPERTY ENVIRONMENT "LSAN_OPTIONS=suppressions=${AVS_COMMONS_SOURCE_DIR}/avs_commons_test.lsan.supp" ${AAT_ENVIRONMENT})
+        set_property(TEST ${AAT_NAME}_test APPEND PROPERTY ENVIRONMENT
+                     "ASAN_OPTIONS=allocator_may_return_null=1"
+                     "LSAN_OPTIONS=suppressions=${AVS_COMMONS_SOURCE_DIR}/avs_commons_test.lsan.supp"
+                     ${AAT_ENVIRONMENT})
 
         add_custom_target(${AAT_NAME}_check COMMAND ${CMAKE_CTEST_COMMAND} -V -R "^${AAT_NAME}_test$" DEPENDS ${AAT_NAME}_test)
         add_dependencies(avs_commons_check ${AAT_NAME}_check)
@@ -620,6 +623,7 @@ set(AVS_COMMONS_SCHED_THREAD_SAFE "${WITH_SCHEDULER_THREAD_SAFE}")
 set(AVS_COMMONS_STREAM_WITH_FILE "${WITH_AVS_STREAM_FILE}")
 set(AVS_COMMONS_UTILS_WITH_POSIX_AVS_TIME "${WITH_POSIX_AVS_TIME}")
 set(AVS_COMMONS_UTILS_WITH_STANDARD_ALLOCATOR "${WITH_STANDARD_ALLOCATOR}")
+set(AVS_COMMONS_UTILS_WITH_ALIGNFIX_ALLOCATOR "${WITH_ALIGNFIX_ALLOCATOR}")
 set(AVS_COMMONS_WITH_MICRO_LOGS "${WITH_AVS_MICRO_LOGS}")
 set(AVS_COMMONS_WITH_POISONING "${WITH_POISONING}")
 

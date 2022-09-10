@@ -261,6 +261,7 @@ static int double_as_string_custom(char *buf,
                                    size_t buf_size,
                                    double value,
                                    uint8_t precision) {
+    static const double EXPONENTIAL_THRESHOLD = 0.0001;
     assert(precision >= 1);
     assert(precision <= 18);
     if (isnan(value)) {
@@ -281,7 +282,7 @@ static int double_as_string_custom(char *buf,
         assert(isfinite(value));
         // For IEEE 754-compliant double, this shall be in the [-308, 308] range
         int16_t e10 = (int16_t) floor(log10(value));
-        if (value <= 0.0001 || e10 >= precision) {
+        if (value <= EXPONENTIAL_THRESHOLD || e10 >= precision) {
             int result = double_as_string_custom_impl(buf, buf_size, value, e10,
                                                       e10, precision);
             if (result < 0) {

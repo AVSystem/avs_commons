@@ -23,10 +23,12 @@
 VISIBILITY_SOURCE_BEGIN
 
 void avs_cleanup_global_state(void) {
-#    ifdef AVS_COMMONS_WITH_AVS_CRYPTO
+#    if defined(AVS_COMMONS_WITH_AVS_CRYPTO) \
+            && !defined(AVS_COMMONS_WITHOUT_TLS)
     void _avs_crypto_cleanup_global_state(void);
     _avs_crypto_cleanup_global_state();
-#    endif // AVS_COMMONS_WITH_AVS_CRYPTO
+#    endif // defined(AVS_COMMONS_WITH_AVS_CRYPTO) &&
+           // !defined(AVS_COMMONS_WITHOUT_TLS)
 
 #    ifdef AVS_COMMONS_WITH_AVS_NET
     void _avs_net_cleanup_global_state(void);

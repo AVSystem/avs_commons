@@ -369,6 +369,14 @@ contains_cipher(const avs_net_socket_tls_ciphersuites_t *enabled_ciphers,
 #    endif // defined(AVS_COMMONS_WITH_AVS_CRYPTO_PKI) ||
            // defined(AVS_COMMONS_WITH_AVS_CRYPTO_PSK)
 
+#    if !defined(MBEDTLS_KEY_EXCHANGE__SOME__PSK_ENABLED) \
+            && !defined(MBEDTLS_KEY_EXCHANGE_SOME_PSK_ENABLED)
+// mbedtls_ssl_ciphersuite_uses_psk() is not defined
+// if Mbed TLS is compiled without PSK support
+#        define mbedtls_ssl_ciphersuite_uses_psk(...) false
+#    endif // !defined(MBEDTLS_KEY_EXCHANGE__SOME__PSK_ENABLED) &&
+           // !defined(MBEDTLS_KEY_EXCHANGE_SOME_PSK_ENABLED)
+
 #    ifdef AVS_COMMONS_WITH_AVS_CRYPTO_PKI
 static int *init_cert_ciphersuites(
         const avs_net_socket_tls_ciphersuites_t *enabled_ciphers) {
@@ -966,14 +974,16 @@ configure_ssl(ssl_socket_t *socket,
     }
 #    endif // MBEDTLS_SSL_DTLS_CONNECTION_ID
 
-#    ifdef MBEDTLS_SSL_SRV_C
+#    if defined(AVS_COMMONS_NET_WITH_TLS_SESSION_PERSISTENCE) \
+            && defined(MBEDTLS_SSL_SRV_C)
     // This is a hack. Session cache is normally used only for server-side TLS.
     // We (ab)use this mechanism on the client side, taking advantage of the
     // fact that Mbed TLS calls it if, and only if, a fresh session has been
     // established, to determine session freshness if resuption is attempted.
     mbedtls_ssl_conf_session_cache(&socket->config, socket, NULL,
                                    fake_session_cache_set);
-#    endif // MBEDTLS_SSL_SRV_C
+#    endif // defined(AVS_COMMONS_NET_WITH_TLS_SESSION_PERSISTENCE) &&
+           // defined(MBEDTLS_SSL_SRV_C)
 
     avs_error_t err;
     switch (socket->security_mode) {
@@ -1033,6 +1043,7 @@ static avs_error_t update_ssl_endpoint_config(ssl_socket_t *socket,
     return AVS_OK;
 }
 
+#    ifdef AVS_COMMONS_NET_WITH_TLS_SESSION_PERSISTENCE
 static void try_save_session(ssl_socket_t *socket) {
     if (!socket->session_resumption_buffer) {
         return;
@@ -1055,15 +1066,16 @@ static void try_save_session(ssl_socket_t *socket) {
 }
 
 static inline void try_save_session_if_new(ssl_socket_t *socket) {
-#    if MBEDTLS_VERSION_NUMBER >= 0x03000000
+#        if MBEDTLS_VERSION_NUMBER >= 0x03000000
     try_save_session(socket);
-#    else  // MBEDTLS_VERSION_NUMBER >= 0x03000000
+#        else  // MBEDTLS_VERSION_NUMBER >= 0x03000000
     (void) socket;
     // In Mbed TLS 2.x, mbedtls_ssl_get_session() is idempotent, so this would
     // save the session every time. We assume that there are no new sessions
     // during renegotiation.
-#    endif // MBEDTLS_VERSION_NUMBER >= 0x03000000
+#        endif // MBEDTLS_VERSION_NUMBER >= 0x03000000
 }
+#    endif // AVS_COMMONS_NET_WITH_TLS_SESSION_PERSISTENCE
 
 static avs_error_t start_ssl(ssl_socket_t *socket, const char *host) {
     int result;
@@ -1075,8 +1087,8 @@ static avs_error_t start_ssl(ssl_socket_t *socket, const char *host) {
     }
     assert(!socket->flags.context_valid);
 
-    bool restore_session = false;
 #    ifdef AVS_COMMONS_NET_WITH_TLS_SESSION_PERSISTENCE
+    bool restore_session = false;
     mbedtls_ssl_session restored_session;
     mbedtls_ssl_session_init(&restored_session);
 #    endif // AVS_COMMONS_NET_WITH_TLS_SESSION_PERSISTENCE
@@ -1112,27 +1124,40 @@ static avs_error_t start_ssl(ssl_socket_t *socket, const char *host) {
         err = avs_errno(AVS_ENOMEM);
         goto finish;
     }
-#    if defined(MBEDTLS_SSL_DTLS_CONNECTION_ID)
-    // This may seem a bit odd, but the CID draft says:
-    //
-    // > 3.  The "connection_id" Extension
-    // > [...]
-    // > A zero-length CID value indicates that the client is prepared to send
-    // > with a CID but does not wish the server to use one when sending.
-    // > [...]
-    // > A server willing to use CIDs will respond with a "connection_id"
-    // > extension in the ServerHello, containing the CID it wishes the client
-    // > to use when sending messages towards it.
-    if (socket->use_connection_id
-            && transport_for_socket_type(socket->backend_type)
-                           == MBEDTLS_SSL_TRANSPORT_DATAGRAM
-            && mbedtls_ssl_set_cid(get_context(socket), MBEDTLS_SSL_CID_ENABLED,
-                                   NULL, 0)) {
-        LOG(ERROR, _("cannot initialize CID to an empty value"));
-        err = avs_errno(AVS_EIO);
-        goto finish;
+#    if defined(MBEDTLS_SSL_PROTO_DTLS)
+    if (transport_for_socket_type(socket->backend_type)
+            == MBEDTLS_SSL_TRANSPORT_DATAGRAM) {
+#        if MBEDTLS_VERSION_NUMBER >= 0x020d0000
+        avs_net_socket_opt_value_t inner_mtu;
+        if (avs_is_ok(avs_net_socket_get_opt(socket->backend_socket,
+                                             AVS_NET_SOCKET_OPT_INNER_MTU,
+                                             &inner_mtu))
+                && inner_mtu.mtu > 0 && inner_mtu.mtu <= UINT16_MAX) {
+            mbedtls_ssl_set_mtu(get_context(socket), (uint16_t) inner_mtu.mtu);
+        }
+#        endif // MBEDTLS_VERSION_NUMBER >= 0x020d0000
+#        if defined(MBEDTLS_SSL_DTLS_CONNECTION_ID)
+        // This may seem a bit odd, but the CID draft says:
+        //
+        // > 3.  The "connection_id" Extension
+        // > [...]
+        // > A zero-length CID value indicates that the client is prepared to
+        // > send with a CID but does not wish the server to use one when
+        // > sending.
+        // > [...]
+        // > A server willing to use CIDs will respond with a "connection_id"
+        // > extension in the ServerHello, containing the CID it wishes the
+        // > client to use when sending messages towards it.
+        if (socket->use_connection_id
+                && mbedtls_ssl_set_cid(get_context(socket),
+                                       MBEDTLS_SSL_CID_ENABLED, NULL, 0)) {
+            LOG(ERROR, _("cannot initialize CID to an empty value"));
+            err = avs_errno(AVS_EIO);
+            goto finish;
+        }
+#        endif // MBEDTLS_SSL_DTLS_CONNECTION_ID
     }
-#    endif // MBEDTLS_SSL_DTLS_CONNECTION_ID
+#    endif // defined(MBEDTLS_SSL_PROTO_DTLS)
 
 #    ifdef AVS_COMMONS_WITH_AVS_CRYPTO_PKI
     if ((result = mbedtls_ssl_set_hostname(
@@ -1258,7 +1283,9 @@ send_ssl(avs_net_socket_t *socket_, const void *buffer, size_t buffer_length) {
                                        (size_t) (buffer_length - bytes_sent));
         } while (is_retry_result(get_context(socket), result));
         result = wrap_handshake_result(socket, result);
+#    ifdef AVS_COMMONS_NET_WITH_TLS_SESSION_PERSISTENCE
         try_save_session_if_new(socket);
+#    endif // AVS_COMMONS_NET_WITH_TLS_SESSION_PERSISTENCE
         if (result <= 0) {
             break;
         }
@@ -1325,7 +1352,9 @@ static avs_error_t receive_ssl(avs_net_socket_t *socket_,
         } while (is_retry_result(get_context(socket), result));
     }
     result = wrap_handshake_result(socket, result);
+#    ifdef AVS_COMMONS_NET_WITH_TLS_SESSION_PERSISTENCE
     try_save_session_if_new(socket);
+#    endif // AVS_COMMONS_NET_WITH_TLS_SESSION_PERSISTENCE
 
     if (result < 0) {
         *out_bytes_received = 0;
