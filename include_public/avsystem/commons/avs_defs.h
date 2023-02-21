@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 AVSystem <avsystem@avsystem.com>
+ * Copyright 2023 AVSystem <avsystem@avsystem.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -165,6 +165,23 @@ extern "C" {
  * @param Value Token to stringify.
  */
 #define AVS_QUOTE_MACRO(Value) AVS_QUOTE(Value)
+
+/**
+ * A group of helper macros for @ref AVS_IS_DEFINED.
+ */
+#define _ADD_ARGUMENT_1 _ADDED_DUMMY_ARG,
+#define _AVS_IS_DEFINED3(Ignored, Val, ...) Val
+#define _AVS_IS_DEFINED2(TrueValue, FalseValue, DummyArg) \
+    _AVS_IS_DEFINED3(DummyArg TrueValue, FalseValue, dummy)
+#define _AVS_IS_DEFINED1(Macro, TrueValue, FalseValue) \
+    _AVS_IS_DEFINED2(TrueValue, FalseValue, _ADD_ARGUMENT_##Macro)
+
+/**
+ * Checks if macro <c>Macro</c> is defined as "1" and expands to
+ * <c>TrueValue</c> if so, otherwise expands to <c>FalseValue</c>.
+ */
+#define AVS_IS_DEFINED(Macro, TrueValue, FalseValue) \
+    _AVS_IS_DEFINED1(Macro, TrueValue, FalseValue)
 
 /**
  * C89-compliant replacement for <c>max_align_t</c>.

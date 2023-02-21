@@ -1,4 +1,4 @@
-# Copyright 2022 AVSystem <avsystem@avsystem.com>
+# Copyright 2023 AVSystem <avsystem@avsystem.com>
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,7 +13,6 @@
 # limitations under the License.
 
 set(AVS_UNIT_PUBLIC_HEADERS
-    "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/avs_unit_memstream.h"
     "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/avs_unit_mock_helpers.h"
     "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/avs_unit_mocksock.h"
     "${AVS_COMMONS_SOURCE_DIR}/include_public/avsystem/commons/avs_unit_test.h")
@@ -36,7 +35,6 @@ if(WITH_AVS_NET)
 endif()
 
 if(WITH_AVS_STREAM)
-    target_sources(avs_unit PRIVATE avs_memstream.c)
     target_link_libraries(avs_unit PUBLIC avs_stream)
 endif()
 

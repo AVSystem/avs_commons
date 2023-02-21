@@ -22,6 +22,9 @@
     "compression": [
         "zlib\\.h"
     ],
+    "avs_mbedtls_global\\.c": [
+        "psa/crypto\\.h"
+    ],
     "avs_openssl_common\\.h": [
         "valgrind/.*"
     ],

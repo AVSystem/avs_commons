@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 AVSystem <avsystem@avsystem.com>
+ * Copyright 2023 AVSystem <avsystem@avsystem.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,10 +46,12 @@ typedef struct buffered_netstream_struct {
 } buffered_netstream_t;
 
 static avs_error_t out_buffer_flush(buffered_netstream_t *stream) {
-    avs_error_t err =
-            avs_net_socket_send(stream->socket,
-                                avs_buffer_data(stream->out_buffer),
-                                avs_buffer_data_size(stream->out_buffer));
+    avs_error_t err = AVS_OK;
+    if (avs_buffer_data_size(stream->out_buffer)) {
+        err = avs_net_socket_send(stream->socket,
+                                  avs_buffer_data(stream->out_buffer),
+                                  avs_buffer_data_size(stream->out_buffer));
+    }
     if (avs_is_ok(err)) {
         avs_buffer_reset(stream->out_buffer);
     }
@@ -61,11 +63,16 @@ static avs_error_t buffered_netstream_write_some(avs_stream_t *stream_,
                                                  size_t *inout_data_length) {
     buffered_netstream_t *stream = (buffered_netstream_t *) stream_;
     avs_error_t err;
-    if (*inout_data_length < avs_buffer_space_left(stream->out_buffer)) {
-        return avs_errno(avs_buffer_append_bytes(stream->out_buffer, data,
-                                                 *inout_data_length)
-                                 ? AVS_ENOBUFS
-                                 : AVS_NO_ERROR);
+    size_t space_left = avs_buffer_space_left(stream->out_buffer);
+    if (*inout_data_length <= space_left) {
+        if (avs_buffer_append_bytes(stream->out_buffer, data,
+                                    *inout_data_length)) {
+            return avs_errno(AVS_ENOBUFS);
+        }
+        if (*inout_data_length == space_left) {
+            return out_buffer_flush(stream);
+        }
+        return AVS_OK;
     } else if (avs_is_err((err = out_buffer_flush(stream)))) {
         return err;
     } else {

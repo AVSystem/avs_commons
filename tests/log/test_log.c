@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 AVSystem <avsystem@avsystem.com>
+ * Copyright 2023 AVSystem <avsystem@avsystem.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -91,8 +91,10 @@ AVS_UNIT_GLOBAL_INIT(verbose) {
     (void) verbose;
     AVS_UNIT_ASSERT_TRUE(g_log.handler.normal == default_log_handler);
     AVS_UNIT_ASSERT_FALSE(g_log.is_extended_handler);
+#ifndef AVS_LOGS_CHECKED_DURING_COMPILE_TIME
     AVS_UNIT_ASSERT_EQUAL(g_log.default_level, AVS_LOG_INFO);
     AVS_UNIT_ASSERT_TRUE(g_log.module_levels == NULL);
+#endif /*AVS_LOGS_CHECKED_DURING_COMPILE_TIME*/
     reset_everything();
 }
 
@@ -115,11 +117,23 @@ AVS_UNIT_TEST(log, initial) {
 
     ASSERT_LOG_CLEAN;
     reset_everything();
+#ifdef AVS_LOGS_CHECKED_DURING_COMPILE_TIME
+#    undef AVS_LOG_LEVEL_DEFAULT
+#    define AVS_LOG_LEVEL_DEFAULT INFO
+#endif /*AVS_LOGS_CHECKED_DURING_COMPILE_TIME*/
 }
 
 AVS_UNIT_TEST(log, default_level) {
     /* not testing TRACE as it may not be compiled in */
+#ifdef AVS_LOGS_CHECKED_DURING_COMPILE_TIME
+#    undef AVS_LOG_LEVEL_DEFAULT
+#    define AVS_LOG_LEVEL_DEFAULT DEBUG
+    avs_log_set_default_level(
+            AVS_LOG_TRACE); // runtime check won't affect the test
+#else
     avs_log_set_default_level(AVS_LOG_DEBUG);
+#endif /*AVS_LOGS_CHECKED_DURING_COMPILE_TIME*/
+
     ASSERT_LOG(test,
                DEBUG,
                "DEBUG [test] [" __FILE__ ":%d]: Testing DEBUG",
@@ -140,8 +154,12 @@ AVS_UNIT_TEST(log, default_level) {
                "ERROR [test] [" __FILE__ ":%d]: Testing ERROR",
                __LINE__ + 1);
     avs_log(test, ERROR, "Testing ERROR");
-
+#ifdef AVS_LOGS_CHECKED_DURING_COMPILE_TIME
+#    undef AVS_LOG_LEVEL_DEFAULT
+#    define AVS_LOG_LEVEL_DEFAULT INFO
+#else
     avs_log_set_default_level(AVS_LOG_INFO);
+#endif /*AVS_LOGS_CHECKED_DURING_COMPILE_TIME*/
     avs_log(test, DEBUG, "Testing DEBUG");
     ASSERT_LOG(test,
                INFO,
@@ -158,8 +176,12 @@ AVS_UNIT_TEST(log, default_level) {
                "ERROR [test] [" __FILE__ ":%d]: Testing ERROR",
                __LINE__ + 1);
     avs_log(test, ERROR, "Testing ERROR");
-
+#ifdef AVS_LOGS_CHECKED_DURING_COMPILE_TIME
+#    undef AVS_LOG_LEVEL_DEFAULT
+#    define AVS_LOG_LEVEL_DEFAULT WARNING
+#else
     avs_log_set_default_level(AVS_LOG_WARNING);
+#endif /*AVS_LOGS_CHECKED_DURING_COMPILE_TIME*/
     avs_log(test, DEBUG, "Testing DEBUG");
     avs_log(test, INFO, "Testing INFO");
     ASSERT_LOG(test,
@@ -172,8 +194,12 @@ AVS_UNIT_TEST(log, default_level) {
                "ERROR [test] [" __FILE__ ":%d]: Testing ERROR",
                __LINE__ + 1);
     avs_log(test, ERROR, "Testing ERROR");
-
+#ifdef AVS_LOGS_CHECKED_DURING_COMPILE_TIME
+#    undef AVS_LOG_LEVEL_DEFAULT
+#    define AVS_LOG_LEVEL_DEFAULT ERROR
+#else
     avs_log_set_default_level(AVS_LOG_ERROR);
+#endif /*AVS_LOGS_CHECKED_DURING_COMPILE_TIME*/
     avs_log(test, DEBUG, "Testing DEBUG");
     avs_log(test, INFO, "Testing INFO");
     avs_log(test, WARNING, "Testing WARNING");
@@ -182,8 +208,12 @@ AVS_UNIT_TEST(log, default_level) {
                "ERROR [test] [" __FILE__ ":%d]: Testing ERROR",
                __LINE__ + 1);
     avs_log(test, ERROR, "Testing ERROR");
-
+#ifdef AVS_LOGS_CHECKED_DURING_COMPILE_TIME
+#    undef AVS_LOG_LEVEL_DEFAULT
+#    define AVS_LOG_LEVEL_DEFAULT QUIET
+#else
     avs_log_set_default_level(AVS_LOG_QUIET);
+#endif /*AVS_LOGS_CHECKED_DURING_COMPILE_TIME*/
     avs_log(test, DEBUG, "Testing DEBUG");
     avs_log(test, INFO, "Testing INFO");
     avs_log(test, WARNING, "Testing WARNING");
@@ -191,12 +221,23 @@ AVS_UNIT_TEST(log, default_level) {
 
     ASSERT_LOG_CLEAN;
     reset_everything();
+#ifdef AVS_LOGS_CHECKED_DURING_COMPILE_TIME
+#    undef AVS_LOG_LEVEL_DEFAULT
+#    define AVS_LOG_LEVEL_DEFAULT INFO
+#endif /*AVS_LOGS_CHECKED_DURING_COMPILE_TIME*/
 }
-
 AVS_UNIT_TEST(log, module_levels) {
+#ifdef AVS_LOGS_CHECKED_DURING_COMPILE_TIME
+#    undef AVS_LOG_LEVEL_FOR_MODULE_debugged_module
+#    undef AVS_LOG_LEVEL_FOR_MODULE_stable_module
+#    define AVS_LOG_LEVEL_FOR_MODULE_debugged_module DEBUG
+#    define AVS_LOG_LEVEL_FOR_MODULE_stable_module ERROR
+    avs_log_set_default_level(
+            AVS_LOG_TRACE); // runtime check won't affect the test
+#else
     avs_log_set_level(debugged_module, AVS_LOG_DEBUG);
     avs_log_set_level(stable_module, AVS_LOG_ERROR);
-
+#endif /*AVS_LOGS_CHECKED_DURING_COMPILE_TIME*/
     ASSERT_LOG(debugged_module,
                DEBUG,
                "DEBUG [debugged_module] [" __FILE__ ":%d]: Testing DEBUG",
@@ -247,6 +288,10 @@ AVS_UNIT_TEST(log, module_levels) {
 
     ASSERT_LOG_CLEAN;
     reset_everything();
+#ifdef AVS_LOGS_CHECKED_DURING_COMPILE_TIME
+#    undef AVS_LOG_LEVEL_DEFAULT
+#    define AVS_LOG_LEVEL_DEFAULT INFO
+#endif /*AVS_LOGS_CHECKED_DURING_COMPILE_TIME*/
 }
 
 static int fail(void) {
@@ -259,9 +304,17 @@ static int success(void) {
 }
 
 AVS_UNIT_TEST(log, lazy_log) {
+#ifdef AVS_LOGS_CHECKED_DURING_COMPILE_TIME
+#    undef AVS_LOG_LEVEL_FOR_MODULE_debugged_module
+#    undef AVS_LOG_LEVEL_FOR_MODULE_stable_module
+#    define AVS_LOG_LEVEL_FOR_MODULE_debugged_module DEBUG
+#    define AVS_LOG_LEVEL_FOR_MODULE_stable_module ERROR
+    avs_log_set_default_level(
+            AVS_LOG_TRACE); // runtime check won't affect the test
+#else
     avs_log_set_level(debugged_module, AVS_LOG_DEBUG);
     avs_log_set_level(stable_module, AVS_LOG_ERROR);
-
+#endif /*AVS_LOGS_CHECKED_DURING_COMPILE_TIME*/
     ASSERT_LOG(debugged_module,
                DEBUG,
                "DEBUG [debugged_module] [" __FILE__ ":%d]: Testing DEBUG 42",
@@ -313,6 +366,10 @@ AVS_UNIT_TEST(log, lazy_log) {
 
     ASSERT_LOG_CLEAN;
     reset_everything();
+#ifdef AVS_LOGS_CHECKED_DURING_COMPILE_TIME
+#    undef AVS_LOG_LEVEL_DEFAULT
+#    define AVS_LOG_LEVEL_DEFAULT INFO
+#endif /*AVS_LOGS_CHECKED_DURING_COMPILE_TIME*/
 }
 
 AVS_UNIT_TEST(log, truncated) {
@@ -379,4 +436,8 @@ AVS_UNIT_TEST(log, extended) {
 
     ASSERT_LOG_CLEAN;
     reset_everything();
+#ifdef AVS_LOGS_CHECKED_DURING_COMPILE_TIME
+#    undef AVS_LOG_LEVEL_DEFAULT
+#    define AVS_LOG_LEVEL_DEFAULT INFO
+#endif /*AVS_LOGS_CHECKED_DURING_COMPILE_TIME*/
 }

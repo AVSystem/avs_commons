@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 AVSystem <avsystem@avsystem.com>
+ * Copyright 2023 AVSystem <avsystem@avsystem.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -69,6 +69,7 @@ run_socket_set_opt_test_cases(avs_net_socket_t *socket,
             break;
         case AVS_NET_SOCKET_OPT_SESSION_RESUMED:
         case AVS_NET_SOCKET_HAS_BUFFERED_DATA:
+        case AVS_NET_SOCKET_OPT_CONNECTION_ID_RESUMED:
             opt_val.flag = true;
             break;
         case AVS_NET_SOCKET_OPT_BYTES_SENT:

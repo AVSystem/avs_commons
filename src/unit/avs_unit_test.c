@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 AVSystem <avsystem@avsystem.com>
+ * Copyright 2023 AVSystem <avsystem@avsystem.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -612,7 +612,8 @@ static int parse_command_line_args(int argc,
     return 0;
 }
 
-#    ifdef AVS_COMMONS_WITH_AVS_LOG
+#    if defined(AVS_COMMONS_WITH_AVS_LOG)
+
 static int parse_log_level(const char *str, avs_log_level_t *level) {
     if (!avs_strcasecmp(str, "trace")) {
         *level = AVS_LOG_TRACE;
@@ -706,6 +707,7 @@ static void process_env_vars(void) {
         atexit(avs_log_reset);
     }
 }
+
 #    else  /* AVS_COMMONS_WITH_AVS_LOG */
 static void process_env_vars(void) {}
 #    endif /* AVS_COMMONS_WITH_AVS_LOG */

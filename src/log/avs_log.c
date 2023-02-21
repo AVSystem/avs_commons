@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 AVSystem <avsystem@avsystem.com>
+ * Copyright 2023 AVSystem <avsystem@avsystem.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,10 +46,12 @@ static void default_log_handler(avs_log_level_t level,
 #    endif // AVS_COMMONS_LOG_WITH_DEFAULT_HANDLER
 }
 
+#    ifndef AVS_COMMONS_WITHOUT_LOG_CHECK_IN_RUNTIME
 typedef struct {
     avs_log_level_t level;
     char module[1];
 } module_level_t;
+#    endif /* AVS_COMMONS_WITHOUT_LOG_CHECK_IN_RUNTIME */
 
 static struct {
     union {
@@ -57,16 +59,19 @@ static struct {
         avs_log_extended_handler_t *extended;
     } handler;
     bool is_extended_handler;
+#    ifndef AVS_COMMONS_WITHOUT_LOG_CHECK_IN_RUNTIME
     avs_log_level_t default_level;
     AVS_LIST(module_level_t) module_levels;
-
+#    endif /* AVS_COMMONS_WITHOUT_LOG_CHECK_IN_RUNTIME */
 #    ifdef AVS_COMMONS_LOG_USE_GLOBAL_BUFFER
     char buffer[AVS_COMMONS_LOG_MAX_LINE_LENGTH];
 #    endif // AVS_COMMONS_LOG_USE_GLOBAL_BUFFER
 } g_log = {
     .handler.normal = default_log_handler,
+#    ifndef AVS_COMMONS_WITHOUT_LOG_CHECK_IN_RUNTIME
     .default_level = AVS_LOG_INFO,
     .module_levels = NULL
+#    endif /* AVS_COMMONS_WITHOUT_LOG_CHECK_IN_RUNTIME */
 };
 
 #    ifdef AVS_COMMONS_WITH_AVS_COMPAT_THREADING
@@ -158,6 +163,7 @@ void avs_log_set_extended_handler(avs_log_extended_handler_t *log_handler) {
     LOG_UNLOCK();
 }
 
+#    ifndef AVS_COMMONS_WITHOUT_LOG_CHECK_IN_RUNTIME
 static avs_log_level_t *level_for(const char *module, int create) {
     if (module) {
         AVS_LIST(module_level_t) *entry_ptr;
@@ -209,17 +215,21 @@ int avs_log_set_level__(const char *module, avs_log_level_t level) {
     LOG_UNLOCK();
     return result;
 }
+#    endif /* AVS_COMMONS_WITHOUT_LOG_CHECK_IN_RUNTIME */
 
 void avs_log_reset(void) {
     if (LOG_LOCK()) {
         return;
     }
+#    ifndef AVS_COMMONS_WITHOUT_LOG_CHECK_IN_RUNTIME
     AVS_LIST_CLEAR(&g_log.module_levels);
-    set_log_handler_unlocked(default_log_handler);
     set_log_level_unlocked(NULL, AVS_LOG_INFO);
+#    endif /* AVS_COMMONS_WITHOUT_LOG_CHECK_IN_RUNTIME */
+    set_log_handler_unlocked(default_log_handler);
     LOG_UNLOCK();
 }
 
+#    ifndef AVS_COMMONS_WITHOUT_LOG_CHECK_IN_RUNTIME
 int avs_log_should_log__(avs_log_level_t level, const char *module) {
     if (level >= AVS_LOG_QUIET) {
         return 1;
@@ -232,6 +242,7 @@ int avs_log_should_log__(avs_log_level_t level, const char *module) {
     LOG_UNLOCK();
     return result;
 }
+#    endif /* AVS_COMMONS_WITHOUT_LOG_CHECK_IN_RUNTIME */
 
 static const char *level_as_string(avs_log_level_t level) {
     switch (level) {
@@ -327,7 +338,10 @@ void avs_log_internal_v__(avs_log_level_t level,
                           unsigned line,
                           const char *msg,
                           va_list ap) {
-    if (avs_log_should_log__(level, module)) {
+#    ifndef AVS_COMMONS_WITHOUT_LOG_CHECK_IN_RUNTIME
+    if (avs_log_should_log__(level, module))
+#    endif /* AVS_COMMONS_WITHOUT_LOG_CHECK_IN_RUNTIME */
+    {
         avs_log_internal_forced_v__(level, module, file, line, msg, ap);
     }
 }
@@ -350,7 +364,10 @@ void avs_log_internal_l__(avs_log_level_t level,
                           unsigned line,
                           const char *msg,
                           ...) {
-    if (avs_log_should_log__(level, module)) {
+#    ifndef AVS_COMMONS_WITHOUT_LOG_CHECK_IN_RUNTIME
+    if (avs_log_should_log__(level, module))
+#    endif /* AVS_COMMONS_WITHOUT_LOG_CHECK_IN_RUNTIME */
+    {
         va_list ap;
         va_start(ap, msg);
         avs_log_internal_forced_v__(level, module, file, line, msg, ap);

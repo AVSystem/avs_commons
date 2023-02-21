@@ -1,4 +1,4 @@
-# Copyright 2022 AVSystem <avsystem@avsystem.com>
+# Copyright 2023 AVSystem <avsystem@avsystem.com>
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -129,14 +129,14 @@ if(WITH_MBEDTLS)
         set(CMAKE_REQUIRED_LIBRARIES mbedtls mbedcrypto mbedx509)
         check_symbol_exists("MBEDTLS_SSL_PROTO_TLS1_3" "mbedtls/version.h" MBEDTLS_SUPPORTS_TLS13)
         check_symbol_exists("MBEDTLS_SSL_PROTO_TLS1_3_EXPERIMENTAL" "mbedtls/version.h" MBEDTLS_SUPPORTS_TLS13_EXPERIMENTAL)
-        check_symbol_exists("MBEDTLS_SSL_NEW_SESSION_TICKET" "mbedtls/version.h" MBEDTLS_SUPPORTS_SESSION_TICKETS)
+        check_symbol_exists("MBEDTLS_SSL_SESSION_TICKETS" "mbedtls/version.h" MBEDTLS_SUPPORTS_SESSION_TICKETS)
         set(CMAKE_REQUIRED_LIBRARIES)
         if(MBEDTLS_SUPPORTS_TLS13 OR MBEDTLS_SUPPORTS_TLS13_EXPERIMENTAL)
             target_sources(avs_net_mbedtls_test PRIVATE
                            ${AVS_COMMONS_SOURCE_DIR}/tests/net/socket_tls13_basic.c)
             # NOTE: The advanced tests below require the experimental branch of
             # Mbed TLS from https://github.com/hannestschofenig/mbedtls.
-            if(MBEDTLS_SUPPORTS_SESSION_TICKETS)
+            if(MBEDTLS_SUPPORTS_SESSION_TICKETS AND NOT MBEDTLS_VERSION VERSION_LESS 3.3)
                 # NOTE: Mbed TLS' dual-stack (1.2+1.3) implementation, even on
                 # the experimental branch, is incompatible with OpenSSL server,
                 # so socket_tls13_default_version.c is never enabled.

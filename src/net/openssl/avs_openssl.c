@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 AVSystem <avsystem@avsystem.com>
+ * Copyright 2023 AVSystem <avsystem@avsystem.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1098,6 +1098,11 @@ static bool is_session_resumed(ssl_socket_t *socket) {
     if (socket && socket->ssl) {
         return !!SSL_session_reused(socket->ssl);
     }
+    return false;
+}
+
+static bool is_connection_id_resumed(ssl_socket_t *socket) {
+    (void) socket;
     return false;
 }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 AVSystem <avsystem@avsystem.com>
+ * Copyright 2023 AVSystem <avsystem@avsystem.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,14 @@
 #include <stdarg.h>
 
 #include <avsystem/commons/avs_defs.h>
+
+#ifdef AVS_COMMONS_WITH_EXTERNAL_LOG_LEVELS_HEADER
+#    include AVS_COMMONS_WITH_EXTERNAL_LOG_LEVELS_HEADER
+#    define AVS_LOGS_CHECKED_DURING_COMPILE_TIME
+#    ifndef AVS_LOG_LEVEL_DEFAULT
+#        define AVS_LOG_LEVEL_DEFAULT INFO
+#    endif
+#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -150,7 +158,135 @@ void avs_log_set_extended_handler(avs_log_extended_handler_t *log_handler);
  */
 void avs_log_reset(void);
 
+#ifndef AVS_COMMONS_WITHOUT_LOG_CHECK_IN_RUNTIME
 int avs_log_set_level__(const char *module, avs_log_level_t level);
+#endif /* AVS_COMMONS_WITHOUT_LOG_CHECK_IN_RUNTIME */
+
+#ifdef AVS_LOGS_CHECKED_DURING_COMPILE_TIME
+/**
+ * A group of helper macros for @ref AVS_IS_LOG_LEVEL_ALLOWED.
+ */
+#    define AVS_LOG_QUIET_NOT_CONTAIN_WARNING _ADDED_DUMMY_ARG,
+#    define AVS_LOG_QUIET_NOT_CONTAIN_INFO _ADDED_DUMMY_ARG,
+#    define AVS_LOG_QUIET_NOT_CONTAIN_DEBUG _ADDED_DUMMY_ARG,
+#    define AVS_LOG_QUIET_NOT_CONTAIN_TRACE _ADDED_DUMMY_ARG,
+#    define AVS_LOG_QUIET_NOT_CONTAIN_ERROR _ADDED_DUMMY_ARG,
+#    define AVS_LOG_ERROR_NOT_CONTAIN_WARNING _ADDED_DUMMY_ARG,
+#    define AVS_LOG_ERROR_NOT_CONTAIN_INFO _ADDED_DUMMY_ARG,
+#    define AVS_LOG_ERROR_NOT_CONTAIN_DEBUG _ADDED_DUMMY_ARG,
+#    define AVS_LOG_ERROR_NOT_CONTAIN_TRACE _ADDED_DUMMY_ARG,
+#    define AVS_LOG_WARNING_NOT_CONTAIN_INFO _ADDED_DUMMY_ARG,
+#    define AVS_LOG_WARNING_NOT_CONTAIN_DEBUG _ADDED_DUMMY_ARG,
+#    define AVS_LOG_WARNING_NOT_CONTAIN_TRACE _ADDED_DUMMY_ARG,
+#    define AVS_LOG_INFO_NOT_CONTAIN_DEBUG _ADDED_DUMMY_ARG,
+#    define AVS_LOG_INFO_NOT_CONTAIN_TRACE _ADDED_DUMMY_ARG,
+#    define AVS_LOG_DEBUG_NOT_CONTAIN_TRACE _ADDED_DUMMY_ARG,
+#    define AVS_LOG_QUIET_NOT_CONTAIN_LAZY_WARNING _ADDED_DUMMY_ARG,
+#    define AVS_LOG_QUIET_NOT_CONTAIN_LAZY_INFO _ADDED_DUMMY_ARG,
+#    define AVS_LOG_QUIET_NOT_CONTAIN_LAZY_DEBUG _ADDED_DUMMY_ARG,
+#    define AVS_LOG_QUIET_NOT_CONTAIN_LAZY_TRACE _ADDED_DUMMY_ARG,
+#    define AVS_LOG_QUIET_NOT_CONTAIN_LAZY_ERROR _ADDED_DUMMY_ARG,
+#    define AVS_LOG_ERROR_NOT_CONTAIN_LAZY_WARNING _ADDED_DUMMY_ARG,
+#    define AVS_LOG_ERROR_NOT_CONTAIN_LAZY_INFO _ADDED_DUMMY_ARG,
+#    define AVS_LOG_ERROR_NOT_CONTAIN_LAZY_DEBUG _ADDED_DUMMY_ARG,
+#    define AVS_LOG_ERROR_NOT_CONTAIN_LAZY_TRACE _ADDED_DUMMY_ARG,
+#    define AVS_LOG_WARNING_NOT_CONTAIN_LAZY_INFO _ADDED_DUMMY_ARG,
+#    define AVS_LOG_WARNING_NOT_CONTAIN_LAZY_DEBUG _ADDED_DUMMY_ARG,
+#    define AVS_LOG_WARNING_NOT_CONTAIN_LAZY_TRACE _ADDED_DUMMY_ARG,
+#    define AVS_LOG_INFO_NOT_CONTAIN_LAZY_DEBUG _ADDED_DUMMY_ARG,
+#    define AVS_LOG_INFO_NOT_CONTAIN_LAZY_TRACE _ADDED_DUMMY_ARG,
+#    define AVS_LOG_DEBUG_NOT_CONTAIN_LAZY_TRACE _ADDED_DUMMY_ARG,
+#    define AVS_LOG_ERROR_CONTAIN_ERROR _ADDED_DUMMY_ARG,
+#    define AVS_LOG_WARNING_CONTAIN_WARNING _ADDED_DUMMY_ARG,
+#    define AVS_LOG_WARNING_CONTAIN_ERROR _ADDED_DUMMY_ARG,
+#    define AVS_LOG_INFO_CONTAIN_INFO _ADDED_DUMMY_ARG,
+#    define AVS_LOG_INFO_CONTAIN_WARNING _ADDED_DUMMY_ARG,
+#    define AVS_LOG_INFO_CONTAIN_ERROR _ADDED_DUMMY_ARG,
+#    define AVS_LOG_DEBUG_CONTAIN_DEBUG _ADDED_DUMMY_ARG,
+#    define AVS_LOG_DEBUG_CONTAIN_INFO _ADDED_DUMMY_ARG,
+#    define AVS_LOG_DEBUG_CONTAIN_WARNING _ADDED_DUMMY_ARG,
+#    define AVS_LOG_DEBUG_CONTAIN_ERROR _ADDED_DUMMY_ARG,
+#    define AVS_LOG_TRACE_CONTAIN_TRACE _ADDED_DUMMY_ARG,
+#    define AVS_LOG_TRACE_CONTAIN_DEBUG _ADDED_DUMMY_ARG,
+#    define AVS_LOG_TRACE_CONTAIN_INFO _ADDED_DUMMY_ARG,
+#    define AVS_LOG_TRACE_CONTAIN_WARNING _ADDED_DUMMY_ARG,
+#    define AVS_LOG_TRACE_CONTAIN_ERROR _ADDED_DUMMY_ARG,
+#    define AVS_LOG_ERROR_CONTAIN_LAZY_ERROR _ADDED_DUMMY_ARG,
+#    define AVS_LOG_WARNING_CONTAIN_LAZY_WARNING _ADDED_DUMMY_ARG,
+#    define AVS_LOG_WARNING_CONTAIN_LAZY_ERROR _ADDED_DUMMY_ARG,
+#    define AVS_LOG_INFO_CONTAIN_LAZY_INFO _ADDED_DUMMY_ARG,
+#    define AVS_LOG_INFO_CONTAIN_LAZY_WARNING _ADDED_DUMMY_ARG,
+#    define AVS_LOG_INFO_CONTAIN_LAZY_ERROR _ADDED_DUMMY_ARG,
+#    define AVS_LOG_DEBUG_CONTAIN_LAZY_DEBUG _ADDED_DUMMY_ARG,
+#    define AVS_LOG_DEBUG_CONTAIN_LAZY_INFO _ADDED_DUMMY_ARG,
+#    define AVS_LOG_DEBUG_CONTAIN_LAZY_WARNING _ADDED_DUMMY_ARG,
+#    define AVS_LOG_DEBUG_CONTAIN_LAZY_ERROR _ADDED_DUMMY_ARG,
+#    define AVS_LOG_TRACE_CONTAIN_LAZY_TRACE _ADDED_DUMMY_ARG,
+#    define AVS_LOG_TRACE_CONTAIN_LAZY_DEBUG _ADDED_DUMMY_ARG,
+#    define AVS_LOG_TRACE_CONTAIN_LAZY_INFO _ADDED_DUMMY_ARG,
+#    define AVS_LOG_TRACE_CONTAIN_LAZY_WARNING _ADDED_DUMMY_ARG,
+#    define AVS_LOG_TRACE_CONTAIN_LAZY_ERROR _ADDED_DUMMY_ARG,
+
+#    define _AVS_IS_LOG_LEVEL_ALLOWED3(Ignored, Val, ...) Val
+#    define AVS_IS_LOG_DEFAULT_LEVEL_ALLOWED2(FalseValue, TrueValue, DummyArg) \
+        _AVS_IS_LOG_LEVEL_ALLOWED3(DummyArg FalseValue, TrueValue, dummy)
+#    define AVS_IS_LOG_DEFAULT_LEVEL_ALLOWED(                     \
+            TrueValue, FalseValue, Level, DefaultLevel, DummyArg) \
+        AVS_IS_LOG_DEFAULT_LEVEL_ALLOWED2(                        \
+                _AVS_IS_LOG_LEVEL_ALLOWED3(                       \
+                        DummyArg TrueValue, FalseValue, dummy),   \
+                TrueValue,                                        \
+                AVS_LOG_##DefaultLevel##_NOT_CONTAIN_##Level)
+#    define _AVS_IS_LOG_LEVEL_ALLOWED2(                                        \
+            TrueValue, FalseValue, Level, DefaultLevel, Macro, DummyArg)       \
+        _AVS_IS_LOG_LEVEL_ALLOWED3(DummyArg FalseValue,                        \
+                                   AVS_IS_LOG_DEFAULT_LEVEL_ALLOWED(           \
+                                           TrueValue,                          \
+                                           FalseValue,                         \
+                                           Level,                              \
+                                           DefaultLevel,                       \
+                                           AVS_LOG_##Macro##_CONTAIN_##Level), \
+                                   dummy)
+#    define _AVS_IS_LOG_LEVEL_ALLOWED1(                        \
+            Macro, TrueValue, FalseValue, Level, DefaultLevel) \
+        _AVS_IS_LOG_LEVEL_ALLOWED2(TrueValue,                  \
+                                   FalseValue,                 \
+                                   Level,                      \
+                                   DefaultLevel,               \
+                                   Macro,                      \
+                                   AVS_LOG_##Macro##_NOT_CONTAIN_##Level)
+
+/**
+ * Checks if macro <c>Macro</c> is defined and log level allows to
+ * put logging message into the compiled code.
+ * Expands to <c>TrueValue</c> if so, otherwise expands to <c>FalseValue</c>.
+ */
+#    define AVS_IS_LOG_LEVEL_ALLOWED(                          \
+            Macro, TrueValue, FalseValue, Level, DefaultLevel) \
+        _AVS_IS_LOG_LEVEL_ALLOWED1(                            \
+                Macro, TrueValue, FalseValue, Level, DefaultLevel)
+
+/**
+ * Decides if logs for module <c>Module</c> should be compiled into the
+ * application. Expands to:
+ *     - <c>EMPTY</c> - logs won't be compiled into the application
+ *     - <c>NOT_EMPTY</c> - logs will be compiled into the application
+ */
+#    define AVS_LOG_MODULE_LOGGING_TYPE(Module, Level)                 \
+        AVS_IS_LOG_LEVEL_ALLOWED(AVS_CONCAT(AVS_LOG_LEVEL_FOR_MODULE_, \
+                                            Module),                   \
+                                 NOT_EMPTY,                            \
+                                 EMPTY,                                \
+                                 Level,                                \
+                                 AVS_LOG_LEVEL_DEFAULT)
+#endif /* AVS_LOGS_CHECKED_DURING_COMPILE_TIME */
+
+/**
+ * Used when using @ref avs_log for module <c>Module</c> if
+ * "AVS_LOG_DISABLE_MODULE_<Module>" macro is defined as "1". That way no logs
+ * for module <c>Module</c> are compiled into the application.
+ */
+#define AVS_LOG_EMPTY(...) (void) sizeof(AVS_LOG_NOT_EMPTY(__VA_ARGS__), 0)
 
 /**
  * Creates a log message and displays it on a specified error output. Message
@@ -167,8 +303,71 @@ int avs_log_set_level__(const char *module, avs_log_level_t level);
  *               not be evaluated if the current log level is lower than the
  *               currently set for the specified module.
  */
-#define avs_log(Module, Level, ...) \
+#define AVS_LOG_NOT_EMPTY(Module, Level, ...) \
     AVS_LOG__##Level(l, AVS_QUOTE_MACRO(Module), __VA_ARGS__)
+
+/**
+ * Wrapper for the @ref avs_log. Expands to "AVS_LOG_<LogType>", where
+ * <c>LogType</c> will be either "EMPTY" or "NOT_EMPTY".
+ *
+ * @param Module  Name of the module that generates the message, given as a raw
+ *                token.
+ *
+ * @param Level   Log level, specified as a name of @ref avs_log_level_t (other
+ *                than <c>QUIET</c>) with the leading <c>AVS_LOG_</c> omitted.
+ *                It may be also prefixed with <c>LAZY_</c> (e.g.
+ *                <c>LAZY_INFO</c>) - in that case the log message arguments
+ *                will not be evaluated if the current log level is lower than
+ *                the currently set for the specified module.
+ *
+ * @param LogType Type of a log for specified <c>Module</c>. Can be <c>EMPTY</c>
+ *                or <c>NOT_EMPTY</c>.
+ */
+#define _AVS_LOG(Module, Level, LogType, ...) \
+    AVS_CONCAT(AVS_LOG_, LogType)(Module, Level, __VA_ARGS__)
+
+#ifndef AVS_LOGS_CHECKED_DURING_COMPILE_TIME
+/**
+ * @param Module Name of the module that generates the message, given as a raw
+ *               token.
+ *
+ * @param Level  Log level, specified as a name of @ref avs_log_level_t (other
+ *               than <c>QUIET</c>) with the leading <c>AVS_LOG_</c> omitted.
+ *               It may be also prefixed with <c>LAZY_</c> (e.g.
+ *               <c>LAZY_INFO</c>) - in that case the log message arguments will
+ *               not be evaluated if the current log level is lower than the
+ *               currently set for the specified module.
+ */
+#    define avs_log(Module, Level, ...) \
+        _AVS_LOG(Module, Level, NOT_EMPTY, __VA_ARGS__)
+#else
+/**
+ * If <Level> value is higher or equal to "AVS_LOG_LEVEL_FOR_MODULE_<Module>"
+ * (if exist) or "AVS_LOG_LEVEL_DEFAULT":
+ *     Expands to @ref AVS_LOG_NOT_EMPTY, creates a log message and displays
+ *     it on a specified error output. Message format and additional arguments
+ *     are the same as for standard C library <c>printf</c>.
+ * If <Level> value is lower than "AVS_LOG_LEVEL_FOR_MODULE_<Module>"(if exist)
+ * and "AVS_LOG_LEVEL_DEFAULT":
+ *     Expands to @ref AVS_LOG_EMPTY so log are not
+ *     compiled into the application.
+ *
+ * @param Module Name of the module that generates the message, given as a raw
+ *               token.
+ *
+ * @param Level  Log level, specified as a name of @ref avs_log_level_t (other
+ *               than <c>QUIET</c>) with the leading <c>AVS_LOG_</c> omitted.
+ *               It may be also prefixed with <c>LAZY_</c> (e.g.
+ *               <c>LAZY_INFO</c>) - in that case the log message arguments will
+ *               not be evaluated if the current log level is lower than the
+ *               currently set for the specified module.
+ */
+#    define avs_log(Module, Level, ...)                      \
+        _AVS_LOG(Module,                                     \
+                 Level,                                      \
+                 AVS_LOG_MODULE_LOGGING_TYPE(Module, Level), \
+                 __VA_ARGS__)
+#endif /* AVS_LOGS_CHECKED_DURING_COMPILE_TIME */
 
 /**
  * Creates a log message and displays it on a specified error output. Message
@@ -222,6 +421,7 @@ int avs_log_set_level__(const char *module, avs_log_level_t level);
 #define avs_log_lazy_v(Module, Level, ...) \
     avs_log_v(Module, LAZY_##Level, __VA_ARGS__)
 
+#ifndef AVS_COMMONS_WITHOUT_LOG_CHECK_IN_RUNTIME
 /**
  * Sets the logging level for a given module. Messages with lower level than the
  * one set will not be passed to the log writer.
@@ -246,8 +446,8 @@ int avs_log_set_level__(const char *module, avs_log_level_t level);
  * @endcode
  * </example>
  */
-#define avs_log_set_level(Module, Level) \
-    avs_log_set_level__(AVS_QUOTE_MACRO(Module), Level)
+#    define avs_log_set_level(Module, Level) \
+        avs_log_set_level__(AVS_QUOTE_MACRO(Module), Level)
 
 /**
  * Sets the logging level for a given module. Messages with lower level than the
@@ -258,8 +458,9 @@ int avs_log_set_level__(const char *module, avs_log_level_t level);
  * @param Level  Log level to set (see @ref avs_log_level_t for list of possible
  *               values).
  */
-#define avs_log_set_default_level(Level) \
-    ((void) avs_log_set_level__(NULL, Level))
+#    define avs_log_set_default_level(Level) \
+        ((void) avs_log_set_level__(NULL, Level))
+#endif /* AVS_COMMONS_WITHOUT_LOG_CHECK_IN_RUNTIME */
 
 #ifndef AVS_COMMONS_WITH_MICRO_LOGS
 #    define AVS_DISPOSABLE_LOG(Arg) Arg

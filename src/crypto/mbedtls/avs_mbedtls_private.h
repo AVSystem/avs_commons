@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 AVSystem <avsystem@avsystem.com>
+ * Copyright 2023 AVSystem <avsystem@avsystem.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -158,7 +158,25 @@ static inline unsigned int
 _avs_crypto_mbedtls_cipher_get_block_size(const mbedtls_cipher_info_t *cipher) {
     return cipher->MBEDTLS_PRIVATE(block_size);
 }
-#endif // AVS_COMMONS_WITH_AVS_NET
+
+#    if MBEDTLS_VERSION_NUMBER < 0x03020000
+// mbedtls_ssl_is_handshake_over() has been introduced in Mbed TLS 3.2
+static inline int mbedtls_ssl_is_handshake_over(mbedtls_ssl_context *ssl) {
+    return ssl->MBEDTLS_PRIVATE(state) == MBEDTLS_SSL_HANDSHAKE_OVER;
+}
+#    endif // MBEDTLS_VERSION_NUMBER < 0x03020000
+#endif     // AVS_COMMONS_WITH_AVS_NET
+
+#if defined(AVS_COMMONS_WITH_AVS_NET)              \
+        && defined(MBEDTLS_SSL_DTLS_CONNECTION_ID) \
+        && defined(MBEDTLS_SSL_CONTEXT_SERIALIZATION)
+static inline mbedtls_cipher_type_t
+_avs_crypto_mbedtls_cipher_info_get_type(const mbedtls_cipher_info_t *cipher) {
+    return cipher->MBEDTLS_PRIVATE(type);
+}
+#endif // defined(AVS_COMMONS_WITH_AVS_NET) &&
+       // defined(MBEDTLS_SSL_DTLS_CONNECTION_ID) &&
+       // defined(MBEDTLS_SSL_CONTEXT_SERIALIZATION)
 
 #if defined(AVS_COMMONS_WITH_AVS_NET) \
         && defined(MBEDTLS_ERR_SSL_RECEIVED_NEW_SESSION_TICKET)

@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 AVSystem <avsystem@avsystem.com>
+ * Copyright 2023 AVSystem <avsystem@avsystem.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,11 @@
               defined(AVS_COMMONS_WITH_AVS_CRYPTO_PSK_ENGINE) */
 
 #    include "../avs_crypto_global.h"
+
+#    include <mbedtls/version.h>
+#    ifdef MBEDTLS_USE_PSA_CRYPTO
+#        include <psa/crypto.h>
+#    endif // MBEDTLS_USE_PSA_CRYPTO
 
 #    define MODULE_NAME avs_crypto_global
 #    include <avs_x_log_config.h>

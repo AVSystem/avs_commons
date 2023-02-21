@@ -1,4 +1,4 @@
-# Copyright 2022 AVSystem <avsystem@avsystem.com>
+# Copyright 2023 AVSystem <avsystem@avsystem.com>
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 cmake_minimum_required(VERSION 3.6.0)
 project(avs_commons C)
 
-set(AVS_COMMONS_VERSION "5.1.3")
+set(AVS_COMMONS_VERSION "5.2.0")
 
 ################# DISTRIBUTION #################################################
 
@@ -158,7 +158,7 @@ option(WITH_AVS_SORTED_SET "AVSystem wrapper for list and red-black tree impleme
 include(CMakeDependentOption)
 cmake_dependent_option(WITH_INTERNAL_LOGS "Enable logging from inside AVSystem Commons libraries" ON WITH_AVS_LOG OFF)
 set(AVS_COMMONS_WITH_INTERNAL_LOGS ${WITH_INTERNAL_LOGS})
-cmake_dependent_option(WITH_INTERNAL_TRACE "Enable TRACE-level logs inside AVSystem Commons libraries" OFF WITH_INTERNAL_LOGS OFF)
+cmake_dependent_option(WITH_INTERNAL_TRACE "Enable TRACE-level logs inside AVSystem Commons libraries" OFF "WITH_INTERNAL_LOGS;NOT EXTERNAL_LOG_LEVELS_HEADER" OFF)
 set(AVS_COMMONS_WITH_INTERNAL_TRACE ${WITH_INTERNAL_TRACE})
 cmake_dependent_option(WITH_MBEDTLS_LOGS "Enable logging from mbedTLS backend library (if used)" OFF "WITH_INTERNAL_LOGS;WITH_MBEDTLS" OFF)
 set(AVS_COMMONS_NET_WITH_MBEDTLS_LOGS ${WITH_MBEDTLS_LOGS})
@@ -175,6 +175,10 @@ if(WITH_AVS_LOG)
     set(EXTERNAL_LOG_HEADER_DEFAULT "")
     set(EXTERNAL_LOG_HEADER ${EXTERNAL_LOG_HEADER_DEFAULT} CACHE STRING "External log header path, if required")
     set(AVS_COMMONS_WITH_EXTERNAL_LOGGER_HEADER "${EXTERNAL_LOG_HEADER}")
+    set(EXTERNAL_LOG_LEVELS_HEADER_DEFAULT "")
+    set(EXTERNAL_LOG_LEVELS_HEADER ${EXTERNAL_LOG_LEVELS_HEADER_DEFAULT} CACHE STRING "Excluded logs header path, if required")
+    set(AVS_COMMONS_WITH_EXTERNAL_LOG_LEVELS_HEADER "${EXTERNAL_LOG_LEVELS_HEADER}")
+    set(AVS_COMMONS_WITHOUT_LOG_CHECK_IN_RUNTIME ${WITHOUT_LOG_CHECK_IN_RUNTIME})
 endif()
 
 cmake_dependent_option(WITH_TEST "Enable unit tests of AVSystem Commons library itself" OFF WITH_AVS_UNIT OFF)

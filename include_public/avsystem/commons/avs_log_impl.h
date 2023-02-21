@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 AVSystem <avsystem@avsystem.com>
+ * Copyright 2023 AVSystem <avsystem@avsystem.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,7 +29,9 @@ extern "C" {
  * @name Logging subsystem internals
  */
 /**@{*/
+#    ifndef AVS_COMMONS_WITHOUT_LOG_CHECK_IN_RUNTIME
 int avs_log_should_log__(avs_log_level_t level, const char *module);
+#    endif /* AVS_COMMONS_WITHOUT_LOG_CHECK_IN_RUNTIME */
 
 void avs_log_internal_forced_v__(avs_log_level_t level,
                                  const char *module,
@@ -62,13 +64,18 @@ void avs_log_internal_l__(avs_log_level_t level,
 #    define AVS_LOG_IMPL__(Level, Variant, ModuleStr, ...)                   \
         avs_log_internal_##Variant##__(Level, ModuleStr, __FILE__, __LINE__, \
                                        __VA_ARGS__)
-
-#    define AVS_LOG_LAZY_IMPL__(Level, Variant, ModuleStr, ...)               \
-        (avs_log_should_log__(Level, ModuleStr)                               \
-                 ? avs_log_internal_forced_##Variant##__(                     \
-                           Level, ModuleStr, __FILE__, __LINE__, __VA_ARGS__) \
-                 : (void) 0)
-
+#    ifndef AVS_COMMONS_WITHOUT_LOG_CHECK_IN_RUNTIME
+#        define AVS_LOG_LAZY_IMPL__(Level, Variant, ModuleStr, ...)  \
+            (avs_log_should_log__(Level, ModuleStr)                  \
+                     ? avs_log_internal_forced_##Variant##__(        \
+                               Level, ModuleStr, __FILE__, __LINE__, \
+                               __VA_ARGS__)                          \
+                     : (void) 0)
+#    else
+#        define AVS_LOG_LAZY_IMPL__(Level, Variant, ModuleStr, ...)           \
+            avs_log_internal_forced_##Variant##__(Level, ModuleStr, __FILE__, \
+                                                  __LINE__, __VA_ARGS__)
+#    endif /* AVS_COMMONS_WITHOUT_LOG_CHECK_IN_RUNTIME */
 #    define AVS_LOG__TRACE(...) AVS_LOG_IMPL__(AVS_LOG_TRACE, __VA_ARGS__)
 #    define AVS_LOG__DEBUG(...) AVS_LOG_IMPL__(AVS_LOG_DEBUG, __VA_ARGS__)
 #    define AVS_LOG__INFO(...) AVS_LOG_IMPL__(AVS_LOG_INFO, __VA_ARGS__)
@@ -86,25 +93,33 @@ void avs_log_internal_l__(avs_log_level_t level,
 #    define AVS_LOG__LAZY_ERROR(...) \
         AVS_LOG_LAZY_IMPL__(AVS_LOG_ERROR, __VA_ARGS__)
 
+#    ifdef AVS_LOG_LEVEL_DEFAULT
+#        if defined(AVS_LOG_WITH_TRACE) || defined(AVS_LOG_WITHOUT_DEBUG)
+#            error "if AVS_LOG_LEVEL_DEFAULT is set, AVS_LOG_WITH_TRACE && AVS_LOG_WITHOUT_DEBUG are redundant"
+#        endif
+#    else
 /* enable compiling-in TRACE messages */
-#    ifndef AVS_LOG_WITH_TRACE
-#        undef AVS_LOG__TRACE
-#        define AVS_LOG__TRACE(...) \
-            ((void) sizeof(AVS_LOG_IMPL__(AVS_LOG_TRACE, __VA_ARGS__), 0))
-#        undef AVS_LOG__LAZY_TRACE
-#        define AVS_LOG__LAZY_TRACE(...) \
-            ((void) sizeof(AVS_LOG_LAZY_IMPL__(AVS_LOG_DEBUG, __VA_ARGS__), 0))
-#    endif
+#        ifndef AVS_LOG_WITH_TRACE
+#            undef AVS_LOG__TRACE
+#            define AVS_LOG__TRACE(...) \
+                ((void) sizeof(AVS_LOG_IMPL__(AVS_LOG_TRACE, __VA_ARGS__), 0))
+#            undef AVS_LOG__LAZY_TRACE
+#            define AVS_LOG__LAZY_TRACE(...) \
+                ((void) sizeof(              \
+                        AVS_LOG_LAZY_IMPL__(AVS_LOG_DEBUG, __VA_ARGS__), 0))
+#        endif
 
 /* disable compiling-in DEBUG messages */
-#    ifdef AVS_LOG_WITHOUT_DEBUG
-#        undef AVS_LOG__DEBUG
-#        define AVS_LOG__DEBUG(...) \
-            ((void) sizeof(AVS_LOG_IMPL__(AVS_LOG_DEBUG, __VA_ARGS__), 0))
-#        undef AVS_LOG__LAZY_DEBUG
-#        define AVS_LOG__LAZY_DEBUG(...) \
-            ((void) sizeof(AVS_LOG_LAZY_IMPL__(AVS_LOG_DEBUG, __VA_ARGS__), 0))
-#    endif
+#        ifdef AVS_LOG_WITHOUT_DEBUG
+#            undef AVS_LOG__DEBUG
+#            define AVS_LOG__DEBUG(...) \
+                ((void) sizeof(AVS_LOG_IMPL__(AVS_LOG_DEBUG, __VA_ARGS__), 0))
+#            undef AVS_LOG__LAZY_DEBUG
+#            define AVS_LOG__LAZY_DEBUG(...) \
+                ((void) sizeof(              \
+                        AVS_LOG_LAZY_IMPL__(AVS_LOG_DEBUG, __VA_ARGS__), 0))
+#        endif
+#    endif /*AVS_LOG_LEVEL_DEFAULT*/
 
 /**@}*/
 #endif

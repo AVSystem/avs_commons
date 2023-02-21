@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 AVSystem <avsystem@avsystem.com>
+ * Copyright 2023 AVSystem <avsystem@avsystem.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,25 +35,25 @@ static avs_error_t inbuf_stream_read(avs_stream_t *stream_,
                                      void *buffer,
                                      size_t buffer_length) {
     avs_stream_inbuf_t *stream = (avs_stream_inbuf_t *) stream_;
-    size_t bytes_left, bytes_read;
-    if (!buffer_length) {
-        return AVS_OK;
-    }
-    if (!buffer) {
-        return avs_errno(AVS_EINVAL);
-    }
+    size_t bytes_left, bytes_read = 0;
+    if (buffer_length) {
+        if (!buffer) {
+            return avs_errno(AVS_EINVAL);
+        }
 
-    assert(stream->buffer_offset <= stream->buffer_size);
+        assert(stream->buffer_offset <= stream->buffer_size);
 
-    bytes_left = stream->buffer_size - stream->buffer_offset;
-    bytes_read = bytes_left < buffer_length ? bytes_left : buffer_length;
-    memcpy(buffer, (const char *) stream->buffer + stream->buffer_offset,
-           bytes_read);
-    stream->buffer_offset += bytes_read;
+        bytes_left = stream->buffer_size - stream->buffer_offset;
+        bytes_read = bytes_left < buffer_length ? bytes_left : buffer_length;
+        memcpy(buffer, (const char *) stream->buffer + stream->buffer_offset,
+               bytes_read);
+        stream->buffer_offset += bytes_read;
+    }
 
     if (out_message_finished) {
         *out_message_finished = stream->buffer_offset >= stream->buffer_size;
     }
+
     if (out_bytes_read) {
         *out_bytes_read = bytes_read;
     }

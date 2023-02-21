@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 AVSystem <avsystem@avsystem.com>
+ * Copyright 2023 AVSystem <avsystem@avsystem.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -594,6 +594,17 @@ typedef enum {
      * Used to set the timeouts for the DTLS handshake.
      */
     AVS_NET_SOCKET_OPT_DTLS_HANDSHAKE_TIMEOUTS,
+
+    /**
+     * Used to check whether the last call to @ref avs_net_socket_connect
+     * resulted in restoring a previously known DTLS Connection ID, instead of
+     * performing a handshake. The value is passed in the <c>flag</c> field of
+     * the @ref avs_net_socket_opt_value_t union - <c>true</c> if the Connection
+     * ID was restored, or <c>false</c> if a handshake was performed. If the
+     * socket is in any other state than @ref AVS_NET_SOCKET_STATE_CONNECTED,
+     * the behaviour is undefined.
+     */
+    AVS_NET_SOCKET_OPT_CONNECTION_ID_RESUMED,
 } avs_net_socket_opt_key_t;
 
 typedef enum {
