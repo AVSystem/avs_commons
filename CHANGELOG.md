@@ -1,6 +1,20 @@
 # Changelog
 
-## avs_commons 5.2.0 (February 21st, 2023)
+## avs_commons 5.3.0 (March 10th, 2023)
+
+### Features
+
+* Added the ``AVS_COMMONS_NET_POSIX_AVS_SOCKET_WITHOUT_IN6_V4MAPPED_SUPPORT``
+  configuration option that improves dual-stack IPv4+IPv6 connectivity on
+  platforms that do not support IPv4-mapped IPv6 addresses (``::ffff:0:0/96``)
+
+### Improvements
+
+* Trivial fixes to silence warnings on certain commercial compilers
+  (contributed by Flonidan A/S)
+* Removed usages of most deprecated Mbed TLS and OpenSSL APIs
+
+## avs_commons 5.2.0 (February 20th, 2023)
 
 ### BREAKING CHANGES
 
@@ -10,10 +24,10 @@
 
 * Added persistence of DTLS context state related to the Connection ID extension
   and the related ``AVS_NET_SOCKET_OPT_CONNECTION_ID_RESUMED`` option
-* Added option to set avs_log logging level in compile time. If 
-  `AVS_COMMONS_WITH_EXTERNAL_LOG_LEVELS_HEADER` is specified, inactive logs will 
+* Added option to set avs_log logging level in compile time. If
+  `AVS_COMMONS_WITH_EXTERNAL_LOG_LEVELS_HEADER` is specified, inactive logs will
   be removed during compile time
-* Added option to disable log level check in runtime, if active the macros 
+* Added option to disable log level check in runtime, if active the macros
   `avs_log_set_level` and `avs_log_set_default_level` are not available
 
 ### Improvements

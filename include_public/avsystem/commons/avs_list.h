@@ -224,14 +224,16 @@ static inline void *avs_list_void_identity__(void *arg) {
 #ifdef __cplusplus
 template <typename T>
 static inline AVS_LIST(T) &avs_list_next__(AVS_LIST(T) element) {
-    return *AVS_APPLY_OFFSET(AVS_LIST(T), element, -AVS_LIST_SPACE_FOR_NEXT__);
+    return *AVS_APPLY_OFFSET(
+            AVS_LIST(T), element, -(int) AVS_LIST_SPACE_FOR_NEXT__);
 }
 
 #    define AVS_LIST_NEXT(element) (avs_list_next__((element)))
 #else
-#    define AVS_LIST_NEXT(element) \
-        (*AVS_APPLY_OFFSET(        \
-                AVS_TYPEOF_PTR(element), element, -AVS_LIST_SPACE_FOR_NEXT__))
+#    define AVS_LIST_NEXT(element)                  \
+        (*AVS_APPLY_OFFSET(AVS_TYPEOF_PTR(element), \
+                           element,                 \
+                           -(int) AVS_LIST_SPACE_FOR_NEXT__))
 #endif
 
 /**

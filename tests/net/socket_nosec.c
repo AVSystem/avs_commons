@@ -236,3 +236,42 @@ AVS_UNIT_TEST(socket, tcp_set_opt_after_close) {
 
     AVS_UNIT_ASSERT_SUCCESS(avs_net_socket_cleanup(&socket));
 }
+
+//// avs_net_socket_connect ////////////////////////////////////////////////////
+
+#if defined(AVS_COMMONS_NET_WITH_IPV4) && defined(AVS_COMMONS_NET_WITH_IPV6)
+AVS_UNIT_TEST(socket, udp_connect_ipv4v6) {
+    avs_net_socket_t *listening_socket = NULL;
+    AVS_UNIT_ASSERT_SUCCESS(avs_net_udp_socket_create(&listening_socket, NULL));
+    AVS_UNIT_ASSERT_SUCCESS(avs_net_socket_bind(listening_socket, "::", "0"));
+
+    char listen_port[sizeof("65536")];
+    AVS_UNIT_ASSERT_SUCCESS(avs_net_socket_get_local_port(
+            listening_socket, listen_port, sizeof(listen_port)));
+
+    char bound_port[sizeof("65536")];
+    char new_bound_port[sizeof("65536")];
+
+    avs_net_socket_t *socket = NULL;
+    AVS_UNIT_ASSERT_SUCCESS(avs_net_udp_socket_create(&socket, NULL));
+    AVS_UNIT_ASSERT_SUCCESS(avs_net_socket_bind(socket, "0.0.0.0", "0"));
+    AVS_UNIT_ASSERT_SUCCESS(avs_net_socket_get_local_port(socket, bound_port,
+                                                          sizeof(bound_port)));
+    // Upgrading from IPv4 to IPv6 will not work
+    AVS_UNIT_ASSERT_FAILED(avs_net_socket_connect(socket, "::1", listen_port));
+    AVS_UNIT_ASSERT_SUCCESS(avs_net_socket_cleanup(&socket));
+
+    AVS_UNIT_ASSERT_SUCCESS(avs_net_udp_socket_create(&socket, NULL));
+    AVS_UNIT_ASSERT_SUCCESS(avs_net_socket_bind(socket, "::", bound_port));
+    // ...but downgrading from IPv6 to IPv4 should
+    AVS_UNIT_ASSERT_SUCCESS(
+            avs_net_socket_connect(socket, "127.0.0.1", listen_port));
+    AVS_UNIT_ASSERT_SUCCESS(avs_net_socket_get_local_port(
+            socket, new_bound_port, sizeof(new_bound_port)));
+    AVS_UNIT_ASSERT_EQUAL_STRING(new_bound_port, bound_port);
+    AVS_UNIT_ASSERT_SUCCESS(avs_net_socket_cleanup(&socket));
+
+    AVS_UNIT_ASSERT_SUCCESS(avs_net_socket_cleanup(&listening_socket));
+}
+#endif // defined(AVS_COMMONS_NET_WITH_IPV4) &&
+       // defined(AVS_COMMONS_NET_WITH_IPV6)

@@ -130,8 +130,7 @@ typedef struct {
     mbedtls_ssl_context context;
     mbedtls_ssl_config config;
     // We might need the version numbers later, and they're write-only in config
-    int config_version_major;
-    int config_version_minor;
+    uint16_t config_version;
 #    ifdef AVS_COMMONS_NET_WITH_TLS_SESSION_PERSISTENCE
     void *session_resumption_buffer;
     size_t session_resumption_buffer_size;
@@ -319,9 +318,8 @@ static void close_ssl_raw(ssl_socket_t *socket) {
     }
 }
 
-static int ssl_version_as_mbedtls_pair(int *out_major,
-                                       int *out_minor,
-                                       avs_net_ssl_version_t version) {
+static int ssl_version_as_on_wire(uint16_t *out_value,
+                                  avs_net_ssl_version_t version) {
     switch (version) {
     case AVS_NET_SSL_VERSION_DEFAULT:
     case AVS_NET_SSL_VERSION_SSLv2_OR_3:
@@ -329,31 +327,26 @@ static int ssl_version_as_mbedtls_pair(int *out_major,
         // NOTE: In Mbed TLS >=3.0, TLS 1.2 is the lowest supported version
         // anyway.
 #    if MBEDTLS_VERSION_NUMBER < 0x03000000
-        *out_major = MBEDTLS_SSL_MAJOR_VERSION_3;
-        *out_minor = MBEDTLS_SSL_MINOR_VERSION_0;
+        *out_value = 0x0300;
         return 0;
 #    endif // MBEDTLS_VERSION_NUMBER < 0x03000000
     case AVS_NET_SSL_VERSION_TLSv1:
 #    if MBEDTLS_VERSION_NUMBER < 0x03000000
-        *out_major = MBEDTLS_SSL_MAJOR_VERSION_3;
-        *out_minor = MBEDTLS_SSL_MINOR_VERSION_1;
+        *out_value = 0x0301;
         return 0;
 #    endif // MBEDTLS_VERSION_NUMBER < 0x03000000
     case AVS_NET_SSL_VERSION_TLSv1_1:
 #    if MBEDTLS_VERSION_NUMBER < 0x03000000
-        *out_major = MBEDTLS_SSL_MAJOR_VERSION_3;
-        *out_minor = MBEDTLS_SSL_MINOR_VERSION_2;
+        *out_value = 0x0302;
         return 0;
 #    endif // MBEDTLS_VERSION_NUMBER < 0x03000000
     case AVS_NET_SSL_VERSION_TLSv1_2:
-        *out_major = MBEDTLS_SSL_MAJOR_VERSION_3;
-        *out_minor = MBEDTLS_SSL_MINOR_VERSION_3;
+        *out_value = 0x0303;
         return 0;
 #    if defined(MBEDTLS_SSL_PROTO_TLS1_3_EXPERIMENTAL) \
             || defined(MBEDTLS_SSL_PROTO_TLS1_3)
     case AVS_NET_SSL_VERSION_TLSv1_3:
-        *out_major = MBEDTLS_SSL_MAJOR_VERSION_3;
-        *out_minor = MBEDTLS_SSL_MINOR_VERSION_4;
+        *out_value = 0x0304;
         return 0;
 #    endif // defined(MBEDTLS_SSL_PROTO_TLS1_3_EXPERIMENTAL) ||
            // defined(MBEDTLS_SSL_PROTO_TLS1_3)
@@ -965,15 +958,21 @@ configure_ssl(ssl_socket_t *socket,
     mbedtls_ssl_conf_dbg(&socket->config, debug_mbedtls, NULL);
 #    endif // AVS_COMMONS_NET_WITH_MBEDTLS_LOGS
 
-    if (ssl_version_as_mbedtls_pair(&socket->config_version_major,
-                                    &socket->config_version_minor,
-                                    configuration->version)) {
+    if (ssl_version_as_on_wire(&socket->config_version,
+                               configuration->version)) {
         LOG(ERROR, _("Could not set SSL version configuration"));
         return avs_errno(AVS_ENOTSUP);
     }
 
-    mbedtls_ssl_conf_min_version(&socket->config, socket->config_version_major,
-                                 socket->config_version_minor);
+#    if MBEDTLS_VERSION_NUMBER >= 0x03020000
+    mbedtls_ssl_conf_min_tls_version(
+            &socket->config,
+            (mbedtls_ssl_protocol_version) socket->config_version);
+#    else  // if MBEDTLS_VERSION_NUMBER >= 0x03020000
+    mbedtls_ssl_conf_min_version(&socket->config,
+                                 (int) (socket->config_version >> 8),
+                                 (int) (socket->config_version & 0xFF));
+#    endif // if MBEDTLS_VERSION_NUMBER >= 0x03020000
 
     mbedtls_ssl_conf_rng(&socket->config, rng_function,
                          configuration->prng_ctx);
@@ -1143,9 +1142,15 @@ static avs_error_t init_ssl_context(ssl_socket_t *socket) {
             // configuration that has then minimum version higher than the
             // maximum version. Let's set the maximum version to be equal to the
             // minimum one and retry...
+#        if MBEDTLS_VERSION_NUMBER >= 0x03020000
+            mbedtls_ssl_conf_max_tls_version(
+                    &socket->config,
+                    (mbedtls_ssl_protocol_version) socket->config_version);
+#        else  // if MBEDTLS_VERSION_NUMBER >= 0x03020000
             mbedtls_ssl_conf_max_version(&socket->config,
-                                         socket->config_version_major,
-                                         socket->config_version_minor);
+                                         (int) (socket->config_version >> 8),
+                                         (int) (socket->config_version & 0xFF));
+#        endif // if MBEDTLS_VERSION_NUMBER >= 0x03020000
             result = mbedtls_ssl_setup(get_context(socket), &socket->config);
         }
 #    endif // MBEDTLS_ERR_SSL_BAD_CONFIG

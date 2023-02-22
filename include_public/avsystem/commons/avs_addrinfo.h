@@ -62,8 +62,10 @@ typedef struct avs_net_addrinfo_struct avs_net_addrinfo_t;
  * This is roughly equivalent to <c>AI_V4MAPPED | AI_ALL</c> flags to
  * <c>getaddrinfo()</c>, but implemented independently of them.
  *
- * This flag is meaningful only if the plaform supports both IPv4 and IPv6.
- * Otherwise it is ignored.
+ * This flag is meaningful only if the plaform supports both IPv4 and IPv6, and
+ * IPv4-mapped IPv6 address support is not disabled (see the
+ * <c>AVS_COMMONS_NET_POSIX_AVS_SOCKET_WITHOUT_IN6_V4MAPPED_SUPPORT</c>
+ * configuration macro). Otherwise it is ignored.
  */
 #define AVS_NET_ADDRINFO_RESOLVE_F_V4MAPPED (1 << 1)
 

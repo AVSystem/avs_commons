@@ -18,6 +18,7 @@ if(WIN32 OR UNIX OR POSIX_COMPAT_HEADER)
 endif()
 
 option(WITH_POSIX_AVS_SOCKET "Enable avs_socket implementation based on POSIX socket API" "${POSIX_AVS_SOCKET_DEFAULT}")
+cmake_dependent_option(WITHOUT_IN6_V4MAPPED_SUPPORT "Prevent avs_net from using IPv4-mapped IPv6 addresses" OFF WITH_POSIX_AVS_SOCKET OFF)
 cmake_dependent_option(WITH_TLS_SESSION_PERSISTENCE "Enable support for TLS session persistence" ON WITH_AVS_PERSISTENCE OFF)
 
 set(AVS_NET_PUBLIC_HEADERS

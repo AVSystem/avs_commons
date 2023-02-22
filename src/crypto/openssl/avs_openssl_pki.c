@@ -90,30 +90,28 @@ avs_error_t avs_crypto_pki_ec_gen(avs_crypto_prng_ctx_t *prng_ctx,
         return avs_errno(AVS_EINVAL);
     }
 
-    EC_GROUP *group =
-            EC_GROUP_new_by_curve_name(asn1_oid_to_nid(ecp_group_oid));
-    if (!group) {
-        LOG(ERROR, _("specified ECP group is invalid or not supported"));
-        return avs_errno(AVS_ENOTSUP);
-    }
-
-    EC_KEY *ec_key = EC_KEY_new();
-    if (!ec_key) {
-        LOG(ERROR, _("EC_KEY_new() failed"));
+    int group_nid = asn1_oid_to_nid(ecp_group_oid);
+    EVP_PKEY_CTX *pkey_ctx = EVP_PKEY_CTX_new_id(EVP_PKEY_EC, NULL);
+    if (!pkey_ctx) {
+        LOG(ERROR, _("EVP_PKEY_CTX_new_id() failed"));
         err = avs_errno(AVS_ENOMEM);
     } else {
-        if (!EC_KEY_set_group(ec_key, group) || !EC_KEY_generate_key(ec_key)) {
+        EVP_PKEY *pkey = NULL;
+        if (!EVP_PKEY_keygen_init(pkey_ctx)
+                || !EVP_PKEY_CTX_set_ec_paramgen_curve_nid(pkey_ctx, group_nid)
+                || !EVP_PKEY_keygen(pkey_ctx, &pkey)) {
             log_openssl_error();
             err = avs_errno(AVS_EPROTO);
         } else {
-            int result = i2d_ECPrivateKey(ec_key, NULL);
+            assert(pkey);
+            int result = i2d_PrivateKey(pkey, NULL);
             if (result > 0) {
                 if ((size_t) result > *inout_der_secret_key_size) {
                     LOG(ERROR, _("Output buffer is too small to fit the key"));
                     err = avs_errno(AVS_E2BIG);
                 } else {
-                    result = i2d_ECPrivateKey(
-                            ec_key,
+                    result = i2d_PrivateKey(
+                            pkey,
                             &(unsigned char *[]){
                                     (unsigned char *) out_der_secret_key }[0]);
                 }
@@ -124,11 +122,11 @@ avs_error_t avs_crypto_pki_ec_gen(avs_crypto_prng_ctx_t *prng_ctx,
             } else {
                 *inout_der_secret_key_size = (size_t) result;
             }
+            EVP_PKEY_free(pkey);
         }
-        EC_KEY_free(ec_key);
+        EVP_PKEY_CTX_free(pkey_ctx);
     }
 
-    EC_GROUP_free(group);
     return err;
 }
 

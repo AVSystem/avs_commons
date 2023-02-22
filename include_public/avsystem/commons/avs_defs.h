@@ -198,7 +198,7 @@ typedef union {
     /* candidates for "largest type"
      * add offending type if getting alignment errors */
     void *ptr;
-    void (*fptr)();
+    void (*fptr)(void);
     long double ld;
     intmax_t i;
     /** @endcond */

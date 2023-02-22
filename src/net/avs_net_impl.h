@@ -27,7 +27,9 @@ VISIBILITY_PRIVATE_HEADER_BEGIN
 #    error "At least one IP protocol version must be enabled"
 #endif
 
-#if defined(AVS_COMMONS_NET_WITH_IPV4) && defined(AVS_COMMONS_NET_WITH_IPV6)
+#if defined(AVS_COMMONS_NET_WITH_IPV4) && defined(AVS_COMMONS_NET_WITH_IPV6) \
+        && !defined(                                                         \
+                   AVS_COMMONS_NET_POSIX_AVS_SOCKET_WITHOUT_IN6_V4MAPPED_SUPPORT)
 #    define WITH_AVS_V4MAPPED
 #endif
 
