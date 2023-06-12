@@ -1,5 +1,21 @@
 # Changelog
 
+## avs_commons 5.3.1 (June 12th, 2023)
+
+### Features
+
+* Added ``AVS_NET_SOCKET_OPT_PREFERRED_ADDR_FAMILY`` and
+  ``AVS_NET_SOCKET_OPT_FORCED_ADDR_FAMILY`` options that allow setting address
+  family configuration of an already created socket
+* Automatically upgrading IPv4 sockets to IPv6 when connecting is now possible
+* Added ``AVS_UNIT_MOCK_DECLARE()`` and ``AVS_UNIT_MOCK_DEFINE()`` to facilitate
+  declaring mocked functions with external linkage
+
+### Improvements
+
+* Slightly changed the semantics of ``avs_sched_run()``, to fix erroneous
+  behavior on platforms with low-resolution system clocks
+
 ## avs_commons 5.3.0 (March 10th, 2023)
 
 ### Features

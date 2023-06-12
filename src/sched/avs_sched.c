@@ -312,7 +312,7 @@ static AVS_LIST(avs_sched_job_t) fetch_job(avs_sched_t *sched,
     AVS_LIST(avs_sched_job_t) result = NULL;
     nonfailing_mutex_lock(sched->mutex);
     if (sched->jobs
-            && avs_time_monotonic_before(sched->jobs->instant, deadline)) {
+            && !avs_time_monotonic_before(deadline, sched->jobs->instant)) {
         if (sched->jobs->handle_ptr) {
             nonfailing_mutex_lock(g_handle_access_mutex);
             assert(*sched->jobs->handle_ptr == sched->jobs);

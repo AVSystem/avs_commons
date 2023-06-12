@@ -605,6 +605,35 @@ typedef enum {
      * the behaviour is undefined.
      */
     AVS_NET_SOCKET_OPT_CONNECTION_ID_RESUMED,
+
+    /**
+     * Used to set and retrieve the IP protocol version preferred for
+     * communication. This controls the same value as the
+     * <c>preferred_family</c> field of the @ref avs_net_socket_configuration_t
+     * structure.
+     *
+     * The value is passed in the <c>addr_family</c> field of the
+     * @ref avs_net_socket_opt_value_t union. The change will take effect at the
+     * next call to a method that performs address resolution, such as
+     * @ref avs_net_socket_connect . If the socket is already bound or
+     * connected, it will <strong>not</strong> be reconnected automatically.
+     */
+    AVS_NET_SOCKET_OPT_PREFERRED_ADDR_FAMILY,
+
+    /**
+     * Used to set and retrieve the only IP protocol version that is allowed to
+     * be used for communication. This controls the same value as the
+     * <c>address_family</c> field of the @ref avs_net_socket_configuration_t
+     * structure. It may be set to <c>AVS_NET_UNSPEC</c> to allow usage of both
+     * IPv4 and IPv6, if supported by the system.
+     *
+     * The value is passed in the <c>addr_family</c> field of the
+     * @ref avs_net_socket_opt_value_t union. The change will take effect at the
+     * next call to a method that performs address resolution, such as
+     * @ref avs_net_socket_connect . If the socket is already bound or
+     * connected, it will <strong>not</strong> be reconnected automatically.
+     */
+    AVS_NET_SOCKET_OPT_FORCED_ADDR_FAMILY,
 } avs_net_socket_opt_key_t;
 
 typedef enum {

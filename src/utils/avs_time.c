@@ -437,13 +437,20 @@ const char *avs_time_duration_as_string_impl__(
     int result;
 
     if (avs_time_duration_valid(time)) {
-        if (time.seconds < 0 && time.nanoseconds > 0) {
-            ++time.seconds;
-            time.nanoseconds = 1000000000 - time.nanoseconds;
+        bool negative = time.seconds < 0;
+        if (negative) {
+            if (time.nanoseconds > 0) {
+                ++time.seconds;
+                time.nanoseconds = 1000000000 - time.nanoseconds;
+            }
+            time.seconds = -time.seconds;
         }
-        result = avs_simple_snprintf(
-                *buf, AVS_TIME_DURATION_AS_STRING_MAX_LENGTH, "%s.%09" PRId32,
-                AVS_INT64_AS_STRING(time.seconds), time.nanoseconds);
+        assert(time.seconds >= 0);
+        result = avs_simple_snprintf(*buf,
+                                     AVS_TIME_DURATION_AS_STRING_MAX_LENGTH,
+                                     "%s%s.%09" PRId32, negative ? "-" : "",
+                                     AVS_INT64_AS_STRING(time.seconds),
+                                     time.nanoseconds);
     } else {
         result = avs_simple_snprintf(
                 *buf, AVS_TIME_DURATION_AS_STRING_MAX_LENGTH, "TIME_INVALID");

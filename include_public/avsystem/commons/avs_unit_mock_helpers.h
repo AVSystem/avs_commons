@@ -140,18 +140,40 @@ unsigned avs_unit_mock_invocations__(avs_unit_mock_func_ptr *invoked_func);
     avs_unit_mock_invocations__((avs_unit_mock_func_ptr *) &AVS_UNIT_MOCK(func))
 
 /**
- * Declares and defines a mocked function pointer.
+ * Produces a forward declaration of a mocked function pointer.
+ *
+ * The declaration may be preceded with linkage specifiers such as
+ * <c>static</c>.
  *
  * @param _function_to_mock Name of the mocked function.
  */
-#define AVS_UNIT_MOCK_CREATE(_function_to_mock)                                \
-    static __typeof__(_function_to_mock) *AVS_UNIT_MOCK(_function_to_mock);    \
+#define AVS_UNIT_MOCK_DECLARE(_function_to_mock) \
+    __typeof__(_function_to_mock) *AVS_UNIT_MOCK(_function_to_mock)
+
+/**
+ * Defines a mocked function pointer.
+ *
+ * The definition shall exist in a single translation unit only, and may be
+ * preceded with linkage specifiers such as <c>static</c>.
+ *
+ * @param _function_to_mock Name of the mocked function.
+ */
+#define AVS_UNIT_MOCK_DEFINE(_function_to_mock)                                \
+    __typeof__(_function_to_mock) *AVS_UNIT_MOCK(_function_to_mock) = NULL;    \
     static void _avs_unit_mock_constructor_##_function_to_mock(void)           \
             __attribute__((constructor));                                      \
     static void _avs_unit_mock_constructor_##_function_to_mock(void) {         \
         avs_unit_mock_add__(                                                   \
                 (avs_unit_mock_func_ptr *) &AVS_UNIT_MOCK(_function_to_mock)); \
     }
+
+/**
+ * Declares and defines a mocked function pointer with internal linkage.
+ *
+ * @param _function_to_mock Name of the mocked function.
+ */
+#define AVS_UNIT_MOCK_CREATE(_function_to_mock) \
+    static AVS_UNIT_MOCK_DEFINE(_function_to_mock)
 
 #ifdef __cplusplus
 }

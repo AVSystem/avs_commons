@@ -1003,26 +1003,23 @@ resolve_addrinfo_for_socket(net_socket_impl_t *net_socket,
         avs_net_af_t socket_family =
                 get_avs_af(get_socket_family(net_socket->socket));
         if (socket_family != AVS_NET_AF_UNSPEC && socket_family != family) {
-#    if defined(AVS_COMMONS_NET_WITH_IPV4) && defined(AVS_COMMONS_NET_WITH_IPV6)
+#    ifdef WITH_AVS_V4MAPPED
             if (socket_family == AVS_NET_AF_INET6) {
-#        ifdef WITH_AVS_V4MAPPED
                 // If we have an already created socket that is bound to IPv6,
                 // but the requested family is something else, use v4-mapping
                 resolve_flags |= AVS_NET_ADDRINFO_RESOLVE_F_V4MAPPED;
-#        else  // WITH_AVS_V4MAPPED
+            } else
+#    endif // WITH_AVS_V4MAPPED
+            {
+                // The case when we have an already created socket, we cannot
+                // use IPv6-to-IPv4 mapping, and the requested family is
+                // different from the socket's bound one will be handled in
+                // try_connect() and ensure_socket_bound_to_family()
                 if (!for_connect) {
-                    // We shouldn't recreate the socket for sendto, just give up
+                    // ...but we shouldn't recreate the socket for sendto, so
+                    // just give up in that case
                     return NULL;
                 }
-#        endif // WITH_AVS_V4MAPPED
-            } else
-#    endif // defined(AVS_COMMONS_NET_WITH_IPV4) &&
-           // defined(AVS_COMMONS_NET_WITH_IPV6)
-            {
-                // If we have an already created socket, we cannot use
-                // IPv6-to-IPv4 mapping, and the requested family is different
-                // than the socket's bound one - we're screwed, just give up
-                return NULL;
             }
         }
     }
@@ -1135,9 +1132,7 @@ create_listening_socket_error:
     return err;
 }
 
-#    if defined(AVS_COMMONS_NET_WITH_IPV4)        \
-            && defined(AVS_COMMONS_NET_WITH_IPV6) \
-            && !defined(WITH_AVS_V4MAPPED)
+#    if defined(AVS_COMMONS_NET_WITH_IPV4) && defined(AVS_COMMONS_NET_WITH_IPV6)
 static avs_error_t
 ensure_socket_bound_to_family(net_socket_impl_t *net_socket,
                               const sockaddr_endpoint_union_t *target_address) {
@@ -1182,15 +1177,13 @@ ensure_socket_bound_to_family(net_socket_impl_t *net_socket,
     return create_listening_socket(net_socket, &new_addr.addr, new_addr_len);
 }
 #    endif // defined(AVS_COMMONS_NET_WITH_IPV4) &&
-           // defined(AVS_COMMONS_NET_WITH_IPV6) && !defined(WITH_AVS_V4MAPPED)
+           // defined(AVS_COMMONS_NET_WITH_IPV6)
 
 static avs_error_t try_connect(net_socket_impl_t *net_socket,
                                const sockaddr_endpoint_union_t *address) {
     char socket_was_already_open = (net_socket->socket != INVALID_SOCKET);
     avs_error_t err = AVS_OK;
-#    if defined(AVS_COMMONS_NET_WITH_IPV4)        \
-            && defined(AVS_COMMONS_NET_WITH_IPV6) \
-            && !defined(WITH_AVS_V4MAPPED)
+#    if defined(AVS_COMMONS_NET_WITH_IPV4) && defined(AVS_COMMONS_NET_WITH_IPV6)
     if (socket_was_already_open && net_socket->type == AVS_NET_UDP_SOCKET) {
         err = ensure_socket_bound_to_family(net_socket, address);
         if (avs_is_err(err)) {
@@ -1198,7 +1191,7 @@ static avs_error_t try_connect(net_socket_impl_t *net_socket,
         }
     }
 #    endif // defined(AVS_COMMONS_NET_WITH_IPV4) &&
-           // defined(AVS_COMMONS_NET_WITH_IPV6) && !defined(WITH_AVS_V4MAPPED)
+           // defined(AVS_COMMONS_NET_WITH_IPV6)
     if (!socket_was_already_open) {
         if ((net_socket->socket =
                      socket(address->sockaddr_ep.addr.sa_family,
@@ -2056,6 +2049,14 @@ static avs_error_t get_opt_net(avs_net_socket_t *net_socket_,
     case AVS_NET_SOCKET_HAS_BUFFERED_DATA:
         out_option_value->flag = false;
         return AVS_OK;
+    case AVS_NET_SOCKET_OPT_PREFERRED_ADDR_FAMILY:
+        out_option_value->addr_family =
+                net_socket->configuration.preferred_family;
+        return AVS_OK;
+    case AVS_NET_SOCKET_OPT_FORCED_ADDR_FAMILY:
+        out_option_value->addr_family =
+                net_socket->configuration.address_family;
+        return AVS_OK;
     default:
         LOG(DEBUG,
             _("get_opt_net: unknown or unsupported option key: ")
@@ -2063,6 +2064,17 @@ static avs_error_t get_opt_net(avs_net_socket_t *net_socket_,
             (int) option_key);
         return avs_errno(AVS_EINVAL);
     }
+}
+
+static bool is_valid_addr_family(avs_net_af_t family) {
+    return family == AVS_NET_AF_UNSPEC
+#    ifdef AVS_COMMONS_NET_WITH_IPV4
+           || family == AVS_NET_AF_INET4
+#    endif /* AVS_COMMONS_NET_WITH_IPV4 */
+#    ifdef AVS_COMMONS_NET_WITH_IPV6
+           || family == AVS_NET_AF_INET6
+#    endif /* AVS_COMMONS_NET_WITH_IPV6 */
+            ;
 }
 
 static avs_error_t set_opt_net(avs_net_socket_t *net_socket_,
@@ -2073,6 +2085,23 @@ static avs_error_t set_opt_net(avs_net_socket_t *net_socket_,
     case AVS_NET_SOCKET_OPT_RECV_TIMEOUT:
         net_socket->recv_timeout = option_value.recv_timeout;
         return AVS_OK;
+    case AVS_NET_SOCKET_OPT_PREFERRED_ADDR_FAMILY:
+        if (!is_valid_addr_family(option_value.addr_family)) {
+            LOG(DEBUG, _("set_opt_net: unsupported preferred address family"));
+            return avs_errno(AVS_EINVAL);
+        } else {
+            net_socket->configuration.preferred_family =
+                    option_value.addr_family;
+            return AVS_OK;
+        }
+    case AVS_NET_SOCKET_OPT_FORCED_ADDR_FAMILY:
+        if (!is_valid_addr_family(option_value.addr_family)) {
+            LOG(DEBUG, _("set_opt_net: unsupported forced address family"));
+            return avs_errno(AVS_EINVAL);
+        } else {
+            net_socket->configuration.address_family = option_value.addr_family;
+            return AVS_OK;
+        }
     default:
         LOG(DEBUG,
             _("set_opt_net: unknown or unsupported option key: ")

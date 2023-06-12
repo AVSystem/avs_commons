@@ -257,13 +257,13 @@ AVS_UNIT_TEST(socket, udp_connect_ipv4v6) {
     AVS_UNIT_ASSERT_SUCCESS(avs_net_socket_bind(socket, "0.0.0.0", "0"));
     AVS_UNIT_ASSERT_SUCCESS(avs_net_socket_get_local_port(socket, bound_port,
                                                           sizeof(bound_port)));
-    // Upgrading from IPv4 to IPv6 will not work
-    AVS_UNIT_ASSERT_FAILED(avs_net_socket_connect(socket, "::1", listen_port));
+    // Upgrading from IPv4 to IPv6
+    AVS_UNIT_ASSERT_SUCCESS(avs_net_socket_connect(socket, "::1", listen_port));
     AVS_UNIT_ASSERT_SUCCESS(avs_net_socket_cleanup(&socket));
 
     AVS_UNIT_ASSERT_SUCCESS(avs_net_udp_socket_create(&socket, NULL));
     AVS_UNIT_ASSERT_SUCCESS(avs_net_socket_bind(socket, "::", bound_port));
-    // ...but downgrading from IPv6 to IPv4 should
+    // Downgrading from IPv6 to IPv4
     AVS_UNIT_ASSERT_SUCCESS(
             avs_net_socket_connect(socket, "127.0.0.1", listen_port));
     AVS_UNIT_ASSERT_SUCCESS(avs_net_socket_get_local_port(

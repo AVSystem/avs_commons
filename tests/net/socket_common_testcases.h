@@ -61,6 +61,8 @@ run_socket_set_opt_test_cases(avs_net_socket_t *socket,
             opt_val.state = AVS_NET_SOCKET_STATE_CONNECTED;
             break;
         case AVS_NET_SOCKET_OPT_ADDR_FAMILY:
+        case AVS_NET_SOCKET_OPT_PREFERRED_ADDR_FAMILY:
+        case AVS_NET_SOCKET_OPT_FORCED_ADDR_FAMILY:
             opt_val.addr_family = AVS_NET_AF_INET4;
             break;
         case AVS_NET_SOCKET_OPT_MTU:

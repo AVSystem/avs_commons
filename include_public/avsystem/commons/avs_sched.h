@@ -209,8 +209,22 @@ static inline int avs_sched_wait_for_next(avs_sched_t *sched,
  * Executes jobs scheduled for execution before or at the current point in time.
  *
  * Specifically, this function will execute any jobs scheduled for before or at
- * the time of entry to this function. If any of the executed jobs schedule more
- * jobs for "now", they will <em>not</em> be executed.
+ * the time returned by @ref avs_time_monotonic_now, queried once at the entry
+ * to this function.
+ *
+ * Note: In principle, jobs scheduled for "now" during the run of
+ * <c>avs_sched_run()</c> are <em>not</em> supposed to be executed within the
+ * same run. However, this depends on a sufficiently high resolution of the
+ * underlying monotonic clock - each @ref AVS_SCHED_NOW call performs a new call
+ * to @ref avs_time_monotonic_now, and such job will only be executed within the
+ * same run if the numeric value of the clock did not change since entry to
+ * <c>avs_sched_run()</c>.
+ *
+ * In other words, in the worst case scenario of an indirect "infinite loop" of
+ * a scheduler job scheduling itself for another execution "now",
+ * <c>avs_sched_run()</c> will block for one "tick" of the monotonic clock
+ * (i.e., a period between changes of its numeric value), plus execution time of
+ * the last such job.
  *
  * @param sched Scheduler object to access.
  */

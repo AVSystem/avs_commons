@@ -506,3 +506,9 @@ AVS_UNIT_TEST(time, negative_duration_as_string) {
     AVS_UNIT_ASSERT_EQUAL_STRING(AVS_TIME_DURATION_AS_STRING(value),
                                  "-122.999999544");
 }
+
+AVS_UNIT_TEST(time, small_negative_duration_as_string) {
+    avs_time_duration_t value = { -1, 234 };
+    AVS_UNIT_ASSERT_EQUAL_STRING(AVS_TIME_DURATION_AS_STRING(value),
+                                 "-0.999999766");
+}
