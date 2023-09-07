@@ -227,10 +227,11 @@ avs_bio_recv(void *ctx, unsigned char *buf, size_t len, uint32_t timeout_ms) {
     avs_net_socket_opt_value_t new_timeout;
     size_t read_bytes;
     int result;
-    if (avs_is_err((socket->bio_error = avs_net_socket_get_opt(
-                            socket->backend_socket,
-                            AVS_NET_SOCKET_OPT_RECV_TIMEOUT,
-                            &orig_timeout)))) {
+    if (!socket->backend_socket
+            || avs_is_err((socket->bio_error = avs_net_socket_get_opt(
+                                   socket->backend_socket,
+                                   AVS_NET_SOCKET_OPT_RECV_TIMEOUT,
+                                   &orig_timeout)))) {
         return MBEDTLS_ERR_NET_RECV_FAILED;
     }
     new_timeout = orig_timeout;
@@ -258,8 +259,9 @@ avs_bio_recv(void *ctx, unsigned char *buf, size_t len, uint32_t timeout_ms) {
 
 static int avs_bio_send(void *ctx, const unsigned char *buf, size_t len) {
     ssl_socket_t *socket = (ssl_socket_t *) ctx;
-    if (avs_is_err((socket->bio_error = avs_net_socket_send(
-                            socket->backend_socket, buf, len)))) {
+    if (!socket->backend_socket
+            || avs_is_err((socket->bio_error = avs_net_socket_send(
+                                   socket->backend_socket, buf, len)))) {
         return MBEDTLS_ERR_NET_SEND_FAILED;
     } else {
         return (int) len;
@@ -850,65 +852,24 @@ rng_function(void *ctx, unsigned char *out_buf, size_t out_buf_size) {
 }
 
 #    ifdef AVS_COMMONS_NET_WITH_TLS_SESSION_PERSISTENCE
-#        ifdef MBEDTLS_SSL_SRV_C
 static int fake_session_cache_set(void *socket_,
-#            if MBEDTLS_VERSION_NUMBER >= 0x03000000
+#        if MBEDTLS_VERSION_NUMBER >= 0x03000000
                                   unsigned char const *session_id,
                                   size_t session_id_len,
-#            endif // MBEDTLS_VERSION_NUMBER >= 0x03000000
+#        endif // MBEDTLS_VERSION_NUMBER >= 0x03000000
                                   const mbedtls_ssl_session *session) {
     ssl_socket_t *socket = (ssl_socket_t *) socket_;
-#            if MBEDTLS_VERSION_NUMBER >= 0x03000000
+#        if MBEDTLS_VERSION_NUMBER >= 0x03000000
     (void) session_id;
     (void) session_id_len;
-#            endif // MBEDTLS_VERSION_NUMBER >= 0x03000000
+#        endif // MBEDTLS_VERSION_NUMBER >= 0x03000000
     (void) session;
     // This will be called only if a new session has been established;
     // not if one has been resumed.
     socket->flags.session_fresh = true;
     return 0;
 }
-#        else // MBEDTLS_SSL_SRV_C
-#            if MBEDTLS_VERSION_NUMBER >= 0x03000000
-#                error "TLS session persistence is only supported with Mbed TLS >=3.0 if MBEDTLS_SSL_SRV_C is enabled"
-#            endif // MBEDTLS_VERSION_NUMBER >= 0x03000000
-typedef struct {
-#            ifdef MBEDTLS_HAVE_TIME
-    mbedtls_time_t start;
-#            endif // MBEDTLS_HAVE_TIME
-    int ciphersuite;
-    int compression;
-    size_t id_len;
-    unsigned char id[sizeof(((mbedtls_ssl_session *) NULL)->id)];
-} resumed_session_data_t;
-
-static void session_copy(resumed_session_data_t *dest,
-                         const mbedtls_ssl_session *src) {
-#            ifdef MBEDTLS_HAVE_TIME
-    dest->start = src->start;
-#            endif // MBEDTLS_HAVE_TIME
-    dest->ciphersuite = src->ciphersuite;
-    dest->compression = src->compression;
-    dest->id_len = src->id_len;
-    assert(dest->id_len <= sizeof(dest->id));
-    memcpy(dest->id, src->id, dest->id_len);
-}
-
-static bool sessions_equal(const mbedtls_ssl_session *left,
-                           const resumed_session_data_t *right) {
-    if (!left && !right) {
-        return true;
-    }
-    return left && right && left->ciphersuite == right->ciphersuite
-           && left->compression == right->compression
-#            ifdef MBEDTLS_HAVE_TIME
-           && left->start == right->start
-#            endif // MBEDTLS_HAVE_TIME
-           && left->id_len == right->id_len
-           && memcmp(left->id, right->id, left->id_len) == 0;
-}
-#        endif     // MBEDTLS_SSL_SRV_C
-#    endif         // AVS_COMMONS_NET_WITH_TLS_SESSION_PERSISTENCE
+#    endif // AVS_COMMONS_NET_WITH_TLS_SESSION_PERSISTENCE
 
 static int socket_set_dtls_handshake_timeouts(
         ssl_socket_t *socket,
@@ -1017,16 +978,14 @@ configure_ssl(ssl_socket_t *socket,
     }
 #    endif // MBEDTLS_SSL_DTLS_CONNECTION_ID
 
-#    if defined(AVS_COMMONS_NET_WITH_TLS_SESSION_PERSISTENCE) \
-            && defined(MBEDTLS_SSL_SRV_C)
+#    ifdef AVS_COMMONS_NET_WITH_TLS_SESSION_PERSISTENCE
     // This is a hack. Session cache is normally used only for server-side TLS.
     // We (ab)use this mechanism on the client side, taking advantage of the
     // fact that Mbed TLS calls it if, and only if, a fresh session has been
     // established, to determine session freshness if resuption is attempted.
     mbedtls_ssl_conf_session_cache(&socket->config, socket, NULL,
                                    fake_session_cache_set);
-#    endif // defined(AVS_COMMONS_NET_WITH_TLS_SESSION_PERSISTENCE) &&
-           // defined(MBEDTLS_SSL_SRV_C)
+#    endif // AVS_COMMONS_NET_WITH_TLS_SESSION_PERSISTENCE
 
     avs_free(socket->effective_ciphersuites);
     if (!(socket->effective_ciphersuites =
@@ -1194,14 +1153,7 @@ static avs_error_t start_ssl(ssl_socket_t *socket, const char *host) {
             socket->flags.session_fresh = false;
         }
     }
-#        ifndef MBEDTLS_SSL_SRV_C
-    resumed_session_data_t restored_session;
-    memset(&restored_session, 0, sizeof(restored_session));
-    if (!socket->flags.session_fresh && get_context(socket)->session) {
-        session_copy(&restored_session, get_context(socket)->session);
-    }
-#        endif // MBEDTLS_SSL_SRV_C
-#    endif     // AVS_COMMONS_NET_WITH_TLS_SESSION_PERSISTENCE
+#    endif // AVS_COMMONS_NET_WITH_TLS_SESSION_PERSISTENCE
 #    if defined(MBEDTLS_SSL_PROTO_DTLS)
     if (transport_for_socket_type(socket->backend_type)
             == MBEDTLS_SSL_TRANSPORT_DATAGRAM) {
@@ -1280,13 +1232,6 @@ static avs_error_t start_ssl(ssl_socket_t *socket, const char *host) {
 #    endif // defined(AVS_COMMONS_WITH_INTERNAL_LOGS) &&
            // defined(MBEDTLS_SSL_DTLS_CONNECTION_ID)
 #    ifdef AVS_COMMONS_NET_WITH_TLS_SESSION_PERSISTENCE
-#        ifndef MBEDTLS_SSL_SRV_C
-        if (!socket->flags.session_fresh
-                && !sessions_equal(get_context(socket)->session,
-                                   &restored_session)) {
-            socket->flags.session_fresh = true;
-        }
-#        endif // MBEDTLS_SSL_SRV_C
         if (socket->flags.session_fresh) {
             // We rely on session renegotation being disabled in
             // configuration.

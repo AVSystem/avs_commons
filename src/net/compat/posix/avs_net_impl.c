@@ -23,7 +23,17 @@
 
 #    include <avs_commons_posix_init.h>
 
-#    include <errno.h>
+// Some libraries, like lwIP, define their own errno.h-like header with own
+// error macro mappings and definition of errno macro/symbol. This allows for
+// including such headers in AVS_COMMONS_POSIX_COMPAT_HEADER and prevents from
+// including errno.h defined by standard library.
+//
+// Note: It might seem more appropriate to write #ifndef errno, but ISO C seems
+// to allow to errno to be not only a macro, but also an external linkage symbol
+// and lwIP does just that.
+#    ifndef EDOM
+#        include <errno.h>
+#    endif // EDOM
 
 #    include <avsystem/commons/avs_errno_map.h>
 

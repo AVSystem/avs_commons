@@ -42,7 +42,7 @@ avs_error_t _avs_stream_md5_common_read(avs_stream_t *stream,
         out_message_finished = &message_finished;
     }
 
-    *out_bytes_read = MD5_LENGTH - str->out_ptr;
+    *out_bytes_read = AVS_COMMONS_MD5_LENGTH - str->out_ptr;
     if (buffer_length < *out_bytes_read) {
         *out_bytes_read = buffer_length;
     }
@@ -50,7 +50,7 @@ avs_error_t _avs_stream_md5_common_read(avs_stream_t *stream,
     memcpy(buffer, str->result, *out_bytes_read);
     str->out_ptr += *out_bytes_read;
 
-    if ((*out_message_finished = (str->out_ptr == MD5_LENGTH))) {
+    if ((*out_message_finished = (str->out_ptr == AVS_COMMONS_MD5_LENGTH))) {
         return avs_stream_reset(stream);
     }
 
@@ -64,7 +64,7 @@ char _avs_stream_md5_common_is_finalized(avs_stream_md5_common_t *stream) {
 void _avs_stream_md5_common_init(avs_stream_md5_common_t *stream,
                                  const avs_stream_v_table_t *const vtable) {
     *(const avs_stream_v_table_t **) (intptr_t) &stream->vtable = vtable;
-    stream->out_ptr = MD5_LENGTH;
+    stream->out_ptr = AVS_COMMONS_MD5_LENGTH;
 }
 
 void _avs_stream_md5_common_finalize(avs_stream_md5_common_t *stream) {
@@ -72,7 +72,7 @@ void _avs_stream_md5_common_finalize(avs_stream_md5_common_t *stream) {
 }
 
 void _avs_stream_md5_common_reset(avs_stream_md5_common_t *stream) {
-    stream->out_ptr = MD5_LENGTH;
+    stream->out_ptr = AVS_COMMONS_MD5_LENGTH;
 }
 
 #endif // AVS_COMMONS_WITH_AVS_STREAM

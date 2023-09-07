@@ -67,7 +67,7 @@ static void putu32(uint32_t data, unsigned char *addr) {
  * reflect the addition of 16 longwords of new data.  MD5Update blocks
  * the data and converts bytes into longwords for this routine.
  */
-static void avs_md5_transform(unsigned char buf[MD5_LENGTH],
+static void avs_md5_transform(unsigned char buf[AVS_COMMONS_MD5_LENGTH],
                               const unsigned char inraw[64]) {
     register uint32_t old_a, old_b, old_c, old_d, a, b, c, d;
     uint32_t in[16];

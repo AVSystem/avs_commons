@@ -1,5 +1,26 @@
 # Changelog
 
+## avs_commons 5.4.0 (September 7th, 2023)
+
+### BREAKING CHANGES
+
+* Default POSIX socket implementation now doesn't include ``errno.h`` if
+  definition of ``EDOM`` (available by e.g. including lwIP's ``lwip/errno.h``)
+  is included in ``AVS_COMMONS_POSIX_COMPAT_HEADER``.
+
+### Improvements
+
+* Made MD5 length define publicly visible (for easier avs_stream_md5 usage)
+* Made (D)TLS session resumption and persistence possible on Mbed TLS 3.0+ even
+  when MBEDTLS_SSL_SRV_C is disabled
+
+### Bugfixes
+
+* Added missing null guards in (D)TLS socket implementations so that all methods
+  are now safe to call in any state
+* When using lwIP, default POSIX socket implementation and appropriate compat
+  header now include lwIP's ``lwip/errno.h`` instead of system ``errno.h``
+
 ## avs_commons 5.3.1 (June 12th, 2023)
 
 ### Features

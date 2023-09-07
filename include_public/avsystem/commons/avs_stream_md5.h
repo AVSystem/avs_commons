@@ -23,6 +23,8 @@
 extern "C" {
 #endif
 
+#define AVS_COMMONS_MD5_LENGTH 16
+
 avs_stream_t *avs_stream_md5_create(void);
 
 #ifdef __cplusplus

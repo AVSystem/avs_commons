@@ -18,15 +18,14 @@
 #define MD5_COMMON_H
 
 #include <avsystem/commons/avs_stream.h>
+#include <avsystem/commons/avs_stream_md5.h>
 #include <avsystem/commons/avs_stream_v_table.h>
 
 VISIBILITY_PRIVATE_HEADER_BEGIN
 
-#define MD5_LENGTH 16
-
 typedef struct {
     const avs_stream_v_table_t *const vtable;
-    unsigned char result[MD5_LENGTH];
+    unsigned char result[AVS_COMMONS_MD5_LENGTH];
     size_t out_ptr;
 } avs_stream_md5_common_t;
 

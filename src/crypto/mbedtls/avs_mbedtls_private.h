@@ -165,6 +165,39 @@ static inline int mbedtls_ssl_is_handshake_over(mbedtls_ssl_context *ssl) {
     return ssl->MBEDTLS_PRIVATE(state) == MBEDTLS_SSL_HANDSHAKE_OVER;
 }
 #    endif // MBEDTLS_VERSION_NUMBER < 0x03020000
+
+#    ifndef MBEDTLS_SSL_SRV_C
+// HACK: We (ab)use mbedtls_ssl_conf_session_cache() in avs_net to detect
+// whether a (D)TLS session has been resumed or a new one has been created.
+// However, this API is normally used for handling session cache, which only
+// makes sense on the server side - hence, this function is only defined by
+// Mbed TLS if MBEDTLS_SSL_SRV_C is enabled. However, the fields in
+// mbedtls_ssl_config and the code that actually calls f_set_cache is compiled
+// unconditionally. So we define our own clone of
+// mbedtls_ssl_conf_session_cache() if MBEDTLS_SSL_SRV_C is disabled.
+//
+// Additionally, in Mbed TLS 2.x, there were no typedefs for the f_get_cache
+// and f_set_cache function pointers. We define those here to make the setter
+// below compatible with both 2.x and 3.x lines. Note that the f_get_cache and
+// f_set_cache function signatures are different between Mbed TLS 2.x and 3.x -
+// we define the 2.x variants here, because the typedefs are already there in
+// 3.x. The difference in actual signatures is handled in avs_mbedtls_socket.c.
+#        if MBEDTLS_VERSION_NUMBER < 0x03000000
+typedef int mbedtls_ssl_cache_get_t(void *data, mbedtls_ssl_session *session);
+typedef int mbedtls_ssl_cache_set_t(void *data,
+                                    const mbedtls_ssl_session *session);
+#        endif // MBEDTLS_VERSION_NUMBER < 0x03000000
+
+static inline void
+mbedtls_ssl_conf_session_cache(mbedtls_ssl_config *conf,
+                               void *p_cache,
+                               mbedtls_ssl_cache_get_t *f_get_cache,
+                               mbedtls_ssl_cache_set_t *f_set_cache) {
+    conf->MBEDTLS_PRIVATE(p_cache) = p_cache;
+    conf->MBEDTLS_PRIVATE(f_get_cache) = f_get_cache;
+    conf->MBEDTLS_PRIVATE(f_set_cache) = f_set_cache;
+}
+#    endif // MBEDTLS_SSL_SRV_C
 #endif     // AVS_COMMONS_WITH_AVS_NET
 
 #if defined(AVS_COMMONS_WITH_AVS_NET)              \

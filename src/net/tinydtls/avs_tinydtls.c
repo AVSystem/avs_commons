@@ -144,9 +144,11 @@ static avs_error_t receive_ssl(avs_net_socket_t *socket_,
      * excessive memory consumption. So, in the end, this buffer will never be
      * completely filled with decoded data. */
     size_t message_length;
-    avs_error_t err =
-            avs_net_socket_receive(socket->backend_socket, &message_length,
-                                   out_buffer, buffer_size);
+    avs_error_t err = avs_errno(AVS_EBADF);
+    if (socket->backend_socket) {
+        err = avs_net_socket_receive(socket->backend_socket, &message_length,
+                                     out_buffer, buffer_size);
+    }
 
     if (avs_is_err(err)) {
         return err;
@@ -342,9 +344,12 @@ static int dtls_write_handler(dtls_context_t *ctx,
                               size_t length) {
     (void) session;
     ssl_socket_t *socket = (ssl_socket_t *) dtls_get_app_data(ctx);
-    if (avs_is_err((socket->bio_error = avs_net_socket_send(
-                            socket->backend_socket, (const void *) buffer,
-                            length)))) {
+    avs_error_t err = avs_errno(AVS_EBADF);
+    if (socket->backend_socket) {
+        err = avs_net_socket_send(socket->backend_socket, (const void *) buffer,
+                                  length);
+    }
+    if (avs_is_err((socket->bio_error = err))) {
         return -1;
     }
     assert(length <= INT_MAX);
