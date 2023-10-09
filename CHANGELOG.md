@@ -1,5 +1,15 @@
 # Changelog
 
+## avs_commons 5.4.1 (October 9th, 2023)
+
+### Bugfixes
+
+* Fixes in CMake scripts when searching for mbed TLS in the case when
+  ``MBEDTLS_ROOT_DIR``, ``CMAKE_FIND_ROOT_PATH`` and
+  ``CMAKE_FIND_ROOT_PATH_MODE_*`` are all specified explicitly
+* Fixes in some ``#ifdef`` directives that caused compilation failures when
+  ``AVS_COMMONS_WITH_AVS_CRYPTO_PSK`` was disabled
+
 ## avs_commons 5.4.0 (September 7th, 2023)
 
 ### BREAKING CHANGES

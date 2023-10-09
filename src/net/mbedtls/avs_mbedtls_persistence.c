@@ -93,9 +93,9 @@ static const char PERSISTENCE_MAGIC[] = { 'M', 'S', 'P', '\0' };
  * to serious problems if we try to restore it on another platform and/or
  * another mbed TLS version.
  */
-#        ifdef AVS_COMMONS_WITH_AVS_CRYPTO_PKI
 static avs_error_t handle_cert_persistence(avs_persistence_context_t *ctx,
                                            mbedtls_x509_crt **cert_ptr) {
+#        ifdef AVS_COMMONS_WITH_AVS_CRYPTO_PKI
     void *data = (*cert_ptr ? (*cert_ptr)->raw.p : NULL);
     size_t size = (*cert_ptr ? (*cert_ptr)->raw.len : 0);
     // Note that avs_persistence_sized_buffer() avs_malloc()ates the buffer
@@ -123,10 +123,7 @@ static avs_error_t handle_cert_persistence(avs_persistence_context_t *ctx,
         avs_free(data);
     }
     return err;
-}
 #        else
-static avs_error_t handle_cert_persistence(avs_persistence_context_t *ctx,
-                                           mbedtls_x509_crt **cert_ptr) {
     (void) cert_ptr;
     void *data = NULL;
     size_t size = 0;
@@ -143,8 +140,8 @@ static avs_error_t handle_cert_persistence(avs_persistence_context_t *ctx,
         avs_free(data);
     }
     return AVS_OK;
-}
 #        endif // AVS_COMMONS_WITH_AVS_CRYPTO_PKI
+}
 
 static avs_error_t handle_session_persistence(avs_persistence_context_t *ctx,
                                               mbedtls_ssl_session *session) {

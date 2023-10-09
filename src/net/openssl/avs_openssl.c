@@ -471,8 +471,8 @@ static int avs_bio_destroy(BIO *bio) {
 
 static BIO_METHOD *AVS_BIO = NULL;
 
-#        if OPENSSL_VERSION_NUMBER_LT(1, 1, 0)
 static int avs_bio_init(void) {
+#        if OPENSSL_VERSION_NUMBER_LT(1, 1, 0)
     static BIO_METHOD AVS_BIO_IMPL = { (100 | BIO_TYPE_SOURCE_SINK),
                                        "avs_net",
                                        avs_bio_write,
@@ -485,9 +485,7 @@ static int avs_bio_init(void) {
                                        NULL };
     AVS_BIO = &AVS_BIO_IMPL;
     return 0;
-}
 #        else
-static int avs_bio_init(void) {
     assert(!AVS_BIO);
     /* BIO_meth_set_* return 1 on success */
     if (!((AVS_BIO = BIO_meth_new(100 | BIO_TYPE_SOURCE_SINK, "avs_net"))
@@ -505,8 +503,8 @@ static int avs_bio_init(void) {
         return -1;
     }
     return 0;
-}
 #        endif
+}
 
 static BIO *avs_bio_spawn(ssl_socket_t *socket) {
     BIO *bio = BIO_new(AVS_BIO);

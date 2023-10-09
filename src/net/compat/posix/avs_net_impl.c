@@ -1456,12 +1456,12 @@ typedef struct {
     socklen_t *src_addr_length;
 } recvfrom_internal_arg_t;
 
-#    ifndef AVS_COMMONS_NET_POSIX_AVS_SOCKET_HAVE_RECVMSG
-
-/* (2017-01-03) LwIP does not implement recvmsg call, try to simulate it using
- * plain recv(), with a little hack to try to detect truncated packets. */
 static avs_error_t recvfrom_internal(sockfd_t sockfd, void *arg_) {
     recvfrom_internal_arg_t *arg = (recvfrom_internal_arg_t *) arg_;
+#    ifndef AVS_COMMONS_NET_POSIX_AVS_SOCKET_HAVE_RECVMSG
+    /* (2017-01-03) LwIP does not implement recvmsg call, try to simulate it
+     * using plain recv(), with a little hack to try to detect truncated
+     * packets. */
     if (arg->src_addr_length && arg->src_addr) {
         *arg->src_addr_length = (socklen_t) sizeof(*arg->src_addr);
     }
@@ -1488,12 +1488,7 @@ static avs_error_t recvfrom_internal(sockfd_t sockfd, void *arg_) {
         arg->bytes_received = (size_t) recv_out;
         return AVS_OK;
     }
-}
-
-#    else /* AVS_COMMONS_NET_POSIX_AVS_SOCKET_HAVE_RECVMSG */
-
-static avs_error_t recvfrom_internal(sockfd_t sockfd, void *arg_) {
-    recvfrom_internal_arg_t *arg = (recvfrom_internal_arg_t *) arg_;
+#    else  /* AVS_COMMONS_NET_POSIX_AVS_SOCKET_HAVE_RECVMSG */
     ssize_t recv_out;
     struct iovec iov = {
         .iov_base = arg->buffer,
@@ -1526,9 +1521,8 @@ static avs_error_t recvfrom_internal(sockfd_t sockfd, void *arg_) {
         arg->bytes_received = (size_t) recv_out;
         return AVS_OK;
     }
-}
-
 #    endif /* AVS_COMMONS_NET_POSIX_AVS_SOCKET_HAVE_RECVMSG */
+}
 
 static avs_error_t receive_net(avs_net_socket_t *net_socket_,
                                size_t *out,

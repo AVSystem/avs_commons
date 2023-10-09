@@ -807,24 +807,19 @@ static inline bool is_retry_result(mbedtls_ssl_context *ctx, int result) {
            || result == MBEDTLS_ERR_SSL_WANT_WRITE;
 }
 
+static inline avs_error_t
+initialize_psk_security(ssl_socket_t *socket,
+                        const avs_net_psk_info_t *psk_info) {
 #    ifdef AVS_COMMONS_WITH_AVS_CRYPTO_PSK
-static avs_error_t initialize_psk_security(ssl_socket_t *socket,
-                                           const avs_net_psk_info_t *psk_info) {
     return _avs_crypto_mbedtls_load_psk(&socket->config, &psk_info->key,
                                         &psk_info->identity);
-}
 #    else  // AVS_COMMONS_WITH_AVS_CRYPTO_PSK
-static inline avs_error_t initialize_psk_security(
-        ssl_socket_t *socket,
-        const avs_net_socket_tls_ciphersuites_t *tls_ciphersuites,
-        const avs_net_psk_info_t *psk_info) {
     (void) socket;
-    (void) tls_ciphersuites;
     (void) psk_info;
     LOG(ERROR, _("PSK support disabled"));
     return avs_errno(AVS_ENOTSUP);
-}
 #    endif // AVS_COMMONS_WITH_AVS_CRYPTO_PSK
+}
 
 static int transport_for_socket_type(avs_net_socket_type_t backend_type) {
     switch (backend_type) {
