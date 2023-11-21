@@ -61,6 +61,7 @@
 #    include "../avs_net_global.h"
 #    include "avs_mbedtls_persistence.h"
 #    include "crypto/mbedtls/avs_mbedtls_data_loader.h"
+#    include "crypto/mbedtls/avs_mbedtls_prng.h"
 
 #    if defined(AVS_COMMONS_WITH_AVS_CRYPTO_PKI) && defined(MBEDTLS_SHA256_C) \
             && defined(MBEDTLS_SHA512_C) && defined(MBEDTLS_PK_WRITE_C)
@@ -840,12 +841,6 @@ static bool socket_is_datagram(ssl_socket_t *socket) {
            == MBEDTLS_SSL_TRANSPORT_DATAGRAM;
 }
 
-static int
-rng_function(void *ctx, unsigned char *out_buf, size_t out_buf_size) {
-    return avs_crypto_prng_bytes((avs_crypto_prng_ctx_t *) ctx, out_buf,
-                                 out_buf_size);
-}
-
 #    ifdef AVS_COMMONS_NET_WITH_TLS_SESSION_PERSISTENCE
 static int fake_session_cache_set(void *socket_,
 #        if MBEDTLS_VERSION_NUMBER >= 0x03000000
@@ -930,8 +925,15 @@ configure_ssl(ssl_socket_t *socket,
                                  (int) (socket->config_version & 0xFF));
 #    endif // if MBEDTLS_VERSION_NUMBER >= 0x03020000
 
-    mbedtls_ssl_conf_rng(&socket->config, rng_function,
-                         configuration->prng_ctx);
+    avs_crypto_mbedtls_prng_cb_t *random_cb = NULL;
+    void *random_cb_arg = NULL;
+    if (_avs_crypto_prng_get_random_cb(configuration->prng_ctx, &random_cb,
+                                       &random_cb_arg)) {
+        LOG(ERROR, _("PRNG context not valid"));
+        return avs_errno(AVS_EINVAL);
+    }
+    assert(random_cb);
+    mbedtls_ssl_conf_rng(&socket->config, random_cb, random_cb_arg);
 
     if (socket_set_dtls_handshake_timeouts(
                 socket, configuration->dtls_handshake_timeouts)) {

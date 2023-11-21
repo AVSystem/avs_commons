@@ -45,7 +45,7 @@ typedef int (*avs_prng_entropy_callback_t)(unsigned char *out_buf,
  *
  * @param entropy_cb Pointer to @def avs_prng_entropy_callback_t function. If
  *                   @c NULL, a default entropy source for selected cryptography
- *                   backend will be used.
+ *                   backend will be used if available.
  * @param user_ptr   User pointer passed to @p entropy_cb in every call.
  *
  * @returns 0 on success, negative value otherwise.

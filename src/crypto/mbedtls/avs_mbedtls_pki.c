@@ -98,10 +98,13 @@ avs_error_t avs_crypto_pki_ec_gen(avs_crypto_prng_ctx_t *prng_ctx,
         return err;
     }
 
-    if (!prng_ctx) {
-        LOG(ERROR, _("PRNG context not specified"));
+    avs_crypto_mbedtls_prng_cb_t *random_cb = NULL;
+    void *random_cb_arg = NULL;
+    if (_avs_crypto_prng_get_random_cb(prng_ctx, &random_cb, &random_cb_arg)) {
+        LOG(ERROR, _("PRNG context not valid"));
         return avs_errno(AVS_EINVAL);
     }
+    assert(random_cb);
 
     const mbedtls_pk_info_t *pk_info =
             mbedtls_pk_info_from_type(MBEDTLS_PK_ECKEY);
@@ -154,8 +157,7 @@ avs_error_t avs_crypto_pki_ec_gen(avs_crypto_prng_ctx_t *prng_ctx,
     }
 
     if ((result = mbedtls_ecp_gen_key(group_id, mbedtls_pk_ec(pk_ctx),
-                                      mbedtls_ctr_drbg_random,
-                                      &prng_ctx->mbedtls_prng_ctx))) {
+                                      random_cb, random_cb_arg))) {
         LOG(ERROR, _("mbedtls_ecp_gen_key() failed: ") "%d", result);
         err = avs_errno(AVS_EPROTO);
     } else {
@@ -217,6 +219,14 @@ avs_crypto_pki_csr_create(avs_crypto_prng_ctx_t *prng_ctx,
         return err;
     }
 
+    avs_crypto_mbedtls_prng_cb_t *random_cb = NULL;
+    void *random_cb_arg = NULL;
+    if (_avs_crypto_prng_get_random_cb(prng_ctx, &random_cb, &random_cb_arg)) {
+        LOG(ERROR, _("PRNG context not valid"));
+        return avs_errno(AVS_EINVAL);
+    }
+    assert(random_cb);
+
     const mbedtls_md_info_t *md_info = mbedtls_md_info_from_string(md_name);
     if (!md_info) {
         LOG(ERROR, _("Mbed TLS does not have MD info for ") "%s", md_name);
@@ -243,8 +253,7 @@ avs_crypto_pki_csr_create(avs_crypto_prng_ctx_t *prng_ctx,
         size_t buffer_size = *inout_der_csr_size;
         int result =
                 mbedtls_x509write_csr_der(&csr_ctx, cast_buffer, buffer_size,
-                                          mbedtls_ctr_drbg_random,
-                                          &prng_ctx->mbedtls_prng_ctx);
+                                          random_cb, random_cb_arg);
         if (result < 0) {
             LOG(ERROR, _("mbedtls_x509write_csr_der() failed: ") "%d", result);
             err = avs_errno(AVS_EPROTO);

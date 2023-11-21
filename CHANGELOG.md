@@ -1,5 +1,17 @@
 # Changelog
 
+## avs_commons 5.4.2 (November 21st, 2023)
+
+### Features
+
+* Refactored the PRNG integration in the Mbed TLS backend so that the PSA RNG
+  API can be used if CTR-DRBG and/or entropy APIs are disabled
+
+### Bugfixes
+
+* Additional validation in ``avs_persistence_string()`` to avoid restoring a
+  string with superfluous data after the nullbyte
+
 ## avs_commons 5.4.1 (October 9th, 2023)
 
 ### Bugfixes

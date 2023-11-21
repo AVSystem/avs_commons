@@ -17,21 +17,17 @@
 #ifndef AVS_COMMONS_CRYPTO_MBEDTLS_PRNG_H
 #define AVS_COMMONS_CRYPTO_MBEDTLS_PRNG_H
 
-#include <mbedtls/ctr_drbg.h>
-#include <mbedtls/entropy.h>
-
 #include <avsystem/commons/avs_prng.h>
 
 VISIBILITY_PRIVATE_HEADER_BEGIN
 
-struct avs_crypto_prng_ctx_struct {
-    mbedtls_ctr_drbg_context mbedtls_prng_ctx;
-    avs_prng_entropy_callback_t seed_callback;
-    void *user_ptr;
-    // FAM to avoid two allocations, but it's actually a single
-    // mbedtls_entropy_context
-    mbedtls_entropy_context mbedtls_entropy_ctx[];
-};
+typedef int avs_crypto_mbedtls_prng_cb_t(void *arg,
+                                         unsigned char *out_buf,
+                                         size_t out_buf_size);
+
+int _avs_crypto_prng_get_random_cb(avs_crypto_prng_ctx_t *ctx,
+                                   avs_crypto_mbedtls_prng_cb_t **out_random_cb,
+                                   void **out_random_cb_arg);
 
 VISIBILITY_PRIVATE_HEADER_END
 

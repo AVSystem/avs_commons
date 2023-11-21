@@ -25,6 +25,7 @@
 #    include <avs_commons_poison.h>
 
 #    include "avs_mbedtls_data_loader.h"
+#    include "avs_mbedtls_prng.h"
 #    if defined(AVS_COMMONS_WITH_AVS_CRYPTO_PKI_ENGINE) \
             || defined(AVS_COMMONS_WITH_AVS_CRYPTO_PSK_ENGINE)
 #        include "avs_mbedtls_engine.h"
@@ -408,21 +409,23 @@ avs_error_t _avs_crypto_mbedtls_load_crls(
     return err;
 }
 
-#        if MBEDTLS_VERSION_NUMBER >= 0x03000000
-static int
-rng_function(void *ctx, unsigned char *out_buf, size_t out_buf_size) {
-    return avs_crypto_prng_bytes((avs_crypto_prng_ctx_t *) ctx, out_buf,
-                                 out_buf_size);
-}
-#        endif // MBEDTLS_VERSION_NUMBER >= 0x03000000
-
 static avs_error_t
 load_private_key_from_buffer(mbedtls_pk_context *client_key,
                              const void *buffer,
                              size_t len,
                              const char *password,
                              avs_crypto_prng_ctx_t *prng_ctx) {
+#        if MBEDTLS_VERSION_NUMBER >= 0x03000000
+    avs_crypto_mbedtls_prng_cb_t *random_cb = NULL;
+    void *random_cb_arg = NULL;
+    if (_avs_crypto_prng_get_random_cb(prng_ctx, &random_cb, &random_cb_arg)) {
+        LOG(ERROR, _("PRNG context not valid"));
+        return avs_errno(AVS_EINVAL);
+    }
+    assert(random_cb);
+#        else  // MBEDTLS_VERSION_NUMBER >= 0x03000000
     (void) prng_ctx;
+#        endif // MBEDTLS_VERSION_NUMBER >= 0x03000000
     const unsigned char *pwd = (const unsigned char *) password;
     const size_t pwd_len = password ? strlen(password) : 0;
     int result =
@@ -431,7 +434,7 @@ load_private_key_from_buffer(mbedtls_pk_context *client_key,
 #        if MBEDTLS_VERSION_NUMBER \
                 >= 0x03000000 // mbed TLS 3.0 added RNG arguments
                                  ,
-                                 rng_function, prng_ctx
+                                 random_cb, random_cb_arg
 #        endif // MBEDTLS_VERSION_NUMBER >= 0x03000000
             );
     if (result == MBEDTLS_ERR_PK_KEY_INVALID_FORMAT && len > 0
@@ -451,7 +454,7 @@ load_private_key_from_buffer(mbedtls_pk_context *client_key,
 #        if MBEDTLS_VERSION_NUMBER \
                 >= 0x03000000 // mbed TLS 3.0 added RNG arguments
                                       ,
-                                      rng_function, prng_ctx
+                                      random_cb, random_cb_arg
 #        endif // MBEDTLS_VERSION_NUMBER >= 0x03000000
         );
         avs_free(refined_buffer);
@@ -463,7 +466,17 @@ static avs_error_t load_private_key_from_file(mbedtls_pk_context *client_key,
                                               const char *filename,
                                               const char *password,
                                               avs_crypto_prng_ctx_t *prng_ctx) {
+#        if MBEDTLS_VERSION_NUMBER >= 0x03000000
+    avs_crypto_mbedtls_prng_cb_t *random_cb = NULL;
+    void *random_cb_arg = NULL;
+    if (_avs_crypto_prng_get_random_cb(prng_ctx, &random_cb, &random_cb_arg)) {
+        LOG(ERROR, _("PRNG context not valid"));
+        return avs_errno(AVS_EINVAL);
+    }
+    assert(random_cb);
+#        else  // MBEDTLS_VERSION_NUMBER >= 0x03000000
     (void) prng_ctx;
+#        endif // MBEDTLS_VERSION_NUMBER >= 0x03000000
 #        ifdef MBEDTLS_FS_IO
     LOG(DEBUG, _("private key <") "%s" _(">: going to load"), filename);
 
@@ -473,7 +486,7 @@ static avs_error_t load_private_key_from_file(mbedtls_pk_context *client_key,
 #            if MBEDTLS_VERSION_NUMBER \
                     >= 0x03000000 // mbed TLS 3.0 added RNG arguments
                                                 ,
-                                                rng_function, prng_ctx
+                                                random_cb, random_cb_arg
 #            endif // MBEDTLS_VERSION_NUMBER >= 0x03000000
                                                 ))
                      ? avs_errno(AVS_EPROTO)

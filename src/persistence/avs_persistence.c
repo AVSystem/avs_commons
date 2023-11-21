@@ -339,7 +339,9 @@ static avs_error_t restore_string(avs_persistence_context_t *ctx,
     if (avs_is_err(err)) {
         return err;
     }
-    if (size > 0 && (*string_ptr)[size - 1] != '\0') {
+    if (size > 0
+            && ((*string_ptr)[size - 1] != '\0'
+                || memchr(*string_ptr, 0, size - 1))) {
         LOG(ERROR, _("Invalid string"));
         avs_free(*string_ptr);
         *string_ptr = NULL;
