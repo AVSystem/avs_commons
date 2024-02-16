@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 AVSystem <avsystem@avsystem.com>
+ * Copyright 2024 AVSystem <avsystem@avsystem.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -320,7 +320,7 @@ static avs_error_t restore_sized_buffer(avs_persistence_context_t *ctx,
         return AVS_OK;
     }
     if (!(*data_ptr = avs_malloc(size32))) {
-        LOG(ERROR, _("Cannot allocate ") "%" PRIu32 _(" bytes"), size32);
+        LOG_OOM();
         return avs_errno(AVS_ENOMEM);
     }
     if (avs_is_err((err = restore_bytes(ctx, *data_ptr, size32)))) {
@@ -659,7 +659,7 @@ typedef struct {
             if (element && !*element) {                                      \
                 *element = ElementType##_NEW_BUFFER(state->element_size);    \
                 if (!element) {                                              \
-                    LOG(ERROR, _("Out of memory"));                          \
+                    LOG_OOM();                                               \
                     return avs_errno(AVS_ENOMEM);                            \
                 }                                                            \
             }                                                                \
@@ -737,7 +737,7 @@ avs_error_t avs_persistence_magic(avs_persistence_context_t *ctx,
     } else {
         void *bytes = avs_malloc(magic_size);
         if (!bytes) {
-            LOG(ERROR, _("Out of memory"));
+            LOG_OOM();
             return avs_errno(AVS_ENOMEM);
         }
         avs_error_t err = avs_persistence_bytes(ctx, bytes, magic_size);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 AVSystem <avsystem@avsystem.com>
+ * Copyright 2024 AVSystem <avsystem@avsystem.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,9 +51,13 @@
 #    include <avsystem/commons/avs_log.h>
 #    define LOG(...) avs_log(MODULE_NAME, __VA_ARGS__)
 
+void _avs_log_oom__(void);
+#    define LOG_OOM() _avs_log_oom__()
+
 #else
 
 #    define LOG(...) ((void) 0)
+#    define LOG_OOM() ((void) 0)
 
 #    ifdef AVS_UNIT_TESTING
 // this should never be called by the library outside test suites

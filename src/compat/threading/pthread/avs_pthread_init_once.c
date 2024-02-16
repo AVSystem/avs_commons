@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 AVSystem <avsystem@avsystem.com>
+ * Copyright 2024 AVSystem <avsystem@avsystem.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,15 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-/* for PTHREAD_MUTEX_RECURSIVE & pthread_mutexattr_settype */
-#define _POSIX_C_SOURCE 200809L
-
-#define AVS_COMPAT_THREADING_PTHREAD_INIT_ONCE
-#include <avs_commons_init.h>
+#include <avsystem/commons/avs_commons_config.h>
 
 #if defined(AVS_COMMONS_WITH_AVS_COMPAT_THREADING) \
         && defined(AVS_COMMONS_COMPAT_THREADING_WITH_PTHREAD)
+
+#    define AVS_COMPAT_THREADING_PTHREAD_INIT_ONCE
+
+#    include <avs_commons_posix_init.h>
 
 #    include <avsystem/commons/avs_defs.h>
 #    include <avsystem/commons/avs_init_once.h>

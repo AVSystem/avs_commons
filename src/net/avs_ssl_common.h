@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 AVSystem <avsystem@avsystem.com>
+ * Copyright 2024 AVSystem <avsystem@avsystem.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -119,7 +119,7 @@ static avs_error_t create_ssl_socket(avs_net_socket_t **socket,
             return AVS_OK;
         }
     } else {
-        LOG(ERROR, _("Out of memory"));
+        LOG_OOM();
         return avs_errno(AVS_ENOMEM);
     }
 }
@@ -348,7 +348,7 @@ set_dane_tlsa_array(ssl_socket_t *socket,
         err = avs_errno(AVS_ENOMEM);
     }
     if (avs_is_err(err)) {
-        LOG(ERROR, _("Out of memory"));
+        LOG_OOM();
         return err;
     }
     avs_free((void *) (intptr_t) (const void *)

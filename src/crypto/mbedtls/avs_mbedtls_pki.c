@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 AVSystem <avsystem@avsystem.com>
+ * Copyright 2024 AVSystem <avsystem@avsystem.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -379,7 +379,7 @@ copy_security_info(AVS_LIST(avs_crypto_security_info_union_t) *out,
             (AVS_LIST(avs_crypto_security_info_union_t)) AVS_LIST_NEW_BUFFER(
                     sizeof(avs_crypto_security_info_union_t) + size);
     if (!element) {
-        LOG(ERROR, _("Out of memory"));
+        LOG_OOM();
         return avs_errno(AVS_ENOMEM);
     }
     unsigned char *buf = ((unsigned char *) element)

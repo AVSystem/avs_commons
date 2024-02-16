@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 AVSystem <avsystem@avsystem.com>
+ * Copyright 2024 AVSystem <avsystem@avsystem.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,7 +46,7 @@ const char *const _AVS_HTTP_METHOD_NAMES[] = { "GET", "POST", "PUT" };
 avs_http_t *avs_http_new(const avs_http_buffer_sizes_t *buffer_sizes) {
     avs_http_t *result = (avs_http_t *) avs_calloc(1, sizeof(avs_http_t));
     if (!result) {
-        LOG(ERROR, _("Out of memory"));
+        LOG_OOM();
         return NULL;
     }
     result->buffer_sizes = *buffer_sizes;
@@ -86,7 +86,7 @@ int avs_http_set_user_agent(avs_http_t *http, const char *user_agent) {
     char *new_user_agent = NULL;
     if (user_agent) {
         if (!(new_user_agent = avs_strdup(user_agent))) {
-            LOG(ERROR, _("Out of memory"));
+            LOG_OOM();
             return -1;
         }
     }

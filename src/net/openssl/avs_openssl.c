@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 AVSystem <avsystem@avsystem.com>
+ * Copyright 2024 AVSystem <avsystem@avsystem.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1471,7 +1471,7 @@ configure_ssl(ssl_socket_t *socket,
         if (!(socket->enabled_ciphersuites.ids = (uint32_t *) avs_malloc(
                       configuration->ciphersuites.num_ids
                       * sizeof(*configuration->ciphersuites.ids)))) {
-            LOG(ERROR, _("Out of memory"));
+            LOG_OOM();
             return avs_errno(AVS_ENOMEM);
         }
         socket->enabled_ciphersuites.num_ids =

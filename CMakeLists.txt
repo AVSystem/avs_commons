@@ -1,4 +1,4 @@
-# Copyright 2023 AVSystem <avsystem@avsystem.com>
+# Copyright 2024 AVSystem <avsystem@avsystem.com>
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 cmake_minimum_required(VERSION 3.6.0)
 project(avs_commons C)
 
-set(AVS_COMMONS_VERSION "5.4.2")
+set(AVS_COMMONS_VERSION "5.4.3")
 
 ################# DISTRIBUTION #################################################
 

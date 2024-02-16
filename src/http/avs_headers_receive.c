@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 AVSystem <avsystem@avsystem.com>
+ * Copyright 2024 AVSystem <avsystem@avsystem.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -371,7 +371,7 @@ avs_error_t _avs_http_receive_headers(http_stream_t *stream) {
             offsetof(header_parser_state_t, header_buf)
             + stream->http->buffer_sizes.header_line);
     if (!parser_state) {
-        LOG(ERROR, _("Out of memory"));
+        LOG_OOM();
         stream->flags.keep_connection = 0;
         err = avs_errno(AVS_ENOMEM);
     }

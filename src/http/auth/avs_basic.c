@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 AVSystem <avsystem@avsystem.com>
+ * Copyright 2024 AVSystem <avsystem@avsystem.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,7 +42,7 @@ avs_error_t _avs_http_auth_send_header_basic(http_stream_t *stream) {
     size_t encoded_size = avs_base64_encoded_size(plaintext_size - 1);
     char *buffer = (char *) avs_malloc(plaintext_size + encoded_size);
     if (!buffer) {
-        LOG(ERROR, _("Out of memory"));
+        LOG_OOM();
         return avs_errno(AVS_ENOMEM);
     }
     char *plaintext = buffer;

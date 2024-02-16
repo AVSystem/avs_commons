@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 AVSystem <avsystem@avsystem.com>
+ * Copyright 2024 AVSystem <avsystem@avsystem.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -355,7 +355,7 @@ avs_error_t _avs_http_encoder_flush(http_stream_t *stream) {
     char *buffer = (char *) avs_malloc(
             stream->http->buffer_sizes.content_coding_min_input);
     if (!buffer) {
-        LOG(ERROR, _("Out of memory"));
+        LOG_OOM();
         return avs_errno(AVS_ENOMEM);
     }
     size_t bytes_read = 0;

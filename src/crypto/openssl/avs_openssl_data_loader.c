@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 AVSystem <avsystem@avsystem.com>
+ * Copyright 2024 AVSystem <avsystem@avsystem.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -327,7 +327,7 @@ static avs_error_t load_file_into_buffer(void **out_buf,
 #    ifdef AVS_COMMONS_STREAM_WITH_FILE
     avs_stream_t *membuf = avs_stream_membuf_create();
     if (!membuf) {
-        LOG(ERROR, _("Out of memory"));
+        LOG_OOM();
         return avs_errno(AVS_ENOMEM);
     }
 

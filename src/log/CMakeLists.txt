@@ -1,4 +1,4 @@
-# Copyright 2023 AVSystem <avsystem@avsystem.com>
+# Copyright 2024 AVSystem <avsystem@avsystem.com>
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,7 +18,8 @@ set(AVS_LOG_PUBLIC_HEADERS
 
 add_library(avs_log STATIC
             ${AVS_LOG_PUBLIC_HEADERS}
-            avs_log.c)
+            avs_log.c
+            avs_log_util.c)
 
 target_link_libraries(avs_log PUBLIC avs_commons_global_headers avs_utils avs_list)
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 AVSystem <avsystem@avsystem.com>
+ * Copyright 2024 AVSystem <avsystem@avsystem.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,7 +49,7 @@ static avs_error_t read_chunk_size(const avs_http_buffer_sizes_t *buffer_sizes,
                                    size_t *out_value) {
     char *line_buf = (char *) avs_malloc(buffer_sizes->header_line);
     if (!line_buf) {
-        LOG(ERROR, _("Out of memory"));
+        LOG_OOM();
         return avs_errno(AVS_ENOMEM);
     }
     unsigned long value = 0;

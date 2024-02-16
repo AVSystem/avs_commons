@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 AVSystem <avsystem@avsystem.com>
+ * Copyright 2024 AVSystem <avsystem@avsystem.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -210,7 +210,7 @@ avs_net_addrinfo_t *avs_net_addrinfo_resolve_ex(
     avs_net_addrinfo_t *ctx =
             (avs_net_addrinfo_t *) avs_calloc(1, sizeof(avs_net_addrinfo_t));
     if (!ctx) {
-        LOG(ERROR, _("Out of memory"));
+        LOG_OOM();
         return NULL;
     }
 

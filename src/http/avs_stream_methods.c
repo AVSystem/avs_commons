@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 AVSystem <avsystem@avsystem.com>
+ * Copyright 2024 AVSystem <avsystem@avsystem.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -385,7 +385,7 @@ avs_error_t avs_http_open_stream(avs_stream_t **out,
             1,
             offsetof(http_stream_t, out_buffer) + http->buffer_sizes.body_send);
     if (!stream) {
-        LOG(ERROR, _("Could not allocate HTTP stream object"));
+        LOG_OOM();
         err = avs_errno(AVS_ENOMEM);
         goto http_open_stream_error;
     }

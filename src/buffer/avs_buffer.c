@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 AVSystem <avsystem@avsystem.com>
+ * Copyright 2024 AVSystem <avsystem@avsystem.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -62,7 +62,7 @@ int avs_buffer_create(avs_buffer_t **buffer_ptr, size_t capacity) {
         avs_buffer_reset(*buffer_ptr);
         return 0;
     } else {
-        LOG(ERROR, _("cannot allocate buffer"));
+        LOG_OOM();
         return -1;
     }
 }

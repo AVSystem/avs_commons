@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 AVSystem <avsystem@avsystem.com>
+ * Copyright 2024 AVSystem <avsystem@avsystem.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -347,7 +347,7 @@ int avs_stream_netbuf_create(avs_stream_t **stream_,
     *stream_ = (avs_stream_t *) stream;
 
     if (!*stream_) {
-        LOG(ERROR, _("cannot allocate memory"));
+        LOG_OOM();
         return -1;
     }
 

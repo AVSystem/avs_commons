@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 AVSystem <avsystem@avsystem.com>
+ * Copyright 2024 AVSystem <avsystem@avsystem.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -309,7 +309,7 @@ static avs_error_t copy_cert(AVS_LIST(avs_crypto_certificate_chain_info_t) *out,
                       AVS_LIST_NEW_BUFFER(
                               sizeof(avs_crypto_certificate_chain_info_t)
                               + (size_t) result))) {
-            LOG(ERROR, _("Out of memory"));
+            LOG_OOM();
             return avs_errno(AVS_ENOMEM);
         }
         unsigned char *buf = ((unsigned char *) *out)
@@ -335,7 +335,7 @@ copy_crl(AVS_LIST(avs_crypto_cert_revocation_list_info_t) *out, X509_CRL *crl) {
                       AVS_LIST_NEW_BUFFER(
                               sizeof(avs_crypto_cert_revocation_list_info_t)
                               + (size_t) result))) {
-            LOG(ERROR, _("Out of memory"));
+            LOG_OOM();
             return avs_errno(AVS_ENOMEM);
         }
         unsigned char *buf = ((unsigned char *) *out)

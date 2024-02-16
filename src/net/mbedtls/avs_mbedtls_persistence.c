@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 AVSystem <avsystem@avsystem.com>
+ * Copyright 2024 AVSystem <avsystem@avsystem.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -394,11 +394,10 @@ avs_error_t _avs_net_mbedtls_context_save(mbedtls_ssl_context *ctx,
         // HACK: mbedtls_ssl_context_save() resets the session. To keep things
         // operational, restore what we have just persisted.
         else if (persist_whole_context
-                 && (result = mbedtls_ssl_context_load(
-                             ctx,
-                             (unsigned char *) out_buf
-                                     + PERSISTENCE_HEADER_SIZE,
-                             bytes_written))) {
+                 && mbedtls_ssl_context_load(ctx,
+                                             (unsigned char *) out_buf
+                                                     + PERSISTENCE_HEADER_SIZE,
+                                             bytes_written)) {
             err = avs_errno(AVS_ENOMEM);
         }
 #        endif // defined(MBEDTLS_SSL_CONTEXT_SERIALIZATION) &&
@@ -499,7 +498,7 @@ avs_error_t _avs_net_mbedtls_context_restore(mbedtls_ssl_context *out_ctx,
     }
     switch (result) {
     case MBEDTLS_ERR_SSL_ALLOC_FAILED:
-        LOG(ERROR, _("Could not restore session: out of memory"));
+        LOG_OOM();
         return avs_errno(AVS_ENOMEM);
     case 0:
         return AVS_OK;

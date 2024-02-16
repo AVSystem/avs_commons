@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 AVSystem <avsystem@avsystem.com>
+ * Copyright 2024 AVSystem <avsystem@avsystem.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -76,7 +76,7 @@ int _avs_http_auth_setup(http_auth_t *auth, const char *challenge) {
             avs_free(auth->state.realm);
             if (!(auth->state.realm =
                           consume_alloc_quotable_token(&challenge))) {
-                LOG(ERROR, _("Could not allocate memory for auth realm"));
+                LOG_OOM();
                 return -1;
             }
             LOG(TRACE, _("Auth realm: ") "%s", auth->state.realm);
@@ -84,7 +84,7 @@ int _avs_http_auth_setup(http_auth_t *auth, const char *challenge) {
             avs_free(auth->state.nonce);
             if (!(auth->state.nonce =
                           consume_alloc_quotable_token(&challenge))) {
-                LOG(ERROR, _("Could not allocate memory for auth nonce"));
+                LOG_OOM();
                 return -1;
             }
             auth->state.nc = 1;
@@ -93,7 +93,7 @@ int _avs_http_auth_setup(http_auth_t *auth, const char *challenge) {
             avs_free(auth->state.opaque);
             if (!(auth->state.opaque =
                           consume_alloc_quotable_token(&challenge))) {
-                LOG(ERROR, _("Could not allocate memory for auth opaque"));
+                LOG_OOM();
                 return -1;
             }
             LOG(TRACE, _("Auth opaque: ") "%s", auth->state.opaque);
@@ -113,7 +113,7 @@ int _avs_http_auth_setup(http_auth_t *auth, const char *challenge) {
         } else if (avs_match_token(&challenge, "qop", "=") == 0) {
             char *qop_options_buf = consume_alloc_quotable_token(&challenge);
             if (!qop_options_buf) {
-                LOG(ERROR, _("Could not allocate memory for qop"));
+                LOG_OOM();
                 return -1;
             }
             char *qop_options_tmp, *qop_options = qop_options_buf;

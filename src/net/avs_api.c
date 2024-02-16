@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 AVSystem <avsystem@avsystem.com>
+ * Copyright 2024 AVSystem <avsystem@avsystem.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -70,7 +70,7 @@ avs_net_socket_dane_tlsa_array_copy(avs_net_socket_dane_tlsa_array_t in_array) {
                     in_array.array_element_count * sizeof(*result)
                     + association_data_size);
     if (!result) {
-        LOG(ERROR, _("out of memory"));
+        LOG_OOM();
         return NULL;
     }
     char *association_data_buf = (char *) &result[in_array.array_element_count];

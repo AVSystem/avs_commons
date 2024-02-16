@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 AVSystem <avsystem@avsystem.com>
+ * Copyright 2024 AVSystem <avsystem@avsystem.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -276,7 +276,7 @@ static zlib_stream_t *zlib_stream_init(const avs_stream_v_table_t *vtable,
     zlib_stream_t *stream = (zlib_stream_t *) avs_calloc(
             1, sizeof(zlib_stream_t) + input_buffer_size + output_buffer_size);
     if (!stream) {
-        LOG(ERROR, _("cannot allocate memory"));
+        LOG_OOM();
         return NULL;
     }
     *(const avs_stream_v_table_t **) (intptr_t) &stream->vtable = vtable;

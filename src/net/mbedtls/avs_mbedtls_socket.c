@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 AVSystem <avsystem@avsystem.com>
+ * Copyright 2024 AVSystem <avsystem@avsystem.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -469,7 +469,7 @@ init_ciphersuites(ssl_socket_t *socket,
                // defined(MBEDTLS_SSL_CONTEXT_SERIALIZATION)
     int *ciphers = (int *) avs_calloc(ciphers_count + 1, sizeof(int));
     if (!ciphers) {
-        LOG(ERROR, _("Out of memory"));
+        LOG_OOM();
         return NULL;
     }
 
@@ -547,7 +547,7 @@ static bool dane_match(mbedtls_x509_crt *crt,
     case AVS_NET_SOCKET_DANE_PUBLIC_KEY: {
         unsigned char *buf = (unsigned char *) avs_malloc(raw_crt_size);
         if (!buf) {
-            LOG(ERROR, _("Out of memory"));
+            LOG_OOM();
             return false;
         }
         // Note: mbedtls_pk_write_pubkey_der() writes data at the end of buffer
@@ -1456,7 +1456,7 @@ static int rebuild_client_cert_chain_verify_cb(void *last_configured_cert_,
     mbedtls_x509_crt *crt_copy =
             (mbedtls_x509_crt *) mbedtls_calloc(1, sizeof(*crt_copy));
     if (!crt_copy) {
-        LOG(ERROR, _("Out of memory"));
+        LOG_OOM();
         return MBEDTLS_ERR_X509_ALLOC_FAILED;
     }
     mbedtls_x509_crt_init(crt_copy);
@@ -1615,7 +1615,7 @@ configure_ssl_certs(ssl_socket_certs_t *certs,
         }
         if (!(*insert_ptr = (mbedtls_x509_crt *) mbedtls_calloc(
                       1, sizeof(**insert_ptr)))) {
-            LOG(ERROR, _("Out of memory"));
+            LOG_OOM();
             err = avs_errno(AVS_ENOMEM);
         } else {
             mbedtls_x509_crt_init(*insert_ptr);

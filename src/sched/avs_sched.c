@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 AVSystem <avsystem@avsystem.com>
+ * Copyright 2024 AVSystem <avsystem@avsystem.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -199,7 +199,7 @@ avs_sched_t *avs_sched_new(const char *name, void *data) {
     (void) name;
     avs_sched_t *sched = (avs_sched_t *) avs_calloc(1, sizeof(avs_sched_t));
     if (!sched) {
-        LOG(ERROR, _("Out of memory"));
+        LOG_OOM();
         return NULL;
     }
     if (avs_mutex_create(&sched->mutex)) {
@@ -400,7 +400,7 @@ static int sched_at_locked(avs_sched_t *sched,
     AVS_LIST(avs_sched_job_t) job = (avs_sched_job_t *) AVS_LIST_NEW_BUFFER(
             sizeof(avs_sched_job_t) + clb_data_size);
     if (!job) {
-        SCHED_LOG(sched, ERROR, _("could not allocate scheduler task"));
+        SCHED_LOG(sched, ERROR, _("out of memory"));
         return -1;
     }
 

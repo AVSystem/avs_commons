@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 AVSystem <avsystem@avsystem.com>
+ * Copyright 2024 AVSystem <avsystem@avsystem.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -282,7 +282,7 @@ avs_error_t _avs_crypto_mbedtls_load_certs(
     assert(!*out);
     *out = (mbedtls_x509_crt *) mbedtls_calloc(1, sizeof(**out));
     if (!*out) {
-        LOG(ERROR, _("Out of memory"));
+        LOG_OOM();
         return avs_errno(AVS_ENOMEM);
     }
     mbedtls_x509_crt_init(*out);
@@ -397,7 +397,7 @@ avs_error_t _avs_crypto_mbedtls_load_crls(
 #        ifdef MBEDTLS_X509_CRL_PARSE_C
     *out = (mbedtls_x509_crl *) mbedtls_calloc(1, sizeof(**out));
     if (!*out) {
-        LOG(ERROR, _("Out of memory"));
+        LOG_OOM();
         return avs_errno(AVS_ENOMEM);
     }
     mbedtls_x509_crl_init(*out);
@@ -531,7 +531,7 @@ _avs_crypto_mbedtls_load_private_key(mbedtls_pk_context **client_key,
     assert(!*client_key);
     *client_key = (mbedtls_pk_context *) avs_calloc(1, sizeof(**client_key));
     if (!*client_key) {
-        LOG(ERROR, _("Out of memory"));
+        LOG_OOM();
         return avs_errno(AVS_ENOMEM);
     }
     mbedtls_pk_init(*client_key);
@@ -693,7 +693,7 @@ load_psk_key(const unsigned char *identity, size_t identity_size, void *args_) {
             case 0:
                 return AVS_OK;
             case MBEDTLS_ERR_SSL_ALLOC_FAILED:
-                LOG(ERROR, _("mbedtls_ssl_conf_psk() failed: out of memory"));
+                LOG_OOM();
                 return avs_errno(AVS_ENOMEM);
             default:
                 LOG(ERROR, _("mbedtls_ssl_conf_psk() failed: unknown error"));

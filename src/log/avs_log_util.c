@@ -14,4 +14,14 @@
  * limitations under the License.
  */
 
-#include "src/rbtree/avs_rbtree.c"
+#define MODULE_NAME avs_log
+#include <avs_commons_init.h>
+#include <avs_x_log_config.h>
+
+VISIBILITY_SOURCE_BEGIN
+
+#ifdef AVS_COMMONS_WITH_INTERNAL_LOGS
+void _avs_log_oom__(void) {
+    LOG(ERROR, _("out of memory"));
+}
+#endif // AVS_COMMONS_WITH_INTERNAL_LOGS
