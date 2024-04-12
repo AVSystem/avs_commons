@@ -77,6 +77,14 @@ typedef struct {
      * flag has no effect if @p padding_char is '\0'.
      */
     bool require_padding;
+
+    /**
+     * Controls whether the encoded string includes a null-termination byte.
+     *
+     * When set to false (the default), a null byte is appended to the end of
+     * the string. When set to true, the null byte is omitted.
+     */
+    bool without_null_termination;
 } avs_base64_config_t;
 
 /**
@@ -94,27 +102,48 @@ extern const avs_base64_config_t AVS_BASE64_DEFAULT_LOOSE_CONFIG;
 extern const avs_base64_config_t AVS_BASE64_DEFAULT_STRICT_CONFIG;
 
 /**
- * Returns amount of bytes required to store input encoded in base64 if padding
- * is used.
+ * Returns the number of bytes required to store input encoded in base64. Allows
+ * to set configuration of the base64 encoding. Options impacting returned size
+ * are padding_char and without_null_termination in @ref avs_base64_config_t
+ * @p config.
+ *
+ * @param input_length Length of input in bytes.
+ * @param config       Configuration of the base64 variant to use.
+ *
+ * @returns length of base64 encoded input of length @p input_length.
+ */
+size_t avs_base64_encoded_size_custom(size_t input_length,
+                                      avs_base64_config_t config);
+
+/**
+ * Returns the number of bytes required to store input encoded in base64 if
+ * padding is used.
  *
  * @param input_length Length of input in bytes.
  *
  * @returns length of base64 encoded input of length @p input_length.
  */
-size_t avs_base64_encoded_size(size_t input_length);
+static inline size_t avs_base64_encoded_size(size_t input_length) {
+    return avs_base64_encoded_size_custom(input_length,
+                                          AVS_BASE64_DEFAULT_STRICT_CONFIG);
+}
 
 /**
- * Returns amount of bytes required to store input encoded in base64 if padding
- * is NOT used.
+ * Returns the number of bytes required to store input encoded in base64 if
+ * padding is NOT used.
  *
  * @param input_length Length of input in bytes.
  *
  * @returns length of base64 encoded input of length @p input_length.
  */
-size_t avs_base64_encoded_size_without_padding(size_t input_length);
+static inline size_t
+avs_base64_encoded_size_without_padding(size_t input_length) {
+    return avs_base64_encoded_size_custom(input_length,
+                                          AVS_BASE64_DEFAULT_LOOSE_CONFIG);
+}
 
 /**
- * Returns amount of bytes that would be sufficient to store input encoded from
+ * Returns amount of bytes that would be sufficient to store input decoded from
  * base64.
  *
  * Warning: this function computes just a rough estimate of amount of bytes that

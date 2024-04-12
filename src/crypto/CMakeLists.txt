@@ -129,7 +129,8 @@ if(WITH_MBEDTLS)
     if(AVS_COMMONS_WITH_AVS_CRYPTO_ADVANCED_FEATURES)
         set(AVS_CRYPTO_MBEDTLS_TEST_SOURCES
             ${AVS_CRYPTO_MBEDTLS_TEST_SOURCES}
-            ${AVS_CRYPTO_ADVANCED_FEATURES_TEST_SOURCES})
+            ${AVS_CRYPTO_ADVANCED_FEATURES_TEST_SOURCES}
+            $<$<BOOL:${WITH_PKI}>:${AVS_COMMONS_SOURCE_DIR}/tests/crypto/mbedtls/mbedtls_pki.c>)
     endif()
 
     add_library(avs_crypto_mbedtls

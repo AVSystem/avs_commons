@@ -1,5 +1,12 @@
 # Changelog
 
+## avs_commons 5.4.4 (April 12th, 2024)
+
+### Features
+
+* Added custom base64 encoding without null terminating
+* Added API to modify extended attributes in Certificate Signing Request
+
 ## avs_commons 5.4.3 (February 16th, 2024)
 
 ### Improvements

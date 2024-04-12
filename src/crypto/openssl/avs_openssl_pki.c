@@ -261,6 +261,25 @@ avs_crypto_pki_csr_create(avs_crypto_prng_ctx_t *prng_ctx,
     return err;
 }
 
+avs_error_t avs_crypto_pki_csr_create_ext(
+        avs_crypto_prng_ctx_t *prng_ctx,
+        const avs_crypto_private_key_info_t *private_key_info,
+        const char *md_name,
+        const avs_crypto_pki_x509_name_entry_t subject[],
+        const unsigned char *const key_usage,
+        const avs_crypto_pki_x509_ext_key_usage_t ext_key_usage[],
+        const bool add_key_id,
+        void *out_der_csr,
+        size_t *inout_der_csr_size) {
+    if (!key_usage && !ext_key_usage && !add_key_id) {
+        return avs_crypto_pki_csr_create(prng_ctx, private_key_info, md_name,
+                                         subject, out_der_csr,
+                                         inout_der_csr_size);
+    } else {
+        return avs_errno(AVS_ENOTSUP);
+    }
+}
+
 avs_time_real_t avs_crypto_certificate_expiration_date(
         const avs_crypto_certificate_chain_info_t *cert_info) {
     if (avs_is_err(_avs_crypto_ensure_global_state())) {

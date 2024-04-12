@@ -840,6 +840,18 @@ typedef struct {
 extern const avs_crypto_pki_x509_name_key_t AVS_CRYPTO_PKI_X509_NAME_CN;
 
 /**
+ * A predefined instance of @ref avs_crypto_pki_x509_name_key_t that identifies
+ * the Organization attribute type.
+ */
+extern const avs_crypto_pki_x509_name_key_t AVS_CRYPTO_PKI_X509_NAME_O;
+
+/**
+ * A predefined instance of @ref avs_crypto_pki_x509_name_key_t that identifies
+ * the Country Name attribute type.
+ */
+extern const avs_crypto_pki_x509_name_key_t AVS_CRYPTO_PKI_X509_NAME_C;
+
+/**
  * Structure representing a single attribute within a Distinguished Name.
  */
 typedef struct {
@@ -897,6 +909,33 @@ typedef struct {
 #    endif // defined(__cplusplus) && __cplusplus >= 201103L
 
 /**
+ * Structure representing a single extended key usage value in a certificate.
+ */
+typedef struct {
+    /**
+     * Value of the attribute as a null-terminated string.
+     */
+    const char *value;
+} avs_crypto_pki_x509_ext_key_usage_t;
+
+#    if defined(__cplusplus) && __cplusplus >= 201103L
+#        define AVS_CRYPTO_PKI_X509_EXTENDED_KEY_USAGE(...)                    \
+            (::std::vector<avs_crypto_pki_x509_ext_key_usage_t>{ __VA_ARGS__,  \
+                                                                 { nullptr } } \
+                     .data())
+#    else // defined(__cplusplus) && __cplusplus >= 201103L
+/**
+ *
+ * Generates a temporary array of @ref avs_crypto_pki_x509_ext_key_usage_t
+ * objects, suitable for use as the @c ext_key_usage argument to the
+ * @ref avs_crypto_pki_csr_create function.
+ */
+#        define AVS_CRYPTO_PKI_X509_EXTENDED_KEY_USAGE(...)                \
+            (&(const avs_crypto_pki_x509_ext_key_usage_t[]) { __VA_ARGS__, \
+                                                              { NULL } }[0])
+#    endif // defined(__cplusplus) && __cplusplus >= 201103L
+
+/**
  * Creates a Certificate Signing Request.
  *
  * @param prng_ctx           PRNG context to use for random number generation.
@@ -936,6 +975,82 @@ avs_crypto_pki_csr_create(avs_crypto_prng_ctx_t *prng_ctx,
                           const avs_crypto_pki_x509_name_entry_t subject[],
                           void *out_der_csr,
                           size_t *inout_der_csr_size);
+
+/**
+ * @experimental This is experimental API to generate CSR. This API can change
+ * in the future versions without any notice.
+ *
+ * Creates a Certificate Signing Request. This function allows adding key usage
+ * and key identifier to the generated CSR but is also able to generate the same
+ * CSR as the @ref avs_crypto_pki_csr_create.
+ *
+ * @param prng_ctx           PRNG context to use for random number generation.
+ *
+ * @param private_key_info   Private key for which the certificate shall be
+ *                           generated. A structure created using either
+ *                           @ref avs_crypto_private_key_info_from_file or
+ *                           @ref avs_crypto_private_key_info_from_buffer shall
+ *                           be passed.
+ *
+ * @param md_name            Name of the digest algorithm to be used when
+ *                           signing the request, e.g. <c>"SHA256"</c>.
+ *
+ * @param subject            Desired subject name of the certificate.
+ *                           This shall be a pointer to an array of
+ *                           @ref avs_crypto_pki_x509_name_entry_t objects,
+ *                           terminated by an entry with the <c>key.oid</c>
+ *                           field set to <c>NULL</c>.
+ *
+ *                           In typical cases, a call to the
+ *                           @ref AVS_CRYPTO_PKI_X509_NAME macro can be passed
+ *                           as this argument.
+ *
+ * @param key_usage          Pointer to a value representing key usage
+ *                           extensions that defines the purpose of the public
+ *                           key contained in a certificate. If <c>NULL</c> then
+ *                           key usage extension won't be added.
+ *
+ *                           For OpenSSL cryptographic backend this needs to be
+ *                           set to <c>NULL</c>.
+ *
+ * @param ext_key_usage      Extended key usage extension further specifies the
+ *                           purpose of the key. This shall be a pointer to an
+ *                           array of @ref avs_crypto_pki_x509_ext_key_usage_t
+ *                           objects, terminated by an entry with the
+ *                           <c>value</c> fields set to <c>NULL</c>.
+ *
+ *                           In typical cases, a call to the
+ *                           @ref AVS_CRYPTO_PKI_X509_EXTENDED_KEY_USAGE macro
+ *                           can be passed as this argument.
+ *
+ *                           For OpenSSL cryptographic backend this needs to be
+ *                           set to <c>NULL</c>.
+ *
+ * @param add_key_id         Determine if key identifier extension will be added
+ *                           to generated CSR.
+ *
+ *                           For OpenSSL cryptographic backend this needs to be
+ *                           set to <c>false</c>.
+ *
+ * @param out_der_csr        Pointer to a buffer, at the beginning of which the
+ *                           CSR encoded as PKCS#10 DER will be stored.
+ *
+ * @param inout_der_csr_size Pointer to a variable which, on input, shall
+ *                           contain the number of bytes available in the
+ *                           @p out_der_csr buffer. On successful return, it
+ *                           will be set to the number of bytes actually
+ *                           written.
+ */
+avs_error_t avs_crypto_pki_csr_create_ext(
+        avs_crypto_prng_ctx_t *prng_ctx,
+        const avs_crypto_private_key_info_t *private_key_info,
+        const char *md_name,
+        const avs_crypto_pki_x509_name_entry_t subject[],
+        const unsigned char *const key_usage,
+        const avs_crypto_pki_x509_ext_key_usage_t ext_key_usage[],
+        const bool add_key_id,
+        void *out_der_csr,
+        size_t *inout_der_csr_size);
 
 /**
  * Retrieves the expiration date (i.e., the value of the "NotAfter" field) of

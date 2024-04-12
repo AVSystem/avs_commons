@@ -18,6 +18,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <avsystem/commons/avs_base64.h>
 #include <avsystem/commons/avs_unit_test.h>
 
 AVS_UNIT_TEST(base64, padding) {
@@ -221,3 +222,54 @@ AVS_UNIT_TEST(base64, encoded_and_decoded_size) {
         AVS_UNIT_ASSERT_EQUAL(avs_base64_estimate_decoded_size(i), 3);
     }
 }
+
+static void test_encoding_without_null_terminating(uint8_t *data_input,
+                                                   size_t input_len,
+                                                   uint8_t *data_expected,
+                                                   size_t expected_len) {
+    avs_base64_config_t config = {
+        .alphabet = AVS_BASE64_CHARS,
+        .padding_char = '=',
+        .allow_whitespace = false,
+        .require_padding = true,
+        .without_null_termination = true
+    };
+
+    char result[1024] = { 0 };
+
+    AVS_UNIT_ASSERT_SUCCESS(avs_base64_encode_custom(
+            result, sizeof(result), data_input, input_len, config));
+    AVS_UNIT_ASSERT_EQUAL(avs_base64_encoded_size_custom(input_len, config),
+                          expected_len);
+    AVS_UNIT_ASSERT_EQUAL_BYTES_SIZED(result, data_expected, expected_len);
+}
+
+#define TEST_ENCODING_WITHOUT_NT(Name, DataInput, DataEncoded)           \
+    AVS_UNIT_TEST(base64, encoding_without_null_terminating##Name) {     \
+        test_encoding_without_null_terminating((uint8_t *) DataInput,    \
+                                               sizeof(DataInput) - 1,    \
+                                               (uint8_t *) DataEncoded,  \
+                                               sizeof(DataEncoded) - 1); \
+    }
+
+TEST_ENCODING_WITHOUT_NT(0, "", "")
+TEST_ENCODING_WITHOUT_NT(1, "Hello", "SGVsbG8=")
+TEST_ENCODING_WITHOUT_NT(2, "avs_commons", "YXZzX2NvbW1vbnM=")
+TEST_ENCODING_WITHOUT_NT(3, "AVS Commons", "QVZTIENvbW1vbnM=")
+TEST_ENCODING_WITHOUT_NT(4, "base 64 encode", "YmFzZSA2NCBlbmNvZGU=")
+TEST_ENCODING_WITHOUT_NT(5, "QWERTYUIOPAS", "UVdFUlRZVUlPUEFT")
+TEST_ENCODING_WITHOUT_NT(6, "QWERTYUIOPASD", "UVdFUlRZVUlPUEFTRA==")
+TEST_ENCODING_WITHOUT_NT(7, "QWERTYUIOPASDF", "UVdFUlRZVUlPUEFTREY=")
+TEST_ENCODING_WITHOUT_NT(
+        8,
+        "QWERTYUIOPASDFQWERTYUIOPASDFQWERTYUIOPASDFQWERTYUIOPASDFQWERTYUIOPASDF"
+        "QWERTYUIOPASDFQWERTYUIOPASDFQWERTYUIOPASDFQWERTYUIOPASDFQWERTYUIOPASDF"
+        "QWERTYUIOPASDFQWERTYUIOPASDFQWERTYUIOPASDFQWERTYUIOPASDFQWERTYUIOPASDF"
+        "QWERTYUIOPASDFQWERTYUIOPASDFQWERTYUIOPASDFQWERTYUIOPASDFQWERTYUIOPASD"
+        "F",
+        "UVdFUlRZVUlPUEFTREZRV0VSVFlVSU9QQVNERlFXRVJUWVVJT1BBU0RGUVdFUlRZVUlPUE"
+        "FTREZRV0VSVFlVSU9QQVNERlFXRVJUWVVJT1BBU0RGUVdFUlRZVUlPUEFTREZRV0VSVFlV"
+        "SU9QQVNERlFXRVJUWVVJT1BBU0RGUVdFUlRZVUlPUEFTREZRV0VSVFlVSU9QQVNERlFXRV"
+        "JUWVVJT1BBU0RGUVdFUlRZVUlPUEFTREZRV0VSVFlVSU9QQVNERlFXRVJUWVVJT1BBU0RG"
+        "UVdFUlRZVUlPUEFTREZRV0VSVFlVSU9QQVNERlFXRVJUWVVJT1BBU0RGUVdFUlRZVUlPUE"
+        "FTREZRV0VSVFlVSU9QQVNERg==")

@@ -204,20 +204,143 @@ convert_subject(mbedtls_asn1_named_data **out_mbedtls_subject,
     return AVS_OK;
 }
 
-avs_error_t
-avs_crypto_pki_csr_create(avs_crypto_prng_ctx_t *prng_ctx,
-                          const avs_crypto_private_key_info_t *private_key_info,
-                          const char *md_name,
-                          const avs_crypto_pki_x509_name_entry_t subject[],
-                          void *out_der_csr,
-                          size_t *inout_der_csr_size) {
-    assert(inout_der_csr_size);
-    assert(!*inout_der_csr_size || out_der_csr);
+#    define AVS_MBEDTLS_ADD_LEN_AND_RETURN_IF_ERR(l, t, func) \
+        do {                                                  \
+            if (((t) = (func)) < 0) {                         \
+                return avs_errno(AVS_EPROTO);                 \
+            } else {                                          \
+                (l) += (size_t) (t);                          \
+            }                                                 \
+        } while (0)
 
+static avs_error_t x509write_csr_set_ext_key_usage(
+        mbedtls_x509write_csr *ctx,
+        const avs_crypto_pki_x509_ext_key_usage_t ext_key_usage[]) {
+    /**
+     * Size of the buffer was taken from a similar function in mbedtls and it
+     * seems to be big enough to hold all possible flags of extended key usage
+     */
+    unsigned char buf[256] = { 0 };
+    unsigned char *p = buf + sizeof(buf);
+    size_t len = 0;
+    int tmp = 0;
+
+    for (const avs_crypto_pki_x509_ext_key_usage_t *eku_entry = ext_key_usage;
+         eku_entry && eku_entry->value;
+         ++eku_entry) {
+        AVS_MBEDTLS_ADD_LEN_AND_RETURN_IF_ERR(
+                len, tmp,
+                mbedtls_asn1_write_oid(&p, buf, eku_entry->value,
+                                       strlen(eku_entry->value)));
+    }
+
+    if (len > 0) {
+        AVS_MBEDTLS_ADD_LEN_AND_RETURN_IF_ERR(
+                len, tmp, mbedtls_asn1_write_len(&p, buf, len));
+        AVS_MBEDTLS_ADD_LEN_AND_RETURN_IF_ERR(
+                len, tmp,
+                mbedtls_asn1_write_tag(&p, buf,
+                                       MBEDTLS_ASN1_CONSTRUCTED
+                                               | MBEDTLS_ASN1_SEQUENCE));
+
+        if (mbedtls_x509write_csr_set_extension(
+                    ctx, MBEDTLS_OID_EXTENDED_KEY_USAGE,
+                    MBEDTLS_OID_SIZE(MBEDTLS_OID_EXTENDED_KEY_USAGE),
+#    if MBEDTLS_VERSION_NUMBER >= 0x03000000
+                    0,
+#    endif // MBEDTLS_VERSION_NUMBER >= 0x03000000
+                    p, len)) {
+            return avs_errno(AVS_EPROTO);
+        }
+    }
+
+    return AVS_OK;
+}
+
+static avs_error_t x509write_csr_set_key_usage(mbedtls_x509write_csr *csr_ctx,
+                                               const unsigned char key_usage) {
+    return mbedtls_x509write_csr_set_key_usage(csr_ctx, key_usage)
+                   ? avs_errno(AVS_EPROTO)
+                   : AVS_OK;
+}
+#    ifdef MBEDTLS_SHA1_C
+static avs_error_t x509write_csr_set_key_id(mbedtls_x509write_csr *csr_ctx,
+                                            mbedtls_pk_context *key) {
+    /* + 20 bytes for the SHA1 message digest */
+    unsigned char buf[MBEDTLS_MPI_MAX_SIZE * 2 + 20];
+    unsigned char *p = buf + sizeof(buf);
+    size_t len = 0;
+    int tmp = 0;
+
+    AVS_MBEDTLS_ADD_LEN_AND_RETURN_IF_ERR(
+            len, tmp, mbedtls_pk_write_pubkey(&p, buf, key));
+
+    if (mbedtls_md(mbedtls_md_info_from_type(MBEDTLS_MD_SHA1),
+                   buf + sizeof(buf) - len, len, buf + sizeof(buf) - 20)) {
+        return avs_errno(AVS_EPROTO);
+    }
+
+    /* After writting message digest reset the p and len variables */
+    p = buf + sizeof(buf) - 20;
+    len = 20;
+
+    AVS_MBEDTLS_ADD_LEN_AND_RETURN_IF_ERR(len, tmp,
+                                          mbedtls_asn1_write_len(&p, buf, len));
+    AVS_MBEDTLS_ADD_LEN_AND_RETURN_IF_ERR(
+            len, tmp,
+            mbedtls_asn1_write_tag(&p, buf, MBEDTLS_ASN1_OCTET_STRING));
+
+    if (mbedtls_x509write_csr_set_extension(
+                csr_ctx, MBEDTLS_OID_SUBJECT_KEY_IDENTIFIER,
+                MBEDTLS_OID_SIZE(MBEDTLS_OID_SUBJECT_KEY_IDENTIFIER),
+#        if MBEDTLS_VERSION_NUMBER >= 0x03000000
+                0,
+#        endif // MBEDTLS_VERSION_NUMBER >= 0x03000000
+                buf + sizeof(buf) - len, len)) {
+        return avs_errno(AVS_EPROTO);
+    }
+
+    return AVS_OK;
+}
+#    endif // MBEDTLS_SHA1_C
+
+static avs_error_t
+x509write_csr_create_begin(mbedtls_x509write_csr *csr_ctx,
+                           const char *md_name,
+                           const avs_crypto_pki_x509_name_entry_t subject[]) {
     avs_error_t err = _avs_crypto_ensure_global_state();
     if (avs_is_err(err)) {
         return err;
     }
+
+    const mbedtls_md_info_t *md_info = mbedtls_md_info_from_string(md_name);
+    if (!md_info) {
+        LOG(ERROR, _("Mbed TLS does not have MD info for ") "%s", md_name);
+        return avs_errno(AVS_ENOTSUP);
+    }
+
+    mbedtls_x509write_csr_init(csr_ctx);
+    mbedtls_x509write_csr_set_md_alg(csr_ctx, mbedtls_md_get_type(md_info));
+
+    mbedtls_asn1_named_data *mbedtls_subject = NULL;
+    if (avs_is_ok((err = convert_subject(&mbedtls_subject, subject)))) {
+        _avs_crypto_mbedtls_x509write_csr_set_subject(csr_ctx, mbedtls_subject);
+    }
+
+    return err;
+}
+
+static avs_error_t x509write_csr_create_finish(
+        mbedtls_x509write_csr *csr_ctx,
+        avs_crypto_prng_ctx_t *prng_ctx,
+        const avs_crypto_private_key_info_t *private_key_info,
+        bool add_key_id,
+        void *out_der_csr,
+        size_t *inout_der_csr_size) {
+    (void) add_key_id;
+
+    assert(inout_der_csr_size);
+    assert(!*inout_der_csr_size || out_der_csr);
 
     avs_crypto_mbedtls_prng_cb_t *random_cb = NULL;
     void *random_cb_arg = NULL;
@@ -227,32 +350,26 @@ avs_crypto_pki_csr_create(avs_crypto_prng_ctx_t *prng_ctx,
     }
     assert(random_cb);
 
-    const mbedtls_md_info_t *md_info = mbedtls_md_info_from_string(md_name);
-    if (!md_info) {
-        LOG(ERROR, _("Mbed TLS does not have MD info for ") "%s", md_name);
-        return avs_errno(AVS_ENOTSUP);
-    }
-
-    mbedtls_x509write_csr csr_ctx;
-    mbedtls_x509write_csr_init(&csr_ctx);
-
-    mbedtls_x509write_csr_set_md_alg(&csr_ctx, mbedtls_md_get_type(md_info));
-
     mbedtls_pk_context *private_key = NULL;
-
-    mbedtls_asn1_named_data *mbedtls_subject = NULL;
-    err = convert_subject(&mbedtls_subject, subject);
-    _avs_crypto_mbedtls_x509write_csr_set_subject(&csr_ctx, mbedtls_subject);
-    if (avs_is_ok(err)
-            && avs_is_ok((err = _avs_crypto_mbedtls_load_private_key(
-                                  &private_key, private_key_info, prng_ctx)))) {
+    avs_error_t err;
+    if (avs_is_ok((err = _avs_crypto_mbedtls_load_private_key(
+                           &private_key, private_key_info, prng_ctx)))) {
         assert(private_key);
-        mbedtls_x509write_csr_set_key(&csr_ctx, private_key);
+        mbedtls_x509write_csr_set_key(csr_ctx, private_key);
+
+#    ifdef MBEDTLS_SHA1_C
+        if (add_key_id) {
+            if (avs_is_err((err = x509write_csr_set_key_id(csr_ctx,
+                                                           private_key)))) {
+                goto cleanup;
+            }
+        }
+#    endif // MBEDTLS_SHA1_C
 
         unsigned char *cast_buffer = (unsigned char *) out_der_csr;
         size_t buffer_size = *inout_der_csr_size;
         int result =
-                mbedtls_x509write_csr_der(&csr_ctx, cast_buffer, buffer_size,
+                mbedtls_x509write_csr_der(csr_ctx, cast_buffer, buffer_size,
                                           random_cb, random_cb_arg);
         if (result < 0) {
             LOG(ERROR, _("mbedtls_x509write_csr_der() failed: ") "%d", result);
@@ -262,8 +379,58 @@ avs_crypto_pki_csr_create(avs_crypto_prng_ctx_t *prng_ctx,
                                    (size_t) result);
         }
     }
-
+cleanup:
     _avs_crypto_mbedtls_pk_context_cleanup(&private_key);
+
+    return err;
+}
+
+avs_error_t
+avs_crypto_pki_csr_create(avs_crypto_prng_ctx_t *prng_ctx,
+                          const avs_crypto_private_key_info_t *private_key_info,
+                          const char *md_name,
+                          const avs_crypto_pki_x509_name_entry_t subject[],
+                          void *out_der_csr,
+                          size_t *inout_der_csr_size) {
+    mbedtls_x509write_csr csr_ctx;
+
+    avs_error_t err;
+    if (avs_is_ok((err = x509write_csr_create_begin(&csr_ctx, md_name,
+                                                    subject)))) {
+        err = x509write_csr_create_finish(&csr_ctx, prng_ctx, private_key_info,
+                                          false, out_der_csr,
+                                          inout_der_csr_size);
+    }
+
+    mbedtls_x509write_csr_free(&csr_ctx);
+    return err;
+}
+
+avs_error_t avs_crypto_pki_csr_create_ext(
+        avs_crypto_prng_ctx_t *prng_ctx,
+        const avs_crypto_private_key_info_t *private_key_info,
+        const char *md_name,
+        const avs_crypto_pki_x509_name_entry_t subject[],
+        const unsigned char *const key_usage,
+        const avs_crypto_pki_x509_ext_key_usage_t ext_key_usage[],
+        const bool add_key_id,
+        void *out_der_csr,
+        size_t *inout_der_csr_size) {
+    mbedtls_x509write_csr csr_ctx;
+
+    avs_error_t err;
+    if (avs_is_ok(
+                (err = x509write_csr_create_begin(&csr_ctx, md_name, subject)))
+            && avs_is_ok((err = x509write_csr_set_ext_key_usage(&csr_ctx,
+                                                                ext_key_usage)))
+            && (!key_usage
+                || avs_is_ok((err = x509write_csr_set_key_usage(
+                                      &csr_ctx, *key_usage))))) {
+        err = x509write_csr_create_finish(&csr_ctx, prng_ctx, private_key_info,
+                                          add_key_id, out_der_csr,
+                                          inout_der_csr_size);
+    }
+
     mbedtls_x509write_csr_free(&csr_ctx);
     return err;
 }

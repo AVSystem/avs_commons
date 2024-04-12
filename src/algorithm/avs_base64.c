@@ -38,45 +38,33 @@ const avs_base64_config_t AVS_BASE64_DEFAULT_LOOSE_CONFIG = {
     .alphabet = AVS_BASE64_CHARS,
     .padding_char = '=',
     .allow_whitespace = true,
-    .require_padding = false
+    .require_padding = false,
+    .without_null_termination = false
 };
 
 const avs_base64_config_t AVS_BASE64_DEFAULT_STRICT_CONFIG = {
     .alphabet = AVS_BASE64_CHARS,
     .padding_char = '=',
     .allow_whitespace = false,
-    .require_padding = true
+    .require_padding = true,
+    .without_null_termination = false
 };
 
 AVS_STATIC_ASSERT(sizeof(AVS_BASE64_CHARS) == 65, // 64 chars + NULL terminator
                   missing_base64_chars);
 
-static int check_base64_out_buffer_size(size_t buffer_size,
-                                        size_t data_length,
-                                        bool use_padding) {
-    size_t encoded_size;
-    if (use_padding) {
-        encoded_size = avs_base64_encoded_size(data_length);
-    } else {
-        encoded_size = avs_base64_encoded_size_without_padding(data_length);
-    }
-    return buffer_size >= encoded_size ? 0 : -1;
-}
-
-size_t avs_base64_encoded_size(size_t input_length) {
+size_t avs_base64_encoded_size_custom(size_t input_length,
+                                      avs_base64_config_t config) {
     size_t needed_size = (input_length / 3) * 4;
-    needed_size += (input_length % 3) ? 4 : 0;
-    needed_size += 1; /* NULL terminator */
-    return needed_size;
-}
 
-size_t avs_base64_encoded_size_without_padding(size_t input_length) {
-    size_t needed_size = (input_length / 3) * 4;
     size_t rest = input_length % 3;
     if (rest) {
-        needed_size += rest + 1;
+        needed_size += !!config.padding_char ? 4 : rest + 1;
     }
-    needed_size += 1; /* NULL terminator */
+
+    if (!config.without_null_termination) {
+        needed_size += 1; /* NULL terminator */
+    }
     return needed_size;
 }
 
@@ -94,8 +82,7 @@ int avs_base64_encode_custom(char *out,
     size_t i;
     unsigned long sh = 0;
 
-    if (check_base64_out_buffer_size(out_length, input_length,
-                                     !!config.padding_char)) {
+    if (avs_base64_encoded_size_custom(input_length, config) > out_length) {
         return -1;
     }
 
@@ -125,7 +112,10 @@ int avs_base64_encode_custom(char *out,
         }
     }
 
-    *out = '\0';
+    if (!config.without_null_termination) {
+        *out = '\0';
+    }
+
     return 0;
 }
 

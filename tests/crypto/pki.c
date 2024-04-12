@@ -152,6 +152,69 @@ AVS_UNIT_TEST(avs_crypto_pki_ec, test_csr_create) {
 #undef TEST_CN
 }
 
+AVS_UNIT_TEST(avs_crypto_pki_ec, test_csr_ext_create_no_key_id_or_key_usage) {
+#define TEST_CN "avs_crypto_pki_ec_test_csr_create"
+    avs_crypto_prng_ctx_t *prng_ctx = avs_crypto_prng_new(NULL, NULL);
+    AVS_UNIT_ASSERT_NOT_NULL(prng_ctx);
+
+    uint8_t secret_key[256];
+    size_t secret_key_size = sizeof(secret_key);
+    AVS_UNIT_ASSERT_SUCCESS(
+            avs_crypto_pki_ec_gen(prng_ctx, AVS_CRYPTO_PKI_ECP_GROUP_SECP256R1,
+                                  secret_key, &secret_key_size));
+
+    uint8_t csr[512];
+    size_t csr_size = sizeof(csr);
+
+    avs_crypto_private_key_info_t key_info =
+            avs_crypto_private_key_info_from_buffer(secret_key, secret_key_size,
+                                                    NULL);
+    AVS_UNIT_ASSERT_SUCCESS(avs_crypto_pki_csr_create_ext(
+            prng_ctx, &key_info, "SHA256",
+            AVS_CRYPTO_PKI_X509_NAME({ AVS_CRYPTO_PKI_X509_NAME_CN, TEST_CN }),
+            NULL, NULL, false, csr, &csr_size));
+
+    avs_crypto_prng_free(&prng_ctx);
+
+    AVS_UNIT_ASSERT_TRUE(csr_size > 169);
+    AVS_UNIT_ASSERT_TRUE(csr_size <= 237);
+    AVS_UNIT_ASSERT_EQUAL_BYTES(csr, "\x30\x81");
+    AVS_UNIT_ASSERT_EQUAL(csr[2], csr_size - 3);
+    AVS_UNIT_ASSERT_EQUAL_BYTES(
+            &csr[3],
+            "\x30\x81\x8e\x02\x01\x00\x30\x2c"
+            "\x31\x2a\x30\x28\x06\x03\x55\x04\x03\x0c\x21" TEST_CN
+            "\x30\x59\x30\x13\x06\x07\x2a\x86\x48\xce\x3d\x02\x01"
+            "\x06\x08\x2a\x86\x48\xce\x3d\x03\x01\x07\x03\x42\x00\x04");
+    AVS_UNIT_ASSERT_EQUAL_BYTES(&csr[146], "\xA0\x00\x30");
+    AVS_UNIT_ASSERT_TRUE(csr[149] == 0x0A || csr[149] == 0x0C);
+    bool has_additional_null_md = (csr[149] == 0x0C);
+    AVS_UNIT_ASSERT_EQUAL_BYTES(
+            &csr[150],
+            "\x06\x08\x2A\x86\x48\xCE\x3D\x04\x03\x02"); // signature algorithm
+    size_t signature_offset;
+    if (has_additional_null_md) {
+        AVS_UNIT_ASSERT_EQUAL_BYTES(&csr[160], "\x05\x00");
+        signature_offset = 162;
+    } else {
+        signature_offset = 160;
+    }
+    AVS_UNIT_ASSERT_EQUAL(csr[signature_offset], 0x03);
+    AVS_UNIT_ASSERT_EQUAL(csr[signature_offset + 1],
+                          csr_size - signature_offset - 2);
+    AVS_UNIT_ASSERT_EQUAL_BYTES(&csr[signature_offset + 2], "\x00\x30");
+    AVS_UNIT_ASSERT_EQUAL(csr[signature_offset + 4],
+                          csr_size - signature_offset - 5);
+    AVS_UNIT_ASSERT_EQUAL(csr[signature_offset + 5], 0x02);
+    AVS_UNIT_ASSERT_EQUAL(csr[signature_offset + 7 + csr[signature_offset + 6]],
+                          0x02);
+    AVS_UNIT_ASSERT_EQUAL(
+            csr[signature_offset + 6]
+                    + csr[signature_offset + 8 + csr[signature_offset + 6]],
+            csr_size - signature_offset - 9);
+#undef TEST_CN
+}
+
 AVS_UNIT_TEST(avs_crypto_pki, avs_crypto_client_cert_expiration_date) {
     static const char CERT_PATH[] = "../certs/client.crt";
 
