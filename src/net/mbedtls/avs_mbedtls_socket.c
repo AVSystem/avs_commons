@@ -364,8 +364,22 @@ static int ssl_version_as_on_wire(uint16_t *out_value,
 // mbedtls_ssl_ciphersuite_uses_psk() is not defined
 // if Mbed TLS is compiled without PSK support
 #        define mbedtls_ssl_ciphersuite_uses_psk(...) false
-#    endif // !defined(MBEDTLS_KEY_EXCHANGE__SOME__PSK_ENABLED) &&
-           // !defined(MBEDTLS_KEY_EXCHANGE_SOME_PSK_ENABLED)
+#    elif MBEDTLS_VERSION_NUMBER >= 0x03060000
+// since in Mbed TLS 3.6.0 mbedtls_ssl_ciphersuite_uses_psk has been moved to
+// internal functions
+static inline int
+mbedtls_ssl_ciphersuite_uses_psk(const mbedtls_ssl_ciphersuite_t *ciphersuite) {
+    switch (ciphersuite->private_key_exchange) {
+    case MBEDTLS_KEY_EXCHANGE_PSK:
+    case MBEDTLS_KEY_EXCHANGE_RSA_PSK:
+    case MBEDTLS_KEY_EXCHANGE_DHE_PSK:
+    case MBEDTLS_KEY_EXCHANGE_ECDHE_PSK:
+        return 1;
+    default:
+        return 0;
+    }
+}
+#    endif // MBEDTLS_VERSION_NUMBER >= 0x03060000
 
 #    if MBEDTLS_VERSION_NUMBER < 0x02110000
 // Mbed TLS <2.17.0 do not have mbedtls_ssl_ciphersuite_uses_srv_cert().
@@ -374,6 +388,24 @@ static int ssl_version_as_on_wire(uint16_t *out_value,
 // to define "uses certificates" as "doesn't use PSK" for earlier versions.
 #        define mbedtls_ssl_ciphersuite_uses_srv_cert(...) \
             (!mbedtls_ssl_ciphersuite_uses_psk(__VA_ARGS__))
+#    elif MBEDTLS_VERSION_NUMBER >= 0x03060000
+// since in Mbed TLS 3.6.0 mbedtls_ssl_ciphersuite_uses_srv_cert has been moved
+// to internal functions
+static inline int mbedtls_ssl_ciphersuite_uses_srv_cert(
+        const mbedtls_ssl_ciphersuite_t *ciphersuite) {
+    switch (ciphersuite->private_key_exchange) {
+    case MBEDTLS_KEY_EXCHANGE_RSA:
+    case MBEDTLS_KEY_EXCHANGE_RSA_PSK:
+    case MBEDTLS_KEY_EXCHANGE_DHE_RSA:
+    case MBEDTLS_KEY_EXCHANGE_ECDH_RSA:
+    case MBEDTLS_KEY_EXCHANGE_ECDHE_RSA:
+    case MBEDTLS_KEY_EXCHANGE_ECDH_ECDSA:
+    case MBEDTLS_KEY_EXCHANGE_ECDHE_ECDSA:
+        return 1;
+    default:
+        return 0;
+    }
+}
 #    endif // MBEDTLS_VERSION_NUMBER
 
 #    if defined(AVS_COMMONS_WITH_AVS_CRYPTO_PKI) \

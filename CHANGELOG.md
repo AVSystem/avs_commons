@@ -1,5 +1,11 @@
 # Changelog
 
+## avs_commons 5.4.5 (May 28th, 2024)
+
+### Improvements
+
+* Added support for Mbed TLS 3.6
+
 ## avs_commons 5.4.4 (April 12th, 2024)
 
 ### Features
