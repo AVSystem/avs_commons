@@ -32,7 +32,7 @@ cmake -D WITH_EXTRA_WARNINGS=ON \
       -D WITH_TEST=ON \
       -D WITH_AVS_CRYPTO_ADVANCED_FEATURES=ON \
       -D WITH_VALGRIND=ON \
-      -D CMAKE_C_FLAGS=-g \
+      -D CMAKE_C_FLAGS="-g -Werror=implicit-function-declaration" \
       -D CMAKE_INSTALL_PREFIX:PATH=/tmp \
       "${EXTRA_FLAGS[@]}" \
       "$@" -H"$(dirname "$0")" -B. &&

@@ -151,7 +151,7 @@ _avs_crypto_mbedtls_cipher_info_from_ciphersuite(
 
 static inline mbedtls_cipher_mode_t
 _avs_crypto_mbedtls_cipher_info_get_mode(const mbedtls_cipher_info_t *cipher) {
-    return cipher->MBEDTLS_PRIVATE(mode);
+    return (mbedtls_cipher_mode_t) cipher->MBEDTLS_PRIVATE(mode);
 }
 
 static inline unsigned int
@@ -165,6 +165,44 @@ static inline int mbedtls_ssl_is_handshake_over(mbedtls_ssl_context *ssl) {
     return ssl->MBEDTLS_PRIVATE(state) == MBEDTLS_SSL_HANDSHAKE_OVER;
 }
 #    endif // MBEDTLS_VERSION_NUMBER < 0x03020000
+
+#    if defined(AVS_COMMONS_WITH_AVS_NET) \
+            && MBEDTLS_VERSION_NUMBER >= 0x03060000
+// since Mbed TLS 3.6.0 mbedtls_ssl_ciphersuite_uses_psk and
+// mbedtls_ssl_ciphersuite_uses_srv_cert has been moved to internal functions
+
+#        if defined(MBEDTLS_KEY_EXCHANGE_SOME_PSK_ENABLED)
+static inline int
+mbedtls_ssl_ciphersuite_uses_psk(const mbedtls_ssl_ciphersuite_t *ciphersuite) {
+    switch (ciphersuite->MBEDTLS_PRIVATE(key_exchange)) {
+    case MBEDTLS_KEY_EXCHANGE_PSK:
+    case MBEDTLS_KEY_EXCHANGE_RSA_PSK:
+    case MBEDTLS_KEY_EXCHANGE_DHE_PSK:
+    case MBEDTLS_KEY_EXCHANGE_ECDHE_PSK:
+        return 1;
+    default:
+        return 0;
+    }
+}
+#        endif // defined(MBEDTLS_KEY_EXCHANGE_SOME_PSK_ENABLED)
+
+static inline int mbedtls_ssl_ciphersuite_uses_srv_cert(
+        const mbedtls_ssl_ciphersuite_t *ciphersuite) {
+    switch (ciphersuite->MBEDTLS_PRIVATE(key_exchange)) {
+    case MBEDTLS_KEY_EXCHANGE_RSA:
+    case MBEDTLS_KEY_EXCHANGE_RSA_PSK:
+    case MBEDTLS_KEY_EXCHANGE_DHE_RSA:
+    case MBEDTLS_KEY_EXCHANGE_ECDH_RSA:
+    case MBEDTLS_KEY_EXCHANGE_ECDHE_RSA:
+    case MBEDTLS_KEY_EXCHANGE_ECDH_ECDSA:
+    case MBEDTLS_KEY_EXCHANGE_ECDHE_ECDSA:
+        return 1;
+    default:
+        return 0;
+    }
+}
+#    endif // defined(AVS_COMMONS_WITH_AVS_NET) && MBEDTLS_VERSION_NUMBER >=
+           // 0x03060000
 
 #    ifndef MBEDTLS_SSL_SRV_C
 // HACK: We (ab)use mbedtls_ssl_conf_session_cache() in avs_net to detect
@@ -205,7 +243,7 @@ mbedtls_ssl_conf_session_cache(mbedtls_ssl_config *conf,
         && defined(MBEDTLS_SSL_CONTEXT_SERIALIZATION)
 static inline mbedtls_cipher_type_t
 _avs_crypto_mbedtls_cipher_info_get_type(const mbedtls_cipher_info_t *cipher) {
-    return cipher->MBEDTLS_PRIVATE(type);
+    return (mbedtls_cipher_type_t) cipher->MBEDTLS_PRIVATE(type);
 }
 #endif // defined(AVS_COMMONS_WITH_AVS_NET) &&
        // defined(MBEDTLS_SSL_DTLS_CONNECTION_ID) &&

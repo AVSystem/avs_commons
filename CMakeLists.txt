@@ -17,7 +17,7 @@
 cmake_minimum_required(VERSION 3.6.0)
 project(avs_commons C)
 
-set(AVS_COMMONS_VERSION "5.4.5")
+set(AVS_COMMONS_VERSION "5.4.6")
 
 ################# DISTRIBUTION #################################################
 

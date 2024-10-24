@@ -1,5 +1,25 @@
 # Changelog
 
+## avs_commons 5.4.6 (Oct 24th, 2024)
+
+### Improvements
+
+* devconfig script now additionally sets `-Werror=implicit-function-declaration`
+  flag to ensure that missing function declarations are treated as error
+
+### Bugfixes
+
+* Fixed default implementation of avs_condvar_create for pthreads
+  in case pthread_condattr APIs are not available
+* Fixed compilation warnings when building against Mbed TLS 3.6
+* Added missing call to `psa_crypto_init()` if `MBEDTLS_USE_PSA_CRYPTO` is not
+  defined, but `MBEDTLS_PSA_CRYPTO_C` is.
+* Fixed DANE implementation to be compatible with TLS 1.3 implementation in Mbed
+  TLS which ignores the authmode setting.
+* Added a workaround to mimic `MBEDTLS_SSL_VERIFY_NONE` authmode when using
+  TLS 1.3.
+* Fixed a corner case with uninitialized variable in mbedtls_socket layer.
+
 ## avs_commons 5.4.5 (May 28th, 2024)
 
 ### Improvements

@@ -29,11 +29,11 @@
 #    include "../avs_crypto_global.h"
 
 #    include <mbedtls/version.h>
-#    if defined(MBEDTLS_USE_PSA_CRYPTO) \
+#    if defined(MBEDTLS_USE_PSA_CRYPTO) || defined(MBEDTLS_PSA_CRYPTO_C) \
             || defined(AVS_COMMONS_WITH_MBEDTLS_PSA_RNG)
 #        include <psa/crypto.h>
-#    endif // defined(MBEDTLS_USE_PSA_CRYPTO) ||
-           // defined(AVS_COMMONS_WITH_MBEDTLS_PSA_RNG)
+#    endif // defined(MBEDTLS_USE_PSA_CRYPTO) || defined(MBEDTLS_PSA_CRYPTO_C)
+           // || defined(AVS_COMMONS_WITH_MBEDTLS_PSA_RNG)
 
 #    define MODULE_NAME avs_crypto_global
 #    include <avs_x_log_config.h>
@@ -42,7 +42,7 @@ VISIBILITY_SOURCE_BEGIN
 
 avs_error_t _avs_crypto_initialize_global_state() {
     avs_error_t err = AVS_OK;
-#    if defined(MBEDTLS_USE_PSA_CRYPTO) \
+#    if defined(MBEDTLS_USE_PSA_CRYPTO) || defined(MBEDTLS_PSA_CRYPTO_C) \
             || defined(AVS_COMMONS_WITH_MBEDTLS_PSA_RNG)
     // NOTE: When MBEDTLS_USE_PSA_CRYPTO is enabled, psa_crypto_init() is
     // required even when only using the regular Mbed TLS API. Also, even when
@@ -53,8 +53,8 @@ avs_error_t _avs_crypto_initialize_global_state() {
         LOG(ERROR, _("psa_crypto_init() failed: ") "%" PRId32, status);
         return avs_errno(AVS_EPROTO);
     }
-#    endif // defined(MBEDTLS_USE_PSA_CRYPTO) ||
-           // defined(AVS_COMMONS_WITH_MBEDTLS_PSA_RNG)
+#    endif // defined(MBEDTLS_USE_PSA_CRYPTO) || defined(MBEDTLS_PSA_CRYPTO_C)
+           // || defined(AVS_COMMONS_WITH_MBEDTLS_PSA_RNG)
 #    if defined(AVS_COMMONS_WITH_AVS_CRYPTO_PKI_ENGINE) \
             || defined(AVS_COMMONS_WITH_AVS_CRYPTO_PSK_ENGINE)
     err = _avs_crypto_mbedtls_engine_initialize_global_state();

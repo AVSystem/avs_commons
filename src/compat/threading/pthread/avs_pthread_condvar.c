@@ -62,9 +62,11 @@ int avs_condvar_create(avs_condvar_t **out_condvar) {
     if (!result) {
         result = pthread_cond_init(&(*out_condvar)->pthread_cond, attr_ptr);
     }
+#    ifdef USE_CLOCK_MONOTONIC
     if (attr_ptr) {
         pthread_condattr_destroy(attr_ptr);
     }
+#    endif // USE_CLOCK_MONOTONIC
     if (result) {
         avs_free(*out_condvar);
         *out_condvar = NULL;

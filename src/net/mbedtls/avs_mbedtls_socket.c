@@ -92,8 +92,6 @@ typedef struct {
     uint8_t match_mask;
 
     uint32_t verify_result_flags;
-
-    int verify_result;
 } dane_verify_state_t;
 
 #            define DANE_TA_OR_EE_MATCH_MASK                       \
@@ -118,6 +116,7 @@ typedef struct {
     avs_net_socket_dane_tlsa_array_t dane_tlsa;
     dane_verify_state_t dane_verify_state;
 #        endif // WITH_DANE_SUPPORT
+    mbedtls_x509_crt *noauth_dummy_ca_cert;
 } ssl_socket_certs_t;
 #    endif // AVS_COMMONS_WITH_AVS_CRYPTO_PKI
 
@@ -364,22 +363,8 @@ static int ssl_version_as_on_wire(uint16_t *out_value,
 // mbedtls_ssl_ciphersuite_uses_psk() is not defined
 // if Mbed TLS is compiled without PSK support
 #        define mbedtls_ssl_ciphersuite_uses_psk(...) false
-#    elif MBEDTLS_VERSION_NUMBER >= 0x03060000
-// since in Mbed TLS 3.6.0 mbedtls_ssl_ciphersuite_uses_psk has been moved to
-// internal functions
-static inline int
-mbedtls_ssl_ciphersuite_uses_psk(const mbedtls_ssl_ciphersuite_t *ciphersuite) {
-    switch (ciphersuite->private_key_exchange) {
-    case MBEDTLS_KEY_EXCHANGE_PSK:
-    case MBEDTLS_KEY_EXCHANGE_RSA_PSK:
-    case MBEDTLS_KEY_EXCHANGE_DHE_PSK:
-    case MBEDTLS_KEY_EXCHANGE_ECDHE_PSK:
-        return 1;
-    default:
-        return 0;
-    }
-}
-#    endif // MBEDTLS_VERSION_NUMBER >= 0x03060000
+#    endif // !defined(MBEDTLS_KEY_EXCHANGE__SOME__PSK_ENABLED) &&
+           // !defined(MBEDTLS_KEY_EXCHANGE_SOME_PSK_ENABLED)
 
 #    if MBEDTLS_VERSION_NUMBER < 0x02110000
 // Mbed TLS <2.17.0 do not have mbedtls_ssl_ciphersuite_uses_srv_cert().
@@ -388,24 +373,6 @@ mbedtls_ssl_ciphersuite_uses_psk(const mbedtls_ssl_ciphersuite_t *ciphersuite) {
 // to define "uses certificates" as "doesn't use PSK" for earlier versions.
 #        define mbedtls_ssl_ciphersuite_uses_srv_cert(...) \
             (!mbedtls_ssl_ciphersuite_uses_psk(__VA_ARGS__))
-#    elif MBEDTLS_VERSION_NUMBER >= 0x03060000
-// since in Mbed TLS 3.6.0 mbedtls_ssl_ciphersuite_uses_srv_cert has been moved
-// to internal functions
-static inline int mbedtls_ssl_ciphersuite_uses_srv_cert(
-        const mbedtls_ssl_ciphersuite_t *ciphersuite) {
-    switch (ciphersuite->private_key_exchange) {
-    case MBEDTLS_KEY_EXCHANGE_RSA:
-    case MBEDTLS_KEY_EXCHANGE_RSA_PSK:
-    case MBEDTLS_KEY_EXCHANGE_DHE_RSA:
-    case MBEDTLS_KEY_EXCHANGE_ECDH_RSA:
-    case MBEDTLS_KEY_EXCHANGE_ECDHE_RSA:
-    case MBEDTLS_KEY_EXCHANGE_ECDH_ECDSA:
-    case MBEDTLS_KEY_EXCHANGE_ECDHE_ECDSA:
-        return 1;
-    default:
-        return 0;
-    }
-}
 #    endif // MBEDTLS_VERSION_NUMBER
 
 #    if defined(AVS_COMMONS_WITH_AVS_CRYPTO_PKI) \
@@ -615,7 +582,6 @@ static bool has_dane_ta_or_ee_entries(ssl_socket_t *socket) {
 static void reset_dane_verify_state(ssl_socket_t *socket) {
     socket->cert_security.dane_verify_state.match_mask = 0;
     socket->cert_security.dane_verify_state.verify_result_flags = 0;
-    socket->cert_security.dane_verify_state.verify_result = 0;
 }
 
 static void update_dane_verify_state(ssl_socket_t *socket,
@@ -692,6 +658,25 @@ static int verify_cert_cb(void *socket_,
     assert(socket->security_mode == AVS_NET_SECURITY_CERTIFICATE);
     assert(socket->cert_security.dane_ta_certs);
 
+    // HACK: Clear verification flags for current certificate. As:
+    // - mbed TLS determines the result of certificate verification by ORing
+    //   flags of all individual certs
+    // - we want to decide on the result of whole verification only after
+    //   processing the whole chain
+    // - we can iterate over the whole chain only once
+    // we need to clear those flags for now, merge them ourselves, apply our
+    // custom logic and possibly set the final result only on the last cert.
+    //
+    // Historically, this was being done by setting authmode to
+    // MBEDTLS_SSL_VERIFY_OPTIONAL, and then adding additional logic that caused
+    // the whole handshake to fail by returning a fatal error in this callback.
+    // As of now (Mbed TLS 3.6.0) MBEDTLS_SSL_VERIFY_OPTIONAL is not supported
+    // by TLS 1.3 client implementation, so let's handle this differently.
+    //
+    // See https://github.com/Mbed-TLS/mbedtls/issues/7075
+    uint32_t orig_verify_result_flags = *verify_result_flags;
+    *verify_result_flags = 0;
+
     if (socket->cert_security.ca_cert == socket->cert_security.dane_ta_certs
             && !has_dane_ta_or_ee_entries(socket)) {
         // No global trust store (opportunistic DANE) and no DANE-TA or DANE-EE
@@ -705,64 +690,64 @@ static int verify_cert_cb(void *socket_,
     }
     socket->cert_security.dane_verify_state.last_known_index = index;
     update_dane_verify_state(socket, crt, /* is_ee = */ index == 0,
-                             *verify_result_flags);
+                             orig_verify_result_flags);
 
     if (index == 0) {
         // End of the chain, perform actual verification
         uint32_t verify_result = perform_cert_verification(socket);
-        *verify_result_flags |= verify_result;
+        *verify_result_flags = verify_result;
 
-        // We are configured to MBEDTLS_SSL_VERIFY_OPTIONAL, so verification
-        // flags would normally be ignored. Let's replicate the logic of
-        // MBEDTLS_SSL_VERIFY_REQUIRED instead.
         if (verify_result) {
             LOG(ERROR,
                 _("server certificate verification failure: ") "%" PRIu32,
                 verify_result);
-            socket->cert_security.dane_verify_state.verify_result =
-                    MBEDTLS_ERR_X509_CERT_VERIFY_FAILED;
-            if (verify_result == MBEDTLS_X509_BADCERT_MISSING) {
-                return MBEDTLS_ERR_SSL_NO_CLIENT_CERTIFICATE;
-            } else {
-                return MBEDTLS_ERR_X509_FATAL_ERROR;
-            }
         }
     }
 
     return 0;
 }
-
-static int wrap_handshake_result(ssl_socket_t *socket, int result) {
-    if (result >= 0 && socket->security_mode == AVS_NET_SECURITY_CERTIFICATE
-            && socket->cert_security.dane_ta_certs
-            && socket->cert_security.dane_verify_state.verify_result) {
-        return socket->cert_security.dane_verify_state.verify_result;
-    }
-    return result;
-}
 #        endif // WITH_DANE_SUPPORT
 
+static int noauth_cert_cb(void *socket_,
+                          mbedtls_x509_crt *crt,
+                          int index,
+                          uint32_t *verify_result_flags) {
+    (void) socket_;
+    (void) crt;
+    (void) index;
+    *verify_result_flags = 0;
+    return 0;
+}
+
 static avs_error_t initialize_cert_security(ssl_socket_t *socket) {
+    mbedtls_ssl_conf_authmode(&socket->config, MBEDTLS_SSL_VERIFY_REQUIRED);
     if (socket->cert_security.ca_cert || socket->cert_security.ca_crl) {
 #        ifdef WITH_DANE_SUPPORT
         if (socket->cert_security.dane_ta_certs) {
-            // NOTE: When verify_cert_cb() fails, the whole verification routine
-            // fails as well, so this is effectively equivalent to modified
-            // MBEDTLS_SSL_VERIFY_REQUIRED.
-            mbedtls_ssl_conf_authmode(&socket->config,
-                                      MBEDTLS_SSL_VERIFY_OPTIONAL);
             mbedtls_ssl_conf_verify(&socket->config, verify_cert_cb, socket);
-        } else
-#        endif // WITH_DANE_SUPPORT
-        {
-            mbedtls_ssl_conf_authmode(&socket->config,
-                                      MBEDTLS_SSL_VERIFY_REQUIRED);
         }
+#        endif // WITH_DANE_SUPPORT
         mbedtls_ssl_conf_ca_chain(&socket->config,
                                   socket->cert_security.ca_cert,
                                   socket->cert_security.ca_crl);
     } else {
-        mbedtls_ssl_conf_authmode(&socket->config, MBEDTLS_SSL_VERIFY_NONE);
+        // HACK: As of now (Mbed TLS 3.6.0), TLS 1.3 implementation ignores
+        // setting client authmode to MBEDTLS_SSL_VERIFY_NONE. To mimic this
+        // behavior with MBEDTLS_SSL_VERIFY_REQUIRED, add a verify callback that
+        // clears all flags, and initialize a dummy trusted CA cert chain.
+        avs_crypto_certificate_chain_info_t empty_chain_info;
+        memset(&empty_chain_info, 0, sizeof(empty_chain_info));
+
+        avs_error_t err;
+        if (avs_is_err((err = _avs_crypto_mbedtls_load_certs(
+                                &socket->cert_security.noauth_dummy_ca_cert,
+                                &empty_chain_info)))) {
+            return err;
+        }
+        mbedtls_ssl_conf_verify(&socket->config, noauth_cert_cb, socket);
+        mbedtls_ssl_conf_ca_chain(&socket->config,
+                                  socket->cert_security.noauth_dummy_ca_cert,
+                                  NULL);
     }
 
     if (socket->cert_security.client_cert && socket->cert_security.client_key) {
@@ -806,23 +791,21 @@ static avs_error_t update_cert_configuration(ssl_socket_t *socket) {
     }
 #        endif // WITH_DANE_SUPPORT
 
-    mbedtls_ssl_conf_ca_chain(&socket->config,
-                              socket->cert_security.ca_cert,
-                              socket->cert_security.ca_crl);
+    if (socket->cert_security.ca_cert || socket->cert_security.ca_crl) {
+        mbedtls_ssl_conf_ca_chain(&socket->config,
+                                  socket->cert_security.ca_cert,
+                                  socket->cert_security.ca_crl);
+    } else {
+        mbedtls_ssl_conf_ca_chain(&socket->config,
+                                  socket->cert_security.noauth_dummy_ca_cert,
+                                  NULL);
+    }
     return AVS_OK;
 }
 #    else // AVS_COMMONS_WITH_AVS_CRYPTO_PKI
 #        define initialize_cert_security(...) avs_errno(AVS_ENOTSUP)
 #        define update_cert_configuration(...) AVS_OK
 #    endif // AVS_COMMONS_WITH_AVS_CRYPTO_PKI
-
-#    if !defined(WITH_DANE_SUPPORT) || !defined(AVS_COMMONS_WITH_AVS_CRYPTO_PKI)
-static int wrap_handshake_result(ssl_socket_t *socket, int result) {
-    (void) socket;
-    return result;
-}
-#    endif // !defined(WITH_DANE_SUPPORT) ||
-           // !defined(AVS_COMMONS_WITH_AVS_CRYPTO_PKI)
 
 static inline bool is_retry_result(mbedtls_ssl_context *ctx, int result) {
 #    ifdef MBEDTLS_ERR_SSL_RECEIVED_NEW_SESSION_TICKET
@@ -1239,7 +1222,8 @@ static avs_error_t start_ssl(ssl_socket_t *socket, const char *host) {
         do {
             result = mbedtls_ssl_handshake(get_context(socket));
         } while (is_retry_result(get_context(socket), result));
-        result = wrap_handshake_result(socket, result);
+    } else {
+        result = 0;
     }
 
     if (result == 0) {
@@ -1315,7 +1299,6 @@ send_ssl(avs_net_socket_t *socket_, const void *buffer, size_t buffer_length) {
                                                + bytes_sent,
                                        (size_t) (buffer_length - bytes_sent));
         } while (is_retry_result(get_context(socket), result));
-        result = wrap_handshake_result(socket, result);
 #    ifdef AVS_COMMONS_NET_WITH_TLS_SESSION_PERSISTENCE
         try_save_session_if_new(socket);
 #    endif // AVS_COMMONS_NET_WITH_TLS_SESSION_PERSISTENCE
@@ -1384,7 +1367,6 @@ static avs_error_t receive_ssl(avs_net_socket_t *socket_,
                                       buffer_length);
         } while (is_retry_result(get_context(socket), result));
     }
-    result = wrap_handshake_result(socket, result);
 #    ifdef AVS_COMMONS_NET_WITH_TLS_SESSION_PERSISTENCE
     try_save_session_if_new(socket);
 #    endif // AVS_COMMONS_NET_WITH_TLS_SESSION_PERSISTENCE
@@ -1428,6 +1410,7 @@ static void cleanup_security_cert(ssl_socket_certs_t *certs) {
     // NOTE: Not freeing dane_ta_certs, as it is supposed to be on the
     // ca_cert chain, so has been freed together with ca_cert
     avs_free((void *) (intptr_t) (const void *) certs->dane_tlsa.array_ptr);
+    _avs_crypto_mbedtls_x509_crt_cleanup(&certs->noauth_dummy_ca_cert);
 #        endif // WITH_DANE_SUPPORT
 }
 #    else // AVS_COMMONS_WITH_AVS_CRYPTO_PKI
