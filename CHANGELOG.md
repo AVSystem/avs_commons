@@ -1,5 +1,15 @@
 # Changelog
 
+## avs_commons 5.4.7 (Nov 6th, 2024)
+
+### Improvements
+
+* Improved the coverage script and switched to lcov.
+
+### Bugfixes
+
+* Fixed problem with command passed to popen function on macOS platform
+
 ## avs_commons 5.4.6 (Oct 24th, 2024)
 
 ### Improvements
