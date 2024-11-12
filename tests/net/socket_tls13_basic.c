@@ -69,20 +69,41 @@ AVS_UNIT_SUITE_INIT(tls13, verbose) {
 }
 
 FILE *socket_tls13_test_launch_server(test_server_args_t args) {
-    const char *credential_args;
+    char credential_args_buf[200];
     switch (args.mode) {
     case SERVER_CERT_VERIFY:
-        credential_args =
-                "-CAfile " CA_CERT_FILE " -Verify 9999 -cert " SERVER_CERT_FILE
-                " -key " SERVER_KEY_FILE;
+        AVS_UNIT_ASSERT_TRUE(
+                avs_simple_snprintf(credential_args_buf,
+                                    sizeof(credential_args_buf), "%s",
+                                    "-CAfile " CA_CERT_FILE
+                                    " -Verify 9999 -cert " SERVER_CERT_FILE
+                                    " -key " SERVER_KEY_FILE)
+                > 0);
         break;
     case SERVER_CERT_NOVERIFY:
-        credential_args = "-cert " SERVER_CERT_FILE " -key " SERVER_KEY_FILE;
+        AVS_UNIT_ASSERT_TRUE(avs_simple_snprintf(credential_args_buf,
+                                                 sizeof(credential_args_buf),
+                                                 "%s",
+                                                 "-cert " SERVER_CERT_FILE
+                                                 " -key " SERVER_KEY_FILE)
+                             > 0);
         break;
-    case SERVER_PSK:
-        credential_args = "-nocert -psk_identity " PSK_IDENTITY
-                          " -psk $(echo -n '" PSK_KEY "' | xxd -p)";
+    case SERVER_PSK: {
+        char hex_psk_buf[50];
+        size_t bytes_hexlified;
+        AVS_UNIT_ASSERT_EQUAL(avs_hexlify(hex_psk_buf, sizeof(hex_psk_buf),
+                                          &bytes_hexlified, PSK_KEY,
+                                          sizeof(PSK_KEY) - 1),
+                              0);
+        AVS_UNIT_ASSERT_EQUAL(bytes_hexlified, sizeof(PSK_KEY) - 1);
+        AVS_UNIT_ASSERT_TRUE(
+                avs_simple_snprintf(
+                        credential_args_buf, sizeof(credential_args_buf),
+                        "-nocert -psk_identity " PSK_IDENTITY " -psk %s",
+                        hex_psk_buf)
+                > 0);
         break;
+    }
     }
     char buf[256];
     AVS_UNIT_ASSERT_TRUE(
@@ -90,9 +111,9 @@ FILE *socket_tls13_test_launch_server(test_server_args_t args) {
                     buf, sizeof(buf),
                     "OPENSSL_CONF=%s openssl s_server -port %s -4 -www -tls1_3 "
                     "%s %s",
-                    g_openssl_tls13_conf_file, args.port, credential_args,
+                    g_openssl_tls13_conf_file, args.port, credential_args_buf,
                     args.additional_args ? args.additional_args : "")
-            >= 0);
+            > 0);
     FILE *f = popen(buf, "r");
     AVS_UNIT_ASSERT_NOT_NULL(f);
     while (true) {

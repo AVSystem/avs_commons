@@ -5,6 +5,7 @@
 *.so.*
 
 /build/
+/coverage/
 /output/
 
 # NetBeans Project

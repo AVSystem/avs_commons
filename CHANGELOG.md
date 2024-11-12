@@ -1,5 +1,15 @@
 # Changelog
 
+## avs_commons 5.4.7 (Nov 12th, 2024)
+
+### Improvements
+
+* Improved the coverage script and switched to lcov.
+
+### Bugfixes
+
+* Fixed command passed to `popen()` call in MbedTLS + TLS 1.3 tests to make it work on macOS
+
 ## avs_commons 5.4.6 (Oct 24th, 2024)
 
 ### Improvements
