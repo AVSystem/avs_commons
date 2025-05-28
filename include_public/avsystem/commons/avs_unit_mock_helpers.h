@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 AVSystem <avsystem@avsystem.com>
+ * Copyright 2025 AVSystem <avsystem@avsystem.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -123,8 +123,8 @@ extern "C" {
 typedef void (*avs_unit_mock_func_ptr)(void);
 
 void avs_unit_mock_add__(avs_unit_mock_func_ptr *new_mock_ptr);
-void avs_unit_mock_reset_all__();
-void avs_unit_mock_cleanup__();
+void avs_unit_mock_reset_all__(void);
+void avs_unit_mock_cleanup__(void);
 void avs_unit_mock_invoke__(avs_unit_mock_func_ptr *invoked_func);
 unsigned avs_unit_mock_invocations__(avs_unit_mock_func_ptr *invoked_func);
 /**@}*/

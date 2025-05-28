@@ -1,5 +1,11 @@
 # Changelog
 
+## avs_commons 5.4.8 (May 28th, 2025)
+
+### Bugfixes
+
+* Fixed hash parsing before RSA signing in pkcs11 engine
+
 ## avs_commons 5.4.7 (Nov 12th, 2024)
 
 ### Improvements

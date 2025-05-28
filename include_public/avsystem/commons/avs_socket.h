@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 AVSystem <avsystem@avsystem.com>
+ * Copyright 2025 AVSystem <avsystem@avsystem.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -97,7 +97,7 @@ typedef struct {
     /**
      * Specifies the Differentiated Services Code Point to send in the IP
      * packets when communicating on the created socket. Valid values are in the
-     * range 0-64.
+     * range 0-63.
      *
      * It is configured using the <c>IP_TOS</c> option on the underlying system
      * socket - not done if left at the default value of 0.

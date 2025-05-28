@@ -1,4 +1,4 @@
-# Copyright 2024 AVSystem <avsystem@avsystem.com>
+# Copyright 2025 AVSystem <avsystem@avsystem.com>
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-cmake_minimum_required(VERSION 3.4.0)
+cmake_minimum_required(VERSION 3.16.0)
 project(avs_commons C)
 
 find_package(avs_commons REQUIRED)

@@ -1,4 +1,4 @@
-# Copyright 2024 AVSystem <avsystem@avsystem.com>
+# Copyright 2025 AVSystem <avsystem@avsystem.com>
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,10 +14,10 @@
 
 ################# DEFINITION ###################################################
 
-cmake_minimum_required(VERSION 3.6.0)
+cmake_minimum_required(VERSION 3.16.0)
 project(avs_commons C)
 
-set(AVS_COMMONS_VERSION "5.4.7")
+set(AVS_COMMONS_VERSION "5.4.8")
 
 ################# DISTRIBUTION #################################################
 
@@ -272,8 +272,8 @@ endif()
 include(CheckSymbolExists)
 if(NOT HAVE_MATH_LIBRARY)
     foreach(MATH_LIBRARY_IT "" "m")
-        file(WRITE ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp/fmod.c "#include <math.h>\nint main() { volatile double a = 4.0, b = 3.2; return (int) fmod(a, b); }\n\n")
-        try_compile(HAVE_MATH_LIBRARY ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp/fmod.c CMAKE_FLAGS "-DLINK_LIBRARIES=${MATH_LIBRARY_IT}")
+        file(WRITE ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp/fmod.c "#include <math.h>\nint main(void) { volatile double a = 4.0, b = 3.2; return (int) fmod(a, b); }\n\n")
+        try_compile(HAVE_MATH_LIBRARY ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp/fmod.c LINK_LIBRARIES ${MATH_LIBRARY_IT})
         if(HAVE_MATH_LIBRARY)
             set(MATH_LIBRARY "${MATH_LIBRARY_IT}" CACHE STRING "Library that provides C math functions. Can be empty if no extra library is required." FORCE)
             break()
