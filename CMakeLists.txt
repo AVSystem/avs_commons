@@ -17,7 +17,7 @@
 cmake_minimum_required(VERSION 3.16.0)
 project(avs_commons C)
 
-set(AVS_COMMONS_VERSION "5.4.8")
+set(AVS_COMMONS_VERSION "5.5.0")
 
 ################# DISTRIBUTION #################################################
 
@@ -162,6 +162,8 @@ cmake_dependent_option(WITH_INTERNAL_TRACE "Enable TRACE-level logs inside AVSys
 set(AVS_COMMONS_WITH_INTERNAL_TRACE ${WITH_INTERNAL_TRACE})
 cmake_dependent_option(WITH_MBEDTLS_LOGS "Enable logging from mbedTLS backend library (if used)" OFF "WITH_INTERNAL_LOGS;WITH_MBEDTLS" OFF)
 set(AVS_COMMONS_NET_WITH_MBEDTLS_LOGS ${WITH_MBEDTLS_LOGS})
+cmake_dependent_option(WITH_MBEDTLS_SSLKEYLOG "Enable (Pre-)Master-Secret logs generation" OFF "WITH_MBEDTLS" OFF)
+set(AVS_COMMONS_NET_WITH_MBEDTLS_SSLKEYLOG ${WITH_MBEDTLS_SSLKEYLOG})
 
 if(WITH_AVS_LOG)
     set(AVS_LOG_MAX_LINE_LENGTH 512 CACHE INTEGER "Max length of a single log message. Longer ones will be truncated.")

@@ -71,6 +71,10 @@ static inline int avs_net_validate_ip_address(avs_net_af_t family,
     return result;
 }
 
+#ifdef AVS_COMMONS_NET_WITH_MBEDTLS_SSLKEYLOG
+void avs_mbedtls_set_sslkeylog_stream(avs_stream_t *stream);
+#endif // AVS_COMMONS_NET_WITH_MBEDTLS_SSLKEYLOG
+
 #ifdef __cplusplus
 }
 #endif

@@ -83,7 +83,7 @@ typedef struct avs_file_stream_struct avs_stream_file_t;
  *
  * Function fails if any of the following is true:
  * 1. file referred in @p path does not exist and @ref AVS_STREAM_FILE_WRITE
- * flag is set, but the file cannot be created
+ *    flag is set, but the file cannot be created
  * 2. file referred in @p path does not exist and @ref AVS_STREAM_FILE_WRITE is
  *    not set
  * 3. there are no sufficient permissions to open file with given flag

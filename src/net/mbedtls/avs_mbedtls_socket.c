@@ -77,6 +77,25 @@
 
 #    include "crypto/mbedtls/avs_mbedtls_private.h"
 
+#    ifdef AVS_COMMONS_NET_WITH_MBEDTLS_SSLKEYLOG
+#        if MBEDTLS_VERSION_NUMBER < 0x03000000
+#            error "We do not support WITH_MBEDTLS_SSLKEYLOG for Mbed TLS versions below v3.0.0"
+#        endif // MBEDTLS_VERSION_NUMBER < 0x03000000
+#        if MBEDTLS_VERSION_NUMBER < 0x03010000 \
+                && !defined(MBEDTLS_SSL_EXPORT_KEYS)
+#            error "To support WITH_MBEDTLS_SSLKEYLOG with Mbed TLS v3.1.0, MBEDTLS_SSL_EXPORT_KEYS must be set"
+#        endif // MBEDTLS_VERSION_NUMBER < 0x03010000 &&
+               // !defined(MBEDTLS_SSL_EXPORT_KEYS)
+#        ifdef AVS_COMMONS_WITH_AVS_COMPAT_THREADING
+#            include <avsystem/commons/avs_mutex.h>
+#        else // AVS_COMMONS_WITH_AVS_COMPAT_THREADING
+#            define avs_mutex_create(...) 0
+#            define avs_mutex_cleanup(...) ((void) 0)
+#            define avs_mutex_lock(...) ((void) 0)
+#            define avs_mutex_unlock(...) ((void) 0)
+#        endif // AVS_COMMONS_WITH_AVS_COMPAT_THREADING
+#    endif     // AVS_COMMONS_NET_WITH_MBEDTLS_SSLKEYLOG
+
 VISIBILITY_SOURCE_BEGIN
 
 #    ifdef AVS_COMMONS_WITH_AVS_CRYPTO_PKI
@@ -154,6 +173,11 @@ typedef struct {
 #    endif // MBEDTLS_SSL_DTLS_CONNECTION_ID
 } ssl_socket_t;
 
+#    ifdef AVS_COMMONS_NET_WITH_MBEDTLS_SSLKEYLOG
+static avs_stream_t *g_ssl_key_log_stream;
+static avs_mutex_t *g_ssl_key_log_mutex;
+#    endif // AVS_COMMONS_NET_WITH_MBEDTLS_SSLKEYLOG
+
 static bool is_ssl_started(ssl_socket_t *socket) {
     return socket->flags.context_valid;
 }
@@ -212,12 +236,25 @@ static avs_error_t return_alert_if_any(ssl_socket_t *socket) {
 }
 
 void _avs_net_cleanup_global_ssl_state(void) {
-    // do nothing
+#    ifdef AVS_COMMONS_NET_WITH_MBEDTLS_SSLKEYLOG
+    avs_mutex_cleanup(&g_ssl_key_log_mutex);
+    g_ssl_key_log_stream = NULL;
+#    endif // AVS_COMMONS_NET_WITH_MBEDTLS_SSLKEYLOG
 }
 
 avs_error_t _avs_net_initialize_global_ssl_state(void) {
-    // do nothing
+#    ifdef AVS_COMMONS_NET_WITH_MBEDTLS_SSLKEYLOG
+    avs_errno_t err = AVS_NO_ERROR;
+    if (avs_mutex_create(&g_ssl_key_log_mutex)) {
+        err = avs_map_errno(errno);
+        if (err == AVS_NO_ERROR) {
+            err = AVS_UNKNOWN_ERROR;
+        }
+    }
+    return avs_errno(err);
+#    else  // AVS_COMMONS_NET_WITH_MBEDTLS_SSLKEYLOG
     return AVS_OK;
+#    endif // AVS_COMMONS_NET_WITH_MBEDTLS_SSLKEYLOG
 }
 
 static int
@@ -720,7 +757,6 @@ static int noauth_cert_cb(void *socket_,
 }
 
 static avs_error_t initialize_cert_security(ssl_socket_t *socket) {
-    mbedtls_ssl_conf_authmode(&socket->config, MBEDTLS_SSL_VERIFY_REQUIRED);
     if (socket->cert_security.ca_cert || socket->cert_security.ca_crl) {
 #        ifdef WITH_DANE_SUPPORT
         if (socket->cert_security.dane_ta_certs) {
@@ -764,6 +800,7 @@ static avs_error_t update_cert_configuration(ssl_socket_t *socket) {
     }
 
 #        ifdef WITH_DANE_SUPPORT
+    size_t dane_ta_record_cnt = 0;
     if (socket->cert_security.dane_ta_certs) {
         // 2 0 0 (DANE-TA / Entire certificate / Entire information) data
         // shall be included as part of the trust store
@@ -780,18 +817,32 @@ static avs_error_t update_cert_configuration(ssl_socket_t *socket) {
             if (entry->certificate_usage
                             == AVS_NET_SOCKET_DANE_TRUST_ANCHOR_ASSERTION
                     && entry->selector == AVS_NET_SOCKET_DANE_CERTIFICATE
-                    && entry->matching_type == AVS_NET_SOCKET_DANE_MATCH_FULL
-                    && mbedtls_x509_crt_parse_der(
-                               socket->cert_security.dane_ta_certs,
-                               (const unsigned char *) entry->association_data,
-                               entry->association_data_size)) {
-                return avs_errno(AVS_EPROTO);
+                    && entry->matching_type == AVS_NET_SOCKET_DANE_MATCH_FULL) {
+
+                if (mbedtls_x509_crt_parse_der(
+                            socket->cert_security.dane_ta_certs,
+                            (const unsigned char *) entry->association_data,
+                            entry->association_data_size)) {
+                    return avs_errno(AVS_EPROTO);
+                } else {
+                    dane_ta_record_cnt++;
+                }
             }
         }
     }
-#        endif // WITH_DANE_SUPPORT
 
-    if (socket->cert_security.ca_cert || socket->cert_security.ca_crl) {
+    if (dane_ta_record_cnt) {
+        /*
+         * We have DANE trust anchors that we would like to use to validate the
+         * connection with. Don't pass the ca_cert trust store to mbedtls and
+         * use the trust anchor as our root of trust.
+         */
+        mbedtls_ssl_conf_ca_chain(&socket->config,
+                                  socket->cert_security.dane_ta_certs,
+                                  socket->cert_security.ca_crl);
+    } else
+#        endif // WITH_DANE_SUPPORT
+            if (socket->cert_security.ca_cert || socket->cert_security.ca_crl) {
         mbedtls_ssl_conf_ca_chain(&socket->config,
                                   socket->cert_security.ca_cert,
                                   socket->cert_security.ca_crl);
@@ -895,6 +946,72 @@ static int socket_set_dtls_handshake_timeouts(
         return 0;
     }
 }
+
+#    ifdef AVS_COMMONS_NET_WITH_MBEDTLS_SSLKEYLOG
+static const char *tls_secret_labels[] = { "CLIENT_RANDOM",
+#        if defined(MBEDTLS_SSL_PROTO_TLS1_3_EXPERIMENTAL) \
+                || defined(MBEDTLS_SSL_PROTO_TLS1_3)
+                                           "CLIENT_EARLY_TRAFFIC_SECRET",
+                                           "EARLY_EXPORTER_MASTER_SECRET",
+                                           "CLIENT_HANDSHAKE_TRAFFIC_SECRET",
+                                           "SERVER_HANDSHAKE_TRAFFIC_SECRET",
+                                           "CLIENT_TRAFFIC_SECRET_0",
+                                           "SERVER_TRAFFIC_SECRET_0"
+#        endif // defined(MBEDTLS_SSL_PROTO_TLS1_3_EXPERIMENTAL) ||
+               // defined(MBEDTLS_SSL_PROTO_TLS1_3)
+};
+
+static void export_keys(void *p_expkey,
+                        mbedtls_ssl_key_export_type type,
+                        const unsigned char *secret,
+                        size_t secret_len,
+                        const unsigned char client_random[32],
+                        const unsigned char server_random[32],
+                        mbedtls_tls_prf_types tls_prf_type) {
+    (void) server_random;
+    (void) tls_prf_type;
+    (void) p_expkey;
+
+    if (type >= AVS_ARRAY_SIZE(tls_secret_labels)) {
+        LOG(ERROR, _("Wrong secret type"));
+        return;
+    }
+
+    char client_random_hexlify[32 * 2 + 1];
+    char secret_hexlify[secret_len * 2 + 1];
+    size_t client_random_bytes_hexlified = 0, secret_bytes_hexlified = 0;
+
+    const char *label = tls_secret_labels[type];
+
+    if (avs_hexlify(client_random_hexlify, 32 * 2 + 1,
+                    &client_random_bytes_hexlified, client_random, 32)
+            || client_random_bytes_hexlified != 32
+            || avs_hexlify(secret_hexlify, secret_len * 2 + 1,
+                           &secret_bytes_hexlified, secret, secret_len)
+            || secret_bytes_hexlified != secret_len) {
+        LOG(ERROR, _("Keys hexlifing failed"));
+        return;
+    }
+
+    if (avs_mutex_lock(g_ssl_key_log_mutex)) {
+        LOG(ERROR, _("Could not lock mutex"));
+        return;
+    }
+
+    if (avs_is_err(avs_stream_write_f(g_ssl_key_log_stream, "%s %s %s\n", label,
+                                      client_random_hexlify, secret_hexlify))) {
+        LOG(ERROR, _("Writing %s to file failed"), label);
+    }
+    avs_mutex_unlock(g_ssl_key_log_mutex);
+}
+
+void avs_mbedtls_set_sslkeylog_stream(avs_stream_t *stream) {
+    assert(stream);
+    if (!g_ssl_key_log_stream) {
+        g_ssl_key_log_stream = stream;
+    }
+}
+#    endif // AVS_COMMONS_NET_WITH_MBEDTLS_SSLKEYLOG
 
 static avs_error_t
 configure_ssl(ssl_socket_t *socket,
@@ -1004,6 +1121,17 @@ configure_ssl(ssl_socket_t *socket,
                   init_ciphersuites(socket, &configuration->ciphersuites))) {
         return avs_errno(AVS_ENOMEM);
     }
+
+#    if defined(MBEDTLS_SSL_PROTO_TLS1_3_EXPERIMENTAL) \
+            || defined(MBEDTLS_SSL_PROTO_TLS1_3)
+    mbedtls_ssl_conf_tls13_key_exchange_modes(
+            &socket->config,
+            socket->security_mode == AVS_NET_SECURITY_PSK
+                    ? MBEDTLS_SSL_TLS1_3_KEY_EXCHANGE_MODE_PSK_ALL
+                    : MBEDTLS_SSL_TLS1_3_KEY_EXCHANGE_MODE_EPHEMERAL);
+#    endif // defined(MBEDTLS_SSL_PROTO_TLS1_3_EXPERIMENTAL)
+           // || defined(MBEDTLS_SSL_PROTO_TLS1_3)
+    mbedtls_ssl_conf_authmode(&socket->config, MBEDTLS_SSL_VERIFY_REQUIRED);
 
     avs_error_t err;
     switch (socket->security_mode) {
@@ -1146,6 +1274,11 @@ static avs_error_t start_ssl(ssl_socket_t *socket, const char *host) {
     if (avs_is_err((err = init_ssl_context(socket)))) {
         goto finish;
     }
+#    ifdef AVS_COMMONS_NET_WITH_MBEDTLS_SSLKEYLOG
+    if (g_ssl_key_log_stream) {
+        mbedtls_ssl_set_export_keys_cb(get_context(socket), export_keys, NULL);
+    }
+#    endif // AVS_COMMONS_NET_WITH_MBEDTLS_SSLKEYLOG
 #    ifdef AVS_COMMONS_NET_WITH_TLS_SESSION_PERSISTENCE
     socket->flags.session_fresh = true;
     if (socket->session_resumption_buffer

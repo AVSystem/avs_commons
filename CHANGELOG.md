@@ -1,5 +1,32 @@
 # Changelog
 
+## avs_commons 5.5.0 (Sep 25th, 2025)
+
+### BREAKING CHANGES
+
+* Stopped passing the Trust Store to the Mbed TLS backend for Certificate Usage
+  2 (DANE-TA) and 3 (DANE-EE) during Server verification.
+
+### Features
+
+* Added support for generating (Pre-)Master-Secret logs for Mbed TLS backend.
+
+### Bugfixes
+
+* Fixed TLS 1.3 PSK-mode vulnerability in the Mbed TLS backend where a client
+  configured for PSK could connect to a server that did not know the PSK, due to
+  advertising non-PSK key exchange and skipping certificate verification.
+
+  This vulnerability affects only Mbed TLS 3.6.1 and later.
+
+  When acting as a TLS client configured for PSK, the library advertised non-PSK key
+  exchange, allowing the server to select a certificate-based (EC)DHE handshake
+  instead of PSK. As a result, the client could successfully establish a connection
+  with a server that did not possess the PSK, because PSK authentication was not
+  enforced for that handshake and certificate vertification was skipped.
+  The client now restricts TLS 1.3 exchange modes to PSK and PSK-(EC)DHE when
+  PSK is configured.
+
 ## avs_commons 5.4.8 (May 28th, 2025)
 
 ### Bugfixes
