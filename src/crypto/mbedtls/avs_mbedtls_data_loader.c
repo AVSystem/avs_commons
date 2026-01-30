@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 AVSystem <avsystem@avsystem.com>
+ * Copyright 2026 AVSystem <avsystem@avsystem.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,11 +19,6 @@
 
 #if defined(AVS_COMMONS_WITH_AVS_CRYPTO) && defined(AVS_COMMONS_WITH_MBEDTLS)
 
-// this uses some symbols such as "printf" - include it before poisoning them
-#    include <mbedtls/platform.h>
-
-#    include <avs_commons_poison.h>
-
 #    include "avs_mbedtls_data_loader.h"
 #    include "avs_mbedtls_prng.h"
 #    if defined(AVS_COMMONS_WITH_AVS_CRYPTO_PKI_ENGINE) \
@@ -42,6 +37,11 @@
 
 #    define MODULE_NAME avs_crypto_data_loader
 #    include <avs_x_log_config.h>
+
+// this uses some symbols such as "printf" - include it before poisoning them
+#    include <mbedtls/platform.h>
+
+#    include <avs_commons_poison.h>
 
 VISIBILITY_SOURCE_BEGIN
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 AVSystem <avsystem@avsystem.com>
+ * Copyright 2026 AVSystem <avsystem@avsystem.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -74,6 +74,32 @@ static inline int avs_net_validate_ip_address(avs_net_af_t family,
 #ifdef AVS_COMMONS_NET_WITH_MBEDTLS_SSLKEYLOG
 void avs_mbedtls_set_sslkeylog_stream(avs_stream_t *stream);
 #endif // AVS_COMMONS_NET_WITH_MBEDTLS_SSLKEYLOG
+
+#ifdef AVS_COMMONS_WITH_TRAFFIC_INTERCEPTOR
+/**
+ * @experimental This is experimental API. This API can change in the future
+ * versions without any notice.
+ *
+ * Direction of the intercepted traffic.
+ */
+typedef enum {
+    AVS_NET_TRAFFIC_INTERCEPTOR_INCOMING,
+    AVS_NET_TRAFFIC_INTERCEPTOR_OUTGOING
+} avs_net_traffic_interceptor_direction_t;
+
+/**
+ * @experimental This is experimental API. This API can change in the future
+ * versions without any notice.
+ *
+ * Callback type for traffic interceptor.
+ */
+void _avs_net_traffic_interceptor(
+        avs_net_socket_t *socket,
+        const void *data,
+        size_t data_length,
+        avs_net_socket_type_t type,
+        avs_net_traffic_interceptor_direction_t direction);
+#endif // #ifdef AVS_COMMONS_WITH_TRAFFIC_INTERCEPTOR
 
 #ifdef __cplusplus
 }

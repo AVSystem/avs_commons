@@ -1,5 +1,11 @@
 # Changelog
 
+## avs_commons 5.6.0 (Jan 30th, 2026)
+
+### Features
+* Added experimental traffic interceptor API.
+* Socket log feature API (`AVS_COMMONS_NET_WITH_SOCKET_LOG`) marked as deprecated.
+
 ## avs_commons 5.5.0 (Sep 25th, 2025)
 
 ### BREAKING CHANGES

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Copyright 2025 AVSystem <avsystem@avsystem.com>
+# Copyright 2026 AVSystem <avsystem@avsystem.com>
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -44,7 +44,7 @@ rm -rf "$PROJECT_ROOT/build/coverage"
 mkdir -p "$PROJECT_ROOT/build/coverage"
 pushd "$PROJECT_ROOT/build/coverage"
     "$PROJECT_ROOT/devconfig" -DCMAKE_C_FLAGS="-std=c99 -D_POSIX_C_SOURCE=200809L -g -O0 --coverage" -DCMAKE_EXE_LINKER_FLAGS="--coverage" "$@"
-    make check -j$(num_processors)
+    make avs_commons_unit_check -j$(num_processors)
     mkdir -p "$PROJECT_ROOT/coverage"
     lcov $LCOV_ADDITIONAL_OPTS -c -d . -o coverage.info --gcov-tool /usr/bin/gcov-$GCC_MAJOR_VERSION
     lcov $LCOV_ADDITIONAL_OPTS --remove coverage.info "$PROJECT_ROOT/tests/*" "/usr/*" "$PROJECT_ROOT/include_public/*" -o coverage.info

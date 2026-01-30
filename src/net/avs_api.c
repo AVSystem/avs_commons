@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 AVSystem <avsystem@avsystem.com>
+ * Copyright 2026 AVSystem <avsystem@avsystem.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,6 +34,12 @@
 #    include "avs_net_impl.h"
 
 VISIBILITY_SOURCE_BEGIN
+
+#    if defined(AVS_COMMONS_NET_WITH_SOCKET_LOG) \
+            && defined(AVS_COMMONS_WITH_TRAFFIC_INTERCEPTOR)
+#        error "Traffic interceptor cannot be used together with socket logging"
+#    endif // defined(AVS_COMMONS_NET_WITH_SOCKET_LOG) && defined
+           // (AVS_COMMONS_WITH_TRAFFIC_INTERCEPTOR)
 
 const avs_time_duration_t AVS_NET_SOCKET_DEFAULT_RECV_TIMEOUT = { 30, 0 };
 
@@ -686,24 +692,276 @@ init_debug_socket_if_applicable(avs_net_socket_t **debug_socket,
     }
     return curr_err;
 }
+#    endif /* AVS_COMMONS_NET_WITH_SOCKET_LOG */
+#    ifdef AVS_COMMONS_WITH_TRAFFIC_INTERCEPTOR
+typedef struct {
+    const avs_net_socket_v_table_t *const operations;
+    avs_net_socket_t *socket;
+    avs_net_socket_type_t type;
+} avs_api_socket_interceptor_t;
 
-#    else
-
-static avs_error_t
-init_debug_socket_if_applicable(avs_net_socket_t **debug_socket,
-                                avs_error_t curr_err) {
-    (void) debug_socket;
-    return curr_err;
+static avs_error_t connect_intercept(avs_net_socket_t *intercept_socket,
+                                     const char *host,
+                                     const char *port) {
+    avs_error_t err = avs_net_socket_connect(
+            ((avs_api_socket_interceptor_t *) intercept_socket)->socket, host,
+            port);
+    return err;
 }
 
-#    endif /* AVS_COMMONS_NET_WITH_SOCKET_LOG */
+static avs_error_t decorate_intercept(avs_net_socket_t *intercept_socket,
+                                      avs_net_socket_t *backend_socket) {
+    avs_error_t err = avs_net_socket_decorate(
+            ((avs_api_socket_interceptor_t *) intercept_socket)->socket,
+            backend_socket);
+    return err;
+}
+static avs_error_t send_intercept(avs_net_socket_t *intercept_socket,
+                                  const void *buffer,
+                                  size_t buffer_length) {
+    const avs_api_socket_interceptor_t *interceptor_socket_impl =
+            (avs_api_socket_interceptor_t *) intercept_socket;
+    avs_error_t err = avs_net_socket_send(interceptor_socket_impl->socket,
+                                          buffer, buffer_length);
+    if (avs_is_ok(err)) {
+        _avs_net_traffic_interceptor(intercept_socket, buffer, buffer_length,
+                                     interceptor_socket_impl->type,
+                                     AVS_NET_TRAFFIC_INTERCEPTOR_OUTGOING);
+    }
+    return err;
+}
+
+static avs_error_t send_to_intercept(avs_net_socket_t *intercept_socket,
+                                     const void *buffer,
+                                     size_t buffer_length,
+                                     const char *host,
+                                     const char *port) {
+    const avs_api_socket_interceptor_t *interceptor_socket_impl =
+            (avs_api_socket_interceptor_t *) intercept_socket;
+    avs_error_t err = avs_net_socket_send_to(interceptor_socket_impl->socket,
+                                             buffer, buffer_length, host, port);
+    if (avs_is_ok(err)) {
+        _avs_net_traffic_interceptor(intercept_socket, buffer, buffer_length,
+                                     interceptor_socket_impl->type,
+                                     AVS_NET_TRAFFIC_INTERCEPTOR_OUTGOING);
+    }
+    return err;
+}
+
+static avs_error_t receive_intercept(avs_net_socket_t *intercept_socket,
+                                     size_t *out_bytes_received,
+                                     void *buffer,
+                                     size_t buffer_length) {
+    const avs_api_socket_interceptor_t *interceptor_socket_impl =
+            (avs_api_socket_interceptor_t *) intercept_socket;
+    avs_error_t err =
+            avs_net_socket_receive(interceptor_socket_impl->socket,
+                                   out_bytes_received, buffer, buffer_length);
+    if (avs_is_ok(err)) {
+        _avs_net_traffic_interceptor(intercept_socket, buffer,
+                                     *out_bytes_received,
+                                     interceptor_socket_impl->type,
+                                     AVS_NET_TRAFFIC_INTERCEPTOR_INCOMING);
+    }
+    return err;
+}
+
+static avs_error_t receive_from_intercept(avs_net_socket_t *intercept_socket,
+                                          size_t *out_bytes_received,
+                                          void *buffer,
+                                          size_t buffer_length,
+                                          char *host,
+                                          size_t host_size,
+                                          char *port,
+                                          size_t port_size) {
+    avs_api_socket_interceptor_t *interceptor_socket_impl =
+            (avs_api_socket_interceptor_t *) intercept_socket;
+    avs_error_t err = avs_net_socket_receive_from(
+            interceptor_socket_impl->socket, out_bytes_received, buffer,
+            buffer_length, host, host_size, port, port_size);
+    if (avs_is_ok(err)) {
+        _avs_net_traffic_interceptor(intercept_socket, buffer,
+                                     *out_bytes_received,
+                                     interceptor_socket_impl->type,
+                                     AVS_NET_TRAFFIC_INTERCEPTOR_INCOMING);
+    }
+    return err;
+}
+
+static avs_error_t bind_intercept(avs_net_socket_t *intercept_socket,
+                                  const char *localaddr,
+                                  const char *port) {
+    avs_error_t err = avs_net_socket_bind(
+            ((avs_api_socket_interceptor_t *) intercept_socket)->socket,
+            localaddr, port);
+    return err;
+}
+
+static avs_error_t accept_intercept(avs_net_socket_t *server_intercept_socket,
+                                    avs_net_socket_t *new_intercept_socket) {
+    avs_error_t err = avs_net_socket_accept(
+            ((avs_api_socket_interceptor_t *) server_intercept_socket)->socket,
+            ((avs_api_socket_interceptor_t *) new_intercept_socket)->socket);
+    return err;
+}
+
+static avs_error_t close_intercept(avs_net_socket_t *intercept_socket) {
+    avs_error_t err = avs_net_socket_close(
+            ((avs_api_socket_interceptor_t *) intercept_socket)->socket);
+    return err;
+}
+
+static avs_error_t shutdown_intercept(avs_net_socket_t *intercept_socket) {
+    avs_error_t err = avs_net_socket_shutdown(
+            ((avs_api_socket_interceptor_t *) intercept_socket)->socket);
+    return err;
+}
+
+static avs_error_t
+interface_name_intercept(avs_net_socket_t *intercept_socket,
+                         avs_net_socket_interface_name_t *if_name) {
+    avs_error_t err = avs_net_socket_interface_name(
+            ((avs_api_socket_interceptor_t *) intercept_socket)->socket,
+            if_name);
+    return err;
+}
+
+static avs_error_t remote_host_intercept(avs_net_socket_t *intercept_socket,
+                                         char *out_buffer,
+                                         size_t out_buffer_size) {
+    avs_error_t err = avs_net_socket_get_remote_host(
+            ((avs_api_socket_interceptor_t *) intercept_socket)->socket,
+            out_buffer, out_buffer_size);
+    return err;
+}
+
+static avs_error_t remote_hostname_intercept(avs_net_socket_t *intercept_socket,
+                                             char *out_buffer,
+                                             size_t out_buffer_size) {
+    avs_error_t err = avs_net_socket_get_remote_hostname(
+            ((avs_api_socket_interceptor_t *) intercept_socket)->socket,
+            out_buffer, out_buffer_size);
+    return err;
+}
+
+static avs_error_t remote_port_intercept(avs_net_socket_t *intercept_socket,
+                                         char *out_buffer,
+                                         size_t out_buffer_size) {
+    avs_error_t err = avs_net_socket_get_remote_port(
+            ((avs_api_socket_interceptor_t *) intercept_socket)->socket,
+            out_buffer, out_buffer_size);
+    return err;
+}
+
+static avs_error_t local_host_intercept(avs_net_socket_t *intercept_socket,
+                                        char *out_buffer,
+                                        size_t out_buffer_size) {
+    avs_error_t err = avs_net_socket_get_local_host(
+            ((avs_api_socket_interceptor_t *) intercept_socket)->socket,
+            out_buffer, out_buffer_size);
+    return err;
+}
+
+static avs_error_t local_port_intercept(avs_net_socket_t *intercept_socket,
+                                        char *out_buffer,
+                                        size_t out_buffer_size) {
+    avs_error_t err = avs_net_socket_get_local_port(
+            ((avs_api_socket_interceptor_t *) intercept_socket)->socket,
+            out_buffer, out_buffer_size);
+    return err;
+}
+
+static avs_error_t
+get_opt_intercept(avs_net_socket_t *intercept_socket,
+                  avs_net_socket_opt_key_t option_key,
+                  avs_net_socket_opt_value_t *out_option_value) {
+    avs_error_t err = avs_net_socket_get_opt(
+            ((avs_api_socket_interceptor_t *) intercept_socket)->socket,
+            option_key, out_option_value);
+    return err;
+}
+
+static avs_error_t set_opt_intercept(avs_net_socket_t *intercept_socket,
+                                     avs_net_socket_opt_key_t option_key,
+                                     avs_net_socket_opt_value_t option_value) {
+    avs_error_t err = avs_net_socket_set_opt(
+            ((avs_api_socket_interceptor_t *) intercept_socket)->socket,
+            option_key, option_value);
+    return err;
+}
+
+static const void *system_socket_intercept(avs_net_socket_t *intercept_socket) {
+    return avs_net_socket_get_system(
+            ((avs_api_socket_interceptor_t *) intercept_socket)->socket);
+}
+
+static avs_error_t cleanup_intercept(avs_net_socket_t **intercept_socket) {
+    avs_error_t err = avs_net_socket_cleanup(
+            &(*((avs_api_socket_interceptor_t **) intercept_socket))->socket);
+    avs_free(*intercept_socket);
+    *intercept_socket = NULL;
+    return err;
+}
+
+static const avs_net_socket_v_table_t interceptor_vtable = {
+    connect_intercept,        decorate_intercept,    send_intercept,
+    send_to_intercept,        receive_intercept,     receive_from_intercept,
+    bind_intercept,           accept_intercept,      close_intercept,
+    shutdown_intercept,       cleanup_intercept,     system_socket_intercept,
+    interface_name_intercept, remote_host_intercept, remote_hostname_intercept,
+    remote_port_intercept,    local_host_intercept,  local_port_intercept,
+    get_opt_intercept,        set_opt_intercept
+};
+
+static avs_error_t
+create_socket_interceptor(avs_net_socket_t **interceptor_socket,
+                          avs_net_socket_t *backend_socket,
+                          avs_net_socket_type_t type) {
+    avs_net_socket_cleanup(interceptor_socket);
+
+    avs_api_socket_interceptor_t *sock =
+            (avs_api_socket_interceptor_t *) avs_malloc(
+                    sizeof(avs_api_socket_interceptor_t));
+    *interceptor_socket = (avs_net_socket_t *) sock;
+    if (*interceptor_socket) {
+        avs_api_socket_interceptor_t new_socket = { &interceptor_vtable,
+                                                    backend_socket, type };
+        memcpy(*interceptor_socket, &new_socket, sizeof(new_socket));
+        return AVS_OK;
+    }
+    return avs_errno(AVS_ENOMEM);
+}
+
+static avs_error_t
+init_traffic_interceptor_if_applicable(avs_net_socket_t **interceptor_socket,
+                                       avs_net_socket_type_t type,
+                                       avs_error_t curr_err) {
+    if (avs_is_ok(curr_err)) {
+        avs_net_socket_t *backend_socket = *interceptor_socket;
+        *interceptor_socket = NULL;
+        curr_err = create_socket_interceptor(interceptor_socket, backend_socket,
+                                             type);
+        if (avs_is_err(curr_err)) {
+            avs_net_socket_cleanup(&backend_socket);
+        }
+    }
+    return curr_err;
+}
+#    endif // AVS_COMMONS_WITH_TRAFFIC_INTERCEPTOR
 
 avs_error_t
 avs_net_udp_socket_create(avs_net_socket_t **socket,
                           const avs_net_socket_configuration_t *config) {
     avs_error_t err =
             create_bare_socket(socket, _avs_net_create_udp_socket, config);
+#    if defined(AVS_COMMONS_NET_WITH_SOCKET_LOG)
     return init_debug_socket_if_applicable(socket, err);
+#    elif defined(AVS_COMMONS_WITH_TRAFFIC_INTERCEPTOR)
+    return init_traffic_interceptor_if_applicable(socket, AVS_NET_UDP_SOCKET,
+                                                  err);
+#    else
+    return err;
+#    endif
 }
 
 avs_error_t
@@ -711,7 +969,14 @@ avs_net_tcp_socket_create(avs_net_socket_t **socket,
                           const avs_net_socket_configuration_t *config) {
     avs_error_t err =
             create_bare_socket(socket, _avs_net_create_tcp_socket, config);
+#    if defined(AVS_COMMONS_NET_WITH_SOCKET_LOG)
     return init_debug_socket_if_applicable(socket, err);
+#    elif defined(AVS_COMMONS_WITH_TRAFFIC_INTERCEPTOR)
+    return init_traffic_interceptor_if_applicable(socket, AVS_NET_TCP_SOCKET,
+                                                  err);
+#    else
+    return err;
+#    endif
 }
 
 #    ifdef AVS_COMMONS_WITH_AVS_CRYPTO
@@ -725,7 +990,14 @@ avs_net_dtls_socket_create(avs_net_socket_t **socket,
     }
     avs_error_t err =
             create_bare_socket(socket, _avs_net_create_dtls_socket, config);
+#            if defined(AVS_COMMONS_NET_WITH_SOCKET_LOG)
     return init_debug_socket_if_applicable(socket, err);
+#            elif defined(AVS_COMMONS_WITH_TRAFFIC_INTERCEPTOR)
+    return init_traffic_interceptor_if_applicable(socket, AVS_NET_DTLS_SOCKET,
+                                                  err);
+#            else
+    return err;
+#            endif
 #        else  // AVS_COMMONS_WITHOUT_TLS
     (void) socket;
     (void) config;
@@ -744,7 +1016,14 @@ avs_net_ssl_socket_create(avs_net_socket_t **socket,
     }
     avs_error_t err =
             create_bare_socket(socket, _avs_net_create_ssl_socket, config);
+#            if defined(AVS_COMMONS_NET_WITH_SOCKET_LOG)
     return init_debug_socket_if_applicable(socket, err);
+#            elif defined(AVS_COMMONS_WITH_TRAFFIC_INTERCEPTOR)
+    return init_traffic_interceptor_if_applicable(socket, AVS_NET_SSL_SOCKET,
+                                                  err);
+#            else
+    return err;
+#            endif
 #        else  // AVS_COMMONS_WITHOUT_TLS
     (void) socket;
     (void) config;

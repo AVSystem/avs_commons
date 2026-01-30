@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 AVSystem <avsystem@avsystem.com>
+ * Copyright 2026 AVSystem <avsystem@avsystem.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,9 +19,6 @@
 
 #if defined(AVS_COMMONS_WITH_AVS_NET) && defined(AVS_COMMONS_WITH_MBEDTLS)
 
-// this uses some symbols such as "printf" - include it before poisoning them
-#    include <mbedtls/platform.h>
-
 #    ifdef AVS_COMMONS_NET_WITH_MBEDTLS_LOGS
 #        ifndef AVS_COMMONS_WITH_INTERNAL_LOGS
 #            error "AVS_COMMONS_NET_WITH_MBEDTLS_LOGS requires AVS_COMMONS_WITH_INTERNAL_LOGS to be enabled"
@@ -29,8 +26,6 @@
 
 #        include <mbedtls/debug.h>
 #    endif // AVS_COMMONS_NET_WITH_MBEDTLS_LOGS
-
-#    include <avs_commons_poison.h>
 
 #    include <assert.h>
 #    include <errno.h>
@@ -75,7 +70,11 @@
 
 #    include "../avs_net_impl.h"
 
+// this uses some symbols such as "printf" - include it before poisoning them
 #    include "crypto/mbedtls/avs_mbedtls_private.h"
+#    include <mbedtls/platform.h>
+
+#    include <avs_commons_poison.h>
 
 #    ifdef AVS_COMMONS_NET_WITH_MBEDTLS_SSLKEYLOG
 #        if MBEDTLS_VERSION_NUMBER < 0x03000000
@@ -431,6 +430,7 @@ contains_cipher(const avs_net_socket_tls_ciphersuites_t *enabled_ciphers,
 
 static bool cipher_matches_mode(const mbedtls_ssl_ciphersuite_t *ciphersuite,
                                 avs_net_security_mode_t mode) {
+    (void) ciphersuite;
     switch (mode) {
 #        ifdef AVS_COMMONS_WITH_AVS_CRYPTO_PSK
     case AVS_NET_SECURITY_PSK:

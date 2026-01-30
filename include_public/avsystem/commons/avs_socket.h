@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 AVSystem <avsystem@avsystem.com>
+ * Copyright 2026 AVSystem <avsystem@avsystem.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -741,6 +741,10 @@ typedef union {
     avs_net_dtls_handshake_timeouts_t dtls_handshake_timeouts;
 } avs_net_socket_opt_value_t;
 
+/**
+ * @deprecated This is deprecated API. This API can be removed in future
+ * releases, without any notice.
+ */
 int avs_net_socket_debug(int value);
 
 /**

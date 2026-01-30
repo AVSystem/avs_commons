@@ -1,4 +1,4 @@
-# Copyright 2025 AVSystem <avsystem@avsystem.com>
+# Copyright 2026 AVSystem <avsystem@avsystem.com>
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 cmake_minimum_required(VERSION 3.16.0)
 project(avs_commons C)
 
-set(AVS_COMMONS_VERSION "5.5.0")
+set(AVS_COMMONS_VERSION "5.6.0")
 
 ################# DISTRIBUTION #################################################
 
@@ -316,6 +316,9 @@ option(WITH_IPV6 "Enable IPv6 support" ON)
 option(WITH_SOCKET_LOG "Enable socket communication logging" OFF)
 set(AVS_COMMONS_NET_WITH_SOCKET_LOG ${WITH_SOCKET_LOG})
 
+option(WITH_TRAFFIC_INTERCEPTOR "Enable socket custom traffic interception" OFF)
+set(AVS_COMMONS_WITH_TRAFFIC_INTERCEPTOR ${WITH_TRAFFIC_INTERCEPTOR})
+
 option(WITHOUT_64BIT_FORMAT_SPECIFIERS "Disable using 64-bit format specifiers in printf/scanf" OFF)
 set(AVS_COMMONS_WITHOUT_64BIT_FORMAT_SPECIFIERS ${WITHOUT_64BIT_FORMAT_SPECIFIERS})
 
@@ -437,12 +440,6 @@ if(WITH_TEST)
         add_dependencies(check avs_commons_check)
     endif()
 
-    # license check is only possible if running in a Git working tree
-    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/.git")
-        add_custom_target(license_check COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/tools/license_headers.py"
-                                                --root "${CMAKE_CURRENT_SOURCE_DIR}")
-        add_dependencies(avs_commons_check license_check)
-    endif()
 
     add_custom_target(avs_commons_extern_c_check COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/tools/check_extern_c.py")
     add_dependencies(avs_commons_check avs_commons_extern_c_check)
@@ -471,6 +468,7 @@ if(WITH_TEST)
     # NAME - test target name, without _test suffix
     # LIBS - libs to link to
     # SOURCES - test sources
+    add_custom_target(avs_commons_unit_check)
     function(avs_add_test)
         set(options)
         set(one_value_args NAME)
@@ -502,8 +500,10 @@ if(WITH_TEST)
                      ${AAT_ENVIRONMENT})
 
         add_custom_target(${AAT_NAME}_check COMMAND ${CMAKE_CTEST_COMMAND} -V -R "^${AAT_NAME}_test$" DEPENDS ${AAT_NAME}_test)
-        add_dependencies(avs_commons_check ${AAT_NAME}_check)
+        add_dependencies(avs_commons_unit_check ${AAT_NAME}_check)
     endfunction()
+
+    add_dependencies(avs_commons_check avs_commons_unit_check)
 else(WITH_TEST)
     function(avs_add_test)
     endfunction()

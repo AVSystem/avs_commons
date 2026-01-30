@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 AVSystem <avsystem@avsystem.com>
+ * Copyright 2026 AVSystem <avsystem@avsystem.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,11 +20,6 @@
 #if defined(AVS_COMMONS_WITH_AVS_NET) && defined(AVS_COMMONS_WITH_MBEDTLS) \
         && defined(AVS_COMMONS_NET_WITH_TLS_SESSION_PERSISTENCE)
 
-// this uses some symbols such as "printf" - include it before poisoning them
-#    include <mbedtls/platform.h>
-
-#    include <avs_commons_poison.h>
-
 #    include <assert.h>
 
 #    include <mbedtls/bignum.h>
@@ -41,6 +36,11 @@
 #    include "avs_mbedtls_persistence.h"
 
 #    include "../avs_net_impl.h"
+
+// this uses some symbols such as "printf" - include it before poisoning them
+#    include <mbedtls/platform.h>
+
+#    include <avs_commons_poison.h>
 
 VISIBILITY_SOURCE_BEGIN
 
