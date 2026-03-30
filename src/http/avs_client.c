@@ -105,8 +105,6 @@ int _avs_http_set_cookie(avs_http_t *client,
                          const char *cookie_header) {
     const char *equal_sign = strchr(cookie_header, '=');
     const char *end = strchr(cookie_header, ';');
-    LOG(TRACE, _("Set-Cookie") "%s" _(": ") "%s", use_cookie2 ? "2" : "",
-        cookie_header);
     if (!equal_sign) {
         LOG(ERROR, _("Invalid cookie format: ") "%s", cookie_header);
         return -1;

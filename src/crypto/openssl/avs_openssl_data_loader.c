@@ -23,6 +23,7 @@
 #if defined(AVS_COMMONS_WITH_AVS_CRYPTO) && defined(AVS_COMMONS_WITH_OPENSSL) \
         && defined(AVS_COMMONS_WITH_AVS_CRYPTO_PKI)
 
+#    include <openssl/crypto.h>
 #    include <openssl/ssl.h>
 
 #    include <avs_commons_poison.h>
@@ -339,11 +340,29 @@ static avs_error_t load_file_into_buffer(void **out_buf,
         err = avs_errno(AVS_EIO);
     }
 
+    avs_off_t file_len;
     (void) (avs_is_err(err)
-            || avs_is_err((err = avs_stream_copy(membuf, file_stream)))
+            || avs_is_err((err = avs_stream_file_length(
+                                   file_stream,
+                                   &file_len))) // read the file size ...
+            || avs_is_err(
+                       (err = avs_stream_membuf_ensure_free_bytes(
+                                membuf,
+                                (size_t) file_len))) // ... and resize the
+                                                     // membuf now to prevent
+                                                     // reallocation later what
+                                                     // would potentially leave
+                                                     // part of the key in the
+                                                     // memory we wouldn't clean
+            || avs_is_err((err = avs_stream_copy_secure(membuf, file_stream,
+                                                        OPENSSL_cleanse)))
             || avs_is_err((err = avs_stream_membuf_take_ownership(
                                    membuf, out_buf, out_buf_size))));
     avs_stream_cleanup(&file_stream);
+    // no need to call OPENSSL_cleanse on the internal buffer
+    // of membuf as it's ownership was passed calling
+    // avs_stream_membuf_take_ownership and will be cleaned
+    // later
     avs_stream_cleanup(&membuf);
     return err;
 #    else  // AVS_COMMONS_STREAM_WITH_FILE
@@ -416,6 +435,7 @@ static avs_error_t load_key_from_file(EVP_PKEY **out_key,
                                                     filename)))
             || avs_is_err((err = load_key_from_buffer(out_key, buffer,
                                                       buffer_size, password))));
+    OPENSSL_cleanse((void *) buffer, buffer_size);
     avs_free(buffer);
     return err;
 }

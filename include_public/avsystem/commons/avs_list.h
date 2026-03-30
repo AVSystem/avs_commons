@@ -371,7 +371,7 @@ static inline AVS_LIST(T) &avs_list_next__(AVS_LIST(T) element) {
  *                    pointers to consecutive list elements during iteration.
  */
 #define AVS_LIST_ITERATE_PTR(element_ptr)    \
-    for (; *(element_ptr);                   \
+    for (; element_ptr && *(element_ptr);    \
          (element_ptr) = AVS_CALL_WITH_CAST( \
                  0, avs_list_void_identity__, AVS_LIST_NEXT_PTR(element_ptr)))
 

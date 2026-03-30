@@ -406,18 +406,20 @@ avs_error_t avs_stream_peekline(avs_stream_t *stream,
     return err;
 }
 
-avs_error_t avs_stream_copy(avs_stream_t *output_stream,
-                            avs_stream_t *input_stream) {
-    char buf[AVS_STREAM_STACK_BUFFER_SIZE];
+static avs_error_t avs_stream_copy_internal(char *internal_buf,
+                                            size_t internal_buf_size,
+                                            avs_stream_t *output_stream,
+                                            avs_stream_t *input_stream) {
     size_t bytes_read;
     bool message_finished = false;
     while (!message_finished) {
         avs_error_t err;
         if (avs_is_err((err = avs_stream_read(input_stream, &bytes_read,
-                                              &message_finished, buf,
-                                              sizeof(buf))))
+                                              &message_finished, internal_buf,
+                                              internal_buf_size)))
                 || (bytes_read
-                    && avs_is_err((err = avs_stream_write(output_stream, buf,
+                    && avs_is_err((err = avs_stream_write(output_stream,
+                                                          internal_buf,
                                                           bytes_read))))) {
             return err;
         }
@@ -426,6 +428,25 @@ avs_error_t avs_stream_copy(avs_stream_t *output_stream,
         }
     }
     return AVS_OK;
+}
+
+avs_error_t avs_stream_copy_secure(avs_stream_t *output_stream,
+                                   avs_stream_t *input_stream,
+                                   avs_zeroise_cb_t zeroise_cb) {
+    char buf[AVS_STREAM_STACK_BUFFER_SIZE];
+    avs_error_t ret = avs_stream_copy_internal(buf, sizeof(buf), output_stream,
+                                               input_stream);
+    if (zeroise_cb) {
+        zeroise_cb(buf, AVS_STREAM_STACK_BUFFER_SIZE);
+    }
+    return ret;
+}
+
+avs_error_t avs_stream_copy(avs_stream_t *output_stream,
+                            avs_stream_t *input_stream) {
+    char buf[AVS_STREAM_STACK_BUFFER_SIZE];
+    return avs_stream_copy_internal(buf, sizeof(buf), output_stream,
+                                    input_stream);
 }
 
 const void *avs_stream_v_table_find_extension(avs_stream_t *stream,

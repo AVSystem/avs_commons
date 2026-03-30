@@ -27,6 +27,7 @@
 #    endif // AVS_COMMONS_WITH_AVS_CRYPTO_PKI_ENGINE
 
 #    include "../avs_crypto_global.h"
+#    include <avsystem/commons/avs_crypto_common.h>
 
 #    include <avs_commons_poison.h>
 
@@ -55,6 +56,10 @@ void _avs_crypto_cleanup_global_state() {
 #    ifdef AVS_COMMONS_WITH_AVS_CRYPTO_PKI_ENGINE
     _avs_crypto_openssl_engine_cleanup_global_state();
 #    endif // AVS_COMMONS_WITH_AVS_CRYPTO_PKI_ENGINE
+}
+
+void avs_crypto_clear_buffer(void *buf, size_t size) {
+    OPENSSL_cleanse(buf, size);
 }
 
 #endif // defined(AVS_COMMONS_WITH_AVS_CRYPTO) &&

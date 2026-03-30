@@ -131,10 +131,20 @@ void avs_vector_delete__(void ***ptr) {
 
 int avs_vector_push__(void ***ptr, const void *elemptr) {
     avs_vector_desc_t *desc = get_desc(*ptr);
-    if (desc->capacity - desc->size == 0
-            && avs_vector_reserve__(ptr,
-                                    desc->size == 0 ? 1 : 2 * desc->size)) {
-        return -1;
+    if (desc->capacity - desc->size == 0) {
+        size_t new_capacity;
+        if (desc->size == 0) {
+            new_capacity = 1;
+        } else {
+            // check for overflow
+            if (desc->size > (SIZE_MAX / 2)) {
+                return -1;
+            }
+            new_capacity = 2 * desc->size;
+        }
+        if (avs_vector_reserve__(ptr, new_capacity)) {
+            return -1;
+        }
     }
     memcpy((char *) desc->data + desc->size * desc->elem_size, elemptr,
            desc->elem_size);
@@ -151,7 +161,7 @@ void *avs_vector_remove__(void ***ptr, size_t index) {
     void *tmp;
     avs_vector_desc_t *desc = get_desc(*ptr);
     size = vector_size_internal(desc);
-    if (size == 0) {
+    if (index >= size) {
         return NULL;
     }
     tmp = avs_malloc(desc->elem_size);

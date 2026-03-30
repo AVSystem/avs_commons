@@ -114,10 +114,21 @@ static avs_error_t stream_membuf_write_some(avs_stream_t *stream_,
     if (*inout_data_length == 0) {
         return AVS_OK;
     }
+
+    // This check is performed before defragment_membuf(). While
+    // defragmentation could theoretically reduce index_write, hitting SIZE_MAX
+    // would require unrealistically large buffers (>= 4 GiB even on 32-bit),
+    // so we don't care about that edge case here and just return ENOMEM.
+    if (*inout_data_length > SIZE_MAX - stream->index_write) {
+        return avs_errno(AVS_ENOMEM); // Prevent size_t overflow
+    }
     if (stream->buffer_size < stream->index_write + *inout_data_length) {
         defragment_membuf(stream);
     }
     if (stream->buffer_size < stream->index_write + *inout_data_length) {
+        if (stream->buffer_size > ((SIZE_MAX - *inout_data_length) / 2)) {
+            return avs_errno(AVS_ENOMEM); // Prevent size_t overflow
+        }
         avs_error_t err =
                 realloc_membuf(stream,
                                2 * stream->buffer_size + *inout_data_length);

@@ -51,6 +51,8 @@ static inline bool avs_is_eof(avs_error_t error) {
     return avs_is_err(error) && error.category == AVS_EOF_CATEGORY;
 }
 
+typedef void (*avs_zeroise_cb_t)(void *buf, size_t size);
+
 /**
  * @file avs_stream.h
  *
@@ -370,11 +372,44 @@ avs_error_t avs_stream_peekline(avs_stream_t *stream,
  * NOTE: @ref avs_stream_finish_message is NOT called on the output stream, so
  * you need to call it manually if needed.
  *
+ * NOTE: This function uses an internal temporary buffer while copying data.
+ * The contents of this buffer are not cleared after the operation completes.
+ * If the copied data may contain sensitive information and requires secure
+ * memory erasure, use @ref avs_stream_copy_secure instead.
+ *
  * @returns @ref AVS_OK for success, or an error condition for which either the
  *          read or the write operation failed.
  */
 avs_error_t avs_stream_copy(avs_stream_t *output_stream,
                             avs_stream_t *input_stream);
+
+/**
+ * Copies a message from one stream to another using a secure temporary buffer.
+ *
+ * This function behaves like @ref avs_stream_copy: it repeatedly calls
+ * @ref avs_stream_read to read chunks of data from @p input_stream and then
+ * @ref avs_stream_write to write them into @p output_stream until the message
+ * is finished or an error occurs.
+ *
+ * NOTE: @ref avs_stream_finish_message is NOT called on the output stream, so
+ * you need to call it manually if needed.
+ *
+ * NOTE: Unlike @ref avs_stream_copy, this function clears the internal buffer
+ * after the copy operation completes using the provided memory-wiping callback.
+ * This is intended for situations where the transferred data may contain
+ * sensitive information.
+ *
+ * @param output_stream Stream to write the message into.
+ * @param input_stream  Stream to read the message from.
+ * @param zeroise_cb    Callback used to securely erase the internal buffer.
+ *                      May be NULL if no wiping is required.
+ *
+ * @returns @ref AVS_OK for success, or an error condition for which either the
+ *          read or the write operation failed.
+ */
+avs_error_t avs_stream_copy_secure(avs_stream_t *output_stream,
+                                   avs_stream_t *input_stream,
+                                   avs_zeroise_cb_t zeroise_cb);
 
 /**
  * Resets stream state (which is something highly dependend on the stream

@@ -100,6 +100,9 @@ char *avs_strtok(char *str, const char *delim, char **saveptr) {
 
 char *avs_strdup(const char *str) {
     size_t len = strlen(str);
+    if (len == SIZE_MAX) {
+        return NULL;
+    }
     char *retval = (char *) avs_malloc(len + 1);
     if (!retval) {
         return NULL;

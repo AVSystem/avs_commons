@@ -109,6 +109,24 @@ struct avs_crypto_security_info_union_struct {
     } info;
 };
 
+#if defined(AVS_COMMONS_WITH_AVS_CRYPTO)
+/**
+ * Securely clears the contents of a memory buffer.
+ *
+ * This function overwrites the memory region pointed to by @p buf to ensure
+ * that sensitive data such as cryptographic keys, passwords, or temporary
+ * plaintext is not left in memory after it is no longer needed.
+ *
+ * The actual implementation of this operation is determined by the crypto
+ * backend in use, and is designed to prevent the compiler from optimizing
+ * the memory wiping away.
+ *
+ * @param buf   Pointer to the buffer to be cleared.
+ * @param size  Size of the buffer in bytes.
+ */
+void avs_crypto_clear_buffer(void *buf, size_t size);
+#endif // defined(AVS_COMMONS_WITH_AVS_CRYPTO)
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

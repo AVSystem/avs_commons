@@ -35,6 +35,10 @@
 #    endif // defined(MBEDTLS_USE_PSA_CRYPTO) || defined(MBEDTLS_PSA_CRYPTO_C)
            // || defined(AVS_COMMONS_WITH_MBEDTLS_PSA_RNG)
 
+#    include <mbedtls/platform_util.h>
+
+#    include <avsystem/commons/avs_crypto_common.h>
+
 #    define MODULE_NAME avs_crypto_global
 #    include <avs_x_log_config.h>
 
@@ -69,6 +73,10 @@ void _avs_crypto_cleanup_global_state() {
     _avs_crypto_mbedtls_engine_cleanup_global_state();
 #    endif /* defined(AVS_COMMONS_WITH_AVS_CRYPTO_PKI_ENGINE) || \
               defined(AVS_COMMONS_WITH_AVS_CRYPTO_PSK_ENGINE) */
+}
+
+void avs_crypto_clear_buffer(void *buf, size_t size) {
+    mbedtls_platform_zeroize(buf, size);
 }
 
 #endif // defined(AVS_COMMONS_WITH_AVS_CRYPTO) &&

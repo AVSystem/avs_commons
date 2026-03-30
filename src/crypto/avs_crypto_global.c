@@ -18,6 +18,10 @@
 
 #ifdef AVS_COMMONS_WITH_AVS_CRYPTO
 
+#    if defined(AVS_COMMONS_WITH_TINYDTLS)
+#        include <string.h>
+#    endif // defined(AVS_COMMONS_WITH_TINYDTLS)
+
 #    include "avs_crypto_global.h"
 #    include <avsystem/commons/avs_errno.h>
 #    include <avsystem/commons/avs_init_once.h>
@@ -45,5 +49,18 @@ avs_error_t _avs_crypto_ensure_global_state(void) {
         return AVS_OK;
     }
 }
+
+#    if defined(AVS_COMMONS_WITH_TINYDTLS)         \
+            && !(defined(AVS_COMMONS_WITH_MBEDTLS) \
+                 || defined(AVS_COMMONS_WITH_OPENSSL))
+typedef void *(*memset_type_t)(void *, int, size_t);
+
+void avs_crypto_clear_buffer(void *buf, size_t size) {
+    volatile memset_type_t memset_ptr = memset;
+    memset_ptr(buf, 0, size);
+}
+#    endif // defined(AVS_COMMONS_WITH_TINYDTLS)&&
+           // !(defined(AVS_COMMONS_WITH_MBEDTLS) ||
+           // defined(AVS_COMMONS_WITH_OPENSSL))
 
 #endif // AVS_COMMONS_WITH_AVS_CRYPTO

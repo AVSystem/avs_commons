@@ -40,6 +40,7 @@
 
 // this uses some symbols such as "printf" - include it before poisoning them
 #    include <mbedtls/platform.h>
+#    include <mbedtls/platform_util.h>
 
 #    include <avs_commons_poison.h>
 
@@ -54,6 +55,9 @@ static avs_error_t append_cert_from_buffer(mbedtls_x509_crt *chain,
             mbedtls_x509_crt_parse(chain, (const unsigned char *) buffer, len);
     if (result == MBEDTLS_ERR_X509_INVALID_FORMAT && len > 0
             && ((const char *) buffer)[len - 1] != '\0') {
+        if (len == SIZE_MAX) {
+            return avs_errno(AVS_EINVAL);
+        }
         // Maybe it's a PEM format without a terminating '\0' that
         // mbedtls_x509_crt_parse() requires for some reason - let's try that.
         unsigned char *refined_buffer = (unsigned char *) avs_malloc(len + 1);
@@ -105,6 +109,9 @@ append_crl_from_buffer(mbedtls_x509_crl *crl, const void *buffer, size_t len) {
             mbedtls_x509_crl_parse(crl, (const unsigned char *) buffer, len);
     if (result == MBEDTLS_ERR_X509_INVALID_FORMAT && len > 0
             && ((const char *) buffer)[len - 1] != '\0') {
+        if (len == SIZE_MAX) {
+            return avs_errno(AVS_EINVAL);
+        }
         // Maybe it's a PEM format without a terminating '\0' that
         // mbedtls_x509_crl_parse() requires for some reason - let's try that.
         unsigned char *refined_buffer = (unsigned char *) avs_malloc(len + 1);
@@ -439,6 +446,9 @@ load_private_key_from_buffer(mbedtls_pk_context *client_key,
             );
     if (result == MBEDTLS_ERR_PK_KEY_INVALID_FORMAT && len > 0
             && ((const char *) buffer)[len - 1] != '\0') {
+        if (len == SIZE_MAX) {
+            return avs_errno(AVS_EINVAL);
+        }
         // Maybe it's a PEM format without a terminating '\0' that
         // mbedtls_pk_parse_key() requires for some reason - let's try that.
         unsigned char *refined_buffer = (unsigned char *) avs_malloc(len + 1);
@@ -447,9 +457,8 @@ load_private_key_from_buffer(mbedtls_pk_context *client_key,
         }
         memcpy(refined_buffer, buffer, len);
         refined_buffer[len] = '\0';
-        len++;
 
-        result = mbedtls_pk_parse_key(client_key, refined_buffer, len, pwd,
+        result = mbedtls_pk_parse_key(client_key, refined_buffer, len + 1, pwd,
                                       pwd_len
 #        if MBEDTLS_VERSION_NUMBER \
                 >= 0x03000000 // mbed TLS 3.0 added RNG arguments
@@ -457,6 +466,7 @@ load_private_key_from_buffer(mbedtls_pk_context *client_key,
                                       random_cb, random_cb_arg
 #        endif // MBEDTLS_VERSION_NUMBER >= 0x03000000
         );
+        mbedtls_platform_zeroize((void *) refined_buffer, len + 1);
         avs_free(refined_buffer);
     }
     return result ? avs_errno(AVS_EPROTO) : AVS_OK;

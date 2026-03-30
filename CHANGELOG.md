@@ -1,5 +1,19 @@
 # Changelog
 
+## avs_commons 5.7.0 (Mar 30th, 2026)
+
+### Improvements
+* Added clearing of buffers that may hold sensitive data before freeing allocated
+  memory.
+* Added validation of input data in various functions.
+
+### Features
+* Introduced new `avs_error_t` category - `AVS_NET_SSL_LIB_ERROR_CATEGORY`
+* MbedTLS integration changes:
+  - Changed handshake errors return to `AVS_NET_SSL_LIB_ERROR_CATEGORY`
+  - Added key/cert pair validation
+
+
 ## avs_commons 5.6.0 (Jan 30th, 2026)
 
 ### Features

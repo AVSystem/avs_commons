@@ -54,6 +54,11 @@ static void url_parse_protocol(const char **url,
                                avs_url_t *parsed_url) {
     assert(*data_out_ptr == 0);
     const char *proto_end = *url;
+    // url must start with a letter
+    if (!isalpha((unsigned char) *proto_end)) {
+        parsed_url->has_protocol = false;
+        return;
+    }
     while (*proto_end && is_valid_schema_char(*proto_end)) {
         ++proto_end;
     }
@@ -352,7 +357,8 @@ avs_url_t *avs_url_parse_lenient(const char *raw_url) {
     size_t data_length = strlen(raw_url) + 1;
     avs_url_t *out =
             (avs_url_t *) avs_malloc(offsetof(avs_url_t, data) + data_length);
-    if (!out) {
+    // data_length == 0 means strlen(raw_url) == SIZE_MAX
+    if (!out || data_length == 0) {
         LOG_OOM();
         return NULL;
     }

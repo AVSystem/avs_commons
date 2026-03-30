@@ -574,7 +574,7 @@ void avs_sched_detach(avs_sched_handle_t *handle_ptr) {
 }
 
 int avs_sched_leap_time(avs_sched_t *sched, avs_time_duration_t diff) {
-    if (avs_time_duration_valid(diff)) {
+    if (!avs_time_duration_valid(diff)) {
         SCHED_LOG(sched, ERROR,
                   _("attempted to leap an invalid amount of time"));
         return -1;

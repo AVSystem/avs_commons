@@ -42,6 +42,8 @@
 
 #include <avsystem/commons/avs_time.h>
 
+#include "avs_mbedtls_prng.h"
+
 VISIBILITY_PRIVATE_HEADER_BEGIN
 
 #if MBEDTLS_VERSION_NUMBER >= 0x03000000
@@ -124,6 +126,61 @@ _avs_crypto_mbedtls_x509_crt_get_raw(const mbedtls_x509_crt *crt,
 static inline mbedtls_pk_context *
 _avs_crypto_mbedtls_x509_crt_get_pk(mbedtls_x509_crt *crt) {
     return &crt->MBEDTLS_PRIVATE_BETWEEN_30_31(pk);
+}
+
+static inline int
+_avs_crypto_mbedtls_pk_check_pair(mbedtls_x509_crt *cert,
+                                  mbedtls_pk_context *prv,
+                                  avs_crypto_mbedtls_prng_cb_t *f_rng,
+                                  void *p_rng) {
+    mbedtls_pk_context *pub = _avs_crypto_mbedtls_x509_crt_get_pk(cert);
+    int result;
+
+#    ifndef AVS_COMMONS_WITH_AVS_CRYPTO_PKI_ENGINE
+#        if MBEDTLS_VERSION_NUMBER >= 0x03000000
+    result = mbedtls_pk_check_pair(pub, prv, f_rng, p_rng);
+#        else  // MBEDTLS_VERSION_NUMBER >= 0x03000000
+    (void) f_rng;
+    (void) p_rng;
+    result = mbedtls_pk_check_pair(pub, prv);
+#        endif // MBEDTLS_VERSION_NUMBER >= 0x03000000
+
+#    else // AVS_COMMONS_WITH_AVS_CRYPTO_PKI_ENGINE
+    /*
+     * Alternative for engine-backed keys if mbedtls_pk_check_pair() returns
+     * MBEDTLS_ERR_PK_FEATURE_UNAVAILABLE:
+     *
+     * 1. Hash a fixed test message.
+     * 2. Sign that hash using mbedtls_pk_sign() on prv.
+     * 3. Verify the signature using mbedtls_pk_verify() on pub.
+     */
+    static const unsigned char TEST_HASH[32] = {
+        0x88, 0x62, 0xf2, 0x6f, 0xd0, 0x46, 0x70, 0x8f, 0x4f, 0x48, 0x1f,
+        0x64, 0x89, 0x9d, 0xbc, 0x6a, 0x0a, 0x71, 0x23, 0xa1, 0x25, 0x47,
+        0x5f, 0xf2, 0x01, 0x90, 0x8f, 0xea, 0xa2, 0x99, 0x7d, 0x3d
+    };
+    unsigned char signature[MBEDTLS_PK_SIGNATURE_MAX_SIZE];
+    size_t signature_len = 0;
+    result =
+#        if MBEDTLS_VERSION_NUMBER >= 0x03000000
+            mbedtls_pk_sign(prv, MBEDTLS_MD_SHA256, TEST_HASH,
+                            sizeof(TEST_HASH), signature, sizeof(signature),
+                            &signature_len, f_rng, p_rng);
+#        else  // MBEDTLS_VERSION_NUMBER >= 0x03000000
+            mbedtls_pk_sign(prv, MBEDTLS_MD_SHA256, TEST_HASH,
+                            sizeof(TEST_HASH), signature, &signature_len, f_rng,
+                            p_rng);
+#        endif // MBEDTLS_VERSION_NUMBER >= 0x03000000
+    if (result) {
+        return result;
+    }
+
+    result = mbedtls_pk_verify(pub, MBEDTLS_MD_SHA256, TEST_HASH,
+                               sizeof(TEST_HASH), signature, signature_len);
+
+#    endif // AVS_COMMONS_WITH_AVS_CRYPTO_PKI_ENGINE
+
+    return result;
 }
 #endif // defined(AVS_COMMONS_WITH_AVS_NET) &&
        // defined(AVS_COMMONS_WITH_AVS_CRYPTO_PKI)

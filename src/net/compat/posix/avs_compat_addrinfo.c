@@ -146,7 +146,7 @@ static void randomize_addrinfo_list(struct addrinfo **list_ptr,
 }
 
 void avs_net_addrinfo_delete(avs_net_addrinfo_t **ctx) {
-    if (*ctx) {
+    if (ctx && *ctx) {
         if ((*ctx)->results) {
             freeaddrinfo((*ctx)->results);
         }

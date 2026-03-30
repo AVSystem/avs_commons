@@ -271,6 +271,12 @@ AVS_UNIT_TEST(parse_url, port_invalid_characters) {
     AVS_UNIT_ASSERT_NULL(avs_url_parse("http://acs.avsystem.com:12345_/path"));
 }
 
+AVS_UNIT_TEST(parse_url, invalid_first_character) {
+    AVS_UNIT_ASSERT_NULL(avs_url_parse("+http://acs.avsystem.com"));
+    AVS_UNIT_ASSERT_NULL(avs_url_parse("1http://acs.avsystem.com"));
+    AVS_UNIT_ASSERT_NULL(avs_url_parse(".http://acs.avsystem.com"));
+}
+
 #ifdef AVS_COMMONS_NET_WITH_IPV6
 AVS_UNIT_TEST(parse_url, ftp_ipv6) {
     avs_url_t *parsed_url = avs_url_parse("ftp://[12::34]");

@@ -225,13 +225,19 @@ static void debug_mbedtls(
 static avs_error_t return_alert_if_any(ssl_socket_t *socket) {
     uint8_t level;
     uint8_t description;
-    if (_avs_crypto_mbedtls_ssl_context_get_current_alert(
+    if (!_avs_crypto_mbedtls_ssl_context_get_current_alert(
                 get_context(socket), &level, &description)) {
-        return AVS_OK;
+        LOG(WARNING,
+            _("incoming alert_level = ") "%u" _(", alert_description = ") "%u",
+            level, description);
+        return avs_net_ssl_alert(level, description);
     }
-    LOG(DEBUG, _("alert_level = ") "%u" _(", alert_description = ") "%u", level,
-        description);
-    return avs_net_ssl_alert(level, description);
+    return AVS_OK;
+}
+
+static inline uint16_t map_mbedtls_error_to_uint16(int32_t mbedtls_error) {
+    assert(mbedtls_error < 0 && mbedtls_error > -0x10000);
+    return (uint16_t) ((-mbedtls_error) & 0xFFFF);
 }
 
 void _avs_net_cleanup_global_ssl_state(void) {
@@ -756,7 +762,10 @@ static int noauth_cert_cb(void *socket_,
     return 0;
 }
 
-static avs_error_t initialize_cert_security(ssl_socket_t *socket) {
+static avs_error_t
+initialize_cert_security(ssl_socket_t *socket,
+                         avs_crypto_mbedtls_prng_cb_t *rng_cb,
+                         void *rng_cb_arg) {
     if (socket->cert_security.ca_cert || socket->cert_security.ca_crl) {
 #        ifdef WITH_DANE_SUPPORT
         if (socket->cert_security.dane_ta_certs) {
@@ -787,6 +796,15 @@ static avs_error_t initialize_cert_security(ssl_socket_t *socket) {
     }
 
     if (socket->cert_security.client_cert && socket->cert_security.client_key) {
+        int mbedtls_err = _avs_crypto_mbedtls_pk_check_pair(
+                socket->cert_security.client_cert,
+                socket->cert_security.client_key, rng_cb, rng_cb_arg);
+        if (mbedtls_err) {
+            LOG(ERROR, _("client certificate and key mismatch: ") "%d",
+                mbedtls_err);
+            return avs_net_ssl_lib_error(
+                    map_mbedtls_error_to_uint16(mbedtls_err));
+        }
         mbedtls_ssl_conf_own_cert(&socket->config,
                                   socket->cert_security.client_cert,
                                   socket->cert_security.client_key);
@@ -1140,7 +1158,7 @@ configure_ssl(ssl_socket_t *socket,
                                       &configuration->security.data.psk);
         break;
     case AVS_NET_SECURITY_CERTIFICATE:
-        err = initialize_cert_security(socket);
+        err = initialize_cert_security(socket, random_cb, random_cb_arg);
         break;
     default:
         AVS_UNREACHABLE("invalid enum value");
@@ -1354,10 +1372,13 @@ static avs_error_t start_ssl(ssl_socket_t *socket, const char *host) {
                  !mbedtls_ssl_is_handshake_over(get_context(socket)))) {
         do {
             result = mbedtls_ssl_handshake(get_context(socket));
+            LOG(ERROR, _("mbedtls_ssl_handshake() returned ") "%d", result);
         } while (is_retry_result(get_context(socket), result));
     } else {
         result = 0;
     }
+
+    LOG(ERROR, _("handshake ") "%s", result == 0 ? "completed" : "failed");
 
     if (result == 0) {
 #    if defined(AVS_COMMONS_WITH_INTERNAL_LOGS) \
@@ -1393,12 +1414,9 @@ static avs_error_t start_ssl(ssl_socket_t *socket, const char *host) {
         }
     } else {
         if (avs_is_ok((err = return_alert_if_any(socket)))) {
-            if (avs_is_err(socket->bio_error)) {
-                err = socket->bio_error;
-            } else {
-                err = avs_errno(AVS_EPROTO);
-            }
+            err = avs_net_ssl_lib_error(map_mbedtls_error_to_uint16(result));
         }
+
         LOG(ERROR, _("handshake failed: ") "%d", result);
     }
 

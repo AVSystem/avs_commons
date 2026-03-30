@@ -82,6 +82,9 @@ int avs_base64_encode_custom(char *out,
     size_t i;
     unsigned long sh = 0;
 
+    if (!out || !input) {
+        return -1;
+    }
     if (avs_base64_encoded_size_custom(input_length, config) > out_length) {
         return -1;
     }

@@ -131,6 +131,11 @@ AVS_UNIT_TEST(avs_vector, vector_remove) {
     AVS_UNIT_ASSERT_EQUAL((*v)[2], 2);
     AVS_UNIT_ASSERT_EQUAL((*v)[3], 4);
 
+    // try to remove non-existing element
+    elem = AVS_VECTOR_REMOVE_AT(&v, 10);
+    AVS_UNIT_ASSERT_NULL(elem);
+    AVS_UNIT_ASSERT_EQUAL(AVS_VECTOR_SIZE(v), 4);
+
     elem = AVS_VECTOR_REMOVE_AT(&v, 3);
     AVS_UNIT_ASSERT_EQUAL(*elem, 4);
     AVS_UNIT_ASSERT_EQUAL(AVS_VECTOR_SIZE(v), 3);

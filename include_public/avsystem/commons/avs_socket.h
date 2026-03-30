@@ -382,6 +382,25 @@ static inline uint8_t avs_net_ssl_alert_description(avs_error_t error) {
     return (uint8_t) error.code;
 }
 
+/**
+ * Category for @ref avs_error_t containing a backend-specific SSL library
+ * error.
+ *
+ * The <c>code</c> field in errors of this type contains an error code returned
+ * by the TLS backend in use. Its exact meaning is backend-specific.
+ *
+ * Errors of this type may be returned by socket operations (and propagated by
+ * other code) when a (D)TLS operation fails, likely during handshake (which
+ * is performed during @ref avs_net_socket_connect and
+ * @ref avs_net_socket_decorate).
+ */
+#define AVS_NET_SSL_LIB_ERROR_CATEGORY 8573 // 'TLSE' on phone keypad
+
+static inline avs_error_t avs_net_ssl_lib_error(uint16_t error) {
+    avs_error_t result = { AVS_NET_SSL_LIB_ERROR_CATEGORY, error };
+    return result;
+}
+
 #ifdef AVS_COMMONS_WITH_AVS_CRYPTO
 typedef struct {
     /** Array of ciphersuite IDs, or NULL to enable all ciphers */

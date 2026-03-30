@@ -373,13 +373,10 @@ avs_error_t avs_http_open_stream(avs_stream_t **out,
         _("avs_http_open_stream, method == ") "%d" _(", encoding == ") "%d" _(
                 ", ")
                 _("protocol == ") "%s" _(", host == ") "%s" _(
-                        ", port == ") "%s" _(", path == ") "%s" _(", ")
-                        _("auth_username == ") "%s" _(
-                                ", auth_password == ") "%s",
+                        ", port == ") "%s" _(", path == ") "%s",
         (int) method, (int) encoding, string_or_null(avs_url_protocol(url)),
         string_or_null(avs_url_host(url)), string_or_null(avs_url_port(url)),
-        string_or_null(avs_url_path(url)), auth_username ? auth_username : "",
-        auth_password ? auth_password : "");
+        string_or_null(avs_url_path(url)));
 
     stream = (http_stream_t *) avs_calloc(
             1,
