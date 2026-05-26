@@ -16,9 +16,6 @@
         "openssl/.*",
         "sys/time\\.h"
     ],
-    "tinydtls": [
-        "tinydtls/.*"
-    ],
     "compression": [
         "zlib\\.h"
     ],

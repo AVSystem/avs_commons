@@ -1372,13 +1372,21 @@ static avs_error_t start_ssl(ssl_socket_t *socket, const char *host) {
                  !mbedtls_ssl_is_handshake_over(get_context(socket)))) {
         do {
             result = mbedtls_ssl_handshake(get_context(socket));
-            LOG(ERROR, _("mbedtls_ssl_handshake() returned ") "%d", result);
+            LOG(TRACE, _("mbedtls_ssl_handshake() returned ") "%d", result);
         } while (is_retry_result(get_context(socket), result));
     } else {
         result = 0;
     }
 
-    LOG(ERROR, _("handshake ") "%s", result == 0 ? "completed" : "failed");
+    if (result == 0) {
+        if (socket->flags.handshake_attempted) {
+            LOG(DEBUG, _("handshake completed"));
+        } else {
+            LOG(DEBUG, _("handshake already completed"));
+        }
+    } else {
+        LOG(ERROR, _("handshake failed: ") "%d", result);
+    }
 
     if (result == 0) {
 #    if defined(AVS_COMMONS_WITH_INTERNAL_LOGS) \

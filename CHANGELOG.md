@@ -1,5 +1,11 @@
 # Changelog
 
+## avs_commons 5.8.0 (May 26th, 2026)
+
+### BREAKING CHANGES
+
+* Remove support for TinyDTLS library.
+
 ## avs_commons 5.7.0 (Mar 30th, 2026)
 
 ### Improvements

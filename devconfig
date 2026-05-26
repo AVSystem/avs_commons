@@ -21,6 +21,42 @@ if [ "$BREW_OPENSSL" ]; then
     EXTRA_FLAGS[${#EXTRA_FLAGS[@]}]="-DOPENSSL_ROOT_DIR=$BREW_OPENSSL"
 fi
 
+# This is the only bash-specific part of the standalone avs_commons engine
+# flow. The actual backend detection lives in a tiny CMake project, so this
+# script only needs to collect the user-facing status message and append every
+# non-empty line from recommended_flags.txt to EXTRA_FLAGS. Those flags are then
+# passed to the final CMake configure call below.
+probe_crypto_engine_flags() {
+    local probe_dir
+    local flag
+
+    probe_dir="$(mktemp -d)"
+    if ! cmake \
+            -S "$(dirname "$0")/cmake/probe_crypto_engine_backend" \
+            -B "$probe_dir" \
+            -D WITH_OPENSSL=ON \
+            -D WITH_MBEDTLS=ON \
+            "${EXTRA_FLAGS[@]}" \
+            "$@" >/dev/null 2>&1; then
+        rm -rf "$probe_dir"
+        return 1
+    fi
+
+    while IFS= read -r flag; do
+        if [ -n "$flag" ]; then
+            EXTRA_FLAGS[${#EXTRA_FLAGS[@]}]="$flag"
+        fi
+    done < "$probe_dir/recommended_flags.txt"
+
+    if [ -f "$probe_dir/probe_message.txt" ]; then
+        cat "$probe_dir/probe_message.txt"
+    fi
+
+    rm -rf "$probe_dir"
+    return 0
+}
+
+
 rm -f CMakeCache.txt
 rm -rf CMakeFiles
 cmake -D WITH_EXTRA_WARNINGS=ON \
@@ -28,7 +64,6 @@ cmake -D WITH_EXTRA_WARNINGS=ON \
       -D WITH_INTERNAL_TRACE=ON \
       -D WITH_OPENSSL=ON \
       -D WITH_MBEDTLS=ON \
-      -D WITH_TINYDTLS=ON \
       -D WITH_TEST=ON \
       -D WITH_AVS_CRYPTO_ADVANCED_FEATURES=ON \
       -D WITH_VALGRIND=ON \

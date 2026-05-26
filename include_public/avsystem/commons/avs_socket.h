@@ -207,8 +207,7 @@ typedef struct {
  *
  * Note that the @ref library_ssl_context parameter is a pointer to a native
  * SSL context object of the SSL library in use. It shall be cast to
- * <c>SSL_CTX *</c> for OpenSSL, <c>mbedtls_ssl_config *</c> for Mbed TLS, or
- * <c>dtls_context_t *</c> for tinyDTLS.
+ * <c>SSL_CTX *</c> for OpenSSL or <c>mbedtls_ssl_config *</c> for Mbed TLS.
  *
  * @param library_ssl_context pointer to a native SSL context object of the
  *                            SSL library in use

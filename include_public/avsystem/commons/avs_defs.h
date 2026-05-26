@@ -35,7 +35,6 @@ extern "C" {
  */
 
 #if !(defined(AVS_COMMONS_WITH_OPENSSL) || defined(AVS_COMMONS_WITH_MBEDTLS) \
-      || defined(AVS_COMMONS_WITH_TINYDTLS)                                  \
       || defined(AVS_COMMONS_WITH_CUSTOM_TLS))                               \
         && !defined(AVS_COMMONS_WITHOUT_TLS)
 #    define AVS_COMMONS_WITHOUT_TLS

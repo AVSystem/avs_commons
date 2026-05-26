@@ -17,7 +17,7 @@
 cmake_minimum_required(VERSION 3.16.0)
 project(avs_commons C)
 
-set(AVS_COMMONS_VERSION "5.7.0")
+set(AVS_COMMONS_VERSION "5.8.0")
 
 ################# DISTRIBUTION #################################################
 
@@ -271,7 +271,6 @@ else()
     set(AVS_COMMONS_UNIT_POSIX_HAVE_BACKTRACE 0)
 endif()
 
-include(CheckSymbolExists)
 if(NOT HAVE_MATH_LIBRARY)
     foreach(MATH_LIBRARY_IT "" "m")
         file(WRITE ${CMAKE_BINARY_DIR}/CMakeFiles/CMakeTmp/fmod.c "#include <math.h>\nint main(void) { volatile double a = 4.0, b = 3.2; return (int) fmod(a, b); }\n\n")
@@ -518,23 +517,26 @@ set(MBEDTLS_ROOT_DIR "" CACHE STRING "mbed TLS installation directory")
 find_package(MbedTLS)
 option(WITH_MBEDTLS "Enable mbed TLS" ${MBEDTLS_FOUND})
 set(AVS_COMMONS_WITH_MBEDTLS ${WITH_MBEDTLS})
-
-set(TINYDTLS_ROOT_DIR "/usr" CACHE STRING "TinyDTLS installation root directory")
-find_package(TinyDTLS)
-option(WITH_TINYDTLS "Enable tinyDTLS" ${TINYDTLS_FOUND})
-set(AVS_COMMONS_WITH_TINYDTLS ${WITH_TINYDTLS})
+if(WITH_MBEDTLS)
+    # Final Mbed TLS config check used by avs_commons validation below.
+    # FindMbedTLS already selects build_info.h for Mbed TLS 3.x and version.h
+    # for Mbed TLS 2.x, so the shared helper can inspect the same headers that
+    # the real build will use.
+    include(${CMAKE_CURRENT_LIST_DIR}/cmake/CheckMbedTlsPsaCrypto.cmake)
+    check_mbedtls_psa_crypto_enabled(MBEDTLS_HAS_PSA_CRYPTO)
+endif()
 
 option(WITH_CUSTOM_TLS "Enable support for custom TLS socket implementation" OFF)
 set(AVS_COMMONS_WITH_CUSTOM_TLS ${WITH_CUSTOM_TLS})
 
-cmake_dependent_option(WITH_PSK "Enable pre-shared key support" ON "WITH_OPENSSL OR WITH_MBEDTLS OR WITH_TINYDTLS OR WITH_CUSTOM_TLS" OFF)
+cmake_dependent_option(WITH_PSK "Enable pre-shared key support" ON "WITH_OPENSSL OR WITH_MBEDTLS OR WITH_CUSTOM_TLS" OFF)
 set(AVS_COMMONS_WITH_AVS_CRYPTO_PSK ${WITH_PSK})
 
 if(DEFINED WITH_X509)
     message(FATAL_ERROR "WITH_X509 has been removed since avs_commons 5.0. Please use WITH_PKI instead.")
 endif()
 
-cmake_dependent_option(WITH_PKI "Enable X.509 certificate support" ON "WITH_OPENSSL OR WITH_MBEDTLS OR WITH_TINYDTLS OR WITH_CUSTOM_TLS" OFF)
+cmake_dependent_option(WITH_PKI "Enable X.509 certificate support" ON "WITH_OPENSSL OR WITH_MBEDTLS OR WITH_CUSTOM_TLS" OFF)
 set(AVS_COMMONS_WITH_AVS_CRYPTO_PKI ${WITH_PKI})
 
 # Hardware security engines
@@ -567,12 +569,6 @@ if(WITH_MBEDTLS)
         set(MBEDTLS_USE_STATIC_LIBS ${MBEDTLS_USE_STATIC_LIBS} CACHE BOOL \"Force static versoin of mbed TLS\")
         find_package(MbedTLS REQUIRED)")
 endif()
-if(WITH_TINYDTLS)
-    avs_add_find_routine("
-        set(TINYDTLS_ROOT_DIR \"${TINYDTLS_ROOT_DIR}\" CACHE STRING \"TinyDTLS installation directory\")
-        find_package(TinyDTLS REQUIRED)
-    ")
-endif()
 
 add_module_with_include_dirs(NAME algorithm)
 add_module_with_include_dirs(NAME buffer)
@@ -602,7 +598,7 @@ add_module_with_include_dirs(NAME crypto)
 set(DOXYGEN_SKIP_DOT TRUE)
 find_package(Doxygen)
 
-if(DOXYGEN_FOUND)
+if(DOXYGEN_FOUND AND WITH_DOCS)
     set(DOXYGEN_INPUT_PATHS ${AVS_COMMONS_SOURCE_DIR}/include_public)
     configure_file(${AVS_COMMONS_SOURCE_DIR}/doc/Doxyfile.in
                    ${AVS_COMMONS_BINARY_DIR}/doc/Doxyfile
@@ -648,7 +644,6 @@ install(FILES
         DESTINATION ${LIB_INSTALL_DIR}/avs_commons)
 install(FILES
         ${CMAKE_CURRENT_SOURCE_DIR}/cmake/FindMbedTLS.cmake
-        ${CMAKE_CURRENT_SOURCE_DIR}/cmake/FindTinyDTLS.cmake
         DESTINATION ${LIB_INSTALL_DIR}/avs_commons/cmake)
 install(FILES
         "${CMAKE_CURRENT_BINARY_DIR}/include_public/avsystem/commons/avs_commons_config.h"
