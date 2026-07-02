@@ -30,6 +30,9 @@ AVS_UNIT_TEST(socket, ciphersuites_psk) {
 
     ssl_socket_t *ssl_socket = (ssl_socket_t *) socket;
 
+    // set the security level to 0 to disable openssl ciphersuites filtering
+    SSL_CTX_set_security_level(ssl_socket->ctx, 0);
+
     AVS_UNIT_ASSERT_EQUAL(ssl_socket->enabled_ciphersuites.num_ids, 2);
 
     ssl_socket->ssl = SSL_new(ssl_socket->ctx);
@@ -59,6 +62,9 @@ AVS_UNIT_TEST(socket, ciphersuites_cert) {
     AVS_UNIT_ASSERT_SUCCESS(avs_net_ssl_socket_create(&socket, &config));
 
     ssl_socket_t *ssl_socket = (ssl_socket_t *) socket;
+
+    // set the security level to 0 to disable openssl ciphersuites filtering
+    SSL_CTX_set_security_level(ssl_socket->ctx, 0);
 
     AVS_UNIT_ASSERT_EQUAL(ssl_socket->enabled_ciphersuites.num_ids, 2);
 
