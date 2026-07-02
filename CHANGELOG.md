@@ -1,5 +1,11 @@
 # Changelog
 
+## avs_commons 5.8.1 (July 2nd, 2026)
+
+### Improvements
+
+* Fixed tests for OpenSSL 3.5.
+
 ## avs_commons 5.8.0 (May 26th, 2026)
 
 ### BREAKING CHANGES
