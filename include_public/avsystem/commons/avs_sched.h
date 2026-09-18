@@ -294,7 +294,7 @@ int avs_resched_at_impl__(avs_sched_handle_t *handle_ptr,
  *
  * The following pseudo-code illustrates the way @p Clb is called:
  *
- * <code>
+ * @code
  * char buf[...]; // a buffer with alignment sufficient for any known data type
  * size_t buf_size;
  *
@@ -304,7 +304,7 @@ int avs_resched_at_impl__(avs_sched_handle_t *handle_ptr,
  *
  * // at execution time:
  * Clb(&buf[0]);
- * </code>
+ * @endcode
  *
  * NOTE: @p OutHandle is an optional parameter where job handle will be stored
  * during the time it remains a scheduled job. At the time of this call,

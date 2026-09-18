@@ -536,22 +536,8 @@ static BIO *avs_bio_spawn(ssl_socket_t *socket) {
 }
 #    endif /* BIO_TYPE_SOURCE_SINK */
 
-static bool socket_can_communicate(avs_net_socket_t *socket) {
-    avs_net_socket_opt_value_t opt;
-    return socket
-           && avs_is_ok(avs_net_socket_get_opt(socket, AVS_NET_SOCKET_OPT_STATE,
-                                               &opt))
-           && (opt.state == AVS_NET_SOCKET_STATE_ACCEPTED
-               || opt.state == AVS_NET_SOCKET_STATE_CONNECTED);
-}
-
 static void close_ssl_raw(ssl_socket_t *socket) {
     if (socket->ssl) {
-        if (socket_can_communicate(socket->backend_socket)) {
-            // SSL_shutdown attempts to send and receive packets,
-            // so do it only if we know we can do it
-            SSL_shutdown(socket->ssl);
-        }
         SSL_free(socket->ssl);
         socket->ssl = NULL;
     }
@@ -1609,31 +1595,42 @@ avs_error_t _avs_net_initialize_global_ssl_state(void) {
 static const SSL_METHOD *stream_method(avs_net_ssl_version_t version) {
     switch (version) {
     case AVS_NET_SSL_VERSION_DEFAULT:
+#        ifdef AVS_COMMONS_WITH_LEGACY_SSL_VERSIONS
+        return OPENSSL_METHOD(SSLv23)();
+#        else  // AVS_COMMONS_WITH_LEGACY_SSL_VERSIONS
+        return OPENSSL_METHOD(TLSv1_2)(); // default value shouldn't choose
+                                          // anything lower then TLS 1.2
+#        endif // AVS_COMMONS_WITH_LEGACY_SSL_VERSIONS
+
+#        ifdef AVS_COMMONS_WITH_LEGACY_SSL_VERSIONS
     case AVS_NET_SSL_VERSION_SSLv2_OR_3:
         return OPENSSL_METHOD(SSLv23)();
 
-#        ifndef OPENSSL_NO_SSL2
+#            ifndef OPENSSL_NO_SSL2
     case AVS_NET_SSL_VERSION_SSLv2:
         return OPENSSL_METHOD(SSLv2)();
-#        endif
+#            endif
 
-#        ifndef OPENSSL_NO_SSL3
+#            ifndef OPENSSL_NO_SSL3
     case AVS_NET_SSL_VERSION_SSLv3:
         return OPENSSL_METHOD(SSLv3)();
-#        endif
+#            endif
 
-#        ifndef OPENSSL_NO_TLS1
+#            ifndef OPENSSL_NO_TLS1
     case AVS_NET_SSL_VERSION_TLSv1:
         return OPENSSL_METHOD(TLSv1)();
 
-#            if OPENSSL_VERSION_NUMBER_GE(1, 0, 1)
+#                if OPENSSL_VERSION_NUMBER_GE(1, 0, 1)
     case AVS_NET_SSL_VERSION_TLSv1_1:
         return OPENSSL_METHOD(TLSv1_1)();
+#                endif
+#            endif /* OPENSSL_NO_TLS1 */
+#        endif     // AVS_COMMONS_WITH_LEGACY_SSL_VERSIONS
 
+#        if OPENSSL_VERSION_NUMBER_GE(1, 0, 1)
     case AVS_NET_SSL_VERSION_TLSv1_2:
         return OPENSSL_METHOD(TLSv1_2)();
-#            endif
-#        endif /* OPENSSL_NO_TLS1 */
+#        endif
 
     default:
         return NULL;
@@ -1647,17 +1644,28 @@ static const SSL_METHOD *stream_method(avs_net_ssl_version_t version) {
 static const SSL_METHOD *dgram_method(avs_net_ssl_version_t version) {
     switch (version) {
     case AVS_NET_SSL_VERSION_DEFAULT:
-#            if OPENSSL_VERSION_NUMBER_GE(1, 0, 2)
+#            ifdef AVS_COMMONS_WITH_LEGACY_SSL_VERSIONS
+#                if OPENSSL_VERSION_NUMBER_GE(1, 0, 2)
         return OPENSSL_METHOD(DTLS)();
+#                endif // OPENSSL_VERSION_NUMBER_GE(1, 0, 2)
+#            else      // AVS_COMMONS_WITH_LEGACY_SSL_VERSIONS
+#                if OPENSSL_VERSION_NUMBER_GE(1, 0, 2)
+        return OPENSSL_METHOD(DTLSv1_2)(); // default value shouldn't choose
+                                           // anything lower then DTLS 1.2
+#                endif
+#            endif // AVS_COMMONS_WITH_LEGACY_SSL_VERSIONS
 
-    case AVS_NET_SSL_VERSION_TLSv1_2:
-        return OPENSSL_METHOD(DTLSv1_2)();
-#            endif
-
-#            if OPENSSL_VERSION_NUMBER_GE(1, 0, 1)
+#            ifdef AVS_COMMONS_WITH_LEGACY_SSL_VERSIONS
+#                if OPENSSL_VERSION_NUMBER_GE(1, 0, 1)
     case AVS_NET_SSL_VERSION_TLSv1:
     case AVS_NET_SSL_VERSION_TLSv1_1:
         return OPENSSL_METHOD(DTLSv1)();
+#                endif
+#            endif // AVS_COMMONS_WITH_LEGACY_SSL_VERSIONS
+
+#            if OPENSSL_VERSION_NUMBER_GE(1, 0, 2)
+    case AVS_NET_SSL_VERSION_TLSv1_2:
+        return OPENSSL_METHOD(DTLSv1_2)();
 #            endif
 
     default:
@@ -1691,6 +1699,14 @@ make_ssl_context(SSL_CTX **out_ctx, bool dtls, avs_net_ssl_version_t version) {
 static int stream_proto_version(avs_net_ssl_version_t version) {
     switch (version) {
     case AVS_NET_SSL_VERSION_DEFAULT:
+#        ifdef AVS_COMMONS_WITH_LEGACY_SSL_VERSIONS
+        return 0;
+#        else  // AVS_COMMONS_WITH_LEGACY_SSL_VERSIONS
+        return TLS1_2_VERSION; // default value shouldn't choose anything
+                               // lower then TLS 1.2
+#        endif // AVS_COMMONS_WITH_LEGACY_SSL_VERSIONS
+
+#        ifdef AVS_COMMONS_WITH_LEGACY_SSL_VERSIONS
     case AVS_NET_SSL_VERSION_SSLv2_OR_3:
         return 0;
     case AVS_NET_SSL_VERSION_SSLv3:
@@ -1699,6 +1715,8 @@ static int stream_proto_version(avs_net_ssl_version_t version) {
         return TLS1_VERSION;
     case AVS_NET_SSL_VERSION_TLSv1_1:
         return TLS1_1_VERSION;
+#        endif // AVS_COMMONS_WITH_LEGACY_SSL_VERSIONS
+
     case AVS_NET_SSL_VERSION_TLSv1_2:
         return TLS1_2_VERSION;
 #        if OPENSSL_VERSION_NUMBER_GE(1, 1, 1)
@@ -1717,10 +1735,18 @@ static int stream_proto_version(avs_net_ssl_version_t version) {
 static int dgram_proto_version(avs_net_ssl_version_t version) {
     switch (version) {
     case AVS_NET_SSL_VERSION_DEFAULT:
+#            ifdef AVS_COMMONS_WITH_LEGACY_SSL_VERSIONS
         return 0;
+#            else  // AVS_COMMONS_WITH_LEGACY_SSL_VERSIONS
+        return DTLS1_2_VERSION; // default value shouldn't choose anything
+                                // lower the DTLS 1.2
+#            endif // AVS_COMMONS_WITH_LEGACY_SSL_VERSIONS
+
+#            ifdef AVS_COMMONS_WITH_LEGACY_SSL_VERSIONS
     case AVS_NET_SSL_VERSION_TLSv1:
     case AVS_NET_SSL_VERSION_TLSv1_1:
         return DTLS1_VERSION;
+#            endif // AVS_COMMONS_WITH_LEGACY_SSL_VERSIONS
     case AVS_NET_SSL_VERSION_TLSv1_2:
         return DTLS1_2_VERSION;
     default:

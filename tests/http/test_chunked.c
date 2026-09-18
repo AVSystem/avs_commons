@@ -42,7 +42,7 @@ AVS_UNIT_TEST(http, send_chunk) {
     AVS_UNIT_ASSERT_SUCCESS(http_send_single_chunk(&stream, input_buffer,
                                                    strlen(input_buffer)));
     avs_net_socket_close(socket);
-    avs_unit_mocksock_expect_shutdown(socket);
+    avs_unit_mocksock_expect_mid_close(socket);
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&stream.backend));
 
     avs_unit_mocksock_create(&socket);
@@ -53,7 +53,7 @@ AVS_UNIT_TEST(http, send_chunk) {
             avs_stream_netbuf_create(&stream.backend, socket, 0, 0));
     AVS_UNIT_ASSERT_SUCCESS(http_send_single_chunk(&stream, NULL, 0));
     avs_net_socket_close(socket);
-    avs_unit_mocksock_expect_shutdown(socket);
+    avs_unit_mocksock_expect_mid_close(socket);
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&stream.backend));
 }
 

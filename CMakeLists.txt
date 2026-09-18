@@ -17,7 +17,7 @@
 cmake_minimum_required(VERSION 3.16.0)
 project(avs_commons C)
 
-set(AVS_COMMONS_VERSION "5.8.1")
+set(AVS_COMMONS_VERSION "5.9.0")
 
 ################# DISTRIBUTION #################################################
 
@@ -629,6 +629,7 @@ set(AVS_COMMONS_UTILS_WITH_STANDARD_ALLOCATOR "${WITH_STANDARD_ALLOCATOR}")
 set(AVS_COMMONS_UTILS_WITH_ALIGNFIX_ALLOCATOR "${WITH_ALIGNFIX_ALLOCATOR}")
 set(AVS_COMMONS_WITH_MICRO_LOGS "${WITH_AVS_MICRO_LOGS}")
 set(AVS_COMMONS_WITH_POISONING "${WITH_POISONING}")
+set(AVS_COMMONS_WITH_LEGACY_SSL_VERSIONS "${WITH_LEGACY_SSL_VERSIONS}")
 
 configure_file("include_public/avsystem/commons/avs_commons_config.h.in"
                "include_public/avsystem/commons/avs_commons_config.h")

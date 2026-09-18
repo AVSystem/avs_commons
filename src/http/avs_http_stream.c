@@ -86,6 +86,12 @@ static const char *resolve_port(const avs_url_t *parsed_url) {
     }
 }
 
+static bool is_https_to_http_downgrade(const avs_url_t *from,
+                                       const avs_url_t *to) {
+    return check_protocol(avs_url_protocol(from)) == HTTP_URI_PROTOCOL_HTTPS
+           && check_protocol(avs_url_protocol(to)) == HTTP_URI_PROTOCOL_HTTP;
+}
+
 avs_error_t _avs_http_socket_new(avs_net_socket_t **out,
                                  avs_http_t *client,
                                  const avs_url_t *url) {
@@ -189,6 +195,16 @@ avs_error_t _avs_http_redirect(http_stream_t *stream, avs_url_t **url_move) {
         assert(avs_is_err(err));
         return err;
     }
+
+    /*
+     * Redirects are a security boundary. Do not let enabling plain HTTP for
+     * development implicitly allow an HTTPS request to be downgraded.
+     */
+    if (is_https_to_http_downgrade(stream->url, *url_move)) {
+        LOG(ERROR, _("refusing HTTPS to HTTP redirect"));
+        return avs_errno(AVS_EACCES);
+    }
+
     avs_error_t err = avs_stream_reset(stream->backend);
     if (avs_is_err(err)) {
         LOG(ERROR, _("stream reset failed"));

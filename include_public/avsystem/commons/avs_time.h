@@ -511,11 +511,23 @@ avs_time_duration_t avs_time_duration_div(avs_time_duration_t input,
                                           int32_t divisor);
 
 /**
+ * Returns the current real, calendar time.
+ *
+ * The application is responsible for periodically synchronizing the underlying
+ * real-time clock. The synchronization frequency shall be selected based on the
+ * expected clock drift and the time accuracy required by the application.
+ *
  * @return Current system time expressed as @ref avs_time_real_t
  */
 avs_time_real_t avs_time_real_now(void);
 
 /**
+ * Returns the current monotonic clock value.
+ *
+ * Values returned by this function MUST NOT decrease during a single
+ * application execution. Synchronization or other adjustments of the real-time
+ * clock MUST NOT cause this clock to move backwards.
+ *
  * @return Current system monotonic clock value expressed as
  *         @ref avs_time_monotonic_t
  */

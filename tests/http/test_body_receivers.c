@@ -57,7 +57,7 @@ AVS_UNIT_TEST(http, dumb_receiver_read) {
     *buffer_ptr = '\0';
     AVS_UNIT_ASSERT_EQUAL_STRING(buffer, DUMB_INPUT_DATA);
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&receiver));
-    avs_unit_mocksock_expect_shutdown(socket);
+    avs_unit_mocksock_expect_mid_close(socket);
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&helper_stream));
 }
 
@@ -104,7 +104,7 @@ AVS_UNIT_TEST(http, dumb_receiver_peek) {
     *buffer_ptr = '\0';
     AVS_UNIT_ASSERT_EQUAL_STRING(buffer, DUMB_INPUT_DATA);
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&receiver));
-    avs_unit_mocksock_expect_shutdown(socket);
+    avs_unit_mocksock_expect_mid_close(socket);
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&helper_stream));
 }
 
@@ -157,7 +157,7 @@ AVS_UNIT_TEST(http, content_length_receiver_good) {
     *buffer_ptr = '\0';
     AVS_UNIT_ASSERT_EQUAL_STRING(buffer, LENGTH_INPUT_DATA + content_length);
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&receiver));
-    avs_unit_mocksock_expect_shutdown(socket);
+    avs_unit_mocksock_expect_mid_close(socket);
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&helper_stream));
 }
 
@@ -191,7 +191,7 @@ AVS_UNIT_TEST(http, content_length_receiver_not_enough) {
     AVS_UNIT_ASSERT_EQUAL(err.category, AVS_ERRNO_CATEGORY);
     AVS_UNIT_ASSERT_EQUAL(err.code, AVS_EIO);
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&receiver));
-    avs_unit_mocksock_expect_shutdown(socket);
+    avs_unit_mocksock_expect_mid_close(socket);
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&helper_stream));
 }
 
@@ -223,7 +223,7 @@ AVS_UNIT_TEST(http, content_length_receiver_peek) {
                 avs_is_eof(avs_stream_peek(receiver, i, &(char) { 0 })));
     }
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&receiver));
-    avs_unit_mocksock_expect_shutdown(socket);
+    avs_unit_mocksock_expect_mid_close(socket);
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&helper_stream));
 }
 
@@ -290,7 +290,7 @@ AVS_UNIT_TEST(http, chunked_receiver_good) {
     *buffer_ptr = '\0';
     AVS_UNIT_ASSERT_EQUAL_STRING(buffer, POST_CHUNKED_DATA);
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&receiver));
-    avs_unit_mocksock_expect_shutdown(socket);
+    avs_unit_mocksock_expect_mid_close(socket);
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&helper_stream));
 }
 
@@ -328,7 +328,7 @@ AVS_UNIT_TEST(http, chunked_receiver_not_enough) {
     AVS_UNIT_ASSERT_EQUAL(err.category, AVS_ERRNO_CATEGORY);
     AVS_UNIT_ASSERT_EQUAL(err.code, AVS_EIO);
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&receiver));
-    avs_unit_mocksock_expect_shutdown(socket);
+    avs_unit_mocksock_expect_mid_close(socket);
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&helper_stream));
 }
 
@@ -354,7 +354,7 @@ AVS_UNIT_TEST(http, chunked_receiver_error) {
                             buffer, sizeof(buffer));
     AVS_UNIT_ASSERT_EQUAL(err.category, AVS_ERRNO_CATEGORY);
     AVS_UNIT_ASSERT_EQUAL(err.code, AVS_EPROTO);
-    avs_unit_mocksock_expect_shutdown(socket);
+    avs_unit_mocksock_expect_mid_close(socket);
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&receiver));
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&helper_stream));
 }
@@ -393,7 +393,7 @@ AVS_UNIT_TEST(http, chunked_receiver_no_zero) {
     AVS_UNIT_ASSERT_EQUAL(err.category, AVS_ERRNO_CATEGORY);
     AVS_UNIT_ASSERT_EQUAL(err.code, AVS_EPROTO);
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&receiver));
-    avs_unit_mocksock_expect_shutdown(socket);
+    avs_unit_mocksock_expect_mid_close(socket);
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&helper_stream));
 }
 
@@ -423,6 +423,6 @@ AVS_UNIT_TEST(http, chunked_receiver_peek) {
                 avs_is_eof(avs_stream_peek(receiver, i, &(char) { 0 })));
     }
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&receiver));
-    avs_unit_mocksock_expect_shutdown(socket);
+    avs_unit_mocksock_expect_mid_close(socket);
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&helper_stream));
 }

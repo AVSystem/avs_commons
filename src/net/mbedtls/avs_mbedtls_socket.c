@@ -362,42 +362,69 @@ static void close_ssl_raw(ssl_socket_t *socket) {
     }
 }
 
-static int ssl_version_as_on_wire(uint16_t *out_value,
-                                  avs_net_ssl_version_t version) {
+#    if AVS_COMMONS_WITH_LEGACY_SSL_VERSIONS
+static int ssl_version_as_on_wire_allow_legacy(uint16_t *out_value,
+                                               avs_net_ssl_version_t version) {
     switch (version) {
     case AVS_NET_SSL_VERSION_DEFAULT:
     case AVS_NET_SSL_VERSION_SSLv2_OR_3:
     case AVS_NET_SSL_VERSION_SSLv3:
         // NOTE: In Mbed TLS >=3.0, TLS 1.2 is the lowest supported version
         // anyway.
-#    if MBEDTLS_VERSION_NUMBER < 0x03000000
+#        if MBEDTLS_VERSION_NUMBER < 0x03000000
         *out_value = 0x0300;
         return 0;
-#    endif // MBEDTLS_VERSION_NUMBER < 0x03000000
+#        endif // MBEDTLS_VERSION_NUMBER < 0x03000000
     case AVS_NET_SSL_VERSION_TLSv1:
-#    if MBEDTLS_VERSION_NUMBER < 0x03000000
+#        if MBEDTLS_VERSION_NUMBER < 0x03000000
         *out_value = 0x0301;
         return 0;
-#    endif // MBEDTLS_VERSION_NUMBER < 0x03000000
+#        endif // MBEDTLS_VERSION_NUMBER < 0x03000000
     case AVS_NET_SSL_VERSION_TLSv1_1:
-#    if MBEDTLS_VERSION_NUMBER < 0x03000000
+#        if MBEDTLS_VERSION_NUMBER < 0x03000000
         *out_value = 0x0302;
         return 0;
-#    endif // MBEDTLS_VERSION_NUMBER < 0x03000000
+#        endif // MBEDTLS_VERSION_NUMBER < 0x03000000
     case AVS_NET_SSL_VERSION_TLSv1_2:
         *out_value = 0x0303;
         return 0;
-#    if defined(MBEDTLS_SSL_PROTO_TLS1_3_EXPERIMENTAL) \
-            || defined(MBEDTLS_SSL_PROTO_TLS1_3)
+#        if defined(MBEDTLS_SSL_PROTO_TLS1_3_EXPERIMENTAL) \
+                || defined(MBEDTLS_SSL_PROTO_TLS1_3)
     case AVS_NET_SSL_VERSION_TLSv1_3:
         *out_value = 0x0304;
         return 0;
-#    endif // defined(MBEDTLS_SSL_PROTO_TLS1_3_EXPERIMENTAL) ||
-           // defined(MBEDTLS_SSL_PROTO_TLS1_3)
+#        endif // defined(MBEDTLS_SSL_PROTO_TLS1_3_EXPERIMENTAL) ||
+               // defined(MBEDTLS_SSL_PROTO_TLS1_3)
     default:
-        LOG(ERROR, _("Unsupported SSL version"));
+        LOG(ERROR, _("Unsupported SSL version %d"), version);
         return -1;
     }
+}
+#    endif // AVS_COMMONS_WITH_LEGACY_SSL_VERSIONS
+
+static int ssl_version_as_on_wire(uint16_t *out_value,
+                                  avs_net_ssl_version_t version) {
+#    if AVS_COMMONS_WITH_LEGACY_SSL_VERSIONS
+    return ssl_version_as_on_wire_allow_legacy(out_value, version);
+#    else // AVS_COMMONS_WITH_LEGACY_SSL_VERSIONS
+    switch (version) {
+    case AVS_NET_SSL_VERSION_DEFAULT:
+    case AVS_NET_SSL_VERSION_TLSv1_2:
+        *out_value = 0x0303; // default value shouldn't choose anything
+                             // lower then DTLS/TLS 1.2
+        return 0;
+#        if defined(MBEDTLS_SSL_PROTO_TLS1_3_EXPERIMENTAL) \
+                || defined(MBEDTLS_SSL_PROTO_TLS1_3)
+    case AVS_NET_SSL_VERSION_TLSv1_3:
+        *out_value = 0x0304;
+        return 0;
+#        endif // defined(MBEDTLS_SSL_PROTO_TLS1_3_EXPERIMENTAL) ||
+               // defined(MBEDTLS_SSL_PROTO_TLS1_3)
+    default:
+        LOG(ERROR, _("Unsupported SSL version %d"), version);
+        return -1;
+    }
+#    endif     // AVS_COMMONS_WITH_LEGACY_SSL_VERSIONS
 }
 
 #    if !defined(MBEDTLS_KEY_EXCHANGE__SOME__PSK_ENABLED) \

@@ -110,7 +110,7 @@ AVS_UNIT_TEST(http_close, chunked_request) {
     }
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_finish_message(stream));
     avs_unit_mocksock_assert_io_clean(socket);
-    avs_unit_mocksock_expect_shutdown(socket);
+    avs_unit_mocksock_expect_mid_close(socket);
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&stream));
     avs_http_free(client);
 }
@@ -135,7 +135,7 @@ AVS_UNIT_TEST(http_close, chunked_request_twice) {
     }
     AVS_UNIT_ASSERT_FAILED(err);
     avs_unit_mocksock_assert_io_clean(socket);
-    avs_unit_mocksock_expect_shutdown(socket);
+    avs_unit_mocksock_expect_mid_close(socket);
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&stream));
     avs_http_free(client);
 }
@@ -180,7 +180,7 @@ AVS_UNIT_TEST(http_close, chunked_request_error_in_first_chunk) {
     }
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_finish_message(stream));
     avs_unit_mocksock_assert_io_clean(socket);
-    avs_unit_mocksock_expect_shutdown(socket);
+    avs_unit_mocksock_expect_mid_close(socket);
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&stream));
     avs_http_free(client);
 }
@@ -224,7 +224,7 @@ AVS_UNIT_TEST(http_close, chunked_request_close_when_receiving) {
     }
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_finish_message(stream));
     avs_unit_mocksock_assert_io_clean(socket);
-    avs_unit_mocksock_expect_shutdown(socket);
+    avs_unit_mocksock_expect_mid_close(socket);
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&stream));
     avs_http_free(client);
 }
@@ -261,7 +261,7 @@ AVS_UNIT_TEST(http_close, chunked_request_error_in_second_chunk) {
     AVS_UNIT_ASSERT_FAILED(avs_stream_finish_message(stream));
     AVS_UNIT_ASSERT_TRUE(avs_http_should_retry(stream));
     avs_unit_mocksock_assert_io_clean(socket);
-    avs_unit_mocksock_expect_shutdown(socket);
+    avs_unit_mocksock_expect_mid_close(socket);
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&stream));
     avs_http_free(client);
 }

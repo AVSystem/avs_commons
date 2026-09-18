@@ -1,5 +1,20 @@
 # Changelog
 
+## avs_commons 5.9.0 (September 18th, 2026)
+
+### Improvements
+
+* Buffered network streams no longer call `avs_net_socket_shutdown()` before
+cleaning up the underlying socket.
+* Prevent HTTPS-to-HTTP downgrades during redirects.
+
+### BREAKING CHANGES
+
+* Changed the default minimum DTLS/TLS version to 1.2 in the Mbed TLS and
+OpenSSL integrations, disabling older protocol versions by default. Added the
+`AVS_COMMONS_WITH_LEGACY_SSL_VERSIONS` configuration option to re-enable support
+for legacy DTLS/TLS versions.
+
 ## avs_commons 5.8.1 (July 2nd, 2026)
 
 ### Improvements

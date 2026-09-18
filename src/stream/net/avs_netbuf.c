@@ -295,14 +295,10 @@ static avs_error_t buffered_netstream_reset(avs_stream_t *stream_) {
 
 static avs_error_t buffered_netstream_close(avs_stream_t *stream_) {
     buffered_netstream_t *stream = (buffered_netstream_t *) stream_;
-    avs_error_t err = AVS_OK;
-    if (stream->socket) {
-        err = avs_net_socket_shutdown(stream->socket);
-    }
     avs_net_socket_cleanup(&stream->socket);
     avs_free(stream->in_buffer);
     avs_buffer_free(&stream->out_buffer);
-    return err;
+    return AVS_OK;
 }
 
 static avs_net_socket_t *buffered_netstream_getsock(avs_stream_t *stream) {

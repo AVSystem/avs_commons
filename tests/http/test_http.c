@@ -122,7 +122,7 @@ AVS_UNIT_TEST(http, full_request) {
     *buffer_ptr = '\0';
     AVS_UNIT_ASSERT_EQUAL_STRING(buffer, tmp_data);
     avs_unit_mocksock_assert_io_clean(socket);
-    avs_unit_mocksock_expect_shutdown(socket);
+    avs_unit_mocksock_expect_mid_close(socket);
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&stream));
     avs_http_free(client);
 }
@@ -164,7 +164,7 @@ AVS_UNIT_TEST(http, reconnect_fail) {
     AVS_UNIT_ASSERT_EQUAL(err.category, AVS_ERRNO_CATEGORY);
     AVS_UNIT_ASSERT_EQUAL(err.code, AVS_ECONNREFUSED);
     avs_unit_mocksock_assert_io_clean(socket);
-    avs_unit_mocksock_expect_shutdown(socket);
+    avs_unit_mocksock_expect_mid_close(socket);
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&stream));
     avs_http_free(client);
 }
@@ -221,7 +221,7 @@ AVS_UNIT_TEST(http, advanced_request) {
     AVS_UNIT_ASSERT_EQUAL(err.code, 401);
     AVS_UNIT_ASSERT_EQUAL(avs_http_status_code(stream), 401);
     avs_unit_mocksock_assert_io_clean(socket);
-    avs_unit_mocksock_expect_shutdown(socket);
+    avs_unit_mocksock_expect_mid_close(socket);
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&stream));
     avs_http_free(client);
 }
@@ -258,7 +258,7 @@ AVS_UNIT_TEST(http, invalid_cookies) {
     AVS_UNIT_ASSERT_EQUAL(err.category, AVS_ERRNO_CATEGORY);
     AVS_UNIT_ASSERT_EQUAL(err.code, AVS_EPROTO);
     avs_unit_mocksock_assert_io_clean(socket);
-    avs_unit_mocksock_expect_shutdown(socket);
+    avs_unit_mocksock_expect_mid_close(socket);
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&stream));
     avs_http_free(client);
 }
@@ -312,7 +312,7 @@ AVS_UNIT_TEST(http, multiple_cookies) {
     AVS_UNIT_ASSERT_EQUAL(err.code, 401);
     AVS_UNIT_ASSERT_EQUAL(avs_http_status_code(stream), 401);
     avs_unit_mocksock_assert_io_clean(socket);
-    avs_unit_mocksock_expect_shutdown(socket);
+    avs_unit_mocksock_expect_mid_close(socket);
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&stream));
     avs_http_free(client);
 }
@@ -610,7 +610,7 @@ AVS_UNIT_TEST(http, chunked_request) {
     }
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_finish_message(stream));
     avs_unit_mocksock_assert_io_clean(socket);
-    avs_unit_mocksock_expect_shutdown(socket);
+    avs_unit_mocksock_expect_mid_close(socket);
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&stream));
     avs_http_free(client);
 }
@@ -653,7 +653,7 @@ AVS_UNIT_TEST(http, no_100_continue) {
     avs_unit_mocksock_input(socket, tmp_data, strlen(tmp_data));
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_finish_message(stream));
     avs_unit_mocksock_assert_io_clean(socket);
-    avs_unit_mocksock_expect_shutdown(socket);
+    avs_unit_mocksock_expect_mid_close(socket);
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&stream));
     avs_http_free(client);
 }
@@ -706,7 +706,7 @@ AVS_UNIT_TEST(http, error_417) {
     }
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_finish_message(stream));
     avs_unit_mocksock_assert_io_clean(socket);
-    avs_unit_mocksock_expect_shutdown(socket);
+    avs_unit_mocksock_expect_mid_close(socket);
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&stream));
     avs_http_free(client);
 }
@@ -879,7 +879,7 @@ AVS_UNIT_TEST(http, big_chunked_request) {
             avs_stream_write(stream, tmp_data, strlen(tmp_data)));
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_finish_message(stream));
     avs_unit_mocksock_assert_io_clean(socket);
-    avs_unit_mocksock_expect_shutdown(socket);
+    avs_unit_mocksock_expect_mid_close(socket);
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&stream));
     avs_http_free(client);
 }
@@ -999,7 +999,7 @@ AVS_UNIT_TEST(http, redirect) {
     AVS_UNIT_ASSERT_EQUAL(err.code, 301);
     AVS_UNIT_ASSERT_EQUAL(avs_http_status_code(stream), 301);
     avs_unit_mocksock_assert_io_clean(sockets[5]);
-    avs_unit_mocksock_expect_shutdown(sockets[5]);
+    avs_unit_mocksock_expect_mid_close(sockets[5]);
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&stream));
     avs_http_free(client);
 }
@@ -1089,7 +1089,7 @@ AVS_UNIT_TEST(http, interleaving) {
     avs_unit_mocksock_expect_connect(socket, "pudim.com.br", "80");
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_finish_message(stream));
     avs_unit_mocksock_assert_io_clean(socket);
-    avs_unit_mocksock_expect_shutdown(socket);
+    avs_unit_mocksock_expect_mid_close(socket);
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&stream));
     avs_http_free(client);
 }
@@ -1131,7 +1131,7 @@ AVS_UNIT_TEST(http, interleaving_error) {
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_getline(stream, NULL, &message_finished,
                                                buffer, sizeof(buffer)));
     AVS_UNIT_ASSERT_FAILED(avs_stream_finish_message(stream));
-    avs_unit_mocksock_expect_shutdown(socket);
+    avs_unit_mocksock_expect_mid_close(socket);
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&stream));
     avs_http_free(client);
 }
@@ -1158,7 +1158,7 @@ AVS_UNIT_TEST(http, send_headers_fail) {
     avs_unit_mocksock_output_fail(socket, avs_errno(AVS_EIO));
     AVS_UNIT_ASSERT_FAILED(avs_stream_finish_message(stream));
     avs_unit_mocksock_assert_io_clean(socket);
-    avs_unit_mocksock_expect_shutdown(socket);
+    avs_unit_mocksock_expect_mid_close(socket);
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&stream));
     avs_http_free(client);
 }
@@ -1186,7 +1186,7 @@ AVS_UNIT_TEST(http, ipv6_host_header_has_square_brackets) {
     avs_unit_mocksock_output_fail(socket, avs_errno(AVS_EIO));
     AVS_UNIT_ASSERT_FAILED(avs_stream_finish_message(stream));
     avs_unit_mocksock_assert_io_clean(socket);
-    avs_unit_mocksock_expect_shutdown(socket);
+    avs_unit_mocksock_expect_mid_close(socket);
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&stream));
     avs_http_free(client);
 }
@@ -1406,7 +1406,7 @@ AVS_UNIT_TEST(http, gzipped_response) {
     *buffer_ptr = '\0';
     AVS_UNIT_ASSERT_EQUAL_STRING(buffer, MONTY_PYTHON_RAW);
     avs_unit_mocksock_assert_io_clean(socket);
-    avs_unit_mocksock_expect_shutdown(socket);
+    avs_unit_mocksock_expect_mid_close(socket);
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&stream));
     avs_http_free(client);
 }
@@ -1454,7 +1454,7 @@ AVS_UNIT_TEST(http, deflated_response) {
     *buffer_ptr = '\0';
     AVS_UNIT_ASSERT_EQUAL_STRING(buffer, MONTY_PYTHON_RAW);
     avs_unit_mocksock_assert_io_clean(socket);
-    avs_unit_mocksock_expect_shutdown(socket);
+    avs_unit_mocksock_expect_mid_close(socket);
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&stream));
     avs_http_free(client);
 }
@@ -1489,7 +1489,7 @@ AVS_UNIT_TEST(http, gzipped_error) {
                             sizeof(MONTY_PYTHON_GZIP) - 1);
     AVS_UNIT_ASSERT_FAILED(avs_stream_finish_message(stream));
     avs_unit_mocksock_assert_io_clean(socket);
-    avs_unit_mocksock_expect_shutdown(socket);
+    avs_unit_mocksock_expect_mid_close(socket);
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&stream));
     avs_http_free(client);
 }
@@ -1524,7 +1524,7 @@ AVS_UNIT_TEST(http, deflated_error) {
                             sizeof(MONTY_PYTHON_ZLIB) - 1);
     AVS_UNIT_ASSERT_FAILED(avs_stream_finish_message(stream));
     avs_unit_mocksock_assert_io_clean(socket);
-    avs_unit_mocksock_expect_shutdown(socket);
+    avs_unit_mocksock_expect_mid_close(socket);
     AVS_UNIT_ASSERT_SUCCESS(avs_stream_cleanup(&stream));
     avs_http_free(client);
 }

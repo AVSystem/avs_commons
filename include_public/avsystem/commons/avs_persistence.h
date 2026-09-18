@@ -476,11 +476,7 @@ avs_persistence_magic_string(avs_persistence_context_t *ctx,
 /**
  * Persists or restores a format version number.
  *
- * This is mostly equivalent to:
- *
- * <code>
- * avs_persistence_u8(ctx, version_number);
- * </code>
+ * This is mostly equivalent to <c>avs_persistence_u8(ctx, version_number)</c>.
  *
  * except on restore operation, the restored value is compared to the values
  * in the <c>supported_versions</c> array, and if it doesn't match any, an error
