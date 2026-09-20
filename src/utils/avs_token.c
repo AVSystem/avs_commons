@@ -51,6 +51,8 @@ void avs_consume_quotable_token(const char **src,
 
     if (dest_size == 0) {
         dest = NULL;
+    } else if (!dest) {
+        dest_size = 0;
     }
     for (char value; (value = **src); ++*src) {
         if (value == '"') {
